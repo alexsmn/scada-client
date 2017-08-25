@@ -1,7 +1,7 @@
-#include "client/components/modus/views/modus_object.h"
+#include "components/modus/views/modus_object.h"
 
 #include "base/stl_util.h"
-#include "client/components/modus/views/modus_element.h"
+#include "components/modus/views/modus_element.h"
 
 namespace modus {
 

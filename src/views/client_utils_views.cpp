@@ -1,13 +1,13 @@
-#include "client/views/client_utils_views.h"
+#include "views/client_utils_views.h"
 
 #include "base/win/win_util.h"
-#include "client/commands/write_dialog.h"
-#include "client/common_resources.h"
-#include "client/views/context_menu_model.h"
-#include "client/controller.h"
-#include "client/components/main/opened_view.h"
-#include "client/components/main/views/main_window_views.h"
-#include "client/window_info.h"
+#include "commands/write_dialog.h"
+#include "common_resources.h"
+#include "views/context_menu_model.h"
+#include "controller.h"
+#include "components/main/opened_view.h"
+#include "components/main/views/main_window_views.h"
+#include "window_info.h"
 #include "common/scada_node_ids.h"
 
 #include <atlbase.h>

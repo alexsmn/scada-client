@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/win/dragdrop.h"
-#include "client/controller.h"
+#include "controller.h"
 #include "common/node_ref.h"
 
 #if defined(UI_QT)

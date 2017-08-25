@@ -1,4 +1,4 @@
-#include "client/components/graph/graph_setup_dialog.h"
+#include "components/graph/graph_setup_dialog.h"
 
 #include "skia/ext/skia_utils_win.h"
 

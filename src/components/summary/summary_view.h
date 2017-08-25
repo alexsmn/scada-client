@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "client/controller.h"
+#include "controller.h"
 
 #if defined(UI_QT)
 class QTableView;

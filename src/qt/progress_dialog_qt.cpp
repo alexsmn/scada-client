@@ -1,4 +1,4 @@
-#include "client/commands/views/progress_dialog.h"
+#include "commands/views/progress_dialog.h"
 
 class ProgressDialogQt : public ProgressDialog  {
  public:

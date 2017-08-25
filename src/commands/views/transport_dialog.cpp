@@ -1,8 +1,8 @@
-#include "client/commands/views/transport_dialog.h"
+#include "commands/views/transport_dialog.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/format.h"
-#include "client/common_resources.h"
+#include "common_resources.h"
 
 #include <algorithm>
 #include <atlstr.h>

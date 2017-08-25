@@ -3,8 +3,8 @@
 #include "base/files/file_path.h"
 #include "base/timer/timer.h"
 #include "base/win/scoped_comptr.h"
-#include "client/controller.h"
-#include "client/components/vidicon_display/views/displayviewerx.h"
+#include "controller.h"
+#include "components/vidicon_display/views/displayviewerx.h"
 #include "ui/views/controls/activex_control.h"
 
 class VidiconClient;

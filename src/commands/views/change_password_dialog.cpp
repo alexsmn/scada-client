@@ -1,10 +1,10 @@
-#include "client/commands/change_password_dialog.h"
+#include "commands/change_password_dialog.h"
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "client/views/framework/dialog.h"
-#include "client/client_utils.h"
-#include "client/common_resources.h"
+#include "views/framework/dialog.h"
+#include "client_utils.h"
+#include "common_resources.h"
 #include "core/node_management_service.h"
 #include "common/node_ref.h"
 

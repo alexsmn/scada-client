@@ -12,8 +12,8 @@ using std::max;
 #include <wtl/atlframe.h>
 
 #include "base/strings/string16.h"
-#include "client/common_resources.h"
-#include "client/components/main/views/main_menu_model2.h"
+#include "common_resources.h"
+#include "components/main/views/main_menu_model2.h"
 
 class ActionManager;
 

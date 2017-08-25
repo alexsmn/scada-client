@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/win/scoped_comptr.h"
-#include "client/components/vidicon_display/teleclient.h"
+#include "components/vidicon_display/teleclient.h"
 
 class VidiconClient {
  public:

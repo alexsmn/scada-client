@@ -2,7 +2,7 @@
 
 #include <QObject>
 
-#include "client/components/main/view_manager.h"
+#include "components/main/view_manager.h"
 
 class ClientApplicationQt;
 class QMainWindow;

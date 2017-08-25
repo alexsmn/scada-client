@@ -17,7 +17,7 @@ using std::max;
 #include "net/transport_string.h"
 #include "core/configuration_types.h"
 #include "common/static_types.h"
-#include "client/common_resources.h"
+#include "common_resources.h"
 #include "common/node_ref.h"
 
 namespace scada {

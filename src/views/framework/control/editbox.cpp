@@ -1,4 +1,4 @@
-#include "client/views/framework/control/editbox.h"
+#include "views/framework/control/editbox.h"
 
 namespace framework {
 

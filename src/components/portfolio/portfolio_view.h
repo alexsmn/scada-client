@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include "client/controller.h"
-#include "client/services/portfolio.h"
-#include "client/contents_model.h"
+#include "controller.h"
+#include "services/portfolio.h"
+#include "contents_model.h"
 
 class PortfolioTreeModel;
 class Tree;

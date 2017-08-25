@@ -1,9 +1,9 @@
-#include "client/components/node_properties/qt/node_property_controller.h"
+#include "components/node_properties/qt/node_property_controller.h"
 
-#include "client/components/node_properties/node_property_model.h"
-#include "client/controller_factory.h"
-#include "client/qt/tree_model_adapter.h"
-#include "client/window_definition.h"
+#include "components/node_properties/node_property_model.h"
+#include "controller_factory.h"
+#include "qt/tree_model_adapter.h"
+#include "window_definition.h"
 
 #include <QTreeView>
 

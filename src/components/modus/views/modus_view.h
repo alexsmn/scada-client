@@ -3,8 +3,8 @@
 #include "base/files/file_util.h"
 #include "base/win/scoped_comptr.h"
 #include "core/configuration_types.h"
-#include "client/components/modus/modus.h"
-#include "client/components/modus/modus_view_wrapper.h"
+#include "components/modus/modus.h"
+#include "components/modus/modus_view_wrapper.h"
 #include "ui/views/controls/activex_control.h"
 
 #include <atlbase.h>

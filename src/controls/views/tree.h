@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "ui/views/controls/tree/tree_view.h"
-#include "client/controls/types.h"
+#include "controls/types.h"
 
 namespace WTL {
 template <bool t_bManaged> class CImageListT;

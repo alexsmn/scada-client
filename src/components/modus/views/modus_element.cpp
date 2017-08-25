@@ -1,4 +1,4 @@
-#include "client/components/modus/views/modus_element.h"
+#include "components/modus/views/modus_element.h"
 
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
@@ -6,7 +6,7 @@
 #include "common/event_manager.h"
 #include "common/scada_node_ids.h"
 #include "core/monitored_item_service.h"
-#include "client/components/modus/views/modus_object.h"
+#include "components/modus/views/modus_object.h"
 #include "common/node_ref.h"
 #include "core/variant.h"
 

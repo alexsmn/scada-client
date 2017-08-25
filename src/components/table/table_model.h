@@ -4,7 +4,7 @@
 #include <set>
 
 #include "core/configuration_types.h"
-#include "client/base/blinker.h"
+#include "base/blinker.h"
 #include "ui/base/models/table_model.h"
 
 namespace events {

@@ -1,4 +1,4 @@
-#include "client/components/login/login_dialog.h"
+#include "components/login/login_dialog.h"
 
 #include <algorithm>
 #include <vector>
@@ -8,11 +8,11 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry.h"
-#include "client/common_resources.h"
-#include "client/services/data_services.h"
-#include "client/services/data_services_factory.h"
-#include "client/views/client_utils_views.h"
-#include "client/views/framework/dialog.h"
+#include "common_resources.h"
+#include "services/data_services.h"
+#include "services/data_services_factory.h"
+#include "views/client_utils_views.h"
+#include "views/framework/dialog.h"
 #include "core/session_service.h"
 #include "core/status.h"
 

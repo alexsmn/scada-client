@@ -1,5 +1,5 @@
 #include "base/pickle.h"
-#include "client/views/item_drag_data.h"
+#include "views/item_drag_data.h"
 
 void ItemDragData::Save(ui::OSExchangeData& data) const {
   auto node_string = item_id_.ToString();

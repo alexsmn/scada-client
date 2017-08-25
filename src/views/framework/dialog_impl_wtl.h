@@ -2,7 +2,7 @@
 
 #include "base/message_loop/message_loop.h"
 #include "base/message_loop/message_pump_dispatcher.h"
-#include "client/views/framework/dialog.h"
+#include "views/framework/dialog.h"
 
 #include <atlbase.h>
 #include <atlwin.h>

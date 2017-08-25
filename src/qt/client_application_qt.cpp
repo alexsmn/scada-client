@@ -1,11 +1,11 @@
-#include "client/qt/client_application_qt.h"
+#include "qt/client_application_qt.h"
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
-#include "client/client_paths.h"
-#include "client/components/main/qt/main_window_qt.h"
-#include "client/components/login/qt/login_dialog.h"
+#include "client_paths.h"
+#include "components/main/qt/main_window_qt.h"
+#include "components/login/qt/login_dialog.h"
 
 ClientApplicationQt* g_application_qt = nullptr;
 

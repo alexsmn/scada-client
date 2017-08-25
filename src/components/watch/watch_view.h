@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "client/controller.h"
+#include "controller.h"
 #include "ui/base/models/table_model_observer.h"
 
 #if defined(UI_VIEWS)

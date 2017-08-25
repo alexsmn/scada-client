@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "client/services/file_cache.h"
+#include "services/file_cache.h"
 
 class ModusView;
 class NodeRefService;

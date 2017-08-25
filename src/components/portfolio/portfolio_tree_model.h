@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/configuration_types.h"
-#include "client/services/portfolio_manager.h"
+#include "services/portfolio_manager.h"
 #include "ui/base/models/tree_node_model.h"
 #include "common/node_ref.h"
 

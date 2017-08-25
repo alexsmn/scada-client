@@ -1,7 +1,7 @@
 #pragma once
 
-#include "client/base/blinker.h"
-#include "client/components/modus/modus_style2.h"
+#include "base/blinker.h"
+#include "components/modus/modus_style2.h"
 #include "common/timed_data/timed_data_spec.h"
 
 namespace {

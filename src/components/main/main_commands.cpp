@@ -1,23 +1,23 @@
-#include "client/components/main/main_commands.h"
+#include "components/main/main_commands.h"
 
 #include <wtl/atlres.h>
 #include <windows.h>
 #include <shellapi.h>
 
 #include "base/path_service.h"
-#include "client/client_paths.h"
-#include "client/client_utils.h"
-#include "client/commands/add_favourites_dialog.h"
-#include "client/commands/prompt_dialog.h"
-#include "client/common_resources.h"
-#include "client/components/about/about_dialog.h"
-#include "client/components/main/main_window.h"
-#include "client/components/main/opened_view.h"
-#include "client/services/favourites.h"
-#include "client/services/local_events.h"
-#include "client/services/profile.h"
-#include "client/services/speech.h"
-#include "client/window_info.h"
+#include "client_paths.h"
+#include "client_utils.h"
+#include "commands/add_favourites_dialog.h"
+#include "commands/prompt_dialog.h"
+#include "common_resources.h"
+#include "components/about/about_dialog.h"
+#include "components/main/main_window.h"
+#include "components/main/opened_view.h"
+#include "services/favourites.h"
+#include "services/local_events.h"
+#include "services/profile.h"
+#include "services/speech.h"
+#include "window_info.h"
 #include "common/event_manager.h"
 #include "core/session_service.h"
 

@@ -4,7 +4,7 @@
 #include <qtableview.h>
 
 #include "ui/base/models/table_model.h"
-#include "client/qt/table_model_adapter.h"
+#include "qt/table_model_adapter.h"
 
 class Table : public QTableView {
  public:

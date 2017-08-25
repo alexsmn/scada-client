@@ -1,15 +1,15 @@
-#include "client/components/vidicon_display/views/vidicon_display_view.h"
+#include "components/vidicon_display/views/vidicon_display_view.h"
 
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_comptr.h"
-#include "client/controller_factory.h"
-#include "client/views/ambient_props.h"
-#include "client/views/client_application_views.h"
-#include "client/services/file_cache.h"
-#include "client/window_definition.h"
-#include "client/components/vidicon_display/views/telecontrolview.h"
-#include "client/components/vidicon_display/teleclient.h"
-#include "client/components/vidicon_display/vidicon_client.h"
+#include "controller_factory.h"
+#include "views/ambient_props.h"
+#include "views/client_application_views.h"
+#include "services/file_cache.h"
+#include "window_definition.h"
+#include "components/vidicon_display/views/telecontrolview.h"
+#include "components/vidicon_display/teleclient.h"
+#include "components/vidicon_display/vidicon_client.h"
 
 //#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb" raw_interfaces_only
 //#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TeleClient.dll" raw_interfaces_only

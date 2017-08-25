@@ -1,8 +1,8 @@
-#include "client/components/summary/summary_model.h"
+#include "components/summary/summary_model.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/format_time.h"
-#include "client/window_definition.h"
+#include "window_definition.h"
 #include "common/timed_data/timed_data_spec.h"
 #include "ui/base/models/grid_range.h"
 

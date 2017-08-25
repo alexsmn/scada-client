@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "base/strings/string16.h"
-#include "client/components/main/view_manager.h"
+#include "components/main/view_manager.h"
 
 class OpenedView;
 class Page;

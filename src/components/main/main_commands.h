@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "client/command_handler.h"
+#include "command_handler.h"
 
 namespace events {
 class EventManager;

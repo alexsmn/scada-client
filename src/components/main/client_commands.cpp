@@ -1,10 +1,10 @@
-#include "client/components/main/client_commands.h"
+#include "components/main/client_commands.h"
 
-#include "client/client_application.h"
-#include "client/client_utils.h"
-#include "client/common_resources.h"
-#include "client/components/main/main_window_util.h"
-#include "client/services/profile.h"
+#include "client_application.h"
+#include "client_utils.h"
+#include "common_resources.h"
+#include "components/main/main_window_util.h"
+#include "services/profile.h"
 
 namespace client {
 

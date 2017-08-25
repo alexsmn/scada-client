@@ -1,12 +1,12 @@
-#include "client/components/main/view_manager.h"
+#include "components/main/view_manager.h"
 
 #include <algorithm>
 
 #include "base/auto_reset.h"
-#include "client/window_info.h"
-#include "client/components/main/opened_view.h"
-#include "client/components/main/view_manager_delegate.h"
-#include "client/services/page.h"
+#include "window_info.h"
+#include "components/main/opened_view.h"
+#include "components/main/view_manager_delegate.h"
+#include "services/page.h"
 
 ViewManager::ViewManager(ViewManagerDelegate* delegate)
     : current_page_(new Page()),

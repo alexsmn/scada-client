@@ -2,11 +2,11 @@
 
 #include <cassert>
 
-#include "client/controls/types.h"
-#include "client/command_handler.h"
-#include "client/controller_delegate.h"
-#include "client/dialog_service.h"
-#include "client/selection_model.h"
+#include "controls/types.h"
+#include "command_handler.h"
+#include "controller_delegate.h"
+#include "dialog_service.h"
+#include "selection_model.h"
 #include "core/configuration_types.h"
 
 namespace events {

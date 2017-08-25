@@ -1,11 +1,11 @@
-#include "client/commands/views/progress_dialog.h"
+#include "commands/views/progress_dialog.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>
 #include <atlwin.h>
 #include <wtl/atlctrls.h>
 
-#include "client/common_resources.h"
+#include "common_resources.h"
 
 namespace {
 

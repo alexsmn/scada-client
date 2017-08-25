@@ -10,8 +10,8 @@ using std::max;
 #include <wtl/atlapp.h>
 #include <wtl/atlframe.h>
 
-#include "client/common_resources.h"
-#include "client/components/main/views/main_menu.h"
+#include "common_resources.h"
+#include "components/main/views/main_menu.h"
 
 namespace gfx {
 class Rect;

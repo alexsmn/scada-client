@@ -1,4 +1,4 @@
-#include "client/qt/tree_model_adapter.h"
+#include "qt/tree_model_adapter.h"
 
 #include <cassert>
 #include <qbitmap.h>
@@ -8,7 +8,7 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "ui/base/models/tree_model.h"
-#include "client/base/color.h"
+#include "base/color.h"
 
 #ifdef OS_WIN
 #include <qwinfunctions.h>

@@ -2,7 +2,7 @@
 
 #include "base/message_loop/message_pump_dispatcher.h"
 #include "base/observer_list.h"
-#include "client/client_application.h"
+#include "client_application.h"
 #include "ui/views/message_dispatch_controller.h"
 
 namespace base {

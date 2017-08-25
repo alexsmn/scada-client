@@ -2,7 +2,7 @@
 
 #include "core/SkColor.h"
 #include "common/timed_data/timed_data_spec.h"
-#include "client/components/sheet/sheet_format.h"
+#include "components/sheet/sheet_format.h"
 
 class SheetModel;
 

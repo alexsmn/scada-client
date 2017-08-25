@@ -4,7 +4,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "core/node_id.h"
-#include "client/command_handler.h"
+#include "command_handler.h"
 
 namespace base {
 class FilePath;

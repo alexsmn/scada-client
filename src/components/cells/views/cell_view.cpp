@@ -1,18 +1,18 @@
-#include "client/components/cells/views/cell_view.h"
+#include "components/cells/views/cell_view.h"
 
 #include <deque>
 
 #include "base/format_time.h"
 #include "common/scada_node_ids.h"
-#include "client/views/client_utils_views.h"
-#include "client/selection_model.h"
-#include "client/components/main/main_window.h"
+#include "views/client_utils_views.h"
+#include "selection_model.h"
+#include "components/main/main_window.h"
 #include "ui/events/event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/rect.h"
 #include "ui/views/controls/grid/grid_view.h"
-#include "client/controller_factory.h"
+#include "controller_factory.h"
 
 // CellView
 

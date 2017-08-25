@@ -2,8 +2,8 @@
 
 #include <map>
 
-#include "client/components/main/main_window.h"
-#include "client/dialog_service.h"
+#include "components/main/main_window.h"
+#include "dialog_service.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/controls/toolbar.h"

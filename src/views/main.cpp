@@ -4,7 +4,7 @@
 #include "base/at_exit.h"
 #include "base/message_loop/message_loop.h"
 #include "base/win/gdiplus_initializer.h"
-#include "client/views/client_application_views.h"
+#include "views/client_application_views.h"
 #include "ui/base/resource/resource_bundle.h"
 
 CAppModule _Module;

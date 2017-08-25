@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client/views/framework/widget.h"
+#include "views/framework/widget.h"
 
 namespace framework {
 

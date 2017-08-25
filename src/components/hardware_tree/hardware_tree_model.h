@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client/components/configuration_tree/configuration_tree_model.h"
+#include "components/configuration_tree/configuration_tree_model.h"
 
 class TimedDataService;
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "client/common_resources.h"
-#include "client/base/color.h"
+#include "common_resources.h"
+#include "base/color.h"
 
 #include <algorithm>
 

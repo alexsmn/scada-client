@@ -4,7 +4,7 @@
 #include <atlwin.h>
 #include <memory>
 
-#include "client/common_resources.h"
+#include "common_resources.h"
 #include "ui/base/models/simple_menu_model.h"
 
 class Favourites;

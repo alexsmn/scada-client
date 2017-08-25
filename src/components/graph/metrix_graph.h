@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "base/timer/timer.h"
-#include "client/components/graph/metrix_data_source.h"
+#include "components/graph/metrix_data_source.h"
 #include "common/timed_data/timed_data.h"
 #include "common/timed_data/timed_data_delegate.h"
 

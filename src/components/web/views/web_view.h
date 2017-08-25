@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client/controller.h"
+#include "controller.h"
 #include "ui/views/controls/activex_control.h"
 
 class WebView : public views::ActiveXControl,

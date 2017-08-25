@@ -1,6 +1,6 @@
 #include "base/run_loop.h"
-#include "client/views/framework/dialog_impl_wtl.h"
-#include "client/views/framework/widget.h"
+#include "views/framework/dialog_impl_wtl.h"
+#include "views/framework/widget.h"
 
 namespace framework {
 

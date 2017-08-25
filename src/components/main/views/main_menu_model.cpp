@@ -1,13 +1,13 @@
-#include "client/components/main/views/main_menu_model.h"
+#include "components/main/views/main_menu_model.h"
 
-#include "client/views/client_utils_views.h"
-#include "client/common_resources.h"
-#include "client/views/context_menu_model.h"
-#include "client/components/main/opened_view.h"
-#include "client/window_info.h"
-#include "client/services/favourites.h"
-#include "client/components/main/views/main_window_views.h"
-#include "client/window_definition.h"
+#include "views/client_utils_views.h"
+#include "common_resources.h"
+#include "views/context_menu_model.h"
+#include "components/main/opened_view.h"
+#include "window_info.h"
+#include "services/favourites.h"
+#include "components/main/views/main_window_views.h"
+#include "window_definition.h"
 
 const unsigned kTableTypes[] = { ID_TABLE_VIEW, ID_SHEET_VIEW, ID_TIMED_DATA_VIEW, 0 };
 const unsigned kGraphTypes[] = { ID_GRAPH_VIEW, 0 };

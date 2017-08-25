@@ -1,8 +1,8 @@
-#include "client/components/modus/modus_style_library2.h"
+#include "components/modus/modus_style_library2.h"
 
 #include "base/memory/singleton.h"
 #include "libmodus/gfx/gdip.h"
-#include "client/components/modus/modus_style2.h"
+#include "components/modus/modus_style2.h"
 
 ModusStyleLibrary2::ModusStyleLibrary2() {
   {

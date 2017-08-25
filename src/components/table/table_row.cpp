@@ -1,8 +1,8 @@
-#include "client/components/table/table_row.h"
+#include "components/table/table_row.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/format_time.h"
-#include "client/components/table/table_model.h"
+#include "components/table/table_model.h"
 #include "core/monitored_item_service.h"
 #include "common/event_manager.h"
 

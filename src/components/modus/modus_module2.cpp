@@ -1,10 +1,10 @@
-#include "client/components/modus/modus_module2.h"
+#include "components/modus/modus_module2.h"
 
 #include "base/path_service.h"
 #include "base/files/file_path.h"
 #include "libmodus/scheme/master_library.h"
-#include "client/client_paths.h"
-#include "client/components/modus/modus_style_library2.h"
+#include "client_paths.h"
+#include "components/modus/modus_style_library2.h"
 
 ModusModule2* ModusModule2::s_instance = nullptr;
 

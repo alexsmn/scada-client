@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "base/memory/weak_ptr.h"
-#include "client/controller.h"
+#include "controller.h"
 
 namespace base {
 class FilePath;

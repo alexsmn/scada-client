@@ -1,11 +1,11 @@
-#include "client/components/portfolio/portfolio_view.h"
+#include "components/portfolio/portfolio_view.h"
 
-#include "client/common_resources.h"
-#include "client/commands/select_item_dialog.h"
-#include "client/components/portfolio/portfolio_tree_model.h"
-#include "client/selection_model.h"
-#include "client/controls/tree.h"
-#include "client/controller_factory.h"
+#include "common_resources.h"
+#include "commands/select_item_dialog.h"
+#include "components/portfolio/portfolio_tree_model.h"
+#include "selection_model.h"
+#include "controls/tree.h"
+#include "controller_factory.h"
 
 REGISTER_CONTROLLER(PortfolioView, ID_PORTFOLIO_VIEW);
 

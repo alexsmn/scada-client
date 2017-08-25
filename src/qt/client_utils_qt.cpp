@@ -1,8 +1,8 @@
-#include "client/client_utils.h"
+#include "client_utils.h"
 
 #include <QMessageBox>
 
-#include "client/components/main/qt/main_window_qt.h"
+#include "components/main/qt/main_window_qt.h"
 
 int ShowMessageBox(DialogService& dialog_service, const base::char16* message,
                    const base::char16* title, unsigned types) {

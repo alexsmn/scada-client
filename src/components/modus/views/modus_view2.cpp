@@ -1,4 +1,4 @@
-#include "client/components/modus/views/modus_view2.h"
+#include "components/modus/views/modus_view2.h"
 
 #include "base/strings/string_split.h"
 #include "base/win/scoped_gdi_object.h"
@@ -10,9 +10,9 @@
 #include "libmodus/scheme/scheme.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/value.h"
-#include "client/client_utils.h"
-#include "client/components/modus/modus_binding2.h"
-#include "client/components/modus/modus_module2.h"
+#include "client_utils.h"
+#include "components/modus/modus_binding2.h"
+#include "components/modus/modus_module2.h"
 #include "ui/gfx/canvas.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/views/controls/scroll_view.h"

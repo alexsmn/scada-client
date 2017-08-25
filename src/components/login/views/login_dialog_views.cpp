@@ -1,4 +1,4 @@
-#include "client/components/login/views/login_dialog_views.h"
+#include "components/login/views/login_dialog_views.h"
 
 #include "ui/views/layout/grid_layout.h"
 #include "ui/views/controls/label.h"

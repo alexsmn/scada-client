@@ -1,9 +1,9 @@
-#include "client/qt/table_model_adapter.h"
+#include "qt/table_model_adapter.h"
 
 #include <QtCore/qsize.h>
 
 #include "ui/base/models/table_model.h"
-#include "client/base/color.h"
+#include "base/color.h"
 
 namespace {
 

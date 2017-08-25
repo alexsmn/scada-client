@@ -1,23 +1,23 @@
-#include "client/components/table/table_view.h"
+#include "components/table/table_view.h"
 
 #include "common/formula_util.h"
 #include "common/scada_node_ids.h"
-#include "client/client_utils.h"
-#include "client/common_resources.h"
-#include "client/selection_model.h"
-#include "client/services/profile.h"
-#include "client/components/table/table_model.h"
-#include "client/components/table/table_row.h"
-#include "client/controller_factory.h"
-#include "client/controls/table.h"
-#include "client/contents_observer.h"
+#include "client_utils.h"
+#include "common_resources.h"
+#include "selection_model.h"
+#include "services/profile.h"
+#include "components/table/table_model.h"
+#include "components/table/table_row.h"
+#include "controller_factory.h"
+#include "controls/table.h"
+#include "contents_observer.h"
 
 #if defined(UI_VIEWS)
 // TODO: Remove.
 #include <atlbase.h>
 #include <wtl/atlapp.h>
 #include <wtl/atlctrls.h>
-#include "client/base/color_string.h"
+#include "base/color_string.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/gfx/canvas.h"
 #include "ui/views/controls/table/table_painter.h"

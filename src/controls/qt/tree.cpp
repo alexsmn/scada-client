@@ -1,7 +1,7 @@
-#include "client/controls/tree.h"
+#include "controls/tree.h"
 
-#include "client/qt/tree_model_adapter.h"
-#include "client/base/color.h"
+#include "qt/tree_model_adapter.h"
+#include "base/color.h"
 
 Tree::Tree(ui::TreeModel& model)
     : model_adapter_(new TreeModelAdapter(model)) {

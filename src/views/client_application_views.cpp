@@ -1,8 +1,8 @@
-#include "client/views/client_application_views.h"
+#include "views/client_application_views.h"
 
 #include "base/run_loop.h"
-#include "client/components/login/login_dialog.h"
-#include "client/components/main/views/main_window_views.h"
+#include "components/login/login_dialog.h"
+#include "components/main/views/main_window_views.h"
 #include "ui/views/focus/accelerator_handler.h"
 
 // ClientApplicationViews

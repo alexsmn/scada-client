@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "client/controller.h"
+#include "controller.h"
 #include "ui/base/models/header_model.h"
 
 #if defined(UI_VIEWS)

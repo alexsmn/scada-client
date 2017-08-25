@@ -2,8 +2,8 @@
 
 #include <set>
 
-#include "client/components/configuration_tree/configuration_tree_view.h"
-#include "client/contents_observer.h"
+#include "components/configuration_tree/configuration_tree_view.h"
+#include "contents_observer.h"
 #include "ui/views/controls/tree/tree_view.h"
 
 class ConfigurationTreeNode;

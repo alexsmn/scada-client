@@ -1,10 +1,10 @@
-#include "client/controller_factory.h"
+#include "controller_factory.h"
 
 #include <cassert>
 #include <map>
 
 #include "base/lazy_instance.h"
-#include "client/window_info.h"
+#include "window_info.h"
 
 namespace {
 

@@ -6,11 +6,11 @@
 #include "base/strings/string16.h"
 #include "base/timer/timer.h"
 #include "core/configuration_types.h"
-#include "client/command_handler.h"
-#include "client/controls/types.h"
+#include "command_handler.h"
+#include "controls/types.h"
 #include "core/configuration_types.h"
 #include "core/status.h"
-#include "client/controller_delegate.h"
+#include "controller_delegate.h"
 
 #if defined(UI_VIEWS)
 #include "ui/gfx/image/image.h"

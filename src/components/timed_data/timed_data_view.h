@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "client/controller.h"
-#include "client/contents_model.h"
+#include "controller.h"
+#include "contents_model.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/table/table_controller.h"

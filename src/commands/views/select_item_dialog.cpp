@@ -1,4 +1,4 @@
-#include "client/commands/select_item_dialog.h"
+#include "commands/select_item_dialog.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>
@@ -9,12 +9,12 @@
 #include <set>
 
 #include "base/strings/sys_string_conversions.h"
-#include "client/views/client_utils_views.h"
-#include "client/common_resources.h"
+#include "views/client_utils_views.h"
+#include "common_resources.h"
 #include "common/scada_node_ids.h"
 #include "core/namespaces.h"
-#include "client/common_resources.h"
-#include "client/dialog_service.h"
+#include "common_resources.h"
+#include "dialog_service.h"
 #include "common/node_ref.h"
 
 class SelectItemDialog : public ATL::CDialogImpl<SelectItemDialog> {

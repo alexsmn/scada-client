@@ -1,9 +1,9 @@
 #pragma once
 
-#include "client/controls/types.h"
-#include "client/controller.h"
-#include "client/components/graph/metrix_graph.h"
-#include "client/contents_model.h"
+#include "controls/types.h"
+#include "controller.h"
+#include "components/graph/metrix_graph.h"
+#include "contents_model.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/context_menu_controller.h"

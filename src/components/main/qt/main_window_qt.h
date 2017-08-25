@@ -1,7 +1,7 @@
 #pragma once
 
-#include "client/components/main/main_window.h"
-#include "client/dialog_service.h"
+#include "components/main/main_window.h"
+#include "dialog_service.h"
 
 #include <QMainWindow>
 

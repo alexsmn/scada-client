@@ -2,8 +2,8 @@
 
 #include <qtreeview.h>
 
-#include "client/controls/types.h"
-#include "client/qt/tree_model_adapter.h"
+#include "controls/types.h"
+#include "qt/tree_model_adapter.h"
 
 namespace ui {
 class TreeModel;

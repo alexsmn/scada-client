@@ -1,4 +1,4 @@
-#include "client/controls/views/table.h"
+#include "controls/views/table.h"
 
 Table::Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
     : TableView(model) {

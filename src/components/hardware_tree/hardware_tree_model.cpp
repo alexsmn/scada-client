@@ -1,7 +1,7 @@
-#include "client/components/hardware_tree/hardware_tree_model.h"
+#include "components/hardware_tree/hardware_tree_model.h"
 
 #include "common/scada_node_ids.h"
-#include "client/services/device_state_notifier.h"
+#include "services/device_state_notifier.h"
 #include "common/node_ref_util.h"
 
 // HardwareTreeModel::DeviceTreeNode

@@ -1,4 +1,4 @@
-#include "client/components/graph/metrix_data_source.h"
+#include "components/graph/metrix_data_source.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/scada_node_ids.h"

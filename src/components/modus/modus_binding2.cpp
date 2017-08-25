@@ -1,12 +1,12 @@
-#include "client/components/modus/modus_binding2.h"
+#include "components/modus/modus_binding2.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
 #include "libmodus/scheme/value.h"
 #include "core/configuration_types.h"
-#include "client/components/modus/modus_module2.h"
-#include "client/components/modus/modus_style_library2.h"
+#include "components/modus/modus_module2.h"
+#include "components/modus/modus_style_library2.h"
 #include "ui/gfx/canvas.h"
 
 namespace modus {

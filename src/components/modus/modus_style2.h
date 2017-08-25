@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "base/observer_list.h"
-#include "client/base/blinker.h"
+#include "base/blinker.h"
 
 namespace Gdiplus {
 class Brush;

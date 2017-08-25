@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client/components/main/view_manager.h"
+#include "components/main/view_manager.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/controls/multi_split_view.h"

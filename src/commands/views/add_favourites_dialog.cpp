@@ -1,6 +1,6 @@
-#include "client/views/framework/dialog.h"
-#include "client/common_resources.h"
-#include "client/services/favourites.h"
+#include "views/framework/dialog.h"
+#include "common_resources.h"
+#include "services/favourites.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>

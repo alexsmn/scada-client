@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "client/views/framework/widget.h"
+#include "views/framework/widget.h"
 
 namespace framework {
 

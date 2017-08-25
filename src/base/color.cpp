@@ -1,5 +1,5 @@
 #include "base/strings/stringprintf.h"
-#include "client/base/color.h"
+#include "base/color.h"
 
 #include <cassert>
 #include <string.h>

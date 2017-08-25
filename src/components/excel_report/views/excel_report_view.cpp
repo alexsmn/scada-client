@@ -1,7 +1,7 @@
-#include "client/components/excel_report/views/excel_report_view.h"
+#include "components/excel_report/views/excel_report_view.h"
 
-#include "client/controller_factory.h"
-#include "client/views/client_application_views.h"
+#include "controller_factory.h"
+#include "views/client_application_views.h"
 #include "ui/views/controls/activex_control.h"
 
 // ExcelView

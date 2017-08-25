@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client/common_resources.h"
+#include "common_resources.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>

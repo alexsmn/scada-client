@@ -1,7 +1,7 @@
-#include "client/components/sheet/sheet_cell.h"
+#include "components/sheet/sheet_cell.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "client/components/sheet/sheet_model.h"
+#include "components/sheet/sheet_model.h"
 #include "common/event_manager.h"
 #include "ui/base/models/grid_range.h"
 

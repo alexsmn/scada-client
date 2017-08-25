@@ -1,12 +1,12 @@
-#include "client/components/modus/views/modus_view.h"
+#include "components/modus/views/modus_view.h"
 
 #include "base/logging.h"
 #include "base/win/scoped_bstr.h"
-#include "client/views/ambient_props.h"
-#include "client/views/client_application_views.h"
-#include "client/components/modus/views/modus_element.h"
-#include "client/components/modus/views/modus_loader.h"
-#include "client/components/modus/views/modus_object.h"
+#include "views/ambient_props.h"
+#include "views/client_application_views.h"
+#include "components/modus/views/modus_element.h"
+#include "components/modus/views/modus_loader.h"
+#include "components/modus/views/modus_object.h"
 
 #include <atlwin.h>
 

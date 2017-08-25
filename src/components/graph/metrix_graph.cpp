@@ -1,4 +1,4 @@
-#include "client/components/graph/metrix_graph.h"
+#include "components/graph/metrix_graph.h"
 
 #include <algorithm>
 
@@ -6,7 +6,7 @@
 #include "base/win/scoped_handle.h"
 #include "base/format_time.h"
 #include "base/minute_time.h"
-#include "client/components/graph/metrix_data_source.h"
+#include "components/graph/metrix_data_source.h"
 #include "core/monitored_item_service.h"
 
 #if defined(UI_QT)

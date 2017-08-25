@@ -4,7 +4,7 @@
 #include <qtableview.h>
 
 #include "ui/base/models/grid_model.h"
-#include "client/qt/grid_model_adapter.h"
+#include "qt/grid_model_adapter.h"
 
 class Grid : public QTableView {
  public:

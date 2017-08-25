@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "client/controls/types.h"
+#include "controls/types.h"
 #include "core/SkColor.h"
 
 #if defined(UI_QT)

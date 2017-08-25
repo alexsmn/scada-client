@@ -5,9 +5,9 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
-#include "client/components/main/main_window.h"
-#include "client/components/main/view_manager_delegate.h"
-#include "client/contents_observer.h"
+#include "components/main/main_window.h"
+#include "components/main/view_manager_delegate.h"
+#include "contents_observer.h"
 #include "core/node_id.h"
 
 namespace base {

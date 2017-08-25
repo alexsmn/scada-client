@@ -1,4 +1,4 @@
-#include "client/components/web/views/web_view.h"
+#include "components/web/views/web_view.h"
 
 #include "base/files/file_path.h"
 #include "base/path_service.h"
@@ -6,10 +6,10 @@
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/scoped_variant.h"
-#include "client/client_paths.h"
-#include "client/controller_factory.h"
-#include "client/window_definition.h"
-#include "client/views/client_application_views.h"
+#include "client_paths.h"
+#include "controller_factory.h"
+#include "window_definition.h"
+#include "views/client_application_views.h"
 
 #include <exdisp.h>
 

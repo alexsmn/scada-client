@@ -1,4 +1,4 @@
-#include "client/components/login/qt/login_dialog.h"
+#include "components/login/qt/login_dialog.h"
 
 #include <QtCore/qsettings.h>
 #include <QtWidgets/qapplication.h>

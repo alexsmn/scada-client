@@ -1,4 +1,4 @@
-#include "client/components/modus/modus_style2.h"
+#include "components/modus/modus_style2.h"
 
 #include "libmodus/gfx/gdip.h"
 

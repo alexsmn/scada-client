@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "common/timed_data/timed_data_spec.h"
-#include "client/controller.h"
-#include "client/contents_model.h"
+#include "controller.h"
+#include "contents_model.h"
 #include "ui/base/models/grid_model.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/views/controls/grid/grid_controller.h"

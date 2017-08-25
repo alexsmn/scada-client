@@ -1,7 +1,7 @@
-#include "client/components/portfolio/portfolio_tree_model.h"
+#include "components/portfolio/portfolio_tree_model.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "client/services/portfolio.h"
+#include "services/portfolio.h"
 #include "common/node_ref_service.h"
 
 void PortfolioTreeNode::SetTitle(const base::string16& title) {

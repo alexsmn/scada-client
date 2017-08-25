@@ -1,4 +1,4 @@
-#include "client/components/main/qt/view_manager_qt.h"
+#include "components/main/qt/view_manager_qt.h"
 
 #include <qapplication.h>
 #include <qdockwidget.h>
@@ -7,11 +7,11 @@
 #include <qsplitter.h>
 
 #include "base/auto_reset.h"
-#include "client/common_resources.h"
-#include "client/components/main/opened_view.h"
-#include "client/qt/client_application_qt.h"
-#include "client/services/page.h"
-#include "client/window_info.h"
+#include "common_resources.h"
+#include "components/main/opened_view.h"
+#include "qt/client_application_qt.h"
+#include "services/page.h"
+#include "window_info.h"
 
 namespace {
 

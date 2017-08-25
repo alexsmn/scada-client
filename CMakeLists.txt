@@ -89,7 +89,7 @@ SET(client_folder "ClientProjects")
 # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Yuprecompile.h /FIprecompile.h")
 # SET_SOURCE_FILES_PROPERTIES(${PRECOMPILE} PROPERTIES COMPILE_FLAGS "/Ycprecompile.h")
 
-ADD_SUBDIRECTORY("d:/work/scada/scada_common" scada_common)
+ADD_SUBDIRECTORY("d:/work/scada/common" scada_common)
 
 SET_PROPERTY(TARGET scada_base PROPERTY FOLDER ${scada_folder})
 SET_PROPERTY(TARGET scada_common PROPERTY FOLDER ${scada_folder})

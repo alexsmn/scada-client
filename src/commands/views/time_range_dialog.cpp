@@ -1,4 +1,4 @@
-#include "client/commands/time_range_dialog.h"
+#include "commands/time_range_dialog.h"
 
 #include <algorithm>
 
@@ -9,8 +9,8 @@ using std::max;
 #include <wtl/atlapp.h>
 #include <wtl/atlctrls.h>
 
-#include "client/common_resources.h"
-#include "client/dialog_service.h"
+#include "common_resources.h"
+#include "dialog_service.h"
 
 class TimeRangeDialog : public ATL::CDialogImpl<TimeRangeDialog> {
  public:

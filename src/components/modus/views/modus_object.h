@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "base/win/scoped_comptr.h"
-#include "client/components/modus/modus.h"
+#include "components/modus/modus.h"
 
 namespace SDECore {
 struct ISDEObject50;

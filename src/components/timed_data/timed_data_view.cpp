@@ -1,20 +1,20 @@
-#include "client/components/timed_data/timed_data_view.h"
+#include "components/timed_data/timed_data_view.h"
 
 #include <ATLComTime.h>
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/scoped_variant.h"
-#include "client/base/excel.h"
-#include "client/common_resources.h"
+#include "base/excel.h"
+#include "common_resources.h"
 #include "common/scada_node_ids.h"
-#include "client/controller_factory.h"
-#include "client/components/timed_data/timed_data_model.h"
-#include "client/window_definition.h"
-#include "client/client_utils.h"
-#include "client/controls/table.h"
+#include "controller_factory.h"
+#include "components/timed_data/timed_data_model.h"
+#include "window_definition.h"
+#include "client_utils.h"
+#include "controls/table.h"
 
 #if defined(UI_VIEWS)
-#include "client/commands/views/tvaldlg.h"
+#include "commands/views/tvaldlg.h"
 #endif
 
 namespace {

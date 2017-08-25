@@ -1,8 +1,8 @@
-#include "client/views/context_menu_model.h"
+#include "views/context_menu_model.h"
 
-#include "client/components/main/action.h"
-#include "client/components/main/opened_view.h"
-#include "client/components/main/views/main_window_views.h"
+#include "components/main/action.h"
+#include "components/main/opened_view.h"
+#include "components/main/views/main_window_views.h"
 
 ContextMenuModel::ContextMenuModel(MainWindowViews* main_view, ActionManager& action_manager)
     : ui::SimpleMenuModel(this),

@@ -1,19 +1,19 @@
-#include "client/components/modus/qt/modus_controller.h"
+#include "components/modus/qt/modus_controller.h"
 
 #include <QScrollArea>
 
 #include "base/bind.h"
-#include "client/controller_factory.h"
+#include "controller_factory.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/strings/string_util.h"
-#include "client/common_resources.h"
-#include "client/services/file_cache.h"
-#include "client/components/main/main_window.h"
-#include "client/components/modus/qt/modus_view2.h"
-#include "client/selection_model.h"
-#include "client/services/profile.h"
-#include "client/window_definition.h"
-#include "client/window_info.h"
+#include "common_resources.h"
+#include "services/file_cache.h"
+#include "components/main/main_window.h"
+#include "components/modus/qt/modus_view2.h"
+#include "selection_model.h"
+#include "services/profile.h"
+#include "window_definition.h"
+#include "window_info.h"
 
 REGISTER_CONTROLLER(ModusController, ID_MODUS_VIEW);
 

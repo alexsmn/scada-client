@@ -1,12 +1,12 @@
-#include "client/components/node_table/node_table_model.h"
+#include "components/node_table/node_table_model.h"
 
 #include <set>
 
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/utils.h"
-#include "client/services/property_defs.h"
-#include "client/services/task_manager.h"
+#include "services/property_defs.h"
+#include "services/task_manager.h"
 #include "common/scada_node_ids.h"
 #include "skia/ext/skia_utils_win.h"
 #include "common/node_ref_service.h"

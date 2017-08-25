@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "client/controller.h"
+#include "controller.h"
 #include "ui/views/controls/native_control.h"
 #include "ui/views/controls/scroll_view.h"
 #include "core/configuration_types.h"

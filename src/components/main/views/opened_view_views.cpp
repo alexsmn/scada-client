@@ -1,11 +1,11 @@
-#include "client/components/main/opened_view.h"
+#include "components/main/opened_view.h"
 
-#include "client/views/client_utils_views.h"
-#include "client/common_resources.h"
-#include "client/views/item_drag_data.h"
-#include "client/controller.h"
-#include "client/contents_model.h"
-#include "client/window_info.h"
+#include "views/client_utils_views.h"
+#include "common_resources.h"
+#include "views/item_drag_data.h"
+#include "controller.h"
+#include "contents_model.h"
+#include "window_info.h"
 #include "common/scada_node_ids.h"
 
 void OpenedView::ShowPopupMenu(unsigned resource_id, const gfx::Point& point, bool right_click) {

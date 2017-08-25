@@ -1,6 +1,6 @@
 #pragma once
 
-#include "client/controls/types.h"
+#include "controls/types.h"
 
 class DialogService;
 class NodeRefService;

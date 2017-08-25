@@ -2,7 +2,7 @@
 
 #include <QApplication>
 
-#include "client/client_application.h"
+#include "client_application.h"
 
 class ClientApplicationQt : public QApplication,
                             public ClientApplication {

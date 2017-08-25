@@ -1,4 +1,4 @@
-#include "client/components/main/qt/main_window_qt.h"
+#include "components/main/qt/main_window_qt.h"
 
 #include <QAction>
 #include <QDockWidget>
@@ -10,19 +10,19 @@
 #include <QToolBar>
 #include <QToolButton>
 
-#include "client/components/main/action.h"
-#include "client/client_utils.h"
-#include "client/common_resources.h"
-#include "client/components/main/selection_commands.h"
-#include "client/services/file_cache.h"
-#include "client/selection_model.h"
-#include "client/client_application.h"
-#include "client/controller.h"
-#include "client/components/main/opened_view.h"
-#include "client/services/profile.h"
-#include "client/window_info.h"
-#include "client/components/main/main_commands.h"
-#include "client/components/main/qt/view_manager_qt.h"
+#include "components/main/action.h"
+#include "client_utils.h"
+#include "common_resources.h"
+#include "components/main/selection_commands.h"
+#include "services/file_cache.h"
+#include "selection_model.h"
+#include "client_application.h"
+#include "controller.h"
+#include "components/main/opened_view.h"
+#include "services/profile.h"
+#include "window_info.h"
+#include "components/main/main_commands.h"
+#include "components/main/qt/view_manager_qt.h"
 
 namespace {
 

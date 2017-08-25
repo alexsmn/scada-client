@@ -1,16 +1,16 @@
-#include "client/components/summary/summary_view.h"
+#include "components/summary/summary_view.h"
 
-#include "client/base/excel.h"
-#include "client/client_utils.h"
-#include "client/common_resources.h"
-#include "client/window_definition.h"
-#include "client/components/summary/summary_model.h"
-#include "client/controller_factory.h"
+#include "base/excel.h"
+#include "client_utils.h"
+#include "common_resources.h"
+#include "window_definition.h"
+#include "components/summary/summary_model.h"
+#include "controller_factory.h"
 
 #if defined(UI_QT)
-#include "client/controls/qt/grid.h"
+#include "controls/qt/grid.h"
 #elif defined(UI_VIEWS)
-#include "client/commands/views/tvaldlg.h"
+#include "commands/views/tvaldlg.h"
 #include "ui/views/controls/grid/grid_view.h"
 #endif
 

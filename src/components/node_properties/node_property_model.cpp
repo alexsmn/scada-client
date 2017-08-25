@@ -1,8 +1,8 @@
-#include "client/components/node_properties/node_property_model.h"
+#include "components/node_properties/node_property_model.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "client/services/property_defs.h"
-#include "client/services/task_manager.h"
+#include "services/property_defs.h"
+#include "services/task_manager.h"
 #include "common/node_ref_service.h"
 #include "server/core/node_utils.h"
 

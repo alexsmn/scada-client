@@ -1,12 +1,12 @@
-#include "client/components/object_tree/object_tree_view.h"
+#include "components/object_tree/object_tree_view.h"
 
-#include "client/controller_factory.h"
-#include "client/contents_model.h"
-#include "client/components/object_tree/object_tree_model.h"
-#include "client/components/main/main_window.h"
-#include "client/components/main/opened_view.h"
-#include "client/services/profile.h"
-#include "client/controls/tree.h"
+#include "controller_factory.h"
+#include "contents_model.h"
+#include "components/object_tree/object_tree_model.h"
+#include "components/main/main_window.h"
+#include "components/main/opened_view.h"
+#include "services/profile.h"
+#include "controls/tree.h"
 #include "common/scada_node_ids.h"
 #include "core/session_service.h"
 
@@ -14,7 +14,7 @@
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/gfx/canvas.h"
-#include "client/base/color_string.h"
+#include "base/color_string.h"
 #endif
 
 REGISTER_CONTROLLER(ObjectTreeView, ID_OBJECT_VIEW);

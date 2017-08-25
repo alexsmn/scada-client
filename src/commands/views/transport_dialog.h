@@ -1,9 +1,9 @@
 #pragma once
 
 #include "net/transport_string.h"
-#include "client/views/framework/dialog.h"
-#include "client/views/framework/control/combobox.h"
-#include "client/commands/views/inplace_dialog.h"
+#include "views/framework/dialog.h"
+#include "views/framework/control/combobox.h"
+#include "commands/views/inplace_dialog.h"
 
 class TransportDialog : public framework::Dialog,
                         protected framework::ComboBoxController {

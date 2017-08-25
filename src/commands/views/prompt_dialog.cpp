@@ -1,7 +1,7 @@
-#include "client/views/framework/dialog.h"
-#include "client/views/client_utils_views.h"
-#include "client/common_resources.h"
-#include "client/components/main/views/main_window_views.h"
+#include "views/framework/dialog.h"
+#include "views/client_utils_views.h"
+#include "common_resources.h"
+#include "components/main/views/main_window_views.h"
 
 class PromptDialog : public framework::Dialog {
  public:

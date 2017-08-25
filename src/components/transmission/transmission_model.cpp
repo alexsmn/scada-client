@@ -1,11 +1,11 @@
-#include "client/components/transmission/transmission_model.h"
+#include "components/transmission/transmission_model.h"
 
 #include "base/format.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/scada_node_ids.h"
-#include "client/contents_observer.h"
+#include "contents_observer.h"
 #include "core/node_management_service.h"
-#include "client/services/task_manager.h"
+#include "services/task_manager.h"
 #include "common/node_ref_util.h"
 #include "common/node_ref_service.h"
 

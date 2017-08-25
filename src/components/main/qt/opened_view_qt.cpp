@@ -1,12 +1,12 @@
-#include "client/components/main/opened_view.h"
+#include "components/main/opened_view.h"
 
 #include <qwidget.h>
 
-#include "client/components/main/action.h"
-#include "client/controller.h"
-#include "client/components/main/main_window.h"
-#include "client/window_definition.h"
-#include "client/window_info.h"
+#include "components/main/action.h"
+#include "controller.h"
+#include "components/main/main_window.h"
+#include "window_definition.h"
+#include "window_info.h"
 
 void OpenedView::Print() {
 }

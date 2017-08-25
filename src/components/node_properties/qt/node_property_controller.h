@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "client/controller.h"
+#include "controller.h"
 
 class NodePropertyModel;
 class QTreeView;

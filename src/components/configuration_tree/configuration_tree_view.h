@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "client/controller.h"
+#include "controller.h"
 #include "ui/views/controls/tree/tree_controller.h"
 #include "ui/views/drop_controller.h"
 

@@ -1,4 +1,4 @@
-#include "client/components/modus/qt/modus_view2.h"
+#include "components/modus/qt/modus_view2.h"
 
 #include <qevent.h>
 #include <qpainter.h>
@@ -15,9 +15,9 @@
 #include "libmodus/scheme/scheme.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/value.h"
-#include "client/client_utils.h"
-#include "client/components/modus/modus_binding2.h"
-#include "client/components/modus/modus_module2.h"
+#include "client_utils.h"
+#include "components/modus/modus_binding2.h"
+#include "components/modus/modus_module2.h"
 
 namespace {
 const int kSelectionInset = 3;

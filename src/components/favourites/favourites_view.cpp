@@ -1,10 +1,10 @@
-#include "client/components/favourites/favourites_view.h"
+#include "components/favourites/favourites_view.h"
 
-#include "client/common_resources.h"
-#include "client/components/favourites/favourites_tree_model.h"
-#include "client/components/main/main_window.h"
-#include "client/controls/tree.h"
-#include "client/controller_factory.h"
+#include "common_resources.h"
+#include "components/favourites/favourites_tree_model.h"
+#include "components/main/main_window.h"
+#include "controls/tree.h"
+#include "controller_factory.h"
 
 REGISTER_CONTROLLER(FavouritesView, ID_FAVOURITES_VIEW);
 

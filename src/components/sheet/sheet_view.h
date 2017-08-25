@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "client/controller.h"
-#include "client/contents_model.h"
+#include "controller.h"
+#include "contents_model.h"
 #include "ui/views/controls/textfield/textfield_controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
 #include "ui/views/drop_controller.h"

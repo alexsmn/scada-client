@@ -1,13 +1,13 @@
-#include "client/components/main/main_window_util.h"
+#include "components/main/main_window_util.h"
 
 #include <Windows.h>
 
-#include "client/client_utils.h"
-#include "client/components/main/main_window.h"
-#include "client/components/main/opened_view.h"
-#include "client/common_resources.h"
-#include "client/contents_model.h"
-#include "client/window_info.h"
+#include "client_utils.h"
+#include "components/main/main_window.h"
+#include "components/main/opened_view.h"
+#include "common_resources.h"
+#include "contents_model.h"
+#include "window_info.h"
 #include "common/node_ref.h"
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"

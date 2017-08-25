@@ -1,11 +1,11 @@
-#include "client/components/main/events_helper.h"
+#include "components/main/events_helper.h"
 
 #include "base/bind.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "client/common_resources.h"
-#include "client/services/local_events.h"
-#include "client/components/main/main_window.h"
-#include "client/services/profile.h"
+#include "common_resources.h"
+#include "services/local_events.h"
+#include "components/main/main_window.h"
+#include "services/profile.h"
 #include "common/event_manager.h"
 
 #include <MMSystem.h>

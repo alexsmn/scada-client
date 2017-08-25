@@ -1,13 +1,13 @@
-#include "client/components/modus/views/modus_loader.h"
+#include "components/modus/views/modus_loader.h"
 
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
-#include "client/views/client_utils_views.h"
-#include "client/window_info.h"
-#include "client/components/modus/modus.h"
-#include "client/components/modus/views/modus_element.h"
-#include "client/components/modus/views/modus_object.h"
-#include "client/components/modus/views/modus_view.h"
+#include "views/client_utils_views.h"
+#include "window_info.h"
+#include "components/modus/modus.h"
+#include "components/modus/views/modus_element.h"
+#include "components/modus/views/modus_object.h"
+#include "components/modus/views/modus_view.h"
 
 namespace modus {
 

@@ -1,4 +1,4 @@
-#include "client/components/main/views/status_bar_controller.h"
+#include "components/main/views/status_bar_controller.h"
 
 #include <algorithm>
 

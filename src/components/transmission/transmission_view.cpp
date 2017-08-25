@@ -1,11 +1,11 @@
-#include "client/components/transmission/transmission_view.h"
+#include "components/transmission/transmission_view.h"
 
-#include "client/common_resources.h"
-#include "client/components/transmission/transmission_model.h"
-#include "client/window_definition.h"
-#include "client/controller_factory.h"
-#include "client/services/task_manager.h"
-#include "client/controls/grid.h"
+#include "common_resources.h"
+#include "components/transmission/transmission_model.h"
+#include "window_definition.h"
+#include "controller_factory.h"
+#include "services/task_manager.h"
+#include "controls/grid.h"
 #include "common/scada_node_ids.h"
 #include "core/session_service.h"
 

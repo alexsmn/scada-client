@@ -1,17 +1,17 @@
-#include "client/components/watch/watch_view.h"
+#include "components/watch/watch_view.h"
 
-#include "client/common_resources.h"
-#include "client/window_definition.h"
-#include "client/components/watch/watch_model.h"
-#include "client/controller_factory.h"
-#include "client/controls/table.h"
+#include "common_resources.h"
+#include "window_definition.h"
+#include "components/watch/watch_model.h"
+#include "controller_factory.h"
+#include "controls/table.h"
 #include "common/node_ref_service.h"
 
 #if defined(UI_QT)
 #elif defined(UI_VIEWS)
 #include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/point.h"
-#include "client/views/client_utils_views.h"
+#include "views/client_utils_views.h"
 // TODO: Remove.
 #include <atlstr.h>
 #include <atlbase.h>

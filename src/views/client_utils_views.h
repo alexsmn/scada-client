@@ -4,8 +4,8 @@
 
 #include "base/strings/string16.h"
 #include "ui/gfx/point.h"
-#include "client/controls/types.h"
-#include "client/client_utils.h"
+#include "controls/types.h"
+#include "client_utils.h"
 #include "core/configuration_types.h"
 
 namespace ui {

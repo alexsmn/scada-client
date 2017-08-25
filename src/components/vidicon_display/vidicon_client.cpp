@@ -1,4 +1,4 @@
-#include "client/components/vidicon_display/vidicon_client.h"
+#include "components/vidicon_display/vidicon_client.h"
 
 #include "base/logging.h"
 

@@ -1,9 +1,9 @@
-#include "client/components/main/views/main_menu.h"
+#include "components/main/views/main_menu.h"
 
-#include "client/base/color.h"
-#include "client/views/client_utils_views.h"
-#include "client/command_handler.h"
-#include "client/views/context_menu_model.h"
+#include "base/color.h"
+#include "views/client_utils_views.h"
+#include "command_handler.h"
+#include "views/context_menu_model.h"
 
 MainMenu::MainMenu(MainWindowViews& main_view, HMENU hmenu, ActionManager& action_manager,
     Profile& profile, FileCache& file_cache, Favourites& favourites)

@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "client/common_resources.h"
-#include "client/controller.h"
+#include "common_resources.h"
+#include "controller.h"
 
 std::unique_ptr<Controller> CreateController(unsigned command_id, const ControllerContext& context);
 

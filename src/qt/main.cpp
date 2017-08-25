@@ -1,8 +1,8 @@
 #include "base/at_exit.h"
 #include "base/win/gdiplus_initializer.h"
-#include "client/components/main/main_window.h"
-#include "client/qt/client_application_qt.h"
-#include "client/qt/message_loop_qt.h"
+#include "components/main/main_window.h"
+#include "qt/client_application_qt.h"
+#include "qt/message_loop_qt.h"
 
 int main(int argc, char* argv[]) {
   GdiplusInitializer gdiplus;

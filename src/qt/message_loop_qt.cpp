@@ -1,4 +1,4 @@
-#include "client/qt/message_loop_qt.h"
+#include "qt/message_loop_qt.h"
 
 MessageLoopQt::MessageLoopQt()
     : sequence_num_(0),

@@ -1,8 +1,8 @@
-#include "client/components/hardware_tree/hardware_tree_model.h"
+#include "components/hardware_tree/hardware_tree_model.h"
 
-#include "client/components/configuration_tree/configuration_tree_view.h"
-#include "client/common_resources.h"
-#include "client/controller_factory.h"
+#include "components/configuration_tree/configuration_tree_view.h"
+#include "common_resources.h"
+#include "controller_factory.h"
 #include "common/scada_node_ids.h"
 
 class HardwareTreeView : public ConfigurationTreeView {
