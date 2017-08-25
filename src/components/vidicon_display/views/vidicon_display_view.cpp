@@ -1,0 +1,123 @@
+#include "client/components/vidicon_display/views/vidicon_display_view.h"
+
+#include "base/win/scoped_bstr.h"
+#include "base/win/scoped_comptr.h"
+#include "client/controller_factory.h"
+#include "client/views/ambient_props.h"
+#include "client/views/client_application_views.h"
+#include "client/services/file_cache.h"
+#include "client/window_definition.h"
+#include "client/components/vidicon_display/views/telecontrolview.h"
+#include "client/components/vidicon_display/teleclient.h"
+#include "client/components/vidicon_display/vidicon_client.h"
+
+//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb" raw_interfaces_only
+//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TeleClient.dll" raw_interfaces_only
+//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\DisplayViewerX.ocx" raw_interfaces_only
+
+namespace {
+
+/*HRESULT AxPropPut(IDispatch& dispatch, LPCOLESTR name, VARIANT* val, EXCEPINFO* excep = NULL) {
+	DISPID dispid = 0;
+	HRESULT res = dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
+                                       LOCALE_SYSTEM_DEFAULT, &dispid);
+	if (FAILED(res))
+		return res;
+
+	DISPID dispidPut = DISPID_PROPERTYPUT;
+	DISPPARAMS params = { 0 };
+	params.cArgs = 1;
+	params.cNamedArgs = 1;
+	params.rgdispidNamedArgs = &dispidPut;
+	params.rgvarg = val;
+
+	return dispatch.Invoke(dispid, IID_NULL, LOCALE_SYSTEM_DEFAULT,
+                         DISPATCH_PROPERTYPUT, &params, NULL, excep, NULL);
+}*/
+
+} // namespace
+
+REGISTER_CONTROLLER(VidiconDisplayView, ID_VIDICON_DISPLAY_VIEW);
+
+VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
+    : ::Controller(context),
+      control_(new views::ActiveXControl{*g_application_views}),
+      synchronize_timer_(false, true) {
+  control_->set_controller(this);
+}
+
+VidiconDisplayView::~VidiconDisplayView() {
+}
+
+views::View* VidiconDisplayView::Init(const WindowDefinition& definition) {
+  path_ = definition.path;
+
+  return control_.get();
+}
+
+void VidiconDisplayView::Save(WindowDefinition& definition) {
+  definition.path = path_;
+}
+
+void VidiconDisplayView::SynchronizeView() {
+  HWND form_window = ::GetWindow(control_->GetWindowHandle(), GW_CHILD);
+  if (::IsWindow(form_window))
+    ::PostMessage(form_window, WM_ENTERIDLE, 0, 0);
+}
+
+void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
+  // set ambient properties
+  {
+    base::win::ScopedComPtr<IAxWinAmbientDispatchEx> ambientEx;
+    control_->QueryHost(IID_IAxWinAmbientDispatchEx, ambientEx.ReceiveVoid());
+    assert(ambientEx);
+    CComObject<AmbientProps>* ambient = NULL;
+    CComObject<AmbientProps>::CreateInstance(&ambient);
+    assert(ambient);
+    ambient->display_name = OLESTR("Ñץולא");
+    ambientEx->SetAmbientDispatch(ambient);
+    ambientEx->put_MessageReflect(ATL_VARIANT_TRUE);
+  }
+  
+  LPOLESTR ole_class;
+  if (SUCCEEDED(StringFromCLSID(__uuidof(ViewerX::ViewerForm), &ole_class))) {
+    control_->CreateControl(ole_class);
+    CoTaskMemFree(ole_class);
+  }
+
+  control_->QueryControl(__uuidof(ViewerX::IViewerForm), (void**)&form_);
+  if (form_) {
+    //DispEventAdvise(form);
+    //form->put_StatusVisible(VARIANT_FALSE);
+    //form->put_ToolbarVisible(VARIANT_FALSE);
+    //form->put_PagesVisible(SDECore::txPagesHidden);
+    //form->put_AxBorderStyle(htsde2::afbNone);
+
+    // TODO: Extract method, log all possible errors.
+    base::win::ScopedComPtr<TelecontrolView::ITelecontrolView> view;
+    control_->QueryControl(__uuidof(TelecontrolView::ITelecontrolView),
+                           view.ReceiveVoid());
+    if (view) {
+      VidiconClient::TeleClient* teleclient =
+          VidiconClient::GetInstance().GetTeleClient();
+      if (teleclient) {
+        HRESULT res = view->SetClient(teleclient);
+        DCHECK(SUCCEEDED(res));
+      }
+    }
+
+    form_->put_AutoStartRuntime(VARIANT_TRUE);
+    form_->put_AxBorderStyle(ViewerX::afbNone);
+
+    base::FilePath full_path = GetPublicFilePath(path_);
+    form_->put_FileName(base::win::ScopedBstr(full_path.value().c_str()));
+
+    synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
+        base::Bind(&VidiconDisplayView::SynchronizeView, base::Unretained(this)));
+  }
+}
+
+void VidiconDisplayView::OnContractDestroyed(views::ActiveXControl& sender) {
+  synchronize_timer_.Reset();
+  form_.Release();
+}

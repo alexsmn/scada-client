@@ -1,0 +1,104 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+PROJECT(scada_client)
+
+SET(project_name "Telecontrol SCADA Client")
+SET(project_version_major 2)
+SET(project_version_minor 0)
+SET(project_version_build 1)
+SET(project_version_patch 0)
+
+SET(COMPONENT_BUILD TRUE)
+
+SET(MAINFOLDER ${PROJECT_SOURCE_DIR})
+SET(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
+SET(LIBRARY_OUTPUT_PATH "${MAINFOLDER}/bin")
+SET(generated_dir "${CMAKE_CACHEFILE_DIR}/generated")
+# IF(WIN32)
+#   SET(deps "c:/work/third_party")
+# ELSE()
+#   SET(deps "/mnt/third_party")
+# ENDIF()
+
+include(CMakeToolsHelpers OPTIONAL)
+
+# This is not working:
+# SET(CMAKE_CXX_STANDARD 11)
+
+ADD_DEFINITIONS(
+  -DARCH_CPU_X86_FAMILY
+  -DU_STATIC_IMPLEMENTATION
+)
+
+MESSAGE("Component build: ${COMPONENT_BUILD}")
+
+IF(WIN32)
+  ADD_DEFINITIONS(
+    -D_CRT_RAND_S
+    -D_CRT_SECURE_NO_WARNINGS
+    -D_SCL_SECURE_NO_WARNINGS
+    -DCOMPILER_MSVC
+    -DNOMINMAX
+    -DOS_WIN
+    -DUNICODE
+    -DWCHAR_T_IS_UTF16
+    -DWIN32_LEAN_AND_MEAN
+    -DWINVER=0x0502
+    -D_WIN32_WINNT=0x0502
+    -D_WTL_USE_VSSYM32
+    -wd4018
+    -wd4244
+    -wd4251
+    -wd4275
+    -wd4996
+  )
+
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SAFESEH:NO")
+  # Multi-processor compilation
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+
+  IF(COMPONENT_BUILD)
+    # ADD_DEFINITIONS(-DCOMPONENT_BUILD)
+    SET(gtest_force_shared_crt ON)
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+  ENDIF()
+
+ELSE(WIN32)
+  ADD_DEFINITIONS(
+    -DOS_POSIX
+    -DOS_LINUX
+    -DARCH_CPU_64_BITS
+    -DWCHAR_T_IS_UTF32
+  )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+ENDIF(WIN32)
+
+ENABLE_TESTING()
+
+SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
+
+SET(scada_folder "CommonProjects")
+SET(server_folder "ServerProjects")
+SET(client_folder "ClientProjects")
+
+# SET(PRECOMPILE "${PROJECT_SOURCE_DIR}/src/build/precompile.cc")
+# SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Yuprecompile.h /FIprecompile.h")
+# SET_SOURCE_FILES_PROPERTIES(${PRECOMPILE} PROPERTIES COMPILE_FLAGS "/Ycprecompile.h")
+
+ADD_SUBDIRECTORY("d:/work/scada/scada_common" scada_common)
+
+SET_PROPERTY(TARGET scada_base PROPERTY FOLDER ${scada_folder})
+SET_PROPERTY(TARGET scada_common PROPERTY FOLDER ${scada_folder})
+SET_PROPERTY(TARGET scada_common_unittests PROPERTY FOLDER ${scada_folder})
+SET_PROPERTY(TARGET scada_core PROPERTY FOLDER ${scada_folder})
+SET_PROPERTY(TARGET scada_core_unittests PROPERTY FOLDER ${scada_folder})
+SET_PROPERTY(TARGET remote PROPERTY FOLDER ${scada_folder})
+SET_PROPERTY(TARGET remote_unittests PROPERTY FOLDER ${scada_folder})
+
+ADD_SUBDIRECTORY(src)
+
+INCLUDE(install.cmake)

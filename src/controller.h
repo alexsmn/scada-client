@@ -1,0 +1,91 @@
+#pragma once
+
+#include <cassert>
+
+#include "client/controls/types.h"
+#include "client/command_handler.h"
+#include "client/controller_delegate.h"
+#include "client/dialog_service.h"
+#include "client/selection_model.h"
+#include "core/configuration_types.h"
+
+namespace events {
+class EventManager;
+}
+
+namespace scada {
+class MonitoredItemService;
+class NodeManagementService;
+class HistoryService;
+class SessionService;
+}
+
+#if defined(UI_VIEWS)
+namespace views {
+class DropController;
+}
+#endif
+
+class ContentsModel;
+class ControllerDelegate;
+class Favourites;
+class FileCache;
+class LocalEvents;
+class NodeRefService;
+class PortfolioManager;
+class Profile;
+class TaskManager;
+class TimedDataService;
+class WindowDefinition;
+
+struct ControllerContext {
+  ControllerDelegate& controller_delegate_;
+  TimedDataService& timed_data_service_;
+  NodeRefService& node_service_;
+  PortfolioManager& portfolio_manager_;
+  TaskManager& task_manager_;
+  Profile& profile_;
+  LocalEvents& local_events_;
+  events::EventManager& event_manager_;
+  FileCache& file_cache_;
+  scada::NodeManagementService& node_management_service_;
+  scada::HistoryService& history_service_;
+  Favourites& favourites_;
+  DialogService& dialog_service_;
+  scada::SessionService& session_service_;
+  scada::MonitoredItemService& monitored_item_service_;
+};
+
+class Controller : public CommandHandler,
+                   protected ControllerContext {
+ public:
+  explicit Controller(const ControllerContext& context)
+      : ControllerContext(std::move(context)),
+        selection_{node_service_, timed_data_service_} {
+  }
+  virtual ~Controller() {}
+
+  SelectionModel& selection() { return selection_; }
+
+  virtual UiView* Init(const WindowDefinition& definition) = 0;
+
+  virtual bool CanClose() const { return true; }
+  virtual bool IsWorking() const { return false; }
+
+  virtual void Save(WindowDefinition& definition) {}
+  virtual void OnViewNodeCreated(const NodeRef& node) {}
+
+  virtual bool ShowContainedItem(const scada::NodeId& item_id) { return false; }
+
+  virtual ContentsModel* GetContentsModel() { return nullptr; }
+
+#if defined(UI_VIEWS)
+  virtual views::DropController* GetDropController() { return nullptr; }
+#endif
+
+  // View root node for creation.
+  virtual NodeRef GetRootNode() const { return nullptr; }
+
+ private:
+  SelectionModel selection_;
+};

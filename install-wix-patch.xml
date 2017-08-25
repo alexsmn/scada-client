@@ -1,0 +1,5 @@
+<CPackWiXPatch>
+  <CPackWiXFragment Id="CM_CP_Server.bin.server.exe">
+    <Merge Id="VCRedist" SourceFile="c:\Program Files (x86)\Common Files\Merge Modules\Microsoft_VC120_CRT_x86.msm" DiskId="1" Language="0"/>
+  </CPackWiXFragment>
+</CPackWiXPatch>

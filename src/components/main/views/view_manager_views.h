@@ -1,0 +1,53 @@
+#pragma once
+
+#include "client/components/main/view_manager.h"
+#include "ui/gfx/native_widget_types.h"
+#include "ui/views/focus/focus_manager.h"
+#include "ui/views/controls/multi_split_view.h"
+
+namespace views {
+class MultiSplitView;
+class View;
+class Widget;
+}
+
+class ViewManagerViews : public ViewManager,
+                         private views::FocusChangeListener,
+                         private views::MultiSplitView::Controller {
+ public:
+  ViewManagerViews(views::View& parent_view, ViewManagerDelegate* delegate);
+  ~ViewManagerViews();
+
+  // Called after native widget is installed.
+  void Init();
+
+  views::View& GetView();
+
+  // ViewManager
+  virtual void OpenLayout(Page& page, const PageLayout& layout) override;
+  virtual void SaveLayout(PageLayout& layout) override;
+  virtual void ActivateView(OpenedView& view) override;
+  virtual void CloseView(OpenedView& view) override;
+  virtual void SetViewTitle(OpenedView& view, const base::string16& title) override;
+
+ protected:
+  void OpenLayoutBlock(const PageLayoutBlock& block, views::MultiSplitPane& pane);
+  void SaveLayoutBlock(PageLayoutBlock& block, views::MultiSplitPane& pane);
+
+  OpenedView* FindViewByViewsView(views::View* view);
+  OpenedView* FindFirstDataView(views::MultiSplitPane& from_pane);
+
+  // ViewManager
+  virtual void AddView(OpenedView& view) override;
+
+  // views::FocusChangeListener
+  virtual void OnFocusChanged(views::View* focused_before, views::View* focused_now) override;
+
+  // MultiSplitView::Controller
+  virtual void OnViewClosed(views::View& view) override;
+  virtual void OnShowViewTabContextMenu(views::View& view, gfx::Point point) override;
+
+ private:
+  views::FocusManager* focus_manager_ = nullptr;
+  std::unique_ptr<views::MultiSplitView> dock_container_;
+};
