@@ -55,6 +55,6 @@ std::unique_ptr<MainWindow> ClientApplicationViews::CreateMainWindow(MainWindowC
   return std::make_unique<MainWindowViews>(std::move(context));
 }
 
-bool ClientApplicationViews::ShowLoginDialog() {
-  return ExecuteLoginDialog(MakeServicesContext(), data_services_);
+bool ClientApplicationViews::ShowLoginDialogImpl(const DataServicesContext& context, DataServices& services) {
+  return ExecuteLoginDialog(context, services);
 }

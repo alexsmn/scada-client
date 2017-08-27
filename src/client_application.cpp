@@ -128,6 +128,15 @@ ClientApplication::~ClientApplication() {
     data_services_.session_service_->RemoveObserver(*this);
 }
 
+bool ClientApplication::ShowLoginDialog() {
+  DataServicesContext context{
+    logger_,
+    *transport_factory_,
+  };
+
+  return ShowLoginDialogImpl(std::move(context), data_services_);
+}
+
 void ClientApplication::BeforeRun() {
   data_services_.session_service_->AddObserver(*this);
 
@@ -281,11 +290,4 @@ OpenedView* ClientApplication::FindOpenedViewByFilePath(const base::FilePath& pa
 
 scada::SessionService& ClientApplication::session_service() {
   return *data_services_.session_service_;
-}
-
-DataServicesContext ClientApplication::MakeServicesContext() {
-  return DataServicesContext{
-      logger_,
-      *transport_factory_,
-  };
 }

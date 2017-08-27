@@ -43,7 +43,10 @@ std::unique_ptr<MainWindow> ClientApplicationQt::CreateMainWindow(MainWindowCont
   return std::make_unique<MainWindowQt>(*this, std::move(context));
 }
 
-bool ClientApplicationQt::ShowLoginDialog() {
-  LoginDialog login_dialog(session_service());
-  return login_dialog.exec() == QDialog::Accepted;
+bool ClientApplicationQt::ShowLoginDialogImpl(const DataServicesContext& context, DataServices& services) {
+  LoginDialog login_dialog(context);
+  if (login_dialog.exec() != QDialog::Accepted)
+    return false;
+  services = login_dialog.services();
+  return true;
 }

@@ -11,13 +11,13 @@ class ClientApplicationQt : public QApplication,
 
   // ClientApplication
   virtual bool Init() override;
-  virtual bool ShowLoginDialog() override;
   virtual int Run(int show) override;
   virtual void Quit() override;
 
  protected:
   // ClientApplication
   virtual std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) override;
+  virtual bool ShowLoginDialogImpl(const DataServicesContext& context, DataServices& services) override;
 };
 
 extern ClientApplicationQt* g_application_qt;

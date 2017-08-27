@@ -49,7 +49,7 @@ class ClientApplication : private scada::SessionStateObserver {
   scada::SessionService& session_service();
 
   virtual bool Init();
-  virtual bool ShowLoginDialog() = 0;
+  bool ShowLoginDialog();
   void BeforeRun();
   virtual int Run(int show) = 0;
   virtual void Quit() = 0;
@@ -62,9 +62,9 @@ class ClientApplication : private scada::SessionStateObserver {
   const MainWindows& main_windows() const { return main_windows_; }
 
  protected:
-  DataServicesContext MakeServicesContext();
-
   virtual std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) = 0;
+
+  virtual bool ShowLoginDialogImpl(const DataServicesContext& context, DataServices& services) = 0;
 
   std::shared_ptr<Logger> logger_;
 

@@ -20,13 +20,13 @@ class ClientApplicationViews : public ClientApplication,
   virtual void RemoveMessageDispatcher(base::MessagePumpDispatcher& dispatcher) override;
 
   // ClientApplication
-  virtual bool ShowLoginDialog() override;
   virtual int Run(int show) override;
   virtual void Quit() override;
 
  protected:
   // ClientApplication
   virtual std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) override;
+  virtual bool ShowLoginDialogImpl(const DataServicesContext& context, DataServices& services) override;
 
  private:
   // base::MessagePumpDispatcher

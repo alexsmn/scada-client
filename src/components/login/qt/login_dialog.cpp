@@ -14,8 +14,8 @@
 #include "core/status.h"
 #include "core/session_service.h"
 
-LoginDialog::LoginDialog(scada::SessionService& session)
-    : session_(session),
+LoginDialog::LoginDialog(const DataServicesContext& services_context)
+    : services_context_(services_context),
       cancelation_(std::make_shared<bool>(false)) {
   // TODO: Reg key constants.
   QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
@@ -81,15 +81,20 @@ void LoginDialog::StartLogin() {
   password_ = password_edit_->text();
   auto_login_ = auto_login_check_box_->isChecked();
 
+  if (!CreateDataServices("Scada", services_context_, services_)) {
+    OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);
+    return;
+  }
+
   std::weak_ptr<bool> cancelation = cancelation_;
-  session_.Connect("TCP;active;port=2000", user_name_.toStdString(), password_.toStdString(), true,
+  services_.session_service_->Connect("TCP;active;port=2000", user_name_.toStdString(), password_.toStdString(), true,
       [this, cancelation](const scada::Status& result) {
         if (!cancelation.expired())
-          OnCreateSessionResult(result);
+          OnLoginResult(result);
       });
 }
 
-void LoginDialog::OnCreateSessionResult(const scada::Status& result) {
+void LoginDialog::OnLoginResult(const scada::Status& result) {
   if (result) {
     QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
     settings.setValue("User", user_name_);
