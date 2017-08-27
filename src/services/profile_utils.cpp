@@ -1,7 +1,7 @@
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
-#include "client/base/xml.h"
+#include "base/xml.h"
 
 const base::char16* kTypeStrings[] = { L"NULL",
                                  L"BOOLEAN",

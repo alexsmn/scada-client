@@ -3,8 +3,8 @@
 #include <memory>
 
 #include "core/configuration_types.h"
-#include "common/timed_data/timed_data.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data.h"
+#include "timed_data/timed_data_spec.h"
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_data_source.h"
@@ -34,12 +34,12 @@ class MetrixDataSource : public views::GraphDataSource,
 
   // views::GraphDataSource
   virtual views::PointEnumerator* EnumPoints(double from, double to,
-                                              bool include_left_bound,
-                                              bool include_right_bound);
+                                             bool include_left_bound,
+                                             bool include_right_bound) override;
 #if defined(UI_QT)
-  virtual std::wstring GetYAxisLabel(double value) const;
+  virtual QString GetYAxisLabel(double value) const override;
 #elif defined(UI_VIEWS)
-  virtual base::string16 GetYAxisLabel(double value) const;
+  virtual base::string16 GetYAxisLabel(double value) const override;
 #endif
 
  protected:

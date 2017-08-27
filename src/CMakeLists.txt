@@ -48,8 +48,6 @@ LIST(APPEND core_sources
   # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/view_manager_delegate.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.h"
-  "${CMAKE_SOURCE_DIR}/src/opcua/opcua_conversion.cpp"
-  "${CMAKE_SOURCE_DIR}/src/opcua/opcua_conversion.h"
 )
 LIST(REMOVE_ITEM core_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/controller.h"
@@ -64,6 +62,7 @@ LIST(REMOVE_ITEM core_sources
 ADD_LIBRARY(client_core STATIC ${core_sources})
 TARGET_LINK_LIBRARIES(client_core
   base_i18n
+  ui_base
   scada_common
   modus
   remote

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ui/base/models/tree_node_model.h"
-#include "client/services/favourites.h"
+#include "services/favourites.h"
 
 class FavouritesFolderNode;
 class FavouritesWindowNode;

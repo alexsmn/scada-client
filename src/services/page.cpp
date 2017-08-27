@@ -4,10 +4,10 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/utils.h"
-#include "client/base/xml.h"
-#include "client/window_info.h"
-#include "client/services/page.h"
-#include "client/services/profile_utils.h"
+#include "base/xml.h"
+#include "window_info.h"
+#include "services/page.h"
+#include "services/profile_utils.h"
 
 #define MAX_TITLE	30
 

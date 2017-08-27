@@ -1,4 +1,4 @@
-#include "client/selection_model.h"
+#include "selection_model.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/scada_node_ids.h"

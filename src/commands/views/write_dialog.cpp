@@ -2,8 +2,8 @@
 
 #include "base/memory/weak_ptr.h"
 #include "views/framework/dialog.h"
-#include "common/timed_data/timed_data.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data.h"
+#include "timed_data/timed_data_spec.h"
 #include "base/bind.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "core/status.h"

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "client/base/blinker.h"
-#include "client/components/configuration_tree/configuration_tree_model.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "base/blinker.h"
+#include "components/configuration_tree/configuration_tree_model.h"
+#include "timed_data/timed_data_spec.h"
 
 class Profile;
 

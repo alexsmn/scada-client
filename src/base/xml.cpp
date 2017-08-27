@@ -1,4 +1,4 @@
-#include "client/base/xml.h"
+#include "base/xml.h"
 
 #include <cassert>
 #include <atlconv.h>

@@ -2,7 +2,7 @@
 
 #include "base/blinker.h"
 #include "components/modus/modus_style2.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data_spec.h"
 
 namespace {
 const int kModusBindingInflate = 3;

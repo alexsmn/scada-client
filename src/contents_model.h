@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/configuration_types.h"
-#include "client/controls/types.h"
+#include "controls/types.h"
 
 class ContentsObserver;
 

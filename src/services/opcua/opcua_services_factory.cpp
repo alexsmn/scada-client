@@ -1,5 +1,5 @@
-#include "client/services/data_services_factory.h"
-#include "client/services/opcua/opcua_session.h"
+#include "services/data_services_factory.h"
+#include "services/opcua/opcua_session.h"
 
 DataServices CreateOpcUaServices(const DataServicesContext& context) {
   auto session = std::make_shared<OpcUaSession>();

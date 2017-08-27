@@ -1,6 +1,6 @@
 #pragma warning(disable:4355)
 #include "base/timer/timer.h"
-#include "client/base/blinker.h"
+#include "base/blinker.h"
 
 #include <cassert>
 #include <set>

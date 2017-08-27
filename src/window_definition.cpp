@@ -1,6 +1,6 @@
 #include "base/values.h"
-#include "client/window_info.h"
-#include "client/window_definition.h"
+#include "window_info.h"
+#include "window_definition.h"
 
 WindowItem::WindowItem()
     : attrs_(new base::DictionaryValue) {

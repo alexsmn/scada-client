@@ -1,4 +1,4 @@
-#include "client/services/local_events.h"
+#include "services/local_events.h"
 
 #include <cassert>
 

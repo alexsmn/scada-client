@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data_spec.h"
 #include "controller.h"
 #include "contents_model.h"
 #include "ui/base/models/grid_model.h"

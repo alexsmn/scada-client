@@ -1,7 +1,7 @@
-#include "client/services/favourites.h"
+#include "services/favourites.h"
 
 #include "base/utils.h"
-#include "client/base/xml.h"
+#include "base/xml.h"
 
 const Page* Favourites::GetFolder(const base::char16* folder) const {
   if (!folder)

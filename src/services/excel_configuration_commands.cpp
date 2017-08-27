@@ -1,14 +1,14 @@
-#include "client/client_utils.h"
+#include "client_utils.h"
 
 #include <algorithm>
 
 #include "base/base_paths.h"
 #include "base/path_service.h"
-#include "client/base/excel.h"
-#include "client/base/table_reader.h"
-#include "client/base/table_writer.h"
-#include "client/services/property_defs.h"
-#include "client/services/task_manager.h"
+#include "base/excel.h"
+#include "base/table_reader.h"
+#include "base/table_writer.h"
+#include "services/property_defs.h"
+#include "services/task_manager.h"
 #include "common/format.h"
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
@@ -26,7 +26,7 @@ const char kNodeIdTitle[] = "ָה";
 typedef std::vector<NodeRef> NodeRefs;
 
 void GetTypePids(NodeRefService& node_service, const NodeRef& type, bool recursive, NodeRefs& component_declarations, NodeRefs& reference_types) {
-  assert(scada::IsTypeDefinition(type.node_class().get()));
+  assert(scada::IsTypeDefinition(type.node_class().value()));
 
   if (recursive) {
     if (const auto& supertype = type.supertype())

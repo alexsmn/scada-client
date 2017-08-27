@@ -1,6 +1,6 @@
 #include "components/main/views/main_window_views.h"
 
-#include "base/win/win_util.h"
+#include "base/win/win_util2.h"
 #include "components/main/action.h"
 #include "client_application.h"
 #include "views/client_utils_views.h"

@@ -1,9 +1,9 @@
-#include "client/services/speech.h"
+#include "services/speech.h"
 
 #include <atlbase.h>
 
-#include "client/services/sapi.h"
-#include "client/services/profile.h"
+#include "services/sapi.h"
+#include "services/profile.h"
 #include "core/monitored_item_service.h"
 
 //#import "libid:C866CA3A-32F7-11D2-9602-00C04F8EE628" raw_interfaces_only

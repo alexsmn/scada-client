@@ -2,8 +2,8 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
-#include "client/time_range.h"
-#include "client/services/local_events.h"
+#include "time_range.h"
+#include "services/local_events.h"
 #include "core/node_observer.h"
 #include "core/event.h"
 #include "common/event_observer.h"

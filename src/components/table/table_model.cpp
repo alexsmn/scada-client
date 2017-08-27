@@ -11,8 +11,6 @@
 #include "common/scada_node_ids.h"
 #include "common/event_manager.h"
 #include "common/node_ref_util.h"
-#include "server/core/node.h"
-#include "server/core/node_utils.h"
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
 

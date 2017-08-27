@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data_spec.h"
 
 class TableModel;
 

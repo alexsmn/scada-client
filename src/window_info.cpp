@@ -1,11 +1,11 @@
-#include "client/window_info.h"
+#include "window_info.h"
 
 #include <cassert>
 #include <cstdlib>
 #include <exception>
 
 #include "base/compiler_specific.h"
-#include "client/common_resources.h"
+#include "common_resources.h"
 
 const WindowInfo g_window_infos[] = {
   { ID_CELLS_VIEW, "Cells", L"ίχεικθ", WIN_INS | WIN_CAN_PRINT, 0, 0, 0 },

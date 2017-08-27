@@ -1,9 +1,9 @@
-#include "client/components/main/action.h"
+#include "components/main/action.h"
 
 #include "base/at_exit.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/scada_node_ids.h"
-#include "client/common_resources.h"
+#include "common_resources.h"
 #include "common/node_ref_service.h"
 
 GroupedActions GroupCommands(ActionManager& action_manager, const std::vector<unsigned>& commands) {

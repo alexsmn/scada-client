@@ -4,12 +4,12 @@
 #include "qt/client_application_qt.h"
 #include "qt/message_loop_qt.h"
 
-int main(int argc, char* argv[]) {
+int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow) {
   GdiplusInitializer gdiplus;
 
   base::AtExitManager at_exit;
 
-  ClientApplicationQt app(argc, argv);
+  ClientApplicationQt app(0, nullptr);
 
   // QApplication must be created.
   scoped_refptr<MessageLoopQt> message_loop(new MessageLoopQt);

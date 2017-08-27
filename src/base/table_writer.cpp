@@ -1,4 +1,4 @@
-#include "client/base/table_writer.h"
+#include "base/table_writer.h"
 
 #include "base/strings/string_util.h"
 

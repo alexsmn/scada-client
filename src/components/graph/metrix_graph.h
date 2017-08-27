@@ -4,8 +4,8 @@
 
 #include "base/timer/timer.h"
 #include "components/graph/metrix_data_source.h"
-#include "common/timed_data/timed_data.h"
-#include "common/timed_data/timed_data_delegate.h"
+#include "timed_data/timed_data.h"
+#include "timed_data/timed_data_delegate.h"
 
 #if defined(UI_QT)
 #include "graph_qt/graph.h"

@@ -1,9 +1,9 @@
-#include "client/services/portfolio_manager.h"
+#include "services/portfolio_manager.h"
 
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
 #include "common/scada_node_ids.h"
-#include "client/services/portfolio.h"
+#include "services/portfolio.h"
 #include "common/node_ref_service.h"
 
 PortfolioManager::PortfolioManager(NodeRefService& node_service)

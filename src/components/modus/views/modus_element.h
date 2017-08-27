@@ -4,7 +4,7 @@
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/scoped_variant.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data_spec.h"
 #include "components/modus/modus.h"
 
 namespace modus {

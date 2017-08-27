@@ -1,7 +1,7 @@
-#include "client/services/device_state_notifier.h"
+#include "services/device_state_notifier.h"
 
 #include "common/formula_util.h"
-#include "common/timed_data/timed_data_service.h"
+#include "timed_data/timed_data_service.h"
 #include "common/scada_node_ids.h"
 
 DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service, const NodeRef& device, Callback callback)

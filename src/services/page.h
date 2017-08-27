@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/files/file_path.h"
-#include "client/services/page_layout.h"
-#include "client/window_definition.h"
+#include "services/page_layout.h"
+#include "window_definition.h"
 
 namespace xml {
 class Node;

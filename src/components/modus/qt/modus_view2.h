@@ -10,7 +10,7 @@
 #include "libmodus/render/renderer_delegate.h"
 #include "components/modus/modus_view_wrapper.h"
 #include "components/modus/modus_binding2.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data_spec.h"
 
 namespace modus {
 class Element;

@@ -3,7 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/format_time.h"
 #include "window_definition.h"
-#include "common/timed_data/timed_data_spec.h"
+#include "timed_data/timed_data_spec.h"
 #include "ui/base/models/grid_range.h"
 
 namespace {

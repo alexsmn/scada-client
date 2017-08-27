@@ -1,4 +1,4 @@
-#include "client/services/file_cache.h"
+#include "services/file_cache.h"
 
 #include "base/files/file_enumerator.h"
 #include "base/files/file_util.h"
@@ -7,8 +7,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/format.h"
 #include "base/logger.h"
-#include "client/base/xml.h"
-#include "client/client_paths.h"
+#include "base/xml.h"
+#include "client_paths.h"
 
 #include <fstream>
 

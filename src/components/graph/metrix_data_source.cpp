@@ -228,6 +228,12 @@ void MetrixDataSource::OnPropertyChanged(rt::TimedDataSpec& spec,
   }
 }
 
-std::wstring MetrixDataSource::GetYAxisLabel(double value) const {
+#if defined(UI_QT)
+QString MetrixDataSource::GetYAxisLabel(double value) const {
+  return QString::fromStdWString(timed_data_.GetValueString(value, {}));
+}
+#elif defined(UI_VIEWS)
+base::string16 MetrixDataSource::GetYAxisLabel(double value) const {
   return timed_data_.GetValueString(value, {});
 }
+#endif

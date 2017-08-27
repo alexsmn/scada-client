@@ -1,9 +1,9 @@
-#include "client/services/task_manager.h"
+#include "services/task_manager.h"
 
 #include "core/status.h"
-#include "client/commands/views/progress_dialog.h"
-#include "client/services/local_events.h"
-#include "client/services/profile.h"
+#include "commands/views/progress_dialog.h"
+#include "services/local_events.h"
+#include "services/profile.h"
 #include "core/node_management_service.h"
 #include "common/node_ref_service.h"
 

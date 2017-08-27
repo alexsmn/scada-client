@@ -3,8 +3,8 @@
 #include "base/strings/stringprintf.h"
 #include "base/win/scoped_bstr.h"
 #include "core/monitored_item.h"
-#include "client/services/vidicon/vidicon_monitored_data_point.h"
-#include "client/services/vidicon/vidicon_monitored_events.h"
+#include "services/vidicon/vidicon_monitored_data_point.h"
+#include "services/vidicon/vidicon_monitored_events.h"
 
 namespace {
 

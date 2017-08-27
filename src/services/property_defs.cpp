@@ -1,4 +1,4 @@
-#include "client/services/property_defs.h"
+#include "services/property_defs.h"
 
 #include <iterator>
 #include <map>
@@ -6,8 +6,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "core/node_management_service.h"
 #include "common/scada_node_ids.h"
-#include "client/base/color.h"
-#include "client/services/task_manager.h"
+#include "base/color.h"
+#include "services/task_manager.h"
 #include "common/node_ref.h"
 #include "common/node_ref_util.h"
 #include "common/node_ref_service.h"

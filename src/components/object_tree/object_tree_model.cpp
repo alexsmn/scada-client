@@ -1,6 +1,6 @@
-#include "client/components/object_tree/object_tree_model.h"
+#include "components/object_tree/object_tree_model.h"
 
-#include "client/services/profile.h"
+#include "services/profile.h"
 #include "core/standard_node_ids.h"
 
 ObjectTreeModel::ObjectTreeModel(NodeRefService& node_service, scada::NodeId root_id,

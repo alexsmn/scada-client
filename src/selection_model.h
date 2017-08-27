@@ -3,10 +3,10 @@
 #include <cassert>
 
 #include "core/configuration_types.h"
-#include "common/timed_data/timed_data_delegate.h"
-#include "common/timed_data/timed_data_spec.h"
-#include "client/controls/types.h"
-#include "client/selection_model.h"
+#include "timed_data/timed_data_delegate.h"
+#include "timed_data/timed_data_spec.h"
+#include "controls/types.h"
+#include "selection_model.h"
 #include "common/node_ref.h"
 #include "common/node_ref_observer.h"
 

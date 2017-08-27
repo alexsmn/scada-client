@@ -1,9 +1,8 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "client/controls/types.h"
-#include "client/window_definition.h"
-#include "core/node_id.h"
+#include "controls/types.h"
+#include "window_definition.h"
 
 namespace rt {
 class TimedDataSpec;

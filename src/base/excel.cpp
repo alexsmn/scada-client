@@ -1,6 +1,7 @@
-#include "client/base/excel.h"
+#include "base/excel.h"
 
 #include <cassert>
+#include <vector>
 
 #include "base/strings/stringprintf.h"
 
@@ -9,12 +10,7 @@
 
 namespace {
 
-// AutoWrap() - Automation helper function...
-HRESULT AutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, LPOLESTR ptName, int cArgs...) {
-  // Begin variable-argument list...
-  va_list marker;
-  va_start(marker, cArgs);
-
+HRESULT AutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, LPOLESTR ptName, std::vector<VARIANT> args = {}) {
   assert(pDisp);
 
   // Variables used...
@@ -36,16 +32,9 @@ HRESULT AutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, LPOLESTR ptN
     return hr;
   }
 
-  // Allocate memory for arguments...
-  VARIANT* pArgs = new VARIANT[cArgs + 1];
-  // Extract arguments...
-  for (int i = 0; i < cArgs; i++) {
-    pArgs[i] = va_arg(marker, VARIANT);
-  }
-
   // Build DISPPARAMS
-  dp.cArgs = cArgs;
-  dp.rgvarg = pArgs;
+  dp.cArgs = args.size();
+  dp.rgvarg = args.data();
 
   // Handle special-case for property-puts!
   if(autoType & DISPATCH_PROPERTYPUT) {
@@ -61,23 +50,19 @@ HRESULT AutoWrap(int autoType, VARIANT *pvResult, IDispatch *pDisp, LPOLESTR ptN
     //_exit(0);
     return hr;
   }
-  // End variable-argument section...
-  va_end(marker);
-
-  delete [] pArgs;
 
   return hr;
 }
 
 base::win::ScopedComPtr<IDispatch> GetProperty(IDispatch& object, const wchar_t* property_name) {
   base::win::ScopedVariant variant;
-  AutoWrap(DISPATCH_PROPERTYGET, variant.Receive(), &object, const_cast<LPOLESTR>(property_name), 0);
+  AutoWrap(DISPATCH_PROPERTYGET, variant.Receive(), &object, const_cast<LPOLESTR>(property_name));
   return base::win::ScopedComPtr<IDispatch>(variant.AsInput()->pdispVal);
 }
 
 base::win::ScopedComPtr<IDispatch> GetIndexedProperty(IDispatch& object, const wchar_t* property_name, const VARIANT& index) {
   base::win::ScopedVariant result;
-  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), &object, const_cast<LPOLESTR>(property_name), 1, index);
+  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), &object, const_cast<LPOLESTR>(property_name), {index});
   return base::win::ScopedComPtr<IDispatch>(result.AsInput()->pdispVal);
 }
 
@@ -118,16 +103,16 @@ void Excel::SetVisible(bool visible) {
   VARIANT x;
   x.vt = VT_I4;
   x.lVal = visible ? 1 : 0;
-  AutoWrap(DISPATCH_PROPERTYPUT, NULL, excel.get(), L"Visible", 1, x);
+  AutoWrap(DISPATCH_PROPERTYPUT, NULL, excel.get(), L"Visible", {x});
 }
 
 void Excel::NewWorkbook() {
   base::win::ScopedVariant result;
-  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), excel.get(), L"Workbooks", 0);
+  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), excel.get(), L"Workbooks");
   base::win::ScopedComPtr<IDispatch> books(result.AsInput()->pdispVal);
 
   result.Reset();
-  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), books.get(), L"Add", 0);
+  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), books.get(), L"Add");
   workbook = result.AsInput()->pdispVal;
 }
 
@@ -145,7 +130,7 @@ void Excel::NewSheet(const ExcelSheetModel& sheet) {
   auto range = GetRange(str.c_str());
 
   // range.Value = data
-  AutoWrap(DISPATCH_PROPERTYPUT, NULL, range.get(), L"Value", 1, sheet.data);
+  AutoWrap(DISPATCH_PROPERTYPUT, NULL, range.get(), L"Value", {sheet.data});
 
   //auto validation = GetProperty(*GetProperty(*GetRange(L"D2"), L"Validation"), L"Add");
 
@@ -155,9 +140,9 @@ void Excel::NewSheet(const ExcelSheetModel& sheet) {
     VARIANT x;
     x.vt = VT_I4;
     x.lVal = 1;
-    AutoWrap(DISPATCH_PROPERTYPUT, NULL, pXlBook, L"Saved", 1, x);
+    AutoWrap(DISPATCH_PROPERTYPUT, NULL, pXlBook, L"Saved", x);
   }
 
   // Tell Excel to quit (i.e. App.Quit)
-  AutoWrap(DISPATCH_METHOD, NULL, pXlApp, L"Quit", 0);*/
+  AutoWrap(DISPATCH_METHOD, NULL, pXlApp, L"Quit");*/
 }

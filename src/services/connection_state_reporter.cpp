@@ -1,10 +1,10 @@
-#include "client/services/connection_state_reporter.h"
+#include "services/connection_state_reporter.h"
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "core/status.h"
 #include "core/session_service.h"
-#include "client/services/local_events.h"
+#include "services/local_events.h"
 
 #include <cassert>
 

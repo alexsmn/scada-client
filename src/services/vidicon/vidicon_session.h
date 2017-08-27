@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/win/scoped_comptr.h"
-#include "client/services/TeleClient.h"
+#include "services/TeleClient.h"
 #include "core/session_service.h"
 #include "core/history_service.h"
 #include "core/monitored_item_service.h"
