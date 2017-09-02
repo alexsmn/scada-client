@@ -2,11 +2,11 @@
 
 #include "base/files/file_util.h"
 #include "base/time/time.h"
-#include "core/SkColor.h"
 #include "ui/gfx/rect.h"
 #include "services/page.h"
 
 #include <map>
+#include <SkColor.h>
 
 namespace events {
 class EventManager;

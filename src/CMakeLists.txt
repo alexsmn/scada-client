@@ -8,7 +8,6 @@ INCLUDE_DIRECTORIES(client
   "."
   "${deps}/OPCFoundation"
   "${deps}/wtl"
-  "${deps}/skia/include"
 )
 
 ADD_SUBDIRECTORY("${deps}/chromeui" chromeui)

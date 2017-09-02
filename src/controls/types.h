@@ -1,13 +1,11 @@
 #pragma once
 
-#include <functional>
-#include <set>
-
 // TODO: Move out.
 #include "core/configuration_types.h"
 
-#include "core/SkColor.h"
-
+#include <functional>
+#include <SkColor.h>
+#include <set>
 #if defined(UI_QT)
 #include <qwidget.h>
 #elif defined(UI_VIEWS)

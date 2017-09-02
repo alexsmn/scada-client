@@ -1,13 +1,13 @@
 #pragma once
 
-#include <memory>
-
 #include "controller.h"
 #include "contents_model.h"
 #include "ui/views/controls/textfield/textfield_controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
 #include "ui/views/drop_controller.h"
-#include "core/SkColor.h"
+
+#include <memory>
+#include <SkColor.h>
 
 namespace ui {
 class OSExchangeData;

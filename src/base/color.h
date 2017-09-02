@@ -2,8 +2,8 @@
 
 #include "base/strings/string16.h"
 #include "controls/types.h"
-#include "core/SkColor.h"
 
+#include <SkColor.h>
 #if defined(UI_QT)
 #include <qcolor.h>
 #endif
