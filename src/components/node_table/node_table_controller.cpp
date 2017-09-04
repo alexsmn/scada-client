@@ -7,7 +7,6 @@
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "common/scada_node_ids.h"
-#include "remote/protocol_utils.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
 #include "core/session_service.h"
@@ -34,18 +33,6 @@ bool PasteRecords(TaskManager& task_manager, const scada::NodeId& parent_id) {
   auto buffer = _GetClipboardData();
   if (buffer.empty())
     return false;
-
-  protocol::BrowseResult message;
-  if (!message.ParseFromString(buffer))
-    return false;
-
-  // TODO: Correct references.
-
-  /*for (auto& packed_node : message.nodes()) {
-    auto node_data = FromProto(packed_node);
-    task_manager.PostInsertTask(scada::NodeId(), parent_id, node_data.type_id,
-        node_data.attributes, node_data.properties);
-  }*/
 
   assert(false);
 
