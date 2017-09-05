@@ -36,7 +36,7 @@ void ExecuteDefaultItemCommand(MainWindow* main_window, const NodeRef& node, uns
   OpenView(main_window, PrepareWindowDefinitionForOpen(node, type, node_ids));
 }
 
-void ExecuteDefaultItemCommand(MainWindow* main_window, const NodeRef& node) {
+void ExecuteDefaultItemCommand(NodeRefService& node_service, const NodeRef& node, MainWindow* main_window) {
   assert(main_window);
 
   WORD shift = 0;
@@ -48,7 +48,7 @@ void ExecuteDefaultItemCommand(MainWindow* main_window, const NodeRef& node) {
   if (IsInstanceOf(node, id::DataGroupType)) {
     std::vector<scada::NodeId> node_ids;
     auto weak_main_window = main_window ? main_window->GetWeakPtr() : nullptr;
-    ExpandGroupItemIds(node, [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
+    ExpandGroupItemIds(node_service, node, [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
       ExecuteDefaultItemCommand(weak_main_window.get(), node, ID_TABLE_VIEW, shift, std::move(node_ids));
     });
     return;

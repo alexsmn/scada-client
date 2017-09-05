@@ -20,7 +20,7 @@ class Node;
 class AddServiceItemsDialog : public framework::Dialog,
                               protected framework::ComboBoxController {
  public:
-  AddServiceItemsDialog(const NodeRef& group, TaskManager& task_manager);
+  AddServiceItemsDialog(NodeRefService& node_service, const NodeRef& group, TaskManager& task_manager);
  
  protected:
   // framework::Dialog
@@ -42,6 +42,7 @@ class AddServiceItemsDialog : public framework::Dialog,
 
   TaskManager& task_manager_;
  
+  NodeRefService& node_service_;
   const NodeRef group_;
   std::vector<NodeRef> devices_;
   std::vector<NodeRef> components_;
@@ -53,8 +54,9 @@ class AddServiceItemsDialog : public framework::Dialog,
   base::WeakPtrFactory<AddServiceItemsDialog> weak_ptr_factory_{this};
 };
 
-AddServiceItemsDialog::AddServiceItemsDialog(const NodeRef& group, TaskManager& task_manager)
+AddServiceItemsDialog::AddServiceItemsDialog(NodeRefService& node_service, const NodeRef& group, TaskManager& task_manager)
     : Dialog(IDD_NEW_SERVICE_ITEMS),
+      node_service_{node_service},
       group_{std::move(group)},
       task_manager_(task_manager) {
 }
@@ -92,7 +94,7 @@ void AddServiceItemsDialog::OnOK() {
 
 void AddServiceItemsDialog::FillDevicesList() {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseAllDevices(group_.node_service(), [weak_ptr](std::vector<NodeRef> devices) {
+  BrowseAllDevices(node_service_, [weak_ptr](std::vector<NodeRef> devices) {
     if (auto* ptr = weak_ptr.get())
       ptr->SetDevices(std::move(devices));
   });
@@ -115,7 +117,7 @@ void AddServiceItemsDialog::FillChannelsList() {
   }
 
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseNodes(device.node_service(),
+  BrowseNodes(node_service_,
       {device.id(), scada::BrowseDirection::Inverse, OpcUaId_Organizes, true},
       [weak_ptr](const scada::Status& status, std::vector<NodeRef> components) {
         auto* ptr = weak_ptr.get();
@@ -157,8 +159,8 @@ void AddServiceItemsDialog::SetDevices(std::vector<NodeRef> devices) {
 //  SelectDevice(id::Server);
 }
 
-void ShowAddServiceItemsDialog(const NodeRef& node, TaskManager& task_manager) {
-  AddServiceItemsDialog dialog(node, task_manager);
+void ShowAddServiceItemsDialog(NodeRefService& node_service, const NodeRef& node, TaskManager& task_manager) {
+  AddServiceItemsDialog dialog{node_service, node, task_manager};
   if (dialog.Execute() != IDOK)
     return;
 }

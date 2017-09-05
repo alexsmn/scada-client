@@ -37,12 +37,12 @@ const size_t kTableLimitation = 1000;
 using WindowDefinitionCallback = std::function<void(WindowDefinition)>;
 
 WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node, unsigned type);
-void PrepareWindowDefinitionForOpenExpandGroups(const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback);
+void PrepareWindowDefinitionForOpenExpandGroups(NodeRefService& node_service, const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback);
 WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node, unsigned type, const std::vector<scada::NodeId>& item_ids);
 WindowDefinition PrepareWindowDefinitionForOpen(const char* formula, unsigned type);
 WindowDefinition PrepareWindowDefinitionForOpen(const NodeIdSet& items, unsigned type,
     const base::char16* title = nullptr);
-void PrepareWindowDefinitionForGroup(const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback);
+void PrepareWindowDefinitionForGroup(NodeRefService& node_service, const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback);
 
 void ExportConfigurationToExcel(DialogService& dialog_service, NodeRefService& node_service);
 void ImportConfigurationFromExcel(DialogService& dialog_service, NodeRefService& node_service, TaskManager& task_manager);
@@ -54,12 +54,12 @@ void DoIOCtrl(const scada::NodeId& node_id, const scada::NodeId& method_id,
               scada::MethodService& method_service);
 
 using ExpandGroupItemIdsCallback = std::function<void(std::vector<scada::NodeId> nodes)>;
-void ExpandGroupItemIds(const NodeRef& node, const ExpandGroupItemIdsCallback& callback);
+void ExpandGroupItemIds(NodeRefService& node_service, const NodeRef& node, const ExpandGroupItemIdsCallback& callback);
 
 void CompletePath(const base::string16& text, int& start, std::vector<base::string16>& list);
 
 void DeleteTreeRecordsRecursive(const NodeRef& node, TaskManager& task_manager);
 
-void PrepareDeviceMetricsView(const NodeRef& device, const WindowDefinitionCallback& callback);
+void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& device, const WindowDefinitionCallback& callback);
 
 int ShowMessageBox(DialogService& dialog_service, const base::char16* message, const base::char16* title, unsigned types);

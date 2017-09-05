@@ -35,7 +35,7 @@ void SelectionCommands::OpenWindow(unsigned type) {
     return;
 
   auto weak_main_window = main_window_->GetWeakPtr();
-  PrepareWindowDefinitionForOpenExpandGroups(node, type, [weak_main_window](WindowDefinition win) {
+  PrepareWindowDefinitionForOpenExpandGroups(node_service_, node, type, [weak_main_window](WindowDefinition win) {
     ::OpenView(weak_main_window.get(), std::move(win));
   });
 }
@@ -220,7 +220,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     case ID_OPEN_EVENTS:
     case ID_HISTORICAL_EVENTS: {
       auto weak_main_window = main_window_->GetWeakPtr();
-      PrepareWindowDefinitionForOpenExpandGroups(node, ID_EVENT_JOURNAL_VIEW,
+      PrepareWindowDefinitionForOpenExpandGroups(node_service_, node, ID_EVENT_JOURNAL_VIEW,
           [command_id, weak_main_window](WindowDefinition win) {
             if (command_id == ID_OPEN_EVENTS)
               win.AddItem("Window").SetString("mode", "Current");
@@ -233,7 +233,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     case ID_OPEN_GROUP_TABLE: {
       auto weak_main_window = main_window_->GetWeakPtr();
-      PrepareWindowDefinitionForGroup(node, ID_TABLE_VIEW, [weak_main_window](WindowDefinition win) {
+      PrepareWindowDefinitionForGroup(node_service_, node, ID_TABLE_VIEW, [weak_main_window](WindowDefinition win) {
         OpenView(weak_main_window.get(), std::move(win));
       });
       return;
@@ -275,7 +275,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     case ID_OPEN_DEVICE_METRICS:
       if (node) {
         auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-        PrepareDeviceMetricsView(node, [weak_ptr](WindowDefinition win) {
+        PrepareDeviceMetricsView(node_service_, node, [weak_ptr](WindowDefinition win) {
           if (auto* ptr = weak_ptr.get())
             OpenView(ptr->main_window_, std::move(win));
         });

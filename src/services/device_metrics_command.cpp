@@ -40,7 +40,7 @@ struct DeviceMetricsViewTable {
 
 template<class Callback>
 struct DeviceMetricsViewBuilder : public std::enable_shared_from_this<DeviceMetricsViewBuilder<Callback>> {
-  explicit DeviceMetricsViewBuilder(NodeRefService& node_service, const Callback& callback)
+  DeviceMetricsViewBuilder(NodeRefService& node_service, const Callback& callback)
       : node_service_{node_service},
         callback_{callback} {
   }
@@ -64,7 +64,7 @@ struct DeviceMetricsViewBuilder : public std::enable_shared_from_this<DeviceMetr
 
     auto self = shared_from_this();
     auto nested_level = level + 1;
-    BrowseNodes(node.node_service(), {node.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
+    BrowseNodes(node_service_, {node.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
         [self, nested_level](const scada::Status& status, const std::vector<NodeRef>& nodes) {
           for (auto& node : nodes)
             self->AddDeviceRecursive(node, nested_level);
@@ -89,17 +89,17 @@ struct DeviceMetricsViewBuilder : public std::enable_shared_from_this<DeviceMetr
 
 // Callback = void(DeviceMetricsViewTable)
 template<class Callback>
-void BuildDeviceMetricsView(const NodeRef& device, const Callback& callback) {
-  std::make_shared<DeviceMetricsViewBuilder<Callback>>(device.node_service(), callback)->Build(device);
+void BuildDeviceMetricsView(NodeRefService& node_service, const NodeRef& device, const Callback& callback) {
+  std::make_shared<DeviceMetricsViewBuilder<Callback>>(node_service, callback)->Build(device);
 }
 
-void PrepareDeviceMetricsView(const NodeRef& device, const WindowDefinitionCallback& callback) {
+void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& device, const WindowDefinitionCallback& callback) {
   if (!device.type_definition()) {
     callback(WindowDefinition{});
     return;
   }
 
-  BuildDeviceMetricsView(device, [device, callback](const DeviceMetricsViewTable& table) {
+  BuildDeviceMetricsView(node_service, device, [device, callback](const DeviceMetricsViewTable& table) {
     WindowDefinition win(GetWindowInfo(ID_SHEET_VIEW));
     win.title = device.display_name();
 

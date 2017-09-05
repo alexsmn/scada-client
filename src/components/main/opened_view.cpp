@@ -89,6 +89,7 @@ OpenedView::OpenedView(const OpenedViewContext& context)
       file_cache_,
       dialog_service_,
       find_opened_view_,
+      node_service_,
   });
   selection_commands_->set_selection(&controller_->selection());
 
@@ -205,10 +206,10 @@ void OpenedView::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_NEW_SERVICE_ITEMS:
-      ShowAddServiceItemsDialog(controller_->selection().node(), task_manager_);
+      ShowAddServiceItemsDialog(node_service_, controller_->selection().node(), task_manager_);
       return;
     case ID_ADD_MULTIPLE_ITEMS:
-      ShowAddMultipleItemsDialog(controller_->selection().node(), task_manager_);
+      ShowAddMultipleItemsDialog(node_service_, controller_->selection().node(), task_manager_);
       return;
   }
 
@@ -348,7 +349,7 @@ void OpenedView::OpenView(const WindowDefinition& def) {
 }
 
 void OpenedView::ExecuteDefaultItemCommand(const NodeRef& node) {
-  ::ExecuteDefaultItemCommand(main_window_, node);
+  ::ExecuteDefaultItemCommand(node_service_, node, main_window_);
 }
 
 ContentsModel* OpenedView::GetActiveContentsModel() {

@@ -1,6 +1,7 @@
 #pragma once
 
 class NodeRef;
+class NodeRefService;
 class TaskManager;
 
-void ShowAddServiceItemsDialog(const NodeRef& node, TaskManager& task_manager);
+void ShowAddServiceItemsDialog(NodeRefService& node_service, const NodeRef& node, TaskManager& task_manager);

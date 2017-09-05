@@ -24,6 +24,7 @@ class DialogService;
 class FileCache;
 class LocalEvents;
 class MainWindow;
+class NodeRefService;
 class OpenedView;
 class Profile;
 class SelectionModel;
@@ -43,6 +44,7 @@ struct SelectionCommandsContext {
   FileCache& file_cache_;
   DialogService& dialog_service_;
   std::function<OpenedView*(const base::FilePath& path)> find_opened_view_;
+  NodeRefService& node_service_;
 };
 
 class SelectionCommands : public CommandHandler,

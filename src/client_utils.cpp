@@ -77,8 +77,9 @@ void ReportRequestResult(const base::string16& title, const scada::Status& statu
 
 template<class Callback>
 struct ExpandGroupItemIdsHelper : public std::enable_shared_from_this<ExpandGroupItemIdsHelper<Callback>> {
-  ExpandGroupItemIdsHelper(const Callback& callback)
-      : callback_{callback} {
+  ExpandGroupItemIdsHelper(NodeRefService& node_service, const Callback& callback)
+      : node_service_{node_service},
+        callback_{callback} {
   }
 
   ~ExpandGroupItemIdsHelper() {
@@ -93,7 +94,7 @@ struct ExpandGroupItemIdsHelper : public std::enable_shared_from_this<ExpandGrou
       item_ids_.emplace_back(node.id());
 
     auto self = shared_from_this();
-    BrowseNodes(node.node_service(), {node.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
+    BrowseNodes(node_service_, {node.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
         [self](const scada::Status& status, std::vector<NodeRef> nodes) {
           for (auto& node : nodes) {
             if (!self->Traverse(node))
@@ -104,18 +105,19 @@ struct ExpandGroupItemIdsHelper : public std::enable_shared_from_this<ExpandGrou
     return true;
   }
 
+  NodeRefService& node_service_;
   std::vector<scada::NodeId> item_ids_;
   Callback callback_;
 };
 
 // Callback = void(std::vector<scada::NodeId>)
-void ExpandGroupItemIds(const NodeRef& node, const ExpandGroupItemIdsCallback& callback) {
+void ExpandGroupItemIds(NodeRefService& node_service, const NodeRef& node, const ExpandGroupItemIdsCallback& callback) {
   if (!node) {
     callback({});
     return;
   }
 
-  std::make_shared<ExpandGroupItemIdsHelper<ExpandGroupItemIdsCallback>>(callback)->Traverse(node);
+  std::make_shared<ExpandGroupItemIdsHelper<ExpandGroupItemIdsCallback>>(node_service, callback)->Traverse(node);
 }
 
 WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node, unsigned type) {
@@ -132,11 +134,11 @@ WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node, unsigned ty
   return win;
 }
 
-void PrepareWindowDefinitionForOpenExpandGroups(const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback) {
+void PrepareWindowDefinitionForOpenExpandGroups(NodeRefService& node_service, const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback) {
   if (!type)
     type = ID_GRAPH_VIEW;
 
-  ExpandGroupItemIds(node, [node, type, callback](const std::vector<scada::NodeId>& node_ids) {
+  ExpandGroupItemIds(node_service, node, [node, type, callback](const std::vector<scada::NodeId>& node_ids) {
     const WindowInfo& window_info = GetWindowInfo(type);
     WindowDefinition win(window_info);
     win.title = base::StringPrintf(L"%ls: %ls", window_info.title, node.display_name().c_str());
@@ -226,19 +228,19 @@ WindowDefinition PrepareWindowDefinitionForOpen(const char* formula, unsigned ty
   return win;
 }
 
-void PrepareWindowDefinitionForGroup(const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback) {
+void PrepareWindowDefinitionForGroup(NodeRefService& node_service, const NodeRef& node, unsigned type, const WindowDefinitionCallback& callback) {
   if (!node) {
     callback({});
     return;
   }
 
-  BrowseParent(node.node_service(), node.id(), OpcUaId_HierarchicalReferences,
-      [type, callback](const scada::Status& status, const NodeRef& parent) {
+  BrowseParent(node_service, node.id(), OpcUaId_HierarchicalReferences,
+      [&node_service, type, callback](const scada::Status& status, const NodeRef& parent) {
         if (!status) {
           callback({});
           return;
         }
-        ExpandGroupItemIds(parent, [parent, type, callback](const std::vector<scada::NodeId>& node_ids) {
+        ExpandGroupItemIds(node_service, parent, [&node_service, parent, type, callback](const std::vector<scada::NodeId>& node_ids) {
           callback(PrepareWindowDefinitionForOpen(parent, type, node_ids));
         });
       });

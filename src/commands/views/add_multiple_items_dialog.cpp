@@ -22,7 +22,7 @@ class AddMultipleItemsDialog : public framework::Dialog,
                                private framework::ButtonController,
                                private framework::EditBoxController {
  public:
-  AddMultipleItemsDialog(NodeRef group, TaskManager& task_manager);
+  AddMultipleItemsDialog(NodeRefService& node_service, NodeRef group, TaskManager& task_manager);
  
  protected:
   virtual void OnInitDialog();
@@ -36,11 +36,12 @@ class AddMultipleItemsDialog : public framework::Dialog,
   NodeRef GetSelectedDevice() const;
 
   // framework::ButtonController
-  virtual void OnButtonPressed(framework::Button& sender);
+  virtual void OnButtonPressed(framework::Button& sender) override;
 
   // framework::EditBox
-  virtual void OnEditBoxChanged(framework::EditBox& sender);
+  virtual void OnEditBoxChanged(framework::EditBox& sender) override;
 
+  NodeRefService& node_service_;
   const NodeRef group_;
   TaskManager& task_manager_;
 
@@ -57,8 +58,9 @@ class AddMultipleItemsDialog : public framework::Dialog,
   base::WeakPtrFactory<AddMultipleItemsDialog> weak_ptr_factory_{this};
 };
 
-AddMultipleItemsDialog::AddMultipleItemsDialog(NodeRef group, TaskManager& task_manager)
-    : Dialog(IDD_NEW_ITEMS),
+AddMultipleItemsDialog::AddMultipleItemsDialog(NodeRefService& node_service, NodeRef group, TaskManager& task_manager)
+    : Dialog{IDD_NEW_ITEMS},
+      node_service_{node_service},
       group_{std::move(group)},
       task_manager_(task_manager),
       ts_(true),
@@ -94,7 +96,7 @@ void AddMultipleItemsDialog::OnInitDialog() {
   SetItemInt(IDC_COUNT, 1);
 
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseAllDevices(group_.node_service(), [weak_ptr](std::vector<NodeRef> devices) {
+  BrowseAllDevices(node_service_, [weak_ptr](std::vector<NodeRef> devices) {
     if (auto* ptr = weak_ptr.get())
       ptr->SetDevices(std::move(devices));
   });
@@ -156,8 +158,8 @@ void AddMultipleItemsDialog::OnEditBoxChanged(framework::EditBox& sender) {
   auto_name_ = false;
 }
 
-void ShowAddMultipleItemsDialog(const NodeRef& node, TaskManager& task_manager) {
-  AddMultipleItemsDialog dialog(node, task_manager);
+void ShowAddMultipleItemsDialog(NodeRefService& node_service, const NodeRef& node, TaskManager& task_manager) {
+  AddMultipleItemsDialog dialog{node_service, node, task_manager};
   if (dialog.Execute() != IDOK)
     return;
 }
