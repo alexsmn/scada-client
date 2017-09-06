@@ -12,6 +12,7 @@
 #include "common/node_ref_util.h"
 #include "core/node_id_util.h"
 #include "common/formula_util.h"
+#include "common/browse_util.h"
 
 namespace scada {
 class Node;

@@ -24,6 +24,7 @@ namespace scada {
 class NodeManagementService;
 }
 
+class NodeRefService;
 class PropertyPageViewContents;
 class TaskManager;
 

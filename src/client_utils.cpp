@@ -12,6 +12,7 @@
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
 #include "common/formula_util.h"
+#include "common/browse_util.h"
 
 UINT CF_TRECS = RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
 

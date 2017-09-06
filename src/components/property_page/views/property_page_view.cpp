@@ -8,6 +8,7 @@
 #include "ui/views/widget/widget.h"
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
+#include "common/browse_util.h"
 #include "ui/views/layout/fill_layout.h"
 
 REGISTER_CONTROLLER(PropertyPageView, ID_PROPERTY_VIEW);

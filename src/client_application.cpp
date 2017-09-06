@@ -25,7 +25,7 @@
 #include "window_info.h"
 #include "common/common_paths.h"
 #include "common/event_manager.h"
-#include "common/node_ref_service.h"
+#include "common/node_ref_service_impl.h"
 #include "timed_data/timed_data_service_impl.h"
 #include "core/session_service.h"
 
@@ -140,7 +140,7 @@ bool ClientApplication::ShowLoginDialog() {
 void ClientApplication::BeforeRun() {
   data_services_.session_service_->AddObserver(*this);
 
-  node_service_ = std::make_unique<NodeRefService>(NodeRefServiceContext{
+  node_service_ = std::make_unique<NodeRefServiceImpl>(NodeRefServiceImplContext{
       logger_,
       *data_services_.view_service_,
       *data_services_.attribute_service_,

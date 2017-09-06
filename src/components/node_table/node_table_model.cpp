@@ -11,6 +11,7 @@
 #include "skia/ext/skia_utils_win.h"
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
+#include "common/browse_util.h"
 
 namespace {
 

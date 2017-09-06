@@ -15,6 +15,7 @@
 #include "core/node_id_util.h"
 #include "core/node_management_service.h"
 #include "skia/ext/skia_utils_win.h"
+#include "common/browse_util.h"
 
 namespace {
 

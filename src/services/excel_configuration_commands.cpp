@@ -13,6 +13,7 @@
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
 #include "common/scada_node_ids.h"
+#include "common/browse_util.h"
 #include "core/node_management_service.h"
 #include "ui/base/dialogs/select_file_dialog.h"
 

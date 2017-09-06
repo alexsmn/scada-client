@@ -8,6 +8,7 @@
 #include "services/task_manager.h"
 #include "common/node_ref_util.h"
 #include "common/node_ref_service.h"
+#include "common/browse_util.h"
 
 TransmissionModel::TransmissionModel(NodeRefService& node_service, TaskManager& task_manager, scada::NodeManagementService& node_management_service)
     : FixedRowModel(*static_cast<FixedRowModel::Delegate*>(this)),

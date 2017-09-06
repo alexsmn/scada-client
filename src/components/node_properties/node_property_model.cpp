@@ -4,6 +4,7 @@
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "common/node_ref_service.h"
+#include "common/browse_util.h"
 
 NodePropertyModel::NodePropertyModel(const PropertyContext& context, NodeIds node_ids)
     : context_(context) {

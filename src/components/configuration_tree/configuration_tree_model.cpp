@@ -2,6 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_ref_service.h"
+#include "common/browse_util.h"
 
 namespace {
 
