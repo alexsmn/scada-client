@@ -231,7 +231,7 @@ bool OpenedView::CanCreateRecord(const scada::NodeId& type_node_id) const {
   if (!session_service_.IsAdministrator())
     return false;
 
-  auto type_definition = node_service_.GetPartialNode(type_node_id);
+  auto type_definition = node_service_.GetNode(type_node_id);
   if (!type_definition.fetched())
     return false;
 
@@ -242,7 +242,7 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
   if (!session_service_.IsAdministrator())
     return;
 
-  auto type_definition = node_service_.GetPartialNode(type_node_id);
+  auto type_definition = node_service_.GetNode(type_node_id);
   if (!type_definition.fetched())
     return;
 
@@ -302,8 +302,8 @@ void OpenedView::OnCreateRecordComplete(const std::string& name,
     return;
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.RequestNode(node_id, [weak_ptr](const scada::Status& status, const NodeRef& node) {
-    if (!status)
+  node_service_.GetNode(node_id).Fetch([weak_ptr](NodeRef node) {
+    if (!node.status())
       return;
     auto* ptr = weak_ptr.get();
     if (!ptr)

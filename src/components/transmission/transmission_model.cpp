@@ -30,7 +30,7 @@ void TransmissionModel::SetDevice(NodeRef device) {
 
 void TransmissionModel::SetDeviceId(const scada::NodeId& device_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service_.RequestNode(device_id, [weak_ptr](const scada::Status& status, NodeRef node) {
+  node_service_.GetNode(device_id).Fetch([weak_ptr](NodeRef node) {
     if (auto* ptr = weak_ptr.get())
       ptr->SetDevice(std::move(node));
   });

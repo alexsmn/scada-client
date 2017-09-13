@@ -160,7 +160,7 @@ ActionManager::ActionManager(NodeRefService& node_service) {
   AddAction(*new Action(ID_NEW_IEC60870_LINK101, CATEGORY_CREATE, L"Направление МЭК-60870-101"));
   AddAction(*new Action(ID_NEW_IEC60870_LINK104, CATEGORY_CREATE, L"Направление МЭК-60870-104"));
   for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i)
-    AddAction(*new NodeAction(ID_NEW + i, CATEGORY_CREATE, node_service.GetPartialNode(kNewCommandTypeIds[i])));
+    AddAction(*new NodeAction(ID_NEW + i, CATEGORY_CREATE, node_service.GetNode(kNewCommandTypeIds[i])));
 }
 
 ActionManager::~ActionManager()

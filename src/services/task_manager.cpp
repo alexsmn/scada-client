@@ -14,9 +14,9 @@ std::string FormatReference(NodeRefService& node_service,
                             const scada::NodeId& source_id,
                             const scada::NodeId& target_id) {
   return base::StringPrintf("%s {%s} %s",
-      node_service.GetPartialNode(source_id).browse_name().c_str(),
-      node_service.GetPartialNode(reference_type_id).browse_name().c_str(),
-      node_service.GetPartialNode(target_id).browse_name().c_str());
+      node_service.GetNode(source_id).browse_name().c_str(),
+      node_service.GetNode(reference_type_id).browse_name().c_str(),
+      node_service.GetNode(target_id).browse_name().c_str());
 }
 
 } // namespace
@@ -41,11 +41,11 @@ void TaskManager::PostInsertTask(const scada::NodeId& requested_id, const scada:
                                  const scada::NodeId& type_id, scada::NodeAttributes attributes,
                                  scada::NodeProperties properties, InsertCallback callback) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.RequestNode(type_id, [=](const scada::Status& status, const NodeRef& type_definition) {
+  node_service_.GetNode(type_id).Fetch([=](NodeRef type_definition) {
     if (!weak_ptr.get())
       return;
 
-    if (!status) {
+    if (!type_definition.status()) {
       // TODO: Report error.
       assert(false);
       return;
@@ -92,11 +92,11 @@ void TaskManager::PostUpdateTask(const scada::NodeId& node_id, scada::NodeAttrib
   assert(!attributes.empty() || !properties.empty());
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.RequestNode(node_id, [=](const scada::Status& status, const NodeRef& node) {
+  node_service_.GetNode(node_id).Fetch([=](NodeRef node) {
     if (!weak_ptr.get())
       return;
 
-    if (!status) {
+    if (!node.status()) {
       // TODO: Report error.
       assert(false);
       return;
@@ -132,7 +132,7 @@ void TaskManager::PostUpdateTask(const scada::NodeId& node_id, scada::NodeAttrib
 }
 
 void TaskManager::PostDeleteTask(const scada::NodeId& node_id) {
-  base::string16 title = node_service_.GetPartialNode(node_id).display_name();
+  base::string16 title = node_service_.GetNode(node_id).display_name();
   auto weak_ptr = weak_factory_.GetWeakPtr();
   PostTask(base::StringPrintf(L"Удаление %ls", title.c_str()), [=] {
     node_management_service_.DeleteNode(node_id, true,
@@ -186,7 +186,7 @@ void TaskManager::OnDeleteRecordComplete(const scada::Status& status,
   for (auto& node_id : *relations) {
     if (!relations_text.empty())
       relations_text += L'\n';
-    relations_text += node_service_.GetPartialNode(node_id).display_name();
+    relations_text += node_service_.GetNode(node_id).display_name();
   }
 
   ReportRequestCompletion(status, relations_text);

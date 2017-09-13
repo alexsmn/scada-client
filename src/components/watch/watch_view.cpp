@@ -58,7 +58,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
     std::string path = item->GetString("path");
     auto device_id = scada::NodeId::FromString(path);
     if (!device_id.is_null())
-      model_->SetDevice(node_service_.GetPartialNode(device_id));
+      model_->SetDevice(node_service_.GetNode(device_id));
   }
 
 #if defined(UI_QT)

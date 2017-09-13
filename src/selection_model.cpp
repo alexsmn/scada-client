@@ -57,11 +57,11 @@ void SelectionModel::SelectNodeId(const scada::NodeId& node_id) {
   pending_request_ = std::make_shared<bool>();
 
   std::weak_ptr<bool> cancelation = pending_request_;
-  node_service_.RequestNode(node_id, [=](const scada::Status& status, const NodeRef& node) {
+  node_service_.GetNode(node_id).Fetch([=](NodeRef node) {
     if (cancelation.expired())
       return;
     pending_request_ = nullptr;
-    if (node)
+    if (node.status())
       SelectNode(node);
   });
 }

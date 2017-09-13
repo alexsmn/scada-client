@@ -87,13 +87,12 @@ void NodeTableModel::SetParentNode(NodeRef parent_node) {
 
 void NodeTableModel::SetParentNodeId(const scada::NodeId& node_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  context_.node_service_.RequestNode(node_id,
-      [weak_ptr](const scada::Status& status, const NodeRef& node) {
-        if (!status)
-          return;
-        if (auto* ptr = weak_ptr.get())
-          ptr->SetParentNode(node);
-      });
+  context_.node_service_.GetNode(node_id).Fetch([weak_ptr](NodeRef node) {
+    if (!node.status())
+      return;
+    if (auto* ptr = weak_ptr.get())
+      ptr->SetParentNode(node);
+  });
 }
 
 int NodeTableModel::GetRowCount() {

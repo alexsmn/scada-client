@@ -158,9 +158,9 @@ void EventTableModel::AddRow(EventType type, const scada::Event& event) {
     index = GetInsertIndex(type, event);
     if (index != -1) {
       Row row{type, event};
-      row.node = node_service_.GetPartialNode(event.node_id);
-      row.user = node_service_.GetPartialNode(event.user_id);
-      row.acknowledged_user = node_service_.GetPartialNode(event.acknowledged_user_id);
+      row.node = node_service_.GetNode(event.node_id);
+      row.user = node_service_.GetNode(event.user_id);
+      row.acknowledged_user = node_service_.GetNode(event.acknowledged_user_id);
       rows_.insert(rows_.begin() + index, std::move(row));
       NotifyItemsAdded(index, 1);
     }

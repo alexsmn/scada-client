@@ -105,7 +105,7 @@ ConfigurationTreeModel::ConfigurationTreeModel(NodeRefService& node_service, con
       node_service_{node_service} {
   node_service_.AddObserver(*this);
 
-  set_root(std::make_unique<ConfigurationTreeNode>(*this, node_service.GetPartialNode(root_id)));
+  set_root(std::make_unique<ConfigurationTreeNode>(*this, node_service.GetNode(root_id)));
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
@@ -164,7 +164,7 @@ void ConfigurationTreeModel::EnsureNode(const scada::NodeId& node_id) {
 }
 
 void ConfigurationTreeModel::EnsureNode2(const scada::NodeId& node_id, const scada::NodeId& parent_id) {
-  auto node = node_service_.GetPartialNode(node_id);
+  auto node = node_service_.GetNode(node_id);
   if (!node)
     return;
 
