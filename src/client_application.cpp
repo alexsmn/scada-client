@@ -28,6 +28,7 @@
 #include "common/node_ref_service_impl.h"
 #include "timed_data/timed_data_service_impl.h"
 #include "core/session_service.h"
+#include "project.h"
 
 ClientApplication* g_application = nullptr;
 
@@ -88,7 +89,7 @@ bool ClientApplication::Init() {
 
   SetUnhandledExceptionFilter(ProcessUnhandledException);
 
-  logger_ = CreateFileLogger(client::DIR_LOG, L"client");
+  logger_ = CreateFileLogger(client::DIR_LOG, L"client", "Telecontrol SCADA Client " PROJECT_VERSION_DOTTED_STRING);
 
   transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_service_);
 

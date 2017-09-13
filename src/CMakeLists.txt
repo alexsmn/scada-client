@@ -1,3 +1,8 @@
+CONFIGURE_FILE(
+  "${CMAKE_CURRENT_SOURCE_DIR}/project.h.src"
+  "${CMAKE_CURRENT_SOURCE_DIR}/project.h"
+)
+
 SET(MODUS_ROOT_DIR "${deps}/modus")
 ADD_SUBDIRECTORY(${MODUS_ROOT_DIR} "modus")
 INSTALL(FILES "${MODUS_ROOT_DIR}/libmodus/Library.txt"

@@ -3,7 +3,7 @@
 #include "base/win/win_util2.h"
 #include "views/framework/dialog.h"
 #include "common_resources.h"
-#include "common/project.h"
+#include "project.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>
