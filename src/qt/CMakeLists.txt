@@ -1,3 +1,12 @@
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Automatically link Qt executables to qtmain target on Windows
+cmake_policy(SET CMP0020 NEW)
+
+FIND_PACKAGE(Qt5LinguistTools)
 FIND_PACKAGE(Qt5Widgets)
 
 ADD_SUBDIRECTORY("${deps}/qt/graph_qt" "graph_qt")
@@ -16,7 +25,11 @@ IF(WIN32)
   LIST(APPEND libs Qt5::WinExtras)
 ENDIF()
 
-ADD_EXECUTABLE(client_qt WIN32 ${sources})
+file(GLOB translations "*.ts")
+qt5_create_translation(translations_out ${sources} ${translations})
+qt5_add_translation(translations_out ${translations})
+
+ADD_EXECUTABLE(client_qt WIN32 ${sources} ${translations} ${translations_out})
 
 TARGET_LINK_LIBRARIES(client_qt ${libs})
 

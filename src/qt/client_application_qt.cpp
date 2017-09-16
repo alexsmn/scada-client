@@ -1,5 +1,8 @@
 #include "qt/client_application_qt.h"
 
+#include <QTranslator>
+#include <QLibraryInfo>
+
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
@@ -17,6 +20,17 @@ ClientApplicationQt::ClientApplicationQt(int argc, char** argv)
 bool ClientApplicationQt::Init() {
   if (!ClientApplication::Init())
     return false;
+
+  // Load translations.
+  {
+    QTranslator qt_translator;
+    qt_translator.load("qt_" + QLocale::system().name(), QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+    installTranslator(&qt_translator);
+
+    QTranslator app_translator;
+    app_translator.load("client_" + QLocale::system().name());
+    installTranslator(&app_translator);
+  }
 
   // Load style-sheet.
   {

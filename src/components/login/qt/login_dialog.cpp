@@ -17,6 +17,8 @@
 LoginDialog::LoginDialog(const DataServicesContext& services_context)
     : services_context_(services_context),
       cancelation_(std::make_shared<bool>(false)) {
+	ui.setupUi(this);
+
   // TODO: Reg key constants.
   QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
   auto user_name = settings.value("User").toString();
@@ -27,45 +29,19 @@ LoginDialog::LoginDialog(const DataServicesContext& services_context)
   if (QApplication::queryKeyboardModifiers() & Qt::ControlModifier)
     auto_login = false;
 
-  setWindowTitle(tr("Login"));
+  connect(ui.buttonBox, &QDialogButtonBox::accepted, [this] { StartLogin(); });
+  connect(ui.buttonBox, &QDialogButtonBox::rejected, [this] { reject(); });
 
-  button_box_ = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-  connect(button_box_, &QDialogButtonBox::accepted, [this] { StartLogin(); });
-  connect(button_box_, &QDialogButtonBox::rejected, [this] { reject(); });
+  ui.serverComboBox->setCurrentText(host);
 
-  name_combo_box_ = new QComboBox;
-  name_combo_box_->setEditable(true);
-  name_combo_box_->setMinimumSize(QSize(200, 0));
-  name_combo_box_->addItems(user_list_);
-  name_combo_box_->setCurrentText(user_name);
-  name_combo_box_->lineEdit()->selectAll();
+  ui.userNameComboBox->addItems(user_list_);
+  ui.userNameComboBox->setCurrentText(user_name);
+  ui.userNameComboBox->lineEdit()->selectAll();
 
-  auto* name_label = new QLabel(tr("&Name:"));
-  name_label->setBuddy(name_combo_box_);
-
-  password_edit_ = new QLineEdit;
-  password_edit_->setEchoMode(QLineEdit::Password);
   if (auto_login)
-    password_edit_->setText(password);
+    ui.passwordLineEdit->setText(password);
 
-  auto* password_label = new QLabel(tr("&Password:"));
-  password_label->setBuddy(password_edit_);
-
-  auto_login_check_box_ = new QCheckBox(tr("&Auto-Login"));
-  auto_login_check_box_->setChecked(auto_login);
-
-  auto* layout = new QGridLayout;
-  const int kMargin = 15;
-  layout->setMargin(kMargin);
-  layout->setSpacing(kMargin);
-  layout->addWidget(name_label, 0, 0, Qt::AlignRight);
-  layout->addWidget(name_combo_box_, 0, 1);
-  layout->addWidget(password_label, 1, 0, Qt::AlignRight);
-  layout->addWidget(password_edit_, 1, 1);
-  layout->addWidget(auto_login_check_box_, 2, 1);
-  layout->addWidget(button_box_, 3, 0, 1, 2);
-
-  setLayout(layout);
+  ui.autoLoginCheckBox->setChecked(auto_login);
 
   if (auto_login)
     StartLogin();
@@ -77,9 +53,9 @@ LoginDialog::~LoginDialog() {
 void LoginDialog::StartLogin() {
   SetControlsEnabled(false);
 
-  user_name_ = name_combo_box_->currentText();
-  password_ = password_edit_->text();
-  auto_login_ = auto_login_check_box_->isChecked();
+  user_name_ = ui.userNameComboBox->currentText();
+  password_ = ui.passwordLineEdit->text();
+  auto_login_ = ui.autoLoginCheckBox->isChecked();
 
   if (!CreateDataServices("Scada", services_context_, services_)) {
     OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);
@@ -124,14 +100,14 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
     msg_box.exec();
 
     SetControlsEnabled(true);
-    name_combo_box_->setFocus();
-    name_combo_box_->lineEdit()->selectAll();
+    ui.userNameComboBox->setFocus();
+    ui.userNameComboBox->lineEdit()->selectAll();
   }
 }
 
 void LoginDialog::SetControlsEnabled(bool enabled) {
-  name_combo_box_->setEnabled(enabled);
-  password_edit_->setEnabled(enabled);
-  auto_login_check_box_->setEnabled(enabled);
-  button_box_->button(QDialogButtonBox::Ok)->setEnabled(enabled);
+  ui.userNameComboBox->setEnabled(enabled);
+  ui.passwordLineEdit->setEnabled(enabled);
+  ui.autoLoginCheckBox->setEnabled(enabled);
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(enabled);
 }

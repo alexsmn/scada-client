@@ -1,8 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <QtWidgets/qdialog.h>
+#include <QDialog>
 
+#include "ui_login_dialog.h"
 #include "core/status.h"
 #include "services/data_services.h"
 #include "services/data_services_factory.h"
@@ -17,6 +18,8 @@ class QComboBox;
 class QLineEdit;
 
 class LoginDialog : public QDialog {
+	Q_OBJECT
+
  public:
   explicit LoginDialog(const DataServicesContext& services_context);
   ~LoginDialog();
@@ -33,10 +36,7 @@ class LoginDialog : public QDialog {
   DataServicesContext services_context_;
   DataServices services_;
 
-  QComboBox* name_combo_box_ = nullptr;
-  QLineEdit* password_edit_ = nullptr;
-  QCheckBox* auto_login_check_box_ = nullptr;
-  QDialogButtonBox* button_box_ = nullptr;
+	Ui::LoginDialog ui;
 
   QString user_name_;
   QString password_;

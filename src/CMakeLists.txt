@@ -81,6 +81,7 @@ FILE(GLOB_RECURSE paths
   "*.cpp"
   "*.h"
   "*.rc"
+  "*.ui"
 )
 LIST(REMOVE_ITEM paths ${core_sources})
 

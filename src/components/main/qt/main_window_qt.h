@@ -15,6 +15,8 @@ enum CommandCategory;
 class MainWindowQt : public QMainWindow,
                      public DialogServiceQt,
                      public MainWindow {
+  Q_OBJECT
+
  public:
   MainWindowQt(ClientApplicationQt& app, MainWindowContext&& context);
   ~MainWindowQt();
