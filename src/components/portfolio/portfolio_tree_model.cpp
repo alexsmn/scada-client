@@ -48,7 +48,7 @@ PortfolioTreeNode* PortfolioTreeModel::FindPortfolioNode(
 }
 
 void PortfolioTreeModel::AddItemNode(PortfolioTreeNode& portfolio_node, const scada::NodeId& item_id) {
-  auto node_ref = node_service_.GetPartialNode(item_id);
+  auto node_ref = node_service_.GetNode(item_id);
   auto node = std::make_unique<PortfolioTreeNode>(portfolio_manager_, portfolio_node.portfolio());
   node->title = base::SysNativeMBToWide(node_ref.browse_name());
   node->icon = 1;
