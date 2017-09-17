@@ -134,9 +134,9 @@ inline int GetImage(const NodeRef& node) {
 
 HTREEITEM SelectItemDialog::InsertTree(const NodeRef& node, HTREEITEM parent) {
 	// insert new item
-	base::string16 name = base::SysNativeMBToWide(node.browse_name());
+	base::string16 name = node.display_name().text();
 	int img = GetImage(node);
-	UINT mask = TVIF_TEXT|TVIF_PARAM|TVIF_IMAGE|TVIF_SELECTEDIMAGE;
+	UINT mask = TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 	HTREEITEM item = tree.InsertItem(mask, name.c_str(), img, img, 0, 0,
 	  (LPARAM)node.id().numeric_id(), parent, TVI_LAST);
 	assert(item);

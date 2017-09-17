@@ -28,7 +28,7 @@ static std::string MakeBoolFormula(const std::string& subexpr,
 
 NodeRef FindNodeByName(const std::vector<NodeRef>& nodes, const std::string& browse_name) {
   for (auto& node : nodes) {
-    if (node.browse_name() == browse_name)
+    if (node.browse_name().name() == browse_name)
       return node;
   }
   return nullptr;
@@ -102,7 +102,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
 
   BuildDeviceMetricsView(node_service, device, [device, callback](const DeviceMetricsViewTable& table) {
     WindowDefinition win(GetWindowInfo(ID_SHEET_VIEW));
-    win.title = device.display_name();
+    win.title = device.display_name().text();
 
     // Header column.
     {
@@ -119,7 +119,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
       cell.SetInt("row", i + 2);
       cell.SetInt("col", 1);
       // TODO: Display name.
-      cell.SetString("text", table.component_declarations[i].browse_name());
+      cell.SetString("text", table.component_declarations[i].display_name().text());
       cell.SetString("color", palette::ColorToString(kHeaderColor));
       cell.SetString("align", "right");
     }
@@ -133,7 +133,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
         WindowItem& cell = win.AddItem("SheetCell");
         cell.SetInt("row", 1);
         cell.SetInt("col", i + 2);
-        cell.SetString("text", item.node.display_name());
+        cell.SetString("text", item.node.display_name().text());
         cell.SetString("color", palette::ColorToString(kHeaderColor));
       }
     

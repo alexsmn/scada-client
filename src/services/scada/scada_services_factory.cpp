@@ -5,9 +5,9 @@
 #include "remote/session_proxy.h"
 #include "remote/view_service_proxy.h"
 
-DataServices CreateScadaServices(const DataServicesContext& context) {
+bool CreateScadaServices(const DataServicesContext& context, DataServices& services) {
   auto session_proxy = std::make_shared<SessionProxy>(context.logger, context.transport_factory);
-  return {
+  services = {
       session_proxy,
       std::shared_ptr<scada::ViewService>(session_proxy, &session_proxy->GetViewService()),
       std::shared_ptr<scada::NodeManagementService>(session_proxy, &session_proxy->GetNodeManagementService()),
@@ -17,4 +17,5 @@ DataServices CreateScadaServices(const DataServicesContext& context) {
       session_proxy,
       session_proxy,
   };
+  return true;
 }

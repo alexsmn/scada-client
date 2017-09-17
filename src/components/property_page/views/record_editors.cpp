@@ -140,7 +140,7 @@ void LookupCombo::Fill(NodeRefService& node_service, const scada::NodeId& root_n
         if (!weak_ptr.get())
           return;
         for (auto& node : nodes) {
-          auto name = base::SysNativeMBToWide(node.browse_name());
+          auto name = base::SysNativeMBToWide(node.browse_name().name());
           nodes_.emplace(name, node);
           combo_box_.AddString(name.c_str());
         }
@@ -189,14 +189,14 @@ void NamedRecordEditor::ReadControlsData() {
 }
 
 void NamedRecordEditor::ReadNodeToControls(const NodeRef& node) {
-  const auto& name = node_.browse_name();
+  const auto& name = node_.browse_name().name();
   SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(name).c_str());
 }
 
 void NamedRecordEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                               scada::NodeProperties& properties,
                                               scada::NodeReferences& references) {
-  attributes.set_browse_name(name_);
+  attributes.set_browse_name(scada::QualifiedName{name_, 0});
 }
 
 // GroupEditor
@@ -218,7 +218,7 @@ void GroupEditor::ReadControlsData() {
 }
 
 void GroupEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name()).c_str());
+  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name().name()).c_str());
   auto simulated = node[id::DataGroupType_Simulated].value().get_or(false);
   CButton(GetDlgItem(IDC_SIMULATE)).SetCheck(simulated ? BST_CHECKED : BST_UNCHECKED);
 }
@@ -226,7 +226,7 @@ void GroupEditor::ReadNodeToControls(const NodeRef& node) {
 void GroupEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                         scada::NodeProperties& properties,
                                         scada::NodeReferences& references) {
-  attributes.set_browse_name(name_);
+  attributes.set_browse_name(scada::QualifiedName{name_, 0});
 
   properties.emplace_back(id::DataGroupType_Simulated, simulate_);
 }
@@ -368,7 +368,7 @@ void ItemComboLookup::Fill(NodeRefService& node_service, const scada::NodeId& de
         for (auto& component : components) {
           if (component.node_class() != scada::NodeClass::Variable)
             continue;
-          auto name = MakeDeviceComponentItem(component.browse_name());
+          auto name = MakeDeviceComponentItem(component.browse_name().name());
           component_items_.emplace(name, component.id());
           items_combo_box_.AddString(base::SysNativeMBToWide(name).c_str());
         }
@@ -404,7 +404,7 @@ void ItemEditor::ReadControlsData() {
 void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  wnd_name.SetWindowText(base::SysNativeMBToWide(node.browse_name()).c_str());
+  wnd_name.SetWindowText(base::SysNativeMBToWide(node.browse_name().name()).c_str());
 
   const auto& alias = node[id::DataItemType_Alias].value().get_or(std::string{});
   wnd_alias.SetWindowText(base::SysNativeMBToWide(alias).c_str());
@@ -442,7 +442,7 @@ void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
 
   // name and alias - only for single item mode
   if (node_) {
-    attributes.set_browse_name(name);
+    attributes.set_browse_name(scada::QualifiedName{name, 0});
     properties.emplace_back(id::DataItemType_Alias, alias);
   }
 
@@ -650,7 +650,7 @@ void TsFormatEditor::ReadControlsData() {
 void TsFormatEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name()).c_str());
+  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name().name()).c_str());
   wnd_lbl_open.SetWindowText(base::SysNativeMBToWide(node[id::TsFormatType_OpenLabel].value().get_or(std::string())).c_str());
   wnd_lbl_open.SetWindowText(base::SysNativeMBToWide(node[id::TsFormatType_CloseLabel].value().get_or(std::string())).c_str());
   wnd_clr_open.SetCurSel(node[id::TsFormatType_OpenColor].value().get_or(0));
@@ -662,7 +662,7 @@ void TsFormatEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                            scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  attributes.set_browse_name(name_);
+  attributes.set_browse_name(scada::QualifiedName{name_, 0});
 
   auto clr_open = GetSelColor(wnd_clr_open.GetCurSel());
   auto clr_close = GetSelColor(wnd_clr_close.GetCurSel());
@@ -947,7 +947,7 @@ void IecDeviceEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_link_addr.ShowWindow(iec104_ ? SW_HIDE : SW_SHOW);
   GetDlgItem(IDC_LINK_ADDR_LABEL).ShowWindow(iec104_ ? SW_HIDE : SW_SHOW);
 
-  wnd_name.SetWindowText(base::SysNativeMBToWide(node.browse_name()).c_str());
+  wnd_name.SetWindowText(base::SysNativeMBToWide(node.browse_name().name()).c_str());
   win_util::SetWindowTextInt(wnd_addr, node[id::Iec60870DeviceType_Address].value().get_or(0));
   WTL::CButton(GetDlgItem(IDC_DISABLED)).SetCheck(node[id::DeviceType_Disabled].value().get_or(false) ? BST_CHECKED : BST_UNCHECKED);
   win_util::SetWindowTextInt(wnd_link_addr, node[id::Iec60870DeviceType_LinkAddress].value().get_or(0));
@@ -972,7 +972,7 @@ void IecDeviceEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                             scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  attributes.set_browse_name(name);
+  attributes.set_browse_name(scada::QualifiedName{name, 0});
 
   properties.emplace_back(id::Iec60870DeviceType_Address, addr);
   properties.emplace_back(id::Iec60870DeviceType_LinkAddress, link_addr);
@@ -1097,7 +1097,7 @@ void SimulationItemEditor::ReadControlsData() {
 }
 
 void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name()).c_str());
+  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name().name()).c_str());
 
   auto type = node[id::SimulationSignalType].value().get_or(0);
   UINT type_id;
@@ -1131,7 +1131,7 @@ void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
 void SimulationItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                                  scada::NodeProperties& properties,
                                                  scada::NodeReferences& references) {
-  attributes.set_browse_name(name_);
+  attributes.set_browse_name(scada::QualifiedName{name_, 0});
 
   properties.emplace_back(id::SimulationSignalType_Type, static_cast<int>(type_));
   properties.emplace_back(id::SimulationSignalType_Period, period_);

@@ -133,7 +133,7 @@ class OpenedView : public CommandHandler,
 
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
   void CreateRecord(const scada::NodeId& type_node_id, int tag);
-  void OnCreateRecordComplete(const std::string& name,
+  void OnCreateRecordComplete(const scada::QualifiedName& browse_name,
                               const scada::Status& status, const scada::NodeId& node_id);
 
   // ControllerDelegate

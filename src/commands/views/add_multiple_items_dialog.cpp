@@ -106,7 +106,7 @@ void AddMultipleItemsDialog::SetDevices(std::vector<NodeRef> devices) {
   devices_combo_box_.ResetContent();
   devices_ = std::move(devices);
   for (auto& device : devices_)
-    devices_combo_box_.AddString(base::SysNativeMBToWide(device.browse_name()).c_str());
+    devices_combo_box_.AddString(base::SysNativeMBToWide(device.browse_name().name()).c_str());
 }
 
 NodeRef AddMultipleItemsDialog::GetSelectedDevice() const {
@@ -136,7 +136,7 @@ void AddMultipleItemsDialog::OnOK() {
     std::string path = MakeNodeIdFormula(scada::MakeNestedNodeId(device.id(), item_path));
 
     task_manager_.PostInsertTask(scada::NodeId(), group_.id(), type_node_id,
-        scada::NodeAttributes().set_browse_name(std::move(name)),
+        scada::NodeAttributes().set_browse_name(scada::QualifiedName{std::move(name), 0}),
         {{ id::DataItemType_Input1, std::move(path) }});
   }
   

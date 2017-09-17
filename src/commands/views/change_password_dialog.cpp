@@ -40,13 +40,12 @@ void ShowChangePasswordDialog(const NodeRef& user, LocalEvents& local_events, Pr
   if (dialog.Execute() != IDOK)
     return;
 
-  std::string user_name = user.browse_name();
+  auto user_name = user.display_name().text();
   node_management_service.ChangeUserPassword(
       user.id(), dialog.current_password(), dialog.new_password(),
       [user_name, &local_events, &profile](const scada::Status& status) {
         base::string16 title = base::StringPrintf(
-            L"Смена пароля пользователя %ls",
-            base::SysNativeMBToWide(user_name).c_str());
+            L"Смена пароля пользователя %ls", user_name.c_str());
         ReportRequestResult(title, status, local_events, profile);
       });
 }

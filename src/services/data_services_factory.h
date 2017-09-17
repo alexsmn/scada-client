@@ -18,7 +18,7 @@ struct DataServicesContext {
   net::TransportFactory& transport_factory;
 };
 
-using DataServicesFactoryMethod = std::function<DataServices(const DataServicesContext& context)>;
+using DataServicesFactoryMethod = std::function<bool(const DataServicesContext& context, DataServices& services)>;
 
 struct DataServicesInfo {
   std::string name;

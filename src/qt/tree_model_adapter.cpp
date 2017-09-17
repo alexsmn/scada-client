@@ -138,12 +138,15 @@ Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex &index) const {
 }
 
 int TreeModelAdapter::GetIndexOf(void* node) const {
-  assert(node != model_.GetRoot());
+  if (node == model_.GetRoot())
+    return 0;
+
   void* parent_node = model_.GetParent(node);
   for (int i = 0; i < model_.GetChildCount(parent_node); ++i) {
     if (model_.GetChild(parent_node, i) == node)
       return i;
   }
+
   return -1;
 }
 

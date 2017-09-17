@@ -73,10 +73,8 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context, s
     auto& b = static_cast<ConfigurationTreeNode*>(right)->data_node();
     if (!!a != !!b)
       return !!a < !!b ? -1 : 1;
-    if (!a.fetched() || !b.fetched()) {
-      return base::SysNativeMBToWide(a.browse_name()).compare(
-             base::SysNativeMBToWide(b.browse_name()));
-    }
+    if (!a.fetched() || !b.fetched())
+      return a.display_name().text().compare(b.display_name().text());
     const auto& ta = a.type_definition().id();
     const auto& tb = b.type_definition().id();
     bool fa = a.node_class() != scada::NodeClass::Variable;
@@ -85,8 +83,7 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context, s
       return fa < fb ? 1 : -1;
     if (ta != tb)
       return ta < tb ? -1 : 1;
-    return base::SysNativeMBToWide(a.browse_name()).compare(
-           base::SysNativeMBToWide(b.browse_name()));
+    return a.display_name().text().compare(b.display_name().text());
   });
 
 #if defined(UI_VIEWS)
@@ -144,7 +141,7 @@ void ConfigurationTreeView::DeleteSelection() {
   if (auto node = selection().node()) {
     base::string16 message = base::StringPrintf(
         L"Вы действительно хотите удалить %ls?",
-        node.display_name().c_str());
+        node.display_name().text().c_str());
     int choice = ShowMessageBox(dialog_service_,
         message.c_str(), L"Удаление", MB_ICONEXCLAMATION | MB_OKCANCEL);
     if (choice == IDOK)

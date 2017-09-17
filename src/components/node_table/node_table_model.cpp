@@ -111,7 +111,7 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
   auto& column = columns_[cell.column];
 
   if (column.attr_id == OpcUa_Attributes_BrowseName)
-    cell.text = base::SysNativeMBToWide(node.browse_name());
+    cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.prop_def->IsReadOnly(node, column.prop_decl_id))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   else
@@ -123,7 +123,7 @@ bool NodeTableModel::SetCellText(int row, int column, const base::string16& text
   auto& c = columns_[column];
   if (c.attr_id == OpcUa_Attributes_BrowseName) {
     context_.task_manager_.PostUpdateTask(node.id(),
-        scada::NodeAttributes().set_browse_name(base::SysWideToNativeMB(text)) , {});
+        scada::NodeAttributes().set_browse_name(scada::QualifiedName{base::SysWideToNativeMB(text), 0}) , {});
   } else {
     c.prop_def->SetText(context_, node, c.prop_decl_id, text);
   }
@@ -265,8 +265,8 @@ void NodeTableModel::InitColumns() {
   auto AddProp = [this, &columns](const NodeRef& prop_decl, const PropertyDefinition& def) {
       columns_.push_back({ OpcUa_Attributes_Value, prop_decl.id(), &def });
       int width = def.width() ? def.width() : 75;
-      auto title = base::SysNativeMBToWide(prop_decl.browse_name());
-      columns.emplace_back(columns.size(), title, width, def.alignment());
+      auto title = prop_decl.display_name().text();
+      columns.emplace_back(columns.size(), std::move(title), width, def.alignment());
     };
 
   for (auto& prop : properties) {

@@ -26,9 +26,10 @@ class LoginDialog : public QDialog {
 
   DataServices& services() { return services_; }
 
- private:
-  void StartLogin();
+public Q_SLOTS:
+    virtual void accept() override;
 
+ private:
   void OnLoginResult(const scada::Status& result);
 
   void SetControlsEnabled(bool enabled);

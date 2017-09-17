@@ -38,7 +38,7 @@ void NodePropertyModel::SetNodes(const Nodes& nodes) {
   if (node) {
     properties_.push_back({
         L"Èìÿ",
-        base::SysNativeMBToWide(node.browse_name()),
+        base::SysNativeMBToWide(node.browse_name().name()),
         OpcUa_Attributes_BrowseName,
     });
   }
@@ -109,7 +109,7 @@ void NodePropertyModel::UpdateNode(const scada::NodeId& node_id) {
     int index = FindProperty(OpcUa_Attributes_BrowseName);
     if (index != -1) {
       auto& prop = properties_[index];
-      prop.string_value = base::SysNativeMBToWide(node_.browse_name());
+      prop.string_value = base::SysNativeMBToWide(node_.browse_name().name());
       TreeNodeChanged(&prop);
     }
   }
@@ -182,7 +182,7 @@ void NodePropertyModel::SetText(void* node, int column_id, const base::string16&
       prop.def->SetText(context_, p.second, prop.prop_type_id, text);
     else {
       context_.task_manager_.PostUpdateTask(p.first,
-          scada::NodeAttributes().set_browse_name(base::SysWideToNativeMB(text)) , {});
+          scada::NodeAttributes().set_browse_name(scada::QualifiedName{base::SysWideToNativeMB(text), 0}) , {});
     }
   }
 }

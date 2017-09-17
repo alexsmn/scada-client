@@ -85,7 +85,7 @@ void AddServiceItemsDialog::OnOK() {
     std::string formula = MakeNodeIdFormula(scada::MakeNestedNodeId(device.id(), component_name));
   
     task_manager_.PostInsertTask(scada::NodeId(), group_.id(), id::AnalogItemType,
-        scada::NodeAttributes().set_browse_name(std::move(component_name)),
+        scada::NodeAttributes().set_browse_name(scada::QualifiedName{std::move(component_name), 0}),
         {{ id::AnalogItemType_DisplayFormat, "0." },
         { id::DataItemType_Input1, std::move(formula) }});
   }
@@ -136,7 +136,7 @@ void AddServiceItemsDialog::SetComponents(std::vector<NodeRef> components) {
 
   components_ = std::move(components);
   for (auto& component : components_)
-    channels_list_box_.AddString(base::SysNativeMBToWide(component.browse_name()).c_str());
+    channels_list_box_.AddString(base::SysNativeMBToWide(component.browse_name().name()).c_str());
 }
 
 NodeRef AddServiceItemsDialog::GetSelectedDevice() const {
@@ -155,7 +155,7 @@ void AddServiceItemsDialog::SetDevices(std::vector<NodeRef> devices) {
   devices_combo_box_.ResetContent();
   devices_ = std::move(devices);
   for (auto& device : devices_)
-    devices_combo_box_.AddString(base::SysNativeMBToWide(device.browse_name()).c_str());
+    devices_combo_box_.AddString(base::SysNativeMBToWide(device.browse_name().name()).c_str());
 
 //  SelectDevice(id::Server);
 }

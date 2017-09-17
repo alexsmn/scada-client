@@ -56,7 +56,7 @@ void TransmissionModel::GetCell(ui::GridCell& cell) {
   switch (cell.column) {
     case 0: {
       auto source = row.transmission.target(id::HasTransmissionSource);
-      cell.text = source.display_name();
+      cell.text = source.display_name().text();
       break;
     }
       

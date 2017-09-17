@@ -3,9 +3,9 @@
 #include "base/strings/string_util.h"
 #include "services/vidicon/vidicon_session.h"
 
-DataServices CreateVidiconServices(const DataServicesContext& context) {
+bool CreateVidiconServices(const DataServicesContext& context, DataServices& services) {
   auto vidicon_session = std::make_shared<VidiconSession>();
-  return {
+  services = {
       vidicon_session,
       vidicon_session,
       vidicon_session,
@@ -15,5 +15,6 @@ DataServices CreateVidiconServices(const DataServicesContext& context) {
       vidicon_session,
       vidicon_session,
   };
+  return true;
 }
 

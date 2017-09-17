@@ -41,8 +41,8 @@ void GetTypePids(NodeRefService& node_service, const NodeRef& type, bool recursi
     reference_types.emplace_back(reference.reference_type);
 }
 
-std::string FormatReferenceCell(const std::string& title, const scada::NodeId& prop_type_id) {
-  return base::StringPrintf("%s @%s", title.c_str(), prop_type_id.ToString().c_str());
+std::string FormatReferenceCell(const scada::QualifiedName& browse_name, const scada::NodeId& prop_type_id) {
+  return base::StringPrintf("%s @%s", browse_name.name().c_str(), prop_type_id.ToString().c_str());
 }
 
 scada::NodeId ParseReferenceCell(const base::StringPiece& s) {
@@ -167,7 +167,7 @@ void ExportConfigurationData::WriteNode(const scada::NodeId& parent_id, const No
   writer_.WriteCell(parent_id.ToString());
   const auto& type = node.type_definition();
   writer_.WriteCell(type ? FormatReferenceCell(type.browse_name(), type.id()) : std::string());
-  writer_.WriteCell(node.browse_name());
+  writer_.WriteCell(node.browse_name().name());
   for (auto& component_declaration : component_declarations_) {
     const auto& value = node[component_declaration.id()].value();
     const auto& str = value.get_or(std::string{});
@@ -255,8 +255,8 @@ void ImportConfiguration(TableReader& reader, const AddressSpaceSnapshot& addres
     scada::NodeAttributes attrs;
     if (!reader.NextCell(cell))
       throw std::runtime_error("Ошибка при чтении имени");
-    if (!node || node.browse_name() != cell)
-      attrs.set_browse_name(std::move(cell));
+    if (!node || node.browse_name().name() != cell)
+      attrs.set_browse_name(scada::QualifiedName{std::move(cell), 0});
 
     // Props & refs.
     scada::NodeProperties props;
@@ -268,7 +268,7 @@ void ImportConfiguration(TableReader& reader, const AddressSpaceSnapshot& addres
         scada::Variant new_value;
         if (!StringToValue(cell.c_str(), property_declaration.data_type().id(), new_value)) {
           auto prop_type = property_declaration.data_type();
-          auto prop_type_name = prop_type ? prop_type.browse_name() : "(Неизвестный)";
+          auto prop_type_name = prop_type ? prop_type.browse_name().name() : "(Неизвестный)";
           throw std::runtime_error("Невозможно распознать значение ячейки '" + cell + "' с типом '" + prop_type_name + "'");
         }
 
@@ -303,14 +303,14 @@ void ImportConfiguration(TableReader& reader, const AddressSpaceSnapshot& addres
 void PrintProps(const NodeRef& type_definition, const scada::NodeProperties& props, std::ostream& report) {
   for (auto& v : props) {
     const auto& prop = type_definition[v.first];
-    report << "  " << prop.browse_name() << " = " << v.second.get_or(std::string{"(Ошибка)"}) << std::endl;
+    report << "  " << prop.browse_name().name() << " = " << v.second.get_or(std::string{"(Ошибка)"}) << std::endl;
   }
 }
 
 void PrintRefs(const AddressSpaceSnapshot& snapshot, const std::vector<ImportData::Reference>& refs, std::ostream& report) {
   for (auto& r : refs) {
-    auto target_name = r.add_target_id.is_null() ? "(Нет)" : snapshot.GetNode(r.add_target_id).browse_name();
-    report << snapshot.GetNode(r.reference_type_id).browse_name() << " = "
+    auto target_name = r.add_target_id.is_null() ? "(Нет)" : snapshot.GetNode(r.add_target_id).browse_name().name();
+    report << snapshot.GetNode(r.reference_type_id).browse_name().name() << " = "
            << target_name << std::endl;
   }
 }
@@ -328,12 +328,12 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
 
   for (auto& p : import_data.create_nodes) {
     auto type_definition = address_space.GetNode(p.type_id);
-    auto type_name = type_definition ? type_definition.browse_name() : "(Ошибка)";
+    auto type_name = type_definition ? type_definition.display_name().text() : L"(Ошибка)";
     report << "Создать: " << type_name << std::endl;
     if (p.id != scada::NodeId())
       report << "  Ид = " << p.id.ToString() << std::endl;
     report << "  Родитель = " << p.parent_id.ToString() << std::endl;
-    report << "  Имя = " << p.attrs.browse_name() << std::endl;
+    report << "  Имя = " << p.attrs.browse_name().name() << std::endl;
     if (type_definition)
       PrintProps(type_definition, p.props, report);
     PrintRefs(address_space, p.refs, report);
@@ -342,10 +342,10 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
   for (auto& p : import_data.modify_nodes) {
     auto node = address_space.GetNode(p.id);
     auto node_name = node.display_name();
-    report << "Изменить: " << node_name << std::endl;
+    report << "Изменить: " << node_name.text() << std::endl;
     auto type_definition = node ? node.type_definition() : nullptr;
     if (p.attrs.has(OpcUa_Attributes_BrowseName))
-      report << "  Имя = " << p.attrs.browse_name() << std::endl;
+      report << "  Имя = " << p.attrs.browse_name().name() << std::endl;
     if (type_definition)
       PrintProps(type_definition, p.props, report);
     PrintRefs(address_space, p.refs, report);
@@ -354,7 +354,7 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
   for (auto& p : import_data.delete_nodes) {
     auto node = address_space.GetNode(p);
     auto node_name = node.display_name();
-    report << "Удалить: " << node_name << std::endl;
+    report << "Удалить: " << node_name.text() << std::endl;
   }
 
   base::FilePath system_path;

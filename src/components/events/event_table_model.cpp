@@ -87,7 +87,7 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
       break;
     case EventColumnItem:
       if (row.node)
-        cell.text = row.node.display_name();
+        cell.text = row.node.display_name().text();
       else if (row.type == LOCAL_EVENT)
         cell.text = kLocalEventSource;
       break;
@@ -96,17 +96,17 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
       break;
     case EventColumnSource:
       if (row.user)
-        cell.text = base::SysNativeMBToWide(row.user.browse_name());
+        cell.text = row.user.display_name().text();
       break;
     case EventColumnValue:
       if (row.node)
         cell.text = FormatValue(row.node, event.value, event.qualifier);
       else
-        cell.text = event.value.get_or(base::string16{});
+        cell.text = event.value.get_or(scada::LocalizedText{}).text();
       break;
     case EventColumnAckUser:
       if (row.acknowledged_user)
-        cell.text = base::SysNativeMBToWide(row.acknowledged_user.browse_name());
+        cell.text = row.acknowledged_user.display_name().text();
       break;
     case EventColumnAckTime:
       cell.text = base::SysNativeMBToWide(FormatTime(event.acknowledged_time,

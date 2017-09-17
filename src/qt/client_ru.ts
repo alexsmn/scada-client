@@ -4,35 +4,42 @@
 <context>
     <name>LoginDialog</name>
     <message>
-        <source>Login failed</source>
-        <translation>Регистрация прервана</translation>
-    </message>
-    <message>
+        <location filename="../components/login/qt/login_dialog.ui" line="20"/>
         <source>Login</source>
-        <translation>Регистрация</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../components/login/qt/login_dialog.ui" line="31"/>
         <source>User name:</source>
-        <translation>Имя:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../components/login/qt/login_dialog.ui" line="48"/>
         <source>Password:</source>
-        <translation>Пароль:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../components/login/qt/login_dialog.ui" line="62"/>
         <source>Auto-Login:</source>
-        <translation>Автоматически:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../components/login/qt/login_dialog.ui" line="72"/>
         <source>Server:</source>
-        <translation>Сервер:</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/login/qt/login_dialog.cpp" line="100"/>
+        <source>Login failed</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MainWindowQt</name>
     <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="50"/>
         <source>Telecontrol SCADA Client</source>
-        <translation>Клиент ОИК Телеконтроль</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

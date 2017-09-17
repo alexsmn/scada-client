@@ -19,6 +19,9 @@ using namespace scada;
 
 namespace {
 
+// TODO:
+static const scada::QualifiedName kEnumStrings{"EnumStrings", 0};
+
 static const base::char16 kDefaultColorString[] = L"<Стандартный>";
 static const base::char16 kChoiceNone[] = L"<Нет>";
 
@@ -176,7 +179,7 @@ PropertyDefinition::PropertyDefinition(ui::TableColumn::Alignment alignment, int
 }
 
 base::string16 PropertyDefinition::GetTitle(PropertyContext& context, const NodeRef& property_declaration) const {
-  return base::SysNativeMBToWide(property_declaration.browse_name());
+  return property_declaration.display_name().text();
 }
 
 bool PropertyDefinition::IsReadOnly(const NodeRef& node, const scada::NodeId& prop_decl_id) const {
@@ -228,7 +231,7 @@ base::string16 ReferencePropertyDefinition::GetText(PropertyContext& context, co
 
   auto referenced_node = node.target(prop_type_id);
   if (referenced_node)
-    return base::SysNativeMBToWide(referenced_node.browse_name());
+    return referenced_node.display_name().text();
   else
     return kChoiceNone;
 }
@@ -286,7 +289,7 @@ base::string16 EnumPropertyDefinition::GetText(PropertyContext& context, const N
     return base::string16();
 
   const auto& value = node[prop_decl_id].value();
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()["EnumStrings"].value().as_string());
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().as_string());
 
   int int_value;
   if (!value.get(int_value))
@@ -301,7 +304,7 @@ void EnumPropertyDefinition::SetText(PropertyContext& context, const NodeRef& no
   if (!property_declaration)
     return;
 
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()["EnumStrings"].value().as_string());
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().as_string());
   int value;
   if (!ParseEnumStrings(enum_strings, value))
     return;
@@ -316,7 +319,7 @@ PropertyEditor EnumPropertyDefinition::GetPropertyEditor(PropertyContext& contex
     return PropertyEditor(PropertyEditor::NONE);
 
   PropertyEditor result(PropertyEditor::DROPDOWN);
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()["EnumStrings"].value().as_string());
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().as_string());
   std::transform(enum_strings.begin(), enum_strings.end(),
       std::back_inserter(result.choices),
       [](base::StringPiece choice) { return base::SysNativeMBToWide(choice); });

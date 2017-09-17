@@ -74,7 +74,7 @@ void WatchModel::GetCell(ui::TableCell& cell) {
     case 1:
       if (event.node_id.is_null())
         break;
-      cell.text = base::SysNativeMBToWide(device_.browse_name());
+      cell.text = device_.display_name().text();
       if (cell.text.empty())
         cell.text = L"?";
       break;

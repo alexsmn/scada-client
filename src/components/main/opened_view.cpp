@@ -256,10 +256,10 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
   bool is104 = tag != 0;
 
   // name
-  std::string browse_name = type_definition.browse_name();
+  auto browse_name = type_definition.browse_name();
   if (type_node_id == id::Iec60870LinkType) {
-    browse_name = is104 ? "Направление МЭК-60870-104" :
-                          "Направление МЭК-60870-101";
+    browse_name = is104 ? scada::QualifiedName{"Направление МЭК-60870-104", 0} :
+                          scada::QualifiedName{"Направление МЭК-60870-101", 0};
   }
   attributes.set_browse_name(browse_name);
 
@@ -292,10 +292,10 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
       });
 }
 
-void OpenedView::OnCreateRecordComplete(const std::string& name,
+void OpenedView::OnCreateRecordComplete(const scada::QualifiedName& browse_name,
                                         const scada::Status& status, const scada::NodeId& node_id) {
   base::string16 title = base::StringPrintf(L"Создание \"%ls\"",
-      base::SysNativeMBToWide(name).c_str());
+      base::SysNativeMBToWide(browse_name.name()).c_str());
   ReportRequestResult(title, status, local_events_, profile_);
 
   if (!status)

@@ -29,9 +29,6 @@ LoginDialog::LoginDialog(const DataServicesContext& services_context)
   if (QApplication::queryKeyboardModifiers() & Qt::ControlModifier)
     auto_login = false;
 
-  connect(ui.buttonBox, &QDialogButtonBox::accepted, [this] { StartLogin(); });
-  connect(ui.buttonBox, &QDialogButtonBox::rejected, [this] { reject(); });
-
   ui.serverComboBox->setCurrentText(host);
 
   ui.userNameComboBox->addItems(user_list_);
@@ -44,26 +41,32 @@ LoginDialog::LoginDialog(const DataServicesContext& services_context)
   ui.autoLoginCheckBox->setChecked(auto_login);
 
   if (auto_login)
-    StartLogin();
+    accept();
 }
 
 LoginDialog::~LoginDialog() {
 }
 
-void LoginDialog::StartLogin() {
+void LoginDialog::accept() {
   SetControlsEnabled(false);
 
+  auto server = ui.serverComboBox->currentText();
   user_name_ = ui.userNameComboBox->currentText();
   password_ = ui.passwordLineEdit->text();
   auto_login_ = ui.autoLoginCheckBox->isChecked();
 
-  if (!CreateDataServices("Scada", services_context_, services_)) {
+  const char* service_name = "Scada";
+  if (server.startsWith("opc."))
+    service_name = "OpcUa";
+
+  if (!CreateDataServices(service_name, services_context_, services_)) {
     OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);
     return;
   }
 
   std::weak_ptr<bool> cancelation = cancelation_;
-  services_.session_service_->Connect("TCP;active;port=2000", user_name_.toStdString(), password_.toStdString(), true,
+  // "TCP;active;port=2000"
+  services_.session_service_->Connect(server.toStdString(), user_name_.toStdString(), password_.toStdString(), true,
       [this, cancelation](const scada::Status& result) {
         if (!cancelation.expired())
           OnLoginResult(result);
@@ -88,7 +91,7 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
       settings.setValue("UserList", user_list_.join(','));
     }
 
-    accept();
+    QDialog::accept();
 
   } else {
     auto_login_ = false;
@@ -106,6 +109,7 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
 }
 
 void LoginDialog::SetControlsEnabled(bool enabled) {
+  ui.serverComboBox->setEnabled(enabled);
   ui.userNameComboBox->setEnabled(enabled);
   ui.passwordLineEdit->setEnabled(enabled);
   ui.autoLoginCheckBox->setEnabled(enabled);

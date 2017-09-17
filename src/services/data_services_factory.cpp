@@ -2,9 +2,9 @@
 
 #include "base/strings/string_util.h"
 
-extern DataServices CreateVidiconServices(const DataServicesContext& context);
-extern DataServices CreateScadaServices(const DataServicesContext& context);
-extern DataServices CreateOpcUaServices(const DataServicesContext& context);
+extern bool CreateVidiconServices(const DataServicesContext& context, DataServices& services);
+extern bool CreateScadaServices(const DataServicesContext& context, DataServices& services);
+extern bool CreateOpcUaServices(const DataServicesContext& context, DataServices& services);
 
 REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
 REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
@@ -33,10 +33,8 @@ bool EqualDataServicesName(base::StringPiece name1, base::StringPiece name2) {
 
 bool CreateDataServices(base::StringPiece name, const DataServicesContext& context, DataServices& services) {
   for (auto& info : GetDataServicesInfoList()) {
-    if (EqualDataServicesName(info.name, name)) {
-      services = info.factory_method(context);
-      return true;
-    }
+    if (EqualDataServicesName(info.name, name))
+      return info.factory_method(context, services);
   }
   return false;
 }
