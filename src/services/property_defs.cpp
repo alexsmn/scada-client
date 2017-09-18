@@ -179,7 +179,7 @@ PropertyDefinition::PropertyDefinition(ui::TableColumn::Alignment alignment, int
 }
 
 base::string16 PropertyDefinition::GetTitle(PropertyContext& context, const NodeRef& property_declaration) const {
-  return property_declaration.display_name().text();
+  return base::SysNativeMBToWide(property_declaration.display_name().text());
 }
 
 bool PropertyDefinition::IsReadOnly(const NodeRef& node, const scada::NodeId& prop_decl_id) const {
@@ -231,7 +231,7 @@ base::string16 ReferencePropertyDefinition::GetText(PropertyContext& context, co
 
   auto referenced_node = node.target(prop_type_id);
   if (referenced_node)
-    return referenced_node.display_name().text();
+    return base::SysNativeMBToWide(referenced_node.display_name().text());
   else
     return kChoiceNone;
 }

@@ -102,7 +102,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
 
   BuildDeviceMetricsView(node_service, device, [device, callback](const DeviceMetricsViewTable& table) {
     WindowDefinition win(GetWindowInfo(ID_SHEET_VIEW));
-    win.title = device.display_name().text();
+    win.title = base::SysNativeMBToWide(device.display_name().text());
 
     // Header column.
     {

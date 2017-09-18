@@ -102,7 +102,7 @@ void TaskManager::PostUpdateTask(const scada::NodeId& node_id, scada::NodeAttrib
       return;
     }
 
-    base::string16 title = node.display_name().text();
+    base::string16 title = base::SysNativeMBToWide(node.display_name().text());
 
     std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
     nodes.reserve(1 + properties.size());
@@ -132,7 +132,7 @@ void TaskManager::PostUpdateTask(const scada::NodeId& node_id, scada::NodeAttrib
 }
 
 void TaskManager::PostDeleteTask(const scada::NodeId& node_id) {
-  base::string16 title = node_service_.GetNode(node_id).display_name().text();
+  base::string16 title = base::SysNativeMBToWide(node_service_.GetNode(node_id).display_name().text());
   auto weak_ptr = weak_factory_.GetWeakPtr();
   PostTask(base::StringPrintf(L"Удаление %ls", title.c_str()), [=] {
     node_management_service_.DeleteNode(node_id, true,
@@ -186,7 +186,7 @@ void TaskManager::OnDeleteRecordComplete(const scada::Status& status,
   for (auto& node_id : *relations) {
     if (!relations_text.empty())
       relations_text += L'\n';
-    relations_text += node_service_.GetNode(node_id).display_name().text();
+    relations_text += base::SysNativeMBToWide(node_service_.GetNode(node_id).display_name().text());
   }
 
   ReportRequestCompletion(status, relations_text);

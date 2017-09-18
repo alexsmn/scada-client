@@ -328,7 +328,7 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
 
   for (auto& p : import_data.create_nodes) {
     auto type_definition = address_space.GetNode(p.type_id);
-    auto type_name = type_definition ? type_definition.display_name().text() : L"(Ошибка)";
+    auto type_name = type_definition ? type_definition.display_name().text() : "(Ошибка)";
     report << "Создать: " << type_name << std::endl;
     if (p.id != scada::NodeId())
       report << "  Ид = " << p.id.ToString() << std::endl;

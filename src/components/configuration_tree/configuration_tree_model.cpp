@@ -82,7 +82,7 @@ int ConfigurationTreeNode::GetChildCount() const {
 }
 
 base::string16 ConfigurationTreeNode::GetText(int column_id) const {
-  return data_node_.display_name().text();
+  return base::SysNativeMBToWide(data_node_.display_name().text());
 }
 
 int ConfigurationTreeNode::GetIcon() const {

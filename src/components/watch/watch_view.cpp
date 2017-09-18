@@ -40,7 +40,7 @@ void WatchView::Save(WindowDefinition& definition) {
 }
 
 base::string16 WatchView::MakeTitle() const {
-  base::string16 title = model_->device().display_name().text();
+  base::string16 title = base::SysNativeMBToWide(model_->device().display_name().text());
   if (model_->paused())
     title += L" [Пауза]";
   return title;

@@ -29,7 +29,7 @@ Value ToValue(const scada::Variant& v) {
     case scada::Variant::STRING:
       return base::SysNativeMBToWide(v.as_string());
     case scada::Variant::LOCALIZED_TEXT:
-      return v.as_localized_text().text();
+      return base::SysNativeMBToWide(v.as_localized_text().text());
     case scada::Variant::NODE_ID:
       return {};
     default:

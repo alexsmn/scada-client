@@ -53,7 +53,7 @@ void StatusBarController::Update() {
   SetPaneText(2, event_severity_min);
 
   auto& user_id = session_service_.GetUserId();
-  base::string16 user_status = node_service_.GetNode(user_id).display_name().text();
+  base::string16 user_status = base::SysNativeMBToWide(node_service_.GetNode(user_id).display_name().text());
   SetPaneText(3, user_status);
 
   auto* connect_string = session_service_.IsConnected() ? L"Подключен" : L"Отключен";

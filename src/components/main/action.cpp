@@ -89,7 +89,7 @@ class NodeAction : public Action {
   }
 
   virtual base::string16 GetTitle() const override {
-    return node_.display_name().text();
+    return base::SysNativeMBToWide(node_.display_name().text());
   }
 
  private:

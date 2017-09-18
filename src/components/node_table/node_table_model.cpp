@@ -265,7 +265,7 @@ void NodeTableModel::InitColumns() {
   auto AddProp = [this, &columns](const NodeRef& prop_decl, const PropertyDefinition& def) {
       columns_.push_back({ OpcUa_Attributes_Value, prop_decl.id(), &def });
       int width = def.width() ? def.width() : 75;
-      auto title = prop_decl.display_name().text();
+      auto title = base::SysNativeMBToWide(prop_decl.display_name().text());
       columns.emplace_back(columns.size(), std::move(title), width, def.alignment());
     };
 
