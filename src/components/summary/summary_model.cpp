@@ -54,7 +54,7 @@ class SummaryModel::Cell {
 };
 
 bool SummaryModel::Cell::Update(const scada::DataValue& data_value) {
-  if (data_value.collection_time <= tvq_.collection_time)
+  if (data_value.server_timestamp <= tvq_.server_timestamp)
     return false;
 
   tvq_ = data_value;
@@ -140,13 +140,13 @@ void SummaryModel::Column::UpdateHistory() {
   }
 
   // Current.
-  int row = model_.GetRowForTime(timed_data_.current().time);
+  int row = model_.GetRowForTime(timed_data_.current().source_timestamp);
   if (row != -1)
     cells_[row].Update(timed_data_.current());
 }
 
 void SummaryModel::Column::OnTvq(const scada::DataValue& data_value) {
-  int row = model_.GetRowForTime(data_value.time);
+  int row = model_.GetRowForTime(data_value.source_timestamp);
   if (row != -1) {
     if (cells_[row].Update(data_value))
       model_.OnCellChanged(index_, row);

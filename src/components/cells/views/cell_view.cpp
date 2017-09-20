@@ -116,7 +116,7 @@ bool CellView::OnGridDrawCell(views::GridView& sender, gfx::Canvas* canvas, int 
   base::string16 lines[4];
   lines[0] = cell->value_spec_.GetTitle();
   lines[1] = cell->value_spec_.GetCurrentString();
-  lines[2] = base::SysNativeMBToWide(FormatTime(tvq.time));
+  lines[2] = base::SysNativeMBToWide(FormatTime(tvq.source_timestamp));
   lines[3] = base::SysNativeMBToWide(FormatTime(cell->value_spec_.change_time()));
 
   gfx::Rect line_rect = rect;

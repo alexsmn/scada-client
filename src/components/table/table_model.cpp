@@ -116,8 +116,8 @@ void TableModel::GetCellEx(CellEx& cell) {
       break;
 
     case COLUMN_UPDATE_TIME:
-      if (!value.time.is_null())
-        cell.text = base::SysNativeMBToWide(FormatTime(value.time, g_time_format));
+      if (!value.source_timestamp.is_null())
+        cell.text = base::SysNativeMBToWide(FormatTime(value.source_timestamp, g_time_format));
       break;
 
     case COLUMN_CHANGE_TIME: {

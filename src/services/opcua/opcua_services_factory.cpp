@@ -16,7 +16,7 @@ bool CreateOpcUaServices(const DataServicesContext& context, DataServices& servi
     };
     return true;
 
-  } catch (const std::exception& e) {
+  } catch (const std::exception&) {
     return false;
   }
 }

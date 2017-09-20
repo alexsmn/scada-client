@@ -250,7 +250,7 @@ void OpcUaSubscription::OnCreateMonitoredItemsResponse(const scada::Status& stat
       if (item.subscribed) {
         // TODO: Forward status.
         if (item.data_change_handler)
-          item.data_change_handler({ConvertStatusCode(result.status_code)});
+          item.data_change_handler({ConvertStatusCode(result.status_code), scada::DateTime::Now()});
       } else {
         assert(items_.find(item.client_handle) != items_.end());
         items_.erase(item.client_handle);

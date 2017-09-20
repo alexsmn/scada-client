@@ -32,7 +32,7 @@ base::string16 GetTimedDataTooltipText(const rt::TimedDataSpec& timed_data) {
 
   base::string16 str_time = base::SysNativeMBToWide(FormatTime(timed_data.change_time(),
       TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-  base::string16 str_utime = base::SysNativeMBToWide(FormatTime(timed_data.current().time,
+  base::string16 str_utime = base::SysNativeMBToWide(FormatTime(timed_data.current().source_timestamp,
       TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
 
   base::string16 str = name;

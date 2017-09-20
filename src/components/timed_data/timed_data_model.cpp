@@ -136,7 +136,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
   
   switch (cell.column_id) {
     case CID_TIME:
-      cell.text = base::SysNativeMBToWide(FormatTime(tvq.time,
+      cell.text = base::SysNativeMBToWide(FormatTime(tvq.source_timestamp,
           TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
   
@@ -150,7 +150,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
       break;
 
     case CID_COLLECTION_TIME:
-      cell.text = base::SysNativeMBToWide(FormatTime(tvq.collection_time,
+      cell.text = base::SysNativeMBToWide(FormatTime(tvq.server_timestamp,
           TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
   }

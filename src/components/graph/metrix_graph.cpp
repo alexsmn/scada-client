@@ -114,7 +114,7 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
     painter.drawText(rc, Qt::AlignLeft | Qt::AlignVCenter, text);
 
     // Draw time.
-    auto time_text = QString::fromStdString(FormatTime(value.time));
+    auto time_text = QString::fromStdString(FormatTime(value.source_timestamp));
     p = title_width_ + 80;
     rc = QRect(p, y, std::max(0, width() - GRAPH_LEG_MARGX - p), GRAPH_LEG_ROW);
     // TODO: End ellipsis.
@@ -164,7 +164,7 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw time.
-    std::string time_text = FormatTime(value.time);
+    std::string time_text = FormatTime(value.source_timestamp);
     p = title_width_ + 80;
     rc = gfx::Rect(p, y, std::max(0, width() - GRAPH_LEG_MARGX - p), GRAPH_LEG_ROW);
     canvas->DrawString(time_text, graph.font_, SK_ColorBLACK, rc,
@@ -245,7 +245,7 @@ void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
     return;
 
   // Scroll to last time.
-  base::Time last_time = timed_data.current().time;
+  base::Time last_time = timed_data.current().source_timestamp;
   if (last_time.is_null())
     return;
 

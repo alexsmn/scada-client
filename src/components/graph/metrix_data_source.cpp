@@ -74,10 +74,10 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
     enum_current_passed_ = true;
     
     const auto& current = timed_data_.current();
-    if (last_value_time_ == current.time)
+    if (last_value_time_ == current.source_timestamp)
       return false;
     
-    point.x = current.time.ToDoubleT();
+    point.x = current.source_timestamp.ToDoubleT();
     point.y = current.value.get_or(0.0);
     point.good = timed_data_.current().qualifier.good();
   
@@ -117,7 +117,7 @@ bool MetrixDataSource::XToData(double& x, scada::VQ& val) const {
   if (value.is_null())
     return false;
 
-  x = value.time.ToDoubleT();
+  x = value.source_timestamp.ToDoubleT();
   val.value = value.value;
   val.qualifier = value.qualifier;
   return true;
