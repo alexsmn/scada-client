@@ -199,7 +199,7 @@ void OpcUaSubscription::CreateMonitoredItems() {
 
     request.MonitoringMode = OpcUa_MonitoringMode_Reporting;
     request.RequestedParameters.ClientHandle = item.client_handle;
-    request.ItemToMonitor.NodeId = Convert(item.read_value_id.first);
+    Convert(item.read_value_id.first, request.ItemToMonitor.NodeId);
     request.ItemToMonitor.AttributeId = static_cast<opcua::AttributeId>(item.read_value_id.second);
     ext_filter.Release(request.RequestedParameters.Filter);
   }
