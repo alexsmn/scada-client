@@ -52,7 +52,7 @@ class VidiconSession : public scada::SessionService,
   virtual std::unique_ptr<scada::MonitoredItem> CreateMonitoredItem(const scada::NodeId& node_id, scada::AttributeId attribute_id) override;
 
   // scada::AttributeService
-  virtual void Read(const std::vector<scada::ReadValueId>& nodes, const ReadCallback& callback) override;
+  virtual void Read(const std::vector<scada::ReadValueId>& nodes, const scada::ReadCallback& callback) override;
   virtual void Write(const scada::NodeId& node_id, double value, const scada::NodeId& user_id,
                      const scada::WriteFlags& flags, const StatusCallback& callback) override;
 
@@ -83,9 +83,9 @@ class VidiconSession : public scada::SessionService,
                                const StatusCallback& callback) override;
 
   // scada::ViewService
-  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes, const BrowseCallback& callback) override;
+  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes, const scada::BrowseCallback& callback) override;
   virtual void TranslateBrowsePath(const scada::NodeId& starting_node_id, const scada::RelativePath& relative_path,
-      const TranslateBrowsePathCallback& callback) override;
+      const scada::TranslateBrowsePathCallback& callback) override;
   virtual void Subscribe(scada::ViewEvents& events) override;
   virtual void Unsubscribe(scada::ViewEvents& events) override;
 

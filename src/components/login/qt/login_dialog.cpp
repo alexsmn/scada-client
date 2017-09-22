@@ -23,13 +23,13 @@ LoginDialog::LoginDialog(const DataServicesContext& services_context)
   QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
   auto user_name = settings.value("User").toString();
   user_list_ = settings.value("UserList").toString().split(',');
-  auto host = settings.value("Host").toString();
+  auto server = settings.value("Server").toString();
   auto password = settings.value("Password").toString();
   auto auto_login = settings.value("AutoLogin").toBool();
   if (QApplication::queryKeyboardModifiers() & Qt::ControlModifier)
     auto_login = false;
 
-  ui.serverComboBox->setCurrentText(host);
+  ui.serverComboBox->setCurrentText(server);
 
   ui.userNameComboBox->addItems(user_list_);
   ui.userNameComboBox->setCurrentText(user_name);
@@ -50,13 +50,13 @@ LoginDialog::~LoginDialog() {
 void LoginDialog::accept() {
   SetControlsEnabled(false);
 
-  auto server = ui.serverComboBox->currentText();
+  server_ = ui.serverComboBox->currentText();
   user_name_ = ui.userNameComboBox->currentText();
   password_ = ui.passwordLineEdit->text();
   auto_login_ = ui.autoLoginCheckBox->isChecked();
 
   const char* service_name = "Scada";
-  if (server.startsWith("opc."))
+  if (server_.startsWith("opc."))
     service_name = "OpcUa";
 
   if (!CreateDataServices(service_name, services_context_, services_)) {
@@ -66,7 +66,7 @@ void LoginDialog::accept() {
 
   std::weak_ptr<bool> cancelation = cancelation_;
   // "TCP;active;port=2000"
-  services_.session_service_->Connect(server.toStdString(), user_name_.toStdString(), password_.toStdString(), true,
+  services_.session_service_->Connect(server_.toStdString(), user_name_.toStdString(), password_.toStdString(), true,
       [this, cancelation](const scada::Status& result) {
         if (!cancelation.expired())
           OnLoginResult(result);
@@ -79,6 +79,7 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
     settings.setValue("User", user_name_);
     settings.setValue("Password", auto_login_ ? password_ : QString());
     settings.setValue("AutoLogin", auto_login_);
+    settings.setValue("Server", server_);
 
     int i = user_list_.indexOf(user_name_);
     if (!user_list_.empty() && i != user_list_.size() - 1) {
@@ -94,6 +95,7 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
     QDialog::accept();
 
   } else {
+    services_ = {};
     auto_login_ = false;
 
     QMessageBox msg_box;

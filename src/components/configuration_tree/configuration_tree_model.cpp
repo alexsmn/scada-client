@@ -69,9 +69,9 @@ void ConfigurationTreeNode::BrowseChildren() {
   auto node_id = data_node_.id();
   for (auto& reference_type_id : model_.reference_type_ids_) {
     data_node_.Browse({node_id, scada::BrowseDirection::Forward, reference_type_id, true},
-        [=](const scada::Status& status, const scada::ReferenceDescriptions& references) {
+        [node_id, &model = model_](const scada::Status& status, const scada::ReferenceDescriptions& references) {
           for (auto& reference : references)
-            model_.EnsureNode2(reference.node_id, node_id);
+            model.EnsureNode2(reference.node_id, node_id);
         });
   }
 }

@@ -90,7 +90,7 @@ std::unique_ptr<scada::MonitoredItem> VidiconSession::CreateMonitoredItem(const 
   return nullptr;
 }
 
-void VidiconSession::Read(const std::vector<scada::ReadValueId>& nodes, const ReadCallback& callback) {
+void VidiconSession::Read(const std::vector<scada::ReadValueId>& nodes, const scada::ReadCallback& callback) {
   assert(false);
 }
 
@@ -144,12 +144,12 @@ void VidiconSession::DeleteReference(const scada::NodeId& reference_type_id, con
   callback(scada::StatusCode::Bad);
 }
 
-void VidiconSession::Browse(const std::vector<scada::BrowseDescription>& nodes, const BrowseCallback& callback) {
+void VidiconSession::Browse(const std::vector<scada::BrowseDescription>& nodes, const scada::BrowseCallback& callback) {
   callback(scada::StatusCode::Bad, {});
 }
 
 void VidiconSession::TranslateBrowsePath(const scada::NodeId& starting_node_id, const scada::RelativePath& relative_path,
-    const TranslateBrowsePathCallback& callback) {
+    const scada::TranslateBrowsePathCallback& callback) {
   callback(scada::StatusCode::Bad, {}, 0);
 }
 

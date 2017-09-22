@@ -9,6 +9,7 @@
 class MessageLoopQt : public base::SingleThreadTaskRunner {
  public:
   MessageLoopQt();
+  ~MessageLoopQt();
 
   void Run();
 
@@ -36,7 +37,7 @@ class MessageLoopQt : public base::SingleThreadTaskRunner {
 
   int sequence_num_;
 
-  std::priority_queue<base::PendingTask> queue_;
+  base::DelayedTaskQueue queue_;
   base::ThreadTaskRunnerHandle thread_task_runner_handle_;
 
   QTimer timer_;

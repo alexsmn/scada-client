@@ -7,12 +7,15 @@ MessageLoopQt::MessageLoopQt()
   QObject::connect(&timer_, &QTimer::timeout, [this] { Run(); });
 }
 
+MessageLoopQt::~MessageLoopQt() {
+}
+
 void MessageLoopQt::Run() {
   auto ticks = base::TimeTicks::Now();
   while (!queue_.empty() && queue_.top().delayed_run_time <= ticks) {
-    auto task = std::move(const_cast<base::PendingTask&>(queue_.top()).task);
+    auto pending_task = std::move(const_cast<base::PendingTask&>(queue_.top()));
     queue_.pop();
-    std::move(task).Run();
+    std::move(pending_task.task).Run();
   }
 }
 

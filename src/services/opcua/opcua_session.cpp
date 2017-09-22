@@ -32,11 +32,11 @@ OpcUa_ProxyStubConfiguration MakeProxyStubConfiguration() {
   return result;
 }
 
-static void OnBrowseResponse(const OpcUaSession::BrowseCallback& callback, const scada::Status& status, std::vector<scada::BrowseResult> results) {
+static void OnBrowseResponse(const scada::BrowseCallback& callback, const scada::Status& status, std::vector<scada::BrowseResult> results) {
   callback(status, std::move(results));
 }
 
-static void OnReadResponse(const OpcUaSession::ReadCallback& callback, const scada::Status& status, std::vector<scada::DataValue> results) {
+static void OnReadResponse(const scada::ReadCallback& callback, const scada::Status& status, std::vector<scada::DataValue> results) {
   callback(status, std::move(results));
 }
 
@@ -102,7 +102,7 @@ void OpcUaSession::AddObserver(scada::SessionStateObserver& observer) {
 void OpcUaSession::RemoveObserver(scada::SessionStateObserver& observer) {
 }
 
-void OpcUaSession::Browse(const std::vector<scada::BrowseDescription>& nodes, const BrowseCallback& callback) {
+void OpcUaSession::Browse(const std::vector<scada::BrowseDescription>& nodes, const scada::BrowseCallback& callback) {
   auto runner = base::SequencedTaskRunnerHandle::Get();
   auto ua_nodes = ConvertVector<OpcUa_BrowseDescription>(nodes.begin(), nodes.end());
   auto size = ua_nodes.size();
@@ -129,7 +129,7 @@ void OpcUaSession::Browse(const std::vector<scada::BrowseDescription>& nodes, co
 }
 
 void OpcUaSession::TranslateBrowsePath(const scada::NodeId& starting_node_id, const scada::RelativePath& relative_path,
-    const TranslateBrowsePathCallback& callback) {
+    const scada::TranslateBrowsePathCallback& callback) {
   assert(false);
 }
 
@@ -155,7 +155,7 @@ std::unique_ptr<scada::MonitoredItem> OpcUaSession::CreateMonitoredItem(const sc
   return GetDefaultSubscription().CreateMonitoredItem(node_id, attribute_id);
 }
 
-void OpcUaSession::Read(const std::vector<scada::ReadValueId>& value_ids, const ReadCallback& callback) {
+void OpcUaSession::Read(const std::vector<scada::ReadValueId>& value_ids, const scada::ReadCallback& callback) {
   assert(session_activated_);
 
   std::vector<OpcUa_ReadValueId> read_array(value_ids.size());

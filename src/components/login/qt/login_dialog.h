@@ -41,7 +41,7 @@ public Q_SLOTS:
 
   QString user_name_;
   QString password_;
-  QString host_;
+  QString server_;
   bool auto_login_ = false;
   QStringList user_list_;
   

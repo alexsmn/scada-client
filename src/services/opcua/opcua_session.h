@@ -35,9 +35,9 @@ class OpcUaSession : public std::enable_shared_from_this<OpcUaSession>,
   virtual void RemoveObserver(scada::SessionStateObserver& observer) override;
 
   // scada::ViewService
-  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes, const BrowseCallback& callback) override;
+  virtual void Browse(const std::vector<scada::BrowseDescription>& nodes, const scada::BrowseCallback& callback) override;
   virtual void TranslateBrowsePath(const scada::NodeId& starting_node_id, const scada::RelativePath& relative_path,
-      const TranslateBrowsePathCallback& callback) override;
+      const scada::TranslateBrowsePathCallback& callback) override;
   virtual void Subscribe(scada::ViewEvents& events) override;
   virtual void Unsubscribe(scada::ViewEvents& events) override;
 
@@ -45,7 +45,7 @@ class OpcUaSession : public std::enable_shared_from_this<OpcUaSession>,
   virtual std::unique_ptr<scada::MonitoredItem> CreateMonitoredItem(const scada::NodeId& node_id, scada::AttributeId attribute_id) override;
 
   // scada::AttributeService
-  virtual void Read(const std::vector<scada::ReadValueId>& value_ids, const ReadCallback& callback) override;
+  virtual void Read(const std::vector<scada::ReadValueId>& value_ids, const scada::ReadCallback& callback) override;
   virtual void Write(const scada::NodeId& node_id, double value, const scada::NodeId& user_id,
                      const scada::WriteFlags& flags, const scada::StatusCallback& callback) override;
 
