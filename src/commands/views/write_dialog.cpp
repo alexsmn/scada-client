@@ -15,6 +15,7 @@
 #include "components/main/views/main_window_views.h"
 #include "common/node_ref_util.h"
 #include "common/formula_util.h"
+#include "translation.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>
@@ -163,7 +164,7 @@ void WriteDialog::OnWriteComplete(const scada::Status& status) {
 
     const base::char16* title = write_selecting_ ? L"Подготовка к управлению" :
                                              L"Управление";
-    base::string16 message = status.ToString16() + L'.';
+    base::string16 message = Translate(status.ToString()) + L'.';
     MessageBoxW(window_handle(), message.c_str(), title, MB_OK | MB_ICONSTOP);
     return;
   }

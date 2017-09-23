@@ -110,7 +110,7 @@ void OpcUaSession::Browse(const std::vector<scada::BrowseDescription>& nodes, co
       [runner, size, callback](opcua::StatusCode status_code, opcua::Span<OpcUa_BrowseResult> results) {
         if (!status_code) {
           runner->PostTask(FROM_HERE, base::Bind(&OnBrowseResponse, callback,
-              ConvertStatusCode(status_code), base::Passed(std::vector<scada::BrowseResult>{})));
+              ConvertStatusCode(status_code.code()), base::Passed(std::vector<scada::BrowseResult>{})));
           return;
         }
 
@@ -123,7 +123,7 @@ void OpcUaSession::Browse(const std::vector<scada::BrowseDescription>& nodes, co
         }
 
         runner->PostTask(FROM_HERE, base::Bind(&OnBrowseResponse, callback,
-            ConvertStatusCode(status_code),
+            ConvertStatusCode(status_code.code()),
             base::Passed(ConvertVector<scada::BrowseResult>(results))));
       });
 }
@@ -164,7 +164,7 @@ void OpcUaSession::Read(const std::vector<scada::ReadValueId>& value_ids, const 
   auto runner = base::SequencedTaskRunnerHandle::Get();
   session_.Read({read_array.data(), value_ids.size()}, [runner, callback](opcua::StatusCode status_code, opcua::Span<OpcUa_DataValue> results) {
     runner->PostTask(FROM_HERE, base::Bind(&OnReadResponse, callback,
-        ConvertStatusCode(status_code),
+        ConvertStatusCode(status_code.code()),
         base::Passed(ConvertVector<scada::DataValue>(results))));
   });
 
@@ -188,7 +188,7 @@ void OpcUaSession::Reset() {
 
 void OpcUaSession::OnConnectionStateChanged(opcua::StatusCode status_code, OpcUa_Channel_Event event) {
   if (event != eOpcUa_Channel_Event_Connected) {
-    OnError(ConvertStatusCode(status_code));
+    OnError(ConvertStatusCode(status_code.code()));
     return;
   }
 
@@ -209,7 +209,7 @@ void OpcUaSession::CreateSession() {
   auto ref = shared_from_this();
   auto runner = base::SequencedTaskRunnerHandle::Get();
   session_.Create(request, [runner, ref](opcua::StatusCode status_code) {
-    runner->PostTask(FROM_HERE, base::Bind(&OpcUaSession::OnCreateSessionResponse, ref, ConvertStatusCode(status_code)));
+    runner->PostTask(FROM_HERE, base::Bind(&OpcUaSession::OnCreateSessionResponse, ref, ConvertStatusCode(status_code.code())));
   });
 }
 
@@ -234,7 +234,7 @@ void OpcUaSession::ActivateSession() {
   auto ref = shared_from_this();
   auto runner = base::SequencedTaskRunnerHandle::Get();
   session_.Activate([runner, ref](opcua::StatusCode status_code) {
-    runner->PostTask(FROM_HERE, base::Bind(&OpcUaSession::OnActivateSessionResponse, ref, ConvertStatusCode(status_code)));
+    runner->PostTask(FROM_HERE, base::Bind(&OpcUaSession::OnActivateSessionResponse, ref, ConvertStatusCode(status_code.code())));
   });
 }
 

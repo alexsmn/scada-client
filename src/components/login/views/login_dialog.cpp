@@ -16,6 +16,7 @@
 #include "views/framework/dialog.h"
 #include "core/session_service.h"
 #include "core/status.h"
+#include "translation.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>
@@ -229,7 +230,7 @@ void LoginDialog::OnLoginFailed(const scada::Status& status) {
   } else {
     base::string16 msg = base::StringPrintf(
         L"Ошибка при подключении к серверу (%ls).",
-        status.ToString16().c_str());
+        Translate(status.ToString()).c_str());
     MessageBoxW(window_handle(), msg.c_str(), title.c_str(), MB_OK | MB_ICONSTOP);
 
     UpdateControls();

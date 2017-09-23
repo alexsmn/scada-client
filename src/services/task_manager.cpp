@@ -6,6 +6,7 @@
 #include "services/profile.h"
 #include "core/node_management_service.h"
 #include "common/node_ref_service.h"
+#include "translation.h"
 
 namespace {
 
@@ -201,7 +202,7 @@ void TaskManager::ReportRequestCompletion(const scada::Status& status,
     return;
 
   base::string16 message = base::StringPrintf(L"%ls: %ls.",
-      task.title.c_str(), status.ToString16().c_str());
+      task.title.c_str(), Translate(status.ToString()).c_str());
   if (!result_text.empty())
     message += L'\n' + result_text;
 

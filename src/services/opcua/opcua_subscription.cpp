@@ -112,7 +112,7 @@ void OpcUaSubscription::CreateSubscription() {
   auto ref = shared_from_this();
   auto runner = base::SequencedTaskRunnerHandle::Get();
   subscription_.Create(params, [ref, runner](opcua::StatusCode status_code) {
-    runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnCreateSubscriptionResponse, ref, ConvertStatusCode(status_code)));
+    runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnCreateSubscriptionResponse, ref, ConvertStatusCode(status_code.code())));
   });
 }
 
@@ -130,7 +130,7 @@ void OpcUaSubscription::OnCreateSubscriptionResponse(const scada::Status& status
   subscription_.StartPublishing(
       [runner, ref](opcua::StatusCode status_code) {
       if (!status_code)
-        runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnError, ref, ConvertStatusCode(status_code)));
+        runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnError, ref, ConvertStatusCode(status_code.code())));
       },
       [runner, ref](OpcUa_DataChangeNotification& notification) {
         runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnDataChange, ref,
@@ -211,7 +211,7 @@ void OpcUaSubscription::CreateMonitoredItems() {
   subscription_.CreateMonitoredItems({requests.data(), requests.size()}, OpcUa_TimestampsToReturn_Both,
       [ref, runner](opcua::StatusCode status_code, opcua::Span<OpcUa_MonitoredItemCreateResult> results) {
         runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnCreateMonitoredItemsResponse,
-            ref, ConvertStatusCode(status_code),
+            ref, ConvertStatusCode(status_code.code()),
             base::Passed(ConvertVector<OpcUaMonitoredItemCreateResult>(results))));
       });
 }
@@ -250,7 +250,7 @@ void OpcUaSubscription::OnCreateMonitoredItemsResponse(const scada::Status& stat
       if (item.subscribed) {
         // TODO: Forward status.
         if (item.data_change_handler)
-          item.data_change_handler({ConvertStatusCode(result.status_code), scada::DateTime::Now()});
+          item.data_change_handler({ConvertStatusCode(result.status_code.code()), scada::DateTime::Now()});
       } else {
         assert(items_.find(item.client_handle) != items_.end());
         items_.erase(item.client_handle);
@@ -309,7 +309,7 @@ void OpcUaSubscription::DeleteMonitoredItems() {
         for (size_t i = 0; i < results.size(); ++i)
           converted_results[i] = ConvertStatusCode(results[i]);
         runner->PostTask(FROM_HERE, base::Bind(&OpcUaSubscription::OnDeleteMonitoredItemsResponse,
-            ref, ConvertStatusCode(status_code),
+            ref, ConvertStatusCode(status_code.code()),
             base::Passed(std::move(converted_results))));
       });
 }

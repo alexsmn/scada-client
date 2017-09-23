@@ -13,6 +13,7 @@
 
 #include "core/status.h"
 #include "core/session_service.h"
+#include "translation.h"
 
 LoginDialog::LoginDialog(const DataServicesContext& services_context)
     : services_context_(services_context),
@@ -101,7 +102,7 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
     QMessageBox msg_box;
     msg_box.setWindowTitle(tr("Login failed"));
     msg_box.setIcon(QMessageBox::Icon::Warning);
-    msg_box.setText(QString::fromStdWString(result.ToString16()) + ".");
+    msg_box.setText(QString::fromStdWString(Translate(result.ToString())) + ".");
     msg_box.exec();
 
     SetControlsEnabled(true);

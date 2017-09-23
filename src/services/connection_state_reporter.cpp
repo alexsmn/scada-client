@@ -5,6 +5,7 @@
 #include "core/status.h"
 #include "core/session_service.h"
 #include "services/local_events.h"
+#include "translation.h"
 
 #include <cassert>
 
@@ -27,6 +28,6 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   base::string16 message = (status.code() == scada::StatusCode::Bad_SessionForcedLogoff) ?
       L"Разрыв связи со стороны сервера" :
       base::StringPrintf(L"Связь с сервером разорвана из-за ошибки (%ls)",
-          status.ToString16().c_str());
+          Translate(status.ToString()).c_str());
   local_events_.ReportEvent(LocalEvents::SEV_ERROR, message);
 }

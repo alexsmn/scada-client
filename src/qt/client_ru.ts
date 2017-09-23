@@ -29,7 +29,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/login/qt/login_dialog.cpp" line="102"/>
+        <location filename="../components/login/qt/login_dialog.cpp" line="103"/>
         <source>Login failed</source>
         <translation type="unfinished"></translation>
     </message>

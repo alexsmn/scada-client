@@ -13,6 +13,7 @@
 #include "common/node_ref_util.h"
 #include "common/formula_util.h"
 #include "common/browse_util.h"
+#include "translation.h"
 
 UINT CF_TRECS = RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
 
@@ -70,7 +71,7 @@ void ReportRequestResult(const base::string16& title, const scada::Status& statu
     return;
 
   base::string16 message = base::StringPrintf(L"%ls - %ls.", title.c_str(),
-      status.ToString16().c_str());
+      Translate(status.ToString()).c_str());
   LocalEvents::Severity severity = status ?
       LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
   local_events.ReportEvent(severity, message);
@@ -245,4 +246,8 @@ void PrepareWindowDefinitionForGroup(NodeRefService& node_service, const NodeRef
           callback(PrepareWindowDefinitionForOpen(parent, type, node_ids));
         });
       });
+}
+
+base::string16 Translate(base::StringPiece text) {
+  return base::SysNativeMBToWide(text);
 }
