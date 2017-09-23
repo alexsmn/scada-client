@@ -35,10 +35,16 @@ void TreeModelAdapter::LoadIcons(unsigned resource_id, int width, QColor mask_co
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {
-  return index.internalPointer();
+  if (index.isValid())
+    return index.internalPointer();
+  else
+    return model_.GetRoot();
 }
 
 QModelIndex TreeModelAdapter::GetNodeIndex(void* node, int column) const {
+  if (node == model_.GetRoot())
+    return QModelIndex();
+
   int row = GetIndexOf(node);
   return createIndex(row, column, node);
 }
@@ -57,33 +63,32 @@ QVariant TreeModelAdapter::headerData(int section, Qt::Orientation orientation, 
 
 QModelIndex TreeModelAdapter::index(int row, int column,
                                     const QModelIndex &parent) const {
-  if (!hasIndex(row, column, parent))
-    return QModelIndex();
-
-  void* parent_node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
+  void* parent_node = GetNode(parent);
+  if (row >= model_.GetChildCount(parent_node))
+    return {};
 
   void* child_node = model_.GetChild(parent_node, row);
   return createIndex(row, column, child_node);
 }
 
 QModelIndex TreeModelAdapter::parent(const QModelIndex &child) const {
-  if (!child.isValid())
-    return QModelIndex();
+  assert(child.isValid());
 
   void* child_node = GetNode(child);
-  void* parent_node = model_.GetParent(child_node);
+  assert(child_node != model_.GetRoot());
 
-  return parent_node == model_.GetRoot() ?
-      QModelIndex() :
-      createIndex(GetIndexOf(parent_node), 0, parent_node);
+  void* parent_node = model_.GetParent(child_node);
+  if (parent_node == model_.GetRoot())
+    return QModelIndex();
+
+  return createIndex(GetIndexOf(parent_node), 0, parent_node);
 }
 
 int TreeModelAdapter::rowCount(const QModelIndex &parent) const {
   if (parent.column() > 0)
     return 0;
 
-  void* parent_node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
-  return model_.GetChildCount(parent_node);
+  return model_.GetChildCount(GetNode(parent));
 }
 
 int TreeModelAdapter::columnCount(const QModelIndex &parent) const {
@@ -91,9 +96,6 @@ int TreeModelAdapter::columnCount(const QModelIndex &parent) const {
 }
 
 QVariant TreeModelAdapter::data(const QModelIndex &index, int role) const {
-  if (!index.isValid())
-    return QVariant();
-
   void* node = GetNode(index);
   assert(node);
 
@@ -138,8 +140,8 @@ Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex &index) const {
 }
 
 int TreeModelAdapter::GetIndexOf(void* node) const {
-  if (node == model_.GetRoot())
-    return 0;
+  // Mustn't be called for root node, since root is equal to QModelIndex().
+  assert(node != model_.GetRoot());
 
   void* parent_node = model_.GetParent(node);
   for (int i = 0; i < model_.GetChildCount(parent_node); ++i) {

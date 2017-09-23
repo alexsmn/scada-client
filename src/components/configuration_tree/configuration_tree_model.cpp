@@ -66,14 +66,7 @@ void ConfigurationTreeNode::BrowseChildren() {
 
   children_ = true;
 
-  auto node_id = data_node_.id();
-  for (auto& reference_type_id : model_.reference_type_ids_) {
-    data_node_.Browse({node_id, scada::BrowseDirection::Forward, reference_type_id, true},
-        [node_id, &model = model_](const scada::Status& status, const scada::ReferenceDescriptions& references) {
-          for (auto& reference : references)
-            model.EnsureNode2(reference.node_id, node_id);
-        });
-  }
+  model_.Browse(data_node_);
 }
 
 int ConfigurationTreeNode::GetChildCount() const {
@@ -194,4 +187,22 @@ void ConfigurationTreeModel::OnReferenceDeleted(const scada::NodeId& node_id) {
 void ConfigurationTreeModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   if (ConfigurationTreeNode* tree_node = FindNode(node_id))
     tree_node->OnNodeSemanticChanged();
+}
+
+void ConfigurationTreeModel::Browse(const NodeRef& node) {
+  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+  auto node_id = node.id();
+  NodeRef::BrowseCallback callback =
+      [weak_ptr, node_id]
+      (const scada::Status& status, scada::ReferenceDescriptions references) {
+        if (auto ptr = weak_ptr.get())
+          ptr->OnBrowseComplete(node_id, std::move(references));
+      };
+  for (auto& reference_type_id : reference_type_ids_)
+    node.Browse({node_id, scada::BrowseDirection::Forward, reference_type_id, true}, callback);
+}
+
+void ConfigurationTreeModel::OnBrowseComplete(const scada::NodeId& node_id, const scada::ReferenceDescriptions& references) {
+  for (auto& reference : references)
+    EnsureNode2(reference.node_id, node_id);
 }

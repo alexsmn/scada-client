@@ -89,6 +89,9 @@ class ConfigurationTreeModel : public ui::TreeNodeModel<ConfigurationTreeNode>,
   NodeRefService& node_service_;
 
  private:
+  void Browse(const NodeRef& node);
+  void OnBrowseComplete(const scada::NodeId& node_id, const scada::ReferenceDescriptions& references);
+
   const std::vector<scada::NodeId> reference_type_ids_;
 
   NodeMap node_map_;
