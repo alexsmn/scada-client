@@ -77,22 +77,6 @@ void ObjectTreeView::UpdateNodesVisibility(ConfigurationTreeNode& parent_node, b
   }
 }
 
-void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& node, bool visible) {
-  if (!node.data_node() || !node.data_node().fetched() ||
-      node.data_node().node_class() != scada::NodeClass::Variable)
-    return;
-
-  if (visible) {
-    rt::TimedDataSpec& data_spec = visible_nodes_data_[&node];
-    data_spec.param = &node;
-    data_spec.set_delegate(this);
-    data_spec.Connect(timed_data_service_, node.data_node().id());
-
-  } else {
-    visible_nodes_data_.erase(&node);
-  }
-}
-
 #if defined(UI_VIEWS)
 void ObjectTreeView::OnPaintNode(gfx::Canvas* canvas,
                                  const gfx::Rect& node_bounds, void* node) {

@@ -157,6 +157,9 @@ void ConfigurationTreeModel::EnsureNode(const scada::NodeId& node_id) {
 }
 
 void ConfigurationTreeModel::EnsureNode2(const scada::NodeId& node_id, const scada::NodeId& parent_id) {
+  if (FindNode(node_id))
+    return;
+
   auto node = node_service_.GetNode(node_id);
   if (!node)
     return;

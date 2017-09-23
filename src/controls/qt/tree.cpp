@@ -7,8 +7,8 @@ Tree::Tree(ui::TreeModel& model)
     : model_adapter_(new TreeModelAdapter(model)) {
   setHeaderHidden(true);
   setModel(model_adapter_.get());
-  for (int i = 0; i < model_adapter_->columnCount(); ++i)
-    resizeColumnToContents(i);
+//  for (int i = 0; i < model_adapter_->columnCount(); ++i)
+//    resizeColumnToContents(i);
 }
 
 Tree::~Tree() {
@@ -35,7 +35,8 @@ void* Tree::GetSelectedNode() {
 }
 
 bool Tree::IsExpanded(void* node, bool up_to_root) const {
-  return isExpanded(model_adapter_->GetNodeIndex(node, 0));
+  auto index = model_adapter_->GetNodeIndex(node, 0);
+  return !index.isValid() || isExpanded(index);
 }
 
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {

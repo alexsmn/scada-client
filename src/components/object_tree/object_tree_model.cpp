@@ -66,8 +66,9 @@ void ObjectTreeModel::OnEventsChanged(rt::TimedDataSpec& spec, const events::Eve
 }
 
 void ObjectTreeModel::OnBlink(bool state) {
-  for (auto& p : visible_nodes_data_) {
-    if (p.second.alerting())
+  for (auto& p : visible_nodes_) {
+    auto& visible_node = p.second;
+    if (visible_node.spec.alerting())
       TreeNodeChanged(p.first);
   }
 }
@@ -75,8 +76,45 @@ void ObjectTreeModel::OnBlink(bool state) {
 const rt::TimedDataSpec* ObjectTreeModel::GetTimedData(void* node) const {
   if (!node)
     return nullptr;
-  auto i = visible_nodes_data_.find(static_cast<ConfigurationTreeNode*>(node));
-  if (i == visible_nodes_data_.end())
+  auto i = visible_nodes_.find(static_cast<ConfigurationTreeNode*>(node));
+  if (i == visible_nodes_.end())
     return nullptr;
-  return &i->second;
+  auto& visible_node = i->second;
+  return &visible_node.spec;
+}
+
+void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& node, bool visible) {
+  if (visible)
+    ConnectVisibleNode(visible_nodes_[&node], node);
+  else
+    visible_nodes_.erase(&node);
+}
+
+void ObjectTreeModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  ConfigurationTreeModel::OnNodeSemanticChanged(node_id);
+
+  auto* tree_node = FindNode(node_id);
+  if (!tree_node)
+    return;
+
+  auto i = visible_nodes_.find(tree_node);
+  if (i != visible_nodes_.end())
+    ConnectVisibleNode(i->second, *tree_node);
+}
+
+void ObjectTreeModel::ConnectVisibleNode(VisibleNode& visible_node, ConfigurationTreeNode& tree_node) {
+  if (visible_node.fetched)
+    return;
+
+  if (!tree_node.data_node().fetched())
+    return;
+
+  visible_node.fetched = true;
+
+  if (tree_node.data_node().node_class() != scada::NodeClass::Variable)
+    return;
+
+  visible_node.spec.param = &tree_node;
+  visible_node.spec.set_delegate(this);
+  visible_node.spec.Connect(timed_data_service_, tree_node.data_node().id());
 }

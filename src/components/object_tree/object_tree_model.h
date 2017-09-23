@@ -28,6 +28,14 @@ class ObjectTreeModel : public ConfigurationTreeModel,
   virtual SkColor GetTextColor(void* node, int column_id) override;
   virtual SkColor GetBackgroundColor(void* node, int column_id) override;
 
+ private:
+  struct VisibleNode {
+    bool fetched = false;
+    rt::TimedDataSpec spec;
+  };
+
+  void ConnectVisibleNode(VisibleNode& visible_node, ConfigurationTreeNode& tree_node);
+
   // rt::TimedDataDelegate
   virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
                                  const rt::PropertySet& properties) override;
@@ -37,9 +45,11 @@ class ObjectTreeModel : public ConfigurationTreeModel,
   // Blinker
   virtual void OnBlink(bool state) override;
 
+  // NodeRefObserver
+  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+
   TimedDataService& timed_data_service_;
   Profile& profile_;
 
-  typedef std::map<ConfigurationTreeNode*, rt::TimedDataSpec> NodeDataMap;
-  NodeDataMap visible_nodes_data_;
+  std::map<ConfigurationTreeNode*, VisibleNode> visible_nodes_;
 };

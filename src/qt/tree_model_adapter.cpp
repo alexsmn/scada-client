@@ -56,6 +56,14 @@ QVariant TreeModelAdapter::headerData(int section, Qt::Orientation orientation, 
   switch (role) {
     case Qt::DisplayRole:
       return QString::fromStdWString(model_.GetColumnText(section));
+    case Qt::SizeHintRole: {
+      auto size = QAbstractItemModel::headerData(section, orientation, role).toSize();
+      size.setHeight(20);
+      int peferred_width = model_.GetColumnPreferredSize(section);
+      if (peferred_width != 0)
+        size.setWidth(peferred_width);
+      return size;
+    }
     default:
       return QAbstractItemModel::headerData(section, orientation, role);
   }
