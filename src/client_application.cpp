@@ -29,6 +29,7 @@
 #include "timed_data/timed_data_service_impl.h"
 #include "core/session_service.h"
 #include "project.h"
+#include "services/master_data_services.h"
 
 ClientApplication* g_application = nullptr;
 
@@ -61,7 +62,8 @@ void RegisterFileCacheType(FileCache& cache, ViewType type, const base::string16
 
 } // namespace
 
-ClientApplication::ClientApplication(int argc, char** argv) {
+ClientApplication::ClientApplication(int argc, char** argv)
+    : master_data_services_{std::make_shared<MasterDataServices>()}  {
 }
 
 bool ClientApplication::Init() {
@@ -125,8 +127,8 @@ ClientApplication::~ClientApplication() {
   event_manager_.reset();
   node_service_.reset();
 
-  if (data_services_.session_service_)
-    data_services_.session_service_->RemoveObserver(*this);
+  // Remove SessionService observer.
+  master_data_services_->RemoveObserver(*this);
 }
 
 bool ClientApplication::ShowLoginDialog() {
@@ -135,34 +137,40 @@ bool ClientApplication::ShowLoginDialog() {
     *transport_factory_,
   };
 
-  return ShowLoginDialogImpl(std::move(context), data_services_);
+  DataServices services;
+  if (!ShowLoginDialogImpl(std::move(context), services))
+    return false;
+
+  master_data_services_->SetServices(std::move(services));
+  return true;
 }
 
 void ClientApplication::BeforeRun() {
-  data_services_.session_service_->AddObserver(*this);
+  // Add SessionService observer.
+  master_data_services_->AddObserver(*this);
 
   node_service_ = std::make_unique<NodeRefServiceImpl>(NodeRefServiceImplContext{
       logger_,
-      *data_services_.view_service_,
-      *data_services_.attribute_service_,
+      *master_data_services_,
+      *master_data_services_,
   });
 
   event_manager_ = std::make_unique<events::EventManager>(events::EventManagerContext{
       io_service_,
-      *data_services_.monitored_item_service_,
-      *data_services_.event_service_,
-      *data_services_.history_service_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
       std::make_shared<NestedLogger>(logger_, "EventManager"),
   });
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       io_service_,
       *node_service_,
-      *data_services_.monitored_item_service_,
-      *data_services_.attribute_service_,
-      *data_services_.method_service_,
-      *data_services_.event_service_,
-      *data_services_.history_service_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
       *event_manager_,
   });
 
@@ -172,7 +180,7 @@ void ClientApplication::BeforeRun() {
 
   task_manager_ = std::make_unique<TaskManager>(TaskManagerContext{
       *node_service_,
-      *data_services_.node_management_service_,
+      *master_data_services_,
       *local_events_,
       *profile_,
   });
@@ -234,12 +242,12 @@ void ClientApplication::OpenMainWindow(int window_id) {
       [this](const base::FilePath& path) { return FindOpenedViewByFilePath(path); },
       [this] { NewMainWindow(); },
       *speech_,
-      *data_services_.node_management_service_,
-      *data_services_.history_service_,
-      *data_services_.method_service_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
       *favourites_,
-      *data_services_.session_service_,
-      *data_services_.monitored_item_service_,
+      *master_data_services_,
+      *master_data_services_,
   });
 
   if (window)
@@ -256,7 +264,7 @@ void ClientApplication::CloseMainWindow(int window_id) {
 }
 
 void ClientApplication::OnSessionCreated() {
-  event_manager_->OnChannelOpened(data_services_.session_service_->GetUserId());
+  event_manager_->OnChannelOpened(master_data_services_->GetUserId());
 }
 
 void ClientApplication::OnSessionDeleted(const scada::Status& status) {
@@ -290,5 +298,5 @@ OpenedView* ClientApplication::FindOpenedViewByFilePath(const base::FilePath& pa
 }
 
 scada::SessionService& ClientApplication::session_service() {
-  return *data_services_.session_service_;
+  return *master_data_services_;
 }

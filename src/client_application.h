@@ -25,6 +25,7 @@ class FileCache;
 class Logger;
 class LocalEvents;
 class MainWindow;
+class MasterDataServices;
 class ModusModule2;
 class NodeRefService;
 class OpenedView;
@@ -68,7 +69,7 @@ class ClientApplication : private scada::SessionStateObserver {
 
   std::shared_ptr<Logger> logger_;
 
-  DataServices data_services_;
+  std::shared_ptr<MasterDataServices> master_data_services_;
 
  private:
   bool IsPageOpened(int page_id);
