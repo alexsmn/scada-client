@@ -1,10 +1,10 @@
 #include "components/main/qt/view_manager_qt.h"
 
-#include <qapplication.h>
-#include <qdockwidget.h>
-#include <qevent.h>
-#include <qmainwindow.h>
-#include <qsplitter.h>
+#include <QApplication>
+#include <QCloseEvent>
+#include <QDockWidget>
+#include <QMainWindow>
+#include <QSplitter>
 
 #include "base/auto_reset.h"
 #include "common_resources.h"
@@ -81,7 +81,8 @@ QTabWidget* GetFirstTabBlock(QWidget& widget) {
 ViewManagerQt::ViewManagerQt(ClientApplicationQt& app, QMainWindow& main_window, ViewManagerDelegate* delegate)
     : ViewManager(delegate),
       main_window_(main_window) {
-  focused_changed_connection_ = QObject::connect(&app, &ClientApplicationQt::focusObjectChanged, [this] { OnFocusChanged(); });
+  QObject::connect(static_cast<QGuiApplication*>(QApplication::instance()),
+      &QGuiApplication::focusObjectChanged, this, &ViewManagerQt::OnFocusChanged);
 }
 
 void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {

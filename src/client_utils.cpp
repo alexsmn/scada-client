@@ -128,7 +128,7 @@ WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node, unsigned ty
 
   const WindowInfo& window_info = GetWindowInfo(type);
   WindowDefinition win(window_info);
-  win.title = base::StringPrintf(L"%ls: %ls", window_info.title, node.display_name().text().c_str());
+  win.title = base::StringPrintf(L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
 
   WindowItem& item_id = win.AddItem("Item");
   item_id.SetString("path", MakeNodeIdFormula(node.id()));
@@ -143,7 +143,7 @@ void PrepareWindowDefinitionForOpenExpandGroups(NodeRefService& node_service, co
   ExpandGroupItemIds(node_service, node, [node, type, callback](const std::vector<scada::NodeId>& node_ids) {
     const WindowInfo& window_info = GetWindowInfo(type);
     WindowDefinition win(window_info);
-    win.title = base::StringPrintf(L"%ls: %ls", window_info.title, node.display_name().text().c_str());
+    win.title = base::StringPrintf(L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
 
     for (auto& node_id : node_ids) {
       WindowItem& item_id = win.AddItem("Item");
@@ -160,7 +160,7 @@ WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node, unsigned ty
 
   const WindowInfo& window_info = GetWindowInfo(type);
   WindowDefinition win(GetWindowInfo(type));
-  win.title = base::StringPrintf(L"%ls: %ls", window_info.title, node.display_name().text().c_str());
+  win.title = base::StringPrintf(L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
 
   for (auto& id : item_ids) {
     WindowItem& item_id = win.AddItem("Item");
@@ -250,4 +250,8 @@ void PrepareWindowDefinitionForGroup(NodeRefService& node_service, const NodeRef
 
 base::string16 Translate(base::StringPiece text) {
   return base::SysNativeMBToWide(text);
+}
+
+base::string16 ToString16(const scada::LocalizedText& text) {
+  return base::SysUTF8ToWide(text.text().c_str());
 }

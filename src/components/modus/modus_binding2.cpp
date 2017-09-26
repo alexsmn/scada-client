@@ -8,6 +8,7 @@
 #include "components/modus/modus_module2.h"
 #include "components/modus/modus_style_library2.h"
 #include "ui/gfx/canvas.h"
+#include "translation.h"
 
 namespace modus {
 
@@ -29,7 +30,7 @@ Value ToValue(const scada::Variant& v) {
     case scada::Variant::STRING:
       return base::SysNativeMBToWide(v.as_string());
     case scada::Variant::LOCALIZED_TEXT:
-      return base::SysNativeMBToWide(v.as_localized_text().text());
+      return ToString16(v.as_localized_text());
     case scada::Variant::NODE_ID:
       return {};
     default:

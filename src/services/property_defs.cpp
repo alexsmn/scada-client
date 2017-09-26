@@ -14,6 +14,7 @@
 #include "core/node_id_util.h"
 #include "common/formula_util.h"
 #include "common/format.h"
+#include "translation.h"
 
 using namespace scada;
 
@@ -179,7 +180,7 @@ PropertyDefinition::PropertyDefinition(ui::TableColumn::Alignment alignment, int
 }
 
 base::string16 PropertyDefinition::GetTitle(PropertyContext& context, const NodeRef& property_declaration) const {
-  return base::SysNativeMBToWide(property_declaration.display_name().text());
+  return ToString16(property_declaration.display_name());
 }
 
 bool PropertyDefinition::IsReadOnly(const NodeRef& node, const scada::NodeId& prop_decl_id) const {
@@ -231,7 +232,7 @@ base::string16 ReferencePropertyDefinition::GetText(PropertyContext& context, co
 
   auto referenced_node = node.target(prop_type_id);
   if (referenced_node)
-    return base::SysNativeMBToWide(referenced_node.display_name().text());
+    return ToString16(referenced_node.display_name());
   else
     return kChoiceNone;
 }

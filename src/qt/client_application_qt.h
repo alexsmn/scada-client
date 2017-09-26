@@ -1,13 +1,11 @@
 #pragma once
 
-#include <QApplication>
-
 #include "client_application.h"
 
-class ClientApplicationQt : public QApplication,
-                            public ClientApplication {
+class ClientApplicationQt : public ClientApplication {
  public:
   ClientApplicationQt(int argc, char** argv);
+  ~ClientApplicationQt();
 
   // ClientApplication
   virtual bool Init() override;

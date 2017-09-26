@@ -1,11 +1,13 @@
 #include "components/main/qt/main_window_qt.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
 #include <QLayout>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QStyleFactory>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QToolButton>
@@ -66,35 +68,33 @@ MainWindowQt::~MainWindowQt() {
 }
 
 void MainWindowQt::CreateToolbar() {
-  context_menu_ = new QMenu(this);
-  context_menu_->setTitle(QStringLiteral("Контекст"));
+  context_menu_ = new QMenu(tr("Context"), this);
 
-  display_menu_ = new QMenu(this);
-  display_menu_->setTitle(QStringLiteral("Схема"));
+  display_menu_ = new QMenu(tr("Display"), this);
   FillDisplayMenu();
 
-  auto* graph_menu = new QMenu(this);
-  graph_menu->setTitle(QStringLiteral("График"));
+  auto* graph_menu = new QMenu(tr("Graph"), this);
+  auto* table_menu = new QMenu(tr("Table"), this);
+  auto* rest_menu = new QMenu(tr("More"), this);
+  auto* page_menu = new QMenu(tr("Page"), this);
 
-  auto* table_menu = new QMenu(this);
-  table_menu->setTitle(QStringLiteral("Таблица"));
+  auto* settings_menu = new QMenu(tr("Settings"), this);
+  auto* style_menu = new QMenu(tr("Style"), this);
+  for (auto& style : QStyleFactory::keys())
+    style_menu->addAction(style, [this, style] { QApplication::setStyle(style); });
+  settings_menu->addMenu(style_menu);
 
-  auto* rest_menu = new QMenu(this);
-  rest_menu->setTitle(QStringLiteral("Далее"));
-
-  auto* page_menu = new QMenu(this);
-  page_menu->setTitle(QStringLiteral("Лист"));
-
-  setMenuBar(new QMenuBar);
-  menuBar()->addMenu(display_menu_);
-  menuBar()->addMenu(graph_menu);
-  menuBar()->addMenu(table_menu);
-  menuBar()->addMenu(context_menu_);
-  menuBar()->addMenu(rest_menu);
-  menuBar()->addSeparator();
-  menuBar()->addMenu(page_menu);
-  menuBar()->addMenu(QStringLiteral("Настройки"));
-  menuBar()->addMenu(QStringLiteral("Справка"));
+  auto* menu_bar = new QMenuBar;
+  setMenuBar(menu_bar);
+  menu_bar->addMenu(display_menu_);
+  menu_bar->addMenu(graph_menu);
+  menu_bar->addMenu(table_menu);
+  menu_bar->addMenu(context_menu_);
+  menu_bar->addMenu(rest_menu);
+  menu_bar->addSeparator();
+  menu_bar->addMenu(page_menu);
+  menu_bar->addMenu(settings_menu);
+  menu_bar->addMenu(tr("Help"));
 
   setStatusBar(new QStatusBar);
 
@@ -116,7 +116,7 @@ void MainWindowQt::CreateToolbar() {
   }
 
   toolbar_ = new QToolBar(this);
-  toolbar_->setWindowTitle(QStringLiteral("Панель инструментов"));
+  toolbar_->setWindowTitle(tr("Toolbar"));
   addToolBar(Qt::TopToolBarArea, toolbar_);
 
   {

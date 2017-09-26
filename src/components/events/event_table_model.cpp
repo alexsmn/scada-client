@@ -14,6 +14,7 @@
 #include "common/node_ref_service.h"
 #include "common/node_ref_format.h"
 #include "common/node_ref_util.h"
+#include "translation.h"
 
 const base::char16 kLocalEventSource[] = L"Локальное событие";
 
@@ -87,7 +88,7 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
       break;
     case EventColumnItem:
       if (row.node)
-        cell.text = base::SysNativeMBToWide(row.node.display_name().text());
+        cell.text = ToString16(row.node.display_name());
       else if (row.type == LOCAL_EVENT)
         cell.text = kLocalEventSource;
       break;
@@ -96,17 +97,17 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
       break;
     case EventColumnSource:
       if (row.user)
-        cell.text = base::SysNativeMBToWide(row.user.display_name().text());
+        cell.text = ToString16(row.user.display_name());
       break;
     case EventColumnValue:
       if (row.node)
         cell.text = FormatValue(row.node, event.value, event.qualifier);
       else
-        cell.text = base::SysNativeMBToWide(event.value.get_or(scada::LocalizedText{}).text());
+        cell.text = ToString16(event.value.get_or(scada::LocalizedText{}));
       break;
     case EventColumnAckUser:
       if (row.acknowledged_user)
-        cell.text = base::SysNativeMBToWide(row.acknowledged_user.display_name().text());
+        cell.text = ToString16(row.acknowledged_user.display_name());
       break;
     case EventColumnAckTime:
       cell.text = base::SysNativeMBToWide(FormatTime(event.acknowledged_time,

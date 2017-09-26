@@ -14,6 +14,7 @@ using std::max;
 #include "common/event_manager.h"
 #include "core/session_service.h"
 #include "common/node_ref_service.h"
+#include "translation.h"
 
 StatusBarController::StatusBarController(HWND hwnd, NodeRefService& node_service,
     events::EventManager& event_manager, scada::SessionService& session_state_notifier)
@@ -53,7 +54,7 @@ void StatusBarController::Update() {
   SetPaneText(2, event_severity_min);
 
   auto& user_id = session_service_.GetUserId();
-  base::string16 user_status = base::SysNativeMBToWide(node_service_.GetNode(user_id).display_name().text());
+  base::string16 user_status = ToString16(node_service_.GetNode(user_id).display_name());
   SetPaneText(3, user_status);
 
   auto* connect_string = session_service_.IsConnected() ? L"Подключен" : L"Отключен";

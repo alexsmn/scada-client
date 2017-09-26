@@ -12,6 +12,7 @@
 #include "common/node_ref.h"
 #include "common/node_ref_util.h"
 #include "common/node_ref_format.h"
+#include "translation.h"
 
 #include <atlbase.h>
 #include <wtl/atlapp.h>

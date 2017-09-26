@@ -6,6 +6,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
+#include "translation.h"
 
 static const int kMaxLines = 1000;
 
@@ -74,7 +75,7 @@ void WatchModel::GetCell(ui::TableCell& cell) {
     case 1:
       if (event.node_id.is_null())
         break;
-      cell.text = base::SysNativeMBToWide(device_.display_name().text());
+      cell.text = ToString16(device_.display_name());
       if (cell.text.empty())
         cell.text = L"?";
       break;

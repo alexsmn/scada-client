@@ -5,15 +5,20 @@
 #include "qt/client_application_qt.h"
 #include "qt/message_loop_qt.h"
 
+#include <QApplication>
+
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow) {
   GdiplusInitializer gdiplus;
 
   base::AtExitManager at_exit;
 
-  ClientApplicationQt app(0, nullptr);
+  int argc = 0;
+  QApplication qapp(argc, nullptr);
 
   // QApplication must be created.
   base::ThreadTaskRunnerHandle message_loop(make_scoped_refptr(new MessageLoopQt));
+
+  ClientApplicationQt app(0, nullptr);
 
   if (!app.Init())
     return 1;

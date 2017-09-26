@@ -3,6 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_ref_service.h"
 #include "common/browse_util.h"
+#include "translation.h"
 
 namespace {
 
@@ -75,7 +76,7 @@ int ConfigurationTreeNode::GetChildCount() const {
 }
 
 base::string16 ConfigurationTreeNode::GetText(int column_id) const {
-  return base::SysNativeMBToWide(data_node_.display_name().text());
+  return ToString16(data_node_.display_name());
 }
 
 int ConfigurationTreeNode::GetIcon() const {

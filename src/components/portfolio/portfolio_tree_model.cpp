@@ -3,6 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "services/portfolio.h"
 #include "common/node_ref_service.h"
+#include "translation.h"
 
 void PortfolioTreeNode::SetTitle(const base::string16& title) {
   if (!is_portfolio())
@@ -50,7 +51,7 @@ PortfolioTreeNode* PortfolioTreeModel::FindPortfolioNode(
 void PortfolioTreeModel::AddItemNode(PortfolioTreeNode& portfolio_node, const scada::NodeId& item_id) {
   auto node_ref = node_service_.GetNode(item_id);
   auto node = std::make_unique<PortfolioTreeNode>(portfolio_manager_, portfolio_node.portfolio());
-  node->title = base::SysNativeMBToWide(node_ref.display_name().text());
+  node->title = ToString16(node_ref.display_name());
   node->icon = 1;
   node->node = node_ref;
   Add(portfolio_node, portfolio_node.GetChildCount(), std::move(node));
@@ -92,7 +93,7 @@ void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio, const scad
   if (!node)
     AddItemNode(*portfolio_node, node_id);
   else {
-    node->title = base::SysNativeMBToWide(node->node.display_name().text());
+    node->title = ToString16(node->node.display_name());
     TreeNodeChanged(node);
   }
 }

@@ -12,6 +12,7 @@
 #include "common/node_ref_util.h"
 #include "common/formula_util.h"
 #include "common/browse_util.h"
+#include "translation.h"
 
 struct DeviceMetricsItem {
   NodeRef node;
@@ -102,7 +103,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
 
   BuildDeviceMetricsView(node_service, device, [device, callback](const DeviceMetricsViewTable& table) {
     WindowDefinition win(GetWindowInfo(ID_SHEET_VIEW));
-    win.title = base::SysNativeMBToWide(device.display_name().text());
+    win.title = ToString16(device.display_name());
 
     // Header column.
     {
@@ -119,7 +120,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
       cell.SetInt("row", i + 2);
       cell.SetInt("col", 1);
       // TODO: Display name.
-      cell.SetString("text", table.component_declarations[i].display_name().text());
+      cell.SetString("text", ToString16(table.component_declarations[i].display_name()));
       cell.SetString("color", palette::ColorToString(kHeaderColor));
       cell.SetString("align", "right");
     }
@@ -133,7 +134,7 @@ void PrepareDeviceMetricsView(NodeRefService& node_service, const NodeRef& devic
         WindowItem& cell = win.AddItem("SheetCell");
         cell.SetInt("row", 1);
         cell.SetInt("col", i + 2);
-        cell.SetString("text", item.node.display_name().text());
+        cell.SetString("text", ToString16(item.node.display_name()));
         cell.SetString("color", palette::ColorToString(kHeaderColor));
       }
     

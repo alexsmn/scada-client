@@ -9,6 +9,7 @@
 #include "common/node_ref_util.h"
 #include "common/node_ref_service.h"
 #include "common/browse_util.h"
+#include "translation.h"
 
 TransmissionModel::TransmissionModel(NodeRefService& node_service, TaskManager& task_manager, scada::NodeManagementService& node_management_service)
     : FixedRowModel(*static_cast<FixedRowModel::Delegate*>(this)),
@@ -56,7 +57,7 @@ void TransmissionModel::GetCell(ui::GridCell& cell) {
   switch (cell.column) {
     case 0: {
       auto source = row.transmission.target(id::HasTransmissionSource);
-      cell.text = base::SysNativeMBToWide(source.display_name().text());
+      cell.text = ToString16(source.display_name());
       break;
     }
       

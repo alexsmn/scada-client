@@ -1,7 +1,9 @@
 #include "qt/client_application_qt.h"
 
-#include <QTranslator>
+#include <QApplication>
 #include <QLibraryInfo>
+#include <QSettings>
+#include <QTranslator>
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -13,8 +15,17 @@
 ClientApplicationQt* g_application_qt = nullptr;
 
 ClientApplicationQt::ClientApplicationQt(int argc, char** argv)
-    : QApplication(argc, argv),
-      ClientApplication(argc, argv) {
+    : ClientApplication(argc, argv) {
+}
+
+ClientApplicationQt::~ClientApplicationQt() {
+  // Save custom style.
+  if (auto* style = QApplication::style()) {
+    // TODO: Const
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
+    // TODO: Const
+    settings.setValue("Style", style->objectName());
+  }
 }
 
 bool ClientApplicationQt::Init() {
@@ -25,21 +36,21 @@ bool ClientApplicationQt::Init() {
   {
     QTranslator qt_translator;
     qt_translator.load("qt_" + QLocale::system().name(), QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-    installTranslator(&qt_translator);
+    QApplication::installTranslator(&qt_translator);
 
     QTranslator app_translator;
     app_translator.load("client_" + QLocale::system().name());
-    installTranslator(&app_translator);
+    QApplication::installTranslator(&app_translator);
   }
 
-  // Load style-sheet.
+  // Set custom style.
   {
-    base::FilePath path;
-    PathService::Get(client::DIR_PUBLIC, &path);
-    path = path.Append(FILE_PATH_LITERAL("style-sheet"));
-    std::string style_sheet;
-    if (base::ReadFileToString(path, &style_sheet))
-      setStyleSheet(QString::fromStdString(style_sheet));
+    // TODO: Const
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
+    // TODO: Const
+    auto style = settings.value("Style").toString();
+    if (!style.isEmpty())
+      QApplication::setStyle(style);
   }
 
   return true;

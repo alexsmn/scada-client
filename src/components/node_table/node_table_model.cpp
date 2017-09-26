@@ -12,6 +12,7 @@
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
 #include "common/browse_util.h"
+#include "translation.h"
 
 namespace {
 
@@ -265,7 +266,7 @@ void NodeTableModel::InitColumns() {
   auto AddProp = [this, &columns](const NodeRef& prop_decl, const PropertyDefinition& def) {
       columns_.push_back({ OpcUa_Attributes_Value, prop_decl.id(), &def });
       int width = def.width() ? def.width() : 75;
-      auto title = base::SysNativeMBToWide(prop_decl.display_name().text());
+      auto title = ToString16(prop_decl.display_name());
       columns.emplace_back(columns.size(), std::move(title), width, def.alignment());
     };
 

@@ -37,8 +37,58 @@
 <context>
     <name>MainWindowQt</name>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="50"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="52"/>
         <source>Telecontrol SCADA Client</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="71"/>
+        <source>Context</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="73"/>
+        <source>Display</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="76"/>
+        <source>Graph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="77"/>
+        <source>Table</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="78"/>
+        <source>More</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="79"/>
+        <source>Page</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="81"/>
+        <source>Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="82"/>
+        <source>Style</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="97"/>
+        <source>Help</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="119"/>
+        <source>Toolbar</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

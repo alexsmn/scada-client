@@ -5,6 +5,7 @@
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "common/node_ref_service.h"
+#include "translation.h"
 
 GroupedActions GroupCommands(ActionManager& action_manager, const std::vector<unsigned>& commands) {
   GroupedActions grouped_commands;
@@ -89,7 +90,7 @@ class NodeAction : public Action {
   }
 
   virtual base::string16 GetTitle() const override {
-    return base::SysNativeMBToWide(node_.display_name().text());
+    return ToString16(node_.display_name().text());
   }
 
  private:

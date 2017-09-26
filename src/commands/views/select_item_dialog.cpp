@@ -16,6 +16,7 @@
 #include "common_resources.h"
 #include "dialog_service.h"
 #include "common/node_ref.h"
+#include "translation.h"
 
 class SelectItemDialog : public ATL::CDialogImpl<SelectItemDialog> {
  public:
@@ -134,7 +135,7 @@ inline int GetImage(const NodeRef& node) {
 
 HTREEITEM SelectItemDialog::InsertTree(const NodeRef& node, HTREEITEM parent) {
 	// insert new item
-	base::string16 name = base::SysNativeMBToWide(node.display_name().text());
+	base::string16 name = ToString16(node.display_name());
 	int img = GetImage(node);
 	UINT mask = TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 	HTREEITEM item = tree.InsertItem(mask, name.c_str(), img, img, 0, 0,

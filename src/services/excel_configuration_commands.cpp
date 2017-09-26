@@ -16,6 +16,7 @@
 #include "common/browse_util.h"
 #include "core/node_management_service.h"
 #include "ui/base/dialogs/select_file_dialog.h"
+#include "translation.h"
 
 namespace {
 
@@ -341,8 +342,8 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
 
   for (auto& p : import_data.modify_nodes) {
     auto node = address_space.GetNode(p.id);
-    auto node_name = node.display_name();
-    report << "Изменить: " << node_name.text() << std::endl;
+    auto node_name = ToString16(node.display_name());
+    report << "Изменить: " << node_name << std::endl;
     auto type_definition = node ? node.type_definition() : nullptr;
     if (p.attrs.has(OpcUa_Attributes_BrowseName))
       report << "  Имя = " << p.attrs.browse_name().name() << std::endl;
@@ -353,8 +354,8 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
 
   for (auto& p : import_data.delete_nodes) {
     auto node = address_space.GetNode(p);
-    auto node_name = node.display_name();
-    report << "Удалить: " << node_name.text() << std::endl;
+    auto node_name = ToString16(node.display_name());
+    report << "Удалить: " << node_name << std::endl;
   }
 
   base::FilePath system_path;

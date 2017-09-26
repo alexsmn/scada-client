@@ -7,6 +7,7 @@
 #include "common_resources.h"
 #include "core/node_management_service.h"
 #include "common/node_ref.h"
+#include "translation.h"
 
 class ChangePasswordDialog : public framework::Dialog {
  public:
@@ -40,12 +41,11 @@ void ShowChangePasswordDialog(const NodeRef& user, LocalEvents& local_events, Pr
   if (dialog.Execute() != IDOK)
     return;
 
-  auto user_name = user.display_name().text();
+  auto user_name = ToString16(user.display_name());
   node_management_service.ChangeUserPassword(
       user.id(), dialog.current_password(), dialog.new_password(),
       [user_name, &local_events, &profile](const scada::Status& status) {
-        base::string16 title = base::StringPrintf(
-            L"Смена пароля пользователя %ls", user_name.c_str());
+        base::string16 title = base::StringPrintf(L"Смена пароля пользователя %ls", user_name.c_str());
         ReportRequestResult(title, status, local_events, profile);
       });
 }

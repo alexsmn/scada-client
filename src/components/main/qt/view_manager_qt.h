@@ -9,7 +9,10 @@ class QMainWindow;
 class QTabWidget;
 class QWidget;
 
-class ViewManagerQt : public ViewManager {
+class ViewManagerQt : public QObject,
+                      public ViewManager {
+  Q_OBJECT
+
  public:
   ViewManagerQt(ClientApplicationQt& app, QMainWindow& main_window, ViewManagerDelegate* delegate);
 
@@ -39,6 +42,4 @@ class ViewManagerQt : public ViewManager {
 
  private:
   QMainWindow& main_window_;
-
-  QMetaObject::Connection focused_changed_connection_;
 };
