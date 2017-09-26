@@ -12,6 +12,7 @@
 #include "window_info.h"
 #include "contents_model.h"
 #include "contents_observer.h"
+#include "common_resources.h"
 
 MainWindow::MainWindow(MainWindowContext&& context)
     : MainWindowContext(std::move(context)),
@@ -36,7 +37,12 @@ MainWindow::MainWindow(MainWindowContext&& context)
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
 
-  events_helper_ = std::make_unique<EventsHelper>(*this, event_manager_, local_events_, profile_);
+  events_helper_ = std::make_unique<EventsHelper>(EventsHelperContext{
+      event_manager_,
+      local_events_,
+      profile_,
+      [this](bool has_events) { OnEvents(has_events); },
+  });
 
   Page* page = nullptr;
   Profile::PageMap& pages = profile_.pages();
@@ -286,4 +292,16 @@ void MainWindow::OnContainedItemsUpdate(const std::set<scada::NodeId>& item_ids)
 
 void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id, bool added) {
   FOR_EACH_OBSERVER(ContentsObserver, contents_observers_, OnContainedItemChanged(item_id, added));
+}
+
+void MainWindow::OnEvents(bool has_events) {
+  bool events_shown = FindOpenedViewByType(ID_EVENT_VIEW) != nullptr;
+  if (has_events != events_shown) {
+    if (has_events && profile_.event_auto_show)
+      OpenPane(ID_EVENT_VIEW, false);
+    else if (!has_events && profile_.event_auto_hide)
+      ClosePane(ID_EVENT_VIEW);
+  }
+
+  SetWindowFlashing(has_events && profile_.event_flash_window);
 }

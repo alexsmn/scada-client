@@ -2,7 +2,6 @@
 
 #include "base/bind.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "common_resources.h"
 #include "services/local_events.h"
 #include "components/main/main_window.h"
 #include "services/profile.h"
@@ -10,12 +9,8 @@
 
 #include <MMSystem.h>
 
-EventsHelper::EventsHelper(MainWindow& main_window, events::EventManager& event_manager, LocalEvents& local_events, Profile& profile)
-    : main_window_(main_window),
-      event_manager_(event_manager),
-      local_events_(local_events),
-      profile_(profile),
-      weak_factory_(this) {
+EventsHelper::EventsHelper(EventsHelperContext&& context)
+    : EventsHelperContext{std::move(context)} {
   event_manager_.AddObserver(*this);
 
   ShowEvents(true, true);
@@ -58,15 +53,7 @@ void EventsHelper::ShowEvents(bool added, bool delayed) {
   if (has_events && !added)
     return;
 
-  bool events_shown = main_window_.FindOpenedViewByType(ID_EVENT_VIEW) != nullptr;
-  if (has_events != events_shown) {
-    if (has_events && profile_.event_auto_show)
-      main_window_.OpenPane(ID_EVENT_VIEW, false);
-    else if (!has_events && profile_.event_auto_hide)
-      main_window_.ClosePane(ID_EVENT_VIEW);
-  }
-
-  main_window_.SetWindowFlashing(has_events && profile_.event_flash_window);
+  events_handler_(has_events);
 
   bool play_sound = has_events && profile_.event_play_sound;
   if (playing_alarm_sound_ != play_sound) {

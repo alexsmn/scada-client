@@ -8,12 +8,19 @@ class EventManager;
 }
 
 class LocalEvents;
-class MainWindow;
 class Profile;
 
-class EventsHelper : private events::EventObserver {
+struct EventsHelperContext {
+  events::EventManager& event_manager_;
+  LocalEvents& local_events_;
+  Profile& profile_;
+  std::function<void(bool has_events)> events_handler_;
+};
+
+class EventsHelper : private EventsHelperContext,
+                     private events::EventObserver {
  public:
-  EventsHelper(MainWindow& main_window, events::EventManager& event_manager, LocalEvents& local_events, Profile& profile);
+  explicit EventsHelper(EventsHelperContext&& context);
   ~EventsHelper();
 
  private:
@@ -24,15 +31,10 @@ class EventsHelper : private events::EventObserver {
   virtual void OnEventAcknowledged(const scada::Event& event) override;
   virtual void OnAllEventsAcknowledged() override;
 
-  MainWindow& main_window_;
-  events::EventManager& event_manager_;
-  LocalEvents& local_events_;
-  Profile& profile_;
-
   bool playing_alarm_sound_ = false;
 
   bool showing_events_ = false;
   bool showing_events_added_ = false;
 
-  base::WeakPtrFactory<EventsHelper> weak_factory_;
+  base::WeakPtrFactory<EventsHelper> weak_factory_{this};
 };

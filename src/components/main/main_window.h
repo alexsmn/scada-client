@@ -143,6 +143,8 @@ class MainWindow : protected MainWindowContext,
   void SetActiveView(OpenedView* view);
   void SetActiveDataView(OpenedView* view);
 
+  void OnEvents(bool has_events);
+
   // ContentsObserver
   virtual void OnContainedItemsUpdate(const std::set<scada::NodeId>& item_ids) override;
   virtual void OnContainedItemChanged(const scada::NodeId& item_id, bool added) override;
