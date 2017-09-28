@@ -76,7 +76,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
   { id::AnalogItemType_DisplayFormat, &kStringPropDef }, // TODO: Editor
   { id::AnalogItemType_EngineeringUnits, &kStringPropDef }, // TODO: Combo
   { id::HasTsFormat, &kRefPropDef },
-  { id::AnalogItemType_Conversion, &kEnumPropDef }, // TODO: Enum
+  { id::AnalogItemType_Conversion, &kEnumPropDef },
   { id::AnalogItemType_EuLo, &kDoublePropDef },
   { id::AnalogItemType_EuHi, &kDoublePropDef },
   { id::AnalogItemType_IrLo, &kDoublePropDef },
@@ -87,7 +87,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
   { id::AnalogItemType_LimitHiHi, &kDoublePropDef },
   { id::DataItemType_StalePeriod, &kIntPropDef },
   { id::HasHistoricalDatabase, &kRefPropDef },
-  { id::AnalogItemType_Clamping, &kEnumPropDef }, // TODO: Enum
+  { id::AnalogItemType_Clamping, &kEnumPropDef },
   // Link
   { id::LinkType_Transport, &kLinkTransportPropDef },
   { id::Iec60870LinkType_SendQueueSize, &kIntPropDef },
@@ -290,13 +290,16 @@ base::string16 EnumPropertyDefinition::GetText(PropertyContext& context, const N
     return base::string16();
 
   const auto& value = node[prop_decl_id].value();
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().as_string());
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().get_or(String{}));
 
   int int_value;
   if (!value.get(int_value))
     return base::string16();
 
-  return base::SysNativeMBToWide(enum_strings[int_value]);
+  if (int_value < 0 || int_value >= static_cast<int>(enum_strings.size()))
+    return base::string16();
+
+  return base::SysNativeMBToWide(enum_strings[static_cast<size_t>(int_value)]);
 }
 
 void EnumPropertyDefinition::SetText(PropertyContext& context, const NodeRef& node, const scada::NodeId& prop_decl_id,
@@ -305,7 +308,7 @@ void EnumPropertyDefinition::SetText(PropertyContext& context, const NodeRef& no
   if (!property_declaration)
     return;
 
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().as_string());
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().get_or(String{}));
   int value;
   if (!ParseEnumStrings(enum_strings, value))
     return;

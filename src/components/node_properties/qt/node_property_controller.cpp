@@ -4,6 +4,7 @@
 #include "controller_factory.h"
 #include "qt/tree_model_adapter.h"
 #include "window_definition.h"
+#include "common/formula_util.h"
 
 #include <QTreeView>
 
@@ -25,8 +26,8 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   const WindowItem* window_item = definition.FindItem("Item");
   if (window_item) {
     std::string path = window_item->GetString("path");
-    auto node_id = scada::NodeId::FromString(path);
-    if (!node_id.is_null())
+    scada::NodeId node_id;
+    if (IsNodeIdFormula(path, node_id))
       node_ids.emplace_back(std::move(node_id));
   }
 

@@ -5,6 +5,7 @@
 #include "services/task_manager.h"
 #include "common/node_ref_service.h"
 #include "common/browse_util.h"
+#include "translation.h"
 
 NodePropertyModel::NodePropertyModel(const PropertyContext& context, NodeIds node_ids)
     : context_(context) {
@@ -37,9 +38,14 @@ void NodePropertyModel::SetNodes(const Nodes& nodes) {
 
   if (node) {
     properties_.push_back({
-        L"Имя",
+        L"(Имя)",
         base::SysNativeMBToWide(node.browse_name().name()),
         OpcUa_Attributes_BrowseName,
+    });
+    properties_.push_back({
+        L"(Обозначение)",
+        ToString16(node.display_name()),
+        OpcUa_Attributes_DisplayName,
     });
   }
 
@@ -105,11 +111,11 @@ void NodePropertyModel::UpdateNode(const scada::NodeId& node_id) {
   if (node_id != node_.id())
     return;
 
-  {
-    int index = FindProperty(OpcUa_Attributes_BrowseName);
+  for (auto attribute_id : {OpcUa_Attributes_BrowseName, OpcUa_Attributes_DisplayName}) {
+    int index = FindProperty(attribute_id);
     if (index != -1) {
       auto& prop = properties_[index];
-      prop.string_value = base::SysNativeMBToWide(node_.browse_name().name());
+      prop.string_value = ToString16(node_.attribute(attribute_id).get_or(scada::LocalizedText{}));
       TreeNodeChanged(&prop);
     }
   }

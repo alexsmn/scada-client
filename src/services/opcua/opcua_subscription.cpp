@@ -190,11 +190,11 @@ void OpcUaSubscription::CreateMonitoredItems() {
       opcua::DataChangeFilter filter;
       filter.DeadbandType = OpcUa_DeadbandType_None;
       filter.Trigger = OpcUa_DataChangeTrigger_StatusValueTimestamp;
-      ext_filter = opcua::Encode(filter);
+      ext_filter = opcua::Encode(std::move(filter));
 
     } else {
       opcua::EventFilter filter;
-      ext_filter = opcua::Encode(filter);
+      ext_filter = opcua::Encode(std::move(filter));
     }
 
     request.MonitoringMode = OpcUa_MonitoringMode_Reporting;
