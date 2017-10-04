@@ -4,6 +4,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "core/configuration_types.h"
+#include "core/node_attributes.h"
 #include "core/status.h"
 
 #include <functional>

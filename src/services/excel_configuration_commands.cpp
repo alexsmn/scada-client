@@ -345,7 +345,7 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
     auto node_name = ToString16(node.display_name());
     report << "Изменить: " << node_name << std::endl;
     auto type_definition = node ? node.type_definition() : nullptr;
-    if (p.attrs.has(OpcUa_Attributes_BrowseName))
+    if (p.attrs.has(scada::AttributeId::BrowseName))
       report << "  Имя = " << p.attrs.browse_name().name() << std::endl;
     if (type_definition)
       PrintProps(type_definition, p.props, report);

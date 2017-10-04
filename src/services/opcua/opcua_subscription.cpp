@@ -186,7 +186,7 @@ void OpcUaSubscription::CreateMonitoredItems() {
 
     opcua::ExtensionObject ext_filter;
 
-    if (item.read_value_id.second != OpcUa_Attributes_EventNotifier) {
+    if (item.read_value_id.second != scada::AttributeId::EventNotifier) {
       opcua::DataChangeFilter filter;
       filter.DeadbandType = OpcUa_DeadbandType_None;
       filter.Trigger = OpcUa_DataChangeTrigger_StatusValueTimestamp;
@@ -356,9 +356,9 @@ void OpcUaSubscription::OnDataChange(std::vector<opcua::MonitoredItemNotificatio
     if (auto* item = FindItem(notification.ClientHandle)) {
       if (!item->subscribed)
         continue;
-      assert(item->read_value_id.second != OpcUa_Attributes_EventNotifier);
+      assert(item->read_value_id.second != scada::AttributeId::EventNotifier);
       assert(item->data_change_handler);
-      if (item->read_value_id.second != OpcUa_Attributes_EventNotifier) {
+      if (item->read_value_id.second != scada::AttributeId::EventNotifier) {
         auto data_value = Convert(std::move(notification.Value));
         item->data_change_handler(std::move(data_value));
       }

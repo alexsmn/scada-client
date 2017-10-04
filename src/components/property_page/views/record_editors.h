@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <set>
 
 using std::min;
 using std::max;
@@ -21,14 +20,13 @@ using std::max;
 #include "common/node_ref.h"
 
 namespace scada {
+class NodeAttributes;
 class NodeManagementService;
 }
 
 class NodeRefService;
 class PropertyPageViewContents;
 class TaskManager;
-
-typedef std::set<const void*> Recs;
 
 struct RecordEditorContext {
   NodeRefService& node_service_;

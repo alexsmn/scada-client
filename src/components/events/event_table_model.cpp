@@ -356,7 +356,7 @@ void EventTableModel::Update() {
 
     auto runner = base::ThreadTaskRunnerHandle::Get();
     auto weak_ptr = weak_factory_.GetWeakPtr();
-    history_service_.HistoryRead({OpcUaId_RootFolder, OpcUa_Attributes_EventNotifier}, from, to, {{scada::Event::ACKED}},
+    history_service_.HistoryRead({OpcUaId_RootFolder, scada::AttributeId::EventNotifier}, from, to, {{scada::Event::ACKED}},
         [this, runner, weak_ptr](scada::Status status, scada::QueryValuesResults values, scada::QueryEventsResults events) {
           runner->PostTask(FROM_HERE, base::Bind(&EventTableModel::OnQueryEventsCompleted,
               weak_ptr, base::Passed(std::move(status)), base::Passed(std::move(events))));

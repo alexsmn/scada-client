@@ -40,12 +40,12 @@ void NodePropertyModel::SetNodes(const Nodes& nodes) {
     properties_.push_back({
         L"(Имя)",
         base::SysNativeMBToWide(node.browse_name().name()),
-        OpcUa_Attributes_BrowseName,
+        scada::AttributeId::BrowseName,
     });
     properties_.push_back({
         L"(Обозначение)",
         ToString16(node.display_name()),
-        OpcUa_Attributes_DisplayName,
+        scada::AttributeId::DisplayName,
     });
   }
 
@@ -111,7 +111,7 @@ void NodePropertyModel::UpdateNode(const scada::NodeId& node_id) {
   if (node_id != node_.id())
     return;
 
-  for (auto attribute_id : {OpcUa_Attributes_BrowseName, OpcUa_Attributes_DisplayName}) {
+  for (auto attribute_id : {scada::AttributeId::BrowseName, scada::AttributeId::DisplayName}) {
     int index = FindProperty(attribute_id);
     if (index != -1) {
       auto& prop = properties_[index];

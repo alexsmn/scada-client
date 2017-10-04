@@ -111,7 +111,7 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
   const auto& node = nodes_[cell.row];
   auto& column = columns_[cell.column];
 
-  if (column.attr_id == OpcUa_Attributes_BrowseName)
+  if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.prop_def->IsReadOnly(node, column.prop_decl_id))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
@@ -122,7 +122,7 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
 bool NodeTableModel::SetCellText(int row, int column, const base::string16& text) {
   const auto& node = nodes_[row];
   auto& c = columns_[column];
-  if (c.attr_id == OpcUa_Attributes_BrowseName) {
+  if (c.attr_id == scada::AttributeId::BrowseName) {
     context_.task_manager_.PostUpdateTask(node.id(),
         scada::NodeAttributes().set_browse_name(scada::QualifiedName{base::SysWideToNativeMB(text), 0}) , {});
   } else {
@@ -135,7 +135,7 @@ PropertyEditor NodeTableModel::GetCellEditor(int row, int column) {
   const auto& node = nodes_[row];
   assert(node);
   auto& c = columns_[column];
-  if (c.attr_id == OpcUa_Attributes_BrowseName)
+  if (c.attr_id == scada::AttributeId::BrowseName)
     return PropertyEditor(PropertyEditor::SIMPLE);
   const auto& type_definition = node.type_definition();
   return type_definition ?
@@ -259,12 +259,12 @@ void NodeTableModel::InitColumns() {
 
   // Display name
   {
-    columns_.push_back({ OpcUa_Attributes_BrowseName, scada::NodeId(), nullptr });
+    columns_.push_back({scada::AttributeId::BrowseName, scada::NodeId(), nullptr});
     columns.emplace_back(columns.size(), L"Èìÿ", 75, ui::TableColumn::LEFT);
   }
 
   auto AddProp = [this, &columns](const NodeRef& prop_decl, const PropertyDefinition& def) {
-      columns_.push_back({ OpcUa_Attributes_Value, prop_decl.id(), &def });
+      columns_.push_back({scada::AttributeId::Value, prop_decl.id(), &def});
       int width = def.width() ? def.width() : 75;
       auto title = ToString16(prop_decl.display_name());
       columns.emplace_back(columns.size(), std::move(title), width, def.alignment());

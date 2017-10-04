@@ -71,7 +71,7 @@ void VidiconSession::AcknowledgeEvent(unsigned ack_id, base::Time time,
 }
 
 std::unique_ptr<scada::MonitoredItem> VidiconSession::CreateMonitoredItem(const scada::NodeId& node_id, scada::AttributeId attribute_id) {
-  if (attribute_id == OpcUa_Attributes_Value) {
+  if (attribute_id == scada::AttributeId::Value) {
     if (node_id.type() != scada::NodeIdType::Numeric)
       return nullptr;
     auto address = base::StringPrintf(L"CF:%d", node_id.numeric_id());
@@ -82,7 +82,7 @@ std::unique_ptr<scada::MonitoredItem> VidiconSession::CreateMonitoredItem(const 
     return std::make_unique<VidiconMonitoredDataPoint>(std::move(point));
   }
 
-  if (attribute_id == OpcUa_Attributes_EventNotifier) {
+  if (attribute_id == scada::AttributeId::EventNotifier) {
     assert(node_id.is_null());
     return std::make_unique<VidiconMonitoredEvents>();
   }
