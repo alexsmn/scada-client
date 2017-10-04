@@ -190,18 +190,18 @@ void OpcUaSubscription::CreateMonitoredItems() {
       opcua::DataChangeFilter filter;
       filter.DeadbandType = OpcUa_DeadbandType_None;
       filter.Trigger = OpcUa_DataChangeTrigger_StatusValueTimestamp;
-      ext_filter = opcua::Encode(std::move(filter));
+      ext_filter = opcua::ExtensionObject::Encode(std::move(filter));
 
     } else {
       opcua::EventFilter filter;
-      ext_filter = opcua::Encode(std::move(filter));
+      ext_filter = opcua::ExtensionObject::Encode(std::move(filter));
     }
 
     request.MonitoringMode = OpcUa_MonitoringMode_Reporting;
     request.RequestedParameters.ClientHandle = item.client_handle;
     Convert(item.read_value_id.first, request.ItemToMonitor.NodeId);
     request.ItemToMonitor.AttributeId = static_cast<opcua::AttributeId>(item.read_value_id.second);
-    ext_filter.Release(request.RequestedParameters.Filter);
+    ext_filter.release(request.RequestedParameters.Filter);
   }
 
   subscribing_items_.swap(pending_subscribe_items_);

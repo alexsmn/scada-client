@@ -4,8 +4,8 @@
 
 #include <map>
 #include <memory>
+#include <opcuapp/basic_types.h>
 #include <opcuapp/client/subscription.h>
-#include <opcuapp/types.h>
 #include <vector>
 
 namespace opcua {
