@@ -151,7 +151,7 @@ void NodeTableModel::Update() {
   if (parent_node_) {
     auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
     BrowseNodes(context_.node_service_,
-        {parent_node_.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
+        {parent_node_.id(), scada::BrowseDirection::Forward, scada::id::Organizes, true},
         [weak_ptr](const scada::Status& status, std::vector<NodeRef> nodes) {
           if (!status)
             return;

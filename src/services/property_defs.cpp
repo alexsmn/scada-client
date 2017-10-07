@@ -16,8 +16,6 @@
 #include "common/format.h"
 #include "translation.h"
 
-using namespace scada;
-
 namespace {
 
 // TODO:
@@ -220,7 +218,7 @@ PropertyEditor PropertyDefinition::GetPropertyEditor(PropertyContext& context, c
   if (!property_declaration)
     return PropertyEditor(PropertyEditor::NONE);
 
-  assert(property_declaration.node_class() == NodeClass::Variable);
+  assert(property_declaration.node_class() == scada::NodeClass::Variable);
   return PropertyEditor(PropertyEditor::SIMPLE);
 }
 
@@ -290,7 +288,7 @@ base::string16 EnumPropertyDefinition::GetText(PropertyContext& context, const N
     return base::string16();
 
   const auto& value = node[prop_decl_id].value();
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().get_or(String{}));
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().get_or(scada::String{}));
 
   int int_value;
   if (!value.get(int_value))
@@ -308,7 +306,7 @@ void EnumPropertyDefinition::SetText(PropertyContext& context, const NodeRef& no
   if (!property_declaration)
     return;
 
-  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().get_or(String{}));
+  const auto& enum_strings = SplitEnumStrings(property_declaration.data_type()[kEnumStrings].value().get_or(scada::String{}));
   int value;
   if (!ParseEnumStrings(enum_strings, value))
     return;
@@ -363,18 +361,18 @@ void ChannelPropertyDefinition::SetText(PropertyContext& context, const NodeRef&
   if (!IsInstanceOf(node, id::DataItemType))
     return;
       
-  NodeId new_device_id;
+  scada::NodeId new_device_id;
   if (device_) {
     //new_device_id = SyncFindNodeRecursive(context.node_service_, id::Devices, base::SysWideToNativeMB(text), id::DeviceType).id();
   }
 
   auto channel_path = node[prop_type_id].value().get_or(std::string{});
   scada::NodeId node_id;
-  NodeId parent_id;
+  scada::NodeId parent_id;
   base::StringPiece component_name;
   if (!IsNodeIdFormula(channel_path, node_id) ||
       !scada::IsNestedNodeId(node_id, parent_id, component_name)) {
-    parent_id = NodeId();
+    parent_id = scada::NodeId();
     component_name = channel_path;
   }
 

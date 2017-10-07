@@ -5,8 +5,8 @@
 
 #include "ui_login_dialog.h"
 #include "core/status.h"
-#include "services/data_services.h"
-#include "services/data_services_factory.h"
+#include "core/data_services.h"
+#include "core/data_services_factory.h"
 
 namespace scada {
 class SessionService;

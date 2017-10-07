@@ -5,7 +5,7 @@
 
 ObjectTreeModel::ObjectTreeModel(NodeRefService& node_service, scada::NodeId root_id,
                                  TimedDataService& timed_data_service, Profile& profile)
-    : ConfigurationTreeModel{node_service, std::move(root_id), {OpcUaId_Organizes, OpcUaId_HasComponent}},
+    : ConfigurationTreeModel{node_service, std::move(root_id), {scada::id::Organizes, scada::id::HasComponent}},
       timed_data_service_{timed_data_service},
       profile_(profile) {
   Blinker::Start();

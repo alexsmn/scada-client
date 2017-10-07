@@ -361,7 +361,7 @@ void ItemComboLookup::Fill(NodeRefService& node_service, const scada::NodeId& de
   // add service items
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   BrowseNodes(node_service,
-      {device_id, scada::BrowseDirection::Forward, OpcUaId_HasComponent, true},
+      {device_id, scada::BrowseDirection::Forward, scada::id::HasComponent, true},
       [weak_ptr, this](const scada::Status& status, const std::vector<NodeRef>& components) {
         if (!status || !weak_ptr.get())
           return;

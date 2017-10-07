@@ -8,8 +8,8 @@
 #include "base/files/file_path.h"
 #include "core/node_id.h"
 #include "core/session_state_observer.h"
-#include "services/data_services.h"
-#include "services/data_services_factory.h"
+#include "core/data_services.h"
+#include "core/data_services_factory.h"
 
 namespace events {
 class EventManager;

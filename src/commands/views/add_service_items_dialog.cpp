@@ -119,7 +119,7 @@ void AddServiceItemsDialog::FillChannelsList() {
 
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   BrowseNodes(node_service_,
-      {device.id(), scada::BrowseDirection::Inverse, OpcUaId_Organizes, true},
+      {device.id(), scada::BrowseDirection::Inverse, scada::id::Organizes, true},
       [weak_ptr](const scada::Status& status, std::vector<NodeRef> components) {
         auto* ptr = weak_ptr.get();
         if (!ptr)

@@ -66,7 +66,7 @@ struct DeviceMetricsViewBuilder : public std::enable_shared_from_this<DeviceMetr
 
     auto self = shared_from_this();
     auto nested_level = level + 1;
-    BrowseNodes(node_service_, {node.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
+    BrowseNodes(node_service_, {node.id(), scada::BrowseDirection::Forward, scada::id::Organizes, true},
         [self, nested_level](const scada::Status& status, const std::vector<NodeRef>& nodes) {
           for (auto& node : nodes)
             self->AddDeviceRecursive(node, nested_level);

@@ -163,7 +163,7 @@ void NodeTableController::CopyToClipboard() {
 
 void NodeTableController::PasteFromClipboard() {
   const auto& parent_node = model_->parent_node();
-  scada::NodeId parent_id = parent_node ? parent_node.id() : OpcUaId_RootFolder;
+  scada::NodeId parent_id = parent_node ? parent_node.id() : scada::id::RootFolder;
   if (!session_service_.IsAdministrator() ||
       !PasteRecords(task_manager_, parent_id)) {
     LOG(ERROR) << "Paste records error";

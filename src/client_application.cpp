@@ -29,7 +29,7 @@
 #include "timed_data/timed_data_service_impl.h"
 #include "core/session_service.h"
 #include "project.h"
-#include "services/master_data_services.h"
+#include "common/master_data_services.h"
 
 ClientApplication* g_application = nullptr;
 

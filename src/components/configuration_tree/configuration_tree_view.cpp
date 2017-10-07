@@ -22,8 +22,8 @@ class TypesView : public ConfigurationTreeView {
  public:
   explicit TypesView(const ControllerContext& context)
       : ConfigurationTreeView(context, std::make_unique<ConfigurationTreeModel>(
-            context.node_service_, OpcUaId_TypesFolder,
-            std::vector<scada::NodeId>{OpcUaId_HierarchicalReferences})) {
+            context.node_service_, scada::id::TypesFolder,
+            std::vector<scada::NodeId>{scada::id::HierarchicalReferences})) {
   }
 };
 
@@ -33,8 +33,8 @@ class NodesView : public ConfigurationTreeView {
  public:
   explicit NodesView(const ControllerContext& context)
       : ConfigurationTreeView(context, std::make_unique<ConfigurationTreeModel>(
-            context.node_service_, OpcUaId_RootFolder,
-            std::vector<scada::NodeId>{OpcUaId_HierarchicalReferences})) {
+            context.node_service_, scada::id::RootFolder,
+            std::vector<scada::NodeId>{scada::id::HierarchicalReferences})) {
   }
 };
 

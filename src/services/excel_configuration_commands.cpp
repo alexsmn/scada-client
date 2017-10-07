@@ -447,7 +447,7 @@ void ImportConfigurationFromExcel(DialogService& dialog_service, const base::Fil
     return;
   }
 
-  MakeAddressSpaceSnapshot(node_service, OpcUaId_RootFolder, {}, [importer](AddressSpaceSnapshot address_space) {
+  MakeAddressSpaceSnapshot(node_service, scada::id::RootFolder, {}, [importer](AddressSpaceSnapshot address_space) {
     try {
       ImportConfiguration(importer->reader, address_space, importer->import_data);
 

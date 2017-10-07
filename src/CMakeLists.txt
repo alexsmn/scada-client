@@ -11,7 +11,6 @@ INSTALL(FILES "${MODUS_ROOT_DIR}/libmodus/Library.txt"
 
 INCLUDE_DIRECTORIES(client
   "."
-  "${deps}/OPCFoundation"
   "${deps}/wtl"
 )
 
@@ -69,7 +68,9 @@ TARGET_LINK_LIBRARIES(client_core
   ui_base
   scada_common
   modus
-  remote
+  scada_core_opcua
+  scada_core_remote
+  scada_core_vidicon
 )
 SET_PROPERTY(TARGET client_core PROPERTY FOLDER ${client_folder})
 

@@ -41,11 +41,12 @@ views::View* PropertyPageView::Init(const WindowDefinition& definition) {
   node_service.GetNode(node_id_).Fetch([&node_service, weak_ptr](NodeRef node) {
     if (!node.status())
       return;
-    BrowseParent(node_service, node.id(), OpcUaId_HierarchicalReferences, [weak_ptr, node](const scada::Status& status, const NodeRef& parent) {
-      // |parent| can be null.
-      if (auto* ptr = weak_ptr.get())
-        ptr->SetNode(node, parent);
-    });
+    BrowseParent(node_service, node.id(), scada::id::HierarchicalReferences,
+        [weak_ptr, node](const scada::Status& status, const NodeRef& parent) {
+          // |parent| can be null.
+          if (auto* ptr = weak_ptr.get())
+            ptr->SetNode(node, parent);
+        });
   });
 
   return view_;

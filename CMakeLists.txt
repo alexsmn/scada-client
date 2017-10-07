@@ -91,14 +91,6 @@ SET(client_folder "ClientProjects")
 
 ADD_SUBDIRECTORY("d:/work/scada/common" scada_common)
 
-SET_PROPERTY(TARGET scada_base PROPERTY FOLDER ${scada_folder})
-SET_PROPERTY(TARGET scada_common PROPERTY FOLDER ${scada_folder})
-SET_PROPERTY(TARGET scada_common_unittests PROPERTY FOLDER ${scada_folder})
-SET_PROPERTY(TARGET scada_core PROPERTY FOLDER ${scada_folder})
-SET_PROPERTY(TARGET scada_core_unittests PROPERTY FOLDER ${scada_folder})
-SET_PROPERTY(TARGET remote PROPERTY FOLDER ${scada_folder})
-SET_PROPERTY(TARGET remote_unittests PROPERTY FOLDER ${scada_folder})
-
 ADD_SUBDIRECTORY(src)
 
 INCLUDE(install.cmake)

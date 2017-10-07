@@ -59,7 +59,7 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 // HardwareTreeModel
 
 HardwareTreeModel::HardwareTreeModel(NodeRefService& node_service, TimedDataService& timed_data_service)
-    : ConfigurationTreeModel{node_service, id::Devices, {OpcUaId_Organizes}},
+    : ConfigurationTreeModel{node_service, id::Devices, {scada::id::Organizes}},
       timed_data_service_{timed_data_service} {
 }
 

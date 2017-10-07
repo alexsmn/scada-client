@@ -96,7 +96,7 @@ struct ExpandGroupItemIdsHelper : public std::enable_shared_from_this<ExpandGrou
       item_ids_.emplace_back(node.id());
 
     auto self = shared_from_this();
-    BrowseNodes(node_service_, {node.id(), scada::BrowseDirection::Forward, OpcUaId_Organizes, true},
+    BrowseNodes(node_service_, {node.id(), scada::BrowseDirection::Forward, scada::id::Organizes, true},
         [self](const scada::Status& status, std::vector<NodeRef> nodes) {
           for (auto& node : nodes) {
             if (!self->Traverse(node))
@@ -236,7 +236,7 @@ void PrepareWindowDefinitionForGroup(NodeRefService& node_service, const NodeRef
     return;
   }
 
-  BrowseParent(node_service, node.id(), OpcUaId_HierarchicalReferences,
+  BrowseParent(node_service, node.id(), scada::id::HierarchicalReferences,
       [&node_service, type, callback](const scada::Status& status, const NodeRef& parent) {
         if (!status) {
           callback({});
