@@ -22,8 +22,7 @@ SET(generated_dir "${CMAKE_CACHEFILE_DIR}/generated")
 
 include(CMakeToolsHelpers OPTIONAL)
 
-# This is not working:
-# SET(CMAKE_CXX_STANDARD 11)
+SET(Boost_USE_STATIC_LIBS ON)
 
 ADD_DEFINITIONS(
   -DARCH_CPU_X86_FAMILY

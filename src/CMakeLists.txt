@@ -74,10 +74,6 @@ TARGET_LINK_LIBRARIES(client_core
 )
 SET_PROPERTY(TARGET client_core PROPERTY FOLDER ${client_folder})
 
-IF(WIN32)
-  TARGET_LINK_LIBRARIES(client_core OPCFoundation)
-ENDIF()
-
 FILE(GLOB_RECURSE paths
   "*.cpp"
   "*.h"
