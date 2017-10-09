@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "base/memory/weak_ptr.h"
 #include "common/event_observer.h"
 
@@ -14,7 +16,7 @@ struct EventsHelperContext {
   events::EventManager& event_manager_;
   LocalEvents& local_events_;
   Profile& profile_;
-  std::function<void(bool has_events)> events_handler_;
+  const std::function<void(bool has_events)> events_handler_;
 };
 
 class EventsHelper : private EventsHelperContext,

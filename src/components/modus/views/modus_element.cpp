@@ -9,6 +9,7 @@
 #include "components/modus/views/modus_object.h"
 #include "common/node_ref.h"
 #include "core/variant.h"
+#include "memdb/types.h"
 
 namespace modus {
 
