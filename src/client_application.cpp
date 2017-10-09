@@ -31,6 +31,14 @@
 #include "project.h"
 #include "common/master_data_services.h"
 
+extern bool CreateVidiconServices(const DataServicesContext& context, DataServices& services);
+extern bool CreateScadaServices(const DataServicesContext& context, DataServices& services);
+extern bool CreateOpcUaServices(const DataServicesContext& context, DataServices& services);
+
+REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
+REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
+REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
+
 ClientApplication* g_application = nullptr;
 
 namespace {
