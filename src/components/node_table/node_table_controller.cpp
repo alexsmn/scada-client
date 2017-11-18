@@ -29,12 +29,22 @@ std::string _GetClipboardData() {
   return v;
 }
 
-bool PasteRecords(TaskManager& task_manager, const scada::NodeId& parent_id) {
+bool PasteRecords(const scada::NodeId& parent_id) {
   auto buffer = _GetClipboardData();
   if (buffer.empty())
     return false;
 
-  assert(false);
+  /*protocol::NodeTree message;
+  if (!message.ParseFromString(buffer))
+    return false;
+
+  // TODO: Correct references.
+
+  for (auto& packed_node : message.node()) {
+    auto node_data = FromProto(packed_node);
+    TaskManager::instance().PostInsertTask(scada::NodeId(), parent_id, node_data.type_definition_id,
+        node_data.attributes, node_data.properties);
+  }*/
 
   return true;
 }
@@ -131,29 +141,34 @@ void NodeTableController::DeleteSelection() {
 
 void NodeTableController::CopyToClipboard() {
 #if defined(UI_VIEWS)
-/*  ui::GridRange range = table_->GetSelectionRange();
+  ui::GridRange range = table_->GetSelectionRange();
   if (range.empty())
     return;
     
-  std::vector<NodeRef> nodes;
+  /*std::set<NodeRef> nodes;
 
   for (int i = range.row(); i <= range.last_row(); i++)
-    nodes.emplace_back(model_->nodes()[i]);
+    nodes.emplace(model_->nodes()[i]);
 
   if (nodes.empty())
     return;
 
-  std::vector<scada::BrowseNode> browse_nodes;
+  auto parent_node = model_->parent_node();
+  scada::NodeId parent_id = parent_node ? parent_node.id() : scada::id::RootFolder;
+
+  std::vector<scada::NodeData> browse_nodes;
   std::vector<scada::BrowseReference> browse_references;
 
   for (auto& node : nodes) {
     browse_nodes.emplace_back();
-    NodeToBrowse(node.node(), browse_nodes.back(), browse_references);
+    browse_nodes.back().parent_id = parent_id;
+    browse_nodes.back().reference_type_id = scada::id::Organizes;
+    NodeToData(node, browse_nodes.back(), browse_references);
   }
 
-  protocol::BrowseResult message;
-  ToProto(browse_nodes, *message.mutable_nodes());
-  ToProto(browse_references, *message.mutable_references());
+  protocol::NodeTree message;
+  ContainerToProto(browse_nodes, *message.mutable_node());
+  ContainerToProto(browse_references, *message.mutable_reference());
 
   auto buffer = message.SerializePartialAsString();
   if (!Clipboard().SetData(CF_TRECS, buffer.data(), buffer.size()))
@@ -165,7 +180,7 @@ void NodeTableController::PasteFromClipboard() {
   const auto& parent_node = model_->parent_node();
   scada::NodeId parent_id = parent_node ? parent_node.id() : scada::id::RootFolder;
   if (!session_service_.IsAdministrator() ||
-      !PasteRecords(task_manager_, parent_id)) {
+      !PasteRecords(parent_id)) {
     LOG(ERROR) << "Paste records error";
   }
 }
