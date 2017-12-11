@@ -171,21 +171,17 @@ void ConfigurationTreeModel::EnsureNode2(const scada::NodeId& node_id, const sca
   }
 }
 
-void ConfigurationTreeModel::OnNodeAdded(const scada::NodeId& node_id) {
-  EnsureNode(node_id);
-}
+void ConfigurationTreeModel::OnModelChange(const ModelChangeEvent& event) {
+  if (event.verb & ModelChangeEvent::NodeDeleted) {
+    if (ConfigurationTreeNode* node = FindNode(event.node_id))
+      Remove(*node->parent(), node->parent()->IndexOfChild(*node));
 
-void ConfigurationTreeModel::OnNodeDeleted(const scada::NodeId& node_id) {
-  if (ConfigurationTreeNode* node = FindNode(node_id))
-    Remove(*node->parent(), node->parent()->IndexOfChild(*node));
-}
+  } else if (event.verb & ModelChangeEvent::NodeAdded) {
+    EnsureNode(event.node_id);
 
-void ConfigurationTreeModel::OnReferenceAdded(const scada::NodeId& node_id) {
-  EnsureParent(node_id);
-}
-
-void ConfigurationTreeModel::OnReferenceDeleted(const scada::NodeId& node_id) {
-  EnsureParent(node_id);
+  } else if (event.verb & (ModelChangeEvent::ReferenceAdded | ModelChangeEvent::ReferenceDeleted)) {
+    EnsureParent(event.node_id);
+  }
 }
 
 void ConfigurationTreeModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {

@@ -18,24 +18,11 @@
 #include "common/browse_util.h"
 #include "memdb/types.h"
 
-namespace {
-
-const base::char16 kNoneChoice[] = L"<Нет>";
-
-std::string MakeDeviceComponentItem(const base::StringPiece& name) {
-  return '<' + name.as_string() + '>';
-}
-
-} // namespace
-
 // RecordEditor
 
 RecordEditor::RecordEditor(unsigned resource_id, RecordEditorContext&& context)
     : RecordEditorContext(std::move(context)),
-      IDD(resource_id),
-      lock(TRUE),
-      m_modified(FALSE),
-      node_(NULL) {
+      IDD(resource_id) {
 }
 
 void RecordEditor::Init(const NodeRef& node) {
@@ -43,8 +30,8 @@ void RecordEditor::Init(const NodeRef& node) {
 }
 
 void RecordEditor::OnFinalMessage(HWND) {
-  if (contents_)
-    contents_->NativeControlDestroyed();
+  if (destroy_handler)
+    destroy_handler();
 }
 
 void RecordEditor::SetModified(BOOL modified) {
@@ -66,7 +53,7 @@ BOOL RecordEditor::SaveData() {
       task_manager_.PostUpdateTask(node_.id(), std::move(attributes), std::move(properties));
 
     for (auto& ref : references) {
-      const auto& ref_id = node_.target(ref.first).id();
+      auto ref_id = node_.target(ref.first).id();
       if (ref_id == ref.second)
         continue;
       if (!ref_id.is_null()) {
@@ -129,51 +116,6 @@ LRESULT RecordEditor::OnChange(WORD /*wNotifyCode*/, WORD wID,
 
 namespace record_editors {
 
-// LookupCombo
-
-void LookupCombo::Fill(NodeRefService& node_service, const scada::NodeId& root_node_id,
-    const scada::NodeId& type_definition_id, const scada::NodeId& selected_node_id) {
-  nodes_.clear();
-  combo_box_.ResetContent();
-  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseNodesRecursive(node_service, root_node_id, type_definition_id,
-      [weak_ptr, this, selected_node_id](const std::vector<NodeRef>& nodes) {
-        if (!weak_ptr.get())
-          return;
-        for (auto& node : nodes) {
-          auto name = base::SysNativeMBToWide(node.browse_name().name());
-          nodes_.emplace(name, node);
-          combo_box_.AddString(name.c_str());
-        }
-        Select(selected_node_id);
-      });
-}
-
-bool LookupCombo::Select(const scada::NodeId& node_id) {
-  bool ok = false;
-  base::string16 choice = kNoneChoice;
-  for (auto& p : nodes_) {
-    if (p.second.id() == node_id) {
-      choice = p.first;
-      ok = true;
-      break;
-    }
-  }
-  combo_box_.SelectString(-1, choice.c_str());
-  return ok;
-}
-
-NodeRef LookupCombo::GetSelection() const {
-  int selected_index = combo_box_.GetCurSel();
-  if (selected_index == -1)
-    return {};
-  auto choice = win_util::GetComboBoxItemText(combo_box_, selected_index);
-  if (IsEqualNoCase(choice, kNoneChoice))
-    return {};
-  auto i = nodes_.find(choice);
-  return i == nodes_.end() ? NodeRef{} : i->second;
-}
-
 // NamedRecordEditor
 
 NamedRecordEditor::NamedRecordEditor(unsigned resource_id, RecordEditorContext&& context)
@@ -186,18 +128,18 @@ LRESULT NamedRecordEditor::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam,
 }
 
 void NamedRecordEditor::ReadControlsData() {
-  name_ = base::SysWideToNativeMB(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
 }
 
 void NamedRecordEditor::ReadNodeToControls(const NodeRef& node) {
-  const auto& name = node_.browse_name().name();
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(name).c_str());
+  auto name = base::ToString16(node_.display_name());
+  SetDlgItemText(IDC_NAME, name.c_str());
 }
 
 void NamedRecordEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                               scada::NodeProperties& properties,
                                               scada::NodeReferences& references) {
-  attributes.set_browse_name(scada::QualifiedName{name_, 0});
+  attributes.set_display_name(display_name_);
 }
 
 // GroupEditor
@@ -213,13 +155,13 @@ LRESULT GroupEditor::OnInitDialog(UINT uMsg, WPARAM wParam,
 }
 
 void GroupEditor::ReadControlsData() {
-  name_ = base::SysWideToNativeMB(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
   
   simulate_ = CButton(GetDlgItem(IDC_SIMULATE)).GetCheck() == BST_CHECKED;
 }
 
 void GroupEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name().name()).c_str());
+  SetDlgItemText(IDC_NAME, base::ToString16(node.display_name()).c_str());
   auto simulated = node[id::DataGroupType_Simulated].value().get_or(false);
   CButton(GetDlgItem(IDC_SIMULATE)).SetCheck(simulated ? BST_CHECKED : BST_UNCHECKED);
 }
@@ -227,7 +169,7 @@ void GroupEditor::ReadNodeToControls(const NodeRef& node) {
 void GroupEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                         scada::NodeProperties& properties,
                                         scada::NodeReferences& references) {
-  attributes.set_browse_name(scada::QualifiedName{name_, 0});
+  attributes.set_display_name(display_name_);
 
   properties.emplace_back(id::DataGroupType_Simulated, simulate_);
 }
@@ -245,8 +187,8 @@ LRESULT ItemEditor::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& 
   wnd_name = GetDlgItem(IDC_NAME);
   wnd_alias = GetDlgItem(IDC_ALIAS);
   wnd_chan = GetDlgItem(IDC_CHAN);
-  devices_combo_box_ = GetDlgItem(IDC_DEV);
-  items_combo_box_ = GetDlgItem(IDC_ITEM);
+  devices_combo_box_.Init(GetDlgItem(IDC_DEV));
+  items_combo_box_.Init(GetDlgItem(IDC_ITEM));
   formula_checkbox_ = GetDlgItem(IDC_FORMULA_CHECK);
   formula_edit_ = GetDlgItem(IDC_FORMULA);
 
@@ -260,9 +202,9 @@ LRESULT ItemEditor::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& 
   wnd_chan.SetCurSel(0);
 
   wnd_simulate = GetDlgItem(IDC_SIMULATE);
-  simulation_signal_combo_ = GetDlgItem(IDC_SIMULATION_SIGNAL);
+  simulation_signal_combo_box_.Init(GetDlgItem(IDC_SIMULATION_SIGNAL));
 
-  historical_db_combo_ = GetDlgItem(IDC_HISTORICAL_DB_COMBO);
+  historical_db_combo_box_.Init(GetDlgItem(IDC_HISTORICAL_DB_COMBO));
 
   bHandled = FALSE;
   return 1;
@@ -283,7 +225,7 @@ LRESULT ItemEditor::OnChanChange(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWnd
 LRESULT ItemEditor::OnSelChange(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& bHandled) {
   if (!lock) {
     if (wID == IDC_DEV)
-      items_combo_box_lookup_.Fill(node_service_, GetDeviceId());
+      items_combo_box_.Fill(node_service_, GetDeviceId());
   }
 
   bHandled = FALSE;
@@ -291,18 +233,7 @@ LRESULT ItemEditor::OnSelChange(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/
 }
 
 scada::NodeId ItemEditor::GetDeviceId() const {
-  int i = devices_combo_box_.GetCurSel();
-  DWORD_PTR data = devices_combo_box_.GetItemData(i);
-  if (data == CB_ERR)
-    return scada::NodeId();
-    
-  return scada::NodeId(HIWORD(data), LOWORD(data));
-}
-
-scada::NodeId ItemComboLookup::GetSelectedId() const {
-  std::string item = base::SysWideToNativeMB(win_util::GetWindowText(items_combo_box_));
-  auto i = component_items_.find(item);
-  return i != component_items_.end() ? i->second : scada::NodeId{};
+  return devices_combo_box_.GetSelection().id();
 }
 
 std::string ItemEditor::GetChannelPath() const {
@@ -311,24 +242,24 @@ std::string ItemEditor::GetChannelPath() const {
 
   } else {
     auto device_id = GetDeviceId();
-    auto selected_component_id = items_combo_box_lookup_.GetSelectedId();
+    auto selected_component_id = items_combo_box_.GetSelectedId();
     if (!selected_component_id.is_null())
       return MakeNodeIdFormula(selected_component_id);
     else {
-      auto text = base::SysWideToNativeMB(win_util::GetWindowText(items_combo_box_));
+      auto text = base::SysWideToNativeMB(items_combo_box_.GetText());
       return MakeNodeIdFormula(scada::MakeNestedNodeId(device_id, text));
     }
   }
 }
 
 bool ItemEditor::SelectDevice(const scada::NodeId& device_id) {
-  auto ok = devices_combo_box_lookup_.Select(device_id);
-  items_combo_box_lookup_.Fill(node_service_, device_id);
+  auto ok = devices_combo_box_.Select(device_id);
+  items_combo_box_.Fill(node_service_, device_id);
   return ok;
 }
 
 void ItemEditor::SelectNestedName(const base::StringPiece& name) {
-  items_combo_box_.SetWindowText(base::SysNativeMBToWide(name).c_str());
+  items_combo_box_.SetText(base::SysNativeMBToWide(name).c_str());
 }
 
 void ItemEditor::LoadChannel(unsigned channel_no) {
@@ -355,27 +286,6 @@ void ItemEditor::LoadChannel(unsigned channel_no) {
   formula_edit_.SetWindowText(is_formula ? base::SysNativeMBToWide(*channel_).c_str() : L"");
 }
 
-void ItemComboLookup::Fill(NodeRefService& node_service, const scada::NodeId& device_id) {
-  items_combo_box_.ResetContent();
-  component_items_.clear();
-
-  // add service items
-  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseNodes(node_service,
-      {device_id, scada::BrowseDirection::Forward, scada::id::HasComponent, true},
-      [weak_ptr, this](const scada::Status& status, const std::vector<NodeRef>& components) {
-        if (!status || !weak_ptr.get())
-          return;
-        for (auto& component : components) {
-          if (component.node_class() != scada::NodeClass::Variable)
-            continue;
-          auto name = MakeDeviceComponentItem(component.browse_name().name());
-          component_items_.emplace(name, component.id());
-          items_combo_box_.AddString(base::SysNativeMBToWide(name).c_str());
-        }
-      });
-}
-
 void ItemEditor::SaveChannel() {
   *channel_ = GetChannelPath();
 }
@@ -383,11 +293,11 @@ void ItemEditor::SaveChannel() {
 void ItemEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  name = base::SysWideToNativeMB(win_util::GetWindowText(wnd_name));
+  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(wnd_name));
   alias = base::SysWideToNativeMB(win_util::GetWindowText(wnd_alias));
   // TODO: check and limit name and alias
 
-  historical_db_id_ = historical_db_combo_lookup_.GetSelection().id();
+  historical_db_id_ = historical_db_combo_box_.GetSelection().id();
 
   sev = win_util::GetWindowInt(wnd_sev);
 
@@ -399,13 +309,13 @@ void ItemEditor::ReadControlsData() {
 
   // Simulate.
   simulate = wnd_simulate.GetCheck() == BST_CHECKED;
-  simulation_signal_id_ = simulation_signal_combo_lookup_.GetSelection().id();
+  simulation_signal_id_ = simulation_signal_combo_box_.GetSelection().id();
 }
 
 void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  wnd_name.SetWindowText(base::SysNativeMBToWide(node.browse_name().name()).c_str());
+  wnd_name.SetWindowText(base::ToString16(node.display_name()).c_str());
 
   const auto& alias = node[id::DataItemType_Alias].value().get_or(std::string{});
   wnd_alias.SetWindowText(base::SysNativeMBToWide(alias).c_str());
@@ -413,14 +323,14 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   auto severity = node[id::DataItemType_Severity].value().get_or(0);
   win_util::SetWindowTextInt(wnd_sev, severity);
 
-  const auto& selected_db_id = node.target(id::HasHistoricalDatabase).id();
-  historical_db_combo_lookup_.Fill(node_service_, id::HistoricalDatabases, id::HistoricalDatabaseType, selected_db_id);
+  auto selected_db_id = node.target(id::HasHistoricalDatabase).id();
+  historical_db_combo_box_.Fill(node_service_, id::HistoricalDatabases, id::HistoricalDatabaseType, selected_db_id);
 
   channels_[0] = node[id::DataItemType_Input1].value().get_or(std::string{});
   channels_[1] = node[id::DataItemType_Input2].value().get_or(std::string{});
   control_channel_ = node[id::DataItemType_Output].value().get_or(std::string{});
   
-  devices_combo_box_lookup_.Fill(node_service_, id::Devices, id::DeviceType, {});
+  devices_combo_box_.Fill(node_service_, id::Devices, id::DeviceType, {});
   LoadChannel(0);
   
   auto stale_period = node[id::DataItemType_StalePeriod].value().get_or(0);
@@ -433,7 +343,7 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_simulate.SetCheck(simulated ? BST_CHECKED : BST_UNCHECKED);
 
   const auto& simulation_signal_id = node.target(id::HasSimulationSignal).id();
-  simulation_signal_combo_lookup_.Fill(node_service_, id::SimulationSignals, id::SimulationSignalType, simulation_signal_id);
+  simulation_signal_combo_box_.Fill(node_service_, id::SimulationSignals, id::SimulationSignalType, simulation_signal_id);
 }
 
 void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
@@ -443,7 +353,7 @@ void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
 
   // name and alias - only for single item mode
   if (node_) {
-    attributes.set_browse_name(scada::QualifiedName{name, 0});
+    attributes.set_display_name(display_name_);
     properties.emplace_back(id::DataItemType_Alias, alias);
   }
 
@@ -476,8 +386,8 @@ LRESULT ItemEditor::OnStaleCheckClicked(WORD /*wNotifyCode*/, WORD /*wID*/,
 }
 
 void ItemEditor::OnFormulaStateChanged(bool is_formula) {
-  devices_combo_box_.EnableWindow(!is_formula);
-  items_combo_box_.EnableWindow(!is_formula);
+  devices_combo_box_.combo_box().EnableWindow(!is_formula);
+  items_combo_box_.combo_box().EnableWindow(!is_formula);
   formula_edit_.EnableWindow(is_formula);
 }
 
@@ -502,7 +412,7 @@ void TsEditor::ReadControlsData() {
 
   inversion = wnd_inv.GetCheck() == BST_CHECKED;
 
-  format_id_ = params_combo_lookup_.GetSelection().id();
+  format_id_ = ts_formats_combo_box_.GetSelection().id();
 }
 
 static int GetSelColor(int sel) {
@@ -518,8 +428,8 @@ void TsEditor::ReadNodeToControls(const NodeRef& node) {
   auto inverted = node[id::DiscreteItemType_Inversion].value().get_or(false);
   wnd_inv.SetCheck(inverted ? BST_CHECKED : BST_UNCHECKED);
 
-  const auto& ts_format_id = node.target(id::HasTsFormat).id();
-  params_combo_lookup_.Fill(node_service_, id::TsFormats, id::TsFormatType, ts_format_id);
+  auto ts_format_id = node.target(id::HasTsFormat).id();
+  ts_formats_combo_box_.Fill(node_service_, id::TsFormats, id::TsFormatType, ts_format_id);
 }
 
 void TsEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
@@ -533,7 +443,7 @@ void TsEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
 
 LRESULT TsEditor::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
   wnd_inv = GetDlgItem(IDC_INV);
-  wnd_params = GetDlgItem(IDC_PARAMS);
+  ts_formats_combo_box_.Init(GetDlgItem(IDC_PARAMS));
 
   bHandled = FALSE;
   return 0;
@@ -643,7 +553,7 @@ TsFormatEditor::TsFormatEditor(RecordEditorContext&& context)
 void TsFormatEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  name_ = base::SysWideToNativeMB(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
   lbl_open = base::SysWideToNativeMB(win_util::GetWindowText(wnd_lbl_open));
   lbl_close = base::SysWideToNativeMB(win_util::GetWindowText(wnd_lbl_close));
 }
@@ -651,7 +561,7 @@ void TsFormatEditor::ReadControlsData() {
 void TsFormatEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name().name()).c_str());
+  SetDlgItemText(IDC_NAME, base::ToString16(node.display_name()).c_str());
   wnd_lbl_open.SetWindowText(base::SysNativeMBToWide(node[id::TsFormatType_OpenLabel].value().get_or(std::string())).c_str());
   wnd_lbl_open.SetWindowText(base::SysNativeMBToWide(node[id::TsFormatType_CloseLabel].value().get_or(std::string())).c_str());
   wnd_clr_open.SetCurSel(node[id::TsFormatType_OpenColor].value().get_or(0));
@@ -663,7 +573,7 @@ void TsFormatEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                            scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  attributes.set_browse_name(scada::QualifiedName{name_, 0});
+  attributes.set_display_name(display_name_);
 
   auto clr_open = GetSelColor(wnd_clr_open.GetCurSel());
   auto clr_close = GetSelColor(wnd_clr_close.GetCurSel());
@@ -928,7 +838,7 @@ IecDeviceEditor::IecDeviceEditor(RecordEditorContext&& context, bool iec104)
 void IecDeviceEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  name = base::SysWideToNativeMB(win_util::GetWindowText(wnd_name));
+  display_name_ = base::SysWideToNativeMB(win_util::GetWindowText(wnd_name));
   poll_on_start_ = WTL::CButton(GetDlgItem(IDC_INTER)).GetCheck() == BST_CHECKED;
   inter_per = win_util::GetWindowInt(wnd_inter_per);
   sync = wnd_sync.GetCheck() == BST_CHECKED;
@@ -948,7 +858,7 @@ void IecDeviceEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_link_addr.ShowWindow(iec104_ ? SW_HIDE : SW_SHOW);
   GetDlgItem(IDC_LINK_ADDR_LABEL).ShowWindow(iec104_ ? SW_HIDE : SW_SHOW);
 
-  wnd_name.SetWindowText(base::SysNativeMBToWide(node.browse_name().name()).c_str());
+  wnd_name.SetWindowText(base::ToString16(node.display_name()).c_str());
   win_util::SetWindowTextInt(wnd_addr, node[id::Iec60870DeviceType_Address].value().get_or(0));
   WTL::CButton(GetDlgItem(IDC_DISABLED)).SetCheck(node[id::DeviceType_Disabled].value().get_or(false) ? BST_CHECKED : BST_UNCHECKED);
   win_util::SetWindowTextInt(wnd_link_addr, node[id::Iec60870DeviceType_LinkAddress].value().get_or(0));
@@ -973,7 +883,7 @@ void IecDeviceEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                             scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  attributes.set_browse_name(scada::QualifiedName{name, 0});
+  attributes.set_display_name(display_name_);
 
   properties.emplace_back(id::Iec60870DeviceType_Address, addr);
   properties.emplace_back(id::Iec60870DeviceType_LinkAddress, link_addr);
@@ -1079,7 +989,7 @@ LRESULT SimulationItemEditor::OnInitDialog(UINT uMsg, WPARAM wParam,
 }
 
 void SimulationItemEditor::ReadControlsData() {
-  name_ = base::SysWideToNativeMB(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
 
   if (CButton(GetDlgItem(IDC_RAMP)).GetCheck() == BST_CHECKED)
     type_ = cfg::SimulationSignalType::RAMP;
@@ -1098,7 +1008,7 @@ void SimulationItemEditor::ReadControlsData() {
 }
 
 void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, base::SysNativeMBToWide(node.browse_name().name()).c_str());
+  SetDlgItemText(IDC_NAME, base::ToString16(node.display_name()).c_str());
 
   auto type = node[id::SimulationSignalType].value().get_or(0);
   UINT type_id;
@@ -1132,7 +1042,7 @@ void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
 void SimulationItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                                  scada::NodeProperties& properties,
                                                  scada::NodeReferences& references) {
-  attributes.set_browse_name(scada::QualifiedName{name_, 0});
+  attributes.set_display_name(display_name_);
 
   properties.emplace_back(id::SimulationSignalType_Type, static_cast<int>(type_));
   properties.emplace_back(id::SimulationSignalType_Period, period_);

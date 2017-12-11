@@ -88,7 +88,7 @@ void NodeTableModel::SetParentNode(NodeRef parent_node) {
 
 void NodeTableModel::SetParentNodeId(const scada::NodeId& node_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  context_.node_service_.GetNode(node_id).Fetch([weak_ptr](NodeRef node) {
+  context_.node_service_.GetNode(node_id).Fetch([weak_ptr](const NodeRef& node) {
     if (!node.status())
       return;
     if (auto* ptr = weak_ptr.get())
@@ -113,6 +113,8 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
 
   if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
+  else if (column.attr_id == scada::AttributeId::DisplayName)
+    cell.text = base::ToString16(node.display_name());
   else if (column.prop_def->IsReadOnly(node, column.prop_decl_id))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   else
@@ -170,26 +172,16 @@ void NodeTableModel::SetNodes(const std::vector<NodeRef>& nodes) {
   InitColumns();
 }
 
-void NodeTableModel::Update(const scada::NodeId& node_id) {
-  // TODO: Can be moved.
-
-  int i = Find(node_id);
-  if (i != -1)
-    NotifyRowsChanged(i, 1);
-}
-
-int NodeTableModel::Find(const scada::NodeId& node_id) const {
-  // TODO: Map.
-  for (int i = 0; i < static_cast<int>(nodes_.size()); i++)
+int NodeTableModel::FindRecord(const scada::NodeId& node_id) const {
+  for (size_t i = 0; i < nodes_.size(); i++) {
     if (nodes_[i].id() == node_id)
-      return i;
+      return static_cast<int>(i);
+  }
   return -1;
 }
 
-void NodeTableModel::Insert(const NodeRef& node) {
-  assert(node);
-
-  int ix = Find(node.id());
+void NodeTableModel::Update(const NodeRef& node) {
+  int ix = FindRecord(node.id());
   if (ix != -1) {
     NotifyRowsChanged(ix, 1);
     return;
@@ -202,33 +194,29 @@ void NodeTableModel::Insert(const NodeRef& node) {
 }
 
 void NodeTableModel::Delete(const scada::NodeId& node_id) {
-  int ix = Find(node_id);
+  int ix = FindRecord(node_id);
   if (ix != -1) {
     nodes_.erase(nodes_.begin() + ix);
     NotifyModelChanged();
   }
 }
 
-void NodeTableModel::OnNodeAdded(const scada::NodeId& node_id) {
-  // if (parent_node_.node_ptr() == scada::GetParent(node))
-  //   Insert(node);
-  // TODO: Handle addition.
-}
-
-void NodeTableModel::OnNodeDeleted(const scada::NodeId& node_id) {
-  Delete(node_id);
+void NodeTableModel::OnModelChange(const ModelChangeEvent& event) {
+  if (event.verb & ModelChangeEvent::NodeDeleted) {
+    Delete(event.node_id);
+  } else {
+    auto node = context_.node_service_.GetNode(event.node_id);
+    if (node.parent() == parent_node_)
+      Update(node);
+    else
+      Delete(event.node_id);
+  }
 }
 
 void NodeTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  Update(node_id);
-}
-
-void NodeTableModel::OnReferenceAdded(const scada::NodeId& node_id) {
-  Update(node_id);
-}
-
-void NodeTableModel::OnReferenceDeleted(const scada::NodeId& node_id) {
-  Update(node_id);
+  auto node = context_.node_service_.GetNode(node_id);
+  if (node.parent() == parent_node_)
+    Update(node);
 }
 
 void NodeTableModel::Sort() {
@@ -259,7 +247,7 @@ void NodeTableModel::InitColumns() {
 
   // Display name
   {
-    columns_.push_back({scada::AttributeId::BrowseName, scada::NodeId(), nullptr});
+    columns_.push_back({scada::AttributeId::DisplayName, scada::NodeId(), nullptr});
     columns.emplace_back(columns.size(), L"Èìÿ", 75, ui::TableColumn::LEFT);
   }
 

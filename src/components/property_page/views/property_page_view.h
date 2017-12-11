@@ -37,7 +37,7 @@ class PropertyPageView : public Controller,
   void SetNode(const NodeRef& node, const NodeRef& parent);
 
   // NodeRefObserver
-  virtual void OnNodeDeleted(const scada::NodeId& node_id) override;
+  virtual void OnModelChange(const ModelChangeEvent& event) override;
 
   scada::NodeId node_id_;
   views::View* view_ = nullptr;

@@ -20,9 +20,8 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service, c
     spec.set_delegate(this);
     spec.param = reinterpret_cast<void*>(i);
 
-    std::string formula = MakeNodeIdFormula(component.id());
     try {
-      spec.Connect(timed_data_service, formula);
+      spec.Connect(timed_data_service, component.id());
     } catch (const std::exception&) {
     }
   }

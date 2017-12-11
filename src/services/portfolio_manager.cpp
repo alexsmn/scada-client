@@ -15,12 +15,11 @@ PortfolioManager::~PortfolioManager() {
   node_service_.RemoveObserver(*this);
 }
 
-void PortfolioManager::OnNodeAdded(const scada::NodeId& node_id) {
-  UpdateNode(node_id);
-}
-
-void PortfolioManager::OnNodeDeleted(const scada::NodeId& node_id) {
-  DeleteNode(node_id);
+void PortfolioManager::OnModelChange(const ModelChangeEvent& event) {
+  if (event.verb & ModelChangeEvent::NodeDeleted)
+    DeleteNode(event.node_id);
+  else if (event.verb & ModelChangeEvent::NodeAdded)
+    UpdateNode(event.node_id);
 }
 
 void PortfolioManager::OnNodeSemanticChanged(const scada::NodeId& node_id) {

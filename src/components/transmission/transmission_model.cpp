@@ -31,7 +31,7 @@ void TransmissionModel::SetDevice(NodeRef device) {
 
 void TransmissionModel::SetDeviceId(const scada::NodeId& device_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service_.GetNode(device_id).Fetch([weak_ptr](NodeRef node) {
+  node_service_.GetNode(device_id).Fetch([weak_ptr](const NodeRef& node) {
     if (auto* ptr = weak_ptr.get())
       ptr->SetDevice(std::move(node));
   });
@@ -88,23 +88,17 @@ void TransmissionModel::Update() {
   GridModel::NotifyModelChanged();
 }
 
-void TransmissionModel::OnNodeAdded(const scada::NodeId& node_id) {
+void TransmissionModel::OnModelChange(const ModelChangeEvent& event) {
+  if (event.verb & ModelChangeEvent::NodeDeleted)
+    DeleteRow(event.node_id);
+  else if (auto node = node_service_.GetNode(event.node_id))
+    UpdateItem(node);
 }
 
 void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   int index = FindRow(node_id);
   if (index != -1)
     UpdateItem(rows_[index].transmission);
-}
-
-void TransmissionModel::OnReferenceAdded(const scada::NodeId& node_id) {
-  if (node_id == device_.id())
-    Update();
-}
-
-void TransmissionModel::OnReferenceDeleted(const scada::NodeId& node_id) {
-  if (node_id == device_.id())
-    Update();
 }
 
 void TransmissionModel::UpdateItem(const NodeRef& transmission) {
@@ -138,12 +132,6 @@ void TransmissionModel::UpdateItem(const NodeRef& transmission) {
     if (contents_observer() && !source_id.is_null())
       contents_observer()->OnContainedItemChanged(source_id, true);
   }
-}
-
-void TransmissionModel::OnNodeDeleted(const scada::NodeId& node_id) {
-  // All references are deleted. No type definition.
-  // assert(IsInstanceOf(&transmission, id::TransmissionItemType));
-  DeleteRow(node_id);
 }
 
 void TransmissionModel::DeleteRow(const scada::NodeId& transmission_id) {

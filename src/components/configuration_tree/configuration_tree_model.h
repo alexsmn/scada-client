@@ -80,10 +80,7 @@ class ConfigurationTreeModel : public ui::TreeNodeModel<ConfigurationTreeNode>,
   void EnsureNode2(const scada::NodeId& node_id, const scada::NodeId& parent_id);
 
   // NodeRefObserver
-  virtual void OnNodeAdded(const scada::NodeId& node_id) override;
-  virtual void OnNodeDeleted(const scada::NodeId& node_id) override;
-  virtual void OnReferenceAdded(const scada::NodeId& node_id) override;
-  virtual void OnReferenceDeleted(const scada::NodeId& node_id) override;
+  virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
   NodeRefService& node_service_;

@@ -40,10 +40,9 @@ class NodeTableModel : public ui::GridModel,
 
   void InitColumns();
 
-  void Update(const scada::NodeId& node_id);
-  void Insert(const NodeRef& node);
+  void Update(const NodeRef& node);
   void Delete(const scada::NodeId& node_id);
-  int Find(const scada::NodeId& node_id) const;
+  int FindRecord(const scada::NodeId& node_id) const;
 
   void Sort();
 
@@ -52,10 +51,7 @@ class NodeTableModel : public ui::GridModel,
   virtual base::string16 GetRowTitle(int row) override;
 
   // NodeRefObserver events
-  virtual void OnNodeAdded(const scada::NodeId& node_id) override;
-  virtual void OnNodeDeleted(const scada::NodeId& node_id) override;
-  virtual void OnReferenceAdded(const scada::NodeId& node_id) override;
-  virtual void OnReferenceDeleted(const scada::NodeId& node_id) override;
+  virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
   PropertyContext context_;

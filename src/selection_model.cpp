@@ -21,7 +21,7 @@ void SelectionModel::Clear() {
 	Changed();
 }
 
-void SelectionModel::SelectNode(NodeRef node) {
+void SelectionModel::SelectNode(const NodeRef& node) {
   if (!node) {
     Clear();
     return;
@@ -57,7 +57,7 @@ void SelectionModel::SelectNodeId(const scada::NodeId& node_id) {
   pending_request_ = std::make_shared<bool>();
 
   std::weak_ptr<bool> cancelation = pending_request_;
-  node_service_.GetNode(node_id).Fetch([=](NodeRef node) {
+  node_service_.GetNode(node_id).Fetch([=](const NodeRef& node) {
     if (cancelation.expired())
       return;
     pending_request_ = nullptr;
@@ -125,7 +125,7 @@ void SelectionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     Changed();
 }
 
-void SelectionModel::OnNodeDeleted(const scada::NodeId& node_id) {
-  if (node_.id() == node_id)
+void SelectionModel::OnModelChange(const ModelChangeEvent& event) {
+  if ((event.verb & ModelChangeEvent::NodeDeleted) && (node_.id() == event.node_id))
     Clear();
 }

@@ -21,7 +21,7 @@
 
 class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
  public:
-  explicit LimitsDialog(TaskManager& task_manager, NodeRef node);
+  explicit LimitsDialog(TaskManager& task_manager, const NodeRef& node);
 
   bool Execute(DialogService& dialog_service);
   
@@ -45,7 +45,7 @@ class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
   TaskManager& task_manager_;
 };
 
-LimitsDialog::LimitsDialog(TaskManager& task_manager, NodeRef node)
+LimitsDialog::LimitsDialog(TaskManager& task_manager, const NodeRef& node)
     : task_manager_{task_manager},
       node_{std::move(node)} {
 }

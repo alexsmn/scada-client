@@ -93,7 +93,7 @@ void TaskManager::PostUpdateTask(const scada::NodeId& node_id, scada::NodeAttrib
   assert(!attributes.empty() || !properties.empty());
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.GetNode(node_id).Fetch([=](NodeRef node) {
+  node_service_.GetNode(node_id).Fetch([=](const NodeRef& node) {
     if (!weak_ptr.get())
       return;
 

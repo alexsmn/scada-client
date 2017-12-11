@@ -25,7 +25,7 @@ class SelectionModel : private rt::TimedDataDelegate,
   std::function<NodeIdSet()> multiple_handler_;
 
   void Clear();
-  void SelectNode(NodeRef node);
+  void SelectNode(const NodeRef& node);
   void SelectNodeId(const scada::NodeId& node_id);
   void SelectTimedData(const rt::TimedDataSpec& spec);
   void SelectMultiple();
@@ -52,7 +52,7 @@ class SelectionModel : private rt::TimedDataDelegate,
 
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnNodeDeleted(const scada::NodeId& node_id) override;
+  virtual void OnModelChange(const ModelChangeEvent& event) override;
 
   enum Type { EMPTY, NODE, SPEC, MULTI };
   Type type_ = EMPTY;

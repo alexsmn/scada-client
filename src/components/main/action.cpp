@@ -84,7 +84,7 @@ Action::Action(unsigned command, CommandCategory category, base::string16 title,
 
 class NodeAction : public Action {
  public:
-  NodeAction(unsigned command_id, CommandCategory category, NodeRef node)
+  NodeAction(unsigned command_id, CommandCategory category, const NodeRef& node)
       : Action(command_id, category, {}),
         node_(std::move(node)) {
   }

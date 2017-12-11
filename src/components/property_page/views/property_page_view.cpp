@@ -38,7 +38,7 @@ views::View* PropertyPageView::Init(const WindowDefinition& definition) {
 
   auto& node_service = node_service_;
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service.GetNode(node_id_).Fetch([&node_service, weak_ptr](NodeRef node) {
+  node_service.GetNode(node_id_).Fetch([&node_service, weak_ptr](const NodeRef& node) {
     if (!node.status())
       return;
     BrowseParent(node_service, node.id(), scada::id::HierarchicalReferences,
@@ -68,15 +68,15 @@ bool PropertyPageViewContents::DispatchNativeEvent(const base::NativeEvent& even
   return editor_ && editor_->IsDialogMessage(const_cast<MSG*>(&event));
 }
 
-void PropertyPageView::OnNodeDeleted(const scada::NodeId& node_id) {
-  if (node_id_ == node_id)
+void PropertyPageView::OnModelChange(const ModelChangeEvent& event) {
+  if ((event.verb & ModelChangeEvent::NodeDeleted) && (node_id_ == event.node_id))
     controller_delegate_.Close();
 }
 
 void PropertyPageViewContents::CreateNativeControl(HWND parent_handle) {
   assert(editor_);
 
-  editor_->contents_ = this;
+  editor_->destroy_handler = [this] { NativeControlDestroyed(); };
   editor_->Create(GetWidget()->GetNativeView());
   editor_->UpdateData();
   editor_->ShowWindow(SW_SHOW);

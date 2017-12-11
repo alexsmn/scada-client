@@ -302,7 +302,7 @@ void OpenedView::OnCreateRecordComplete(const scada::QualifiedName& browse_name,
     return;
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.GetNode(node_id).Fetch([weak_ptr](NodeRef node) {
+  node_service_.GetNode(node_id).Fetch([weak_ptr](const NodeRef& node) {
     if (!node.status())
       return;
     auto* ptr = weak_ptr.get();

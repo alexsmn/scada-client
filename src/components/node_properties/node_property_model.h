@@ -46,9 +46,7 @@ class NodePropertyModel : public ui::TreeModel,
   int FindProperty(scada::AttributeId attribute_id) const;
 
   // scada::NodeObserver
-  virtual void OnNodeDeleted(const scada::NodeId& node_id) override;
-  virtual void OnReferenceAdded(const scada::NodeId& node_id) override;
-  virtual void OnReferenceDeleted(const scada::NodeId& node_id) override;
+  virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
   PropertyContext context_;

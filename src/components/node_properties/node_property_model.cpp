@@ -86,21 +86,16 @@ void NodePropertyModel::SetValue(int index, const base::string16& value) {
   prop.def->SetText(context_, node_, prop.prop_type_id, value);
 }
 
-void NodePropertyModel::OnNodeDeleted(const scada::NodeId& node_id) {
-  nodes_.erase(node_id);
-  
-  if (node_.id() == node_id)
-    node_ = nullptr;
+void NodePropertyModel::OnModelChange(const ModelChangeEvent& event) {
+  if (event.verb & ModelChangeEvent::NodeDeleted) {
+    nodes_.erase(event.node_id);
+    if (node_.id() == event.node_id)
+      node_ = nullptr;
+    // TODO: Model changed?
 
-  // TODO: Model changed?
-}
-
-void NodePropertyModel::OnReferenceAdded(const scada::NodeId& node_id) {
-  UpdateNode(node_id);
-}
-
-void NodePropertyModel::OnReferenceDeleted(const scada::NodeId& node_id) {
-  UpdateNode(node_id);
+  } else if (event.verb & (ModelChangeEvent::ReferenceAdded | ModelChangeEvent::ReferenceDeleted)) {
+    UpdateNode(event.node_id);
+  }
 }
 
 void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {

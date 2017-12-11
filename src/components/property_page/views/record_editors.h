@@ -14,10 +14,11 @@ using std::max;
 
 #include "base/memory/weak_ptr.h"
 #include "net/transport_string.h"
-#include "core/configuration_types.h"
 #include "common/static_types.h"
 #include "common_resources.h"
 #include "common/node_ref.h"
+#include "core/configuration_types.h"
+#include "node_combo_box.h"
 
 namespace scada {
 class NodeAttributes;
@@ -56,7 +57,7 @@ class RecordEditor : public ATL::CDialogImpl<RecordEditor>,
   BOOL SaveData();
   void DoPaint(HDC dc) { }
 
-  virtual void OnFinalMessage(HWND);
+  virtual void OnFinalMessage(HWND) override;
 
   BEGIN_MSG_MAP(RecordEditor)
     CHAIN_MSG_MAP(WTL::CScrollImpl<RecordEditor>)
@@ -79,37 +80,18 @@ class RecordEditor : public ATL::CDialogImpl<RecordEditor>,
   // input
   NodeRef node_;
   // data
-  BOOL		m_modified;
-  BOOL		lock;     // OnChange method is locked
+  BOOL		m_modified = FALSE;
+  BOOL		lock = TRUE; // OnChange method is locked
 
-  base::WeakPtrFactory<RecordEditor> weak_ptr_factory_{this};
+  std::function<void()> destroy_handler;
 
  private:
   scada::NodeId node_type_id_;    // editing table - shall correspond edit dialog
 
-  PropertyPageViewContents* contents_ = nullptr;
-
-  friend class PropertyPageViewContents;
+  base::WeakPtrFactory<RecordEditor> weak_ptr_factory_{this};
 };
 
 namespace record_editors {
-
-class LookupCombo {
- public:
-  explicit LookupCombo(WTL::CComboBox& combo_box) : combo_box_{combo_box} {}
-
-  void Fill(NodeRefService& node_service, const scada::NodeId& root_node_id,
-      const scada::NodeId& type_definition_id, const scada::NodeId& selected_node_id);
-
-  bool Select(const scada::NodeId& node_id);
-
-  NodeRef GetSelection() const;
-
- private:
-  WTL::CComboBox& combo_box_;
-  base::WeakPtrFactory<LookupCombo> weak_ptr_factory_{this};
-  std::map<base::string16, NodeRef> nodes_;
-};
 
 class NamedRecordEditor : public RecordEditor {
  public:
@@ -131,7 +113,7 @@ class NamedRecordEditor : public RecordEditor {
                                      scada::NodeReferences& references) override;
 
  private:
-  std::string name_;
+  scada::LocalizedText display_name_;
 };
 
 class GroupEditor : public RecordEditor {
@@ -154,20 +136,8 @@ class GroupEditor : public RecordEditor {
                                      scada::NodeReferences& references) override;
 
  private:
-  std::string name_;
+  scada::LocalizedText display_name_;
   bool		simulate_;
-};
-
-class ItemComboLookup {
- public:
-  explicit ItemComboLookup(WTL::CComboBox& combo_box) : items_combo_box_{combo_box} {}
-
-  void Fill(NodeRefService& node_service, const scada::NodeId& device_id);
-  scada::NodeId GetSelectedId() const;
-
-  WTL::CComboBox& items_combo_box_;
-  std::map<std::string, scada::NodeId> component_items_;
-  base::WeakPtrFactory<ItemComboLookup> weak_ptr_factory_{this};
 };
 
 class ItemEditor : public RecordEditor {
@@ -214,20 +184,16 @@ class ItemEditor : public RecordEditor {
   CEdit			wnd_sev;
   WTL::CUpDownCtrl	wnd_sev_spin;
   WTL::CComboBox	wnd_chan;
-  WTL::CComboBox	devices_combo_box_;
-  LookupCombo devices_combo_box_lookup_{devices_combo_box_};
-  WTL::CComboBox	items_combo_box_;
-  ItemComboLookup items_combo_box_lookup_{items_combo_box_};
+  NodeComboBox devices_combo_box_;
+  ItemComboBox items_combo_box_;
   WTL::CButton	wnd_simulate;
   WTL::CButton formula_checkbox_;
   WTL::CEdit formula_edit_;
-  WTL::CComboBox historical_db_combo_;
-  LookupCombo historical_db_combo_lookup_{historical_db_combo_};
-  WTL::CComboBox simulation_signal_combo_;
-  LookupCombo simulation_signal_combo_lookup_{simulation_signal_combo_};
+  NodeComboBox historical_db_combo_box_;
+  NodeComboBox simulation_signal_combo_box_;
 
   // fields
-  std::string	name;
+  scada::LocalizedText display_name_;
   std::string alias;
   int			sev;
   bool		simulate;
@@ -266,8 +232,7 @@ class TsEditor : public ItemEditor {
 
   // windows
   WTL::CButton wnd_inv;
-  WTL::CComboBox wnd_params;
-  LookupCombo params_combo_lookup_{wnd_params};
+  NodeComboBox ts_formats_combo_box_;
   // data
   bool inversion;
   scada::NodeId format_id_;
@@ -345,7 +310,7 @@ class TsFormatEditor : public RecordEditor,
   WTL::CComboBox	wnd_clr_open;
   WTL::CComboBox	wnd_clr_close;
   // data
-  std::string name_;
+  scada::LocalizedText display_name_;
   std::string lbl_open;
   std::string lbl_close;
   BYTE clr_open;
@@ -473,7 +438,7 @@ class IecDeviceEditor : public RecordEditor {
   CEdit		wnd_sync_per;
   CEdit		wnd_poll[16];
   // data
-  std::string name;
+  scada::LocalizedText display_name_;
   int			addr;
   int			link_addr;
   bool    poll_on_start_;
@@ -504,7 +469,7 @@ class SimulationItemEditor : public RecordEditor {
                                      scada::NodeReferences& references) override;
 
  private:
-  std::string name_;
+  scada::LocalizedText display_name_;
   cfg::SimulationSignalType type_;
   int period_;
   int phase_;
