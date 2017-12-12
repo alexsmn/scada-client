@@ -12,7 +12,7 @@
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
 #include "common/scada_node_ids.h"
-#include "core/node_id_util.h"
+#include "common/node_id_util.h"
 #include "core/node_management_service.h"
 #include "skia/ext/skia_utils_win.h"
 #include "common/browse_util.h"
@@ -247,7 +247,7 @@ std::string ItemEditor::GetChannelPath() const {
       return MakeNodeIdFormula(selected_component_id);
     else {
       auto text = base::SysWideToNativeMB(items_combo_box_.GetText());
-      return MakeNodeIdFormula(scada::MakeNestedNodeId(device_id, text));
+      return MakeNodeIdFormula(MakeNestedNodeId(device_id, text));
     }
   }
 }
@@ -276,7 +276,7 @@ void ItemEditor::LoadChannel(unsigned channel_no) {
   scada::NodeId device_id;
   base::StringPiece nested_name;
   bool is_formula = !IsNodeIdFormula(*channel_, node_id) ||
-                    !scada::IsNestedNodeId(node_id, device_id, nested_name);
+                    !IsNestedNodeId(node_id, device_id, nested_name);
 
   formula_checkbox_.SetCheck(is_formula ? BST_CHECKED : BST_UNCHECKED);                                  
   OnFormulaStateChanged(is_formula);

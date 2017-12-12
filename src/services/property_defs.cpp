@@ -11,7 +11,7 @@
 #include "common/node_ref.h"
 #include "common/node_ref_util.h"
 #include "common/node_ref_service.h"
-#include "core/node_id_util.h"
+#include "common/node_id_util.h"
 #include "common/formula_util.h"
 #include "common/format.h"
 #include "translation.h"
@@ -342,7 +342,7 @@ base::string16 ChannelPropertyDefinition::GetText(PropertyContext& context, cons
   scada::NodeId node_id;
   base::StringPiece component_name;
   if (IsNodeIdFormula(channel_path, node_id) &&
-      scada::IsNestedNodeId(node_id, parent_id, component_name)) {
+      IsNestedNodeId(node_id, parent_id, component_name)) {
     if (!device_)
       return base::SysNativeMBToWide(component_name);
     /*auto&& parent = SyncRequestNode(context.node_service_, node_id);
@@ -371,7 +371,7 @@ void ChannelPropertyDefinition::SetText(PropertyContext& context, const NodeRef&
   scada::NodeId parent_id;
   base::StringPiece component_name;
   if (!IsNodeIdFormula(channel_path, node_id) ||
-      !scada::IsNestedNodeId(node_id, parent_id, component_name)) {
+      !IsNestedNodeId(node_id, parent_id, component_name)) {
     parent_id = scada::NodeId();
     component_name = channel_path;
   }
@@ -383,7 +383,7 @@ void ChannelPropertyDefinition::SetText(PropertyContext& context, const NodeRef&
     item_path = base::SysWideToNativeMB(text);
       
   auto component_id = item_path.empty() ? std::string() :
-      MakeNodeIdFormula(scada::MakeNestedNodeId(parent_id, item_path));
+      MakeNodeIdFormula(MakeNestedNodeId(parent_id, item_path));
 
   context.task_manager_.PostUpdateTask(node.id(), {}, {{ prop_type_id, std::move(component_id) }});
 }

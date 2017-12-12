@@ -11,7 +11,7 @@
 #include "views/framework/control/editbox.h"
 #include "common/node_ref.h"
 #include "common/node_ref_util.h"
-#include "core/node_id_util.h"
+#include "common/node_id_util.h"
 #include "common/formula_util.h"
 
 #include <atlbase.h>
@@ -133,7 +133,7 @@ void AddMultipleItemsDialog::OnOK() {
   for (int i = 0; i < count; ++i, ++number, ++address) {
     std::string name = base::StringPrintf("%s%d", name_prefix.c_str(), number);
     std::string item_path = base::StringPrintf("%s%d", path_prefix.c_str(), address);
-    std::string path = MakeNodeIdFormula(scada::MakeNestedNodeId(device.id(), item_path));
+    std::string path = MakeNodeIdFormula(MakeNestedNodeId(device.id(), item_path));
 
     task_manager_.PostInsertTask(scada::NodeId(), group_.id(), type_node_id,
         scada::NodeAttributes().set_browse_name(scada::QualifiedName{std::move(name), 0}),

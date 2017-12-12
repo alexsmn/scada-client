@@ -10,7 +10,7 @@
 #include "common/node_ref.h"
 #include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
-#include "core/node_id_util.h"
+#include "common/node_id_util.h"
 #include "common/formula_util.h"
 #include "common/browse_util.h"
 
@@ -82,7 +82,7 @@ void AddServiceItemsDialog::OnOK() {
       continue;
       
     std::string component_name = base::SysWideToNativeMB(win_util::GetListBoxItemText(channels_list_box_, i));
-    std::string formula = MakeNodeIdFormula(scada::MakeNestedNodeId(device.id(), component_name));
+    std::string formula = MakeNodeIdFormula(MakeNestedNodeId(device.id(), component_name));
   
     task_manager_.PostInsertTask(scada::NodeId(), group_.id(), id::AnalogItemType,
         scada::NodeAttributes().set_browse_name(scada::QualifiedName{std::move(component_name), 0}),
