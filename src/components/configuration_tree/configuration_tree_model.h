@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "base/memory/weak_ptr.h"
-#include "core/node_observer.h"
 #include "common/node_ref.h"
 #include "common/node_ref_observer.h"
 #include "ui/base/models/tree_node_model.h"

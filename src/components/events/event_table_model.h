@@ -4,7 +4,6 @@
 #include "base/timer/timer.h"
 #include "time_range.h"
 #include "services/local_events.h"
-#include "core/node_observer.h"
 #include "core/event.h"
 #include "common/event_observer.h"
 #include "core/history_service.h"
