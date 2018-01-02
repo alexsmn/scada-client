@@ -334,7 +334,7 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
     if (p.id != scada::NodeId())
       report << "  Ид = " << p.id.ToString() << std::endl;
     report << "  Родитель = " << p.parent_id.ToString() << std::endl;
-    report << "  Имя = " << p.attrs.browse_name().name() << std::endl;
+    report << "  Имя = " << p.attrs.browse_name.name() << std::endl;
     if (type_definition)
       PrintProps(type_definition, p.props, report);
     PrintRefs(address_space, p.refs, report);
@@ -345,8 +345,8 @@ void ShowImportReport(const ImportData& import_data, const AddressSpaceSnapshot&
     auto node_name = ToString16(node.display_name());
     report << "Изменить: " << node_name << std::endl;
     auto type_definition = node ? node.type_definition() : nullptr;
-    if (p.attrs.has(scada::AttributeId::BrowseName))
-      report << "  Имя = " << p.attrs.browse_name().name() << std::endl;
+    if (!p.attrs.browse_name.empty())
+      report << "  Имя = " << p.attrs.browse_name.name() << std::endl;
     if (type_definition)
       PrintProps(type_definition, p.props, report);
     PrintRefs(address_space, p.refs, report);

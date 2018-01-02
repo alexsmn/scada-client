@@ -21,8 +21,8 @@ using std::max;
 #include "node_combo_box.h"
 
 namespace scada {
-class NodeAttributes;
 class NodeManagementService;
+struct NodeAttributes;
 }
 
 class NodeRefService;
