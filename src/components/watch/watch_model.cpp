@@ -40,7 +40,7 @@ void WatchModel::SetDevice(NodeRef device) {
   device_ = std::move(device);
 
   if (device_) {
-    monitored_item_ = monitored_item_service_.CreateMonitoredItem(device_.id(), scada::AttributeId::EventNotifier);
+    monitored_item_ = monitored_item_service_.CreateMonitoredItem({device_.id(), scada::AttributeId::EventNotifier});
     monitored_item_->set_event_handler(
         [this](const scada::Status& status, const scada::Event& event) { OnEvent(event); });
     monitored_item_->Subscribe();
