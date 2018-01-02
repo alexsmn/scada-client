@@ -6,8 +6,8 @@ using std::min;
 using std::max;
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"

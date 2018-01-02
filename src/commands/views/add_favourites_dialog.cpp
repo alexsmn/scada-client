@@ -3,8 +3,8 @@
 #include "services/favourites.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 #include <string>
 
 class AddFavouritesDialog : public framework::Dialog {

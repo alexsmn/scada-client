@@ -1,9 +1,9 @@
 #include "commands/views/progress_dialog.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
+#include <atlapp.h>
 #include <atlwin.h>
-#include <wtl/atlctrls.h>
+#include <atlctrls.h>
 
 #include "common_resources.h"
 

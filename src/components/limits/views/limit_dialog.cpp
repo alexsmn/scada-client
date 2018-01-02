@@ -15,7 +15,7 @@
 #include "translation.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
+#include <atlapp.h>
 #include <atlstr.h>
 #include <atlwin.h>
 

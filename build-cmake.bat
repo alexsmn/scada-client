@@ -1,6 +1,6 @@
 set BUILD_DIR=build-cmake
-set THIRD_PARTY=c:/work/third_party
-set CMAKE_PREFIX_PATH=%THIRD_PARTY%/boost-1.65.1;%THIRD_PARTY%/protobuf/install;c:/Qt/5.7/msvc2015/lib/cmake
+set THIRD_PARTY=d:/ThirdParty
+set CMAKE_PREFIX_PATH=%THIRD_PARTY%/boost-1.65.1
 
 @if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%" || exit /b 1
 

@@ -11,8 +11,9 @@ INSTALL(FILES "${MODUS_ROOT_DIR}/libmodus/Library.txt"
 
 INCLUDE_DIRECTORIES(client
   "."
-  "${deps}/wtl"
 )
+
+set(WTL_INCLUDE_DIR "${deps}/wtl/include")
 
 ADD_SUBDIRECTORY("${deps}/chromeui" chromeui)
 ADD_SUBDIRECTORY(services)

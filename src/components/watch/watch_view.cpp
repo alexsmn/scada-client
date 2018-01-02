@@ -16,9 +16,9 @@
 // TODO: Remove.
 #include <atlstr.h>
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atluser.h>
-#include <wtl/atldlgs.h>
+#include <atlapp.h>
+#include <atluser.h>
+#include <atldlgs.h>
 #endif
 
 // WatchView

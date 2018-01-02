@@ -1,8 +1,8 @@
 #include "commands/select_item_dialog.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 #include <atlwin.h>
 #include <map>
 #include <vector>

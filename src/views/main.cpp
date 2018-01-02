@@ -1,5 +1,5 @@
 #include <atlbase.h>
-#include <wtl/atlapp.h>
+#include <atlapp.h>
 
 #include "base/at_exit.h"
 #include "base/message_loop/message_loop.h"

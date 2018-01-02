@@ -6,8 +6,8 @@ using std::min;
 using std::max;
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 
 #include "common_resources.h"
 #include "dialog_service.h"

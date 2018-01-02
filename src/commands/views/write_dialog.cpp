@@ -18,8 +18,8 @@
 #include "translation.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 
 class WriteDialog : public framework::Dialog,
                     private rt::TimedDataDelegate {

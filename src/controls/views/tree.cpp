@@ -2,8 +2,8 @@
 
 #include <atlbase.h>
 #include <atltypes.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 
 #include "skia/ext/skia_utils_win.h"
 #include "ui/views/widget/widget.h"

@@ -15,8 +15,8 @@
 #include "common/formula_util.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 
 class AddMultipleItemsDialog : public framework::Dialog,
                                private framework::ButtonController,

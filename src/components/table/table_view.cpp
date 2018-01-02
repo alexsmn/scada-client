@@ -15,8 +15,8 @@
 #if defined(UI_VIEWS)
 // TODO: Remove.
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 #include "base/color_string.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/gfx/canvas.h"

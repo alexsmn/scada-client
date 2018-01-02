@@ -6,7 +6,7 @@
 #include "project.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
+#include <atlapp.h>
 
 class AboutDialog : public framework::Dialog {
  public:

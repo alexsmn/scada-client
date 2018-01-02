@@ -3,9 +3,9 @@
 #include "common_resources.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
+#include <atlapp.h>
 #include <atlwin.h>
-#include <wtl/atlctrls.h>
+#include <atlctrls.h>
 
 class TimeValDlg : public CDialogImpl<TimeValDlg>
 {

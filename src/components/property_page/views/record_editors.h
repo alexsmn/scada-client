@@ -7,10 +7,10 @@ using std::max;
 
 #include <atlbase.h>
 #include <atlwin.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
-#include <wtl/atlframe.h>
-#include <wtl/atlscrl.h>
+#include <atlapp.h>
+#include <atlctrls.h>
+#include <atlframe.h>
+#include <atlscrl.h>
 
 #include "base/memory/weak_ptr.h"
 #include "net/transport_string.h"

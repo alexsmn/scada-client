@@ -6,5 +6,11 @@ OpenSSL/1.0.2h@lasote/stable
 Protobuf/3.1.0@a_teammate/stable
 Qt/5.7.1@osechet/stable
 
+[options]
+gtest:shared=False
+gtest:include_pdbs=True # MSVC - include debug symbols
+gtest:no_gmock=False # don't include Google Mock
+gtest:no_main=True # don't link with main() provided by gtest/gmock
+
 [generators]
 cmake

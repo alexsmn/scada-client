@@ -14,11 +14,6 @@ SET(MAINFOLDER ${PROJECT_SOURCE_DIR})
 SET(EXECUTABLE_OUTPUT_PATH "${MAINFOLDER}/bin")
 SET(LIBRARY_OUTPUT_PATH "${MAINFOLDER}/bin")
 SET(generated_dir "${CMAKE_CACHEFILE_DIR}/generated")
-# IF(WIN32)
-#   SET(deps "c:/work/third_party")
-# ELSE()
-#   SET(deps "/mnt/third_party")
-# ENDIF()
 
 include(CMakeToolsHelpers OPTIONAL)
 
@@ -89,7 +84,7 @@ SET(client_folder "ClientProjects")
 # SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Yuprecompile.h /FIprecompile.h")
 # SET_SOURCE_FILES_PROPERTIES(${PRECOMPILE} PROPERTIES COMPILE_FLAGS "/Ycprecompile.h")
 
-ADD_SUBDIRECTORY("d:/work/scada/common" scada_common)
+ADD_SUBDIRECTORY("../common" scada_common)
 
 ADD_SUBDIRECTORY(src)
 

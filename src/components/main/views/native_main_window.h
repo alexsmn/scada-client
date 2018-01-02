@@ -7,8 +7,8 @@ using std::min;
 using std::max;
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlframe.h>
+#include <atlapp.h>
+#include <atlframe.h>
 
 #include "common_resources.h"
 #include "components/main/views/main_menu.h"

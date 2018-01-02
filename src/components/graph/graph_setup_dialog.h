@@ -9,9 +9,9 @@ using std::min;
 using std::max;
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlframe.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlframe.h>
+#include <atlctrls.h>
 
 class GraphSetupDialog : public ATL::CDialogImpl<GraphSetupDialog>,
 	                       protected WTL::COwnerDraw<GraphSetupDialog>

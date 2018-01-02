@@ -1,3 +1,4 @@
 /build-cmake
 /bin
 /build-conan
+/build-vcpkg

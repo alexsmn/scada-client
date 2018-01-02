@@ -17,8 +17,8 @@
 #include <qheaderview.h>
 #elif defined(UI_VIEWS)
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atlctrls.h>
+#include <atlapp.h>
+#include <atlctrls.h>
 #endif
 
 static const char* FormatTimeRange(unsigned mode) {

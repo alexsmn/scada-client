@@ -11,8 +11,8 @@
 #include "common/scada_node_ids.h"
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
-#include <wtl/atluser.h>
+#include <atlapp.h>
+#include <atluser.h>
 
 void ShowPopupMenu(MainWindow* main_window, HMENU popup_menu,
                    const gfx::Point& point, bool right_click) {

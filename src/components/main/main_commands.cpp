@@ -1,6 +1,6 @@
 #include "components/main/main_commands.h"
 
-#include <wtl/atlres.h>
+#include <atlres.h>
 #include <windows.h>
 #include <shellapi.h>
 

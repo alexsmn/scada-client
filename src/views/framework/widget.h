@@ -1,9 +1,9 @@
 #pragma once
 
 #include <atlbase.h>
-#include <wtl/atlapp.h>
+#include <atlapp.h>
 #include <atlwin.h>
-#include <wtl/atlctrls.h>
+#include <atlctrls.h>
 
 namespace framework {
 
