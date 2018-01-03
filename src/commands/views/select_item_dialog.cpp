@@ -12,7 +12,7 @@
 #include "views/client_utils_views.h"
 #include "common_resources.h"
 #include "common/scada_node_ids.h"
-#include "core/namespaces.h"
+#include "common/namespaces.h"
 #include "common_resources.h"
 #include "dialog_service.h"
 #include "common/node_ref.h"
