@@ -277,8 +277,8 @@ PropertyEditor ReferencePropertyDefinition::GetPropertyEditor(PropertyContext& c
 PropertyEditor BoolPropertyDefinition::GetPropertyEditor(PropertyContext& context, const NodeRef& type_definition,
     const scada::NodeId& prop_decl_id) const {
   PropertyEditor result(PropertyEditor::DROPDOWN);
-  result.choices.emplace_back(base::SysNativeMBToWide(scada::Variant::kFalseString));
-  result.choices.emplace_back(base::SysNativeMBToWide(scada::Variant::kTrueString));
+  result.choices.emplace_back(scada::Variant::kFalseString);
+  result.choices.emplace_back(scada::Variant::kTrueString);
   return result;
 }
 
