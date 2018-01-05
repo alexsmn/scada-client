@@ -102,7 +102,7 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
     QMessageBox msg_box;
     msg_box.setWindowTitle(tr("Login failed"));
     msg_box.setIcon(QMessageBox::Icon::Warning);
-    msg_box.setText(QString::fromStdWString(Translate(result.ToString())) + ".");
+    msg_box.setText(QString::fromStdWString(ToString16(result)) + ".");
     msg_box.exec();
 
     SetControlsEnabled(true);

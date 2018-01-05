@@ -1,4 +1,4 @@
-#include "services/connection_state_reporter.h"
+п»ї#include "services/connection_state_reporter.h"
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
@@ -21,13 +21,13 @@ ConnectionStateReporter::~ConnectionStateReporter() {
 
 void ConnectionStateReporter::OnSessionCreated() {
   local_events_.ReportEvent(LocalEvents::SEV_INFO,
-      L"Связь с сервером восстановлена. Выполнен повторный вход в систему");
+      L"РЎРІСЏР·СЊ СЃ СЃРµСЂРІРµСЂРѕРј РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅР°. Р’С‹РїРѕР»РЅРµРЅ РїРѕРІС‚РѕСЂРЅС‹Р№ РІС…РѕРґ РІ СЃРёСЃС‚РµРјСѓ");
 }
 
 void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   base::string16 message = (status.code() == scada::StatusCode::Bad_SessionForcedLogoff) ?
-      L"Разрыв связи со стороны сервера" :
-      base::StringPrintf(L"Связь с сервером разорвана из-за ошибки (%ls)",
-          Translate(status.ToString()).c_str());
+      L"Р Р°Р·СЂС‹РІ СЃРІСЏР·Рё СЃРѕ СЃС‚РѕСЂРѕРЅС‹ СЃРµСЂРІРµСЂР°" :
+      base::StringPrintf(L"РЎРІСЏР·СЊ СЃ СЃРµСЂРІРµСЂРѕРј СЂР°Р·РѕСЂРІР°РЅР° РёР·-Р·Р° РѕС€РёР±РєРё (%ls)",
+          ToString16(status).c_str());
   local_events_.ReportEvent(LocalEvents::SEV_ERROR, message);
 }

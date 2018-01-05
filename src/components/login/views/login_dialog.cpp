@@ -1,4 +1,4 @@
-#include "components/login/login_dialog.h"
+п»ї#include "components/login/login_dialog.h"
 
 #include <algorithm>
 #include <vector>
@@ -157,7 +157,7 @@ void LoginDialog::StartLogin() {
   Connect(false);
   UpdateControls();
 
-  SetItemText(IDC_STATUS, L"Подключение...");
+  SetItemText(IDC_STATUS, L"РџРѕРґРєР»СЋС‡РµРЅРёРµ...");
 }
 
 void LoginDialog::OnOK() {
@@ -204,8 +204,8 @@ void LoginDialog::OnLoginCompleted() {
 
   if (!auto_login_ && auto_login_option_) {
     MessageBoxW(::GetActiveWindow(),
-        L"Для того, чтобы отключить автоматический вход, удерживайте Ctrl при запуске приложения.",
-        L"Автоматический вход", MB_ICONINFORMATION | MB_OK);
+        L"Р”Р»СЏ С‚РѕРіРѕ, С‡С‚РѕР±С‹ РѕС‚РєР»СЋС‡РёС‚СЊ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ РІС…РѕРґ, СѓРґРµСЂР¶РёРІР°Р№С‚Рµ Ctrl РїСЂРё Р·Р°РїСѓСЃРєРµ РїСЂРёР»РѕР¶РµРЅРёСЏ.",
+        L"РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРёР№ РІС…РѕРґ", MB_ICONINFORMATION | MB_OK);
   }
 
   EndDialog(IDOK);
@@ -217,8 +217,8 @@ void LoginDialog::OnLoginFailed(const scada::Status& status) {
   base::string16 title = win_util::GetWindowText(window_handle());
 
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
-    const wchar_t* msg = L"Указанное имя уже используется другой сессией. "
-                         L"Разорвать открытую сессию и продолжить?";
+    const wchar_t* msg = L"РЈРєР°Р·Р°РЅРЅРѕРµ РёРјСЏ СѓР¶Рµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґСЂСѓРіРѕР№ СЃРµСЃСЃРёРµР№. "
+                         L"Р Р°Р·РѕСЂРІР°С‚СЊ РѕС‚РєСЂС‹С‚СѓСЋ СЃРµСЃСЃРёСЋ Рё РїСЂРѕРґРѕР»Р¶РёС‚СЊ?";
     if (MessageBoxW(window_handle(), msg, title.c_str(),
                     MB_YESNO | MB_ICONQUESTION) == IDYES) {
       Connect(true);
@@ -229,8 +229,8 @@ void LoginDialog::OnLoginFailed(const scada::Status& status) {
 
   } else {
     base::string16 msg = base::StringPrintf(
-        L"Ошибка при подключении к серверу (%ls).",
-        Translate(status.ToString()).c_str());
+        L"РћС€РёР±РєР° РїСЂРё РїРѕРґРєР»СЋС‡РµРЅРёРё Рє СЃРµСЂРІРµСЂСѓ (%ls).",
+        ToString16(status).c_str());
     MessageBoxW(window_handle(), msg.c_str(), title.c_str(), MB_OK | MB_ICONSTOP);
 
     UpdateControls();
@@ -242,7 +242,7 @@ void LoginDialog::OnLoginFailed(const scada::Status& status) {
 
 /*void LoginDialog::OnRequestData(RequestHandle handle, void* data) {
   WTL::CStatic status_window = GetItem(IDC_STATUS);
-  status_window.SetWindowText("Получение данных...");
+  status_window.SetWindowText("РџРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С…...");
   status_window.UpdateWindow();
 }*/
 

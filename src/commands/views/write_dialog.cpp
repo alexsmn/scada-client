@@ -1,4 +1,4 @@
-#include "commands/write_dialog.h"
+п»ї#include "commands/write_dialog.h"
 
 #include "base/memory/weak_ptr.h"
 #include "views/framework/dialog.h"
@@ -75,8 +75,8 @@ WriteDialog::WriteDialog(TimedDataService& timed_data_service, const rt::TimedDa
 }
 
 void WriteDialog::OnInitDialog() {
-  SetWindowText(manual_ ? L"Ручной ввод" :
-                          L"Управление");
+  SetWindowText(manual_ ? L"Р СѓС‡РЅРѕР№ РІРІРѕРґ" :
+                          L"РЈРїСЂР°РІР»РµРЅРёРµ");
   SetItemText(IDC_TITLE, spec_.GetTitle());
   
   UpdateCurrent();
@@ -125,8 +125,8 @@ void WriteDialog::OnOK() {
     base::string16 value_str = GetItemText(IDC_VALUE);
     if (!Parse(value_str, write_value_)) {
       MessageBox(window_handle(),
-        L"Введено неверное значение. Используйте точку в качестве разделителя "
-        L"десятичных разрядов.",
+        L"Р’РІРµРґРµРЅРѕ РЅРµРІРµСЂРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ. РСЃРїРѕР»СЊР·СѓР№С‚Рµ С‚РѕС‡РєСѓ РІ РєР°С‡РµСЃС‚РІРµ СЂР°Р·РґРµР»РёС‚РµР»СЏ "
+        L"РґРµСЃСЏС‚РёС‡РЅС‹С… СЂР°Р·СЂСЏРґРѕРІ.",
         GetWindowText().c_str(), MB_OK | MB_ICONSTOP);
       return;
     }
@@ -162,9 +162,9 @@ void WriteDialog::OnWriteComplete(const scada::Status& status) {
   if (!status) {
     set_running(false);
 
-    const base::char16* title = write_selecting_ ? L"Подготовка к управлению" :
-                                             L"Управление";
-    base::string16 message = Translate(status.ToString()) + L'.';
+    const base::char16* title = write_selecting_ ? L"РџРѕРґРіРѕС‚РѕРІРєР° Рє СѓРїСЂР°РІР»РµРЅРёСЋ" :
+                                             L"РЈРїСЂР°РІР»РµРЅРёРµ";
+    base::string16 message = ToString16(status) + L'.';
     MessageBoxW(window_handle(), message.c_str(), title, MB_OK | MB_ICONSTOP);
     return;
   }
@@ -175,8 +175,8 @@ void WriteDialog::OnWriteComplete(const scada::Status& status) {
       base::string16 title = spec_.GetTitle();
       base::string16 value_str = spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
       base::string16 message = base::StringPrintf(
-          L"Удаленное устройство готово к исполнению команды.\n\n"
-          L"Перевести %ls в состояние %ls?",
+          L"РЈРґР°Р»РµРЅРЅРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РіРѕС‚РѕРІРѕ Рє РёСЃРїРѕР»РЅРµРЅРёСЋ РєРѕРјР°РЅРґС‹.\n\n"
+          L"РџРµСЂРµРІРµСЃС‚Рё %ls РІ СЃРѕСЃС‚РѕСЏРЅРёРµ %ls?",
           title.c_str(), value_str.c_str());
       if (::MessageBox(window_handle(), message.c_str(), GetWindowText().c_str(), 
           MB_OKCANCEL | MB_DEFBUTTON2 | MB_ICONEXCLAMATION) != IDOK) {
@@ -206,8 +206,8 @@ void WriteDialog::set_running(bool running) {
 
   const base::char16* status = L"";
   if (running) {
-    status = write_selecting_ ? L"Подготовка к управлению..." :
-                                L"Управление...";
+    status = write_selecting_ ? L"РџРѕРґРіРѕС‚РѕРІРєР° Рє СѓРїСЂР°РІР»РµРЅРёСЋ..." :
+                                L"РЈРїСЂР°РІР»РµРЅРёРµ...";
   }
   SetItemText(IDC_STATUS, status);
 }
@@ -220,10 +220,10 @@ void WriteDialog::UpdateCondition() {
   if (has_condition_) {
     const scada::DataValue& value = condition_.current();
     bool ok = !value.qualifier.general_bad() && value.value.get_or(false);
-    SetItemText(IDC_CONDITION, ok ? L"Норма" : L"Нарушение");
+    SetItemText(IDC_CONDITION, ok ? L"РќРѕСЂРјР°" : L"РќР°СЂСѓС€РµРЅРёРµ");
     EnableWindow(GetItem(IDOK), ok);
   } else {
-    SetItemText(IDC_CONDITION, L"Не задано");
+    SetItemText(IDC_CONDITION, L"РќРµ Р·Р°РґР°РЅРѕ");
   }
 }
 
@@ -240,11 +240,11 @@ void ExecuteWriteDialog(MainWindow* main_window, TimedDataService& timed_data_se
 
   auto window_handle = static_cast<MainWindowViews*>(main_window)->GetWindowHandle();
 
-  const base::char16* title = manual ? L"Ручной ввод" : L"Управление";
+  const base::char16* title = manual ? L"Р СѓС‡РЅРѕР№ РІРІРѕРґ" : L"РЈРїСЂР°РІР»РµРЅРёРµ";
 
   if (node.node_class() != scada::NodeClass::Variable) {
     ::AtlMessageBox(window_handle,
-        L"Операция не поддерживается для объектов данного типа.",
+        L"РћРїРµСЂР°С†РёСЏ РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ РґР»СЏ РѕР±СЉРµРєС‚РѕРІ РґР°РЅРЅРѕРіРѕ С‚РёРїР°.",
         title, MB_OK | MB_ICONEXCLAMATION);
     return;
   }

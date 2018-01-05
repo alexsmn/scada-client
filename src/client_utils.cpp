@@ -71,7 +71,7 @@ void ReportRequestResult(const base::string16& title, const scada::Status& statu
     return;
 
   base::string16 message = base::StringPrintf(L"%ls - %ls.", title.c_str(),
-      Translate(status.ToString()).c_str());
+      ToString16(status).c_str());
   LocalEvents::Severity severity = status ?
       LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
   local_events.ReportEvent(severity, message);

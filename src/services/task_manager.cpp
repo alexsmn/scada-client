@@ -202,7 +202,7 @@ void TaskManager::ReportRequestCompletion(const scada::Status& status,
     return;
 
   base::string16 message = base::StringPrintf(L"%ls: %ls.",
-      task.title.c_str(), Translate(status.ToString()).c_str());
+      task.title.c_str(), ToString16(status).c_str());
   if (!result_text.empty())
     message += L'\n' + result_text;
 
