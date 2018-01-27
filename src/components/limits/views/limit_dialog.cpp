@@ -58,7 +58,7 @@ LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/,
                                    LPARAM /*lParam*/, BOOL& /*bHandled*/) {
   CenterWindow(GetParent());
 
-  SetDlgItemText(IDC_DESC, base::SysNativeMBToWide(node_.display_name().text()).c_str());
+  SetDlgItemText(IDC_DESC, ToString16(node_.display_name()).c_str());
 
   auto lolo = node_[id::AnalogItemType_LimitLoLo].value();
   auto hihi = node_[id::AnalogItemType_LimitHiHi].value();

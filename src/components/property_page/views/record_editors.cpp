@@ -132,7 +132,7 @@ void NamedRecordEditor::ReadControlsData() {
 }
 
 void NamedRecordEditor::ReadNodeToControls(const NodeRef& node) {
-  auto name = base::ToString16(node_.display_name());
+  auto name = ToString16(node_.display_name());
   SetDlgItemText(IDC_NAME, name.c_str());
 }
 
@@ -161,7 +161,7 @@ void GroupEditor::ReadControlsData() {
 }
 
 void GroupEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, base::ToString16(node.display_name()).c_str());
+  SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
   auto simulated = node[id::DataGroupType_Simulated].value().get_or(false);
   CButton(GetDlgItem(IDC_SIMULATE)).SetCheck(simulated ? BST_CHECKED : BST_UNCHECKED);
 }
@@ -315,7 +315,7 @@ void ItemEditor::ReadControlsData() {
 void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  wnd_name.SetWindowText(base::ToString16(node.display_name()).c_str());
+  wnd_name.SetWindowText(ToString16(node.display_name()).c_str());
 
   const auto& alias = node[id::DataItemType_Alias].value().get_or(std::string{});
   wnd_alias.SetWindowText(base::SysNativeMBToWide(alias).c_str());
@@ -561,7 +561,7 @@ void TsFormatEditor::ReadControlsData() {
 void TsFormatEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  SetDlgItemText(IDC_NAME, base::ToString16(node.display_name()).c_str());
+  SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
   wnd_lbl_open.SetWindowText(base::SysNativeMBToWide(node[id::TsFormatType_OpenLabel].value().get_or(std::string())).c_str());
   wnd_lbl_open.SetWindowText(base::SysNativeMBToWide(node[id::TsFormatType_CloseLabel].value().get_or(std::string())).c_str());
   wnd_clr_open.SetCurSel(node[id::TsFormatType_OpenColor].value().get_or(0));
@@ -838,7 +838,7 @@ IecDeviceEditor::IecDeviceEditor(RecordEditorContext&& context, bool iec104)
 void IecDeviceEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  display_name_ = base::SysWideToNativeMB(win_util::GetWindowText(wnd_name));
+  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(wnd_name));
   poll_on_start_ = WTL::CButton(GetDlgItem(IDC_INTER)).GetCheck() == BST_CHECKED;
   inter_per = win_util::GetWindowInt(wnd_inter_per);
   sync = wnd_sync.GetCheck() == BST_CHECKED;
@@ -858,7 +858,7 @@ void IecDeviceEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_link_addr.ShowWindow(iec104_ ? SW_HIDE : SW_SHOW);
   GetDlgItem(IDC_LINK_ADDR_LABEL).ShowWindow(iec104_ ? SW_HIDE : SW_SHOW);
 
-  wnd_name.SetWindowText(base::ToString16(node.display_name()).c_str());
+  wnd_name.SetWindowText(ToString16(node.display_name()).c_str());
   win_util::SetWindowTextInt(wnd_addr, node[id::Iec60870DeviceType_Address].value().get_or(0));
   WTL::CButton(GetDlgItem(IDC_DISABLED)).SetCheck(node[id::DeviceType_Disabled].value().get_or(false) ? BST_CHECKED : BST_UNCHECKED);
   win_util::SetWindowTextInt(wnd_link_addr, node[id::Iec60870DeviceType_LinkAddress].value().get_or(0));
@@ -1008,7 +1008,7 @@ void SimulationItemEditor::ReadControlsData() {
 }
 
 void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, base::ToString16(node.display_name()).c_str());
+  SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
 
   auto type = node[id::SimulationSignalType].value().get_or(0);
   UINT type_id;

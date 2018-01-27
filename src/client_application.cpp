@@ -1,42 +1,44 @@
-#include "client_application.h"
+п»ї#include "client_application.h"
 
 #include "base/command_line.h"
+#include "base/logger.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/win/dump.h"
-#include "net/session_info.h"
-#include "net/transport_factory.h"
-#include "base/logger.h"
 #include "client_paths.h"
 #include "client_utils.h"
+#include "common/common_paths.h"
+#include "common/event_manager.h"
+#include "common/master_data_services.h"
+#include "common/node_ref_service_impl.h"
 #include "common_resources.h"
 #include "components/main/action.h"
 #include "components/main/main_window.h"
 #include "components/modus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
+#include "core/session_service.h"
+#include "net/session_info.h"
+#include "net/transport_factory.h"
+#include "project.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
 #include "services/local_events.h"
 #include "services/portfolio_manager.h"
 #include "services/profile.h"
-#include "services/profile.h"
 #include "services/speech.h"
-#include "services/task_manager.h"
-#include "window_info.h"
-#include "common/common_paths.h"
-#include "common/event_manager.h"
-#include "common/node_ref_service_impl.h"
+#include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_impl.h"
-#include "core/session_service.h"
-#include "project.h"
-#include "common/master_data_services.h"
+#include "window_info.h"
 
-extern bool CreateVidiconServices(const DataServicesContext& context, DataServices& services);
-extern bool CreateScadaServices(const DataServicesContext& context, DataServices& services);
-extern bool CreateOpcUaServices(const DataServicesContext& context, DataServices& services);
+extern bool CreateVidiconServices(const DataServicesContext& context,
+                                  DataServices& services);
+extern bool CreateScadaServices(const DataServicesContext& context,
+                                DataServices& services);
+extern bool CreateOpcUaServices(const DataServicesContext& context,
+                                DataServices& services);
 
-REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
-REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
+REGISTER_DATA_SERVICES("Scada", L"РўРµР»РµРєРѕРЅС‚СЂРѕР»СЊ", CreateScadaServices);
+REGISTER_DATA_SERVICES("Vidicon", L"Р’РёРґРёРєРѕРЅ", CreateVidiconServices);
 REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
 
 ClientApplication* g_application = nullptr;
@@ -46,33 +48,34 @@ namespace {
 LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   SYSTEMTIME time;
   GetLocalTime(&time);
-  
+
   base::FilePath path;
   PathService::Get(base::DIR_EXE, &path);
   path = path.Append(L"logs");
   base::CreateDirectory(path);
-  
+
   // TODO: Take module name.
-  std::wstring name = base::StringPrintf(L"client_%04d%02d%02d_%02d%02d%02d.dmp",
-      time.wYear, time.wMonth, time.wDay,
-      time.wHour, time.wMinute, time.wSecond);
+  std::wstring name = base::StringPrintf(
+      L"client_%04d%02d%02d_%02d%02d%02d.dmp", time.wYear, time.wMonth,
+      time.wDay, time.wHour, time.wMinute, time.wSecond);
   path = path.Append(name);
-      
+
   DumpException(path.value().c_str(), *exception);
-  
+
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
-void RegisterFileCacheType(FileCache& cache, ViewType type, const base::string16& ext) {
+void RegisterFileCacheType(FileCache& cache,
+                           ViewType type,
+                           const base::string16& ext) {
   base::string16 name = base::SysNativeMBToWide(ViewTypeToString(type));
   cache.RegisterType(type, name, ext);
 }
 
-} // namespace
+}  // namespace
 
 ClientApplication::ClientApplication(int argc, char** argv)
-    : master_data_services_{std::make_shared<MasterDataServices>()}  {
-}
+    : master_data_services_{std::make_shared<MasterDataServices>()} {}
 
 bool ClientApplication::Init() {
   if (!base::CommandLine::Init(0, nullptr)) {
@@ -99,7 +102,9 @@ bool ClientApplication::Init() {
 
   SetUnhandledExceptionFilter(ProcessUnhandledException);
 
-  logger_ = CreateFileLogger(client::DIR_LOG, L"client", "Telecontrol SCADA Client " PROJECT_VERSION_DOTTED_STRING);
+  logger_ = CreateFileLogger(
+      client::DIR_LOG, L"client",
+      "Telecontrol SCADA Client " PROJECT_VERSION_DOTTED_STRING);
 
   transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_service_);
 
@@ -115,8 +120,8 @@ ClientApplication::~ClientApplication() {
   VidiconClient::CleanupInstance();
 
   // Shutdown OPC.
-  //extern void ShutdownOpc();
-  //ShutdownOpc();
+  // extern void ShutdownOpc();
+  // ShutdownOpc();
 
   action_manager_.reset();
 
@@ -141,8 +146,8 @@ ClientApplication::~ClientApplication() {
 
 bool ClientApplication::ShowLoginDialog() {
   DataServicesContext context{
-    logger_,
-    *transport_factory_,
+      logger_,
+      *transport_factory_,
   };
 
   DataServices services;
@@ -157,19 +162,21 @@ void ClientApplication::BeforeRun() {
   // Add SessionService observer.
   master_data_services_->AddObserver(*this);
 
-  node_service_ = std::make_unique<NodeRefServiceImpl>(NodeRefServiceImplContext{
-      logger_,
-      *master_data_services_,
-      *master_data_services_,
-  });
+  node_service_ =
+      std::make_unique<NodeRefServiceImpl>(NodeRefServiceImplContext{
+          logger_,
+          *master_data_services_,
+          *master_data_services_,
+      });
 
-  event_manager_ = std::make_unique<events::EventManager>(events::EventManagerContext{
-      io_service_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      std::make_shared<NestedLogger>(logger_, "EventManager"),
-  });
+  event_manager_ =
+      std::make_unique<events::EventManager>(events::EventManagerContext{
+          io_service_,
+          *master_data_services_,
+          *master_data_services_,
+          *master_data_services_,
+          std::make_shared<NestedLogger>(logger_, "EventManager"),
+      });
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       io_service_,
@@ -186,7 +193,7 @@ void ClientApplication::BeforeRun() {
 
   profile_ = std::make_unique<Profile>();
 
-  task_manager_ = std::make_unique<TaskManager>(TaskManagerContext{
+  task_manager_ = std::make_unique<TaskManagerImpl>(TaskManagerImplContext{
       *node_service_,
       *master_data_services_,
       *local_events_,
@@ -247,7 +254,9 @@ void ClientApplication::OpenMainWindow(int window_id) {
       [this](int window_id) { CloseMainWindow(window_id); },
       [this](int page_id) { return IsPageOpened(page_id); },
       [this] { return FindFirstNotOpenedPage(); },
-      [this](const base::FilePath& path) { return FindOpenedViewByFilePath(path); },
+      [this](const base::FilePath& path) {
+        return FindOpenedViewByFilePath(path);
+      },
       [this] { NewMainWindow(); },
       *speech_,
       *master_data_services_,
@@ -296,7 +305,8 @@ Page* ClientApplication::FindFirstNotOpenedPage() {
   return NULL;
 }
 
-OpenedView* ClientApplication::FindOpenedViewByFilePath(const base::FilePath& path) {
+OpenedView* ClientApplication::FindOpenedViewByFilePath(
+    const base::FilePath& path) {
   for (auto& p : main_windows_) {
     auto view = p.second->FindOpenedViewByFilePath(path);
     if (view)

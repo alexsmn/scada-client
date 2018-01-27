@@ -251,7 +251,3 @@ void PrepareWindowDefinitionForGroup(NodeRefService& node_service, const NodeRef
 base::string16 Translate(base::StringPiece text) {
   return base::SysNativeMBToWide(text);
 }
-
-base::string16 ToString16(const scada::LocalizedText& text) {
-  return base::SysUTF8ToWide(text.text().c_str());
-}

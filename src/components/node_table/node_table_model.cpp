@@ -114,7 +114,7 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
   if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
-    cell.text = base::ToString16(node.display_name());
+    cell.text = ToString16(node.display_name());
   else if (column.prop_def->IsReadOnly(node, column.prop_decl_id))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   else

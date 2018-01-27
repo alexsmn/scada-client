@@ -90,7 +90,7 @@ class NodeAction : public Action {
   }
 
   virtual base::string16 GetTitle() const override {
-    return ToString16(node_.display_name().text());
+    return ToString16(node_.display_name());
   }
 
  private:

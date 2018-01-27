@@ -11,7 +11,7 @@ const base::char16 kNoneChoice[] = L"<Нет>";
 
 base::string16 MakeDeviceComponentItem(
     const scada::LocalizedText& display_name) {
-  return L'<' + base::ToString16(display_name) + L'>';
+  return L'<' + ToString16(display_name) + L'>';
 }
 
 }  // namespace
@@ -35,7 +35,7 @@ void NodeComboBox::Fill(NodeRefService& node_service,
         if (!weak_ptr.get())
           return;
         for (auto& node : nodes) {
-          auto name = base::ToString16(node.display_name());
+          auto name = ToString16(node.display_name());
           nodes_.emplace(name, node);
           combo_box_.AddString(name.c_str());
         }
