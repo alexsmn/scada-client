@@ -35,7 +35,7 @@ class EventsHelper;
 class Favourites;
 class FileCache;
 class LocalEvents;
-class NodeRefService;
+class NodeService;
 class MainCommands;
 class MainWindow;
 class OpenedView;
@@ -53,7 +53,7 @@ struct MainWindowContext {
   int window_id_;
   FileCache& file_cache_;
   TimedDataService& timed_data_service_;
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
   TaskManager& task_manager_;
   ActionManager& action_manager_;

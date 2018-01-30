@@ -1,7 +1,7 @@
 ﻿#include "services/task_manager_impl.h"
 
 #include "commands/views/progress_dialog.h"
-#include "common/node_ref_service.h"
+#include "common/node_service.h"
 #include "core/node_management_service.h"
 #include "core/status.h"
 #include "services/local_events.h"
@@ -10,7 +10,7 @@
 
 namespace {
 
-std::string FormatReference(NodeRefService& node_service,
+std::string FormatReference(NodeService& node_service,
                             const scada::NodeId& reference_type_id,
                             const scada::NodeId& source_id,
                             const scada::NodeId& target_id) {

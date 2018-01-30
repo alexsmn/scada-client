@@ -1,23 +1,26 @@
 #include "components/node_properties/node_property_model.h"
 
 #include "base/strings/sys_string_conversions.h"
+#include "common/browse_util.h"
+#include "common/node_service.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
-#include "common/node_ref_service.h"
-#include "common/browse_util.h"
 #include "translation.h"
 
-NodePropertyModel::NodePropertyModel(const PropertyContext& context, NodeIds node_ids)
+NodePropertyModel::NodePropertyModel(const PropertyContext& context,
+                                     NodeIds node_ids)
     : context_(context) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   RequestNodes(context.node_service_, node_ids,
-      [weak_ptr](std::vector<scada::Status> statuses, std::vector<NodeRef> nodes) {
-        if (auto* ptr = weak_ptr.get()) {
-          // TODO: Handle errors.
-          nodes.erase(std::remove(nodes.begin(), nodes.end(), nullptr), nodes.end());
-          ptr->SetNodes(std::move(nodes));
-        }
-      });
+               [weak_ptr](std::vector<scada::Status> statuses,
+                          std::vector<NodeRef> nodes) {
+                 if (auto* ptr = weak_ptr.get()) {
+                   // TODO: Handle errors.
+                   nodes.erase(std::remove(nodes.begin(), nodes.end(), nullptr),
+                               nodes.end());
+                   ptr->SetNodes(std::move(nodes));
+                 }
+               });
 }
 
 NodePropertyModel::~NodePropertyModel() {
@@ -93,7 +96,8 @@ void NodePropertyModel::OnModelChange(const ModelChangeEvent& event) {
       node_ = nullptr;
     // TODO: Model changed?
 
-  } else if (event.verb & (ModelChangeEvent::ReferenceAdded | ModelChangeEvent::ReferenceDeleted)) {
+  } else if (event.verb & (ModelChangeEvent::ReferenceAdded |
+                           ModelChangeEvent::ReferenceDeleted)) {
     UpdateNode(event.node_id);
   }
 }
@@ -106,11 +110,13 @@ void NodePropertyModel::UpdateNode(const scada::NodeId& node_id) {
   if (node_id != node_.id())
     return;
 
-  for (auto attribute_id : {scada::AttributeId::BrowseName, scada::AttributeId::DisplayName}) {
+  for (auto attribute_id :
+       {scada::AttributeId::BrowseName, scada::AttributeId::DisplayName}) {
     int index = FindProperty(attribute_id);
     if (index != -1) {
       auto& prop = properties_[index];
-      prop.string_value = ToString16(node_.attribute(attribute_id).get_or(scada::LocalizedText{}));
+      prop.string_value = ToString16(
+          node_.attribute(attribute_id).get_or(scada::LocalizedText{}));
       TreeNodeChanged(&prop);
     }
   }
@@ -155,8 +161,10 @@ void* NodePropertyModel::GetChild(void* parent, int index) {
 }
 
 int NodePropertyModel::NodeToIndex(void* node) const {
-  size_t index = std::find_if(properties_.begin(), properties_.end(),
-      [node](const Property& prop) { return &prop == node; }) - properties_.begin();
+  size_t index =
+      std::find_if(properties_.begin(), properties_.end(),
+                   [node](const Property& prop) { return &prop == node; }) -
+      properties_.begin();
   if (index >= properties_.size())
     return -1;
   return static_cast<int>(index);
@@ -169,7 +177,9 @@ base::string16 NodePropertyModel::GetText(void* node, int column_id) {
   return column_id == 0 ? GetName(index) : GetValue(index);
 }
 
-void NodePropertyModel::SetText(void* node, int column_id, const base::string16& text) {
+void NodePropertyModel::SetText(void* node,
+                                int column_id,
+                                const base::string16& text) {
   if (column_id != 1)
     return;
 
@@ -182,8 +192,11 @@ void NodePropertyModel::SetText(void* node, int column_id, const base::string16&
     if (prop.def)
       prop.def->SetText(context_, p.second, prop.prop_type_id, text);
     else {
-      context_.task_manager_.PostUpdateTask(p.first,
-          scada::NodeAttributes().set_browse_name(scada::QualifiedName{base::SysWideToNativeMB(text), 0}) , {});
+      context_.task_manager_.PostUpdateTask(
+          p.first,
+          scada::NodeAttributes().set_browse_name(
+              scada::QualifiedName{base::SysWideToNativeMB(text), 0}),
+          {});
     }
   }
 }

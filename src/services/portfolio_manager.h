@@ -7,7 +7,7 @@
 #include <list>
 #include <set>
 
-class NodeRefService;
+class NodeService;
 class Portfolio;
 
 class PortfolioEvents {
@@ -23,7 +23,7 @@ class PortfolioManager : private NodeRefObserver {
   typedef std::list<Portfolio> Portfolios;
   typedef std::set<PortfolioEvents*> PortfolioEventsSet;
 
-  explicit PortfolioManager(NodeRefService& node_service);
+  explicit PortfolioManager(NodeService& node_service);
   ~PortfolioManager();
 
   void Subscribe(PortfolioEvents& events);
@@ -50,5 +50,5 @@ class PortfolioManager : private NodeRefObserver {
   virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
 };

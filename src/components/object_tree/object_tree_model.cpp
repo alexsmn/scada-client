@@ -3,7 +3,7 @@
 #include "services/profile.h"
 #include "core/standard_node_ids.h"
 
-ObjectTreeModel::ObjectTreeModel(NodeRefService& node_service, scada::NodeId root_id,
+ObjectTreeModel::ObjectTreeModel(NodeService& node_service, scada::NodeId root_id,
                                  TimedDataService& timed_data_service, Profile& profile)
     : ConfigurationTreeModel{node_service, std::move(root_id), {scada::id::Organizes, scada::id::HasComponent}},
       timed_data_service_{timed_data_service},

@@ -9,8 +9,8 @@
 #include "base/table_writer.h"
 #include "common/browse_util.h"
 #include "common/format.h"
-#include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "core/node_management_service.h"
 #include "services/property_defs.h"
@@ -27,7 +27,7 @@ const char kNodeIdTitle[] = "Ид";
 
 typedef std::vector<NodeRef> NodeRefs;
 
-void GetTypePids(NodeRefService& node_service,
+void GetTypePids(NodeService& node_service,
                  const NodeRef& type,
                  bool recursive,
                  NodeRefs& component_declarations,
@@ -71,7 +71,7 @@ struct AddressSpaceSnapshot {
 };
 
 void MakeAddressSpaceSnapshot(
-    NodeRefService& service,
+    NodeService& service,
     const scada::NodeId& parent_id,
     const scada::NodeId& type_definition_id,
     const std::function<void(AddressSpaceSnapshot snapshot)>& callback) {
@@ -99,7 +99,7 @@ void ScanDeleteNodes(const AddressSpaceSnapshot& address_space,
 
 struct ExportConfigurationData
     : public std::enable_shared_from_this<ExportConfigurationData> {
-  explicit ExportConfigurationData(NodeRefService& node_service);
+  explicit ExportConfigurationData(NodeService& node_service);
 
   void Export(const base::FilePath& path);
 
@@ -108,7 +108,7 @@ struct ExportConfigurationData
   void WriteHeader();
   void WriteNode(const scada::NodeId& parent_id, const NodeRef& node);
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   TableWriter writer_;
   std::function<void(const base::string16& message)> error_handler_;
 
@@ -116,7 +116,7 @@ struct ExportConfigurationData
   std::vector<NodeRef> reference_types_;
 };
 
-ExportConfigurationData::ExportConfigurationData(NodeRefService& node_service)
+ExportConfigurationData::ExportConfigurationData(NodeService& node_service)
     : node_service_{node_service} {}
 
 void ExportConfigurationData::Export(const base::FilePath& path) {
@@ -457,7 +457,7 @@ void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
 }
 
 void ExportConfigurationToExcel(DialogService& dialog_service,
-                                NodeRefService& node_service,
+                                NodeService& node_service,
                                 const base::FilePath& path) {
   auto data = std::make_shared<ExportConfigurationData>(node_service);
 
@@ -469,11 +469,11 @@ void ExportConfigurationToExcel(DialogService& dialog_service,
 }
 
 void ExportConfigurationToExcel(DialogService& dialog_service,
-                                NodeRefService& node_service) {
+                                NodeService& node_service) {
   class SelectFile : public ui::SelectFileDialog::Listener {
    public:
     explicit SelectFile(DialogService& dialog_service,
-                        NodeRefService& node_service)
+                        NodeService& node_service)
         : node_service_(node_service), dialog_service_(dialog_service) {}
 
     virtual void FileSelected(const base::FilePath& path,
@@ -484,7 +484,7 @@ void ExportConfigurationToExcel(DialogService& dialog_service,
 
    private:
     DialogService& dialog_service_;
-    NodeRefService& node_service_;
+    NodeService& node_service_;
   };
 
   // TODO: Fixit.
@@ -497,7 +497,7 @@ void ExportConfigurationToExcel(DialogService& dialog_service,
 
 void ImportConfigurationFromExcel(DialogService& dialog_service,
                                   const base::FilePath& path,
-                                  NodeRefService& node_service,
+                                  NodeService& node_service,
                                   TaskManager& task_manager) {
   struct Importer {
     Importer(DialogService& dialog_service, TaskManager& task_manager)
@@ -552,12 +552,12 @@ void ImportConfigurationFromExcel(DialogService& dialog_service,
 }
 
 void ImportConfigurationFromExcel(DialogService& dialog_service,
-                                  NodeRefService& node_service,
+                                  NodeService& node_service,
                                   TaskManager& task_manager) {
   class SelectFile : public ui::SelectFileDialog::Listener {
    public:
     SelectFile(DialogService& dialog_service,
-               NodeRefService& node_service,
+               NodeService& node_service,
                TaskManager& task_manager)
         : dialog_service_(dialog_service),
           node_service_(node_service),
@@ -572,7 +572,7 @@ void ImportConfigurationFromExcel(DialogService& dialog_service,
 
    private:
     DialogService& dialog_service_;
-    NodeRefService& node_service_;
+    NodeService& node_service_;
     TaskManager& task_manager_;
   };
 

@@ -6,7 +6,7 @@ class TimedDataService;
 
 class HardwareTreeModel : public ConfigurationTreeModel {
  public:
-  HardwareTreeModel(NodeRefService& node_service, TimedDataService& timed_data_service);
+  HardwareTreeModel(NodeService& node_service, TimedDataService& timed_data_service);
   virtual ~HardwareTreeModel();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }

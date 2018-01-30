@@ -1,12 +1,12 @@
 #include "selection_model.h"
 
 #include "base/strings/sys_string_conversions.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
-#include "common/node_ref_service.h"
 
-SelectionModel::SelectionModel(NodeRefService& node_service, TimedDataService& timed_data_service)
-    : node_service_{node_service},
-      timed_data_service_{timed_data_service} {
+SelectionModel::SelectionModel(NodeService& node_service,
+                               TimedDataService& timed_data_service)
+    : node_service_{node_service}, timed_data_service_{timed_data_service} {
   timed_data_.set_delegate(this);
 }
 
@@ -18,7 +18,7 @@ void SelectionModel::Clear() {
   if (type_ == EMPTY)
     return;
   Reset();
-	Changed();
+  Changed();
 }
 
 void SelectionModel::SelectNode(const NodeRef& node) {
@@ -32,22 +32,22 @@ void SelectionModel::SelectNode(const NodeRef& node) {
 
   Reset();
 
-	type_ = NODE;
-	node_ = node;
-  node_service_.AddObserver(*this);
+  type_ = NODE;
+  node_ = node;
+  node_.Subscribe(*this);
 
-	if (node.fetched() && node.node_class() == scada::NodeClass::Variable) {
-	  try {
-		  timed_data_.Connect(timed_data_service_, node.id());
-		} catch (const std::exception&) {
-		  Clear();
-		  return;
-		}
+  if (node.fetched() && node.node_class() == scada::NodeClass::Variable) {
+    try {
+      timed_data_.Connect(timed_data_service_, node.id());
+    } catch (const std::exception&) {
+      Clear();
+      return;
+    }
 
-		type_ = SPEC;
-	}
+    type_ = SPEC;
+  }
 
-	Changed();
+  Changed();
 }
 
 void SelectionModel::SelectNodeId(const scada::NodeId& node_id) {
@@ -72,25 +72,25 @@ void SelectionModel::SelectTimedData(const rt::TimedDataSpec& spec) {
 
   Reset();
 
-	type_ = SPEC;
-	timed_data_ = spec;
-	node_ = timed_data_.GetNode();
+  type_ = SPEC;
+  timed_data_ = spec;
+  node_ = timed_data_.GetNode();
   if (node_)
-    node_service_.AddObserver(*this);
+    node_.Subscribe(*this);
 
-	Changed();
+  Changed();
 }
 
 void SelectionModel::SelectMultiple() {
   Reset();
-	type_ = MULTI;
-	Changed();
+  type_ = MULTI;
+  Changed();
 }
 
 void SelectionModel::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                  const rt::PropertySet& properties) {
+                                       const rt::PropertySet& properties) {
   assert(&spec == &timed_data_);
-  
+
   if (properties.is_item_changed())
     Clear();
 }
@@ -104,14 +104,14 @@ NodeIdSet SelectionModel::GetMultipleNodeIds() const {
 }
 
 void SelectionModel::Reset() {
-	type_ = EMPTY;
+  type_ = EMPTY;
 
   if (node_) {
-    node_service_.RemoveObserver(*this);
-	  node_ = nullptr;
+    node_.Unsubscribe(*this);
+    node_ = nullptr;
   }
 
-	timed_data_.Reset();
+  timed_data_.Reset();
   pending_request_ = nullptr;
 }
 
@@ -126,6 +126,8 @@ void SelectionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 }
 
 void SelectionModel::OnModelChange(const ModelChangeEvent& event) {
-  if ((event.verb & ModelChangeEvent::NodeDeleted) && (node_.id() == event.node_id))
+  if ((event.verb & ModelChangeEvent::NodeDeleted) &&
+      (node_.id() == event.node_id)) {
     Clear();
+  }
 }

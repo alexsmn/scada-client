@@ -5,7 +5,7 @@
 #include "ui/base/models/tree_node_model.h"
 #include "common/node_ref.h"
 
-class NodeRefService;
+class NodeService;
 
 class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
  public:
@@ -33,7 +33,7 @@ class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
 class PortfolioTreeModel : public ui::TreeNodeModel<PortfolioTreeNode>,
                            protected PortfolioEvents {
  public:
-  PortfolioTreeModel(PortfolioManager& portfolio_manager, NodeRefService& node_service);
+  PortfolioTreeModel(PortfolioManager& portfolio_manager, NodeService& node_service);
   virtual ~PortfolioTreeModel();
 
   PortfolioTreeNode& root() { return *ui::TreeNodeModel<PortfolioTreeNode>::root();  }
@@ -54,6 +54,6 @@ class PortfolioTreeModel : public ui::TreeNodeModel<PortfolioTreeNode>,
 
   void AddItemNode(PortfolioTreeNode& portfolio_node, const scada::NodeId& item_id);
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
 };

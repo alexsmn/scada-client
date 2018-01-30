@@ -1,39 +1,52 @@
 #include "components/configuration_tree/configuration_tree_model.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_ref_service.h"
 #include "common/browse_util.h"
+#include "common/node_service.h"
 #include "translation.h"
 
 namespace {
 
 // Callback = void(const scada::NodeId& parent_id)
-template<class Callback>
-void BrowseMultipleParentIdsHelper(NodeRefService& service, const scada::NodeId& node_id,
-    const std::shared_ptr<const std::vector<scada::NodeId>>& shared_reference_type_ids,
-    size_t from_index, const Callback& callback) {
-  BrowseParentId(service, node_id, shared_reference_type_ids->at(from_index),
-      [=, &service](const scada::NodeId& parent_id) {
-        if (!parent_id.is_null())
-          callback(parent_id);
-        else
-          BrowseMultipleParentIdsHelper(service, node_id, shared_reference_type_ids, from_index + 1, callback);
-      });
+template <class Callback>
+void BrowseMultipleParentIdsHelper(
+    scada::ViewService& view_service,
+    const scada::NodeId& node_id,
+    const std::shared_ptr<const std::vector<scada::NodeId>>&
+        shared_reference_type_ids,
+    size_t from_index,
+    const Callback& callback) {
+  BrowseParentId(view_service, node_id,
+                 shared_reference_type_ids->at(from_index),
+                 [=, &view_service](const scada::NodeId& parent_id) {
+                   if (!parent_id.is_null())
+                     callback(parent_id);
+                   else
+                     BrowseMultipleParentIdsHelper(view_service, node_id,
+                                                   shared_reference_type_ids,
+                                                   from_index + 1, callback);
+                 });
 }
 
 // Callback = void(const scada::NodeId& parent_id)
-template<class Callback>
-void BrowseMultipleParentIds(NodeRefService& service, const scada::NodeId& node_id,
-    const std::vector<scada::NodeId>& reference_type_ids, const Callback& callback) {
-  BrowseMultipleParentIdsHelper(service, node_id,
-      std::make_shared<const std::vector<scada::NodeId>>(reference_type_ids), 0, callback);
+template <class Callback>
+void BrowseMultipleParentIds(
+    scada::ViewService& view_service,
+    const scada::NodeId& node_id,
+    const std::vector<scada::NodeId>& reference_type_ids,
+    const Callback& callback) {
+  BrowseMultipleParentIdsHelper(
+      view_service, node_id,
+      std::make_shared<const std::vector<scada::NodeId>>(reference_type_ids), 0,
+      callback);
 }
 
-} // namespace
+}  // namespace
 
 // ConfigurationTreeNode
 
-ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model, NodeRef data_node)
+ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
+                                             NodeRef data_node)
     : model_(model) {
   SetDataNode(std::move(data_node));
 }
@@ -80,7 +93,10 @@ base::string16 ConfigurationTreeNode::GetText(int column_id) const {
 }
 
 int ConfigurationTreeNode::GetIcon() const {
-  return (data_node_ && data_node_.fetched() && data_node_.node_class() == scada::NodeClass::Variable) ? IMAGE_ITEM : IMAGE_FOLDER;
+  return (data_node_ && data_node_.fetched() &&
+          data_node_.node_class() == scada::NodeClass::Variable)
+             ? IMAGE_ITEM
+             : IMAGE_FOLDER;
 }
 
 void ConfigurationTreeNode::OnNodeSemanticChanged() {
@@ -93,13 +109,18 @@ void ConfigurationTreeNode::Changed() {
 
 // ConfigurationTreeModel
 
-ConfigurationTreeModel::ConfigurationTreeModel(NodeRefService& node_service, const scada::NodeId& root_id,
+ConfigurationTreeModel::ConfigurationTreeModel(
+    scada::ViewService& view_service,
+    NodeService& node_service,
+    const scada::NodeId& root_id,
     std::vector<scada::NodeId> reference_type_ids)
-    : reference_type_ids_{std::move(reference_type_ids)},
-      node_service_{node_service} {
+    : view_service_{view_service},
+      node_service_{node_service},
+      reference_type_ids_{std::move(reference_type_ids)} {
   node_service_.AddObserver(*this);
 
-  set_root(std::make_unique<ConfigurationTreeNode>(*this, node_service.GetNode(root_id)));
+  set_root(std::make_unique<ConfigurationTreeNode>(
+      *this, node_service.GetNode(root_id)));
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
@@ -108,12 +129,13 @@ ConfigurationTreeModel::~ConfigurationTreeModel() {
   node_service_.RemoveObserver(*this);
 }
 
-std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateNode(const NodeRef& data_node) {
+std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateNode(
+    const NodeRef& data_node) {
   return std::make_unique<ConfigurationTreeNode>(*this, data_node);
 }
 
-ConfigurationTreeNode*
-ConfigurationTreeModel::FindNode(const scada::NodeId& node_id) {
+ConfigurationTreeNode* ConfigurationTreeModel::FindNode(
+    const scada::NodeId& node_id) {
   auto i = node_map_.find(node_id);
   return i != node_map_.end() ? i->second : nullptr;
 }
@@ -122,34 +144,38 @@ void ConfigurationTreeModel::EnsureParent(const scada::NodeId& node_id) {
   if (!FindNode(node_id))
     return;
 
-  BrowseMultipleParentIds(node_service_, node_id, reference_type_ids_, [=](const scada::NodeId& parent_id) {
-    auto* node_ptr = FindNode(node_id);
-    if (!node_ptr)
-      return;
+  BrowseMultipleParentIds(
+      view_service_, node_id, reference_type_ids_,
+      [=](const scada::NodeId& parent_id) {
+        auto* node_ptr = FindNode(node_id);
+        if (!node_ptr)
+          return;
 
-    auto* supposed_parent = FindNode(parent_id);
-    if (supposed_parent == node_ptr->parent())
-      return;
+        auto* supposed_parent = FindNode(parent_id);
+        if (supposed_parent == node_ptr->parent())
+          return;
 
-    // Remove node from old place.
-    std::unique_ptr<ConfigurationTreeNode> node;
-    if (ConfigurationTreeNode* n = FindNode(node_id))
-      node = Remove(*n->parent(), n->parent()->IndexOfChild(*n));
+        // Remove node from old place.
+        std::unique_ptr<ConfigurationTreeNode> node;
+        if (ConfigurationTreeNode* n = FindNode(node_id))
+          node = Remove(*n->parent(), n->parent()->IndexOfChild(*n));
 
-    // Insert into new place.
-    if (!supposed_parent)
-      return;
+        // Insert into new place.
+        if (!supposed_parent)
+          return;
 
-    if (node)
-      Add(*supposed_parent, supposed_parent->GetChildCount(), std::move(node));
-    else
-      EnsureNode(node_id);
-  });
+        if (node)
+          Add(*supposed_parent, supposed_parent->GetChildCount(),
+              std::move(node));
+        else
+          EnsureNode(node_id);
+      });
 }
 
 void ConfigurationTreeModel::EnsureNode(const scada::NodeId& node_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseMultipleParentIds(node_service_, node_id, reference_type_ids_,
+  BrowseMultipleParentIds(
+      view_service_, node_id, reference_type_ids_,
       [weak_ptr, this, node_id](const scada::NodeId& parent_id) {
         if (!weak_ptr.get() || parent_id.is_null())
           return;
@@ -157,7 +183,8 @@ void ConfigurationTreeModel::EnsureNode(const scada::NodeId& node_id) {
       });
 }
 
-void ConfigurationTreeModel::EnsureNode2(const scada::NodeId& node_id, const scada::NodeId& parent_id) {
+void ConfigurationTreeModel::EnsureNode2(const scada::NodeId& node_id,
+                                         const scada::NodeId& parent_id) {
   if (FindNode(node_id))
     return;
 
@@ -179,12 +206,14 @@ void ConfigurationTreeModel::OnModelChange(const ModelChangeEvent& event) {
   } else if (event.verb & ModelChangeEvent::NodeAdded) {
     EnsureNode(event.node_id);
 
-  } else if (event.verb & (ModelChangeEvent::ReferenceAdded | ModelChangeEvent::ReferenceDeleted)) {
+  } else if (event.verb & (ModelChangeEvent::ReferenceAdded |
+                           ModelChangeEvent::ReferenceDeleted)) {
     EnsureParent(event.node_id);
   }
 }
 
-void ConfigurationTreeModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+void ConfigurationTreeModel::OnNodeSemanticChanged(
+    const scada::NodeId& node_id) {
   if (ConfigurationTreeNode* tree_node = FindNode(node_id))
     tree_node->OnNodeSemanticChanged();
 }
@@ -192,17 +221,30 @@ void ConfigurationTreeModel::OnNodeSemanticChanged(const scada::NodeId& node_id)
 void ConfigurationTreeModel::Browse(const NodeRef& node) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   auto node_id = node.id();
-  NodeRef::BrowseCallback callback =
-      [weak_ptr, node_id]
-      (const scada::Status& status, scada::ReferenceDescriptions references) {
-        if (auto ptr = weak_ptr.get())
-          ptr->OnBrowseComplete(node_id, std::move(references));
-      };
-  for (auto& reference_type_id : reference_type_ids_)
-    node.Browse({node_id, scada::BrowseDirection::Forward, reference_type_id, true}, callback);
+
+  std::vector<scada::BrowseDescription> descriptions;
+  descriptions.reserve(reference_type_ids_.size());
+  for (auto& reference_type_id : reference_type_ids_) {
+    descriptions.push_back(
+        {node_id, scada::BrowseDirection::Forward, reference_type_id, true});
+  }
+
+  view_service_.Browse(
+      descriptions,
+      [this, weak_ptr, node_id](const scada::Status& status,
+                                std::vector<scada::BrowseResult>&& results) {
+        auto ptr = weak_ptr.get();
+        if (!ptr)
+          return;
+
+        for (auto& result : results)
+          OnBrowseComplete(node_id, std::move(result.references));
+      });
 }
 
-void ConfigurationTreeModel::OnBrowseComplete(const scada::NodeId& node_id, const scada::ReferenceDescriptions& references) {
+void ConfigurationTreeModel::OnBrowseComplete(
+    const scada::NodeId& node_id,
+    const scada::ReferenceDescriptions& references) {
   for (auto& reference : references)
     EnsureNode2(reference.node_id, node_id);
 }

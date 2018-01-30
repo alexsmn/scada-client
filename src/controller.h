@@ -2,12 +2,12 @@
 
 #include <cassert>
 
-#include "controls/types.h"
 #include "command_handler.h"
 #include "controller_delegate.h"
+#include "controls/types.h"
+#include "core/configuration_types.h"
 #include "dialog_service.h"
 #include "selection_model.h"
-#include "core/configuration_types.h"
 
 namespace events {
 class EventManager;
@@ -18,7 +18,8 @@ class MonitoredItemService;
 class NodeManagementService;
 class HistoryService;
 class SessionService;
-}
+class ViewService;
+}  // namespace scada
 
 #if defined(UI_VIEWS)
 namespace views {
@@ -31,7 +32,7 @@ class ControllerDelegate;
 class Favourites;
 class FileCache;
 class LocalEvents;
-class NodeRefService;
+class NodeService;
 class PortfolioManager;
 class Profile;
 class TaskManager;
@@ -41,7 +42,7 @@ class WindowDefinition;
 struct ControllerContext {
   ControllerDelegate& controller_delegate_;
   TimedDataService& timed_data_service_;
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
   TaskManager& task_manager_;
   Profile& profile_;
@@ -54,15 +55,14 @@ struct ControllerContext {
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
   scada::MonitoredItemService& monitored_item_service_;
+  scada::ViewService& view_service_;
 };
 
-class Controller : public CommandHandler,
-                   protected ControllerContext {
+class Controller : public CommandHandler, protected ControllerContext {
  public:
   explicit Controller(const ControllerContext& context)
       : ControllerContext(std::move(context)),
-        selection_{node_service_, timed_data_service_} {
-  }
+        selection_{node_service_, timed_data_service_} {}
   virtual ~Controller() {}
 
   SelectionModel& selection() { return selection_; }

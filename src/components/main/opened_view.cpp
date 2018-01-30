@@ -1,35 +1,37 @@
 #include "components/main/opened_view.h"
 
-#include "controller.h"
-#include "components/main/main_window.h"
-#include "window_info.h"
-#include "components/main/selection_commands.h"
-#include "window_definition.h"
-#include "common_resources.h"
-#include "common/scada_node_ids.h"
-#include "components/main/action.h"
+#include "client_utils.h"
 #include "commands/add_multiple_items_dialog.h"
 #include "commands/add_service_items_dialog.h"
-#include "client_utils.h"
-#include "core/node_management_service.h"
-#include "common/static_types.h"
-#include "net/transport_string.h"
-#include "components/main/client_commands.h"
-#include "controller_factory.h"
-#include "services/task_manager.h"
-#include "components/main/main_window_util.h"
-#include "core/session_service.h"
-#include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
+#include "common/node_service.h"
+#include "common/scada_node_ids.h"
+#include "common/static_types.h"
+#include "common_resources.h"
+#include "components/main/action.h"
+#include "components/main/client_commands.h"
+#include "components/main/main_window.h"
+#include "components/main/main_window_util.h"
+#include "components/main/selection_commands.h"
+#include "controller.h"
+#include "controller_factory.h"
+#include "core/node_management_service.h"
+#include "core/session_service.h"
+#include "net/transport_string.h"
+#include "services/task_manager.h"
+#include "window_definition.h"
+#include "window_info.h"
 
 #if defined(UI_QT)
-#include <QMenu>
 #include "components/main/qt/main_window_qt.h"
+
+#include <QMenu>
 #endif
 
 namespace {
 
-NodeRef GetCreateParentNode(const NodeRef& suggested_parent, const NodeRef& root,
+NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
+                            const NodeRef& root,
                             const NodeRef& new_component_type) {
   for (auto& parent : {suggested_parent, root}) {
     if (!parent)
@@ -44,7 +46,7 @@ NodeRef GetCreateParentNode(const NodeRef& suggested_parent, const NodeRef& root
   return nullptr;
 }
 
-} // namespace
+}  // namespace
 
 OpenedView::OpenedView(const OpenedViewContext& context)
     : OpenedViewContext(context),
@@ -54,43 +56,45 @@ OpenedView::OpenedView(const OpenedViewContext& context)
       window_info_(*context.definition_.window_info()),
       window_id_(context.definition_.id),
       weak_factory_(this) {
-  controller_ = CreateController(window_info_.command_id, ControllerContext{
-      *this,
-      timed_data_service_,
-      node_service_,
-      portfolio_manager_,
-      task_manager_,
-      profile_,
-      local_events_,
-      event_manager_,
-      file_cache_,
-      node_management_service_,
-      history_service_,
-      favourites_,
-      dialog_service_,
-      session_service_,
-      monitored_item_service_,
-  });
+  controller_ =
+      CreateController(window_info_.command_id, ControllerContext{
+                                                    *this,
+                                                    timed_data_service_,
+                                                    node_service_,
+                                                    portfolio_manager_,
+                                                    task_manager_,
+                                                    profile_,
+                                                    local_events_,
+                                                    event_manager_,
+                                                    file_cache_,
+                                                    node_management_service_,
+                                                    history_service_,
+                                                    favourites_,
+                                                    dialog_service_,
+                                                    session_service_,
+                                                    monitored_item_service_,
+                                                });
   if (!controller_)
     throw std::exception("View type not found");
 
   title_ = user_title_ = context.definition_.title;
 
-  selection_commands_ = std::make_unique<SelectionCommands>(SelectionCommandsContext{
-      main_window_,
-      timed_data_service_,
-      task_manager_,
-      profile_,
-      local_events_,
-      event_manager_,
-      session_service_,
-      node_management_service_,
-      method_service_,
-      file_cache_,
-      dialog_service_,
-      find_opened_view_,
-      node_service_,
-  });
+  selection_commands_ =
+      std::make_unique<SelectionCommands>(SelectionCommandsContext{
+          main_window_,
+          timed_data_service_,
+          task_manager_,
+          profile_,
+          local_events_,
+          event_manager_,
+          session_service_,
+          node_management_service_,
+          method_service_,
+          file_cache_,
+          dialog_service_,
+          find_opened_view_,
+          node_service_,
+      });
   selection_commands_->set_selection(&controller_->selection());
 
   auto* view = controller_->Init(context.definition_);
@@ -100,10 +104,13 @@ OpenedView::OpenedView(const OpenedViewContext& context)
 
 #if defined(UI_QT)
   view_->setContextMenuPolicy(Qt::CustomContextMenu);
-  QObject::connect(view_, &QWidget::customContextMenuRequested, [this](const QPoint& pos) {
-    static_cast<MainWindowQt*>(main_window_)->context_menu().exec(view_->mapToGlobal(pos));
-  });
-  
+  QObject::connect(view_, &QWidget::customContextMenuRequested,
+                   [this](const QPoint& pos) {
+                     static_cast<MainWindowQt*>(main_window_)
+                         ->context_menu()
+                         .exec(view_->mapToGlobal(pos));
+                   });
+
 #elif defined(UI_VIEWS)
   view_->set_parent_owned(false);
   view_->set_drop_controller(this);
@@ -111,13 +118,13 @@ OpenedView::OpenedView(const OpenedViewContext& context)
 #endif
 
   update_working_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(100),
-      this, &OpenedView::UpdateWorking);
+                              this, &OpenedView::UpdateWorking);
 
-//  image_ = ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
+  //  image_ =
+  //  ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
 }
 
-OpenedView::~OpenedView() {
-}
+OpenedView::~OpenedView() {}
 
 void OpenedView::Activate() {
   if (main_window_)
@@ -206,10 +213,12 @@ void OpenedView::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_NEW_SERVICE_ITEMS:
-      ShowAddServiceItemsDialog(node_service_, controller_->selection().node(), task_manager_);
+      ShowAddServiceItemsDialog(node_service_, controller_->selection().node(),
+                                task_manager_);
       return;
     case ID_ADD_MULTIPLE_ITEMS:
-      ShowAddMultipleItemsDialog(node_service_, controller_->selection().node(), task_manager_);
+      ShowAddMultipleItemsDialog(node_service_, controller_->selection().node(),
+                                 task_manager_);
       return;
   }
 
@@ -235,7 +244,9 @@ bool OpenedView::CanCreateRecord(const scada::NodeId& type_node_id) const {
   if (!type_definition.fetched())
     return false;
 
-  return GetCreateParentNode(controller_->selection().node(), controller_->GetRootNode(), type_definition) != nullptr;
+  return GetCreateParentNode(controller_->selection().node(),
+                             controller_->GetRootNode(),
+                             type_definition) != nullptr;
 }
 
 void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
@@ -246,7 +257,9 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
   if (!type_definition.fetched())
     return;
 
-  auto parent_node = GetCreateParentNode(controller_->selection().node(), controller_->GetRootNode(), type_definition);
+  auto parent_node =
+      GetCreateParentNode(controller_->selection().node(),
+                          controller_->GetRootNode(), type_definition);
   if (!parent_node)
     return;
 
@@ -258,16 +271,18 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
   // name
   auto browse_name = type_definition.browse_name();
   if (type_node_id == id::Iec60870LinkType) {
-    browse_name = is104 ? scada::QualifiedName{"Направление МЭК-60870-104", 0} :
-                          scada::QualifiedName{"Направление МЭК-60870-101", 0};
+    browse_name = is104 ? scada::QualifiedName{"Направление МЭК-60870-104", 0}
+                        : scada::QualifiedName{"Направление МЭК-60870-101", 0};
   }
   attributes.set_browse_name(browse_name);
 
   // IEC link specific.
   if (type_node_id == id::Iec60870LinkType) {
     // type
-    auto protocol = is104 ? cfg::IecProtocol::IEC104 : cfg::IecProtocol::IEC101;
-    properties.emplace_back(id::Iec60870LinkType_Protocol, static_cast<int>(protocol));
+    auto protocol =
+        is104 ? cfg::Iec60870Protocol::IEC104 : cfg::Iec60870Protocol::IEC101;
+    properties.emplace_back(id::Iec60870LinkType_Protocol,
+                            static_cast<int>(protocol));
 
     net::TransportString ts;
     if (is104) {
@@ -286,16 +301,18 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
   task_manager_.PostInsertTask(
       scada::NodeId(), parent_node.id(), type_node_id, std::move(attributes),
       std::move(properties),
-      [weak_ptr, browse_name](const scada::Status& status, const scada::NodeId& node_id) {
+      [weak_ptr, browse_name](const scada::Status& status,
+                              const scada::NodeId& node_id) {
         if (auto ptr = weak_ptr.get())
           ptr->OnCreateRecordComplete(browse_name, status, node_id);
       });
 }
 
 void OpenedView::OnCreateRecordComplete(const scada::QualifiedName& browse_name,
-                                        const scada::Status& status, const scada::NodeId& node_id) {
-  base::string16 title = base::StringPrintf(L"Создание \"%ls\"",
-      base::SysNativeMBToWide(browse_name.name()).c_str());
+                                        const scada::Status& status,
+                                        const scada::NodeId& node_id) {
+  base::string16 title = base::StringPrintf(
+      L"Создание \"%ls\"", base::SysNativeMBToWide(browse_name.name()).c_str());
   ReportRequestResult(title, status, local_events_, profile_);
 
   if (!status)

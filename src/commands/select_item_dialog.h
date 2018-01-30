@@ -3,6 +3,6 @@
 #include "controls/types.h"
 
 class DialogService;
-class NodeRefService;
+class NodeService;
 
-NodeIdSet RunSelectItemsDialog(DialogService& dialog_service, NodeRefService& node_service);
+NodeIdSet RunSelectItemsDialog(DialogService& dialog_service, NodeService& node_service);

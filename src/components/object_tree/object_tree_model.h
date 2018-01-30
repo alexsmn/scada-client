@@ -10,7 +10,7 @@ class ObjectTreeModel : public ConfigurationTreeModel,
                         private rt::TimedDataDelegate,
                         private Blinker {
  public:
-  ObjectTreeModel(NodeRefService& node_service, scada::NodeId root_id,
+  ObjectTreeModel(NodeService& node_service, scada::NodeId root_id,
                   TimedDataService& timed_data_service, Profile& profile);
 
   void SetNodeVisible(ConfigurationTreeNode& node, bool visible);

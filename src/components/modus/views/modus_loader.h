@@ -4,7 +4,7 @@
 #include "services/file_cache.h"
 
 class ModusView;
-class NodeRefService;
+class NodeService;
 class TimedDataService;
 
 namespace base {
@@ -23,7 +23,7 @@ namespace modus {
 class ModusObject;
 
 struct ModusLoaderContext {
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
 };

@@ -1,20 +1,20 @@
 #include "components/events/event_table_model.h"
 
+#include "base/excel.h"
 #include "base/format_time.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/utils.h"
-#include "base/excel.h"
-#include "common_resources.h"
-#include "common/scada_node_ids.h"
 #include "common/event_manager.h"
-#include "core/data_value.h"
-#include "ui/base/models/grid_range.h"
-#include "common/node_ref_service.h"
 #include "common/node_ref_format.h"
 #include "common/node_ref_util.h"
+#include "common/node_service.h"
+#include "common/scada_node_ids.h"
+#include "common_resources.h"
+#include "core/data_value.h"
 #include "translation.h"
+#include "ui/base/models/grid_range.h"
 
 const base::char16 kLocalEventSource[] = L"Локальное событие";
 
@@ -34,7 +34,8 @@ struct EventTableModel::RowsComparer {
   }
 };
 
-static void GetEventColors(const scada::Event& event, SkColor& text_color,
+static void GetEventColors(const scada::Event& event,
+                           SkColor& text_color,
                            SkColor& back_color) {
   if (!event.acked) {
     back_color = SkColorSetRGB(99, 190, 123);
@@ -46,8 +47,7 @@ static void GetEventColors(const scada::Event& event, SkColor& text_color,
 }
 
 EventTableModel::EventTableModel(EventTableModelContext&& context)
-    : EventTableModelContext(std::move(context)),
-      mode_(ID_CURRENT_EVENTS) {
+    : EventTableModelContext(std::move(context)), mode_(ID_CURRENT_EVENTS) {
   local_events_.observers().AddObserver(this);
   event_manager_.AddObserver(*this);
   node_service_.AddObserver(*this);
@@ -61,7 +61,9 @@ EventTableModel::~EventTableModel() {
   local_events_.observers().RemoveObserver(this);
 }
 
-void EventTableModel::Init(Mode mode, const TimeRange& range, ItemIds filter_items) {
+void EventTableModel::Init(Mode mode,
+                           const TimeRange& range,
+                           ItemIds filter_items) {
   mode_ = mode;
   time_range_ = range;
   filter_node_ids_ = std::move(filter_items);
@@ -80,11 +82,11 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
 
   switch (cell.column_id) {
     case EventColumnTime:
-      cell.text = base::SysNativeMBToWide(FormatTime(event.time,
-          TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
+      cell.text = base::SysNativeMBToWide(FormatTime(
+          event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     case EventColumnSeverity:
-  		cell.text = base::IntToString16(event.severity);
+      cell.text = base::IntToString16(event.severity);
       break;
     case EventColumnItem:
       if (row.node)
@@ -110,8 +112,9 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
         cell.text = ToString16(row.acknowledged_user.display_name());
       break;
     case EventColumnAckTime:
-      cell.text = base::SysNativeMBToWide(FormatTime(event.acknowledged_time,
-          TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
+      cell.text = base::SysNativeMBToWide(
+          FormatTime(event.acknowledged_time,
+                     TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     default:
       assert(false);
@@ -148,9 +151,10 @@ int EventTableModel::GetInsertIndex(EventType type, const scada::Event& event) {
     return -1;
 
   Row row(type, event);
-  Rows::iterator i = std::upper_bound(rows_.begin(), rows_.end(), row, RowsComparer());
-  return i != rows_.end() ? static_cast<int>(i - rows_.begin()) :
-                            static_cast<int>(rows_.size());
+  Rows::iterator i =
+      std::upper_bound(rows_.begin(), rows_.end(), row, RowsComparer());
+  return i != rows_.end() ? static_cast<int>(i - rows_.begin())
+                          : static_cast<int>(rows_.size());
 }
 
 void EventTableModel::AddRow(EventType type, const scada::Event& event) {
@@ -235,7 +239,7 @@ void EventTableModel::OnLocalEvent(const scada::Event& event) {
 bool EventTableModel::AddFilteredItem(const scada::NodeId& item) {
   if (!filter_node_ids_.insert(item).second)
     return false;
-    
+
   Refilter();
   return true;
 }
@@ -243,14 +247,14 @@ bool EventTableModel::AddFilteredItem(const scada::NodeId& item) {
 bool EventTableModel::RemoveFilteredItem(const scada::NodeId& item) {
   if (!filter_node_ids_.erase(item))
     return false;
-    
+
   Refilter();
   return true;
 }
 
 void EventTableModel::Refilter() {
   refilter_delay_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(300),
-      this, &EventTableModel::RefilterNow);
+                              this, &EventTableModel::RefilterNow);
 }
 
 void EventTableModel::SetSeverityMin(unsigned severity) {
@@ -268,7 +272,7 @@ void EventTableModel::RefilterNow() {
 
   const LocalEvents::Events& local_events = local_events_.events();
   for (LocalEvents::Events::const_iterator i = local_events.begin();
-                                           i != local_events.end(); ++i) {
+       i != local_events.end(); ++i) {
     const scada::Event& event = **i;
     rows_.push_back(Row(LOCAL_EVENT, event));
   }
@@ -281,10 +285,9 @@ void EventTableModel::RefilterNow() {
   }
 
   if (mode_ == ID_CURRENT_EVENTS) {
-
   } else {
     for (EventContainer::iterator i = historical_events_.begin();
-                                  i != historical_events_.end(); ++i) {
+         i != historical_events_.end(); ++i) {
       const scada::Event& event = *i;
       if (IsEventShown(event))
         rows_.push_back(Row(HISTORICAL_EVENT, event));
@@ -310,7 +313,6 @@ void EventTableModel::Update() {
   historical_events_.clear();
 
   if (mode_ == ID_CURRENT_EVENTS) {
-
   } else {
     base::Time from, to;
     switch (mode_) {
@@ -356,10 +358,16 @@ void EventTableModel::Update() {
 
     auto runner = base::ThreadTaskRunnerHandle::Get();
     auto weak_ptr = weak_factory_.GetWeakPtr();
-    history_service_.HistoryRead({scada::id::RootFolder, scada::AttributeId::EventNotifier}, from, to, {{scada::Event::ACKED}},
-        [this, runner, weak_ptr](scada::Status status, scada::QueryValuesResults values, scada::QueryEventsResults events) {
-          runner->PostTask(FROM_HERE, base::Bind(&EventTableModel::OnQueryEventsCompleted,
-              weak_ptr, base::Passed(std::move(status)), base::Passed(std::move(events))));
+    history_service_.HistoryRead(
+        {scada::id::RootFolder, scada::AttributeId::EventNotifier}, from, to,
+        {{scada::Event::ACKED}},
+        [this, runner, weak_ptr](scada::Status status,
+                                 scada::QueryValuesResults values,
+                                 scada::QueryEventsResults events) {
+          runner->PostTask(FROM_HERE,
+                           base::Bind(&EventTableModel::OnQueryEventsCompleted,
+                                      weak_ptr, base::Passed(std::move(status)),
+                                      base::Passed(std::move(events))));
         });
   }
 
@@ -380,7 +388,8 @@ void EventTableModel::SetMode(unsigned mode) {
   Update();
 }
 
-void EventTableModel::OnQueryEventsCompleted(scada::Status status, scada::QueryEventsResults events) {
+void EventTableModel::OnQueryEventsCompleted(scada::Status status,
+                                             scada::QueryEventsResults events) {
   DCHECK(request_running_);
 
   if (events)
@@ -439,7 +448,7 @@ base::string16 EventTableModel::MakeTitle() const {
       title = L"Журнал событий за месяц";
       break;
     case ID_TIME_RANGE_CUSTOM:
-      title = L"Журнал событий";	// TODO: Format time range.
+      title = L"Журнал событий";  // TODO: Format time range.
       break;
     default:
       title = L"Текущие события";

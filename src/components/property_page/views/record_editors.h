@@ -25,12 +25,12 @@ class NodeManagementService;
 struct NodeAttributes;
 }
 
-class NodeRefService;
+class NodeService;
 class PropertyPageViewContents;
 class TaskManager;
 
 struct RecordEditorContext {
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   TaskManager& task_manager_;
   scada::NodeManagementService& node_management_service_;
 };

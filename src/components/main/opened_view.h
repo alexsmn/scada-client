@@ -41,7 +41,7 @@ class DialogService;
 class Favourites;
 class FileCache;
 class LocalEvents;
-class NodeRefService;
+class NodeService;
 class MainWindow;
 class OpenedView;
 class PortfolioManager;
@@ -56,7 +56,7 @@ struct OpenedViewContext {
   MainWindow* main_window_;
   const WindowDefinition& definition_;
   TimedDataService& timed_data_service_;
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
   TaskManager& task_manager_;
   Profile& profile_;

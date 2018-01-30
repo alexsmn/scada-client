@@ -1,24 +1,26 @@
 #include "components/watch/watch_view.h"
 
+#include "common/node_service.h"
 #include "common_resources.h"
-#include "window_definition.h"
 #include "components/watch/watch_model.h"
 #include "controller_factory.h"
 #include "controls/table.h"
-#include "common/node_ref_service.h"
 #include "translation.h"
+#include "window_definition.h"
 
 #if defined(UI_QT)
 #elif defined(UI_VIEWS)
 #include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/point.h"
 #include "views/client_utils_views.h"
+
 // TODO: Remove.
-#include <atlstr.h>
 #include <atlbase.h>
+
 #include <atlapp.h>
-#include <atluser.h>
 #include <atldlgs.h>
+#include <atlstr.h>
+#include <atluser.h>
 #endif
 
 // WatchView
@@ -28,8 +30,7 @@ REGISTER_CONTROLLER(WatchView, ID_WATCH_VIEW);
 WatchView::WatchView(const ControllerContext& context)
     : Controller(context),
       model_(std::make_unique<WatchModel>(monitored_item_service_)),
-      auto_scroll_(true) {
-}
+      auto_scroll_(true) {}
 
 WatchView::~WatchView() {
   model_->observers().RemoveObserver(this);
@@ -51,8 +52,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   const ui::TableColumn columns[] = {
       ui::TableColumn(0, L"Время", 100, ui::TableColumn::LEFT),
       ui::TableColumn(1, L"Устройство", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(2, L"Событие", 400, ui::TableColumn::LEFT)
-  };
+      ui::TableColumn(2, L"Событие", 400, ui::TableColumn::LEFT)};
 
   const WindowItem* item = definition.FindItem("Item");
   if (item) {
@@ -63,8 +63,9 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   }
 
 #if defined(UI_QT)
-  table_.reset(new Table(*model_, { columns, columns + _countof(columns) }));
-  QObject::connect(table_->selectionModel(), &QItemSelectionModel::currentRowChanged,
+  table_.reset(new Table(*model_, {columns, columns + _countof(columns)}));
+  QObject::connect(
+      table_->selectionModel(), &QItemSelectionModel::currentRowChanged,
       [this](const QModelIndex& current, const QModelIndex& previous) {
         auto_scroll_ = current.row() == model_->GetRowCount() - 1;
       });
@@ -93,9 +94,9 @@ void WatchView::ShowContextMenu(gfx::Point point) {
 }
 
 void WatchView::OnSelectionChanged(views::TableView& sender) {
-  auto_scroll_ =
-      table_->selection_model().size() == 1 &&
-      table_->selection_model().selected_indices()[0] == model_->GetRowCount() - 1;
+  auto_scroll_ = table_->selection_model().size() == 1 &&
+                 table_->selection_model().selected_indices()[0] ==
+                     model_->GetRowCount() - 1;
 }
 #endif
 
@@ -104,14 +105,17 @@ void WatchView::SaveLog() {
   SYSTEMTIME time;
   GetLocalTime(&time);
 
-  base::string16 name = base::StringPrintf(L"%04d%02d%02d_%02d%02d%02d",
-      time.wYear, time.wMonth, time.wDay,
-      time.wHour, time.wMinute, time.wSecond);
+  base::string16 name =
+      base::StringPrintf(L"%04d%02d%02d_%02d%02d%02d", time.wYear, time.wMonth,
+                         time.wDay, time.wHour, time.wMinute, time.wSecond);
 
-  WTL::CFileDialog dlg(FALSE, L"*.log", name.c_str(),
+  WTL::CFileDialog dlg(
+      FALSE, L"*.log", name.c_str(),
       OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
       L"Файлы Log\0*.log\0Все файлы\0*.*\0");
-  if (dlg.DoModal(static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) != IDOK)
+  if (dlg.DoModal(
+          static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) !=
+      IDOK)
     return;
 
   model_->SaveLog(base::FilePath(dlg.m_ofn.lpstrFile));

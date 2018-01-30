@@ -87,14 +87,14 @@ void WriteDialog::OnInitDialog() {
     wnd_state = GetItem(IDC_STATE);
     if (IsInstanceOf(node, id::DiscreteItemType)) {
       auto format = node.target(id::AnalogItemType_DisplayFormat);
-      std::string close_label = kDefaultCloseLabel;
-      std::string open_label = kDefaultOpenLabel;
+      base::string16 close_label = kDefaultCloseLabel;
+      base::string16 open_label = kDefaultOpenLabel;
       if (format) {
-        close_label = format[id::TsFormatType_CloseLabel].value().get_or(std::string());
-        open_label = format[id::TsFormatType_OpenLabel].value().get_or(std::string());
+        close_label = format[id::TsFormatType_CloseLabel].value().get_or(base::string16{});
+        open_label = format[id::TsFormatType_OpenLabel].value().get_or(base::string16{});
       }
-      wnd_state.AddString(base::SysNativeMBToWide(open_label).c_str());
-      wnd_state.AddString(base::SysNativeMBToWide(close_label).c_str());
+      wnd_state.AddString(open_label.c_str());
+      wnd_state.AddString(close_label.c_str());
     }
     wnd_state.SetCurSel(spec_.current().value.get_or(true) ? 0 : 1);	// invert state
   

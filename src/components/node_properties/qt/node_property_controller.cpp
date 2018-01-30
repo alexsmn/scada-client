@@ -1,10 +1,10 @@
 #include "components/node_properties/qt/node_property_controller.h"
 
+#include "common/formula_util.h"
 #include "components/node_properties/node_property_model.h"
 #include "controller_factory.h"
 #include "qt/tree_model_adapter.h"
 #include "window_definition.h"
-#include "common/formula_util.h"
 
 #include <QTreeView>
 
@@ -15,11 +15,9 @@ const float ROW_HEIGHT = 22.0f;
 REGISTER_CONTROLLER(NodePropertyController, ID_PROPERTY_VIEW);
 
 NodePropertyController::NodePropertyController(const ControllerContext& context)
-    : Controller(context) {
-}
+    : Controller(context) {}
 
-NodePropertyController::~NodePropertyController() {
-}
+NodePropertyController::~NodePropertyController() {}
 
 UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   std::vector<scada::NodeId> node_ids;
@@ -32,7 +30,8 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   }
 
   model_ = std::make_unique<NodePropertyModel>(
-      PropertyContext{node_service_, task_manager_, node_management_service_},
+      PropertyContext{view_service_, node_service_, task_manager_,
+                      node_management_service_},
       std::move(node_ids));
 
   model_adapter_ = std::make_unique<TreeModelAdapter>(*model_);

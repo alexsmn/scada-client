@@ -5,13 +5,13 @@
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/utils.h"
+#include "common/browse_util.h"
+#include "common/node_ref_util.h"
+#include "common/node_service.h"
+#include "common/scada_node_ids.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
-#include "common/scada_node_ids.h"
 #include "skia/ext/skia_utils_win.h"
-#include "common/node_ref_service.h"
-#include "common/node_ref_util.h"
-#include "common/browse_util.h"
 #include "translation.h"
 
 namespace {
@@ -22,7 +22,8 @@ struct TypeInfo {
 };
 
 void GetTypeInfo(const NodeRef& type_definition, TypeInfo& type_info) {
-  for (auto base_type = type_definition; base_type; base_type = base_type.supertype()) {
+  for (auto base_type = type_definition; base_type;
+       base_type = base_type.supertype()) {
     for (auto& p : base_type.properties())
       type_info.property_declarations.emplace_back(p);
     for (auto& r : base_type.references())
@@ -31,8 +32,8 @@ void GetTypeInfo(const NodeRef& type_definition, TypeInfo& type_info) {
 }
 
 void GetTypeInfoRecursive(const NodeRef& type_definition, TypeInfo& type_info) {
-  /*for (auto& ref : scada::FilterReferences(type.forward_references(), OpcUaId_HasSubtype)) {
-    if (auto* subtype = scada::AsTypeDefinition(ref.node))
+  /*for (auto& ref : scada::FilterReferences(type.forward_references(),
+  OpcUaId_HasSubtype)) { if (auto* subtype = scada::AsTypeDefinition(ref.node))
       GetInheritedTypesProperties(*subtype, property_ids);
   }*/
   GetTypeInfo(type_definition, type_info);
@@ -63,11 +64,10 @@ PropertyDefs GetChildrenPropertyDefs(const NodeRef& parent_node) {
   return PropertyDefs{};
 }
 
-} // namespace
+}  // namespace
 
 NodeTableModel::NodeTableModel(PropertyContext& context)
-    : context_(context),
-      row_model_(*this) {
+    : context_(context), row_model_(*this) {
   row_model_.set_row_height(19);
 
   context_.node_service_.AddObserver(*this);
@@ -88,12 +88,13 @@ void NodeTableModel::SetParentNode(NodeRef parent_node) {
 
 void NodeTableModel::SetParentNodeId(const scada::NodeId& node_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  context_.node_service_.GetNode(node_id).Fetch([weak_ptr](const NodeRef& node) {
-    if (!node.status())
-      return;
-    if (auto* ptr = weak_ptr.get())
-      ptr->SetParentNode(node);
-  });
+  context_.node_service_.GetNode(node_id).Fetch(
+      [weak_ptr](const NodeRef& node) {
+        if (!node.status())
+          return;
+        if (auto* ptr = weak_ptr.get())
+          ptr->SetParentNode(node);
+      });
 }
 
 int NodeTableModel::GetRowCount() {
@@ -121,12 +122,17 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
     cell.text = column.prop_def->GetText(context_, node, column.prop_decl_id);
 }
 
-bool NodeTableModel::SetCellText(int row, int column, const base::string16& text) {
+bool NodeTableModel::SetCellText(int row,
+                                 int column,
+                                 const base::string16& text) {
   const auto& node = nodes_[row];
   auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::BrowseName) {
-    context_.task_manager_.PostUpdateTask(node.id(),
-        scada::NodeAttributes().set_browse_name(scada::QualifiedName{base::SysWideToNativeMB(text), 0}) , {});
+    context_.task_manager_.PostUpdateTask(
+        node.id(),
+        scada::NodeAttributes().set_browse_name(
+            scada::QualifiedName{base::SysWideToNativeMB(text), 0}),
+        {});
   } else {
     c.prop_def->SetText(context_, node, c.prop_decl_id, text);
   }
@@ -140,9 +146,9 @@ PropertyEditor NodeTableModel::GetCellEditor(int row, int column) {
   if (c.attr_id == scada::AttributeId::BrowseName)
     return PropertyEditor(PropertyEditor::SIMPLE);
   const auto& type_definition = node.type_definition();
-  return type_definition ?
-      c.prop_def->GetPropertyEditor(context_, type_definition, c.prop_decl_id) :
-      PropertyEditor(PropertyEditor::NONE);
+  return type_definition ? c.prop_def->GetPropertyEditor(
+                               context_, type_definition, c.prop_decl_id)
+                         : PropertyEditor(PropertyEditor::NONE);
 }
 
 void NodeTableModel::Update() {
@@ -152,8 +158,10 @@ void NodeTableModel::Update() {
 
   if (parent_node_) {
     auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-    BrowseNodes(context_.node_service_,
-        {parent_node_.id(), scada::BrowseDirection::Forward, scada::id::Organizes, true},
+    BrowseNodes(
+        context_.view_service_, context_.node_service_,
+        {parent_node_.id(), scada::BrowseDirection::Forward,
+         scada::id::Organizes, true},
         [weak_ptr](const scada::Status& status, std::vector<NodeRef> nodes) {
           if (!status)
             return;
@@ -222,19 +230,25 @@ void NodeTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 void NodeTableModel::Sort() {
   if (sorting_locked_)
     return;
-    
+
   struct CompareRecords {
     bool operator()(const NodeRef& left, const NodeRef& right) const {
       auto left_data_item = IsInstanceOf(left, id::DataItemType);
       auto right_data_item = IsInstanceOf(right, id::DataItemType);
-      auto left_path = left_data_item ? left[id::DataItemType_Input1].value().get_or(std::string{}) : std::string();
-      auto right_path = right_data_item ? right[id::DataItemType_Input1].value().get_or(std::string{}) : std::string();
+      auto left_path =
+          left_data_item
+              ? left[id::DataItemType_Input1].value().get_or(std::string{})
+              : std::string();
+      auto right_path =
+          right_data_item
+              ? right[id::DataItemType_Input1].value().get_or(std::string{})
+              : std::string();
       if (left_path.empty() && right_path.empty())
         return left.id() < right.id();
       return HumanCompareText(left_path.c_str(), right_path.c_str()) < 0;
     }
   };
-    
+
   std::sort(nodes_.begin(), nodes_.end(), CompareRecords());
 }
 
@@ -247,16 +261,19 @@ void NodeTableModel::InitColumns() {
 
   // Display name
   {
-    columns_.push_back({scada::AttributeId::DisplayName, scada::NodeId(), nullptr});
+    columns_.push_back(
+        {scada::AttributeId::DisplayName, scada::NodeId(), nullptr});
     columns.emplace_back(columns.size(), L"Èìÿ", 75, ui::TableColumn::LEFT);
   }
 
-  auto AddProp = [this, &columns](const NodeRef& prop_decl, const PropertyDefinition& def) {
-      columns_.push_back({scada::AttributeId::Value, prop_decl.id(), &def});
-      int width = def.width() ? def.width() : 75;
-      auto title = ToString16(prop_decl.display_name());
-      columns.emplace_back(columns.size(), std::move(title), width, def.alignment());
-    };
+  auto AddProp = [this, &columns](const NodeRef& prop_decl,
+                                  const PropertyDefinition& def) {
+    columns_.push_back({scada::AttributeId::Value, prop_decl.id(), &def});
+    int width = def.width() ? def.width() : 75;
+    auto title = ToString16(prop_decl.display_name());
+    columns.emplace_back(columns.size(), std::move(title), width,
+                         def.alignment());
+  };
 
   for (auto& prop : properties) {
     if (auto* hier_prop = prop.second->AsHierarchical()) {

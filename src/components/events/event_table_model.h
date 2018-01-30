@@ -19,7 +19,7 @@ namespace events {
 class EventManager;
 }
 
-class NodeRefService;
+class NodeService;
 
 enum EventColumnId {
   EventColumnSeverity,
@@ -34,7 +34,7 @@ enum EventColumnId {
 };
 
 struct EventTableModelContext {
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   events::EventManager& event_manager_;
   LocalEvents& local_events_;
   scada::HistoryService& history_service_;

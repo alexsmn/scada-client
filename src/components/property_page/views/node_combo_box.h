@@ -8,7 +8,7 @@
 #include <atlctrls.h>
 #include <map>
 
-class NodeRefService;
+class NodeService;
 
 class NodeComboBox {
  public:
@@ -16,7 +16,7 @@ class NodeComboBox {
 
   WTL::CComboBox& combo_box() { return combo_box_; }
 
-  void Fill(NodeRefService& node_service,
+  void Fill(NodeService& node_service,
             const scada::NodeId& root_node_id,
             const scada::NodeId& type_definition_id,
             const scada::NodeId& selected_node_id);
@@ -39,7 +39,7 @@ class ItemComboBox {
 
   WTL::CComboBox& combo_box() { return combo_box_; }
 
-  void Fill(NodeRefService& node_service, const scada::NodeId& device_id);
+  void Fill(NodeService& node_service, const scada::NodeId& device_id);
 
   scada::NodeId GetSelectedId() const;
 

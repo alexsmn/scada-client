@@ -3,22 +3,26 @@
 #include <Windows.h>
 
 #include "client_utils.h"
+#include "common/node_ref.h"
+#include "common/node_ref_util.h"
+#include "common/node_service.h"
+#include "common/scada_node_ids.h"
+#include "common_resources.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
-#include "common_resources.h"
 #include "contents_model.h"
 #include "window_info.h"
-#include "common/node_ref.h"
-#include "common/node_ref_service.h"
-#include "common/node_ref_util.h"
-#include "common/scada_node_ids.h"
 
 void OpenView(MainWindow* main_window, const WindowDefinition& def) {
   DCHECK(main_window);
   main_window->OpenView(def, true);
 }
 
-void ExecuteDefaultItemCommand(MainWindow* main_window, const NodeRef& node, unsigned type, unsigned shift, const std::vector<scada::NodeId>& node_ids) {
+void ExecuteDefaultItemCommand(MainWindow* main_window,
+                               const NodeRef& node,
+                               unsigned type,
+                               unsigned shift,
+                               const std::vector<scada::NodeId>& node_ids) {
   auto* view = main_window->GetActiveDataView();
   auto* contents = view ? view->GetContentsModel() : nullptr;
   if (view && contents && view->window_info().can_insert_item()) {
@@ -36,7 +40,9 @@ void ExecuteDefaultItemCommand(MainWindow* main_window, const NodeRef& node, uns
   OpenView(main_window, PrepareWindowDefinitionForOpen(node, type, node_ids));
 }
 
-void ExecuteDefaultItemCommand(NodeRefService& node_service, const NodeRef& node, MainWindow* main_window) {
+void ExecuteDefaultItemCommand(NodeService& node_service,
+                               const NodeRef& node,
+                               MainWindow* main_window) {
   assert(main_window);
 
   WORD shift = 0;
@@ -48,9 +54,12 @@ void ExecuteDefaultItemCommand(NodeRefService& node_service, const NodeRef& node
   if (IsInstanceOf(node, id::DataGroupType)) {
     std::vector<scada::NodeId> node_ids;
     auto weak_main_window = main_window ? main_window->GetWeakPtr() : nullptr;
-    ExpandGroupItemIds(node_service, node, [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
-      ExecuteDefaultItemCommand(weak_main_window.get(), node, ID_TABLE_VIEW, shift, std::move(node_ids));
-    });
+    ExpandGroupItemIds(
+        node_service, node,
+        [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
+          ExecuteDefaultItemCommand(weak_main_window.get(), node, ID_TABLE_VIEW,
+                                    shift, std::move(node_ids));
+        });
     return;
   }
 

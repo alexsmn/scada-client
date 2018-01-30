@@ -2,22 +2,26 @@
 
 #include <algorithm>
 
-using std::min;
 using std::max;
-
-#include <atlbase.h>
-#include <atlapp.h>
-#include <atlctrls.h>
+using std::min;
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/event_manager.h"
+#include "common/node_service.h"
 #include "core/session_service.h"
-#include "common/node_ref_service.h"
 #include "translation.h"
 
-StatusBarController::StatusBarController(HWND hwnd, NodeRefService& node_service,
-    events::EventManager& event_manager, scada::SessionService& session_state_notifier)
+#include <atlbase.h>
+
+#include <atlapp.h>
+#include <atlctrls.h>
+
+StatusBarController::StatusBarController(
+    HWND hwnd,
+    NodeService& node_service,
+    events::EventManager& event_manager,
+    scada::SessionService& session_state_notifier)
     : hwnd_(hwnd),
       node_service_(node_service),
       event_manager_(event_manager),
@@ -25,7 +29,8 @@ StatusBarController::StatusBarController(HWND hwnd, NodeRefService& node_service
   Layout();
   Update();
 
-  update_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(500),
+  update_timer_.Start(
+      FROM_HERE, base::TimeDelta::FromMilliseconds(500),
       base::Bind(&StatusBarController::Update, base::Unretained(this)));
 }
 
@@ -34,7 +39,7 @@ void StatusBarController::Layout() {
   RECT rect;
   status_bar.GetClientRect(&rect);
 
-  int parts[] = { rect.right - rect.left, 100, 100, 100, 100 };
+  int parts[] = {rect.right - rect.left, 100, 100, 100, 100};
   for (int i = 1; i < _countof(parts); i++)
     parts[0] -= parts[i];
   for (int i = 1; i < _countof(parts); i++)
@@ -44,9 +49,10 @@ void StatusBarController::Layout() {
 
 void StatusBarController::Update() {
   size_t unacked_event_count = event_manager_.unacked_events().size();
-  base::string16 event_status = unacked_event_count ?
-      base::StringPrintf(L"Событий: %u", unacked_event_count) :
-      L"Нет событий";
+  base::string16 event_status =
+      unacked_event_count
+          ? base::StringPrintf(L"Событий: %u", unacked_event_count)
+          : L"Нет событий";
   SetPaneText(1, event_status);
 
   base::string16 event_severity_min =
@@ -54,10 +60,12 @@ void StatusBarController::Update() {
   SetPaneText(2, event_severity_min);
 
   auto& user_id = session_service_.GetUserId();
-  base::string16 user_status = ToString16(node_service_.GetNode(user_id).display_name());
+  base::string16 user_status =
+      ToString16(node_service_.GetNode(user_id).display_name());
   SetPaneText(3, user_status);
 
-  auto* connect_string = session_service_.IsConnected() ? L"Подключен" : L"Отключен";
+  auto* connect_string =
+      session_service_.IsConnected() ? L"Подключен" : L"Отключен";
   SetPaneText(4, connect_string);
 }
 

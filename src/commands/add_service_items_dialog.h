@@ -1,7 +1,14 @@
 #pragma once
 
+namespace scada {
+class ViewService;
+}
+
 class NodeRef;
-class NodeRefService;
+class NodeService;
 class TaskManager;
 
-void ShowAddServiceItemsDialog(NodeRefService& node_service, const NodeRef& node, TaskManager& task_manager);
+void ShowAddServiceItemsDialog(scada::ViewService& view_service,
+                               NodeService& node_service,
+                               const NodeRef& node,
+                               TaskManager& task_manager);

@@ -16,7 +16,7 @@ class DialogService;
 class Favourites;
 class LocalEvents;
 class MainWindow;
-class NodeRefService;
+class NodeService;
 class Page;
 class Profile;
 class Speech;
@@ -24,7 +24,7 @@ class TaskManager;
 
 struct MainCommandsContext {
   MainWindow& main_window_;
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   TaskManager& task_manager_;
   events::EventManager& event_manager_;
   LocalEvents& local_events_;

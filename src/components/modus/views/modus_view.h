@@ -14,7 +14,7 @@
 
 class FileCache;
 class ModusController;
-class NodeRefService;
+class NodeService;
 class TimedDataService;
 
 namespace base {
@@ -31,7 +31,7 @@ class ModusObject;
 }
 
 struct ModusViewContext {
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
 };

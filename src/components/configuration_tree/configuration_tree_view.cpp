@@ -2,17 +2,17 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
+#include "common/node_ref_util.h"
+#include "common/scada_node_ids.h"
 #include "common_resources.h"
+#include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
-#include "components/configuration_tree/configuration_tree_model.h"
-#include "views/item_drag_data.h"
-#include "common/scada_node_ids.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
-#include "ui/base/models/sorted_tree_model.h"
-#include "common/node_ref_util.h"
 #include "translation.h"
+#include "ui/base/models/sorted_tree_model.h"
+#include "views/item_drag_data.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/widget/widget.h"
@@ -21,10 +21,13 @@
 class TypesView : public ConfigurationTreeView {
  public:
   explicit TypesView(const ControllerContext& context)
-      : ConfigurationTreeView(context, std::make_unique<ConfigurationTreeModel>(
-            context.node_service_, scada::id::TypesFolder,
-            std::vector<scada::NodeId>{scada::id::HierarchicalReferences})) {
-  }
+      : ConfigurationTreeView(context,
+                              std::make_unique<ConfigurationTreeModel>(
+                                  context.view_service_,
+                                  context.node_service_,
+                                  scada::id::TypesFolder,
+                                  std::vector<scada::NodeId>{
+                                      scada::id::HierarchicalReferences})) {}
 };
 
 // REGISTER_CONTROLLER(TypesView, ID_TYPES_VIEW);
@@ -32,17 +35,21 @@ class TypesView : public ConfigurationTreeView {
 class NodesView : public ConfigurationTreeView {
  public:
   explicit NodesView(const ControllerContext& context)
-      : ConfigurationTreeView(context, std::make_unique<ConfigurationTreeModel>(
-            context.node_service_, scada::id::RootFolder,
-            std::vector<scada::NodeId>{scada::id::HierarchicalReferences})) {
-  }
+      : ConfigurationTreeView(context,
+                              std::make_unique<ConfigurationTreeModel>(
+                                  context.view_service_,
+                                  context.node_service_,
+                                  scada::id::RootFolder,
+                                  std::vector<scada::NodeId>{
+                                      scada::id::HierarchicalReferences})) {}
 };
 
 REGISTER_CONTROLLER(NodesView, ID_NODES_VIEW);
 
-ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context, std::unique_ptr<ConfigurationTreeModel> model)
-    : Controller(context),
-      model_(std::move(model)) {
+ConfigurationTreeView::ConfigurationTreeView(
+    const ControllerContext& context,
+    std::unique_ptr<ConfigurationTreeModel> model)
+    : Controller(context), model_(std::move(model)) {
   // sorted_model_ = std::make_unique<ui::SortedTreeModel>(*model_);
 
   tree_view_.reset(new Tree(*model_));
@@ -58,7 +65,8 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context, s
     if (selection_size == 0)
       selection().SelectNode(model_->root_node());
     else if (selection_size == 1) {
-      auto* node = static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
+      auto* node =
+          static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
       selection().SelectNode(node->data_node());
     } else
       selection().SelectMultiple();
@@ -96,8 +104,7 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context, s
   });*/
 }
 
-ConfigurationTreeView::~ConfigurationTreeView() {
-}
+ConfigurationTreeView::~ConfigurationTreeView() {}
 
 UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
   return tree_view_.get();
@@ -108,7 +115,7 @@ CommandHandler* ConfigurationTreeView::GetCommandHandler(unsigned command_id) {
     case ID_DELETE: {
       if (!session_service_.IsAdministrator())
         return NULL;
-    
+
       if (selection().node())
         return this;
     }
@@ -122,7 +129,7 @@ void ConfigurationTreeView::ExecuteCommand(unsigned command) {
     case ID_DELETE:
       DeleteSelection();
       break;
-      
+
     default:
       __super::ExecuteCommand(command);
       break;
@@ -140,11 +147,11 @@ void ConfigurationTreeView::DeleteSelection() {
     return;
 
   if (auto node = selection().node()) {
-    base::string16 message = base::StringPrintf(
-        L"Вы действительно хотите удалить %ls?",
-        ToString16(node.display_name()).c_str());
-    int choice = ShowMessageBox(dialog_service_,
-        message.c_str(), L"Удаление", MB_ICONEXCLAMATION | MB_OKCANCEL);
+    base::string16 message =
+        base::StringPrintf(L"Вы действительно хотите удалить %ls?",
+                           ToString16(node.display_name()).c_str());
+    int choice = ShowMessageBox(dialog_service_, message.c_str(), L"Удаление",
+                                MB_ICONEXCLAMATION | MB_OKCANCEL);
     if (choice == IDOK)
       DeleteTreeRecordsRecursive(node, task_manager_);
   }
@@ -165,7 +172,8 @@ void ConfigurationTreeView::StartDrag(void* node) {
   item_data.Save(data);
 
   if (views::Widget* widget = tree_view_->GetWidget())
-    widget->RunShellDrag(data, DROPEFFECT_MOVE | DROPEFFECT_COPY | DROPEFFECT_LINK);
+    widget->RunShellDrag(data,
+                         DROPEFFECT_MOVE | DROPEFFECT_COPY | DROPEFFECT_LINK);
 }
 
 void* ConfigurationTreeView::TestDrop(const ui::DropTargetEvent& event) const {
@@ -173,8 +181,8 @@ void* ConfigurationTreeView::TestDrop(const ui::DropTargetEvent& event) const {
   if (!dragging_node)
     return NULL;*/
 
-  ConfigurationTreeNode* node =
-      reinterpret_cast<ConfigurationTreeNode*>(tree_view_->GetNodeAt(event.location()));
+  ConfigurationTreeNode* node = reinterpret_cast<ConfigurationTreeNode*>(
+      tree_view_->GetNodeAt(event.location()));
   if (!node)
     return NULL;
 
@@ -200,7 +208,8 @@ void* ConfigurationTreeView::TestDrop(const ui::DropTargetEvent& event) const {
 }
 
 bool ConfigurationTreeView::CanDrop(const ui::OSExchangeData& data) {
-  return session_service_.IsAdministrator() && data.HasCustomFormat(ItemDragData::GetCustomFormat());
+  return session_service_.IsAdministrator() &&
+         data.HasCustomFormat(ItemDragData::GetCustomFormat());
 }
 
 void ConfigurationTreeView::OnDragEntered(const ui::DropTargetEvent& event) {
@@ -216,7 +225,7 @@ int ConfigurationTreeView::OnDragUpdated(const ui::DropTargetEvent& event) {
   tree_view_->SetDropTargetNode(node);
   if (!node)
     return ui::DragDropTypes::DRAG_NONE;
-    
+
   return ui::DragDropTypes::DRAG_MOVE;
 }
 

@@ -2,15 +2,15 @@
 
 #include "base/win/clipboard.h"
 #include "client_utils.h"
+#include "common/node_service.h"
+#include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/node_table/node_table_model.h"
-#include "services/property_defs.h"
-#include "services/task_manager.h"
-#include "common/scada_node_ids.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
 #include "core/session_service.h"
-#include "common/node_ref_service.h"
+#include "services/property_defs.h"
+#include "services/task_manager.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/textfield/combo_textfield.h"
@@ -42,36 +42,40 @@ bool PasteRecords(const scada::NodeId& parent_id) {
 
   for (auto& packed_node : message.node()) {
     auto node_data = FromProto(packed_node);
-    TaskManager::instance().PostInsertTask(scada::NodeId(), parent_id, node_data.type_definition_id,
-        node_data.attributes, node_data.properties);
+    TaskManager::instance().PostInsertTask(scada::NodeId(), parent_id,
+  node_data.type_definition_id, node_data.attributes, node_data.properties);
   }*/
 
   return true;
 }
 
-} // namespace
+}  // namespace
 
 // NodeTableControllerImpl
 
-template<int kNodeId>
+template <int kNodeId>
 class NodeTableControllerImpl : public NodeTableController {
  public:
   explicit NodeTableControllerImpl(const ControllerContext& context)
-      : NodeTableController(context, kNodeId) {
-  }
+      : NodeTableController(context, kNodeId) {}
 };
 
 REGISTER_CONTROLLER(NodeTableControllerImpl<0>, ID_TABLE_EDITOR);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::TsFormats>, ID_TS_FORMATS_VIEW);
+REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::TsFormats>,
+                    ID_TS_FORMATS_VIEW);
 REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::Users>, ID_USERS_VIEW);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::SimulationSignals>, ID_SIMULATION_ITEMS_VIEW);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::HistoricalDatabases>, ID_HISTORICAL_DB_VIEW);
+REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::SimulationSignals>,
+                    ID_SIMULATION_ITEMS_VIEW);
+REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::HistoricalDatabases>,
+                    ID_HISTORICAL_DB_VIEW);
 
 // NodeTableController
 
-NodeTableController::NodeTableController(const ControllerContext& context, const scada::NodeId& parent_id)
+NodeTableController::NodeTableController(const ControllerContext& context,
+                                         const scada::NodeId& parent_id)
     : Controller(context),
       model_(std::make_unique<NodeTableModel>(PropertyContext{
+          context.view_service_,
           context.node_service_,
           context.task_manager_,
           context.node_management_service_,
@@ -79,8 +83,7 @@ NodeTableController::NodeTableController(const ControllerContext& context, const
   model_->SetParentNodeId(parent_id);
 }
 
-NodeTableController::~NodeTableController() {
-}
+NodeTableController::~NodeTableController() {}
 
 UiView* NodeTableController::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
@@ -144,55 +147,57 @@ void NodeTableController::CopyToClipboard() {
   ui::GridRange range = table_->GetSelectionRange();
   if (range.empty())
     return;
-    
-  /*std::set<NodeRef> nodes;
 
-  for (int i = range.row(); i <= range.last_row(); i++)
-    nodes.emplace(model_->nodes()[i]);
+    /*std::set<NodeRef> nodes;
 
-  if (nodes.empty())
-    return;
+    for (int i = range.row(); i <= range.last_row(); i++)
+      nodes.emplace(model_->nodes()[i]);
 
-  auto parent_node = model_->parent_node();
-  scada::NodeId parent_id = parent_node ? parent_node.id() : scada::id::RootFolder;
+    if (nodes.empty())
+      return;
 
-  std::vector<scada::NodeData> browse_nodes;
-  std::vector<scada::BrowseReference> browse_references;
+    auto parent_node = model_->parent_node();
+    scada::NodeId parent_id = parent_node ? parent_node.id() :
+    scada::id::RootFolder;
 
-  for (auto& node : nodes) {
-    browse_nodes.emplace_back();
-    browse_nodes.back().parent_id = parent_id;
-    browse_nodes.back().reference_type_id = scada::id::Organizes;
-    NodeToData(node, browse_nodes.back(), browse_references);
-  }
+    std::vector<scada::NodeData> browse_nodes;
+    std::vector<scada::BrowseReference> browse_references;
 
-  protocol::NodeTree message;
-  ContainerToProto(browse_nodes, *message.mutable_node());
-  ContainerToProto(browse_references, *message.mutable_reference());
+    for (auto& node : nodes) {
+      browse_nodes.emplace_back();
+      browse_nodes.back().parent_id = parent_id;
+      browse_nodes.back().reference_type_id = scada::id::Organizes;
+      NodeToData(node, browse_nodes.back(), browse_references);
+    }
 
-  auto buffer = message.SerializePartialAsString();
-  if (!Clipboard().SetData(CF_TRECS, buffer.data(), buffer.size()))
-    LOG(ERROR) << "Can't set clipboard data";*/
+    protocol::NodeTree message;
+    ContainerToProto(browse_nodes, *message.mutable_node());
+    ContainerToProto(browse_references, *message.mutable_reference());
+
+    auto buffer = message.SerializePartialAsString();
+    if (!Clipboard().SetData(CF_TRECS, buffer.data(), buffer.size()))
+      LOG(ERROR) << "Can't set clipboard data";*/
 #endif
 }
 
 void NodeTableController::PasteFromClipboard() {
   const auto& parent_node = model_->parent_node();
-  scada::NodeId parent_id = parent_node ? parent_node.id() : scada::id::RootFolder;
-  if (!session_service_.IsAdministrator() ||
-      !PasteRecords(parent_id)) {
+  scada::NodeId parent_id =
+      parent_node ? parent_node.id() : scada::id::RootFolder;
+  if (!session_service_.IsAdministrator() || !PasteRecords(parent_id)) {
     LOG(ERROR) << "Paste records error";
   }
 }
 
 #if defined(UI_VIEWS)
 bool NodeTableController::OnGridEditCellText(views::GridView& sender,
-                                         int row, int column,
-                                         const base::string16& text) {
+                                             int row,
+                                             int column,
+                                             const base::string16& text) {
   ui::GridRange range = table_->GetSelectionRange();
   if (range.empty())
     return true;
-  
+
   for (int row = range.row(); row <= range.last_row(); row++)
     for (int col = range.column(); col <= range.last_column(); col++)
       model_->SetCellText(row, col, text);
@@ -200,16 +205,22 @@ bool NodeTableController::OnGridEditCellText(views::GridView& sender,
   return true;
 }
 
-bool NodeTableController::CanEditCell(views::GridView& sender, int row, int column) {
+bool NodeTableController::CanEditCell(views::GridView& sender,
+                                      int row,
+                                      int column) {
   return true;
 }
 
-views::ComboTextfield* NodeTableController::OnGridCreateEditor(views::GridView& sender, int row, int column) {
+views::ComboTextfield* NodeTableController::OnGridCreateEditor(
+    views::GridView& sender,
+    int row,
+    int column) {
   auto result = model_->GetCellEditor(row, column);
   if (result.type == PropertyEditor::NONE)
     return nullptr;
 
-  views::ComboTextfield* editor = __super::OnGridCreateEditor(sender, row, column);
+  views::ComboTextfield* editor =
+      __super::OnGridCreateEditor(sender, row, column);
   assert(editor);
 
   if (result.type == PropertyEditor::DROPDOWN) {
@@ -271,7 +282,8 @@ NodeRef NodeTableController::GetRootNode() const {
 }
 
 #if defined(UI_VIEWS)
-bool NodeTableController::OnKeyPressed(views::GridView& sender, ui::KeyboardCode key_code) {
+bool NodeTableController::OnKeyPressed(views::GridView& sender,
+                                       ui::KeyboardCode key_code) {
   // Clear selection when Delete is pressed.
   if (key_code == ui::VKEY_DELETE && !table_->editing()) {
     ui::GridRange range = table_->GetSelectionRange();
@@ -294,7 +306,7 @@ void NodeTableController::OnGridSelectionChanged(views::GridView& sender) {
     selection().Clear();
     return;
   }
-  
+
   const auto& node = model_->nodes()[row];
   assert(node);
 

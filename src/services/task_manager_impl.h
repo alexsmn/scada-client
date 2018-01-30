@@ -14,12 +14,12 @@ class NodeManagementService;
 }
 
 class LocalEvents;
-class NodeRefService;
+class NodeService;
 class Profile;
 class ProgressDialog;
 
 struct TaskManagerImplContext {
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   scada::NodeManagementService& node_management_service_;
   LocalEvents& local_events_;
   Profile& profile_;

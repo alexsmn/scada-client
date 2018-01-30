@@ -6,8 +6,8 @@
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
 #include "common/node_ref.h"
-#include "common/node_ref_service.h"
 #include "common/node_ref_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "core/configuration_types.h"
@@ -16,13 +16,14 @@
 #include "views/framework/dialog.h"
 
 namespace scada {
-class Node;
+class ViewService;
 };
 
 class AddServiceItemsDialog : public framework::Dialog,
                               protected framework::ComboBoxController {
  public:
-  AddServiceItemsDialog(NodeRefService& node_service,
+  AddServiceItemsDialog(scada::ViewService& view_service,
+                        NodeService& node_service,
                         const NodeRef& group,
                         TaskManager& task_manager);
 
@@ -47,9 +48,10 @@ class AddServiceItemsDialog : public framework::Dialog,
   void FillChannelsList();
 
   TaskManager& task_manager_;
-
-  NodeRefService& node_service_;
+  scada::ViewService& view_service_;
+  NodeService& node_service_;
   const NodeRef group_;
+
   std::vector<NodeRef> devices_;
   std::vector<NodeRef> components_;
 
@@ -60,10 +62,12 @@ class AddServiceItemsDialog : public framework::Dialog,
   base::WeakPtrFactory<AddServiceItemsDialog> weak_ptr_factory_{this};
 };
 
-AddServiceItemsDialog::AddServiceItemsDialog(NodeRefService& node_service,
+AddServiceItemsDialog::AddServiceItemsDialog(scada::ViewService& view_service,
+                                             NodeService& node_service,
                                              const NodeRef& group,
                                              TaskManager& task_manager)
-    : Dialog(IDD_NEW_SERVICE_ITEMS),
+    : Dialog{IDD_NEW_SERVICE_ITEMS},
+      view_service_{view_service},
       node_service_{node_service},
       group_{std::move(group)},
       task_manager_(task_manager) {}
@@ -130,7 +134,7 @@ void AddServiceItemsDialog::FillChannelsList() {
 
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   BrowseNodes(
-      node_service_,
+      view_service_, node_service_,
       {device.id(), scada::BrowseDirection::Inverse, scada::id::Organizes,
        true},
       [weak_ptr](const scada::Status& status, std::vector<NodeRef> components) {
@@ -179,10 +183,11 @@ void AddServiceItemsDialog::SetDevices(std::vector<NodeRef> devices) {
   //  SelectDevice(id::Server);
 }
 
-void ShowAddServiceItemsDialog(NodeRefService& node_service,
+void ShowAddServiceItemsDialog(scada::ViewService& view_service,
+                               NodeService& node_service,
                                const NodeRef& node,
                                TaskManager& task_manager) {
-  AddServiceItemsDialog dialog{node_service, node, task_manager};
+  AddServiceItemsDialog dialog{view_service, node_service, node, task_manager};
   if (dialog.Execute() != IDOK)
     return;
 }

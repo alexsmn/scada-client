@@ -2,6 +2,7 @@
 
 #include "base/command_line.h"
 #include "base/logger.h"
+#include "base/nested_logger.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/win/dump.h"
@@ -10,7 +11,7 @@
 #include "common/common_paths.h"
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
-#include "common/node_ref_service_impl.h"
+#include "common/node_service_impl.h"
 #include "common_resources.h"
 #include "components/main/action.h"
 #include "components/main/main_window.h"
@@ -162,12 +163,11 @@ void ClientApplication::BeforeRun() {
   // Add SessionService observer.
   master_data_services_->AddObserver(*this);
 
-  node_service_ =
-      std::make_unique<NodeRefServiceImpl>(NodeRefServiceImplContext{
-          logger_,
-          *master_data_services_,
-          *master_data_services_,
-      });
+  node_service_ = std::make_unique<NodeServiceImpl>(NodeServiceImplContext{
+      logger_,
+      *master_data_services_,
+      *master_data_services_,
+  });
 
   event_manager_ =
       std::make_unique<events::EventManager>(events::EventManagerContext{

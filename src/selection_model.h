@@ -10,12 +10,12 @@
 #include "common/node_ref.h"
 #include "common/node_ref_observer.h"
 
-class NodeRefService;
+class NodeService;
 
 class SelectionModel : private rt::TimedDataDelegate,
                        private NodeRefObserver {
  public:
-  SelectionModel(NodeRefService& node_service, TimedDataService& timed_data_service);
+  SelectionModel(NodeService& node_service, TimedDataService& timed_data_service);
   SelectionModel(const SelectionModel&) = delete;
   ~SelectionModel();
 
@@ -57,7 +57,7 @@ class SelectionModel : private rt::TimedDataDelegate,
   enum Type { EMPTY, NODE, SPEC, MULTI };
   Type type_ = EMPTY;
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   TimedDataService& timed_data_service_;
   rt::TimedDataSpec	timed_data_;
   NodeRef node_;

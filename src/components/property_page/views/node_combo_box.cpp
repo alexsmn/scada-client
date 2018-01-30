@@ -22,7 +22,7 @@ void NodeComboBox::Init(HWND combo_box_handle) {
   combo_box_ = combo_box_handle;
 }
 
-void NodeComboBox::Fill(NodeRefService& node_service,
+void NodeComboBox::Fill(NodeService& node_service,
                         const scada::NodeId& root_node_id,
                         const scada::NodeId& type_definition_id,
                         const scada::NodeId& selected_node_id) {
@@ -80,7 +80,7 @@ scada::NodeId ItemComboBox::GetSelectedId() const {
   return i != component_items_.end() ? i->second : scada::NodeId{};
 }
 
-void ItemComboBox::Fill(NodeRefService& node_service,
+void ItemComboBox::Fill(NodeService& node_service,
                         const scada::NodeId& device_id) {
   combo_box_.ResetContent();
   component_items_.clear();

@@ -13,11 +13,11 @@ namespace scada {
 class SessionService;
 }
 
-class NodeRefService;
+class NodeService;
 
 class StatusBarController {
  public:
-  StatusBarController(HWND hwnd, NodeRefService& node_service, events::EventManager& event_manager,
+  StatusBarController(HWND hwnd, NodeService& node_service, events::EventManager& event_manager,
       scada::SessionService& session_service);
 
   void Layout();
@@ -27,7 +27,7 @@ class StatusBarController {
 
   void SetPaneText(int pane, const base::string16& text);
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   events::EventManager& event_manager_;
   scada::SessionService& session_service_;
 

@@ -4,17 +4,18 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "ui/base/models/grid_model.h"
-#include "ui/base/models/fixed_row_model.h"
-#include "contents_model.h"
 #include "common/node_ref.h"
 #include "common/node_ref_observer.h"
+#include "contents_model.h"
+#include "ui/base/models/fixed_row_model.h"
+#include "ui/base/models/grid_model.h"
 
 namespace scada {
 class NodeManagementService;
-}
+class ViewService;
+}  // namespace scada
 
-class NodeRefService;
+class NodeService;
 class TaskManager;
 
 class TransmissionModel : public ui::GridModel,
@@ -28,7 +29,10 @@ class TransmissionModel : public ui::GridModel,
     scada::NodeId source_id;
   };
 
-  TransmissionModel(NodeRefService& node_service, TaskManager& task_manager, scada::NodeManagementService& node_management_service);
+  TransmissionModel(scada::ViewService& view_service,
+                    NodeService& node_service,
+                    TaskManager& task_manager,
+                    scada::NodeManagementService& node_management_service);
   ~TransmissionModel();
 
   const NodeRef& device() const { return device_; }
@@ -43,7 +47,8 @@ class TransmissionModel : public ui::GridModel,
   void Update();
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
   virtual void RemoveContainedItem(const scada::NodeId& node_id) override;
   virtual NodeIdSet GetContainedItems() const override;
 
@@ -63,7 +68,8 @@ class TransmissionModel : public ui::GridModel,
   virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  NodeRefService& node_service_;
+  scada::ViewService& view_service_;
+  NodeService& node_service_;
   TaskManager& task_manager_;
   scada::NodeManagementService& node_management_service_;
 
@@ -71,6 +77,6 @@ class TransmissionModel : public ui::GridModel,
   NodeRef device_;
 
   base::WeakPtrFactory<TransmissionModel> weak_ptr_factory_{this};
-  
+
   DISALLOW_COPY_AND_ASSIGN(TransmissionModel);
 };

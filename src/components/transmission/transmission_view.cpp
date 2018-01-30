@@ -1,23 +1,24 @@
 #include "components/transmission/transmission_view.h"
 
+#include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
-#include "window_definition.h"
 #include "controller_factory.h"
-#include "services/task_manager.h"
 #include "controls/grid.h"
-#include "common/scada_node_ids.h"
 #include "core/session_service.h"
+#include "services/task_manager.h"
+#include "window_definition.h"
 
 REGISTER_CONTROLLER(TransmissionView, ID_TRANSMISSION_VIEW);
 
 TransmissionView::TransmissionView(const ControllerContext& context)
     : Controller(context),
-      model_(std::make_unique<TransmissionModel>(node_service_, task_manager_, node_management_service_)) {
-}
+      model_(std::make_unique<TransmissionModel>(view_service_,
+                                                 node_service_,
+                                                 task_manager_,
+                                                 node_management_service_)) {}
 
-TransmissionView::~TransmissionView() {
-}
+TransmissionView::~TransmissionView() {}
 
 UiView* TransmissionView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
@@ -29,8 +30,7 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
 
   const ui::TableColumn columns[] = {
       ui::TableColumn(0, L"Объект", 250, ui::TableColumn::LEFT),
-      ui::TableColumn(1, L"Адрес", 100, ui::TableColumn::RIGHT)
-  };
+      ui::TableColumn(1, L"Адрес", 100, ui::TableColumn::RIGHT)};
   column_model_.SetColumns(_countof(columns), columns);
 
 #if defined(UI_QT)
@@ -70,11 +70,12 @@ void TransmissionView::DeleteSelection() {
 #endif
 }
 
-void TransmissionView::WriteCell(int row, int col, LPCTSTR text) {
-}
+void TransmissionView::WriteCell(int row, int col, LPCTSTR text) {}
 
 #if defined(UI_VIEWS)
-bool TransmissionView::CanEditCell(views::GridView& sender, int row, int column) {
+bool TransmissionView::CanEditCell(views::GridView& sender,
+                                   int row,
+                                   int column) {
   assert(row >= 0 && row < model_->GetRowCount());
 
   if (column == 0)
@@ -83,14 +84,16 @@ bool TransmissionView::CanEditCell(views::GridView& sender, int row, int column)
   return true;
 }
 
-bool TransmissionView::OnGridEditCellText(views::GridView& sender, int row, int column,
+bool TransmissionView::OnGridEditCellText(views::GridView& sender,
+                                          int row,
+                                          int column,
                                           const base::string16& text) {
   assert(row >= 0 && row < model_->GetRowCount());
 
-/*	GridRange range = selection();
-  for (int row = range.top; row <= range.bottom; row++)
-    for (int col = range.left; col <= range.right; col++)
-      WriteCell(row, col, text);*/
+  /*	GridRange range = selection();
+    for (int row = range.top; row <= range.bottom; row++)
+      for (int col = range.left; col <= range.right; col++)
+        WriteCell(row, col, text);*/
 
   int value;
   if (!Parse(text, value))
@@ -98,7 +101,8 @@ bool TransmissionView::OnGridEditCellText(views::GridView& sender, int row, int 
 
   auto& row_item = model_->row(row);
   scada::NodeProperties properties;
-  properties.emplace_back(id::TransmissionItemType_SourceAddress, static_cast<int>(value));
+  properties.emplace_back(id::TransmissionItemType_SourceAddress,
+                          static_cast<int>(value));
   task_manager_.PostUpdateTask(row_item.transmission.id(), {}, properties);
 
   return true;

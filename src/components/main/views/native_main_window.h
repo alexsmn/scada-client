@@ -31,7 +31,7 @@ class Widget;
 
 class MainMenu;
 class MainWindowViews;
-class NodeRefService;
+class NodeService;
 class StatusBarController;
 
 struct NativeMainWindowContext {
@@ -42,7 +42,7 @@ struct NativeMainWindowContext {
   scada::SessionService& session_service_;
   FileCache& file_cache_;
   Favourites& favourites_;
-  NodeRefService& node_service_;
+  NodeService& node_service_;
 };
 
 class NativeMainWindow : public WTL::CFrameWindowImpl<NativeMainWindow>,

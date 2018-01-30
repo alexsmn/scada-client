@@ -22,7 +22,7 @@ class SelectItemDialog : public ATL::CDialogImpl<SelectItemDialog> {
  public:
   enum { IDD = IDD_SELITEM };
 
-  explicit SelectItemDialog(NodeRefService& node_service);
+  explicit SelectItemDialog(NodeService& node_service);
   
   scada::NodeId GetItemNodeId(HTREEITEM item) const;
   HTREEITEM GetTreeItem(const scada::NodeId& node_id);
@@ -45,7 +45,7 @@ class SelectItemDialog : public ATL::CDialogImpl<SelectItemDialog> {
   LRESULT OnTreeSelect(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
   LRESULT OnListSelect(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
 
   typedef std::map<scada::NodeId, HTREEITEM> R2I;
   typedef std::vector<scada::NodeId> LI2TR;
@@ -59,7 +59,7 @@ class SelectItemDialog : public ATL::CDialogImpl<SelectItemDialog> {
   NodeIdSet		trids;
 };
 
-SelectItemDialog::SelectItemDialog(NodeRefService& node_service)
+SelectItemDialog::SelectItemDialog(NodeService& node_service)
     : node_service_{node_service} {
 }
 
@@ -172,7 +172,7 @@ void SelectItemDialog::LoadItems() {
 	}*/
 }
 
-NodeIdSet RunSelectItemsDialog(DialogService& dialog_service, NodeRefService& node_service) {
+NodeIdSet RunSelectItemsDialog(DialogService& dialog_service, NodeService& node_service) {
   SelectItemDialog dlg{node_service};
   if (dlg.DoModal(static_cast<DialogServiceViews&>(dialog_service).GetParentView()) == IDOK)
     return dlg.trids;

@@ -2,17 +2,22 @@
 
 #include "base/format.h"
 #include "base/strings/sys_string_conversions.h"
+#include "common/browse_util.h"
+#include "common/node_ref_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "contents_observer.h"
 #include "core/node_management_service.h"
 #include "services/task_manager.h"
-#include "common/node_ref_util.h"
-#include "common/node_ref_service.h"
-#include "common/browse_util.h"
 #include "translation.h"
 
-TransmissionModel::TransmissionModel(NodeRefService& node_service, TaskManager& task_manager, scada::NodeManagementService& node_management_service)
+TransmissionModel::TransmissionModel(
+    scada::ViewService& view_service,
+    NodeService& node_service,
+    TaskManager& task_manager,
+    scada::NodeManagementService& node_management_service)
     : FixedRowModel(*static_cast<FixedRowModel::Delegate*>(this)),
+      view_service_{view_service},
       node_service_{node_service},
       task_manager_{task_manager},
       node_management_service_{node_management_service} {
@@ -48,9 +53,9 @@ base::string16 TransmissionModel::GetRowTitle(int row) {
 void TransmissionModel::GetCell(ui::GridCell& cell) {
   assert(cell.row >= 0 && cell.row <= (int)rows_.size());
 
-//	// Last cell.row is new cell.row.
-//	if (cell.row == rows_.size())
-//		return;
+  //	// Last cell.row is new cell.row.
+  //	if (cell.row == rows_.size())
+  //		return;
 
   auto& row = rows_[cell.row];
 
@@ -60,9 +65,12 @@ void TransmissionModel::GetCell(ui::GridCell& cell) {
       cell.text = ToString16(source.display_name());
       break;
     }
-      
+
     case 1:
-      auto device_item_address = row.transmission[id::TransmissionItemType_SourceAddress].value().get_or(0);
+      auto device_item_address =
+          row.transmission[id::TransmissionItemType_SourceAddress]
+              .value()
+              .get_or(0);
       cell.text = WideFormat(device_item_address);
       break;
   }
@@ -73,16 +81,18 @@ void TransmissionModel::Update() {
 
   if (device_) {
     auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-    BrowseNodes(node_service_,
-        {device_.id(), scada::BrowseDirection::Inverse, id::HasTransmissionTarget, true},
-        [weak_ptr](const scada::Status& status, const std::vector<NodeRef>& transmission_items) {
-          if (!status)
-            return;
-          if (auto* ptr = weak_ptr.get()) {
-            for (auto& transmission_item : transmission_items)
-              ptr->UpdateItem(transmission_item);
-          }
-        });
+    BrowseNodes(view_service_, node_service_,
+                {device_.id(), scada::BrowseDirection::Inverse,
+                 id::HasTransmissionTarget, true},
+                [weak_ptr](const scada::Status& status,
+                           const std::vector<NodeRef>& transmission_items) {
+                  if (!status)
+                    return;
+                  if (auto* ptr = weak_ptr.get()) {
+                    for (auto& transmission_item : transmission_items)
+                      ptr->UpdateItem(transmission_item);
+                  }
+                });
   }
 
   GridModel::NotifyModelChanged();
@@ -127,7 +137,8 @@ void TransmissionModel::UpdateItem(const NodeRef& transmission) {
   auto old_source_id = rows_[i].source_id;
   if (old_source_id != source_id) {
     rows_[i].source_id = source_id;
-    if (contents_observer() && !old_source_id.is_null() && FindSource(old_source_id) == -1)
+    if (contents_observer() && !old_source_id.is_null() &&
+        FindSource(old_source_id) == -1)
       contents_observer()->OnContainedItemChanged(old_source_id, false);
     if (contents_observer() && !source_id.is_null())
       contents_observer()->OnContainedItemChanged(source_id, true);
@@ -174,20 +185,24 @@ NodeIdSet TransmissionModel::GetContainedItems() const {
   return items;
 }
 
-void TransmissionModel::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
+void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
+                                         unsigned flags) {
   if (!device())
     return;
 
   auto& node_management_service = node_management_service_;
   const auto& device_id = device_.id();
-  task_manager_.PostInsertTask(scada::NodeId(), id::TransmissionItems,
-      id::TransmissionItemType, {}, {},
-      [node_id, device_id, &node_management_service](const scada::Status& status, const scada::NodeId& transmission_id) {
+  task_manager_.PostInsertTask(
+      scada::NodeId(), id::TransmissionItems, id::TransmissionItemType, {}, {},
+      [node_id, device_id, &node_management_service](
+          const scada::Status& status, const scada::NodeId& transmission_id) {
         if (!status)
           return;
-        node_management_service.AddReference(id::HasTransmissionSource, transmission_id, node_id,
+        node_management_service.AddReference(
+            id::HasTransmissionSource, transmission_id, node_id,
             [](const scada::Status& status) {});
-        node_management_service.AddReference(id::HasTransmissionTarget, transmission_id, device_id,
+        node_management_service.AddReference(
+            id::HasTransmissionTarget, transmission_id, device_id,
             [](const scada::Status& status) {});
       });
 }

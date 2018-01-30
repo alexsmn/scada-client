@@ -6,7 +6,7 @@
 #include <vector>
 #include <map>
 
-class NodeRefService;
+class NodeService;
 
 enum CommandCategory {
   CATEGORY_NEW,
@@ -66,7 +66,7 @@ class ActionManager {
  public:
   typedef std::map<unsigned, Action*> ActionMap;
 
-  explicit ActionManager(NodeRefService& node_service);
+  explicit ActionManager(NodeService& node_service);
   ~ActionManager();
 
   const ActionList& actions() const { return actions_; }

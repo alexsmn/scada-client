@@ -27,7 +27,7 @@ class LocalEvents;
 class MainWindow;
 class MasterDataServices;
 class ModusModule2;
-class NodeRefService;
+class NodeService;
 class OpenedView;
 class Page;
 class PortfolioManager;
@@ -83,7 +83,7 @@ class ClientApplication : private scada::SessionStateObserver {
   boost::asio::io_service io_service_;
   std::unique_ptr<net::TransportFactory> transport_factory_;
 
-  std::unique_ptr<NodeRefService> node_service_;
+  std::unique_ptr<NodeService> node_service_;
 
   std::unique_ptr<events::EventManager> event_manager_;
   std::unique_ptr<TimedDataService> timed_data_service_;

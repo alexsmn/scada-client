@@ -23,7 +23,7 @@ class AddMultipleItemsDialog : public framework::Dialog,
                                private framework::ButtonController,
                                private framework::EditBoxController {
  public:
-  AddMultipleItemsDialog(NodeRefService& node_service,
+  AddMultipleItemsDialog(NodeService& node_service,
                          NodeRef group,
                          TaskManager& task_manager);
 
@@ -44,7 +44,7 @@ class AddMultipleItemsDialog : public framework::Dialog,
   // framework::EditBox
   virtual void OnEditBoxChanged(framework::EditBox& sender) override;
 
-  NodeRefService& node_service_;
+  NodeService& node_service_;
   const NodeRef group_;
   TaskManager& task_manager_;
 
@@ -61,7 +61,7 @@ class AddMultipleItemsDialog : public framework::Dialog,
   base::WeakPtrFactory<AddMultipleItemsDialog> weak_ptr_factory_{this};
 };
 
-AddMultipleItemsDialog::AddMultipleItemsDialog(NodeRefService& node_service,
+AddMultipleItemsDialog::AddMultipleItemsDialog(NodeService& node_service,
                                                NodeRef group,
                                                TaskManager& task_manager)
     : Dialog{IDD_NEW_ITEMS},
@@ -169,7 +169,7 @@ void AddMultipleItemsDialog::OnEditBoxChanged(framework::EditBox& sender) {
   auto_name_ = false;
 }
 
-void ShowAddMultipleItemsDialog(NodeRefService& node_service,
+void ShowAddMultipleItemsDialog(NodeService& node_service,
                                 const NodeRef& node,
                                 TaskManager& task_manager) {
   AddMultipleItemsDialog dialog{node_service, node, task_manager};
