@@ -158,6 +158,7 @@ WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node,
 }
 
 void PrepareWindowDefinitionForOpenExpandGroups(
+    scada::ViewService& view_service,
     NodeService& node_service,
     const NodeRef& node,
     unsigned type,
@@ -166,7 +167,7 @@ void PrepareWindowDefinitionForOpenExpandGroups(
     type = ID_GRAPH_VIEW;
 
   ExpandGroupItemIds(
-      node_service, node,
+      view_service, node_service, node,
       [node, type, callback](const std::vector<scada::NodeId>& node_ids) {
         const WindowInfo& window_info = GetWindowInfo(type);
         WindowDefinition win(window_info);
@@ -286,14 +287,14 @@ void PrepareWindowDefinitionForGroup(scada::ViewService& view_service,
 
   BrowseParent(
       view_service, node_service, node.id(), scada::id::HierarchicalReferences,
-      [&node_service, type, callback](const scada::Status& status,
-                                      const NodeRef& parent) {
+      [&view_service, &node_service, type, callback](
+          const scada::Status& status, const NodeRef& parent) {
         if (!status) {
           callback({});
           return;
         }
         ExpandGroupItemIds(
-            node_service, parent,
+            view_service, node_service, parent,
             [&node_service, parent, type,
              callback](const std::vector<scada::NodeId>& node_ids) {
               callback(PrepareWindowDefinitionForOpen(parent, type, node_ids));

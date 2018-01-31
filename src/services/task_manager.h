@@ -8,7 +8,7 @@
 
 class TaskManager {
  public:
-  virtual ~TaskManager() = 0;
+  virtual ~TaskManager() {}
 
   using InsertCallback =
       std::function<void(scada::Status status, const scada::NodeId& node_id)>;

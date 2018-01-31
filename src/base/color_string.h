@@ -1,5 +1,9 @@
 #pragma once
 
+namespace gfx {
+class Font;
+}
+
 void MeasureColoredString(gfx::Canvas* canvas, const gfx::Font& font,
                           SkColor color, RECT& rect,
                           const base::string16& text, int format);

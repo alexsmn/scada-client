@@ -43,6 +43,7 @@ using WindowDefinitionCallback = std::function<void(WindowDefinition)>;
 WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node,
                                                 unsigned type);
 void PrepareWindowDefinitionForOpenExpandGroups(
+    scada::ViewService& view_service,
     NodeService& node_service,
     const NodeRef& node,
     unsigned type,
@@ -84,7 +85,8 @@ void DoIOCtrl(const scada::NodeId& node_id,
 
 using ExpandGroupItemIdsCallback =
     std::function<void(std::vector<scada::NodeId> nodes)>;
-void ExpandGroupItemIds(NodeService& node_service,
+void ExpandGroupItemIds(scada::ViewService& view_service,
+                        NodeService& node_service,
                         const NodeRef& node,
                         const ExpandGroupItemIdsCallback& callback);
 

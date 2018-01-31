@@ -1,8 +1,8 @@
 #include "components/hardware_tree/hardware_tree_model.h"
 
+#include "common/node_ref_util.h"
 #include "common/scada_node_ids.h"
 #include "services/device_state_notifier.h"
-#include "common/node_ref_util.h"
 
 // HardwareTreeModel::DeviceTreeNode
 
@@ -22,7 +22,8 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
   std::unique_ptr<DeviceStateNotifier> device_state_notifier_;
 };
 
-HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(HardwareTreeModel& model, NodeRef data_node)
+HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(HardwareTreeModel& model,
+                                                  NodeRef data_node)
     : ConfigurationTreeNode{model, std::move(data_node)} {
   UpdateNotifier();
 }
@@ -58,14 +59,18 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 
 // HardwareTreeModel
 
-HardwareTreeModel::HardwareTreeModel(NodeService& node_service, TimedDataService& timed_data_service)
-    : ConfigurationTreeModel{node_service, id::Devices, {scada::id::Organizes}},
-      timed_data_service_{timed_data_service} {
-}
+HardwareTreeModel::HardwareTreeModel(scada::ViewService& view_service,
+                                     NodeService& node_service,
+                                     TimedDataService& timed_data_service)
+    : ConfigurationTreeModel{view_service,
+                             node_service,
+                             id::Devices,
+                             {scada::id::Organizes}},
+      timed_data_service_{timed_data_service} {}
 
-HardwareTreeModel::~HardwareTreeModel() {
-}
+HardwareTreeModel::~HardwareTreeModel() {}
 
-std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateNode(const NodeRef& data_node) {
+std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateNode(
+    const NodeRef& data_node) {
   return std::make_unique<DeviceTreeNode>(*this, data_node);
 }

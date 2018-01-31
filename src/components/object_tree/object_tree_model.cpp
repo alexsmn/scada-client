@@ -1,11 +1,17 @@
 #include "components/object_tree/object_tree_model.h"
 
-#include "services/profile.h"
 #include "core/standard_node_ids.h"
+#include "services/profile.h"
 
-ObjectTreeModel::ObjectTreeModel(NodeService& node_service, scada::NodeId root_id,
-                                 TimedDataService& timed_data_service, Profile& profile)
-    : ConfigurationTreeModel{node_service, std::move(root_id), {scada::id::Organizes, scada::id::HasComponent}},
+ObjectTreeModel::ObjectTreeModel(scada::ViewService& view_service,
+                                 NodeService& node_service,
+                                 scada::NodeId root_id,
+                                 TimedDataService& timed_data_service,
+                                 Profile& profile)
+    : ConfigurationTreeModel{view_service,
+                             node_service,
+                             std::move(root_id),
+                             {scada::id::Organizes, scada::id::HasComponent}},
       timed_data_service_{timed_data_service},
       profile_(profile) {
   Blinker::Start();
@@ -51,7 +57,8 @@ SkColor ObjectTreeModel::GetBackgroundColor(void* node, int column_id) {
   return ConfigurationTreeModel::GetBackgroundColor(node, column_id);
 }
 
-void ObjectTreeModel::OnPropertyChanged(rt::TimedDataSpec& spec, const rt::PropertySet& properties) {
+void ObjectTreeModel::OnPropertyChanged(rt::TimedDataSpec& spec,
+                                        const rt::PropertySet& properties) {
   if (properties.is_current_changed()) {
     ConfigurationTreeNode& node =
         *reinterpret_cast<ConfigurationTreeNode*>(spec.param);
@@ -59,7 +66,8 @@ void ObjectTreeModel::OnPropertyChanged(rt::TimedDataSpec& spec, const rt::Prope
   }
 }
 
-void ObjectTreeModel::OnEventsChanged(rt::TimedDataSpec& spec, const events::EventSet& events) {
+void ObjectTreeModel::OnEventsChanged(rt::TimedDataSpec& spec,
+                                      const events::EventSet& events) {
   ConfigurationTreeNode& node =
       *reinterpret_cast<ConfigurationTreeNode*>(spec.param);
   TreeNodeChanged(&node);
@@ -83,7 +91,8 @@ const rt::TimedDataSpec* ObjectTreeModel::GetTimedData(void* node) const {
   return &visible_node.spec;
 }
 
-void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& node, bool visible) {
+void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& node,
+                                     bool visible) {
   if (visible)
     ConnectVisibleNode(visible_nodes_[&node], node);
   else
@@ -102,7 +111,8 @@ void ObjectTreeModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     ConnectVisibleNode(i->second, *tree_node);
 }
 
-void ObjectTreeModel::ConnectVisibleNode(VisibleNode& visible_node, ConfigurationTreeNode& tree_node) {
+void ObjectTreeModel::ConnectVisibleNode(VisibleNode& visible_node,
+                                         ConfigurationTreeNode& tree_node) {
   if (visible_node.fetched)
     return;
 

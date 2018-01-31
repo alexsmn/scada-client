@@ -40,7 +40,8 @@ void ExecuteDefaultItemCommand(MainWindow* main_window,
   OpenView(main_window, PrepareWindowDefinitionForOpen(node, type, node_ids));
 }
 
-void ExecuteDefaultItemCommand(NodeService& node_service,
+void ExecuteDefaultItemCommand(scada::ViewService& view_service,
+                               NodeService& node_service,
                                const NodeRef& node,
                                MainWindow* main_window) {
   assert(main_window);
@@ -55,7 +56,7 @@ void ExecuteDefaultItemCommand(NodeService& node_service,
     std::vector<scada::NodeId> node_ids;
     auto weak_main_window = main_window ? main_window->GetWeakPtr() : nullptr;
     ExpandGroupItemIds(
-        node_service, node,
+        view_service, node_service, node,
         [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
           ExecuteDefaultItemCommand(weak_main_window.get(), node, ID_TABLE_VIEW,
                                     shift, std::move(node_ids));

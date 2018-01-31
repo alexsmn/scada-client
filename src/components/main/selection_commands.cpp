@@ -34,7 +34,8 @@ void SelectionCommands::OpenWindow(unsigned type) {
 
   auto weak_main_window = main_window_->GetWeakPtr();
   PrepareWindowDefinitionForOpenExpandGroups(
-      node_service_, node, type, [weak_main_window](WindowDefinition win) {
+      view_service_, node_service_, node, type,
+      [weak_main_window](WindowDefinition win) {
         ::OpenView(weak_main_window.get(), std::move(win));
       });
 }
@@ -223,7 +224,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     case ID_HISTORICAL_EVENTS: {
       auto weak_main_window = main_window_->GetWeakPtr();
       PrepareWindowDefinitionForOpenExpandGroups(
-          node_service_, node, ID_EVENT_JOURNAL_VIEW,
+          view_service_, node_service_, node, ID_EVENT_JOURNAL_VIEW,
           [command_id, weak_main_window](WindowDefinition win) {
             if (command_id == ID_OPEN_EVENTS)
               win.AddItem("Window").SetString("mode", "Current");

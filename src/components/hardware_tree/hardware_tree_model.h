@@ -6,14 +6,17 @@ class TimedDataService;
 
 class HardwareTreeModel : public ConfigurationTreeModel {
  public:
-  HardwareTreeModel(NodeService& node_service, TimedDataService& timed_data_service);
+  HardwareTreeModel(scada::ViewService& view_service,
+                    NodeService& node_service,
+                    TimedDataService& timed_data_service);
   virtual ~HardwareTreeModel();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
  protected:
   // ConfigurationTreeModel
-  virtual std::unique_ptr<ConfigurationTreeNode> CreateNode(const NodeRef& data_node) override;
+  virtual std::unique_ptr<ConfigurationTreeNode> CreateNode(
+      const NodeRef& data_node) override;
 
  private:
   TimedDataService& timed_data_service_;
