@@ -36,14 +36,16 @@ views::View* PropertyPageView::Init(const WindowDefinition& definition) {
   view_ = new views::View;
   view_->SetLayoutManager(new views::FillLayout);
 
+  auto& view_service = view_service_;
   auto& node_service = node_service_;
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service.GetNode(node_id_).Fetch([&node_service,
+  node_service.GetNode(node_id_).Fetch([&view_service, &node_service,
                                         weak_ptr](const NodeRef& node) {
     if (!node.status())
       return;
     BrowseParent(
-        node_service, node.id(), scada::id::HierarchicalReferences,
+        view_service, node_service, node.id(),
+        scada::id::HierarchicalReferences,
         [weak_ptr, node](const scada::Status& status, const NodeRef& parent) {
           // |parent| can be null.
           if (auto* ptr = weak_ptr.get())
@@ -94,6 +96,7 @@ PropertyPageViewContents::PropertyPageViewContents(
 
 void PropertyPageView::SetNode(const NodeRef& node, const NodeRef& parent) {
   RecordEditorContext context{
+      view_service_,
       node_service_,
       task_manager_,
       node_management_service_,

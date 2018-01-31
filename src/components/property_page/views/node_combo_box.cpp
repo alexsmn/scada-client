@@ -22,7 +22,8 @@ void NodeComboBox::Init(HWND combo_box_handle) {
   combo_box_ = combo_box_handle;
 }
 
-void NodeComboBox::Fill(NodeService& node_service,
+void NodeComboBox::Fill(scada::ViewService& view_service,
+                        NodeService& node_service,
                         const scada::NodeId& root_node_id,
                         const scada::NodeId& type_definition_id,
                         const scada::NodeId& selected_node_id) {
@@ -30,7 +31,7 @@ void NodeComboBox::Fill(NodeService& node_service,
   combo_box_.ResetContent();
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   BrowseNodesRecursive(
-      node_service, root_node_id, type_definition_id,
+      view_service, node_service, root_node_id, type_definition_id,
       [weak_ptr, this, selected_node_id](const std::vector<NodeRef>& nodes) {
         if (!weak_ptr.get())
           return;
@@ -80,14 +81,15 @@ scada::NodeId ItemComboBox::GetSelectedId() const {
   return i != component_items_.end() ? i->second : scada::NodeId{};
 }
 
-void ItemComboBox::Fill(NodeService& node_service,
+void ItemComboBox::Fill(scada::ViewService& view_service,
+                        NodeService& node_service,
                         const scada::NodeId& device_id) {
   combo_box_.ResetContent();
   component_items_.clear();
 
   // add service items
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseNodes(node_service,
+  BrowseNodes(view_service, node_service,
               {device_id, scada::BrowseDirection::Forward,
                scada::id::HasComponent, true},
               [weak_ptr, this](const scada::Status& status,

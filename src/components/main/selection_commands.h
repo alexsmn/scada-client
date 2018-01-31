@@ -18,6 +18,7 @@ namespace scada {
 class MethodService;
 class NodeManagementService;
 class SessionService;
+class ViewService;
 }
 
 class DialogService;
@@ -45,6 +46,7 @@ struct SelectionCommandsContext {
   DialogService& dialog_service_;
   std::function<OpenedView*(const base::FilePath& path)> find_opened_view_;
   NodeService& node_service_;
+  scada::ViewService& view_service_;
 };
 
 class SelectionCommands : public CommandHandler,

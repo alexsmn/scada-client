@@ -15,7 +15,7 @@ SET(generated_dir "${CMAKE_CACHEFILE_DIR}/generated")
 
 include(CMakeToolsHelpers OPTIONAL)
 
-SET(Boost_USE_STATIC_LIBS OFF)
+SET(Boost_USE_STATIC_LIBS ON)
 
 ADD_DEFINITIONS(
   -DARCH_CPU_X86_FAMILY

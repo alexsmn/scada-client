@@ -95,6 +95,7 @@ OpenedView::OpenedView(const OpenedViewContext& context)
           dialog_service_,
           find_opened_view_,
           node_service_,
+          view_service_,
       });
   selection_commands_->set_selection(&controller_->selection());
 

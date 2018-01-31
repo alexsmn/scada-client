@@ -4,9 +4,14 @@
 #include "common/node_ref.h"
 
 #include <atlbase.h>
+
 #include <atlapp.h>
 #include <atlctrls.h>
 #include <map>
+
+namespace scada {
+class ViewService;
+}
 
 class NodeService;
 
@@ -16,7 +21,8 @@ class NodeComboBox {
 
   WTL::CComboBox& combo_box() { return combo_box_; }
 
-  void Fill(NodeService& node_service,
+  void Fill(scada::ViewService& view_service,
+            NodeService& node_service,
             const scada::NodeId& root_node_id,
             const scada::NodeId& type_definition_id,
             const scada::NodeId& selected_node_id);
@@ -39,7 +45,9 @@ class ItemComboBox {
 
   WTL::CComboBox& combo_box() { return combo_box_; }
 
-  void Fill(NodeService& node_service, const scada::NodeId& device_id);
+  void Fill(scada::ViewService& view_service,
+            NodeService& node_service,
+            const scada::NodeId& device_id);
 
   scada::NodeId GetSelectedId() const;
 
@@ -50,6 +58,6 @@ class ItemComboBox {
   WTL::CComboBox combo_box_;
 
   std::map<base::string16, scada::NodeId> component_items_;
-  
+
   base::WeakPtrFactory<ItemComboBox> weak_ptr_factory_{this};
 };

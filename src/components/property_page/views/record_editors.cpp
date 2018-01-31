@@ -249,7 +249,7 @@ LRESULT ItemEditor::OnSelChange(WORD /*wNotifyCode*/,
                                 BOOL& bHandled) {
   if (!lock) {
     if (wID == IDC_DEV)
-      items_combo_box_.Fill(node_service_, GetDeviceId());
+      items_combo_box_.Fill(view_service_, node_service_, GetDeviceId());
   }
 
   bHandled = FALSE;
@@ -278,7 +278,7 @@ std::string ItemEditor::GetChannelPath() const {
 
 bool ItemEditor::SelectDevice(const scada::NodeId& device_id) {
   auto ok = devices_combo_box_.Select(device_id);
-  items_combo_box_.Fill(node_service_, device_id);
+  items_combo_box_.Fill(view_service_, node_service_, device_id);
   return ok;
 }
 
@@ -351,7 +351,8 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   win_util::SetWindowTextInt(wnd_sev, severity);
 
   auto selected_db_id = node.target(id::HasHistoricalDatabase).id();
-  historical_db_combo_box_.Fill(node_service_, id::HistoricalDatabases,
+  historical_db_combo_box_.Fill(view_service_, node_service_,
+                                id::HistoricalDatabases,
                                 id::HistoricalDatabaseType, selected_db_id);
 
   channels_[0] = node[id::DataItemType_Input1].value().get_or(std::string{});
@@ -359,7 +360,8 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   control_channel_ =
       node[id::DataItemType_Output].value().get_or(std::string{});
 
-  devices_combo_box_.Fill(node_service_, id::Devices, id::DeviceType, {});
+  devices_combo_box_.Fill(view_service_, node_service_, id::Devices,
+                          id::DeviceType, {});
   LoadChannel(0);
 
   auto stale_period = node[id::DataItemType_StalePeriod].value().get_or(0);
@@ -373,9 +375,9 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_simulate.SetCheck(simulated ? BST_CHECKED : BST_UNCHECKED);
 
   const auto& simulation_signal_id = node.target(id::HasSimulationSignal).id();
-  simulation_signal_combo_box_.Fill(node_service_, id::SimulationSignals,
-                                    id::SimulationSignalType,
-                                    simulation_signal_id);
+  simulation_signal_combo_box_.Fill(
+      view_service_, node_service_, id::SimulationSignals,
+      id::SimulationSignalType, simulation_signal_id);
 }
 
 void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
@@ -464,8 +466,8 @@ void TsEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_inv.SetCheck(inverted ? BST_CHECKED : BST_UNCHECKED);
 
   auto ts_format_id = node.target(id::HasTsFormat).id();
-  ts_formats_combo_box_.Fill(node_service_, id::TsFormats, id::TsFormatType,
-                             ts_format_id);
+  ts_formats_combo_box_.Fill(view_service_, node_service_, id::TsFormats,
+                             id::TsFormatType, ts_format_id);
 }
 
 void TsEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
