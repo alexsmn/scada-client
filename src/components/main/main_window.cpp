@@ -1,22 +1,24 @@
 #include "components/main/main_window.h"
 
-#include "components/main/main_commands.h"
-#include "services/connection_state_reporter.h"
 #include "client_application.h"
 #include "client_utils.h"
-#include "services/profile.h"
+#include "common_resources.h"
 #include "components/main/events_helper.h"
+#include "components/main/main_commands.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
-#include "controller.h"
-#include "window_info.h"
 #include "contents_model.h"
 #include "contents_observer.h"
-#include "common_resources.h"
+#include "controller.h"
+#include "services/connection_state_reporter.h"
+#include "services/profile.h"
+#include "window_info.h"
 
 MainWindow::MainWindow(MainWindowContext&& context)
     : MainWindowContext(std::move(context)),
-      connection_state_reporter_(std::make_unique<ConnectionStateReporter>(session_service_, local_events_)),
+      connection_state_reporter_(
+          std::make_unique<ConnectionStateReporter>(session_service_,
+                                                    local_events_)),
       main_commands_(std::make_unique<MainCommands>(MainCommandsContext{
           *this,
           node_service_,
@@ -30,9 +32,9 @@ MainWindow::MainWindow(MainWindowContext&& context)
           speech_,
           favourites_,
           GetDialogService(),
+          view_service_,
       })),
-      weak_factory_(this) {
-}
+      weak_factory_(this) {}
 
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
@@ -58,8 +60,7 @@ void MainWindow::Init(ViewManager& view_manager) {
   OpenPage(*page);
 }
 
-MainWindow::~MainWindow() {
-}
+MainWindow::~MainWindow() {}
 
 void MainWindow::BeforeClose() {
   SavePage();
@@ -87,7 +88,8 @@ void MainWindow::SetActiveView(OpenedView* view) {
   active_view_ = view;
 
   if (active_view_)
-    active_view_->controller().selection().set_change_handler([this]{ OnSelectionChanged(); });
+    active_view_->controller().selection().set_change_handler(
+        [this] { OnSelectionChanged(); });
 
   const WindowInfo* window_info = nullptr;
   if (view)
@@ -127,7 +129,9 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
 
   {
     bool set = false;
-    auto* contents = active_data_view_ ? active_data_view_->controller().GetContentsModel() : nullptr;
+    auto* contents = active_data_view_
+                         ? active_data_view_->controller().GetContentsModel()
+                         : nullptr;
     if (contents) {
       contents->set_contents_observer(this);
       OnContainedItemsUpdate(contents->GetContainedItems());
@@ -142,18 +146,19 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
   for (auto& p : view_manager_->views()) {
     OpenedView* view = p.view;
     if (view->window_info().command_id == type &&
-        view->window_info().can_insert_item() &&
-        !view->locked())
+        view->window_info().can_insert_item() && !view->locked())
       return view;
   }
   return nullptr;
 }
 
-OpenedView* MainWindow::OpenView(const WindowDefinition& def, bool make_active) {
+OpenedView* MainWindow::OpenView(const WindowDefinition& def,
+                                 bool make_active) {
   if (!def.window_info())
     return nullptr;
 
-  OpenedView* after_view = !def.window_info()->is_pane() ? active_data_view() : nullptr;
+  OpenedView* after_view =
+      !def.window_info()->is_pane() ? active_data_view() : nullptr;
   return view_manager_->OpenView(def, make_active, after_view);
 }
 
@@ -165,7 +170,8 @@ void MainWindow::OnViewClosed(OpenedView& view, WindowDefinition& definition) {
 
   view.Save(definition);
 
-  // Don't remove window definition if window is single to allow parameter storing.
+  // Don't remove window definition if window is single to allow parameter
+  // storing.
   if (view.window_info().is_pane()) {
     definition.visible = false;
 
@@ -190,7 +196,7 @@ void MainWindow::OpenPage(const Page& page) {
 
   UpdateTitle();
 
-  OnSelectionChanged();			
+  OnSelectionChanged();
 }
 
 const Page& MainWindow::current_page() const {
@@ -257,10 +263,12 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
       find_opened_view_,
       session_service_,
       monitored_item_service_,
+      view_service_,
   });
 }
 
-void MainWindow::OnViewTitleUpdated(OpenedView& view, const base::string16& title) {
+void MainWindow::OnViewTitleUpdated(OpenedView& view,
+                                    const base::string16& title) {
   view_manager_->SetViewTitle(view, title);
 }
 
@@ -286,12 +294,16 @@ void MainWindow::SetPageTitle(const base::string16& title) {
   UpdateTitle();
 }
 
-void MainWindow::OnContainedItemsUpdate(const std::set<scada::NodeId>& item_ids) {
-  FOR_EACH_OBSERVER(ContentsObserver, contents_observers_, OnContainedItemsUpdate(item_ids));
+void MainWindow::OnContainedItemsUpdate(
+    const std::set<scada::NodeId>& item_ids) {
+  FOR_EACH_OBSERVER(ContentsObserver, contents_observers_,
+                    OnContainedItemsUpdate(item_ids));
 }
 
-void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id, bool added) {
-  FOR_EACH_OBSERVER(ContentsObserver, contents_observers_, OnContainedItemChanged(item_id, added));
+void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
+                                        bool added) {
+  FOR_EACH_OBSERVER(ContentsObserver, contents_observers_,
+                    OnContainedItemChanged(item_id, added));
 }
 
 void MainWindow::OnEvents(bool has_events) {

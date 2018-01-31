@@ -23,7 +23,8 @@ class AddMultipleItemsDialog : public framework::Dialog,
                                private framework::ButtonController,
                                private framework::EditBoxController {
  public:
-  AddMultipleItemsDialog(NodeService& node_service,
+  AddMultipleItemsDialog(scada::ViewService& view_service,
+                         NodeService& node_service,
                          NodeRef group,
                          TaskManager& task_manager);
 
@@ -44,6 +45,7 @@ class AddMultipleItemsDialog : public framework::Dialog,
   // framework::EditBox
   virtual void OnEditBoxChanged(framework::EditBox& sender) override;
 
+  scada::ViewService& view_service_;
   NodeService& node_service_;
   const NodeRef group_;
   TaskManager& task_manager_;
@@ -55,21 +57,21 @@ class AddMultipleItemsDialog : public framework::Dialog,
   WTL::CComboBox devices_combo_box_;
   std::vector<NodeRef> devices_;
 
-  bool ts_;
-  bool auto_name_;
+  bool ts_ = true;
+  bool auto_name_ = true;
 
   base::WeakPtrFactory<AddMultipleItemsDialog> weak_ptr_factory_{this};
 };
 
-AddMultipleItemsDialog::AddMultipleItemsDialog(NodeService& node_service,
+AddMultipleItemsDialog::AddMultipleItemsDialog(scada::ViewService& view_service,
+                                               NodeService& node_service,
                                                NodeRef group,
                                                TaskManager& task_manager)
     : Dialog{IDD_NEW_ITEMS},
+      view_service_{view_service},
       node_service_{node_service},
       group_{std::move(group)},
-      task_manager_(task_manager),
-      ts_(true),
-      auto_name_(true) {}
+      task_manager_{task_manager} {}
 
 void AddMultipleItemsDialog::OnInitDialog() {
   __super::OnInitDialog();
@@ -103,10 +105,11 @@ void AddMultipleItemsDialog::OnInitDialog() {
   SetItemInt(IDC_COUNT, 1);
 
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseAllDevices(node_service_, [weak_ptr](std::vector<NodeRef> devices) {
-    if (auto* ptr = weak_ptr.get())
-      ptr->SetDevices(std::move(devices));
-  });
+  BrowseAllDevices(view_service_, node_service_,
+                   [weak_ptr](std::vector<NodeRef> devices) {
+                     if (auto* ptr = weak_ptr.get())
+                       ptr->SetDevices(std::move(devices));
+                   });
 }
 
 void AddMultipleItemsDialog::SetDevices(std::vector<NodeRef> devices) {
@@ -169,10 +172,11 @@ void AddMultipleItemsDialog::OnEditBoxChanged(framework::EditBox& sender) {
   auto_name_ = false;
 }
 
-void ShowAddMultipleItemsDialog(NodeService& node_service,
+void ShowAddMultipleItemsDialog(scada::ViewService& view_service,
+                                NodeService& node_service,
                                 const NodeRef& node,
                                 TaskManager& task_manager) {
-  AddMultipleItemsDialog dialog{node_service, node, task_manager};
+  AddMultipleItemsDialog dialog{view_service, node_service, node, task_manager};
   if (dialog.Execute() != IDOK)
     return;
 }

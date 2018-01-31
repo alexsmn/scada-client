@@ -73,6 +73,7 @@ OpenedView::OpenedView(const OpenedViewContext& context)
                                                     dialog_service_,
                                                     session_service_,
                                                     monitored_item_service_,
+                                                    view_service_,
                                                 });
   if (!controller_)
     throw std::exception("View type not found");
@@ -213,11 +214,12 @@ void OpenedView::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_NEW_SERVICE_ITEMS:
-      ShowAddServiceItemsDialog(node_service_, controller_->selection().node(),
-                                task_manager_);
+      ShowAddServiceItemsDialog(view_service_, node_service_,
+                                controller_->selection().node(), task_manager_);
       return;
     case ID_ADD_MULTIPLE_ITEMS:
-      ShowAddMultipleItemsDialog(node_service_, controller_->selection().node(),
+      ShowAddMultipleItemsDialog(view_service_, node_service_,
+                                 controller_->selection().node(),
                                  task_manager_);
       return;
   }

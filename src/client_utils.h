@@ -57,14 +57,17 @@ WindowDefinition PrepareWindowDefinitionForOpen(
     const NodeIdSet& items,
     unsigned type,
     const base::char16* title = nullptr);
-void PrepareWindowDefinitionForGroup(NodeService& node_service,
+void PrepareWindowDefinitionForGroup(scada::ViewService& view_service,
+                                     NodeService& node_service,
                                      const NodeRef& node,
                                      unsigned type,
                                      const WindowDefinitionCallback& callback);
 
 void ExportConfigurationToExcel(DialogService& dialog_service,
+                                scada::ViewService& view_service,
                                 NodeService& node_service);
 void ImportConfigurationFromExcel(DialogService& dialog_service,
+                                  scada::ViewService& view_service,
                                   NodeService& node_service,
                                   TaskManager& task_manager);
 

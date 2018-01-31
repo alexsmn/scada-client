@@ -10,7 +10,8 @@ class EventManager;
 
 namespace scada {
 class SessionService;
-}
+class ViewService;
+}  // namespace scada
 
 class DialogService;
 class Favourites;
@@ -35,12 +36,13 @@ struct MainCommandsContext {
   Speech& speech_;
   Favourites& favourites_;
   DialogService& dialog_service_;
+  scada::ViewService& view_service_;
 };
 
-class MainCommands : public CommandHandler,
-                     private MainCommandsContext {
+class MainCommands : public CommandHandler, private MainCommandsContext {
  public:
-  explicit MainCommands(MainCommandsContext&& context) : MainCommandsContext(std::move(context)) {}
+  explicit MainCommands(MainCommandsContext&& context)
+      : MainCommandsContext(std::move(context)) {}
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
@@ -49,6 +51,6 @@ class MainCommands : public CommandHandler,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-	void AddToFavourites();
+  void AddToFavourites();
   void ShowRenameWindowDialog();
 };

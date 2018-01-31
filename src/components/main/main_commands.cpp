@@ -178,11 +178,11 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_EXPORT_CONFIGURATION_TO_EXCEL:
-      ExportConfigurationToExcel(dialog_service_, node_service_);
+      ExportConfigurationToExcel(dialog_service_, view_service_, node_service_);
       return;
 
     case ID_IMPORT_CONFIGURATION_FROM_EXCEL:
-      ImportConfigurationFromExcel(dialog_service_, node_service_, task_manager_);
+      ImportConfigurationFromExcel(dialog_service_, view_service_, node_service_, task_manager_);
       return;
 
     case ID_WINDOW_NEW:

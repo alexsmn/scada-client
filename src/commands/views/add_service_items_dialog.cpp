@@ -109,10 +109,11 @@ void AddServiceItemsDialog::OnOK() {
 
 void AddServiceItemsDialog::FillDevicesList() {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseAllDevices(node_service_, [weak_ptr](std::vector<NodeRef> devices) {
-    if (auto* ptr = weak_ptr.get())
-      ptr->SetDevices(std::move(devices));
-  });
+  BrowseAllDevices(view_service_, node_service_,
+                   [weak_ptr](std::vector<NodeRef> devices) {
+                     if (auto* ptr = weak_ptr.get())
+                       ptr->SetDevices(std::move(devices));
+                   });
 }
 
 void AddServiceItemsDialog::SelectDevice(const scada::NodeId& device_id) {

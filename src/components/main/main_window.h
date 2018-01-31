@@ -24,6 +24,7 @@ class MethodService;
 class NodeManagementService;
 class MonitoredItemService;
 class SessionService;
+class ViewService;
 }
 
 class ActionManager;
@@ -72,6 +73,7 @@ struct MainWindowContext {
   Favourites& favourites_;
   scada::SessionService& session_service_;
   scada::MonitoredItemService& monitored_item_service_;
+  scada::ViewService& view_service_;
 };
 
 class MainWindow : protected MainWindowContext,

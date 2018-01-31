@@ -265,6 +265,7 @@ void ClientApplication::OpenMainWindow(int window_id) {
       *favourites_,
       *master_data_services_,
       *master_data_services_,
+      *master_data_services_,
   });
 
   if (window)

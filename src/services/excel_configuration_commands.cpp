@@ -71,11 +71,13 @@ struct AddressSpaceSnapshot {
 };
 
 void MakeAddressSpaceSnapshot(
-    NodeService& service,
+    scada::ViewService& view_service,
+    NodeService& node_service,
     const scada::NodeId& parent_id,
     const scada::NodeId& type_definition_id,
     const std::function<void(AddressSpaceSnapshot snapshot)>& callback) {
-  BrowseNodesRecursive(service, parent_id, type_definition_id,
+  BrowseNodesRecursive(view_service, node_service, parent_id,
+                       type_definition_id,
                        [callback](std::vector<NodeRef> nodes) {
                          AddressSpaceSnapshot snapshot;
                          for (auto& node : nodes)
@@ -99,7 +101,8 @@ void ScanDeleteNodes(const AddressSpaceSnapshot& address_space,
 
 struct ExportConfigurationData
     : public std::enable_shared_from_this<ExportConfigurationData> {
-  explicit ExportConfigurationData(NodeService& node_service);
+  ExportConfigurationData(scada::ViewService& view_service,
+                          NodeService& node_service);
 
   void Export(const base::FilePath& path);
 
@@ -108,6 +111,7 @@ struct ExportConfigurationData
   void WriteHeader();
   void WriteNode(const scada::NodeId& parent_id, const NodeRef& node);
 
+  scada::ViewService& view_service_;
   NodeService& node_service_;
   TableWriter writer_;
   std::function<void(const base::string16& message)> error_handler_;
@@ -116,8 +120,10 @@ struct ExportConfigurationData
   std::vector<NodeRef> reference_types_;
 };
 
-ExportConfigurationData::ExportConfigurationData(NodeService& node_service)
-    : node_service_{node_service} {}
+ExportConfigurationData::ExportConfigurationData(
+    scada::ViewService& view_service,
+    NodeService& node_service)
+    : view_service_{view_service}, node_service_{node_service} {}
 
 void ExportConfigurationData::Export(const base::FilePath& path) {
   if (!writer_.Init(base::FilePath(path.value()))) {
@@ -151,7 +157,7 @@ void ExportConfigurationData::Export(const base::FilePath& path) {
 void ExportConfigurationData::WriteRecursive(const scada::NodeId& parent_id) {
   auto self = shared_from_this();
   BrowseNodesRecursive(
-      node_service_, parent_id, {},
+      view_service_, node_service_, parent_id, {},
       [self, this, parent_id](std::vector<NodeRef> nodes) {
         nodes.erase(
             std::remove_if(nodes.begin(), nodes.end(),
@@ -457,9 +463,11 @@ void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
 }
 
 void ExportConfigurationToExcel(DialogService& dialog_service,
+                                scada::ViewService& view_service,
                                 NodeService& node_service,
                                 const base::FilePath& path) {
-  auto data = std::make_shared<ExportConfigurationData>(node_service);
+  auto data =
+      std::make_shared<ExportConfigurationData>(view_service, node_service);
 
   data->error_handler_ = [&dialog_service](const base::string16& message) {
     ShowMessageBox(dialog_service, message.c_str(), L"Экспорт", MB_ICONSTOP);
@@ -469,26 +477,32 @@ void ExportConfigurationToExcel(DialogService& dialog_service,
 }
 
 void ExportConfigurationToExcel(DialogService& dialog_service,
+                                scada::ViewService& view_service,
                                 NodeService& node_service) {
   class SelectFile : public ui::SelectFileDialog::Listener {
    public:
-    explicit SelectFile(DialogService& dialog_service,
-                        NodeService& node_service)
-        : node_service_(node_service), dialog_service_(dialog_service) {}
+    SelectFile(DialogService& dialog_service,
+               scada::ViewService& view_service,
+               NodeService& node_service)
+        : view_service_{view_service},
+          node_service_{node_service},
+          dialog_service_{dialog_service} {}
 
     virtual void FileSelected(const base::FilePath& path,
                               int index,
                               void* params) override {
-      ExportConfigurationToExcel(dialog_service_, node_service_, path);
+      ExportConfigurationToExcel(dialog_service_, view_service_, node_service_,
+                                 path);
     }
 
    private:
     DialogService& dialog_service_;
+    scada::ViewService& view_service_;
     NodeService& node_service_;
   };
 
   // TODO: Fixit.
-  static SelectFile select_file(dialog_service, node_service);
+  static SelectFile select_file{dialog_service, view_service, node_service};
   ui::SelectFileDialog::Create(&select_file, nullptr)
       ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE, L"Экспорт",
                    base::FilePath(L"configuration.csv"), nullptr, -1,
@@ -497,6 +511,7 @@ void ExportConfigurationToExcel(DialogService& dialog_service,
 
 void ImportConfigurationFromExcel(DialogService& dialog_service,
                                   const base::FilePath& path,
+                                  scada::ViewService& view_service,
                                   NodeService& node_service,
                                   TaskManager& task_manager) {
   struct Importer {
@@ -517,7 +532,7 @@ void ImportConfigurationFromExcel(DialogService& dialog_service,
   }
 
   MakeAddressSpaceSnapshot(
-      node_service, scada::id::RootFolder, {},
+      view_service, node_service, scada::id::RootFolder, {},
       [importer](AddressSpaceSnapshot address_space) {
         try {
           ImportConfiguration(importer->reader, address_space,
@@ -552,32 +567,37 @@ void ImportConfigurationFromExcel(DialogService& dialog_service,
 }
 
 void ImportConfigurationFromExcel(DialogService& dialog_service,
+                                  scada::ViewService& view_service,
                                   NodeService& node_service,
                                   TaskManager& task_manager) {
   class SelectFile : public ui::SelectFileDialog::Listener {
    public:
     SelectFile(DialogService& dialog_service,
+               scada::ViewService& view_service,
                NodeService& node_service,
                TaskManager& task_manager)
-        : dialog_service_(dialog_service),
-          node_service_(node_service),
-          task_manager_(task_manager) {}
+        : view_service_{view_service},
+          dialog_service_{dialog_service},
+          node_service_{node_service},
+          task_manager_{task_manager} {}
 
     virtual void FileSelected(const base::FilePath& path,
                               int index,
                               void* params) override {
-      ImportConfigurationFromExcel(dialog_service_, path, node_service_,
-                                   task_manager_);
+      ImportConfigurationFromExcel(dialog_service_, path, view_service_,
+                                   node_service_, task_manager_);
     }
 
    private:
+    scada::ViewService& view_service_;
     DialogService& dialog_service_;
     NodeService& node_service_;
     TaskManager& task_manager_;
   };
 
   // TODO: Fixit.
-  static SelectFile select_file(dialog_service, node_service, task_manager);
+  static SelectFile select_file{dialog_service, view_service, node_service,
+                                task_manager};
   ui::SelectFileDialog::Create(&select_file, nullptr)
       ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, L"Импорт",
                    base::FilePath(), nullptr, -1, base::string16(), nullptr,

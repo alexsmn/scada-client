@@ -32,6 +32,7 @@ class MethodService;
 class MonitoredItemService;
 class NodeManagementService;
 class SessionService;
+class ViewService;
 }
 
 class ActionManager;
@@ -72,6 +73,7 @@ struct OpenedViewContext {
   std::function<OpenedView*(const base::FilePath& path)> find_opened_view_;
   scada::SessionService& session_service_;
   scada::MonitoredItemService& monitored_item_service_;
+  scada::ViewService& view_service_;
 };
 
 class OpenedView : public CommandHandler,
