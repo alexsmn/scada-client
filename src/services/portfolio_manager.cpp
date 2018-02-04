@@ -8,11 +8,11 @@
 
 PortfolioManager::PortfolioManager(NodeService& node_service)
     : node_service_{node_service} {
-  node_service_.AddObserver(*this);
+  node_service_.Subscribe(*this);
 }
 
 PortfolioManager::~PortfolioManager() {
-  node_service_.RemoveObserver(*this);
+  node_service_.Unsubscribe(*this);
 }
 
 void PortfolioManager::OnModelChange(const ModelChangeEvent& event) {

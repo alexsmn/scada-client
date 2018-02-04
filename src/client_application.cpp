@@ -19,7 +19,7 @@
 #include "components/vidicon_display/vidicon_client.h"
 #include "core/session_service.h"
 #include "net/session_info.h"
-#include "net/transport_factory.h"
+#include "net/transport_factory_impl.h"
 #include "project.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"

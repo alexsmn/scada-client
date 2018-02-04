@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/strings/string16.h"
+#include "common/node_observer.h"
 #include "core/configuration_types.h"
-#include "common/node_ref_observer.h"
 
 #include <list>
 #include <set>
@@ -14,8 +14,10 @@ class PortfolioEvents {
  public:
   virtual void Portfolio_OnUpdate(Portfolio& portfolio) {}
   virtual void Portfolio_OnDelete(Portfolio& portfolio) {}
-  virtual void Portfolio_OnUpdateItem(Portfolio& portfolio, const scada::NodeId& node_id) {}
-  virtual void Portfolio_OnDeleteItem(Portfolio& portfolio, const scada::NodeId& node_id) {}
+  virtual void Portfolio_OnUpdateItem(Portfolio& portfolio,
+                                      const scada::NodeId& node_id) {}
+  virtual void Portfolio_OnDeleteItem(Portfolio& portfolio,
+                                      const scada::NodeId& node_id) {}
 };
 
 class PortfolioManager : private NodeRefObserver {
@@ -46,7 +48,7 @@ class PortfolioManager : private NodeRefObserver {
   void UpdateNode(const scada::NodeId& node_id);
   void DeleteNode(const scada::NodeId& node_id);
 
-  // scada::NodeObserver
+  // NodeRefObserver
   virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
