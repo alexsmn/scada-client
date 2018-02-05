@@ -221,14 +221,13 @@ void PropertyDefinition::SetText(PropertyContext& context,
   if (type_definition)
     return;
 
-  const auto& property_declaration =
-      type_definition.GetAggregateDeclaration(prop_decl_id);
-  if (!property_declaration)
+  const auto& property = node[prop_decl_id];
+  if (!property)
     return;
 
   scada::Variant value;
   if (!StringToValue(base::SysWideToNativeMB(text).c_str(),
-                     property_declaration.data_type().id(), value))
+                     property.data_type().id(), value))
     return;
 
   context.task_manager_.PostUpdateTask(node.id(), {},
@@ -239,8 +238,7 @@ PropertyEditor PropertyDefinition::GetPropertyEditor(
     PropertyContext& context,
     const NodeRef& type_definition,
     const scada::NodeId& prop_decl_id) const {
-  auto property_declaration =
-      type_definition.GetAggregateDeclaration(prop_decl_id);
+  const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
     return PropertyEditor(PropertyEditor::NONE);
 
@@ -322,14 +320,13 @@ base::string16 EnumPropertyDefinition::GetText(
     PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  const auto& property_declaration = node.GetAggregateDeclaration(prop_decl_id);
-  if (!property_declaration)
+  const auto& property = node[prop_decl_id];
+  if (!property)
     return base::string16();
 
   const auto& value = node[prop_decl_id].value();
   const auto& enum_strings = SplitEnumStrings(
-      property_declaration.data_type()[kEnumStrings].value().get_or(
-          scada::String{}));
+      property.data_type()[kEnumStrings].value().get_or(scada::String{}));
 
   int int_value;
   if (!value.get(int_value))
@@ -345,13 +342,12 @@ void EnumPropertyDefinition::SetText(PropertyContext& context,
                                      const NodeRef& node,
                                      const scada::NodeId& prop_decl_id,
                                      const base::string16& text) const {
-  const auto& property_declaration = node.GetAggregateDeclaration(prop_decl_id);
-  if (!property_declaration)
+  const auto& property = node[prop_decl_id];
+  if (!property)
     return;
 
   const auto& enum_strings = SplitEnumStrings(
-      property_declaration.data_type()[kEnumStrings].value().get_or(
-          scada::String{}));
+      property.data_type()[kEnumStrings].value().get_or(scada::String{}));
   int value;
   if (!ParseEnumStrings(enum_strings, value))
     return;
@@ -363,8 +359,7 @@ PropertyEditor EnumPropertyDefinition::GetPropertyEditor(
     PropertyContext& context,
     const NodeRef& type_definition,
     const scada::NodeId& prop_decl_id) const {
-  const auto& property_declaration =
-      type_definition.GetAggregateDeclaration(prop_decl_id);
+  const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
     return PropertyEditor(PropertyEditor::NONE);
 

@@ -298,8 +298,7 @@ void ImportConfiguration(TableReader& reader,
     size_t pid_index = 0;
     while (reader.NextCell(cell)) {
       auto pid = prop_type_ids[pid_index++];
-      if (auto property_declaration =
-              type_definition.GetAggregateDeclaration(pid)) {
+      if (auto property_declaration = type_definition[pid]) {
         scada::Variant new_value;
         if (!StringToValue(cell.c_str(), property_declaration.data_type().id(),
                            new_value)) {
