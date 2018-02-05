@@ -1,6 +1,6 @@
 #include "components/hardware_tree/hardware_tree_model.h"
 
-#include "common/node_ref_util.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "services/device_state_notifier.h"
 

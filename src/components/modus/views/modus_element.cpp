@@ -9,7 +9,6 @@
 #include "components/modus/views/modus_object.h"
 #include "common/node_ref.h"
 #include "core/variant.h"
-#include "memdb/types.h"
 
 namespace modus {
 
@@ -178,7 +177,7 @@ void ModusElement::UpdateData(bool init) {
 
       base::string16 text;
       if (!state_strings_.empty()) {
-        bool state = memdb::FloatToBool(value_);
+        bool state = std::abs(value_) >= std::numeric_limits<double>::epsilon();
         size_t state_no = state ? 1 : 0;
         text = (state_no < state_strings_.size()) ?
             state_strings_[state_no ? 1 : 0].c_str() : L"";

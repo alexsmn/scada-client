@@ -24,11 +24,11 @@ NodePropertyModel::NodePropertyModel(const PropertyContext& context,
 }
 
 NodePropertyModel::~NodePropertyModel() {
-  context_.node_service_.RemoveObserver(*this);
+  context_.node_service_.Unsubscribe(*this);
 }
 
 void NodePropertyModel::SetNodes(const Nodes& nodes) {
-  context_.node_service_.AddObserver(*this);
+  context_.node_service_.Subscribe(*this);
 
   for (auto& node : nodes)
     nodes_.emplace(node.id(), node);

@@ -2,19 +2,20 @@
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "views/client_utils_views.h"
-#include "services/task_manager.h"
-#include "core/data_value.h"
+#include "common/node_format.h"
+#include "common/node_ref.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "core/configuration_types.h"
+#include "core/data_value.h"
 #include "dialog_service.h"
-#include "common/node_ref.h"
-#include "common/node_ref_util.h"
-#include "common/node_ref_format.h"
+#include "services/task_manager.h"
 #include "translation.h"
+#include "views/client_utils_views.h"
 
 #include <atlbase.h>
+
 #include <atlapp.h>
 #include <atlstr.h>
 #include <atlwin.h>
@@ -24,21 +25,30 @@ class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
   explicit LimitsDialog(TaskManager& task_manager, const NodeRef& node);
 
   bool Execute(DialogService& dialog_service);
-  
+
  protected:
   friend class ATL::CDialogImpl<LimitsDialog>;
 
   enum { IDD = IDD_LIMITS };
 
   BEGIN_MSG_MAP(LimitsDialog)
-    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-    COMMAND_ID_HANDLER(IDOK, OnOK)
-    COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
+  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+  COMMAND_ID_HANDLER(IDOK, OnOK)
+  COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
   END_MSG_MAP()
 
-  LRESULT OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
-  LRESULT OnOK(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
-  LRESULT OnCancel(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+  LRESULT OnInitDialog(UINT /*uMsg*/,
+                       WPARAM /*wParam*/,
+                       LPARAM /*lParam*/,
+                       BOOL& /*bHandled*/);
+  LRESULT OnOK(WORD /*wNotifyCode*/,
+               WORD /*wID*/,
+               HWND /*hWndCtl*/,
+               BOOL& /*bHandled*/);
+  LRESULT OnCancel(WORD /*wNotifyCode*/,
+                   WORD /*wID*/,
+                   HWND /*hWndCtl*/,
+                   BOOL& /*bHandled*/);
 
  private:
   const NodeRef node_;
@@ -46,16 +56,17 @@ class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
 };
 
 LimitsDialog::LimitsDialog(TaskManager& task_manager, const NodeRef& node)
-    : task_manager_{task_manager},
-      node_{std::move(node)} {
-}
+    : task_manager_{task_manager}, node_{std::move(node)} {}
 
 bool LimitsDialog::Execute(DialogService& dialog_service) {
-  return DoModal(static_cast<DialogServiceViews&>(dialog_service).GetParentView()) == IDOK;
+  return DoModal(static_cast<DialogServiceViews&>(dialog_service)
+                     .GetParentView()) == IDOK;
 }
 
-LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/,
-                                   LPARAM /*lParam*/, BOOL& /*bHandled*/) {
+LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
+                                   WPARAM /*wParam*/,
+                                   LPARAM /*lParam*/,
+                                   BOOL& /*bHandled*/) {
   CenterWindow(GetParent());
 
   SetDlgItemText(IDC_DESC, ToString16(node_.display_name()).c_str());
@@ -74,16 +85,23 @@ LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/,
   return TRUE;
 }
 
-LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
+                           WORD /*wID*/,
+                           HWND /*hWndCtl*/,
+                           BOOL& /*bHandled*/) {
   ATL::CString str;
   GetDlgItemText(IDC_LIMIT_LO, str);
-  auto limit_lo = str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  auto limit_lo =
+      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
   GetDlgItemText(IDC_LIMIT_HI, str);
-  auto limit_hi = str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  auto limit_hi =
+      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
   GetDlgItemText(IDC_LIMIT_LOLO, str);
-  auto limit_lolo = str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  auto limit_lolo =
+      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
   GetDlgItemText(IDC_LIMIT_HIHI, str);
-  auto limit_hihi = str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  auto limit_hihi =
+      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
 
   scada::NodeProperties properties;
   /*properties.emplace_back(id::AnalogItemType_LimitLo, limit_lo);
@@ -99,11 +117,16 @@ LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/,
   return 0;
 }
 
-LRESULT LimitsDialog::OnCancel(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+LRESULT LimitsDialog::OnCancel(WORD /*wNotifyCode*/,
+                               WORD /*wID*/,
+                               HWND /*hWndCtl*/,
+                               BOOL& /*bHandled*/) {
   EndDialog(IDCANCEL);
   return 0;
 }
 
-void ShowLimitsDialog(DialogService& dialog_service, const NodeRef& node, TaskManager& task_manager) {
+void ShowLimitsDialog(DialogService& dialog_service,
+                      const NodeRef& node,
+                      TaskManager& task_manager) {
   LimitsDialog(task_manager, node).Execute(dialog_service);
 }

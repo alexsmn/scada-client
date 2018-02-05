@@ -57,13 +57,14 @@ void SelectionModel::SelectNodeId(const scada::NodeId& node_id) {
   pending_request_ = std::make_shared<bool>();
 
   std::weak_ptr<bool> cancelation = pending_request_;
-  node_service_.GetNode(node_id).Fetch([=](const NodeRef& node) {
-    if (cancelation.expired())
-      return;
-    pending_request_ = nullptr;
-    if (node.status())
-      SelectNode(node);
-  });
+  node_service_.GetNode(node_id).Fetch(NodeFetchStatus::NodeOnly(),
+                                       [=](const NodeRef& node) {
+                                         if (cancelation.expired())
+                                           return;
+                                         pending_request_ = nullptr;
+                                         if (node.status())
+                                           SelectNode(node);
+                                       });
 }
 
 void SelectionModel::SelectTimedData(const rt::TimedDataSpec& spec) {

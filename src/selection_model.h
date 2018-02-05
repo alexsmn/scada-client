@@ -8,7 +8,7 @@
 #include "controls/types.h"
 #include "selection_model.h"
 #include "common/node_ref.h"
-#include "common/node_ref_observer.h"
+#include "common/node_observer.h"
 
 class NodeService;
 

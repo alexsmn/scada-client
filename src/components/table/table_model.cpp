@@ -1,16 +1,16 @@
 #include "components/table/table_model.h"
 
+#include "base/color.h"
 #include "base/format_time.h"
 #include "base/time/time.h"
 #include "base/utils.h"
-#include "base/color.h"
 #include "client_utils.h"
-#include "common_resources.h"
-#include "services/profile.h"
-#include "components/table/table_row.h"
-#include "common/scada_node_ids.h"
 #include "common/event_manager.h"
-#include "common/node_ref_util.h"
+#include "common/node_util.h"
+#include "common/scada_node_ids.h"
+#include "common_resources.h"
+#include "components/table/table_row.h"
+#include "services/profile.h"
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
 
@@ -20,22 +20,21 @@ const int kValueFormat = FORMAT_DEFAULT | FORMAT_COLOR;
 const int kValueFormat = FORMAT_DEFAULT;
 #endif
 
-bool TableModel::RowsComparer::operator()(
-    const TableRow* left,
-    const TableRow* right) const {
+bool TableModel::RowsComparer::operator()(const TableRow* left,
+                                          const TableRow* right) const {
   if (!left && !right)
     return false;
   if (!left)
     return false;
   if (!right)
     return true;
-    
+
   switch (command_id_) {
     case ID_SORT_NAME:
       return HumanCompareText(
-          base::SysWideToNativeMB(left->GetTitle()).c_str(),
-          base::SysWideToNativeMB(right->GetTitle()).c_str()) < 0;
-    
+                 base::SysWideToNativeMB(left->GetTitle()).c_str(),
+                 base::SysWideToNativeMB(right->GetTitle()).c_str()) < 0;
+
     case ID_SORT_CHANNEL: {
       auto item1 = left->timed_data().GetNode();
       auto item2 = right->timed_data().GetNode();
@@ -45,17 +44,21 @@ bool TableModel::RowsComparer::operator()(
       const auto& type_id2 = item2.type_definition().id();
       if (type_id1 != type_id2)
         return type_id1 < type_id2;
-      auto channel1 = item1[id::DataItemType_Input1].value().get_or(std::string{});
-      auto channel2 = item2[id::DataItemType_Input1].value().get_or(std::string{});
+      auto channel1 =
+          item1[id::DataItemType_Input1].value().get_or(std::string{});
+      auto channel2 =
+          item2[id::DataItemType_Input1].value().get_or(std::string{});
       return channel1 < channel2;
     }
-    
+
     default:
       return false;
   }
 }
 
-TableModel::TableModel(TimedDataService& timed_data_service, events::EventManager& event_manager, Profile& profile)
+TableModel::TableModel(TimedDataService& timed_data_service,
+                       events::EventManager& event_manager,
+                       Profile& profile)
     : timed_data_service_(timed_data_service),
       event_manager_(event_manager),
       profile_(profile) {
@@ -80,7 +83,7 @@ void TableModel::GetCellEx(CellEx& cell) {
 
   const TableRow* trow = rows_[cell.row];
   if (!trow) {
-    //cell.clrb = RGB(218, 218, 218);
+    // cell.clrb = RGB(218, 218, 218);
     return;
   }
 
@@ -95,14 +98,16 @@ void TableModel::GetCellEx(CellEx& cell) {
     }
 
     case COLUMN_VALUE:
-      cell.text = trow->timed_data().GetValueString(value.value, value.qualifier, kValueFormat);
+      cell.text = trow->timed_data().GetValueString(
+          value.value, value.qualifier, kValueFormat);
       if (IsInstanceOf(_item, id::DiscreteItemType)) {
         if (!value.value.is_null()) {
           auto params = _item.target(id::AnalogItemType_DisplayFormat);
           int color_index = -1;
           bool bool_value;
           if (value.value.get(bool_value) && params) {
-            auto pid = bool_value ? id::TsFormatType_CloseColor : id::TsFormatType_OpenColor;
+            auto pid = bool_value ? id::TsFormatType_CloseColor
+                                  : id::TsFormatType_OpenColor;
             color_index = params[pid].value().get_or(-1);
           }
           if (color_index >= 0 && color_index < palette::GetColorCount())
@@ -117,7 +122,8 @@ void TableModel::GetCellEx(CellEx& cell) {
 
     case COLUMN_UPDATE_TIME:
       if (!value.source_timestamp.is_null())
-        cell.text = base::SysNativeMBToWide(FormatTime(value.source_timestamp, g_time_format));
+        cell.text = base::SysNativeMBToWide(
+            FormatTime(value.source_timestamp, g_time_format));
       break;
 
     case COLUMN_CHANGE_TIME: {
@@ -130,7 +136,8 @@ void TableModel::GetCellEx(CellEx& cell) {
     case COLUMN_EVENT:
       // last unacked event
       if (_item) {
-        const events::EventSet* events = event_manager_.GetItemUnackedEvents(_item.id());
+        const events::EventSet* events =
+            event_manager_.GetItemUnackedEvents(_item.id());
         if (events && !events->empty()) {
           const scada::Event& event = **events->rbegin();
           cell.text = event.message;
@@ -158,8 +165,8 @@ void TableModel::GetCell(ui::TableCell& cell) {
 }
 
 void TableModel::OnBlink(bool state) {
-  for (RowSet::iterator i = blinking_rows_.begin();
-                        i != blinking_rows_.end(); ++i)
+  for (RowSet::iterator i = blinking_rows_.begin(); i != blinking_rows_.end();
+       ++i)
     (*i)->NotifyUpdate();
 }
 
@@ -202,7 +209,8 @@ bool TableModel::DeleteRows(int start, int count) {
   NotifyItemsRemoved(start, count);
 
   if (item_changed_) {
-    for (NodeIdSet::const_iterator i = item_ids.begin(); i != item_ids.end(); ++i) {
+    for (NodeIdSet::const_iterator i = item_ids.begin(); i != item_ids.end();
+         ++i) {
       if (FindItem(*i) == -1)
         item_changed_(*i, false);
     }
@@ -217,7 +225,7 @@ int TableModel::MoveRow(int row, bool up) {
     row2--;
   else
     row2++;
-    
+
   if (row2 < 0 || row2 >= (int)rows_.size())
     return -1;
 
@@ -226,7 +234,7 @@ int TableModel::MoveRow(int row, bool up) {
     rows_[row]->set_index(row);
   if (rows_[row2])
     rows_[row2]->set_index(row2);
-  
+
   NotifyItemsChanged(row, 1);
   NotifyItemsChanged(row2, 1);
 
@@ -291,7 +299,7 @@ base::string16 TableModel::GetTooltip(int row, int column_id) {
   const TableRow* trow = GetRow(row);
   if (!trow)
     return base::string16();
-    
+
   return GetTimedDataTooltipText(trow->timed_data());
 }
 

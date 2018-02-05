@@ -5,7 +5,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "common/node_ref.h"
-#include "common/node_ref_observer.h"
+#include "common/node_observer.h"
 #include "contents_model.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"

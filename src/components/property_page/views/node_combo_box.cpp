@@ -3,7 +3,7 @@
 #include "base/string_util.h"
 #include "base/win/win_util2.h"
 #include "common/browse_util.h"
-#include "common/node_ref_util.h"
+#include "common/node_util.h"
 
 namespace {
 

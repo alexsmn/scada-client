@@ -2,8 +2,8 @@
 
 #include "client_utils.h"
 #include "common/browse_util.h"
-#include "common/node_ref_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "components/property_page/views/record_editors.h"
 #include "controller_factory.h"
@@ -15,11 +15,11 @@ REGISTER_CONTROLLER(PropertyPageView, ID_PROPERTY_VIEW);
 
 PropertyPageView::PropertyPageView(const ControllerContext& context)
     : Controller(context) {
-  node_service_.AddObserver(*this);
+  node_service_.Subscribe(*this);
 }
 
 PropertyPageView::~PropertyPageView() {
-  node_service_.RemoveObserver(*this);
+  node_service_.Unsubscribe(*this);
 }
 
 views::View* PropertyPageView::Init(const WindowDefinition& definition) {
@@ -39,19 +39,20 @@ views::View* PropertyPageView::Init(const WindowDefinition& definition) {
   auto& view_service = view_service_;
   auto& node_service = node_service_;
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service.GetNode(node_id_).Fetch([&view_service, &node_service,
-                                        weak_ptr](const NodeRef& node) {
-    if (!node.status())
-      return;
-    BrowseParent(
-        view_service, node_service, node.id(),
-        scada::id::HierarchicalReferences,
-        [weak_ptr, node](const scada::Status& status, const NodeRef& parent) {
-          // |parent| can be null.
-          if (auto* ptr = weak_ptr.get())
-            ptr->SetNode(node, parent);
-        });
-  });
+  node_service.GetNode(node_id_).Fetch(
+      NodeFetchStatus::NodeOnly(),
+      [&view_service, &node_service, weak_ptr](const NodeRef& node) {
+        if (!node.status())
+          return;
+        BrowseParent(view_service, node_service, node.id(),
+                     scada::id::HierarchicalReferences,
+                     [weak_ptr, node](const scada::Status& status,
+                                      const NodeRef& parent) {
+                       // |parent| can be null.
+                       if (auto* ptr = weak_ptr.get())
+                         ptr->SetNode(node, parent);
+                     });
+      });
 
   return view_;
 }

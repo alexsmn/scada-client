@@ -3,8 +3,8 @@
 #include "base/format.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/browse_util.h"
-#include "common/node_ref_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "contents_observer.h"
 #include "core/node_management_service.h"
@@ -22,11 +22,11 @@ TransmissionModel::TransmissionModel(
       task_manager_{task_manager},
       node_management_service_{node_management_service} {
   // Must subscribe to root, since references will be deleted.
-  node_service_.AddObserver(*this);
+  node_service_.Subscribe(*this);
 }
 
 TransmissionModel::~TransmissionModel() {
-  node_service_.RemoveObserver(*this);
+  node_service_.Unsubscribe(*this);
 }
 
 void TransmissionModel::SetDevice(NodeRef device) {
@@ -36,10 +36,11 @@ void TransmissionModel::SetDevice(NodeRef device) {
 
 void TransmissionModel::SetDeviceId(const scada::NodeId& device_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service_.GetNode(device_id).Fetch([weak_ptr](const NodeRef& node) {
-    if (auto* ptr = weak_ptr.get())
-      ptr->SetDevice(std::move(node));
-  });
+  node_service_.GetNode(device_id).Fetch(NodeFetchStatus::NodeOnly(),
+                                         [weak_ptr](const NodeRef& node) {
+                                           if (auto* ptr = weak_ptr.get())
+                                             ptr->SetDevice(std::move(node));
+                                         });
 }
 
 int TransmissionModel::GetRowCount() {

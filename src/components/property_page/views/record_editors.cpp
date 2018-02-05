@@ -7,12 +7,11 @@
 #include "common/browse_util.h"
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
-#include "common/node_ref_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "components/property_page/views/property_page_view.h"
 #include "core/node_management_service.h"
-#include "memdb/types.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
@@ -694,22 +693,6 @@ void TsFormatEditor::DrawItem(LPDRAWITEMSTRUCT dis) {
   dc.DrawText(text, -1, &rect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
 
-base::string16 UInt8ToString(BYTE val) {
-  return !memdb::IsNull(val) ? base::StringPrintf(L"%d", static_cast<int>(val))
-                             : base::string16();
-}
-
-memdb::DBUInt8 UInt8FromString(const base::string16& str) {
-  if (str.empty())
-    return memdb::NULL_UINT8;
-  int val;
-  if (!Parse(str, val))
-    throw E_INVALIDARG;
-  if (val < 0 || val > 255)
-    throw E_INVALIDARG;
-  return val;
-}
-
 // LinkEditor
 
 LinkEditor::LinkEditor(unsigned resource_id, RecordEditorContext&& context)
@@ -780,8 +763,8 @@ void IecLinkEditor::ReadControlsData() {
   len_addr = win_util::GetWindowInt(wnd_len_addr);
 
   if (IDD == IDD_IEC60870_LINK104) {
-    max_send = UInt8FromString(win_util::GetWindowText(wnd_max_send));
-    max_recv = UInt8FromString(win_util::GetWindowText(wnd_max_recv));
+    max_send = win_util::GetWindowInt(wnd_max_send);
+    max_recv = win_util::GetWindowInt(wnd_max_recv);
 
     send_timeout_ = GetDlgItemInt(IDC_SEND_TIMEOUT);
     receive_timeout_ = GetDlgItemInt(IDC_RECEIVE_TIMEOUT);

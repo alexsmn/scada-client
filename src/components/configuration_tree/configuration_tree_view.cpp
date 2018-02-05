@@ -2,7 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
-#include "common/node_ref_util.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_model.h"

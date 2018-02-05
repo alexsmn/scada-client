@@ -3,8 +3,8 @@
 #include "client_utils.h"
 #include "commands/add_multiple_items_dialog.h"
 #include "commands/add_service_items_dialog.h"
-#include "common/node_ref_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common/static_types.h"
 #include "common_resources.h"
@@ -322,15 +322,16 @@ void OpenedView::OnCreateRecordComplete(const scada::QualifiedName& browse_name,
     return;
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.GetNode(node_id).Fetch([weak_ptr](const NodeRef& node) {
-    if (!node.status())
-      return;
-    auto* ptr = weak_ptr.get();
-    if (!ptr)
-      return;
-    ptr->controller_->OnViewNodeCreated(node);
-    client::OpenRecordEditor(ptr->main_window_, node);
-  });
+  node_service_.GetNode(node_id).Fetch(
+      NodeFetchStatus::NodeOnly(), [weak_ptr](const NodeRef& node) {
+        if (!node.status())
+          return;
+        auto* ptr = weak_ptr.get();
+        if (!ptr)
+          return;
+        ptr->controller_->OnViewNodeCreated(node);
+        client::OpenRecordEditor(ptr->main_window_, node);
+      });
 }
 
 void OpenedView::SetSelection(const scada::NodeId& item_id) {

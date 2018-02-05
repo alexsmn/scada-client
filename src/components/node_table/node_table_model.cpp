@@ -6,8 +6,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/utils.h"
 #include "common/browse_util.h"
-#include "common/node_ref_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
@@ -70,13 +70,13 @@ NodeTableModel::NodeTableModel(PropertyContext& context)
     : context_(context), row_model_(*this) {
   row_model_.set_row_height(19);
 
-  context_.node_service_.AddObserver(*this);
+  context_.node_service_.Subscribe(*this);
 }
 
 NodeTableModel::~NodeTableModel() {
   SetParentNode(nullptr);
 
-  context_.node_service_.RemoveObserver(*this);
+  context_.node_service_.Unsubscribe(*this);
 }
 
 void NodeTableModel::SetParentNode(NodeRef parent_node) {
@@ -89,7 +89,7 @@ void NodeTableModel::SetParentNode(NodeRef parent_node) {
 void NodeTableModel::SetParentNodeId(const scada::NodeId& node_id) {
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
   context_.node_service_.GetNode(node_id).Fetch(
-      [weak_ptr](const NodeRef& node) {
+      NodeFetchStatus::NodeOnly(), [weak_ptr](const NodeRef& node) {
         if (!node.status())
           return;
         if (auto* ptr = weak_ptr.get())

@@ -7,9 +7,9 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/utils.h"
 #include "common/event_manager.h"
-#include "common/node_ref_format.h"
-#include "common/node_ref_util.h"
+#include "common/node_format.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "core/data_value.h"
@@ -50,13 +50,13 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
     : EventTableModelContext(std::move(context)), mode_(ID_CURRENT_EVENTS) {
   local_events_.observers().AddObserver(this);
   event_manager_.AddObserver(*this);
-  node_service_.AddObserver(*this);
+  node_service_.Subscribe(*this);
 }
 
 EventTableModel::~EventTableModel() {
   CancelRequest();
 
-  node_service_.RemoveObserver(*this);
+  node_service_.Unsubscribe(*this);
   event_manager_.RemoveObserver(*this);
   local_events_.observers().RemoveObserver(this);
 }

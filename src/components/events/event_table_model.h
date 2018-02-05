@@ -9,7 +9,7 @@
 #include "core/history_service.h"
 #include "core/configuration_types.h"
 #include "common/node_ref.h"
-#include "common/node_ref_observer.h"
+#include "common/node_observer.h"
 #include "ui/base/models/table_model.h"
 
 #include <list>

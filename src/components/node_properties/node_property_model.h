@@ -7,7 +7,7 @@
 #include "ui/base/models/tree_model.h"
 #include "services/property_defs.h"
 #include "common/node_ref.h"
-#include "common/node_ref_observer.h"
+#include "common/node_observer.h"
 
 class PropertyDefinition;
 class TaskManager;
@@ -45,7 +45,7 @@ class NodePropertyModel : public ui::TreeModel,
   int FindProperty(const scada::NodeId& prop_type_id) const;
   int FindProperty(scada::AttributeId attribute_id) const;
 
-  // scada::NodeObserver
+  // scada::NodeRefObserver
   virtual void OnModelChange(const ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 

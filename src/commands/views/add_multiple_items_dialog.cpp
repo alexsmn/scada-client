@@ -6,7 +6,7 @@
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
 #include "common/node_ref.h"
-#include "common/node_ref_util.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "services/task_manager.h"

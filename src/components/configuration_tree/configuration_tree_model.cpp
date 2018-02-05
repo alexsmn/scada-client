@@ -117,7 +117,7 @@ ConfigurationTreeModel::ConfigurationTreeModel(
     : view_service_{view_service},
       node_service_{node_service},
       reference_type_ids_{std::move(reference_type_ids)} {
-  node_service_.AddObserver(*this);
+  node_service_.Subscribe(*this);
 
   set_root(std::make_unique<ConfigurationTreeNode>(
       *this, node_service.GetNode(root_id)));
@@ -126,7 +126,7 @@ ConfigurationTreeModel::ConfigurationTreeModel(
 ConfigurationTreeModel::~ConfigurationTreeModel() {
   set_root(nullptr);
 
-  node_service_.RemoveObserver(*this);
+  node_service_.Unsubscribe(*this);
 }
 
 std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateNode(
