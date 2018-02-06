@@ -1,26 +1,26 @@
 #include "components/sheet/sheet_view.h"
 
-#include "base/strings/sys_string_conversions.h"
 #include "base/color.h"
+#include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
+#include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "views/item_drag_data.h"
-#include "selection_model.h"
-#include "window_definition.h"
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
-#include "common/scada_node_ids.h"
-#include "ui/base/dragdrop/os_exchange_data.h"
-#include "controls/grid.h"
 #include "controller_factory.h"
+#include "controls/grid.h"
+#include "selection_model.h"
+#include "ui/base/dragdrop/os_exchange_data.h"
+#include "views/item_drag_data.h"
+#include "window_definition.h"
 
 #if defined(UI_QT)
 #include <qlayout.h>
 #include <qlineedit.h>
 #elif defined(UI_VIEWS)
+#include "skia/ext/skia_utils_win.h"
 #include "ui/events/event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
-#include "skia/ext/skia_utils_win.h"
 #include "ui/views/controls/textfield/textfield.h"
 #endif
 
@@ -51,8 +51,7 @@ class SheetView::ContentsView : public views::View {
 REGISTER_CONTROLLER(SheetView, ID_SHEET_VIEW);
 
 SheetView::SheetView(const ControllerContext& context)
-    : Controller(context),
-      model_(new SheetModel(context.timed_data_service_)) {
+    : Controller(context), model_(new SheetModel(context.timed_data_service_)) {
   selection().multiple_handler_ = [this] { return GetSelectedNodeIdList(); };
 }
 
@@ -63,7 +62,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
   // load
   int n = 0;
   for (WindowItems::const_iterator i = definition.items.begin();
-                                   i != definition.items.end(); i++)  {
+       i != definition.items.end(); i++) {
     const WindowItem& item = *i;
     if (item.name_is("SheetCell")) {
       long row = item.GetInt("row", 0) - 1;
@@ -85,7 +84,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
         format.align = DT_CENTER;
       else
         format.align = DT_LEFT;
-     
+
       std::string color_string = item.GetString("color");
       if (!color_string.empty()) {
         format.transparent = false;
@@ -118,7 +117,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
 
 #elif defined(UI_VIEWS)
   formula_row_.reset(new views::Textfield);
-//  formula_row_->set_show_border(false);
+  //  formula_row_->set_show_border(false);
   formula_row_->SetVisible(false);
   formula_row_->SetController(this);
 
@@ -143,7 +142,9 @@ void SheetView::ShowContextMenu(gfx::Point point) {
   controller_delegate_.ShowPopupMenu(IDR_SHEET_POPUP, point, true);
 }
 
-bool SheetView::OnGridEditCellText(views::GridView& sender, int row, int column,
+bool SheetView::OnGridEditCellText(views::GridView& sender,
+                                   int row,
+                                   int column,
                                    const base::string16& text) {
   model_->SetCellText(row, column, text);
   // TODO: Update formula row on model change notification.
@@ -152,7 +153,8 @@ bool SheetView::OnGridEditCellText(views::GridView& sender, int row, int column,
 }
 
 void SheetView::OnGridGetAutocompleteList(views::GridView& sender,
-                                          const base::string16& text, int& start,
+                                          const base::string16& text,
+                                          int& start,
                                           std::vector<base::string16>& list) {
   if (text.empty() || text[0] != '=')
     return;
@@ -161,7 +163,7 @@ void SheetView::OnGridGetAutocompleteList(views::GridView& sender,
   base::string16 text2 = text.substr(1);
   int start2 = start;
   CompletePath(text2, start2, list);
-  
+
   start = start2 + 1;
 }
 #endif
@@ -187,7 +189,8 @@ void SheetView::Save(WindowDefinition& definition) {
         if (cell->format_) {
           // color
           if (!cell->format_->transparent)
-            item.SetString("color", palette::ColorToString(cell->format_->color));
+            item.SetString("color",
+                           palette::ColorToString(cell->format_->color));
 
           // align
           if (cell->format_->align == DT_RIGHT)
@@ -200,10 +203,10 @@ void SheetView::Save(WindowDefinition& definition) {
   }
 }
 
-bool SheetView::CanClose() const
-{
-  /*if (AtlMessageBox(m_hWnd, _T("Закрытие окна приведет к потере таблицы. Продолжить?"),
-  (LPCTSTR)frame->GetTitle(), MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
+bool SheetView::CanClose() const {
+  /*if (AtlMessageBox(m_hWnd, _T("Закрытие окна приведет к потере таблицы.
+  Продолжить?"), (LPCTSTR)frame->GetTitle(),
+  MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
   // cancel close
   return FALSE;
   }*/
@@ -212,8 +215,10 @@ bool SheetView::CanClose() const
 
 void SheetView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 #if defined(UI_VIEWS)
-  if (model_->is_editing() && grid_->selected_column() != -1 && grid_->selected_row() != -1) {
-    SheetCell& cell = model_->GetCell(grid_->selected_row(), grid_->selected_column());
+  if (model_->is_editing() && grid_->selected_column() != -1 &&
+      grid_->selected_row() != -1) {
+    SheetCell& cell =
+        model_->GetCell(grid_->selected_row(), grid_->selected_column());
     cell.SetFormula('=' + node_id.ToString());
   }
 #endif
@@ -235,14 +240,14 @@ CommandHandler* SheetView::GetCommandHandler(unsigned command_id) {
       return this;
   }
 
-  if (command_id >= ID_COLOR_0 && command_id < ID_COLOR_0 + palette::GetColorCount())
+  if (command_id >= ID_COLOR_0 &&
+      command_id < ID_COLOR_0 + palette::GetColorCount())
     return model_->is_editing() ? this : NULL;
 
   return __super::GetCommandHandler(command_id);
 }
 
-bool SheetView::IsCommandChecked(unsigned command_id) const
-{
+bool SheetView::IsCommandChecked(unsigned command_id) const {
   switch (command_id) {
     case ID_EDIT:
       return model_->is_editing();
@@ -262,7 +267,8 @@ void SheetView::ExecuteCommand(unsigned command_id) {
       UpdateEditing();
       break;
     default:
-      if (command_id >= ID_COLOR_0 && command_id < ID_COLOR_0 + palette::GetColorCount()) {
+      if (command_id >= ID_COLOR_0 &&
+          command_id < ID_COLOR_0 + palette::GetColorCount()) {
         SkColor color = palette::GetColor(command_id - ID_COLOR_0);
         SetSelectionColor(color);
       } else {
@@ -335,7 +341,8 @@ void SheetView::SetSelectionColor(SkColor color) {
 }
 
 #if defined(UI_VIEWS)
-bool SheetView::OnKeyPressed(views::GridView& sender, ui::KeyboardCode key_code) {
+bool SheetView::OnKeyPressed(views::GridView& sender,
+                             ui::KeyboardCode key_code) {
   switch (key_code) {
     case ui::VKEY_DELETE:
       if (!grid_->editing()) {
@@ -344,16 +351,16 @@ bool SheetView::OnKeyPressed(views::GridView& sender, ui::KeyboardCode key_code)
       }
       break;
   }
-  
+
   return __super::OnKeyPressed(sender, key_code);
 }
 
 bool SheetView::OnDoubleClick() {
-  SheetCell* cell = model_->FindCell(grid_->selected_row(),
-                                     grid_->selected_column());  
+  SheetCell* cell =
+      model_->FindCell(grid_->selected_row(), grid_->selected_column());
   if (!cell)
     return false;
-    
+
   if (cell->is_blinking()) {
     cell->timed_data().Acknowledge();
     return true;
@@ -380,10 +387,10 @@ NodeIdSet SheetView::GetSelectedNodeIdList() {
     for (int column = range.column(); column <= range.last_column(); ++column) {
       SheetCell* cell = model_->FindCell(row, column);
       if (cell) {
-        scada::NodeId item = cell->timed_data().trid();
-        if (item != scada::NodeId())
-          result.insert(item);
-      }        
+        auto node_id = cell->timed_data().GetNode().id();
+        if (!node_id.is_null())
+          result.insert(node_id);
+      }
     }
   }
 #endif
@@ -419,7 +426,7 @@ int SheetView::OnPerformDrop(const ui::DropTargetEvent& event) {
       return ui::DragDropTypes::DRAG_COPY;
     }
   }
-  
+
   return ui::DragDropTypes::DRAG_NONE;
 }
 
@@ -429,7 +436,7 @@ void SheetView::ContentsChanged(views::Textfield* sender,
   DCHECK(model_->is_editing());
   DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);
 
-  model_->GetCell(grid_->selected_row(), grid_->selected_column()).
-      SetFormula(base::SysWideToNativeMB(new_contents));
+  model_->GetCell(grid_->selected_row(), grid_->selected_column())
+      .SetFormula(base::SysWideToNativeMB(new_contents));
 }
 #endif

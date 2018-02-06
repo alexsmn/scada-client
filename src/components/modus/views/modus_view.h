@@ -2,9 +2,9 @@
 
 #include "base/files/file_util.h"
 #include "base/win/scoped_comptr.h"
-#include "core/configuration_types.h"
 #include "components/modus/modus.h"
 #include "components/modus/modus_view_wrapper.h"
+#include "core/configuration_types.h"
 #include "ui/views/controls/activex_control.h"
 
 #include <atlbase.h>
@@ -28,7 +28,7 @@ class TimedDataSpec;
 namespace modus {
 class ModusLoader;
 class ModusObject;
-}
+}  // namespace modus
 
 struct ModusViewContext {
   NodeService& node_service_;
@@ -36,30 +36,45 @@ struct ModusViewContext {
   FileCache& file_cache_;
 };
 
-class ModusView : public views::ActiveXControl,
-                  public ModusViewWrapper,
-                  public ATL::IDispEventImpl<1, ModusView,
-                                             &__uuidof(htsde2::IHTSDEForm2Events),
-                                             &__uuidof(htsde2::__htsde2), 0xFFFF, 0xFFFF>,
-                  private views::ActiveXControl::Controller,
-                  private ModusViewContext {
+class ModusView
+    : public views::ActiveXControl,
+      public ModusViewWrapper,
+      public ATL::IDispEventImpl<1,
+                                 ModusView,
+                                 &__uuidof(htsde2::IHTSDEForm2Events),
+                                 &__uuidof(htsde2::__htsde2),
+                                 0xFFFF,
+                                 0xFFFF>,
+      private views::ActiveXControl::Controller,
+      private ModusViewContext {
  public:
   explicit ModusView(ModusViewContext&& context);
   virtual ~ModusView();
 
   // Find entity by TRID. Method has linear complexity.
-  modus::ModusObject* FindObject(scada::NodeId trid);
+  modus::ModusObject* FindObject(const scada::NodeId& node_id);
 
   BEGIN_SINK_MAP(ModusView)
-    SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x0000000b, OnDocPopup)
-    SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x0000001a, OnDocClick)		// click
-    SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x00000012, OnDocDblClick)	// double-click
-    SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x00000019, OnDocClick)		// right-click
+  SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x0000000b, OnDocPopup)
+  SINK_ENTRY_EX(1,
+                __uuidof(htsde2::IHTSDEForm2Events),
+                0x0000001a,
+                OnDocClick)  // click
+  SINK_ENTRY_EX(1,
+                __uuidof(htsde2::IHTSDEForm2Events),
+                0x00000012,
+                OnDocDblClick)  // double-click
+  SINK_ENTRY_EX(1,
+                __uuidof(htsde2::IHTSDEForm2Events),
+                0x00000019,
+                OnDocClick)  // right-click
   END_SINK_MAP()
 
   STDMETHOD_(void, OnDocPopup)(ISDEDocument50* doc, VARIANT_BOOL* popup);
-  STDMETHOD_(void, OnDocClick)(ISDEDocument50* doc, SDECore::IUIEventInfo* info);
-  STDMETHOD_(void, OnDocDblClick)(ISDEDocument50* doc, SDECore::IUIEventInfo* info);
+  STDMETHOD_(void, OnDocClick)
+  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
+  STDMETHOD_(void, OnDocDblClick)
+  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
 
   // ModusViewWrapper
   virtual void Open(const base::FilePath& path) override;

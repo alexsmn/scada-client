@@ -194,8 +194,8 @@ bool TableModel::DeleteRows(int start, int count) {
     if (!row)
       continue;
 
-    scada::NodeId item_id = row->timed_data().trid();
-    if (item_id != scada::NodeId())
+    auto item_id = row->timed_data().GetNode().id();
+    if (!item_id.is_null())
       item_ids.insert(item_id);
 
     delete row;
@@ -255,19 +255,19 @@ bool TableModel::SetFormula(int row, const std::string& formula) {
   DCHECK(rows_[row]);
   TableRow& trow = *rows_[row];
 
-  scada::NodeId old_trid = trow.timed_data().trid();
+  auto old_node_id = trow.timed_data().GetNode().id();
   try {
     trow.SetFormula(formula);
   } catch (const std::exception&) {
     return false;
   }
-  scada::NodeId new_trid = trow.timed_data().trid();
+  auto new_node_id = trow.timed_data().GetNode().id();
 
-  if (item_changed_ && old_trid != new_trid) {
-    if (old_trid != scada::NodeId() && FindItem(old_trid) == -1)
-      item_changed_(old_trid, false);
-    if (new_trid != scada::NodeId())
-      item_changed_(new_trid, true);
+  if (item_changed_ && old_node_id != new_node_id) {
+    if (!old_node_id.is_null() && FindItem(old_node_id) == -1)
+      item_changed_(old_node_id, false);
+    if (!new_node_id.is_null())
+      item_changed_(new_node_id, true);
   }
 
   NotifyItemsChanged(row, 1);
@@ -275,10 +275,10 @@ bool TableModel::SetFormula(int row, const std::string& formula) {
   return true;
 }
 
-int TableModel::FindItem(const scada::NodeId& trid) const {
+int TableModel::FindItem(const scada::NodeId& node_id) const {
   for (int i = 0; i < (int)rows_.size(); i++) {
     const TableRow* row = GetRow(i);
-    if (row && row->timed_data().trid() == trid)
+    if (row && row->timed_data().GetNode().id() == node_id)
       return i;
   }
   return -1;

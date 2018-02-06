@@ -1,43 +1,43 @@
 #include "components/graph/graph_view.h"
 
+#include "base/color.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
-#include "base/color.h"
-#include "controller_factory.h"
 #include "client_utils.h"
-#include "common_resources.h"
-#include "selection_model.h"
-#include "time_range.h"
 #include "commands/time_range_dialog.h"
-#include "base/color.h"
-#include "components/graph/graph_setup_dialog.h"
-#include "services/profile.h"
 #include "common/scada_node_ids.h"
+#include "common_resources.h"
+#include "components/graph/graph_setup_dialog.h"
 #include "contents_observer.h"
+#include "controller_factory.h"
+#include "selection_model.h"
+#include "services/profile.h"
+#include "time_range.h"
 
 #if defined(UI_QT)
 #include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_pane.h"
 #include "graph_qt/graph_plot.h"
 #elif defined(UI_VIEWS)
+#include "skia/ext/skia_utils_win.h"
+#include "ui/events/event.h"
+#include "ui/gfx/canvas.h"
+#include "ui/views/background.h"
 #include "ui/views/controls/graph/graph_axis.h"
 #include "ui/views/controls/graph/graph_pane.h"
 #include "ui/views/controls/graph/graph_plot.h"
-#include "skia/ext/skia_utils_win.h"
-#include "ui/gfx/canvas.h"
-#include "ui/views/background.h"
-#include "ui/events/event.h"
 #endif
 
 static const size_t kMaxPanes = 10;
 
 std::string FormatTimeDelta(base::TimeDelta delta) {
   int64 s = delta.InSeconds();
-  int64 m = s / 60; s = s % 60;
-  int64 h = m / 60; m = m % 60;
+  int64 m = s / 60;
+  s = s % 60;
+  int64 h = m / 60;
+  m = m % 60;
   return base::StringPrintf("%d:%02d:%02d", static_cast<int>(h),
-                                            static_cast<int>(m),
-                                            static_cast<int>(s));
+                            static_cast<int>(m), static_cast<int>(s));
 }
 
 bool ParseTimeDelta(const char* str, base::TimeDelta& delta) {
@@ -48,41 +48,40 @@ bool ParseTimeDelta(const char* str, base::TimeDelta& delta) {
   if (h < 0 || m < 0 || s < 0)
     return false;
 
-  delta = base::TimeDelta::FromHours(h) +
-          base::TimeDelta::FromMinutes(m) +
+  delta = base::TimeDelta::FromHours(h) + base::TimeDelta::FromMinutes(m) +
           base::TimeDelta::FromSeconds(s);
   return true;
 }
 
 base::string16 FormatTime(base::Time time) {
-  base::Time::Exploded e = { 0 };
+  base::Time::Exploded e = {0};
   time.UTCExplode(&e);
-	return base::StringPrintf(L"%02d-%02d-%04d %02d:%02d:%02d.%03d",
-		  e.day_of_month, e.month, e.year, e.hour, e.minute, e.second,
-      e.millisecond);  
+  return base::StringPrintf(L"%02d-%02d-%04d %02d:%02d:%02d.%03d",
+                            e.day_of_month, e.month, e.year, e.hour, e.minute,
+                            e.second, e.millisecond);
 }
 
 bool ParseTime(const char* str, base::Time& time) {
-		int d, m, y, h, n, s, ms;
-		if (sscanf_s(str, "%02d-%02d-%04d %02d:%02d:%02d.%03d",
-		    &d, &m, &y, &h, &n, &s, &ms) != 7)
-			return false;
+  int d, m, y, h, n, s, ms;
+  if (sscanf_s(str, "%02d-%02d-%04d %02d:%02d:%02d.%03d", &d, &m, &y, &h, &n,
+               &s, &ms) != 7)
+    return false;
 
-		base::Time::Exploded e = { 0 };
-    e.year = y;
-    e.month = m;
-    e.day_of_month = d;
-    e.hour = h;
-    e.minute = n;
-    e.second = s;
-    e.millisecond = ms;
+  base::Time::Exploded e = {0};
+  e.year = y;
+  e.month = m;
+  e.day_of_month = d;
+  e.hour = h;
+  e.minute = n;
+  e.second = s;
+  e.millisecond = ms;
 
-    base::Time t = base::Time::FromUTCExploded(e);
-    if (t.is_null())
-      return false;
+  base::Time t = base::Time::FromUTCExploded(e);
+  if (t.is_null())
+    return false;
 
-    time = t;
-		return true;
+  time = t;
+  return true;
 }
 
 // GraphView
@@ -90,8 +89,7 @@ bool ParseTime(const char* str, base::Time& time) {
 REGISTER_CONTROLLER(GraphView, ID_GRAPH_VIEW);
 
 GraphView::GraphView(const ControllerContext& context)
-    : ::Controller(context) {
-}
+    : ::Controller(context) {}
 
 UiView* GraphView::Init(const WindowDefinition& definition) {
   BOOL time_set = FALSE;
@@ -100,21 +98,20 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   graph_ = std::make_unique<MetrixGraph>(timed_data_service_);
 
 #if defined(UI_VIEWS)
-  graph_->set_background(
-      new views::ColorBackground(profile_.graph_def_color));
+  graph_->set_background(new views::ColorBackground(profile_.graph_def_color));
 #endif
 
   typedef std::map<int, views::GraphPane*> PaneMap;
   PaneMap pane_map;
 
   for (WindowItems::const_iterator i = definition.items.begin();
-                                   i != definition.items.end(); i++) {
+       i != definition.items.end(); i++) {
     const WindowItem& item = *i;
     if (item.name_is("GraphPane")) {
       views::GraphPane* pane = &graph_->NewPane();
-      
+
       pane->size_percent_ = item.GetInt("size", 100);
-        
+
       int ix = item.GetInt("ix", -1);
       if (ix != -1)
         pane_map.insert(PaneMap::value_type(ix, pane));
@@ -133,13 +130,13 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       int pane_ix = item.GetInt("pane", -1);
       PaneMap::iterator i = pane_map.find(pane_ix);
       MetrixGraph::MetrixPane* pane = NULL;
-      if (i != pane_map.end()) 
+      if (i != pane_map.end())
         pane = static_cast<MetrixGraph::MetrixPane*>(i->second);
       else
         pane = &static_cast<MetrixGraph::MetrixPane&>(graph_->NewPane());
       // make color
-      auto color = color_string.empty() ? NewColor() :
-          palette::StringToColor(color_string);
+      auto color = color_string.empty() ? NewColor()
+                                        : palette::StringToColor(color_string);
       // add line
       MetrixGraph::MetrixLine& line =
           graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
@@ -167,18 +164,18 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
 
   if (!time_set) {
     base::Time now = base::Time::Now();
-    graph_->horizontal_axis().SetRange(views::GraphRange(
-        (now - profile_.default_graph_span).ToDoubleT(),
-        now.ToDoubleT(), views::GraphRange::TIME));
+    graph_->horizontal_axis().SetRange(
+        views::GraphRange((now - profile_.default_graph_span).ToDoubleT(),
+                          now.ToDoubleT(), views::GraphRange::TIME));
   }
-  
+
   graph_->right_range_limit_ = graph_->horizontal_axis().range().high();
   graph_->Fit();
 
   graph_->UpdateData();
 
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); i++) {
+       i != graph_->panes().end(); i++) {
     MetrixGraph::MetrixPane& pane = *static_cast<MetrixGraph::MetrixPane*>(*i);
     pane.ShowLegend(true);
   }
@@ -197,11 +194,11 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
 
 bool GraphView::FindColor(SkColor color) const {
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ++i) {
+       i != graph_->panes().end(); ++i) {
     views::GraphPane& pane = **i;
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-                                                 i != lines.end(); ++i)
+         i != lines.end(); ++i)
       if ((*i)->color == color)
         return true;
   }
@@ -220,12 +217,15 @@ SkColor GraphView::NewColor() const {
 }
 
 void GraphView::Save(WindowDefinition& definition) {
-  base::Time time = base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
-  base::TimeDelta span = TimeDeltaFromSecondsF(graph_->horizontal_axis().range().delta());
+  base::Time time =
+      base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
+  base::TimeDelta span =
+      TimeDeltaFromSecondsF(graph_->horizontal_axis().range().delta());
 
   // time scale
   WindowItem& item = definition.AddItem("TimeScale");
-  item.SetString("time", graph_->m_time_fit ? base::string16(L"Now") : FormatTime(time));
+  item.SetString(
+      "time", graph_->m_time_fit ? base::string16(L"Now") : FormatTime(time));
   item.SetString("span", FormatTimeDelta(span));
 
   // value scale
@@ -233,7 +233,7 @@ void GraphView::Save(WindowDefinition& definition) {
   int pane_ix = 1;
   // panes
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ++i) {
+       i != graph_->panes().end(); ++i) {
     views::GraphPane& pane = **i;
 
     WindowItem& item = definition.AddItem("GraphPane");
@@ -242,7 +242,7 @@ void GraphView::Save(WindowDefinition& definition) {
 
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-                                                 i != lines.end(); ++i) {
+         i != lines.end(); ++i) {
       const MetrixGraph::MetrixLine& line =
           static_cast<const MetrixGraph::MetrixLine&>(**i);
 
@@ -260,7 +260,8 @@ void GraphView::Save(WindowDefinition& definition) {
   }
 }
 
-//LRESULT GraphView::OnPrompt(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+// LRESULT GraphView::OnPrompt(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/,
+// BOOL& /*bHandled*/)
 //{
 //  MetrixPane* pane = selected_pane();
 //  assert(pane);
@@ -268,8 +269,8 @@ void GraphView::Save(WindowDefinition& definition) {
 //  CString text = (LPCTSTR)wParam;
 //  int i = text.Find(',');
 //  if (i != -1) {
-//    StrToIntEx(text.Mid(i + 1), STIF_DEFAULT, &line_ival);	// TODO: check result
-//    line_type = line_ival ? MetrixLine::BARS : MetrixLine::TIMED_DATA;
+//    StrToIntEx(text.Mid(i + 1), STIF_DEFAULT, &line_ival);	// TODO: check
+//    result line_type = line_ival ? MetrixLine::BARS : MetrixLine::TIMED_DATA;
 //    text.Truncate(i);
 //  }
 //  if (text.IsEmpty()) {
@@ -331,7 +332,8 @@ void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
         static_cast<MetrixGraph::MetrixLine&>(*lines.front());
     // TODO: Check if there are still another lines for this item.
     if (contents_observer())
-      contents_observer()->OnContainedItemChanged(line.data_source().trid(), false);
+      contents_observer()->OnContainedItemChanged(line.data_source().trid(),
+                                                  false);
     pane.plot().DeleteLine(line);
   }
 }
@@ -343,7 +345,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 
   // find first empty pane
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ++i) {
+       i != graph_->panes().end(); ++i) {
     if ((*i)->plot().lines().empty()) {
       pane = static_cast<MetrixGraph::MetrixPane*>(*i);
       break;
@@ -376,7 +378,8 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   graph_->Fit();
 
   if (contents_observer())
-    contents_observer()->OnContainedItemChanged(line.data_source().trid(), true);
+    contents_observer()->OnContainedItemChanged(line.data_source().trid(),
+                                                true);
 
   pane->ShowLegend(true);
 
@@ -390,16 +393,18 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 }
 
 base::string16 GraphView::MakeTitle() const {
-  MetrixGraph::MetrixLine* line = !graph_->panes().empty() ?
-      static_cast<MetrixGraph::MetrixLine*>(graph_->panes().front()->plot().primary_line()) :
-      NULL;
+  MetrixGraph::MetrixLine* line =
+      !graph_->panes().empty()
+          ? static_cast<MetrixGraph::MetrixLine*>(
+                graph_->panes().front()->plot().primary_line())
+          : NULL;
   return line ? line->data_source().title() : L"Нет объекта";
 }
 
 void GraphView::ShowSetupDialog() {
 #if defined(UI_VIEWS)
-  MetrixGraph::MetrixLine* line = graph_->selected_pane() ?
-      graph_->selected_pane()->primary_line() : NULL;
+  MetrixGraph::MetrixLine* line =
+      graph_->selected_pane() ? graph_->selected_pane()->primary_line() : NULL;
 
   const views::ColorBackground* background =
       static_cast<const views::ColorBackground*>(graph_->background());
@@ -409,15 +414,17 @@ void GraphView::ShowSetupDialog() {
   dlg.color = color;
   dlg.line_weight_ = line ? line->line_weight_ : 0;
 
-  if (dlg.DoModal(static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) != IDOK)
+  if (dlg.DoModal(
+          static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) !=
+      IDOK)
     return;
 
   graph_->set_background(new views::ColorBackground(dlg.color));
   profile_.graph_def_color = dlg.color;
-  
+
   if (line)
     line->line_weight_ = dlg.line_weight_;
-    
+
   graph_->SchedulePaint();
 #endif
 }
@@ -428,11 +435,11 @@ bool GraphView::CanClose() const {
 
 bool GraphView::IsWorking() const {
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ++i) {
+       i != graph_->panes().end(); ++i) {
     views::GraphPane& pane = **i;
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-                                                 i != lines.end(); ++i) {
+         i != lines.end(); ++i) {
       MetrixGraph::MetrixLine& line =
           static_cast<MetrixGraph::MetrixLine&>(**i);
       if (!line.data_source().is_ready())
@@ -443,8 +450,11 @@ bool GraphView::IsWorking() const {
 }
 
 void GraphView::OnGraphSelectPane() {
-  MetrixGraph::MetrixLine* line = graph_->selected_pane() ?
-      static_cast<MetrixGraph::MetrixPane*>(graph_->selected_pane())->primary_line() : NULL;
+  MetrixGraph::MetrixLine* line =
+      graph_->selected_pane()
+          ? static_cast<MetrixGraph::MetrixPane*>(graph_->selected_pane())
+                ->primary_line()
+          : NULL;
   if (line)
     selection().SelectTimedData(line->data_source().timed_data());
   else
@@ -454,12 +464,13 @@ void GraphView::OnGraphSelectPane() {
 NodeIdSet GraphView::GetContainedItems() const {
   NodeIdSet items;
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ++i) {
+       i != graph_->panes().end(); ++i) {
     views::GraphPane& pane = **i;
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-                                                 i != lines.end(); ++i) {
-      MetrixGraph::MetrixLine& line = static_cast<MetrixGraph::MetrixLine&>(**i);
+         i != lines.end(); ++i) {
+      MetrixGraph::MetrixLine& line =
+          static_cast<MetrixGraph::MetrixLine&>(**i);
       scada::NodeId trid = line.data_source().trid();
       if (trid != scada::NodeId())
         items.insert(trid);
@@ -470,12 +481,13 @@ NodeIdSet GraphView::GetContainedItems() const {
 
 void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ) {
+       i != graph_->panes().end();) {
     views::GraphPane& pane = **i++;
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-                                                 i != lines.end(); ) {
-      MetrixGraph::MetrixLine& line = static_cast<MetrixGraph::MetrixLine&>(**i++);
+         i != lines.end();) {
+      MetrixGraph::MetrixLine& line =
+          static_cast<MetrixGraph::MetrixLine&>(**i++);
 
       if (line.data_source().trid() == node_id)
         pane.plot().DeleteLine(line);
@@ -514,7 +526,8 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
       return this;
   }
 
-  if (command_id >= ID_COLOR_0 && command_id < ID_COLOR_0 + palette::GetColorCount())
+  if (command_id >= ID_COLOR_0 &&
+      command_id < ID_COLOR_0 + palette::GetColorCount())
     return this;
 
   return __super::GetCommandHandler(command_id);
@@ -525,21 +538,18 @@ bool GraphView::IsCommandChecked(unsigned command_id) const {
     case ID_GRAPH_ZOOM:
       return graph_->selected_pane() &&
              graph_->selected_pane()->plot().zooming();
-      
+
     case ID_VIEW_LEGEND:
-      return graph_->selected_pane() &&
-             graph_->selected_pane()->show_legend();
-      
+      return graph_->selected_pane() && graph_->selected_pane()->show_legend();
+
     case ID_GRAPH_DOTS:
-      return graph_->primary_line() &&
-             graph_->primary_line()->dots_shown();
+      return graph_->primary_line() && graph_->primary_line()->dots_shown();
     case ID_GRAPH_STEPS:
-      return graph_->primary_line() &&
-             graph_->primary_line()->stepped();
-      
+      return graph_->primary_line() && graph_->primary_line()->stepped();
+
     case ID_NOW:
       return graph_->m_time_fit;
-      
+
     default:
       return __super::IsCommandChecked(command_id);
   }
@@ -559,19 +569,23 @@ void GraphView::ExecuteCommand(unsigned command_id) {
         controller_delegate_.SetModified(true);
       }
       break;
-      
+
     case ID_TIME_RANGE_DAY:
-      SetTimeRange(TimeRange(TimeRangeBound(base::Time::Now(), true),
-                             TimeRangeBound()));
-      break;    
+      SetTimeRange(
+          TimeRange(TimeRangeBound(base::Time::Now(), true), TimeRangeBound()));
+      break;
     case ID_TIME_RANGE_WEEK:
-      SetTimeRange(TimeRange(TimeRangeBound(base::Time::Now() - base::TimeDelta::FromDays(7), true),
-                             TimeRangeBound()));
-      break;    
+      SetTimeRange(
+          TimeRange(TimeRangeBound(
+                        base::Time::Now() - base::TimeDelta::FromDays(7), true),
+                    TimeRangeBound()));
+      break;
     case ID_TIME_RANGE_MONTH:
-      SetTimeRange(TimeRange(TimeRangeBound(base::Time::Now() - base::TimeDelta::FromDays(30), true),
-                             TimeRangeBound()));
-      break;    
+      SetTimeRange(TimeRange(
+          TimeRangeBound(base::Time::Now() - base::TimeDelta::FromDays(30),
+                         true),
+          TimeRangeBound()));
+      break;
     case ID_TIME_RANGE_CUSTOM: {
       TimeRange range;
       if (ShowTimeRangeDialog(dialog_service_, range))
@@ -583,8 +597,8 @@ void GraphView::ExecuteCommand(unsigned command_id) {
       controller_delegate_.SetModified(true);
       views::GraphPane& pane = graph_->NewPane();
       // TODO: Recover prompt.
-//      PromptBegin(views::View::GetWindowHandle(),
-//          pane.rect_.left + 10, pane.rect_.top + 10);
+      //      PromptBegin(views::View::GetWindowHandle(),
+      //          pane.rect_.left + 10, pane.rect_.top + 10);
       break;
     }
 
@@ -619,7 +633,7 @@ void GraphView::ExecuteCommand(unsigned command_id) {
         controller_delegate_.SetModified(true);
       }
       break;
-      
+
     case ID_GRAPH_ZOOM:
       if (graph_->selected_pane()) {
         graph_->selected_pane()->plot().set_zooming(
@@ -633,7 +647,8 @@ void GraphView::ExecuteCommand(unsigned command_id) {
       break;
 
     default:
-      if (command_id >= ID_COLOR_0 && command_id < ID_COLOR_0 + palette::GetColorCount()) {
+      if (command_id >= ID_COLOR_0 &&
+          command_id < ID_COLOR_0 + palette::GetColorCount()) {
         SkColor color = palette::GetColor(command_id - ID_COLOR_0);
         if (MetrixGraph::MetrixPane* pane = graph_->selected_pane()) {
           views::GraphLine* line = pane->plot().lines().front();
@@ -655,13 +670,13 @@ void GraphView::SetTimeRange(const TimeRange& range) {
 
   base::Time end_time = range.end.GetEndTime();
   graph_->m_time_fit = end_time.is_null();
-  double high = graph_->m_time_fit ?
-      graph_->right_range_limit_ : end_time.ToDoubleT();
-  
-  graph_->horizontal_axis().SetRange(views::GraphRange(
-      low, high, views::GraphRange::TIME));
+  double high =
+      graph_->m_time_fit ? graph_->right_range_limit_ : end_time.ToDoubleT();
 
- controller_delegate_.SetModified(true);
+  graph_->horizontal_axis().SetRange(
+      views::GraphRange(low, high, views::GraphRange::TIME));
+
+  controller_delegate_.SetModified(true);
 }
 
 void GraphView::OnLineItemChanged(views::GraphLine& line) {
@@ -671,8 +686,8 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
   if (contents_observer()) {
     MetrixGraph::MetrixLine& metrix_line =
         static_cast<MetrixGraph::MetrixLine&>(line);
-    scada::NodeId item_id = metrix_line.data_source().timed_data().trid();
-    contents_observer()->OnContainedItemChanged(item_id, true);
+    auto node_id = metrix_line.data_source().timed_data().GetNode().id();
+    contents_observer()->OnContainedItemChanged(node_id, true);
   }
 }
 
@@ -682,7 +697,7 @@ void GraphView::UndoZoom() {
   graph_->Fit();
 
   for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-                                          i != graph_->panes().end(); ++i) {
+       i != graph_->panes().end(); ++i) {
     (*i)->vertical_axis().UpdateRange();
   }
 }

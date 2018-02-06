@@ -2,11 +2,11 @@
 
 #include "base/logging.h"
 #include "base/win/scoped_bstr.h"
-#include "views/ambient_props.h"
-#include "views/client_application_views.h"
 #include "components/modus/views/modus_element.h"
 #include "components/modus/views/modus_loader.h"
 #include "components/modus/views/modus_object.h"
+#include "views/ambient_props.h"
+#include "views/client_application_views.h"
 
 #include <atlwin.h>
 
@@ -35,12 +35,12 @@ bool ModusView::ShowContainedItem(const scada::NodeId& item_id) {
   auto* object = FindObject(item_id);
   if (!object)
     return false;
-    
+
   sde_document_->DocHighLight(&object->sde_object(), RGB(0, 255, 0), false);
-  
+
   if (!object->elements().empty())
     selection_callback_(object->elements()[0]->timed_data());
-  
+
   return true;
 }
 
@@ -61,7 +61,7 @@ void ModusView::OpenInternal(const base::FilePath& path) {
 
   assert(!sde_document_);
   assert(objects_.empty());
-  
+
   sde_form_->Open(base::win::ScopedBstr(path.value().c_str()));
 
   sde_form_->get_Document(sde_document_.Receive());
@@ -69,7 +69,8 @@ void ModusView::OpenInternal(const base::FilePath& path) {
     return;
 
   {
-    modus::ModusLoader loader({node_service_, timed_data_service_, file_cache_});
+    modus::ModusLoader loader(
+        {node_service_, timed_data_service_, file_cache_});
     loader.Load(*sde_document_, path, this);
     title_ = loader.title();
   }
@@ -79,28 +80,29 @@ void ModusView::OpenInternal(const base::FilePath& path) {
   title_callback_(title_);
 }
 
-modus::ModusObject* ModusView::FindObject(scada::NodeId trid) {
+modus::ModusObject* ModusView::FindObject(const scada::NodeId& node_id) {
   for (Objects::iterator i = objects_.begin(); i != objects_.end(); ++i) {
     modus::ModusObject& object = **i;
     for (auto* element : object.elements()) {
-      if (element->timed_data().trid() == trid)
+      if (element->timed_data().GetNode().id() == node_id)
         return &object;
     }
   }
   return NULL;
 }
 
-STDMETHODIMP_(void) ModusView::OnDocPopup(ISDEDocument50* doc, VARIANT_BOOL* popup) {
+STDMETHODIMP_(void)
+ModusView::OnDocPopup(ISDEDocument50* doc, VARIANT_BOOL* popup) {
   assert(doc);
   assert(popup);
   *popup = FALSE;
 }
 
-STDMETHODIMP_(void) ModusView::OnDocDblClick(ISDEDocument50* doc,
-                                             SDECore::IUIEventInfo* info) {
+STDMETHODIMP_(void)
+ModusView::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   assert(doc);
   assert(info);
-  
+
   modus::ModusObject* object = NULL;
 
   base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object;
@@ -114,7 +116,7 @@ STDMETHODIMP_(void) ModusView::OnDocDblClick(ISDEDocument50* doc,
         object = i->second;
     }
   }
-   
+
   bool acked = false;
   if (object) {
     for (auto* element : object->elements()) {
@@ -132,8 +134,8 @@ STDMETHODIMP_(void) ModusView::OnDocDblClick(ISDEDocument50* doc,
   }
 }
 
-STDMETHODIMP_(void) ModusView::OnDocClick(ISDEDocument50* doc,
-                                          SDECore::IUIEventInfo* info) {
+STDMETHODIMP_(void)
+ModusView::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   assert(doc);
   assert(info);
 
@@ -143,18 +145,18 @@ STDMETHODIMP_(void) ModusView::OnDocClick(ISDEDocument50* doc,
   static const long LeftBtn = 0;
   static const long RightBtn = 2;
 
-/*	long x = 0, y = 0;
-  info->get_X(&x);
-  info->get_Y(&y);*/
+  /*	long x = 0, y = 0;
+    info->get_X(&x);
+    info->get_Y(&y);*/
 
   modus::ModusObject* object = NULL;
-  
+
   base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object;
   info->get_Touched(sde_object.Receive());
   if (sde_object) {
     long id = -1;
     sde_object->get_RTID(&id);
-    
+
     if (id != -1) {
       ObjectMap::iterator i = object_map_.find(id);
       if (i != object_map_.end())
@@ -199,7 +201,7 @@ void ModusView::OnControlCreated(views::ActiveXControl& sender) {
     DispEventAdvise(sde_form_.get());
     sde_form_->put_StatusVisible(VARIANT_FALSE);
     sde_form_->put_ToolbarVisible(VARIANT_FALSE);
-    //sde_form_->put_PagesVisible(SDECore::txPagesHidden);
+    // sde_form_->put_PagesVisible(SDECore::txPagesHidden);
     sde_form_->put_AxBorderStyle(htsde2::afbNone);
   }
 
