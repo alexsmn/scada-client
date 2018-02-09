@@ -3,7 +3,6 @@
 #include <cassert>
 
 #include "core/configuration_types.h"
-#include "timed_data/timed_data_delegate.h"
 #include "timed_data/timed_data_spec.h"
 #include "controls/types.h"
 #include "selection_model.h"
@@ -12,8 +11,7 @@
 
 class NodeService;
 
-class SelectionModel : private rt::TimedDataDelegate,
-                       private NodeRefObserver {
+class SelectionModel : private NodeRefObserver {
  public:
   SelectionModel(NodeService& node_service, TimedDataService& timed_data_service);
   SelectionModel(const SelectionModel&) = delete;
@@ -45,10 +43,6 @@ class SelectionModel : private rt::TimedDataDelegate,
 
  private:
   void Reset();
-
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties) override;
 
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;

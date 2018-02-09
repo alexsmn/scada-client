@@ -3,8 +3,7 @@
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/table_model.h"
 
-class TimedDataModel : public ui::TableModel,
-                       private rt::TimedDataDelegate {
+class TimedDataModel : public ui::TableModel {
  public:
   enum {
     CID_TIME,
@@ -36,15 +35,6 @@ class TimedDataModel : public ui::TableModel,
   virtual void GetCell(ui::TableCell& cell) override;
 
  private:
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties) override;
-  virtual void OnTimedDataCorrections(rt::TimedDataSpec& spec, size_t count,
-                                      const scada::DataValue* tvqs) override;
-  virtual void OnTimedDataReady(rt::TimedDataSpec& spec) override;
-  virtual void OnTimedDataNodeModified(rt::TimedDataSpec& spec,
-                                       const scada::PropertyIds& property_ids) override;
-
   TimedDataService& timed_data_service_;
   rt::TimedDataSpec	timed_data_;
   rt::TimedVQMap::const_iterator cached_iterator_;

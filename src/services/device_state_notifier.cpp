@@ -1,13 +1,17 @@
 #include "services/device_state_notifier.h"
 
 #include "common/formula_util.h"
-#include "timed_data/timed_data_service.h"
 #include "common/scada_node_ids.h"
+#include "timed_data/timed_data_service.h"
 
-DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service, const NodeRef& device, Callback callback)
+DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
+                                         const NodeRef& device,
+                                         Callback callback)
     : callback_{std::move(callback)} {
-  const scada::NodeId kComponentIds[] = {id::DeviceType_Enabled, id::DeviceType_Online};
-  static_assert(_countof(kComponentIds) == FIELD_COUNT, "NotEnoughFieldChannelNames");
+  const scada::NodeId kComponentIds[] = {id::DeviceType_Enabled,
+                                         id::DeviceType_Online};
+  static_assert(_countof(kComponentIds) == FIELD_COUNT,
+                "NotEnoughFieldChannelNames");
 
   assert(device.fetched());
 
@@ -17,8 +21,10 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service, c
       continue;
 
     rt::TimedDataSpec& spec = specs_[i];
-    spec.set_delegate(this);
-    spec.param = reinterpret_cast<void*>(i);
+    spec.property_change_handler = [this, i,
+                                    &spec](const rt::PropertySet& properties) {
+      OnPropertyChanged(i, spec.current());
+    };
 
     try {
       spec.Connect(timed_data_service, component.id());
@@ -44,15 +50,14 @@ DeviceState DeviceStateNotifier::CalculateDeviceState() const {
     return DEVICE_STATE_UNKNOWN;
 
   bool online = specs_[FIELD_ONLINE].current().value.get_or(false);
-  return online ? DEVICE_STATE_ONLINE : 
-                  DEVICE_STATE_OFFLINE;
+  return online ? DEVICE_STATE_ONLINE : DEVICE_STATE_OFFLINE;
 }
 
 void DeviceStateNotifier::OnPropertyChanged(
-                                       rt::TimedDataSpec& spec,
-                                       const rt::PropertySet& properties) {
-  LOG(INFO) << "Spec " << reinterpret_cast<unsigned>(spec.param)
-            << " changed value to " << spec.current().value.get_or(std::string{});
+    size_t index,
+    const scada::DataValue& data_value) {
+  LOG(INFO) << "Spec " << index << " changed value to "
+            << data_value.value.get_or(std::string{});
 
   DeviceState device_state = CalculateDeviceState();
   if (device_state == device_state_)

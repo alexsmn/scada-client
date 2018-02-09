@@ -20,7 +20,7 @@ struct Limits {
   double limits[static_cast<size_t>(Limit::Count)];
 };
 
-class ModusElement : protected rt::TimedDataDelegate {
+class ModusElement {
  public:
   enum Type { UNKNOWN, SWITCH, LABEL, VALUE };
 
@@ -39,13 +39,6 @@ class ModusElement : protected rt::TimedDataDelegate {
   unsigned style() const { return style_; }
 
   void Init();
-
- protected:
-  // rt::TimedDataDelegate
-  virtual void OnTimedDataDeleted(rt::TimedDataSpec& spec) override;
-  virtual void OnEventsChanged(rt::TimedDataSpec& spec, const events::EventSet& events) override;
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec, const rt::PropertySet& properties) override;
-  virtual void OnTimedDataNodeModified(rt::TimedDataSpec& spec, const scada::PropertyIds& property_ids) override;
 
  private:
   void UpdateData(bool init);

@@ -1,10 +1,10 @@
 #include "components/summary/summary_model.h"
 
-#include "base/strings/sys_string_conversions.h"
 #include "base/format_time.h"
-#include "window_definition.h"
+#include "base/strings/sys_string_conversions.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/grid_range.h"
+#include "window_definition.h"
 
 namespace {
 
@@ -18,14 +18,15 @@ base::Time AlignTime(base::Time time, base::TimeDelta interval, bool upper) {
 
   // For intraday intervals align to midnight.
   base::TimeDelta day_offset = time - midnight;
-  time -= base::TimeDelta::FromMicroseconds(
-      day_offset.InMicroseconds() % interval.InMicroseconds());
+  time -= base::TimeDelta::FromMicroseconds(day_offset.InMicroseconds() %
+                                            interval.InMicroseconds());
   if (upper)
     time += interval;
   return time;
 }
 
-size_t CalculateRowCount(base::Time start_time, base::Time end_time,
+size_t CalculateRowCount(base::Time start_time,
+                         base::Time end_time,
                          base::TimeDelta interval) {
   if (start_time >= end_time)
     return 0;
@@ -37,7 +38,7 @@ size_t CalculateRowCount(base::Time start_time, base::Time end_time,
   return std::min(count, 1000u);
 }
 
-} // namespace
+}  // namespace
 
 // SummaryModel::Cell ---------------------------------------------------------
 
@@ -63,7 +64,7 @@ bool SummaryModel::Cell::Update(const scada::DataValue& data_value) {
 
 // SummaryModel::Column -------------------------------------------------------
 
-class SummaryModel::Column : public rt::TimedDataDelegate {
+class SummaryModel::Column {
  public:
   Column(SummaryModel& model, int index, const std::string& formula);
 
@@ -83,11 +84,9 @@ class SummaryModel::Column : public rt::TimedDataDelegate {
 
   void OnTvq(const scada::DataValue& data_value);
 
-  // rt::TimedDataDelegate
-  virtual void OnTimedDataCorrections(rt::TimedDataSpec& spec, size_t count,
-                                     const scada::DataValue* tvqs) override;
-  virtual void OnTimedDataReady(rt::TimedDataSpec& spec) override;
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec, const rt::PropertySet& properties) override;
+  void OnTimedDataCorrections(size_t count, const scada::DataValue* tvqs);
+  void OnTimedDataReady();
+  void OnPropertyChanged(const rt::PropertySet& properties);
 
   SummaryModel& model_;
   int index_;
@@ -100,12 +99,19 @@ class SummaryModel::Column : public rt::TimedDataDelegate {
   rt::TimedDataSpec timed_data_;
 };
 
-SummaryModel::Column::Column(SummaryModel& model, int index, const std::string& formula)
-    : model_(model),
-      index_(index),
-      cells_(model.row_count_),
-      width_(100) {
-  timed_data_.set_delegate(this);
+SummaryModel::Column::Column(SummaryModel& model,
+                             int index,
+                             const std::string& formula)
+    : model_(model), index_(index), cells_(model.row_count_), width_(100) {
+  timed_data_.correction_handler = [this](size_t count,
+                                          const scada::DataValue* tvqs) {
+    OnTimedDataCorrections(count, tvqs);
+  };
+  timed_data_.ready_handler = [this] { OnTimedDataReady(); };
+  timed_data_.property_change_handler =
+      [this](const rt::PropertySet& properties) {
+        OnPropertyChanged(properties);
+      };
   timed_data_.SetFrom(model_.times().start_time);
   timed_data_.Connect(model_.timed_data_service(), formula);
   title_ = timed_data_.GetTitle();
@@ -126,14 +132,15 @@ void SummaryModel::Column::UpdateHistory() {
   // History.
   const rt::TimedVQMap* values = timed_data_.values();
   if (values) {
-    rt::TimedVQMap::const_iterator i = values->lower_bound(model_.times().start_time);
-    rt::TimedVQMap::const_iterator end = values->upper_bound(model_.times().end_time);
-    for ( ; i != end; ++i) {
+    rt::TimedVQMap::const_iterator i =
+        values->lower_bound(model_.times().start_time);
+    rt::TimedVQMap::const_iterator end =
+        values->upper_bound(model_.times().end_time);
+    for (; i != end; ++i) {
       int row = model_.GetRowForTime(i->first);
       if (row != -1) {
         cells_[row].Update(scada::DataValue(i->second.vq.value,
-                                            i->second.vq.qualifier,
-                                            i->first,
+                                            i->second.vq.qualifier, i->first,
                                             i->second.collection_time));
       }
     }
@@ -154,21 +161,21 @@ void SummaryModel::Column::OnTvq(const scada::DataValue& data_value) {
 }
 
 void SummaryModel::Column::OnTimedDataCorrections(
-    rt::TimedDataSpec& spec, size_t count, const scada::DataValue* tvqs) {
+    size_t count,
+    const scada::DataValue* tvqs) {
   for (size_t i = 0; i < count; ++i)
     OnTvq(tvqs[i]);
 }
 
-void SummaryModel::Column::OnTimedDataReady(rt::TimedDataSpec& spec) {
+void SummaryModel::Column::OnTimedDataReady() {
   UpdateHistory();
   model_.OnColumnChanged(index_);
 }
 
 void SummaryModel::Column::OnPropertyChanged(
-                                       rt::TimedDataSpec& spec,
-                                       const rt::PropertySet& properties) {
+    const rt::PropertySet& properties) {
   if (properties.is_current_changed())
-    OnTvq(spec.current());
+    OnTvq(timed_data_.current());
 
   if (properties.is_title_changed()) {
     title_ = timed_data_.GetTitle();
@@ -196,8 +203,7 @@ class SummaryModel::RowModel : public ui::HeaderModel {
   SummaryModel& model_;
 };
 
-SummaryModel::RowModel::RowModel(SummaryModel& model)
-    : model_(model) {
+SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
   SetFixedSize(true);
 }
 
@@ -256,8 +262,7 @@ SummaryModel::SummaryModel(TimedDataService& timed_data_service)
     : timed_data_service_(timed_data_service),
       row_count_(0),
       row_model_(new RowModel(*this)),
-      column_model_(new ColumnModel(*this)) {
-}
+      column_model_(new ColumnModel(*this)) {}
 
 ui::HeaderModel& SummaryModel::row_model() {
   return *row_model_;
@@ -274,8 +279,8 @@ void SummaryModel::SetTimes(const Times& times) {
   times_.start_time = AlignTime(times.start_time, times.interval, false);
   times_.end_time = AlignTime(times.end_time, times.interval, true);
   times_.interval = times.interval;
-  row_count_ = CalculateRowCount(times_.start_time, times_.end_time,
-                                 times_.interval);
+  row_count_ =
+      CalculateRowCount(times_.start_time, times_.end_time, times_.interval);
 
   for (size_t i = 0; i < columns_.size(); ++i)
     columns_[i]->UpdateTimes();
@@ -291,8 +296,8 @@ int SummaryModel::AddColumn(const std::string& formula) {
 
 void SummaryModel::Load(const WindowDefinition& definition) {
   base::Time now = base::Time::Now();
-  Times times = { now - base::TimeDelta::FromHours(5), now,
-                  base::TimeDelta::FromMinutes(1) };
+  Times times = {now - base::TimeDelta::FromHours(5), now,
+                 base::TimeDelta::FromMinutes(1)};
   SetTimes(times);
 
   size_t count = std::min(10u, definition.items.size());
@@ -325,7 +330,8 @@ void SummaryModel::GetCell(ui::GridCell& c) {
   Cell& cell = column.GetCell(c.row);
 
   const scada::DataValue& data_value = cell.data_value();
-  c.text = column.timed_data().GetValueString(data_value.value, data_value.qualifier);
+  c.text = column.timed_data().GetValueString(data_value.value,
+                                              data_value.qualifier);
 
   if (!column.timed_data().ready())
     c.cell_color = SkColorSetRGB(227, 227, 227);

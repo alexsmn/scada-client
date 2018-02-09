@@ -4,40 +4,30 @@
 
 class TableModel;
 
-class TableRow : protected rt::TimedDataDelegate {
+class TableRow {
  public:
   TableRow(TableModel& model, int index);
   ~TableRow();
-  
-  int index() const { return index_; }    
+
+  int index() const { return index_; }
   void set_index(int index) { index_ = index; }
 
   const rt::TimedDataSpec& timed_data() const { return timed_data_; }
   bool is_blinking() const { return is_blinking_; }
-  
+
   std::string GetFormula() const;
   base::string16 GetTitle() const;
-  
-  void SetFormula(const std::string& formula);
-  
-  void NotifyUpdate();
 
- protected:
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties) override;
-  virtual void OnEventsChanged(rt::TimedDataSpec& spec,
-                               const events::EventSet& events) override;
-  virtual void OnTimedDataNodeModified(rt::TimedDataSpec& spec,
-                                       const scada::PropertyIds& property_ids) override;
-  virtual void OnTimedDataDeleted(rt::TimedDataSpec& spec) override;
+  void SetFormula(const std::string& formula);
+
+  void NotifyUpdate();
 
  private:
   void SetBlinking(bool blinking);
 
   TableModel& model_;
   int index_;
-  
+
   std::string formula_;
   rt::TimedDataSpec timed_data_;
   bool is_blinking_;

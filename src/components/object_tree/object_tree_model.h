@@ -6,9 +6,7 @@
 
 class Profile;
 
-class ObjectTreeModel : public ConfigurationTreeModel,
-                        private rt::TimedDataDelegate,
-                        private Blinker {
+class ObjectTreeModel : public ConfigurationTreeModel, private Blinker {
  public:
   ObjectTreeModel(scada::ViewService& view_service,
                   NodeService& node_service,
@@ -39,12 +37,6 @@ class ObjectTreeModel : public ConfigurationTreeModel,
 
   void ConnectVisibleNode(VisibleNode& visible_node,
                           ConfigurationTreeNode& tree_node);
-
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties) override;
-  virtual void OnEventsChanged(rt::TimedDataSpec& spec,
-                               const events::EventSet& events) override;
 
   // Blinker
   virtual void OnBlink(bool state) override;

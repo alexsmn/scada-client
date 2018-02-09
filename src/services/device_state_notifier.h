@@ -7,29 +7,30 @@
 
 class TimedDataService;
 
-enum DeviceState { DEVICE_STATE_UNKNOWN,
-                   DEVICE_STATE_DISABLED,
-                   DEVICE_STATE_OFFLINE,
-                   DEVICE_STATE_ONLINE };
+enum DeviceState {
+  DEVICE_STATE_UNKNOWN,
+  DEVICE_STATE_DISABLED,
+  DEVICE_STATE_OFFLINE,
+  DEVICE_STATE_ONLINE
+};
 
 // Notifies observers about changes of ONLINE and ENABLED device fields.
-class DeviceStateNotifier : private rt::TimedDataDelegate {
+class DeviceStateNotifier {
  public:
   using Callback = std::function<void()>;
 
-  DeviceStateNotifier(TimedDataService& timed_data_service, const NodeRef& device, Callback callback);
+  DeviceStateNotifier(TimedDataService& timed_data_service,
+                      const NodeRef& device,
+                      Callback callback);
 
   DeviceState device_state() const { return device_state_; }
 
  private:
-  enum { FIELD_ENABLED,
-         FIELD_ONLINE,
-         FIELD_COUNT };
+  enum { FIELD_ENABLED, FIELD_ONLINE, FIELD_COUNT };
 
   DeviceState CalculateDeviceState() const;
 
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec, const rt::PropertySet& properties) override;
+  void OnPropertyChanged(size_t index, const scada::DataValue& data_value);
 
   const Callback callback_;
 

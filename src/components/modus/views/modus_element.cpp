@@ -1,13 +1,13 @@
 #include "components/modus/views/modus_element.h"
 
+#include "base/format.h"
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
-#include "base/format.h"
 #include "common/event_manager.h"
-#include "common/scada_node_ids.h"
-#include "core/monitored_item_service.h"
-#include "components/modus/views/modus_object.h"
 #include "common/node_ref.h"
+#include "common/scada_node_ids.h"
+#include "components/modus/views/modus_object.h"
+#include "core/monitored_item_service.h"
 #include "core/variant.h"
 
 namespace modus {
@@ -35,7 +35,7 @@ bool HasParam(SDECore::IParams& params, const VARIANT& index) {
   SDEParam param = GetParam(params, index);
   if (!param)
     return false;
-  
+
   base::win::ScopedBstr name;
   param->get_Name(name.Receive());
   return name != NULL;
@@ -45,7 +45,7 @@ base::string16 GetParamValue(SDECore::IParams& params, const VARIANT& index) {
   SDEParam param = GetParam(params, index);
   if (!param)
     return base::string16();
-    
+
   base::win::ScopedBstr val;
   if (FAILED(param->get_Value(val.Receive())) || !val)
     return base::string16();
@@ -67,16 +67,16 @@ base::string16 GetHyperlink(SDECore::ISDEObject50& object) {
   SDEParam param = GetParam(*params, kParameterHyperlink);
   if (!param)
     return base::string16();
-    
+
   long size;
   if (FAILED(param->get_Dim(&size)) || !size)
     return base::string16();
-    
+
   base::win::ScopedBstr value;
   if (FAILED(param->get_IndexedValue(1, value.Receive())))
     return base::string16();
-    
-	return static_cast<const base::char16*>(value);
+
+  return static_cast<const base::char16*>(value);
 }
 
 inline std::string StrTok(std::string& str, const char* delimiters) {
@@ -84,21 +84,24 @@ inline std::string StrTok(std::string& str, const char* delimiters) {
   std::string res = str.substr(0, p);
   p = str.find_first_not_of(delimiters, p + 1);
   str.erase(0, p);
-  return res;  
+  return res;
 }
 
-std::vector<base::string16> GetStateStrings(SDECore::IParams& params, base::StringPiece16 param_name) {
-  SDEParam param = GetParam(params, base::win::ScopedVariant(param_name.as_string().c_str()));
+std::vector<base::string16> GetStateStrings(SDECore::IParams& params,
+                                            base::StringPiece16 param_name) {
+  SDEParam param = GetParam(
+      params, base::win::ScopedVariant(param_name.as_string().c_str()));
   if (!param)
     return {};
 
-  base::win::ScopedBstr values;    
+  base::win::ScopedBstr values;
   if (FAILED(param->get_Values(values.Receive())))
     return {};
   if (!values)
     return {};
-    
-  return base::SplitString(base::string16(values), L";", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+
+  return base::SplitString(base::string16(values), L";", base::TRIM_WHITESPACE,
+                           base::SPLIT_WANT_NONEMPTY);
 }
 
 Limits GetLimits(const NodeRef& node) {
@@ -111,13 +114,10 @@ Limits GetLimits(const NodeRef& node) {
 }
 
 const base::char16* ToString(Limit limit) {
-  const base::char16* strs[] = {
-      L"мин_аларм",
-      L"мин_уставка",
-      L"макс_уставка",
-      L"макс_аларм"
-  };
-  static_assert(_countof(strs) == static_cast<int>(Limit::Count), "Wrong limits");
+  const base::char16* strs[] = {L"мин_аларм", L"мин_уставка", L"макс_уставка",
+                                L"макс_аларм"};
+  static_assert(_countof(strs) == static_cast<int>(Limit::Count),
+                "Wrong limits");
   auto index = static_cast<size_t>(limit);
   assert(index < _countof(strs));
   return strs[index];
@@ -136,7 +136,8 @@ base::string16 GetLimitSetString(const Limits& limits) {
 }
 
 inline bool operator==(const Limits& left, const Limits& right) {
-  return std::equal(std::begin(left.limits),  std::end(left.limits), std::begin(right.limits));
+  return std::equal(std::begin(left.limits), std::end(left.limits),
+                    std::begin(right.limits));
 }
 
 inline bool operator!=(const Limits& left, const Limits& right) {
@@ -145,14 +146,19 @@ inline bool operator!=(const Limits& left, const Limits& right) {
 
 // ModusElement
 
-ModusElement::ModusElement(ModusObject& object, SDECore::IParams& sde_params,
+ModusElement::ModusElement(ModusObject& object,
+                           SDECore::IParams& sde_params,
                            const base::string16& prop_name)
     : object_(object),
       sde_params_(&sde_params),
       prop_name_(prop_name),
       style_(0),
       value_(0) {
-  data_spec_.set_delegate(this);
+  data_spec_.property_change_handler =
+      [this](const rt::PropertySet& properties) { UpdateData(false); };
+  data_spec_.node_modified_handler = [this] { UpdateData(false); };
+  data_spec_.deletion_handler = [this] { UpdateData(false); };
+  data_spec_.event_change_handler = [this] { UpdateData(false); };
 }
 
 void ModusElement::Init() {
@@ -179,8 +185,9 @@ void ModusElement::UpdateData(bool init) {
       if (!state_strings_.empty()) {
         bool state = std::abs(value_) >= std::numeric_limits<double>::epsilon();
         size_t state_no = state ? 1 : 0;
-        text = (state_no < state_strings_.size()) ?
-            state_strings_[state_no ? 1 : 0].c_str() : L"";
+        text = (state_no < state_strings_.size())
+                   ? state_strings_[state_no ? 1 : 0].c_str()
+                   : L"";
         if (text.empty())
           text = state ? kStateClose : kStateOpen;
 
@@ -189,7 +196,7 @@ void ModusElement::UpdateData(bool init) {
       }
 
       SetParamValue(*sde_params_, base::win::ScopedVariant(prop_name_.c_str()),
-                                  base::win::ScopedBstr(text.c_str()));
+                    base::win::ScopedBstr(text.c_str()));
     }
 
     // bad quality
@@ -207,11 +214,14 @@ void ModusElement::UpdateData(bool init) {
       if (init || limits_ != limits) {
         limits_ = limits;
         auto limit_set_string = GetLimitSetString(limits_);
-        SetParamValue(*sde_params_, kParameterLimits, base::win::ScopedBstr(limit_set_string.c_str()));
+        SetParamValue(*sde_params_, kParameterLimits,
+                      base::win::ScopedBstr(limit_set_string.c_str()));
         for (size_t i = 0; i < static_cast<size_t>(Limit::Count); ++i) {
           if (limits.limits[i] != kNoLimit) {
-            SetParamValue(*sde_params_, base::win::ScopedVariant(ToString(static_cast<Limit>(i))),
-                                        base::win::ScopedBstr(WideFormat(limits.limits[i]).c_str()));
+            SetParamValue(
+                *sde_params_,
+                base::win::ScopedVariant(ToString(static_cast<Limit>(i))),
+                base::win::ScopedBstr(WideFormat(limits.limits[i]).c_str()));
           }
         }
       }
@@ -228,26 +238,4 @@ void ModusElement::UpdateData(bool init) {
     object_.UpdateStyle(false);
 }
 
-void ModusElement::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                     const rt::PropertySet& properties) {
-  assert(&spec == &data_spec_);
-  UpdateData(false);
-}
-
-void ModusElement::OnTimedDataNodeModified(rt::TimedDataSpec& spec, const scada::PropertyIds& property_ids) {
-  assert(&spec == &data_spec_);
-  UpdateData(false);
-}
-
-void ModusElement::OnTimedDataDeleted(rt::TimedDataSpec& spec) {
-  assert(&spec == &data_spec_);
-  UpdateData(false);
-}
-
-void ModusElement::OnEventsChanged(rt::TimedDataSpec& spec,
-                              const events::EventSet& events) {
-  assert(&spec == &data_spec_);
-  UpdateData(false);
-}
-
-} // namespace modus
+}  // namespace modus

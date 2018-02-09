@@ -2,11 +2,11 @@
 
 #include <memory>
 
-#include "timed_data/timed_data_spec.h"
-#include "controller.h"
 #include "contents_model.h"
-#include "ui/base/models/grid_model.h"
+#include "controller.h"
+#include "timed_data/timed_data_spec.h"
 #include "ui/base/models/fixed_row_model.h"
+#include "ui/base/models/grid_model.h"
 #include "ui/views/controls/grid/grid_controller.h"
 
 class CellView : public Controller,
@@ -25,25 +25,11 @@ class CellView : public Controller,
   virtual ContentsModel* GetContentsModel() { return this; }
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
 
  private:
-  class Cell {
-   public:
-    Cell(CellView& view, int row, int column)
-        : row_(row),
-          column_(column) {
-      value_spec_.set_delegate(&view);
-      value_spec_.param = this;
-    }
-
-    rt::TimedDataSpec	value_spec_;
-    int				row_;
-    int				column_;
-
-   private:
-    DISALLOW_COPY_AND_ASSIGN(Cell);
-  };
+  class Cell;
 
   int GetCellIndex(int row, int column) const {
     DCHECK(row >= 0 && row < row_count_);
@@ -51,9 +37,7 @@ class CellView : public Controller,
     return row * column_count_ + column;
   }
 
-  Cell*& cell(int row, int column) {
-    return cells_[GetCellIndex(row, column)];
-  }
+  Cell*& cell(int row, int column) { return cells_[GetCellIndex(row, column)]; }
   const Cell* cell(int row, int column) const {
     return cells_[GetCellIndex(row, column)];
   }
@@ -66,25 +50,32 @@ class CellView : public Controller,
   void ClearCell(int row, int column);
   void ClearSelection();
 
+  void OnTimedDataDeleted(Cell& cell);
+  void OnPropertyChanged(Cell& cell, const rt::PropertySet& properties);
+  void OnEventsChanged(Cell& cell);
+
   // views::GridController
-  virtual bool OnGridDrawCell(views::GridView& sender, gfx::Canvas* canvas, int row,
-                              int col, const gfx::Rect& rect) override;
-  virtual bool CanEditCell(views::GridView& sender, int row, int column) override { return true; }
-  virtual bool OnGridEditCellText(views::GridView& sender, int row, int column,
+  virtual bool OnGridDrawCell(views::GridView& sender,
+                              gfx::Canvas* canvas,
+                              int row,
+                              int col,
+                              const gfx::Rect& rect) override;
+  virtual bool CanEditCell(views::GridView& sender,
+                           int row,
+                           int column) override {
+    return true;
+  }
+  virtual bool OnGridEditCellText(views::GridView& sender,
+                                  int row,
+                                  int column,
                                   const base::string16& text) override;
   virtual void OnGridSelectionChanged(views::GridView& sender) override;
-  virtual bool OnKeyPressed(views::GridView& sender, ui::KeyboardCode key_code) override;
-  
+  virtual bool OnKeyPressed(views::GridView& sender,
+                            ui::KeyboardCode key_code) override;
+
   // GridModel
   virtual int GetRowCount() override;
   virtual void GetCell(ui::GridCell& data) override;
-
-  // rt::TimedDataDelegate
-  virtual void OnTimedDataDeleted(rt::TimedDataSpec& spec) override;
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties) override;
-  virtual void OnEventsChanged(rt::TimedDataSpec& spec,
-                               const events::EventSet& events) override;
 
   int row_count_;
   int column_count_;

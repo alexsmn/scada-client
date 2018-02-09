@@ -57,22 +57,6 @@ SkColor ObjectTreeModel::GetBackgroundColor(void* node, int column_id) {
   return ConfigurationTreeModel::GetBackgroundColor(node, column_id);
 }
 
-void ObjectTreeModel::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                        const rt::PropertySet& properties) {
-  if (properties.is_current_changed()) {
-    ConfigurationTreeNode& node =
-        *reinterpret_cast<ConfigurationTreeNode*>(spec.param);
-    TreeNodeChanged(&node);
-  }
-}
-
-void ObjectTreeModel::OnEventsChanged(rt::TimedDataSpec& spec,
-                                      const events::EventSet& events) {
-  ConfigurationTreeNode& node =
-      *reinterpret_cast<ConfigurationTreeNode*>(spec.param);
-  TreeNodeChanged(&node);
-}
-
 void ObjectTreeModel::OnBlink(bool state) {
   for (auto& p : visible_nodes_) {
     auto& visible_node = p.second;
@@ -124,7 +108,13 @@ void ObjectTreeModel::ConnectVisibleNode(VisibleNode& visible_node,
   if (tree_node.data_node().node_class() != scada::NodeClass::Variable)
     return;
 
-  visible_node.spec.param = &tree_node;
-  visible_node.spec.set_delegate(this);
+  visible_node.spec.property_change_handler =
+      [this, &tree_node](const rt::PropertySet& properties) {
+        if (properties.is_current_changed())
+          TreeNodeChanged(&tree_node);
+      };
+  visible_node.spec.event_change_handler = [this, &tree_node] {
+    TreeNodeChanged(&tree_node);
+  };
   visible_node.spec.Connect(timed_data_service_, tree_node.data_node().id());
 }

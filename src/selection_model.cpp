@@ -7,7 +7,11 @@
 SelectionModel::SelectionModel(NodeService& node_service,
                                TimedDataService& timed_data_service)
     : node_service_{node_service}, timed_data_service_{timed_data_service} {
-  timed_data_.set_delegate(this);
+  timed_data_.property_change_handler =
+      [this](const rt::PropertySet& properties) {
+        if (properties.is_item_changed())
+          Clear();
+      };
 }
 
 SelectionModel::~SelectionModel() {
@@ -86,14 +90,6 @@ void SelectionModel::SelectMultiple() {
   Reset();
   type_ = MULTI;
   Changed();
-}
-
-void SelectionModel::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                       const rt::PropertySet& properties) {
-  assert(&spec == &timed_data_);
-
-  if (properties.is_item_changed())
-    Clear();
 }
 
 base::string16 SelectionModel::GetTitle() const {

@@ -1,7 +1,7 @@
 #include "components/timed_data/timed_data_model.h"
 
-#include "base/strings/sys_string_conversions.h"
 #include "base/format_time.h"
+#include "base/strings/sys_string_conversions.h"
 
 std::string FormatQuality(scada::Qualifier qualifier) {
   std::string text;
@@ -29,10 +29,19 @@ std::string FormatQuality(scada::Qualifier qualifier) {
 // TimedDataModel
 
 TimedDataModel::TimedDataModel(TimedDataService& timed_data_service)
-    : timed_data_service_(timed_data_service),
-      cached_index_(-1),
-      count_(0) {
-  timed_data_.set_delegate(this);
+    : timed_data_service_(timed_data_service), cached_index_(-1), count_(0) {
+  timed_data_.property_change_handler =
+      [this](const rt::PropertySet& properties) {
+        if (properties.is_current_changed())
+          Update();
+      };
+  timed_data_.correction_handler = [this](size_t count,
+                                          const scada::DataValue* tvqs) {
+    assert(count > 0);
+    Update();
+  };
+  timed_data_.ready_handler = [this] { Update(); };
+  timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
 }
 
 void TimedDataModel::SetTimedData(rt::TimedDataSpec timed_data) {
@@ -57,31 +66,10 @@ void TimedDataModel::Update() {
     NotifyModelChanged();
 }
 
-void TimedDataModel::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                      const rt::PropertySet& properties) {
-  if (properties.is_current_changed())
-    Update();
-}
-
-void TimedDataModel::OnTimedDataCorrections(rt::TimedDataSpec& spec, size_t count,
-                                            const scada::DataValue* tvqs) {
-  assert(count > 0);
-  Update();
-}
-
-void TimedDataModel::OnTimedDataReady(rt::TimedDataSpec& spec) {
-  Update();
-}
-
-void TimedDataModel::OnTimedDataNodeModified(rt::TimedDataSpec& spec,
-                                             const scada::PropertyIds& property_ids) {
-  NotifyModelChanged();
-}
-
 void TimedDataModel::Iterate(int index) {
   const rt::TimedVQMap* values = timed_data_.values();
   assert(values);
-  
+
   assert(index < count_);
 
   if (cached_index_ == -1) {
@@ -119,12 +107,11 @@ void TimedDataModel::Iterate(int index) {
 scada::DataValue TimedDataModel::GetRowTVQ(int row) {
   if (row >= (int)timed_data_.values()->size())
     return timed_data_.current();
-  
+
   Iterate(row);
-  return scada::DataValue(cached_iterator_->second.vq.value,
-                          cached_iterator_->second.vq.qualifier,
-                          cached_iterator_->first,
-                          cached_iterator_->second.collection_time);
+  return scada::DataValue(
+      cached_iterator_->second.vq.value, cached_iterator_->second.vq.qualifier,
+      cached_iterator_->first, cached_iterator_->second.collection_time);
 }
 
 int TimedDataModel::GetRowCount() {
@@ -133,25 +120,27 @@ int TimedDataModel::GetRowCount() {
 
 void TimedDataModel::GetCell(ui::TableCell& cell) {
   scada::DataValue tvq = GetRowTVQ(cell.row);
-  
+
   switch (cell.column_id) {
     case CID_TIME:
-      cell.text = base::SysNativeMBToWide(FormatTime(tvq.source_timestamp,
-          TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
+      cell.text = base::SysNativeMBToWide(
+          FormatTime(tvq.source_timestamp,
+                     TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
-  
+
     case CID_VALUE:
       // Format without quality.
       cell.text = timed_data_.GetValueString(tvq.value, tvq.qualifier, 0);
       break;
-  
+
     case CID_QUALITY:
       cell.text = base::SysNativeMBToWide(FormatQuality(tvq.qualifier));
       break;
 
     case CID_COLLECTION_TIME:
-      cell.text = base::SysNativeMBToWide(FormatTime(tvq.server_timestamp,
-          TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
+      cell.text = base::SysNativeMBToWide(
+          FormatTime(tvq.server_timestamp,
+                     TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
   }
 

@@ -18,8 +18,7 @@ class Shape;
 
 class ModusView2;
 
-class ModusBinding2 : private rt::TimedDataDelegate,
-                      private ModusStyle2::AnimationObserver {
+class ModusBinding2 : private ModusStyle2::AnimationObserver {
  public:
   class Delegate {
    public:
@@ -37,12 +36,6 @@ class ModusBinding2 : private rt::TimedDataDelegate,
   bool Update();
 
   bool SetStyles(unsigned styles);
-
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties) override;
-  virtual void OnEventsChanged(rt::TimedDataSpec& spec,
-                               const events::EventSet& events) override;
 
   // ModusStyle2::AnimationObserver
 	virtual void OnAnimationStep() override;
