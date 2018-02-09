@@ -100,7 +100,17 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
 // MetrixDataSource
 
 MetrixDataSource::MetrixDataSource() {
-  timed_data_.set_delegate(this);
+  timed_data_.ready_handler = [this] { OnHistoryChanged(); };
+  timed_data_.correction_handler = [this](size_t count,
+                                          const scada::DataValue* tvqs) {
+    assert(count > 0);
+    OnHistoryChanged();
+  };
+  timed_data_.node_modified_handler = [this] { OnItemChanged(); };
+  timed_data_.deletion_handler = [this] {
+    if (observer_)
+      observer_->OnDataSourceDeleted();
+  };
 }
 
 MetrixDataSource::~MetrixDataSource() {}
@@ -189,36 +199,9 @@ void MetrixDataSource::OnHistoryChanged() {
     observer_->OnDataSourceHistoryChanged();
 }
 
-void MetrixDataSource::OnTimedDataReady(rt::TimedDataSpec& spec) {
-  assert(&spec == &timed_data_);
-  OnHistoryChanged();
-}
-
-void MetrixDataSource::OnTimedDataCorrections(rt::TimedDataSpec& spec,
-                                              size_t count,
-                                              const scada::DataValue* tvqs) {
-  assert(&spec == &timed_data_);
-  assert(count > 0);
-  OnHistoryChanged();
-}
-
-void MetrixDataSource::OnTimedDataNodeModified(
-    rt::TimedDataSpec& spec,
-    const scada::PropertyIds& property_ids) {
-  OnItemChanged();
-}
-
-void MetrixDataSource::OnTimedDataDeleted(rt::TimedDataSpec& spec) {
-  if (observer_)
-    observer_->OnDataSourceDeleted();
-}
-
-void MetrixDataSource::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                         const rt::PropertySet& properties) {
-  assert(&spec == &timed_data_);
-
+void MetrixDataSource::OnPropertyChanged(const rt::PropertySet& properties) {
   if (properties.is_current_changed()) {
-    if (spec.historical())
+    if (timed_data_.historical())
       OnHistoryChanged();
 
     const auto& tvq = timed_data_.current();

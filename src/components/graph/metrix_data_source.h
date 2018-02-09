@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "core/configuration_types.h"
-#include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
 
 #if defined(UI_QT)
@@ -14,8 +13,7 @@
 
 class MetrixPointEnum;
 
-class MetrixDataSource : public views::GraphDataSource,
-                         private rt::TimedDataDelegate {
+class MetrixDataSource : public views::GraphDataSource {
  public:
   MetrixDataSource();
   virtual ~MetrixDataSource();
@@ -33,7 +31,8 @@ class MetrixDataSource : public views::GraphDataSource,
   bool XToData(double& x, scada::VQ& val) const;
 
   // views::GraphDataSource
-  virtual views::PointEnumerator* EnumPoints(double from, double to,
+  virtual views::PointEnumerator* EnumPoints(double from,
+                                             double to,
                                              bool include_left_bound,
                                              bool include_right_bound) override;
 #if defined(UI_QT)
@@ -49,15 +48,7 @@ class MetrixDataSource : public views::GraphDataSource,
   void UpdateRange();
   void UpdateLimits();
 
-  // rt::TimedDataDelegate
-  virtual void OnTimedDataCorrections(rt::TimedDataSpec& spec, size_t count,
-                                      const scada::DataValue* tvqs) override;
-  virtual void OnTimedDataReady(rt::TimedDataSpec& spec) override;
-  virtual void OnTimedDataNodeModified(rt::TimedDataSpec& spec,
-                                       const scada::PropertyIds& property_ids) override;
-  virtual void OnTimedDataDeleted(rt::TimedDataSpec& spec) override;
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                  const rt::PropertySet& properties) override;
+  void OnPropertyChanged(const rt::PropertySet& properties);
 
   rt::TimedDataSpec timed_data_;
   base::string16 title_;

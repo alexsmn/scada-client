@@ -42,10 +42,6 @@ class WriteDialog : public framework::Dialog, private rt::TimedDataDelegate {
 
   void OnWriteComplete(const scada::Status& status);
 
-  // rt::TimedDataDelegate
-  virtual void OnPropertyChanged(rt::TimedDataSpec& spec,
-                                 const rt::PropertySet& properties);
-
   TimedDataService& timed_data_service_;
   Profile& profile_;
 
@@ -76,8 +72,11 @@ WriteDialog::WriteDialog(TimedDataService& timed_data_service,
       write_selecting_(false),
       has_condition_(false),
       weak_factory_(this) {
-  spec_.set_delegate(this);
-  condition_.set_delegate(this);
+  spec_.property_change_handler = [this](const rt::PropertySet& properties) {
+    UpdateCurrent();
+  };
+  condition_.property_change_handler =
+      [this](const rt::PropertySet& properties) { UpdateCondition(); };
 }
 
 void WriteDialog::OnInitDialog() {
@@ -242,14 +241,6 @@ void WriteDialog::UpdateCondition() {
   } else {
     SetItemText(IDC_CONDITION, L"Не задано");
   }
-}
-
-void WriteDialog::OnPropertyChanged(rt::TimedDataSpec& spec,
-                                    const rt::PropertySet& properties) {
-  if (&spec == &spec_)
-    UpdateCurrent();
-  else if (&spec == &condition_)
-    UpdateCondition();
 }
 
 void ExecuteWriteDialog(MainWindow* main_window,
