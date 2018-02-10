@@ -6,10 +6,11 @@
 #include <string>
 
 #include "base/files/file_path.h"
-#include "core/node_id.h"
-#include "core/session_state_observer.h"
+#include "common/aliases.h"
 #include "core/data_services.h"
 #include "core/data_services_factory.h"
+#include "core/node_id.h"
+#include "core/session_state_observer.h"
 
 namespace events {
 class EventManager;
@@ -46,7 +47,7 @@ class ClientApplication : private scada::SessionStateObserver {
   ClientApplication& operator=(const ClientApplication&) = delete;
 
   Logger& logger() const { return *logger_; }
-  
+
   scada::SessionService& session_service();
 
   virtual bool Init();
@@ -63,9 +64,11 @@ class ClientApplication : private scada::SessionStateObserver {
   const MainWindows& main_windows() const { return main_windows_; }
 
  protected:
-  virtual std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) = 0;
+  virtual std::unique_ptr<MainWindow> CreateMainWindow(
+      MainWindowContext&& context) = 0;
 
-  virtual bool ShowLoginDialogImpl(const DataServicesContext& context, DataServices& services) = 0;
+  virtual bool ShowLoginDialogImpl(const DataServicesContext& context,
+                                   DataServices& services) = 0;
 
   std::shared_ptr<Logger> logger_;
 
@@ -86,6 +89,7 @@ class ClientApplication : private scada::SessionStateObserver {
   std::unique_ptr<NodeService> node_service_;
 
   std::unique_ptr<events::EventManager> event_manager_;
+  AliasResolver alias_resolver_;
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;

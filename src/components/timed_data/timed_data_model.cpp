@@ -111,7 +111,7 @@ scada::DataValue TimedDataModel::GetRowTVQ(int row) {
   Iterate(row);
   return scada::DataValue(
       cached_iterator_->second.vq.value, cached_iterator_->second.vq.qualifier,
-      cached_iterator_->first, cached_iterator_->second.collection_time);
+      cached_iterator_->first, cached_iterator_->second.server_timestamp);
 }
 
 int TimedDataModel::GetRowCount() {

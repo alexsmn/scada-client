@@ -141,7 +141,7 @@ void SummaryModel::Column::UpdateHistory() {
       if (row != -1) {
         cells_[row].Update(scada::DataValue(i->second.vq.value,
                                             i->second.vq.qualifier, i->first,
-                                            i->second.collection_time));
+                                            i->second.server_timestamp));
       }
     }
   }

@@ -21,6 +21,7 @@
 #include "net/session_info.h"
 #include "net/transport_factory_impl.h"
 #include "project.h"
+#include "services/alias_service.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
 #include "services/local_events.h"
@@ -138,6 +139,7 @@ ClientApplication::~ClientApplication() {
   local_events_.reset();
 
   timed_data_service_.reset();
+  alias_resolver_ = nullptr;
   event_manager_.reset();
   node_service_.reset();
 
@@ -178,8 +180,18 @@ void ClientApplication::BeforeRun() {
           std::make_shared<NestedLogger>(logger_, "EventManager"),
       });
 
+  auto alias_service = std::make_shared<AliasService>(AliasServiceContext{
+      std::make_shared<NestedLogger>(logger_, "AliasService"),
+      *node_service_,
+  });
+  alias_resolver_ = [alias_service](base::StringPiece alias,
+                                    const AliasResolveCallback& callback) {
+    alias_service->Resolve(alias, callback);
+  };
+
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       io_service_,
+      alias_resolver_,
       *node_service_,
       *master_data_services_,
       *master_data_services_,
