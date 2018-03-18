@@ -33,7 +33,7 @@ void SelectionCommands::OpenWindow(unsigned type) {
     return;
 
   auto weak_main_window = main_window_->GetWeakPtr();
-  PrepareWindowDefinitionForOpenExpandGroups(
+  MakeGroupWindowDefinition(
       view_service_, node_service_, node, type,
       [weak_main_window](WindowDefinition win) {
         ::OpenView(weak_main_window.get(), std::move(win));
@@ -164,7 +164,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     auto title = selection_->GetTitle();
     auto items = selection_->GetMultipleNodeIds();
     OpenView(main_window_,
-             PrepareWindowDefinitionForOpen(items, type, title.c_str()));
+             MakeWindowDefinition(items, type, title.c_str()));
     return;
   }
 
@@ -200,7 +200,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     if (type) {
       const std::string& formula = selection_->GetTimedData().formula();
       OpenView(main_window_,
-               PrepareWindowDefinitionForOpen(formula.c_str(), type));
+               MakeWindowDefinition(formula.c_str(), type));
     }
     return;
   }
@@ -223,7 +223,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     case ID_OPEN_EVENTS:
     case ID_HISTORICAL_EVENTS: {
       auto weak_main_window = main_window_->GetWeakPtr();
-      PrepareWindowDefinitionForOpenExpandGroups(
+      MakeGroupWindowDefinition(
           view_service_, node_service_, node, ID_EVENT_JOURNAL_VIEW,
           [command_id, weak_main_window](WindowDefinition win) {
             if (command_id == ID_OPEN_EVENTS)
@@ -272,19 +272,19 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     case ID_ITEM_PARAMS:
       OpenView(main_window_,
-               PrepareWindowDefinitionForOpen(node, ID_PROPERTY_VIEW));
+               MakeWindowDefinition(node, ID_PROPERTY_VIEW));
       return;
     case ID_TABLE_CONFIG:
       OpenView(main_window_,
-               PrepareWindowDefinitionForOpen(node, ID_TABLE_EDITOR));
+               MakeWindowDefinition(node, ID_TABLE_EDITOR));
       return;
     case ID_TRANSMISSION_VIEW:
       OpenView(main_window_,
-               PrepareWindowDefinitionForOpen(node, ID_TRANSMISSION_VIEW));
+               MakeWindowDefinition(node, ID_TRANSMISSION_VIEW));
       return;
     case ID_OPEN_WATCH:
       OpenView(main_window_,
-               PrepareWindowDefinitionForOpen(node, ID_WATCH_VIEW));
+               MakeWindowDefinition(node, ID_WATCH_VIEW));
       return;
     case ID_OPEN_DEVICE_METRICS:
       if (node) {

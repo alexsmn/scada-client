@@ -6,7 +6,6 @@
 #include "controller_delegate.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
-#include "dialog_service.h"
 #include "selection_model.h"
 
 namespace events {
@@ -29,6 +28,7 @@ class DropController;
 
 class ContentsModel;
 class ControllerDelegate;
+class DialogService;
 class Favourites;
 class FileCache;
 class LocalEvents;
@@ -58,10 +58,10 @@ struct ControllerContext {
   scada::ViewService& view_service_;
 };
 
-class Controller : public CommandHandler, protected ControllerContext {
+class Controller : protected ControllerContext, public CommandHandler {
  public:
   explicit Controller(const ControllerContext& context)
-      : ControllerContext(std::move(context)),
+      : ControllerContext{context},
         selection_{node_service_, timed_data_service_} {}
   virtual ~Controller() {}
 

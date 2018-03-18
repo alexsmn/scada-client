@@ -2,11 +2,10 @@
 
 MessageLoopQt::MessageLoopQt() {
   QObject::connect(&timer_, &QTimer::timeout, [this] { Run(); });
-  timer_.start(50);
+  timer_.start(10);
 }
 
-MessageLoopQt::~MessageLoopQt() {
-}
+MessageLoopQt::~MessageLoopQt() {}
 
 void MessageLoopQt::Run() {
   auto ticks = base::TimeTicks::Now();
@@ -22,7 +21,8 @@ void MessageLoopQt::Run() {
 }
 
 bool MessageLoopQt::PostTaskHelper(const tracked_objects::Location& from_here,
-                                   const base::Closure& task, base::TimeDelta delay,
+                                   const base::Closure& task,
+                                   base::TimeDelta delay,
                                    bool nestable) {
   assert(task);
 

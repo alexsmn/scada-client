@@ -74,7 +74,7 @@ ConfigurationTreeView::ConfigurationTreeView(
 
   tree_view_->SetDoubleClickHandler([this] {
     if (const auto& node = selection().node())
-      controller_delegate_.ExecuteDefaultItemCommand(node);
+      controller_delegate_.ExecuteDefaultNodeCommand(node);
   });
 
   tree_view_->SetCompareHandler([this](void* left, void* right) {

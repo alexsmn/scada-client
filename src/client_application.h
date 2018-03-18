@@ -1,16 +1,21 @@
 #pragma once
 
-#include <boost/asio/io_service.hpp>
-#include <map>
-#include <memory>
-#include <string>
-
 #include "base/files/file_path.h"
 #include "common/aliases.h"
 #include "core/data_services.h"
 #include "core/data_services_factory.h"
 #include "core/node_id.h"
 #include "core/session_state_observer.h"
+
+#include <map>
+#include <memory>
+#include <string>
+
+namespace boost {
+namespace asio {
+class io_context;
+}
+}  // namespace boost
 
 namespace events {
 class EventManager;
@@ -83,8 +88,10 @@ class ClientApplication : private scada::SessionStateObserver {
   virtual void OnSessionCreated() override;
   virtual void OnSessionDeleted(const scada::Status& status) override;
 
-  boost::asio::io_service io_service_;
+  std::unique_ptr<boost::asio::io_context> io_context_;
   std::unique_ptr<net::TransportFactory> transport_factory_;
+
+  std::unique_ptr<Profile> profile_;
 
   std::unique_ptr<NodeService> node_service_;
 
@@ -94,18 +101,14 @@ class ClientApplication : private scada::SessionStateObserver {
 
   std::unique_ptr<LocalEvents> local_events_;
   std::unique_ptr<TaskManager> task_manager_;
+  std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<PortfolioManager> portfolio_manager_;
+  std::unique_ptr<Favourites> favourites_;
   std::unique_ptr<Speech> speech_;
 
   std::unique_ptr<FileCache> file_cache_;
 
   std::unique_ptr<ModusModule2> modus_module_;
-
-  std::unique_ptr<ActionManager> action_manager_;
-
-  std::unique_ptr<Profile> profile_;
-
-  std::unique_ptr<Favourites> favourites_;
 
   MainWindows main_windows_;
 

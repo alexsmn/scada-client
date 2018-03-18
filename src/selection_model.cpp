@@ -97,7 +97,7 @@ base::string16 SelectionModel::GetTitle() const {
 }
 
 NodeIdSet SelectionModel::GetMultipleNodeIds() const {
-  return multiple_handler_ ? multiple_handler_() : NodeIdSet();
+  return multiple_handler ? multiple_handler() : NodeIdSet{};
 }
 
 void SelectionModel::Reset() {
@@ -113,8 +113,8 @@ void SelectionModel::Reset() {
 }
 
 void SelectionModel::Changed() {
-  if (change_handler_)
-    change_handler_();
+  if (change_handler)
+    change_handler();
 }
 
 void SelectionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
@@ -122,9 +122,9 @@ void SelectionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     Changed();
 }
 
-void SelectionModel::OnModelChange(const ModelChangeEvent& event) {
-  if ((event.verb & ModelChangeEvent::NodeDeleted) &&
-      (node_.id() == event.node_id)) {
+void SelectionModel::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if ((event.verb & scada::ModelChangeEvent::NodeDeleted) &&
+      (event.node_id == node_.id())) {
     Clear();
   }
 }

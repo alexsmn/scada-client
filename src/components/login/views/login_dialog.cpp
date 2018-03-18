@@ -1,36 +1,32 @@
 ﻿#include "components/login/login_dialog.h"
 
-#include <algorithm>
-#include <vector>
-
 #include "base/bind.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "base/win/win_util2.h"
 #include "base/win/registry2.h"
+#include "base/win/win_util2.h"
 #include "common_resources.h"
 #include "core/data_services.h"
 #include "core/data_services_factory.h"
-#include "views/client_utils_views.h"
-#include "views/framework/dialog.h"
 #include "core/session_service.h"
 #include "core/status.h"
-#include "translation.h"
+#include "views/client_utils_views.h"
+#include "views/framework/dialog.h"
+
+#include <algorithm>
+#include <vector>
 
 #include <atlbase.h>
+
 #include <atlapp.h>
 #include <atlctrls.h>
-
-namespace scada {
-class SessionService;
-}
 
 class LoginDialog : public framework::Dialog {
  public:
   explicit LoginDialog(const DataServicesContext& services_context);
   ~LoginDialog();
-  
+
   const std::string& server_host() const { return server_host_; }
   DataServices& services() { return services_; }
 
@@ -41,7 +37,7 @@ class LoginDialog : public framework::Dialog {
 
  private:
   typedef std::vector<std::string> StringList;
-  
+
   void StartLogin();
   void Connect(bool allow_remote_logoff);
   void UpdateControls();
@@ -53,13 +49,15 @@ class LoginDialog : public framework::Dialog {
   DataServicesContext services_context_;
   DataServices services_;
 
-  std::string   user_name_;
-  std::string   password_;
-  std::string   server_host_;
+  std::string user_name_;
+  std::string password_;
+  std::string server_host_;
   std::string server_type_;
-  StringList    user_list_;
-  bool      auto_login_ = false;  // Automatic startup login is performed.
-  bool      auto_login_option_ = false;
+  StringList user_list_;
+
+  // Automatic startup login is performed.
+  bool auto_login_ = false;
+  bool auto_login_option_ = false;
 
   bool connecting_ = false;
 
@@ -67,15 +65,13 @@ class LoginDialog : public framework::Dialog {
 };
 
 LoginDialog::LoginDialog(const DataServicesContext& services_context)
-    : Dialog{IDD_LOGIN},
-      services_context_{services_context} {
-}
+    : Dialog{IDD_LOGIN}, services_context_{services_context} {}
 
-LoginDialog::~LoginDialog() {
-}
+LoginDialog::~LoginDialog() {}
 
 void LoginDialog::UpdateControls() {
-  int ids[] = { IDOK, IDC_NAME, IDC_PASSWORD, IDC_HOST, IDC_SERVER_TYPE, IDC_AUTO_LOGIN };
+  int ids[] = {IDOK,     IDC_NAME,        IDC_PASSWORD,
+               IDC_HOST, IDC_SERVER_TYPE, IDC_AUTO_LOGIN};
   bool connecting = connecting_;
   for (int i = 0; i < _countof(ids); i++)
     EnableWindow(GetItem(ids[i]), !connecting);
@@ -88,25 +84,28 @@ void LoginDialog::OnInitDialog() {
   std::string user_name = base::SysWideToNativeMB(reg.GetString(L"User"));
   std::string user_list = base::SysWideToNativeMB(reg.GetString(L"UserList"));
   std::string host = base::SysWideToNativeMB(reg.GetString(L"Host"));
-  std::string server_type = base::SysWideToNativeMB(reg.GetString(L"ServerType"));
+  std::string server_type =
+      base::SysWideToNativeMB(reg.GetString(L"ServerType"));
   std::string password = base::SysWideToNativeMB(reg.GetString(L"Password"));
   auto_login_ = reg.GetDWORD(L"AutoLogin") != 0;
 
-  WTL::CButton(GetItem(IDC_AUTO_LOGIN)).SetCheck(auto_login_ ? BST_CHECKED : BST_UNCHECKED);
+  WTL::CButton(GetItem(IDC_AUTO_LOGIN))
+      .SetCheck(auto_login_ ? BST_CHECKED : BST_UNCHECKED);
 
-  // Don't perform automatic login if Shift is pressed. 
+  // Don't perform automatic login if Shift is pressed.
   if (GetAsyncKeyState(VK_CONTROL) < 0)
     auto_login_ = false;
 
   // Users.
   {
     WTL::CComboBox user_combo = GetItem(IDC_NAME);
-    for (size_t p = 0; p < user_list.length(); ) {
+    for (size_t p = 0; p < user_list.length();) {
       size_t n = user_list.find(',', p);
-      std::string user_name = (n == std::string::npos) ? user_list.substr(p) :
-                                                         user_list.substr(p, n - p);
+      std::string user_name = (n == std::string::npos)
+                                  ? user_list.substr(p)
+                                  : user_list.substr(p, n - p);
       if (std::find(user_list_.begin(), user_list_.end(), user_name) ==
-              user_list_.end()) {
+          user_list_.end()) {
         user_list_.push_back(user_name);
         user_combo.AddString(base::SysNativeMBToWide(user_name).c_str());
       }
@@ -148,11 +147,13 @@ void LoginDialog::StartLogin() {
   password_ = base::SysWideToNativeMB(GetItemText(IDC_PASSWORD));
   server_host_ = base::SysWideToNativeMB(GetItemText(IDC_HOST));
   {
-    int server_type_index = WTL::CComboBox(GetItem(IDC_SERVER_TYPE)).GetCurSel();
+    int server_type_index =
+        WTL::CComboBox(GetItem(IDC_SERVER_TYPE)).GetCurSel();
     server_type_index = std::max(server_type_index, 0);
     server_type_ = GetDataServicesInfoList()[server_type_index].name;
   }
-  auto_login_option_ = WTL::CButton(GetItem(IDC_AUTO_LOGIN)).GetState() == BST_CHECKED;
+  auto_login_option_ =
+      WTL::CButton(GetItem(IDC_AUTO_LOGIN)).GetState() == BST_CHECKED;
 
   Connect(false);
   UpdateControls();
@@ -170,24 +171,27 @@ void LoginDialog::OnLoginResult(const scada::Status& status) {
 
   base::Closure task;
   if (status)
-    task = base::Bind(&LoginDialog::OnLoginCompleted, weak_factory_.GetWeakPtr());
+    task =
+        base::Bind(&LoginDialog::OnLoginCompleted, weak_factory_.GetWeakPtr());
   else
-    task = base::Bind(&LoginDialog::OnLoginFailed, weak_factory_.GetWeakPtr(), status);
+    task = base::Bind(&LoginDialog::OnLoginFailed, weak_factory_.GetWeakPtr(),
+                      status);
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, task);
 }
 
 void LoginDialog::OnLoginCompleted() {
   // save last users
-  StringList::iterator i = std::find(user_list_.begin(), user_list_.end(),
-                                     user_name_);
+  StringList::iterator i =
+      std::find(user_list_.begin(), user_list_.end(), user_name_);
   if (i == user_list_.end())
     user_list_.push_back(user_name_);
   while (user_list_.size() > 10)
     user_list_.erase(user_list_.begin());
 
   std::string user_list;
-  for (StringList::iterator i = user_list_.begin(); i != user_list_.end(); i++) {
+  for (StringList::iterator i = user_list_.begin(); i != user_list_.end();
+       i++) {
     if (!user_list.empty())
       user_list += ',';
     user_list += *i;
@@ -204,8 +208,9 @@ void LoginDialog::OnLoginCompleted() {
 
   if (!auto_login_ && auto_login_option_) {
     MessageBoxW(::GetActiveWindow(),
-        L"Для того, чтобы отключить автоматический вход, удерживайте Ctrl при запуске приложения.",
-        L"Автоматический вход", MB_ICONINFORMATION | MB_OK);
+                L"Для того, чтобы отключить автоматический вход, удерживайте "
+                L"Ctrl при запуске приложения.",
+                L"Автоматический вход", MB_ICONINFORMATION | MB_OK);
   }
 
   EndDialog(IDOK);
@@ -217,21 +222,22 @@ void LoginDialog::OnLoginFailed(const scada::Status& status) {
   base::string16 title = win_util::GetWindowText(window_handle());
 
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
-    const wchar_t* msg = L"Указанное имя уже используется другой сессией. "
-                         L"Разорвать открытую сессию и продолжить?";
+    const wchar_t* msg =
+        L"Указанное имя уже используется другой сессией. "
+        L"Разорвать открытую сессию и продолжить?";
     if (MessageBoxW(window_handle(), msg, title.c_str(),
                     MB_YESNO | MB_ICONQUESTION) == IDYES) {
       Connect(true);
-      
+
     } else {
       UpdateControls();
     }
 
   } else {
     base::string16 msg = base::StringPrintf(
-        L"Ошибка при подключении к серверу (%ls).",
-        ToString16(status).c_str());
-    MessageBoxW(window_handle(), msg.c_str(), title.c_str(), MB_OK | MB_ICONSTOP);
+        L"Ошибка при подключении к серверу (%ls).", ToString16(status).c_str());
+    MessageBoxW(window_handle(), msg.c_str(), title.c_str(),
+                MB_OK | MB_ICONSTOP);
 
     UpdateControls();
     WTL::CEdit edit = GetItem(IDC_NAME);
@@ -239,12 +245,6 @@ void LoginDialog::OnLoginFailed(const scada::Status& status) {
     edit.SetFocus();
   }
 }
-
-/*void LoginDialog::OnRequestData(RequestHandle handle, void* data) {
-  WTL::CStatic status_window = GetItem(IDC_STATUS);
-  status_window.SetWindowText("Получение данных...");
-  status_window.UpdateWindow();
-}*/
 
 void LoginDialog::Connect(bool allow_remote_logoff) {
   connecting_ = true;
@@ -254,11 +254,13 @@ void LoginDialog::Connect(bool allow_remote_logoff) {
     return;
   }
 
-  services_.session_service_->Connect(server_host_, user_name_, password_, allow_remote_logoff,
+  services_.session_service_->Connect(
+      server_host_, user_name_, password_, allow_remote_logoff,
       [this](const scada::Status& status) { OnLoginResult(status); });
 }
 
-bool ExecuteLoginDialog(const DataServicesContext& services_context, DataServices& services) {
+bool ExecuteLoginDialog(const DataServicesContext& services_context,
+                        DataServices& services) {
   LoginDialog login_dialog{services_context};
   if (login_dialog.Execute() != IDOK)
     return false;

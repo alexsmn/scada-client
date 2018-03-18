@@ -20,12 +20,17 @@ class PortfolioEvents {
                                       const scada::NodeId& node_id) {}
 };
 
-class PortfolioManager : private NodeRefObserver {
+struct PortfolioManagerContext {
+  NodeService& node_service_;
+};
+
+class PortfolioManager : private PortfolioManagerContext,
+                         private NodeRefObserver {
  public:
   typedef std::list<Portfolio> Portfolios;
   typedef std::set<PortfolioEvents*> PortfolioEventsSet;
 
-  explicit PortfolioManager(NodeService& node_service);
+  explicit PortfolioManager(PortfolioManagerContext&& context);
   ~PortfolioManager();
 
   void Subscribe(PortfolioEvents& events);
@@ -49,8 +54,6 @@ class PortfolioManager : private NodeRefObserver {
   void DeleteNode(const scada::NodeId& node_id);
 
   // NodeRefObserver
-  virtual void OnModelChange(const ModelChangeEvent& event) override;
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-
-  NodeService& node_service_;
 };

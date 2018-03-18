@@ -2,15 +2,14 @@
 
 #include <memory>
 
+#include "contents_model.h"
 #include "controller.h"
 #include "services/portfolio.h"
-#include "contents_model.h"
 
 class PortfolioTreeModel;
 class Tree;
 
-class PortfolioView : public Controller,
-                      public ContentsModel {
+class PortfolioView : public Controller, public ContentsModel {
  public:
   explicit PortfolioView(const ControllerContext& context);
   virtual ~PortfolioView();
@@ -23,7 +22,8 @@ class PortfolioView : public Controller,
   virtual ContentsModel* GetContentsModel() { return this; }
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
 
  private:
   const Portfolio* GetSelectedPortfolio() const;

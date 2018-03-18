@@ -6,35 +6,40 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Automatically link Qt executables to qtmain target on Windows
 cmake_policy(SET CMP0020 NEW)
 
-FIND_PACKAGE(Qt5LinguistTools)
-FIND_PACKAGE(Qt5Widgets)
+add_subdirectory("${deps}/qt/graph_qt" "graph_qt") 
 
-ADD_SUBDIRECTORY("${deps}/qt/graph_qt" "graph_qt")
-
-LIST(APPEND sources ${sources_qt})
-LIST(APPEND unittests ${unittests_qt})
-
-LIST(APPEND libs
-  graph_qt
-  Qt5::Widgets
-  ui_base
+add_executable(client_qt WIN32
+  ${SOURCES}
+  ${SOURCES_QT}
 )
 
-IF(WIN32)
-  FIND_PACKAGE(Qt5WinExtras)
-  LIST(APPEND libs Qt5::WinExtras)
-ENDIF()
+set_property(TARGET client_qt PROPERTY FOLDER ${client_folder})
 
-file(GLOB translations "*.ts")
-qt5_create_translation(translations_out ${sources} ${translations})
-qt5_add_translation(translations_out ${translations})
+target_compile_definitions(client_qt PUBLIC
+  "-DUI_QT"
+)
 
-ADD_EXECUTABLE(client_qt WIN32 ${sources} ${translations} ${translations_out})
+find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
+target_link_libraries(client_qt PUBLIC
+  client_core
+  gdiplus
+  graph_qt
+  Qt5::Widgets
+)
 
-TARGET_LINK_LIBRARIES(client_qt ${libs})
+if(WIN32)
+  find_package(Qt5 COMPONENTS WinExtras)
+  target_link_libraries(client_qt PUBLIC
+    Qt5::WinExtras
+    Qt5::WinMain
+  )
+endif()
 
-SET_PROPERTY(TARGET client_qt APPEND PROPERTY COMPILE_FLAGS "-DUI_QT")
-SET_PROPERTY(TARGET client_qt PROPERTY FOLDER ${client_folder})
+find_package(Qt5LinguistTools REQUIRED)
+file(GLOB TRANSLATIONS "*.ts")
+qt5_create_translation(translations_out ${SOURCES} ${TRANSLATIONS})
+qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
+target_sources(client_qt PUBLIC ${TRANSLATIONS})
 
 # UT-s
 

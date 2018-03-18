@@ -1,36 +1,32 @@
-#include "components/main/action.h"
+ï»¿#include "components/main/action.h"
 
 #include "base/at_exit.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "translation.h"
 
 GroupedActions GroupCommands(ActionManager& action_manager,
                              const std::vector<unsigned>& commands) {
   GroupedActions grouped_commands;
-  for (std::vector<unsigned>::const_iterator i = commands.begin();
-       i != commands.end(); ++i) {
-    Action* action = action_manager.FindAction(*i);
-    if (!action)
-      continue;
-    grouped_commands[action->category_].push_back(action);
+  for (unsigned command_id : commands) {
+    if (auto* action = action_manager.FindAction(command_id))
+      grouped_commands[action->category_].push_back(action);
   }
   return grouped_commands;
 }
 
 const base::char16* GetCommandCategoryTitle(CommandCategory category) {
-  const base::char16* titles[] = {L"Íîâûé",       // CATEGORY_NEW
-                                  L"Îòêðûòü",     // CATEGORY_OPEN
-                                  L"Îáúåêò",      // CATEGORY_ITEM
-                                  L"Óñòðîéñòâî",  // CATEGORY_DEVICE
-                                  L"Îïöèè",       // CATEGORY_SETUP
-                                  L"Ðàçíîå",      // CATEGORY_SPECIFIC
-                                  L"Îêíî",        // CATEGORY_VIEW
-                                  L"Ïåðèîä",      // CATEGORY_PERIOD
-                                  L"Ñîçäàòü",     // CATEGORY_CREATE
-                                  L"Ïðàâêà"};     // CATEGORY_EDIT,
+  const base::char16* titles[] = {L"ÐÐ¾Ð²Ñ‹Ð¹",       // CATEGORY_NEW
+                                  L"ÐžÑ‚ÐºÑ€Ñ‹Ñ‚ÑŒ",     // CATEGORY_OPEN
+                                  L"ÐžÐ±ÑŠÐµÐºÑ‚",      // CATEGORY_ITEM
+                                  L"Ð£ÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾",  // CATEGORY_DEVICE
+                                  L"ÐžÐ¿Ñ†Ð¸Ð¸",       // CATEGORY_SETUP
+                                  L"Ð Ð°Ð·Ð½Ð¾Ðµ",      // CATEGORY_SPECIFIC
+                                  L"ÐžÐºÐ½Ð¾",        // CATEGORY_VIEW
+                                  L"ÐŸÐµÑ€Ð¸Ð¾Ð´",      // CATEGORY_PERIOD
+                                  L"Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ",     // CATEGORY_CREATE
+                                  L"ÐŸÑ€Ð°Ð²ÐºÐ°"};     // CATEGORY_EDIT,
   assert(category >= 0 && category < _countof(titles));
   return titles[category];
 }
@@ -42,13 +38,16 @@ bool CanExpandCommandCategory(CommandCategory category) {
 
 namespace {
 
+// TODO(semenov): Refactor to avoid listing the types.
 const scada::NodeId kNewCommandTypeIds[] = {
     id::DataGroupType,          id::DiscreteItemType,
     id::AnalogItemType,         id::UserType,
     id::HistoricalDatabaseType, id::SimulationSignalType,
-    id::Iec60870DeviceType,     id::ModbusLinkType,
+    id::Iec60870DeviceType,     id::Iec61850DeviceType,
+    id::Iec61850RcbType,        id::ModbusLinkType,
     id::ModbusDeviceType,       id::TsFormatType,
-    id::TransmissionItemType};
+    id::TransmissionItemType,
+};
 
 }  // namespace
 
@@ -93,106 +92,108 @@ class NodeAction : public Action {
 
 // ActionManager
 
-ActionManager::ActionManager(NodeService& node_service) {
-  //  AddAction(*new Action(ID_GRAPH_VIEW, CATEGORY_NEW, "Íîâûé ãðàôèê", NULL,
+ActionManager::ActionManager(NodeService& node_service)
+    : node_service_{node_service} {
+  //  AddAction(*new Action(ID_GRAPH_VIEW, CATEGORY_NEW, "ÐÐ¾Ð²Ñ‹Ð¹ Ð³Ñ€Ð°Ñ„Ð¸Ðº", NULL,
   //  kGraphImageIndex)); AddAction(*new Action(ID_TABLE_VIEW, CATEGORY_NEW,
-  //  "Íîâàÿ òàáëèöà", NULL, kTableImageIndex));
+  //  "ÐÐ¾Ð²Ð°Ñ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ð°", NULL, kTableImageIndex));
 
-  AddAction(*new Action(ID_OPEN_GRAPH, CATEGORY_OPEN, L"Ãðàôèê",
+  AddAction(*new Action(ID_OPEN_GRAPH, CATEGORY_OPEN, L"Ð“Ñ€Ð°Ñ„Ð¸Ðº",
                         base::string16(), ID_GRAPH_VIEW,
                         Action::ALWAYS_VISIBLE));
-  AddAction(*new Action(ID_TIMED_DATA_VIEW, CATEGORY_OPEN, L"Äàííûå",
+  AddAction(*new Action(ID_TIMED_DATA_VIEW, CATEGORY_OPEN, L"Ð”Ð°Ð½Ð½Ñ‹Ðµ",
                         base::string16(), IDB_TIMED_DATA,
                         Action::ALWAYS_VISIBLE));
-  AddAction(*new Action(ID_OPEN_DISPLAY, CATEGORY_OPEN, L"Ñõåìà",
+  AddAction(*new Action(ID_OPEN_DISPLAY, CATEGORY_OPEN, L"Ð¡Ñ…ÐµÐ¼Ð°",
                         base::string16(), ID_MODUS_VIEW,
                         Action::ALWAYS_VISIBLE));
-  AddAction(*new Action(ID_OPEN_TABLE, CATEGORY_OPEN, L"Òàáëèöà",
+  AddAction(*new Action(ID_OPEN_TABLE, CATEGORY_OPEN, L"Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð°",
                         base::string16(), ID_TABLE_VIEW,
                         Action::ALWAYS_VISIBLE));
-  AddAction(*new Action(ID_OPEN_SUMMARY, CATEGORY_OPEN, L"Ñâîäêà",
+  AddAction(*new Action(ID_OPEN_SUMMARY, CATEGORY_OPEN, L"Ð¡Ð²Ð¾Ð´ÐºÐ°",
                         base::string16(), IDB_SUMMARY, Action::ALWAYS_VISIBLE));
-  AddAction(*new Action(ID_HISTORICAL_EVENTS, CATEGORY_OPEN, L"Ñîáûòèÿ",
+  AddAction(*new Action(ID_HISTORICAL_EVENTS, CATEGORY_OPEN, L"Ð¡Ð¾Ð±Ñ‹Ñ‚Ð¸Ñ",
                         base::string16(), IDB_OPEN_EVENTS,
                         Action::ALWAYS_VISIBLE));
 
-  AddAction(*new Action(ID_OPEN_GROUP_TABLE, CATEGORY_OPEN, L"Òàáëèöà ãðóïïû",
+  AddAction(*new Action(ID_OPEN_GROUP_TABLE, CATEGORY_OPEN, L"Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° Ð³Ñ€ÑƒÐ¿Ð¿Ñ‹",
                         base::string16(), 0, Action::VISIBLE));
 
-  AddAction(*new Action(ID_ACKNOWLEDGE_CURRENT, CATEGORY_ITEM, L"Êâèòèðîâàòü"));
-  AddAction(*new Action(ID_UNLOCK_ITEM, CATEGORY_ITEM, L"Ñíÿòü áëîêèðîâêó",
+  AddAction(*new Action(ID_ACKNOWLEDGE_CURRENT, CATEGORY_ITEM, L"ÐšÐ²Ð¸Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ"));
+  AddAction(*new Action(ID_UNLOCK_ITEM, CATEGORY_ITEM, L"Ð¡Ð½ÑÑ‚ÑŒ Ð±Ð»Ð¾ÐºÐ¸Ñ€Ð¾Ð²ÐºÑƒ",
                         base::string16(), IDB_UNLOCK));
-  AddAction(*new Action(ID_WRITE, CATEGORY_ITEM, L"Óïðàâëåíèå...",
-                        L"Óïðàâëåíèå", IDB_WRITE));
-  AddAction(*new Action(ID_WRITE_MANUAL, CATEGORY_ITEM, L"Ðó÷íîé ââîä...",
-                        L"Ðó÷íîé ââîä", IDB_WRITE_MANUAL));
+  AddAction(*new Action(ID_WRITE, CATEGORY_ITEM, L"Ð£Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ...",
+                        L"Ð£Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ", IDB_WRITE));
+  AddAction(*new Action(ID_WRITE_MANUAL, CATEGORY_ITEM, L"Ð ÑƒÑ‡Ð½Ð¾Ð¹ Ð²Ð²Ð¾Ð´...",
+                        L"Ð ÑƒÑ‡Ð½Ð¾Ð¹ Ð²Ð²Ð¾Ð´", IDB_WRITE_MANUAL));
   AddAction(
-      *new Action(ID_EDIT_LIMITS, CATEGORY_ITEM, L"Óñòàâêè...", L"Óñòàâêè"));
+      *new Action(ID_EDIT_LIMITS, CATEGORY_ITEM, L"Ð£ÑÑ‚Ð°Ð²ÐºÐ¸...", L"Ð£ÑÑ‚Ð°Ð²ÐºÐ¸"));
 
-  AddAction(*new Action(ID_DEV1_REFR, CATEGORY_DEVICE, L"Îïðîñèòü óñòðîéñòâî"));
+  AddAction(*new Action(ID_DEV1_REFR, CATEGORY_DEVICE, L"ÐžÐ¿Ñ€Ð¾ÑÐ¸Ñ‚ÑŒ ÑƒÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾"));
   AddAction(
-      *new Action(ID_DEV1_SYNC, CATEGORY_DEVICE, L"Ñèíõðîíèçèðîâàòü ÷àñû"));
+      *new Action(ID_DEV1_SYNC, CATEGORY_DEVICE, L"Ð¡Ð¸Ð½Ñ…Ñ€Ð¾Ð½Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ñ‡Ð°ÑÑ‹"));
 
-  AddAction(*new Action(ID_SETUP, CATEGORY_SETUP, L"Îïöèè"));
-  AddAction(*new Action(ID_PRINT, CATEGORY_SETUP, L"Ïå÷àòü", base::string16(),
+  AddAction(*new Action(ID_SETUP, CATEGORY_SETUP, L"ÐžÐ¿Ñ†Ð¸Ð¸"));
+  AddAction(*new Action(ID_PRINT, CATEGORY_SETUP, L"ÐŸÐµÑ‡Ð°Ñ‚ÑŒ", base::string16(),
                         IDB_PRINTER));
-  AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, L"Ïðàâêà"));
-  AddAction(*new Action(ID_EXPORT, CATEGORY_SETUP, L"Ýêñïîðò"));
+  AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, L"ÐŸÑ€Ð°Ð²ÐºÐ°"));
+  AddAction(*new Action(ID_EXPORT, CATEGORY_SETUP, L"Ð­ÐºÑÐ¿Ð¾Ñ€Ñ‚"));
 
-  AddAction(*new Action(ID_OPEN_WATCH, CATEGORY_SPECIFIC, L"Íàáëþäåíèå"));
-  AddAction(*new Action(ID_OPEN_DEVICE_METRICS, CATEGORY_SPECIFIC, L"Ìåòðèêè"));
+  AddAction(*new Action(ID_OPEN_WATCH, CATEGORY_SPECIFIC, L"ÐÐ°Ð±Ð»ÑŽÐ´ÐµÐ½Ð¸Ðµ"));
+  AddAction(*new Action(ID_OPEN_DEVICE_METRICS, CATEGORY_SPECIFIC, L"ÐœÐµÑ‚Ñ€Ð¸ÐºÐ¸"));
   AddAction(*new Action(ID_CHANGE_PASSWORD, CATEGORY_SPECIFIC,
-                        L"Çàäàòü ïàðîëü...", L"Ïàðîëü"));
-  AddAction(*new Action(ID_ITEM_ENABLE, CATEGORY_SPECIFIC, L"Âêëþ÷èòü"));
-  AddAction(*new Action(ID_ITEM_DISABLE, CATEGORY_SPECIFIC, L"Îòêëþ÷èòü"));
-  AddAction(*new Action(ID_PAUSE, CATEGORY_SPECIFIC, L"Ïàóçà"));
+                        L"Ð—Ð°Ð´Ð°Ñ‚ÑŒ Ð¿Ð°Ñ€Ð¾Ð»ÑŒ...", L"ÐŸÐ°Ñ€Ð¾Ð»ÑŒ"));
+  AddAction(*new Action(ID_ITEM_ENABLE, CATEGORY_SPECIFIC, L"Ð’ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ"));
+  AddAction(*new Action(ID_ITEM_DISABLE, CATEGORY_SPECIFIC, L"ÐžÑ‚ÐºÐ»ÑŽÑ‡Ð¸Ñ‚ÑŒ"));
+  AddAction(*new Action(ID_PAUSE, CATEGORY_SPECIFIC, L"ÐŸÐ°ÑƒÐ·Ð°"));
 
-  AddAction(*new Action(ID_ACKNOWLEDGE_ALL, CATEGORY_VIEW, L"Êâèòèðîâàòü âñå",
+  AddAction(*new Action(ID_ACKNOWLEDGE_ALL, CATEGORY_VIEW, L"ÐšÐ²Ð¸Ñ‚Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð²ÑÐµ",
                         base::string16(), IDB_ACKNOWLEDGE_ALL));
-  AddAction(*new Action(ID_SEVERITY_CUSTOM, CATEGORY_VIEW, L"Âàæíîñòü...",
-                        L"Âàæíîñòü"));
+  AddAction(*new Action(ID_SEVERITY_CUSTOM, CATEGORY_VIEW, L"Ð’Ð°Ð¶Ð½Ð¾ÑÑ‚ÑŒ...",
+                        L"Ð’Ð°Ð¶Ð½Ð¾ÑÑ‚ÑŒ"));
   AddAction(
-      *new Action(ID_MODUS_TOOLBAR, CATEGORY_VIEW, L"Ïàíåëü èíñòðóìåíòîâ"));
+      *new Action(ID_MODUS_TOOLBAR, CATEGORY_VIEW, L"ÐŸÐ°Ð½ÐµÐ»ÑŒ Ð¸Ð½ÑÑ‚Ñ€ÑƒÐ¼ÐµÐ½Ñ‚Ð¾Ð²"));
   AddAction(
-      *new Action(ID_MODUS_STATUSBAR, CATEGORY_VIEW, L"Ñòðîêà ñîñòîÿíèÿ"));
-  AddAction(*new Action(ID_EVENT_VIEW, CATEGORY_VIEW, L"Ïàíåëü ñîáûòèé",
+      *new Action(ID_MODUS_STATUSBAR, CATEGORY_VIEW, L"Ð¡Ñ‚Ñ€Ð¾ÐºÐ° ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ñ"));
+  AddAction(*new Action(ID_EVENT_VIEW, CATEGORY_VIEW, L"ÐŸÐ°Ð½ÐµÐ»ÑŒ ÑÐ¾Ð±Ñ‹Ñ‚Ð¸Ð¹",
                         base::string16(), ID_EVENT_VIEW));
-  AddAction(*new Action(ID_SAVE, CATEGORY_VIEW, L"Ñîõðàíèòü"));
-  AddAction(*new Action(ID_SAVE_AS, CATEGORY_VIEW, L"Ñîõðàíèòü êàê...",
-                        L"Ñîõðàíèòü"));
+  AddAction(*new Action(ID_SAVE, CATEGORY_VIEW, L"Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ"));
+  AddAction(*new Action(ID_SAVE_AS, CATEGORY_VIEW, L"Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ ÐºÐ°Ðº...",
+                        L"Ð¡Ð¾Ñ…Ñ€Ð°Ð½Ð¸Ñ‚ÑŒ"));
 
-  AddAction(*new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, L"Òåêóùèå"));
-  AddAction(*new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, L"Äåíü"));
-  AddAction(*new Action(ID_TIME_RANGE_WEEK, CATEGORY_PERIOD, L"Íåäåëÿ"));
-  AddAction(*new Action(ID_TIME_RANGE_MONTH, CATEGORY_PERIOD, L"Ìåñÿö"));
-  AddAction(*new Action(ID_TIME_RANGE_CUSTOM, CATEGORY_PERIOD, L"Äðóãîé...",
-                        L"Äðóãîé"));
+  AddAction(*new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, L"Ð¢ÐµÐºÑƒÑ‰Ð¸Ðµ"));
+  AddAction(*new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, L"Ð”ÐµÐ½ÑŒ"));
+  AddAction(*new Action(ID_TIME_RANGE_WEEK, CATEGORY_PERIOD, L"ÐÐµÐ´ÐµÐ»Ñ"));
+  AddAction(*new Action(ID_TIME_RANGE_MONTH, CATEGORY_PERIOD, L"ÐœÐµÑÑÑ†"));
+  AddAction(*new Action(ID_TIME_RANGE_CUSTOM, CATEGORY_PERIOD, L"Ð”Ñ€ÑƒÐ³Ð¾Ð¹...",
+                        L"Ð”Ñ€ÑƒÐ³Ð¾Ð¹"));
 
-  AddAction(*new Action(ID_ITEM_PARAMS, CATEGORY_EDIT, L"Ïàðàìåòðû",
+  AddAction(*new Action(ID_ITEM_PARAMS, CATEGORY_EDIT, L"ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹",
                         base::string16(), IDB_RECORD_EDITOR));
-  AddAction(*new Action(ID_TABLE_CONFIG, CATEGORY_EDIT, L"Ïàðàìåòðû ýëåìåíòîâ",
-                        L"Ýëåìåíòû"));
+  AddAction(*new Action(ID_TABLE_CONFIG, CATEGORY_EDIT, L"ÐŸÐ°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ ÑÐ»ÐµÐ¼ÐµÐ½Ñ‚Ð¾Ð²",
+                        L"Ð­Ð»ÐµÐ¼ÐµÐ½Ñ‚Ñ‹"));
   AddAction(*new Action(ID_TRANSMISSION_VIEW, CATEGORY_EDIT,
-                        L"Òàáëèöà ðåòðàíñëÿöèè", L"Ðåòðàíñëÿöèÿ"));
-  AddAction(*new Action(ID_NEW_PORTFOLIO, CATEGORY_EDIT, L"Ñîçäàòü ïîðòôîëèî"));
-  AddAction(*new Action(ID_ADD_ITEMS, CATEGORY_EDIT, L"Äîáàâèòü îáúåêòû...",
-                        L"Äîáàâèòü îáúåêòû"));
-  AddAction(*new Action(ID_RENAME, CATEGORY_EDIT, L"Ïåðåèìåíîâàòü"));
-  AddAction(*new Action(ID_DELETE, CATEGORY_EDIT, L"Óäàëèòü", base::string16(),
+                        L"Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° Ñ€ÐµÑ‚Ñ€Ð°Ð½ÑÐ»ÑÑ†Ð¸Ð¸", L"Ð ÐµÑ‚Ñ€Ð°Ð½ÑÐ»ÑÑ†Ð¸Ñ"));
+  AddAction(*new Action(ID_NEW_PORTFOLIO, CATEGORY_EDIT, L"Ð¡Ð¾Ð·Ð´Ð°Ñ‚ÑŒ Ð¿Ð¾Ñ€Ñ‚Ñ„Ð¾Ð»Ð¸Ð¾"));
+  AddAction(*new Action(ID_ADD_ITEMS, CATEGORY_EDIT, L"Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð¾Ð±ÑŠÐµÐºÑ‚Ñ‹...",
+                        L"Ð”Ð¾Ð±Ð°Ð²Ð¸Ñ‚ÑŒ Ð¾Ð±ÑŠÐµÐºÑ‚Ñ‹"));
+  AddAction(*new Action(ID_RENAME, CATEGORY_EDIT, L"ÐŸÐµÑ€ÐµÐ¸Ð¼ÐµÐ½Ð¾Ð²Ð°Ñ‚ÑŒ"));
+  AddAction(*new Action(ID_DELETE, CATEGORY_EDIT, L"Ð£Ð´Ð°Ð»Ð¸Ñ‚ÑŒ", base::string16(),
                         IDB_DELETE));
-  AddAction(*new Action(ID_CLEAR_ALL, CATEGORY_EDIT, L"Î÷èñòèòü"));
+  AddAction(*new Action(ID_CLEAR_ALL, CATEGORY_EDIT, L"ÐžÑ‡Ð¸ÑÑ‚Ð¸Ñ‚ÑŒ"));
 
   AddAction(*new Action(ID_ADD_MULTIPLE_ITEMS, CATEGORY_CREATE,
-                        L"Ñåðèÿ îáúåêòîâ..."));
+                        L"Ð¡ÐµÑ€Ð¸Ñ Ð¾Ð±ÑŠÐµÐºÑ‚Ð¾Ð²..."));
   AddAction(*new Action(ID_NEW_SERVICE_ITEMS, CATEGORY_CREATE,
-                        L"Ñåðâèñíûå îáúåêòû..."));
+                        L"Ð¡ÐµÑ€Ð²Ð¸ÑÐ½Ñ‹Ðµ Ð¾Ð±ÑŠÐµÐºÑ‚Ñ‹..."));
   AddAction(*new Action(ID_NEW_IEC60870_LINK101, CATEGORY_CREATE,
-                        L"Íàïðàâëåíèå ÌÝÊ-60870-101"));
+                        L"ÐÐ°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÐœÐ­Ðš-60870-101"));
   AddAction(*new Action(ID_NEW_IEC60870_LINK104, CATEGORY_CREATE,
-                        L"Íàïðàâëåíèå ÌÝÊ-60870-104"));
-  for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i)
+                        L"ÐÐ°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÐœÐ­Ðš-60870-104"));
+  for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i) {
     AddAction(*new NodeAction(ID_NEW + i, CATEGORY_CREATE,
                               node_service.GetNode(kNewCommandTypeIds[i])));
+  }
 }
 
 ActionManager::~ActionManager() {

@@ -16,7 +16,7 @@
 #include "translation.h"
 #include "ui/base/models/grid_range.h"
 
-const base::char16 kLocalEventSource[] = L"Локальное событие";
+const base::char16 kLocalEventSource[] = L"????????? ???????";
 
 struct EventTableModel::RowsComparer {
   bool operator()(const Row& left, const Row& right) const {
@@ -142,6 +142,13 @@ bool EventTableModel::IsEventShown(const scada::Event& event) const {
   // Check item is in filter.
   if (filter_node_ids_.find(event.node_id) != filter_node_ids_.end())
     return true;
+
+  // Check any containing node is in filter.
+  for (auto node = node_service_.GetNode(event.node_id); node;
+       node = node.parent()) {
+    if (filter_node_ids_.find(node.id()) != filter_node_ids_.end())
+      return true;
+  }
 
   return false;
 }
@@ -312,8 +319,7 @@ void EventTableModel::Update() {
   rows_.clear();
   historical_events_.clear();
 
-  if (mode_ == ID_CURRENT_EVENTS) {
-  } else {
+  if (mode_ != ID_CURRENT_EVENTS) {
     base::Time from, to;
     switch (mode_) {
       case ID_TIME_RANGE_DAY:

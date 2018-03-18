@@ -1,15 +1,15 @@
 #pragma once
 
-#include <functional>
-
 #include "base/memory/weak_ptr.h"
 #include "common/event_observer.h"
+#include "services/local_events.h"
+
+#include <functional>
 
 namespace events {
 class EventManager;
 }
 
-class LocalEvents;
 class Profile;
 
 struct EventsHelperContext {
@@ -19,8 +19,9 @@ struct EventsHelperContext {
   const std::function<void(bool has_events)> events_handler_;
 };
 
-class EventsHelper : private EventsHelperContext,
-                     private events::EventObserver {
+class EventsHelper final : private EventsHelperContext,
+                           private events::EventObserver,
+                           private LocalEvents::Observer {
  public:
   explicit EventsHelper(EventsHelperContext&& context);
   ~EventsHelper();
@@ -32,6 +33,9 @@ class EventsHelper : private EventsHelperContext,
   virtual void OnEventReported(const scada::Event& event) override;
   virtual void OnEventAcknowledged(const scada::Event& event) override;
   virtual void OnAllEventsAcknowledged() override;
+
+  // LocalEvents::Observer
+  virtual void OnLocalEvent(const scada::Event& event) override;
 
   bool playing_alarm_sound_ = false;
 

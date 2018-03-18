@@ -1,6 +1,5 @@
 #include "components/main/main_window.h"
 
-#include "client_application.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/main/events_helper.h"
@@ -154,11 +153,8 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
 
 OpenedView* MainWindow::OpenView(const WindowDefinition& def,
                                  bool make_active) {
-  if (!def.window_info())
-    return nullptr;
-
   OpenedView* after_view =
-      !def.window_info()->is_pane() ? active_data_view() : nullptr;
+      !def.window_info().is_pane() ? active_data_view() : nullptr;
   return view_manager_->OpenView(def, make_active, after_view);
 }
 
@@ -233,11 +229,8 @@ void MainWindow::SavePage() {
 }
 
 std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
-  if (!def.window_info())
-    return nullptr;
-
   // Initialize defaults.
-  const WindowInfo& window_info = *def.window_info();
+  const WindowInfo& window_info = def.window_info();
   if (def.size == gfx::Size()) {
     if (window_info.cx && window_info.cy)
       def.size = gfx::Size(window_info.cx, window_info.cy);

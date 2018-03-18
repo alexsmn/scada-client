@@ -1,13 +1,14 @@
-#include "services/portfolio_manager.h"
+ï»¿#include "services/portfolio_manager.h"
 
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
+#include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "services/portfolio.h"
 
-PortfolioManager::PortfolioManager(NodeService& node_service)
-    : node_service_{node_service} {
+PortfolioManager::PortfolioManager(PortfolioManagerContext&& context)
+    : PortfolioManagerContext{std::move(context)} {
   node_service_.Subscribe(*this);
 }
 
@@ -15,10 +16,10 @@ PortfolioManager::~PortfolioManager() {
   node_service_.Unsubscribe(*this);
 }
 
-void PortfolioManager::OnModelChange(const ModelChangeEvent& event) {
-  if (event.verb & ModelChangeEvent::NodeDeleted)
+void PortfolioManager::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted)
     DeleteNode(event.node_id);
-  else if (event.verb & ModelChangeEvent::NodeAdded)
+  else if (event.verb & scada::ModelChangeEvent::NodeAdded)
     UpdateNode(event.node_id);
 }
 
@@ -28,7 +29,7 @@ void PortfolioManager::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 
 void PortfolioManager::UpdateNode(const scada::NodeId& node_id) {
   for (auto& portfolio : portfolios) {
-    if (portfolio.items.erase(node_id)) {
+    if (portfolio.items.find(node_id) != portfolio.items.end()) {
       for (auto* events : portfolio_events)
         events->Portfolio_OnUpdateItem(portfolio, node_id);
     }
@@ -40,7 +41,7 @@ void PortfolioManager::DeleteNode(const scada::NodeId& node_id) {
        ++i) {
     Portfolio& portfolio = *i;
     if (portfolio.items.erase(node_id)) {
-      std::string item_path = node_id.ToString();
+      std::string item_path = NodeIdToScadaString(node_id);
       LOG(INFO) << "Portfolio " << portfolio.name << ": "
                 << "Item " << item_path << " is removed";
 
@@ -76,7 +77,7 @@ PortfolioManager::Portfolios::iterator PortfolioManager::Find(
 }
 
 Portfolio& PortfolioManager::New() {
-  static const base::char16 mask[] = L"Ïîðòôîëèî";
+  static const base::char16 mask[] = L"ÐŸÐ¾Ñ€Ñ‚Ñ„Ð¾Ð»Ð¸Ð¾";
 
   base::string16 name = mask;
   int id = 2;

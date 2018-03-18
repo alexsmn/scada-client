@@ -1,29 +1,27 @@
 #pragma once
 
-#include <fstream>
+#include "base/strings/string_piece.h"
 
-#include "base/files/file_path.h"
+#include <istream>
 
 class TableReader {
  public:
-  TableReader();
+  // |signature| is expected contents of the first cell useful to determine separrator.
+  TableReader(std::wistream& stream, base::StringPiece16 signature = {});
 
   int row_index() const { return row_index_; }
   int cell_index() const { return cell_index_; }
 
-  // |signature| is expected contents of the first cell useful to determine separrator.
-  bool Init(const base::FilePath& path, base::StringPiece signature = {});
-
   bool NextRow();
-  bool NextCell(std::string& str);
+  bool NextCell(base::string16& str);
 
  private:
-  base::StringPiece signature_;
-  std::ifstream stream_;
-  char separator_ = ';';
-  std::string line_;
-  std::string::size_type line_pos_;
-  bool has_cells_;
-  int row_index_;
-  int cell_index_;
+  base::StringPiece16 signature_;
+  std::wistream& stream_;
+  wchar_t separator_ = L',';
+  base::string16 line_;
+  base::string16::size_type line_pos_ = 0;
+  bool has_cells_ = false;
+  int row_index_ = 0;
+  int cell_index_ = 1;
 };

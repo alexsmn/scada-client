@@ -1,22 +1,21 @@
 #include "qt/tree_model_adapter.h"
 
-#include <cassert>
+#include "base/qt/color_qt.h"
+#include "base/win/scoped_gdi_object.h"
+#include "ui/base/models/tree_model.h"
+
 #include <qbitmap.h>
 #include <qpixmap.h>
 #include <qsize.h>
 #include <windows.h>
-
-#include "base/win/scoped_gdi_object.h"
-#include "ui/base/models/tree_model.h"
-#include "base/color.h"
+#include <cassert>
 
 #ifdef OS_WIN
 #include <qwinfunctions.h>
 #endif
 
 TreeModelAdapter::TreeModelAdapter(ui::TreeModel& model)
-    : model_(model),
-      checkable_(false) {
+    : model_(model), checkable_(false) {
   model_.AddObserver(*this);
 }
 
@@ -24,8 +23,11 @@ TreeModelAdapter::~TreeModelAdapter() {
   model_.RemoveObserver(*this);
 }
 
-void TreeModelAdapter::LoadIcons(unsigned resource_id, int width, QColor mask_color) {
-  base::win::ScopedBitmap bitmap(::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id)));
+void TreeModelAdapter::LoadIcons(unsigned resource_id,
+                                 int width,
+                                 QColor mask_color) {
+  base::win::ScopedBitmap bitmap(
+      ::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id)));
 
   QPixmap tile = QtWin::fromHBITMAP(bitmap.get());
   tile.setMask(tile.createMaskFromColor(mask_color));
@@ -49,7 +51,9 @@ QModelIndex TreeModelAdapter::GetNodeIndex(void* node, int column) const {
   return createIndex(row, column, node);
 }
 
-QVariant TreeModelAdapter::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant TreeModelAdapter::headerData(int section,
+                                      Qt::Orientation orientation,
+                                      int role) const {
   if (orientation != Qt::Horizontal)
     return QAbstractItemModel::headerData(section, orientation, role);
 
@@ -57,7 +61,8 @@ QVariant TreeModelAdapter::headerData(int section, Qt::Orientation orientation, 
     case Qt::DisplayRole:
       return QString::fromStdWString(model_.GetColumnText(section));
     case Qt::SizeHintRole: {
-      auto size = QAbstractItemModel::headerData(section, orientation, role).toSize();
+      auto size =
+          QAbstractItemModel::headerData(section, orientation, role).toSize();
       size.setHeight(20);
       int peferred_width = model_.GetColumnPreferredSize(section);
       if (peferred_width != 0)
@@ -69,8 +74,9 @@ QVariant TreeModelAdapter::headerData(int section, Qt::Orientation orientation, 
   }
 }
 
-QModelIndex TreeModelAdapter::index(int row, int column,
-                                    const QModelIndex &parent) const {
+QModelIndex TreeModelAdapter::index(int row,
+                                    int column,
+                                    const QModelIndex& parent) const {
   void* parent_node = GetNode(parent);
   if (row >= model_.GetChildCount(parent_node))
     return {};
@@ -79,7 +85,7 @@ QModelIndex TreeModelAdapter::index(int row, int column,
   return createIndex(row, column, child_node);
 }
 
-QModelIndex TreeModelAdapter::parent(const QModelIndex &child) const {
+QModelIndex TreeModelAdapter::parent(const QModelIndex& child) const {
   assert(child.isValid());
 
   void* child_node = GetNode(child);
@@ -92,18 +98,18 @@ QModelIndex TreeModelAdapter::parent(const QModelIndex &child) const {
   return createIndex(GetIndexOf(parent_node), 0, parent_node);
 }
 
-int TreeModelAdapter::rowCount(const QModelIndex &parent) const {
+int TreeModelAdapter::rowCount(const QModelIndex& parent) const {
   if (parent.column() > 0)
     return 0;
 
   return model_.GetChildCount(GetNode(parent));
 }
 
-int TreeModelAdapter::columnCount(const QModelIndex &parent) const {
+int TreeModelAdapter::columnCount(const QModelIndex& parent) const {
   return model_.GetColumnCount();
 }
 
-QVariant TreeModelAdapter::data(const QModelIndex &index, int role) const {
+QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
   void* node = GetNode(index);
   assert(node);
 
@@ -117,18 +123,23 @@ QVariant TreeModelAdapter::data(const QModelIndex &index, int role) const {
       return ColorToQt(model_.GetBackgroundColor(node, index.column()));
     case Qt::DecorationRole: {
       auto icon_index = index.column() == 0 ? model_.GetIcon(node) : -1;
-      return (icon_index >= 0 && icon_index < icons_.size()) ? icons_[icon_index] : QVariant();
+      return (icon_index >= 0 && icon_index < icons_.size())
+                 ? icons_[icon_index]
+                 : QVariant();
     }
     case Qt::CheckStateRole:
       if (!checkable_ || index.column() != 0)
         return QVariant();
-      return checked_nodes_.find(node) == checked_nodes_.end() ? Qt::Unchecked : Qt::Checked;
+      return checked_nodes_.find(node) == checked_nodes_.end() ? Qt::Unchecked
+                                                               : Qt::Checked;
     default:
       return QVariant();
   }
 }
 
-bool TreeModelAdapter::setData(const QModelIndex &index, const QVariant &value, int role) {
+bool TreeModelAdapter::setData(const QModelIndex& index,
+                               const QVariant& value,
+                               int role) {
   if (role != Qt::EditRole)
     return QAbstractItemModel::setData(index, value, role);
 
@@ -138,7 +149,7 @@ bool TreeModelAdapter::setData(const QModelIndex &index, const QVariant &value, 
   return true;
 }
 
-Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex &index) const {
+Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
   auto flags = QAbstractItemModel::flags(index);
   if (checkable_ && index.column() == 0)
     flags |= Qt::ItemIsUserCheckable;
@@ -169,11 +180,11 @@ void TreeModelAdapter::OnTreeNodesDeleted(void* parent, int start, int count) {
 }
 
 void TreeModelAdapter::OnTreeNodeChanged(void* node) {
-  dataChanged(
-      GetNodeIndex(node, 0),
-      GetNodeIndex(node, model_.GetColumnCount() - 1));
+  dataChanged(GetNodeIndex(node, 0),
+              GetNodeIndex(node, model_.GetColumnCount() - 1));
 }
 
 bool TreeModelAdapter::IsEditable(int column_id) const {
-  return std::find(editable_column_ids_.begin(), editable_column_ids_.end(), column_id) != editable_column_ids_.end();
+  return std::find(editable_column_ids_.begin(), editable_column_ids_.end(),
+                   column_id) != editable_column_ids_.end();
 }

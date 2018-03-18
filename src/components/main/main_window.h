@@ -5,6 +5,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/strings/string16.h"
+#include "common/aliases.h"
 #include "components/main/main_window.h"
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
@@ -21,11 +22,11 @@ class EventManager;
 namespace scada {
 class HistoryService;
 class MethodService;
-class NodeManagementService;
 class MonitoredItemService;
+class NodeManagementService;
 class SessionService;
 class ViewService;
-}
+}  // namespace scada
 
 class ActionManager;
 class ClientApplication;
@@ -36,9 +37,9 @@ class EventsHelper;
 class Favourites;
 class FileCache;
 class LocalEvents;
-class NodeService;
 class MainCommands;
 class MainWindow;
+class NodeService;
 class OpenedView;
 class Page;
 class PortfolioManager;
@@ -51,29 +52,30 @@ class WindowDefinition;
 struct MainWindowDef;
 
 struct MainWindowContext {
-  int window_id_;
+  ActionManager& action_manager_;
+  const AliasResolver alias_resolver_;
+  const int window_id_;
+  events::EventManager& event_manager_;
+  Favourites& favourites_;
   FileCache& file_cache_;
-  TimedDataService& timed_data_service_;
+  LocalEvents& local_events_;
   NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
-  TaskManager& task_manager_;
-  ActionManager& action_manager_;
   Profile& profile_;
-  LocalEvents& local_events_;
-  events::EventManager& event_manager_;
-  std::function<void(int window_id)> close_handler_;
-  std::function<bool(int page_id)> page_opened_;
-  std::function<Page*()> find_closed_page_;
-  std::function<OpenedView*(const base::FilePath& path)> find_opened_view_;
-  std::function<void()> new_main_window_;
-  Speech& speech_;
-  scada::NodeManagementService& node_management_service_;
   scada::HistoryService& history_service_;
   scada::MethodService& method_service_;
-  Favourites& favourites_;
-  scada::SessionService& session_service_;
   scada::MonitoredItemService& monitored_item_service_;
+  scada::NodeManagementService& node_management_service_;
+  scada::SessionService& session_service_;
   scada::ViewService& view_service_;
+  Speech& speech_;
+  std::function<bool(int page_id)> page_opened_;
+  std::function<OpenedView*(const base::FilePath& path)> find_opened_view_;
+  std::function<Page*()> find_closed_page_;
+  std::function<void()> new_main_window_;
+  std::function<void(int window_id)> close_handler_;
+  TaskManager& task_manager_;
+  TimedDataService& timed_data_service_;
 };
 
 class MainWindow : protected MainWindowContext,
@@ -89,12 +91,12 @@ class MainWindow : protected MainWindowContext,
 
   MainWindowDef& GetPrefs() const;
 
-  // Pages.  
+  // Pages.
   const Page& current_page() const;
 
   OpenedView* active_view() const { return active_view_; }
   OpenedView* active_data_view() const { return active_data_view_; }
-  
+
   void ActivateView(OpenedView& view);
   void CloseView(OpenedView& view);
 
@@ -112,19 +114,24 @@ class MainWindow : protected MainWindowContext,
   void SetPageTitle(const base::string16& title);
   OpenedView* GetActiveView();
   OpenedView* GetActiveDataView();
-  OpenedView* OpenView(const WindowDefinition& window_definition, bool make_active);
+  OpenedView* OpenView(const WindowDefinition& window_definition,
+                       bool make_active);
   OpenedView* FindOpenedViewByFilePath(const base::FilePath& path);
   OpenedView* FindOpenedViewByType(unsigned type_id);
   void OpenPane(unsigned type_id, bool activate);
   void ClosePane(unsigned type_id);
 
-  virtual void SetWindowFlashing(bool flashing) = 0;
-  virtual void UpdateToolbarPosition() = 0;
 
   virtual DialogService& GetDialogService() { return *(DialogService*)0; }
 
-  ViewManager& view_manager() { assert(view_manager_); return *view_manager_; }
-  const ViewManager& view_manager() const { assert(view_manager_); return *view_manager_; }
+  ViewManager& view_manager() {
+    assert(view_manager_);
+    return *view_manager_;
+  }
+  const ViewManager& view_manager() const {
+    assert(view_manager_);
+    return *view_manager_;
+  }
 
  protected:
   MainCommands& main_commands() { return *main_commands_; }
@@ -132,13 +139,21 @@ class MainWindow : protected MainWindowContext,
   void Init(ViewManager& view_manager);
   void BeforeClose();
 
+  OpenedView* FindViewToRecycle(unsigned type);
+
+  virtual void SetWindowFlashing(bool flashing) = 0;
+  virtual void UpdateToolbarPosition() = 0;
+
+
   virtual void UpdateTitle() = 0;
 
   virtual void OnSelectionChanged() = 0;
 
   // ViewManagerDelegate
-  virtual std::unique_ptr<OpenedView> OnCreateView(WindowDefinition& def) override;
-  virtual void OnViewClosed(OpenedView& view, WindowDefinition& definition) override;
+  virtual std::unique_ptr<OpenedView> OnCreateView(
+      WindowDefinition& def) override;
+  virtual void OnViewClosed(OpenedView& view,
+                            WindowDefinition& definition) override;
   virtual void OnActiveViewChanged(OpenedView* view) override;
 
  private:
@@ -148,10 +163,10 @@ class MainWindow : protected MainWindowContext,
   void OnEvents(bool has_events);
 
   // ContentsObserver
-  virtual void OnContainedItemsUpdate(const std::set<scada::NodeId>& item_ids) override;
-  virtual void OnContainedItemChanged(const scada::NodeId& item_id, bool added) override;
-
-  OpenedView* FindViewToRecycle(unsigned type);
+  virtual void OnContainedItemsUpdate(
+      const std::set<scada::NodeId>& item_ids) override;
+  virtual void OnContainedItemChanged(const scada::NodeId& item_id,
+                                      bool added) override;
 
   OpenedView* active_view_ = nullptr;
   // View to insert new items.
@@ -159,7 +174,7 @@ class MainWindow : protected MainWindowContext,
 
   // TODO: Move into application.
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
-  
+
   std::unique_ptr<MainCommands> main_commands_;
 
   std::unique_ptr<EventsHelper> events_helper_;

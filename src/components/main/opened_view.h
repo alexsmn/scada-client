@@ -142,7 +142,7 @@ class OpenedView : public CommandHandler,
   virtual void OpenView(const WindowDefinition& def) override;
   virtual void SetTitle(const base::StringPiece16& title) override;
   virtual void ShowPopupMenu(unsigned resource_id, const gfx::Point& point, bool right_click) override;
-  virtual void ExecuteDefaultItemCommand(const NodeRef& node) override;
+  virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override;
   virtual ContentsModel* GetActiveContentsModel() override;
   virtual void AddContentsObserver(ContentsObserver& observer) override;
   virtual void RemoveContentsObserver(ContentsObserver& observer) override;

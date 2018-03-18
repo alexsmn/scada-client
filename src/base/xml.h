@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -9,8 +9,7 @@
 
 namespace xml {
 
-class Error {
-};
+class Error {};
 
 enum NodeType {
   NodeTypeDocument,
@@ -36,23 +35,21 @@ typedef std::map<std::string, std::wstring> AttributeMap;
 
 class Reader {
  public:
-  // Атрибуты текущего узла
-  std::string		name;
-  std::wstring	value;
-  NodeType		node_type;
-  bool			empty;
-  AttributeMap	attributes;
-  Encoding		encoding;
+  // РђС‚СЂРёР±СѓС‚С‹ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р°
+  std::string name;
+  std::wstring value;
+  NodeType node_type;
+  bool empty;
+  AttributeMap attributes;
+  Encoding encoding;
 
-  Reader()
-      : encoding(EncodingUnknown) {
-  }
+  Reader() : encoding(EncodingUnknown) {}
 
-  // Атрибуты текущего узла
+  // РђС‚СЂРёР±СѓС‚С‹ С‚РµРєСѓС‰РµРіРѕ СѓР·Р»Р°
   bool GetAttribute(const char* attr, std::wstring& val) const;
   std::wstring GetAttribute(const char* attr) const;
 
-  // Внешний интерфейс
+  // Р’РЅРµС€РЅРёР№ РёРЅС‚РµСЂС„РµР№СЃ
   virtual void Read() = 0;
   virtual bool Eof() const = 0;
 };
@@ -61,38 +58,36 @@ class Reader {
 
 class TextReader : public Reader {
  protected:
-  // Внутренние операции
+  // Р’РЅСѓС‚СЂРµРЅРЅРёРµ РѕРїРµСЂР°С†РёРё
   void SkipSpaces();
   bool IsNameSymbol(int ch, bool NotFirst = true);
   std::string ReadName();
   void ReadUntil(std::string& str, const char* term);
 
  public:
-  // Конструкторы и деструктор
-  TextReader()
-      : m_stream(NULL) {
-  }
+  // РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂС‹ Рё РґРµСЃС‚СЂСѓРєС‚РѕСЂ
+  TextReader() : m_stream(NULL) {}
   TextReader(std::istream& stream) {
     assert(m_stream);
     m_stream = &stream;
   }
 
-  // Функции инициализации
+  // Р¤СѓРЅРєС†РёРё РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
   void SetStream(std::istream& stream) { m_stream = &stream; }
 
-  // Внешний интерфейс
+  // Р’РЅРµС€РЅРёР№ РёРЅС‚РµСЂС„РµР№СЃ
   virtual void Read();
   virtual bool Eof() const;
 
-  // Атрибуты
+  // РђС‚СЂРёР±СѓС‚С‹
   long GetPosition() const {
     assert(m_stream);
     return static_cast<long>(m_stream->tellg());
   }
 
  protected:
-  // Начальные параметры
-  std::istream*	m_stream;
+  // РќР°С‡Р°Р»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹
+  std::istream* m_stream;
 };
 
 class Node;
@@ -115,7 +110,7 @@ class TextWriter {
   bool line_breaks;
 
  protected:
-  std::ostream*	m_stream;
+  std::ostream* m_stream;
 
   int node_level_;
 };
@@ -124,22 +119,17 @@ class TextWriter {
 
 class Node {
  public:
-  std::string		name;
-  std::wstring	value;
-  NodeType		type;
-  Node*			parent;
-  Node*			next;
-  Node*			first_child;
-  Node*			last_child;
-  AttributeMap	attributes;
+  std::string name;
+  std::wstring value;
+  NodeType type;
+  Node* parent;
+  Node* next;
+  Node* first_child;
+  Node* last_child;
+  AttributeMap attributes;
 
   explicit Node(NodeType type)
-      : type(type),
-        parent(0),
-        next(0),
-        first_child(0),
-        last_child(0) {
-  }
+      : type(type), parent(0), next(0), first_child(0), last_child(0) {}
   ~Node() { clear(); }
 
   Node& AddChild(NodeType type);
@@ -150,10 +140,10 @@ class Node {
 
   bool GetAttribute(const char* attr, std::wstring& val) const;
   bool GetAttribute(const char* attr, std::string& val) const;
-  
+
   std::wstring GetAttribute(const char* attr) const;
   std::string GetAttributeA(const char* attr) const;
-  
+
   void SetAttribute(const char* attr, const wchar_t* val);
   void SetAttribute(const char* attr, const char* val);
   void SetAttribute(const char* attr, const std::string& val);
@@ -195,18 +185,18 @@ class Document : public Node {
 
 class NodeReader : public Reader {
  public:
-  // Конструкторы и деструктор
+  // РљРѕРЅСЃС‚СЂСѓРєС‚РѕСЂС‹ Рё РґРµСЃС‚СЂСѓРєС‚РѕСЂ
   void Start(Node& parent);
 
-  // Внешний интерфейс
+  // Р’РЅРµС€РЅРёР№ РёРЅС‚РµСЂС„РµР№СЃ
   virtual void Read();
   virtual bool Eof() const;
 
  protected:
-  // Параметры чтения
+  // РџР°СЂР°РјРµС‚СЂС‹ С‡С‚РµРЅРёСЏ
   typedef std::list<Node*> NodePath;
-  NodePath	path;
-  Node*		current;
+  NodePath path;
+  Node* current;
 };
 
 inline bool Node::GetAttribute(const char* attr, std::wstring& val) const {
@@ -239,4 +229,4 @@ inline void Node::SetAttribute(const char* attr, const std::wstring& val) {
   SetAttribute(attr, val.c_str());
 }
 
-} // namespace xml
+}  // namespace xml

@@ -4,9 +4,6 @@
 #include "controls/types.h"
 
 #include <SkColor.h>
-#if defined(UI_QT)
-#include <qcolor.h>
-#endif
 
 namespace palette {
 
@@ -21,9 +18,4 @@ int FindColorName(const base::char16* str);
 SkColor StringToColor(const std::string& str);
 std::string ColorToString(SkColor color);
 
-} // namespace palette
-
-#if defined(UI_QT)
-QColor ColorToQt(SkColor color);
-SkColor ColorFromQt(QColor qcolor);
-#endif
+}  // namespace palette

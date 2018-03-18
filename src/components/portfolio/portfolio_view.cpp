@@ -1,11 +1,11 @@
 #include "components/portfolio/portfolio_view.h"
 
-#include "common_resources.h"
 #include "commands/select_item_dialog.h"
+#include "common_resources.h"
 #include "components/portfolio/portfolio_tree_model.h"
-#include "selection_model.h"
-#include "controls/tree.h"
 #include "controller_factory.h"
+#include "controls/tree.h"
+#include "selection_model.h"
 
 REGISTER_CONTROLLER(PortfolioView, ID_PORTFOLIO_VIEW);
 
@@ -13,12 +13,12 @@ REGISTER_CONTROLLER(PortfolioView, ID_PORTFOLIO_VIEW);
 
 PortfolioView::PortfolioView(const ControllerContext& context)
     : Controller(context),
-      model_(std::make_unique<PortfolioTreeModel>(context.portfolio_manager_, context.node_service_)) {
+      model_(std::make_unique<PortfolioTreeModel>(context.portfolio_manager_,
+                                                  context.node_service_)) {
   selection().multiple_handler_ = [this] { return GetSelectedNodeIdList(); };
 }
 
-PortfolioView::~PortfolioView() {
-}
+PortfolioView::~PortfolioView() {}
 
 UiView* PortfolioView::Init(const WindowDefinition& definition) {
   tree_.reset(new Tree(*model_));
@@ -46,9 +46,8 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
       selection().SelectNode(node->node);
   });
 
-  tree_->SetEditHandler([this](void* node) {
-    return model_->AsNode(node)->is_portfolio();
-  });
+  tree_->SetEditHandler(
+      [this](void* node) { return model_->AsNode(node)->is_portfolio(); });
 
   return tree_.get();
 }
@@ -74,7 +73,7 @@ const Portfolio* PortfolioView::GetSelectedPortfolio() const {
     return NULL;
   if (!node->is_portfolio())
     node = node->parent();
-  return &node->portfolio();    
+  return &node->portfolio();
 }
 
 void PortfolioView::AddItemsToPortfolio() {
@@ -87,11 +86,12 @@ void PortfolioView::AddItemsToPortfolio() {
     portfolio_manager_.AddItem(*portfolio, trid);
 }
 
-void PortfolioView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
+void PortfolioView::AddContainedItem(const scada::NodeId& node_id,
+                                     unsigned flags) {
   const Portfolio* portfolio = GetSelectedPortfolio();
   if (!portfolio)
     return;
-    
+
   portfolio_manager_.AddItem(*portfolio, node_id);
 
   PortfolioTreeNode* portfolio_node = model_->FindPortfolioNode(*portfolio);
@@ -131,7 +131,7 @@ void PortfolioView::NewPortfolio() {
 
   PortfolioTreeNode* node = model_->FindPortfolioNode(portfolio);
   assert(node);
-  
+
   tree_->SelectNode(node);
   tree_->StartEditing(node);
 }

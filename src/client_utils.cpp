@@ -141,7 +141,7 @@ void ExpandGroupItemIds(scada::ViewService& view_service,
       ->Traverse(node);
 }
 
-WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node,
+WindowDefinition MakeWindowDefinition(const NodeRef& node,
                                                 unsigned type) {
   if (!type)
     type = ID_GRAPH_VIEW;
@@ -157,7 +157,7 @@ WindowDefinition PrepareWindowDefinitionForOpen(const NodeRef& node,
   return win;
 }
 
-void PrepareWindowDefinitionForOpenExpandGroups(
+void MakeGroupWindowDefinition(
     scada::ViewService& view_service,
     NodeService& node_service,
     const NodeRef& node,
@@ -183,7 +183,7 @@ void PrepareWindowDefinitionForOpenExpandGroups(
       });
 }
 
-WindowDefinition PrepareWindowDefinitionForOpen(
+WindowDefinition MakeWindowDefinition(
     const NodeRef& node,
     unsigned type,
     const std::vector<scada::NodeId>& item_ids) {
@@ -242,7 +242,7 @@ void DeleteTreeRecordsRecursive(const NodeRef& node,
   task_manager.PostDeleteTask(node.id());
 }
 
-WindowDefinition PrepareWindowDefinitionForOpen(const NodeIdSet& items,
+WindowDefinition MakeWindowDefinition(const NodeIdSet& items,
                                                 unsigned type,
                                                 const base::char16* title) {
   if (!type)
@@ -261,7 +261,7 @@ WindowDefinition PrepareWindowDefinitionForOpen(const NodeIdSet& items,
   return win;
 }
 
-WindowDefinition PrepareWindowDefinitionForOpen(const char* formula,
+WindowDefinition MakeWindowDefinition(const char* formula,
                                                 unsigned type) {
   if (!type)
     type = ID_GRAPH_VIEW;
@@ -297,7 +297,7 @@ void PrepareWindowDefinitionForGroup(scada::ViewService& view_service,
             view_service, node_service, parent,
             [&node_service, parent, type,
              callback](const std::vector<scada::NodeId>& node_ids) {
-              callback(PrepareWindowDefinitionForOpen(parent, type, node_ids));
+              callback(MakeWindowDefinition(parent, type, node_ids));
             });
       });
 }

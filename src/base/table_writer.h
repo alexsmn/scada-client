@@ -1,20 +1,18 @@
 #pragma once
 
-#include <fstream>
+#include "base/strings/string_piece.h"
 
-#include "base/files/file_path.h"
+#include <ostream>
 
 class TableWriter {
  public:
-  TableWriter();
-
-  bool Init(const base::FilePath& path);
+  explicit TableWriter(std::wostream& stream);
 
   void StartRow();
-  void WriteCell(const base::StringPiece& str);
+  void WriteCell(base::StringPiece16 str);
 
  private:
-  std::ofstream stream_;
-  bool skip_start_;
-  bool start_of_line_;
+  std::wostream& stream_;
+  bool skip_start_ = true;
+  bool start_of_line_ = true;
 };

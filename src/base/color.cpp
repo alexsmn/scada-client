@@ -1,8 +1,8 @@
+п»ї#include "base/color.h"
 #include "base/strings/stringprintf.h"
-#include "base/color.h"
 
-#include <cassert>
 #include <string.h>
+#include <cassert>
 
 namespace palette {
 
@@ -13,15 +13,15 @@ struct ColorEntry {
 
 static const ColorEntry* GetColorEntries(size_t* count) {
   static const ColorEntry kColorEntries[] = {
-    { L"Прозрачный", SkColorSetARGB(0, 0, 0, 0) },
-    { L"Черный", SK_ColorBLACK },
-    { L"Белый", SK_ColorWHITE },
-    { L"Синий", SK_ColorBLUE },
-    { L"Красный", SK_ColorRED },
-    { L"Зеленый", SK_ColorGREEN },
-    { L"Желтый", SK_ColorYELLOW },
-    { L"Голубой", SkColorSetRGB(0, 255, 255) },
-    { L"Малиновый", SkColorSetRGB(255, 0, 255) },
+      {L"РџСЂРѕР·СЂР°С‡РЅС‹Р№", SkColorSetARGB(0, 0, 0, 0)},
+      {L"Р§РµСЂРЅС‹Р№", SK_ColorBLACK},
+      {L"Р‘РµР»С‹Р№", SK_ColorWHITE},
+      {L"РЎРёРЅРёР№", SK_ColorBLUE},
+      {L"РљСЂР°СЃРЅС‹Р№", SK_ColorRED},
+      {L"Р—РµР»РµРЅС‹Р№", SK_ColorGREEN},
+      {L"Р–РµР»С‚С‹Р№", SK_ColorYELLOW},
+      {L"Р“РѕР»СѓР±РѕР№", SkColorSetRGB(0, 255, 255)},
+      {L"РњР°Р»РёРЅРѕРІС‹Р№", SkColorSetRGB(255, 0, 255)},
   };
 
   if (count)
@@ -87,14 +87,4 @@ std::string ColorToString(SkColor color) {
   return base::StringPrintf("#%08X", color);
 }
 
-} // namespace palette
-
-#if defined(UI_QT)
-QColor ColorToQt(SkColor color) {
-  return QColor(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color), SkColorGetA(color));
-}
-
-SkColor ColorFromQt(QColor qcolor) {
-  return SkColorSetARGB(qcolor.alpha(), qcolor.red(), qcolor.green(), qcolor.blue());
-}
-#endif
+}  // namespace palette

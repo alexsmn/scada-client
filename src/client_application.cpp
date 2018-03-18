@@ -108,7 +108,7 @@ bool ClientApplication::Init() {
       client::DIR_LOG, L"client",
       "Telecontrol SCADA Client " PROJECT_VERSION_DOTTED_STRING);
 
-  transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_service_);
+  transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
 
   return true;
 }
@@ -173,7 +173,7 @@ void ClientApplication::BeforeRun() {
 
   event_manager_ =
       std::make_unique<events::EventManager>(events::EventManagerContext{
-          io_service_,
+          io_context_,
           *master_data_services_,
           *master_data_services_,
           *master_data_services_,
@@ -190,7 +190,7 @@ void ClientApplication::BeforeRun() {
   };
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
-      io_service_,
+      io_context_,
       alias_resolver_,
       *node_service_,
       *master_data_services_,

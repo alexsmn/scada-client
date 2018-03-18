@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mutex>
 #include <QtCore/qtimer.h>
+#include <mutex>
 
 #include "base/pending_task.h"
 #include "base/single_thread_task_runner.h"
@@ -19,9 +19,7 @@ class MessageLoopQt : public base::SingleThreadTaskRunner {
     return PostTaskHelper(from_here, task, delay, false);
   }
 
-  virtual bool RunsTasksOnCurrentThread() const override {
-    return true;
-  }
+  virtual bool RunsTasksOnCurrentThread() const override { return true; }
 
   virtual bool PostNonNestableDelayedTask(
       const tracked_objects::Location& from_here,
@@ -32,7 +30,8 @@ class MessageLoopQt : public base::SingleThreadTaskRunner {
 
  private:
   bool PostTaskHelper(const tracked_objects::Location& from_here,
-                      const base::Closure& task, base::TimeDelta delay,
+                      const base::Closure& task,
+                      base::TimeDelta delay,
                       bool nestable);
 
   QTimer timer_;

@@ -1,9 +1,9 @@
 #include "qt/table_model_adapter.h"
 
-#include <QtCore/qsize.h>
-
+#include "base/qt/color_qt.h"
 #include "ui/base/models/table_model.h"
-#include "base/color.h"
+
+#include <QSize>
 
 namespace {
 
@@ -20,11 +20,11 @@ Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
   }
 }
 
-} // namespace
+}  // namespace
 
-TableModelAdapter::TableModelAdapter(ui::TableModel& model, std::vector<ui::TableColumn> columns)
-    : model_(model),
-      columns_(std::move(columns)) {
+TableModelAdapter::TableModelAdapter(ui::TableModel& model,
+                                     std::vector<ui::TableColumn> columns)
+    : model_(model), columns_(std::move(columns)) {
   model_.observers().AddObserver(this);
 }
 
@@ -32,15 +32,15 @@ TableModelAdapter::~TableModelAdapter() {
   model_.observers().RemoveObserver(this);
 }
 
-int TableModelAdapter::rowCount(const QModelIndex &parent) const {
+int TableModelAdapter::rowCount(const QModelIndex& parent) const {
   return model_.GetRowCount();
 }
 
-int TableModelAdapter::columnCount(const QModelIndex &parent) const {
+int TableModelAdapter::columnCount(const QModelIndex& parent) const {
   return static_cast<int>(columns_.size());
 }
 
-QVariant TableModelAdapter::data(const QModelIndex &index, int role) const {
+QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
   auto& column = columns_[index.column()];
 
   switch (role) {
@@ -65,10 +65,12 @@ QVariant TableModelAdapter::data(const QModelIndex &index, int role) const {
   }
 }
 
-QVariant TableModelAdapter::headerData(int section, Qt::Orientation orientation, int role) const {
+QVariant TableModelAdapter::headerData(int section,
+                                       Qt::Orientation orientation,
+                                       int role) const {
   if (orientation != Qt::Horizontal)
     return QVariant();
-  
+
   auto& column = columns_[section];
 
   switch (role) {
@@ -87,9 +89,8 @@ void TableModelAdapter::OnModelChanged() {
 }
 
 void TableModelAdapter::OnItemsChanged(int first, int count) {
-  dataChanged(
-      index(first, 0),
-      index(first + count - 1, static_cast<int>(columns_.size()) - 1));
+  dataChanged(index(first, 0),
+              index(first + count - 1, static_cast<int>(columns_.size()) - 1));
 }
 
 void TableModelAdapter::OnItemsAdded(int first, int count) {

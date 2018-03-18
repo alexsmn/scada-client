@@ -2,17 +2,9 @@
 
 #include "base/strings/string_util.h"
 
-TableReader::TableReader()
-    : line_pos_(0),
-      has_cells_(false),
-      row_index_(0),
-      cell_index_(1) {
-}
-
-bool TableReader::Init(const base::FilePath& path, base::StringPiece signature) {
-  signature_ = signature;
-  stream_.open(path.value());
-  return !!stream_;
+TableReader::TableReader(std::wistream& stream, base::StringPiece16 signature)
+    : stream_{stream},
+      signature_{signature} {
 }
 
 bool TableReader::NextRow() {
@@ -25,7 +17,7 @@ bool TableReader::NextRow() {
   has_cells_ = true;
 
   // Normalize EOL sequences so that we uniformly use a single LF character.
-  base::ReplaceSubstringsAfterOffset(&line_, 0, "\r\n", "\n");
+  base::ReplaceSubstringsAfterOffset(&line_, 0, L"\r\n", L"\n");
 
   if (!signature_.empty()) {
     if (line_.size() > signature_.size() &&
@@ -37,7 +29,7 @@ bool TableReader::NextRow() {
   return true;
 }
 
-bool TableReader::NextCell(std::string& str) {
+bool TableReader::NextCell(base::string16& str) {
   str.clear();
 
   if (!has_cells_)
@@ -46,19 +38,19 @@ bool TableReader::NextCell(std::string& str) {
   ++cell_index_;
 
   // Escaped.
-  if (line_pos_ < line_.size() && line_[line_pos_] == '"') {
+  if (line_pos_ < line_.size() && line_[line_pos_] == L'"') {
     ++line_pos_;
     while (line_pos_ < line_.size()) {
-      auto p = line_.find('"', line_pos_);
+      auto p = line_.find(L'"', line_pos_);
       if (p == std::string::npos) {
         assert(false);
         return false;
       }
       str += line_.substr(line_pos_, p - line_pos_);
       line_pos_ = p + 1; // skip quote
-      if (line_pos_ >= line_.size() || line_[line_pos_] != '"')
+      if (line_pos_ >= line_.size() || line_[line_pos_] != L'"')
         break;
-      str += '"';
+      str += L'"';
       ++line_pos_;
     }
     // Should end with line break or separator.

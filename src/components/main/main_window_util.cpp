@@ -18,7 +18,7 @@ void OpenView(MainWindow* main_window, const WindowDefinition& def) {
   main_window->OpenView(def, true);
 }
 
-void ExecuteDefaultItemCommand(MainWindow* main_window,
+void ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const NodeRef& node,
                                unsigned type,
                                unsigned shift,
@@ -37,10 +37,10 @@ void ExecuteDefaultItemCommand(MainWindow* main_window,
     }
   }
 
-  OpenView(main_window, PrepareWindowDefinitionForOpen(node, type, node_ids));
+  OpenView(main_window, MakeWindowDefinition(node, type, node_ids));
 }
 
-void ExecuteDefaultItemCommand(scada::ViewService& view_service,
+void ExecuteDefaultNodeCommand(scada::ViewService& view_service,
                                NodeService& node_service,
                                const NodeRef& node,
                                MainWindow* main_window) {
@@ -58,7 +58,7 @@ void ExecuteDefaultItemCommand(scada::ViewService& view_service,
     ExpandGroupItemIds(
         view_service, node_service, node,
         [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
-          ExecuteDefaultItemCommand(weak_main_window.get(), node, ID_TABLE_VIEW,
+          ExecuteDefaultNodeCommand(weak_main_window.get(), node, ID_TABLE_VIEW,
                                     shift, std::move(node_ids));
         });
     return;
@@ -72,5 +72,5 @@ void ExecuteDefaultItemCommand(scada::ViewService& view_service,
   else
     type = (shift & MK_CONTROL) ? ID_TABLE_EDITOR : ID_PROPERTY_VIEW;
 
-  ExecuteDefaultItemCommand(main_window, node, type, shift, {node.id()});
+  ExecuteDefaultNodeCommand(main_window, node, type, shift, {node.id()});
 }

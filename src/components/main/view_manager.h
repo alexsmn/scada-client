@@ -34,7 +34,9 @@ class ViewManager {
   OpenedView* FindViewByType(unsigned type) const;
 
   OpenedView* CreateView(WindowDefinition& def);
-  OpenedView* OpenView(const WindowDefinition& def, bool make_active, OpenedView* after_view);
+  OpenedView* OpenView(const WindowDefinition& def,
+                       bool make_active,
+                       OpenedView* after_view);
 
   OpenedView* active_view() const { return active_view_; }
 

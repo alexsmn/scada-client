@@ -12,7 +12,7 @@ void ExecuteCommand(MainWindow* main_window, unsigned command_id) {
 }
 
 void OpenRecordEditor(MainWindow* main_window, const NodeRef& node) {
-  ::OpenView(main_window, PrepareWindowDefinitionForOpen(node, ID_PROPERTY_VIEW));
+  ::OpenView(main_window, MakeWindowDefinition(node, ID_PROPERTY_VIEW));
 }
 
 } // namespace client

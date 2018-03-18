@@ -369,8 +369,8 @@ void OpenedView::OpenView(const WindowDefinition& def) {
   main_window_->OpenView(def, true);
 }
 
-void OpenedView::ExecuteDefaultItemCommand(const NodeRef& node) {
-  ::ExecuteDefaultItemCommand(view_service_, node_service_, node, main_window_);
+void OpenedView::ExecuteDefaultNodeCommand(const NodeRef& node) {
+  ::ExecuteDefaultNodeCommand(view_service_, node_service_, node, main_window_);
 }
 
 ContentsModel* OpenedView::GetActiveContentsModel() {

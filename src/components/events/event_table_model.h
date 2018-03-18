@@ -2,14 +2,14 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
-#include "time_range.h"
-#include "services/local_events.h"
-#include "core/event.h"
 #include "common/event_observer.h"
-#include "core/history_service.h"
-#include "core/configuration_types.h"
-#include "common/node_ref.h"
 #include "common/node_observer.h"
+#include "common/node_ref.h"
+#include "core/configuration_types.h"
+#include "core/event.h"
+#include "core/history_service.h"
+#include "services/local_events.h"
+#include "time_range.h"
 #include "ui/base/models/table_model.h"
 
 #include <list>
@@ -100,7 +100,8 @@ class EventTableModel : public ui::TableModel,
   void RefilterNow();
   void Refilter();
 
-  void OnQueryEventsCompleted(scada::Status status, scada::QueryEventsResults events);
+  void OnQueryEventsCompleted(scada::Status status,
+                              scada::QueryEventsResults events);
 
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
@@ -112,8 +113,6 @@ class EventTableModel : public ui::TableModel,
 
   // LocalEvents::Observer
   virtual void OnLocalEvent(const scada::Event& event) override;
-
-  // NodeFetcherObserver
 
   Mode mode_;
 
@@ -130,8 +129,7 @@ class EventTableModel : public ui::TableModel,
   // Rows displayed in grid.
   struct Row {
     Row(EventType type, const scada::Event& event)
-        : type(type),
-          event(&event) {}
+        : type(type), event(&event) {}
 
     EventType type;
     const scada::Event* event;

@@ -370,7 +370,7 @@ bool SheetView::OnDoubleClick() {
   if (!node)
     return false;
 
-  controller_delegate_.ExecuteDefaultItemCommand(node);
+  controller_delegate_.ExecuteDefaultNodeCommand(node);
   return true;
 }
 #endif

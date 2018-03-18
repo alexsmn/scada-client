@@ -1,5 +1,9 @@
 #include "components/login/qt/login_dialog.h"
 
+#include "core/session_service.h"
+#include "core/status.h"
+#include "translation.h"
+
 #include <QtCore/qsettings.h>
 #include <QtWidgets/qapplication.h>
 #include <QtWidgets/qcheckbox.h>
@@ -11,17 +15,14 @@
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qpushbutton.h>
 
-#include "core/status.h"
-#include "core/session_service.h"
-#include "translation.h"
-
 LoginDialog::LoginDialog(const DataServicesContext& services_context)
     : services_context_(services_context),
       cancelation_(std::make_shared<bool>(false)) {
-	ui.setupUi(this);
+  ui.setupUi(this);
 
   // TODO: Reg key constants.
-  QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
+  QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace",
+                     QSettings::NativeFormat);
   auto user_name = settings.value("User").toString();
   user_list_ = settings.value("UserList").toString().split(',');
   auto server = settings.value("Server").toString();
@@ -45,8 +46,7 @@ LoginDialog::LoginDialog(const DataServicesContext& services_context)
     accept();
 }
 
-LoginDialog::~LoginDialog() {
-}
+LoginDialog::~LoginDialog() {}
 
 void LoginDialog::accept() {
   SetControlsEnabled(false);
@@ -67,8 +67,9 @@ void LoginDialog::accept() {
 
   std::weak_ptr<bool> cancelation = cancelation_;
   // "TCP;active;port=2000"
-  services_.session_service_->Connect(server_.toStdString(), user_name_.toStdString(), password_.toStdString(), true,
-      [this, cancelation](const scada::Status& result) {
+  services_.session_service_->Connect(
+      server_.toStdString(), user_name_.toStdString(), password_.toStdString(),
+      true, [this, cancelation](const scada::Status& result) {
         if (!cancelation.expired())
           OnLoginResult(result);
       });
@@ -76,7 +77,8 @@ void LoginDialog::accept() {
 
 void LoginDialog::OnLoginResult(const scada::Status& result) {
   if (result) {
-    QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace", QSettings::NativeFormat);
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace",
+                       QSettings::NativeFormat);
     settings.setValue("User", user_name_);
     settings.setValue("Password", auto_login_ ? password_ : QString());
     settings.setValue("AutoLogin", auto_login_);
@@ -89,7 +91,9 @@ void LoginDialog::OnLoginResult(const scada::Status& result) {
       user_list_.append(user_name_);
       const int sc_maxUserList = 10;
       if (user_list_.size() > sc_maxUserList)
-        user_list_.erase(user_list_.begin(), user_list_.begin() + user_list_.size() - sc_maxUserList);
+        user_list_.erase(
+            user_list_.begin(),
+            user_list_.begin() + user_list_.size() - sc_maxUserList);
       settings.setValue("UserList", user_list_.join(','));
     }
 

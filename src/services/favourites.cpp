@@ -49,7 +49,7 @@ void Favourites::Add(const WindowDefinition& win, const Page& folder) {
 void Favourites::Delete(const WindowDefinition& win, const Page& folder) {
   Page& local_folder = const_cast<Page&>(folder);
 
-  int index = local_folder.FindWindow(win);
+  int index = local_folder.FindWindowDef(win);
   if (index == -1)
     return;
 
@@ -59,7 +59,8 @@ void Favourites::Delete(const WindowDefinition& win, const Page& folder) {
   local_folder.DeleteWindow(index);
 }
 
-void Favourites::NotifyWindowAdded(const Page& folder, const WindowDefinition& win) const {
+void Favourites::NotifyWindowAdded(const Page& folder,
+                                   const WindowDefinition& win) const {
   FOR_EACH_OBSERVER(Observer, observers_, OnFavouriteAdded(folder, win));
 }
 

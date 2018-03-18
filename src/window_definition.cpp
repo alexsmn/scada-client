@@ -17,9 +17,6 @@ WindowItem& WindowItem::operator=(const WindowItem& source) {
   return *this;
 }
 
-WindowDefinition::WindowDefinition() {
-}
-
 WindowDefinition::WindowDefinition(const WindowInfo& window_info)
     : window_info_(&window_info) {
 }
@@ -53,13 +50,10 @@ WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
 }
 
 base::string16 WindowDefinition::GetTitle() const {
-  if (!window_info())
-    return {};
-
   if (!title.empty())
     return title;
 
-  base::string16 title = window_info()->title;
+  base::string16 title = window_info().title;
   if (!path.empty())
     title += L": " + path.value();
   return title;

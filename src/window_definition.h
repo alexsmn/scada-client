@@ -69,14 +69,13 @@ typedef std::vector<WindowItem> WindowItems;
 
 class WindowDefinition {
  public:
-  WindowDefinition();
   explicit WindowDefinition(const WindowInfo& window_info);
   WindowDefinition(const WindowDefinition& other);
   ~WindowDefinition();
 
   WindowDefinition& operator=(const WindowDefinition& other);
 
-  const WindowInfo* window_info() const { return window_info_; }
+  const WindowInfo& window_info() const { assert(window_info_); return *window_info_; }
   base::string16 GetTitle() const;
   
   WindowItem& AddItem(const char* name);

@@ -8,9 +8,15 @@ class SessionService;
 
 class LocalEvents;
 
-class ConnectionStateReporter : private scada::SessionStateObserver {
+struct ConnectionStateReporterContext {
+  scada::SessionService& session_service_;
+  LocalEvents& local_events_;
+};
+
+class ConnectionStateReporter final : private ConnectionStateReporterContext,
+                                      private scada::SessionStateObserver {
  public:
-  explicit ConnectionStateReporter(scada::SessionService& notifier, LocalEvents& local_events);
+  explicit ConnectionStateReporter(ConnectionStateReporterContext&& context);
   ~ConnectionStateReporter();
 
   ConnectionStateReporter(const ConnectionStateReporter&) = delete;
@@ -20,7 +26,4 @@ class ConnectionStateReporter : private scada::SessionStateObserver {
   // scada::SessionStateObserver
   virtual void OnSessionCreated() override;
   virtual void OnSessionDeleted(const scada::Status& status) override;
-
-  scada::SessionService& session_service_;
-  LocalEvents& local_events_;
 };

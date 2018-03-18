@@ -9,7 +9,7 @@ INSTALL(FILES "${MODUS_ROOT_DIR}/libmodus/Library.txt"
   DESTINATION data
   COMPONENT Client)
 
-INCLUDE_DIRECTORIES(client
+include_directories(client
   "."
 )
 
@@ -28,7 +28,7 @@ SET_PROPERTY(TARGET gfx PROPERTY FOLDER ${client_folder})
 ADD_DEFINITIONS(
   -DMODUS_GDIP)
 
-FILE(GLOB core_sources
+file(GLOB CORE_SOURCES
   "*.cpp"
   "*.h"
   "base/*.cpp"
@@ -38,9 +38,11 @@ FILE(GLOB core_sources
   "services/opcua/*.*"
   "services/scada/*.*"
 )
-LIST(APPEND core_sources
+list(APPEND CORE_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/components/configuration_tree/configuration_tree_model.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/configuration_tree/configuration_tree_model.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/events/event_table_model.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/events/event_table_model.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/favourites/favourites_tree_model.cpp"
@@ -50,10 +52,8 @@ LIST(APPEND core_sources
   # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/view_manager.cpp"
   # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/view_manager.h"
   # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/view_manager_delegate.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.h"
 )
-LIST(REMOVE_ITEM core_sources
+LIST(REMOVE_ITEM CORE_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/controller.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/controller_delegate.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/controller_factory.cpp"
@@ -63,47 +63,46 @@ LIST(REMOVE_ITEM core_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/base/color.h"
 )
 
-ADD_LIBRARY(client_core STATIC ${core_sources})
-TARGET_LINK_LIBRARIES(client_core
+add_library(client_core ${CORE_SOURCES})
+set_property(TARGET client_core PROPERTY FOLDER ${client_folder})
+
+target_link_libraries(client_core PUBLIC
   base_i18n
-  ui_base
-  scada_common
   modus
+  scada_common
   scada_core_opcua
   scada_core_remote
   scada_core_vidicon
+  ui_base
 )
-SET_PROPERTY(TARGET client_core PROPERTY FOLDER ${client_folder})
 
-FILE(GLOB_RECURSE paths
+file(GLOB_RECURSE PATHS
   "*.cpp"
   "*.h"
   "*.rc"
   "*.ui"
 )
-LIST(REMOVE_ITEM paths ${core_sources})
+list(REMOVE_ITEM PATHS ${CORE_SOURCES})
 
-FOREACH(path ${paths})
-  IF(${path} MATCHES "_unittest")
-    IF(${path} MATCHES "/views/")
-      LIST(APPEND unittests_views ${path})
-    ELSEIF(${path} MATCHES "/qt/")
-      LIST(APPEND unittests_qt ${path})
+foreach(PATH ${PATHS})
+  IF(${PATH} MATCHES "_unittest")
+    IF(${PATH} MATCHES "/views/")
+      LIST(APPEND UNITTESTS_VIEWS ${PATH})
+    ELSEIF(${PATH} MATCHES "/qt/")
+      LIST(APPEND UNITTESTS_QT ${PATH})
     ELSE()
-      LIST(APPEND unittests ${path})
+      LIST(APPEND UNITTESTS ${PATH})
     ENDIF()
   ELSE()
-    IF(${path} MATCHES "/views/")
-      LIST(APPEND sources_views ${path})
-    ELSEIF(${path} MATCHES "/qt/")
-      LIST(APPEND sources_qt ${path})
+    IF(${PATH} MATCHES "/views/")
+      LIST(APPEND SOURCES_VIEWS ${PATH})
+    ELSEIF(${PATH} MATCHES "/qt/")
+      LIST(APPEND SOURCES_QT ${PATH})
     ELSE()
-      LIST(APPEND sources ${path})
+      LIST(APPEND SOURCES ${PATH})
     ENDIF()
   ENDIF()
-ENDFOREACH()
-
-LIST(APPEND libs client_core)
+endforeach()
 
 ADD_SUBDIRECTORY(views)
 ADD_SUBDIRECTORY(qt)

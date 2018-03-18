@@ -1,13 +1,13 @@
-#include "base/xml.h"
+п»ї#include "base/xml.h"
 
-#include <cassert>
 #include <atlconv.h>
-#include <sstream>
 #include <windows.h>
+#include <cassert>
+#include <sstream>
 
 namespace xml {
 
-template<typename CharType>
+template <typename CharType>
 class StringBuilder {
  public:
   typedef std::basic_string<CharType> StringType;
@@ -16,7 +16,7 @@ class StringBuilder {
   CharType buf[64];
   int nbuf;
 
-  explicit StringBuilder(StringType& str) : str(str), nbuf(0) { }
+  explicit StringBuilder(StringType& str) : str(str), nbuf(0) {}
 
   StringBuilder(const StringBuilder&) = delete;
   StringBuilder& operator=(const StringBuilder&) = delete;
@@ -40,15 +40,14 @@ class StringBuilder {
   }
 };
 
-template<int CAPACITY = 64>
+template <int CAPACITY = 64>
 struct AutoBuffer {
-  char	mem[CAPACITY];
-  char*	buf;
-  bool	alloc;
-  int		size;
+  char mem[CAPACITY];
+  char* buf;
+  bool alloc;
+  int size;
 
-  AutoBuffer(int size)
-      : size(size) {
+  AutoBuffer(int size) : size(size) {
     alloc = size > sizeof(mem);
     if (alloc)
       buf = new char[size];
@@ -80,9 +79,9 @@ static const wchar_t* ReplaceStringTag(const wchar_t* str, int len) {
   };
 
   static const Entry entries[] = {
-    { L"lt", L"<" },
-    { L"gt", L">" },
-    { L"amp", L"&" },
+      {L"lt", L"<"},
+      {L"gt", L">"},
+      {L"amp", L"&"},
   };
 
   for (int i = 0; i < _countof(entries); ++i)
@@ -135,28 +134,26 @@ std::wstring Reader::GetAttribute(const char* attr) const {
 
 // TextReader
 
-void TextReader::SkipSpaces()
-{
+void TextReader::SkipSpaces() {
   // m_stream->ipfx();
   while (isspace(m_stream->peek()))
     m_stream->ignore();
 }
 
 bool TextReader::IsNameSymbol(int ch, bool NotFirst) {
-  switch (ch)
-  {
-  case '_':
-    return true;
-  case '-':
-    return NotFirst;
-  case ':':
-    return NotFirst;
-  default:
-    if (isalpha(ch))
-            return true;
-    if (isdigit(ch))
+  switch (ch) {
+    case '_':
+      return true;
+    case '-':
       return NotFirst;
-    return false;
+    case ':':
+      return NotFirst;
+    default:
+      if (isalpha(ch))
+        return true;
+      if (isdigit(ch))
+        return NotFirst;
+      return false;
   }
 }
 
@@ -212,46 +209,44 @@ UINT ConvertEncodingToCodePage(Encoding encoding) {
     case EncodingUtf8:
       return CP_UTF8;
     default:
-      return UINT(-1);
+      return CP_UTF8;
   }
 }
 
-static std::wstring DecodeString(UINT code_page, const std::string& str) {
+static std::wstring DecodeString(Encoding encoding, const std::string& str) {
   if (str.empty())
     return std::wstring();
 
-  if (code_page == EncodingUnknown)
-    code_page = CP_UTF8;
+  const auto code_page = ConvertEncodingToCodePage(encoding);
 
   int len = MultiByteToWideChar(code_page, MB_ERR_INVALID_CHARS, str.data(),
-      (int)str.length(), 0, NULL);
+                                (int)str.length(), 0, NULL);
   if (len < 0)
     throw Error();
 
-  AutoBuffer<> buf(len*2);
+  AutoBuffer<> buf(len * 2);
   int res = MultiByteToWideChar(code_page, MB_ERR_INVALID_CHARS, str.data(),
-      (int)str.length(), (LPWSTR)buf.buf, len);
+                                (int)str.length(), (LPWSTR)buf.buf, len);
   if (res < 0)
     throw Error();
 
   return std::wstring((wchar_t*)buf.buf, res);
 }
 
-static std::string EncodeString(UINT code_page, const std::wstring& str) {
+static std::string EncodeString(Encoding encoding, const std::wstring& str) {
   if (str.empty())
     return std::string();
 
-  if (code_page == EncodingUnknown)
-    code_page = CP_UTF8;
+  const auto code_page = ConvertEncodingToCodePage(encoding);
 
-  int len = WideCharToMultiByte(code_page, 0, str.data(), (int)str.length(),
-      0, NULL, NULL, NULL);
+  int len = WideCharToMultiByte(code_page, 0, str.data(), (int)str.length(), 0,
+                                NULL, NULL, NULL);
   if (len <= 0)
     throw Error();
 
   AutoBuffer<> buf(len);
   int res = WideCharToMultiByte(code_page, 0, str.data(), (int)str.length(),
-      buf.buf, len, NULL, NULL);
+                                buf.buf, len, NULL, NULL);
   if (res <= 0)
     throw Error();
 
@@ -274,7 +269,7 @@ void TextReader::Read() {
   int ch = m_stream->get();
 
   if (ch != '<') {
-    // Текстовая область
+    // РўРµРєСЃС‚РѕРІР°СЏ РѕР±Р»Р°СЃС‚СЊ
     std::string val(1, static_cast<char>(ch));
     StringBuilder<char> builder(val);
     while ((ch = m_stream->peek()) != EOF && ch != '<')
@@ -294,7 +289,7 @@ void TextReader::Read() {
     case '!':
       ch = m_stream->get();
       if (ch == '-') {
-        // Комментарий, оканичивается на -->
+        // РљРѕРјРјРµРЅС‚Р°СЂРёР№, РѕРєР°РЅРёС‡РёРІР°РµС‚СЃСЏ РЅР° -->
         if (m_stream->get() != '-')
           throw Error();
         node_type = NodeTypeComment;
@@ -332,31 +327,31 @@ void TextReader::Read() {
   name = ReadName();
   assert(!name.empty());
 
-  // Читаем атрибуты
+  // Р§РёС‚Р°РµРј Р°С‚СЂРёР±СѓС‚С‹
 
   while (TRUE) {
     SkipSpaces();
-    
+
     switch (m_stream->get()) {
       case '>':
-        // Конец тега
+        // РљРѕРЅРµС† С‚РµРіР°
         empty = false;
         return;
 
       case '/':
-        // Конец пустого тега
-        // Проверим что это не закрывающий тег
+        // РљРѕРЅРµС† РїСѓСЃС‚РѕРіРѕ С‚РµРіР°
+        // РџСЂРѕРІРµСЂРёРј С‡С‚Рѕ СЌС‚Рѕ РЅРµ Р·Р°РєСЂС‹РІР°СЋС‰РёР№ С‚РµРі
         if (node_type != NodeTypeElement)
-          throw Error();	// должен быть элемент
+          throw Error();  // РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ СЌР»РµРјРµРЅС‚
         if (m_stream->get() != '>')
-          throw Error();	// ожидается />
+          throw Error();  // РѕР¶РёРґР°РµС‚СЃСЏ />
         return;
 
       case '?':
         if (node_type != NodeTypeDeclaration)
           throw Error();
         if (m_stream->get() != '>')
-          throw Error();	// ожидается ?>
+          throw Error();  // РѕР¶РёРґР°РµС‚СЃСЏ ?>
         return;
 
       default: {
@@ -365,25 +360,27 @@ void TextReader::Read() {
         assert(!AttributeName.empty());
         SkipSpaces();
         if (m_stream->get() != '=')
-          throw Error();	// ожидается знак равенства
+          throw Error();  // РѕР¶РёРґР°РµС‚СЃСЏ Р·РЅР°Рє СЂР°РІРµРЅСЃС‚РІР°
         SkipSpaces();
         if ((ch = m_stream->get()) != '"' && ch != '\'')
-          throw Error();	// значение атрибута должно быть заключено в кавчыки
+          throw Error();  // Р·РЅР°С‡РµРЅРёРµ Р°С‚СЂРёР±СѓС‚Р° РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ Р·Р°РєР»СЋС‡РµРЅРѕ РІ РєР°РІС‡С‹РєРё
         char open = static_cast<char>(ch);
-        // Читаем значение атрибута
+        // Р§РёС‚Р°РµРј Р·РЅР°С‡РµРЅРёРµ Р°С‚СЂРёР±СѓС‚Р°
         std::string AttributeValue;
         StringBuilder<char> builder(AttributeValue);
         while ((ch = m_stream->get()) != open) {
           if (ch == EOF)
-            throw Error();	// конец файла при чтении значения атрибута
+            throw Error();  // РєРѕРЅРµС† С„Р°Р№Р»Р° РїСЂРё С‡С‚РµРЅРёРё Р·РЅР°С‡РµРЅРёСЏ Р°С‚СЂРёР±СѓС‚Р°
           builder += static_cast<char>(ch);
         }
         builder.flush();
         std::wstring val = DecodeString(encoding, AttributeValue);
         ReplaceStringTags(val);
-        bool ok = attributes.insert(AttributeMap::value_type(AttributeName, val)).second;
+        bool ok =
+            attributes.insert(AttributeMap::value_type(AttributeName, val))
+                .second;
         if (!ok)
-          throw Error();	// повторяющийся атрибут
+          throw Error();  // РїРѕРІС‚РѕСЂСЏСЋС‰РёР№СЃСЏ Р°С‚СЂРёР±СѓС‚
         break;
       }
     }
@@ -440,15 +437,13 @@ TextWriter::TextWriter()
     : encoding(EncodingUtf8),
       line_breaks(true),
       m_stream(NULL),
-      node_level_(0) {
-}
+      node_level_(0) {}
 
 TextWriter::TextWriter(std::ostream& stream)
     : m_stream(&stream),
       encoding(EncodingUtf8),
       line_breaks(true),
-      node_level_(0) {
-}
+      node_level_(0) {}
 
 void TextWriter::Write(Reader& reader) {
   switch (reader.node_type) {
@@ -507,7 +502,7 @@ void TextWriter::Write(Reader& reader) {
       return;
 
     default:
-      throw Error();	// неопределенный тип элемента
+      throw Error();  // РЅРµРѕРїСЂРµРґРµР»РµРЅРЅС‹Р№ С‚РёРї СЌР»РµРјРµРЅС‚Р°
   }
 }
 
@@ -515,26 +510,23 @@ void TextWriter::WriteAttributes(Reader& reader) {
   assert(m_stream);
   for (AttributeMap::const_iterator i = reader.attributes.begin();
        i != reader.attributes.end(); ++i) {
-    *m_stream << " " << i->first
-              << "=\"" << EncodeString(encoding, i->second) << "\"";
+    *m_stream << " " << i->first << "=\"" << EncodeString(encoding, i->second)
+              << "\"";
   }
 }
 
 // Node
 
-inline Node& alloc_node(NodeType type)
-{
+inline Node& alloc_node(NodeType type) {
   return *(new Node(type));
 }
 
-inline void free_node(Node& node)
-{
+inline void free_node(Node& node) {
   node.clear();
   delete &node;
 }
 
-std::wstring Node::get_text() const
-{
+std::wstring Node::get_text() const {
   for (const Node* node = first_child; node; node = node->next)
     if (node->type == NodeTypeText)
       return node->value;
@@ -548,12 +540,11 @@ void Node::set_text(const wchar_t* text) {
       return;
     }
   }
-  
+
   AddChild(NodeTypeText).value = text;
 }
 
-const std::wstring& Node::get_value() const
-{
+const std::wstring& Node::get_value() const {
   static const std::wstring empty_str;
   return first_child ? first_child->value : empty_str;
 }
@@ -567,7 +558,7 @@ bool Node::GetAttribute(const char* attr, std::string& val) const {
   std::wstring wval;
   if (!GetAttribute(attr, wval))
     return false;
-    
+
   USES_CONVERSION;
   val = W2A(wval.c_str());
   return true;
@@ -592,8 +583,7 @@ Node& Node::AddChild(NodeType type) {
   return node;
 }
 
-Node& Node::AddChildFirst(NodeType type)
-{
+Node& Node::AddChildFirst(NodeType type) {
   Node& node = alloc_node(type);
   node.parent = this;
   if (first_child) {
@@ -606,38 +596,33 @@ Node& Node::AddChildFirst(NodeType type)
   return node;
 }
 
-Node& Node::AddElement(const std::string& name)
-{
+Node& Node::AddElement(const std::string& name) {
   Node& node = AddChild(NodeTypeElement);
   node.name = name;
   return node;
 }
 
-Node& Node::AddElement(const char* name)
-{
+Node& Node::AddElement(const char* name) {
   Node& node = AddChild(NodeTypeElement);
   node.name = name;
   return node;
 }
 
-Node* Node::select(const char* name)
-{
+Node* Node::select(const char* name) {
   for (Node* node = first_child; node; node = node->next)
     if (node->type == NodeTypeElement && node->name.compare(name) == 0)
       return node;
   return NULL;
 }
 
-const Node* Node::select(const char* name) const
-{
+const Node* Node::select(const char* name) const {
   for (Node* node = first_child; node; node = node->next)
     if (node->type == NodeTypeElement && node->name.compare(name) == 0)
       return node;
   return NULL;
 }
 
-void Node::clear()
-{
+void Node::clear() {
   while (first_child) {
     Node& node = *first_child;
     first_child = first_child->next;
@@ -646,8 +631,7 @@ void Node::clear()
   last_child = NULL;
 }
 
-void Node::to_stream(std::ostream& stream) const
-{
+void Node::to_stream(std::ostream& stream) const {
   TextWriter writer(stream);
   writer.encoding = EncodingAscii;
   NodeReader reader;
@@ -683,8 +667,7 @@ void Node::to_stream(std::ostream& stream) const
   }
 }
 
-std::string Node::to_string() const
-{
+std::string Node::to_string() const {
   std::stringstream stream;
   to_stream(stream);
   return stream.str();
@@ -699,8 +682,8 @@ struct CodePage {
 };
 
 static CodePage code_pages[] = {
-  { L"utf-7", L"utf7", EncodingUtf7 },
-  { L"utf-8", L"utf8", EncodingUtf8 },
+    {L"utf-7", L"utf7", EncodingUtf7},
+    {L"utf-8", L"utf8", EncodingUtf8},
 };
 
 static Encoding ParseEncoding(const wchar_t* name) {
@@ -719,9 +702,7 @@ static const wchar_t* FormatEncoding(Encoding enc) {
   return NULL;
 }
 
-Document::Document()
-    : Node(NodeTypeDocument) {
-}
+Document::Document() : Node(NodeTypeDocument) {}
 
 void Document::Load(TextReader& reader) {
   clear();
@@ -736,9 +717,10 @@ void Document::Load(TextReader& reader) {
     reader.Read();
 
     if (reader.node_type == NodeTypeEndElement) {
-      // Закрывающий тег родительского элемента
+      // Р—Р°РєСЂС‹РІР°СЋС‰РёР№ С‚РµРі СЂРѕРґРёС‚РµР»СЊСЃРєРѕРіРѕ СЌР»РµРјРµРЅС‚Р°
       if (reader.name != node->name)
-        throw Error();	// закрывающий тег с именем не соответствующим открывающему тегу
+        throw Error();  // Р·Р°РєСЂС‹РІР°СЋС‰РёР№ С‚РµРі СЃ РёРјРµРЅРµРј РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРј
+                        // РѕС‚РєСЂС‹РІР°СЋС‰РµРјСѓ С‚РµРіСѓ
       if (!node->parent)
         return;
       node = node->parent;
@@ -757,7 +739,7 @@ void Document::Load(TextReader& reader) {
         reader.encoding = GetEncoding();
     }
 
-    // Читаем дочерние элементы
+    // Р§РёС‚Р°РµРј РґРѕС‡РµСЂРЅРёРµ СЌР»РµРјРµРЅС‚С‹
     if (!reader.empty)
       node = &child;
   }
@@ -783,14 +765,13 @@ Node* Document::GetDocumentElement() {
 }
 
 Node* Document::GetDeclaration(bool create) {
-  if (first_child &&
-      first_child->type == NodeTypeDeclaration &&
+  if (first_child && first_child->type == NodeTypeDeclaration &&
       first_child->name.compare("xml") == 0)
     return first_child;
-    
+
   if (!create)
     return NULL;
-    
+
   Node& node = AddChild(NodeTypeDeclaration);
   node.name = "xml";
   return &node;
@@ -800,7 +781,7 @@ Encoding Document::GetEncoding() const {
   const Node* decl = const_cast<Document*>(this)->GetDeclaration();
   if (!decl)
     return EncodingUnknown;
-    
+
   std::wstring encoding = decl->GetAttribute("encoding");
   return ParseEncoding(encoding.c_str());
 }
@@ -821,4 +802,4 @@ void Document::SetVersion(const wchar_t* ver) {
   decl->SetAttribute("version", ver);
 }
 
-};
+};  // namespace xml

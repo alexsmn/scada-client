@@ -3,7 +3,7 @@
 #include <QtCore/qsize.h>
 
 #include "ui/base/models/grid_range.h"
-#include "base/color.h"
+#include "base/qt/color_qt.h"
 
 namespace {
 

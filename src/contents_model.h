@@ -7,7 +7,7 @@ class ContentsObserver;
 
 class ContentsModel {
  public:
-  ContentsModel() : contents_observer_(nullptr) {}
+  virtual ~ContentsModel() {}
 
   void set_contents_observer(ContentsObserver* observer) {
     contents_observer_ = observer;
@@ -24,5 +24,5 @@ class ContentsModel {
   ContentsObserver* contents_observer() { return contents_observer_; }
 
  private:
-  ContentsObserver* contents_observer_;
+  ContentsObserver* contents_observer_ = nullptr;
 };

@@ -15,7 +15,7 @@ class ControllerRegistrarBase {
 };
 
 template<class ControllerClass>
-class ControllerRegistrar : public ControllerRegistrarBase {
+class ControllerRegistrar final : public ControllerRegistrarBase {
  public:
   explicit ControllerRegistrar(unsigned command_id) : ControllerRegistrarBase(command_id) {}
 
