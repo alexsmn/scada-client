@@ -16,7 +16,6 @@ class WindowDefinition;
 
 class ViewManager {
  public:
-  explicit ViewManager(ViewManagerDelegate* delegate);
   virtual ~ViewManager();
 
   ViewManager(const ViewManager&) = delete;
@@ -33,7 +32,7 @@ class ViewManager {
   OpenedView* FindViewByID(int id) const;
   OpenedView* FindViewByType(unsigned type) const;
 
-  OpenedView* CreateView(WindowDefinition& def);
+  OpenedView* CreateView(WindowDefinition& def, OpenedView* after_view);
   OpenedView* OpenView(const WindowDefinition& def,
                        bool make_active,
                        OpenedView* after_view);
@@ -45,30 +44,32 @@ class ViewManager {
   void SavePage();
   void ClosePage();
 
-  virtual void OpenLayout(Page& page, const PageLayout& layout) = 0;
-  virtual void SaveLayout(PageLayout& layout) = 0;
-
   virtual void ActivateView(OpenedView& view) = 0;
   virtual void CloseView(OpenedView& view) = 0;
 
   virtual void SetViewTitle(OpenedView& view, const base::string16& title) = 0;
 
  protected:
-  bool is_closing_page() const { return closing_page_; }
+  explicit ViewManager(ViewManagerDelegate& delegate);
 
-  virtual void AddView(OpenedView& view) = 0;
+  bool is_closing_page() const { return closing_page_; }
 
   void SetActiveView(OpenedView* view);
   void DestroyView(OpenedView& view);
 
-  ViewManagerDelegate* delegate_;
+  virtual void OpenLayout(Page& page, const PageLayout& layout) = 0;
+  virtual void SaveLayout(PageLayout& layout) = 0;
+
+  virtual void AddView(OpenedView& view) = 0;
+
+  ViewManagerDelegate& delegate_;
 
   Views views_;
 
-  OpenedView* active_view_;
+  OpenedView* active_view_ = nullptr;
 
-  bool opening_layout_;
-  bool closing_page_;
+  bool opening_layout_ = false;
+  bool closing_page_ = false;
 
   std::unique_ptr<Page> current_page_;
 };

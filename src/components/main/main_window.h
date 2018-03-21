@@ -1,15 +1,13 @@
 #pragma once
 
-#include <functional>
-
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/strings/string16.h"
 #include "common/aliases.h"
-#include "components/main/main_window.h"
+#include "components/main/main_window_context.h"
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
-#include "core/node_id.h"
+
+#include <functional>
 
 namespace base {
 class FilePath;
@@ -139,15 +137,12 @@ class MainWindow : protected MainWindowContext,
   void Init(ViewManager& view_manager);
   void BeforeClose();
 
-  OpenedView* FindViewToRecycle(unsigned type);
-
   virtual void SetWindowFlashing(bool flashing) = 0;
-  virtual void UpdateToolbarPosition() = 0;
-
-
-  virtual void UpdateTitle() = 0;
 
   virtual void OnSelectionChanged() = 0;
+
+  virtual void UpdateTitle() = 0;
+  virtual void UpdateToolbarPosition() = 0;
 
   // ViewManagerDelegate
   virtual std::unique_ptr<OpenedView> OnCreateView(
@@ -156,9 +151,13 @@ class MainWindow : protected MainWindowContext,
                             WindowDefinition& definition) override;
   virtual void OnActiveViewChanged(OpenedView* view) override;
 
+  std::unique_ptr<MainCommands> main_commands_;
+
  private:
   void SetActiveView(OpenedView* view);
   void SetActiveDataView(OpenedView* view);
+
+  OpenedView* FindViewToRecycle(unsigned type);
 
   void OnEvents(bool has_events);
 
@@ -175,15 +174,13 @@ class MainWindow : protected MainWindowContext,
   // TODO: Move into application.
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
 
-  std::unique_ptr<MainCommands> main_commands_;
-
   std::unique_ptr<EventsHelper> events_helper_;
 
   ViewManager* view_manager_ = nullptr;
 
   base::ObserverList<ContentsObserver> contents_observers_;
 
-  base::WeakPtrFactory<MainWindow> weak_factory_;
+  base::WeakPtrFactory<MainWindow> weak_factory_{this};
 
   friend class OpenedView;
   friend class MainMenu;

@@ -39,10 +39,10 @@ struct MainCommandsContext {
   scada::ViewService& view_service_;
 };
 
-class MainCommands : public CommandHandler, private MainCommandsContext {
+class MainCommands : private MainCommandsContext, public CommandHandler {
  public:
   explicit MainCommands(MainCommandsContext&& context)
-      : MainCommandsContext(std::move(context)) {}
+      : MainCommandsContext{std::move(context)} {}
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);

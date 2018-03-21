@@ -1,35 +1,40 @@
 #pragma once
 
-#include <QObject>
-
 #include "components/main/view_manager.h"
 
-class ClientApplicationQt;
+#include <QObject>
+
 class QMainWindow;
 class QTabWidget;
 class QWidget;
 
-class ViewManagerQt : public QObject,
-                      public ViewManager {
+class ViewManagerQt final : public QObject, public ViewManager {
   Q_OBJECT
 
  public:
-  ViewManagerQt(ClientApplicationQt& app, QMainWindow& main_window, ViewManagerDelegate* delegate);
+  ViewManagerQt(QMainWindow& main_window, ViewManagerDelegate& delegate);
+  ~ViewManagerQt();
 
+  // ViewManager
+  virtual void SetViewTitle(OpenedView& view,
+                            const base::string16& title) override;
+  virtual void ActivateView(OpenedView& view) override;
+  virtual void CloseView(OpenedView& view) override;
+
+ protected:
   // ViewManager
   virtual void OpenLayout(Page& page, const PageLayout& layout) override;
   virtual void SaveLayout(PageLayout& layout) override;
-  virtual void ActivateView(OpenedView& view) override;
-  virtual void CloseView(OpenedView& view) override;
-  virtual void SetViewTitle(OpenedView& view, const base::string16& title) override;
+  virtual void AddView(OpenedView& view) override;
 
- protected:
+ private:
   void AddTabView(OpenedView& view);
   void AddDockView(OpenedView& view);
 
   std::unique_ptr<QTabWidget> CreateTabBlock();
 
-  std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page, const PageLayoutBlock& block);
+  std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page,
+                                           const PageLayoutBlock& block);
   void SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget);
 
   OpenedView* FindViewByWidget(const QWidget* widget);
@@ -37,9 +42,5 @@ class ViewManagerQt : public QObject,
   void OnFocusChanged();
   void OnViewCloseRequested(OpenedView& opened_view);
 
-  // ViewManager
-  virtual void AddView(OpenedView& view) override;
-
- private:
   QMainWindow& main_window_;
 };

@@ -156,8 +156,7 @@ void ObjectTreeView::OnContainedItemsUpdate(
 void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& item_id,
                                             bool added) {
 #if defined(UI_VIEWS)
-  ConfigurationTreeNode* node = model().FindNode(item_id);
-  if (node)
+  if (auto* node = model().FindNode(item_id))
     tree_view().SetChecked(node, added);
 #endif
 }

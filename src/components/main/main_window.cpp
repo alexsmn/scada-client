@@ -32,8 +32,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
           favourites_,
           GetDialogService(),
           view_service_,
-      })),
-      weak_factory_(this) {}
+      })) {}
 
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
@@ -63,13 +62,15 @@ MainWindow::~MainWindow() {}
 
 void MainWindow::BeforeClose() {
   SavePage();
+
   SetActiveView(nullptr);
   SetActiveDataView(nullptr);
+
   view_manager_->ClosePage();
 }
 
 MainWindowDef& MainWindow::GetPrefs() const {
-  DCHECK_NE(window_id_, 0);
+  assert(window_id_ != 0);
   return profile_.GetMainWindow(window_id_);
 }
 
@@ -274,17 +275,17 @@ void MainWindow::CloseView(OpenedView& view) {
     view_manager_->CloseView(view);
 }
 
+void MainWindow::SetPageTitle(const base::string16& title) {
+  const_cast<Page&>(current_page()).title = title;
+  UpdateTitle();
+}
+
 void MainWindow::AddContentsObserver(ContentsObserver& observer) {
   contents_observers_.AddObserver(&observer);
 }
 
 void MainWindow::RemoveContentsObserver(ContentsObserver& observer) {
   contents_observers_.RemoveObserver(&observer);
-}
-
-void MainWindow::SetPageTitle(const base::string16& title) {
-  const_cast<Page&>(current_page()).title = title;
-  UpdateTitle();
 }
 
 void MainWindow::OnContainedItemsUpdate(

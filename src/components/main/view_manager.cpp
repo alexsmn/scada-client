@@ -1,19 +1,17 @@
 #include "components/main/view_manager.h"
 
-#include <algorithm>
-
 #include "base/auto_reset.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager_delegate.h"
 #include "services/page.h"
+#include "window_definition.h"
 #include "window_info.h"
 
-ViewManager::ViewManager(ViewManagerDelegate* delegate)
-    : current_page_(new Page()),
-      delegate_(delegate),
-      active_view_(NULL),
-      opening_layout_(false),
-      closing_page_(false) {}
+
+#include <algorithm>
+
+ViewManager::ViewManager(ViewManagerDelegate& delegate)
+    : current_page_{std::make_unique<Page>()}, delegate_{delegate} {}
 
 ViewManager::~ViewManager() {
   // Page must be closed before destruction, as closing calls delegate.
@@ -21,32 +19,19 @@ ViewManager::~ViewManager() {
 }
 
 OpenedView* ViewManager::FindViewByID(int id) const {
-#ifndef NDEBUG
-  size_t count = 0;
-  for (Views::const_iterator i = views_.begin(); i != views_.end(); ++i) {
-    OpenedView* view = i->view;
-    if (view->window_id() == id)
-      ++count;
+  for (auto& view_info : views_) {
+    if (view_info.view->window_id() == id)
+      return view_info.view;
   }
-  assert(count <= 1);
-#endif
-
-  for (Views::const_iterator i = views_.begin(); i != views_.end(); ++i) {
-    OpenedView* view = i->view;
-    if (view->window_id() == id)
-      return view;
-  }
-  return NULL;
+  return nullptr;
 }
 
 OpenedView* ViewManager::FindViewByType(unsigned type) const {
-  for (ViewManager::Views::const_iterator i = views_.begin(); i != views_.end();
-       ++i) {
-    OpenedView* view = i->view;
-    if (view->window_info().command_id == type)
-      return view;
+  for (auto& view_info : views_) {
+    if (view_info.view->window_info().command_id == type)
+      return view_info.view;
   }
-  return NULL;
+  return nullptr;
 }
 
 void ViewManager::SetActiveView(OpenedView* view) {
@@ -55,21 +40,16 @@ void ViewManager::SetActiveView(OpenedView* view) {
 
   active_view_ = view;
 
-  if (delegate_)
-    delegate_->OnActiveViewChanged(view);
+  delegate_.OnActiveViewChanged(view);
 }
 
 void ViewManager::DestroyView(OpenedView& view) {
   if (&view == active_view_)
-    SetActiveView(NULL);
+    SetActiveView(nullptr);
 
-  Views::iterator p = views_.end();
-  for (Views::iterator i = views_.begin(); i != views_.end(); ++i) {
-    if (i->view == &view) {
-      p = i;
-      break;
-    }
-  }
+  auto p = std::find_if(
+      views_.begin(), views_.end(),
+      [&view](ViewInfo& view_info) { return view_info.view == &view; });
   assert(p != views_.end());
   WindowDefinition* definition = p->definition;
   views_.erase(p);
@@ -80,16 +60,19 @@ void ViewManager::DestroyView(OpenedView& view) {
   delete &view;
 }
 
-OpenedView* ViewManager::CreateView(WindowDefinition& def) {
+OpenedView* ViewManager::CreateView(WindowDefinition& def,
+                                    OpenedView* after_view) {
   std::unique_ptr<OpenedView> view;
   try {
-    view = delegate_->OnCreateView(def);
+    view = delegate_.OnCreateView(def);
   } catch (const std::exception&) {
     return nullptr;
   }
 
-  ViewInfo view_info = {view.release(), &def};
+  ViewInfo view_info{view.release(), &def};
   views_.push_back(view_info);
+
+  // TODO: Process |after_view|.
 
   if (!opening_layout_)
     AddView(*view_info.view);
@@ -127,14 +110,12 @@ void ViewManager::ClosePage() {
 OpenedView* ViewManager::OpenView(const WindowDefinition& def,
                                   bool make_active,
                                   OpenedView* after_view) {
-  const WindowInfo* info = def.window_info();
-  if (!info)
-    return nullptr;
+  const WindowInfo& info = def.window_info();
 
   WindowDefinition* window_def = nullptr;
 
-  if (info->is_pane()) {
-    OpenedView* view = FindViewByType(info->command_id);
+  if (info.is_pane()) {
+    OpenedView* view = FindViewByType(info.command_id);
     if (view) {
       if (make_active)
         ActivateView(*view);
@@ -146,7 +127,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     Page& page = current_page();
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
-      if (win.window_info() == info) {
+      if (&win.window_info() == &info) {
         assert(!win.visible);
         win.visible = true;
         window_def = &win;
@@ -155,14 +136,14 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     }
   }
 
-  LOG(INFO) << "Open window " << info->title;
+  LOG(INFO) << "Open window " << info.title;
 
   if (!window_def)
     window_def = &current_page().AddWindow(def);
 
   // add win
 
-  OpenedView* view = CreateView(*window_def);
+  OpenedView* view = CreateView(*window_def, after_view);
   if (!view)
     return nullptr;
 

@@ -1,17 +1,17 @@
 #include "components/main/qt/view_manager_qt.h"
 
-#include <QApplication>
-#include <QCloseEvent>
-#include <QDockWidget>
-#include <QMainWindow>
-#include <QSplitter>
-
 #include "base/auto_reset.h"
 #include "common_resources.h"
 #include "components/main/opened_view.h"
 #include "qt/client_application_qt.h"
 #include "services/page.h"
 #include "window_info.h"
+
+#include <QApplication>
+#include <QCloseEvent>
+#include <QDockWidget>
+#include <QMainWindow>
+#include <QSplitter>
 
 namespace {
 
@@ -20,7 +20,9 @@ class CustomDockWidget : public QDockWidget {
   CustomDockWidget(QWidget* parent = nullptr) : QDockWidget(parent) {}
 
   typedef std::function<void()> ClosedHandler;
-  void SetClosedHandler(ClosedHandler handler) { closed_handler_ = std::move(handler); }
+  void SetClosedHandler(ClosedHandler handler) {
+    closed_handler_ = std::move(handler);
+  }
 
  protected:
   void closeEvent(QCloseEvent* e) override {
@@ -38,9 +40,9 @@ const char sc_layoutWidgetTypeProp[] = "LayoutWidgetType";
 enum class LayoutWidgetType { Splitter, Tabs, Window, Panel };
 
 QDockWidget* GetDockWidget(OpenedView& opened_view) {
-  return opened_view.window_info().is_pane() ?
-      static_cast<QDockWidget*>(opened_view.view()->parentWidget()) :
-      nullptr;
+  return opened_view.window_info().is_pane()
+             ? static_cast<QDockWidget*>(opened_view.view()->parentWidget())
+             : nullptr;
 }
 
 QTabWidget* GetTabWidget(OpenedView& opened_view) {
@@ -76,20 +78,27 @@ QTabWidget* GetFirstTabBlock(QWidget& widget) {
   }
 }
 
-} // namespace
+}  // namespace
 
-ViewManagerQt::ViewManagerQt(ClientApplicationQt& app, QMainWindow& main_window, ViewManagerDelegate* delegate)
-    : ViewManager(delegate),
-      main_window_(main_window) {
+ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
+                             ViewManagerDelegate& delegate)
+    : ViewManager{delegate},
+      main_window_{main_window} {
   QObject::connect(static_cast<QGuiApplication*>(QApplication::instance()),
-      &QGuiApplication::focusObjectChanged, this, &ViewManagerQt::OnFocusChanged);
+                   &QGuiApplication::focusObjectChanged, this,
+                   &ViewManagerQt::OnFocusChanged);
+}
+
+ViewManagerQt::~ViewManagerQt() {
+  // TODO: Disconnect.
 }
 
 void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
   // Do not call AddView() from CreateView().
   base::AutoReset<bool> opening_layout(&opening_layout_, true);
 
-  main_window_.setCentralWidget(OpenLayoutBlock(page, page.layout().main).release());
+  main_window_.setCentralWidget(
+      OpenLayoutBlock(page, page.layout().main).release());
 
   for (int i = 0; i < page.GetWindowCount(); ++i) {
     WindowDefinition& win = page.GetWindow(i);
@@ -105,23 +114,26 @@ std::unique_ptr<QTabWidget> ViewManagerQt::CreateTabBlock() {
   tabs->setDocumentMode(true);
   tabs->setMovable(true);
   tabs->setTabsClosable(true);
-  tabs->setProperty(sc_layoutWidgetTypeProp, static_cast<int>(LayoutWidgetType::Tabs));
+  tabs->setProperty(sc_layoutWidgetTypeProp,
+                    static_cast<int>(LayoutWidgetType::Tabs));
   auto* tabs_ptr = tabs.get();
-  QObject::connect(tabs.get(), &QTabWidget::tabCloseRequested,
-      [this, tabs_ptr](int index) {
-          auto* opened_view = FindViewByWidget(tabs_ptr->widget(index));
-          if (opened_view)
-            OnViewCloseRequested(*opened_view);
+  QObject::connect(
+      tabs.get(), &QTabWidget::tabCloseRequested, [this, tabs_ptr](int index) {
+        auto* opened_view = FindViewByWidget(tabs_ptr->widget(index));
+        if (opened_view)
+          OnViewCloseRequested(*opened_view);
       });
   return tabs;
 }
 
-std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(const Page& page, const PageLayoutBlock& block) {
+std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
+    const Page& page,
+    const PageLayoutBlock& block) {
   if (block.type == PageLayoutBlock::PANE) {
     std::vector<OpenedView*> tab_views;
     for (int window_id : block.wins) {
       auto* window = const_cast<WindowDefinition*>(page.FindWindow(window_id));
-      auto* opened_view = window ? CreateView(*window) : nullptr;
+      auto* opened_view = window ? CreateView(*window, nullptr) : nullptr;
       if (!opened_view)
         continue;
 
@@ -136,7 +148,8 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(const Page& page, const 
 
     auto tabs = CreateTabBlock();
     for (auto* opened_view : tab_views)
-      tabs->addTab(opened_view->view(), QString::fromStdWString(opened_view->GetWindowTitle()));
+      tabs->addTab(opened_view->view(),
+                   QString::fromStdWString(opened_view->GetWindowTitle()));
     return std::move(tabs);
 
   } else if (block.type == PageLayoutBlock::SPLIT) {
@@ -149,7 +162,8 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(const Page& page, const 
 
     auto splitter = std::make_unique<QSplitter>();
     splitter->setOrientation(block.horz ? Qt::Vertical : Qt::Horizontal);
-    splitter->setProperty(sc_layoutWidgetTypeProp, static_cast<int>(LayoutWidgetType::Splitter));
+    splitter->setProperty(sc_layoutWidgetTypeProp,
+                          static_cast<int>(LayoutWidgetType::Splitter));
     splitter->addWidget(widget1.release());
     splitter->addWidget(widget2.release());
     splitter->setStretchFactor(1, block.pos);
@@ -173,6 +187,19 @@ void ViewManagerQt::OnFocusChanged() {
   SetActiveView(FindViewByWidget(QApplication::focusWidget()));
 }
 
+void ViewManagerQt::ActivateView(OpenedView& opened_view) {
+  if (auto* tabs = GetTabWidget(opened_view)) {
+    auto index = tabs->indexOf(opened_view.view());
+    if (index != -1)
+      tabs->setCurrentIndex(index);
+
+  } else if (auto* dock = GetDockWidget(opened_view)) {
+    // Detach from parent to avoid deletion by dock.
+  }
+
+  opened_view.view()->setFocus();
+}
+
 void ViewManagerQt::CloseView(OpenedView& opened_view) {
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
@@ -189,7 +216,8 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
   DestroyView(opened_view);
 }
 
-void ViewManagerQt::SetViewTitle(OpenedView& opened_view, const base::string16& title) {
+void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
+                                 const base::string16& title) {
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
     if (index != -1)
@@ -239,7 +267,8 @@ void ViewManagerQt::AddView(OpenedView& view) {
 void ViewManagerQt::AddDockView(OpenedView& view) {
   assert(view.view());
 
-  auto area = view.window_info().dock_bottom() ? Qt::BottomDockWidgetArea : Qt::LeftDockWidgetArea;
+  auto area = view.window_info().dock_bottom() ? Qt::BottomDockWidgetArea
+                                               : Qt::LeftDockWidgetArea;
   auto* dock = new CustomDockWidget(&main_window_);
   dock->setWindowTitle(QString::fromStdWString(view.GetWindowTitle()));
   dock->setWidget(view.view());
@@ -277,17 +306,4 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
 
 void ViewManagerQt::OnViewCloseRequested(OpenedView& opened_view) {
   CloseView(opened_view);
-}
-
-void ViewManagerQt::ActivateView(OpenedView& opened_view) {
-  if (auto* tabs = GetTabWidget(opened_view)) {
-    auto index = tabs->indexOf(opened_view.view());
-    if (index != -1)
-      tabs->setCurrentIndex(index);
-
-  } else if (auto* dock = GetDockWidget(opened_view)) {
-    // Detach from parent to avoid deletion by dock.
-  }
-
-  opened_view.view()->setFocus();
 }

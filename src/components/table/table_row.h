@@ -30,7 +30,7 @@ class TableRow {
 
   std::string formula_;
   rt::TimedDataSpec timed_data_;
-  bool is_blinking_;
+  bool is_blinking_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(TableRow);
 };

@@ -2,6 +2,8 @@
 
 #include "client_utils.h"
 #include "common/formula_util.h"
+#include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/table/table_model.h"
@@ -10,6 +12,7 @@
 #include "controller_factory.h"
 #include "controls/table.h"
 #include "selection_model.h"
+#include "services/dialog_service.h"
 #include "services/profile.h"
 
 #if defined(UI_VIEWS)
@@ -43,9 +46,9 @@ class TableViewPainter : public views::TablePainter {
 
 REGISTER_CONTROLLER(TableView, ID_TABLE_VIEW);
 
-TableView::TableView(const ControllerContext& context) : Controller(context) {
-  model_ = std::make_unique<TableModel>(timed_data_service_, event_manager_,
-                                        profile_);
+TableView::TableView(const ControllerContext& context) : Controller{context} {
+  model_ = std::make_unique<TableModel>(
+      TableModelContext{timed_data_service_, event_manager_, profile_});
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
     if (contents_observer())
       contents_observer()->OnContainedItemChanged(item_id, added);
@@ -90,7 +93,7 @@ TableView::TableView(const ControllerContext& context) : Controller(context) {
   image_list_->Add(items_bitmap, RGB(255, 0, 255));
 #endif
 
-  selection().multiple_handler_ = [this] { return GetMultipleSelection(); };
+  selection().multiple_handler = [this] { return GetMultipleSelection(); };
 }
 
 TableView::~TableView() {}
@@ -213,7 +216,8 @@ bool TableView::OnEditCellText(views::TableView& sender,
     text2.erase(0, 1);
 
   if (!model_->SetFormula(row, text2)) {
-    ShowMessageBox(dialog_service_, L"Неверное выражение.", NULL, MB_ICONSTOP);
+    dialog_service_.RunMessageBox(L"Неверное выражение.", {},
+                                  MessageBoxMode::Error);
     return false;
   }
 
@@ -350,6 +354,16 @@ void TableView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   if (!(flags & APPEND))
     model_->Clear();
 
+  auto node = node_service_.GetNode(node_id);
+  if (IsInstanceOf(node, id::DataGroupType)) {
+    for (auto& child : node.components())
+      AddContainedItem(child.id(), flags | APPEND);
+    return;
+  }
+
+  if (node.node_class() != scada::NodeClass::Variable)
+    return;
+
   int ix = model_->FindItem(node_id);
   if (ix != -1) {
 #if defined(UI_VIEWS)
@@ -388,17 +402,7 @@ bool TableView::CanClose() const {
 void TableView::OnGetAutocompleteList(views::TableView& sender,
                                       const base::string16& text,
                                       int& start,
-                                      std::vector<base::string16>& list) {
-  /*if (text.empty() || text[0] != '=')
-    return;
-
-  // Remove '='.
-  std::string text2 = text.substr(1);
-  int start2 = start;
-  CompletePath(text2, start2, list);
-
-  start = start2 + 1;*/
-}
+                                      std::vector<base::string16>& list) {}
 #endif
 
 void TableView::DeleteSelection() {
@@ -437,7 +441,7 @@ NodeIdSet TableView::GetMultipleSelection() {
     for (auto row_index = range.top(); row_index <= range.bottom();
          ++row_index) {
       auto* row = model_->GetRow(row_index);
-      auto node_id = row->timed_data().GetNode().id();
+      const auto& node_id = row->timed_data().GetNode().id();
       if (!node_id.is_null())
         node_ids.emplace(node_id);
     }
@@ -456,7 +460,7 @@ NodeIdSet TableView::GetMultipleSelection() {
 
     auto node_id = row->timed_data().GetNode().id();
     if (!node_id.is_null())
-      node_ids.insert(node_id);
+      node_ids.emplace(std::move(node_id));
   }
 #endif
 
@@ -472,7 +476,7 @@ NodeIdSet TableView::GetContainedItems() const {
 
     auto node_id = row->timed_data().GetNode().id();
     if (!node_id.is_null())
-      items.insert(node_id);
+      items.emplace(std::move(node_id));
   }
   return items;
 }

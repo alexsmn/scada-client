@@ -56,12 +56,8 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
   }
 }
 
-TableModel::TableModel(TimedDataService& timed_data_service,
-                       events::EventManager& event_manager,
-                       Profile& profile)
-    : timed_data_service_(timed_data_service),
-      event_manager_(event_manager),
-      profile_(profile) {
+TableModel::TableModel(TableModelContext&& context)
+    : TableModelContext{std::move(context)} {
   Blinker::Start();
 }
 
@@ -87,7 +83,7 @@ void TableModel::GetCellEx(CellEx& cell) {
     return;
   }
 
-  auto _item = trow->timed_data().GetNode();
+  auto node = trow->timed_data().GetNode();
   const auto& value = trow->timed_data().current();
 
   switch (cell.column_id) {
@@ -100,9 +96,9 @@ void TableModel::GetCellEx(CellEx& cell) {
     case COLUMN_VALUE:
       cell.text = trow->timed_data().GetValueString(
           value.value, value.qualifier, kValueFormat);
-      if (IsInstanceOf(_item, id::DiscreteItemType)) {
+      if (IsInstanceOf(node, id::DiscreteItemType)) {
         if (!value.value.is_null()) {
-          auto params = _item.target(id::AnalogItemType_DisplayFormat);
+          auto params = node.target(id::HasTsFormat);
           int color_index = -1;
           bool bool_value;
           if (value.value.get(bool_value) && params) {
@@ -135,9 +131,9 @@ void TableModel::GetCellEx(CellEx& cell) {
 
     case COLUMN_EVENT:
       // last unacked event
-      if (_item) {
+      if (node) {
         const events::EventSet* events =
-            event_manager_.GetItemUnackedEvents(_item.id());
+            event_manager_.GetItemUnackedEvents(node.id());
         if (events && !events->empty()) {
           const scada::Event& event = **events->rbegin();
           cell.text = event.message;

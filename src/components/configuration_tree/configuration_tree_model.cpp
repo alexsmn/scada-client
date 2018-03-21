@@ -93,10 +93,8 @@ base::string16 ConfigurationTreeNode::GetText(int column_id) const {
 }
 
 int ConfigurationTreeNode::GetIcon() const {
-  return (data_node_ && data_node_.fetched() &&
-          data_node_.node_class() == scada::NodeClass::Variable)
-             ? IMAGE_ITEM
-             : IMAGE_FOLDER;
+  return data_node_.node_class() == scada::NodeClass::Variable ? IMAGE_ITEM
+                                                               : IMAGE_FOLDER;
 }
 
 void ConfigurationTreeNode::OnNodeSemanticChanged() {

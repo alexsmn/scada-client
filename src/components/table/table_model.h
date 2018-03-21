@@ -3,8 +3,8 @@
 #include <functional>
 #include <set>
 
-#include "core/configuration_types.h"
 #include "base/blinker.h"
+#include "core/configuration_types.h"
 #include "ui/base/models/table_model.h"
 
 namespace events {
@@ -15,20 +15,29 @@ class Profile;
 class TableRow;
 class TimedDataService;
 
-class TableModel : public ui::TableModel,
+struct TableModelContext {
+  TimedDataService& timed_data_service_;
+  events::EventManager& event_manager_;
+  Profile& profile_;
+};
+
+class TableModel : private TableModelContext,
+                   public ui::TableModel,
                    private Blinker {
  public:
-  enum ColumnType { COLUMN_TITLE,
-                    COLUMN_VALUE,
-                    COLUMN_CHANGE_TIME,
-                    COLUMN_UPDATE_TIME,
-                    COLUMN_EVENT };
+  enum ColumnType {
+    COLUMN_TITLE,
+    COLUMN_VALUE,
+    COLUMN_CHANGE_TIME,
+    COLUMN_UPDATE_TIME,
+    COLUMN_EVENT
+  };
 
   struct CellEx : public ui::TableCell {
     int image_index;
   };
 
-  TableModel(TimedDataService& timed_data_service, events::EventManager& event_manager, Profile& profile);
+  explicit TableModel(TableModelContext&& context);
   virtual ~TableModel();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
@@ -60,20 +69,16 @@ class TableModel : public ui::TableModel,
 
   class RowsComparer {
    public:
-    explicit RowsComparer(unsigned command_id) : command_id_(command_id) { }
-    
+    explicit RowsComparer(unsigned command_id) : command_id_(command_id) {}
+
     bool operator()(const TableRow* left, const TableRow* right) const;
 
    private:
     unsigned command_id_;
   };
-  
+
   // Blinker events
   virtual void OnBlink(bool state) override;
-
-  TimedDataService& timed_data_service_;
-  events::EventManager& event_manager_;
-  Profile& profile_;
 
   typedef std::vector<TableRow*> Rows;
   Rows rows_;

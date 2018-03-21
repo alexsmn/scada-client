@@ -67,7 +67,7 @@ ConfigurationTreeView::ConfigurationTreeView(
     else if (selection_size == 1) {
       auto* node =
           static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
-      selection().SelectNode(node->data_node());
+      selection().SelectNode(node ? node->data_node() : nullptr);
     } else
       selection().SelectMultiple();
   });
@@ -81,9 +81,9 @@ ConfigurationTreeView::ConfigurationTreeView(
     auto& a = static_cast<ConfigurationTreeNode*>(left)->data_node();
     auto& b = static_cast<ConfigurationTreeNode*>(right)->data_node();
     if (!!a != !!b)
-      return !!a < !!b ? -1 : 1;
-    if (!a.fetched() || !b.fetched())
-      return ToString16(a.display_name()).compare(ToString16(b.display_name()));
+      return !!a > !!b ? -1 : 1;
+    if (a.fetched() != b.fetched())
+      return a.fetched() > b.fetched();
     const auto& ta = a.type_definition().id();
     const auto& tb = b.type_definition().id();
     bool fa = a.node_class() != scada::NodeClass::Variable;
@@ -137,8 +137,7 @@ void ConfigurationTreeView::ExecuteCommand(unsigned command) {
 }
 
 void ConfigurationTreeView::OnViewNodeCreated(const NodeRef& node) {
-  ConfigurationTreeNode* tree_node = model_->FindNode(node.id());
-  if (tree_node)
+  if (auto* tree_node = model_->FindNode(node.id()))
     tree_view().SelectNode(tree_node);
 }
 
@@ -147,12 +146,11 @@ void ConfigurationTreeView::DeleteSelection() {
     return;
 
   if (auto node = selection().node()) {
-    base::string16 message =
-        base::StringPrintf(L"Вы действительно хотите удалить %ls?",
-                           ToString16(node.display_name()).c_str());
-    int choice = ShowMessageBox(dialog_service_, message.c_str(), L"Удаление",
-                                MB_ICONEXCLAMATION | MB_OKCANCEL);
-    if (choice == IDOK)
+    base::string16 message = base::StringPrintf(
+        L"Вы действительно хотите удалить %ls?", node.display_name().c_str());
+    auto choice = dialog_service_.RunMessageBox(message, L"Удаление",
+                                                MessageBoxMode::QuestionYesNo);
+    if (choice == MessageBoxResult::Yes)
       DeleteTreeRecordsRecursive(node, task_manager_);
   }
 }
@@ -163,17 +161,18 @@ void ConfigurationTreeView::StartDrag(void* node) {
   if (!cfg_node->data_node())
     return;
 
-  const auto& data_node = cfg_node->data_node();
-  if (!data_node)
+  scada::NodeId item_id = cfg_node->data_node().id();
+  if (item_id.is_null())
     return;
 
   ui::OSExchangeData data;
-  ItemDragData item_data(data_node.id());
+  ItemDragData item_data(item_id);
   item_data.Save(data);
 
-  if (views::Widget* widget = tree_view_->GetWidget())
+  if (auto* widget = tree_view_->GetWidget()) {
     widget->RunShellDrag(data,
                          DROPEFFECT_MOVE | DROPEFFECT_COPY | DROPEFFECT_LINK);
+  }
 }
 
 void* ConfigurationTreeView::TestDrop(const ui::DropTargetEvent& event) const {
