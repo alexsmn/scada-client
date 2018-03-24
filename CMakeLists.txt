@@ -7,6 +7,7 @@ include_directories(client
 set(WTL_INCLUDE_DIR "${deps}/wtl/include")
 
 add_subdirectory("${deps}/chromeui" chromeui)
+add_subdirectory("${deps}/modus" modus)
 
 add_definitions(
   -DMODUS_GDIP)
