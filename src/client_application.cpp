@@ -165,7 +165,7 @@ void ClientApplication::BeforeRun() {
   // Add SessionService observer.
   master_data_services_->AddObserver(*this);
 
-  node_service_ = std::make_unique<NodeServiceImpl>(NodeServiceImplContext{
+  node_service_ = std::make_unique<RemoteNodeService>(RemoteNodeServiceContext{
       logger_,
       *master_data_services_,
       *master_data_services_,

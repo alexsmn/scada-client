@@ -196,16 +196,17 @@ void ConfigurationTreeModel::EnsureNode2(const scada::NodeId& node_id,
   }
 }
 
-void ConfigurationTreeModel::OnModelChange(const ModelChangeEvent& event) {
-  if (event.verb & ModelChangeEvent::NodeDeleted) {
+void ConfigurationTreeModel::OnModelChange(
+    const scada::ModelChangeEvent& event) {
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     if (ConfigurationTreeNode* node = FindNode(event.node_id))
       Remove(*node->parent(), node->parent()->IndexOfChild(*node));
 
-  } else if (event.verb & ModelChangeEvent::NodeAdded) {
+  } else if (event.verb & scada::ModelChangeEvent::NodeAdded) {
     EnsureNode(event.node_id);
 
-  } else if (event.verb & (ModelChangeEvent::ReferenceAdded |
-                           ModelChangeEvent::ReferenceDeleted)) {
+  } else if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
+                           scada::ModelChangeEvent::ReferenceDeleted)) {
     EnsureParent(event.node_id);
   }
 }

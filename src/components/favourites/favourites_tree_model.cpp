@@ -56,9 +56,7 @@ void FavouritesWindowNode::SetTitle(const base::string16& title) {
 }
 
 int FavouritesWindowNode::GetIcon() const {
-  if (!window_.window_info())
-    return -1;
-  switch (window_.window_info()->command_id) {
+  switch (window_.window_info().command_id) {
     case ID_GRAPH_VIEW:
       return 1;
     case ID_TABLE_VIEW:

@@ -30,8 +30,8 @@ class AliasService final : private AliasServiceContext,
   void Set(const scada::NodeId& node_id, std::string alias);
 
   // NodeRefObserver
-  virtual void OnModelChange(const ModelChangeEvent& event) final;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) final;
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
   std::unordered_map<std::string, scada::NodeId> resolved_aliases_;
   std::map<scada::NodeId, std::string> resolved_nodes_;
