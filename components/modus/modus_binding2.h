@@ -17,6 +17,7 @@ class Shape;
 }
 
 class ModusView2;
+class TimedDataService;
 
 class ModusBinding2 : private ModusStyle2::AnimationObserver {
  public:
@@ -25,7 +26,10 @@ class ModusBinding2 : private ModusStyle2::AnimationObserver {
     virtual void SchedulePaintShape(modus::Shape& shape) = 0;
   };
 
-  ModusBinding2(Delegate& delegate, TimedDataService& timed_data_service, modus::Shape& shape, const std::wstring& binding);
+  ModusBinding2(Delegate& delegate,
+                modus::Shape& shape,
+                const std::wstring& binding,
+                TimedDataService& timed_data_service);
   ~ModusBinding2();
 
   const rt::TimedDataSpec& data_point() const { return data_point_; }
@@ -38,7 +42,7 @@ class ModusBinding2 : private ModusStyle2::AnimationObserver {
   bool SetStyles(unsigned styles);
 
   // ModusStyle2::AnimationObserver
-	virtual void OnAnimationStep() override;
+  virtual void OnAnimationStep() override;
 
   Delegate& delegate_;
   modus::Shape& shape_;

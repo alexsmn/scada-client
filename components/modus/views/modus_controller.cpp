@@ -5,12 +5,11 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "common_resources.h"
-#include "controller_factory.h"
-#include "services/file_cache.h"
-#include "components/main/main_window.h"
 #include "components/modus/views/modus_view.h"
 #include "components/modus/views/modus_view2.h"
+#include "controller_factory.h"
 #include "selection_model.h"
+#include "services/file_cache.h"
 #include "services/profile.h"
 #include "window_definition.h"
 #include "window_info.h"
@@ -18,58 +17,53 @@
 REGISTER_CONTROLLER(ModusController, ID_MODUS_VIEW);
 
 ModusController::ModusController(const ControllerContext& context)
-    : Controller(context),
-      weak_factory_(this) {
-}
+    : Controller{context}, wrapper_(nullptr) {}
 
-ModusController::~ModusController() {
-}
+ModusController::~ModusController() {}
 
 views::View* ModusController::CreateModusView() {
-  view_ = std::make_unique<ModusView>(ModusViewContext{
-      node_service_,
-      timed_data_service_,
-      file_cache_,
-  });
+  view_ = std::make_unique<ModusView>(
+      ModusViewContext{alias_resolver_, timed_data_service_, file_cache_});
 
-  view_->title_callback_ = [this] (const base::string16& title) {
+  view_->title_callback_ = [this](const base::string16& title) {
     controller_delegate_.SetTitle(title);
   };
 
-  view_->navigation_callback_ = [this] (const base::FilePath& path) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, base::Bind(
-        &ModusController::OpenPath, weak_factory_.GetWeakPtr(), path));
+  view_->navigation_callback_ = [this](const base::FilePath& path) {
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::Bind(&ModusController::OpenPath,
+                              weak_factory_.GetWeakPtr(), path));
   };
 
-  view_->selection_callback_ = [this] (const rt::TimedDataSpec& spec) {
+  view_->selection_callback_ = [this](const rt::TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   };
 
   // TODO: Change on ContextMenu.
-  view_->popup_menu_callback_ = [this] (const gfx::Point& point) {
+  view_->popup_menu_callback_ = [this](const gfx::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
   };
 
   wrapper_ = view_.get();
 
- return view_.get();
+  return view_.get();
 }
 
 views::View* ModusController::CreateModusView2() {
-  view2_.reset(new ModusView2(timed_data_service_));
+  view2_ = std::make_unique<ModusView2>(ModusView2Context{timed_data_service_});
 
-  view2_->set_selection_signal([this] (const rt::TimedDataSpec& spec) {
+  view2_->set_selection_signal([this](const rt::TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   });
 
-  view2_->set_navigation_signal([this] (const base::FilePath& path) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, base::Bind(
-        &ModusController::OpenPath, weak_factory_.GetWeakPtr(), path));
+  view2_->set_navigation_signal([this](const base::FilePath& path) {
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::Bind(&ModusController::OpenPath,
+                              weak_factory_.GetWeakPtr(), path));
   });
 
-  view2_->set_double_click_signal([this] {
-    selection().GetTimedData().Acknowledge();
-  });
+  view2_->set_double_click_signal(
+      [this] { selection().GetTimedData().Acknowledge(); });
 
   view2_->title_changed_handler = [this](base::StringPiece16 new_title) {
     controller_delegate_.SetTitle(new_title);
@@ -132,14 +126,14 @@ void ModusController::ExecuteCommand(unsigned command) {
     case ID_PRINT:
       view_->sde_form_->Print();
       break;
-      
+
     case ID_MODUS_TOOLBAR: {
       VARIANT_BOOL visible = VARIANT_FALSE;
       view_->sde_form_->get_ToolbarVisible(&visible);
       view_->sde_form_->put_ToolbarVisible(!visible);
       break;
     }
-                 
+
     case ID_MODUS_STATUSBAR: {
       VARIANT_BOOL visible = VARIANT_FALSE;
       view_->sde_form_->get_StatusVisible(&visible);

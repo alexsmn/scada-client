@@ -8,6 +8,8 @@
 
 namespace {
 
+const unsigned kMaxRowCount = 10000;
+
 base::Time AlignTime(base::Time time, base::TimeDelta interval, bool upper) {
   base::Time midnight = time.LocalMidnight();
 
@@ -23,19 +25,6 @@ base::Time AlignTime(base::Time time, base::TimeDelta interval, bool upper) {
   if (upper)
     time += interval;
   return time;
-}
-
-size_t CalculateRowCount(base::Time start_time,
-                         base::Time end_time,
-                         base::TimeDelta interval) {
-  if (start_time >= end_time)
-    return 0;
-  if (interval.InMinutes() <= 0)
-    return 0;
-
-  base::TimeDelta delta = end_time - start_time;
-  size_t count = static_cast<size_t>(delta / interval);
-  return std::min(count, 1000u);
 }
 
 }  // namespace
@@ -109,11 +98,11 @@ SummaryModel::Column::Column(SummaryModel& model,
   };
   timed_data_.ready_handler = [this] { OnTimedDataReady(); };
   timed_data_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
-        OnPropertyChanged(properties);
+      [this](const rt::PropertySet& properies) {
+        OnPropertyChanged(properies);
       };
-  timed_data_.SetFrom(model_.times().start_time);
-  timed_data_.Connect(model_.timed_data_service(), formula);
+  timed_data_.SetFrom(model_.start_time_);
+  timed_data_.Connect(model.timed_data_service(), formula);
   title_ = timed_data_.GetTitle();
 
   UpdateHistory();
@@ -121,7 +110,7 @@ SummaryModel::Column::Column(SummaryModel& model,
 
 void SummaryModel::Column::UpdateTimes() {
   cells_.resize(model_.row_count_);
-  timed_data_.SetFrom(model_.times().start_time);
+  timed_data_.SetFrom(model_.start_time_);
   UpdateHistory();
 }
 
@@ -132,10 +121,8 @@ void SummaryModel::Column::UpdateHistory() {
   // History.
   const rt::TimedVQMap* values = timed_data_.values();
   if (values) {
-    rt::TimedVQMap::const_iterator i =
-        values->lower_bound(model_.times().start_time);
-    rt::TimedVQMap::const_iterator end =
-        values->upper_bound(model_.times().end_time);
+    auto i = values->lower_bound(model_.start_time_);
+    auto end = values->upper_bound(model_.end_time_);
     for (; i != end; ++i) {
       int row = model_.GetRowForTime(i->first);
       if (row != -1) {
@@ -258,9 +245,8 @@ ui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(int index) {
 
 // SummaryModel ---------------------------------------------------------------
 
-SummaryModel::SummaryModel(TimedDataService& timed_data_service)
-    : timed_data_service_(timed_data_service),
-      row_count_(0),
+SummaryModel::SummaryModel(SummaryModelContext&& context)
+    : SummaryModelContext{std::move(context)},
       row_model_(new RowModel(*this)),
       column_model_(new ColumnModel(*this)) {}
 
@@ -272,22 +258,6 @@ ui::HeaderModel& SummaryModel::column_model() {
   return *column_model_;
 }
 
-void SummaryModel::SetTimes(const Times& times) {
-  CHECK(times.start_time <= times.end_time);
-  CHECK(times.interval.InMinutes() > 0);
-
-  times_.start_time = AlignTime(times.start_time, times.interval, false);
-  times_.end_time = AlignTime(times.end_time, times.interval, true);
-  times_.interval = times.interval;
-  row_count_ =
-      CalculateRowCount(times_.start_time, times_.end_time, times_.interval);
-
-  for (size_t i = 0; i < columns_.size(); ++i)
-    columns_[i]->UpdateTimes();
-
-  row_model_->NotifyModelChanged();
-}
-
 int SummaryModel::AddColumn(const std::string& formula) {
   int index = static_cast<int>(columns_.size());
   columns_.emplace_back(new Column(*this, index, formula));
@@ -295,10 +265,8 @@ int SummaryModel::AddColumn(const std::string& formula) {
 }
 
 void SummaryModel::Load(const WindowDefinition& definition) {
-  base::Time now = base::Time::Now();
-  Times times = {now - base::TimeDelta::FromHours(5), now,
-                 base::TimeDelta::FromMinutes(1)};
-  SetTimes(times);
+  // TODO: Load time range and interval.
+  SetTimes(TimeRange{ID_TIME_RANGE_DAY}, base::TimeDelta::FromHours(1));
 
   size_t count = std::min(10u, definition.items.size());
   for (size_t i = 0; i < count; ++i) {
@@ -338,19 +306,26 @@ void SummaryModel::GetCell(ui::GridCell& c) {
 }
 
 base::Time SummaryModel::GetRowTime(int row) const {
-  DCHECK(row >= 0 && row < static_cast<int>(row_count_));
-  return times_.start_time + times_.interval * row;
+  assert(row >= 0 && row < static_cast<int>(row_count_));
+  assert(!start_time_.is_null());
+  assert(!interval_.is_zero());
+  return start_time_ + interval_ * row;
 }
 
 int SummaryModel::GetRowForTime(base::Time time) const {
-  if ((time < times_.start_time) || (time >= times_.end_time))
+  assert(!start_time_.is_null());
+  assert(!end_time_.is_null());
+  assert(start_time_ <= end_time_);
+  assert(!interval_.is_zero());
+
+  if (time < start_time_ || time >= end_time_)
     return -1;
   if (row_count_ == 0)
     return -1;
 
-  base::TimeDelta delta = time - times_.start_time;
-  int row = static_cast<int>(delta / times_.interval);
-  DCHECK(row >= 0 && row < static_cast<int>(row_count_));
+  base::TimeDelta delta = time - start_time_;
+  int row = static_cast<int>(delta / interval_);
+  assert(row >= 0 && row < static_cast<int>(row_count_));
   return row;
 }
 
@@ -364,4 +339,41 @@ void SummaryModel::OnColumnChanged(int column) {
 
 void SummaryModel::OnColumnTitleChanged(int column) {
   column_model_->NotifyModelChanged();
+}
+
+TimeRange SummaryModel::GetTimeRange() const {
+  return time_range_;
+}
+
+void SummaryModel::SetTimeRange(const TimeRange& time_range) {
+  SetTimes(time_range, interval_);
+}
+
+void SummaryModel::SetTimes(const TimeRange& time_range,
+                            base::TimeDelta interval) {
+  assert(!interval.is_zero());
+
+  auto [start_time, end_time] = GetTimeRangeBounds(time_range);
+
+  // Can update |interval_|.
+  auto delta = end_time - start_time;
+  int64_t row_count = (delta + base::TimeDelta::FromMicroseconds(1)) / interval;
+  row_count = std::min(row_count, static_cast<int64_t>(kMaxRowCount));
+
+  time_range_ = time_range;
+  start_time_ = start_time;
+  end_time_ = start_time_ + interval * row_count;
+  row_count_ = row_count;
+  interval_ = (end_time_ - start_time) / row_count;
+
+  assert(!interval_.is_zero());
+  assert(!start_time_.is_null());
+  assert(!end_time_.is_null());
+  assert(start_time_ <= end_time_);
+  assert(row_count_ <= kMaxRowCount);
+
+  for (size_t i = 0; i < columns_.size(); ++i)
+    columns_[i]->UpdateTimes();
+
+  row_model_->NotifyModelChanged();
 }

@@ -6,7 +6,7 @@
 #define IDD_ABOUTBOX                    100
 #define IDD_LIMITS                      101
 #define ID_VIEW_ADD_TO_FAVOURITES       101
-#define IDD_IEC60870_DEVICE                  102
+#define IDD_IEC60870_DEVICE             102
 #define IDD_TS_FORMAT                   103
 #define IDD_MESSAGES                    104
 #define ID_GRAPH_VIEW                   104
@@ -58,8 +58,8 @@
 #define ID_SETUP                        132
 #define ID_PRINT                        133
 #define ID_EXPORT                       134
-#define ID_NEW_IEC60870_LINK101              135
-#define ID_NEW_IEC60870_LINK104              136
+#define ID_NEW_IEC60870_LINK101         135
+#define ID_NEW_IEC60870_LINK104         136
 #define ID_OPEN_SUMMARY                 137
 #define ID_OPEN_DISPLAY                 138
 #define ID_OPEN_EVENTS                  139
@@ -115,17 +115,17 @@
 #define IDR_SHEET_POPUP                 218
 #define IDD_LIMIT                       219
 #define IDR_MAIN_USER                   219
-#define IDD_IEC60870_LINK101                 221
+#define IDD_IEC60870_LINK101            221
 #define IDD_MSG                         222
 #define IDD_PROMPT                      225
 #define IDR_LOG_POPUP                   226
 #define IDD_PROGRESS                    227
-#define IDD_TIMEVAL                     228
 #define IDD_CHANGE_PASSWORD             229
 #define IDR_TIMEVAL_POPUP               229
 #define IDR_MODUS_POPUP                 230
 #define IDR_FAVOR_POPUP                 231
 #define IDR_PFOLIO_POPUP                232
+#define IDR_GRID_POPUP                  233
 #define IDB_WIN_TYPES                   236
 #define IDD_ADD_FAVOURITES              237
 #define IDB_ACTIONS                     240
@@ -133,9 +133,7 @@
 #define IDD_FILTER                      244
 #define IDD_TS_PARAMS                   245
 #define IDD_GRAPH_SETUP                 246
-#define IDD_IEC60870_LINK104                 247
-#define IDD_NEW_IEC60870_LINK                248
-#define IDD_IEC60870_DEV                     249
+#define IDD_IEC60870_LINK104            247
 #define IDD_GROUP                       250
 #define IDD_SIMULATION_ITEM             251
 #define IDC_TITLE                       252
@@ -154,6 +152,9 @@
 #define IDD_TRANSPORT                   259
 #define IDD_HISTORICAL_DB               260
 #define IDB_OPEN_EVENTS                 261
+#define IDD_IEC61850_DEVICE             261
+#define IDD_IEC61850_REF                262
+#define IDD_IEC61850_RCB                262
 #define IDB_TIMED_DATA                  263
 #define IDB_UNLOCK                      264
 #define IDB_WRITE                       265
@@ -274,12 +275,19 @@
 #define IDC_POLL                        1044
 #define IDC_INTER                       1044
 #define IDC_DATETIMEPICKER3             1045
+#define IDC_EDIT1                       1045
+#define IDC_APERTURE                    1045
 #define IDC_DATETIMEPICKER4             1046
+#define IDC_REF                         1046
 #define IDC_PROGRESS                    1047
+#define IDC_UTC_TIME                    1047
+#define IDC_EXACT_TIME                  1048
+#define IDC_TIME_CHECK                  1048
 #define IDC_PORT                        1049
+#define IDC_TIME_GROUP                  1049
 #define IDC_FORMULA_CHECK               1050
-#define IDC_DATE                        1051
-#define IDC_TIME                        1052
+#define IDC_EDIT2                       1051
+#define IDC_DEADBAND                    1051
 #define IDC_CUR_PASSW                   1058
 #define IDC_FORMULA                     1059
 #define IDC_PASSW2                      1060
@@ -324,7 +332,7 @@
 #define IDC_RECEIVE_TIMEOUT             1107
 #define IDC_IDLE_TIMEOUT                1108
 #define IDC_ANONYMOUS                   1109
-#define IDC_IEC60870_LINK_T0                 1110
+#define IDC_IEC60870_LINK_T0            1110
 #define IDC_VERSION                     1111
 #define IDC_POLL1                       2001
 #define IDC_POLL2                       2002
@@ -355,6 +363,9 @@
 #define ID_Menu4027                     4027
 #define ID_NODE_VIEW                    4028
 #define ID_NODES_VIEW                   4029
+#define ID_SORT_NONE                    4030
+#define ID_4031                         4031
+#define ID_SORT_ALIAS                   4032
 #define ID_PAGE_DELETE                  32787
 #define ID_VIEW_LEGEND                  32797
 #define ID_NOW                          32830
@@ -420,9 +431,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        112
-#define _APS_NEXT_COMMAND_VALUE         4030
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_RESOURCE_VALUE        115
+#define _APS_NEXT_COMMAND_VALUE         4033
+#define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           184
 #endif
 #endif

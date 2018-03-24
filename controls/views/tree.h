@@ -7,7 +7,8 @@
 
 namespace WTL {
 template <bool t_bManaged> class CImageListT;
-typedef CImageListT<true> CImageListManaged;
+typedef CImageListT<false>   CImageList;
+typedef CImageListT<true>    CImageListManaged;
 }
 
 class Tree : public views::TreeView,
@@ -47,5 +48,5 @@ class Tree : public views::TreeView,
   TreeEditHandler edit_handler_;
   TreeCompareHandler compare_handler_;
 
-  std::unique_ptr<WTL::CImageListManaged> images_;
+  std::unique_ptr<WTL::CImageList> images_;
 };

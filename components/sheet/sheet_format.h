@@ -1,9 +1,8 @@
 #pragma once
 
-#include "base/pool.h"
-#include "components/sheet/conditional_format.h"
-
 #include <SkColor.h>
+#include "base/pool.h"
+#include "conditional_format.h"
 
 struct SheetFormatBase {
   SheetFormatBase()

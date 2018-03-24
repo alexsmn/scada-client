@@ -1,19 +1,19 @@
-#include "services/profile.h"
+Ôªø#include "services/profile.h"
 
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
-#include "base/memory/singleton.h"
+#include "base/utils.h"
 #include "base/xml.h"
 #include "client_paths.h"
+#include "common/event_manager.h"
+#include "common/node_id_util.h"
+#include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "window_info.h"
 #include "services/favourites.h"
 #include "services/portfolio.h"
 #include "services/portfolio_manager.h"
-#include "common/scada_node_ids.h"
-#include "common/event_manager.h"
-#include "base/utils.h"
+#include "window_info.h"
 
 #include <ATLComTime.h>
 #include <fstream>
@@ -27,7 +27,7 @@ std::wstring FormatTimeDelta(base::TimeDelta span) {
   int minutes = reminder % 60;
   reminder /= 60;
   int hours = static_cast<int>(reminder);
-  
+
   return base::StringPrintf(L"%d:%02d:%02d", hours, minutes, seconds);
 }
 
@@ -35,8 +35,7 @@ bool ParseTimeDelta(const wchar_t* str, base::TimeDelta& span) {
   int h, m, s;
   if (swscanf(str, L"%d:%d:%d", &h, &m, &s) != 3)
     return false;
-  span = base::TimeDelta::FromHours(h) +
-         base::TimeDelta::FromMinutes(m) +
+  span = base::TimeDelta::FromHours(h) + base::TimeDelta::FromMinutes(m) +
          base::TimeDelta::FromSeconds(s);
   return true;
 }
@@ -65,37 +64,37 @@ Page CreateInitialPage() {
   Page page;
 
   page.id = 1;
-  page.title = L"ÀËÒÚ 1";
-  
+  page.title = L"–õ–∏—Å—Ç 1";
+
   /*// welcome
   WindowDefinition& def = page.AddWin();
-  def.title = _T("–ÛÍÓ‚Ó‰ÒÚ‚Ó ÔÓÎ¸ÁÓ‚‡ÚÂÎˇ");
+  def.title = _T("–†—É–∫–æ–≤–æ–¥—Å—Ç–≤–æ –ø–æ–ª—å–∑–æ–≤–∞—Ç–µ–ª—è");
   def.type = WinTypeWeb;*/
-  
+
   // objects
-  WindowDefinition& objects_def = page.AddWindow(
-      WindowDefinition(GetWindowInfo(ID_OBJECT_VIEW)));
+  WindowDefinition& objects_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_OBJECT_VIEW)));
   objects_def.size = gfx::Size(200, 450);
 
   // portfolio
-  WindowDefinition& portfolio = page.AddWindow(
-      WindowDefinition(GetWindowInfo(ID_PORTFOLIO_VIEW)));
+  WindowDefinition& portfolio =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_PORTFOLIO_VIEW)));
   portfolio.size = gfx::Size(200, 450);
-  
+
   // subsystems
-  WindowDefinition& subs_def = page.AddWindow(
-      WindowDefinition(GetWindowInfo(ID_HARDWARE_VIEW)));
+  WindowDefinition& subs_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_HARDWARE_VIEW)));
   subs_def.size = gfx::Size(200, 450);
-  
+
   // events
-  WindowDefinition& events_def = page.AddWindow(
-      WindowDefinition(GetWindowInfo(ID_EVENT_VIEW)));
+  WindowDefinition& events_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_EVENT_VIEW)));
   events_def.size = gfx::Size(800, 600);
   events_def.visible = false;
-  
+
   // Graph with server CPU usage.
-  WindowDefinition& graph_def = page.AddWindow(
-      WindowDefinition(GetWindowInfo(ID_GRAPH_VIEW)));
+  WindowDefinition& graph_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_GRAPH_VIEW)));
   graph_def.size = gfx::Size(800, 300);
   graph_def.AddItem("TimeScale").SetString("span", "0:05:00");
   // TODO: Implement.
@@ -105,20 +104,20 @@ Page CreateInitialPage() {
     item.SetString("path", path);
     item.SetInt("dots", 0);
   }*/
-  
+
   // Table with top 10 tss.
-  WindowDefinition& table_def = page.AddWindow(
-      WindowDefinition(GetWindowInfo(ID_TABLE_VIEW)));
+  WindowDefinition& table_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_TABLE_VIEW)));
   table_def.size = gfx::Size(800, 450);
   // TODO: Implement.
   /*for (int i = 1; i <= 10; i++) {
     std::string path = NodeId(NamespaceIndexes::TS, i).ToString();
     table_def.AddItem("Item").SetString("path", path);
   }*/
-  
+
   // Layout
 
-  PageLayoutBlock& main = page.layout().main;
+  PageLayoutBlock& main = page.layout.main;
 
   main.split(false);
   main.pos = 20;
@@ -144,48 +143,34 @@ Page CreateInitialPage() {
 }
 
 void LoadMainWindowDef(MainWindowDef& main_window, xml::Node& node) {
-  const int inval = (unsigned)(-1)/2;
+  const int inval = (unsigned)(-1) / 2;
   int left = ParseWithDefault(node.GetAttribute("left"), inval);
   int top = ParseWithDefault(node.GetAttribute("top"), inval);
   int width = ParseWithDefault(node.GetAttribute("width"), inval);
   int height = ParseWithDefault(node.GetAttribute("height"), inval);
   if (left != inval && top != inval && width != inval && height != inval)
-      main_window.bounds = gfx::Rect(left, top, width, height);
+    main_window.bounds = gfx::Rect(left, top, width, height);
   main_window.maximized =
       ParseWithDefault(node.GetAttribute("maximized"), false);
-  main_window.toolbar_position = ParseToolbarPosition(node.GetAttribute("toolbar"));
+  main_window.toolbar_position =
+      ParseToolbarPosition(node.GetAttribute("toolbar"));
   main_window.page_id = ParseWithDefault(node.GetAttribute("page"), 0);
 }
 
-} // namespace
+}  // namespace
 
 // MainWindowDef
 
 MainWindowDef::MainWindowDef()
-    : id(0),
-      maximized(false),
-      toolbar_position(ID_TOOLBAR_TOP),
-      page_id(0) {
-}
+    : id(0), maximized(false), toolbar_position(ID_TOOLBAR_TOP), page_id(0) {}
 
 // Profile
 
-Profile::Profile()
-    : bad_value_color_(SkColorSetRGB(192, 192, 192)),
-      show_write_ok(true),
-      event_auto_show(true),
-      event_auto_hide(true),
-      event_flash_window(false),
-      event_play_sound(false),
-      control_confirmation(true),
-      speech_enabled(true),
-      default_graph_span(base::TimeDelta::FromHours(1)),
-      graph_def_color(SK_ColorWHITE),
-      graph_def_width(1),
-      modus2(false) {
-}
+Profile::Profile() {}
 
-void Profile::Load(PortfolioManager& portfolio_manager, events::EventManager& event_manager, Favourites& favourites) {
+void Profile::Load(events::EventManager& event_manager,
+                   PortfolioManager& portfolio_manager,
+                   Favourites& favourites) {
   LOG(INFO) << "Load profile";
 
   try {
@@ -205,15 +190,21 @@ void Profile::Load(PortfolioManager& portfolio_manager, events::EventManager& ev
     // common settings
     xml::Node* paramse = doce->select("Profile");
     if (paramse) {
-      show_write_ok = ParseWithDefault(paramse->GetAttribute("showWriteOk"), show_write_ok);
-      event_auto_show = ParseWithDefault(paramse->GetAttribute("showEvents"), event_auto_show);
-      event_auto_hide = ParseWithDefault(paramse->GetAttribute("hideEvents"), event_auto_hide);
-      event_flash_window = ParseWithDefault(paramse->GetAttribute("flashOnEvents"), event_flash_window);
-      event_play_sound = ParseWithDefault(paramse->GetAttribute("soundOnEvents"), event_play_sound);
+      show_write_ok =
+          ParseWithDefault(paramse->GetAttribute("showWriteOk"), show_write_ok);
+      event_auto_show = ParseWithDefault(paramse->GetAttribute("showEvents"),
+                                         event_auto_show);
+      event_auto_hide = ParseWithDefault(paramse->GetAttribute("hideEvents"),
+                                         event_auto_hide);
+      event_flash_window = ParseWithDefault(
+          paramse->GetAttribute("flashOnEvents"), event_flash_window);
+      event_play_sound = ParseWithDefault(
+          paramse->GetAttribute("soundOnEvents"), event_play_sound);
       modus2 = ParseWithDefault(paramse->GetAttribute("modus2"), modus2);
 
-      unsigned severity_min = ParseWithDefault(paramse->GetAttribute("severityMin"),
-          static_cast<unsigned>(scada::kSeverityMin));
+      unsigned severity_min =
+          ParseWithDefault(paramse->GetAttribute("severityMin"),
+                           static_cast<unsigned>(scada::kSeverityMin));
       event_manager.SetSeverityMin(severity_min);
     }
 
@@ -244,18 +235,18 @@ void Profile::Load(PortfolioManager& portfolio_manager, events::EventManager& ev
       try {
         page.Load(pagee);
       } catch (HRESULT err) {
-        LOG(ERROR) << "Error " << static_cast<int>(err)
-                   << " on load page " << page.id;
+        LOG(ERROR) << "Error " << static_cast<int>(err) << " on load page "
+                   << page.id;
         page.id = 0;
       }
       if (page.id)
-        pages_[page.id] = page;
+        pages[page.id] = page;
     }
 
     // out-of-page
     xml::Node* out_pagese = doce->select("OutOfPage");
     if (out_pagese)
-      out_wins_.Load(*out_pagese);
+      out_wins.Load(*out_pagese);
 
     // favorites
     xml::Node* favourites_root = doce->select("Favorites");
@@ -265,7 +256,7 @@ void Profile::Load(PortfolioManager& portfolio_manager, events::EventManager& ev
     // portfolios
     xml::Node* pfoliose = doce->select("Portfolios");
     if (pfoliose) {
-      PortfolioManager::Portfolios& portfolios = portfolio_manager.portfolios;
+      auto& portfolios = portfolio_manager.portfolios;
       for (xml::Node* node = pfoliose->first_child; node; node = node->next) {
         xml::Node& pfolioe = *node;
         if (pfolioe.type != xml::NodeTypeElement)
@@ -282,25 +273,39 @@ void Profile::Load(PortfolioManager& portfolio_manager, events::EventManager& ev
             continue;
           if (iteme.name.compare("Item") != 0)
             continue;
-            
-          std::string path = base::SysWideToNativeMB(iteme.GetAttribute("path"));
-          auto node_id = scada::NodeId::FromString(path);
+
+          std::string path =
+              base::SysWideToNativeMB(iteme.GetAttribute("path"));
+          auto node_id = NodeIdFromScadaString(path);
           if (node_id.is_null()) {
             // TODO: Log.
             continue;
           }
-          
+
           portfolio.items.insert(node_id);
         }
       }
     }
 
     // defaults
-    xml::Node* defse = doce->select("Defaults");
-    if (defse) {
-      xml::Node* graphe = defse->select("Graph");
-      if (graphe) {
-        ParseTimeDelta(graphe->GetAttribute("def_span").c_str(), default_graph_span);
+    if (auto* defse = doce->select("Defaults")) {
+      if (auto* graphe = defse->select("Graph")) {
+        ParseTimeDelta(graphe->GetAttribute("def_span").c_str(),
+                       graph_view.default_span);
+        graph_view.default_width =
+            ParseWithDefault(graphe->GetAttribute("def_weight"), 1);
+      }
+
+      if (auto* node = defse->select("TimeRangeDialog")) {
+        time_range_dialog.width =
+            ParseWithDefault(node->GetAttribute("width"), 0);
+        time_range_dialog.height =
+            ParseWithDefault(node->GetAttribute("height"), 0);
+      }
+
+      if (auto* node = defse->select("NodeTable")) {
+        node_table.default_sort_property_id = NodeIdFromScadaString(
+            base::SysWideToNativeMB(node->GetAttribute("sort-property-id")));
       }
     }
 
@@ -312,13 +317,15 @@ void Profile::Load(PortfolioManager& portfolio_manager, events::EventManager& ev
     LOG(ERROR) << "Profile load XML error";
   }
 
-  if (pages_.empty()) {
+  if (pages.empty()) {
     Page page = CreateInitialPage();
-    pages_[page.id] = page;
+    pages[page.id] = page;
   }
 }
 
-void Profile::Save(const PortfolioManager& portfolio_manager, const events::EventManager& event_manager, const Favourites& favourites) {
+void Profile::Save(const events::EventManager& event_manager,
+                   const PortfolioManager& portfolio_manager,
+                   const Favourites& favourites) {
   LOG(INFO) << "Save profile";
 
   try {
@@ -338,11 +345,13 @@ void Profile::Save(const PortfolioManager& portfolio_manager, const events::Even
     paramse.SetAttribute("hideEvents", WideFormat(event_auto_hide));
     paramse.SetAttribute("flashOnEvents", WideFormat(event_flash_window));
     paramse.SetAttribute("soundOnEvents", WideFormat(event_play_sound));
-    paramse.SetAttribute("severityMin", WideFormat(event_manager.severity_min()));
+    paramse.SetAttribute("severityMin",
+                         WideFormat(event_manager.severity_min()));
     paramse.SetAttribute("modus2", WideFormat(modus2));
 
     // window settings
-    for (MainWindows::iterator i = main_windows.begin(); i != main_windows.end(); ++i) {
+    for (MainWindows::iterator i = main_windows.begin();
+         i != main_windows.end(); ++i) {
       const MainWindowDef& main_window = i->second;
       xml::Node& wine = doce.AddElement("MainWindow");
       wine.SetAttribute("id", WideFormat(main_window.id));
@@ -351,14 +360,15 @@ void Profile::Save(const PortfolioManager& portfolio_manager, const events::Even
       wine.SetAttribute("width", WideFormat(main_window.bounds.width()));
       wine.SetAttribute("height", WideFormat(main_window.bounds.height()));
       wine.SetAttribute("maximized", WideFormat(main_window.maximized));
-      wine.SetAttribute("toolbar", FormatToolbarPosition(main_window.toolbar_position));
+      wine.SetAttribute("toolbar",
+                        FormatToolbarPosition(main_window.toolbar_position));
       wine.SetAttribute("page", WideFormat(main_window.page_id));
     }
 
     // pages root
     xml::Node& pagese = doce.AddElement("Pages");
     // pages
-    for (PageMap::iterator i = pages_.begin(); i != pages_.end(); i++) {
+    for (PageMap::iterator i = pages.begin(); i != pages.end(); i++) {
       Page& page = i->second;
       xml::Node& pagee = pagese.AddElement("Page");
       page.Save(pagee, false);
@@ -366,29 +376,53 @@ void Profile::Save(const PortfolioManager& portfolio_manager, const events::Even
 
     // out-of-page
     xml::Node& out_winse = doce.AddElement("OutOfPage");
-    out_wins_.Save(out_winse, true);
+    out_wins.Save(out_winse, true);
 
     // favorites
     xml::Node& favourites_root = doce.AddElement("Favorites");
     favourites.Save(favourites_root);
 
     // portfolios
+    auto& portfolios = portfolio_manager.portfolios;
     xml::Node& pfoliose = doce.AddElement("Portfolios");
-    for (auto& portfolio : portfolio_manager.portfolios) {
+    for (auto i = portfolios.begin(); i != portfolios.end(); ++i) {
+      const Portfolio& portfolio = *i;
       xml::Node& pfolioe = pfoliose.AddElement("Portfolio");
       pfolioe.SetAttribute("name", portfolio.name);
       for (std::set<scada::NodeId>::const_iterator j = portfolio.items.begin();
-                                                   j != portfolio.items.end(); ++j) {
+           j != portfolio.items.end(); ++j) {
         const scada::NodeId& node_id = *j;
         xml::Node& iteme = pfolioe.AddElement("Item");
-        iteme.SetAttribute("path", node_id.ToString());
+        iteme.SetAttribute("path", NodeIdToScadaString(node_id));
       }
     }
 
     // defaults
-    xml::Node& defse = doce.AddElement("Defaults");
-    xml::Node& graphe = defse.AddElement("Graph");
-    graphe.SetAttribute("def_span", FormatTimeDelta(default_graph_span));
+    {
+      xml::Node& defse = doce.AddElement("Defaults");
+
+      // GraphView
+      {
+        xml::Node& graphe = defse.AddElement("Graph");
+        graphe.SetAttribute("def_span",
+                            FormatTimeDelta(graph_view.default_span));
+        graphe.SetAttribute("def_weight", WideFormat(graph_view.default_width));
+      }
+
+      // TimeRangeDialog
+      {
+        xml::Node& node = defse.AddElement("TimeRangeDialog");
+        node.SetAttribute("width", WideFormat(time_range_dialog.width));
+        node.SetAttribute("height", WideFormat(time_range_dialog.height));
+      }
+
+      {
+        xml::Node& node = defse.AddElement("NodeTable");
+        node.SetAttribute(
+            "sort-property-id",
+            NodeIdToScadaString(node_table.default_sort_property_id));
+      }
+    }
 
     // save
     std::ofstream stream(GetFilePath().value().c_str(),
@@ -414,10 +448,10 @@ base::FilePath Profile::GetFilePath() {
 
 Page& Profile::CreatePage() {
   int id = 1;
-  while (pages_.find(id) != pages_.end())
+  while (pages.find(id) != pages.end())
     id++;
 
-  Page& page = pages_[id];
+  Page& page = pages[id];
   page.id = id;
   return page;
 }
@@ -425,7 +459,7 @@ Page& Profile::CreatePage() {
 int Profile::CreateWindowId() {
   int id = 1;
   while (main_windows.find(id) != main_windows.end())
-      ++id;
+    ++id;
   return id;
 }
 

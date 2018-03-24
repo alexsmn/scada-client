@@ -51,7 +51,7 @@ class WatchView : public Controller,
 
   std::unique_ptr<WatchModel> model_;
 
-  bool auto_scroll_;
+  bool auto_scroll_ = false;
 
 #if defined(UI_QT)
   std::unique_ptr<QTableView> table_;

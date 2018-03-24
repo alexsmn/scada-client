@@ -1,25 +1,26 @@
 #pragma once
 
+#include "base/files/file_path.h"
+#include "components/modus/modus_binding2.h"
+#include "components/modus/modus_view_wrapper.h"
+#include "libmodus/gfx/gfx.h"
+#include "libmodus/render/renderer_delegate.h"
+#include "timed_data/timed_data_spec.h"
+
+#include <qwidget.h>
 #include <functional>
 #include <map>
 #include <memory>
-#include <qwidget.h>
-
-#include "base/files/file_path.h"
-#include "libmodus/gfx/gfx.h"
-#include "libmodus/render/renderer_delegate.h"
-#include "components/modus/modus_view_wrapper.h"
-#include "components/modus/modus_binding2.h"
-#include "timed_data/timed_data_spec.h"
 
 namespace modus {
 class Element;
 class Renderer;
 class Scheme;
 class Shape;
-}
+}  // namespace modus
 
 class ModusBinding2;
+class TimedDataService;
 
 class ModusView2 : public QWidget,
                    public ModusViewWrapper,
@@ -94,11 +95,11 @@ class ModusView2 : public QWidget,
   std::unique_ptr<modus::Scheme> scheme_;
   std::unique_ptr<modus::Renderer> renderer_;
 
-  float scale_;
+  float scale_ = 1.0f;
 
   std::map<modus::Shape*, std::unique_ptr<ModusBinding2>> bindings_;
 
-  modus::Shape* selection_;
+  modus::Shape* selection_ = nullptr;
 
   SelectionSignal selection_signal_;
   NavigationSignal navigation_signal_;

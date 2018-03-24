@@ -2,8 +2,9 @@
 
 #include <memory>
 
-#include "controller.h"
 #include "contents_model.h"
+#include "controller.h"
+#include "time_model.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/table/table_controller.h"
@@ -11,22 +12,22 @@
 
 #if defined(UI_VIEWS)
 namespace WTL {
-template <bool t_bManaged> class CImageListT;
+template <bool t_bManaged>
+class CImageListT;
+typedef CImageListT<false> CImageList;
 typedef CImageListT<true> CImageListManaged;
-}
+}  // namespace WTL
 #endif
-
-namespace events {
-class EventManager;
-}
 
 class Table;
 class EventTableModel;
 
 class EventView : public Controller,
-                  public ContentsModel
+                  public ContentsModel,
+                  public TimeModel
 #if defined(UI_VIEWS)
-                  , protected views::TableController
+    ,
+                  protected views::TableController
 #endif
 {
  public:
@@ -45,26 +46,32 @@ class EventView : public Controller,
   virtual bool IsCommandEnabled(unsigned command) const override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
+  virtual TimeModel* GetTimeModel() override;
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
   virtual void RemoveContainedItem(const scada::NodeId& node_id) override;
   virtual NodeIdSet GetContainedItems() const override;
+
+  // TimeModel
+  virtual TimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const TimeRange& time_range) override;
 
  protected:
 #if defined(UI_VIEWS)
   // view::TableController overrides
   virtual void OnSelectionChanged(views::TableView& sender) override;
-  virtual bool OnDoubleClick() override; 
+  virtual bool OnDoubleClick() override;
   virtual void ShowContextMenu(gfx::Point point) override;
-  virtual bool OnKeyPressed(views::TableView& sender, ui::KeyboardCode key_code) override;
+  virtual bool OnKeyPressed(views::TableView& sender,
+                            ui::KeyboardCode key_code) override;
 #endif
 
  private:
   base::string16 MakeTitle() const;
 
   void ExportToExcel();
-  void SelectTimeRange();
   void SelectSeverity();
 
   NodeIdSet EventView::GetSelectedNodeIds() const;
@@ -76,6 +83,6 @@ class EventView : public Controller,
 
 #if defined(UI_VIEWS)
   // TODO: Use gfx image list.
-  std::unique_ptr<WTL::CImageListManaged> severities_image_list_;
+  std::unique_ptr<WTL::CImageList> severities_image_list_;
 #endif
 };

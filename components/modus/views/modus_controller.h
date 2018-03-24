@@ -1,13 +1,10 @@
 #pragma once
 
-#include <memory>
-
+#include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "controller.h"
 
-namespace base {
-class FilePath;
-}
+#include <memory>
 
 class ModusView;
 class ModusView2;
@@ -33,7 +30,7 @@ class ModusController : public Controller {
 
   std::unique_ptr<ModusView> view_;
   std::unique_ptr<ModusView2> view2_;
-  ModusViewWrapper* wrapper_ = nullptr;
+  ModusViewWrapper* wrapper_;
 
-  base::WeakPtrFactory<ModusController> weak_factory_;
+  base::WeakPtrFactory<ModusController> weak_factory_{this};
 };

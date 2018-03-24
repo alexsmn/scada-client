@@ -1,4 +1,7 @@
 #include "commands/write_dialog.h"
 
-void ExecuteWriteDialog(MainWindow* main_window, TimedDataService& timed_data_service, const NodeRef& node, bool manual, Profile& profile) {
-}
+void ExecuteWriteDialog(DialogService& dialog_service,
+                        const scada::NodeId& item_id,
+                        bool manual,
+                        TimedDataService& timed_data_service,
+                        Profile& profile) {}

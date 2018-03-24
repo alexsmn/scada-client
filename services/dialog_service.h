@@ -1,32 +1,25 @@
 #pragma once
 
-#if defined(UI_VIEWS)
-#include "ui/gfx/native_widget_types.h"
-#endif
+#include "base/strings/string_piece.h"
+#include "gfx/native_widget_types.h"
 
-#if defined(UI_QT)
-class QWidget;
-#endif
+enum class MessageBoxMode {
+  Info,
+  Error,
+  QuestionYesNo,
+  QuestionYesNoDefaultNo,
+  Count
+};
+
+enum class MessageBoxResult { Ok, Cancel, Yes, No };
 
 class DialogService {
  public:
   virtual ~DialogService() {}
+
+  virtual gfx::NativeView GetDialogOwningWindow() const = 0;
+
+  virtual MessageBoxResult RunMessageBox(base::StringPiece16 message,
+                                         base::StringPiece16 title,
+                                         MessageBoxMode mode) = 0;
 };
-
-#if defined(UI_VIEWS)
-class DialogServiceViews : public DialogService {
- public:
-  using DialogParentType = gfx::NativeView;
-
-  virtual DialogParentType GetParentView() = 0;
-};
-#endif
-
-#if defined(UI_QT)
-class DialogServiceQt : public DialogService {
- public:
-  using DialogParentType = QWidget*;
-
-  virtual DialogParentType GetParentView() = 0;
-};
-#endif

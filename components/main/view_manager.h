@@ -2,10 +2,8 @@
 
 #include <list>
 #include <memory>
-#include <vector>
 
 #include "base/strings/string16.h"
-#include "components/main/view_manager.h"
 
 class OpenedView;
 class Page;
@@ -40,6 +38,7 @@ class ViewManager {
   OpenedView* active_view() const { return active_view_; }
 
   Page& current_page() const { return *current_page_; }
+  bool is_closing_page() const { return closing_page_; }
   void OpenPage(const Page& page);
   void SavePage();
   void ClosePage();
@@ -51,8 +50,6 @@ class ViewManager {
 
  protected:
   explicit ViewManager(ViewManagerDelegate& delegate);
-
-  bool is_closing_page() const { return closing_page_; }
 
   void SetActiveView(OpenedView* view);
   void DestroyView(OpenedView& view);

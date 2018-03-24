@@ -1,10 +1,12 @@
-#include "components/graph/graph_view.h"
+ï»¿#include "components/graph/graph_view.h"
 
 #include "base/color.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "client_utils.h"
 #include "commands/time_range_dialog.h"
+#include "common/formula_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/graph/graph_setup_dialog.h"
@@ -15,6 +17,7 @@
 #include "time_range.h"
 
 #if defined(UI_QT)
+#include "base/qt/color_qt.h"
 #include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_pane.h"
 #include "graph_qt/graph_plot.h"
@@ -89,24 +92,24 @@ bool ParseTime(const char* str, base::Time& time) {
 REGISTER_CONTROLLER(GraphView, ID_GRAPH_VIEW);
 
 GraphView::GraphView(const ControllerContext& context)
-    : ::Controller(context) {}
+    : ::Controller{context} {}
 
 UiView* GraphView::Init(const WindowDefinition& definition) {
   BOOL time_set = FALSE;
   BOOL val_set = FALSE;
 
-  graph_ = std::make_unique<MetrixGraph>(timed_data_service_);
+  graph_ =
+      std::make_unique<MetrixGraph>(MetrixGraphContext{timed_data_service_});
 
 #if defined(UI_VIEWS)
-  graph_->set_background(new views::ColorBackground(profile_.graph_def_color));
+  graph_->set_background(
+      new views::ColorBackground(profile_.graph_view.default_color));
 #endif
 
   typedef std::map<int, views::GraphPane*> PaneMap;
   PaneMap pane_map;
 
-  for (WindowItems::const_iterator i = definition.items.begin();
-       i != definition.items.end(); i++) {
-    const WindowItem& item = *i;
+  for (auto& item : definition.items) {
     if (item.name_is("GraphPane")) {
       views::GraphPane* pane = &graph_->NewPane();
 
@@ -165,7 +168,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   if (!time_set) {
     base::Time now = base::Time::Now();
     graph_->horizontal_axis().SetRange(
-        views::GraphRange((now - profile_.default_graph_span).ToDoubleT(),
+        views::GraphRange((now - profile_.graph_view.default_span).ToDoubleT(),
                           now.ToDoubleT(), views::GraphRange::TIME));
   }
 
@@ -369,7 +372,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
     ClearPane(*pane);
   }
 
-  std::string path = node_id.ToString();
+  std::string path = MakeNodeIdFormula(node_id);
 
   MetrixGraph::MetrixLine& line =
       graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
@@ -398,7 +401,7 @@ base::string16 GraphView::MakeTitle() const {
           ? static_cast<MetrixGraph::MetrixLine*>(
                 graph_->panes().front()->plot().primary_line())
           : NULL;
-  return line ? line->data_source().title() : L"Íåò îáúåêòà";
+  return line ? line->data_source().title() : L"ÐÐµÑ‚ Ð¾Ð±ÑŠÐµÐºÑ‚Ð°";
 }
 
 void GraphView::ShowSetupDialog() {
@@ -414,13 +417,11 @@ void GraphView::ShowSetupDialog() {
   dlg.color = color;
   dlg.line_weight_ = line ? line->line_weight_ : 0;
 
-  if (dlg.DoModal(
-          static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) !=
-      IDOK)
+  if (dlg.DoModal() != IDOK)
     return;
 
   graph_->set_background(new views::ColorBackground(dlg.color));
-  profile_.graph_def_color = dlg.color;
+  profile_.graph_view.default_color = dlg.color;
 
   if (line)
     line->line_weight_ = dlg.line_weight_;
@@ -459,6 +460,14 @@ void GraphView::OnGraphSelectPane() {
     selection().SelectTimedData(line->data_source().timed_data());
   else
     selection().Clear();
+}
+
+TimeRange GraphView::GetTimeRange() const {
+  auto start = base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
+  base::Time end;
+  if (!graph_->m_time_fit)
+    end = base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
+  return TimeRange{start, end};
 }
 
 NodeIdSet GraphView::GetContainedItems() const {
@@ -518,10 +527,6 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
     case ID_NOW:
     case ID_GRAPH_ADD_PANE:
     case ID_GRAPH_DELETE_PANE:
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-    case ID_TIME_RANGE_CUSTOM:
     case ID_GRAPH_ZOOM:
       return this;
   }
@@ -569,29 +574,6 @@ void GraphView::ExecuteCommand(unsigned command_id) {
         controller_delegate_.SetModified(true);
       }
       break;
-
-    case ID_TIME_RANGE_DAY:
-      SetTimeRange(
-          TimeRange(TimeRangeBound(base::Time::Now(), true), TimeRangeBound()));
-      break;
-    case ID_TIME_RANGE_WEEK:
-      SetTimeRange(
-          TimeRange(TimeRangeBound(
-                        base::Time::Now() - base::TimeDelta::FromDays(7), true),
-                    TimeRangeBound()));
-      break;
-    case ID_TIME_RANGE_MONTH:
-      SetTimeRange(TimeRange(
-          TimeRangeBound(base::Time::Now() - base::TimeDelta::FromDays(30),
-                         true),
-          TimeRangeBound()));
-      break;
-    case ID_TIME_RANGE_CUSTOM: {
-      TimeRange range;
-      if (ShowTimeRangeDialog(dialog_service_, range))
-        SetTimeRange(range);
-      break;
-    }
 
     case ID_GRAPH_ADD_PANE: {
       controller_delegate_.SetModified(true);
@@ -665,10 +647,10 @@ void GraphView::ExecuteCommand(unsigned command_id) {
 }
 
 void GraphView::SetTimeRange(const TimeRange& range) {
-  base::Time start_time = range.start.GetStartTime();
+  auto [start_time, end_time] = GetTimeRangeBounds(range);
+
   double low = start_time.ToDoubleT();
 
-  base::Time end_time = range.end.GetEndTime();
   graph_->m_time_fit = end_time.is_null();
   double high =
       graph_->m_time_fit ? graph_->right_range_limit_ : end_time.ToDoubleT();
@@ -710,5 +692,5 @@ void GraphView::OnGraphModified() {
       base::Time::FromDoubleT(graph_->horizontal_axis().range().high()) -
       base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
   if (span.InSeconds() >= 1)
-    profile_.default_graph_span = span;
+    profile_.graph_view.default_span = span;
 }

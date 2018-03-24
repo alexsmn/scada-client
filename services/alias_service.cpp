@@ -1,8 +1,8 @@
 #include "alias_service.h"
 
 #include "base/logger.h"
-#include "common/node_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 
 AliasService::AliasService(AliasServiceContext&& context)
@@ -41,12 +41,15 @@ void AliasService::Resolve(base::StringPiece alias,
   pending_aliases_[alias_string].emplace_back(callback);
 }
 
-void AliasService::OnModelChange(const ModelChangeEvent& event) {
-  if (event.verb & ModelChangeEvent::NodeDeleted) {
+void AliasService::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     Set(event.node_id, {});
 
-  } else if (event.verb & ModelChangeEvent::NodeAdded) {
-    Update(node_service_.GetNode(event.node_id));
+  } else if (event.verb & scada::ModelChangeEvent::NodeAdded) {
+    assert(!event.type_definition_id.is_null());
+    auto type_definition = node_service_.GetNode(event.type_definition_id);
+    if (IsSubtypeOf(type_definition, id::DataItemType))
+      Update(node_service_.GetNode(event.node_id));
   }
 }
 
@@ -101,7 +104,7 @@ void AliasService::Set(const scada::NodeId& node_id, std::string alias) {
     resolved_aliases_.emplace(alias, node_id);
     resolved_nodes_.emplace(node_id, alias);
 
-  } else if (i->second == alias) {
+  } else if (i->second != alias) {
     logger_->WriteF(LogSeverity::Normal, "Updated: %s=%s", alias.c_str(),
                     node_id.ToString().c_str());
 

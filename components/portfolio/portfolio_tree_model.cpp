@@ -2,8 +2,8 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "services/portfolio.h"
-#include "translation.h"
 
 void PortfolioTreeNode::SetTitle(const base::string16& title) {
   if (!is_portfolio())
@@ -12,14 +12,17 @@ void PortfolioTreeNode::SetTitle(const base::string16& title) {
   portfolio_manager_.Rename(portfolio_, title.c_str());
 }
 
-PortfolioTreeModel::PortfolioTreeModel(PortfolioManager& portfolio_manager,
-                                       NodeService& node_service)
-    : portfolio_manager_(portfolio_manager), node_service_(node_service) {
-  set_root(std::make_unique<PortfolioTreeNode>(portfolio_manager_,
-                                               *static_cast<Portfolio*>(NULL)));
+PortfolioTreeModel::PortfolioTreeModel(NodeService& node_service,
+                                       PortfolioManager& portfolio_manager)
+    : node_service_{node_service}, portfolio_manager_{portfolio_manager} {
+  set_root(std::make_unique<PortfolioTreeNode>(
+      portfolio_manager_, *static_cast<Portfolio*>(nullptr)));
 
-  for (auto& portfolio : portfolio_manager_.portfolios)
-    AddPortfolioNode(portfolio);
+  PortfolioManager::Portfolios& list = portfolio_manager_.portfolios;
+  for (PortfolioManager::Portfolios::const_iterator i = list.begin();
+       i != list.end(); ++i) {
+    AddPortfolioNode(*i);
+  }
 
   portfolio_manager_.Subscribe(*this);
 }
@@ -31,19 +34,21 @@ PortfolioTreeModel::~PortfolioTreeModel() {
 void PortfolioTreeModel::AddPortfolioNode(const Portfolio& portfolio) {
   auto node =
       std::make_unique<PortfolioTreeNode>(portfolio_manager_, portfolio);
+  node->set_title(portfolio.name);
+  node->set_icon(0);
   auto* node_ptr = node.get();
-  node->title = portfolio.name;
-  node->icon = 0;
-  Add(root(), root().GetChildCount(), std::move(node));
+  Add(*root(), root()->GetChildCount(), std::move(node));
 
-  for (auto node_id : portfolio.items)
-    AddItemNode(*node_ptr, node_id);
+  for (std::set<scada::NodeId>::const_iterator i = portfolio.items.begin();
+       i != portfolio.items.end(); ++i) {
+    AddItemNode(*node_ptr, *i);
+  }
 }
 
 PortfolioTreeNode* PortfolioTreeModel::FindPortfolioNode(
     const Portfolio& portfolio) {
-  for (int i = 0; i < root().GetChildCount(); ++i) {
-    PortfolioTreeNode& node = root().GetChild(i);
+  for (int i = 0; i < root()->GetChildCount(); ++i) {
+    PortfolioTreeNode& node = root()->GetChild(i);
     if (&node.portfolio() == &portfolio)
       return &node;
   }
@@ -52,12 +57,11 @@ PortfolioTreeNode* PortfolioTreeModel::FindPortfolioNode(
 
 void PortfolioTreeModel::AddItemNode(PortfolioTreeNode& portfolio_node,
                                      const scada::NodeId& item_id) {
-  auto node_ref = node_service_.GetNode(item_id);
   auto node = std::make_unique<PortfolioTreeNode>(portfolio_manager_,
                                                   portfolio_node.portfolio());
-  node->title = ToString16(node_ref.display_name());
-  node->icon = 1;
-  node->node = node_ref;
+  node->set_title(GetDisplayName(node_service_, item_id));
+  node->set_icon(1);
+  node->set_item_id(item_id);
   Add(portfolio_node, portfolio_node.GetChildCount(), std::move(node));
 }
 
@@ -66,7 +70,7 @@ PortfolioTreeNode* PortfolioTreeModel::FindItemNode(
     const scada::NodeId& item_id) {
   for (int i = 0; i < portfolio_node.GetChildCount(); ++i) {
     PortfolioTreeNode& node = portfolio_node.GetChild(i);
-    if (node.node.id() == item_id)
+    if (node.item_id() == item_id)
       return &node;
   }
   return NULL;
@@ -77,7 +81,7 @@ void PortfolioTreeModel::Portfolio_OnUpdate(Portfolio& portfolio) {
   if (!node)
     AddPortfolioNode(portfolio);
   else {
-    node->title = portfolio.name;
+    node->set_title(portfolio.name);
     TreeNodeChanged(node);
   }
 }
@@ -85,8 +89,7 @@ void PortfolioTreeModel::Portfolio_OnUpdate(Portfolio& portfolio) {
 void PortfolioTreeModel::Portfolio_OnDelete(Portfolio& portfolio) {
   PortfolioTreeNode* node = FindPortfolioNode(portfolio);
   assert(node);
-  Remove(root(), root().IndexOfChild(*node));
-  delete node;
+  Remove(*root(), root()->IndexOfChild(*node));
 }
 
 void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
@@ -98,7 +101,7 @@ void PortfolioTreeModel::Portfolio_OnUpdateItem(Portfolio& portfolio,
   if (!node)
     AddItemNode(*portfolio_node, node_id);
   else {
-    node->title = ToString16(node->node.display_name());
+    node->set_title(GetDisplayName(node_service_, node_id));
     TreeNodeChanged(node);
   }
 }
@@ -112,5 +115,4 @@ void PortfolioTreeModel::Portfolio_OnDeleteItem(Portfolio& portfolio,
   assert(node);
 
   Remove(*portfolio_node, portfolio_node->IndexOfChild(*node));
-  delete node;
 }

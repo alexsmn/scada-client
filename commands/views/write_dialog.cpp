@@ -4,16 +4,15 @@
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "common/formula_util.h"
+#include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "components/main/views/main_window_views.h"
 #include "core/monitored_item_service.h"
 #include "core/status.h"
+#include "services/dialog_service.h"
 #include "services/profile.h"
-#include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
-#include "translation.h"
 #include "views/client_utils_views.h"
 #include "views/framework/dialog.h"
 
@@ -22,12 +21,14 @@
 #include <atlapp.h>
 #include <atlctrls.h>
 
-class WriteDialog : public framework::Dialog, private rt::TimedDataDelegate {
+class TimedDataService;
+
+class WriteDialog : public framework::Dialog {
  public:
   WriteDialog(TimedDataService& timed_data_service,
+              Profile& profile,
               const rt::TimedDataSpec& spec,
-              bool manual,
-              Profile& profile);
+              bool manual);
 
  protected:
   // Dialog
@@ -45,33 +46,30 @@ class WriteDialog : public framework::Dialog, private rt::TimedDataDelegate {
   TimedDataService& timed_data_service_;
   Profile& profile_;
 
-  bool logical_;
+  bool logical_ = false;
   rt::TimedDataSpec spec_;
-  bool manual_;
-  bool write_selecting_;
-  double write_value_;
+  bool manual_ = false;
+  bool write_selecting_ = false;
+  double write_value_ = 0;
   WTL::CComboBox wnd_state;
   WTL::CButton wnd_lock;
 
-  bool has_condition_;
+  bool has_condition_ = false;
   rt::TimedDataSpec condition_;
 
-  base::WeakPtrFactory<WriteDialog> weak_factory_;
+  base::WeakPtrFactory<WriteDialog> weak_factory_{this};
 };
 
 WriteDialog::WriteDialog(TimedDataService& timed_data_service,
+                         Profile& profile,
                          const rt::TimedDataSpec& spec,
-                         bool manual,
-                         Profile& profile)
-    : Dialog(spec.logical() ? IDD_WRITE_TS : IDD_WRITE_TIT),
-      timed_data_service_(timed_data_service),
-      profile_(profile),
-      spec_(spec),
-      logical_(spec.logical()),
-      manual_(manual),
-      write_selecting_(false),
-      has_condition_(false),
-      weak_factory_(this) {
+                         bool manual)
+    : Dialog{spec.logical() ? IDD_WRITE_TS : IDD_WRITE_TIT},
+      timed_data_service_{timed_data_service},
+      profile_{profile},
+      spec_{spec},
+      logical_{spec.logical()},
+      manual_{manual} {
   spec_.property_change_handler = [this](const rt::PropertySet& properties) {
     UpdateCurrent();
   };
@@ -85,19 +83,18 @@ void WriteDialog::OnInitDialog() {
 
   UpdateCurrent();
 
-  const auto& node = spec_.GetNode();
+  auto node = spec_.GetNode();
 
   if (logical_) {
     wnd_state = GetItem(IDC_STATE);
     if (IsInstanceOf(node, id::DiscreteItemType)) {
-      auto format = node.target(id::AnalogItemType_DisplayFormat);
       base::string16 close_label = kDefaultCloseLabel;
       base::string16 open_label = kDefaultOpenLabel;
-      if (format) {
-        close_label = format[id::TsFormatType_CloseLabel].value().get_or(
-            base::string16{});
-        open_label =
-            format[id::TsFormatType_OpenLabel].value().get_or(base::string16{});
+      if (auto format = node.target(id::HasTsFormat)) {
+        close_label = base::SysNativeMBToWide(
+            format[id::TsFormatType_CloseLabel].value().get_or(std::string()));
+        open_label = base::SysNativeMBToWide(
+            format[id::TsFormatType_OpenLabel].value().get_or(std::string()));
       }
       wnd_state.AddString(open_label.c_str());
       wnd_state.AddString(close_label.c_str());
@@ -118,9 +115,9 @@ void WriteDialog::OnInitDialog() {
   wnd_lock.SetCheck(BST_CHECKED);
   wnd_lock.ShowWindow(manual_ ? SW_SHOW : SW_HIDE);
 
-  auto& condition =
+  auto condition =
       node
-          ? node[id::DataItemType_OutputCondition].value().get_or(std::string())
+          ? node[kObjectOutputConditionPropTypeId].value().get_or(std::string())
           : std::string();
   has_condition_ = !condition.empty();
   if (has_condition_)
@@ -151,7 +148,7 @@ void WriteDialog::OnOK() {
   if (manual_) {
     bool lock = wnd_lock.GetCheck() == BST_CHECKED;
 
-    spec_.Call(id::DataItemType_WriteManual, {write_value_, lock},
+    spec_.Call(kObjectWriteManualCommandId, {write_value_, lock}, {},
                [weak_ptr](const scada::Status& status) {
                  base::ThreadTaskRunnerHandle::Get()->PostTask(
                      FROM_HERE, base::Bind(&WriteDialog::OnWriteComplete,
@@ -161,11 +158,12 @@ void WriteDialog::OnOK() {
   } else {
     write_selecting_ = true;
     flags.set_select();
-    spec_.Write(write_value_, flags, [weak_ptr](const scada::Status& status) {
-      base::ThreadTaskRunnerHandle::Get()->PostTask(
-          FROM_HERE,
-          base::Bind(&WriteDialog::OnWriteComplete, weak_ptr, status));
-    });
+    spec_.Write(
+        write_value_, {}, flags, [weak_ptr](const scada::Status& status) {
+          base::ThreadTaskRunnerHandle::Get()->PostTask(
+              FROM_HERE,
+              base::Bind(&WriteDialog::OnWriteComplete, weak_ptr, status));
+        });
   }
 }
 
@@ -205,11 +203,10 @@ void WriteDialog::OnWriteComplete(const scada::Status& status) {
 
     // Execute actual Write.
     auto weak_ptr = weak_factory_.GetWeakPtr();
-    spec_.Write(write_value_, scada::WriteFlags(),
-                [weak_ptr](const scada::Status& status) {
-                  if (auto ptr = weak_ptr.get())
-                    ptr->OnWriteComplete(status);
-                });
+    spec_.Write(write_value_, {}, {}, [weak_ptr](const scada::Status& status) {
+      if (auto ptr = weak_ptr.get())
+        ptr->OnWriteComplete(status);
+    });
 
     return;
   }
@@ -243,30 +240,14 @@ void WriteDialog::UpdateCondition() {
   }
 }
 
-void ExecuteWriteDialog(MainWindow* main_window,
-                        TimedDataService& timed_data_service,
-                        const NodeRef& node,
+void ExecuteWriteDialog(DialogService& dialog_service,
+                        const scada::NodeId& item_id,
                         bool manual,
+                        TimedDataService& timed_data_service,
                         Profile& profile) {
-  DCHECK(main_window);
-
-  auto window_handle =
-      static_cast<MainWindowViews*>(main_window)->GetWindowHandle();
-
-  const base::char16* title = manual ? L"Ручной ввод" : L"Управление";
-
-  if (node.node_class() != scada::NodeClass::Variable) {
-    ::AtlMessageBox(window_handle,
-                    L"Операция не поддерживается для объектов данного типа.",
-                    title, MB_OK | MB_ICONEXCLAMATION);
-    return;
-  }
-
-  std::string formula = MakeNodeIdFormula(node.id());
-
   rt::TimedDataSpec spec;
-  spec.Connect(timed_data_service, formula);
+  spec.Connect(timed_data_service, MakeNodeIdFormula(item_id));
 
-  WriteDialog dialog(timed_data_service, spec, manual, profile);
-  dialog.Execute(window_handle);
+  WriteDialog dialog{timed_data_service, profile, spec, manual};
+  dialog.Execute(dialog_service.GetDialogOwningWindow());
 }

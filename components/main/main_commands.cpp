@@ -1,46 +1,47 @@
-#include "components/main/main_commands.h"
-
-#include <atlres.h>
-#include <windows.h>
-#include <shellapi.h>
+ï»¿#include "components/main/main_commands.h"
 
 #include "base/path_service.h"
 #include "client_paths.h"
 #include "client_utils.h"
 #include "commands/add_favourites_dialog.h"
 #include "commands/prompt_dialog.h"
+#include "common/event_manager.h"
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
 #include "components/main/main_window.h"
+#include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
+#include "core/session_service.h"
+#include "services/excel_configuration_commands.h"
 #include "services/favourites.h"
 #include "services/local_events.h"
 #include "services/profile.h"
 #include "services/speech.h"
 #include "window_info.h"
-#include "common/event_manager.h"
-#include "core/session_service.h"
+
+#include <atlres.h>
+#include <shellapi.h>
+#include <windows.h>
 
 namespace {
 
 struct Option {
   unsigned id;
-  bool Profile::* option;
+  bool Profile::*option;
 };
 
-const Option options[] =  {
-  { ID_SHOW_WRITEOK, &Profile::show_write_ok },
-  { ID_SHOW_EVENTS, &Profile::event_auto_show },
-  { ID_HIDE_EVENTS, &Profile::event_auto_hide },
-  { ID_WRITE_CONFIRMATION, &Profile::control_confirmation },
-  { ID_OPT_SPEECH, &Profile::speech_enabled },
-  { ID_EVENT_FLASH_WINDOW, &Profile::event_flash_window },
-  { ID_EVENT_PLAY_SOUND, &Profile::event_play_sound },
-  { ID_MODUS2_MODE, &Profile::modus2 },
-  { 0, NULL }
-};
+const Option options[] = {
+    {ID_SHOW_WRITEOK, &Profile::show_write_ok},
+    {ID_SHOW_EVENTS, &Profile::event_auto_show},
+    {ID_HIDE_EVENTS, &Profile::event_auto_hide},
+    {ID_WRITE_CONFIRMATION, &Profile::control_confirmation},
+    {ID_OPT_SPEECH, &Profile::speech_enabled},
+    {ID_EVENT_FLASH_WINDOW, &Profile::event_flash_window},
+    {ID_EVENT_PLAY_SOUND, &Profile::event_play_sound},
+    {ID_MODUS2_MODE, &Profile::modus2},
+    {0, NULL}};
 
-static bool Profile::* GetOption(UINT id) {
+static bool Profile::*GetOption(UINT id) {
   for (int i = 0; options[i].id; ++i)
     if (options[i].id == id)
       return options[i].option;
@@ -51,10 +52,11 @@ void OpenPublicFolder() {
   base::FilePath path;
   if (!PathService::Get(client::DIR_PUBLIC, &path))
     return;
-  ShellExecuteW(nullptr, L"open", path.value().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+  ShellExecuteW(nullptr, L"open", path.value().c_str(), nullptr, nullptr,
+                SW_SHOWNORMAL);
 }
 
-} // namespace
+}  // namespace
 
 CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
   auto* active_view = main_window_.GetActiveView();
@@ -83,7 +85,8 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
       return active_view ? this : NULL;
 
     case ID_PRINT:
-      return active_view && active_view->window_info().printable() ? this : NULL;
+      return active_view && active_view->window_info().printable() ? this
+                                                                   : NULL;
 
     case ID_TOOLBAR_TOP:
     case ID_TOOLBAR_LEFT:
@@ -108,14 +111,16 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
   if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
     if (!win_info->createable())
       return NULL;
-    if (win_info->requires_admin_rights() && !session_service_.IsAdministrator())
+    if (win_info->requires_admin_rights() &&
+        !session_service_.HasPrivilege(scada::Privilege::Configure)) {
       return NULL;
+    }
     return this;
   }
 
   if (GetOption(command_id))
     return this;
-  
+
   return NULL;
 }
 
@@ -151,7 +156,7 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
            main_window_.FindOpenedViewByType(command_id);
   }
 
-  if (bool Profile::* option = GetOption(command_id))
+  if (bool Profile::*option = GetOption(command_id))
     return profile_.*option;
 
   return false;
@@ -161,32 +166,33 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_HELP_MANUAL: {
       WindowDefinition def(GetWindowInfo(ID_WEB_VIEW));
-      def.title = L"Äîêóìåíòàöèÿ";
+      def.title = L"Ð”Ð¾ÐºÑƒÐ¼ÐµÐ½Ñ‚Ð°Ñ†Ð¸Ñ";
       def.path = base::FilePath(
           FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));
       main_window_.OpenView(def, true);
       return;
     }
-      
+
     case ID_APP_ABOUT:
       ShowAboutDialog();
       return;
-      
+
     case ID_ACKNOWLEDGE_ALL:
       event_manager_.AcknowledgeAll();
       local_events_.AcknowledgeAll();
       return;
 
     case ID_EXPORT_CONFIGURATION_TO_EXCEL:
-      ExportConfigurationToExcel(dialog_service_, view_service_, node_service_);
+      ExportConfigurationToExcel(node_service_, dialog_service_);
       return;
 
     case ID_IMPORT_CONFIGURATION_FROM_EXCEL:
-      ImportConfigurationFromExcel(dialog_service_, view_service_, node_service_, task_manager_);
+      ImportConfigurationFromExcel(node_service_, task_manager_,
+                                   dialog_service_);
       return;
 
     case ID_WINDOW_NEW:
-      new_main_window_();
+      main_window_manager_.CreateMainWindow();
       return;
 
     case ID_PAGE_NEW: {
@@ -197,23 +203,19 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     }
 
     case ID_PAGE_RENAME: {
-      auto* page = main_window_.GetCurrentPage();
-      if (!page)
-        return;
-      auto title = page->title;
-      if (RunPromptDialog(dialog_service_, L"Èìÿ:", L"Ïåðåèìåíîâàíèå", title))
+      auto& page = main_window_.current_page();
+      auto title = page.title;
+      if (RunPromptDialog(dialog_service_, L"Ð˜Ð¼Ñ:", L"ÐŸÐµÑ€ÐµÐ¸Ð¼ÐµÐ½Ð¾Ð²Ð°Ð½Ð¸Ðµ", title))
         main_window_.SetPageTitle(title);
       return;
     }
 
     case ID_PAGE_DELETE: {
-      Profile::PageMap& pages = profile_.pages();
-      auto* page = main_window_.GetCurrentPage();
-      if (!page)
-        return;
-      pages.erase(page->id);
+      Profile::PageMap& pages = profile_.pages;
+      auto& page = main_window_.current_page();
+      pages.erase(page.id);
       // Select first not opened page.
-      Page* select_page = find_closed_page_();
+      Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
       if (!select_page)
         select_page = &profile_.CreatePage();
       main_window_.OpenPage(*select_page);
@@ -267,7 +269,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
   }
 
   // Check option command.
-  if (bool Profile::* option = GetOption(command_id)) {
+  if (bool Profile::*option = GetOption(command_id)) {
     profile_.*option = !(profile_.*option);
     return;
   }
@@ -285,13 +287,13 @@ void MainCommands::AddToFavourites() {
 
   auto title = view->GetWindowTitle();
   base::string16 folder_name;
-  if (!ShowAddFavouritesDialog(title, folder_name, favourites_))
+  if (!ShowAddFavouritesDialog(favourites_, title, folder_name))
     return;
 
   WindowDefinition definition(view->window_info());
   view->Save(definition);
   definition.title = title;
-  
+
   const Page& folder = favourites_.GetOrAddFolder(folder_name.c_str());
   favourites_.Add(definition, folder);
 }
@@ -305,6 +307,6 @@ void MainCommands::ShowRenameWindowDialog() {
     return;
 
   base::string16 title = view->GetWindowTitle();
-  if (RunPromptDialog(dialog_service_, L"Èìÿ:", L"Ïåðåèìåíîâàòü", title))
+  if (RunPromptDialog(dialog_service_, L"Ð˜Ð¼Ñ:", L"ÐŸÐµÑ€ÐµÐ¸Ð¼ÐµÐ½Ð¾Ð²Ð°Ñ‚ÑŒ", title))
     view->SetUserTitle(title);
 }

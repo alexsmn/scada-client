@@ -29,17 +29,8 @@ bool SheetCell::SetFormula(const std::string& formula) {
 
   bool is_formula = !formula.empty() && formula[0] == '=';
   if (is_formula) {
-    std::string formula2 = formula.c_str() + 1;
-
-    try {
-      timed_data_.Connect(model_.timed_data_service(), formula2);
-
-    } catch (const std::exception&) {
-      text_ = L"#Œÿ»¡ ¿?";
-      NotifyChanged();
-      return false;
-    }
-
+    auto formula2 = base::StringPiece{formula}.substr(1);
+    timed_data_.Connect(model_.timed_data_service(), formula2);
     SetBlinking(timed_data_.alerting());
     UpdateTextFromFormula();
 

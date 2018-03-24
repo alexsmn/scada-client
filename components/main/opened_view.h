@@ -5,12 +5,12 @@
 #include "base/memory/weak_ptr.h"
 #include "base/strings/string16.h"
 #include "base/timer/timer.h"
-#include "core/configuration_types.h"
 #include "command_handler.h"
+#include "common/aliases.h"
+#include "controller_delegate.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "core/status.h"
-#include "controller_delegate.h"
 
 #if defined(UI_VIEWS)
 #include "ui/gfx/image/image.h"
@@ -18,22 +18,17 @@
 #include "ui/views/drop_controller.h"
 #endif
 
-namespace base {
-class FilePath;
-}
-
 namespace events {
 class EventManager;
 }
 
 namespace scada {
-class HistoryService;
 class MethodService;
 class MonitoredItemService;
 class NodeManagementService;
+class HistoryService;
 class SessionService;
-class ViewService;
-}
+}  // namespace scada
 
 class ActionManager;
 class ContentsModel;
@@ -42,9 +37,9 @@ class DialogService;
 class Favourites;
 class FileCache;
 class LocalEvents;
-class NodeService;
 class MainWindow;
-class OpenedView;
+class MainWindowManager;
+class NodeService;
 class PortfolioManager;
 class Profile;
 class SelectionCommands;
@@ -55,42 +50,45 @@ struct WindowInfo;
 
 struct OpenedViewContext {
   MainWindow* main_window_;
-  const WindowDefinition& definition_;
+  const AliasResolver alias_resolver_;
+  TaskManager& task_manager_;
+  scada::MethodService& method_service_;
+  scada::SessionService& session_service_;
+  scada::NodeManagementService& node_management_service_;
+  events::EventManager& event_manager_;
+  scada::HistoryService& history_service_;
+  scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
-  TaskManager& task_manager_;
-  Profile& profile_;
   ActionManager& action_manager_;
   LocalEvents& local_events_;
-  events::EventManager& event_manager_;
-  FileCache& file_cache_;
-  scada::NodeManagementService& node_management_service_;
-  scada::HistoryService& history_service_;
-  scada::MethodService& method_service_;
   Favourites& favourites_;
+  FileCache& file_cache_;
+  Profile& profile_;
   DialogService& dialog_service_;
-  std::function<OpenedView*(const base::FilePath& path)> find_opened_view_;
-  scada::SessionService& session_service_;
-  scada::MonitoredItemService& monitored_item_service_;
-  scada::ViewService& view_service_;
+  MainWindowManager& main_window_manager_;
 };
 
-class OpenedView : public CommandHandler,
+class OpenedView : private OpenedViewContext,
+                   public CommandHandler,
 #if defined(UI_VIEWS)
                    public views::DropController,
                    private views::ContextMenuController,
 #endif
-                   private ControllerDelegate,
-                   private OpenedViewContext {
+                   private ControllerDelegate {
  public:
-  explicit OpenedView(const OpenedViewContext& context);
+  OpenedView(const OpenedViewContext& context,
+             const WindowDefinition& definition);
   virtual ~OpenedView();
 
   Controller& controller() { return *controller_; }
   const WindowInfo& window_info() const { return window_info_; }
   int window_id() const { return window_id_; }
-  MainWindow* main_window() const { return main_window_; }
+  MainWindow& main_window() const {
+    assert(main_window_);
+    return *main_window_;
+  }
   bool locked() const { return locked_; }
 
   UiView* view() { return view_; }
@@ -112,6 +110,7 @@ class OpenedView : public CommandHandler,
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command_id) override;
+  virtual bool IsCommandChecked(unsigned command_id) const override;
 
 #if defined(UI_VIEWS)
   // views::DropController
@@ -122,7 +121,8 @@ class OpenedView : public CommandHandler,
   virtual int OnPerformDrop(const ui::DropTargetEvent& event) override;
 
   // views::ContextMenuController
-  virtual void ShowContextMenuForView(views::View* source, const gfx::Point& point) override;
+  virtual void ShowContextMenuForView(views::View* source,
+                                      const gfx::Point& point) override;
 #endif
 
   // ControllerDelegate
@@ -135,13 +135,16 @@ class OpenedView : public CommandHandler,
 
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
   void CreateRecord(const scada::NodeId& type_node_id, int tag);
-  void OnCreateRecordComplete(const scada::QualifiedName& browse_name,
-                              const scada::Status& status, const scada::NodeId& node_id);
+  void OnCreateRecordComplete(const scada::LocalizedText& display_name,
+                              const scada::Status& status,
+                              const scada::NodeId& node_id);
 
   // ControllerDelegate
-  virtual void OpenView(const WindowDefinition& def) override;
   virtual void SetTitle(const base::StringPiece16& title) override;
-  virtual void ShowPopupMenu(unsigned resource_id, const gfx::Point& point, bool right_click) override;
+  virtual void ShowPopupMenu(unsigned resource_id,
+                             const gfx::Point& point,
+                             bool right_click) override;
+  virtual void OpenView(const WindowDefinition& def) override;
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override;
   virtual ContentsModel* GetActiveContentsModel() override;
   virtual void AddContentsObserver(ContentsObserver& observer) override;
@@ -150,7 +153,7 @@ class OpenedView : public CommandHandler,
   std::unique_ptr<Controller> controller_;
 
   const WindowInfo& window_info_;
-  int window_id_ = 0;
+  int window_id_;
 
   std::unique_ptr<SelectionCommands> selection_commands_;
   bool modified_ = false;
@@ -161,7 +164,7 @@ class OpenedView : public CommandHandler,
   base::RepeatingTimer update_working_timer_;
 
   UiView* view_ = nullptr;
-  
+
 #if defined(UI_VIEWS)
   gfx::Image image_;
 #endif
@@ -172,5 +175,5 @@ class OpenedView : public CommandHandler,
   // Window is locked for adding of new items.
   bool locked_ = false;
 
-  base::WeakPtrFactory<OpenedView> weak_factory_;
+  base::WeakPtrFactory<OpenedView> weak_factory_{this};
 };

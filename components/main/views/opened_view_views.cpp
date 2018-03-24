@@ -1,21 +1,35 @@
 #include "components/main/opened_view.h"
 
-#include "views/client_utils_views.h"
-#include "common_resources.h"
-#include "views/item_drag_data.h"
-#include "controller.h"
-#include "contents_model.h"
-#include "window_info.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
+#include "common/static_types.h"
+#include "common_resources.h"
+#include "components/main/action.h"
+#include "components/main/selection_commands.h"
+#include "components/main/views/main_window_views.h"
+#include "contents_model.h"
+#include "controller.h"
+#include "net/transport_string.h"
+#include "views/client_utils_views.h"
+#include "views/item_drag_data.h"
+#include "window_info.h"
 
-void OpenedView::ShowPopupMenu(unsigned resource_id, const gfx::Point& point, bool right_click) {
-  HMENU menu = CreatePopupMenu(resource_id, *this, action_manager_);
+void OpenedView::ShowPopupMenu(unsigned resource_id,
+                               const gfx::Point& point,
+                               bool right_click) {
+  assert(main_window_);
+
+  // TODO: Avoid the cast.
+  HMENU menu =
+      CreatePopupMenu(resource_id, *static_cast<MainWindowViews*>(main_window_),
+                      action_manager_);
   if (!menu)
     return;
 
   HMENU popup_menu = GetSubMenu(menu, 0);
   assert(popup_menu);
-  ::ShowPopupMenu(main_window_, popup_menu, point, right_click);
+  ::ShowPopupMenu(dialog_service_.GetDialogOwningWindow(), popup_menu, point,
+                  right_click);
 
   DestroyMenu(menu);
 }
@@ -40,9 +54,9 @@ void OpenedView::OnDragEntered(const ui::DropTargetEvent& event) {
 
 int OpenedView::OnDragUpdated(const ui::DropTargetEvent& event) {
   if (auto* drop_controller = controller_->GetDropController()) {
-    auto result = drop_controller->OnDragUpdated(event);
-    if (result != ui::DragDropTypes::DRAG_NONE)
-      return result;
+    auto controller_result = drop_controller->OnDragUpdated(event);
+    if (controller_result != ui::DragDropTypes::DRAG_NONE)
+      return controller_result;
   }
 
   ItemDragData item_data;
@@ -61,9 +75,9 @@ void OpenedView::OnDragDone() {
 
 int OpenedView::OnPerformDrop(const ui::DropTargetEvent& event) {
   if (auto* drop_controller = controller_->GetDropController()) {
-    auto result = drop_controller->OnPerformDrop(event);
-    if (result != ui::DragDropTypes::DRAG_NONE)
-      return result;
+    auto controller_result = drop_controller->OnPerformDrop(event);
+    if (controller_result != ui::DragDropTypes::DRAG_NONE)
+      return controller_result;
   }
 
   ItemDragData item_data;
@@ -71,7 +85,8 @@ int OpenedView::OnPerformDrop(const ui::DropTargetEvent& event) {
     if (window_info().can_insert_item()) {
       auto* contents_model = controller_->GetContentsModel();
       if (contents_model) {
-        contents_model->AddContainedItem(item_data.item_id(), ContentsModel::APPEND);
+        contents_model->AddContainedItem(item_data.item_id(),
+                                         ContentsModel::APPEND);
         return ui::DragDropTypes::DRAG_COPY;
       }
     }
@@ -89,12 +104,13 @@ void OpenedView::Print() {
   if (!printer_dc)
     return;	// TODO: message
 
-  int iWidth = printer_dc.GetDeviceCaps(PHYSICALWIDTH); 
-  int iHeight = printer_dc.GetDeviceCaps(PHYSICALHEIGHT); 
+  int iWidth = printer_dc.GetDeviceCaps(PHYSICALWIDTH);
+  int iHeight = printer_dc.GetDeviceCaps(PHYSICALHEIGHT);
   int nLogx = printer_dc.GetDeviceCaps(LOGPIXELSX);
   int nLogy = printer_dc.GetDeviceCaps(LOGPIXELSY);
 
-  RECT rcMM = { 0, 0, ::MulDiv(iWidth, 2540, nLogx), ::MulDiv(iHeight, 2540, nLogy) };
+  RECT rcMM = { 0, 0, ::MulDiv(iWidth, 2540, nLogx), ::MulDiv(iHeight, 2540,
+  nLogy) };
 
   CEnhMetaFileDC meta_dc(printer_dc, &rcMM);
   if (!active_view()->Print((HDC)meta_dc))
@@ -107,7 +123,8 @@ void OpenedView::Print() {
   view.SetEnhMetaFile(meta_dc.Close()); */
 }
 
-void OpenedView::ShowContextMenuForView(views::View* source, const gfx::Point& point) {
+void OpenedView::ShowContextMenuForView(views::View* source,
+                                        const gfx::Point& point) {
   auto menu_id = window_info().menu;
   if (menu_id == 0)
     menu_id = IDR_ITEM_POPUP;

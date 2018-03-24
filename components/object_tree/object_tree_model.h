@@ -5,21 +5,25 @@
 #include "timed_data/timed_data_spec.h"
 
 class Profile;
+class TimedDataService;
 
-class ObjectTreeModel : public ConfigurationTreeModel, private Blinker {
+struct ObjectTreeModelContext {
+  NodeService& node_service_;
+  TaskManager& task_manager_;
+  const NodeRef root_;
+  TimedDataService& timed_data_service_;
+  Profile& profile_;
+};
+
+class ObjectTreeModel : private ObjectTreeModelContext,
+                        public ConfigurationTreeModel,
+                        private Blinker {
  public:
-  ObjectTreeModel(scada::ViewService& view_service,
-                  NodeService& node_service,
-                  scada::NodeId root_id,
-                  TimedDataService& timed_data_service,
-                  Profile& profile);
+  explicit ObjectTreeModel(ObjectTreeModelContext&& context);
 
   void SetNodeVisible(ConfigurationTreeNode& node, bool visible);
 
   const rt::TimedDataSpec* GetTimedData(void* node) const;
-
-  // ConfigurationTreeModel
-  virtual bool AreChecksVisible() const override { return true; }
 
   // TreeModel
   virtual int GetColumnCount() const override;
@@ -29,23 +33,9 @@ class ObjectTreeModel : public ConfigurationTreeModel, private Blinker {
   virtual SkColor GetTextColor(void* node, int column_id) override;
   virtual SkColor GetBackgroundColor(void* node, int column_id) override;
 
- private:
-  struct VisibleNode {
-    bool fetched = false;
-    rt::TimedDataSpec spec;
-  };
-
-  void ConnectVisibleNode(VisibleNode& visible_node,
-                          ConfigurationTreeNode& tree_node);
-
   // Blinker
   virtual void OnBlink(bool state) override;
 
-  // NodeRefObserver
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-
-  TimedDataService& timed_data_service_;
-  Profile& profile_;
-
-  std::map<ConfigurationTreeNode*, VisibleNode> visible_nodes_;
+  typedef std::map<ConfigurationTreeNode*, rt::TimedDataSpec> NodeDataMap;
+  NodeDataMap visible_nodes_data_;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <set>
 
 using std::max;
 using std::min;
@@ -13,7 +14,6 @@ using std::min;
 #include <atlscrl.h>
 #include <atlwin.h>
 
-#include "base/memory/weak_ptr.h"
 #include "common/node_ref.h"
 #include "common/static_types.h"
 #include "common_resources.h"
@@ -22,27 +22,22 @@ using std::min;
 #include "node_combo_box.h"
 
 namespace scada {
-class NodeManagementService;
-class ViewService;
 struct NodeAttributes;
-}  // namespace scada
+}
 
 class NodeService;
-class PropertyPageViewContents;
 class TaskManager;
 
 struct RecordEditorContext {
-  scada::ViewService& view_service_;
-  NodeService& node_service_;
   TaskManager& task_manager_;
-  scada::NodeManagementService& node_management_service_;
+  NodeService& node_service_;
 };
 
-class RecordEditor : public ATL::CDialogImpl<RecordEditor>,
-                     public WTL::CScrollImpl<RecordEditor>,
-                     protected RecordEditorContext {
+class RecordEditor : protected RecordEditorContext,
+                     public ATL::CDialogImpl<RecordEditor>,
+                     public WTL::CScrollImpl<RecordEditor> {
  public:
-  RecordEditor(unsigned resource_id, RecordEditorContext&& context);
+  explicit RecordEditor(unsigned resource_id, RecordEditorContext&& context);
 
   const scada::NodeId& node_type_id() const { return node_type_id_; }
 
@@ -99,15 +94,14 @@ class RecordEditor : public ATL::CDialogImpl<RecordEditor>,
 
  private:
   scada::NodeId node_type_id_;  // editing table - shall correspond edit dialog
-
-  base::WeakPtrFactory<RecordEditor> weak_ptr_factory_{this};
 };
 
 namespace record_editors {
 
 class NamedRecordEditor : public RecordEditor {
  public:
-  NamedRecordEditor(unsigned resource_id, RecordEditorContext&& context);
+  explicit NamedRecordEditor(unsigned resource_id,
+                             RecordEditorContext&& context);
 
  protected:
   BEGIN_MSG_MAP(NamedRecordEditor)
@@ -156,7 +150,7 @@ class GroupEditor : public RecordEditor {
 
 class ItemEditor : public RecordEditor {
  public:
-  ItemEditor(unsigned resource_id, RecordEditorContext&& context);
+  ItemEditor(UINT IDD, RecordEditorContext&& context);
 
   BEGIN_MSG_MAP(ItemEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -196,7 +190,6 @@ class ItemEditor : public RecordEditor {
 
  private:
   bool SelectDevice(const scada::NodeId& device_id);
-  void SelectNestedName(const base::StringPiece& name);
 
   void LoadChannel(unsigned channel_no);
   void SaveChannel();
@@ -299,6 +292,8 @@ class TitEditor : public ItemEditor {
   CEdit wnd_ir_lo;
   CEdit wnd_ir_hi;
   CButton wnd_clamp;
+  CEdit wnd_aperture;
+  CEdit wnd_deadband;
   CComboBox wnd_fmt;
   CComboBox wnd_units;
   CButton wnd_conv_none;
@@ -312,12 +307,14 @@ class TitEditor : public ItemEditor {
   int clamp;
   std::string fmt;
   std::string units;
+  double aperture = 0.0;
+  double deadband = 0.0;
 };
 
 class TsFormatEditor : public RecordEditor,
                        public WTL::COwnerDraw<TsFormatEditor> {
  public:
-  TsFormatEditor(RecordEditorContext&& context);
+  explicit TsFormatEditor(RecordEditorContext&& context);
 
   virtual void ReadControlsData() override;
   virtual void ReadNodeToControls(const NodeRef& node) override;
@@ -352,7 +349,7 @@ class TsFormatEditor : public RecordEditor,
 
 class LinkEditor : public NamedRecordEditor {
  public:
-  LinkEditor(unsigned resource_id, RecordEditorContext&& context);
+  LinkEditor(UINT IDD, RecordEditorContext&& context);
 
   virtual void ReadControlsData() override;
   virtual void ReadNodeToControls(const NodeRef& node) override;
@@ -383,9 +380,9 @@ class LinkEditor : public NamedRecordEditor {
   net::TransportString transport_string_;
 };
 
-class IecLinkEditor : public LinkEditor {
+class Iec60870LinkEditor : public LinkEditor {
  public:
-  IecLinkEditor(unsigned resource_id, RecordEditorContext&& context);
+  Iec60870LinkEditor(UINT IDD, RecordEditorContext&& context);
 
   virtual void ReadControlsData() override;
   virtual void ReadNodeToControls(const NodeRef& node) override;
@@ -394,7 +391,7 @@ class IecLinkEditor : public LinkEditor {
       scada::NodeProperties& properties,
       scada::NodeReferences& references) override;
 
-  BEGIN_MSG_MAP(IecLinkEditor)
+  BEGIN_MSG_MAP(Iec60870LinkEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
   CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
@@ -446,9 +443,9 @@ class ModbusLinkEditor : public LinkEditor {
   cfg::ModbusEncoding mode_;
 };
 
-class IecDeviceEditor : public RecordEditor {
+class Iec60870DeviceEditor : public RecordEditor {
  public:
-  explicit IecDeviceEditor(RecordEditorContext&& context, bool iec104);
+  explicit Iec60870DeviceEditor(RecordEditorContext&& context);
 
   virtual void ReadControlsData() override;
   virtual void ReadNodeToControls(const NodeRef& node) override;
@@ -459,7 +456,7 @@ class IecDeviceEditor : public RecordEditor {
 
   void UpdateSync();
 
-  BEGIN_MSG_MAP(IecDeviceEditor)
+  BEGIN_MSG_MAP(Iec60870DeviceEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
   COMMAND_HANDLER(IDC_SYNC, BN_CLICKED, OnSync)
   CHAIN_MSG_MAP(__super)
@@ -471,8 +468,6 @@ class IecDeviceEditor : public RecordEditor {
                  HWND /*hWndCtl*/,
                  BOOL& /*bHandled*/);
 
-  const bool iec104_;
-
   // windows
   CEdit wnd_name;
   CEdit wnd_addr;
@@ -480,6 +475,7 @@ class IecDeviceEditor : public RecordEditor {
   CEdit wnd_inter_per;
   CButton wnd_sync;
   CEdit wnd_sync_per;
+  CButton utc_time_checkbox_;
   CEdit wnd_poll[16];
   // data
   scada::LocalizedText display_name_;
@@ -491,6 +487,7 @@ class IecDeviceEditor : public RecordEditor {
   int sync_per;
   int poll[16];
   bool disabled_;
+  bool utc_time_ = false;
 };
 
 class SimulationItemEditor : public RecordEditor {
@@ -592,6 +589,60 @@ class HistoricalDBEditor : public NamedRecordEditor {
 
  private:
   int depth_;
+};
+
+class Iec61850DeviceEditor : public RecordEditor {
+ public:
+  explicit Iec61850DeviceEditor(RecordEditorContext&& context);
+
+  virtual void ReadControlsData() override;
+  virtual void ReadNodeToControls(const NodeRef& node) override;
+  virtual void GetModifiedProperties(
+      scada::NodeAttributes& attributes,
+      scada::NodeProperties& properties,
+      scada::NodeReferences& references) override;
+
+  BEGIN_MSG_MAP(Iec61850DeviceEditor)
+  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+  CHAIN_MSG_MAP(__super)
+  END_MSG_MAP()
+
+  LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+
+  CEdit name_edit_;
+  CButton disabled_button_;
+  CEdit host_edit_;
+  CEdit port_edit_;
+
+  scada::LocalizedText display_name_;
+  bool disabled_;
+  std::string host_;
+  int port_;
+};
+
+class Iec61850RCBEditor : public RecordEditor {
+ public:
+  explicit Iec61850RCBEditor(RecordEditorContext&& context);
+
+  virtual void ReadControlsData() override;
+  virtual void ReadNodeToControls(const NodeRef& node) override;
+  virtual void GetModifiedProperties(
+      scada::NodeAttributes& attributes,
+      scada::NodeProperties& properties,
+      scada::NodeReferences& references) override;
+
+  BEGIN_MSG_MAP(Iec61850RCBEditor)
+  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+  CHAIN_MSG_MAP(__super)
+  END_MSG_MAP()
+
+  LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+
+  CEdit name_edit_;
+  CEdit reference_edit_;
+
+  scada::LocalizedText display_name_;
+  std::string reference_;
 };
 
 }  // namespace record_editors

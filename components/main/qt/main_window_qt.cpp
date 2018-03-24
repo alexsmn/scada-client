@@ -1,30 +1,28 @@
-#include "components/main/qt/main_window_qt.h"
+﻿#include "components/main/qt/main_window_qt.h"
+
+#include "client_utils.h"
+#include "common_resources.h"
+#include "components/main/action.h"
+#include "components/main/main_commands.h"
+#include "components/main/main_window_manager.h"
+#include "components/main/opened_view.h"
+#include "components/main/qt/view_manager_qt.h"
+#include "components/main/selection_commands.h"
+#include "controller.h"
+#include "selection_model.h"
+#include "services/file_cache.h"
+#include "services/profile.h"
+#include "window_info.h"
 
 #include <QAction>
-#include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
 #include <QLayout>
 #include <QMenuBar>
 #include <QStatusBar>
-#include <QStyleFactory>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QToolButton>
-
-#include "components/main/action.h"
-#include "client_utils.h"
-#include "common_resources.h"
-#include "components/main/selection_commands.h"
-#include "services/file_cache.h"
-#include "selection_model.h"
-#include "client_application.h"
-#include "controller.h"
-#include "components/main/opened_view.h"
-#include "services/profile.h"
-#include "window_info.h"
-#include "components/main/main_commands.h"
-#include "components/main/qt/view_manager_qt.h"
 
 namespace {
 
@@ -33,7 +31,7 @@ QPixmap LoadPixmap(unsigned resource_id) {
   DWORD size = SizeofResource(NULL, hres);
 
   HGLOBAL resource = LoadResource(NULL, hres);
-  
+
   LPVOID resource_data = LockResource(resource);
 
   QPixmap pixmap;
@@ -41,21 +39,19 @@ QPixmap LoadPixmap(unsigned resource_id) {
   return pixmap;
 }
 
-} // namespace
+}  // namespace
 
-MainWindowQt::MainWindowQt(ClientApplicationQt& app, MainWindowContext&& context)
-    : MainWindow(std::move(context)) {
+MainWindowQt::MainWindowQt(MainWindowContext&& context)
+    : MainWindow{std::move(context), dialog_service_} {
+  auto& prefs = GetPrefs();
+  setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
+              prefs.bounds.height());
+
   CreateToolbar();
 
-  // Init window.
-  {
-    setWindowTitle(tr("Telecontrol SCADA Client"));
+  view_manager_.reset(new ViewManagerQt{*this, *this});
 
-    auto& prefs = GetPrefs();
-    setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(), prefs.bounds.height());
-  }
-
-  view_manager_.reset(new ViewManagerQt(app, *this, this));
+  dialog_service_.parent_widget = this;
 
   Init(*view_manager_);
 
@@ -67,48 +63,54 @@ MainWindowQt::~MainWindowQt() {
   view_manager_.reset();
 }
 
-void MainWindowQt::CreateToolbar() {
-  context_menu_ = new QMenu(tr("Context"), this);
+void MainWindowQt::UpdateTitle() {}
 
-  display_menu_ = new QMenu(tr("Display"), this);
+void MainWindowQt::CreateToolbar() {
+  context_menu_ = new QMenu(this);
+  context_menu_->setTitle(tr("Context"));
+
+  display_menu_ = new QMenu(this);
+  display_menu_->setTitle(tr("Display"));
   FillDisplayMenu();
 
-  auto* graph_menu = new QMenu(tr("Graph"), this);
-  auto* table_menu = new QMenu(tr("Table"), this);
-  auto* rest_menu = new QMenu(tr("More"), this);
-  auto* page_menu = new QMenu(tr("Page"), this);
+  auto* graph_menu = new QMenu(this);
+  graph_menu->setTitle(tr("Graph"));
 
-  auto* settings_menu = new QMenu(tr("Settings"), this);
-  auto* style_menu = new QMenu(tr("Style"), this);
-  for (auto& style : QStyleFactory::keys())
-    style_menu->addAction(style, [this, style] { QApplication::setStyle(style); });
-  settings_menu->addMenu(style_menu);
+  auto* table_menu = new QMenu(this);
+  table_menu->setTitle(tr("Table"));
 
-  auto* menu_bar = new QMenuBar;
-  setMenuBar(menu_bar);
-  menu_bar->addMenu(display_menu_);
-  menu_bar->addMenu(graph_menu);
-  menu_bar->addMenu(table_menu);
-  menu_bar->addMenu(context_menu_);
-  menu_bar->addMenu(rest_menu);
-  menu_bar->addSeparator();
-  menu_bar->addMenu(page_menu);
-  menu_bar->addMenu(settings_menu);
-  menu_bar->addMenu(tr("Help"));
+  auto* rest_menu = new QMenu(this);
+  rest_menu->setTitle(tr("More"));
+
+  auto* page_menu = new QMenu(this);
+  page_menu->setTitle(tr("Page"));
+
+  setMenuBar(new QMenuBar);
+  menuBar()->addMenu(display_menu_);
+  menuBar()->addMenu(graph_menu);
+  menuBar()->addMenu(table_menu);
+  menuBar()->addMenu(context_menu_);
+  menuBar()->addMenu(rest_menu);
+  menuBar()->addSeparator();
+  menuBar()->addMenu(page_menu);
+  menuBar()->addMenu(tr("Settings"));
+  menuBar()->addMenu(tr("Help"));
 
   setStatusBar(new QStatusBar);
 
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
-    auto* action = new QAction(QString::fromStdWString(action_info->GetShortTitle()), this);
-    action->setPriority(collapsible ? QAction::LowPriority : QAction::NormalPriority);
+    auto* action = new QAction(
+        QString::fromStdWString(action_info->GetShortTitle()), this);
+    action->setPriority(collapsible ? QAction::LowPriority
+                                    : QAction::NormalPriority);
     action->setVisible(false);
     if (action_info->image_id() != 0)
       action->setIcon(QIcon(LoadPixmap(action_info->image_id())));
     auto command_id = action_info->command_id();
-    QObject::connect(action, &QAction::triggered,
-        [this, command_id](bool checked) {
-          auto* handler = main_commands().GetCommandHandler(command_id);
+    QObject::connect(
+        action, &QAction::triggered, [this, command_id](bool checked) {
+          auto* handler = main_commands_->GetCommandHandler(command_id);
           if (handler && handler->IsCommandEnabled(command_id))
             handler->ExecuteCommand(command_id);
         });
@@ -136,7 +138,8 @@ void MainWindowQt::CreateToolbar() {
         if (!category_action.menu) {
           auto* button = new QToolButton();
           auto* menu = new QMenu(this);
-          auto text = QString::fromWCharArray(GetCommandCategoryTitle(action_info->category_));
+          auto text = QString::fromWCharArray(
+              GetCommandCategoryTitle(action_info->category_));
           button->setMenu(menu);
           button->setPopupMode(QToolButton::InstantPopup);
           button->setText(text);
@@ -153,11 +156,12 @@ void MainWindowQt::CreateToolbar() {
 
   for (int i = 0; i < VIEW_TYPE_COUNT; ++i) {
     auto& window_info = g_window_infos[i];
-    auto* action = new QAction(QString::fromWCharArray(window_info.title), this);
+    auto* action =
+        new QAction(QString::fromWCharArray(window_info.title), this);
     auto command_id = window_info.command_id;
-    QObject::connect(action, &QAction::triggered,
-        [this, command_id](bool checked) {
-          auto* handler = main_commands().GetCommandHandler(command_id);
+    QObject::connect(
+        action, &QAction::triggered, [this, command_id](bool checked) {
+          auto* handler = main_commands_->GetCommandHandler(command_id);
           if (handler && handler->IsCommandEnabled(command_id))
             handler->ExecuteCommand(command_id);
         });
@@ -192,14 +196,13 @@ void MainWindowQt::CreateToolbar() {
   page_menu->addAction(FindAction(ID_PAGE_RENAME));
 }
 
-void MainWindowQt::SetWindowFlashing(bool flashing) {
-}
+void MainWindowQt::SetWindowFlashing(bool flashing) {}
 
 void MainWindowQt::OnSelectionChanged() {
   for (auto& p : action_map_) {
     auto command_id = p.first;
     auto* action = p.second;
-    auto* handler = main_commands().GetCommandHandler(p.first);
+    auto* handler = main_commands_->GetCommandHandler(p.first);
     action->setVisible(!!handler);
     if (handler) {
       bool enabled = handler->IsCommandEnabled(command_id);
@@ -222,18 +225,21 @@ void MainWindowQt::OnSelectionChanged() {
   }
 }
 
-void MainWindowQt::UpdateToolbarPosition() {
-}
+void MainWindowQt::UpdateToolbarPosition() {}
+
+void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
+                                      const gfx::Point& point) {}
 
 void MainWindowQt::FillDisplayMenu() {
   display_menu_->clear();
 
   for (auto& entry : file_cache_.GetList(VIEW_TYPE_MODUS)) {
-    auto* action = display_menu_->addAction(QString::fromStdWString(entry.title));
+    auto* action =
+        display_menu_->addAction(QString::fromStdWString(entry.title));
     auto path = entry.path;
     QObject::connect(action, &QAction::triggered, [this, path] {
       // find existing display
-      auto* view = find_opened_view_(path);
+      auto view = main_window_manager_.FindOpenedViewByFilePath(path);
       if (view) {
         view->Activate();
       } else {
@@ -249,14 +255,4 @@ void MainWindowQt::FillDisplayMenu() {
 QAction* MainWindowQt::FindAction(unsigned command_id) {
   auto i = action_map_.find(command_id);
   return i == action_map_.end() ? nullptr : i->second;
-}
-
-void MainWindowQt::OnShowTabPopupMenu(OpenedView& view, const gfx::Point& point) {
-}
-
-void MainWindowQt::UpdateTitle() {
-}
-
-DialogServiceQt::DialogParentType MainWindowQt::GetParentView() {
-  return this;
 }

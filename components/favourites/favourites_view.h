@@ -4,8 +4,8 @@
 
 #include "controller.h"
 
-class FavouritesTreeModel;
 class Tree;
+class FavouritesTreeModel;
 class WindowDefinition;
 
 class FavouritesView : public Controller {

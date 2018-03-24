@@ -1,16 +1,12 @@
 #pragma once
 
-#include "core/data_services.h"
+#include "components/login/login_controller.h"
 #include "core/data_services_factory.h"
-#include "core/status.h"
+#include "qt/dialog_service_impl_qt.h"
 #include "ui_login_dialog.h"
 
 #include <QDialog>
 #include <memory>
-
-namespace scada {
-class SessionService;
-}
 
 class QDialogButtonBox;
 class QCheckBox;
@@ -21,29 +17,20 @@ class LoginDialog : public QDialog {
   Q_OBJECT
 
  public:
-  explicit LoginDialog(const DataServicesContext& services_context);
+  explicit LoginDialog(DataServicesContext&& services_context);
   ~LoginDialog();
 
-  DataServices& services() { return services_; }
+  DataServices services;
 
  public Q_SLOTS:
   virtual void accept() override;
 
  private:
-  void OnLoginResult(const scada::Status& result);
-
-  void SetControlsEnabled(bool enabled);
-
-  DataServicesContext services_context_;
-  DataServices services_;
+  void Login();
+  void EnableControls(bool enable);
 
   Ui::LoginDialog ui;
 
-  QString user_name_;
-  QString password_;
-  QString server_;
-  bool auto_login_ = false;
-  QStringList user_list_;
-
-  std::shared_ptr<bool> cancelation_;
+  DialogServiceImplQt dialog_service_;
+  LoginController controller_;
 };

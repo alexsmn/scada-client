@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/pool.h"
-
 #include <SkColor.h>
+
 #include <string>
 
 class ConditionalFormatBase {

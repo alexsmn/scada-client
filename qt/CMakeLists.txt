@@ -43,8 +43,11 @@ target_sources(client_qt PUBLIC ${TRANSLATIONS})
 
 # UT-s
 
-# ADD_EXECUTABLE(client_unittests_qt WIN32 ${unittests})
+# LIST(APPEND client_unittests_qt_sources ${CLIENT_SOURCES} ${client_qt_sources} ${CLIENT_UT_SOURCES})
+# LIST(REMOVE_ITEM client_unittests_qt_sources "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 
-# TARGET_LINK_LIBRARIES(client_unittests_qt ${libs} gmock_main)
-# SET_PROPERTY(TARGET client_unittests_qt APPEND PROPERTY COMPILE_FLAGS "-DUI_QT")
-# SET_PROPERTY(TARGET client_unittests_qt PROPERTY FOLDER ${client_folder})
+# ADD_EXECUTABLE(client_qt_unittests WIN32 ${client_unittests_qt_sources})
+# target_link_libraries(client_qt_unittests PUBLIC ${client_qt_libs} gmock_main)
+# SET_PROPERTY(TARGET client_qt_unittests APPEND PROPERTY COMPILE_FLAGS "-DUI_QT")
+
+# SET_PROPERTY(TARGET client_qt_unittests PROPERTY FOLDER ${client_folder})

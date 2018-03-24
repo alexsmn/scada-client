@@ -8,17 +8,15 @@
 #include "base/win/scoped_variant.h"
 #include "client_paths.h"
 #include "controller_factory.h"
+#include "views/activex_host.h"
 #include "window_definition.h"
-#include "views/client_application_views.h"
 
 #include <exdisp.h>
 
 REGISTER_CONTROLLER(WebView, ID_WEB_VIEW);
 
 WebView::WebView(const ControllerContext& context)
-    : ActiveXControl{*g_application_views},
-      Controller{context} {
-}
+    : Controller{context}, ActiveXControl{ActiveXHost::instance()} {}
 
 views::View* WebView::Init(const WindowDefinition& definition) {
   url_ = definition.path.value();
@@ -45,9 +43,10 @@ void WebView::NativeControlCreated(HWND window_handle) {
   QueryControl(IID_IWebBrowser2, web.ReceiveVoid());
   if (web) {
     web->put_Silent(TRUE);
-    //web->put_Offline(TRUE);
+    // web->put_Offline(TRUE);
     base::win::ScopedVariant e;
     VARIANT* empty = const_cast<VARIANT*>(e.ptr());
-    web->Navigate(base::win::ScopedBstr(url_.c_str()), empty, empty, empty, empty);
+    web->Navigate(base::win::ScopedBstr(url_.c_str()), empty, empty, empty,
+                  empty);
   }
 }

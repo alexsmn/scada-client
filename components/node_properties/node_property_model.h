@@ -1,68 +1,48 @@
 #pragma once
 
-#include <map>
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
-#include "ui/base/models/tree_model.h"
-#include "services/property_defs.h"
-#include "common/node_ref.h"
 #include "common/node_observer.h"
+#include "common/node_ref.h"
+#include "core/configuration_types.h"
+#include "services/property_defs.h"
+#include "ui/base/models/property_list_model.h"
 
+class NodeService;
 class PropertyDefinition;
-class TaskManager;
-struct PropertyContext;
 
-class NodePropertyModel : public ui::TreeModel,
+class NodePropertyModel : private PropertyContext,
+                          public ui::PropertyListModel,
                           private NodeRefObserver {
  public:
-  using Nodes = std::vector<NodeRef>;
-  using NodeIds = std::vector<scada::NodeId>;
+  typedef std::vector<NodeRef> Nodes;
 
-  NodePropertyModel(const PropertyContext& context, NodeIds node_ids);
+  NodePropertyModel(NodeService& node_service,
+                    TaskManager& task_manager,
+                    Nodes nodes);
   virtual ~NodePropertyModel();
 
-  virtual int GetColumnCount() const { return 2; }
-
-  virtual void* GetRoot() override { return this; }
-  virtual void* GetParent(void* node) override;
-  virtual int GetChildCount(void* parent) override;
-  virtual void* GetChild(void* parent, int index) override;
-  virtual base::string16 GetText(void* node, int column_id) override;
-  virtual void SetText(void* node, int column_id, const base::string16& text) override;
+  virtual int GetCount() override;
+  virtual base::string16 GetName(int index) override;
+  virtual base::string16 GetValue(int index) override;
+  virtual bool IsInherited(int index) override;
+  virtual void SetValue(int index, const base::string16& value) override;
 
  private:
-  void SetNodes(const Nodes& nodes);
-  void UpdateNode(const scada::NodeId& node_id);
-
-  virtual int GetCount();
-  virtual base::string16 GetName(int index);
-  virtual base::string16 GetValue(int index);
-  virtual bool IsInherited(int index);
-  virtual void SetValue(int index, const base::string16& value);
-
-  int NodeToIndex(void* node) const;
   int FindProperty(const scada::NodeId& prop_type_id) const;
-  int FindProperty(scada::AttributeId attribute_id) const;
 
-  // scada::NodeRefObserver
-  virtual void OnModelChange(const ModelChangeEvent& event) override;
+  // NodeRefObserver
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  PropertyContext context_;
-
-  std::map<scada::NodeId, NodeRef> nodes_;
-  NodeRef node_;
+  Nodes nodes_;
 
   struct Property {
-    base::string16 name;
+    scada::LocalizedText display_name;
     base::string16 string_value;
-    scada::AttributeId attribute_id;
     const PropertyDefinition* def;
     scada::NodeId prop_type_id;
   };
 
   std::vector<Property> properties_;
-
-  base::WeakPtrFactory<NodePropertyModel> weak_ptr_factory_{this};
 };

@@ -2,11 +2,11 @@
 
 #include <memory>
 
+#include "common/node_observer.h"
 #include "controller.h"
+#include "core/configuration_types.h"
 #include "ui/views/controls/native_control.h"
 #include "ui/views/controls/scroll_view.h"
-#include "core/configuration_types.h"
-#include "common/node_observer.h"
 
 class RecordEditor;
 
@@ -23,8 +23,7 @@ class PropertyPageViewContents : public views::NativeControl {
   std::unique_ptr<RecordEditor> editor_;
 };
 
-class PropertyPageView : public Controller,
-                         private NodeRefObserver {
+class PropertyPageView : public Controller, private NodeRefObserver {
  public:
   explicit PropertyPageView(const ControllerContext& context);
   ~PropertyPageView();
@@ -34,12 +33,12 @@ class PropertyPageView : public Controller,
   virtual void Save(WindowDefinition& definition) override;
 
  private:
-  void SetNode(const NodeRef& node, const NodeRef& parent);
+  void SetNode(const NodeRef& node);
 
   // NodeRefObserver
-  virtual void OnModelChange(const ModelChangeEvent& event) override;
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
 
-  scada::NodeId node_id_;
+  NodeRef node_;
   views::View* view_ = nullptr;
   PropertyPageViewContents* contents_ = nullptr;
 

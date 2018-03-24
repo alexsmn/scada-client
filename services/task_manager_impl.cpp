@@ -2,23 +2,24 @@
 
 #include "commands/views/progress_dialog.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "core/node_management_service.h"
 #include "core/status.h"
 #include "services/local_events.h"
 #include "services/profile.h"
-#include "translation.h"
 
 namespace {
 
-std::string FormatReference(NodeService& node_service,
-                            const scada::NodeId& reference_type_id,
-                            const scada::NodeId& source_id,
-                            const scada::NodeId& target_id) {
+base::string16 FormatReference(NodeService& node_service,
+                               const scada::NodeId& reference_type_id,
+                               const scada::NodeId& source_id,
+                               const scada::NodeId& target_id,
+                               bool add) {
   return base::StringPrintf(
-      "%s {%s} %s",
-      node_service.GetNode(source_id).browse_name().name().c_str(),
-      node_service.GetNode(reference_type_id).browse_name().name().c_str(),
-      node_service.GetNode(target_id).browse_name().name().c_str());
+      L"%ls типа %ls от %ls к %ls", add ? L"Создание связи" : L"Удаление связи",
+      GetDisplayName(node_service, reference_type_id).c_str(),
+      GetDisplayName(node_service, source_id).c_str(),
+      GetDisplayName(node_service, target_id).c_str());
 }
 
 }  // namespace
@@ -45,129 +46,110 @@ void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
                                      scada::NodeAttributes attributes,
                                      scada::NodeProperties properties,
                                      InsertCallback callback) {
+  auto type = node_service_.GetNode(type_id);
+  if (!type) {
+    assert(false);
+    return;
+  }
+
+  if (type.node_class() != scada::NodeClass::ObjectType &&
+      type.node_class() != scada::NodeClass::VariableType) {
+    assert(false);
+    return;
+  }
+
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.GetNode(type_id).Fetch(
-      NodeFetchStatus::NodeOnly(), [=](const NodeRef& type_definition) {
-        if (!weak_ptr.get())
-          return;
+  auto node_class = type.node_class() == scada::NodeClass::ObjectType
+                        ? scada::NodeClass::Object
+                        : scada::NodeClass::Variable;
 
-        if (!type_definition.status()) {
-          // TODO: Report error.
-          assert(false);
-          return;
-        }
+  PostTask(L"Вставка", [=,
+                        &node_management_service = node_management_service_] {
+    node_management_service.CreateNode(
+        requested_id, parent_id, node_class, type_id, std::move(attributes),
+        [weak_ptr, properties, callback](const scada::Status& status,
+                                         const scada::NodeId& node_id) mutable {
+          auto ptr = weak_ptr.get();
+          if (!ptr)
+            return;
 
-        if (type_definition.node_class() != scada::NodeClass::ObjectType &&
-            type_definition.node_class() != scada::NodeClass::VariableType) {
-          // TODO: Report error.
-          assert(false);
-          return;
-        }
+          ptr->ReportRequestCompletion(status, base::string16());
 
-        auto node_class =
-            type_definition.node_class() == scada::NodeClass::ObjectType
-                ? scada::NodeClass::Object
-                : scada::NodeClass::Variable;
+          if (properties.empty() || !status) {
+            if (callback)
+              callback(status, node_id);
+            return;
+          }
 
-        PostTask(L"Вставка", [=] {
-          node_management_service_.CreateNode(
-              requested_id, parent_id, node_class, type_id,
-              std::move(attributes),
-              [=](const scada::Status& status, const scada::NodeId& node_id) {
-                if (!weak_ptr.get())
-                  return;
-
-                // Attributes have already been applied.
-
-                if (properties.empty()) {
-                  ReportRequestCompletion(status, base::string16());
-                  return;
-                }
-
-                PostUpdateTask(node_id, {}, std::move(properties),
-                               [=](const scada::Status& status) {
-                                 if (!weak_ptr.get())
-                                   return;
-                                 ReportRequestCompletion(status,
-                                                         base::string16());
-                                 callback(status, node_id);
-                               });
-              });
+          ptr->PostUpdateTask(node_id, {}, properties,
+                              [node_id, callback](const scada::Status& status) {
+                                if (callback)
+                                  callback(status, node_id);
+                              });
         });
-      });
+  });
 }
 
 void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
                                      scada::NodeAttributes attributes,
                                      scada::NodeProperties properties,
                                      UpdateCallback callback) {
-  assert(!attributes.empty() || !properties.empty());
-
+  base::string16 title = GetDisplayName(node_service_, node_id);
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.GetNode(node_id).Fetch(
-      NodeFetchStatus::NodeOnly(), [=](const NodeRef& node) {
-        if (!weak_ptr.get())
-          return;
+  PostTask(base::StringPrintf(L"Изменение %ls", title.c_str()), [=] {
+    node_service_.GetNode(node_id).Fetch(
+        NodeFetchStatus::NodeOnly(),
+        [weak_ptr, node_id, &node_management_service = node_management_service_,
+         attributes, properties, callback](const NodeRef& node) {
+          std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
+          nodes.reserve(1 + properties.size());
+          if (!attributes.empty())
+            nodes.emplace_back(node_id, std::move(attributes));
+          for (auto& [prop_decl_id, value] : properties) {
+            auto prop_id = node[prop_decl_id].id();
+            assert(!prop_id.is_null());
+            scada::NodeAttributes attributes;
+            attributes.value = std::move(value);
+            nodes.emplace_back(std::move(prop_id), std::move(attributes));
+          }
 
-        if (!node.status()) {
-          // TODO: Report error.
-          assert(false);
-          return;
-        }
+          node_management_service.ModifyNodes(
+              nodes, [weak_ptr, node_id, callback](
+                         const scada::Status& status,
+                         const std::vector<scada::Status>& results) {
+                if (auto* ptr = weak_ptr.get())
+                  ptr->ReportRequestCompletion(status, base::string16());
 
-        base::string16 title = ToString16(node.display_name());
-
-        std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
-        nodes.reserve(1 + properties.size());
-
-        if (!attributes.empty())
-          nodes.emplace_back(node_id, std::move(attributes));
-
-        for (auto& p : properties) {
-          auto id = node[p.first].id();
-          // TODO: !id.is_null()
-          scada::NodeAttributes attributes;
-          attributes.set_value(p.second);
-          nodes.emplace_back(std::move(id), std::move(attributes));
-        }
-
-        PostTask(base::StringPrintf(L"Изменение %ls", title.c_str()), [=] {
-          node_management_service_.ModifyNodes(
-              nodes, [=](const scada::Status& status,
-                         const std::vector<scada::Status>& statuses) {
-                if (!weak_ptr.get())
-                  return;
-                ReportRequestCompletion(statuses.front(), base::string16());
                 if (callback)
                   callback(status);
               });
         });
-      });
+  });
 }
 
 void TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
-  base::string16 title =
-      ToString16(node_service_.GetNode(node_id).display_name());
+  base::string16 title = GetDisplayName(node_service_, node_id);
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  PostTask(base::StringPrintf(L"Удаление %ls", title.c_str()), [=] {
-    node_management_service_.DeleteNode(
-        node_id, true,
-        [weak_ptr](const scada::Status& status,
-                   const scada::NodeIdSet* relations) {
-          if (auto ptr = weak_ptr.get())
-            ptr->OnDeleteRecordComplete(status, relations);
-        });
-  });
+  PostTask(base::StringPrintf(L"Удаление %ls", title.c_str()),
+           [=, &node_management_service = node_management_service_] {
+             node_management_service.DeleteNode(
+                 node_id, true,
+                 [weak_ptr](const scada::Status& status,
+                            const scada::NodeIdSet* relations) {
+                   if (auto ptr = weak_ptr.get())
+                     ptr->OnDeleteRecordComplete(status, relations);
+                 });
+           });
 }
 
 void TaskManagerImpl::PostAddReference(const scada::NodeId& reference_type_id,
                                        const scada::NodeId& source_id,
                                        const scada::NodeId& target_id) {
-  auto title =
-      FormatReference(node_service_, reference_type_id, source_id, target_id);
+  auto title = FormatReference(node_service_, reference_type_id, source_id,
+                               target_id, true);
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  PostTask(base::SysNativeMBToWide(title), [=] {
-    node_management_service_.AddReference(
+  PostTask(title, [=, &node_management_service = node_management_service_] {
+    node_management_service.AddReference(
         reference_type_id, source_id, target_id,
         [weak_ptr](const scada::Status& status) {
           if (auto ptr = weak_ptr.get())
@@ -180,11 +162,11 @@ void TaskManagerImpl::PostDeleteReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
-  auto title =
-      FormatReference(node_service_, reference_type_id, source_id, target_id);
+  auto title = FormatReference(node_service_, reference_type_id, source_id,
+                               target_id, false);
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  PostTask(base::SysNativeMBToWide(title), [=] {
-    node_management_service_.DeleteReference(
+  PostTask(title, [=, &node_management_service = node_management_service_] {
+    node_management_service.DeleteReference(
         reference_type_id, source_id, target_id,
         [weak_ptr](const scada::Status& status) {
           if (auto ptr = weak_ptr.get())
@@ -211,7 +193,7 @@ void TaskManagerImpl::OnDeleteRecordComplete(
   for (auto& node_id : *relations) {
     if (!relations_text.empty())
       relations_text += L'\n';
-    relations_text += ToString16(node_service_.GetNode(node_id).display_name());
+    relations_text += GetDisplayName(node_service_, node_id);
   }
 
   ReportRequestCompletion(status, relations_text);

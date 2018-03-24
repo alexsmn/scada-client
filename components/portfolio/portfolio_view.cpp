@@ -1,6 +1,7 @@
 #include "components/portfolio/portfolio_view.h"
 
 #include "commands/select_item_dialog.h"
+#include "common/node_service.h"
 #include "common_resources.h"
 #include "components/portfolio/portfolio_tree_model.h"
 #include "controller_factory.h"
@@ -12,10 +13,10 @@ REGISTER_CONTROLLER(PortfolioView, ID_PORTFOLIO_VIEW);
 // PortfolioView
 
 PortfolioView::PortfolioView(const ControllerContext& context)
-    : Controller(context),
-      model_(std::make_unique<PortfolioTreeModel>(context.portfolio_manager_,
-                                                  context.node_service_)) {
-  selection().multiple_handler_ = [this] { return GetSelectedNodeIdList(); };
+    : Controller{context},
+      model_{std::make_unique<PortfolioTreeModel>(context.node_service_,
+                                                  context.portfolio_manager_)} {
+  selection().multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
 PortfolioView::~PortfolioView() {}
@@ -43,7 +44,7 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
     else if (node->is_portfolio())
       selection().SelectMultiple();
     else
-      selection().SelectNode(node->node);
+      selection().SelectNode(node_service_.GetNode(node->item_id()));
   });
 
   tree_->SetEditHandler(
@@ -63,7 +64,7 @@ void PortfolioView::DeleteSelection() {
     if (node->is_portfolio())
       portfolio_manager_.Delete(node->portfolio());
     else
-      portfolio_manager_.DeleteItem(node->portfolio(), node->node.id());
+      portfolio_manager_.DeleteItem(node->portfolio(), node->item_id());
   }
 }
 
@@ -81,8 +82,7 @@ void PortfolioView::AddItemsToPortfolio() {
   if (!portfolio)
     return;
 
-  auto items = RunSelectItemsDialog(dialog_service_, node_service_);
-  for (auto& trid : items)
+  for (auto& trid : RunSelectItemsDialog(dialog_service_, node_service_))
     portfolio_manager_.AddItem(*portfolio, trid);
 }
 
@@ -121,7 +121,7 @@ NodeIdSet PortfolioView::GetSelectedNodeIdList() {
   if (node->is_portfolio())
     node_ids = node->portfolio().items;
   else
-    node_ids.insert(node->node.id());
+    node_ids.insert(node->item_id());
 
   return node_ids;
 }

@@ -3,6 +3,7 @@
 #include "base/strings/string16.h"
 
 enum ViewType {
+  VIEW_TYPE_NEW_PROPERTIES,
   VIEW_TYPE_CELLS,
   VIEW_TYPE_SHEET,
   VIEW_TYPE_EVENTS,

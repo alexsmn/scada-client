@@ -1,14 +1,14 @@
 #include "components/excel_report/views/excel_report_view.h"
 
 #include "controller_factory.h"
-#include "views/client_application_views.h"
 #include "ui/views/controls/activex_control.h"
+#include "views/activex_host.h"
 
 // ExcelView
 
 class ExcelView : public views::ActiveXControl {
  public:
-  ExcelView() : ActiveXControl(*g_application_views) {}
+  using ActiveXControl::ActiveXControl;
 
  protected:
   // NativeControl
@@ -26,12 +26,9 @@ void ExcelView::NativeControlCreated(HWND window_handle) {
 REGISTER_CONTROLLER(ExcelReportView, ID_EXCEL_REPORT_VIEW);
 
 ExcelReportView::ExcelReportView(const ControllerContext& context)
-    : Controller(context),
-      excel_(new ExcelView) {
-}
+    : Controller{context}, excel_(new ExcelView{ActiveXHost::instance()}) {}
 
-ExcelReportView::~ExcelReportView() {
-}
+ExcelReportView::~ExcelReportView() {}
 
 views::View* ExcelReportView::Init(const WindowDefinition& definition) {
   return excel_.get();

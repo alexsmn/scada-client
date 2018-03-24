@@ -1,29 +1,32 @@
-#include "components/modus/views/modus_loader.h"
+ï»¿#include "components/modus/views/modus_loader.h"
 
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
-#include "views/client_utils_views.h"
-#include "window_info.h"
+#include "common/node_service.h"
 #include "components/modus/modus.h"
 #include "components/modus/views/modus_element.h"
 #include "components/modus/views/modus_object.h"
 #include "components/modus/views/modus_view.h"
+#include "core/configuration_utils.h"
+#include "services/file_cache_updater.h"
+#include "views/client_utils_views.h"
+#include "window_info.h"
 
 namespace modus {
 
 ModusLoader::ModusLoader(ModusLoaderContext&& context)
-    : ModusLoaderContext(std::move(context)) {
-}
+    : ModusLoaderContext{std::move(context)} {}
 
 void ModusLoader::Load(SDECore::ISDEDocument50& document,
-                       const base::FilePath& path, ModusView* view) {
+                       const base::FilePath& path,
+                       ModusView* view) {
   view_ = view;
 
   {
     base::win::ScopedBstr bstr;
     document.get_Title(bstr.Receive());
-    if (bstr && bstr != L"áåç èìåíè")
-        title_ = bstr;
+    if (bstr && bstr != L"Ð±ÐµÐ· Ð¸Ð¼ÐµÐ½Ð¸")
+      title_ = bstr;
   }
 
   if (title_.empty()) {
@@ -36,6 +39,14 @@ void ModusLoader::Load(SDECore::ISDEDocument50& document,
   if (title_.empty())
     title_ = path.BaseName().RemoveExtension().value();
 
+  cache_updater_ = FileCacheUpdater::Create(FileCacheUpdaterContext{
+      VIEW_TYPE_MODUS,
+      FullFilePathToPublic(path),
+      title_,
+      alias_resolver_,
+      file_cache_,
+  });
+
   base::win::ScopedComPtr<SDECore::ISDEPage50> page;
   document.get_CurrentPage(page.Receive());
   if (page) {
@@ -44,13 +55,12 @@ void ModusLoader::Load(SDECore::ISDEDocument50& document,
     if (objects)
       LoadObjects(*objects);
   }
-
-  file_cache_.Update(VIEW_TYPE_MODUS, FullFilePathToPublic(path), title_, cache_items_);
 }
 
 void ModusLoader::AddElement(ModusObject*& object,
                              SDECore::ISDEObject50& sde_object,
-                             SDECore::IParams& params, const base::string16& binding,
+                             SDECore::IParams& params,
+                             const base::string16& binding,
                              long object_tag) {
   DCHECK(!binding.empty());
 
@@ -77,30 +87,21 @@ void ModusLoader::AddElement(ModusObject*& object,
       object = new ModusObject(sde_object);
 
     ModusElement* element = new ModusElement(*object, params, prop_name);
-
-    try {
-      element->timed_data().Connect(timed_data_service_, formula);
-    } catch (const std::exception&) {
-    }
-      
+    element->timed_data().Connect(timed_data_service_, formula);
     object->AddElement(*element);
   }
-    
+
   // update index
-  /*if (object_tag != -1) {
-    // Parse data source
-    scada::NodeId item_id = scada::NodeIdFromAliasedString(configuration_, formula);
-    if (item_id != scada::NodeId())
-      cache_items_[item_id] = object_tag;
-  }*/
+  if (object_tag != -1)
+    cache_updater_->Add(formula, object_tag);
 }
- 
+
 void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
   base::win::ScopedComPtr<SDECore::INamedPBs> techs;
   sde_object.get_Techs(techs.Receive());
   if (!techs)
     return;
-      
+
   long tag = -1;
   sde_object.get_Tag(&tag);
 
@@ -109,7 +110,7 @@ void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
 
   long count = 0;
   techs->get_Count(&count);
-      
+
   ModusObject* object = NULL;
 
   for (long i = 0; i < count; ++i) {
@@ -126,11 +127,12 @@ void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
     if (bindings.empty())
       continue;
 
-    auto binding_list = base::SplitString(bindings, L";", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+    auto binding_list = base::SplitString(bindings, L";", base::TRIM_WHITESPACE,
+                                          base::SPLIT_WANT_NONEMPTY);
     for (auto& binding : binding_list)
       AddElement(object, sde_object, *params, binding, tag);
   }
-    
+
   if (object)
     object->Init();
 
@@ -142,7 +144,7 @@ void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
       view_->object_map_[id] = object;
   }
 }
- 
+
 void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
   long count = 0;
   objects.get_Count(&count);
@@ -151,9 +153,9 @@ void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
     objects.get_Item(base::win::ScopedVariant(i), object.Receive());
     if (!object)
       continue;
-        
+
     AddObject(*object);
-      
+
     // Process child objects.
     base::win::ScopedComPtr<SDECore::ISDEObjects2> children;
     object->get_Elements(children.Receive());
@@ -162,4 +164,4 @@ void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
   }
 }
 
-} // namespace modus
+}  // namespace modus

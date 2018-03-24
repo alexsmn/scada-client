@@ -1,14 +1,10 @@
 #pragma once
 
-namespace scada {
-class ViewService;
-}
+#include "core/node_id.h"
 
-class NodeRef;
 class NodeService;
 class TaskManager;
 
-void ShowAddMultipleItemsDialog(scada::ViewService& view_service,
-                                NodeService& node_service,
-                                const NodeRef& node,
-                                TaskManager& task_manager);
+void ShowAddMultipleItemsDialog(NodeService& node_service,
+                                TaskManager& task_manager,
+                                const scada::NodeId& node_id);

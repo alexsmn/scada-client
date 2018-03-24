@@ -2,10 +2,10 @@
 
 #include <algorithm>
 
-#include "base/strings/stringprintf.h"
-#include "base/win/scoped_handle.h"
 #include "base/format_time.h"
 #include "base/minute_time.h"
+#include "base/strings/stringprintf.h"
+#include "base/win/scoped_handle.h"
 #include "components/graph/metrix_data_source.h"
 #include "core/monitored_item_service.h"
 
@@ -14,22 +14,22 @@
 #include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_cursor.h"
 #elif defined(UI_VIEWS)
-#include "ui/views/controls/graph/graph_axis.h"
-#include "ui/views/controls/graph/graph_cursor.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/font.h"
-#include "skia/ext/skia_utils_win.h"
+#include "ui/views/controls/graph/graph_axis.h"
+#include "ui/views/controls/graph/graph_cursor.h"
 #endif
 
-template<class TimedVQMap, class Iter, typename Arg>
+template <class TimedVQMap, class Iter, typename Arg>
 void GetDrawRange(TimedVQMap& values, Arg x1, Arg x2, Iter& begin, Iter& end) {
   begin = end = values.begin();
   while (end != values.end()) {
     const Arg& x = end->first;
     if (x <= x1)
-      begin = end;	// start from point previous to first visible
+      begin = end;  // start from point previous to first visible
     else if (x >= x2) {
-      end++;			// end by first invisible point
+      end++;  // end by first invisible point
       break;
     }
     end++;
@@ -81,11 +81,10 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
 
   int y = GRAPH_LEG_MARGY;
   for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-                                               i != plot().lines().end(); i++) {
+       i != plot().lines().end(); i++) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
 
-    QRect box(GRAPH_LEG_MARGX, y + 3,
-              GRAPH_LEG_ROW - 6, GRAPH_LEG_ROW - 6);
+    QRect box(GRAPH_LEG_MARGX, y + 3, GRAPH_LEG_ROW - 6, GRAPH_LEG_ROW - 6);
 
     //		CBrush brush;
     //		brush.CreateSolidBrush(line.color);
@@ -108,7 +107,10 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
     painter.drawText(rc, Qt::AlignLeft | Qt::AlignVCenter, title);
 
     // Draw value.
-    auto text = QStringLiteral("= ") + QString::fromStdWString(line.data_source().timed_data().GetValueString(value.value, value.qualifier));
+    auto text =
+        QStringLiteral("= ") +
+        QString::fromStdWString(line.data_source().timed_data().GetValueString(
+            value.value, value.qualifier));
     rc = QRect(title_width_, y, 80, GRAPH_LEG_ROW);
     // TODO: End ellipsis.
     painter.drawText(rc, Qt::AlignLeft | Qt::AlignVCenter, text);
@@ -131,11 +133,10 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
 
   int y = GRAPH_LEG_MARGY;
   for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-                                               i != plot().lines().end(); i++) {
+       i != plot().lines().end(); i++) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
 
-    gfx::Rect box(GRAPH_LEG_MARGX, y + 3,
-                  GRAPH_LEG_ROW - 6, GRAPH_LEG_ROW - 6);
+    gfx::Rect box(GRAPH_LEG_MARGX, y + 3, GRAPH_LEG_ROW - 6, GRAPH_LEG_ROW - 6);
 
     //		CBrush brush;
     //		brush.CreateSolidBrush(line.color);
@@ -155,20 +156,23 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
     int p = box.x() + box.width() + 3;
     gfx::Rect rc(p, y, std::max(0, title_width_ - p), GRAPH_LEG_ROW);
     canvas->DrawString(title, graph.font_, SK_ColorBLACK, rc,
-        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+                       DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw value.
-    base::string16 text = L"= " + line.data_source().timed_data().GetValueString(value.value, value.qualifier);
+    base::string16 text =
+        L"= " + line.data_source().timed_data().GetValueString(value.value,
+                                                               value.qualifier);
     rc = gfx::Rect(title_width_, y, 80, GRAPH_LEG_ROW);
     canvas->DrawString(text, graph.font_, SK_ColorBLACK, rc,
-        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+                       DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw time.
     std::string time_text = FormatTime(value.source_timestamp);
     p = title_width_ + 80;
-    rc = gfx::Rect(p, y, std::max(0, width() - GRAPH_LEG_MARGX - p), GRAPH_LEG_ROW);
+    rc = gfx::Rect(p, y, std::max(0, width() - GRAPH_LEG_MARGX - p),
+                   GRAPH_LEG_ROW);
     canvas->DrawString(time_text, graph.font_, SK_ColorBLACK, rc,
-        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+                       DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     y += GRAPH_LEG_ROW;
   }
@@ -178,11 +182,11 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
 #if defined(UI_QT)
 QSize MetrixGraph::Legend::sizeHint() const {
   MetrixGraph& graph = pane().graph();
-  
+
   int width = 30;
 
   for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-                                               i != plot().lines().end(); ++i) {
+       i != plot().lines().end(); ++i) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
     auto title = QString::fromStdWString(line.data_source().title());
     auto size = QFontMetrics(font()).width(title);
@@ -190,8 +194,8 @@ QSize MetrixGraph::Legend::sizeHint() const {
       width = size;
   }
   width += GRAPH_LEG_MARGX * 2 + GRAPH_LEG_ROW - 6 + 5;
-  int height = plot().lines().empty() ? GRAPH_LEG_ROW :
-                                        GRAPH_LEG_ROW * plot().lines().size();
+  int height = plot().lines().empty() ? GRAPH_LEG_ROW
+                                      : GRAPH_LEG_ROW * plot().lines().size();
   height += 2 * GRAPH_LEG_MARGY;
 
   const_cast<Legend*>(this)->title_width_ = width;
@@ -200,11 +204,11 @@ QSize MetrixGraph::Legend::sizeHint() const {
 #elif defined(UI_VIEWS)
 gfx::Size MetrixGraph::Legend::GetPreferredSize() const {
   MetrixGraph& graph = pane().graph();
-  
+
   int width = 30;
 
   for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-                                               i != plot().lines().end(); ++i) {
+       i != plot().lines().end(); ++i) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
     const auto& title = line.data_source().title();
     gfx::Size size = gfx::Canvas::GetStringSize(title, graph.font_);
@@ -212,8 +216,8 @@ gfx::Size MetrixGraph::Legend::GetPreferredSize() const {
       width = size.width();
   }
   width += GRAPH_LEG_MARGX * 2 + GRAPH_LEG_ROW - 6 + 5;
-  int height = plot().lines().empty() ? GRAPH_LEG_ROW :
-                                        GRAPH_LEG_ROW * plot().lines().size();
+  int height = plot().lines().empty() ? GRAPH_LEG_ROW
+                                      : GRAPH_LEG_ROW * plot().lines().size();
   height += 2 * GRAPH_LEG_MARGY;
 
   const_cast<Legend*>(this)->title_width_ = width;
@@ -223,8 +227,7 @@ gfx::Size MetrixGraph::Legend::GetPreferredSize() const {
 
 // MetrixGraph::MetrixLine
 
-MetrixGraph::MetrixLine::MetrixLine()
-    : data_source_(new MetrixDataSource) {
+MetrixGraph::MetrixLine::MetrixLine() : data_source_(new MetrixDataSource) {
   SetDataSource(data_source_.get());
   set_auto_range(false);
 }
@@ -240,7 +243,7 @@ void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
 
   assert(timed_data.historical());
 
-  const rt::TimedVQMap* values = timed_data.values();  
+  const rt::TimedVQMap* values = timed_data.values();
   if (!values || values->empty())
     return;
 
@@ -283,11 +286,10 @@ void MetrixGraph::MetrixLine::OnDataSourceDeleted() {
 
 // MetrixGraph
 
-MetrixGraph::MetrixGraph(TimedDataService& timed_data_service)
-    : timed_data_service_(timed_data_service),
-      monitored_item_service_(NULL) {
+MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
+    : MetrixGraphContext{std::move(context)} {
   update_data_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(50),
-      this, &MetrixGraph::UpdateData);
+                           this, &MetrixGraph::UpdateData);
 }
 
 void MetrixGraph::UpdateCurBox() {
@@ -309,7 +311,8 @@ void MetrixGraph::UpdateCurBox() {
 
 void MetrixGraph::MetrixLine::UpdateTimeRange() {
   if (data_source().connected())
-    data_source().SetFrom(base::Time::FromDoubleT(graph().horizontal_axis().range().low()));
+    data_source().SetFrom(
+        base::Time::FromDoubleT(graph().horizontal_axis().range().low()));
 }
 
 void MetrixGraph::UpdateData() {
@@ -317,29 +320,26 @@ void MetrixGraph::UpdateData() {
     views::GraphPane& pane = **i;
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-                                                 i != lines.end(); ++i) {
+         i != lines.end(); ++i) {
       static_cast<MetrixLine*>(*i)->UpdateTimeRange();
     }
   }
 }
 
-MetrixGraph::MetrixLine& MetrixGraph::NewLine(const std::string& path, MetrixPane& pane) {
-  rt::TimedDataSpec spec;
-  try {
-    spec.Connect(timed_data_service_, path);
-  } catch (const std::exception& /*err*/) {
-  }
-
+MetrixGraph::MetrixLine& MetrixGraph::NewLine(const std::string& path,
+                                              MetrixPane& pane) {
   MetrixLine* line = new MetrixLine();
   pane.plot().AddLine(*line);
-  
-  line->data_source().SetTimedData(spec);
+
+  rt::TimedDataSpec spec;
+  spec.Connect(timed_data_service_, path);
+  line->data_source().SetTimedData(std::move(spec));
 
   return *line;
 }
 
 MetrixGraph::MetrixPane& MetrixGraph::NewPane() {
-  MetrixPane& pane = * new MetrixPane();
+  MetrixPane& pane = *new MetrixPane();
 
   // TODO: fix this
   /*if (selected_pane_) {

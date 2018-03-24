@@ -9,8 +9,6 @@ class VidiconClient {
 
   TeleClient* GetTeleClient() { return teleclient_.get(); }
 
-  void Shutdown();
-
   static VidiconClient& GetInstance();
   static void CleanupInstance();
 

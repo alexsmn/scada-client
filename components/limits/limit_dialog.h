@@ -1,7 +1,6 @@
 #pragma once
 
-class DialogService;
-class TaskManager;
 class NodeRef;
+class TaskManager;
 
-void ShowLimitsDialog(DialogService& dialog_service, const NodeRef& node, TaskManager& task_manager);
+void ShowLimitsDialog(TaskManager& task_manager, const NodeRef& node);

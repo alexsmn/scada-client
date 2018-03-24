@@ -1,5 +1,9 @@
 #pragma once
 
+namespace events {
+class EventManager;
+}
+
 namespace scada {
 class HistoryService;
 class MethodService;
@@ -8,9 +12,11 @@ class NodeManagementService;
 class SessionService;
 }  // namespace scada
 
+class ActionManager;
 class Favourites;
 class FileCache;
 class LocalEvents;
+class MainWindowManager;
 class NodeService;
 class PortfolioManager;
 class Profile;

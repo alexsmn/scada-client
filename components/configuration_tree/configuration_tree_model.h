@@ -3,31 +3,28 @@
 #include <map>
 #include <memory>
 
-#include "base/memory/weak_ptr.h"
-#include "common/node_ref.h"
 #include "common/node_observer.h"
-#include "core/configuration_types.h"
+#include "common/node_ref.h"
+#include "ui/base/dragdrop/drag_drop_types.h"
 #include "ui/base/models/tree_node_model.h"
 
-namespace scada {
-class ViewService;
-}
-
-class NodeService;
 class ConfigurationTreeModel;
+class NodeService;
+class TaskManager;
+
+using DropAction = std::function<int()>;
 
 class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
  public:
-  ConfigurationTreeNode(ConfigurationTreeModel& model, NodeRef data_node);
+  ConfigurationTreeNode(ConfigurationTreeModel& model,
+                        const NodeRef& data_node);
   virtual ~ConfigurationTreeNode();
 
   ConfigurationTreeModel& model() const { return model_; }
-
   const NodeRef& data_node() const { return data_node_; }
 
-  void BrowseChildren();
-
-  virtual void OnNodeSemanticChanged();
+  bool loaded() const { return loaded_; }
+  void Load();
 
   // TreeNode
   virtual int GetChildCount() const override;
@@ -46,62 +43,81 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
     IMAGE_DEVICE_DISABLED,
   };
 
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) {}
+
   void Changed();
 
  private:
-  void SetDataNode(NodeRef data_node);
-
   ConfigurationTreeModel& model_;
-  NodeRef data_node_;
+  const NodeRef data_node_;
 
-  bool children_ = false;
+  bool loaded_ = false;
+
+  friend class ConfigurationTreeModel;
+};
+
+class ConfigurationTreeRootNode : public ConfigurationTreeNode {
+ public:
+  ConfigurationTreeRootNode(ConfigurationTreeModel& model, NodeRef tree);
+
+  // TreeNode
+  virtual base::string16 GetText(int column_id) const;
+  virtual int GetIcon() const;
 };
 
 class ConfigurationTreeModel : public ui::TreeNodeModel<ConfigurationTreeNode>,
                                protected NodeRefObserver {
  public:
-  ConfigurationTreeModel(scada::ViewService& view_service,
-                         NodeService& node_service,
-                         const scada::NodeId& root_id,
-                         std::vector<scada::NodeId> reference_type_ids);
+  ConfigurationTreeModel(NodeService& node_service,
+                         TaskManager& task_manager,
+                         NodeRef tree,
+                         std::vector<scada::NodeId> reference_type_ids,
+                         std::vector<scada::NodeId> type_definition_ids);
   virtual ~ConfigurationTreeModel();
 
-  ConfigurationTreeNode* FindNode(const scada::NodeId& node_id);
+  NodeRef tree() const { return tree_; }
 
-  const NodeRef& root_node() const { return root()->data_node(); }
+  void Init();
+
+  ConfigurationTreeNode* FindNode(const scada::NodeId& node_id);
 
   typedef std::map<scada::NodeId, ConfigurationTreeNode*> NodeMap;
   const NodeMap& node_map() const { return node_map_; }
 
-  virtual bool AreChecksVisible() const { return false; }
+  int GetDropAction(const scada::NodeId& dragging_id,
+                    ConfigurationTreeNode*& target_node,
+                    DropAction& action);
 
  protected:
   friend class ConfigurationTreeNode;
+
+  std::unique_ptr<ConfigurationTreeNode> CreateNodeIfMatches(
+      const NodeRef& data_node);
 
   // Returns nullptr if node must be skipped.
   virtual std::unique_ptr<ConfigurationTreeNode> CreateNode(
       const NodeRef& data_node);
 
-  void EnsureParent(const scada::NodeId& node_id);
-  void EnsureNode(const scada::NodeId& node_id);
-  void EnsureNode2(const scada::NodeId& node_id,
-                   const scada::NodeId& parent_id);
-
   // NodeRefObserver
-  virtual void OnModelChange(const ModelChangeEvent& event) override;
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  scada::ViewService& view_service_;
-  NodeService& node_service_;
-
  private:
-  void Browse(const NodeRef& node);
-  void OnBrowseComplete(const scada::NodeId& node_id,
-                        const scada::ReferenceDescriptions& references);
+  void UpdateNode(const scada::ModelChangeEvent& event);
 
+  NodeService& node_service_;
+  TaskManager& task_manager_;
+  const NodeRef tree_;
   const std::vector<scada::NodeId> reference_type_ids_;
+  const std::vector<scada::NodeId> type_definition_ids_;
 
   NodeMap node_map_;
-
-  base::WeakPtrFactory<ConfigurationTreeModel> weak_ptr_factory_{this};
 };
+
+inline ConfigurationTreeNode* ConfigurationTreeModel::FindNode(
+    const scada::NodeId& node_id) {
+  if (node_id.is_null())
+    return nullptr;
+  auto i = node_map_.find(node_id);
+  return i != node_map_.end() ? i->second : nullptr;
+}

@@ -1,25 +1,26 @@
-#include "components/summary/summary_view.h"
+п»ї#include "components/summary/summary_view.h"
 
 #include "base/excel.h"
 #include "client_utils.h"
 #include "common_resources.h"
-#include "window_definition.h"
 #include "components/summary/summary_model.h"
 #include "controller_factory.h"
+#include "services/dialog_service.h"
+#include "time_range.h"
+#include "window_definition.h"
 
 #if defined(UI_QT)
 #include "controls/qt/grid.h"
 #elif defined(UI_VIEWS)
-#include "commands/views/tvaldlg.h"
 #include "ui/views/controls/grid/grid_view.h"
 #endif
 
 REGISTER_CONTROLLER(SummaryView, ID_SUMMARY_VIEW);
 
 SummaryView::SummaryView(const ControllerContext& context)
-    : Controller(context),
-      model_(std::make_unique<SummaryModel>(context.timed_data_service_)) {
-}
+    : Controller{context},
+      model_{std::make_unique<SummaryModel>(
+          SummaryModelContext{timed_data_service_})} {}
 
 UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
@@ -45,7 +46,6 @@ void SummaryView::Save(WindowDefinition& definition) {
 
 CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
-    case ID_SETUP:
     case ID_EXPORT:
       return this;
   }
@@ -53,12 +53,8 @@ CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
   return __super::GetCommandHandler(command_id);
 }
 
-void SummaryView::ExecuteCommand(unsigned command)
-{
+void SummaryView::ExecuteCommand(unsigned command) {
   switch (command) {
-    case ID_SETUP:
-      ShowSetupDialog();
-      break;
     case ID_EXPORT:
       ExportToExcel();
       break;
@@ -66,22 +62,6 @@ void SummaryView::ExecuteCommand(unsigned command)
       __super::ExecuteCommand(command);
       break;
   }
-}
-
-void SummaryView::ShowSetupDialog() {
-  auto times = model_->times();
-
-#if defined(UI_VIEWS)
-  TimeValDlg dlg;
-
-  dlg.start_time = times.start_time;
-
-  if (dlg.DoModal(static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) != IDOK)
-    return;
-
-  times.start_time = dlg.start_time;
-  model_->SetTimes(times);
-#endif
 }
 
 void SummaryView::ExportToExcel() {
@@ -121,6 +101,11 @@ void SummaryView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    ShowMessageBox(dialog_service_, L"Ошибка при экспорте.", L"Экспорт", MB_ICONSTOP);
+    dialog_service_.RunMessageBox(L"РћС€РёР±РєР° РїСЂРё СЌРєСЃРїРѕСЂС‚Рµ.", L"Р­РєСЃРїРѕСЂС‚",
+                                  MessageBoxMode::Error);
   }
+}
+
+TimeModel* SummaryView::GetTimeModel() {
+  return model_.get();
 }

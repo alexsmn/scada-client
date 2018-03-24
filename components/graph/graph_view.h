@@ -1,9 +1,10 @@
 #pragma once
 
-#include "controls/types.h"
-#include "controller.h"
 #include "components/graph/metrix_graph.h"
 #include "contents_model.h"
+#include "controller.h"
+#include "controls/types.h"
+#include "time_model.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/context_menu_controller.h"
@@ -13,6 +14,7 @@ struct TimeRange;
 
 class GraphView : public Controller,
                   public ContentsModel,
+                  public TimeModel,
                   private views::Graph::Controller {
  public:
   explicit GraphView(const ControllerContext& context);
@@ -26,11 +28,18 @@ class GraphView : public Controller,
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
+  virtual TimeModel* GetTimeModel() override { return this; }
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
   virtual void RemoveContainedItem(const scada::NodeId& node_id) override;
   virtual NodeIdSet GetContainedItems() const override;
+
+  // TimeModel
+  virtual TimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual bool IsTimeRequired() const override { return true; }
 
  private:
   base::string16 MakeTitle() const;
@@ -38,8 +47,7 @@ class GraphView : public Controller,
   void DeleteSelectedPane();
 
   void ShowSetupDialog();
-  void SetTimeRange(const TimeRange& range);
-  
+
   void UndoZoom();
 
   // Delete all pane lines and remove items.

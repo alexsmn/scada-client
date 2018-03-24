@@ -30,7 +30,8 @@ class FileCache {
    public:
     int Find(const base::FilePath& path) const;
 
-    std::vector<DisplayItem> GetFilesContainingItem(const scada::NodeId& item_id) const;
+    void GetFilesContainingItem(const scada::NodeId& item_id,
+                                std::vector<DisplayItem>& items) const;
   };
 
   const FileList& GetList(int type_id) const;

@@ -1,7 +1,7 @@
 #include "components/property_page/views/property_page_view.h"
 
 #include "client_utils.h"
-#include "common/browse_util.h"
+#include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
@@ -14,53 +14,43 @@
 REGISTER_CONTROLLER(PropertyPageView, ID_PROPERTY_VIEW);
 
 PropertyPageView::PropertyPageView(const ControllerContext& context)
-    : Controller(context) {
-  node_service_.Subscribe(*this);
-}
+    : Controller(context) {}
 
 PropertyPageView::~PropertyPageView() {
-  node_service_.Unsubscribe(*this);
+  if (node_)
+    node_.Unsubscribe(*this);
 }
 
 views::View* PropertyPageView::Init(const WindowDefinition& definition) {
+  scada::NodeId node_id;
   for (auto& item : definition.items) {
     if (!item.name_is("Item"))
       continue;
 
     auto path = item.GetString("path");
-    node_id_ = scada::NodeId::FromString(path);
-    if (!node_id_.is_null())
+    node_id = NodeIdFromScadaString(path);
+    if (!node_id.is_null())
       break;
   }
 
   view_ = new views::View;
   view_->SetLayoutManager(new views::FillLayout);
 
-  auto& view_service = view_service_;
-  auto& node_service = node_service_;
   auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  node_service.GetNode(node_id_).Fetch(
-      NodeFetchStatus::NodeOnly(),
-      [&view_service, &node_service, weak_ptr](const NodeRef& node) {
-        if (!node.status())
-          return;
-        BrowseParent(view_service, node_service, node.id(),
-                     scada::id::HierarchicalReferences,
-                     [weak_ptr, node](const scada::Status& status,
-                                      const NodeRef& parent) {
-                       // |parent| can be null.
-                       if (auto* ptr = weak_ptr.get())
-                         ptr->SetNode(node, parent);
-                     });
-      });
+  node_service_.GetNode(node_id).Fetch(NodeFetchStatus::NodeOnly(),
+                                       [weak_ptr](const NodeRef& node) {
+                                         // |parent| can be null.
+                                         if (auto* ptr = weak_ptr.get())
+                                           ptr->SetNode(node);
+                                       });
 
   return view_;
 }
 
 void PropertyPageView::Save(WindowDefinition& definition) {
-  if (!node_id_.is_null()) {
+  if (node_) {
     WindowItem& item = definition.AddItem("Item");
-    item.SetString("path", node_id_.ToString());
+    item.SetString("path", NodeIdToScadaString(node_.id()));
   }
 }
 
@@ -74,9 +64,9 @@ bool PropertyPageViewContents::DispatchNativeEvent(
   return editor_ && editor_->IsDialogMessage(const_cast<MSG*>(&event));
 }
 
-void PropertyPageView::OnModelChange(const ModelChangeEvent& event) {
-  if ((event.verb & ModelChangeEvent::NodeDeleted) &&
-      (node_id_ == event.node_id))
+void PropertyPageView::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if ((event.verb & scada::ModelChangeEvent::NodeDeleted) &&
+      (node_.id() == event.node_id))
     controller_delegate_.Close();
 }
 
@@ -95,13 +85,8 @@ PropertyPageViewContents::PropertyPageViewContents(
     std::unique_ptr<RecordEditor> editor)
     : editor_{std::move(editor)} {}
 
-void PropertyPageView::SetNode(const NodeRef& node, const NodeRef& parent) {
-  RecordEditorContext context{
-      view_service_,
-      node_service_,
-      task_manager_,
-      node_management_service_,
-  };
+void PropertyPageView::SetNode(const NodeRef& node) {
+  RecordEditorContext context{task_manager_, node_service_};
 
   std::unique_ptr<RecordEditor> editor;
   if (IsInstanceOf(node, id::DataGroupType))
@@ -119,22 +104,24 @@ void PropertyPageView::SetNode(const NodeRef& node, const NodeRef& parent) {
             static_cast<int>(cfg::Iec60870Protocol::IEC104)));
     switch (protocol) {
       case cfg::Iec60870Protocol::IEC101:
-        editor = std::make_unique<record_editors::IecLinkEditor>(
+        editor = std::make_unique<record_editors::Iec60870LinkEditor>(
             IDD_IEC60870_LINK101, std::move(context));
         break;
       case cfg::Iec60870Protocol::IEC104:
-        editor = std::make_unique<record_editors::IecLinkEditor>(
+        editor = std::make_unique<record_editors::Iec60870LinkEditor>(
             IDD_IEC60870_LINK104, std::move(context));
         break;
     }
-  } else if (IsInstanceOf(node, id::Iec60870DeviceType)) {
-    const auto protocol = static_cast<cfg::Iec60870Protocol>(
-        parent[id::Iec60870LinkType_Protocol].value().get_or(
-            static_cast<int>(cfg::Iec60870Protocol::IEC104)));
-    const bool iec104 = protocol == cfg::Iec60870Protocol::IEC104;
-    editor = std::make_unique<record_editors::IecDeviceEditor>(
-        std::move(context), iec104);
-  } else if (IsInstanceOf(node, id::SimulationSignalType))
+  } else if (IsInstanceOf(node, id::Iec60870DeviceType))
+    editor = std::make_unique<record_editors::Iec60870DeviceEditor>(
+        std::move(context));
+  else if (IsInstanceOf(node, id::Iec61850DeviceType))
+    editor = std::make_unique<record_editors::Iec61850DeviceEditor>(
+        std::move(context));
+  else if (IsInstanceOf(node, id::Iec61850RcbType))
+    editor =
+        std::make_unique<record_editors::Iec61850RCBEditor>(std::move(context));
+  else if (IsInstanceOf(node, id::SimulationSignalType))
     editor = std::make_unique<record_editors::SimulationItemEditor>(
         std::move(context));
   else if (IsInstanceOf(node, id::ModbusLinkType))
@@ -152,6 +139,9 @@ void PropertyPageView::SetNode(const NodeRef& node, const NodeRef& parent) {
 
   if (!editor)
     return;
+
+  node_ = node;
+  node_.Subscribe(*this);
 
   editor->Init(node);
 

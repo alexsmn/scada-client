@@ -3,12 +3,14 @@
 #include <memory>
 
 #include "core/configuration_types.h"
+#include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_data_source.h"
 #elif defined(UI_VIEWS)
 #include "ui/base/models/graph_data_source.h"
+#include "ui/base/models/graph_types.h"
 #endif
 
 class MetrixPointEnum;
@@ -34,11 +36,11 @@ class MetrixDataSource : public views::GraphDataSource {
   virtual views::PointEnumerator* EnumPoints(double from,
                                              double to,
                                              bool include_left_bound,
-                                             bool include_right_bound) override;
+                                             bool include_right_bound);
 #if defined(UI_QT)
-  virtual QString GetYAxisLabel(double value) const override;
+  virtual QString GetYAxisLabel(double value) const;
 #elif defined(UI_VIEWS)
-  virtual base::string16 GetYAxisLabel(double value) const override;
+  virtual base::string16 GetYAxisLabel(double value) const;
 #endif
 
  protected:

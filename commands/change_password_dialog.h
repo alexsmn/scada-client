@@ -1,14 +1,15 @@
 #pragma once
 
-#include "core/configuration_types.h"
-
 namespace scada {
 class NodeManagementService;
-}
+}  // namespace scada
 
 class LocalEvents;
 class NodeRef;
 class Profile;
 
-void ShowChangePasswordDialog(const NodeRef& user, LocalEvents& local_events, Profile& profile,
-    scada::NodeManagementService& node_management_service);
+void ShowChangePasswordDialog(
+    const NodeRef& user,
+    scada::NodeManagementService& node_management_service,
+    LocalEvents& local_events,
+    Profile& profile);

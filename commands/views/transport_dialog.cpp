@@ -1,4 +1,4 @@
-#include "commands/views/transport_dialog.h"
+п»ї#include "commands/views/transport_dialog.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/format.h"
@@ -11,28 +11,28 @@ static const unsigned kBaudRates[] = {
     75, 110, 134, 150, 300, 600, 1200, 1800, 2400,  4800, 7200, 9600, 14400,
     19200, 38400, 57600, 115200, 128000 };
 static const RECT kConnectionFrameRect = { 15, 33, 15 + 454, 33 + 102 };
-static const base::char16* kConnectionTypeStrings[] = { L"TCP-клиент",
-                                                  L"TCP-сервер",
-                                                  L"UDP-клиент",
-                                                  L"UDP-сервер",
-                                                  L"COM-порт" };
+static const base::char16* kConnectionTypeStrings[] = { L"TCP-РєР»РёРµРЅС‚",
+                                                  L"TCP-СЃРµСЂРІРµСЂ",
+                                                  L"UDP-РєР»РёРµРЅС‚",
+                                                  L"UDP-СЃРµСЂРІРµСЂ",
+                                                  L"COM-РїРѕСЂС‚" };
 static const char* kStopBitsStrings[] = { "1", "1.5", "2" };
 static const int kBitCountFirst = 4;
 static const int kBitCountLast = 8;
 
 typedef std::pair<const base::char16*, const char*> StringPair;
 
-static const StringPair kParityStrings[] = { StringPair(L"Нет", "No"),
-                                             StringPair(L"Чет", "Even"),
-                                             StringPair(L"Нечет", "Odd"),
-                                             StringPair(L"Маркер", "Mark"),
-                                             StringPair(L"Пробел", "Space") };
+static const StringPair kParityStrings[] = { StringPair(L"РќРµС‚", "No"),
+                                             StringPair(L"Р§РµС‚", "Even"),
+                                             StringPair(L"РќРµС‡РµС‚", "Odd"),
+                                             StringPair(L"РњР°СЂРєРµСЂ", "Mark"),
+                                             StringPair(L"РџСЂРѕР±РµР»", "Space") };
 
-static const StringPair kFlowControlStrings[] = { StringPair(L"Нет", "No"),
+static const StringPair kFlowControlStrings[] = { StringPair(L"РќРµС‚", "No"),
                                                   StringPair(L"XON/XOFF", "XON/XOFF"),
-                                                  StringPair(L"Аппаратное", "Hardware") };
+                                                  StringPair(L"РђРїРїР°СЂР°С‚РЅРѕРµ", "Hardware") };
                                                   
-static const base::char16 kDefaultString[] = L"<Текущее>";
+static const base::char16 kDefaultString[] = L"<РўРµРєСѓС‰РµРµ>";
 
 static int FindString(const char* strs[], int count, const char* value) {
   for (int i = 0; i < count; ++i) {

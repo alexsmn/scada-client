@@ -13,8 +13,7 @@ class CellView : public Controller,
                  public ContentsModel,
                  private ui::GridModel,
                  private views::FixedRowModel::Delegate,
-                 private views::GridController,
-                 private rt::TimedDataDelegate {
+                 private views::GridController {
  public:
   explicit CellView(const ControllerContext& context);
   virtual ~CellView();
@@ -29,7 +28,17 @@ class CellView : public Controller,
                                 unsigned flags) override;
 
  private:
-  class Cell;
+  class Cell {
+   public:
+    Cell(CellView& view, int row, int column);
+
+    rt::TimedDataSpec value_spec_;
+    int row_;
+    int column_;
+
+   private:
+    DISALLOW_COPY_AND_ASSIGN(Cell);
+  };
 
   int GetCellIndex(int row, int column) const {
     DCHECK(row >= 0 && row < row_count_);
@@ -49,10 +58,6 @@ class CellView : public Controller,
 
   void ClearCell(int row, int column);
   void ClearSelection();
-
-  void OnTimedDataDeleted(Cell& cell);
-  void OnPropertyChanged(Cell& cell, const rt::PropertySet& properties);
-  void OnEventsChanged(Cell& cell);
 
   // views::GridController
   virtual bool OnGridDrawCell(views::GridView& sender,

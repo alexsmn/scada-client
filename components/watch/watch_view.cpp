@@ -1,15 +1,17 @@
-#include "components/watch/watch_view.h"
+ï»¿#include "components/watch/watch_view.h"
 
+#include "common/node_id_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common_resources.h"
 #include "components/watch/watch_model.h"
 #include "controller_factory.h"
 #include "controls/table.h"
-#include "translation.h"
+#include "remote/session_proxy.h"
+#include "services/dialog_service.h"
 #include "window_definition.h"
 
-#if defined(UI_QT)
-#elif defined(UI_VIEWS)
+#if defined(UI_VIEWS)
 #include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/point.h"
 #include "views/client_utils_views.h"
@@ -28,9 +30,9 @@
 REGISTER_CONTROLLER(WatchView, ID_WATCH_VIEW);
 
 WatchView::WatchView(const ControllerContext& context)
-    : Controller(context),
-      model_(std::make_unique<WatchModel>(monitored_item_service_)),
-      auto_scroll_(true) {}
+    : Controller{context},
+      model_{std::make_unique<WatchModel>(WatchModelContext{
+          context.node_service_, context.monitored_item_service_})} {}
 
 WatchView::~WatchView() {
   model_->observers().RemoveObserver(this);
@@ -38,28 +40,28 @@ WatchView::~WatchView() {
 
 void WatchView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
-  item.SetString("path", model_->device().id().ToString());
+  item.SetString("path", NodeIdToScadaString(model_->device_id()));
 }
 
 base::string16 WatchView::MakeTitle() const {
-  base::string16 title = ToString16(model_->device().display_name());
+  base::string16 title = GetDisplayName(node_service_, model_->device_id());
   if (model_->paused())
-    title += L" [Ïàóçà]";
+    title += L" [ÐŸÐ°ÑƒÐ·Ð°]";
   return title;
 }
 
 UiView* WatchView::Init(const WindowDefinition& definition) {
   const ui::TableColumn columns[] = {
-      ui::TableColumn(0, L"Âðåìÿ", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(1, L"Óñòðîéñòâî", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(2, L"Ñîáûòèå", 400, ui::TableColumn::LEFT)};
+      ui::TableColumn(0, L"Ð’Ñ€ÐµÐ¼Ñ", 100, ui::TableColumn::LEFT),
+      ui::TableColumn(1, L"Ð£ÑÑ‚Ñ€Ð¾Ð¹ÑÑ‚Ð²Ð¾", 100, ui::TableColumn::LEFT),
+      ui::TableColumn(2, L"Ð¡Ð¾Ð±Ñ‹Ñ‚Ð¸Ðµ", 400, ui::TableColumn::LEFT)};
 
   const WindowItem* item = definition.FindItem("Item");
   if (item) {
     std::string path = item->GetString("path");
-    auto device_id = scada::NodeId::FromString(path);
+    auto device_id = NodeIdFromScadaString(path);
     if (!device_id.is_null())
-      model_->SetDevice(node_service_.GetNode(device_id));
+      model_->SetDeviceID(device_id);
   }
 
 #if defined(UI_QT)
@@ -90,7 +92,12 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
 
 #if defined(UI_VIEWS)
 void WatchView::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_LOG_POPUP, point, true);
+  WTL::CMenu menu;
+  menu.LoadMenu(IDR_LOG_POPUP);
+  WTL::CMenuHandle popup = menu.GetSubMenu(0);
+  popup.CheckMenuItem(
+      ID_PAUSE, MF_BYCOMMAND | (model_->paused() ? MF_CHECKED : MF_UNCHECKED));
+  ::ShowPopupMenu(dialog_service_.GetDialogOwningWindow(), popup, point, true);
 }
 
 void WatchView::OnSelectionChanged(views::TableView& sender) {
@@ -112,10 +119,8 @@ void WatchView::SaveLog() {
   WTL::CFileDialog dlg(
       FALSE, L"*.log", name.c_str(),
       OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
-      L"Ôàéëû Log\0*.log\0Âñå ôàéëû\0*.*\0");
-  if (dlg.DoModal(
-          static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) !=
-      IDOK)
+      L"Ð¤Ð°Ð¹Ð»Ñ‹ Log\0*.log\0Ð’ÑÐµ Ñ„Ð°Ð¹Ð»Ñ‹\0*.*\0");
+  if (dlg.DoModal() != IDOK)
     return;
 
   model_->SaveLog(base::FilePath(dlg.m_ofn.lpstrFile));

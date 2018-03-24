@@ -1,12 +1,13 @@
 #include "controls/views/tree.h"
 
-#include <atlbase.h>
-#include <atltypes.h>
-#include <atlapp.h>
-#include <atlctrls.h>
-
 #include "skia/ext/skia_utils_win.h"
 #include "ui/views/widget/widget.h"
+
+#include <atlbase.h>
+
+#include <atlapp.h>
+#include <atlctrls.h>
+#include <atltypes.h>
 
 Tree::Tree(ui::TreeModel& model) {
   SetController(this);
@@ -15,13 +16,16 @@ Tree::Tree(ui::TreeModel& model) {
 
 Tree::~Tree() {
   SetController(nullptr);
+
+  if (images_)
+    images_->Destroy();
 }
 
 void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
-  images_.reset(new WTL::CImageListManaged);
-  images_->Create(resource_id, width, 0, RGB(SkColorGetR(mask_color),
-                                             SkColorGetG(mask_color),
-                                             SkColorGetB(mask_color)));
+  images_.reset(new WTL::CImageList);
+  images_->Create(resource_id, width, 0,
+                  RGB(SkColorGetR(mask_color), SkColorGetG(mask_color),
+                      SkColorGetB(mask_color)));
   SetIcons(*images_);
 }
 

@@ -9,8 +9,7 @@ VidiconClient::VidiconClient() {
   DCHECK(SUCCEEDED(res));
 }
 
-VidiconClient::~VidiconClient() {
-}
+VidiconClient::~VidiconClient() {}
 
 // static
 VidiconClient& VidiconClient::GetInstance() {

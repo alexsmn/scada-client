@@ -15,13 +15,8 @@ base::string16 SheetColumnModel::GetTitle(int index) {
 
 // SheetModel -----------------------------------------------------------------
 
-SheetModel::SheetModel(TimedDataService& timed_data_service)
-    : timed_data_service_(timed_data_service),
-      row_model_(*this),
-      row_count_(0),
-      column_count_(0),
-      cells_(NULL),
-      editing_(false) {
+SheetModel::SheetModel(SheetModelContext&& context)
+    : SheetModelContext{std::move(context)} {
   Blinker::Start();
 }
 
@@ -38,8 +33,8 @@ void SheetModel::SetSizes(int row_count, int column_count) {
 
   std::vector<SheetCell*> new_cells(row_count * column_count);
 
-  int crow = (std::min)(row_count, row_count_);			// rows to copy
-  int ccol = (std::min)(column_count, column_count_);	// columns to copy
+  int crow = (std::min)(row_count, row_count_);        // rows to copy
+  int ccol = (std::min)(column_count, column_count_);  // columns to copy
   for (int i = 0; i < crow; i++) {
     for (int j = 0; j < ccol; j++)
       new_cells[i * row_count + j] = FindCell(i, j);
@@ -82,7 +77,7 @@ void SheetModel::GetCell(ui::GridCell& cell) {
     cell.cell_color = c->format_->color;
 
   if (!editing_ && c->is_blinking() && Blinker::GetState())
-    cell.cell_color = SK_ColorYELLOW;   
+    cell.cell_color = SK_ColorYELLOW;
 }
 
 SheetCell& SheetModel::GetCell(int row, int column) {
@@ -107,7 +102,7 @@ void SheetModel::ClearRange(const ui::GridRange& range) {
       }
     }
   }
-  
+
   NotifyRangeChanged(update_range);
 }
 
@@ -125,7 +120,7 @@ void SheetModel::OnBlink(bool state) {
 
   ui::GridRange range = ui::GridRange::Cell(cell.row(), cell.column());
   for (CellSet::iterator i = ++blinking_cells_.begin();
-                         i != blinking_cells_.end(); ++i) {
+       i != blinking_cells_.end(); ++i) {
     SheetCell& cell = **i;
     range.Expand(cell.row(), cell.column());
   }
@@ -133,16 +128,14 @@ void SheetModel::OnBlink(bool state) {
   NotifyRangeChanged(range);
 }
 
-void SheetModel::SetRangeColor(const ui::GridRange& range,
-                               SkColor color) {
+void SheetModel::SetRangeColor(const ui::GridRange& range, SkColor color) {
   ui::GridRange update_range;
 
   for (int column = range.column(); column <= range.last_column(); ++column) {
     for (int row = range.row(); row <= range.last_row(); ++row) {
       SheetCell& cell = GetCell(row, column);
 
-      SheetFormatBase format = cell.format_ ? *cell.format_ :
-                                              SheetFormatBase();
+      SheetFormatBase format = cell.format_ ? *cell.format_ : SheetFormatBase();
       if (format.transparent || format.color != color) {
         format.transparent = false;
         format.color = color;

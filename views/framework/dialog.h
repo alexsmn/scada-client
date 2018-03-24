@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/macros.h"
 #include "base/win/win_util2.h"
 
 #include <map>
@@ -16,9 +17,6 @@ class DialogImpl {
       : dialog_(dialog),
         window_handle_(NULL) { }
   virtual ~DialogImpl() { }
-
-  DialogImpl(const DialogImpl&) = delete;
-  DialogImpl& operator=(const DialogImpl&) = delete;
   
   HWND window_handle() const { return window_handle_; }
   
@@ -33,14 +31,13 @@ class DialogImpl {
  private:
   Dialog& dialog_;
   HWND window_handle_;
+
+  DISALLOW_COPY_AND_ASSIGN(DialogImpl);
 };
 
 class Dialog {
 public:
   explicit Dialog(unsigned resource_id);
-
-  Dialog(const Dialog&) = delete;
-  Dialog& operator=(const Dialog&) = delete;
 
   unsigned resource_id() const { return resource_id_; }
   HWND window_handle() const { return impl_->window_handle(); }
@@ -100,6 +97,8 @@ public:
   std::unique_ptr<DialogImpl> impl_;
   
   ViewMap view_map_;
+
+  DISALLOW_COPY_AND_ASSIGN(Dialog);
 };
 
 } // namespace framework

@@ -27,7 +27,7 @@ enum EventColumnId {
   EventColumnItem,
   EventColumnValue,
   EventColumnMessage,
-  EventColumnSource,
+  EventColumnUser,
   EventColumnAckUser,
   EventColumnAckTime,
   EventColumnCount
@@ -38,6 +38,7 @@ struct EventTableModelContext {
   events::EventManager& event_manager_;
   LocalEvents& local_events_;
   scada::HistoryService& history_service_;
+  const bool current_events_;
 };
 
 class EventTableModel : public ui::TableModel,
@@ -53,9 +54,7 @@ class EventTableModel : public ui::TableModel,
   explicit EventTableModel(EventTableModelContext&& context);
   virtual ~EventTableModel();
 
-  using Mode = unsigned;
-
-  Mode mode() const { return mode_; }
+  bool current_events() const { return current_events_; }
   const ItemIds& filter_items() const { return filter_node_ids_; }
   const TimeRange& time_range() const { return time_range_; }
   unsigned severity_min() const { return severity_min_; }
@@ -64,9 +63,8 @@ class EventTableModel : public ui::TableModel,
   const scada::Event& event_at(int row) const { return *rows_[row].event; }
   bool IsWorking() const;
 
-  void Init(Mode mode, const TimeRange& range, ItemIds filter_items);
-  void SetMode(Mode mode);
-  void set_time_range(const TimeRange& range) { time_range_ = range; }
+  void Init(const TimeRange& range, ItemIds filter_items);
+  void SetTimeRange(const TimeRange& range);
   void SetSeverityMin(unsigned severity);
 
   bool AddFilteredItem(const scada::NodeId& item);
@@ -100,11 +98,16 @@ class EventTableModel : public ui::TableModel,
   void RefilterNow();
   void Refilter();
 
+  void UpdateAffectedRows(const scada::NodeId& node_id);
+
   void OnQueryEventsCompleted(scada::Status status,
                               scada::QueryEventsResults events);
 
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  virtual void OnNodeFetched(const scada::NodeId& node_id,
+                             bool children) override;
 
   // events::EventObserver
   virtual void OnEventReported(const scada::Event& event) override;
@@ -113,8 +116,6 @@ class EventTableModel : public ui::TableModel,
 
   // LocalEvents::Observer
   virtual void OnLocalEvent(const scada::Event& event) override;
-
-  Mode mode_;
 
   // Filter.
   TimeRange time_range_;
@@ -130,6 +131,9 @@ class EventTableModel : public ui::TableModel,
   struct Row {
     Row(EventType type, const scada::Event& event)
         : type(type), event(&event) {}
+
+    void Update(NodeService& node_service);
+    bool IsAffected(const scada::NodeId& node_id) const;
 
     EventType type;
     const scada::Event* event;

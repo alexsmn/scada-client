@@ -2,16 +2,17 @@
 
 #include "base/auto_reset.h"
 #include "components/main/opened_view.h"
-#include "services/page.h"
 #include "components/main/view_manager_delegate.h"
-#include "window_info.h"
-#include "ui/views/widget/widget.h"
-#include "ui/views/widget/root_view.h"
+#include "services/page.h"
 #include "ui/views/controls/split_view.h"
+#include "ui/views/widget/root_view.h"
+#include "ui/views/widget/widget.h"
+#include "window_info.h"
 
-ViewManagerViews::ViewManagerViews(views::View& parent_view, ViewManagerDelegate* delegate)
-    : ViewManager(delegate) {
-  dock_container_.reset(new views::MultiSplitView);
+ViewManagerViews::ViewManagerViews(views::View& parent_view,
+                                   ViewManagerDelegate& delegate)
+    : ViewManager{delegate} {
+  dock_container_ = std::make_unique<views::MultiSplitView>();
   dock_container_->SetController(this);
   parent_view.AddChildView(dock_container_.get());
 }
@@ -30,9 +31,10 @@ views::View& ViewManagerViews::GetView() {
   return *dock_container_;
 }
 
-void ViewManagerViews::SetViewTitle(OpenedView& view, const base::string16& title) {
+void ViewManagerViews::SetViewTitle(OpenedView& view,
+                                    const base::string16& title) {
   if (view.view())
-    dock_container_->SetViewTitle(*view.view(), title);  
+    dock_container_->SetViewTitle(*view.view(), title);
 }
 
 void ViewManagerViews::OpenLayout(Page& page, const PageLayout& layout) {
@@ -41,10 +43,10 @@ void ViewManagerViews::OpenLayout(Page& page, const PageLayout& layout) {
 
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
-   
+
       // create window
       if (win.visible)
-        CreateView(win);
+        CreateView(win, NULL);
     }
 
     OpenLayoutBlock(layout.main, dock_container_->root_pane());
@@ -61,10 +63,11 @@ void ViewManagerViews::OpenLayout(Page& page, const PageLayout& layout) {
   SetActiveView(view);
 }
 
-void ViewManagerViews::OpenLayoutBlock(const PageLayoutBlock& block, views::MultiSplitPane& pane) {
+void ViewManagerViews::OpenLayoutBlock(const PageLayoutBlock& block,
+                                       views::MultiSplitPane& pane) {
   if (block.type == PageLayoutBlock::SPLIT) {
-    views::ViewSide dock_side = block.horz ? views::DOCK_BOTTOM :
-                                             views::DOCK_RIGHT;
+    views::ViewSide dock_side =
+        block.horz ? views::DOCK_BOTTOM : views::DOCK_RIGHT;
     int pane_percent_size = block.pos > 0 ? 100 - block.pos : 50;
     views::MultiSplitPane& new_pane =
         dock_container_->SplitPane(pane, dock_side, pane_percent_size);
@@ -77,8 +80,8 @@ void ViewManagerViews::OpenLayoutBlock(const PageLayoutBlock& block, views::Mult
       OpenedView* view = FindViewByID(block.wins[i]);
       if (view && !view->view()->parent()) {
         base::string16 title = view->GetWindowTitle();
-        dock_container_->AddView(pane, views::DOCK_CENTER, *view->view(),
-                                 title, gfx::Image() /*view->image()*/, 0);
+        dock_container_->AddView(pane, views::DOCK_CENTER, *view->view(), title,
+                                 gfx::Image() /*view->image()*/, 0);
       }
     }
 
@@ -91,7 +94,8 @@ void ViewManagerViews::SaveLayout(PageLayout& layout) {
   SaveLayoutBlock(layout.main, dock_container_->root_pane());
 }
 
-void ViewManagerViews::SaveLayoutBlock(PageLayoutBlock& block, views::MultiSplitPane& pane) {
+void ViewManagerViews::SaveLayoutBlock(PageLayoutBlock& block,
+                                       views::MultiSplitPane& pane) {
   assert(block.empty());
 
   if (pane.is_split()) {
@@ -121,7 +125,7 @@ void ViewManagerViews::ActivateView(OpenedView& view) {
 }
 
 OpenedView* ViewManagerViews::FindViewByViewsView(views::View* view) {
-  for ( ; view; view = view->parent()) {
+  for (; view; view = view->parent()) {
     // Check this view is top level view.
     for (Views::const_iterator i = views_.begin(); i != views_.end(); ++i) {
       OpenedView* v = i->view;
@@ -132,10 +136,11 @@ OpenedView* ViewManagerViews::FindViewByViewsView(views::View* view) {
   return NULL;
 }
 
-OpenedView* ViewManagerViews::FindFirstDataView(views::MultiSplitPane& from_pane) {
+OpenedView* ViewManagerViews::FindFirstDataView(
+    views::MultiSplitPane& from_pane) {
   if (from_pane.is_split()) {
     views::MultiSplitPane* c1 = from_pane.split_pane(0);
-    views::MultiSplitPane* c2 = from_pane.split_pane(1);    
+    views::MultiSplitPane* c2 = from_pane.split_pane(1);
     OpenedView* v;
     if (c1 && (v = FindFirstDataView(*c1)))
       return v;
@@ -154,14 +159,15 @@ OpenedView* ViewManagerViews::FindFirstDataView(views::MultiSplitPane& from_pane
   }
 }
 
-void ViewManagerViews::OnShowViewTabContextMenu(views::View& view, gfx::Point point) {
+void ViewManagerViews::OnShowViewTabContextMenu(views::View& view,
+                                                gfx::Point point) {
   OpenedView* v = FindViewByViewsView(&view);
   if (!v)
     return;
 
   ActivateView(*v);
 
-  delegate_->OnShowTabPopupMenu(*v, point);
+  delegate_.OnShowTabPopupMenu(*v, point);
 }
 
 void ViewManagerViews::AddView(OpenedView& view) {
@@ -170,13 +176,13 @@ void ViewManagerViews::AddView(OpenedView& view) {
   views::MultiSplitPane* pane = NULL;
   views::ViewSide side = views::DOCK_CENTER;
   int percent_size = 50;
-  
+
   if (!pane && view.window_info().is_pane()) {
-    percent_size = view.window_info().dock_bottom() ?
-        view.window_info().cy * 100 / 768:
-        view.window_info().cx * 100 / 1024;
-    side = view.window_info().dock_bottom() ? views::DOCK_BOTTOM :
-                                              views::DOCK_LEFT;
+    percent_size = view.window_info().dock_bottom()
+                       ? view.window_info().cy * 100 / 768
+                       : view.window_info().cx * 100 / 1024;
+    side = view.window_info().dock_bottom() ? views::DOCK_BOTTOM
+                                            : views::DOCK_LEFT;
     pane = dock_container_->FindDockPane(side);
     /*if (pane)
       side = views::DOCK_CENTER;
@@ -198,7 +204,8 @@ void ViewManagerViews::CloseView(OpenedView& view) {
   DestroyView(view);
 }
 
-void ViewManagerViews::OnFocusChanged(views::View* focused_before, views::View* focused_now) {
+void ViewManagerViews::OnFocusChanged(views::View* focused_before,
+                                      views::View* focused_now) {
   if (opening_layout_)
     return;
   OpenedView* view = FindViewByViewsView(focused_now);

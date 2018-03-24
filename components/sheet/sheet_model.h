@@ -1,11 +1,11 @@
 #pragma once
 
-#include <set>
-
 #include "base/blinker.h"
 #include "components/sheet/sheet_format.h"
-#include "ui/base/models/grid_model.h"
 #include "ui/base/models/fixed_row_model.h"
+#include "ui/base/models/grid_model.h"
+
+#include <set>
 
 class SheetCell;
 class TimedDataService;
@@ -16,11 +16,16 @@ class SheetColumnModel : public ui::ColumnHeaderModel {
   virtual base::string16 GetTitle(int index) override;
 };
 
-class SheetModel : public ui::GridModel,
+struct SheetModelContext {
+  TimedDataService& timed_data_service_;
+};
+
+class SheetModel : private SheetModelContext,
+                   public ui::GridModel,
                    private views::FixedRowModel::Delegate,
                    private Blinker {
  public:
-  explicit SheetModel(TimedDataService& timed_data_service);
+  explicit SheetModel(SheetModelContext&& context);
   virtual ~SheetModel();
 
   views::FixedRowModel& row_model() { return row_model_; }
@@ -46,23 +51,23 @@ class SheetModel : public ui::GridModel,
   SheetFormatPool& formats() { return formats_; }
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
-  
+
   // ui::GridModel
   virtual int GetRowCount() override;
   virtual void GetCell(ui::GridCell& cell) override;
-  virtual bool SetCellText(int row, int column, const base::string16& text) override;
+  virtual bool SetCellText(int row,
+                           int column,
+                           const base::string16& text) override;
 
  protected:
   friend class SheetCell;
 
  private:
   // Blinker
-	virtual void OnBlink(bool state);
+  virtual void OnBlink(bool state);
 
-  TimedDataService& timed_data_service_;
-
-  int row_count_;
-  int column_count_;
+  int row_count_ = 0;
+  int column_count_ = 0;
   std::vector<SheetCell*> cells_;
 
   SheetFormatPool formats_;
@@ -70,9 +75,9 @@ class SheetModel : public ui::GridModel,
   typedef std::set<SheetCell*> CellSet;
   CellSet blinking_cells_;
 
-  bool editing_;
+  bool editing_ = false;
 
-  views::FixedRowModel row_model_;
+  views::FixedRowModel row_model_{*this};
   SheetColumnModel column_model_;
 };
 

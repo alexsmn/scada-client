@@ -1,3 +1,5 @@
+ï»¿#include "services/page.h"
+
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/stl_util.h"
@@ -5,17 +7,16 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/utils.h"
 #include "base/xml.h"
-#include "window_info.h"
-#include "services/page.h"
 #include "services/profile_utils.h"
+#include "window_info.h"
 
-#define MAX_TITLE	30
+#define MAX_TITLE 30
 
 static const base::char16 kPageFileExtension[] = L"page";
 
 void LoadWinItem(WindowItem& item, const xml::Node& node) {
   for (xml::AttributeMap::const_iterator i = node.attributes.begin();
-                                         i != node.attributes.end(); ++i) {
+       i != node.attributes.end(); ++i) {
     item.SetString(i->first.c_str(), i->second);
   }
 }
@@ -39,8 +40,7 @@ void SaveWinItem(const WindowItem& item, xml::Node& node) {
   }
 }
 
-void SaveWinItems(const WindowItems& items, xml::Node& elem)
-{
+void SaveWinItems(const WindowItems& items, xml::Node& elem) {
   for (WindowItems::const_iterator i = items.begin(); i != items.end(); i++) {
     const WindowItem& item = *i;
     assert(!item.name().empty());
@@ -60,7 +60,8 @@ static void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
   if (splite) {
     bool horz = splite->GetAttribute("orientation").compare(L"Vertical") != 0;
     block.split(horz);
-    block.pos = ParseWithDefault<int>(splite->GetAttribute("position").c_str(), -1);
+    block.pos =
+        ParseWithDefault<int>(splite->GetAttribute("position").c_str(), -1);
     const xml::Node* pane1e = splite->select("Pane1");
     const xml::Node* pane2e = splite->select("Pane2");
     if (pane1e)
@@ -70,7 +71,8 @@ static void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
 
   } else {
     assert(block.type == PageLayoutBlock::PANE);
-    for (const xml::Node* child = node.first_child; child; child = child->next) {
+    for (const xml::Node* child = node.first_child; child;
+         child = child->next) {
       if (child->type != xml::NodeTypeElement)
         continue;
       int id = ParseWithDefault<int>(child->GetAttribute("id").c_str(), 0);
@@ -79,13 +81,14 @@ static void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
       block.wins.push_back(id);
     }
 
-    block.active_window = ParseWithDefault(node.GetAttribute("active").c_str(), -1);
+    block.active_window =
+        ParseWithDefault(node.GetAttribute("active").c_str(), -1);
   }
 
   block.central = ParseWithDefault<bool>(node.GetAttribute("central"), false);
 }
 
-const char* dock_names[4] = { "DockBottom", "DockTop", "DockLeft", "DockRight" };
+const char* dock_names[4] = {"DockBottom", "DockTop", "DockLeft", "DockRight"};
 
 void Page::Load(const xml::Node& node) {
   std::wstring sid = node.GetAttribute("id");
@@ -111,7 +114,7 @@ void Page::Load(const xml::Node& node) {
       bool found = false;
       if (info->is_pane()) {
         for (int i = 0; i < GetWindowCount(); ++i)
-          if (GetWindow(i).window_info() == info) {
+          if (&GetWindow(i).window_info() == info) {
             found = true;
             break;
           }
@@ -157,14 +160,15 @@ void Page::Load(const xml::Node& node) {
   if (layoute) {
     const xml::Node* maine = layoute->select("Center");
     if (maine)
-      LoadLayoutBlock(layout_.main, *maine);
+      LoadLayoutBlock(layout.main, *maine);
     for (int i = 0; i < 4; i++) {
       const xml::Node* docke = layoute->select(dock_names[i]);
       if (!docke)
         continue;
-      PageLayout::Dock& dock = layout_.dock[i];
+      PageLayout::Dock& dock = layout.dock[i];
       dock.size = ParseWithDefault<int>(docke->GetAttribute("size").c_str(), 0);
-      dock.place = ParseWithDefault<int>(docke->GetAttribute("place").c_str(), 0);
+      dock.place =
+          ParseWithDefault<int>(docke->GetAttribute("place").c_str(), 0);
       LoadLayoutBlock(dock, *docke);
     }
   }
@@ -177,7 +181,7 @@ static void SaveLayoutBlock(const PageLayoutBlock& block, xml::Node& node) {
     node2.SetAttribute("position", WideFormat(block.pos).c_str());
     SaveLayoutBlock(*block.left, node2.AddElement("Pane1"));
     SaveLayoutBlock(*block.right, node2.AddElement("Pane2"));
-  
+
   } else {
     for (int i = 0; i < (int)block.wins.size(); ++i) {
       int id = block.wins[i];
@@ -203,15 +207,13 @@ void Page::Save(xml::Node& node, bool current) const {
   xml::Node& winse = node.AddElement("Windows");
   for (int i = 0; i < GetWindowCount(); ++i) {
     WindowDefinition& def = GetWindow(i);
-    const WindowInfo* window_info = def.window_info();
-    if (!window_info)
-      continue;
+    const WindowInfo& window_info = def.window_info();
 
     xml::Node& win = winse.AddElement("Window");
-    win.SetAttribute("type", window_info->name);
+    win.SetAttribute("type", window_info.name);
     win.SetAttribute("id", WideFormat(def.id));
     if (!def.visible) {
-      assert(window_info->flags & WIN_SING);
+      assert(window_info.flags & WIN_SING);
       win.SetAttribute("visible", WideFormat(def.visible));
     }
     if (!def.title.empty())
@@ -234,10 +236,10 @@ void Page::Save(xml::Node& node, bool current) const {
 
   // layout
   xml::Node& layoute = node.AddElement("Layout");
-  if (!layout_.main.empty())
-    SaveLayoutBlock(layout_.main, layoute.AddElement("Center"));
+  if (!layout.main.empty())
+    SaveLayoutBlock(layout.main, layoute.AddElement("Center"));
   for (int i = 0; i < 4; i++) {
-    auto& dock = layout_.dock[i];
+    auto& dock = layout.dock[i];
     if (dock.empty())
       continue;
     xml::Node& docke = layoute.AddElement(dock_names[i]);
@@ -267,14 +269,14 @@ base::string16 Page::GetTitle() const {
   }
 
   if (title.empty())
-    title = L"(Ïóñòîé)";
+    title = L"(ÐŸÑƒÑÑ‚Ð¾Ð¹)";
 
   return title;
 }
 
 int Page::NewWindowId() {
   static int _id = 1;
-  while (FindWindow(_id))
+  while (FindWindowDef(_id))
     _id++;
   return _id++;
 }
@@ -286,7 +288,7 @@ WindowDefinition& Page::AddWindow(const WindowDefinition& window) {
   return *w;
 }
 
-WindowDefinition* Page::FindWindow(int id) {
+WindowDefinition* Page::FindWindowDef(int id) {
   for (int i = 0; i < GetWindowCount(); ++i) {
     WindowDefinition& win = GetWindow(i);
     if (win.id == id)
@@ -295,13 +297,13 @@ WindowDefinition* Page::FindWindow(int id) {
   return NULL;
 }
 
-const WindowDefinition* Page::FindWindow(int id) const {
-  return const_cast<Page*>(this)->FindWindow(id);
+const WindowDefinition* Page::FindWindowDef(int id) const {
+  return const_cast<Page*>(this)->FindWindowDef(id);
 }
 
-int Page::FindWindow(const WindowDefinition& window) const {
-  Windows::const_iterator i = std::find(windows_.begin(),
-                                        windows_.end(), &window);
+int Page::FindWindowDef(const WindowDefinition& window) const {
+  Windows::const_iterator i =
+      std::find(windows_.begin(), windows_.end(), &window);
   return (i != windows_.end()) ? i - windows_.begin() : -1;
 }
 

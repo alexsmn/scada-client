@@ -21,29 +21,29 @@
 #include "ui/views/controls/graph/graph_widget.h"
 #endif
 
-namespace scada {
-class MonitoredItemService;
-}
+class TimedDataService;
 
-class MetrixGraph : public views::Graph {
+struct MetrixGraphContext {
+  TimedDataService& timed_data_service_;
+};
+
+class MetrixGraph : private MetrixGraphContext, public views::Graph {
  public:
-//  typedef std::map<long, Bar> BarMap;
+  //  typedef std::map<long, Bar> BarMap;
 
   class MetrixPane;
   class MetrixLine;
 
   class MetrixWidget : public views::GraphWidget {
-  public:
-    explicit MetrixWidget(MetrixPane& pane)
-        : GraphWidget(pane) {
-    }
+   public:
+    explicit MetrixWidget(MetrixPane& pane) : GraphWidget(pane) {}
 
     MetrixPane& pane() const { return static_cast<MetrixPane&>(pane_); }
   };
 
   class Legend : public MetrixWidget {
-  public:
-    explicit Legend(MetrixPane& pane) : MetrixWidget(pane) { }
+   public:
+    explicit Legend(MetrixPane& pane) : MetrixWidget(pane) {}
 
 #if defined(UI_QT)
     // QWidget
@@ -55,14 +55,14 @@ class MetrixGraph : public views::Graph {
     virtual gfx::Size GetPreferredSize() const;
 #endif
 
-  private:
-    static const int GRAPH_LEG_MARGX	= 5;	// margin inside legend
-    static const int GRAPH_LEG_MARGY	= 2;	// margin inside legend
-    static const int GRAPH_LEG_ROW		= 13;	// legend row height
+   private:
+    static const int GRAPH_LEG_MARGX = 5;  // margin inside legend
+    static const int GRAPH_LEG_MARGY = 2;  // margin inside legend
+    static const int GRAPH_LEG_ROW = 13;   // legend row height
 
     int title_width_;
   };
-  
+
   class MetrixPane : public views::GraphPane {
    public:
     MetrixGraph& graph() const {
@@ -82,50 +82,49 @@ class MetrixGraph : public views::Graph {
     std::unique_ptr<Legend> legend_;
   };
 
- 
   class MetrixLine : public views::GraphLine {
    public:
     MetrixLine();
     virtual ~MetrixLine();
 
-    MetrixPane& pane() const { return static_cast<MetrixPane&>(GraphLine::plot().pane()); }
+    MetrixPane& pane() const {
+      return static_cast<MetrixPane&>(GraphLine::plot().pane());
+    }
     MetrixGraph& graph() const { return pane().graph(); }
 
     MetrixDataSource& data_source() { return *data_source_; }
     const MetrixDataSource& data_source() const { return *data_source_; }
 
     void UpdateTimeRange();
-    
+
     std::unique_ptr<MetrixDataSource> data_source_;
 
    protected:
-    // GraphDataSource::Observer
-    virtual void OnDataSourceHistoryChanged() override;
-    virtual void OnDataSourceCurrentValueChanged() override;
-    virtual void OnDataSourceItemChanged() override;
-    virtual void OnDataSourceDeleted() override;
+    // MetrixDataSource::Observer
+    virtual void OnDataSourceHistoryChanged();
+    virtual void OnDataSourceCurrentValueChanged();
+    virtual void OnDataSourceItemChanged();
+    virtual void OnDataSourceDeleted();
   };
 
-  explicit MetrixGraph(TimedDataService& timed_data_service);
+  explicit MetrixGraph(MetrixGraphContext&& context);
 
-  MetrixPane* selected_pane() const { return static_cast<MetrixPane*>(Graph::selected_pane()); }
+  MetrixPane* selected_pane() const {
+    return static_cast<MetrixPane*>(Graph::selected_pane());
+  }
   MetrixLine* primary_line() const {
     MetrixPane* pane = selected_pane();
     return pane ? pane->primary_line() : NULL;
   }
-  
+
   MetrixLine& NewLine(const std::string& path, MetrixPane& pane);
   MetrixPane& NewPane();
 
   void UpdateData();
-  
+
   // Graph
   virtual void UpdateCurBox() override;
 
  private:
-  TimedDataService& timed_data_service_;
-
-  scada::MonitoredItemService* monitored_item_service_;
-  
   base::RepeatingTimer update_data_timer_;
 };

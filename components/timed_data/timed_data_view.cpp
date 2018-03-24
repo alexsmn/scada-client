@@ -1,25 +1,30 @@
-#include "components/timed_data/timed_data_view.h"
-
-#include <ATLComTime.h>
+п»ї#include "components/timed_data/timed_data_view.h"
 
 #include "base/excel.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/scoped_variant.h"
 #include "client_utils.h"
+#include "common/formula_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/timed_data/timed_data_model.h"
 #include "controller_factory.h"
-#include "controls/table.h"
+#include "services/dialog_service.h"
 #include "window_definition.h"
 
-#if defined(UI_VIEWS)
-#include "commands/views/tvaldlg.h"
+#if defined(UI_QT)
+#include "controls/qt/table.h"
+#elif defined(UI_VIEWS)
+#include "skia/ext/skia_utils_win.h"
+#include "ui/views/controls/table/table_view.h"
 #endif
+
+#include <ATLComTime.h>
 
 namespace {
 
-const base::char16 kValueColumnTitle[] = L"Значение";
+const base::char16 kValueColumnTitle[] = L"Р—РЅР°С‡РµРЅРёРµ";
 
 void ValueToVariant(const scada::Variant& value,
                     base::win::ScopedVariant& result) {
@@ -44,7 +49,7 @@ void ValueToVariant(const scada::Variant& value,
 
 const ui::TableColumn s_columns[] = {
     ui::TableColumn(TimedDataModel::CID_TIME,
-                    L"Время",
+                    L"Р’СЂРµРјСЏ",
                     150,
                     ui::TableColumn::LEFT),
     ui::TableColumn(TimedDataModel::CID_VALUE,
@@ -52,11 +57,11 @@ const ui::TableColumn s_columns[] = {
                     150,
                     ui::TableColumn::RIGHT),
     ui::TableColumn(TimedDataModel::CID_QUALITY,
-                    L"Качество",
+                    L"РљР°С‡РµСЃС‚РІРѕ",
                     65,
                     ui::TableColumn::LEFT),
     ui::TableColumn(TimedDataModel::CID_COLLECTION_TIME,
-                    L"Время приема",
+                    L"Р’СЂРµРјСЏ РїСЂРёРµРјР°",
                     150,
                     ui::TableColumn::LEFT)};
 
@@ -67,8 +72,9 @@ const ui::TableColumn s_columns[] = {
 REGISTER_CONTROLLER(TimedDataView, ID_TIMED_DATA_VIEW);
 
 TimedDataView::TimedDataView(const ControllerContext& context)
-    : Controller(context),
-      model_(std::make_unique<TimedDataModel>(context.timed_data_service_)) {}
+    : Controller{context},
+      model_{std::make_unique<TimedDataModel>(
+          TimedDataModelContext{timed_data_service_})} {}
 
 UiView* TimedDataView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item"))
@@ -95,11 +101,11 @@ void TimedDataView::Save(WindowDefinition& definition) {
 }
 
 std::string GetTimedDataUnits(const rt::TimedDataSpec& spec) {
-  if (auto node = spec.GetNode())
-    return node[id::AnalogItemType_EngineeringUnits].value().get_or(
-        std::string{});
-  else
+  auto node = spec.GetNode();
+  if (!node)
     return std::string();
+  return node[id::AnalogItemType_EngineeringUnits].value().get_or(
+      std::string());
 }
 
 void TimedDataView::UpdateColumnTitles() {
@@ -119,27 +125,7 @@ base::string16 TimedDataView::MakeTitle() const {
 
 void TimedDataView::AddContainedItem(const scada::NodeId& node_id,
                                      unsigned flags) {
-  model_->SetFormula(node_id.ToString());
-}
-
-void TimedDataView::ShowSetupDialog() {
-#if defined(UI_VIEWS)
-  auto timed_data = model_->timed_data();
-  if (!timed_data.connected())
-    return;
-
-  TimeValDlg dlg;
-
-  dlg.start_time = timed_data.from();
-
-  if (dlg.DoModal(
-          static_cast<DialogServiceViews&>(dialog_service_).GetParentView()) !=
-      IDOK)
-    return;
-
-  timed_data.SetFrom(dlg.start_time);
-  model_->SetTimedData(timed_data);
-#endif
+  model_->SetFormula(MakeNodeIdFormula(node_id));
 }
 
 #if defined(UI_VIEWS)
@@ -150,7 +136,6 @@ void TimedDataView::ShowContextMenu(gfx::Point point) {
 
 CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
-    case ID_SETUP:
     case ID_EXPORT:
       return this;
   }
@@ -160,9 +145,6 @@ CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
 
 void TimedDataView::ExecuteCommand(unsigned command) {
   switch (command) {
-    case ID_SETUP:
-      ShowSetupDialog();
-      break;
     case ID_EXPORT:
       ExportToExcel();
       break;
@@ -195,8 +177,7 @@ void TimedDataView::ExportToExcel() {
           row, 1,
           base::win::ScopedVariant(COleDateTime(time.ToFileTime()), VT_DATE));
       sheet.SetData(row, 2, value);
-      base::string16 qualifier_string =
-          base::SysNativeMBToWide(FormatQuality(entry.vq.qualifier));
+      base::string16 qualifier_string = FormatQuality(entry.vq.qualifier);
       sheet.SetData(row, 3, base::win::ScopedVariant(qualifier_string.c_str()));
       sheet.SetData(
           row, 4,
@@ -210,11 +191,15 @@ void TimedDataView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    ShowMessageBox(dialog_service_, _T("Ошибка при экспорте."), _T("Экспорт"),
-                   MB_OK | MB_ICONSTOP);
+    dialog_service_.RunMessageBox(L"РћС€РёР±РєР° РїСЂРё СЌРєСЃРїРѕСЂС‚Рµ.", L"Р­РєСЃРїРѕСЂС‚",
+                                  MessageBoxMode::Error);
   }
 }
 
 bool TimedDataView::IsWorking() const {
-  return model_->IsWorking();
+  return !model_->timed_data().ready();
+}
+
+TimeModel* TimedDataView::GetTimeModel() {
+  return model_.get();
 }

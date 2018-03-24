@@ -1,26 +1,29 @@
 ﻿#include "client_application.h"
 
+#include "base/bind.h"
 #include "base/command_line.h"
+#include "base/files/file_util.h"
 #include "base/logger.h"
-#include "base/nested_logger.h"
 #include "base/path_service.h"
-#include "base/strings/string_util.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/win/dump.h"
 #include "client_paths.h"
-#include "client_utils.h"
+#include "common/address_space_fetcher.h"
+#include "common/address_space_node_service.h"
 #include "common/common_paths.h"
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
-#include "common/node_service_impl.h"
-#include "common_resources.h"
+#include "common/project.h"
+#include "common/remote_node_service.h"
 #include "components/main/action.h"
-#include "components/main/main_window.h"
+#include "components/main/main_window_manager.h"
 #include "components/modus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
-#include "core/session_service.h"
-#include "net/session_info.h"
+#include "core/configuration_impl.h"
+#include "core/monitored_item_service.h"
 #include "net/transport_factory_impl.h"
-#include "project.h"
+#include "remote/session_proxy.h"
+#include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
@@ -40,10 +43,8 @@ extern bool CreateOpcUaServices(const DataServicesContext& context,
                                 DataServices& services);
 
 REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
-REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
-REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
-
-ClientApplication* g_application = nullptr;
+// REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
+// REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
 
 namespace {
 
@@ -74,16 +75,17 @@ void RegisterFileCacheType(FileCache& cache,
   cache.RegisterType(type, name, ext);
 }
 
+void PollIoContext(boost::asio::io_context* context) {
+  context->poll();
+}
+
 }  // namespace
 
-ClientApplication::ClientApplication(int argc, char** argv)
-    : master_data_services_{std::make_shared<MasterDataServices>()} {}
-
-bool ClientApplication::Init() {
-  if (!base::CommandLine::Init(0, nullptr)) {
-    LOG(FATAL) << "Can't parse command line.";
-    return false;
-  }
+ClientApplication::ClientApplication(ClientApplicationContext&& context)
+    : ClientApplicationContext{std::move(context)},
+      master_data_services_{std::make_shared<MasterDataServices>()} {
+  if (!base::CommandLine::Init(0, nullptr))
+    throw std::runtime_error{"Can't parse command line."};
 
   scada::RegisterPathProvider();
   client::RegisterPathProvider();
@@ -108,16 +110,22 @@ bool ClientApplication::Init() {
       client::DIR_LOG, L"client",
       "Telecontrol SCADA Client " PROJECT_VERSION_DOTTED_STRING);
 
-  transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
+  io_context_ = std::make_unique<boost::asio::io_context>();
+  io_context_timer_ = std::make_unique<base::Timer>(true, true);
+  io_context_timer_->Start(
+      FROM_HERE, base::TimeDelta::FromMilliseconds(10),
+      base::Bind(&PollIoContext, base::Unretained(io_context_.get())));
 
-  return true;
+  transport_factory_ =
+      std::make_unique<net::TransportFactoryImpl>(*io_context_);
 }
 
 ClientApplication::~ClientApplication() {
-  main_windows_.clear();
+  main_window_manager_.reset();
 
+  // Don't save layout for QT.
   if (profile_ && profile_loaded_)
-    profile_->Save(*portfolio_manager_, *event_manager_, *favourites_);
+    profile_->Save(*event_manager_, *portfolio_manager_, *favourites_);
 
   VidiconClient::CleanupInstance();
 
@@ -125,63 +133,130 @@ ClientApplication::~ClientApplication() {
   // extern void ShutdownOpc();
   // ShutdownOpc();
 
-  action_manager_.reset();
-
   ModusModule2::SetInstance(nullptr);
   modus_module_.reset();
 
   file_cache_.reset();
 
   speech_.reset();
+  action_manager_.reset();
+  favourites_.reset();
   portfolio_manager_.reset();
   task_manager_.reset();
-  profile_.reset();
   local_events_.reset();
+
+  profile_.reset();
 
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
   event_manager_.reset();
   node_service_.reset();
 
-  // Remove SessionService observer.
   master_data_services_->RemoveObserver(*this);
+  master_data_services_ = nullptr;
+
+  transport_factory_.reset();
+  io_context_timer_.reset();
+  io_context_.reset();
 }
 
-bool ClientApplication::ShowLoginDialog() {
-  DataServicesContext context{
-      logger_,
-      *transport_factory_,
+std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
+  struct Context {
+    Context(const std::shared_ptr<Logger>& logger, MasterDataServices& services)
+        : node_service{RemoteNodeServiceContext{
+              std::make_shared<NestedLogger>(logger, "RemoteNodeService"),
+              services, services}},
+          node_service_notifier{node_service, services} {}
+
+    RemoteNodeService node_service;
+    SessionProxyNotifier<RemoteNodeService> node_service_notifier;
   };
 
-  DataServices services;
-  if (!ShowLoginDialogImpl(std::move(context), services))
-    return false;
-
-  master_data_services_->SetServices(std::move(services));
-  return true;
+  auto context = std::make_shared<Context>(logger_, *master_data_services_);
+  return std::shared_ptr<NodeService>{context, &context->node_service};
 }
 
-void ClientApplication::BeforeRun() {
-  // Add SessionService observer.
-  master_data_services_->AddObserver(*this);
+std::shared_ptr<NodeService>
+ClientApplication::CreateAddressSpaceNodeService() {
+  struct Context {
+    Context(std::shared_ptr<Logger> input_logger, MasterDataServices& services)
+        : logger{std::move(input_logger)},
+          services{services},
+          address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
+          address_space_fetcher{MakeAddressSpaceFetcherContext()},
+          address_space_fetcher_notifier{address_space_fetcher, services},
+          node_service{MakeAddressSpaceNodeServiceContext()} {}
 
-  node_service_ = std::make_unique<RemoteNodeService>(RemoteNodeServiceContext{
-      logger_,
-      *master_data_services_,
-      *master_data_services_,
-  });
+    AddressSpaceFetcherContext MakeAddressSpaceFetcherContext() {
+      return {
+          std::make_shared<NestedLogger>(logger, "AddressSpaceFetcher"),
+          services,
+          services,
+          address_space,
+          base::CommandLine::ForCurrentProcess()->HasSwitch("smart-node-fetch"),
+          [this](const scada::NodeId& node_id, const NodeFetchStatus& status) {
+            node_service.OnNodeFetchStatusChanged(node_id, status);
+          },
+      };
+    }
+
+    AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
+      return {std::make_shared<NestedLogger>(logger, "NodeService"),
+              [this](const scada::NodeId& node_id) {
+                return address_space_fetcher.GetNodeFetchStatus(node_id);
+              },
+              [this](const scada::NodeId& node_id,
+                     const NodeFetchStatus& requested_status) {
+                address_space_fetcher.FetchNode(node_id, requested_status);
+              },
+              address_space};
+    }
+
+    const std::shared_ptr<Logger> logger;
+    MasterDataServices& services;
+    ConfigurationImpl address_space;
+    AddressSpaceFetcher address_space_fetcher;
+    SessionProxyNotifier<AddressSpaceFetcher> address_space_fetcher_notifier;
+    AddressSpaceNodeService node_service;
+  };
+
+  auto logger =
+      base::CommandLine::ForCurrentProcess()->HasSwitch("verbose-logging")
+          ? logger_
+          : static_cast<std::shared_ptr<Logger>>(
+                std::make_shared<NullLogger>());
+
+  auto context = std::make_shared<Context>(logger, *master_data_services_);
+  return std::shared_ptr<NodeService>{context, &context->node_service};
+}
+
+void ClientApplication::SetServices(DataServices&& services) {
+  master_data_services_->SetServices(std::move(services));
+  master_data_services_->AddObserver(*this);
 
   event_manager_ =
       std::make_unique<events::EventManager>(events::EventManagerContext{
-          io_context_,
           *master_data_services_,
           *master_data_services_,
           *master_data_services_,
           std::make_shared<NestedLogger>(logger_, "EventManager"),
       });
+  if (master_data_services_->IsConnected())
+    event_manager_->OnChannelOpened(master_data_services_->GetUserId());
 
+  node_service_ =
+      base::CommandLine::ForCurrentProcess()->HasSwitch("new-node-service")
+          ? CreateRemoteNodeService()
+          : CreateAddressSpaceNodeService();
+
+  auto alias_logger =
+      base::CommandLine::ForCurrentProcess()->HasSwitch("verbose-logging")
+          ? static_cast<std::shared_ptr<Logger>>(
+                std::make_shared<NestedLogger>(logger_, "AliasService"))
+          : static_cast<std::shared_ptr<Logger>>(
+                std::make_shared<NullLogger>());
   auto alias_service = std::make_shared<AliasService>(AliasServiceContext{
-      std::make_shared<NestedLogger>(logger_, "AliasService"),
+      alias_logger,
       *node_service_,
   });
   alias_resolver_ = [alias_service](base::StringPiece alias,
@@ -189,31 +264,26 @@ void ClientApplication::BeforeRun() {
     alias_service->Resolve(alias, callback);
   };
 
-  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
-      io_context_,
-      alias_resolver_,
-      *node_service_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *event_manager_,
-  });
-
-  local_events_ = std::make_unique<LocalEvents>();
+  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
+      TimedDataContext{
+          alias_resolver_,
+          *node_service_,
+          *master_data_services_,
+          *master_data_services_,
+          *master_data_services_,
+          *master_data_services_,
+          *master_data_services_,
+          *event_manager_,
+      },
+      std::make_shared<NestedLogger>(logger_, "TimedDataService"));
 
   profile_ = std::make_unique<Profile>();
-
+  local_events_ = std::make_unique<LocalEvents>();
   task_manager_ = std::make_unique<TaskManagerImpl>(TaskManagerImplContext{
-      *node_service_,
-      *master_data_services_,
-      *local_events_,
-      *profile_,
-  });
+      *node_service_, *master_data_services_, *local_events_, *profile_});
   speech_.reset(new Speech);
 
-  file_cache_.reset(new FileCache);
+  file_cache_ = std::make_unique<FileCache>();
   RegisterFileCacheType(*file_cache_, VIEW_TYPE_MODUS, L".sde;.xsde");
   RegisterFileCacheType(*file_cache_, VIEW_TYPE_VIDICON_DISPLAY, L".vds");
   RegisterFileCacheType(*file_cache_, VIEW_TYPE_EXCEL_REPORT, L".tsr");
@@ -222,75 +292,23 @@ void ClientApplication::BeforeRun() {
   modus_module_.reset(new ModusModule2);
   ModusModule2::SetInstance(modus_module_.get());
 
+  action_manager_ = std::make_unique<ActionManager>(*node_service_);
+
   favourites_ = std::make_unique<Favourites>();
 
-  portfolio_manager_ = std::make_unique<PortfolioManager>(*node_service_);
+  portfolio_manager_ = std::make_unique<PortfolioManager>(
+      PortfolioManagerContext{*node_service_});
 
-  profile_->Load(*portfolio_manager_, *event_manager_, *favourites_);
+  profile_->Load(*event_manager_, *portfolio_manager_, *favourites_);
   profile_loaded_ = true;
 
-  typedef Profile::MainWindows Windows;
-  const Windows& window_defs = profile_->main_windows;
-  if (window_defs.empty()) {
-    auto window_id = profile_->CreateWindowId();
-    OpenMainWindow(window_id);
-  } else {
-    for (auto& p : window_defs)
-      OpenMainWindow(p.second.id);
-  }
-}
-
-void ClientApplication::NewMainWindow() {
-  int window_id = profile_->CreateWindowId();
-  OpenMainWindow(window_id);
-}
-
-void ClientApplication::OpenMainWindow(int window_id) {
-  if (main_windows_.find(window_id) != main_windows_.end())
-    return;
-
-  if (!action_manager_)
-    action_manager_ = std::make_unique<ActionManager>(*node_service_);
-
-  auto window = CreateMainWindow(MainWindowContext{
-      window_id,
-      *file_cache_,
-      *timed_data_service_,
-      *node_service_,
-      *portfolio_manager_,
-      *task_manager_,
-      *action_manager_,
-      *profile_,
-      *local_events_,
-      *event_manager_,
-      [this](int window_id) { CloseMainWindow(window_id); },
-      [this](int page_id) { return IsPageOpened(page_id); },
-      [this] { return FindFirstNotOpenedPage(); },
-      [this](const base::FilePath& path) {
-        return FindOpenedViewByFilePath(path);
-      },
-      [this] { NewMainWindow(); },
-      *speech_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *favourites_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-  });
-
-  if (window)
-    main_windows_[window_id] = std::move(window);
-}
-
-void ClientApplication::CloseMainWindow(int window_id) {
-  main_windows_.erase(window_id);
-
-  if (main_windows_.empty())
-    Quit();
-  else
-    profile_->main_windows.erase(window_id);
+  main_window_manager_ =
+      std::make_unique<MainWindowManager>(MainWindowManagerContext{
+          alias_resolver_, *task_manager_, *master_data_services_,
+          *master_data_services_, *master_data_services_, *event_manager_,
+          *master_data_services_, *master_data_services_, *timed_data_service_,
+          *portfolio_manager_, *node_service_, *action_manager_, *local_events_,
+          *favourites_, *file_cache_, *speech_, *profile_, quit_handler_});
 }
 
 void ClientApplication::OnSessionCreated() {
@@ -301,33 +319,6 @@ void ClientApplication::OnSessionDeleted(const scada::Status& status) {
   event_manager_->OnChannelClosed();
 }
 
-bool ClientApplication::IsPageOpened(int page_id) {
-  for (auto& p : main_windows_) {
-    auto* page = p.second->GetCurrentPage();
-    if (page && page->id == page_id)
-      return true;
-  }
-  return false;
-}
-
-Page* ClientApplication::FindFirstNotOpenedPage() {
-  for (auto& p : profile_->pages()) {
-    if (!IsPageOpened(p.second.id))
-      return &p.second;
-  }
-  return NULL;
-}
-
-OpenedView* ClientApplication::FindOpenedViewByFilePath(
-    const base::FilePath& path) {
-  for (auto& p : main_windows_) {
-    auto view = p.second->FindOpenedViewByFilePath(path);
-    if (view)
-      return view;
-  }
-  return NULL;
-}
-
-scada::SessionService& ClientApplication::session_service() {
-  return *master_data_services_;
+DataServicesContext ClientApplication::MakeDataServicesContext() {
+  return {logger_, base::ThreadTaskRunnerHandle::Get(), *transport_factory_};
 }

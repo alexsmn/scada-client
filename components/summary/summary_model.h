@@ -4,6 +4,7 @@
 
 #include "base/time/time.h"
 #include "core/configuration_types.h"
+#include "time_model.h"
 #include "ui/base/models/grid_model.h"
 
 namespace scada {
@@ -13,20 +14,19 @@ class DataValue;
 class TimedDataService;
 class WindowDefinition;
 
-class SummaryModel : public ui::GridModel {
+struct SummaryModelContext {
+  TimedDataService& timed_data_service_;
+};
+
+class SummaryModel : private SummaryModelContext,
+                     public ui::GridModel,
+                     public TimeModel {
  public:
-  explicit SummaryModel(TimedDataService& timed_data_service);
+  explicit SummaryModel(SummaryModelContext&& context);
 
-  TimedDataService& timed_data_service() { return timed_data_service_; }
-
-  struct Times {
-    base::Time start_time;
-    base::Time end_time;
-    base::TimeDelta interval;
-  };
-
-  const Times& times() const { return times_; }
-  void SetTimes(const Times& times);
+  const TimeRange& time_range() const { return time_range_; }
+  base::TimeDelta interval() const { return interval_; }
+  void SetTimes(const TimeRange& time_range, base::TimeDelta interval);
 
   int AddColumn(const std::string& formula);
 
@@ -36,8 +36,14 @@ class SummaryModel : public ui::GridModel {
   ui::HeaderModel& row_model();
   ui::HeaderModel& column_model();
 
+  TimedDataService& timed_data_service() { return timed_data_service_; }
+
   // ui::GridModel
   virtual void GetCell(ui::GridCell& cell) override;
+
+  // TimeModel
+  virtual TimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const TimeRange& time_range) override;
 
  private:
   class Cell;
@@ -52,13 +58,14 @@ class SummaryModel : public ui::GridModel {
   void OnColumnChanged(int column);
   void OnColumnTitleChanged(int column);
 
-  TimedDataService& timed_data_service_;
-
   std::vector<std::unique_ptr<Column>> columns_;
 
-  Times times_;
+  base::Time start_time_;
+  base::Time end_time_;
+  base::TimeDelta interval_;
+  TimeRange time_range_;
 
-  size_t row_count_;
+  size_t row_count_ = 0;
 
   std::unique_ptr<RowModel> row_model_;
   std::unique_ptr<ColumnModel> column_model_;

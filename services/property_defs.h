@@ -3,27 +3,15 @@
 #include <vector>
 
 #include "base/strings/string16.h"
+#include "common/node_ref.h"
 #include "core/configuration_types.h"
 #include "ui/base/models/table_column.h"
 
-namespace scada {
-class NodeManagementService;
-class ViewService;
-}
-
-class NodeRef;
-class NodeService;
 class HierachicalPropertyDefinition;
+class NodeService;
 class TaskManager;
 
 typedef std::pair<base::string16, bool /*read_only*/> PropertyValue;
-
-struct PropertyContext {
-  scada::ViewService& view_service_;
-  NodeService& node_service_;
-  TaskManager& task_manager_;
-  scada::NodeManagementService& node_management_service_;
-};
 
 struct PropertyEditor {
   enum Type { NONE, SIMPLE, DROPDOWN, BUTTON };
@@ -34,6 +22,11 @@ struct PropertyEditor {
   std::vector<base::string16> choices;
 };
 
+struct PropertyContext {
+  NodeService& node_service_;
+  TaskManager& task_manager_;
+};
+
 class PropertyDefinition {
  public:
   explicit PropertyDefinition(ui::TableColumn::Alignment alignment,
@@ -42,26 +35,27 @@ class PropertyDefinition {
   ui::TableColumn::Alignment alignment() const { return alignment_; }
   int width() const { return width_; }
 
-  bool IsReadOnly(const NodeRef& node, const scada::NodeId& prop_type_id) const;
+  virtual bool IsReadOnly(const NodeRef& node,
+                          const scada::NodeId& prop_decl_id) const;
 
-  virtual base::string16 GetTitle(PropertyContext& context,
-                                  const NodeRef& property_declaration) const;
+  virtual base::string16 GetTitle(const PropertyContext& context,
+                                  const scada::NodeId& prop_decl_id) const;
 
   virtual const HierachicalPropertyDefinition* AsHierarchical() const {
     return nullptr;
   }
 
-  virtual base::string16 GetText(PropertyContext& context,
+  virtual base::string16 GetText(const PropertyContext& context,
                                  const NodeRef& node,
-                                 const scada::NodeId& prop_type_id) const;
-  virtual void SetText(PropertyContext& context,
+                                 const scada::NodeId& prop_decl_id) const;
+  virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
-                       const scada::NodeId& prop_type_id,
+                       const scada::NodeId& prop_decl_id,
                        const base::string16& text) const;
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& type_definition,
-      const scada::NodeId& prop_type_id) const;
+      const scada::NodeId& prop_decl_id) const;
 
  private:
   ui::TableColumn::Alignment alignment_;
@@ -92,17 +86,19 @@ class ReferencePropertyDefinition : public PropertyDefinition {
 
   // PropertyDefinition
   virtual base::string16 GetText(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& node,
-      const scada::NodeId& prop_type_id) const override;
-  virtual void SetText(PropertyContext& context,
+      const scada::NodeId& prop_decl_id) const override;
+  virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
-                       const scada::NodeId& prop_type_id,
+                       const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& type_definition,
-      const scada::NodeId& prop_type_id) const override;
+      const scada::NodeId& prop_decl_id) const override;
+  virtual bool IsReadOnly(const NodeRef& node,
+                          const scada::NodeId& prop_decl_id) const override;
 };
 
 class BoolPropertyDefinition : public PropertyDefinition {
@@ -110,10 +106,14 @@ class BoolPropertyDefinition : public PropertyDefinition {
   BoolPropertyDefinition() : PropertyDefinition(ui::TableColumn::CENTER) {}
 
   // PropertyDefinition
+  virtual base::string16 GetText(
+      const PropertyContext& context,
+      const NodeRef& node,
+      const scada::NodeId& prop_decl_id) const override;
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& type_definition,
-      const scada::NodeId& prop_type_id) const override;
+      const scada::NodeId& prop_decl_id) const override;
 };
 
 class EnumPropertyDefinition : public PropertyDefinition {
@@ -122,17 +122,17 @@ class EnumPropertyDefinition : public PropertyDefinition {
 
   // PropertyDefinition
   virtual base::string16 GetText(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& node,
-      const scada::NodeId& prop_type_id) const override;
-  virtual void SetText(PropertyContext& context,
+      const scada::NodeId& prop_decl_id) const override;
+  virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
-                       const scada::NodeId& prop_type_id,
+                       const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
-      const NodeRef& type,
-      const scada::NodeId& prop_type_id) const override;
+      const PropertyContext& context,
+      const NodeRef& type_definition,
+      const scada::NodeId& prop_decl_id) const override;
 };
 
 class ChannelPropertyDefinition : public PropertyDefinition {
@@ -144,20 +144,20 @@ class ChannelPropertyDefinition : public PropertyDefinition {
 
   // PropertyDefinition
   virtual base::string16 GetTitle(
-      PropertyContext& context,
-      const NodeRef& property_declaration) const override;
+      const PropertyContext& context,
+      const scada::NodeId& prop_decl_id) const override;
   virtual base::string16 GetText(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& node,
-      const scada::NodeId& prop_type_id) const override;
-  virtual void SetText(PropertyContext& context,
+      const scada::NodeId& prop_decl_id) const override;
+  virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
-                       const scada::NodeId& prop_type_id,
+                       const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& type_definition,
-      const scada::NodeId& prop_type_id) const override;
+      const scada::NodeId& prop_decl_id) const override;
 
  private:
   base::string16 title_;
@@ -170,9 +170,9 @@ class TransportPropertyDefinition : public PropertyDefinition {
 
   // PropertyDefinition
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& type_definition,
-      const scada::NodeId& prop_type_id) const override;
+      const scada::NodeId& prop_decl_id) const override;
 };
 
 class ColorPropertyDefinition : public PropertyDefinition {
@@ -180,22 +180,22 @@ class ColorPropertyDefinition : public PropertyDefinition {
   ColorPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual base::string16 GetText(
-      PropertyContext& context,
+  virtual base::string16 GetText(const PropertyContext& context,
       const NodeRef& node,
-      const scada::NodeId& prop_type_id) const override;
-  virtual void SetText(PropertyContext& context,
+      const scada::NodeId& prop_decl_id) const override;
+  virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
-                       const scada::NodeId& prop_type_id,
+                       const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
   virtual PropertyEditor GetPropertyEditor(
-      PropertyContext& context,
+      const PropertyContext& context,
       const NodeRef& type_definition,
-      const scada::NodeId& prop_type_id) const override;
+      const scada::NodeId& prop_decl_id) const override;
 };
 
-typedef std::vector<std::pair<NodeRef /*prop_decl*/, const PropertyDefinition*>>
+typedef std::vector<
+    std::pair<scada::NodeId /*prop_decl_id*/, const PropertyDefinition*>>
     PropertyDefs;
 
-const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_type_id);
-PropertyDefs GetTypeProperties(const NodeRef& type_definition);
+const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_decl_id);
+PropertyDefs GetTypeProperties(const NodeRef& type);

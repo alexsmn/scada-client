@@ -1,24 +1,26 @@
-#include "components/main/opened_view.h"
+ï»¿#include "opened_view.h"
 
+#include "action.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "commands/add_multiple_items_dialog.h"
 #include "commands/add_service_items_dialog.h"
+#include "commands/time_range_dialog.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common/static_types.h"
 #include "common_resources.h"
-#include "components/main/action.h"
-#include "components/main/client_commands.h"
-#include "components/main/main_window.h"
 #include "components/main/main_window_util.h"
 #include "components/main/selection_commands.h"
 #include "controller.h"
 #include "controller_factory.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
+#include "main_window.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
+#include "time_model.h"
 #include "window_definition.h"
 #include "window_info.h"
 
@@ -32,82 +34,132 @@ namespace {
 
 NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
                             const NodeRef& root,
-                            const NodeRef& new_component_type) {
-  for (auto& parent : {suggested_parent, root}) {
+                            const NodeRef& component_type) {
+  if (!component_type)
+    return nullptr;
+
+  for (auto parent : {suggested_parent, root}) {
     if (!parent)
       continue;
 
-    for (auto& target : parent.type_definition().targets(id::Creates)) {
-      if (IsSubtypeOf(new_component_type, target.id()))
-        return parent;
-    }
+    auto type = parent.type_definition();
+    if (type && HasComponent(type, component_type))
+      return parent;
   }
 
   return nullptr;
 }
 
+void AwaitNode(const NodeRef& node, const std::function<void()>& callback) {
+  class Awaiter final : public std::enable_shared_from_this<Awaiter>,
+                        private NodeRefObserver {
+   public:
+    ~Awaiter() { Reset(); }
+
+    void Await(const NodeRef& node, const std::function<void()>& callback) {
+      assert(callback);
+
+      node_ = node;
+      if (!node_ || node_.fetched()) {
+        callback();
+        return;
+      }
+
+      self_ = shared_from_this();
+      callback_ = std::move(callback);
+      node_.Subscribe(*this);
+    }
+
+   private:
+    void Check() {
+      if (!node_.fetched())
+        return;
+
+      assert(callback_);
+      auto callback = std::move(callback_);
+      Reset();
+      self_ = nullptr;
+      base::ThreadTaskRunnerHandle::Get()->PostTask(
+          FROM_HERE, base::Bind(&Awaiter::Invoke, callback));
+    }
+
+    void Reset() {
+      if (node_) {
+        node_.Unsubscribe(*this);
+        node_ = nullptr;
+      }
+      callback_ = nullptr;
+    }
+
+    static void Invoke(const std::function<void()>& callback) { callback(); }
+
+    // NodeRefObserver
+    virtual void OnModelChanged(const scada::ModelChangeEvent& event) override {
+      assert(event.node_id == node_.id());
+      Check();
+    }
+
+    virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override {
+      assert(node_id == node_.id());
+      Check();
+    }
+
+    NodeRef node_;
+    std::function<void()> callback_;
+    std::shared_ptr<Awaiter> self_;
+  };
+
+  std::make_shared<Awaiter>()->Await(node, callback);
+}
+
 }  // namespace
 
-OpenedView::OpenedView(const OpenedViewContext& context)
-    : OpenedViewContext(context),
-      modified_(false),
-      working_(false),
-      view_(nullptr),
-      window_info_(*context.definition_.window_info()),
-      window_id_(context.definition_.id),
-      weak_factory_(this) {
-  controller_ =
-      CreateController(window_info_.command_id, ControllerContext{
-                                                    *this,
-                                                    timed_data_service_,
-                                                    node_service_,
-                                                    portfolio_manager_,
-                                                    task_manager_,
-                                                    profile_,
-                                                    local_events_,
-                                                    event_manager_,
-                                                    file_cache_,
-                                                    node_management_service_,
-                                                    history_service_,
-                                                    favourites_,
-                                                    dialog_service_,
-                                                    session_service_,
-                                                    monitored_item_service_,
-                                                    view_service_,
-                                                });
+OpenedView::OpenedView(const OpenedViewContext& context,
+                       const WindowDefinition& definition)
+    : OpenedViewContext{context},
+      window_info_{definition.window_info()},
+      window_id_{definition.id} {
+  ControllerContext controller_context{
+      *this,
+      alias_resolver_,
+      task_manager_,
+      session_service_,
+      event_manager_,
+      history_service_,
+      monitored_item_service_,
+      timed_data_service_,
+      node_service_,
+      portfolio_manager_,
+      local_events_,
+      favourites_,
+      file_cache_,
+      profile_,
+      dialog_service_,
+  };
+  controller_ = CreateController(window_info_.command_id, controller_context);
   if (!controller_)
-    throw std::exception("View type not found");
+    throw std::runtime_error{"View type not found"};
 
-  title_ = user_title_ = context.definition_.title;
+  title_ = user_title_ = definition.title;
 
   selection_commands_ =
       std::make_unique<SelectionCommands>(SelectionCommandsContext{
-          main_window_,
-          timed_data_service_,
-          task_manager_,
-          profile_,
-          local_events_,
-          event_manager_,
-          session_service_,
-          node_management_service_,
-          method_service_,
-          file_cache_,
-          dialog_service_,
-          find_opened_view_,
-          node_service_,
-          view_service_,
-      });
+          *main_window_, task_manager_, method_service_, session_service_,
+          node_management_service_, event_manager_, timed_data_service_,
+          local_events_, file_cache_, profile_, dialog_service_,
+          main_window_manager_});
   selection_commands_->set_selection(&controller_->selection());
 
-  auto* view = controller_->Init(context.definition_);
+  auto* view = controller_->Init(definition);
   if (!view)
-    throw std::runtime_error("Can't create widget");
+    throw std::runtime_error{"Can't create widget"};
   view_ = view;
 
 #if defined(UI_QT)
   view_->setContextMenuPolicy(Qt::CustomContextMenu);
   QObject::connect(view_, &QWidget::customContextMenuRequested,
                    [this](const QPoint& pos) {
+                     // TODO: Avoid the cast.
                      static_cast<MainWindowQt*>(main_window_)
                          ->context_menu()
                          .exec(view_->mapToGlobal(pos));
@@ -159,7 +211,7 @@ base::string16 OpenedView::GetWindowTitle() const {
 void OpenedView::UpdateTitle() {
   base::string16 title = GetWindowTitle();
   if (working_)
-    title += L" [Âûïîëíåíèå]";
+    title += L" [Ð’Ñ‹Ð¿Ð¾Ð»Ð½ÐµÐ½Ð¸Ðµ]";
 
   assert(main_window_);
   main_window_->OnViewTitleUpdated(*this, title);
@@ -190,6 +242,12 @@ CommandHandler* OpenedView::GetCommandHandler(unsigned command_id) {
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
       return CanCreateRecord(id::Iec60870LinkType) ? this : NULL;
+
+    case ID_TIME_RANGE_DAY:
+    case ID_TIME_RANGE_WEEK:
+    case ID_TIME_RANGE_MONTH:
+    case ID_TIME_RANGE_CUSTOM:
+      return controller_->GetTimeModel() != nullptr ? this : NULL;
   }
 
   auto node_id = GetNewCommandTypeId(command_id);
@@ -215,13 +273,28 @@ void OpenedView::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_NEW_SERVICE_ITEMS:
-      ShowAddServiceItemsDialog(view_service_, node_service_,
-                                controller_->selection().node(), task_manager_);
+      ShowAddServiceItemsDialog(node_service_, task_manager_,
+                                controller_->selection().node().id());
       return;
     case ID_ADD_MULTIPLE_ITEMS:
-      ShowAddMultipleItemsDialog(view_service_, node_service_,
-                                 controller_->selection().node(),
-                                 task_manager_);
+      ShowAddMultipleItemsDialog(node_service_, task_manager_,
+                                 controller_->selection().node().id());
+      return;
+
+    case ID_TIME_RANGE_DAY:
+    case ID_TIME_RANGE_WEEK:
+    case ID_TIME_RANGE_MONTH:
+      if (auto* model = controller_->GetTimeModel())
+        model->SetTimeRange(TimeRange{command_id});
+      return;
+
+    case ID_TIME_RANGE_CUSTOM:
+      if (auto* model = controller_->GetTimeModel()) {
+        auto range = model->GetTimeRange();
+        bool time_required = model->IsTimeRequired();
+        if (ShowTimeRangeDialog(profile_, range, time_required))
+          model->SetTimeRange(range);
+      }
       return;
   }
 
@@ -235,34 +308,44 @@ void OpenedView::ExecuteCommand(unsigned command_id) {
   assert(false);
 }
 
+bool OpenedView::IsCommandChecked(unsigned command_id) const {
+  switch (command_id) {
+    case ID_TIME_RANGE_DAY:
+    case ID_TIME_RANGE_WEEK:
+    case ID_TIME_RANGE_MONTH:
+    case ID_TIME_RANGE_CUSTOM:
+      if (auto* model = controller_->GetTimeModel())
+        return model->GetTimeRange().command_id == command_id;
+      return false;
+
+    default:
+      return false;
+  }
+}
+
 ContentsModel* OpenedView::GetContentsModel() {
   return controller_->GetContentsModel();
 }
 
 bool OpenedView::CanCreateRecord(const scada::NodeId& type_node_id) const {
-  if (!session_service_.IsAdministrator())
-    return false;
-
-  auto type_definition = node_service_.GetNode(type_node_id);
-  if (!type_definition.fetched())
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return false;
 
   return GetCreateParentNode(controller_->selection().node(),
                              controller_->GetRootNode(),
-                             type_definition) != nullptr;
+                             node_service_.GetNode(type_node_id)) != nullptr;
 }
 
 void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
-  if (!session_service_.IsAdministrator())
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return;
 
-  auto type_definition = node_service_.GetNode(type_node_id);
-  if (!type_definition.fetched())
+  auto node_type = node_service_.GetNode(type_node_id);
+  if (!node_type)
     return;
 
-  auto parent_node =
-      GetCreateParentNode(controller_->selection().node(),
-                          controller_->GetRootNode(), type_definition);
+  auto parent_node = GetCreateParentNode(controller_->selection().node(),
+                                         controller_->GetRootNode(), node_type);
   if (!parent_node)
     return;
 
@@ -272,12 +355,11 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
   bool is104 = tag != 0;
 
   // name
-  auto browse_name = type_definition.browse_name();
+  attributes.display_name = node_type.display_name();
   if (type_node_id == id::Iec60870LinkType) {
-    browse_name = is104 ? scada::QualifiedName{"Íàïðàâëåíèå ÌÝÊ-60870-104", 0}
-                        : scada::QualifiedName{"Íàïðàâëåíèå ÌÝÊ-60870-101", 0};
+    attributes.display_name =
+        is104 ? L"ÐÐ°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÐœÐ­Ðš-60870-104" : L"ÐÐ°Ð¿Ñ€Ð°Ð²Ð»ÐµÐ½Ð¸Ðµ ÐœÐ­Ðš-60870-101";
   }
-  attributes.set_browse_name(browse_name);
 
   // IEC link specific.
   if (type_node_id == id::Iec60870LinkType) {
@@ -297,41 +379,41 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
       ts.SetParam(net::TransportString::kParamName, "COM1");
     }
     ts.SetParam(net::TransportString::kParamActive);
-    properties.emplace_back(id::LinkType_Transport, ts.ToString());
+    properties.emplace_back(kLinkTransportStringPropTypeId, ts.ToString());
   }
 
+  auto dispay_name = attributes.display_name;
   auto weak_ptr = weak_factory_.GetWeakPtr();
   task_manager_.PostInsertTask(
       scada::NodeId(), parent_node.id(), type_node_id, std::move(attributes),
       std::move(properties),
-      [weak_ptr, browse_name](const scada::Status& status,
+      [weak_ptr, dispay_name](const scada::Status& status,
                               const scada::NodeId& node_id) {
         if (auto ptr = weak_ptr.get())
-          ptr->OnCreateRecordComplete(browse_name, status, node_id);
+          ptr->OnCreateRecordComplete(dispay_name, status, node_id);
       });
 }
 
-void OpenedView::OnCreateRecordComplete(const scada::QualifiedName& browse_name,
-                                        const scada::Status& status,
-                                        const scada::NodeId& node_id) {
-  base::string16 title = base::StringPrintf(
-      L"Ñîçäàíèå \"%ls\"", base::SysNativeMBToWide(browse_name.name()).c_str());
+void OpenedView::OnCreateRecordComplete(
+    const scada::LocalizedText& display_name,
+    const scada::Status& status,
+    const scada::NodeId& node_id) {
+  base::string16 title =
+      base::StringPrintf(L"Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ \"%ls\"", display_name.c_str());
   ReportRequestResult(title, status, local_events_, profile_);
 
   if (!status)
     return;
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
-  node_service_.GetNode(node_id).Fetch(
-      NodeFetchStatus::NodeOnly(), [weak_ptr](const NodeRef& node) {
-        if (!node.status())
-          return;
-        auto* ptr = weak_ptr.get();
-        if (!ptr)
-          return;
-        ptr->controller_->OnViewNodeCreated(node);
-        client::OpenRecordEditor(ptr->main_window_, node);
-      });
+  auto node = node_service_.GetNode(node_id);
+  AwaitNode(node, [weak_ptr, node] {
+    if (auto* ptr = weak_ptr.get()) {
+      ptr->controller_->OnViewNodeCreated(node);
+      auto def = MakeWindowDefinition(node, ID_PROPERTY_VIEW, false);
+      ::OpenView(&ptr->main_window(), def, true);
+    }
+  });
 }
 
 void OpenedView::SetSelection(const scada::NodeId& item_id) {
@@ -355,7 +437,7 @@ void OpenedView::SetTitle(const base::StringPiece16& title) {
 }
 
 void OpenedView::Save(WindowDefinition& definition) {
-  assert(&window_info() == definition.window_info());
+  assert(&window_info() == &definition.window_info());
 
   definition.Clear();
   definition.title = user_title_;
@@ -365,12 +447,17 @@ void OpenedView::Save(WindowDefinition& definition) {
 }
 
 void OpenedView::OpenView(const WindowDefinition& def) {
-  assert(main_window_);
-  main_window_->OpenView(def, true);
+  ::OpenView(main_window_, def, true);
 }
 
 void OpenedView::ExecuteDefaultNodeCommand(const NodeRef& node) {
-  ::ExecuteDefaultNodeCommand(view_service_, node_service_, node, main_window_);
+  WORD shift = 0;
+  if (::GetAsyncKeyState(VK_SHIFT))
+    shift |= MK_SHIFT;
+  if (::GetAsyncKeyState(VK_CONTROL))
+    shift |= MK_CONTROL;
+
+  ::ExecuteDefaultNodeCommand(main_window_, node, shift);
 }
 
 ContentsModel* OpenedView::GetActiveContentsModel() {

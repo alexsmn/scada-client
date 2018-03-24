@@ -8,11 +8,9 @@
 #include "core/configuration_types.h"
 #include "timed_data/timed_data_spec.h"
 
-class NodeService;
 class TimedDataService;
 
 struct SelectionModelContext {
-  NodeService& node_service_;
   TimedDataService& timed_data_service_;
 };
 
@@ -28,7 +26,6 @@ class SelectionModel final : private SelectionModelContext,
 
   void Clear();
   void SelectNode(const NodeRef& node);
-  void SelectNodeId(const scada::NodeId& node_id);
   void SelectTimedData(const rt::TimedDataSpec& spec);
   void SelectMultiple();
 
@@ -53,12 +50,12 @@ class SelectionModel final : private SelectionModelContext,
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  virtual void OnNodeFetched(const scada::NodeId& node_id,
+                             bool children) override;
 
   enum Type { EMPTY, NODE, SPEC, MULTI };
   Type type_ = EMPTY;
 
   rt::TimedDataSpec timed_data_;
   NodeRef node_;
-
-  std::shared_ptr<bool> pending_request_;
 };

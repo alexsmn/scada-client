@@ -1,10 +1,10 @@
-#include "services/speech.h"
+#include "speech.h"
 
 #include <atlbase.h>
 
-#include "services/sapi.h"
-#include "services/profile.h"
 #include "core/monitored_item_service.h"
+#include "sapi.h"
+#include "services/profile.h"
 
 //#import "libid:C866CA3A-32F7-11D2-9602-00C04F8EE628" raw_interfaces_only
 
@@ -23,21 +23,20 @@ typedef enum SPEAKFLAGS {
 
   // Masks
   SPF_NLP_MASK = (SPF_NLP_SPEAK_PUNC),
-  SPF_VOICE_MASK = (SPF_ASYNC|SPF_PURGEBEFORESPEAK|SPF_IS_FILENAME|
-  SPF_IS_XML|SPF_IS_NOT_XML|SPF_NLP_MASK|SPF_PERSIST_XML),
+  SPF_VOICE_MASK =
+      (SPF_ASYNC | SPF_PURGEBEFORESPEAK | SPF_IS_FILENAME | SPF_IS_XML |
+       SPF_IS_NOT_XML | SPF_NLP_MASK | SPF_PERSIST_XML),
   SPF_UNUSED_FLAGS = ~(SPF_VOICE_MASK)
 } SPEAKFLAGS;
 
-Speech::Speech()
-    : voice_(NULL) {
+Speech::Speech() : voice_(NULL) {
   SpeechLib::ISpVoice* voice = nullptr;
   CoCreateInstance(__uuidof(SpeechLib::SpVoice), NULL, CLSCTX_ALL,
-      __uuidof(SpeechLib::ISpVoice), (void**)&voice);
+                   __uuidof(SpeechLib::ISpVoice), (void**)&voice);
   voice_.swap(&voice);
 }
 
-Speech::~Speech() {
-}
+Speech::~Speech() {}
 
 void Speech::Speak(const base::StringPiece16& text) {
   if (!voice_)

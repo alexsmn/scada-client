@@ -2,19 +2,16 @@
 
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
-#include "components/main/main_window.h"
-#include "controls/tree.h"
 #include "controller_factory.h"
+#include "controls/tree.h"
 
 REGISTER_CONTROLLER(FavouritesView, ID_FAVOURITES_VIEW);
 
 FavouritesView::FavouritesView(const ControllerContext& context)
-    : Controller(context),
-      favourites_tree_model_(std::make_unique<FavouritesTreeModel>(favourites_)) {
-}
+    : Controller{context},
+      favourites_tree_model_(new FavouritesTreeModel(favourites_)) {}
 
-FavouritesView::~FavouritesView() {
-}
+FavouritesView::~FavouritesView() {}
 
 UiView* FavouritesView::Init(const WindowDefinition& definition) {
   tree_view_.reset(new Tree(*favourites_tree_model_));
@@ -44,44 +41,44 @@ void FavouritesView::OpenSelection() {
   const FavouritesNode* node =
       reinterpret_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
   const FavouritesWindowNode* window_node = node ? node->AsWindowNode() : NULL;
-	if (window_node)
-		controller_delegate_.OpenView(window_node->window());
+  if (window_node)
+    controller_delegate_.OpenView(window_node->window());
 }
 
 CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
-	switch (command_id) {
-		case ID_OPEN: {
-      const FavouritesNode* node =
-        reinterpret_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+  switch (command_id) {
+    case ID_OPEN: {
+      const FavouritesNode* node = reinterpret_cast<const FavouritesNode*>(
+          tree_view_->GetSelectedNode());
       return node && node->AsWindowNode() ? this : NULL;
     }
 
-		case ID_RENAME:
-		case ID_DELETE:
-			return tree_view_->GetSelectedNode() ? this : NULL;
-			
-		default:
-			return __super::GetCommandHandler(command_id);
-	}
+    case ID_RENAME:
+    case ID_DELETE:
+      return tree_view_->GetSelectedNode() ? this : NULL;
+
+    default:
+      return __super::GetCommandHandler(command_id);
+  }
 }
 
 void FavouritesView::ExecuteCommand(unsigned command) {
-	switch (command) {
-		case ID_OPEN:
-			OpenSelection();
-			break;
+  switch (command) {
+    case ID_OPEN:
+      OpenSelection();
+      break;
 
-		case ID_RENAME:
-			if (void* node = tree_view_->GetSelectedNode())
-				tree_view_->StartEditing(node);
-			break;
-			
-		case ID_DELETE:
-			DeleteSelection();
-			break;
+    case ID_RENAME:
+      if (void* node = tree_view_->GetSelectedNode())
+        tree_view_->StartEditing(node);
+      break;
 
-		default:
-			__super::ExecuteCommand(command);
-			break;
-	}
+    case ID_DELETE:
+      DeleteSelection();
+      break;
+
+    default:
+      __super::ExecuteCommand(command);
+      break;
+  }
 }

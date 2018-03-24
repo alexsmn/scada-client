@@ -1,12 +1,13 @@
 #pragma once
 
-#include "base/files/file_util.h"
+#include "base/files/file_path.h"
 #include "base/time/time.h"
-#include "ui/gfx/rect.h"
+#include "core/node_id.h"
 #include "services/page.h"
+#include "ui/gfx/rect.h"
 
-#include <map>
 #include <SkColor.h>
+#include <map>
 
 namespace events {
 class EventManager;
@@ -27,66 +28,82 @@ struct MainWindowDef {
 
 class Profile {
  public:
-  typedef std::map<int, Page>	PageMap;
+  typedef std::map<int, Page> PageMap;
 
   Profile();
+
+  Profile(const Profile&) = delete;
+  Profile& operator=(const Profile&) = delete;
 
   Page& CreatePage();
 
   int CreateWindowId();
   MainWindowDef& GetMainWindow(int id);
 
-  PageMap& pages() { return pages_; }
-  Page& trash() { return trash_; }
-  Page& out_wins() { return out_wins_; }
-  SkColor bad_value_color() const { return bad_value_color_; }
+  PageMap pages;
+
+  Page trash;
+
+  Page out_wins;  // windows out-of-page
+
+  SkColor bad_value_color = SkColorSetRGB(192, 192, 192);
 
   struct Column {
     int id;
     int width;
   };
   typedef std::vector<Column> Columns;
-  void set_default_table_columns(const Columns& columns) { columns_ = columns; }
+  Columns default_table_columns;
 
-  void set_bad_value_color(SkColor color) { bad_value_color_ = color; }
-
-  void Load(PortfolioManager& portfolio_manager, events::EventManager& event_manager, Favourites& favourites);
-  void Save(const PortfolioManager& portfolio_manager, const events::EventManager& event_manager, const Favourites& favourites);
+  void Load(events::EventManager& event_manager,
+            PortfolioManager& portfolio_manager,
+            Favourites& favourites);
+  void Save(const events::EventManager& event_manager,
+            const PortfolioManager& portfolio_manager,
+            const Favourites& favourites);
 
   typedef std::map<int, MainWindowDef> MainWindows;
   MainWindows main_windows;
 
   // display message box also in case if telecontrol is succeeded
-  bool show_write_ok;
+  bool show_write_ok = true;
   // display event window on new events
-  bool event_auto_show;
+  bool event_auto_show = true;
   // hide event window when empty
-  bool event_auto_hide;
+  bool event_auto_hide = true;
   // flash main window if there are any unacknowledged events
-  bool event_flash_window;
+  bool event_flash_window = false;
   // play sound if there are any unacknowledged events
-  bool event_play_sound;
+  bool event_play_sound = false;
 
-  bool speech_enabled;
+  bool speech_enabled = true;
 
-  bool control_confirmation;
+  bool control_confirmation = true;
 
   // Use internal Modus rendered instead of ActiveXeme.
-  bool modus2;
+  bool modus2 = false;
 
-  // graph settings
-  base::TimeDelta default_graph_span;
-  SkColor graph_def_color;
-  int graph_def_width;
+  struct GraphView {
+    base::TimeDelta default_span = base::TimeDelta::FromHours(1);
+    SkColor default_color = SK_ColorWHITE;
+    int default_width = 1;
+  };
 
-private:
+  GraphView graph_view;
+
+  struct TimeRangeDialog {
+    int width = 0;
+    int height = 0;
+  };
+
+  TimeRangeDialog time_range_dialog;
+
+  struct NodeTableController {
+    scada::NodeId default_sort_property_id;
+  };
+
+  NodeTableController node_table;
+
+ private:
   base::FilePath GetFilePath();
-
-  PageMap		pages_;
-  Page		trash_;
-  Page		out_wins_;			// windows out-of-page
-  SkColor bad_value_color_;
-  Columns columns_;
-
-  DISALLOW_COPY_AND_ASSIGN(Profile);
 };

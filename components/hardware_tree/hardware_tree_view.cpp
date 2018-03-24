@@ -1,17 +1,17 @@
-#include "components/hardware_tree/hardware_tree_model.h"
+#include "components/configuration_tree/configuration_tree_view.h"
 
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "components/configuration_tree/configuration_tree_view.h"
+#include "components/hardware_tree/hardware_tree_model.h"
 #include "controller_factory.h"
 
 class HardwareTreeView : public ConfigurationTreeView {
  public:
   explicit HardwareTreeView(const ControllerContext& context)
-      : ConfigurationTreeView{context, std::make_unique<HardwareTreeModel>(
-                                           context.view_service_,
-                                           context.node_service_,
-                                           context.timed_data_service_)} {}
+      : ConfigurationTreeView{
+            context,
+            *new HardwareTreeModel{context.node_service_, context.task_manager_,
+                                   context.timed_data_service_}} {}
 };
 
 REGISTER_CONTROLLER(HardwareTreeView, ID_HARDWARE_VIEW);

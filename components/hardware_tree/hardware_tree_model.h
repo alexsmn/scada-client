@@ -6,8 +6,8 @@ class TimedDataService;
 
 class HardwareTreeModel : public ConfigurationTreeModel {
  public:
-  HardwareTreeModel(scada::ViewService& view_service,
-                    NodeService& node_service,
+  HardwareTreeModel(NodeService& node_service,
+                    TaskManager& task_manager,
                     TimedDataService& timed_data_service);
   virtual ~HardwareTreeModel();
 

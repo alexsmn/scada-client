@@ -15,10 +15,17 @@ class SessionService;
 
 class NodeService;
 
-class StatusBarController {
+struct StatusBarControllerContext {
+  scada::SessionService& session_service_;
+  events::EventManager& event_manager_;
+  NodeService& node_service_;
+};
+
+class StatusBarController : private StatusBarControllerContext {
  public:
-  StatusBarController(HWND hwnd, NodeService& node_service, events::EventManager& event_manager,
-      scada::SessionService& session_service);
+  explicit StatusBarController(const StatusBarControllerContext& context);
+
+  void Init(HWND hwnd);
 
   void Layout();
 
@@ -27,11 +34,7 @@ class StatusBarController {
 
   void SetPaneText(int pane, const base::string16& text);
 
-  NodeService& node_service_;
-  events::EventManager& event_manager_;
-  scada::SessionService& session_service_;
-
-  HWND hwnd_;
+  HWND hwnd_ = nullptr;
 
   base::RepeatingTimer update_timer_;
 };

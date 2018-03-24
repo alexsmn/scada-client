@@ -3,5 +3,5 @@
 struct DataServices;
 struct DataServicesContext;
 
-bool ExecuteLoginDialog(const DataServicesContext& services_context,
+bool ExecuteLoginDialog(DataServicesContext&& services_context,
                         DataServices& services);

@@ -1,25 +1,34 @@
-#include "components/watch/watch_model.h"
-
-#include <fstream>
+﻿#include "components/watch/watch_model.h"
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
+#include "common/node_util.h"
+#include "core/event_service.h"
 #include "core/monitored_item.h"
 #include "core/monitored_item_service.h"
-#include "translation.h"
 
-static const int kMaxLines = 1000;
+#include <fstream>
+
+static const int kMaxLines = 10000;
 
 // WatchModel
 
-WatchModel::WatchModel(scada::MonitoredItemService& monitored_item_service)
-    : monitored_item_service_(monitored_item_service) {
+WatchModel::WatchModel(WatchModelContext&& context)
+    : WatchModelContext{std::move(context)} {}
+
+void WatchModel::OnEvent(const scada::Status& status,
+                         const scada::Event& event) {
+  if (!status) {
+    scada::Event event;
+    event.message = L"Подписка прервана. Возможно, устройство было удалено.";
+    AddLine(event);
+
+  } else if (!paused_) {
+    AddLine(event);
+  }
 }
 
-void WatchModel::OnEvent(const scada::Event& event) {
-  if (paused_)
-    return;
-
+void WatchModel::AddLine(const scada::Event& event) {
   int index = static_cast<int>(events_.size());
   events_.push_back(event);
   NotifyItemsAdded(index, 1);
@@ -31,18 +40,20 @@ void WatchModel::OnEvent(const scada::Event& event) {
   }
 }
 
-void WatchModel::SetDevice(NodeRef device) {
-  if (device_ == device)
+void WatchModel::SetDeviceID(scada::NodeId device_id) {
+  if (device_id_ == device_id)
     return;
 
   monitored_item_.reset();
 
-  device_ = std::move(device);
-
-  if (device_) {
-    monitored_item_ = monitored_item_service_.CreateMonitoredItem({device_.id(), scada::AttributeId::EventNotifier});
+  device_id_ = device_id;
+  if (device_id_ != scada::NodeId()) {
+    monitored_item_ = monitored_item_service_.CreateMonitoredItem(
+        {device_id_, scada::AttributeId::EventNotifier});
     monitored_item_->set_event_handler(
-        [this](const scada::Status& status, const scada::Event& event) { OnEvent(event); });
+        [this](const scada::Status& status, const scada::Event& event) {
+          OnEvent(status, event);
+        });
     monitored_item_->Subscribe();
   }
 }
@@ -72,15 +83,15 @@ void WatchModel::GetCell(ui::TableCell& cell) {
       cell.text = base::SysNativeMBToWide(
           FormatTime(event.time, TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
-      
+
     case 1:
       if (event.node_id.is_null())
         break;
-      cell.text = ToString16(device_.display_name());
+      cell.text = GetDisplayName(node_service_, event.node_id);
       if (cell.text.empty())
         cell.text = L"?";
       break;
-      
+
     case 2:
       cell.text = event.message;
       break;

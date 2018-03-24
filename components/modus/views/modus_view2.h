@@ -5,10 +5,10 @@
 #include <memory>
 
 #include "base/files/file_path.h"
+#include "components/modus/modus_binding2.h"
+#include "components/modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"
 #include "libmodus/render/renderer_delegate.h"
-#include "components/modus/modus_view_wrapper.h"
-#include "components/modus/modus_binding2.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/views/view.h"
 
@@ -17,7 +17,7 @@ class Element;
 class Renderer;
 class Scheme;
 class Shape;
-}
+}  // namespace modus
 
 namespace views {
 class ScrollView;
@@ -25,12 +25,17 @@ class ScrollView;
 
 class ModusBinding2;
 
-class ModusView2 : public views::View,
+struct ModusView2Context {
+  TimedDataService& timed_data_service_;
+};
+
+class ModusView2 : private ModusView2Context,
+                   public views::View,
                    public ModusViewWrapper,
                    private modus::RendererDelegate,
                    private ModusBinding2::Delegate {
  public:
-  explicit ModusView2(TimedDataService& timed_data_service);
+  explicit ModusView2(ModusView2Context&& context);
   virtual ~ModusView2();
 
   modus::Scheme* scheme() const { return scheme_.get(); }
@@ -70,7 +75,8 @@ class ModusView2 : public views::View,
                               base::string16* tooltip) const override;
   virtual bool OnMouseWheel(const ui::MouseWheelEvent& event) override;
 
-  using TitleChangedHandler = std::function<void(base::StringPiece16 new_title)>;
+  using TitleChangedHandler =
+      std::function<void(base::StringPiece16 new_title)>;
   TitleChangedHandler title_changed_handler;
 
  private:
@@ -91,8 +97,6 @@ class ModusView2 : public views::View,
 
   // modus::RendererDelegate
   virtual void SchedulePaintShape(modus::Shape& shape) override;
-
-  TimedDataService& timed_data_service_;
 
   base::FilePath path_;
   base::string16 title_;

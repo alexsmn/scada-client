@@ -1,8 +1,8 @@
 #pragma once
 
+#include "base/memory/weak_ptr.h"
 #include "base/win/dragdrop.h"
 #include "controller.h"
-#include "common/node_ref.h"
 
 #if defined(UI_QT)
 #elif defined(UI_VIEWS)
@@ -23,13 +23,15 @@ class NodeTableController : public Controller,
 #endif
                             public DataObject {
  public:
-  NodeTableController(const ControllerContext& context, const scada::NodeId& parent_id);
+  NodeTableController(const ControllerContext& context,
+                      const NodeRef& parent_node);
   virtual ~NodeTableController();
 
   // Controller events
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandEnabled(unsigned command_id) const override;
+  virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual NodeRef GetRootNode() const override;
@@ -37,17 +39,27 @@ class NodeTableController : public Controller,
  protected:
 #if defined(UI_VIEWS)
   // GridController overrides
-  virtual bool CanEditCell(views::GridView& sender, int row, int column) override;
+  virtual bool CanEditCell(views::GridView& sender,
+                           int row,
+                           int column) override;
   virtual void OnGridSelectionChanged(views::GridView& sender) override;
-  virtual bool OnGridEditCellText(views::GridView& sender, int row, int column,
+  virtual bool OnGridEditCellText(views::GridView& sender,
+                                  int row,
+                                  int column,
                                   const base::string16& text) override;
   virtual views::ComboTextfield* OnGridCreateEditor(views::GridView& sender,
-                                                    int row, int column) override;
+                                                    int row,
+                                                    int column) override;
   virtual void ShowContextMenu(gfx::Point point) override;
-  virtual bool OnKeyPressed(views::GridView& sender, ui::KeyboardCode key_code) override;
+  virtual bool OnKeyPressed(views::GridView& sender,
+                            ui::KeyboardCode key_code) override;
+  virtual void ShowHeaderContextMenu(gfx::Point point) override;
+  virtual void OnGridColumnClicked(views::GridView& sender, int index) override;
 #endif
 
  private:
+  void SetSorting(const scada::NodeId& property_id);
+
   void DeleteSelection();
   void CopyToClipboard();
   void PasteFromClipboard();
@@ -60,4 +72,6 @@ class NodeTableController : public Controller,
 #elif defined(UI_VIEWS)
   std::unique_ptr<views::GridView> table_;
 #endif
+
+  base::WeakPtrFactory<NodeTableController> weak_ptr_factory_{this};
 };

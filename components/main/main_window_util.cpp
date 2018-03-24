@@ -1,10 +1,7 @@
 #include "components/main/main_window_util.h"
 
-#include <Windows.h>
-
 #include "client_utils.h"
 #include "common/node_ref.h"
-#include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
@@ -13,64 +10,49 @@
 #include "contents_model.h"
 #include "window_info.h"
 
-void OpenView(MainWindow* main_window, const WindowDefinition& def) {
-  DCHECK(main_window);
-  main_window->OpenView(def, true);
+#include <cassert>
+
+void OpenView(MainWindow* main_window,
+              const WindowDefinition& def,
+              bool activate) {
+  assert(main_window);
+  main_window->OpenView(def, activate);
 }
 
-void ExecuteDefaultNodeCommand(MainWindow* main_window,
+bool ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const NodeRef& node,
-                               unsigned type,
-                               unsigned shift,
-                               const std::vector<scada::NodeId>& node_ids) {
-  auto* view = main_window->GetActiveDataView();
-  auto* contents = view ? view->GetContentsModel() : nullptr;
-  if (view && contents && view->window_info().can_insert_item()) {
-    if ((view->window_info().command_id == type) || (shift & MK_CONTROL)) {
-      // insert items into active frame
-      unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
-      for (auto& node_id : node_ids) {
-        contents->AddContainedItem(node_id, flags);
-        flags |= ContentsModel::APPEND;
-      }
-      return;
-    }
-  }
-
-  OpenView(main_window, MakeWindowDefinition(node, type, node_ids));
-}
-
-void ExecuteDefaultNodeCommand(scada::ViewService& view_service,
-                               NodeService& node_service,
-                               const NodeRef& node,
-                               MainWindow* main_window) {
+                               unsigned shift) {
   assert(main_window);
 
-  WORD shift = 0;
-  if (::GetAsyncKeyState(VK_SHIFT))
-    shift |= MK_SHIFT;
-  if (::GetAsyncKeyState(VK_CONTROL))
-    shift |= MK_CONTROL;
-
-  if (IsInstanceOf(node, id::DataGroupType)) {
-    std::vector<scada::NodeId> node_ids;
-    auto weak_main_window = main_window ? main_window->GetWeakPtr() : nullptr;
-    ExpandGroupItemIds(
-        view_service, node_service, node,
-        [weak_main_window, node, shift](std::vector<scada::NodeId> node_ids) {
-          ExecuteDefaultNodeCommand(weak_main_window.get(), node, ID_TABLE_VIEW,
-                                    shift, std::move(node_ids));
-        });
-    return;
-  }
-
-  UINT type = ID_TABLE_VIEW;
-  if (node.node_class() == scada::NodeClass::Variable)
+  UINT type;
+  if (IsInstanceOf(node, id::DataGroupType))
+    type = ID_TABLE_VIEW;
+  else if (IsInstanceOf(node, id::DataItemType))
     type = ID_GRAPH_VIEW;
   else if (IsInstanceOf(node, id::DeviceType))
     type = ID_WATCH_VIEW;
   else
     type = (shift & MK_CONTROL) ? ID_TABLE_EDITOR : ID_PROPERTY_VIEW;
 
-  ExecuteDefaultNodeCommand(main_window, node, type, shift, {node.id()});
+  auto* view = main_window->GetActiveDataView();
+  auto* contents = view ? view->GetContentsModel() : nullptr;
+  if (view && contents && view->window_info().can_insert_item()) {
+    if ((view->window_info().command_id == type) || (shift & MK_CONTROL)) {
+      // insert items into active frame
+      NodeIdSet trids;
+      if (IsInstanceOf(node, id::DataGroupType))
+        ExpandGroupItemIds(node, trids);
+      else
+        trids.insert(node.id());
+      unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
+      for (NodeIdSet::iterator i = trids.begin(); i != trids.end(); ++i) {
+        contents->AddContainedItem(*i, flags);
+        flags |= ContentsModel::APPEND;
+      }
+      return true;
+    }
+  }
+
+  OpenView(main_window, MakeWindowDefinition(node, type, true));
+  return true;
 }

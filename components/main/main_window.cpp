@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "components/main/events_helper.h"
 #include "components/main/main_commands.h"
+#include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
 #include "contents_model.h"
@@ -13,44 +14,30 @@
 #include "services/profile.h"
 #include "window_info.h"
 
-MainWindow::MainWindow(MainWindowContext&& context)
-    : MainWindowContext(std::move(context)),
-      connection_state_reporter_(
-          std::make_unique<ConnectionStateReporter>(session_service_,
-                                                    local_events_)),
-      main_commands_(std::make_unique<MainCommands>(MainCommandsContext{
-          *this,
-          node_service_,
-          task_manager_,
-          event_manager_,
-          local_events_,
-          profile_,
-          session_service_,
-          new_main_window_,
-          find_closed_page_,
-          speech_,
-          favourites_,
-          GetDialogService(),
-          view_service_,
-      })) {}
+MainWindow::MainWindow(MainWindowContext&& context,
+                       DialogService& dialog_service)
+    : MainWindowContext{std::move(context)},
+      connection_state_reporter_(std::make_unique<ConnectionStateReporter>(
+          ConnectionStateReporterContext{session_service_, local_events_})),
+      main_commands_{std::make_unique<MainCommands>(MainCommandsContext{
+          *this, task_manager_, dialog_service, session_service_,
+          event_manager_, node_service_, local_events_, favourites_, speech_,
+          profile_, main_window_manager_})} {}
 
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
 
-  events_helper_ = std::make_unique<EventsHelper>(EventsHelperContext{
-      event_manager_,
-      local_events_,
-      profile_,
-      [this](bool has_events) { OnEvents(has_events); },
-  });
+  events_helper_ = std::make_unique<EventsHelper>(
+      EventsHelperContext{event_manager_, local_events_, profile_,
+                          [this](bool has_events) { OnEvents(has_events); }});
 
   Page* page = nullptr;
-  Profile::PageMap& pages = profile_.pages();
+  Profile::PageMap& pages = profile_.pages;
   Profile::PageMap::iterator i = pages.find(GetPrefs().page_id);
   if (i != pages.end())
     page = &i->second;
   else if (!pages.empty())
-    page = find_closed_page_();
+    page = main_window_manager_.FindFirstNotOpenedPage();
 
   if (!page)
     page = &profile_.CreatePage();
@@ -75,7 +62,7 @@ MainWindowDef& MainWindow::GetPrefs() const {
 }
 
 void MainWindow::Close() {
-  close_handler_(window_id_);
+  main_window_manager_.CloseMainWindow(window_id_);
 }
 
 void MainWindow::SetActiveView(OpenedView* view) {
@@ -83,13 +70,14 @@ void MainWindow::SetActiveView(OpenedView* view) {
     return;
 
   if (active_view_)
-    active_view_->controller().selection().set_change_handler(nullptr);
+    active_view_->controller().selection().change_handler = nullptr;
 
   active_view_ = view;
 
   if (active_view_)
-    active_view_->controller().selection().set_change_handler(
-        [this] { OnSelectionChanged(); });
+    active_view_->controller().selection().change_handler = [this] {
+      OnSelectionChanged();
+    };
 
   const WindowInfo* window_info = nullptr;
   if (view)
@@ -134,8 +122,10 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
                          : nullptr;
     if (contents) {
       contents->set_contents_observer(this);
-      OnContainedItemsUpdate(contents->GetContainedItems());
-      set = true;
+      if (!view_manager_->is_closing_page()) {
+        OnContainedItemsUpdate(contents->GetContainedItems());
+        set = true;
+      }
     }
     if (!set)
       OnContainedItemsUpdate({});
@@ -165,6 +155,9 @@ void MainWindow::OnViewClosed(OpenedView& view, WindowDefinition& definition) {
 
   LOG(INFO) << "Window " << view.window_info().title << " closed.";
 
+  if (view_manager_->is_closing_page())
+    return;
+
   view.Save(definition);
 
   // Don't remove window definition if window is single to allow parameter
@@ -174,13 +167,13 @@ void MainWindow::OnViewClosed(OpenedView& view, WindowDefinition& definition) {
 
   } else {
     // append trash
-    Page& trash = profile_.trash();
+    Page& trash = profile_.trash;
     trash.AddWindow(definition);
     while (trash.GetWindowCount() > 10)
       trash.DeleteWindow(0);
 
     auto& page = view_manager_->current_page();
-    page.DeleteWindow(page.FindWindow(definition));
+    page.DeleteWindow(page.FindWindowDef(definition));
   }
 }
 
@@ -225,7 +218,7 @@ void MainWindow::SavePage() {
 
   view_manager_->SavePage();
 
-  Profile::PageMap& pages = profile_.pages();
+  Profile::PageMap& pages = profile_.pages;
   pages[view_manager_->current_page().id] = view_manager_->current_page();
 }
 
@@ -237,28 +230,29 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
       def.size = gfx::Size(window_info.cx, window_info.cy);
   }
 
-  return std::make_unique<OpenedView>(OpenedViewContext{
+  OpenedViewContext context{
       this,
-      def,
+      alias_resolver_,
+      task_manager_,
+      method_service_,
+      session_service_,
+      node_management_service_,
+      event_manager_,
+      history_service_,
+      monitored_item_service_,
       timed_data_service_,
       node_service_,
       portfolio_manager_,
-      task_manager_,
-      profile_,
       action_manager_,
       local_events_,
-      event_manager_,
-      file_cache_,
-      node_management_service_,
-      history_service_,
-      method_service_,
       favourites_,
+      file_cache_,
+      profile_,
       GetDialogService(),
-      find_opened_view_,
-      session_service_,
-      monitored_item_service_,
-      view_service_,
-  });
+      main_window_manager_,
+  };
+
+  return std::make_unique<OpenedView>(context, def);
 }
 
 void MainWindow::OnViewTitleUpdated(OpenedView& view,
@@ -271,6 +265,9 @@ void MainWindow::ActivateView(OpenedView& view) {
 }
 
 void MainWindow::CloseView(OpenedView& view) {
+  if (view_manager_->is_closing_page())
+    return;
+
   if (view.controller().CanClose())
     view_manager_->CloseView(view);
 }

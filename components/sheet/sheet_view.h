@@ -1,13 +1,16 @@
 #pragma once
 
-#include "controller.h"
 #include "contents_model.h"
-#include "ui/views/controls/textfield/textfield_controller.h"
+#include "controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
-#include "ui/views/drop_controller.h"
+#include "ui/views/controls/textfield/textfield_controller.h"
 
-#include <memory>
+#if defined(UI_VIEWS)
+#include "ui/views/drop_controller.h"
+#endif
+
 #include <SkColor.h>
+#include <memory>
 
 namespace ui {
 class OSExchangeData;
@@ -28,15 +31,16 @@ class Grid;
 class SheetView : public Controller,
                   public ContentsModel
 #if defined(UI_VIEWS)
-                  , private views::DropController
-                  , private views::GridController
-                  , private views::TextfieldController
+    ,
+                  private views::GridController,
+                  private views::TextfieldController,
+                  private views::DropController
 #endif
 {
  public:
   explicit SheetView(const ControllerContext& context);
 
-  // View
+  // Controller
   virtual bool CanClose() const override;
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
@@ -44,9 +48,13 @@ class SheetView : public Controller,
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() { return this; }
+#if defined(UI_VIEWS)
+  virtual views::DropController* GetDropController() override { return this; }
+#endif
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
 
  protected:
 #if defined(UI_VIEWS)
@@ -59,7 +67,7 @@ class SheetView : public Controller,
   friend class SheetCell;
 
   class ContentsView;
- 
+
   void UpdateEditing();
   void UpdateFormulaRow();
   void ClearSelection();
@@ -70,15 +78,22 @@ class SheetView : public Controller,
 
 #if defined(UI_VIEWS)
   // GridController
-  virtual bool OnGridEditCellText(views::GridView& sender, int row, int column,
+  virtual bool OnGridEditCellText(views::GridView& sender,
+                                  int row,
+                                  int column,
                                   const base::string16& text) override;
-  virtual bool CanEditCell(views::GridView& sender, int row, int column) override;
-  virtual void OnGridGetAutocompleteList(views::GridView& sender,
-                                         const base::string16& text, int& start,
-                                         std::vector<base::string16>& list) override;
-	virtual void OnGridSelectionChanged(views::GridView& sender) override;
+  virtual bool CanEditCell(views::GridView& sender,
+                           int row,
+                           int column) override;
+  virtual void OnGridGetAutocompleteList(
+      views::GridView& sender,
+      const base::string16& text,
+      int& start,
+      std::vector<base::string16>& list) override;
+  virtual void OnGridSelectionChanged(views::GridView& sender) override;
   virtual void ShowContextMenu(gfx::Point point) override;
-  virtual bool OnKeyPressed(views::GridView& sender, ui::KeyboardCode key_code) override;
+  virtual bool OnKeyPressed(views::GridView& sender,
+                            ui::KeyboardCode key_code) override;
   virtual bool OnDoubleClick() override;
 
   // private views::TextfieldController

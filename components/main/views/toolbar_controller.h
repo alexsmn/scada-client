@@ -13,19 +13,19 @@ class CommandHandler;
 
 class ToolbarController {
  public:
-  ToolbarController(views::Toolbar& toolbar, CommandHandler& command_handler, ActionManager& action_manager);
+  ToolbarController(ActionManager& action_manager,
+                    views::Toolbar& toolbar,
+                    CommandHandler& command_handler);
 
   void UpdateCommands();
   void UpdateCommandStates();
 
-  void AddImage(unsigned resource_id);
-
  private:
   int GetImageIndex(unsigned command_id) const;
 
+  ActionManager& action_manager_;
   views::Toolbar& toolbar_;
   CommandHandler& command_handler_;
-  ActionManager& action_manager_;
 
   std::map<unsigned /*command_id*/, int /*image_index*/> image_indexes_;
 

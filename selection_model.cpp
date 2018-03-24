@@ -1,12 +1,12 @@
 #include "selection_model.h"
 
-#include "base/strings/sys_string_conversions.h"
+#include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
+#include "controller.h"
 
-SelectionModel::SelectionModel(NodeService& node_service,
-                               TimedDataService& timed_data_service)
-    : node_service_{node_service}, timed_data_service_{timed_data_service} {
+SelectionModel::SelectionModel(SelectionModelContext&& context)
+    : SelectionModelContext{std::move(context)} {
   timed_data_.property_change_handler =
       [this](const rt::PropertySet& properties) {
         if (properties.is_item_changed())
@@ -40,35 +40,12 @@ void SelectionModel::SelectNode(const NodeRef& node) {
   node_ = node;
   node_.Subscribe(*this);
 
-  if (node.fetched() && node.node_class() == scada::NodeClass::Variable) {
-    try {
-      timed_data_.Connect(timed_data_service_, node.id());
-    } catch (const std::exception&) {
-      Clear();
-      return;
-    }
-
+  if (node.node_class() == scada::NodeClass::Variable) {
     type_ = SPEC;
+    timed_data_.Connect(timed_data_service_, node);
   }
 
   Changed();
-}
-
-void SelectionModel::SelectNodeId(const scada::NodeId& node_id) {
-  Clear();
-
-  assert(!pending_request_);
-  pending_request_ = std::make_shared<bool>();
-
-  std::weak_ptr<bool> cancelation = pending_request_;
-  node_service_.GetNode(node_id).Fetch(NodeFetchStatus::NodeOnly(),
-                                       [=](const NodeRef& node) {
-                                         if (cancelation.expired())
-                                           return;
-                                         pending_request_ = nullptr;
-                                         if (node.status())
-                                           SelectNode(node);
-                                       });
 }
 
 void SelectionModel::SelectTimedData(const rt::TimedDataSpec& spec) {
@@ -109,7 +86,6 @@ void SelectionModel::Reset() {
   }
 
   timed_data_.Reset();
-  pending_request_ = nullptr;
 }
 
 void SelectionModel::Changed() {
@@ -118,6 +94,12 @@ void SelectionModel::Changed() {
 }
 
 void SelectionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  if (node_.id() == node_id)
+    Changed();
+}
+
+void SelectionModel::OnNodeFetched(const scada::NodeId& node_id,
+                                   bool children) {
   if (node_.id() == node_id)
     Changed();
 }

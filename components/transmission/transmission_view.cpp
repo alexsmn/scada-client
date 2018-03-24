@@ -1,36 +1,40 @@
-#include "components/transmission/transmission_view.h"
+ï»¿#include "components/transmission/transmission_view.h"
 
+#include "common/node_id_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "controller_factory.h"
-#include "controls/grid.h"
-#include "core/session_service.h"
+#include "remote/session_proxy.h"
 #include "services/task_manager.h"
 #include "window_definition.h"
+
+#if defined(UI_QT)
+#include "controls/qt/grid.h"
+#elif defined(UI_VIEWS)
+#include "ui/views/controls/grid/grid_view.h"
+#endif
 
 REGISTER_CONTROLLER(TransmissionView, ID_TRANSMISSION_VIEW);
 
 TransmissionView::TransmissionView(const ControllerContext& context)
-    : Controller(context),
-      model_(std::make_unique<TransmissionModel>(view_service_,
-                                                 node_service_,
-                                                 task_manager_,
-                                                 node_management_service_)) {}
+    : Controller{context},
+      model_(new TransmissionModel(context.node_service_,
+                                   context.task_manager_)) {}
 
 TransmissionView::~TransmissionView() {}
 
 UiView* TransmissionView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
     std::string path = item->GetString("path");
-    auto device_id = scada::NodeId::FromString(path);
-    if (!device_id.is_null())
-      model_->SetDeviceId(device_id);
+    auto device_id = NodeIdFromScadaString(path);
+    model_->SetDevice(node_service_.GetNode(device_id));
   }
 
   const ui::TableColumn columns[] = {
-      ui::TableColumn(0, L"Îáúåêò", 250, ui::TableColumn::LEFT),
-      ui::TableColumn(1, L"Àäðåñ", 100, ui::TableColumn::RIGHT)};
+      ui::TableColumn(0, L"ÐžÐ±ÑŠÐµÐºÑ‚", 250, ui::TableColumn::LEFT),
+      ui::TableColumn(1, L"ÐÐ´Ñ€ÐµÑ", 100, ui::TableColumn::RIGHT)};
   column_model_.SetColumns(_countof(columns), columns);
 
 #if defined(UI_QT)
@@ -57,7 +61,7 @@ void TransmissionView::ShowContextMenu(gfx::Point point) {
 #endif
 
 void TransmissionView::DeleteSelection() {
-  if (!session_service_.IsAdministrator())
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return;
 
 #if defined(UI_VIEWS)
@@ -101,7 +105,7 @@ bool TransmissionView::OnGridEditCellText(views::GridView& sender,
 
   auto& row_item = model_->row(row);
   scada::NodeProperties properties;
-  properties.emplace_back(id::TransmissionItemType_SourceAddress,
+  properties.emplace_back(kIecTransmitTargetInfoAddressPropTypeId,
                           static_cast<int>(value));
   task_manager_.PostUpdateTask(row_item.transmission.id(), {}, properties);
 

@@ -1,13 +1,18 @@
-#include "views/framework/dialog.h"
-#include "views/client_utils_views.h"
+#include "commands/prompt_dialog.h"
+
 #include "common_resources.h"
-#include "components/main/views/main_window_views.h"
+#include "services/dialog_service.h"
+#include "views/client_utils_views.h"
+#include "views/framework/dialog.h"
 
 class PromptDialog : public framework::Dialog {
  public:
-  PromptDialog() : Dialog(IDD_PROMPT) { }
+  PromptDialog() : Dialog(IDD_PROMPT) {}
 
-  bool Execute(HWND parent, base::string16& value, const base::char16* prompt, const base::char16* title) {
+  bool Execute(HWND parent,
+               base::string16& value,
+               const base::char16* prompt,
+               const base::char16* title) {
     title_ = title;
     prompt_ = prompt;
     value_ = value;
@@ -17,7 +22,7 @@ class PromptDialog : public framework::Dialog {
     return true;
   }
 
-protected:
+ protected:
   virtual void OnInitDialog() {
     SetWindowText(title_);
     SetItemText(IDC_PROMPT, prompt_);
@@ -35,9 +40,11 @@ protected:
   base::string16 value_;
 };
 
-bool RunPromptDialog(DialogService& dialog_service, const base::string16& prompt,
-                     const base::string16& title, base::string16& value) {
-  return PromptDialog().Execute(
-      static_cast<DialogServiceViews&>(dialog_service).GetParentView(),
-      value, prompt.c_str(), title.c_str());
+bool RunPromptDialog(DialogService& dialog_service,
+                     const base::string16& prompt,
+                     const base::string16& title,
+                     base::string16& value) {
+  PromptDialog dlg;
+  return dlg.Execute(dialog_service.GetDialogOwningWindow(), value,
+                     prompt.c_str(), title.c_str());
 }

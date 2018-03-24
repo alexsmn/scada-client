@@ -1,11 +1,10 @@
-#include "commands/add_multiple_items_dialog.h"
+ï»¿#include "commands/add_multiple_items_dialog.h"
 
-#include "base/memory/weak_ptr.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
-#include "common/node_ref.h"
+#include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
@@ -15,18 +14,33 @@
 #include "views/framework/control/editbox.h"
 #include "views/framework/dialog.h"
 
-#include <atlapp.h>
 #include <atlbase.h>
+
+#include <atlapp.h>
 #include <atlctrls.h>
+
+namespace {
+
+void FillDeviceItems(const NodeRef& parent,
+                     std::map<base::string16, scada::NodeId>& items) {
+  for (auto& node : parent.organizes()) {
+    if (IsInstanceOf(node, id::DeviceType)) {
+      auto title = GetFullDisplayName(node);
+      items.emplace(std::move(title), node.id());
+      FillDeviceItems(node, items);
+    }
+  }
+}
+
+}  // namespace
 
 class AddMultipleItemsDialog : public framework::Dialog,
                                private framework::ButtonController,
                                private framework::EditBoxController {
  public:
-  AddMultipleItemsDialog(scada::ViewService& view_service,
-                         NodeService& node_service,
-                         NodeRef group,
-                         TaskManager& task_manager);
+  AddMultipleItemsDialog(NodeService& node_service,
+                         TaskManager& task_manager,
+                         const scada::NodeId& group_id);
 
  protected:
   virtual void OnInitDialog();
@@ -35,43 +49,34 @@ class AddMultipleItemsDialog : public framework::Dialog,
  private:
   void SetAutoName();
 
-  void SetDevices(std::vector<NodeRef> devices);
-
-  NodeRef GetSelectedDevice() const;
-
   // framework::ButtonController
-  virtual void OnButtonPressed(framework::Button& sender) override;
+  virtual void OnButtonPressed(framework::Button& sender);
 
   // framework::EditBox
-  virtual void OnEditBoxChanged(framework::EditBox& sender) override;
+  virtual void OnEditBoxChanged(framework::EditBox& sender);
 
-  scada::ViewService& view_service_;
   NodeService& node_service_;
-  const NodeRef group_;
   TaskManager& task_manager_;
+  const scada::NodeId group_id_;
 
   framework::EditBox name_edit_;
   framework::Button ts_check_;
   framework::Button tit_check_;
 
   WTL::CComboBox devices_combo_box_;
-  std::vector<NodeRef> devices_;
+  std::map<base::string16, scada::NodeId> device_items_;
 
   bool ts_ = true;
   bool auto_name_ = true;
-
-  base::WeakPtrFactory<AddMultipleItemsDialog> weak_ptr_factory_{this};
 };
 
-AddMultipleItemsDialog::AddMultipleItemsDialog(scada::ViewService& view_service,
-                                               NodeService& node_service,
-                                               NodeRef group,
-                                               TaskManager& task_manager)
+AddMultipleItemsDialog::AddMultipleItemsDialog(NodeService& node_service,
+                                               TaskManager& task_manager,
+                                               const scada::NodeId& group_id)
     : Dialog{IDD_NEW_ITEMS},
-      view_service_{view_service},
       node_service_{node_service},
-      group_{std::move(group)},
-      task_manager_{task_manager} {}
+      task_manager_{task_manager},
+      group_id_{std::move(group_id)} {}
 
 void AddMultipleItemsDialog::OnInitDialog() {
   __super::OnInitDialog();
@@ -90,6 +95,11 @@ void AddMultipleItemsDialog::OnInitDialog() {
 
   devices_combo_box_ = GetDlgItem(window_handle(), IDC_DEVICES_COMBO);
 
+  FillDeviceItems(node_service_.GetNode(id::Devices), device_items_);
+  for (auto& p : device_items_)
+    devices_combo_box_.AddString(p.first.c_str());
+  devices_combo_box_.SetCurSel(0);
+
   WTL::CButton(GetDlgItem(window_handle(), IDC_TYPE)).SetCheck(BST_CHECKED);
 
   WTL::CUpDownCtrl(GetDlgItem(window_handle(), IDC_COUNT_SPIN))
@@ -103,38 +113,15 @@ void AddMultipleItemsDialog::OnInitDialog() {
   SetItemInt(IDC_STARTING_NUMBER, 1);
   SetItemInt(IDC_STARTING_ADDRESS, 1);
   SetItemInt(IDC_COUNT, 1);
-
-  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  BrowseAllDevices(view_service_, node_service_,
-                   [weak_ptr](std::vector<NodeRef> devices) {
-                     if (auto* ptr = weak_ptr.get())
-                       ptr->SetDevices(std::move(devices));
-                   });
-}
-
-void AddMultipleItemsDialog::SetDevices(std::vector<NodeRef> devices) {
-  devices_combo_box_.ResetContent();
-  devices_ = std::move(devices);
-  for (auto& device : devices_)
-    devices_combo_box_.AddString(
-        base::SysNativeMBToWide(device.browse_name().name()).c_str());
-}
-
-NodeRef AddMultipleItemsDialog::GetSelectedDevice() const {
-  int i = devices_combo_box_.GetCurSel();
-  if (i == -1)
-    return nullptr;
-  return devices_[i];
 }
 
 void AddMultipleItemsDialog::OnOK() {
-  auto device = GetSelectedDevice();
+  base::string16 device_desc = win_util::GetWindowText(devices_combo_box_);
+  auto i = device_items_.find(device_desc);
+  auto device_id = i == device_items_.end() ? scada::NodeId() : i->second;
 
-  std::string name_prefix =
-      base::SysWideToNativeMB(GetItemText(IDC_NAME_PREFIX));
-  std::string path_prefix =
-      base::SysWideToNativeMB(GetItemText(IDC_PATH_PREFIX));
-
+  auto name_prefix = GetItemText(IDC_NAME_PREFIX);
+  auto path_prefix = base::SysWideToNativeMB(GetItemText(IDC_PATH_PREFIX));
   int number = GetItemInt(IDC_STARTING_NUMBER);
   int address = GetItemInt(IDC_STARTING_ADDRESS);
   int count = GetItemInt(IDC_COUNT);
@@ -142,24 +129,23 @@ void AddMultipleItemsDialog::OnOK() {
   scada::NodeId type_node_id = ts_ ? id::DiscreteItemType : id::AnalogItemType;
 
   for (int i = 0; i < count; ++i, ++number, ++address) {
-    std::string name = base::StringPrintf("%s%d", name_prefix.c_str(), number);
-    std::string item_path =
-        base::StringPrintf("%s%d", path_prefix.c_str(), address);
-    std::string path =
-        MakeNodeIdFormula(MakeNestedNodeId(device.id(), item_path));
+    auto display_name = scada::ToLocalizedText(
+        base::StringPrintf(L"%ls%d", name_prefix.c_str(), number));
+    auto item_path = base::StringPrintf("%s%d", path_prefix.c_str(), address);
+    auto path = MakeNodeIdFormula(MakeNestedNodeId(device_id, item_path));
 
-    task_manager_.PostInsertTask(scada::NodeId(), group_.id(), type_node_id,
-                                 scada::NodeAttributes().set_browse_name(
-                                     scada::QualifiedName{std::move(name), 0}),
-                                 {{id::DataItemType_Input1, std::move(path)}});
+    task_manager_.PostInsertTask(
+        scada::NodeId(), group_id_, type_node_id,
+        scada::NodeAttributes().set_display_name(std::move(display_name)),
+        {{kObjectInput1PropTypeId, std::move(path)}});
   }
 
   __super::OnOK();
 }
 
 void AddMultipleItemsDialog::SetAutoName() {
-  const char* name = ts_ ? "ÒÑ" : "ÒÈÒ";
-  name_edit_.SetText(base::SysNativeMBToWide(name).c_str());
+  const wchar_t* name = ts_ ? L"Ð¢Ð¡" : L"Ð¢Ð˜Ð¢";
+  name_edit_.SetText(name);
 }
 
 void AddMultipleItemsDialog::OnButtonPressed(framework::Button& sender) {
@@ -172,11 +158,10 @@ void AddMultipleItemsDialog::OnEditBoxChanged(framework::EditBox& sender) {
   auto_name_ = false;
 }
 
-void ShowAddMultipleItemsDialog(scada::ViewService& view_service,
-                                NodeService& node_service,
-                                const NodeRef& node,
-                                TaskManager& task_manager) {
-  AddMultipleItemsDialog dialog{view_service, node_service, node, task_manager};
+void ShowAddMultipleItemsDialog(NodeService& node_service,
+                                TaskManager& task_manager,
+                                const scada::NodeId& node_id) {
+  AddMultipleItemsDialog dialog{node_service, task_manager, node_id};
   if (dialog.Execute() != IDOK)
     return;
 }

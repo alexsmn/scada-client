@@ -1,8 +1,11 @@
-#include "views/framework/dialog.h"
+#include "commands/add_favourites_dialog.h"
+
 #include "common_resources.h"
 #include "services/favourites.h"
+#include "views/framework/dialog.h"
 
 #include <atlbase.h>
+
 #include <atlapp.h>
 #include <atlctrls.h>
 #include <string>
@@ -10,9 +13,7 @@
 class AddFavouritesDialog : public framework::Dialog {
  public:
   explicit AddFavouritesDialog(Favourites& favourites)
-      : Dialog(IDD_ADD_FAVOURITES),
-        favourites_(favourites) {
-  }
+      : Dialog{IDD_ADD_FAVOURITES}, favourites_{favourites} {}
 
   void set_name(const base::string16& name) { name_ = name; }
 
@@ -22,11 +23,15 @@ class AddFavouritesDialog : public framework::Dialog {
  protected:
   virtual void OnInitDialog() {
     SetItemText(IDC_NAME, name_);
-    
+
     folder_combo_ = GetItem(IDC_FOLDER);
 
-    for (auto& folder : favourites_.folders())
+    const Favourites::Folders& folders = favourites_.folders();
+    for (Favourites::Folders::const_iterator i = folders.begin();
+         i != folders.end(); ++i) {
+      const Page& folder = *i;
       folder_combo_.AddString(folder.GetTitle().c_str());
+    }
 
     folder_combo_.SetCurSel(0);
   }
@@ -34,7 +39,7 @@ class AddFavouritesDialog : public framework::Dialog {
   virtual void OnOK() {
     name_ = GetItemText(IDC_NAME);
     folder_ = win_util::GetWindowText(folder_combo_);
-    
+
     Dialog::OnOK();
   }
 
@@ -47,8 +52,10 @@ class AddFavouritesDialog : public framework::Dialog {
   WTL::CComboBox folder_combo_;
 };
 
-bool ShowAddFavouritesDialog(base::string16& title, base::string16& folder_name, Favourites& favourites) {
-  AddFavouritesDialog dlg(favourites);
+bool ShowAddFavouritesDialog(Favourites& favourites,
+                             base::string16& title,
+                             base::string16& folder_name) {
+  AddFavouritesDialog dlg{favourites};
   dlg.set_name(title);
   if (dlg.Execute() != IDOK)
     return false;

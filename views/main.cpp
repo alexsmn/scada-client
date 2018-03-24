@@ -1,11 +1,19 @@
-#include <atlbase.h>
-#include <atlapp.h>
-
 #include "base/at_exit.h"
+#include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
+#include "base/run_loop.h"
+#include "base/strings/stringprintf.h"
 #include "base/win/gdiplus_initializer.h"
-#include "views/client_application_views.h"
+#include "client_application.h"
+#include "components/login/login_dialog.h"
+#include "core/data_services_factory.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/views/focus/accelerator_handler.h"
+#include "views/activex_host.h"
+
+#include <atlbase.h>
+
+#include <atlapp.h>
 
 CAppModule _Module;
 
@@ -15,44 +23,49 @@ int Run(int show = SW_SHOWDEFAULT) {
   GdiplusInitializer gdiplus;
   ui::ResourceBundle::InitSharedInstance();
 
-  base::MessageLoop message_loop(base::MessageLoop::TYPE_UI);
+  int result = 0;
 
-  // Message loop must exist on destruction.
-  ClientApplicationViews app(0, nullptr);
+  try {
+    base::MessageLoop message_loop(base::MessageLoop::TYPE_UI);
+    base::RunLoop run_loop(&ActiveXHost::instance());
 
-  if (!app.Init()) {
-    ui::ResourceBundle::CleanupSharedInstance();
-    _Module.RemoveMessageLoop();
-    return -1;
+    ClientApplication app{
+        ClientApplicationContext{[&run_loop] { run_loop.Quit(); }}};
+
+    {
+      DataServices services;
+      if (!ExecuteLoginDialog(app.MakeDataServicesContext(), services))
+        throw std::runtime_error{"Login failed"};
+      app.SetServices(std::move(services));
+    }
+
+    views::AcceleratorHandler accelerator_handler;
+    ActiveXHost::instance().AddMessageDispatcher(accelerator_handler);
+
+    run_loop.Run();
+
+    ActiveXHost::instance().RemoveMessageDispatcher(accelerator_handler);
+
+  } catch (const std::exception&) {
+    result = -1;
   }
-  
-  if (!app.ShowLoginDialog()) {
-    ui::ResourceBundle::CleanupSharedInstance();
-    _Module.RemoveMessageLoop();
-    return -1;
-  }
-
-  app.BeforeRun();
-  
-  int res = app.Run(show);
 
   ui::ResourceBundle::CleanupSharedInstance();
+  _Module.RemoveMessageLoop();
 
-  return res;
+  return result;
 }
 
-void ShutdownComModule() {
-  _Module.RevokeClassObjects();
-}
-
-int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
-                     LPTSTR lpstrCmdLine, int nCmdShow) {
+int WINAPI _tWinMain(HINSTANCE hInstance,
+                     HINSTANCE /*hPrevInstance*/,
+                     LPTSTR lpstrCmdLine,
+                     int nCmdShow) {
   setlocale(LC_ALL, "Russian");
 
   HRESULT hRes = ::CoInitialize(NULL);
   ATLASSERT(SUCCEEDED(hRes));
 
-  hRes = ::OleInitialize(NULL);	// for drag& drop
+  hRes = ::OleInitialize(NULL);  // for drag& drop
   ATLASSERT(SUCCEEDED(hRes));
 
   // This resolves ATL window thunking problem when Microsoft Layer for

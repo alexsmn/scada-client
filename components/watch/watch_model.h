@@ -6,19 +6,25 @@
 #include "base/files/file_path.h"
 #include "core/event.h"
 #include "ui/base/models/table_model.h"
-#include "common/node_ref.h"
 
 namespace scada {
 class MonitoredItem;
 class MonitoredItemService;
-}
+}  // namespace scada
 
-class WatchModel : public ui::TableModel {
+class NodeService;
+
+struct WatchModelContext {
+  NodeService& node_service_;
+  scada::MonitoredItemService& monitored_item_service_;
+};
+
+class WatchModel : private WatchModelContext, public ui::TableModel {
  public:
-  explicit WatchModel(scada::MonitoredItemService& monitored_item_service);
+  explicit WatchModel(WatchModelContext&& context);
 
-  const NodeRef& device() const { return device_; }
-  void SetDevice(NodeRef device);
+  const scada::NodeId& device_id() const { return device_id_; }
+  void SetDeviceID(scada::NodeId device_id);
 
   bool paused() const { return paused_; }
   void set_paused(bool paused) { paused_ = paused; }
@@ -32,14 +38,13 @@ class WatchModel : public ui::TableModel {
   virtual void GetCell(ui::TableCell& cell) override;
 
  private:
-  void OnEvent(const scada::Event& event);
-
-  scada::MonitoredItemService& monitored_item_service_;
+  void OnEvent(const scada::Status& status, const scada::Event& event);
+  void AddLine(const scada::Event& event);
 
   typedef std::deque<scada::Event> Events;
   Events events_;
 
-  NodeRef device_;
+  scada::NodeId device_id_;
   std::unique_ptr<scada::MonitoredItem> monitored_item_;
 
   bool paused_ = false;

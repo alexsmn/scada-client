@@ -1,47 +1,39 @@
-#include "components/events/event_view.h"
+п»ї#include "components/events/event_view.h"
 
 #include "base/excel.h"
-#include "common_resources.h"
-#include "commands/prompt_dialog.h"
-#include "controller_factory.h"
-#include "selection_model.h"
-#include "commands/time_range_dialog.h"
-#include "components/events/event_table_model.h"
-#include "components/main/main_window.h"
-#include "common/event_manager.h"
 #include "client_utils.h"
-#include "controls/table.h"
+#include "commands/prompt_dialog.h"
+#include "commands/time_range_dialog.h"
+#include "common/event_manager.h"
+#include "common/node_id_util.h"
+#include "common/node_service.h"
+#include "common_resources.h"
+#include "components/events/event_table_model.h"
 #include "contents_observer.h"
+#include "controller_factory.h"
+#include "controls/table.h"
+#include "selection_model.h"
+#include "services/dialog_service.h"
 
 #if defined(UI_QT)
 #include <qheaderview.h>
 #elif defined(UI_VIEWS)
 #include <atlbase.h>
+
 #include <atlapp.h>
 #include <atlctrls.h>
 #endif
 
-static const char* FormatTimeRange(unsigned mode) {
-  switch (mode) {
-    case ID_TIME_RANGE_DAY:
-      return "Day";
-    case ID_TIME_RANGE_WEEK:
-      return "Week";
-    case ID_TIME_RANGE_MONTH:
-      return "Month";
-    default:
-      return "Current";
-  }
-}
-
 class EventPanel : public EventView {
  public:
-  explicit EventPanel(const ControllerContext& context) : EventView(context, true) {}
+  explicit EventPanel(const ControllerContext& context)
+      : EventView(context, true) {}
 };
 
 class EventJournal : public EventView {
  public:
-  explicit EventJournal(const ControllerContext& context) : EventView(context, false) {}
+  explicit EventJournal(const ControllerContext& context)
+      : EventView(context, false) {}
 };
 
 REGISTER_CONTROLLER(EventPanel, ID_EVENT_VIEW);
@@ -50,33 +42,37 @@ REGISTER_CONTROLLER(EventJournal, ID_EVENT_JOURNAL_VIEW);
 // EventView
 
 EventView::EventView(const ControllerContext& context, bool is_panel)
-    : Controller(context),
-      is_panel_(is_panel),
+    : Controller{context},
+      is_panel_{is_panel},
 #if defined(UI_VIEWS)
-      severities_image_list_(new WTL::CImageListManaged),
+      severities_image_list_{std::make_unique<WTL::CImageList>()},
 #endif
-      model_(std::make_unique<EventTableModel>(EventTableModelContext{
-          context.node_service_,
-          context.event_manager_,
-          context.local_events_,
-          context.history_service_,
-      })) {
+      model_{std::make_unique<EventTableModel>(EventTableModelContext{
+          context.node_service_, context.event_manager_, context.local_events_,
+          context.history_service_, is_panel_})} {
   const ui::TableColumn kEventViewColumns[] = {
-      ui::TableColumn(EventColumnTime, L"Время", 150, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnItem, L"Объект", 170, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnSeverity, L"Важность", 45, ui::TableColumn::RIGHT),
-      ui::TableColumn(EventColumnValue, L"Значение", 100, ui::TableColumn::RIGHT),
-      ui::TableColumn(EventColumnMessage, L"Сообщение", 300, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnSource, L"Источник", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnAckUser, L"Квитировал", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnAckTime, L"Время квитирования", 150, ui::TableColumn::LEFT)
-  };
+      ui::TableColumn(EventColumnTime, L"Р’СЂРµРјСЏ", 150, ui::TableColumn::LEFT),
+      ui::TableColumn(EventColumnItem, L"РћР±СЉРµРєС‚", 170, ui::TableColumn::LEFT),
+      ui::TableColumn(EventColumnSeverity, L"Р’Р°Р¶РЅРѕСЃС‚СЊ", 45,
+                      ui::TableColumn::RIGHT),
+      ui::TableColumn(EventColumnValue, L"Р—РЅР°С‡РµРЅРёРµ", 100,
+                      ui::TableColumn::RIGHT),
+      ui::TableColumn(EventColumnMessage, L"РЎРѕРѕР±С‰РµРЅРёРµ", 300,
+                      ui::TableColumn::LEFT),
+      ui::TableColumn(EventColumnUser, L"РРЅРёС†РёР°С‚РѕСЂ", 100,
+                      ui::TableColumn::LEFT),
+      ui::TableColumn(EventColumnAckUser, L"РљРІРёС‚РёСЂРѕРІР°Р»", 100,
+                      ui::TableColumn::LEFT),
+      ui::TableColumn(EventColumnAckTime, L"Р’СЂРµРјСЏ РєРІРёС‚РёСЂРѕРІР°РЅРёСЏ", 150,
+                      ui::TableColumn::LEFT)};
 
-  size_t count = _countof(kEventViewColumns);
+  size_t count = std::size(kEventViewColumns);
   if (is_panel)
     count -= 2;
 
-  table_.reset(new Table(*model_, std::vector<ui::TableColumn>(kEventViewColumns, kEventViewColumns + count)));
+  table_.reset(
+      new Table(*model_, std::vector<ui::TableColumn>(
+                             kEventViewColumns, kEventViewColumns + count)));
 
 #if defined(UI_QT)
   table_->horizontalHeader()->setHighlightSections(false);
@@ -86,19 +82,23 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
 
 #elif defined(UI_VIEWS)
   severities_image_list_->Create(16, 16, ILC_MASK | ILC_COLOR32, 0, 0);
-  WTL::CBitmap severities_bitmap = WTL::AtlLoadBitmapImage(IDB_EVENT_SEVERITIES);
+  WTL::CBitmap severities_bitmap =
+      WTL::AtlLoadBitmapImage(IDB_EVENT_SEVERITIES);
   severities_image_list_->Add(severities_bitmap, RGB(0, 255, 0));
 
-  //table_->set_show_grid(true);
+  // table_->set_show_grid(true);
 
   table_->SetColumns(count, kEventViewColumns);
   table_->set_controller(this);
 #endif
 
-  selection().multiple_handler_ = [this] { return GetSelectedNodeIds(); };
+  selection().multiple_handler = [this] { return GetSelectedNodeIds(); };
 }
 
 EventView::~EventView() {
+#if defined(UI_VIEWS)
+  severities_image_list_->Destroy();
+#endif
 }
 
 NodeIdSet EventView::GetContainedItems() const {
@@ -118,12 +118,12 @@ void EventView::AcknowledgeSelection() {
 void EventView::OnSelectionChanged(views::TableView& sender) {
   if (table_->selection_model().empty())
     selection().Clear();
-  else  if (table_->selection_model().selected_indices().size() >= 2)
+  else if (table_->selection_model().selected_indices().size() >= 2)
     selection().SelectMultiple();
   else {
     auto& indices = table_->selection_model().selected_indices();
     const scada::Event& event = model_->event_at(indices[0]);
-    selection().SelectNodeId(event.node_id);
+    selection().SelectNode(node_service_.GetNode(event.node_id));
   }
 }
 #endif
@@ -149,25 +149,26 @@ bool EventView::OnDoubleClick() {
 #endif
 
 UiView* EventView::Init(const WindowDefinition& definition) {
-  EventTableModel::ItemIds filter_items;
+  model_->LockUpdate();
+  model_->Update();
 
   WORD mode = is_panel_ ? ID_CURRENT_EVENTS : ID_TIME_RANGE_DAY;
   TimeRange range;
-  
-  for (WindowItems::const_iterator i = definition.items.begin();
-                                   i != definition.items.end(); ++i) {
-    const WindowItem& window_item = *i;
+
+  for (auto& window_item : definition.items) {
     if (window_item.name_is("Item")) {
       std::string path = window_item.GetString("path");
-      auto item_id = scada::NodeId::FromString(path);
+      auto item_id = NodeIdFromScadaString(path);
       if (!item_id.is_null())
-        filter_items.insert(item_id);
+        model_->AddFilteredItem(item_id);
 
     } else if (window_item.name_is("Column")) {
 #if defined(UI_VIEWS)
       int index = window_item.GetInt("index", -1);
       int width = window_item.GetInt("width", 0);
-      if (index >= 0 && index < static_cast<int>(table_->visible_columns().size()) && width > 0)
+      if (index >= 0 &&
+          index < static_cast<int>(table_->visible_columns().size()) &&
+          width > 0)
         table_->SetVisibleColumnWidth(index, width);
 #endif
 
@@ -181,14 +182,14 @@ UiView* EventView::Init(const WindowDefinition& definition) {
         mode = ID_TIME_RANGE_MONTH;
       else if (_stricmp(smode.c_str(), "Current") == 0)
         mode = ID_CURRENT_EVENTS;
-      else if (_stricmp(smode.c_str(), "GridRange") == 0) {
+      else if (_stricmp(smode.c_str(), "Custom") == 0) {
         mode = ID_TIME_RANGE_CUSTOM;
-
       }
     }
   }
 
-  model_->Init(mode, range, filter_items);
+  model_->SetTimeRange(range);
+  model_->UnlockUpdate();
 
   if (!is_panel_)
     controller_delegate_.SetTitle(MakeTitle());
@@ -208,7 +209,8 @@ void EventView::ShowContextMenu(gfx::Point point) {
 #endif
 
 #if defined(UI_VIEWS)
-bool EventView::OnKeyPressed(views::TableView& sender, ui::KeyboardCode key_code) {
+bool EventView::OnKeyPressed(views::TableView& sender,
+                             ui::KeyboardCode key_code) {
   switch (key_code) {
     case VK_ESCAPE:
       model_->CancelRequest();
@@ -229,7 +231,7 @@ base::string16 EventView::MakeTitle() const {
 }
 
 void EventView::Save(WindowDefinition& definition) {
-  const char* mode_string = FormatTimeRange(model_->mode());
+  const char* mode_string = FormatTimeRange(model_->time_range().command_id);
   definition.AddItem("Window").SetString("mode", mode_string);
 
 #if defined(UI_VIEWS)
@@ -240,18 +242,17 @@ void EventView::Save(WindowDefinition& definition) {
   }
 #endif
 
-  for (NodeIdSet::const_iterator i = model_->filter_items().begin();
-                                 i != model_->filter_items().end(); ++i) {
-    const scada::NodeId& item = *i;
+  for (auto& item : model_->filter_items()) {
     WindowItem& window_item = definition.AddItem("Item");
-    window_item.SetString("path", item.ToString());
+    window_item.SetString("path", NodeIdToScadaString(item));
   }
 }
 
 void EventView::ExportToExcel() {
   int rows = model_->GetRowCount();
   if (!rows) {
-    ShowMessageBox(dialog_service_, L"Нет данных для экспорта.", L"Экспорт", MB_OK | MB_ICONEXCLAMATION);
+    dialog_service_.RunMessageBox(L"РќРµС‚ РґР°РЅРЅС‹С… РґР»СЏ СЌРєСЃРїРѕСЂС‚Р°.", L"Р­РєСЃРїРѕСЂС‚",
+                                  MessageBoxMode::Info);
     return;
   }
 
@@ -264,7 +265,8 @@ void EventView::ExportToExcel() {
     const views::TableView::TableColumns& columns = table_->columns();
 
     for (size_t i = 0; i < columns.size(); ++i)
-      sheet.SetData(1, i + 1, base::win::ScopedVariant(columns[i].title.c_str()));
+      sheet.SetData(1, i + 1,
+                    base::win::ScopedVariant(columns[i].title.c_str()));
 
     for (int row = 0; row < model_->GetRowCount(); ++row) {
       for (size_t col = 0; col < columns.size(); ++col) {
@@ -280,7 +282,8 @@ void EventView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    ShowMessageBox(dialog_service_, L"Ошибка при экспорте.", L"Экспорт", MB_OK | MB_ICONSTOP);
+    dialog_service_.RunMessageBox(L"РћС€РёР±РєР° РїСЂРё СЌРєСЃРїРѕСЂС‚Рµ.", L"Р­РєСЃРїРѕСЂС‚",
+                                  MessageBoxMode::Error);
   }
 }
 
@@ -300,6 +303,10 @@ void EventView::RemoveContainedItem(const scada::NodeId& node_id) {
     contents_observer()->OnContainedItemChanged(node_id, false);
 }
 
+TimeRange EventView::GetTimeRange() const {
+  return model_->time_range();
+}
+
 CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_ACKNOWLEDGE_CURRENT:
@@ -307,14 +314,7 @@ CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
     case ID_SEVERITY_CUSTOM:
     case ID_SEVERITY_ALL:
       return this;
-      
-    case ID_CURRENT_EVENTS:
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-    case ID_TIME_RANGE_CUSTOM:
-      return !is_panel_ ? this : NULL;
-      
+
     default:
       return __super::GetCommandHandler(command_id);
   }
@@ -324,7 +324,7 @@ bool EventView::IsCommandEnabled(unsigned command_id) const {
   switch (command_id) {
     case ID_ACKNOWLEDGE_CURRENT:
       return CanAcknowledgeSelection();
-      
+
     default:
       return __super::IsCommandEnabled(command_id);
   }
@@ -332,12 +332,6 @@ bool EventView::IsCommandEnabled(unsigned command_id) const {
 
 bool EventView::IsCommandChecked(unsigned command_id) const {
   switch (command_id) {
-    case ID_CURRENT_EVENTS:
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-    case ID_TIME_RANGE_CUSTOM:
-      return command_id == model_->mode();
     case ID_SEVERITY_CUSTOM:
       return model_->severity_min() != 0;
     case ID_SEVERITY_ALL:
@@ -362,18 +356,6 @@ void EventView::ExecuteCommand(unsigned command) {
       SelectSeverity();
       break;
 
-    case ID_CURRENT_EVENTS:
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-      model_->SetMode(command);
-      controller_delegate_.SetTitle(MakeTitle());
-      break;
-
-    case ID_TIME_RANGE_CUSTOM:
-      SelectTimeRange();
-      break;
-
     case ID_EXPORT:
       ExportToExcel();
       break;
@@ -384,38 +366,31 @@ void EventView::ExecuteCommand(unsigned command) {
   }
 }
 
-void EventView::SelectTimeRange() {
-  DCHECK(!is_panel_);
-
-  auto range = model_->time_range();
-  if (!ShowTimeRangeDialog(dialog_service_, range))
-    return;
-
-  model_->set_time_range(range);
-  model_->SetMode(ID_TIME_RANGE_CUSTOM);
-
+void EventView::SetTimeRange(const TimeRange& time_range) {
+  model_->SetTimeRange(time_range);
   controller_delegate_.SetTitle(MakeTitle());
 }
 
 void EventView::SelectSeverity() {
-  unsigned severity = (model_->mode() == ID_CURRENT_EVENTS) ?
-      event_manager_.severity_min() : model_->severity_min();
+  unsigned severity = model_->current_events() ? event_manager_.severity_min()
+                                               : model_->severity_min();
   const base::char16 prompt[] =
-      L"Минимальный порог важности (0 - все события):";
+      L"РњРёРЅРёРјР°Р»СЊРЅС‹Р№ РїРѕСЂРѕРі РІР°Р¶РЅРѕСЃС‚Рё (0 - РІСЃРµ СЃРѕР±С‹С‚РёСЏ):";
   base::string16 value = WideFormat(severity);
   for (;;) {
-    if (!RunPromptDialog(dialog_service_, prompt, L"Фильтр", value))
+    if (!RunPromptDialog(dialog_service_, prompt, L"Р¤РёР»СЊС‚СЂ", value))
       return;
     if (!Parse(value, severity) || severity > scada::kSeverityMax) {
-      base::string16 message = base::StringPrintf(L"Введите число от %d до %d.",
-          scada::kSeverityMin, scada::kSeverityMax);
-      MessageBox(GetActiveWindow(), message.c_str(), L"Фильтр", MB_ICONSTOP);
+      base::string16 message =
+          base::StringPrintf(L"Р’РІРµРґРёС‚Рµ С‡РёСЃР»Рѕ РѕС‚ %d РґРѕ %d.", scada::kSeverityMin,
+                             scada::kSeverityMax);
+      MessageBox(GetActiveWindow(), message.c_str(), L"Р¤РёР»СЊС‚СЂ", MB_ICONSTOP);
       continue;
     }
     break;
   }
 
-  if (model_->mode() == ID_CURRENT_EVENTS) {
+  if (model_->current_events()) {
     event_manager_.SetSeverityMin(severity);
   } else {
     model_->SetSeverityMin(severity);
@@ -435,4 +410,8 @@ NodeIdSet EventView::GetSelectedNodeIds() const {
   }
 #endif
   return node_ids;
+}
+
+TimeModel* EventView::GetTimeModel() {
+  return model_->current_events() ? nullptr : this;
 }

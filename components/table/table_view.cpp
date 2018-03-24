@@ -1,4 +1,4 @@
-#include "components/table/table_view.h"
+п»ї#include "components/table/table_view.h"
 
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -55,15 +55,15 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
   };
 
   const ui::TableColumn columns[] = {
-      ui::TableColumn(TableModel::COLUMN_TITLE, L"Имя", 150,
+      ui::TableColumn(TableModel::COLUMN_TITLE, L"РРјСЏ", 150,
                       ui::TableColumn::LEFT),
-      ui::TableColumn(TableModel::COLUMN_VALUE, L"Значение", 100,
+      ui::TableColumn(TableModel::COLUMN_VALUE, L"Р—РЅР°С‡РµРЅРёРµ", 100,
                       ui::TableColumn::RIGHT),
-      ui::TableColumn(TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
+      ui::TableColumn(TableModel::COLUMN_CHANGE_TIME, L"Р’СЂРµРјСЏ РёР·РјРµРЅРµРЅРёСЏ", 170,
                       ui::TableColumn::LEFT),
-      ui::TableColumn(TableModel::COLUMN_UPDATE_TIME, L"Время обновления", 170,
+      ui::TableColumn(TableModel::COLUMN_UPDATE_TIME, L"Р’СЂРµРјСЏ РѕР±РЅРѕРІР»РµРЅРёСЏ", 170,
                       ui::TableColumn::LEFT),
-      ui::TableColumn(TableModel::COLUMN_EVENT, L"Событие", 200,
+      ui::TableColumn(TableModel::COLUMN_EVENT, L"РЎРѕР±С‹С‚РёРµ", 200,
                       ui::TableColumn::LEFT)};
 
   view_ = std::make_unique<Table>(
@@ -169,8 +169,8 @@ bool TableView::OnDrawCell(views::TableView& sender,
     if (new_row) {
       font = &new_row_font_;
       if (cell.column_id == TableModel::COLUMN_TITLE) {
-        cell.text = L"Введите выражение для добавления строки";
-        cell.text_color = profile_.bad_value_color();
+        cell.text = L"Р’РІРµРґРёС‚Рµ РІС‹СЂР°Р¶РµРЅРёРµ РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ СЃС‚СЂРѕРєРё";
+        cell.text_color = profile_.bad_value_color;
       }
     }
 
@@ -216,7 +216,7 @@ bool TableView::OnEditCellText(views::TableView& sender,
     text2.erase(0, 1);
 
   if (!model_->SetFormula(row, text2)) {
-    dialog_service_.RunMessageBox(L"Неверное выражение.", {},
+    dialog_service_.RunMessageBox(L"РќРµРІРµСЂРЅРѕРµ РІС‹СЂР°Р¶РµРЅРёРµ.", {},
                                   MessageBoxMode::Error);
     return false;
   }
@@ -273,7 +273,7 @@ void TableView::Save(WindowDefinition& definition) {
     default_columns.push_back(c);
   }
 #endif
-  profile_.set_default_table_columns(default_columns);
+  profile_.default_table_columns = std::move(default_columns);
 
 #if defined(UI_VIEWS)
   for (size_t i = 0; i < view_->visible_columns().size(); ++i) {
@@ -389,8 +389,8 @@ void TableView::RemoveContainedItem(const scada::NodeId& node_id) {
 }
 
 bool TableView::CanClose() const {
-  /*if (AtlMessageBox(m_hWnd, _T("Закрытие окна приведет к потере таблицы.
-  Продолжить?"), (LPCTSTR)frame->GetTitle(),
+  /*if (AtlMessageBox(m_hWnd, _T("Р—Р°РєСЂС‹С‚РёРµ РѕРєРЅР° РїСЂРёРІРµРґРµС‚ Рє РїРѕС‚РµСЂРµ С‚Р°Р±Р»РёС†С‹.
+  РџСЂРѕРґРѕР»Р¶РёС‚СЊ?"), (LPCTSTR)frame->GetTitle(),
   MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
     // cancel close
     return FALSE;
@@ -473,7 +473,6 @@ NodeIdSet TableView::GetContainedItems() const {
     const TableRow* row = model_->GetRow(i);
     if (!row)
       continue;
-
     auto node_id = row->timed_data().GetNode().id();
     if (!node_id.is_null())
       items.emplace(std::move(node_id));

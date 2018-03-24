@@ -1,15 +1,16 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "common/aliases.h"
-#include "core/data_services.h"
 #include "core/data_services_factory.h"
-#include "core/node_id.h"
 #include "core/session_state_observer.h"
 
 #include <map>
 #include <memory>
 #include <string>
+
+namespace base {
+class Timer;
+}
 
 namespace boost {
 namespace asio {
@@ -25,75 +26,63 @@ namespace net {
 class TransportFactory;
 }
 
+namespace scada {
+class SessionService;
+}
+
 class ActionManager;
 class Favourites;
 class FileCache;
 class Logger;
 class LocalEvents;
-class MainWindow;
+class MainWindowManager;
 class MasterDataServices;
 class ModusModule2;
 class NodeService;
-class OpenedView;
-class Page;
 class PortfolioManager;
 class Profile;
+class SessionProxy;
 class TaskManager;
 class TimedDataService;
 class Speech;
-struct MainWindowContext;
 
-class ClientApplication : private scada::SessionStateObserver {
+struct ClientApplicationContext {
+  const std::function<void()> quit_handler_;
+};
+
+class ClientApplication : private ClientApplicationContext,
+                          private scada::SessionStateObserver {
  public:
-  ClientApplication(int argc, char** argv);
-  virtual ~ClientApplication();
+  explicit ClientApplication(ClientApplicationContext&& context);
+  ~ClientApplication();
 
   ClientApplication(const ClientApplication&) = delete;
   ClientApplication& operator=(const ClientApplication&) = delete;
 
-  Logger& logger() const { return *logger_; }
-
-  scada::SessionService& session_service();
-
-  virtual bool Init();
-  bool ShowLoginDialog();
-  void BeforeRun();
-  virtual int Run(int show) = 0;
-  virtual void Quit() = 0;
-
-  void NewMainWindow();
-  void OpenMainWindow(int window_id);
-  void CloseMainWindow(int window_id);
-
-  typedef std::map<int /*window_id*/, std::unique_ptr<MainWindow>> MainWindows;
-  const MainWindows& main_windows() const { return main_windows_; }
-
- protected:
-  virtual std::unique_ptr<MainWindow> CreateMainWindow(
-      MainWindowContext&& context) = 0;
-
-  virtual bool ShowLoginDialogImpl(const DataServicesContext& context,
-                                   DataServices& services) = 0;
-
-  std::shared_ptr<Logger> logger_;
-
-  std::shared_ptr<MasterDataServices> master_data_services_;
+  DataServicesContext MakeDataServicesContext();
+  void SetServices(DataServices&& services);
 
  private:
-  bool IsPageOpened(int page_id);
-  Page* FindFirstNotOpenedPage();
-  OpenedView* FindOpenedViewByFilePath(const base::FilePath& path);
+  std::shared_ptr<NodeService> CreateRemoteNodeService();
+  std::shared_ptr<NodeService> CreateAddressSpaceNodeService();
 
   // scada::SessionStateObserver
   virtual void OnSessionCreated() override;
   virtual void OnSessionDeleted(const scada::Status& status) override;
 
+  std::shared_ptr<Logger> logger_;
+
   std::unique_ptr<boost::asio::io_context> io_context_;
+  std::unique_ptr<base::Timer> io_context_timer_;
   std::unique_ptr<net::TransportFactory> transport_factory_;
+
+  std::shared_ptr<MasterDataServices> master_data_services_;
+
+  std::shared_ptr<SessionProxy> session_;
 
   std::unique_ptr<Profile> profile_;
 
-  std::unique_ptr<NodeService> node_service_;
+  std::shared_ptr<NodeService> node_service_;
 
   std::unique_ptr<events::EventManager> event_manager_;
   AliasResolver alias_resolver_;
@@ -110,7 +99,7 @@ class ClientApplication : private scada::SessionStateObserver {
 
   std::unique_ptr<ModusModule2> modus_module_;
 
-  MainWindows main_windows_;
+  std::unique_ptr<MainWindowManager> main_window_manager_;
 
   bool profile_loaded_ = false;
 };

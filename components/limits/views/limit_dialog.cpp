@@ -2,16 +2,13 @@
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "common/format.h"
 #include "common/node_format.h"
-#include "common/node_ref.h"
-#include "common/node_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "core/configuration_types.h"
 #include "core/data_value.h"
-#include "dialog_service.h"
 #include "services/task_manager.h"
-#include "translation.h"
 #include "views/client_utils_views.h"
 
 #include <atlbase.h>
@@ -22,9 +19,9 @@
 
 class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
  public:
-  explicit LimitsDialog(TaskManager& task_manager, const NodeRef& node);
+  LimitsDialog(TaskManager& task_manager, const NodeRef& node);
 
-  bool Execute(DialogService& dialog_service);
+  bool Execute();
 
  protected:
   friend class ATL::CDialogImpl<LimitsDialog>;
@@ -51,16 +48,15 @@ class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
                    BOOL& /*bHandled*/);
 
  private:
-  const NodeRef node_;
   TaskManager& task_manager_;
+  const NodeRef node_;
 };
 
 LimitsDialog::LimitsDialog(TaskManager& task_manager, const NodeRef& node)
-    : task_manager_{task_manager}, node_{std::move(node)} {}
+    : task_manager_{task_manager}, node_{node} {}
 
-bool LimitsDialog::Execute(DialogService& dialog_service) {
-  return DoModal(static_cast<DialogServiceViews&>(dialog_service)
-                     .GetParentView()) == IDOK;
+bool LimitsDialog::Execute() {
+  return DoModal() == IDOK;
 }
 
 LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
@@ -69,18 +65,20 @@ LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
                                    BOOL& /*bHandled*/) {
   CenterWindow(GetParent());
 
-  SetDlgItemText(IDC_DESC, ToString16(node_.display_name()).c_str());
+  if (node_) {
+    SetDlgItemText(IDC_DESC, node_.display_name().c_str());
 
-  auto lolo = node_[id::AnalogItemType_LimitLoLo].value();
-  auto hihi = node_[id::AnalogItemType_LimitHiHi].value();
-  auto lo = node_[id::AnalogItemType_LimitLo].value();
-  auto hi = node_[id::AnalogItemType_LimitHi].value();
+    auto lolo = node_[kTitLimitLoLoPropTypeId].value();
+    auto hihi = node_[kTitLimitHiHiPropTypeId].value();
+    auto lo = node_[kTitLimitLoPropTypeId].value();
+    auto hi = node_[kTitLimitHiPropTypeId].value();
 
-  SetDlgItemText(IDC_LIMIT_LOLO, FormatValue(node_, lolo, {}, 0).c_str());
-  SetDlgItemText(IDC_LIMIT_HIHI, FormatValue(node_, hihi, {}, 0).c_str());
+    SetDlgItemText(IDC_LIMIT_LOLO, FormatValue(node_, lolo, {}, 0).c_str());
+    SetDlgItemText(IDC_LIMIT_HIHI, FormatValue(node_, hihi, {}, 0).c_str());
 
-  SetDlgItemText(IDC_LIMIT_LO, FormatValue(node_, lo, {}, 0).c_str());
-  SetDlgItemText(IDC_LIMIT_HI, FormatValue(node_, hi, {}, 0).c_str());
+    SetDlgItemText(IDC_LIMIT_LO, FormatValue(node_, lo, {}, 0).c_str());
+    SetDlgItemText(IDC_LIMIT_HI, FormatValue(node_, hi, {}, 0).c_str());
+  }
 
   return TRUE;
 }
@@ -104,14 +102,12 @@ LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
       str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
 
   scada::NodeProperties properties;
-  /*properties.emplace_back(id::AnalogItemType_LimitLo, limit_lo);
-  properties.emplace_back(id::AnalogItemType_LimitHi, limit_hi);
-  properties.emplace_back(id::AnalogItemType_LimitLoLo, limit_lolo);
-  properties.emplace_back(id::AnalogItemType_LimitHiHi, limit_hihi);*/
+  properties.emplace_back(kTitLimitLoPropTypeId, limit_lo);
+  properties.emplace_back(kTitLimitHiPropTypeId, limit_hi);
+  properties.emplace_back(kTitLimitLoLoPropTypeId, limit_lolo);
+  properties.emplace_back(kTitLimitHiHiPropTypeId, limit_hihi);
 
-  scada::Variant limit_hi2{limit_lo};
-
-  task_manager_.PostUpdateTask(node_.id(), {}, std::move(properties));
+  task_manager_.PostUpdateTask(node_.id(), {}, properties);
 
   EndDialog(IDOK);
   return 0;
@@ -125,8 +121,6 @@ LRESULT LimitsDialog::OnCancel(WORD /*wNotifyCode*/,
   return 0;
 }
 
-void ShowLimitsDialog(DialogService& dialog_service,
-                      const NodeRef& node,
-                      TaskManager& task_manager) {
-  LimitsDialog(task_manager, node).Execute(dialog_service);
+void ShowLimitsDialog(TaskManager& task_manager, const NodeRef& node) {
+  LimitsDialog{task_manager, node}.Execute();
 }

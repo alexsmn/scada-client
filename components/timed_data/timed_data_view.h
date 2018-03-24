@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "controller.h"
 #include "contents_model.h"
+#include "controller.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/table/table_controller.h"
@@ -18,7 +18,8 @@ class QTableView;
 class TimedDataView : public Controller,
                       public ContentsModel
 #if defined(UI_VIEWS)
-                      , private views::TableController
+    ,
+                      private views::TableController
 #endif
 {
  public:
@@ -31,17 +32,18 @@ class TimedDataView : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
+  virtual TimeModel* GetTimeModel() override;
 
   // ContentsModel
-  virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) override;
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
 
  private:
   base::string16 MakeTitle() const;
   void UpdateColumnTitles();
 
-  void ShowSetupDialog();
   void ExportToExcel();
-  
+
 #if defined(UI_VIEWS)
   // views::TableController overrides
   virtual void ShowContextMenu(gfx::Point point) override;

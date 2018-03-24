@@ -2,39 +2,37 @@
 
 #include "base/strings/string_split.h"
 #include "base/win/scoped_gdi_object.h"
-#include "libmodus/gfx/canvas.h"
-#include "libmodus/scheme/element.h"
-#include "libmodus/scheme/property_def.h"
-#include "libmodus/render/renderer.h"
-#include "libmodus/scheme/serialization.h"
-#include "libmodus/scheme/scheme.h"
-#include "libmodus/render/shape.h"
-#include "libmodus/scheme/value.h"
 #include "client_utils.h"
 #include "components/modus/modus_binding2.h"
 #include "components/modus/modus_module2.h"
+#include "libmodus/gfx/canvas.h"
+#include "libmodus/render/renderer.h"
+#include "libmodus/render/shape.h"
+#include "libmodus/scheme/element.h"
+#include "libmodus/scheme/property_def.h"
+#include "libmodus/scheme/scheme.h"
+#include "libmodus/scheme/serialization.h"
+#include "libmodus/scheme/value.h"
 #include "ui/gfx/canvas.h"
 #include "ui/native_theme/native_theme.h"
-#include "ui/views/controls/scroll_view.h"
 #include "ui/views/background.h"
+#include "ui/views/controls/scroll_view.h"
 
 namespace {
 const int kSelectionInset = 3;
 const float kHitTolerance = 6.0f;
-} // namespace
+}  // namespace
 
-ModusView2::ModusView2(TimedDataService& timed_data_service)
-    : timed_data_service_(timed_data_service) {
-}
+ModusView2::ModusView2(ModusView2Context&& context)
+    : ModusView2Context{std::move(context)} {}
 
-ModusView2::~ModusView2() {
-}
+ModusView2::~ModusView2() {}
 
 views::View* ModusView2::CreateParentIfNecessary() {
   scroll_view_ = new views::ScrollView;
   scroll_view_->SetContentsView(this);
-  scroll_view_->set_background(
-      new views::ThemedBackground(*scroll_view_, ui::NativeTheme::kColorWindow));
+  scroll_view_->set_background(new views::ThemedBackground(
+      *scroll_view_, ui::NativeTheme::kColorWindow));
   return scroll_view_;
 }
 
@@ -126,7 +124,8 @@ bool ModusView2::OnMousePressed(const ui::MouseEvent& event) {
   if (event.IsDoubleClick()) {
     auto link = shape->element().GetValue("Links[0]");
     if (!link.empty() && navigation_signal_)
-      navigation_signal_(base::FilePath(modus::GetLinkFilePath(link.as_string_piece())));
+      navigation_signal_(
+          base::FilePath(modus::GetLinkFilePath(link.as_string_piece())));
 
     if (double_click_signal_)
       double_click_signal_();
@@ -155,12 +154,16 @@ bool ModusView2::OnMouseWheel(const ui::MouseWheelEvent& event) {
 
 void ModusView2::CreateBindings() {
   for (auto& shape : renderer_->shapes()) {
-    auto composite_binding_string = shape->element().GetValue("Tech.keyLink").as_string();
-    auto binding_string_list = base::SplitString(composite_binding_string, L";",
-        base::WhitespaceHandling::KEEP_WHITESPACE,
-        base::SplitResult::SPLIT_WANT_NONEMPTY);
+    auto composite_binding_string =
+        shape->element().GetValue("Tech.keyLink").as_string();
+    auto binding_string_list =
+        base::SplitString(composite_binding_string, L";",
+                          base::WhitespaceHandling::KEEP_WHITESPACE,
+                          base::SplitResult::SPLIT_WANT_NONEMPTY);
     for (auto& binding_string : binding_string_list) {
-      std::unique_ptr<ModusBinding2> binding(new ModusBinding2(*this, timed_data_service_, *shape, binding_string));
+      ModusBinding2::Delegate& delegate = *this;
+      auto binding = std::make_unique<ModusBinding2>(
+          delegate, *shape, binding_string, timed_data_service_);
       bindings_.emplace(shape.get(), std::move(binding));
     }
   }
@@ -183,15 +186,15 @@ void ModusView2::SetSelection(modus::Shape* shape) {
 
   if (selection_signal_) {
     auto binding = GetBinding(selection_);
-    rt::TimedDataSpec spec = binding ? binding->data_point() :
-                                       rt::TimedDataSpec();
+    rt::TimedDataSpec spec =
+        binding ? binding->data_point() : rt::TimedDataSpec();
     selection_signal_(spec);
   }
 }
 
 void ModusView2::SchedulePaintShape(modus::Shape& shape) {
   auto inflate = std::max(kSelectionInset, kModusBindingInflate);
-  
+
   {
     gfx::Rect rect = BoundsToView(shape.bounds());
     rect.Inset(-inflate, -inflate);
@@ -226,12 +229,11 @@ void ModusView2::PaintSelection(gfx::Canvas& canvas, modus::Shape& shape) {
 }
 
 modus::Point ModusView2::PointToScheme(const gfx::Point& point) const {
-  return modus::Point(point.x() / scale_, point.y() / scale_);  
+  return modus::Point(point.x() / scale_, point.y() / scale_);
 }
 
 gfx::Rect ModusView2::BoundsToView(const modus::Rect& bounds) const {
-  return gfx::Rect(floor(bounds.x() * scale_),
-                   floor(bounds.y() * scale_),
+  return gfx::Rect(floor(bounds.x() * scale_), floor(bounds.y() * scale_),
                    ceil(bounds.width() * scale_),
                    ceil(bounds.height() * scale_));
 }
@@ -245,10 +247,8 @@ void ModusView2::ZoomAtPoint(const gfx::Point& point, float factor) {
   PreferredSizeChanged();
 
   gfx::Rect new_visible_bounds(
-      visible_bounds.x() * factor,
-      visible_bounds.y() * factor,
-      visible_bounds.width() * factor,
-      visible_bounds.height() * factor);
+      visible_bounds.x() * factor, visible_bounds.y() * factor,
+      visible_bounds.width() * factor, visible_bounds.height() * factor);
   ScrollRectToVisible(new_visible_bounds);
 }
 

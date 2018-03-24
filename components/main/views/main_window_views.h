@@ -1,25 +1,20 @@
 #pragma once
 
-#include <map>
-
 #include "components/main/main_window.h"
-#include "dialog_service.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/controls/toolbar.h"
+#include "views/dialog_service_impl_views.h"
 
-namespace views {
-class Menu;
-}
-
+class MainMenu;
 class NativeMainWindow;
+class StatusBarController;
 class ToolbarController;
 class ViewManagerViews;
 
-class MainWindowViews : public MainWindow,
-                        public views::View,
-                        public DialogServiceViews,
-                        private views::Toolbar::Controller {
+class MainWindowViews final : public MainWindow,
+                              public views::View,
+                              private views::Toolbar::Controller {
  public:
   explicit MainWindowViews(MainWindowContext&& context);
   ~MainWindowViews();
@@ -28,31 +23,31 @@ class MainWindowViews : public MainWindow,
 
   base::string16 GetWindowTitle() const;
 
-  // MainWindow
-  virtual void SetWindowFlashing(bool flashing) override;
-  virtual void UpdateToolbarPosition() override;
-  virtual DialogService& GetDialogService() override { return *this; }
+  void OnNativeWindowClosed();
 
   // views::View
   virtual void Layout() override;
   virtual bool ExecuteWindowsCommand(int command_id) override;
 
-  // DialogServiceViews
-  virtual DialogParentType GetParentView() override;
-
  protected:
   // MainWindow
+  virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void UpdateTitle() override;
+  virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;
+  virtual void UpdateToolbarPosition() override;
 
   // ViewManagerDelegate
-  virtual void OnShowTabPopupMenu(OpenedView& view, const gfx::Point& point) override;
+  virtual void OnShowTabPopupMenu(OpenedView& view,
+                                  const gfx::Point& point) override;
 
  private:
+  void CreateToolbar();
   void LoadAccelerators();
 
   // views::Toolbar::Controller
-  virtual void OnExecuteToolbarCommand(views::Toolbar& sender, unsigned command_id) override;
+  virtual void OnExecuteToolbarCommand(views::Toolbar& sender,
+                                       unsigned command_id) override;
 
   // ui::AcceleratorTarget
   virtual bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
@@ -62,9 +57,14 @@ class MainWindowViews : public MainWindow,
 
   NativeMainWindow* main_window_ = nullptr;
 
+  std::unique_ptr<MainMenu> main_menu_;
+  std::unique_ptr<StatusBarController> status_bar_controller_;
+
   std::unique_ptr<views::Toolbar> toolbar_;
   std::unique_ptr<ToolbarController> toolbar_controller_;
 
   // A mapping between accelerators and commands.
-  std::map<ui::Accelerator, int> accelerator_table_; 
+  std::map<ui::Accelerator, int> accelerator_table_;
+
+  DialogServiceImplViews dialog_service_;
 };

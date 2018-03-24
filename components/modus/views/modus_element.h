@@ -4,8 +4,8 @@
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_comptr.h"
 #include "base/win/scoped_variant.h"
-#include "timed_data/timed_data_spec.h"
 #include "components/modus/modus.h"
+#include "timed_data/timed_data_spec.h"
 
 namespace modus {
 
@@ -25,13 +25,14 @@ class ModusElement {
   enum Type { UNKNOWN, SWITCH, LABEL, VALUE };
 
   enum Style {
-    MODUS_INVAL	= 0x0001,	// data item not found
-    MODUS_INACT	= 0x0002,	// inactive item (no subsystem)
-    MODUS_ALERT	= 0x0004,	// alert state
-    MODUS_BADQ	= 0x0008,	// bad quality
+    MODUS_INVAL = 0x0001,  // data item not found
+    MODUS_INACT = 0x0002,  // inactive item (no subsystem)
+    MODUS_ALERT = 0x0004,  // alert state
+    MODUS_BADQ = 0x0008,   // bad quality
   };
 
-  ModusElement(ModusObject& object, SDECore::IParams& sde_params,
+  ModusElement(ModusObject& object,
+               SDECore::IParams& sde_params,
                const base::string16& prop_name);
 
   rt::TimedDataSpec& timed_data() { return data_spec_; }
@@ -42,7 +43,7 @@ class ModusElement {
 
  private:
   void UpdateData(bool init);
-  
+
   ModusObject& object_;
   SDEParams sde_params_;
   base::string16 prop_name_;
@@ -51,14 +52,14 @@ class ModusElement {
   Limits limits_{};
   std::vector<base::string16> state_strings_;
 
-  rt::TimedDataSpec	data_spec_;
-  
-  // data
-  base::string16 text_; // for LABEL
-  double value_;  // for VALUE
+  rt::TimedDataSpec data_spec_;
 
-  unsigned style_;
- 
+  // data
+  base::string16 text_;  // for LABEL
+  double value_ = 0;     // for VALUE
+
+  unsigned style_ = 0;
+
   DISALLOW_COPY_AND_ASSIGN(ModusElement);
 };
 
@@ -77,4 +78,4 @@ extern const base::win::ScopedVariant kParameterStyle;
 extern const base::win::ScopedBstr kBstrClose;
 extern const base::win::ScopedBstr kBstrOpen;
 
-} // namespace modus
+}  // namespace modus

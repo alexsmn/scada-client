@@ -1,43 +1,33 @@
 #pragma once
 
 #include "components/main/main_window.h"
-#include "services/dialog_service.h"
+#include "qt/dialog_service_impl_qt.h"
 
 #include <QMainWindow>
 
-class ClientApplicationQt;
 class QAction;
 class QMenu;
 class QWidget;
 class ViewManagerQt;
-enum CommandCategory;
 
-class MainWindowQt : public QMainWindow,
-                     public DialogServiceQt,
-                     public MainWindow {
-  Q_OBJECT
-
+class MainWindowQt final : public MainWindow, public QMainWindow {
  public:
-  MainWindowQt(ClientApplicationQt& app, MainWindowContext&& context);
+  explicit MainWindowQt(MainWindowContext&& context);
   ~MainWindowQt();
 
   QMenu& context_menu() const { return *context_menu_; }
 
-  // MainWindow
-  virtual void SetWindowFlashing(bool flashing) override;
-  virtual void UpdateToolbarPosition() override;
-  virtual DialogService& GetDialogService() override { return *this; }
-
-  // DialogServiceQt
-  virtual DialogParentType GetParentView() override;
-
  protected:
   // MainWindow
+  virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void UpdateTitle() override;
+  virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;
+  virtual void UpdateToolbarPosition() override;
 
   // ViewManagerDelegate
-  virtual void OnShowTabPopupMenu(OpenedView& view, const gfx::Point& point) override;
+  virtual void OnShowTabPopupMenu(OpenedView& view,
+                                  const gfx::Point& point) override;
 
  private:
   void CreateToolbar();
@@ -53,7 +43,10 @@ class MainWindowQt : public QMainWindow,
   QToolBar* toolbar_ = nullptr;
 
   struct CategoryData {
-    CategoryData() : menu(nullptr), toolbar_action(nullptr), context_menu_action(nullptr) {}
+    CategoryData()
+        : menu(nullptr),
+          toolbar_action(nullptr),
+          context_menu_action(nullptr) {}
     QMenu* menu;
     QAction* toolbar_action;
     QAction* context_menu_action;
@@ -61,6 +54,8 @@ class MainWindowQt : public QMainWindow,
 
   std::map<CommandCategory, CategoryData> category_actions_;
 
-  QMenu* display_menu_;
-  QMenu* context_menu_;
+  QMenu* display_menu_ = nullptr;
+  QMenu* context_menu_ = nullptr;
+
+  DialogServiceImplQt dialog_service_;
 };

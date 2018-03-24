@@ -1,9 +1,9 @@
 #pragma once
 
-#include <vector>
-
 #include "base/win/scoped_comptr.h"
-#include "components/modus/modus.h"
+#include "components/modus/sdecore.h"
+
+#include <vector>
 
 namespace SDECore {
 struct ISDEObject50;

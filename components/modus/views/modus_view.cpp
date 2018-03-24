@@ -1,21 +1,53 @@
-#include "components/modus/views/modus_view.h"
+ï»¿#include "components/modus/views/modus_view.h"
 
 #include "base/logging.h"
 #include "base/win/scoped_bstr.h"
 #include "components/modus/views/modus_element.h"
 #include "components/modus/views/modus_loader.h"
 #include "components/modus/views/modus_object.h"
+#include "views/activex_host.h"
 #include "views/ambient_props.h"
-#include "views/client_application_views.h"
 
 #include <atlwin.h>
+
+HRESULT ModusReindex(const base::FilePath& path,
+                     const AliasResolver& alias_resolver,
+                     TimedDataService& timed_data_service,
+                     FileCache& file_cache) {
+  HRESULT res;
+  CAxWindow win;
+  LPOLESTR ole_class;
+  if (FAILED(res = StringFromCLSID(__uuidof(htsde2::HTSDEForm2), &ole_class)))
+    return res;
+  if (!win.Create(NULL, NULL, NULL, WS_OVERLAPPEDWINDOW))
+    return E_FAIL;
+
+  res = win.CreateControl(ole_class);
+  CoTaskMemFree(ole_class);
+  if (FAILED(res))
+    return res;
+
+  base::win::ScopedComPtr<htsde2::IHTSDEForm2> form;
+  if (FAILED(res = win.QueryControl(__uuidof(htsde2::IHTSDEForm2),
+                                    form.ReceiveVoid())))
+    return res;
+  if (FAILED(res = form->Open(base::win::ScopedBstr(path.value().c_str()))))
+    return res;
+  base::win::ScopedComPtr<SDECore::ISDEDocument50> doc;
+  if (FAILED(res = form->get_Document(doc.Receive())))
+    return res;
+
+  modus::ModusLoader loader{modus::ModusLoaderContext{
+      alias_resolver, timed_data_service, file_cache}};
+  loader.Load(*doc, path, NULL);
+  return S_OK;
+}
 
 // ModusView
 
 ModusView::ModusView(ModusViewContext&& context)
-    : ModusViewContext(std::move(context)),
-      ActiveXControl(*g_application_views),
-      selected_item_(scada::NodeId()) {
+    : ModusViewContext{std::move(context)},
+      views::ActiveXControl{ActiveXHost::instance()} {
   set_controller(this);
 }
 
@@ -69,8 +101,8 @@ void ModusView::OpenInternal(const base::FilePath& path) {
     return;
 
   {
-    modus::ModusLoader loader(
-        {node_service_, timed_data_service_, file_cache_});
+    modus::ModusLoader loader{modus::ModusLoaderContext{
+        alias_resolver_, timed_data_service_, file_cache_}};
     loader.Load(*sde_document_, path, this);
     title_ = loader.title();
   }
@@ -188,7 +220,7 @@ void ModusView::OnControlCreated(views::ActiveXControl& sender) {
     CComObject<AmbientProps>* ambient = NULL;
     CComObject<AmbientProps>::CreateInstance(&ambient);
     assert(ambient);
-    ambient->display_name = OLESTR("Ñõåìà");
+    ambient->display_name = OLESTR("Ð¡Ñ…ÐµÐ¼Ð°");
     ambientEx->SetAmbientDispatch(ambient);
     ambientEx->put_MessageReflect(ATL_VARIANT_TRUE);
   }

@@ -2,52 +2,54 @@
 
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_comptr.h"
-#include "controller_factory.h"
-#include "views/ambient_props.h"
-#include "views/client_application_views.h"
-#include "services/file_cache.h"
-#include "window_definition.h"
-#include "components/vidicon_display/views/telecontrolview.h"
 #include "components/vidicon_display/teleclient.h"
 #include "components/vidicon_display/vidicon_client.h"
+#include "components/vidicon_display/views/telecontrolview.h"
+#include "controller_factory.h"
+#include "services/file_cache.h"
+#include "views/activex_host.h"
+#include "views/ambient_props.h"
+#include "window_definition.h"
 
-//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb" raw_interfaces_only
-//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TeleClient.dll" raw_interfaces_only
-//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\DisplayViewerX.ocx" raw_interfaces_only
+//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"
+// raw_interfaces_only #import "c:\Program
+// Files\Telecontrol\Vidicon\Bin\\TeleClient.dll" raw_interfaces_only #import
+//"c:\Program Files\Telecontrol\Vidicon\Bin\\DisplayViewerX.ocx"
+// raw_interfaces_only
 
 namespace {
 
-/*HRESULT AxPropPut(IDispatch& dispatch, LPCOLESTR name, VARIANT* val, EXCEPINFO* excep = NULL) {
-	DISPID dispid = 0;
-	HRESULT res = dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
+/*HRESULT AxPropPut(IDispatch& dispatch, LPCOLESTR name, VARIANT* val,
+EXCEPINFO* excep = NULL) { DISPID dispid = 0; HRESULT res =
+dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
                                        LOCALE_SYSTEM_DEFAULT, &dispid);
-	if (FAILED(res))
-		return res;
+        if (FAILED(res))
+                return res;
 
-	DISPID dispidPut = DISPID_PROPERTYPUT;
-	DISPPARAMS params = { 0 };
-	params.cArgs = 1;
-	params.cNamedArgs = 1;
-	params.rgdispidNamedArgs = &dispidPut;
-	params.rgvarg = val;
+        DISPID dispidPut = DISPID_PROPERTYPUT;
+        DISPPARAMS params = { 0 };
+        params.cArgs = 1;
+        params.cNamedArgs = 1;
+        params.rgdispidNamedArgs = &dispidPut;
+        params.rgvarg = val;
 
-	return dispatch.Invoke(dispid, IID_NULL, LOCALE_SYSTEM_DEFAULT,
+        return dispatch.Invoke(dispid, IID_NULL, LOCALE_SYSTEM_DEFAULT,
                          DISPATCH_PROPERTYPUT, &params, NULL, excep, NULL);
 }*/
 
-} // namespace
+}  // namespace
 
 REGISTER_CONTROLLER(VidiconDisplayView, ID_VIDICON_DISPLAY_VIEW);
 
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
-    : ::Controller(context),
-      control_(new views::ActiveXControl{*g_application_views}),
+    : ::Controller{context},
+      control_{
+          std::make_unique<views::ActiveXControl>(ActiveXHost::instance())},
       synchronize_timer_(false, true) {
   control_->set_controller(this);
 }
 
-VidiconDisplayView::~VidiconDisplayView() {
-}
+VidiconDisplayView::~VidiconDisplayView() {}
 
 views::View* VidiconDisplayView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
@@ -78,7 +80,7 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
     ambientEx->SetAmbientDispatch(ambient);
     ambientEx->put_MessageReflect(ATL_VARIANT_TRUE);
   }
-  
+
   LPOLESTR ole_class;
   if (SUCCEEDED(StringFromCLSID(__uuidof(ViewerX::ViewerForm), &ole_class))) {
     control_->CreateControl(ole_class);
@@ -87,11 +89,11 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
 
   control_->QueryControl(__uuidof(ViewerX::IViewerForm), (void**)&form_);
   if (form_) {
-    //DispEventAdvise(form);
-    //form->put_StatusVisible(VARIANT_FALSE);
-    //form->put_ToolbarVisible(VARIANT_FALSE);
-    //form->put_PagesVisible(SDECore::txPagesHidden);
-    //form->put_AxBorderStyle(htsde2::afbNone);
+    // DispEventAdvise(form);
+    // form->put_StatusVisible(VARIANT_FALSE);
+    // form->put_ToolbarVisible(VARIANT_FALSE);
+    // form->put_PagesVisible(SDECore::txPagesHidden);
+    // form->put_AxBorderStyle(htsde2::afbNone);
 
     // TODO: Extract method, log all possible errors.
     base::win::ScopedComPtr<TelecontrolView::ITelecontrolView> view;
@@ -113,7 +115,8 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
     form_->put_FileName(base::win::ScopedBstr(full_path.value().c_str()));
 
     synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
-        base::Bind(&VidiconDisplayView::SynchronizeView, base::Unretained(this)));
+                             base::Bind(&VidiconDisplayView::SynchronizeView,
+                                        base::Unretained(this)));
   }
 }
 

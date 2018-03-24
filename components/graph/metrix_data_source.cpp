@@ -7,7 +7,7 @@
 #if defined(UI_QT)
 #include "graph_qt/model/graph_types.h"
 #elif defined(UI_VIEWS)
-#include "ui/base/models/graph_types.h"
+#include "ui/base/models/graph_data_source.h"
 #endif
 
 // MetrixPointEnum
@@ -103,10 +103,13 @@ MetrixDataSource::MetrixDataSource() {
   timed_data_.ready_handler = [this] { OnHistoryChanged(); };
   timed_data_.correction_handler = [this](size_t count,
                                           const scada::DataValue* tvqs) {
-    assert(count > 0);
     OnHistoryChanged();
   };
   timed_data_.node_modified_handler = [this] { OnItemChanged(); };
+  timed_data_.property_change_handler =
+      [this](const rt::PropertySet& properties) {
+        OnPropertyChanged(properties);
+      };
   timed_data_.deletion_handler = [this] {
     if (observer_)
       observer_->OnDataSourceDeleted();
@@ -153,26 +156,27 @@ void MetrixDataSource::UpdateRange() {
 
   range_ = views::GraphRange();
 
-  const auto& node = timed_data_.GetNode();
+  auto node = timed_data_.GetNode();
   if (IsInstanceOf(node, id::AnalogItemType)) {
     range_ = views::GraphRange(
-        node[id::AnalogItemType_EuLo].value().get_or(views::kGraphUnknownValue),
-        node[id::AnalogItemType_EuHi].value().get_or(
-            views::kGraphUnknownValue));
+        node[kTitEuLoPropTypeId].value().get_or(views::kGraphUnknownValue),
+        node[kTitEuHiPropTypeId].value().get_or(views::kGraphUnknownValue));
   }
 }
 
 void MetrixDataSource::UpdateLimits() {
-  const auto& node = timed_data_.GetNode();
-  if (IsInstanceOf(node, id::AnalogItemType)) {
-    limit_lo_ = node[id::AnalogItemType_LimitLo].value().get_or(
-        views::kGraphUnknownValue);
-    limit_hi_ = node[id::AnalogItemType_LimitHi].value().get_or(
-        views::kGraphUnknownValue);
-    limit_lolo_ = node[id::AnalogItemType_LimitLoLo].value().get_or(
-        views::kGraphUnknownValue);
-    limit_hihi_ = node[id::AnalogItemType_LimitHiHi].value().get_or(
-        views::kGraphUnknownValue);
+  if (auto node = timed_data_.GetNode()) {
+    limit_lo_ =
+        node[kTitLimitLoPropTypeId].value().get_or(views::kGraphUnknownValue);
+    limit_hi_ =
+        node[kTitLimitHiPropTypeId].value().get_or(views::kGraphUnknownValue);
+    ;
+    limit_lolo_ =
+        node[kTitLimitLoLoPropTypeId].value().get_or(views::kGraphUnknownValue);
+    ;
+    limit_hihi_ =
+        node[kTitLimitHiHiPropTypeId].value().get_or(views::kGraphUnknownValue);
+    ;
   } else {
     limit_lo_ = views::kGraphUnknownValue;
     limit_hi_ = views::kGraphUnknownValue;

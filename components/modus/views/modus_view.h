@@ -2,20 +2,17 @@
 
 #include "base/files/file_util.h"
 #include "base/win/scoped_comptr.h"
+#include "common/aliases.h"
 #include "components/modus/modus.h"
 #include "components/modus/modus_view_wrapper.h"
 #include "core/configuration_types.h"
 #include "ui/views/controls/activex_control.h"
 
 #include <atlbase.h>
+
 #include <atlcom.h>
 #include <functional>
 #include <map>
-
-class FileCache;
-class ModusController;
-class NodeService;
-class TimedDataService;
 
 namespace base {
 class FilePath;
@@ -30,14 +27,19 @@ class ModusLoader;
 class ModusObject;
 }  // namespace modus
 
+class FileCache;
+class ModusController;
+class TimedDataService;
+
 struct ModusViewContext {
-  NodeService& node_service_;
+  const AliasResolver alias_resolver_;
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
 };
 
 class ModusView
-    : public views::ActiveXControl,
+    : private ModusViewContext,
+      public views::ActiveXControl,
       public ModusViewWrapper,
       public ATL::IDispEventImpl<1,
                                  ModusView,
@@ -45,8 +47,7 @@ class ModusView
                                  &__uuidof(htsde2::__htsde2),
                                  0xFFFF,
                                  0xFFFF>,
-      private views::ActiveXControl::Controller,
-      private ModusViewContext {
+      private views::ActiveXControl::Controller {
  public:
   explicit ModusView(ModusViewContext&& context);
   virtual ~ModusView();

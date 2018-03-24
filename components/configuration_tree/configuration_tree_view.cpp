@@ -1,16 +1,16 @@
-#include "components/configuration_tree/configuration_tree_view.h"
+ï»¿#include "components/configuration_tree/configuration_tree_view.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
-#include "common/node_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
 #include "core/node_management_service.h"
-#include "core/session_service.h"
-#include "translation.h"
+#include "remote/session_proxy.h"
+#include "services/dialog_service.h"
 #include "ui/base/models/sorted_tree_model.h"
 #include "views/item_drag_data.h"
 
@@ -21,13 +21,13 @@
 class TypesView : public ConfigurationTreeView {
  public:
   explicit TypesView(const ControllerContext& context)
-      : ConfigurationTreeView(context,
-                              std::make_unique<ConfigurationTreeModel>(
-                                  context.view_service_,
-                                  context.node_service_,
-                                  scada::id::TypesFolder,
-                                  std::vector<scada::NodeId>{
-                                      scada::id::HierarchicalReferences})) {}
+      : ConfigurationTreeView{
+            context, *new ConfigurationTreeModel{
+                         context.node_service_,
+                         context.task_manager_,
+                         context.node_service_.GetNode(scada::id::TypesFolder),
+                         {scada::id::HierarchicalReferences},
+                         {}}} {}
 };
 
 // REGISTER_CONTROLLER(TypesView, ID_TYPES_VIEW);
@@ -35,35 +35,32 @@ class TypesView : public ConfigurationTreeView {
 class NodesView : public ConfigurationTreeView {
  public:
   explicit NodesView(const ControllerContext& context)
-      : ConfigurationTreeView(context,
-                              std::make_unique<ConfigurationTreeModel>(
-                                  context.view_service_,
-                                  context.node_service_,
-                                  scada::id::RootFolder,
-                                  std::vector<scada::NodeId>{
-                                      scada::id::HierarchicalReferences})) {}
+      : ConfigurationTreeView{
+            context, *new ConfigurationTreeModel{
+                         context.node_service_,
+                         context.task_manager_,
+                         context.node_service_.GetNode(scada::id::RootFolder),
+                         {scada::id::HierarchicalReferences},
+                         {}}} {}
 };
 
 REGISTER_CONTROLLER(NodesView, ID_NODES_VIEW);
 
-ConfigurationTreeView::ConfigurationTreeView(
-    const ControllerContext& context,
-    std::unique_ptr<ConfigurationTreeModel> model)
-    : Controller(context), model_(std::move(model)) {
+ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
+                                             ConfigurationTreeModel& model)
+    : Controller{context}, model_(&model) {
+  model_->Init();
+
   // sorted_model_ = std::make_unique<ui::SortedTreeModel>(*model_);
 
   tree_view_.reset(new Tree(*model_));
   tree_view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetRootVisible(true);
 
-#if defined(UI_VIEWS)
-  tree_view_->SetShowChecks(model_->AreChecksVisible());
-#endif
-
   tree_view_->SetSelectionChangedHandler([this] {
     auto selection_size = tree_view_->GetSelectionSize();
     if (selection_size == 0)
-      selection().SelectNode(model_->root_node());
+      selection().SelectNode(model_->tree());
     else if (selection_size == 1) {
       auto* node =
           static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
@@ -81,9 +78,9 @@ ConfigurationTreeView::ConfigurationTreeView(
     auto& a = static_cast<ConfigurationTreeNode*>(left)->data_node();
     auto& b = static_cast<ConfigurationTreeNode*>(right)->data_node();
     if (!!a != !!b)
-      return !!a > !!b ? -1 : 1;
+      return !!a < !!b ? 1 : -1;
     if (a.fetched() != b.fetched())
-      return a.fetched() > b.fetched();
+      return a.fetched() < b.fetched() ? 1 : -1;
     const auto& ta = a.type_definition().id();
     const auto& tb = b.type_definition().id();
     bool fa = a.node_class() != scada::NodeClass::Variable;
@@ -113,7 +110,7 @@ UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
 CommandHandler* ConfigurationTreeView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_DELETE: {
-      if (!session_service_.IsAdministrator())
+      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return NULL;
 
       if (selection().node())
@@ -142,16 +139,16 @@ void ConfigurationTreeView::OnViewNodeCreated(const NodeRef& node) {
 }
 
 void ConfigurationTreeView::DeleteSelection() {
-  if (!session_service_.IsAdministrator())
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return;
 
   if (auto node = selection().node()) {
     base::string16 message = base::StringPrintf(
-        L"Âû äåéñòâèòåëüíî õîòèòå óäàëèòü %ls?", node.display_name().c_str());
-    auto choice = dialog_service_.RunMessageBox(message, L"Óäàëåíèå",
+        L"Ð’Ñ‹ Ð´ÐµÐ¹ÑÑ‚Ð²Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ Ñ…Ð¾Ñ‚Ð¸Ñ‚Ðµ ÑƒÐ´Ð°Ð»Ð¸Ñ‚ÑŒ %ls?", node.display_name().c_str());
+    auto choice = dialog_service_.RunMessageBox(message, L"Ð£Ð´Ð°Ð»ÐµÐ½Ð¸Ðµ",
                                                 MessageBoxMode::QuestionYesNo);
     if (choice == MessageBoxResult::Yes)
-      DeleteTreeRecordsRecursive(node, task_manager_);
+      DeleteTreeRecordsRecursive(task_manager_, node);
   }
 }
 
@@ -175,39 +172,8 @@ void ConfigurationTreeView::StartDrag(void* node) {
   }
 }
 
-void* ConfigurationTreeView::TestDrop(const ui::DropTargetEvent& event) const {
-  /*auto* dragging_node = configuration_.GetNode(dragging_item_id_);
-  if (!dragging_node)
-    return NULL;*/
-
-  ConfigurationTreeNode* node = reinterpret_cast<ConfigurationTreeNode*>(
-      tree_view_->GetNodeAt(event.location()));
-  if (!node)
-    return NULL;
-
-  /*auto* dragging_type = scada::GetTypeDefinition(*dragging_node);
-  if (!dragging_type)
-    return nullptr;
-
-  for ( ; node; node = node->parent()) {
-    if (!node->data_node())
-      continue;
-    auto* type = scada::GetTypeDefinition(node->data_node().node());
-    if (type && scada::HasComponent(*type, *dragging_type))
-      break;
-  }
-  if (!node)
-    return nullptr;
-
-  if (node->data_node().node_ptr() == dragging_node ||
-      node->data_node().node_ptr() == scada::GetParent(*dragging_node))
-    return nullptr;*/
-
-  return node;
-}
-
 bool ConfigurationTreeView::CanDrop(const ui::OSExchangeData& data) {
-  return session_service_.IsAdministrator() &&
+  return session_service_.HasPrivilege(scada::Privilege::Configure) &&
          data.HasCustomFormat(ItemDragData::GetCustomFormat());
 }
 
@@ -220,45 +186,33 @@ void ConfigurationTreeView::OnDragEntered(const ui::DropTargetEvent& event) {
 }
 
 int ConfigurationTreeView::OnDragUpdated(const ui::DropTargetEvent& event) {
-  void* node = TestDrop(event);
-  tree_view_->SetDropTargetNode(node);
-  if (!node)
-    return ui::DragDropTypes::DRAG_NONE;
-
-  return ui::DragDropTypes::DRAG_MOVE;
+  ConfigurationTreeNode* target_node = reinterpret_cast<ConfigurationTreeNode*>(
+      tree_view_->GetNodeAt(event.location()));
+  int result =
+      model_->GetDropAction(dragging_item_id_, target_node, drop_action_);
+  if (result == ui::DragDropTypes::DRAG_NONE) {
+    target_node = nullptr;
+    drop_action_ = nullptr;
+  }
+  tree_view_->SetDropTargetNode(target_node);
+  return result;
 }
 
 void ConfigurationTreeView::OnDragDone() {
   dragging_item_id_ = scada::NodeId();
+  drop_action_ = nullptr;
   tree_view_->SetDropTargetNode(NULL);
 }
 
 int ConfigurationTreeView::OnPerformDrop(const ui::DropTargetEvent& event) {
   assert(!dragging_item_id_.is_null());
-  auto dragging_node_id = dragging_item_id_;
+
+  auto drop_action = std::move(drop_action_);
+
+  drop_action_ = nullptr;
   dragging_item_id_ = scada::NodeId();
-
-  ConfigurationTreeNode* target_node =
-      reinterpret_cast<ConfigurationTreeNode*>(tree_view_->drop_target_node());
   tree_view_->SetDropTargetNode(NULL);
-  if (!target_node || !target_node->data_node())
-    return ui::DragDropTypes::DRAG_NONE;
 
-  /*auto* dragging_node = configuration_.GetNode(dragging_node_id);
-  if (!dragging_node)
-    return ui::DragDropTypes::DRAG_NONE;
-
-  auto* parent = scada::GetParent(*dragging_node);
-  if (parent) {
-    node_management_service_.DeleteReference(OpcUaId_Organizes,
-        parent->GetId(), dragging_node->GetId(),
-        [](const scada::Status& status) {});
-  }
-
-  node_management_service_.AddReference(OpcUaId_Organizes,
-        target_node->data_node().id(), dragging_node->GetId(),
-        [](const scada::Status& status) {});*/
-
-  return ui::DragDropTypes::DRAG_MOVE;
+  return drop_action();
 }
 #endif

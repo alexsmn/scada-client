@@ -1,8 +1,8 @@
 #pragma once
 
-#include <functional>
-
 #include "command_handler.h"
+
+#include <type_traits>
 
 namespace events {
 class EventManager;
@@ -10,33 +10,30 @@ class EventManager;
 
 namespace scada {
 class SessionService;
-class ViewService;
-}  // namespace scada
+}
 
 class DialogService;
 class Favourites;
 class LocalEvents;
 class MainWindow;
+class MainWindowManager;
 class NodeService;
-class Page;
 class Profile;
 class Speech;
 class TaskManager;
 
 struct MainCommandsContext {
   MainWindow& main_window_;
-  NodeService& node_service_;
   TaskManager& task_manager_;
-  events::EventManager& event_manager_;
-  LocalEvents& local_events_;
-  Profile& profile_;
-  scada::SessionService& session_service_;
-  std::function<void()> new_main_window_;
-  std::function<Page*()> find_closed_page_;
-  Speech& speech_;
-  Favourites& favourites_;
   DialogService& dialog_service_;
-  scada::ViewService& view_service_;
+  scada::SessionService& session_service_;
+  events::EventManager& event_manager_;
+  NodeService& node_service_;
+  LocalEvents& local_events_;
+  Favourites& favourites_;
+  Speech& speech_;
+  Profile& profile_;
+  MainWindowManager& main_window_manager_;
 };
 
 class MainCommands : private MainCommandsContext, public CommandHandler {

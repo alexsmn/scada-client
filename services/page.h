@@ -10,35 +10,33 @@ class Node;
 
 class Page {
  public:
-	Page() : id(0) {}
+  Page() : id(0) {}
 
-	base::string16 GetTitle() const;
-	PageLayout& layout() { return layout_; }
-	const PageLayout& layout() const { return layout_; }
+  base::string16 GetTitle() const;
 
-	WindowDefinition& AddWindow(const WindowDefinition& window);
-	WindowDefinition* FindWindow(int id);
-  const WindowDefinition* FindWindow(int id) const;
-  int FindWindow(const WindowDefinition& window) const;
-	void DeleteWindow(int index);
-	void Clear();
+  WindowDefinition& AddWindow(const WindowDefinition& window);
+  WindowDefinition* FindWindowDef(int id);
+  const WindowDefinition* FindWindowDef(int id) const;
+  int FindWindowDef(const WindowDefinition& window) const;
+  void DeleteWindow(int index);
+  void Clear();
 
   int GetWindowCount() const { return windows_.size(); }
   WindowDefinition& GetWindow(int index) const { return *windows_[index]; }
 
-	void Load(const xml::Node& node);
-	void Save(xml::Node& node, bool current) const;
+  void Load(const xml::Node& node);
+  void Save(xml::Node& node, bool current) const;
 
-	int	id;
-	base::string16 title;
+  int id;
+  base::string16 title;
 
-private:
-	int NewWindowId();
+  PageLayout layout;
 
-	PageLayout layout_;
+ private:
+  int NewWindowId();
 
   typedef std::vector<WindowDefinition*> Windows;
-	Windows windows_;
+  Windows windows_;
 };
 
 base::FilePath GetPagePath(const char* name);

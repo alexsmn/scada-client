@@ -2,11 +2,7 @@
 
 #include "core/session_service.h"
 #include "core/status.h"
-#include "translation.h"
 
-#include <QtCore/qsettings.h>
-#include <QtWidgets/qapplication.h>
-#include <QtWidgets/qcheckbox.h>
 #include <QtWidgets/qcombobox.h>
 #include <QtWidgets/qdialogbuttonbox.h>
 #include <QtWidgets/qlabel.h>
@@ -14,111 +10,72 @@
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qpushbutton.h>
+#include <QApplication>
+#include <QCheckBox>
+#include <QSettings>
 
-LoginDialog::LoginDialog(const DataServicesContext& services_context)
-    : services_context_(services_context),
-      cancelation_(std::make_shared<bool>(false)) {
+namespace {
+
+QStringList MakeQStringList(const std::vector<base::string16>& source) {
+  QStringList list;
+  list.reserve(source.size());
+  for (auto& str : source)
+    list.push_back(QString::fromStdWString(str));
+  return list;
+}
+
+}  // namespace
+
+LoginDialog::LoginDialog(DataServicesContext&& services_context)
+    : controller_{std::move(services_context), dialog_service_} {
   ui.setupUi(this);
 
-  // TODO: Reg key constants.
-  QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace",
-                     QSettings::NativeFormat);
-  auto user_name = settings.value("User").toString();
-  user_list_ = settings.value("UserList").toString().split(',');
-  auto server = settings.value("Server").toString();
-  auto password = settings.value("Password").toString();
-  auto auto_login = settings.value("AutoLogin").toBool();
-  if (QApplication::queryKeyboardModifiers() & Qt::ControlModifier)
-    auto_login = false;
+  dialog_service_.parent_widget = this;
 
-  ui.serverComboBox->setCurrentText(server);
+  controller_.completion_handler = [this](DataServices& services) {
+    this->services = std::move(services);
+    QDialog::accept();
+  };
 
-  ui.userNameComboBox->addItems(user_list_);
-  ui.userNameComboBox->setCurrentText(user_name);
+  controller_.error_handler = [this] {
+    EnableControls(true);
+    ui.userNameComboBox->setFocus();
+    ui.userNameComboBox->lineEdit()->selectAll();
+  };
+
+  ui.serverComboBox->setCurrentText(
+      QString::fromStdString(controller_.server_host));
+
+  ui.userNameComboBox->addItems(MakeQStringList(controller_.user_list));
+  ui.userNameComboBox->setCurrentText(
+      QString::fromStdWString(controller_.user_name));
   ui.userNameComboBox->lineEdit()->selectAll();
 
-  if (auto_login)
-    ui.passwordLineEdit->setText(password);
+  ui.autoLoginCheckBox->setChecked(controller_.auto_login);
 
-  ui.autoLoginCheckBox->setChecked(auto_login);
-
-  if (auto_login)
+  if (controller_.auto_login) {
+    ui.passwordLineEdit->setText(QString::fromStdString(controller_.password));
     accept();
+  }
 }
 
 LoginDialog::~LoginDialog() {}
 
 void LoginDialog::accept() {
-  SetControlsEnabled(false);
+  EnableControls(false);
 
-  server_ = ui.serverComboBox->currentText();
-  user_name_ = ui.userNameComboBox->currentText();
-  password_ = ui.passwordLineEdit->text();
-  auto_login_ = ui.autoLoginCheckBox->isChecked();
+  controller_.server_host = ui.serverComboBox->currentText().toStdString();
+  controller_.user_name = ui.userNameComboBox->currentText().toStdWString();
+  controller_.password = ui.passwordLineEdit->text().toStdString();
+  controller_.auto_login = ui.autoLoginCheckBox->isChecked();
 
-  const char* service_name = "Scada";
-  if (server_.startsWith("opc."))
-    service_name = "OpcUa";
-
-  if (!CreateDataServices(service_name, services_context_, services_)) {
-    OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);
-    return;
-  }
-
-  std::weak_ptr<bool> cancelation = cancelation_;
-  // "TCP;active;port=2000"
-  services_.session_service_->Connect(
-      server_.toStdString(), user_name_.toStdString(), password_.toStdString(),
-      true, [this, cancelation](const scada::Status& result) {
-        if (!cancelation.expired())
-          OnLoginResult(result);
-      });
+  controller_.Login();
 }
 
-void LoginDialog::OnLoginResult(const scada::Status& result) {
-  if (result) {
-    QSettings settings("HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace",
-                       QSettings::NativeFormat);
-    settings.setValue("User", user_name_);
-    settings.setValue("Password", auto_login_ ? password_ : QString());
-    settings.setValue("AutoLogin", auto_login_);
-    settings.setValue("Server", server_);
-
-    int i = user_list_.indexOf(user_name_);
-    if (!user_list_.empty() && i != user_list_.size() - 1) {
-      if (i != -1)
-        user_list_.erase(user_list_.begin() + i);
-      user_list_.append(user_name_);
-      const int sc_maxUserList = 10;
-      if (user_list_.size() > sc_maxUserList)
-        user_list_.erase(
-            user_list_.begin(),
-            user_list_.begin() + user_list_.size() - sc_maxUserList);
-      settings.setValue("UserList", user_list_.join(','));
-    }
-
-    QDialog::accept();
-
-  } else {
-    services_ = {};
-    auto_login_ = false;
-
-    QMessageBox msg_box;
-    msg_box.setWindowTitle(tr("Login failed"));
-    msg_box.setIcon(QMessageBox::Icon::Warning);
-    msg_box.setText(QString::fromStdWString(ToString16(result)) + ".");
-    msg_box.exec();
-
-    SetControlsEnabled(true);
-    ui.userNameComboBox->setFocus();
-    ui.userNameComboBox->lineEdit()->selectAll();
-  }
-}
-
-void LoginDialog::SetControlsEnabled(bool enabled) {
-  ui.serverComboBox->setEnabled(enabled);
-  ui.userNameComboBox->setEnabled(enabled);
-  ui.passwordLineEdit->setEnabled(enabled);
-  ui.autoLoginCheckBox->setEnabled(enabled);
-  ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(enabled);
+void LoginDialog::EnableControls(bool enable) {
+  ui.serverComboBox->setEnabled(enable);
+  ui.userNameComboBox->setEnabled(enable);
+  ui.passwordLineEdit->setEnabled(enable);
+  ui.autoLoginCheckBox->setEnabled(enable);
+  ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(enable);
 }

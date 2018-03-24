@@ -1,45 +1,25 @@
 #pragma once
 
 #include "base/time/time.h"
+#include "common_resources.h"
 
-struct TimeRangeBound {
-  TimeRangeBound()
-      : date_only(true) {
-  }
-  TimeRangeBound(base::Time time, bool date_only)
-      : time(time),
-        date_only(date_only) {
-  }
-  
-  base::Time GetStartTime() const {
-    if (time.is_null())
-      return base::Time();
-    else if (date_only)
-      return time.LocalMidnight() - base::TimeDelta::FromDays(1);
-    else
-      return time;
-  }
-
-  base::Time GetEndTime() const {
-    if (time.is_null())
-      return base::Time();
-    else if (date_only)
-      return time.LocalMidnight() + base::TimeDelta::FromDays(1);
-    else
-      return time;
-  }
-
-  base::Time time;
-  bool date_only;
-};
+#include <cassert>
 
 struct TimeRange {
-  TimeRange() { }
-  TimeRange(const TimeRangeBound& start, const TimeRangeBound& end)
-      : start(start),
-        end(end) {
-  }
+  TimeRange() {}
+  explicit TimeRange(unsigned command_id) : command_id{command_id} {}
+  TimeRange(base::Time start, base::Time end)
+      : start{start}, end{end}, command_id{ID_TIME_RANGE_CUSTOM} {}
 
-  TimeRangeBound start;
-  TimeRangeBound end;
+  unsigned command_id = ID_TIME_RANGE_DAY;
+  base::Time start;
+  base::Time end;
+  bool dates = false;
 };
+
+bool operator==(const TimeRange& a, const TimeRange& b);
+
+std::pair<base::Time, base::Time> GetTimeRangeBounds(
+    const TimeRange& time_range);
+
+const char* FormatTimeRange(unsigned mode);

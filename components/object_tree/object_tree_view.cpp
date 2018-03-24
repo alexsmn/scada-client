@@ -1,13 +1,11 @@
 #include "components/object_tree/object_tree_view.h"
 
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
-#include "components/main/main_window.h"
-#include "components/main/opened_view.h"
 #include "components/object_tree/object_tree_model.h"
 #include "contents_model.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
-#include "core/session_service.h"
 #include "services/profile.h"
 
 #if defined(UI_VIEWS)
@@ -20,17 +18,17 @@
 REGISTER_CONTROLLER(ObjectTreeView, ID_OBJECT_VIEW);
 
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
-    : ConfigurationTreeView{context, std::make_unique<ObjectTreeModel>(
-                                         context.view_service_,
-                                         context.node_service_,
-                                         id::DataItems,
-                                         context.timed_data_service_,
-                                         context.profile_)} {
+    : ConfigurationTreeView{
+          context, *new ObjectTreeModel{ObjectTreeModelContext{
+                       context.node_service_, context.task_manager_,
+                       context.node_service_.GetNode(id::DataItems),
+                       context.timed_data_service_, context.profile_}}} {
 #if defined(UI_QT)
   tree_view().model_adapter().set_checkable(true);
   tree_view().setHeaderHidden(false);
 #elif defined(UI_VIEWS)
   tree_view().set_custom_painter(this);
+  tree_view().SetShowChecks(true);
 #endif
 
   tree_view().SetExpandedHandler([this](void* node, bool expanded) {
@@ -39,8 +37,6 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
 
   tree_view().SetCheckedHandler([this](void* node, bool checked) {
     ConfigurationTreeNode* n = reinterpret_cast<ConfigurationTreeNode*>(node);
-    if (!n->data_node())
-      return;
     auto* contents_model = controller_delegate_.GetActiveContentsModel();
     if (contents_model) {
       if (checked)
@@ -96,7 +92,7 @@ void ObjectTreeView::OnPaintNode(gfx::Canvas* canvas,
 
   SkColor color = SK_ColorBLACK;
   if (timed_data->current().qualifier.general_bad())
-    color = profile_.bad_value_color();
+    color = profile_.bad_value_color;
 
   RECT rc = node_bounds.ToRECT();
 

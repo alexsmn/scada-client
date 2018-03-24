@@ -1,31 +1,32 @@
-#include "components/main/views/status_bar_controller.h"
+Ôªø#include "components/main/views/status_bar_controller.h"
 
 #include <algorithm>
 
 using std::max;
 using std::min;
 
-#include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
-#include "common/event_manager.h"
-#include "common/node_service.h"
-#include "core/session_service.h"
-#include "translation.h"
-
 #include <atlbase.h>
 
 #include <atlapp.h>
 #include <atlctrls.h>
 
+#include "base/strings/sys_string_conversions.h"
+#include "common/event_manager.h"
+#include "common/node_service.h"
+#include "common/node_util.h"
+#include "core/monitored_item_service.h"
+#include "core/session_service.h"
+#include "remote/session_proxy.h"
+#include "views/client_utils_views.h"
+
 StatusBarController::StatusBarController(
-    HWND hwnd,
-    NodeService& node_service,
-    events::EventManager& event_manager,
-    scada::SessionService& session_state_notifier)
-    : hwnd_(hwnd),
-      node_service_(node_service),
-      event_manager_(event_manager),
-      session_service_(session_state_notifier) {
+    const StatusBarControllerContext& context)
+    : StatusBarControllerContext{context} {
+}
+
+void StatusBarController::Init(HWND hwnd) {
+  hwnd_ = hwnd;
+
   Layout();
   Update();
 
@@ -39,7 +40,7 @@ void StatusBarController::Layout() {
   RECT rect;
   status_bar.GetClientRect(&rect);
 
-  int parts[] = {rect.right - rect.left, 100, 100, 100, 100};
+  int parts[] = {rect.right - rect.left, 100, 100, 100, 100, 120};
   for (int i = 1; i < _countof(parts); i++)
     parts[0] -= parts[i];
   for (int i = 1; i < _countof(parts); i++)
@@ -51,22 +52,27 @@ void StatusBarController::Update() {
   size_t unacked_event_count = event_manager_.unacked_events().size();
   base::string16 event_status =
       unacked_event_count
-          ? base::StringPrintf(L"—Ó·˚ÚËÈ: %u", unacked_event_count)
-          : L"ÕÂÚ ÒÓ·˚ÚËÈ";
+          ? base::StringPrintf(L"–°–æ–±—ã—Ç–∏–π: %u", unacked_event_count)
+          : L"–ù–µ—Ç —Å–æ–±—ã—Ç–∏–π";
   SetPaneText(1, event_status);
 
   base::string16 event_severity_min =
-      base::StringPrintf(L"¬‡ÊÌÓÒÚ¸: %u", event_manager_.severity_min());
+      base::StringPrintf(L"–í–∞–∂–Ω–æ—Å—Ç—å: %u", event_manager_.severity_min());
   SetPaneText(2, event_severity_min);
 
   auto& user_id = session_service_.GetUserId();
-  base::string16 user_status =
-      ToString16(node_service_.GetNode(user_id).display_name());
+  base::string16 user_status = GetDisplayName(node_service_, user_id);
   SetPaneText(3, user_status);
 
-  auto* connect_string =
-      session_service_.IsConnected() ? L"œÓ‰ÍÎ˛˜ÂÌ" : L"ŒÚÍÎ˛˜ÂÌ";
-  SetPaneText(4, connect_string);
+  base::TimeDelta ping_delay;
+  auto connected = session_service_.IsConnected(&ping_delay);
+
+  SetPaneText(4, connected ? L"–ü–æ–¥–∫–ª—é—á–µ–Ω" : L"–û—Ç–∫–ª—é—á–µ–Ω");
+  SetPaneText(5, connected
+                     ? base::StringPrintf(
+                           L"–û—Ç–∫–ª–∏–∫: %u –º—Å",
+                           static_cast<unsigned>(ping_delay.InMilliseconds()))
+                     : L"–ù–µ—Ç –æ—Ç–∫–ª–∏–∫–∞");
 }
 
 void StatusBarController::SetPaneText(int pane, const base::string16& text) {

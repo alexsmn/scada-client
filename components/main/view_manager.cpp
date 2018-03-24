@@ -7,7 +7,6 @@
 #include "window_definition.h"
 #include "window_info.h"
 
-
 #include <algorithm>
 
 ViewManager::ViewManager(ViewManagerDelegate& delegate)
@@ -54,8 +53,7 @@ void ViewManager::DestroyView(OpenedView& view) {
   WindowDefinition* definition = p->definition;
   views_.erase(p);
 
-  if (!is_closing_page())
-    delegate_->OnViewClosed(view, *definition);
+  delegate_.OnViewClosed(view, *definition);
 
   delete &view;
 }
@@ -85,14 +83,14 @@ void ViewManager::OpenPage(const Page& page) {
 
   *current_page_ = page;
 
-  OpenLayout(*current_page_, current_page_->layout());
+  OpenLayout(*current_page_, current_page_->layout);
 }
 
 void ViewManager::SavePage() {
   for (auto& view_info : views_)
     view_info.view->Save(*view_info.definition);
 
-  PageLayout& layout = current_page_->layout();
+  PageLayout& layout = current_page_->layout;
   layout.Clear();
   SaveLayout(layout);
 }

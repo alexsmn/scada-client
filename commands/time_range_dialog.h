@@ -2,6 +2,8 @@
 
 #include "time_range.h"
 
-class DialogService;
+class Profile;
 
-bool ShowTimeRangeDialog(DialogService& dialog_service, TimeRange& range);
+bool ShowTimeRangeDialog(Profile& profile,
+                         TimeRange& range,
+                         bool time_required);

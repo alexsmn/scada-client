@@ -1,18 +1,22 @@
 #pragma once
 
+#include "time_model.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/table_model.h"
 
-class TimedDataModel : public ui::TableModel {
- public:
-  enum {
-    CID_TIME,
-    CID_QUALITY,
-    CID_VALUE,
-    CID_COLLECTION_TIME
-  };
+class TimedDataService;
 
-  explicit TimedDataModel(TimedDataService& timed_data_service);
+struct TimedDataModelContext {
+  TimedDataService& timed_data_service_;
+};
+
+class TimedDataModel : private TimedDataModelContext,
+                       public ui::TableModel,
+                       public TimeModel {
+ public:
+  enum { CID_TIME, CID_QUALITY, CID_VALUE, CID_COLLECTION_TIME };
+
+  explicit TimedDataModel(TimedDataModelContext&& context);
 
   rt::TimedVQMap::const_iterator begin() const { return begin_iterator_; }
   rt::TimedVQMap::const_iterator end() const { return end_iterator_; }
@@ -28,20 +32,24 @@ class TimedDataModel : public ui::TableModel {
   void Iterate(int index);
   scada::DataValue GetRowTVQ(int row);
 
-  bool IsWorking() const { return !timed_data_.ready(); }
-
   // ui::TableModel overrides
   virtual int GetRowCount() override;
   virtual void GetCell(ui::TableCell& cell) override;
 
+  // TimeModel
+  virtual TimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const TimeRange& time_range) override;
+
  private:
-  TimedDataService& timed_data_service_;
-  rt::TimedDataSpec	timed_data_;
+  rt::TimedDataSpec timed_data_;
   rt::TimedVQMap::const_iterator cached_iterator_;
-  int cached_index_;
+  int cached_index_ = -1;
   rt::TimedVQMap::const_iterator begin_iterator_;
   rt::TimedVQMap::const_iterator end_iterator_;
-  int count_;
+  int count_ = 0;
+  TimeRange time_range_;
+  // Can be null.
+  base::Time end_time_;
 };
 
-std::string FormatQuality(scada::Qualifier qualifier);
+base::string16 FormatQuality(scada::Qualifier qualifier);

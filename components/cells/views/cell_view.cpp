@@ -1,10 +1,13 @@
-#include "components/cells/views/cell_view.h"
+Ôªø#include "components/cells/views/cell_view.h"
 
 #include "base/format_time.h"
+#include "common/formula_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
-#include "components/main/main_window.h"
 #include "controller_factory.h"
 #include "selection_model.h"
+#include "services/dialog_service.h"
+#include "timed_data/timed_data_service.h"
 #include "ui/events/event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
@@ -16,35 +19,26 @@
 
 // CellView::Cell
 
-class CellView::Cell {
- public:
-  Cell(CellView& view, int row, int column) : row_(row), column_(column) {
-    value_spec_.deletion_handler = [this, &view] {
-      view.OnTimedDataDeleted(*this);
-    };
-    value_spec_.property_change_handler =
-        [this, &view](const rt::PropertySet& properties) {
-          view.OnPropertyChanged(*this, properties);
-        };
-    value_spec_.event_change_handler = [this, &view] {
-      view.OnEventsChanged(*this);
-    };
-  }
-
-  rt::TimedDataSpec value_spec_;
-  int row_;
-  int column_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(Cell);
-};
+CellView::Cell::Cell(CellView& view, int row, int column)
+    : row_(row), column_(column) {
+  value_spec_.deletion_handler = [this, &view] {
+    view.ClearCell(row_, column_);
+  };
+  value_spec_.property_change_handler =
+      [this, &view](const rt::PropertySet& properties) {
+        view.grid_->SchedulePaintCell(row_, column_);
+      };
+}
 
 // CellView
 
 REGISTER_CONTROLLER(CellView, ID_CELLS_VIEW);
 
 CellView::CellView(const ControllerContext& context)
-    : Controller(context), row_model_(*this), grid_(new views::GridView) {
+    : Controller{context},
+      row_model_(*this),
+      cells_(NULL),
+      grid_(new views::GridView) {
   row_model_.SetSize(0, 100);
 
   grid_->SetModel(this);
@@ -108,8 +102,8 @@ bool CellView::OnGridEditCellText(views::GridView& sender,
   try {
     SetCellFormula(row, column, base::SysWideToNativeMB(text));
   } catch (const std::exception& e) {
-    ShowMessageBox(dialog_service_, base::SysNativeMBToWide(e.what()).c_str(),
-                   L"Œ¯Ë·Í‡", MB_ICONEXCLAMATION);
+    dialog_service_.RunMessageBox(base::SysNativeMBToWide(e.what()).c_str(),
+                                  L"–û—à–∏–±–∫–∞", MessageBoxMode::Error);
     return false;
   }
 
@@ -167,8 +161,7 @@ bool CellView::OnGridDrawCell(views::GridView& sender,
 void CellView::Save(WindowDefinition& definition) {
   for (int row = 0; row < row_count_; ++row) {
     for (int column = 0; column < column_count_; ++column) {
-      Cell* cell = this->cell(row, column);
-      if (cell) {
+      if (Cell* cell = this->cell(row, column)) {
         WindowItem& item = definition.AddItem("Item");
         item.SetInt("row", row);
         item.SetInt("column", column);
@@ -239,23 +232,9 @@ void CellView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   if (!FindEmptyCell(row, column))
     return;
 
-  std::string path = node_id.ToString();
+  std::string path = MakeNodeIdFormula(node_id);
   SetCellFormula(row, column, path);
   grid_->SelectCell(row, column, true);
-}
-
-void CellView::OnTimedDataDeleted(Cell& cell) {
-  ClearCell(cell.row_, cell.column_);
-}
-
-void CellView::OnPropertyChanged(Cell& cell,
-                                 const rt::PropertySet& properties) {
-  grid_->SchedulePaintCell(cell.row_, cell.column_);
-}
-
-void CellView::OnEventsChanged(Cell& cell) {
-  //	Cell& cell = *static_cast<Cell*>(spec.param);
-  //	invalidate_cell(cell.row_, cell.column_);
 }
 
 void CellView::OnGridSelectionChanged(views::GridView& sender) {

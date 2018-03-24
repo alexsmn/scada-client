@@ -6,10 +6,13 @@
 class FavouritesFolderNode;
 class FavouritesWindowNode;
 
-FavouritesRootNode::FavouritesRootNode(Favourites& favourites) {
+FavouritesRootNode::FavouritesRootNode(Favourites& favourites)
+    : FavouritesNode{favourites} {
   int n = 0;
-  for (auto& folder : favourites.folders())
-    Add(n++, std::make_unique<FavouritesFolderNode>(favourites, folder));
+  for (Favourites::Folders::const_iterator i = favourites_.folders().begin();
+       i != favourites_.folders().end(); ++i, ++n) {
+    Add(n, std::make_unique<FavouritesFolderNode>(favourites_, *i));
+  }
 }
 
 int FavouritesRootNode::FindFolderNode(const Page& folder) const {
@@ -22,12 +25,12 @@ int FavouritesRootNode::FindFolderNode(const Page& folder) const {
   return -1;
 }
 
-FavouritesFolderNode::FavouritesFolderNode(Favourites& favourites, const Page& folder)
-    : favourites_(favourites),
-      folder_(folder) {
+FavouritesFolderNode::FavouritesFolderNode(Favourites& favourites,
+                                           const Page& folder)
+    : FavouritesNode{favourites}, folder_(folder) {
   for (int i = 0; i != folder.GetWindowCount(); ++i) {
     const WindowDefinition& window = folder.GetWindow(i);
-    Add(i, std::make_unique<FavouritesWindowNode>(favourites, folder, window));
+    Add(i, std::make_unique<FavouritesWindowNode>(favourites_, folder, window));
   }
 }
 
@@ -73,11 +76,12 @@ void FavouritesWindowNode::Delete() {
 // FavouritesTreeModel
 
 FavouritesTreeModel::FavouritesTreeModel(Favourites& favourites)
-    : TreeNodeModel<FavouritesNode>(std::make_unique<FavouritesRootNode>(favourites)),
+    : TreeNodeModel<FavouritesNode>(
+          std::make_unique<FavouritesRootNode>(favourites)),
       favourites_(favourites) {
   favourites_.AddObserver(*this);
 }
-      
+
 FavouritesTreeModel::~FavouritesTreeModel() {
   favourites_.RemoveObserver(*this);
 }
@@ -87,7 +91,7 @@ void FavouritesTreeModel::OnFavouriteAdded(const Page& folder,
   int i = root().FindFolderNode(folder);
   if (i == -1)
     return;
-    
+
   FavouritesFolderNode& folder_node =
       reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
   Add(folder_node, folder_node.GetChildCount(),
@@ -99,35 +103,36 @@ void FavouritesTreeModel::OnFavouriteDeleted(const Page& folder,
   int i = root().FindFolderNode(folder);
   if (i == -1)
     return;
-    
+
   FavouritesFolderNode& folder_node =
       reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
-    
+
   int index = folder_node.FindWindowNode(window);
   assert(index != -1);
-  delete &Remove(folder_node, index);
+  Remove(folder_node, index);
 }
 
 void FavouritesTreeModel::OnFolderChanged(const Page& folder) {
   int i = root().FindFolderNode(folder);
   if (i == -1)
     return;
-    
+
   FavouritesFolderNode& folder_node =
       reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
   TreeNodeChanged(&folder_node);
 }
 
 void FavouritesTreeModel::OnFolderAdded(const Page& folder) {
-  Add(root(), root().GetChildCount(), std::make_unique<FavouritesFolderNode>(favourites_, folder));
+  Add(root(), root().GetChildCount(),
+      std::make_unique<FavouritesFolderNode>(favourites_, folder));
 }
 
 void FavouritesTreeModel::OnFolderDeleted(const Page& folder) {
   int i = root().FindFolderNode(folder);
   if (i == -1)
     return;
-    
-  delete &Remove(root(), i);
+
+  Remove(root(), i);
 }
 
 void FavouritesTreeModel::OnWindowChanged(const Page& folder,
@@ -135,7 +140,7 @@ void FavouritesTreeModel::OnWindowChanged(const Page& folder,
   int i = root().FindFolderNode(folder);
   if (i == -1)
     return;
-    
+
   FavouritesFolderNode& folder_node =
       reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
 

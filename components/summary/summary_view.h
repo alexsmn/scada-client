@@ -23,10 +23,10 @@ class SummaryView : public Controller {
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual TimeModel* GetTimeModel() override;
 
  private:
-  void ShowSetupDialog();
-  void ExportToExcel();
+   void ExportToExcel();
 
   std::unique_ptr<SummaryModel> model_;
 

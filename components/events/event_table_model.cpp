@@ -1,4 +1,4 @@
-#include "components/events/event_table_model.h"
+п»ї#include "components/events/event_table_model.h"
 
 #include "base/excel.h"
 #include "base/format_time.h"
@@ -13,10 +13,9 @@
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "core/data_value.h"
-#include "translation.h"
 #include "ui/base/models/grid_range.h"
 
-const base::char16 kLocalEventSource[] = L"????????? ???????";
+const base::char16 kLocalEventSource[] = L"Р›РѕРєР°Р»СЊРЅРѕРµ СЃРѕР±С‹С‚РёРµ";
 
 struct EventTableModel::RowsComparer {
   bool operator()(const Row& left, const Row& right) const {
@@ -46,8 +45,25 @@ static void GetEventColors(const scada::Event& event,
   }
 }
 
+// EventTableModel::Row
+
+void EventTableModel::Row::Update(NodeService& node_service) {
+  assert(event);
+  node = node_service.GetNode(event->node_id);
+  user = node_service.GetNode(event->user_id);
+  acknowledged_user = node_service.GetNode(event->acknowledged_user_id);
+}
+
+bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
+  assert(event);
+  return event->node_id == node_id || event->user_id == node_id ||
+         event->acknowledged_user_id == node_id;
+}
+
+// EventTableModel
+
 EventTableModel::EventTableModel(EventTableModelContext&& context)
-    : EventTableModelContext(std::move(context)), mode_(ID_CURRENT_EVENTS) {
+    : EventTableModelContext(std::move(context)) {
   local_events_.observers().AddObserver(this);
   event_manager_.AddObserver(*this);
   node_service_.Subscribe(*this);
@@ -61,12 +77,18 @@ EventTableModel::~EventTableModel() {
   local_events_.observers().RemoveObserver(this);
 }
 
-void EventTableModel::Init(Mode mode,
-                           const TimeRange& range,
-                           ItemIds filter_items) {
-  mode_ = mode;
+void EventTableModel::Init(const TimeRange& range, ItemIds filter_items) {
   time_range_ = range;
   filter_node_ids_ = std::move(filter_items);
+  Update();
+}
+
+void EventTableModel::SetTimeRange(const TimeRange& range) {
+  if (time_range_ == range)
+    return;
+
+  time_range_ = range;
+
   Update();
 }
 
@@ -90,14 +112,14 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
       break;
     case EventColumnItem:
       if (row.node)
-        cell.text = ToString16(row.node.display_name());
+        cell.text = GetFullDisplayName(row.node);
       else if (row.type == LOCAL_EVENT)
         cell.text = kLocalEventSource;
       break;
     case EventColumnMessage:
       cell.text = event.message;
       break;
-    case EventColumnSource:
+    case EventColumnUser:
       if (row.user)
         cell.text = ToString16(row.user.display_name());
       break;
@@ -125,7 +147,7 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
 int EventTableModel::FindRow(const scada::Event& event) const {
   for (Rows::const_iterator i = rows_.begin(); i != rows_.end(); ++i) {
     if (i->event == &event) {
-      DCHECK(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
+      assert(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
       return i - rows_.begin();
     }
   }
@@ -170,15 +192,15 @@ void EventTableModel::AddRow(EventType type, const scada::Event& event) {
     index = GetInsertIndex(type, event);
     if (index != -1) {
       Row row{type, event};
-      row.node = node_service_.GetNode(event.node_id);
-      row.user = node_service_.GetNode(event.user_id);
-      row.acknowledged_user = node_service_.GetNode(event.acknowledged_user_id);
+      row.Update(node_service_);
       rows_.insert(rows_.begin() + index, std::move(row));
       NotifyItemsAdded(index, 1);
     }
   } else {
     // Update row data.
-    assert(rows_[index].type == type);
+    auto& row = rows_[index];
+    assert(row.type == type);
+    row.Update(node_service_);
     NotifyItemsChanged(index, 1);
   }
 }
@@ -188,14 +210,33 @@ void EventTableModel::RemoveRows(int first, int count) {
   NotifyItemsRemoved(first, count);
 }
 
-void EventTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+void EventTableModel::UpdateAffectedRows(const scada::NodeId& node_id) {
   // TODO: check only visible rows
+  int min_index = -1, max_index = -1;
   int index = 0;
-  for (Rows::const_iterator i = rows_.begin(); i != rows_.end(); ++i, ++index) {
-    const Row& row = *i;
-    if (node_id == row.event->node_id)
-      NotifyItemsChanged(index, 1);
+  for (auto& row : rows_) {
+    if (row.IsAffected(node_id)) {
+      if (min_index == -1)
+        min_index = index;
+      max_index = index;
+    }
+    ++index;
   }
+  if (min_index != -1)
+    NotifyItemsChanged(min_index, max_index - min_index + 1);
+}
+
+void EventTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  UpdateAffectedRows(node_id);
+}
+
+void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
+  UpdateAffectedRows(event.node_id);
+}
+
+void EventTableModel::OnNodeFetched(const scada::NodeId& node_id,
+                                    bool children) {
+  UpdateAffectedRows(node_id);
 }
 
 void EventTableModel::OnEventReported(const scada::Event& event) {
@@ -214,7 +255,7 @@ void EventTableModel::OnAllEventsAcknowledged() {
 }
 
 void EventTableModel::AckRows(int first, int count) {
-  if (mode_ == ID_CURRENT_EVENTS) {
+  if (current_events_) {
     RemoveRows(first, count);
 
   } else {
@@ -281,23 +322,30 @@ void EventTableModel::RefilterNow() {
   for (LocalEvents::Events::const_iterator i = local_events.begin();
        i != local_events.end(); ++i) {
     const scada::Event& event = **i;
-    rows_.push_back(Row(LOCAL_EVENT, event));
+    Row row(LOCAL_EVENT, event);
+    row.Update(node_service_);
+    rows_.emplace_back(std::move(row));
   }
 
   const auto& events = event_manager_.unacked_events();
   for (auto i = events.begin(); i != events.end(); i++) {
     const scada::Event& event = i->second;
-    if (IsEventShown(event))
-      rows_.push_back(Row(CURRENT_EVENT, event));
+    if (IsEventShown(event)) {
+      Row row(CURRENT_EVENT, event);
+      row.Update(node_service_);
+      rows_.emplace_back(std::move(row));
+    }
   }
 
-  if (mode_ == ID_CURRENT_EVENTS) {
-  } else {
-    for (EventContainer::iterator i = historical_events_.begin();
-         i != historical_events_.end(); ++i) {
+  if (!current_events_) {
+    for (auto i = historical_events_.begin(); i != historical_events_.end();
+         ++i) {
       const scada::Event& event = *i;
-      if (IsEventShown(event))
-        rows_.push_back(Row(HISTORICAL_EVENT, event));
+      if (IsEventShown(event)) {
+        Row row(HISTORICAL_EVENT, event);
+        row.Update(node_service_);
+        rows_.emplace_back(std::move(row));
+      }
     }
   }
 
@@ -319,44 +367,8 @@ void EventTableModel::Update() {
   rows_.clear();
   historical_events_.clear();
 
-  if (mode_ != ID_CURRENT_EVENTS) {
-    base::Time from, to;
-    switch (mode_) {
-      case ID_TIME_RANGE_DAY:
-        from = base::Time::Now().LocalMidnight();
-        break;
-      case ID_TIME_RANGE_WEEK: {
-        base::Time cur = base::Time::Now().LocalMidnight();
-        base::Time::Exploded ts = {0};
-        cur.LocalExplode(&ts);
-        // We need to start day of week from Monday instead of Sunday.
-        unsigned day_of_week = (ts.day_of_week + 6) % 7;
-        from = cur - base::TimeDelta::FromDays(day_of_week);
-        break;
-      }
-      case ID_TIME_RANGE_MONTH: {
-        base::Time::Exploded ts;
-        base::Time::Now().LocalMidnight().LocalExplode(&ts);
-        ts.day_of_month = 1;
-        from = base::Time::FromLocalExploded(ts);
-        break;
-      }
-      case ID_TIME_RANGE_CUSTOM:
-        from = time_range().start.time;
-        if (time_range().start.date_only)
-          from = from.LocalMidnight();
-        to = time_range().end.time;
-        if (time_range().end.date_only)
-          to = to.LocalMidnight() + base::TimeDelta::FromDays(1);
-        if (from >= to) {
-          to = base::Time::Now();
-          from = to - base::TimeDelta::FromHours(1);
-        }
-        break;
-      default:
-        assert(false);
-        break;
-    }
+  if (!current_events_) {
+    auto [from, to] = GetTimeRangeBounds(time_range_);
 
     LOG(INFO) << "Query events from " << FormatTime(from).c_str();
 
@@ -385,18 +397,9 @@ void EventTableModel::CancelRequest() {
   request_running_ = false;
 }
 
-void EventTableModel::SetMode(unsigned mode) {
-  if (mode != ID_TIME_RANGE_CUSTOM && mode_ == mode)
-    return;
-
-  mode_ = mode;
-
-  Update();
-}
-
 void EventTableModel::OnQueryEventsCompleted(scada::Status status,
                                              scada::QueryEventsResults events) {
-  DCHECK(request_running_);
+  assert(request_running_);
 
   if (events)
     historical_events_.assign(events->begin(), events->end());
@@ -424,7 +427,7 @@ void EventTableModel::AcknowledgeRow(int row) {
       break;
 
     default:
-      DCHECK(false);
+      assert(false);
       break;
   }
 }
@@ -443,32 +446,34 @@ void EventTableModel::UnlockUpdate() {
 
 base::string16 EventTableModel::MakeTitle() const {
   base::string16 title;
-  switch (mode_) {
-    case ID_TIME_RANGE_DAY:
-      title = L"Журнал событий за день";
-      break;
-    case ID_TIME_RANGE_WEEK:
-      title = L"Журнал событий за неделю";
-      break;
-    case ID_TIME_RANGE_MONTH:
-      title = L"Журнал событий за месяц";
-      break;
-    case ID_TIME_RANGE_CUSTOM:
-      title = L"Журнал событий";  // TODO: Format time range.
-      break;
-    default:
-      title = L"Текущие события";
-      break;
+  if (current_events_) {
+    title = L"РўРµРєСѓС‰РёРµ СЃРѕР±С‹С‚РёСЏ";
+  } else {
+    switch (time_range_.command_id) {
+      case ID_TIME_RANGE_DAY:
+        title = L"Р–СѓСЂРЅР°Р» СЃРѕР±С‹С‚РёР№ Р·Р° РґРµРЅСЊ";
+        break;
+      case ID_TIME_RANGE_WEEK:
+        title = L"Р–СѓСЂРЅР°Р» СЃРѕР±С‹С‚РёР№ Р·Р° РЅРµРґРµР»СЋ";
+        break;
+      case ID_TIME_RANGE_MONTH:
+        title = L"Р–СѓСЂРЅР°Р» СЃРѕР±С‹С‚РёР№ Р·Р° РјРµСЃСЏС†";
+        break;
+      case ID_TIME_RANGE_CUSTOM:
+      default:
+        title = L"Р–СѓСЂРЅР°Р» СЃРѕР±С‹С‚РёР№";  // TODO: Format time range.
+        break;
+    }
   }
 
   if (severity_min_ || !filter_node_ids_.empty())
-    title += L" (Фильтр)";
+    title += L" (Р¤РёР»СЊС‚СЂ)";
 
   return title;
 }
 
 bool EventTableModel::IsWorking() const {
-  if (mode_ == ID_CURRENT_EVENTS)
+  if (current_events_)
     return event_manager_.is_acking();
   else
     return request_running_;

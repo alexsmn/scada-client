@@ -3,7 +3,6 @@
 #include "base/auto_reset.h"
 #include "common_resources.h"
 #include "components/main/opened_view.h"
-#include "qt/client_application_qt.h"
 #include "services/page.h"
 #include "window_info.h"
 
@@ -82,8 +81,7 @@ QTabWidget* GetFirstTabBlock(QWidget& widget) {
 
 ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
                              ViewManagerDelegate& delegate)
-    : ViewManager{delegate},
-      main_window_{main_window} {
+    : ViewManager{delegate}, main_window_{main_window} {
   QObject::connect(static_cast<QGuiApplication*>(QApplication::instance()),
                    &QGuiApplication::focusObjectChanged, this,
                    &ViewManagerQt::OnFocusChanged);
@@ -96,14 +94,13 @@ ViewManagerQt::~ViewManagerQt() {
 void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
   // Do not call AddView() from CreateView().
   base::AutoReset<bool> opening_layout(&opening_layout_, true);
-
   main_window_.setCentralWidget(
-      OpenLayoutBlock(page, page.layout().main).release());
+      OpenLayoutBlock(page, page.layout.main).release());
 
   for (int i = 0; i < page.GetWindowCount(); ++i) {
     WindowDefinition& win = page.GetWindow(i);
     if (win.visible && !FindViewByID(win.id)) {
-      if (auto* opened_view = CreateView(win))
+      if (auto* opened_view = CreateView(win, nullptr))
         AddView(*opened_view);
     }
   }
@@ -132,7 +129,8 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
   if (block.type == PageLayoutBlock::PANE) {
     std::vector<OpenedView*> tab_views;
     for (int window_id : block.wins) {
-      auto* window = const_cast<WindowDefinition*>(page.FindWindow(window_id));
+      auto* window =
+          const_cast<WindowDefinition*>(page.FindWindowDef(window_id));
       auto* opened_view = window ? CreateView(*window, nullptr) : nullptr;
       if (!opened_view)
         continue;
@@ -197,7 +195,7 @@ void ViewManagerQt::ActivateView(OpenedView& opened_view) {
     // Detach from parent to avoid deletion by dock.
   }
 
-  opened_view.view()->setFocus();
+  opened_view.view()->setFocus(Qt::ActiveWindowFocusReason);
 }
 
 void ViewManagerQt::CloseView(OpenedView& opened_view) {

@@ -1,4 +1,4 @@
-#include "window_info.h"
+п»ї#include "window_info.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -8,34 +8,35 @@
 #include "common_resources.h"
 
 const WindowInfo g_window_infos[] = {
-  { ID_CELLS_VIEW, "Cells", L"Ячейки", WIN_INS | WIN_CAN_PRINT, 0, 0, 0 },
-  { ID_SHEET_VIEW, "CusTable", L"Пользовательская таблица", WIN_INS | WIN_CAN_PRINT, 0, 0, 0  },
-  { ID_EVENT_VIEW, "Event", L"События", WIN_SING | WIN_DOCKB | WIN_CAN_PRINT, 800, 200, 0 },
-  { ID_EVENT_JOURNAL_VIEW, "EventJournal", L"Журнал событий", WIN_INS | WIN_CAN_PRINT, 0, 0, 0 },
-  { ID_FAVOURITES_VIEW, "Favorites", L"Избранное", WIN_SING, 200, 400 },
-  { ID_TS_FORMATS_VIEW, "Params", L"Форматы", WIN_REQUIRES_ADMIN },
-  { ID_GRAPH_VIEW, "Graph", L"График", WIN_INS | WIN_CAN_PRINT, 0, 0, IDR_GRAPH_POPUP },
-  { ID_WATCH_VIEW, "Log", L"Наблюдение", WIN_DISALLOW_NEW, 0, 0, 0 },
-  { ID_MODUS_VIEW, "Modus", L"Схема", WIN_CAN_PRINT, 0, 0, IDR_MODUS_POPUP },
-  { ID_PORTFOLIO_VIEW, "Portfolio", L"Портфолио", WIN_SING | WIN_INS, 200, 400, 0 },
-  { ID_OBJECT_VIEW, "Struct", L"Объекты", WIN_SING, 200, 400, 0 },
-  { ID_TABLE_VIEW, "Table", L"Таблица", WIN_INS | WIN_CAN_PRINT, 620, 400 },
-  { ID_SIMULATION_ITEMS_VIEW, "SimulationItems", L"Эмулируемые сигналы", WIN_REQUIRES_ADMIN },
-  { ID_HISTORICAL_DB_VIEW, "HistoricalDB", L"Базы данных", WIN_REQUIRES_ADMIN },
-  { ID_STATISTICS_VIEW, "Stat", L"Статус", WIN_SING, 300, 400 },
-  { ID_SUMMARY_VIEW, "Summ", L"Сводка", WIN_INS | WIN_CAN_PRINT },
-  { ID_TIMED_DATA_VIEW, "TimeVal", L"Времена и значения", WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT, 0, 0, 0 },
-  { ID_USERS_VIEW, "Users", L"Пользователи", WIN_REQUIRES_ADMIN },
+  { ID_NEW_PROPERTY_VIEW, "NewProps", L"РЎРІРѕР№СЃС‚РІР°", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN, 200, 400 },
+  { ID_CELLS_VIEW, "Cells", L"РЇС‡РµР№РєРё", WIN_INS | WIN_CAN_PRINT, 0, 0, 0 },
+  { ID_SHEET_VIEW, "CusTable", L"РџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєР°СЏ С‚Р°Р±Р»РёС†Р°", WIN_INS | WIN_CAN_PRINT, 0, 0, 0  },
+  { ID_EVENT_VIEW, "Event", L"РЎРѕР±С‹С‚РёСЏ", WIN_SING | WIN_DOCKB | WIN_CAN_PRINT, 800, 200, 0 },
+  { ID_EVENT_JOURNAL_VIEW, "EventJournal", L"Р–СѓСЂРЅР°Р» СЃРѕР±С‹С‚РёР№", WIN_INS | WIN_CAN_PRINT, 0, 0, 0 },
+  { ID_FAVOURITES_VIEW, "Favorites", L"РР·Р±СЂР°РЅРЅРѕРµ", WIN_SING, 200, 400 },
+  { ID_TS_FORMATS_VIEW, "Params", L"Р¤РѕСЂРјР°С‚С‹", WIN_REQUIRES_ADMIN },
+  { ID_GRAPH_VIEW, "Graph", L"Р“СЂР°С„РёРє", WIN_INS | WIN_CAN_PRINT, 0, 0, IDR_GRAPH_POPUP },
+  { ID_WATCH_VIEW, "Log", L"РќР°Р±Р»СЋРґРµРЅРёРµ", WIN_DISALLOW_NEW, 0, 0, 0 },
+  { ID_MODUS_VIEW, "Modus", L"РЎС…РµРјР°", WIN_CAN_PRINT, 0, 0, IDR_MODUS_POPUP },
+  { ID_PORTFOLIO_VIEW, "Portfolio", L"РџРѕСЂС‚С„РѕР»РёРѕ", WIN_SING | WIN_INS, 200, 400, 0 },
+  { ID_OBJECT_VIEW, "Struct", L"РћР±СЉРµРєС‚С‹", WIN_SING, 200, 400, 0 },
+  { ID_TABLE_VIEW, "Table", L"РўР°Р±Р»РёС†Р°", WIN_INS | WIN_CAN_PRINT, 620, 400 },
+  { ID_SIMULATION_ITEMS_VIEW, "SimulationItems", L"Р­РјСѓР»РёСЂСѓРµРјС‹Рµ СЃРёРіРЅР°Р»С‹", WIN_REQUIRES_ADMIN },
+  { ID_HISTORICAL_DB_VIEW, "HistoricalDB", L"Р‘Р°Р·С‹ РґР°РЅРЅС‹С…", WIN_REQUIRES_ADMIN },
+  { ID_STATISTICS_VIEW, "Stat", L"РЎС‚Р°С‚СѓСЃ", WIN_SING, 300, 400 },
+  { ID_SUMMARY_VIEW, "Summ", L"РЎРІРѕРґРєР°", WIN_INS | WIN_CAN_PRINT },
+  { ID_TIMED_DATA_VIEW, "TimeVal", L"Р’СЂРµРјРµРЅР° Рё Р·РЅР°С‡РµРЅРёСЏ", WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT, 0, 0, 0 },
+  { ID_USERS_VIEW, "Users", L"РџРѕР»СЊР·РѕРІР°С‚РµР»Рё", WIN_REQUIRES_ADMIN },
   { ID_WEB_VIEW, "Web", L"Web" },
-  { ID_PRINT_PREVIEW, "Print", L"Печать", WIN_DISALLOW_NEW },
-  { ID_PROPERTY_VIEW, "RecEditor", L"Параметры", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN },
-  { ID_HARDWARE_VIEW, "Subsystems", L"Оборудование", WIN_SING, 200, 400 },
-  { ID_TABLE_EDITOR, "TableEditor", L"Конфигурация", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN, 0, 0, IDR_ITEM_POPUP },
-  { ID_TRANSMISSION_VIEW, "Transmission", L"Ретрансляция", WIN_INS | WIN_DISALLOW_NEW, 0, 0, 0 },
-  { ID_EXCEL_REPORT_VIEW, "ExcelReport", L"Отчет", WIN_CAN_PRINT, 0, 0, 0 },
-  { ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", WIN_CAN_PRINT, 0, 0, 0 },
-  { ID_TYPES_VIEW, "Types", L"Типы", WIN_SING | WIN_REQUIRES_ADMIN, 200, 400, 0 },
-  { ID_NODES_VIEW, "Nodes", L"Узлы", WIN_SING | WIN_REQUIRES_ADMIN, 200, 400, 0 },
+  { ID_PRINT_PREVIEW, "Print", L"РџРµС‡Р°С‚СЊ", WIN_DISALLOW_NEW },
+  { ID_PROPERTY_VIEW, "RecEditor", L"РџР°СЂР°РјРµС‚СЂС‹", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN },
+  { ID_HARDWARE_VIEW, "Subsystems", L"РћР±РѕСЂСѓРґРѕРІР°РЅРёРµ", WIN_SING, 200, 400 },
+  { ID_TABLE_EDITOR, "TableEditor", L"РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN },
+  { ID_TRANSMISSION_VIEW, "Transmission", L"Р РµС‚СЂР°РЅСЃР»СЏС†РёСЏ", WIN_INS | WIN_DISALLOW_NEW, 0, 0, 0 },
+  { ID_EXCEL_REPORT_VIEW, "ExcelReport", L"РћС‚С‡РµС‚", WIN_CAN_PRINT, 0, 0, 0 },
+  { ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"РЎС…РµРјР°", WIN_CAN_PRINT, 0, 0, 0 },
+  { ID_TYPES_VIEW, "Types", L"РўРёРїС‹", WIN_SING | WIN_REQUIRES_ADMIN, 200, 400, 0 },
+  { ID_NODES_VIEW, "Nodes", L"РЈР·Р»С‹", WIN_SING | WIN_REQUIRES_ADMIN, 200, 400, 0 },
 };
 
 const WindowInfo* FindWindowInfo(unsigned command_id) {

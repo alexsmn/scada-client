@@ -1,27 +1,25 @@
-#include "components/modus/views/modus_element.h"
+п»ї#include "components/modus/views/modus_element.h"
 
 #include "base/format.h"
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
 #include "common/event_manager.h"
-#include "common/node_ref.h"
 #include "common/scada_node_ids.h"
 #include "components/modus/views/modus_object.h"
 #include "core/monitored_item_service.h"
-#include "core/variant.h"
 
 namespace modus {
 
-const base::win::ScopedVariant kParameterBinding(OLESTR("ключ_привязки"));
-const base::win::ScopedVariant kParameterText(OLESTR("текст"));
-const base::win::ScopedVariant kParameterValue(OLESTR("значение_базовое"));
-const base::win::ScopedVariant kParameterState(OLESTR("положение"));
-const base::win::ScopedVariant kParameterStyle(OLESTR("композитный_стиль"));
-const base::win::ScopedVariant kParameterHyperlink(OLESTR("гиперссылка"));
-const base::win::ScopedVariant kParameterLimits(OLESTR("уставки"));
+const base::win::ScopedVariant kParameterBinding(OLESTR("РєР»СЋС‡_РїСЂРёРІСЏР·РєРё"));
+const base::win::ScopedVariant kParameterText(OLESTR("С‚РµРєСЃС‚"));
+const base::win::ScopedVariant kParameterValue(OLESTR("Р·РЅР°С‡РµРЅРёРµ_Р±Р°Р·РѕРІРѕРµ"));
+const base::win::ScopedVariant kParameterState(OLESTR("РїРѕР»РѕР¶РµРЅРёРµ"));
+const base::win::ScopedVariant kParameterStyle(OLESTR("РєРѕРјРїРѕР·РёС‚РЅС‹Р№_СЃС‚РёР»СЊ"));
+const base::win::ScopedVariant kParameterHyperlink(OLESTR("РіРёРїРµСЂСЃСЃС‹Р»РєР°"));
+const base::win::ScopedVariant kParameterLimits(OLESTR("СѓСЃС‚Р°РІРєРё"));
 
-const base::char16 kStateClose[] = L"включен";
-const base::char16 kStateOpen[] = L"отключен";
+const base::char16 kStateClose[] = L"РІРєР»СЋС‡РµРЅ";
+const base::char16 kStateOpen[] = L"РѕС‚РєР»СЋС‡РµРЅ";
 
 const double kNoLimit = std::numeric_limits<double>::max();
 
@@ -106,16 +104,16 @@ std::vector<base::string16> GetStateStrings(SDECore::IParams& params,
 
 Limits GetLimits(const NodeRef& node) {
   return {
-      node[id::AnalogItemType_LimitLoLo].value().get_or(kNoLimit),
-      node[id::AnalogItemType_LimitLo].value().get_or(kNoLimit),
-      node[id::AnalogItemType_LimitHi].value().get_or(kNoLimit),
-      node[id::AnalogItemType_LimitHiHi].value().get_or(kNoLimit),
+      node[kTitLimitLoLoPropTypeId].value().get_or(kNoLimit),
+      node[kTitLimitLoPropTypeId].value().get_or(kNoLimit),
+      node[kTitLimitHiPropTypeId].value().get_or(kNoLimit),
+      node[kTitLimitHiHiPropTypeId].value().get_or(kNoLimit),
   };
 }
 
 const base::char16* ToString(Limit limit) {
-  const base::char16* strs[] = {L"мин_аларм", L"мин_уставка", L"макс_уставка",
-                                L"макс_аларм"};
+  const base::char16* strs[] = {L"РјРёРЅ_Р°Р»Р°СЂРј", L"РјРёРЅ_СѓСЃС‚Р°РІРєР°", L"РјР°РєСЃ_СѓСЃС‚Р°РІРєР°",
+                                L"РјР°РєСЃ_Р°Р»Р°СЂРј"};
   static_assert(_countof(strs) == static_cast<int>(Limit::Count),
                 "Wrong limits");
   auto index = static_cast<size_t>(limit);
@@ -149,11 +147,7 @@ inline bool operator!=(const Limits& left, const Limits& right) {
 ModusElement::ModusElement(ModusObject& object,
                            SDECore::IParams& sde_params,
                            const base::string16& prop_name)
-    : object_(object),
-      sde_params_(&sde_params),
-      prop_name_(prop_name),
-      style_(0),
-      value_(0) {
+    : object_{object}, sde_params_{&sde_params}, prop_name_{prop_name} {
   data_spec_.property_change_handler =
       [this](const rt::PropertySet& properties) { UpdateData(false); };
   data_spec_.node_modified_handler = [this] { UpdateData(false); };

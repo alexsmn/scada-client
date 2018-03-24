@@ -6,9 +6,9 @@
 class ItemDragData {
  public:
   ItemDragData() {}
-  explicit ItemDragData(const scada::NodeId& item_id) : item_id_(item_id) {}
+  explicit ItemDragData(const scada::NodeId& item_id) : node_id_(item_id) {}
 
-  const scada::NodeId& item_id() const { return item_id_; }
+  const scada::NodeId& item_id() const { return node_id_; }
 
   void Save(ui::OSExchangeData& data) const;
   bool Load(const ui::OSExchangeData& data);
@@ -16,5 +16,5 @@ class ItemDragData {
   static ui::OSExchangeData::CustomFormat GetCustomFormat();
 
  private:
-  scada::NodeId item_id_;
+  scada::NodeId node_id_;
 };

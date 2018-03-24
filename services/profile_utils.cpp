@@ -3,6 +3,8 @@
 #include "base/values.h"
 #include "base/xml.h"
 
+#include <memory>
+
 const base::char16* kTypeStrings[] = { L"NULL",
                                  L"BOOLEAN",
                                  L"INTEGER",

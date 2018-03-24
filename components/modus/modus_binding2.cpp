@@ -7,7 +7,6 @@
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
 #include "libmodus/scheme/value.h"
-#include "translation.h"
 #include "ui/gfx/canvas.h"
 
 namespace modus {
@@ -29,8 +28,6 @@ Value ToValue(const scada::Variant& v) {
     }
     case scada::Variant::STRING:
       return base::SysNativeMBToWide(v.as_string());
-    case scada::Variant::LOCALIZED_TEXT:
-      return ToString16(v.as_localized_text());
     case scada::Variant::NODE_ID:
       return {};
     default:
@@ -50,15 +47,16 @@ inline bool UpdateValue(T& value, const T& new_value) {
 }
 
 ModusBinding2::ModusBinding2(Delegate& delegate,
-                             TimedDataService& timed_data_service,
                              modus::Shape& shape,
-                             const std::wstring& binding)
+                             const std::wstring& binding,
+                             TimedDataService& timed_data_service)
     : delegate_(delegate), shape_(shape), styles_(0) {
   data_point_.property_change_handler =
       [this](const rt::PropertySet& properties) {
         if (Update())
           delegate_.SchedulePaintShape(shape_);
       };
+
   data_point_.event_change_handler = [this] {
     if (Update())
       delegate_.SchedulePaintShape(shape_);
@@ -71,11 +69,7 @@ ModusBinding2::ModusBinding2(Delegate& delegate,
     formula = formula.substr(p + 1);
   }
 
-  try {
-    data_point_.Connect(timed_data_service, base::SysWideToNativeMB(formula));
-  } catch (const std::exception& e) {
-    LOG(WARNING) << "Binding '" << binding << "' error: " << e.what();
-  }
+  data_point_.Connect(timed_data_service, base::SysWideToNativeMB(formula));
 
   Update();
 }

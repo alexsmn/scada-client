@@ -4,7 +4,10 @@
 
 #include "controller.h"
 #include "ui/views/controls/tree/tree_controller.h"
+
+#if defined(UI_VIEWS)
 #include "ui/views/drop_controller.h"
+#endif
 
 namespace ui {
 class SortedTreeModel;
@@ -13,10 +16,17 @@ class SortedTreeModel;
 class ConfigurationTreeModel;
 class Tree;
 
-class ConfigurationTreeView : public Controller,
-                              protected views::DropController {
+using DropAction = std::function<int()>;
+
+class ConfigurationTreeView : public Controller
+#if defined(UI_VIEWS)
+    ,
+                              private views::DropController
+#endif
+{
  public:
-  ConfigurationTreeView(const ControllerContext& context, std::unique_ptr<ConfigurationTreeModel> model);
+  ConfigurationTreeView(const ControllerContext& context,
+                        ConfigurationTreeModel& model);
   virtual ~ConfigurationTreeView();
 
   // View
@@ -24,6 +34,9 @@ class ConfigurationTreeView : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;
+#if defined(UI_VIEWS)
+  virtual views::DropController* GetDropController() override { return this; }
+#endif
 
  protected:
   ConfigurationTreeModel& model() { return *model_; }
@@ -46,14 +59,11 @@ class ConfigurationTreeView : public Controller,
  private:
   void DeleteSelection();
 
-#if defined(UI_VIEWS)
-  void* TestDrop(const ui::DropTargetEvent& event) const;
-#endif
-
   std::unique_ptr<ConfigurationTreeModel> model_;
   std::unique_ptr<ui::SortedTreeModel> sorted_model_;
 
   scada::NodeId dragging_item_id_;
+  DropAction drop_action_;
 
   std::unique_ptr<Tree> tree_view_;
 };

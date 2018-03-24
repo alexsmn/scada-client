@@ -1,45 +1,47 @@
-#include "components/timed_data/timed_data_model.h"
+ï»¿#include "components/timed_data/timed_data_model.h"
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
 
-std::string FormatQuality(scada::Qualifier qualifier) {
-  std::string text;
+base::string16 FormatQuality(scada::Qualifier qualifier) {
+  base::string16 text;
   if (qualifier.bad())
-    text += "Íåäîñò ";
+    text += L"ÐÐµÐ´Ð¾ÑÑ‚ ";
   if (qualifier.backup())
-    text += "Ðåçåðâ ";
+    text += L"Ð ÐµÐ·ÐµÑ€Ð² ";
   if (qualifier.offline())
-    text += "ÍåòÑâÿçè ";
+    text += L"ÐÐµÑ‚Ð¡Ð²ÑÐ·Ð¸ ";
   if (qualifier.manual())
-    text += "Ðó÷íîé ";
+    text += L"Ð ÑƒÑ‡Ð½Ð¾Ð¹ ";
   if (qualifier.misconfigured())
-    text += "ÍåÑêîíô ";
+    text += L"ÐÐµÐ¡ÐºÐ¾Ð½Ñ„ ";
   if (qualifier.simulated())
-    text += "Ýìóëèðîâàí ";
+    text += L"Ð­Ð¼ÑƒÐ»Ð¸Ñ€Ð¾Ð²Ð°Ð½ ";
   if (qualifier.sporadic())
-    text += "Ñïîðàäèêà ";
+    text += L"Ð¡Ð¿Ð¾Ñ€Ð°Ð´Ð¸ÐºÐ° ";
   if (qualifier.stale())
-    text += "Óñòàðåë ";
+    text += L"Ð£ÑÑ‚Ð°Ñ€ÐµÐ» ";
   if (qualifier.failed())
-    text += "Îøèáêà ";
+    text += L"ÐžÑˆÐ¸Ð±ÐºÐ° ";
   return text;
 }
 
 // TimedDataModel
 
-TimedDataModel::TimedDataModel(TimedDataService& timed_data_service)
-    : timed_data_service_(timed_data_service), cached_index_(-1), count_(0) {
+TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
+    : TimedDataModelContext{std::move(context)} {
   timed_data_.property_change_handler =
       [this](const rt::PropertySet& properties) {
         if (properties.is_current_changed())
           Update();
       };
+
   timed_data_.correction_handler = [this](size_t count,
                                           const scada::DataValue* tvqs) {
     assert(count > 0);
     Update();
   };
+
   timed_data_.ready_handler = [this] { Update(); };
   timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
 }
@@ -55,8 +57,10 @@ void TimedDataModel::Update() {
   int old_count = count_;
   count_ = 0;
   if (timed_data_.connected() && timed_data_.values()) {
-    begin_iterator_ = timed_data_.values()->lower_bound(timed_data_.from());
-    end_iterator_ = timed_data_.values()->end();
+    auto& values = *timed_data_.values();
+    begin_iterator_ = values.lower_bound(timed_data_.from());
+    end_iterator_ =
+        end_time_.is_null() ? values.end() : values.upper_bound(end_time_);
     count_ = std::distance(begin_iterator_, end_iterator_);
   }
 
@@ -134,7 +138,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
       break;
 
     case CID_QUALITY:
-      cell.text = base::SysNativeMBToWide(FormatQuality(tvq.qualifier));
+      cell.text = FormatQuality(tvq.qualifier);
       break;
 
     case CID_COLLECTION_TIME:
@@ -159,4 +163,23 @@ void TimedDataModel::SetFormula(const std::string& formula) {
   } catch (const std::exception&) {
   }
   SetTimedData(timed_data);
+}
+
+TimeRange TimedDataModel::GetTimeRange() const {
+  return time_range_;
+}
+
+void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
+  time_range_ = time_range;
+  auto [start, end] = GetTimeRangeBounds(time_range_);
+
+  if (!timed_data_.connected())
+    return;
+
+  timed_data_.SetFrom(start);
+  end;
+
+  end_time_ = time_range.end;
+
+  Update();
 }

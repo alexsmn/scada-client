@@ -1,100 +1,108 @@
-#include "components/node_table/node_table_model.h"
+Ôªø#include "components/node_table/node_table_model.h"
 
 #include <set>
 
-#include "base/auto_reset.h"
+#include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/utils.h"
-#include "common/browse_util.h"
+#include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
-#include "translation.h"
 
 namespace {
 
-struct TypeInfo {
-  std::vector<NodeRef> property_declarations;
-  std::vector<NodeRef> reference_types;
-};
+const auto kSortDelay = base::TimeDelta::FromMilliseconds(300);
 
-void GetTypeInfo(const NodeRef& type_definition, TypeInfo& type_info) {
-  for (auto base_type = type_definition; base_type;
-       base_type = base_type.supertype()) {
-    for (auto& p : base_type.properties())
-      type_info.property_declarations.emplace_back(p);
-    for (auto& r : base_type.references())
-      type_info.reference_types.emplace_back(r.reference_type);
+void GetTypeProperties(const NodeRef& type_definition,
+                       std::set<scada::NodeId>& property_ids) {
+  assert(type_definition.fetched());
+  for (auto supertype_definition = type_definition; supertype_definition;
+       supertype_definition = supertype_definition.supertype()) {
+    for (auto& p : supertype_definition.properties())
+      property_ids.emplace(p.id());
+    for (auto& r : supertype_definition.references()) {
+      if (!IsSubtypeOf(r.reference_type, scada::id::HasProperty))
+        property_ids.emplace(r.reference_type.id());
+    }
   }
 }
 
-void GetTypeInfoRecursive(const NodeRef& type_definition, TypeInfo& type_info) {
-  /*for (auto& ref : scada::FilterReferences(type.forward_references(),
-  OpcUaId_HasSubtype)) { if (auto* subtype = scada::AsTypeDefinition(ref.node))
-      GetInheritedTypesProperties(*subtype, property_ids);
-  }*/
-  GetTypeInfo(type_definition, type_info);
+void GetAllSubtypesProperties(const NodeRef& type_definition,
+                              std::set<scada::NodeId>& property_ids) {
+  assert(type_definition.fetched());
+  GetTypeProperties(type_definition, property_ids);
+  for (auto& subtype_definition :
+       type_definition.targets(scada::id::HasSubtype)) {
+    GetAllSubtypesProperties(subtype_definition, property_ids);
+  }
 }
 
-PropertyDefs GetChildrenPropertyDefs(const NodeRef& parent_node) {
-  /*std::set<NodeRef> node_types;
+PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
+  assert(parent_node.fetched());
+
+  std::set<NodeRef> child_type_definitions;
   for (auto node_type = parent_node.type_definition(); node_type;
-            node_type = node_type.supertype()) {
+       node_type = node_type.supertype()) {
     for (auto& component_decl : node_type.components())
-      node_types.emplace(component_decl.type_definition());
+      child_type_definitions.emplace(component_decl.type_definition());
   }
 
   std::set<scada::NodeId> property_ids;
-  for (auto& node_type : node_types)
-    GetInheritedTypesProperties(node_type, property_ids);
+  for (auto& child_type_definition : child_type_definitions)
+    GetAllSubtypesProperties(child_type_definition, property_ids);
 
   PropertyDefs result;
   for (auto& p : property_ids) {
-    auto* def = GetPropertyDef(p);
-    if (def)
+    if (auto* def = GetPropertyDef(p))
       result.emplace_back(p, def);
   }
 
   std::sort(result.begin(), result.end());
-  return result;*/
 
-  return PropertyDefs{};
+  return result;
 }
 
 }  // namespace
 
-NodeTableModel::NodeTableModel(PropertyContext& context)
-    : context_(context), row_model_(*this) {
+NodeTableModel::NodeTableModel(NodeService& node_service,
+                               TaskManager& task_manager)
+    : PropertyContext{node_service, task_manager}, node_service_{node_service} {
   row_model_.set_row_height(19);
-
-  context_.node_service_.Subscribe(*this);
 }
 
 NodeTableModel::~NodeTableModel() {
-  SetParentNode(nullptr);
-
-  context_.node_service_.Unsubscribe(*this);
+  SetFetchedParentNode(nullptr);
 }
 
-void NodeTableModel::SetParentNode(NodeRef parent_node) {
+void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
+  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+  parent_node.Fetch(NodeFetchStatus::NodeAndChildren(),
+                    [weak_ptr](const NodeRef& node) {
+                      if (auto* ptr = weak_ptr.get())
+                        ptr->SetFetchedParentNode(node);
+                    });
+}
+
+void NodeTableModel::SetFetchedParentNode(const NodeRef& parent_node) {
   if (parent_node_ == parent_node)
     return;
 
-  parent_node_ = parent_node;
-}
+  if (parent_node_) {
+    node_service_.Unsubscribe(*this);
+    parent_node_ = nullptr;
+  }
 
-void NodeTableModel::SetParentNodeId(const scada::NodeId& node_id) {
-  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  context_.node_service_.GetNode(node_id).Fetch(
-      NodeFetchStatus::NodeOnly(), [weak_ptr](const NodeRef& node) {
-        if (!node.status())
-          return;
-        if (auto* ptr = weak_ptr.get())
-          ptr->SetParentNode(node);
-      });
+  parent_node_ = parent_node;
+
+  if (parent_node_)
+    node_service_.Subscribe(*this);
+
+  Update();
 }
 
 int NodeTableModel::GetRowCount() {
@@ -102,7 +110,7 @@ int NodeTableModel::GetRowCount() {
 }
 
 base::string16 NodeTableModel::GetRowTitle(int row) {
-  return base::SysNativeMBToWide(nodes_[row].id().ToString());
+  return base::SysNativeMBToWide(NodeIdToScadaString(nodes_[row].id()));
 }
 
 void NodeTableModel::GetCell(ui::GridCell& cell) {
@@ -115,26 +123,34 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
   if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
-    cell.text = ToString16(node.display_name());
+    cell.text = node.display_name();
   else if (column.prop_def->IsReadOnly(node, column.prop_decl_id))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   else
-    cell.text = column.prop_def->GetText(context_, node, column.prop_decl_id);
+    cell.text = column.prop_def->GetText(*this, node, column.prop_decl_id);
 }
 
 bool NodeTableModel::SetCellText(int row,
                                  int column,
                                  const base::string16& text) {
+  assert(row >= 0 && row < nodes_.size());
+  if (row < 0 || row >= nodes_.size())
+    return false;
+
   const auto& node = nodes_[row];
   auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::BrowseName) {
-    context_.task_manager_.PostUpdateTask(
+    task_manager_.PostUpdateTask(
         node.id(),
-        scada::NodeAttributes().set_browse_name(
-            scada::QualifiedName{base::SysWideToNativeMB(text), 0}),
+        scada::NodeAttributes().set_browse_name(base::SysWideToNativeMB(text)),
+        {});
+  } else if (c.attr_id == scada::AttributeId::DisplayName) {
+    task_manager_.PostUpdateTask(
+        node.id(),
+        scada::NodeAttributes().set_display_name(scada::ToLocalizedText(text)),
         {});
   } else {
-    c.prop_def->SetText(context_, node, c.prop_decl_id, text);
+    c.prop_def->SetText(*this, node, c.prop_decl_id, text);
   }
   return true;
 }
@@ -143,41 +159,27 @@ PropertyEditor NodeTableModel::GetCellEditor(int row, int column) {
   const auto& node = nodes_[row];
   assert(node);
   auto& c = columns_[column];
-  if (c.attr_id == scada::AttributeId::BrowseName)
-    return PropertyEditor(PropertyEditor::SIMPLE);
+  if (c.attr_id == scada::AttributeId::BrowseName ||
+      c.attr_id == scada::AttributeId::DisplayName)
+    return PropertyEditor{PropertyEditor::SIMPLE};
   const auto& type_definition = node.type_definition();
-  return type_definition ? c.prop_def->GetPropertyEditor(
-                               context_, type_definition, c.prop_decl_id)
-                         : PropertyEditor(PropertyEditor::NONE);
+  return type_definition ? c.prop_def->GetPropertyEditor(*this, type_definition,
+                                                         c.prop_decl_id)
+                         : PropertyEditor{PropertyEditor::NONE};
 }
 
 void NodeTableModel::Update() {
   columns_.clear();
   nodes_.clear();
-  NotifyModelChanged();
 
   if (parent_node_) {
-    auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-    BrowseNodes(
-        context_.view_service_, context_.node_service_,
-        {parent_node_.id(), scada::BrowseDirection::Forward,
-         scada::id::Organizes, true},
-        [weak_ptr](const scada::Status& status, std::vector<NodeRef> nodes) {
-          if (!status)
-            return;
-          if (auto* ptr = weak_ptr.get())
-            ptr->SetNodes(std::move(nodes));
-        });
+    for (const auto& node : parent_node_.organizes())
+      nodes_.push_back(node);
+
+    InitColumns();
   }
-}
 
-void NodeTableModel::SetNodes(const std::vector<NodeRef>& nodes) {
-  nodes_ = std::move(nodes);
   Sort();
-
-  // TODO: Update model.
-
-  InitColumns();
 }
 
 int NodeTableModel::FindRecord(const scada::NodeId& node_id) const {
@@ -192,13 +194,12 @@ void NodeTableModel::Update(const NodeRef& node) {
   int ix = FindRecord(node.id());
   if (ix != -1) {
     NotifyRowsChanged(ix, 1);
-    return;
+  } else {
+    nodes_.push_back(node);
+    NotifyRowsAdded(nodes_.size() - 1, 1);
   }
 
-  nodes_.push_back(node);
-  Sort();
-
-  NotifyModelChanged();
+  ScheduleSort();
 }
 
 void NodeTableModel::Delete(const scada::NodeId& node_id) {
@@ -209,11 +210,11 @@ void NodeTableModel::Delete(const scada::NodeId& node_id) {
   }
 }
 
-void NodeTableModel::OnModelChange(const ModelChangeEvent& event) {
-  if (event.verb & ModelChangeEvent::NodeDeleted) {
+void NodeTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     Delete(event.node_id);
   } else {
-    auto node = context_.node_service_.GetNode(event.node_id);
+    auto node = node_service_.GetNode(event.node_id);
     if (node.parent() == parent_node_)
       Update(node);
     else
@@ -222,38 +223,59 @@ void NodeTableModel::OnModelChange(const ModelChangeEvent& event) {
 }
 
 void NodeTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  auto node = context_.node_service_.GetNode(node_id);
+  auto node = node_service_.GetNode(node_id);
   if (node.parent() == parent_node_)
     Update(node);
 }
 
 void NodeTableModel::Sort() {
-  if (sorting_locked_)
+  sort_needed_ = false;
+
+  if (sort_property_id_.is_null())
     return;
 
-  struct CompareRecords {
+  struct CompareNodes {
     bool operator()(const NodeRef& left, const NodeRef& right) const {
-      auto left_data_item = IsInstanceOf(left, id::DataItemType);
-      auto right_data_item = IsInstanceOf(right, id::DataItemType);
-      auto left_path =
-          left_data_item
-              ? left[id::DataItemType_Input1].value().get_or(std::string{})
-              : std::string();
-      auto right_path =
-          right_data_item
-              ? right[id::DataItemType_Input1].value().get_or(std::string{})
-              : std::string();
-      if (left_path.empty() && right_path.empty())
-        return left.id() < right.id();
-      return HumanCompareText(left_path.c_str(), right_path.c_str()) < 0;
+      const auto& a = left[property_id].value().get_or(std::string());
+      const auto& b = right[property_id].value().get_or(std::string());
+      return a < b;
     }
+
+    const scada::NodeId property_id;
   };
 
-  std::sort(nodes_.begin(), nodes_.end(), CompareRecords());
+  std::sort(nodes_.begin(), nodes_.end(), CompareNodes{sort_property_id_});
+
+  NotifyModelChanged();
+}
+
+void NodeTableModel::ScheduleSort() {
+  if (sort_property_id_.is_null())
+    return;
+
+  sort_needed_ = true;
+
+  if (sort_scheduled_)
+    return;
+
+  sort_scheduled_ = true;
+
+  base::SequencedTaskRunnerHandle::Get()->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(&NodeTableModel::ScheduleSortHelper,
+                 weak_ptr_factory_.GetWeakPtr()),
+      kSortDelay);
+}
+
+void NodeTableModel::ScheduleSortHelper() {
+  sort_scheduled_ = false;
+
+  if (sort_needed_)
+    Sort();
 }
 
 void NodeTableModel::InitColumns() {
-  auto properties = GetChildrenPropertyDefs(parent_node_);
+  auto properties = GetChildPropertyDefs(parent_node_);
 
   std::vector<ui::TableColumn> columns;
 
@@ -263,16 +285,15 @@ void NodeTableModel::InitColumns() {
   {
     columns_.push_back(
         {scada::AttributeId::DisplayName, scada::NodeId(), nullptr});
-    columns.emplace_back(columns.size(), L"»Ïˇ", 75, ui::TableColumn::LEFT);
+    columns.emplace_back(columns.size(), L"–ò–º—è", 75, ui::TableColumn::LEFT);
   }
 
-  auto AddProp = [this, &columns](const NodeRef& prop_decl,
+  auto AddProp = [this, &columns](const scada::NodeId& prop_id,
                                   const PropertyDefinition& def) {
-    columns_.push_back({scada::AttributeId::Value, prop_decl.id(), &def});
+    columns_.push_back({scada::AttributeId::Value, prop_id, &def});
     int width = def.width() ? def.width() : 75;
-    auto title = ToString16(prop_decl.display_name());
-    columns.emplace_back(columns.size(), std::move(title), width,
-                         def.alignment());
+    auto title = def.GetTitle(*this, prop_id);
+    columns.emplace_back(columns.size(), title, width, def.alignment());
   };
 
   for (auto& prop : properties) {
@@ -284,4 +305,12 @@ void NodeTableModel::InitColumns() {
     }
   }
   column_model_.SetColumns(columns.size(), columns.data());
+}
+
+void NodeTableModel::SetSorting(const scada::NodeId& property_id) {
+  if (sort_property_id_ == property_id)
+    return;
+
+  sort_property_id_ = property_id;
+  Sort();
 }

@@ -1,8 +1,10 @@
-#include "components/sheet/sheet_view.h"
+ï»¿#include "components/sheet/sheet_view.h"
 
 #include "base/color.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
+#include "common/formula_util.h"
+#include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/sheet/sheet_cell.h"
@@ -51,8 +53,10 @@ class SheetView::ContentsView : public views::View {
 REGISTER_CONTROLLER(SheetView, ID_SHEET_VIEW);
 
 SheetView::SheetView(const ControllerContext& context)
-    : Controller(context), model_(new SheetModel(context.timed_data_service_)) {
-  selection().multiple_handler_ = [this] { return GetSelectedNodeIdList(); };
+    : Controller{context},
+      model_{std::make_unique<SheetModel>(
+          SheetModelContext{timed_data_service_})} {
+  selection().multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
 UiView* SheetView::Init(const WindowDefinition& definition) {
@@ -204,8 +208,8 @@ void SheetView::Save(WindowDefinition& definition) {
 }
 
 bool SheetView::CanClose() const {
-  /*if (AtlMessageBox(m_hWnd, _T("Çàêðûòèå îêíà ïðèâåäåò ê ïîòåðå òàáëèöû.
-  Ïðîäîëæèòü?"), (LPCTSTR)frame->GetTitle(),
+  /*if (AtlMessageBox(m_hWnd, _T("Ð—Ð°ÐºÑ€Ñ‹Ñ‚Ð¸Ðµ Ð¾ÐºÐ½Ð° Ð¿Ñ€Ð¸Ð²ÐµÐ´ÐµÑ‚ Ðº Ð¿Ð¾Ñ‚ÐµÑ€Ðµ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ñ‹.
+  ÐŸÑ€Ð¾Ð´Ð¾Ð»Ð¶Ð¸Ñ‚ÑŒ?"), (LPCTSTR)frame->GetTitle(),
   MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
   // cancel close
   return FALSE;
@@ -219,7 +223,7 @@ void SheetView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
       grid_->selected_row() != -1) {
     SheetCell& cell =
         model_->GetCell(grid_->selected_row(), grid_->selected_column());
-    cell.SetFormula('=' + node_id.ToString());
+    cell.SetFormula('=' + MakeNodeIdFormula(node_id));
   }
 #endif
 }
@@ -371,6 +375,7 @@ bool SheetView::OnDoubleClick() {
     return false;
 
   controller_delegate_.ExecuteDefaultNodeCommand(node);
+
   return true;
 }
 #endif
@@ -388,7 +393,7 @@ NodeIdSet SheetView::GetSelectedNodeIdList() {
       SheetCell* cell = model_->FindCell(row, column);
       if (cell) {
         auto node_id = cell->timed_data().GetNode().id();
-        if (!node_id.is_null())
+        if (node_id.is_null())
           result.insert(node_id);
       }
     }
@@ -421,7 +426,7 @@ int SheetView::OnPerformDrop(const ui::DropTargetEvent& event) {
     int row = 0, col = 0;
     if (grid_->GetCellAt(event.location(), row, col)) {
       SheetCell& cell = model_->GetCell(row, col);
-      std::string formula = '=' + item_data.item_id().ToString();
+      std::string formula = '=' + MakeNodeIdFormula(item_data.item_id());
       cell.SetFormula(formula);
       return ui::DragDropTypes::DRAG_COPY;
     }
