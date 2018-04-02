@@ -236,6 +236,7 @@ void ClientApplication::SetServices(DataServices&& services) {
 
   event_manager_ =
       std::make_unique<events::EventManager>(events::EventManagerContext{
+          *io_context_,
           *master_data_services_,
           *master_data_services_,
           *master_data_services_,
@@ -266,6 +267,7 @@ void ClientApplication::SetServices(DataServices&& services) {
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
       TimedDataContext{
+          *io_context_,
           alias_resolver_,
           *node_service_,
           *master_data_services_,
