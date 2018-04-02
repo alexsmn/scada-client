@@ -14,34 +14,35 @@
 #include "services/task_manager.h"
 #include "ui/base/dialogs/select_file_dialog.h"
 
+#include <algorithm>
 #include <fstream>
 #include <set>
 
 void PrintProps(NodeService& node_service,
                 const scada::NodeProperties& props,
-                std::ostream& report) {
+                std::wostream& report) {
   for (auto& v : props) {
-    auto prop = node_service.GetNode(v.first);
-    report << "  " << prop.display_name() << " = " << v.second.get_or("(Error)")
-           << std::endl;
+    const auto& prop = node_service.GetNode(v.first);
+    report << L"  " << ToString16(prop.display_name()) << L" = "
+           << v.second.get_or(L"(Ошибка)") << std::endl;
   }
 }
 
 void PrintRefs(NodeService& node_service,
                const std::vector<ImportData::Reference>& refs,
-               std::ostream& report) {
+               std::wostream& report) {
   for (auto& r : refs) {
     auto target_name = r.add_target_id.is_null()
                            ? L"(Нет)"
                            : GetDisplayName(node_service, r.add_target_id);
-    report << GetDisplayName(node_service, r.reference_type_id) << " = "
-           << ToString16(target_name) << std::endl;
+    report << ToString16(GetDisplayName(node_service, r.reference_type_id))
+           << L" = " << ToString16(target_name) << std::endl;
   }
 }
 
-void ShowImportReport(NodeService& node_service,
-                      const ImportData& import_data) {
-  std::ofstream report("report.txt");
+void ShowImportReport(const ImportData& import_data,
+                      NodeService& node_service) {
+  std::wofstream report("report.txt");
 
   report
       << L"Пожалуйста, убедитесь в правильности производимых изменений. Если "
@@ -59,11 +60,15 @@ void ShowImportReport(NodeService& node_service,
       << std::endl;
 
   for (auto& p : import_data.create_nodes) {
-    auto type = node_service.GetNode(p.type_id);
-    report << L"Создать: " << ToString16(type.display_name()) << std::endl;
-    if (p.id != scada::NodeId())
-      report << L"  Ид = " << NodeIdToScadaString(p.id) << std::endl;
-    report << L"  Родитель = " << NodeIdToScadaString(p.parent_id) << std::endl;
+    auto type_definition = node_service.GetNode(p.type_id);
+    report << L"Создать: " << ToString16(type_definition.display_name())
+           << std::endl;
+    if (!p.id.is_null())
+      report << L"  Ид = " << base::SysNativeMBToWide(NodeIdToScadaString(p.id))
+             << std::endl;
+    report << L"  Родитель = "
+           << base::SysNativeMBToWide(NodeIdToScadaString(p.parent_id))
+           << std::endl;
     report << L"  Имя = " << ToString16(p.attrs.display_name) << std::endl;
     PrintProps(node_service, p.props, report);
     PrintRefs(node_service, p.refs, report);
@@ -73,7 +78,7 @@ void ShowImportReport(NodeService& node_service,
     auto node = node_service.GetNode(p.id);
     report << L"Изменить: " << ToString16(node.display_name()) << std::endl;
     if (!p.attrs.browse_name.empty())
-      report << L"  Имя = " << p.attrs.browse_name.name() << std::endl;
+      report << L"  Имя = " << ToString16(p.attrs.browse_name) << std::endl;
     PrintProps(node_service, p.props, report);
     PrintRefs(node_service, p.refs, report);
   }
@@ -100,7 +105,7 @@ void ShowImportReport(NodeService& node_service,
   CloseHandle(process_info.hThread);
 }
 
-void ApplyImportData(TaskManager& task_manager, const ImportData& import_data) {
+void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
   for (auto& p : import_data.create_nodes) {
     task_manager.PostInsertTask(p.id, p.parent_id, p.type_id, p.attrs, p.props);
     for (auto& ref : p.refs) {
@@ -213,7 +218,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
     return;
   }
 
-  ShowImportReport(node_service, import_data);
+  ShowImportReport(import_data, node_service);
 
   bool confirmed =
       dialog_service.RunMessageBox(L"Применить изменения?", L"Импорт",
@@ -221,7 +226,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
       MessageBoxResult::Yes;
 
   if (confirmed)
-    ApplyImportData(task_manager, import_data);
+    ApplyImportData(import_data, task_manager);
 }
 
 void ImportConfigurationFromExcel(NodeService& node_service,

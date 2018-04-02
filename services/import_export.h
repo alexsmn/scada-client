@@ -12,7 +12,8 @@ class TableWriter;
 
 class ResourceError {
  public:
-  explicit ResourceError(base::string16 message) : message_{std::move(message)} {}
+  explicit ResourceError(base::string16 message)
+      : message_{std::move(message)} {}
 
   const base::string16& message() const { return message_; }
 
