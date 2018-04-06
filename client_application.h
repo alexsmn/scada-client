@@ -26,10 +26,6 @@ namespace net {
 class TransportFactory;
 }
 
-namespace scada {
-class SessionService;
-}
-
 class ActionManager;
 class Favourites;
 class FileCache;
@@ -41,7 +37,6 @@ class ModusModule2;
 class NodeService;
 class PortfolioManager;
 class Profile;
-class SessionProxy;
 class TaskManager;
 class TimedDataService;
 class Speech;
@@ -77,8 +72,6 @@ class ClientApplication : private ClientApplicationContext,
   std::unique_ptr<net::TransportFactory> transport_factory_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
-
-  std::shared_ptr<SessionProxy> session_;
 
   std::unique_ptr<Profile> profile_;
 

@@ -45,26 +45,11 @@ void MainWindowManager::CloseMainWindow(int window_id) {
 
 std::unique_ptr<MainWindow> MainWindowManager::CreateMainWindow(int window_id) {
   return std::make_unique<MainWindowType>(MainWindowContext{
-      action_manager_,
-      alias_resolver_,
-      window_id,
-      event_manager_,
-      favourites_,
-      file_cache_,
-      local_events_,
-      *this,
-      node_service_,
-      portfolio_manager_,
-      profile_,
-      history_service_,
-      method_service_,
-      monitored_item_service_,
-      node_management_service_,
-      session_service_,
-      speech_,
-      task_manager_,
-      timed_data_service_,
-  });
+      action_manager_, alias_resolver_, window_id, event_manager_, favourites_,
+      file_cache_, local_events_, *this, node_service_, portfolio_manager_,
+      profile_, history_service_, method_service_, monitored_item_service_,
+      node_management_service_, session_service_, speech_, task_manager_,
+      timed_data_service_});
 }
 
 bool MainWindowManager::IsPageOpened(int page_id) const {

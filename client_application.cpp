@@ -3,7 +3,7 @@
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
-#include "base/logger.h"
+#include "base/nested_logger.h"
 #include "base/path_service.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/dump.h"
@@ -20,9 +20,7 @@
 #include "components/modus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "core/configuration_impl.h"
-#include "core/monitored_item_service.h"
 #include "net/transport_factory_impl.h"
-#include "remote/session_proxy.h"
 #include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
 #include "services/favourites.h"
@@ -123,7 +121,6 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 ClientApplication::~ClientApplication() {
   main_window_manager_.reset();
 
-  // Don't save layout for QT.
   if (profile_ && profile_loaded_)
     profile_->Save(*event_manager_, *portfolio_manager_, *favourites_);
 

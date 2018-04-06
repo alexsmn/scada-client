@@ -70,12 +70,12 @@ class ConfigurationTreeModel : public ui::TreeNodeModel<ConfigurationTreeNode>,
  public:
   ConfigurationTreeModel(NodeService& node_service,
                          TaskManager& task_manager,
-                         NodeRef tree,
+                         NodeRef root_node,
                          std::vector<scada::NodeId> reference_type_ids,
                          std::vector<scada::NodeId> type_definition_ids);
   virtual ~ConfigurationTreeModel();
 
-  NodeRef tree() const { return tree_; }
+  const NodeRef& root_node() const { return root()->data_node(); }
 
   void Init();
 
@@ -107,17 +107,8 @@ class ConfigurationTreeModel : public ui::TreeNodeModel<ConfigurationTreeNode>,
 
   NodeService& node_service_;
   TaskManager& task_manager_;
-  const NodeRef tree_;
   const std::vector<scada::NodeId> reference_type_ids_;
   const std::vector<scada::NodeId> type_definition_ids_;
 
   NodeMap node_map_;
 };
-
-inline ConfigurationTreeNode* ConfigurationTreeModel::FindNode(
-    const scada::NodeId& node_id) {
-  if (node_id.is_null())
-    return nullptr;
-  auto i = node_map_.find(node_id);
-  return i != node_map_.end() ? i->second : nullptr;
-}

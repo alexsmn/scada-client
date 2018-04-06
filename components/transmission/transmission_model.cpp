@@ -23,7 +23,7 @@ TransmissionModel::~TransmissionModel() {
 }
 
 void TransmissionModel::SetDevice(NodeRef device) {
-  device_ = device;
+  device_ = std::move(device);
   Update();
 }
 

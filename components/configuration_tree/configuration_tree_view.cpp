@@ -60,7 +60,7 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   tree_view_->SetSelectionChangedHandler([this] {
     auto selection_size = tree_view_->GetSelectionSize();
     if (selection_size == 0)
-      selection().SelectNode(model_->tree());
+      selection().SelectNode(model_->root_node());
     else if (selection_size == 1) {
       auto* node =
           static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());

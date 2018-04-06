@@ -383,10 +383,8 @@ void Profile::Save(const events::EventManager& event_manager,
     favourites.Save(favourites_root);
 
     // portfolios
-    auto& portfolios = portfolio_manager.portfolios;
     xml::Node& pfoliose = doce.AddElement("Portfolios");
-    for (auto i = portfolios.begin(); i != portfolios.end(); ++i) {
-      const Portfolio& portfolio = *i;
+    for (auto& portfolio : portfolio_manager.portfolios) {
       xml::Node& pfolioe = pfoliose.AddElement("Portfolio");
       pfolioe.SetAttribute("name", portfolio.name);
       for (std::set<scada::NodeId>::const_iterator j = portfolio.items.begin();

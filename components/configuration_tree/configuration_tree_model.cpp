@@ -145,15 +145,14 @@ int ConfigurationTreeRootNode::GetIcon() const {
 ConfigurationTreeModel::ConfigurationTreeModel(
     NodeService& node_service,
     TaskManager& task_manager,
-    NodeRef tree,
+    NodeRef root_node,
     std::vector<scada::NodeId> reference_type_ids,
     std::vector<scada::NodeId> type_definition_ids)
     : node_service_{node_service},
       task_manager_{task_manager},
-      tree_{tree},
       reference_type_ids_{std::move(reference_type_ids)},
       type_definition_ids_{std::move(type_definition_ids)} {
-  set_root(std::make_unique<ConfigurationTreeRootNode>(*this, tree));
+  set_root(std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
@@ -329,4 +328,12 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   }
 
   return ui::DragDropTypes::DRAG_NONE;
+}
+
+ConfigurationTreeNode* ConfigurationTreeModel::FindNode(
+    const scada::NodeId& node_id) {
+  if (node_id.is_null())
+    return nullptr;
+  auto i = node_map_.find(node_id);
+  return i != node_map_.end() ? i->second : nullptr;
 }

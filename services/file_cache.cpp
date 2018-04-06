@@ -185,9 +185,9 @@ void FileCache::Save() {
   }
 }
 
-void FileCache::FileList::GetFilesContainingItem(
-    const scada::NodeId& item_id,
-    std::vector<DisplayItem>& items) const {
+std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
+    const scada::NodeId& item_id) const {
+  std::vector<DisplayItem> items;
   items.reserve(size());
 
   for (FileList::const_iterator i = begin(); i != end(); ++i) {
@@ -196,6 +196,8 @@ void FileCache::FileList::GetFilesContainingItem(
     if (j != entry.items.end())
       items.push_back(DisplayItem(entry.path, j->second));
   }
+
+  return items;
 }
 
 void FileCache::Refresh() {

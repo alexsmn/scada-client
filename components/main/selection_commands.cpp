@@ -324,9 +324,8 @@ void SelectionCommands::DoIOCtrl(const scada::NodeId& node_id,
 }
 
 void SelectionCommands::OpenModusView(const NodeRef& node) {
-  std::vector<FileCache::DisplayItem> cached_items;
-  file_cache_.GetList(VIEW_TYPE_MODUS)
-      .GetFilesContainingItem(node.id(), cached_items);
+  auto cached_items =
+      file_cache_.GetList(VIEW_TYPE_MODUS).GetFilesContainingItem(node.id());
 
   if (cached_items.empty()) {
     base::string16 msg =

@@ -23,10 +23,10 @@ class EventManager;
 }
 
 namespace scada {
+class HistoryService;
 class MethodService;
 class MonitoredItemService;
 class NodeManagementService;
-class HistoryService;
 class SessionService;
 }  // namespace scada
 

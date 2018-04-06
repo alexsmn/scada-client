@@ -32,8 +32,8 @@ void MainWindow::Init(ViewManager& view_manager) {
                           [this](bool has_events) { OnEvents(has_events); }});
 
   Page* page = nullptr;
-  Profile::PageMap& pages = profile_.pages;
-  Profile::PageMap::iterator i = pages.find(GetPrefs().page_id);
+  auto& pages = profile_.pages;
+  auto i = pages.find(GetPrefs().page_id);
   if (i != pages.end())
     page = &i->second;
   else if (!pages.empty())
@@ -74,10 +74,11 @@ void MainWindow::SetActiveView(OpenedView* view) {
 
   active_view_ = view;
 
-  if (active_view_)
+  if (active_view_) {
     active_view_->controller().selection().change_handler = [this] {
       OnSelectionChanged();
     };
+  }
 
   const WindowInfo* window_info = nullptr;
   if (view)
@@ -167,7 +168,7 @@ void MainWindow::OnViewClosed(OpenedView& view, WindowDefinition& definition) {
 
   } else {
     // append trash
-    Page& trash = profile_.trash;
+    auto& trash = profile_.trash;
     trash.AddWindow(definition);
     while (trash.GetWindowCount() > 10)
       trash.DeleteWindow(0);
@@ -218,7 +219,7 @@ void MainWindow::SavePage() {
 
   view_manager_->SavePage();
 
-  Profile::PageMap& pages = profile_.pages;
+  auto& pages = profile_.pages;
   pages[view_manager_->current_page().id] = view_manager_->current_page();
 }
 
@@ -230,27 +231,25 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
       def.size = gfx::Size(window_info.cx, window_info.cy);
   }
 
-  OpenedViewContext context{
-      this,
-      alias_resolver_,
-      task_manager_,
-      method_service_,
-      session_service_,
-      node_management_service_,
-      event_manager_,
-      history_service_,
-      monitored_item_service_,
-      timed_data_service_,
-      node_service_,
-      portfolio_manager_,
-      action_manager_,
-      local_events_,
-      favourites_,
-      file_cache_,
-      profile_,
-      GetDialogService(),
-      main_window_manager_,
-  };
+  OpenedViewContext context{this,
+                            alias_resolver_,
+                            task_manager_,
+                            method_service_,
+                            session_service_,
+                            node_management_service_,
+                            event_manager_,
+                            history_service_,
+                            monitored_item_service_,
+                            timed_data_service_,
+                            node_service_,
+                            portfolio_manager_,
+                            action_manager_,
+                            local_events_,
+                            favourites_,
+                            file_cache_,
+                            profile_,
+                            GetDialogService(),
+                            main_window_manager_};
 
   return std::make_unique<OpenedView>(context, def);
 }
