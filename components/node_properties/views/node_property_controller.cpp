@@ -5,7 +5,7 @@
 #include "common/scada_node_ids.h"
 #include "components/node_properties/node_property_model.h"
 #include "controller_factory.h"
-#include "ui/views/controls/property_view/property_view.h"
+#include "ui/views/controls/tree/tree_view.h"
 #include "window_definition.h"
 
 const float ROW_HEIGHT = 22.0f;
@@ -20,21 +20,20 @@ NodePropertyController::NodePropertyController(const ControllerContext& context)
 NodePropertyController::~NodePropertyController() {}
 
 views::View* NodePropertyController::Init(const WindowDefinition& definition) {
-  NodePropertyModel::Nodes nodes;
+  NodeRef node;
 
-  const WindowItem* window_item = definition.FindItem("Item");
-  if (window_item) {
+  if (const WindowItem* window_item = definition.FindItem("Item")) {
     std::string path = window_item->GetString("path");
     auto node_id = NodeIdFromScadaString(path);
-    if (auto node = node_service_.GetNode(node_id))
-      nodes.emplace_back(node);
+    node = node_service_.GetNode(node_id);
   }
 
-  model_ = std::make_unique<NodePropertyModel>(node_service_, task_manager_,
-                                               std::move(nodes));
-  view_.reset(new views::PropertyView(*model_));
-  view_->SetColumnWidth(0, 150);
-  view_->SetColumnWidth(1, 200);
+  model_ = std::make_unique<NodePropertyModel>(
+      PropertyContext{node_service_, task_manager_}, std::move(node));
+  view_ = std::make_unique<views::TreeView>();
+  view_->SetModel(model_.get());
+  /*view_->SetColumnWidth(0, 150);
+  view_->SetColumnWidth(1, 200);*/
 
-  return view_->CreateParentIfNecessary();
+  return view_.get();
 }

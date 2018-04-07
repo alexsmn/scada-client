@@ -71,7 +71,7 @@ class NodeTableModel : private PropertyContext,
 
   struct Column {
     scada::AttributeId attr_id;
-    scada::NodeId prop_decl_id;
+    NodeRef property_declaration;
     const PropertyDefinition* prop_def;
   };
 

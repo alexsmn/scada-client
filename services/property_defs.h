@@ -7,11 +7,16 @@
 #include "core/configuration_types.h"
 #include "ui/base/models/table_column.h"
 
-class HierachicalPropertyDefinition;
 class NodeService;
+class HierachicalPropertyDefinition;
 class TaskManager;
 
 typedef std::pair<base::string16, bool /*read_only*/> PropertyValue;
+
+struct PropertyContext {
+  NodeService& node_service_;
+  TaskManager& task_manager_;
+};
 
 struct PropertyEditor {
   enum Type { NONE, SIMPLE, DROPDOWN, BUTTON };
@@ -20,11 +25,6 @@ struct PropertyEditor {
 
   Type type;
   std::vector<base::string16> choices;
-};
-
-struct PropertyContext {
-  NodeService& node_service_;
-  TaskManager& task_manager_;
 };
 
 class PropertyDefinition {
@@ -39,7 +39,7 @@ class PropertyDefinition {
                           const scada::NodeId& prop_decl_id) const;
 
   virtual base::string16 GetTitle(const PropertyContext& context,
-                                  const scada::NodeId& prop_decl_id) const;
+                                  const NodeRef& property_declaration) const;
 
   virtual const HierachicalPropertyDefinition* AsHierarchical() const {
     return nullptr;
@@ -145,7 +145,7 @@ class ChannelPropertyDefinition : public PropertyDefinition {
   // PropertyDefinition
   virtual base::string16 GetTitle(
       const PropertyContext& context,
-      const scada::NodeId& prop_decl_id) const override;
+      const NodeRef& property_declaration) const override;
   virtual base::string16 GetText(
       const PropertyContext& context,
       const NodeRef& node,
@@ -180,7 +180,8 @@ class ColorPropertyDefinition : public PropertyDefinition {
   ColorPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual base::string16 GetText(const PropertyContext& context,
+  virtual base::string16 GetText(
+      const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
   virtual void SetText(const PropertyContext& context,
@@ -193,9 +194,8 @@ class ColorPropertyDefinition : public PropertyDefinition {
       const scada::NodeId& prop_decl_id) const override;
 };
 
-typedef std::vector<
-    std::pair<scada::NodeId /*prop_decl_id*/, const PropertyDefinition*>>
+typedef std::vector<std::pair<NodeRef /*prop_decl*/, const PropertyDefinition*>>
     PropertyDefs;
 
 const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_decl_id);
-PropertyDefs GetTypeProperties(const NodeRef& type);
+PropertyDefs GetTypeProperties(const NodeRef& type_definition);

@@ -24,9 +24,10 @@ class ViewManagerViews final : public ViewManager,
   views::View& GetView();
 
   // ViewManager
-  virtual void SetViewTitle(OpenedView& view, const base::string16& title) override;
   virtual void ActivateView(OpenedView& view) override;
   virtual void CloseView(OpenedView& view) override;
+  virtual void SetViewTitle(OpenedView& view,
+                            const base::string16& title) override;
 
  protected:
   // ViewManager

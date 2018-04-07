@@ -108,10 +108,8 @@ bool MainMenuModel2::GetMenuItems(UINT id, MenuItems& items) {
   switch (id) {
     case ID_PAGE_0: {
       empty = _T("Нет листов");
-      Profile::PageMap& pages = profile_.pages;
-      for (Profile::PageMap::iterator i = pages.begin(); i != pages.end();
-           ++i) {
-        Page& page = i->second;
+      for (auto& p : profile_.pages) {
+        auto& page = p.second;
         item.text = page.id == main_window_.current_page().id
                         ? main_window_.current_page().GetTitle()
                         : page.GetTitle();
@@ -124,9 +122,8 @@ bool MainMenuModel2::GetMenuItems(UINT id, MenuItems& items) {
 
     case ID_WIN_0: {
       empty = _T("Нет окон");
-      for (ViewManager::Views::const_iterator i = view_manager_.views().begin();
-           i != view_manager_.views().end(); ++i) {
-        OpenedView& view = *i->view;
+      for (auto& p : view_manager_.views()) {
+        auto& view = *p.view;
         item.text = view.GetWindowTitle();
         item.radio = true;
         item.checked = main_window_.active_view() == &view;
@@ -137,7 +134,7 @@ bool MainMenuModel2::GetMenuItems(UINT id, MenuItems& items) {
 
     case ID_TRASH_0: {
       empty = _T("Корзина пуста");
-      Page& trash = profile_.trash;
+      const auto& trash = profile_.trash;
       for (int i = 0; i < trash.GetWindowCount(); ++i) {
         WindowDefinition& win = trash.GetWindow(i);
         item.text = win.GetTitle();
@@ -156,7 +153,7 @@ bool MainMenuModel2::GetMenuItems(UINT id, MenuItems& items) {
 
     case ID_NEW_REPORT_0: {
       empty = _T("Нет отчетов");
-      auto& cache = file_cache_.GetList(VIEW_TYPE_EXCEL_REPORT);
+      const auto& cache = file_cache_.GetList(VIEW_TYPE_EXCEL_REPORT);
       for (size_t i = 0; i < cache.size(); ++i) {
         item.text = cache[i].title;
         items.push_back(item);
@@ -405,7 +402,7 @@ LRESULT MainMenuModel2::OnFavGraph(WORD /*wNotifyCode*/,
 }
 
 void MainMenuModel2::GetFileCacheItems(int type_id, MenuItems& items) {
-  auto& cache = file_cache_.GetList(type_id);
+  const auto& cache = file_cache_.GetList(type_id);
   for (size_t i = 0; i < cache.size(); ++i) {
     MenuItem item;
     item.text = cache[i].title;

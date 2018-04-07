@@ -8,7 +8,6 @@
 #include "client_paths.h"
 #include "components/login/qt/login_dialog.h"
 #include "qt/message_loop_qt.h"
-#include "remote/session_proxy.h"
 
 #include <QApplication>
 #include <QLibraryInfo>

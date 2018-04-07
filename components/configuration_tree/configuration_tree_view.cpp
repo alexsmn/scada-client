@@ -9,7 +9,7 @@
 #include "controller_factory.h"
 #include "controls/tree.h"
 #include "core/node_management_service.h"
-#include "remote/session_proxy.h"
+#include "core/session_service.h"
 #include "services/dialog_service.h"
 #include "ui/base/models/sorted_tree_model.h"
 #include "views/item_drag_data.h"

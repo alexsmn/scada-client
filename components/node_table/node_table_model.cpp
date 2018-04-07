@@ -19,26 +19,26 @@ namespace {
 const auto kSortDelay = base::TimeDelta::FromMilliseconds(300);
 
 void GetTypeProperties(const NodeRef& type_definition,
-                       std::set<scada::NodeId>& property_ids) {
+                       std::set<NodeRef>& property_declarations) {
   assert(type_definition.fetched());
   for (auto supertype_definition = type_definition; supertype_definition;
        supertype_definition = supertype_definition.supertype()) {
     for (auto& p : supertype_definition.properties())
-      property_ids.emplace(p.id());
+      property_declarations.emplace(p);
     for (auto& r : supertype_definition.references()) {
       if (!IsSubtypeOf(r.reference_type, scada::id::HasProperty))
-        property_ids.emplace(r.reference_type.id());
+        property_declarations.emplace(r.reference_type);
     }
   }
 }
 
 void GetAllSubtypesProperties(const NodeRef& type_definition,
-                              std::set<scada::NodeId>& property_ids) {
+                              std::set<NodeRef>& property_declarations) {
   assert(type_definition.fetched());
-  GetTypeProperties(type_definition, property_ids);
+  GetTypeProperties(type_definition, property_declarations);
   for (auto& subtype_definition :
        type_definition.targets(scada::id::HasSubtype)) {
-    GetAllSubtypesProperties(subtype_definition, property_ids);
+    GetAllSubtypesProperties(subtype_definition, property_declarations);
   }
 }
 
@@ -52,13 +52,13 @@ PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
       child_type_definitions.emplace(component_decl.type_definition());
   }
 
-  std::set<scada::NodeId> property_ids;
+  std::set<NodeRef> property_declarations;
   for (auto& child_type_definition : child_type_definitions)
-    GetAllSubtypesProperties(child_type_definition, property_ids);
+    GetAllSubtypesProperties(child_type_definition, property_declarations);
 
   PropertyDefs result;
-  for (auto& p : property_ids) {
-    if (auto* def = GetPropertyDef(p))
+  for (const auto& p : property_declarations) {
+    if (auto* def = GetPropertyDef(p.id()))
       result.emplace_back(p, def);
   }
 
@@ -124,10 +124,11 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
-  else if (column.prop_def->IsReadOnly(node, column.prop_decl_id))
+  else if (column.prop_def->IsReadOnly(node, column.property_declaration.id()))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   else
-    cell.text = column.prop_def->GetText(*this, node, column.prop_decl_id);
+    cell.text =
+        column.prop_def->GetText(*this, node, column.property_declaration.id());
 }
 
 bool NodeTableModel::SetCellText(int row,
@@ -150,7 +151,7 @@ bool NodeTableModel::SetCellText(int row,
         scada::NodeAttributes().set_display_name(scada::ToLocalizedText(text)),
         {});
   } else {
-    c.prop_def->SetText(*this, node, c.prop_decl_id, text);
+    c.prop_def->SetText(*this, node, c.property_declaration.id(), text);
   }
   return true;
 }
@@ -163,9 +164,10 @@ PropertyEditor NodeTableModel::GetCellEditor(int row, int column) {
       c.attr_id == scada::AttributeId::DisplayName)
     return PropertyEditor{PropertyEditor::SIMPLE};
   const auto& type_definition = node.type_definition();
-  return type_definition ? c.prop_def->GetPropertyEditor(*this, type_definition,
-                                                         c.prop_decl_id)
-                         : PropertyEditor{PropertyEditor::NONE};
+  return type_definition
+             ? c.prop_def->GetPropertyEditor(*this, type_definition,
+                                             c.property_declaration.id())
+             : PropertyEditor{PropertyEditor::NONE};
 }
 
 void NodeTableModel::Update() {
@@ -283,16 +285,15 @@ void NodeTableModel::InitColumns() {
 
   // Display name
   {
-    columns_.push_back(
-        {scada::AttributeId::DisplayName, scada::NodeId(), nullptr});
+    columns_.push_back({scada::AttributeId::DisplayName});
     columns.emplace_back(columns.size(), L"Имя", 75, ui::TableColumn::LEFT);
   }
 
-  auto AddProp = [this, &columns](const scada::NodeId& prop_id,
+  auto AddProp = [this, &columns](const NodeRef& property_declaration,
                                   const PropertyDefinition& def) {
-    columns_.push_back({scada::AttributeId::Value, prop_id, &def});
+    columns_.push_back({scada::AttributeId::Value, property_declaration, &def});
     int width = def.width() ? def.width() : 75;
-    auto title = def.GetTitle(*this, prop_id);
+    auto title = def.GetTitle(*this, property_declaration);
     columns.emplace_back(columns.size(), title, width, def.alignment());
   };
 

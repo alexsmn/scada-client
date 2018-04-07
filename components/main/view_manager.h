@@ -1,9 +1,9 @@
 #pragma once
 
+#include "base/strings/string16.h"
+
 #include <list>
 #include <memory>
-
-#include "base/strings/string16.h"
 
 class OpenedView;
 class Page;

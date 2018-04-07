@@ -239,7 +239,7 @@ void MainWindowQt::FillDisplayMenu() {
     auto path = entry.path;
     QObject::connect(action, &QAction::triggered, [this, path] {
       // find existing display
-      auto view = main_window_manager_.FindOpenedViewByFilePath(path);
+      auto* view = main_window_manager_.FindOpenedViewByFilePath(path);
       if (view) {
         view->Activate();
       } else {

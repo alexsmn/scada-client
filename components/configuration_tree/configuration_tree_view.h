@@ -21,7 +21,7 @@ using DropAction = std::function<int()>;
 class ConfigurationTreeView : public Controller
 #if defined(UI_VIEWS)
     ,
-                              private views::DropController
+                              protected views::DropController
 #endif
 {
  public:

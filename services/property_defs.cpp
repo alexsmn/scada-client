@@ -201,16 +201,17 @@ const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_decl_id) {
 PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
   PropertyDefs properties;
   properties.reserve(32);
-  for (auto t = type_definition; t; t = t.supertype()) {
-    for (auto p : t.properties()) {
+  for (auto supertype = type_definition; supertype;
+       supertype = supertype.supertype()) {
+    for (const auto& p : supertype.properties()) {
       if (auto* def = GetPropertyDef(p.id()))
-        properties.emplace_back(p.id(), def);
+        properties.emplace_back(p, def);
     }
-    for (auto r : t.references()) {
+    for (const auto& r : supertype.references()) {
       if (IsSubtypeOf(r.reference_type, scada::id::HasProperty))
-        break;
+        continue;
       if (auto* def = GetPropertyDef(r.reference_type.id()))
-        properties.emplace_back(r.reference_type.id(), def);
+        properties.emplace_back(r.reference_type, def);
     }
   }
   return properties;
@@ -222,10 +223,8 @@ PropertyDefinition::PropertyDefinition(ui::TableColumn::Alignment alignment,
 
 base::string16 PropertyDefinition::GetTitle(
     const PropertyContext& context,
-    const scada::NodeId& prop_decl_id) const {
-  auto type = context.node_service_.GetNode(prop_decl_id);
-  assert(type);
-  return ToString16(type.display_name());
+    const NodeRef& property_declaration) const {
+  return ToString16(property_declaration.display_name());
 }
 
 bool PropertyDefinition::IsReadOnly(const NodeRef& node,
@@ -245,12 +244,12 @@ void PropertyDefinition::SetText(const PropertyContext& context,
                                  const NodeRef& node,
                                  const scada::NodeId& prop_decl_id,
                                  const base::string16& text) const {
-  auto prop = node[prop_decl_id];
-  if (!prop)
+  const auto& property = node[prop_decl_id];
+  if (!property)
     return;
 
   scada::Variant value;
-  if (!StringToValue(text, prop.data_type().id(), value))
+  if (!StringToValue(text, property.data_type().id(), value))
     return;
 
   context.task_manager_.PostUpdateTask(node.id(), {},
@@ -261,11 +260,11 @@ PropertyEditor PropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& type_definition,
     const scada::NodeId& prop_decl_id) const {
-  auto prop_decl = type_definition[prop_decl_id];
-  if (!prop_decl)
+  const auto& property_declaration = type_definition[prop_decl_id];
+  if (!property_declaration)
     return PropertyEditor(PropertyEditor::NONE);
 
-  assert(prop_decl.node_class() == scada::NodeClass::Variable);
+  assert(property_declaration.node_class() == scada::NodeClass::Variable);
   return PropertyEditor(PropertyEditor::SIMPLE);
 }
 
@@ -362,15 +361,16 @@ base::string16 EnumPropertyDefinition::GetText(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  auto prop = node[prop_decl_id];
-  if (!prop)
+  const auto& property = node[prop_decl_id];
+  if (!property)
     return base::string16();
 
   int int_value;
-  if (!prop.value().get(int_value))
+  if (!property.value().get(int_value))
     return base::string16();
 
-  auto enum_strings_value = prop.data_type()[scada::id::EnumStrings].value();
+  auto enum_strings_value =
+      property.data_type()[scada::id::EnumStrings].value();
   auto* enum_strings =
       enum_strings_value.get_if<std::vector<scada::LocalizedText>>();
   if (!enum_strings || int_value < 0 || int_value >= enum_strings->size())
@@ -383,11 +383,12 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
                                      const NodeRef& node,
                                      const scada::NodeId& prop_decl_id,
                                      const base::string16& text) const {
-  auto prop = node[prop_decl_id];
-  if (!prop)
+  const auto& property = node[prop_decl_id];
+  if (!property)
     return;
 
-  auto enum_strings_value = prop.data_type()[scada::id::EnumStrings].value();
+  auto enum_strings_value =
+      property.data_type()[scada::id::EnumStrings].value();
   auto* enum_strings =
       enum_strings_value.get_if<std::vector<scada::LocalizedText>>();
   if (!enum_strings)
@@ -406,14 +407,14 @@ PropertyEditor EnumPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& type_definition,
     const scada::NodeId& prop_decl_id) const {
-  auto prop_decl = type_definition[prop_decl_id];
-  if (!prop_decl)
+  const auto& property_declaration = type_definition[prop_decl_id];
+  if (!property_declaration)
     return PropertyEditor(PropertyEditor::NONE);
 
   PropertyEditor result(PropertyEditor::DROPDOWN);
 
   auto enum_strings_value =
-      prop_decl.data_type()[scada::id::EnumStrings].value();
+      property_declaration.data_type()[scada::id::EnumStrings].value();
   if (auto* enum_strings =
           enum_strings_value.get_if<std::vector<scada::LocalizedText>>()) {
     result.choices = *enum_strings;
@@ -424,7 +425,7 @@ PropertyEditor EnumPropertyDefinition::GetPropertyEditor(
 
 base::string16 ChannelPropertyDefinition::GetTitle(
     const PropertyContext& context,
-    const scada::NodeId& prop_decl_id) const {
+    const NodeRef& property_declaration) const {
   return title_;
 }
 
@@ -435,7 +436,7 @@ base::string16 ChannelPropertyDefinition::GetText(
   if (!IsInstanceOf(node, id::DataItemType))
     return base::string16();
 
-  auto channel_path = node[prop_decl_id].value().get_or(std::string());
+  auto channel_path = node[prop_decl_id].value().get_or(std::string{});
 
   scada::NodeId parent_id;
   scada::NodeId node_id;
@@ -468,7 +469,7 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
             .id();
   }
 
-  auto channel_path = node[prop_decl_id].value().get_or(std::string());
+  auto channel_path = node[prop_decl_id].value().get_or(std::string{});
   scada::NodeId node_id;
   scada::NodeId parent_id;
   base::StringPiece component_name;

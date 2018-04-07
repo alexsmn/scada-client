@@ -2,8 +2,8 @@
 
 #include "base/win/win_util2.h"
 #include "common_resources.h"
-#include "components/main//main_commands.h"
 #include "components/main/action.h"
+#include "components/main/main_commands.h"
 #include "components/main/opened_view.h"
 #include "components/main/views/main_menu_model.h"
 #include "components/main/views/native_main_window.h"

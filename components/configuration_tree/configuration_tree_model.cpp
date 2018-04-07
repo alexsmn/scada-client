@@ -66,7 +66,7 @@ DropAction MakeAssignChannelAction(TaskManager& task_manager,
     auto channel_prop_id =
         control_item ? kObjectOutputPropTypeId : kObjectInput1PropTypeId;
     task_manager.PostUpdateTask(
-        node_id, {}, {{kObjectOutputPropTypeId, std::move(formula)}});
+        node_id, {}, {{std::move(channel_prop_id), std::move(formula)}});
 
     return ui::DragDropTypes::DRAG_LINK;
   };

@@ -1,39 +1,46 @@
-#include "components/node_properties/node_property_model.h"
+﻿#include "components/node_properties/node_property_model.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_service.h"
 #include "services/property_defs.h"
+#include "services/task_manager.h"
 
 #include <algorithm>
 
-NodePropertyModel::NodePropertyModel(NodeService& node_service,
-                                     TaskManager& task_manager,
-                                     Nodes nodes)
-    : PropertyContext{node_service, task_manager}, nodes_(std::move(nodes)) {
-  for (auto& node : nodes_)
-    node.Subscribe(*this);
+NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
+    : PropertyContext{std::move(context)}, node_{std::move(node)} {
+  node_.Subscribe(*this);
 
-  auto node = !nodes_.empty() ? nodes_.front() : nullptr;
-  auto type = node.type_definition();
+  properties_ = {{
+                     L"(Идентификатор)",
+                     base::SysNativeMBToWide(node_.browse_name().name()),
+                     scada::AttributeId::BrowseName,
+                 },
+                 {
+                     L"(Имя)",
+                     ToString16(node_.display_name()),
+                     scada::AttributeId::DisplayName,
+                 }};
 
-  if (type) {
-    for (auto& p : GetTypeProperties(type)) {
-      auto prop_decl = node_service_.GetNode(p.first);
-      assert(prop_decl);
+  if (const auto& type_definition = node_.type_definition()) {
+    for (auto& p : GetTypeProperties(type_definition)) {
+      const auto& prop_decl = p.first;
+      if (!prop_decl)
+        continue;
       auto* def = p.second;
       Property prop;
-      prop.display_name = prop_decl.display_name();
-      prop.string_value = def->GetText(*this, node, p.first);
+      prop.name = def->GetTitle(*this, prop_decl);
+      prop.string_value = def->GetText(*this, node_, prop_decl.id());
       prop.def = def;
-      prop.prop_type_id = p.first;
+      prop.prop_type_id = p.first.id();
       properties_.emplace_back(std::move(prop));
     }
   }
 }
 
 NodePropertyModel::~NodePropertyModel() {
-  for (auto& node : nodes_)
-    node.Subscribe(*this);
+  if (node_)
+    node_.Unsubscribe(*this);
 }
 
 int NodePropertyModel::GetCount() {
@@ -41,7 +48,7 @@ int NodePropertyModel::GetCount() {
 }
 
 base::string16 NodePropertyModel::GetName(int index) {
-  return properties_[index].display_name;
+  return properties_[index].name;
 }
 
 base::string16 NodePropertyModel::GetValue(int index) {
@@ -54,33 +61,43 @@ bool NodePropertyModel::IsInherited(int index) {
 
 void NodePropertyModel::SetValue(int index, const base::string16& value) {
   auto& prop = properties_[index];
-  prop.def->SetText(*this, nodes_.front(), prop.prop_type_id, value);
+  prop.def->SetText(*this, node_, prop.prop_type_id, value);
 }
 
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
-  if (!(event.verb & scada::ModelChangeEvent::NodeDeleted))
-    return;
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
+    if (node_.id() == event.node_id) {
+      node_.Unsubscribe(*this);
+      node_ = nullptr;
+    }
+    // TODO: Model changed?
 
-  auto i = std::find_if(nodes_.begin(), nodes_.end(), [&](const NodeRef& node) {
-    return node.id() == event.node_id;
-  });
-  if (i == nodes_.end())
-    return;
-
-  i->Unsubscribe(*this);
-  nodes_.erase(i);
+  } else if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
+                           scada::ModelChangeEvent::ReferenceDeleted)) {
+    Update();
+  }
 }
 
 void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  auto node = nodes_.front();
-  if (node_id != node.id())
-    return;
+  Update();
+}
 
-  for (auto& prop : properties_)
-    prop.string_value = prop.def->GetText(*this, node, prop.prop_type_id);
+void NodePropertyModel::Update() {
+  for (auto attribute_id :
+       {scada::AttributeId::BrowseName, scada::AttributeId::DisplayName}) {
+    int index = FindProperty(attribute_id);
+    if (index != -1) {
+      auto& prop = properties_[index];
+      prop.string_value = ToString16(
+          node_.attribute(attribute_id).get_or(scada::LocalizedText{}));
+      TreeNodeChanged(&prop);
+    }
+  }
 
-  if (observer_)
-    observer_->OnValuesChanged(0, static_cast<int>(properties_.size()));
+  for (auto& prop : properties_) {
+    prop.string_value = prop.def->GetText(*this, node_, prop.prop_type_id);
+    TreeNodeChanged(&prop);
+  }
 }
 
 int NodePropertyModel::FindProperty(const scada::NodeId& prop_type_id) const {
@@ -89,4 +106,68 @@ int NodePropertyModel::FindProperty(const scada::NodeId& prop_type_id) const {
       return i;
   }
   return -1;
+}
+
+int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
+  for (int i = 0; i < properties_.size(); ++i) {
+    if (properties_[i].attribute_id == attribute_id)
+      return i;
+  }
+  return -1;
+}
+
+void* NodePropertyModel::GetParent(void* node) {
+  return node == this ? nullptr : this;
+}
+
+int NodePropertyModel::GetChildCount(void* parent) {
+  if (parent != this)
+    return 0;
+  return GetCount();
+}
+
+void* NodePropertyModel::GetChild(void* parent, int index) {
+  if (parent != this)
+    return nullptr;
+  assert(index < static_cast<int>(properties_.size()));
+  return &properties_[index];
+}
+
+int NodePropertyModel::NodeToIndex(void* node) const {
+  size_t index =
+      std::find_if(properties_.begin(), properties_.end(),
+                   [node](const Property& prop) { return &prop == node; }) -
+      properties_.begin();
+  if (index >= properties_.size())
+    return -1;
+  return static_cast<int>(index);
+}
+
+base::string16 NodePropertyModel::GetText(void* node, int column_id) {
+  int index = NodeToIndex(node);
+  if (index == -1)
+    return {};
+  return column_id == 0 ? GetName(index) : GetValue(index);
+}
+
+void NodePropertyModel::SetText(void* node,
+                                int column_id,
+                                const base::string16& text) {
+  if (column_id != 1)
+    return;
+
+  int index = NodeToIndex(node);
+  if (index == -1)
+    return;
+
+  auto& prop = properties_[index];
+  if (prop.def)
+    prop.def->SetText(*this, node_, prop.prop_type_id, text);
+  else {
+    task_manager_.PostUpdateTask(
+        node_.id(),
+        scada::NodeAttributes().set_browse_name(
+            scada::QualifiedName{base::SysWideToNativeMB(text), 0}),
+        {});
+  }
 }

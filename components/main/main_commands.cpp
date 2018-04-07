@@ -19,9 +19,10 @@
 #include "services/speech.h"
 #include "window_info.h"
 
+#include <windows.h>
+
 #include <atlres.h>
 #include <shellapi.h>
-#include <windows.h>
 
 namespace {
 
@@ -211,9 +212,8 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     }
 
     case ID_PAGE_DELETE: {
-      Profile::PageMap& pages = profile_.pages;
       auto& page = main_window_.current_page();
-      pages.erase(page.id);
+      profile_.pages.erase(page.id);
       // Select first not opened page.
       Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
       if (!select_page)
