@@ -1,8 +1,8 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util.h"
-#include "common/project.h"
 #include "common_resources.h"
+#include "project.h"
 #include "views/framework/dialog.h"
 
 #include <atlbase.h>
