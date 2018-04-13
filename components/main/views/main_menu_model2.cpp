@@ -122,11 +122,10 @@ bool MainMenuModel2::GetMenuItems(UINT id, MenuItems& items) {
 
     case ID_WIN_0: {
       empty = _T("Нет окон");
-      for (auto& p : view_manager_.views()) {
-        auto& view = *p.view;
-        item.text = view.GetWindowTitle();
+      for (auto* opened_view : view_manager_.views()) {
+        item.text = opened_view->GetWindowTitle();
         item.radio = true;
-        item.checked = main_window_.active_view() == &view;
+        item.checked = main_window_.active_view() == opened_view;
         items.push_back(item);
       }
       break;
@@ -317,7 +316,7 @@ LRESULT MainMenuModel2::OnWin(WORD wNotifyCode,
   for (ViewManager::Views::const_iterator i = views.begin(); i != views.end();
        ++i, --ix) {
     if (!ix) {
-      view = i->view;
+      view = *i;
       break;
     }
   }

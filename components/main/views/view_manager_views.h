@@ -24,6 +24,7 @@ class ViewManagerViews final : public ViewManager,
   views::View& GetView();
 
   // ViewManager
+  virtual OpenedView* GetActiveView() override;
   virtual void ActivateView(OpenedView& view) override;
   virtual void CloseView(OpenedView& view) override;
   virtual void SetViewTitle(OpenedView& view,

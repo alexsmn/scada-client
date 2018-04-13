@@ -18,19 +18,23 @@ ViewManager::~ViewManager() {
 }
 
 OpenedView* ViewManager::FindViewByID(int id) const {
-  for (auto& view_info : views_) {
-    if (view_info.view->window_id() == id)
-      return view_info.view;
-  }
-  return nullptr;
+  auto i = std::find_if(
+      views_.begin(), views_.end(),
+      [id](OpenedView* opened_view) { return opened_view->window_id() == id; });
+  return i == views_.end() ? nullptr : *i;
+}
+
+bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
+  auto i = std::find(added_views_.begin(), added_views_.end(), &opened_view);
+  return i != added_views_.end();
 }
 
 OpenedView* ViewManager::FindViewByType(unsigned type) const {
-  for (auto& view_info : views_) {
-    if (view_info.view->window_info().command_id == type)
-      return view_info.view;
-  }
-  return nullptr;
+  auto i = std::find_if(views_.begin(), views_.end(),
+                        [type](OpenedView* opened_view) {
+                          return opened_view->window_info().command_id == type;
+                        });
+  return i == views_.end() ? nullptr : *i;
 }
 
 void ViewManager::SetActiveView(OpenedView* view) {
@@ -46,36 +50,40 @@ void ViewManager::DestroyView(OpenedView& view) {
   if (&view == active_view_)
     SetActiveView(nullptr);
 
-  auto p = std::find_if(
-      views_.begin(), views_.end(),
-      [&view](ViewInfo& view_info) { return view_info.view == &view; });
-  assert(p != views_.end());
-  WindowDefinition* definition = p->definition;
-  views_.erase(p);
+  {
+    auto i = std::find(views_.begin(), views_.end(), &view);
+    assert(i != views_.end());
+    views_.erase(i);
+  }
 
-  delegate_.OnViewClosed(view, *definition);
+  {
+    auto i = std::find(added_views_.begin(), added_views_.end(), &view);
+    if (i != added_views_.end())
+      added_views_.erase(i);
+  }
+
+  delegate_.OnViewClosed(view);
 
   delete &view;
 }
 
 OpenedView* ViewManager::CreateView(WindowDefinition& def,
                                     OpenedView* after_view) {
-  std::unique_ptr<OpenedView> view;
+  std::unique_ptr<OpenedView> opened_view;
   try {
-    view = delegate_.OnCreateView(def);
+    opened_view = delegate_.OnCreateView(def);
   } catch (const std::exception&) {
     return nullptr;
   }
 
-  ViewInfo view_info{view.release(), &def};
-  views_.push_back(view_info);
+  auto& opened_view_ref = *views_.emplace_back(opened_view.release());
 
   // TODO: Process |after_view|.
 
   if (!opening_layout_)
-    AddView(*view_info.view);
+    AddView(opened_view_ref);
 
-  return view_info.view;
+  return &opened_view_ref;
 }
 
 void ViewManager::OpenPage(const Page& page) {
@@ -83,12 +91,27 @@ void ViewManager::OpenPage(const Page& page) {
 
   *current_page_ = page;
 
-  OpenLayout(*current_page_, current_page_->layout);
+  {
+    // Do not call AddView() from CreateView() and don't process focus change.
+    base::AutoReset<bool> opening_layout(&opening_layout_, true);
+
+    for (int i = 0; i < current_page_->GetWindowCount(); ++i) {
+      WindowDefinition& win = current_page_->GetWindow(i);
+
+      // create window
+      if (win.visible)
+        CreateView(win, NULL);
+    }
+
+    OpenLayout(*current_page_, current_page_->layout);
+  }
+
+  SetActiveView(GetActiveView());
 }
 
 void ViewManager::SavePage() {
-  for (auto& view_info : views_)
-    view_info.view->Save(*view_info.definition);
+  for (auto* opened_view : views_)
+    opened_view->Save();
 
   PageLayout& layout = current_page_->layout;
   layout.Clear();
@@ -102,22 +125,20 @@ void ViewManager::ClosePage() {
   base::AutoReset<bool> closing_page(&closing_page_, true);
 
   while (!views_.empty())
-    CloseView(*views_.front().view);
+    CloseView(*views_.front());
 }
 
 OpenedView* ViewManager::OpenView(const WindowDefinition& def,
                                   bool make_active,
                                   OpenedView* after_view) {
-  const WindowInfo& info = def.window_info();
-
   WindowDefinition* window_def = nullptr;
 
+  const WindowInfo& info = def.window_info();
   if (info.is_pane()) {
-    OpenedView* view = FindViewByType(info.command_id);
-    if (view) {
+    if (auto* opened_view = FindViewByType(info.command_id)) {
       if (make_active)
-        ActivateView(*view);
-      return view;
+        ActivateView(*opened_view);
+      return opened_view;
     }
 
     // If window is not found try to find stored invisible definition for

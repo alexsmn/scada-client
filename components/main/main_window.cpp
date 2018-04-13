@@ -134,11 +134,10 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
 }
 
 OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
-  for (auto& p : view_manager_->views()) {
-    OpenedView* view = p.view;
-    if (view->window_info().command_id == type &&
-        view->window_info().can_insert_item() && !view->locked())
-      return view;
+  for (auto* opened_view : view_manager_->views()) {
+    if (opened_view->window_info().command_id == type &&
+        opened_view->window_info().can_insert_item() && !opened_view->locked())
+      return opened_view;
   }
   return nullptr;
 }
@@ -150,7 +149,7 @@ OpenedView* MainWindow::OpenView(const WindowDefinition& def,
   return view_manager_->OpenView(def, make_active, after_view);
 }
 
-void MainWindow::OnViewClosed(OpenedView& view, WindowDefinition& definition) {
+void MainWindow::OnViewClosed(OpenedView& view) {
   if (&view == active_data_view_)
     SetActiveDataView(nullptr);
 
@@ -159,22 +158,22 @@ void MainWindow::OnViewClosed(OpenedView& view, WindowDefinition& definition) {
   if (view_manager_->is_closing_page())
     return;
 
-  view.Save(definition);
+  view.Save();
 
   // Don't remove window definition if window is single to allow parameter
   // storing.
   if (view.window_info().is_pane()) {
-    definition.visible = false;
+    view.window_def().visible = false;
 
   } else {
     // append trash
     auto& trash = profile_.trash;
-    trash.AddWindow(definition);
+    trash.AddWindow(view.window_def());
     while (trash.GetWindowCount() > 10)
       trash.DeleteWindow(0);
 
     auto& page = view_manager_->current_page();
-    page.DeleteWindow(page.FindWindowDef(definition));
+    page.DeleteWindow(page.FindWindowDef(view.window_def()));
   }
 }
 
@@ -203,9 +202,9 @@ OpenedView* MainWindow::GetActiveDataView() {
 }
 
 OpenedView* MainWindow::FindOpenedViewByFilePath(const base::FilePath& path) {
-  for (auto& p : view_manager_->views()) {
-    if (p.definition->path == path)
-      return p.view;
+  for (auto* opened_view : view_manager_->views()) {
+    if (opened_view->window_def().path == path)
+      return opened_view;
   }
   return nullptr;
 }
@@ -231,27 +230,27 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
       def.size = gfx::Size(window_info.cx, window_info.cy);
   }
 
-  OpenedViewContext context{this,
-                            alias_resolver_,
-                            task_manager_,
-                            method_service_,
-                            session_service_,
-                            node_management_service_,
-                            event_manager_,
-                            history_service_,
-                            monitored_item_service_,
-                            timed_data_service_,
-                            node_service_,
-                            portfolio_manager_,
-                            action_manager_,
-                            local_events_,
-                            favourites_,
-                            file_cache_,
-                            profile_,
-                            GetDialogService(),
-                            main_window_manager_};
-
-  return std::make_unique<OpenedView>(context, def);
+  return std::make_unique<OpenedView>(
+      OpenedViewContext{this,
+                        alias_resolver_,
+                        task_manager_,
+                        method_service_,
+                        session_service_,
+                        node_management_service_,
+                        event_manager_,
+                        history_service_,
+                        monitored_item_service_,
+                        timed_data_service_,
+                        node_service_,
+                        portfolio_manager_,
+                        action_manager_,
+                        local_events_,
+                        favourites_,
+                        file_cache_,
+                        profile_,
+                        GetDialogService(),
+                        main_window_manager_,
+                        def});
 }
 
 void MainWindow::OnViewTitleUpdated(OpenedView& view,

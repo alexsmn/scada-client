@@ -12,6 +12,9 @@ class Page {
  public:
   Page() : id(0) {}
 
+  Page(const Page& source);
+  Page& operator=(const Page& source);
+
   base::string16 GetTitle() const;
 
   WindowDefinition& AddWindow(const WindowDefinition& window);
@@ -35,7 +38,7 @@ class Page {
  private:
   int NewWindowId();
 
-  typedef std::vector<WindowDefinition*> Windows;
+  typedef std::vector<std::unique_ptr<WindowDefinition>> Windows;
   Windows windows_;
 };
 

@@ -290,8 +290,9 @@ void MainCommands::AddToFavourites() {
   if (!ShowAddFavouritesDialog(favourites_, title, folder_name))
     return;
 
-  WindowDefinition definition(view->window_info());
-  view->Save(definition);
+  view->Save();
+
+  auto definition = view->window_def();
   definition.title = title;
 
   const Page& folder = favourites_.GetOrAddFolder(folder_name.c_str());

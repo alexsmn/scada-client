@@ -87,23 +87,19 @@ ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
                    &ViewManagerQt::OnFocusChanged);
 }
 
-ViewManagerQt::~ViewManagerQt() {
-  // TODO: Disconnect.
-}
+ViewManagerQt::~ViewManagerQt() {}
 
 void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
-  // Do not call AddView() from CreateView().
-  base::AutoReset<bool> opening_layout(&opening_layout_, true);
   main_window_.setCentralWidget(
       OpenLayoutBlock(page, page.layout.main).release());
 
-  for (int i = 0; i < page.GetWindowCount(); ++i) {
-    WindowDefinition& win = page.GetWindow(i);
-    if (win.visible && !FindViewByID(win.id)) {
-      if (auto* opened_view = CreateView(win, nullptr))
-        AddView(*opened_view);
-    }
+  // Open windows not opended by layout.
+  for (auto* opened_view : views_) {
+    if (!IsViewAdded(*opened_view))
+      AddView(*opened_view);
   }
+
+  main_window_.restoreState(QByteArray::fromStdString(layout.blob));
 }
 
 std::unique_ptr<QTabWidget> ViewManagerQt::CreateTabBlock() {
@@ -114,12 +110,13 @@ std::unique_ptr<QTabWidget> ViewManagerQt::CreateTabBlock() {
   tabs->setProperty(sc_layoutWidgetTypeProp,
                     static_cast<int>(LayoutWidgetType::Tabs));
   auto* tabs_ptr = tabs.get();
-  QObject::connect(
-      tabs.get(), &QTabWidget::tabCloseRequested, [this, tabs_ptr](int index) {
-        auto* opened_view = FindViewByWidget(tabs_ptr->widget(index));
-        if (opened_view)
-          OnViewCloseRequested(*opened_view);
-      });
+  QObject::connect(tabs.get(), &QTabWidget::tabCloseRequested, this,
+                   [this, tabs_ptr](int index) {
+                     auto* opened_view =
+                         FindViewByWidget(tabs_ptr->widget(index));
+                     if (opened_view)
+                       CloseView(*opened_view);
+                   });
   return tabs;
 }
 
@@ -129,9 +126,7 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
   if (block.type == PageLayoutBlock::PANE) {
     std::vector<OpenedView*> tab_views;
     for (int window_id : block.wins) {
-      auto* window =
-          const_cast<WindowDefinition*>(page.FindWindowDef(window_id));
-      auto* opened_view = window ? CreateView(*window, nullptr) : nullptr;
+      auto* opened_view = FindViewByID(window_id);
       if (!opened_view)
         continue;
 
@@ -145,9 +140,13 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
       return nullptr;
 
     auto tabs = CreateTabBlock();
-    for (auto* opened_view : tab_views)
-      tabs->addTab(opened_view->view(),
-                   QString::fromStdWString(opened_view->GetWindowTitle()));
+    for (auto* opened_view : tab_views) {
+      if (!IsViewAdded(*opened_view)) {
+        tabs->addTab(opened_view->view(),
+                     QString::fromStdWString(opened_view->GetWindowTitle()));
+        added_views_.emplace_back(opened_view);
+      }
+    }
     return std::move(tabs);
 
   } else if (block.type == PageLayoutBlock::SPLIT) {
@@ -174,15 +173,15 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
 }
 
 OpenedView* ViewManagerQt::FindViewByWidget(const QWidget* widget) {
-  for (auto& p : views_) {
-    if (p.view->view() == widget)
-      return p.view;
-  }
-  return nullptr;
+  auto i = std::find_if(views_.begin(), views_.end(),
+                        [widget](OpenedView* opened_view) {
+                          return opened_view->view() == widget;
+                        });
+  return i == views_.end() ? nullptr : *i;
 }
 
 void ViewManagerQt::OnFocusChanged() {
-  SetActiveView(FindViewByWidget(QApplication::focusWidget()));
+  SetActiveView(GetActiveView());
 }
 
 void ViewManagerQt::ActivateView(OpenedView& opened_view) {
@@ -214,6 +213,10 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
   DestroyView(opened_view);
 }
 
+OpenedView* ViewManagerQt::GetActiveView() {
+  return FindViewByWidget(QApplication::focusWidget());
+}
+
 void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
                                  const base::string16& title) {
   if (auto* tabs = GetTabWidget(opened_view)) {
@@ -229,6 +232,16 @@ void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
 void ViewManagerQt::SaveLayout(PageLayout& layout) {
   if (main_window_.centralWidget())
     SaveLayoutBlock(layout.main, *main_window_.centralWidget());
+
+  for (auto* opened_view : views_) {
+    if (auto* dock = GetDockWidget(*opened_view))
+      dock->setObjectName(QString{"dock-%1"}.arg(opened_view->window_id()));
+  }
+  layout.blob = main_window_.saveState().toStdString();
+  for (auto* opened_view : views_) {
+    if (auto* dock = GetDockWidget(*opened_view))
+      dock->setObjectName({});
+  }
 }
 
 void ViewManagerQt::SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget) {
@@ -264,6 +277,7 @@ void ViewManagerQt::AddView(OpenedView& view) {
 
 void ViewManagerQt::AddDockView(OpenedView& view) {
   assert(view.view());
+  assert(!IsViewAdded(view));
 
   auto area = view.window_info().dock_bottom() ? Qt::BottomDockWidgetArea
                                                : Qt::LeftDockWidgetArea;
@@ -287,10 +301,13 @@ void ViewManagerQt::AddDockView(OpenedView& view) {
     main_window_.tabifyDockWidget(tabify_to, dock);
   else
     main_window_.addDockWidget(area, dock);
+
+  added_views_.emplace_back(&view);
 }
 
 void ViewManagerQt::AddTabView(OpenedView& view) {
   assert(view.view());
+  assert(!IsViewAdded(view));
 
   auto* tabs = active_view_ ? GetTabWidget(*active_view_) : nullptr;
   if (!tabs && main_window_.centralWidget())
@@ -300,8 +317,6 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
     main_window_.setCentralWidget(tabs);
   }
   tabs->addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
-}
 
-void ViewManagerQt::OnViewCloseRequested(OpenedView& opened_view) {
-  CloseView(opened_view);
+  added_views_.emplace_back(&view);
 }

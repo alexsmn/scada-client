@@ -38,29 +38,13 @@ void ViewManagerViews::SetViewTitle(OpenedView& view,
 }
 
 void ViewManagerViews::OpenLayout(Page& page, const PageLayout& layout) {
-  {
-    base::AutoReset<bool> opening_layout(&opening_layout_, true);
+  OpenLayoutBlock(layout.main, dock_container_->root_pane());
 
-    for (int i = 0; i < page.GetWindowCount(); ++i) {
-      WindowDefinition& win = page.GetWindow(i);
-
-      // create window
-      if (win.visible)
-        CreateView(win, NULL);
-    }
-
-    OpenLayoutBlock(layout.main, dock_container_->root_pane());
-
-    // Open windows not opended by layout.
-    for (Views::iterator i = views_.begin(); i != views_.end(); ++i) {
-      OpenedView& view = *i->view;
-      if (view.view() && !view.view()->parent())
-        AddView(view);
-    }
+  // Open windows not opended by layout.
+  for (auto* opened_view : views_) {
+    if (!IsViewAdded(*opened_view))
+      AddView(*opened_view);
   }
-
-  OpenedView* view = FindViewByViewsView(focus_manager_->GetFocusedView());
-  SetActiveView(view);
 }
 
 void ViewManagerViews::OpenLayoutBlock(const PageLayoutBlock& block,
@@ -78,10 +62,11 @@ void ViewManagerViews::OpenLayoutBlock(const PageLayoutBlock& block,
   } else if (block.type == PageLayoutBlock::PANE) {
     for (size_t i = 0; i < block.wins.size(); ++i) {
       OpenedView* view = FindViewByID(block.wins[i]);
-      if (view && !view->view()->parent()) {
+      if (view && !IsViewAdded(*view)) {
         base::string16 title = view->GetWindowTitle();
         dock_container_->AddView(pane, views::DOCK_CENTER, *view->view(), title,
                                  gfx::Image() /*view->image()*/, 0);
+        added_views_.emplace_back(view);
       }
     }
 
@@ -109,8 +94,7 @@ void ViewManagerViews::SaveLayoutBlock(PageLayoutBlock& block,
   } else {
     views::TabView& tab_view = pane.tab_view();
     for (int i = 0; i < tab_view.tab_count(); ++i) {
-      OpenedView* view = FindViewByViewsView(&tab_view.GetTabView(i));
-      if (view)
+      if (OpenedView* view = FindViewByViewsView(&tab_view.GetTabView(i)))
         block.add(view->window_id());
     }
   }
@@ -127,11 +111,12 @@ void ViewManagerViews::ActivateView(OpenedView& view) {
 OpenedView* ViewManagerViews::FindViewByViewsView(views::View* view) {
   for (; view; view = view->parent()) {
     // Check this view is top level view.
-    for (Views::const_iterator i = views_.begin(); i != views_.end(); ++i) {
-      OpenedView* v = i->view;
-      if (v->view() == view)
-        return v;
-    }
+    auto i = std::find_if(views_.begin(), views_.end(),
+                          [view](OpenedView* opened_view) {
+                            return opened_view->view() == view;
+                          });
+    if (i != views_.end())
+      return *i;
   }
   return NULL;
 }
@@ -172,6 +157,7 @@ void ViewManagerViews::OnShowViewTabContextMenu(views::View& view,
 
 void ViewManagerViews::AddView(OpenedView& view) {
   assert(view.view());
+  assert(!IsViewAdded(view));
 
   views::MultiSplitPane* pane = NULL;
   views::ViewSide side = views::DOCK_CENTER;
@@ -196,6 +182,8 @@ void ViewManagerViews::AddView(OpenedView& view) {
 
   dock_container_->AddView(*pane, side, *view.view(), view.GetWindowTitle(),
                            gfx::Image() /*view.image()*/, percent_size);
+
+  added_views_.emplace_back(&view);
 }
 
 void ViewManagerViews::CloseView(OpenedView& view) {
@@ -208,12 +196,15 @@ void ViewManagerViews::OnFocusChanged(views::View* focused_before,
                                       views::View* focused_now) {
   if (opening_layout_)
     return;
-  OpenedView* view = FindViewByViewsView(focused_now);
-  SetActiveView(view);
+  SetActiveView(GetActiveView());
 }
 
 void ViewManagerViews::OnViewClosed(views::View& view) {
   OpenedView* v = FindViewByViewsView(&view);
   if (v)
     CloseView(*v);
+}
+
+OpenedView* ViewManagerViews::GetActiveView() {
+  return FindViewByViewsView(focus_manager_->GetFocusedView());
 }

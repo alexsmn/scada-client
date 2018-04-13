@@ -114,33 +114,19 @@ void AwaitNode(const NodeRef& node, const std::function<void()>& callback) {
 
 }  // namespace
 
-OpenedView::OpenedView(const OpenedViewContext& context,
-                       const WindowDefinition& definition)
-    : OpenedViewContext{context},
-      window_info_{definition.window_info()},
-      window_id_{definition.id} {
-  ControllerContext controller_context{
-      *this,
-      alias_resolver_,
-      task_manager_,
-      session_service_,
-      event_manager_,
-      history_service_,
-      monitored_item_service_,
-      timed_data_service_,
-      node_service_,
-      portfolio_manager_,
-      local_events_,
-      favourites_,
-      file_cache_,
-      profile_,
-      dialog_service_,
-  };
-  controller_ = CreateController(window_info_.command_id, controller_context);
+OpenedView::OpenedView(OpenedViewContext&& context)
+    : OpenedViewContext{std::move(context)} {
+  controller_ = CreateController(
+      window_def_.window_info().command_id,
+      ControllerContext{*this, alias_resolver_, task_manager_, session_service_,
+                        event_manager_, history_service_,
+                        monitored_item_service_, timed_data_service_,
+                        node_service_, portfolio_manager_, local_events_,
+                        favourites_, file_cache_, profile_, dialog_service_});
   if (!controller_)
     throw std::runtime_error{"View type not found"};
 
-  title_ = user_title_ = definition.title;
+  title_ = user_title_ = window_def_.title;
 
   selection_commands_ =
       std::make_unique<SelectionCommands>(SelectionCommandsContext{
@@ -150,7 +136,7 @@ OpenedView::OpenedView(const OpenedViewContext& context,
           main_window_manager_});
   selection_commands_->set_selection(&controller_->selection());
 
-  auto* view = controller_->Init(definition);
+  auto* view = controller_->Init(window_def_);
   if (!view)
     throw std::runtime_error{"Can't create widget"};
   view_ = view;
@@ -436,12 +422,10 @@ void OpenedView::SetTitle(const base::StringPiece16& title) {
   }
 }
 
-void OpenedView::Save(WindowDefinition& definition) {
-  assert(&window_info() == &definition.window_info());
-
-  definition.Clear();
-  definition.title = user_title_;
-  controller_->Save(definition);
+void OpenedView::Save() {
+  window_def_.Clear();
+  window_def_.title = user_title_;
+  controller_->Save(window_def_);
 
   SetModified(false);
 }

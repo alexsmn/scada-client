@@ -86,8 +86,7 @@ class MainWindow : protected MainWindowContext,
   // ViewManagerDelegate
   virtual std::unique_ptr<OpenedView> OnCreateView(
       WindowDefinition& def) override;
-  virtual void OnViewClosed(OpenedView& view,
-                            WindowDefinition& definition) override;
+  virtual void OnViewClosed(OpenedView& view) override;
   virtual void OnActiveViewChanged(OpenedView* view) override;
 
   std::unique_ptr<MainCommands> main_commands_;

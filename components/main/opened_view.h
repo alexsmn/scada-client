@@ -11,6 +11,7 @@
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "core/status.h"
+#include "window_definition.h"
 
 #if defined(UI_VIEWS)
 #include "ui/gfx/image/image.h"
@@ -68,6 +69,7 @@ struct OpenedViewContext {
   Profile& profile_;
   DialogService& dialog_service_;
   MainWindowManager& main_window_manager_;
+  WindowDefinition& window_def_;
 };
 
 class OpenedView : private OpenedViewContext,
@@ -78,13 +80,13 @@ class OpenedView : private OpenedViewContext,
 #endif
                    private ControllerDelegate {
  public:
-  OpenedView(const OpenedViewContext& context,
-             const WindowDefinition& definition);
+  explicit OpenedView(OpenedViewContext&& context);
   virtual ~OpenedView();
 
   Controller& controller() { return *controller_; }
-  const WindowInfo& window_info() const { return window_info_; }
-  int window_id() const { return window_id_; }
+  const WindowInfo& window_info() const { return window_def_.window_info(); }
+  WindowDefinition& window_def() { return window_def_; }
+  int window_id() const { return window_def_.id; }
   MainWindow& main_window() const {
     assert(main_window_);
     return *main_window_;
@@ -103,7 +105,7 @@ class OpenedView : private OpenedViewContext,
   void SetSelection(const scada::NodeId& item_id);
   ContentsModel* GetContentsModel();
   void SetUserTitle(const base::StringPiece16& title);
-  void Save(WindowDefinition& definition);
+  void Save();
   base::string16 GetWindowTitle() const;
   void Close();
 
@@ -151,9 +153,6 @@ class OpenedView : private OpenedViewContext,
   virtual void RemoveContentsObserver(ContentsObserver& observer) override;
 
   std::unique_ptr<Controller> controller_;
-
-  const WindowInfo& window_info_;
-  int window_id_;
 
   std::unique_ptr<SelectionCommands> selection_commands_;
   bool modified_ = false;

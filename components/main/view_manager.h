@@ -19,15 +19,9 @@ class ViewManager {
   ViewManager(const ViewManager&) = delete;
   ViewManager& operator=(const ViewManager&) = delete;
 
-  // WARNING: List allows deletion without iterator corruption.
-  struct ViewInfo {
-    OpenedView* view;
-    WindowDefinition* definition;
-  };
-  typedef std::list<ViewInfo> Views;
-
+  // WARNING: List is required for deletion during iterator.
+  typedef std::list<OpenedView*> Views;
   const Views& views() const { return views_; }
-  OpenedView* FindViewByID(int id) const;
   OpenedView* FindViewByType(unsigned type) const;
 
   OpenedView* CreateView(WindowDefinition& def, OpenedView* after_view);
@@ -35,14 +29,13 @@ class ViewManager {
                        bool make_active,
                        OpenedView* after_view);
 
-  OpenedView* active_view() const { return active_view_; }
-
   Page& current_page() const { return *current_page_; }
   bool is_closing_page() const { return closing_page_; }
   void OpenPage(const Page& page);
   void SavePage();
   void ClosePage();
 
+  virtual OpenedView* GetActiveView() = 0;
   virtual void ActivateView(OpenedView& view) = 0;
   virtual void CloseView(OpenedView& view) = 0;
 
@@ -54,6 +47,10 @@ class ViewManager {
   void SetActiveView(OpenedView* view);
   void DestroyView(OpenedView& view);
 
+  OpenedView* FindViewByID(int id) const;
+
+  bool IsViewAdded(OpenedView& opened_view) const;
+
   virtual void OpenLayout(Page& page, const PageLayout& layout) = 0;
   virtual void SaveLayout(PageLayout& layout) = 0;
 
@@ -62,6 +59,7 @@ class ViewManager {
   ViewManagerDelegate& delegate_;
 
   Views views_;
+  Views added_views_;
 
   OpenedView* active_view_ = nullptr;
 

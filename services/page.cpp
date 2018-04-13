@@ -1,5 +1,6 @@
 ﻿#include "services/page.h"
 
+#include "base/base64.h"
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/stl_util.h"
@@ -11,6 +12,8 @@
 #include "window_info.h"
 
 #define MAX_TITLE 30
+
+namespace {
 
 static const base::char16 kPageFileExtension[] = L"page";
 
@@ -49,9 +52,7 @@ void SaveWinItems(const WindowItems& items, xml::Node& elem) {
   }
 }
 
-// Page
-
-static void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
+void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
   assert(block.type == PageLayoutBlock::PANE);
   assert(block.wins.empty());
   assert(!block.left && !block.right);
@@ -90,6 +91,55 @@ static void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
 
 const char* dock_names[4] = {"DockBottom", "DockTop", "DockLeft", "DockRight"};
 
+void SaveLayoutBlock(const PageLayoutBlock& block, xml::Node& node) {
+  if (block.type == PageLayoutBlock::SPLIT) {
+    xml::Node& node2 = node.AddElement("Split");
+    node2.SetAttribute("orientation", block.horz ? L"Horizontal" : L"Vertical");
+    node2.SetAttribute("position", WideFormat(block.pos).c_str());
+    SaveLayoutBlock(*block.left, node2.AddElement("Pane1"));
+    SaveLayoutBlock(*block.right, node2.AddElement("Pane2"));
+
+  } else {
+    for (int i = 0; i < (int)block.wins.size(); ++i) {
+      int id = block.wins[i];
+      xml::Node& node2 = node.AddElement("Window");
+      node2.SetAttribute("id", WideFormat(id).c_str());
+    }
+
+    if (block.active_window != -1)
+      node.SetAttribute("active", WideFormat(block.active_window).c_str());
+  }
+
+  if (block.central)
+    node.SetAttribute("central", WideFormat(true));
+}
+
+}  // namespace
+
+// Page
+
+Page::Page(const Page& source)
+    : id{source.id}, title{source.title}, layout{source.layout} {
+  windows_.reserve(source.windows_.size());
+  for (auto& w : source.windows_)
+    windows_.emplace_back(std::make_unique<WindowDefinition>(*w));
+}
+
+Page& Page::operator=(const Page& source) {
+  if (&source != this) {
+    id = source.id;
+    title = source.title;
+    layout = source.layout;
+
+    windows_.clear();
+    windows_.reserve(source.windows_.size());
+    for (auto& w : source.windows_)
+      windows_.emplace_back(std::make_unique<WindowDefinition>(*w));
+  }
+
+  return *this;
+}
+
 void Page::Load(const xml::Node& node) {
   std::wstring sid = node.GetAttribute("id");
   if (!sid.empty())
@@ -125,7 +175,7 @@ void Page::Load(const xml::Node& node) {
         continue;
       }
 
-      WindowDefinition* w = new WindowDefinition(*info);
+      auto w = std::make_unique<WindowDefinition>(*info);
       w->id = ParseWithDefault<int>(win.GetAttribute("id"), 0);
       if (info->flags & WIN_SING)
         w->visible = ParseWithDefault(win.GetAttribute("visible"), true);
@@ -139,7 +189,7 @@ void Page::Load(const xml::Node& node) {
       JSONStringValueDeserializer serializer(data);
       w->set_storage(serializer.Deserialize(NULL, NULL));
 
-      windows_.push_back(w);
+      windows_.emplace_back(std::move(w));
     }
   }
 
@@ -158,43 +208,23 @@ void Page::Load(const xml::Node& node) {
   // layout
   const xml::Node* layoute = node.select("Layout");
   if (layoute) {
-    const xml::Node* maine = layoute->select("Center");
-    if (maine)
+    if (const xml::Node* maine = layoute->select("Center"))
       LoadLayoutBlock(layout.main, *maine);
     for (int i = 0; i < 4; i++) {
       const xml::Node* docke = layoute->select(dock_names[i]);
       if (!docke)
         continue;
-      PageLayout::Dock& dock = layout.dock[i];
+      auto& dock = layout.dock[i];
       dock.size = ParseWithDefault<int>(docke->GetAttribute("size").c_str(), 0);
       dock.place =
           ParseWithDefault<int>(docke->GetAttribute("place").c_str(), 0);
       LoadLayoutBlock(dock, *docke);
     }
-  }
-}
-
-static void SaveLayoutBlock(const PageLayoutBlock& block, xml::Node& node) {
-  if (block.type == PageLayoutBlock::SPLIT) {
-    xml::Node& node2 = node.AddElement("Split");
-    node2.SetAttribute("orientation", block.horz ? L"Horizontal" : L"Vertical");
-    node2.SetAttribute("position", WideFormat(block.pos).c_str());
-    SaveLayoutBlock(*block.left, node2.AddElement("Pane1"));
-    SaveLayoutBlock(*block.right, node2.AddElement("Pane2"));
-
-  } else {
-    for (int i = 0; i < (int)block.wins.size(); ++i) {
-      int id = block.wins[i];
-      xml::Node& node2 = node.AddElement("Window");
-      node2.SetAttribute("id", WideFormat(id).c_str());
+    if (auto* blobe = layoute->select("Blob")) {
+      std::string encoded_blob = base::SysWideToNativeMB(blobe->get_text());
+      base::Base64Decode(encoded_blob, &layout.blob);
     }
-
-    if (block.active_window != -1)
-      node.SetAttribute("active", WideFormat(block.active_window).c_str());
   }
-
-  if (block.central)
-    node.SetAttribute("central", WideFormat(true));
 }
 
 void Page::Save(xml::Node& node, bool current) const {
@@ -247,6 +277,12 @@ void Page::Save(xml::Node& node, bool current) const {
     docke.SetAttribute("place", WideFormat(dock.place));
     SaveLayoutBlock(dock, docke);
   }
+  if (!layout.blob.empty()) {
+    std::string encoded_blob;
+    base::Base64Encode(layout.blob, &encoded_blob);
+    node.AddElement("Blob").set_text(
+        base::SysNativeMBToWide(encoded_blob).c_str());
+  }
 }
 
 base::string16 Page::GetTitle() const {
@@ -282,10 +318,9 @@ int Page::NewWindowId() {
 }
 
 WindowDefinition& Page::AddWindow(const WindowDefinition& window) {
-  WindowDefinition* w = new WindowDefinition(window);
+  auto w = std::make_unique<WindowDefinition>(window);
   w->id = NewWindowId();
-  windows_.push_back(w);
-  return *w;
+  return *windows_.emplace_back(std::move(w));
 }
 
 WindowDefinition* Page::FindWindowDef(int id) {
@@ -302,17 +337,16 @@ const WindowDefinition* Page::FindWindowDef(int id) const {
 }
 
 int Page::FindWindowDef(const WindowDefinition& window) const {
-  Windows::const_iterator i =
-      std::find(windows_.begin(), windows_.end(), &window);
-  return (i != windows_.end()) ? i - windows_.begin() : -1;
+  auto i = std::find_if(windows_.begin(), windows_.end(),
+                        [&window](auto& p) { return p.get() == &window; });
+  return i != windows_.end() ? i - windows_.begin() : -1;
 }
 
 void Page::DeleteWindow(int index) {
   DCHECK_GE(index, 0);
-  delete windows_[index];
   windows_.erase(windows_.begin() + index);
 }
 
 void Page::Clear() {
-  base::STLDeleteContainerPointers(windows_.begin(), windows_.end());
+  windows_.clear();
 }

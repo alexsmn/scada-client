@@ -15,13 +15,10 @@ add_definitions(
 file(GLOB CORE_SOURCES
   "base/*.cpp"
   "base/*.h"
-  "services/alias_service.cpp"
-  "services/alias_service.h"
-  "services/excel_configuration_commands.cpp"
-  "services/excel_configuration_commands.h"
-  "services/import_export.cpp"
-  "services/import_export.h"
+  "services/*.cpp"
+  "services/*.h"
 )
+
 list(APPEND CORE_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/components/configuration_tree/configuration_tree_model.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/configuration_tree/configuration_tree_model.h"
@@ -41,8 +38,7 @@ list(APPEND CORE_SOURCES
 
 file(GLOB CORE_UT_SOURCES
   "base/*_unittest.*"
-  "services/alias_service_unittest.cpp"
-  "services/excel_configuration_commands_unittest.cpp"
+  "services/*_unittest.*"
 )
 
 list(REMOVE_ITEM CORE_SOURCES ${CORE_UT_SOURCES})

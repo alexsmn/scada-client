@@ -15,11 +15,13 @@
 #include "window_info.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QDockWidget>
 #include <QEvent>
 #include <QLayout>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QStyleFactory>
 #include <QTabWidget>
 #include <QToolBar>
 #include <QToolButton>
@@ -43,6 +45,8 @@ QPixmap LoadPixmap(unsigned resource_id) {
 
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
+  setWindowTitle(tr("Telecontrol SCADA Client"));
+
   auto& prefs = GetPrefs();
   setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
               prefs.bounds.height());
@@ -66,35 +70,34 @@ MainWindowQt::~MainWindowQt() {
 void MainWindowQt::UpdateTitle() {}
 
 void MainWindowQt::CreateToolbar() {
-  context_menu_ = new QMenu(this);
-  context_menu_->setTitle(tr("Context"));
+  context_menu_ = new QMenu(tr("Context"), this);
 
-  display_menu_ = new QMenu(this);
-  display_menu_->setTitle(tr("Display"));
+  display_menu_ = new QMenu(tr("Display"), this);
   FillDisplayMenu();
 
-  auto* graph_menu = new QMenu(this);
-  graph_menu->setTitle(tr("Graph"));
+  auto* graph_menu = new QMenu(tr("Graph"), this);
+  auto* table_menu = new QMenu(tr("Table"), this);
+  auto* rest_menu = new QMenu(tr("More"), this);
+  auto* page_menu = new QMenu(tr("Page"), this);
 
-  auto* table_menu = new QMenu(this);
-  table_menu->setTitle(tr("Table"));
+  auto* settings_menu = new QMenu(tr("Settings"), this);
+  auto* style_menu = new QMenu(tr("Style"), this);
+  for (auto& style : QStyleFactory::keys())
+    style_menu->addAction(style,
+                          [this, style] { QApplication::setStyle(style); });
+  settings_menu->addMenu(style_menu);
 
-  auto* rest_menu = new QMenu(this);
-  rest_menu->setTitle(tr("More"));
-
-  auto* page_menu = new QMenu(this);
-  page_menu->setTitle(tr("Page"));
-
-  setMenuBar(new QMenuBar);
-  menuBar()->addMenu(display_menu_);
-  menuBar()->addMenu(graph_menu);
-  menuBar()->addMenu(table_menu);
-  menuBar()->addMenu(context_menu_);
-  menuBar()->addMenu(rest_menu);
-  menuBar()->addSeparator();
-  menuBar()->addMenu(page_menu);
-  menuBar()->addMenu(tr("Settings"));
-  menuBar()->addMenu(tr("Help"));
+  auto* menu_bar = new QMenuBar;
+  setMenuBar(menu_bar);
+  menu_bar->addMenu(display_menu_);
+  menu_bar->addMenu(graph_menu);
+  menu_bar->addMenu(table_menu);
+  menu_bar->addMenu(context_menu_);
+  menu_bar->addMenu(rest_menu);
+  menu_bar->addSeparator();
+  menu_bar->addMenu(page_menu);
+  menu_bar->addMenu(settings_menu);
+  menu_bar->addMenu(tr("Help"));
 
   setStatusBar(new QStatusBar);
 

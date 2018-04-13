@@ -16,6 +16,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
   ~ViewManagerQt();
 
   // ViewManager
+  virtual OpenedView* GetActiveView() override;
   virtual void SetViewTitle(OpenedView& view,
                             const base::string16& title) override;
   virtual void ActivateView(OpenedView& view) override;
@@ -40,7 +41,6 @@ class ViewManagerQt final : public QObject, public ViewManager {
   OpenedView* FindViewByWidget(const QWidget* widget);
 
   void OnFocusChanged();
-  void OnViewCloseRequested(OpenedView& opened_view);
 
   QMainWindow& main_window_;
 };
