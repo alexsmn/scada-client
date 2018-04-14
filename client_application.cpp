@@ -20,7 +20,7 @@
 #include "components/vidicon_display/vidicon_client.h"
 #include "core/configuration_impl.h"
 #include "core/generic_node_factory.h"
-#include "core/types.h"
+#include "core/scada_address_space.h"
 #include "net/transport_factory_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
