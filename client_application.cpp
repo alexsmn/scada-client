@@ -8,8 +8,8 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/dump.h"
 #include "client_paths.h"
-#include "common/address_space_fetcher.h"
-#include "common/address_space_node_service.h"
+#include "common/address_space/address_space_fetcher.h"
+#include "common/address_space/address_space_node_service.h"
 #include "common/common_paths.h"
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
@@ -18,9 +18,9 @@
 #include "components/main/main_window_manager.h"
 #include "components/modus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
-#include "core/configuration_impl.h"
-#include "core/generic_node_factory.h"
-#include "core/scada_address_space.h"
+#include "address_space/address_space_impl.h"
+#include "address_space/generic_node_factory.h"
+#include "address_space/scada_address_space.h"
 #include "net/transport_factory_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
@@ -179,10 +179,10 @@ std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
 
 std::shared_ptr<NodeService>
 ClientApplication::CreateAddressSpaceNodeService() {
-  class ClientAddressSpace : public ConfigurationImpl {
+  class ClientAddressSpace : public AddressSpaceImpl {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : ConfigurationImpl{logger},
+        : AddressSpaceImpl{logger},
           node_factory{logger, *this} {
       CreateScadaAddressSpace(*this, node_factory);
     }

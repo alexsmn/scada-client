@@ -1,6 +1,6 @@
 #include "services/alias_service.h"
 
-#include "common/test/address_space_node_service_test_context.h"
+#include "common/address_space/test/address_space_node_service_test_context.h"
 
 #include <gmock/gmock.h>
 

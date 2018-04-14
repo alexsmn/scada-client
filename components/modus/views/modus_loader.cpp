@@ -7,7 +7,7 @@
 #include "components/modus/views/modus_element.h"
 #include "components/modus/views/modus_object.h"
 #include "components/modus/views/modus_view.h"
-#include "core/configuration_utils.h"
+#include "address_space/address_space_util.h"
 #include "services/file_cache_updater.h"
 #include "views/client_utils_views.h"
 #include "window_info.h"
