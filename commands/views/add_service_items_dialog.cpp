@@ -89,7 +89,7 @@ void AddServiceItemsDialog::OnOK() {
             : id::AnalogItemType;
 
     scada::NodeProperties properties;
-    properties.emplace_back(kObjectInput1PropTypeId, std::move(formula));
+    properties.emplace_back(id::DataItemType_Input1, std::move(formula));
     if (type_definition_id == id::AnalogItemType)
       properties.emplace_back(id::AnalogItemType_DisplayFormat, "0.");
 

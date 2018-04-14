@@ -45,9 +45,9 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
       if (type_id1 != type_id2)
         return type_id1 < type_id2;
       auto channel1 =
-          item1[kObjectInput1PropTypeId].value().get_or(std::string{});
+          item1[id::DataItemType_Input1].value().get_or(std::string{});
       auto channel2 =
-          item2[kObjectInput1PropTypeId].value().get_or(std::string{});
+          item2[id::DataItemType_Input1].value().get_or(std::string{});
       return channel1 < channel2;
     }
 
@@ -102,8 +102,8 @@ void TableModel::GetCellEx(CellEx& cell) {
           int color_index = -1;
           bool bool_value;
           if (value.value.get(bool_value) && params) {
-            auto pid = bool_value ? kTsFormatCloseColorPropTypeId
-                                  : kTsFormatOpenColorPropTypeId;
+            auto pid = bool_value ? id::TsFormatType_CloseColor
+                                  : id::TsFormatType_OpenColor;
             color_index = params[pid].value().get_or(-1);
           }
           if (color_index >= 0 && color_index < palette::GetColorCount())

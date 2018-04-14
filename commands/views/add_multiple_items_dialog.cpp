@@ -137,7 +137,7 @@ void AddMultipleItemsDialog::OnOK() {
     task_manager_.PostInsertTask(
         scada::NodeId(), group_id_, type_node_id,
         scada::NodeAttributes().set_display_name(std::move(display_name)),
-        {{kObjectInput1PropTypeId, std::move(path)}});
+        {{id::DataItemType_Input1, std::move(path)}});
   }
 
   __super::OnOK();

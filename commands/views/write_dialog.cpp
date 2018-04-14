@@ -117,7 +117,7 @@ void WriteDialog::OnInitDialog() {
 
   auto condition =
       node
-          ? node[kObjectOutputConditionPropTypeId].value().get_or(std::string())
+          ? node[id::DataItemType_OutputCondition].value().get_or(std::string())
           : std::string();
   has_condition_ = !condition.empty();
   if (has_condition_)
@@ -148,7 +148,7 @@ void WriteDialog::OnOK() {
   if (manual_) {
     bool lock = wnd_lock.GetCheck() == BST_CHECKED;
 
-    spec_.Call(kObjectWriteManualCommandId, {write_value_, lock}, {},
+    spec_.Call(id::DataItemType_WriteManual, {write_value_, lock}, {},
                [weak_ptr](const scada::Status& status) {
                  base::ThreadTaskRunnerHandle::Get()->PostTask(
                      FROM_HERE, base::Bind(&WriteDialog::OnWriteComplete,

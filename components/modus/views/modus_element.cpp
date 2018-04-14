@@ -104,10 +104,10 @@ std::vector<base::string16> GetStateStrings(SDECore::IParams& params,
 
 Limits GetLimits(const NodeRef& node) {
   return {
-      node[kTitLimitLoLoPropTypeId].value().get_or(kNoLimit),
-      node[kTitLimitLoPropTypeId].value().get_or(kNoLimit),
-      node[kTitLimitHiPropTypeId].value().get_or(kNoLimit),
-      node[kTitLimitHiHiPropTypeId].value().get_or(kNoLimit),
+      node[id::AnalogItemType_LimitLoLo].value().get_or(kNoLimit),
+      node[id::AnalogItemType_LimitLo].value().get_or(kNoLimit),
+      node[id::AnalogItemType_LimitHi].value().get_or(kNoLimit),
+      node[id::AnalogItemType_LimitHiHi].value().get_or(kNoLimit),
   };
 }
 

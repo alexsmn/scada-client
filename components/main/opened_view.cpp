@@ -361,7 +361,7 @@ void OpenedView::CreateRecord(const scada::NodeId& type_node_id, int tag) {
       ts.SetParam(net::TransportString::kParamName, "COM1");
     }
     ts.SetParam(net::TransportString::kParamActive);
-    properties.emplace_back(kLinkTransportStringPropTypeId, ts.ToString());
+    properties.emplace_back(id::LinkType_Transport, ts.ToString());
   }
 
   auto dispay_name = attributes.display_name;

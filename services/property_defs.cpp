@@ -90,7 +90,7 @@ const TransportPropertyDefinition kLinkTransportPropDef;
 // TODO: Avoid property definitions.
 std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     // Default
-    {kObjectSeverityPropTypeId, &kIntPropDef},
+    {id::DataItemType_Severity, &kIntPropDef},
     {id::DeviceType_Disabled, &kBoolPropDef},
     {id::HasSimulationSignal, &kRefPropDef},
     // DataGroup
@@ -98,97 +98,97 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     // DataItem
     {id::DataItemType_Simulated, &kBoolPropDef},
     {id::DataItemType_Alias, &kStringPropDef},
-    {kObjectInput1PropTypeId, &kObjectInput1PropDef},
-    {kObjectInput2PropTypeId, &kObjectInput2PropDef},
-    {kObjectOutputPropTypeId, &kObjectOutputPropDef},
-    {kObjectOutputConditionPropTypeId, &kStringPropDef},
-    {kTsInvertedPropTypeId, &kBoolPropDef},
+    {id::DataItemType_Input1, &kObjectInput1PropDef},
+    {id::DataItemType_Input2, &kObjectInput2PropDef},
+    {id::DataItemType_Output, &kObjectOutputPropDef},
+    {id::DataItemType_OutputCondition, &kStringPropDef},
+    {id::DiscreteItemType_Inversion, &kBoolPropDef},
     {id::AnalogItemType_DisplayFormat, &kStringPropDef},     // TODO: Editor
     {id::AnalogItemType_EngineeringUnits, &kStringPropDef},  // TODO: Combo
     {id::AnalogItemType_Aperture, &kDoublePropDef},
     {id::AnalogItemType_Deadband, &kDoublePropDef},
     {id::HasTsFormat, &kRefPropDef},
-    {kTitConversionPropTypeId, &kEnumPropDef},  // TODO: Enum
-    {kTitEuLoPropTypeId, &kDoublePropDef},
-    {kTitEuHiPropTypeId, &kDoublePropDef},
-    {kTitIrLoPropTypeId, &kDoublePropDef},
-    {kTitIrHiPropTypeId, &kDoublePropDef},
-    {kTitLimitLoLoPropTypeId, &kDoublePropDef},
-    {kTitLimitLoPropTypeId, &kDoublePropDef},
-    {kTitLimitHiPropTypeId, &kDoublePropDef},
-    {kTitLimitHiHiPropTypeId, &kDoublePropDef},
-    {kObjectStalePeriodTypeId, &kIntPropDef},
-    {kObjectHistoricalDbPropTypeId, &kRefPropDef},
-    {kTitClampingPropTypeId, &kEnumPropDef},  // TODO: Enum
+    {id::AnalogItemType_Conversion, &kEnumPropDef},  // TODO: Enum
+    {id::AnalogItemType_EuLo, &kDoublePropDef},
+    {id::AnalogItemType_EuHi, &kDoublePropDef},
+    {id::AnalogItemType_IrLo, &kDoublePropDef},
+    {id::AnalogItemType_IrHi, &kDoublePropDef},
+    {id::AnalogItemType_LimitLoLo, &kDoublePropDef},
+    {id::AnalogItemType_LimitLo, &kDoublePropDef},
+    {id::AnalogItemType_LimitHi, &kDoublePropDef},
+    {id::AnalogItemType_LimitHiHi, &kDoublePropDef},
+    {id::DataItemType_StalePeriod, &kIntPropDef},
+    {id::HasHistoricalDatabase, &kRefPropDef},
+    {id::AnalogItemType_Clamping, &kEnumPropDef},  // TODO: Enum
     // Link
-    {kLinkTransportStringPropTypeId, &kLinkTransportPropDef},
-    {kIec60870LinkSendQueueSizePropTypeId, &kIntPropDef},
-    {kIec60870LinkReceiveQueueSizePropTypeId, &kIntPropDef},
-    {kIec60870LinkConfirmationTimeoutPropTypeId, &kIntPropDef},  // time delta
-    {kIec60870LinkTerminationTimeoutProtocolPropTypeId,
+    {id::LinkType_Transport, &kLinkTransportPropDef},
+    {id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
+    {id::Iec60870LinkType_ReceiveQueueSize, &kIntPropDef},
+    {id::Iec60870LinkType_ConfirmationTimeout, &kIntPropDef},  // time delta
+    {id::Iec60870LinkType_TerminationTimeout,
      &kIntPropDef},  // time delta
     // IEC-60870 Link
     {id::Iec60870LinkType_Protocol, &kIntPropDef},  // TODO: Enum
-    {kIec60870LinkModePropTypeId, &kIntPropDef},    // TODO: Enum
-    {kIec60870LinkT0PropTypeId, &kIntPropDef},
-    {kIec60870LinkDeviceAddressSizePropTypeId, &kIntPropDef},
-    {kIec60870LinkCotSizePropTypeId, &kIntPropDef},
-    {kIec60870LinkInfoAddressSizePropTypeId, &kIntPropDef},
-    {kIec60870LinkCollectDataPropTypeId, &kBoolPropDef},
-    {kIec60870LinkSendRetriesPropTypeId, &kIntPropDef},
-    {kIec60870LinkCrcProtectionPropTypeId, &kBoolPropDef},
-    {kIec60870LinkSendTimeoutPropTypeId, &kIntPropDef},
-    {kIec60870LinkReceiveTimeoutPropTypeId, &kIntPropDef},
-    {kIec60870LinkIdleTimeoutPropTypeId, &kIntPropDef},
-    {kIec60870LinkAnonymousPropTypeId, &kBoolPropDef},
+    {id::Iec60870LinkType_Mode, &kIntPropDef},    // TODO: Enum
+    {id::Iec60870LinkType_ConnectTimeout, &kIntPropDef},
+    {id::Iec60870LinkType_DeviceAddressSize, &kIntPropDef},
+    {id::Iec60870LinkType_COTSize, &kIntPropDef},
+    {id::Iec60870LinkType_InfoAddressSize, &kIntPropDef},
+    {id::Iec60870LinkType_DataCollection, &kBoolPropDef},
+    {id::Iec60870LinkType_SendRetryCount, &kIntPropDef},
+    {id::Iec60870LinkType_CRCProtection, &kBoolPropDef},
+    {id::Iec60870LinkType_SendTimeout, &kIntPropDef},
+    {id::Iec60870LinkType_ReceiveTimeout, &kIntPropDef},
+    {id::Iec60870LinkType_IdleTimeout, &kIntPropDef},
+    {id::Iec60870LinkType_AnonymousMode, &kBoolPropDef},
     // IEC-60870 Device
-    {kIec60870DeviceAddressPropTypeId, &kIntPropDef},
-    {kIec60870DeviceLinkAddressPropTypeId, &kIntPropDef},
-    {kIec60870DeviceInterrogateOnStartPropTypeId, &kBoolPropDef},
-    {kIec60870DeviceInterrogationPeriodPropTypeId, &kIntPropDef},  // time delta
-    {kIec60870DeviceSynchronizeClockOnStartPropTypeId, &kBoolPropDef},
-    {kIec60870DeviceClockSynchronizationPeriodPropTypeId, &kIntPropDef},
+    {id::Iec60870DeviceType_Address, &kIntPropDef},
+    {id::Iec60870DeviceType_LinkAddress, &kIntPropDef},
+    {id::Iec60870DeviceType_StartupInterrogation, &kBoolPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriod, &kIntPropDef},  // time delta
+    {id::Iec60870DeviceType_StartupClockSync, &kBoolPropDef},
+    {id::Iec60870DeviceType_ClockSyncPeriod, &kIntPropDef},
     {id::Iec60870DeviceType_UtcTime, &kBoolPropDef},
-    {kIec60870DeviceGroup1PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup2PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup3PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup4PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup5PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup6PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup7PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup8PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup9PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup10PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup11PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup12PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup13PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup14PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup15PollPeriodPropTypeId, &kIntPropDef},
-    {kIec60870DeviceGroup16PollPeriodPropTypeId, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup1, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup2, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup3, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup4, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup5, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup6, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup7, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup8, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup9, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup10, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup11, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup12, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup13, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup14, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup15, &kIntPropDef},
+    {id::Iec60870DeviceType_InterrogationPeriodGroup16, &kIntPropDef},
     // Modbus Link
-    {kModbusPortModePropTypeId, &kIntPropDef},  // TODO: Enum
+    {id::ModbusLinkType_Protocol, &kIntPropDef},  // TODO: Enum
     // Modbus Dev
-    {kModbusDeviceAddressPropTypeId, &kIntPropDef},
-    {kModbusDeviceRepeatCountPropTypeId, &kIntPropDef},
+    {id::ModbusDeviceType_Address, &kIntPropDef},
+    {id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
     // IEC-81650 Device
     {id::Iec61850DeviceType_Host, &kStringPropDef},
     {id::Iec61850DeviceType_Port, &kIntPropDef},
     // IEC-81650 ConfigurableObject
     {id::Iec61850ConfigurableObjectType_Reference, &kStringPropDef},
     // Sim Signal
-    {kSimulationSignalTypePropTypeId, &kIntPropDef},            // TODO: Enum
-    {kSimulationSignalPeriodPropTypeId, &kIntPropDef},          // time delta
-    {kSimulationSignalPhasePropTypeId, &kIntPropDef},           // time delta
-    {kSimulationSignalUpdateIntervalPropTypeId, &kIntPropDef},  // time delta
+    {id::SimulationSignalType_Type, &kIntPropDef},            // TODO: Enum
+    {id::SimulationSignalType_Period, &kIntPropDef},          // time delta
+    {id::SimulationSignalType_Phase, &kIntPropDef},           // time delta
+    {id::SimulationSignalType_UpdateInterval, &kIntPropDef},  // time delta
     // User
-    {kUserAccessRightsPropTypeId, &kIntPropDef},  // TODO: Set
+    {id::UserType_AccessRights, &kIntPropDef},  // TODO: Set
     // TsFormat
     {id::TsFormatType_OpenLabel, &kStringPropDef},
     {id::TsFormatType_CloseLabel, &kStringPropDef},
-    {kTsFormatOpenColorPropTypeId, &kColorPropDef},
-    {kTsFormatCloseColorPropTypeId, &kColorPropDef},
+    {id::TsFormatType_OpenColor, &kColorPropDef},
+    {id::TsFormatType_CloseColor, &kColorPropDef},
     // Historical DB
-    {kHistoricalDbDepthPropTypeId, &kIntPropDef},  // time delta
+    {id::HistoricalDatabaseType_Depth, &kIntPropDef},  // time delta
 };
 
 }  // namespace

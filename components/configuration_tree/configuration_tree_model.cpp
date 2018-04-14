@@ -40,7 +40,7 @@ DropAction MakeCreateDataItemAction(TaskManager& task_manager,
             ? id::DiscreteItemType
             : id::AnalogItemType;
     auto channel_prop_id =
-        control_item ? kObjectOutputPropTypeId : kObjectInput1PropTypeId;
+        control_item ? id::DataItemType_Output : id::DataItemType_Input1;
     task_manager.PostInsertTask(
         {}, parent_id, std::move(type_definition_id), std::move(attributes),
         {{std::move(channel_prop_id), std::move(formula)}});
@@ -55,7 +55,7 @@ DropAction MakeAssignChannelAction(TaskManager& task_manager,
                                    bool control_item) {
   return [=, &task_manager] {
     auto channel_prop_id =
-        control_item ? kObjectOutputPropTypeId : kObjectInput1PropTypeId;
+        control_item ? id::DataItemType_Output : id::DataItemType_Input1;
     task_manager.PostUpdateTask(
         node_id, {}, {{std::move(channel_prop_id), std::move(formula)}});
 

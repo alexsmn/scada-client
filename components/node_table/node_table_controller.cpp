@@ -77,7 +77,7 @@ scada::NodeId GetSortCommandPropertyId(unsigned command_id) {
     case ID_SORT_ALIAS:
       return id::DataItemType_Alias;
     case ID_SORT_CHANNEL:
-      return kObjectInput1PropTypeId;
+      return id::DataItemType_Input1;
     default:
       assert(false);
       return {};

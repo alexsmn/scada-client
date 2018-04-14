@@ -159,23 +159,23 @@ void MetrixDataSource::UpdateRange() {
   auto node = timed_data_.GetNode();
   if (IsInstanceOf(node, id::AnalogItemType)) {
     range_ = views::GraphRange(
-        node[kTitEuLoPropTypeId].value().get_or(views::kGraphUnknownValue),
-        node[kTitEuHiPropTypeId].value().get_or(views::kGraphUnknownValue));
+        node[id::AnalogItemType_EuLo].value().get_or(views::kGraphUnknownValue),
+        node[id::AnalogItemType_EuHi].value().get_or(views::kGraphUnknownValue));
   }
 }
 
 void MetrixDataSource::UpdateLimits() {
   if (auto node = timed_data_.GetNode()) {
     limit_lo_ =
-        node[kTitLimitLoPropTypeId].value().get_or(views::kGraphUnknownValue);
+        node[id::AnalogItemType_LimitLo].value().get_or(views::kGraphUnknownValue);
     limit_hi_ =
-        node[kTitLimitHiPropTypeId].value().get_or(views::kGraphUnknownValue);
+        node[id::AnalogItemType_LimitHi].value().get_or(views::kGraphUnknownValue);
     ;
     limit_lolo_ =
-        node[kTitLimitLoLoPropTypeId].value().get_or(views::kGraphUnknownValue);
+        node[id::AnalogItemType_LimitLoLo].value().get_or(views::kGraphUnknownValue);
     ;
     limit_hihi_ =
-        node[kTitLimitHiHiPropTypeId].value().get_or(views::kGraphUnknownValue);
+        node[id::AnalogItemType_LimitHiHi].value().get_or(views::kGraphUnknownValue);
     ;
   } else {
     limit_lo_ = views::kGraphUnknownValue;

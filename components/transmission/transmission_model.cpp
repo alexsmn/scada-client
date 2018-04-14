@@ -46,14 +46,14 @@ void TransmissionModel::GetCell(ui::GridCell& cell) {
 
   switch (cell.column) {
     case 0: {
-      auto source = row.transmission.target(kIecTransmitSourceRefTypeId);
+      auto source = row.transmission.target(id::HasTransmissionSource);
       cell.text = source ? source.display_name() : base::string16();
       break;
     }
 
     case 1:
       auto device_item_address =
-          row.transmission[kIecTransmitTargetInfoAddressPropTypeId]
+          row.transmission[id::TransmissionItemType_SourceAddress]
               .value()
               .get_or(0);
       cell.text = WideFormat(device_item_address);
@@ -66,7 +66,7 @@ void TransmissionModel::Update() {
 
   if (device_) {
     for (auto reference :
-         device_.inverse_references(kIecTransmitTargetDeviceRefTypeId)) {
+         device_.inverse_references(id::HasTransmissionTarget)) {
       assert(IsInstanceOf(reference.target, id::TransmissionItemType));
       Update(reference.target);
     }
@@ -90,13 +90,13 @@ void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 void TransmissionModel::Update(NodeRef transmission) {
   assert(IsInstanceOf(transmission, id::TransmissionItemType));
 
-  auto device = transmission.target(kIecTransmitTargetDeviceRefTypeId);
+  auto device = transmission.target(id::HasTransmissionTarget);
   if (device != device_) {
     Delete(transmission.id());
     return;
   }
 
-  auto source_id = transmission.target(kIecTransmitSourceRefTypeId).id();
+  auto source_id = transmission.target(id::HasTransmissionSource).id();
 
   int i = FindRow(transmission.id());
   if (i == -1) {
@@ -126,7 +126,7 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
     return;
 
   auto transmission = rows_[i].transmission;
-  auto source = transmission.target(kIecTransmitSourceRefTypeId);
+  auto source = transmission.target(id::HasTransmissionSource);
   if (source && contents_observer())
     contents_observer()->OnContainedItemChanged(source.id(), false);
 
@@ -144,7 +144,7 @@ int TransmissionModel::FindRow(const scada::NodeId& transmission_id) const {
 int TransmissionModel::FindSource(const scada::NodeId& source_id) const {
   for (int i = 0; i < (int)rows_.size(); i++) {
     auto& row = rows_[i];
-    auto source = row.transmission.target(kIecTransmitSourceRefTypeId);
+    auto source = row.transmission.target(id::HasTransmissionSource);
     if (source && source.id() == source_id)
       return i;
   }
@@ -154,7 +154,7 @@ int TransmissionModel::FindSource(const scada::NodeId& source_id) const {
 NodeIdSet TransmissionModel::GetContainedItems() const {
   NodeIdSet items;
   for (auto& row : rows()) {
-    if (auto source = row.transmission.target(kIecTransmitSourceRefTypeId))
+    if (auto source = row.transmission.target(id::HasTransmissionSource))
       items.emplace(source.id());
   }
   return items;
@@ -173,9 +173,9 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
         if (!status)
           return;
 
-        task_manager.PostAddReference(kIecTransmitSourceRefTypeId,
+        task_manager.PostAddReference(id::HasTransmissionSource,
                                       transmission_id, node_id);
-        task_manager.PostAddReference(kIecTransmitTargetDeviceRefTypeId,
+        task_manager.PostAddReference(id::HasTransmissionTarget,
                                       transmission_id, device_id);
       });
 }
@@ -186,7 +186,7 @@ void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {
     return;
 
   for (auto& row : rows()) {
-    if (row.transmission.target(kIecTransmitSourceRefTypeId) == source)
+    if (row.transmission.target(id::HasTransmissionSource) == source)
       task_manager_.PostDeleteTask(row.transmission.id());
   }
 }

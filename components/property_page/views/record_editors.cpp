@@ -335,22 +335,22 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
           .c_str());
 
   win_util::SetWindowTextInt(wnd_sev,
-                             node[kObjectSeverityPropTypeId].value().get_or(0));
+                             node[id::DataItemType_Severity].value().get_or(0));
 
-  auto selected_db_id = node.target(kObjectHistoricalDbPropTypeId).id();
+  auto selected_db_id = node.target(id::HasHistoricalDatabase).id();
   historical_db_combo_box_.Fill(node_service_.GetNode(id::HistoricalDatabases),
                                 id::HistoricalDatabaseType, selected_db_id);
 
-  channels_[0] = node[kObjectInput1PropTypeId].value().get_or(std::string());
-  channels_[1] = node[kObjectInput2PropTypeId].value().get_or(std::string());
+  channels_[0] = node[id::DataItemType_Input1].value().get_or(std::string());
+  channels_[1] = node[id::DataItemType_Input2].value().get_or(std::string());
   control_channel_ =
-      node[kObjectOutputPropTypeId].value().get_or(std::string());
+      node[id::DataItemType_Output].value().get_or(std::string());
 
   devices_combo_box_.Fill(node_service_.GetNode(id::Devices), id::DeviceType,
                           {});
   LoadChannel(0);
 
-  auto stale_period = node[kObjectStalePeriodTypeId].value().get_or(0);
+  auto stale_period = node[id::DataItemType_StalePeriod].value().get_or(0);
   WTL::CButton(GetDlgItem(IDC_STALE_CHECK))
       .SetCheck(stale_period ? BST_CHECKED : BST_UNCHECKED);
   SetDlgItemInt(IDC_STALE_PERIOD, stale_period ? stale_period : 5 * 60, FALSE);
@@ -378,15 +378,15 @@ void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
     properties.emplace_back(id::DataItemType_Alias, alias);
   }
 
-  properties.emplace_back(kObjectSeverityPropTypeId, sev);
-  references.emplace_back(kObjectHistoricalDbPropTypeId, historical_db_id_);
+  properties.emplace_back(id::DataItemType_Severity, sev);
+  references.emplace_back(id::HasHistoricalDatabase, historical_db_id_);
 
   // channels
-  properties.emplace_back(kObjectInput1PropTypeId, channels_[0]);
-  properties.emplace_back(kObjectInput2PropTypeId, channels_[1]);
-  properties.emplace_back(kObjectOutputPropTypeId, control_channel_);
+  properties.emplace_back(id::DataItemType_Input1, channels_[0]);
+  properties.emplace_back(id::DataItemType_Input2, channels_[1]);
+  properties.emplace_back(id::DataItemType_Output, control_channel_);
 
-  properties.emplace_back(kObjectStalePeriodTypeId, stale_period_);
+  properties.emplace_back(id::DataItemType_StalePeriod, stale_period_);
 
   // Simulation.
   properties.emplace_back(id::DataItemType_Simulated, simulate);
@@ -449,7 +449,7 @@ static int GetSelColor(int sel) {
 void TsEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  auto inverted = node[kTsInvertedPropTypeId].value().get_or(false);
+  auto inverted = node[id::DiscreteItemType_Inversion].value().get_or(false);
   wnd_inv.SetCheck(inverted ? BST_CHECKED : BST_UNCHECKED);
 
   auto ts_format_id = node.target(id::HasTsFormat).id();
@@ -462,7 +462,7 @@ void TsEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                      scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  properties.emplace_back(kTsInvertedPropTypeId, inversion);
+  properties.emplace_back(id::DiscreteItemType_Inversion, inversion);
   references.emplace_back(id::HasTsFormat, format_id_);
 }
 
@@ -511,15 +511,15 @@ void TitEditor::ReadControlsData() {
 void TitEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  LoadFloat(wnd_eu_lo, node[kTitEuLoPropTypeId].value().get_or(0.0));
-  LoadFloat(wnd_eu_hi, node[kTitEuHiPropTypeId].value().get_or(0.0));
-  LoadFloat(wnd_ir_lo, node[kTitIrLoPropTypeId].value().get_or(0.0));
-  LoadFloat(wnd_ir_hi, node[kTitIrHiPropTypeId].value().get_or(0.0));
+  LoadFloat(wnd_eu_lo, node[id::AnalogItemType_EuLo].value().get_or(0.0));
+  LoadFloat(wnd_eu_hi, node[id::AnalogItemType_EuHi].value().get_or(0.0));
+  LoadFloat(wnd_ir_lo, node[id::AnalogItemType_IrLo].value().get_or(0.0));
+  LoadFloat(wnd_ir_hi, node[id::AnalogItemType_IrHi].value().get_or(0.0));
 
-  auto clamping = node[kTitClampingPropTypeId].value().get_or(false);
+  auto clamping = node[id::AnalogItemType_Clamping].value().get_or(false);
   wnd_clamp.SetCheck(clamping ? BST_CHECKED : BST_UNCHECKED);
 
-  auto conversion = node[kTitConversionPropTypeId].value().get_or(false);
+  auto conversion = node[id::AnalogItemType_Conversion].value().get_or(false);
   wnd_conv_none.SetCheck(!conversion);
   wnd_conv_line.SetCheck(conversion);
   UpdateConv();
@@ -542,12 +542,12 @@ void TitEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                       scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  properties.emplace_back(kTitEuLoPropTypeId, eu_lo);
-  properties.emplace_back(kTitEuHiPropTypeId, eu_hi);
-  properties.emplace_back(kTitIrLoPropTypeId, ir_lo);
-  properties.emplace_back(kTitIrHiPropTypeId, ir_hi);
-  properties.emplace_back(kTitConversionPropTypeId, conv ? 1 : 0);
-  properties.emplace_back(kTitClampingPropTypeId, clamp);
+  properties.emplace_back(id::AnalogItemType_EuLo, eu_lo);
+  properties.emplace_back(id::AnalogItemType_EuHi, eu_hi);
+  properties.emplace_back(id::AnalogItemType_IrLo, ir_lo);
+  properties.emplace_back(id::AnalogItemType_IrHi, ir_hi);
+  properties.emplace_back(id::AnalogItemType_Conversion, conv ? 1 : 0);
+  properties.emplace_back(id::AnalogItemType_Clamping, clamp);
   properties.emplace_back(id::AnalogItemType_DisplayFormat, fmt);
   properties.emplace_back(id::AnalogItemType_EngineeringUnits, units);
   properties.emplace_back(id::AnalogItemType_Aperture, aperture);
@@ -615,9 +615,9 @@ void TsFormatEditor::ReadNodeToControls(const NodeRef& node) {
       base::SysNativeMBToWide(
           node[id::TsFormatType_CloseLabel].value().get_or(std::string()))
           .c_str());
-  wnd_clr_open.SetCurSel(node[kTsFormatOpenColorPropTypeId].value().get_or(0));
+  wnd_clr_open.SetCurSel(node[id::TsFormatType_OpenColor].value().get_or(0));
   wnd_clr_close.SetCurSel(
-      node[kTsFormatCloseColorPropTypeId].value().get_or(0));
+      node[id::TsFormatType_CloseColor].value().get_or(0));
 }
 
 void TsFormatEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
@@ -632,8 +632,8 @@ void TsFormatEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
 
   properties.emplace_back(id::TsFormatType_OpenLabel, lbl_open);
   properties.emplace_back(id::TsFormatType_CloseLabel, lbl_close);
-  properties.emplace_back(kTsFormatOpenColorPropTypeId, clr_open);
-  properties.emplace_back(kTsFormatCloseColorPropTypeId, clr_close);
+  properties.emplace_back(id::TsFormatType_OpenColor, clr_open);
+  properties.emplace_back(id::TsFormatType_CloseColor, clr_close);
 }
 
 LRESULT TsFormatEditor::OnInitDialog(UINT uMsg,
@@ -716,7 +716,7 @@ void LinkEditor::ReadNodeToControls(const NodeRef& node) {
       .SetCheck(disabled ? BST_CHECKED : BST_UNCHECKED);
 
   transport_string_ = net::TransportString(
-      node[kLinkTransportStringPropTypeId].value().get_or(std::string()));
+      node[id::LinkType_Transport].value().get_or(std::string()));
   UpdateTransportString();
 }
 
@@ -726,7 +726,7 @@ void LinkEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::DeviceType_Disabled, disabled_);
-  properties.emplace_back(kLinkTransportStringPropTypeId,
+  properties.emplace_back(id::LinkType_Transport,
                           transport_string_.ToString());
 }
 
@@ -785,52 +785,52 @@ void Iec60870LinkEditor::ReadNodeToControls(const NodeRef& node) {
 
   win_util::SetWindowTextInt(
       wnd_con_timeo,
-      node[kIec60870LinkConfirmationTimeoutPropTypeId].value().get_or(0));
+      node[id::Iec60870LinkType_ConfirmationTimeout].value().get_or(0));
   win_util::SetWindowTextInt(
       wnd_term_timeo,
-      node[kIec60870LinkTerminationTimeoutProtocolPropTypeId].value().get_or(
+      node[id::Iec60870LinkType_TerminationTimeout].value().get_or(
           0));
   wnd_collect_data.SetCheck(
-      node[kIec60870LinkCollectDataPropTypeId].value().get_or(false)
+      node[id::Iec60870LinkType_DataCollection].value().get_or(false)
           ? BST_CHECKED
           : BST_UNCHECKED);
   CButton(GetDlgItem(IDC_ANONYMOUS))
-      .SetCheck(node[kIec60870LinkAnonymousPropTypeId].value().get_or(false)
+      .SetCheck(node[id::Iec60870LinkType_AnonymousMode].value().get_or(false)
                     ? BST_CHECKED
                     : BST_UNCHECKED);
 
   SetComboInt(wnd_len_dev,
-              node[kIec60870LinkDeviceAddressSizePropTypeId].value().get_or(0));
+              node[id::Iec60870LinkType_DeviceAddressSize].value().get_or(0));
   SetComboInt(wnd_len_cot,
-              node[kIec60870LinkCotSizePropTypeId].value().get_or(0));
+              node[id::Iec60870LinkType_COTSize].value().get_or(0));
   SetComboInt(wnd_len_addr,
-              node[kIec60870LinkInfoAddressSizePropTypeId].value().get_or(0));
+              node[id::Iec60870LinkType_InfoAddressSize].value().get_or(0));
 
   if (IDD == IDD_IEC60870_LINK104) {
     win_util::SetWindowTextInt(
         wnd_max_send,
-        node[kIec60870LinkSendQueueSizePropTypeId].value().get_or(0));
+        node[id::Iec60870LinkType_SendQueueSize].value().get_or(0));
     win_util::SetWindowTextInt(
         wnd_max_recv,
-        node[kIec60870LinkReceiveQueueSizePropTypeId].value().get_or(0));
+        node[id::Iec60870LinkType_ReceiveQueueSize].value().get_or(0));
 
     SetDlgItemInt(IDC_SEND_TIMEOUT,
-                  node[kIec60870LinkSendTimeoutPropTypeId].value().get_or(0),
+                  node[id::Iec60870LinkType_SendTimeout].value().get_or(0),
                   FALSE);
     SetDlgItemInt(IDC_RECEIVE_TIMEOUT,
-                  node[kIec60870LinkReceiveTimeoutPropTypeId].value().get_or(0),
+                  node[id::Iec60870LinkType_ReceiveTimeout].value().get_or(0),
                   FALSE);
     SetDlgItemInt(IDC_IDLE_TIMEOUT,
-                  node[kIec60870LinkIdleTimeoutPropTypeId].value().get_or(0),
+                  node[id::Iec60870LinkType_IdleTimeout].value().get_or(0),
                   FALSE);
     SetDlgItemInt(IDC_NUM_SEND_REPEATS,
-                  node[kIec60870LinkSendRetriesPropTypeId].value().get_or(0),
+                  node[id::Iec60870LinkType_SendRetryCount].value().get_or(0),
                   FALSE);
     SetDlgItemInt(IDC_IEC60870_LINK_T0,
-                  node[kIec60870LinkT0PropTypeId].value().get_or(0), FALSE);
+                  node[id::Iec60870LinkType_ConnectTimeout].value().get_or(0), FALSE);
     CButton(GetDlgItem(IDC_CRC_PROTECTION))
         .SetCheck(
-            node[kIec60870LinkCrcProtectionPropTypeId].value().get_or(false)
+            node[id::Iec60870LinkType_CRCProtection].value().get_or(false)
                 ? BST_CHECKED
                 : BST_UNCHECKED);
   }
@@ -845,29 +845,29 @@ void Iec60870LinkEditor::GetModifiedProperties(
   auto mode = transport_string().IsActive() ? cfg::Iec60870Mode::MASTER
                                             : cfg::Iec60870Mode::SLAVE;
 
-  properties.emplace_back(kIec60870LinkConfirmationTimeoutPropTypeId,
+  properties.emplace_back(id::Iec60870LinkType_ConfirmationTimeout,
                           con_timeo);
-  properties.emplace_back(kIec60870LinkTerminationTimeoutProtocolPropTypeId,
+  properties.emplace_back(id::Iec60870LinkType_TerminationTimeout,
                           term_timeo);
-  properties.emplace_back(kIec60870LinkT0PropTypeId, t0_);
-  properties.emplace_back(kIec60870LinkCollectDataPropTypeId, collect_data_);
-  properties.emplace_back(kIec60870LinkAnonymousPropTypeId, anonymous_);
-  properties.emplace_back(kIec60870LinkModePropTypeId, static_cast<int>(mode));
+  properties.emplace_back(id::Iec60870LinkType_ConnectTimeout, t0_);
+  properties.emplace_back(id::Iec60870LinkType_DataCollection, collect_data_);
+  properties.emplace_back(id::Iec60870LinkType_AnonymousMode, anonymous_);
+  properties.emplace_back(id::Iec60870LinkType_Mode, static_cast<int>(mode));
 
-  properties.emplace_back(kIec60870LinkDeviceAddressSizePropTypeId, len_dev);
-  properties.emplace_back(kIec60870LinkCotSizePropTypeId, len_cot);
-  properties.emplace_back(kIec60870LinkInfoAddressSizePropTypeId, len_addr);
+  properties.emplace_back(id::Iec60870LinkType_DeviceAddressSize, len_dev);
+  properties.emplace_back(id::Iec60870LinkType_COTSize, len_cot);
+  properties.emplace_back(id::Iec60870LinkType_InfoAddressSize, len_addr);
 
   if (IDD == IDD_IEC60870_LINK104) {
-    properties.emplace_back(kIec60870LinkSendQueueSizePropTypeId, max_send);
-    properties.emplace_back(kIec60870LinkReceiveQueueSizePropTypeId, max_recv);
-    properties.emplace_back(kIec60870LinkSendTimeoutPropTypeId, send_timeout_);
-    properties.emplace_back(kIec60870LinkReceiveTimeoutPropTypeId,
+    properties.emplace_back(id::Iec60870LinkType_SendQueueSize, max_send);
+    properties.emplace_back(id::Iec60870LinkType_ReceiveQueueSize, max_recv);
+    properties.emplace_back(id::Iec60870LinkType_SendTimeout, send_timeout_);
+    properties.emplace_back(id::Iec60870LinkType_ReceiveTimeout,
                             receive_timeout_);
-    properties.emplace_back(kIec60870LinkIdleTimeoutPropTypeId, idle_timeout_);
-    properties.emplace_back(kIec60870LinkSendRetriesPropTypeId,
+    properties.emplace_back(id::Iec60870LinkType_IdleTimeout, idle_timeout_);
+    properties.emplace_back(id::Iec60870LinkType_SendRetryCount,
                             num_send_repeats_);
-    properties.emplace_back(kIec60870LinkCrcProtectionPropTypeId,
+    properties.emplace_back(id::Iec60870LinkType_CRCProtection,
                             crc_protection_ ? 1 : 0);
   }
 }
@@ -946,31 +946,31 @@ void Iec60870DeviceEditor::ReadNodeToControls(const NodeRef& node) {
 
   wnd_name.SetWindowText(node.display_name().c_str());
   win_util::SetWindowTextInt(
-      wnd_addr, node[kIec60870DeviceAddressPropTypeId].value().get_or(0));
+      wnd_addr, node[id::Iec60870DeviceType_Address].value().get_or(0));
   WTL::CButton(GetDlgItem(IDC_DISABLED))
       .SetCheck(node[id::DeviceType_Disabled].value().get_or(false)
                     ? BST_CHECKED
                     : BST_UNCHECKED);
   win_util::SetWindowTextInt(
       wnd_link_addr,
-      node[kIec60870DeviceLinkAddressPropTypeId].value().get_or(0));
+      node[id::Iec60870DeviceType_LinkAddress].value().get_or(0));
   WTL::CButton(GetDlgItem(IDC_INTER))
       .SetCheck(
-          node[kIec60870DeviceInterrogateOnStartPropTypeId].value().get_or(
+          node[id::Iec60870DeviceType_StartupInterrogation].value().get_or(
               false)
               ? BST_CHECKED
               : BST_UNCHECKED);
   win_util::SetWindowTextInt(
       wnd_inter_per,
-      node[kIec60870DeviceInterrogationPeriodPropTypeId].value().get_or(0));
+      node[id::Iec60870DeviceType_InterrogationPeriod].value().get_or(0));
   wnd_sync.SetCheck(
-      node[kIec60870DeviceSynchronizeClockOnStartPropTypeId].value().get_or(
+      node[id::Iec60870DeviceType_StartupClockSync].value().get_or(
           false)
           ? BST_CHECKED
           : BST_UNCHECKED);
   win_util::SetWindowTextInt(
       wnd_sync_per,
-      node[kIec60870DeviceClockSynchronizationPeriodPropTypeId].value().get_or(
+      node[id::Iec60870DeviceType_ClockSyncPeriod].value().get_or(
           0));
   utc_time_checkbox_.SetCheck(
       node[id::Iec60870DeviceType_UtcTime].value().get_or(false)
@@ -979,7 +979,7 @@ void Iec60870DeviceEditor::ReadNodeToControls(const NodeRef& node) {
 
   for (int i = 0; i < 16; i++) {
     scada::NodeId prop_id(
-        numeric_id::kIec60870DeviceGroup1PollPeriodPropTypeId + i,
+        numeric_id::Iec60870DeviceType_InterrogationPeriodGroup1 + i,
         NamespaceIndexes::SCADA);
     win_util::SetWindowTextInt(wnd_poll[i], node[prop_id].value().get_or(0));
   }
@@ -995,21 +995,21 @@ void Iec60870DeviceEditor::GetModifiedProperties(
 
   attributes.set_display_name(display_name_);
 
-  properties.emplace_back(kIec60870DeviceAddressPropTypeId, addr);
-  properties.emplace_back(kIec60870DeviceLinkAddressPropTypeId, link_addr);
+  properties.emplace_back(id::Iec60870DeviceType_Address, addr);
+  properties.emplace_back(id::Iec60870DeviceType_LinkAddress, link_addr);
   properties.emplace_back(id::DeviceType_Disabled, disabled_);
-  properties.emplace_back(kIec60870DeviceInterrogateOnStartPropTypeId,
+  properties.emplace_back(id::Iec60870DeviceType_StartupInterrogation,
                           poll_on_start_);
-  properties.emplace_back(kIec60870DeviceInterrogationPeriodPropTypeId,
+  properties.emplace_back(id::Iec60870DeviceType_InterrogationPeriod,
                           inter_per);
-  properties.emplace_back(kIec60870DeviceSynchronizeClockOnStartPropTypeId,
+  properties.emplace_back(id::Iec60870DeviceType_StartupClockSync,
                           sync);
-  properties.emplace_back(kIec60870DeviceClockSynchronizationPeriodPropTypeId,
+  properties.emplace_back(id::Iec60870DeviceType_ClockSyncPeriod,
                           sync_per);
   properties.emplace_back(id::Iec60870DeviceType_UtcTime, utc_time_);
   for (int i = 0; i < 16; i++) {
     scada::NodeId prop_id(
-        numeric_id::kIec60870DeviceGroup1PollPeriodPropTypeId + i,
+        numeric_id::Iec60870DeviceType_InterrogationPeriodGroup1 + i,
         NamespaceIndexes::SCADA);
     properties.emplace_back(prop_id, poll[i]);
   }
@@ -1074,7 +1074,7 @@ void ModbusLinkEditor::ReadNodeToControls(const NodeRef& node) {
   WTL::CButton ascii_radio = GetDlgItem(IDC_MODBUS_ASCII);
   WTL::CButton tcp_radio = GetDlgItem(IDC_MODBUS_TCP);
 
-  switch (node[kModbusPortModePropTypeId].value().get_or(0)) {
+  switch (node[id::ModbusLinkType_Protocol].value().get_or(0)) {
     case cfg::ModbusEncoding::ASCII:
       ascii_radio.SetCheck(BST_CHECKED);
       break;
@@ -1093,7 +1093,7 @@ void ModbusLinkEditor::GetModifiedProperties(
     scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  properties.emplace_back(kModbusPortModePropTypeId, static_cast<int>(mode_));
+  properties.emplace_back(id::ModbusLinkType_Protocol, static_cast<int>(mode_));
 }
 
 // SimulationItemEditor
@@ -1133,7 +1133,7 @@ void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
   SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
 
   UINT type_id;
-  switch (node[kSimulationSignalTypePropTypeId].value().get_or(0)) {
+  switch (node[id::SimulationSignalType_Type].value().get_or(0)) {
     case cfg::SimulationSignalType::RAMP:
       type_id = IDC_RAMP;
       break;
@@ -1154,13 +1154,13 @@ void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
 
   win_util::SetWindowTextInt(
       GetDlgItem(IDC_PERIOD),
-      node[kSimulationSignalPeriodPropTypeId].value().get_or(0));
+      node[id::SimulationSignalType_Period].value().get_or(0));
   win_util::SetWindowTextInt(
       GetDlgItem(IDC_PHASE),
-      node[kSimulationSignalPhasePropTypeId].value().get_or(0));
+      node[id::SimulationSignalType_Phase].value().get_or(0));
   win_util::SetWindowTextInt(
       GetDlgItem(IDC_UPDATE_RATE),
-      node[kSimulationSignalUpdateIntervalPropTypeId].value().get_or(0));
+      node[id::SimulationSignalType_UpdateInterval].value().get_or(0));
 }
 
 void SimulationItemEditor::GetModifiedProperties(
@@ -1169,11 +1169,11 @@ void SimulationItemEditor::GetModifiedProperties(
     scada::NodeReferences& references) {
   attributes.set_display_name(display_name_);
 
-  properties.emplace_back(kSimulationSignalTypePropTypeId,
+  properties.emplace_back(id::SimulationSignalType_Type,
                           static_cast<int>(type_));
-  properties.emplace_back(kSimulationSignalPeriodPropTypeId, period_);
-  properties.emplace_back(kSimulationSignalPhasePropTypeId, phase_);
-  properties.emplace_back(kSimulationSignalUpdateIntervalPropTypeId,
+  properties.emplace_back(id::SimulationSignalType_Period, period_);
+  properties.emplace_back(id::SimulationSignalType_Phase, phase_);
+  properties.emplace_back(id::SimulationSignalType_UpdateInterval,
                           update_rate_);
 }
 
@@ -1218,9 +1218,9 @@ void ModbusDeviceEditor::ReadNodeToControls(const NodeRef& node) {
   WTL::CButton(GetDlgItem(IDC_DISABLED))
       .SetCheck(disabled ? BST_CHECKED : BST_UNCHECKED);
   SetDlgItemInt(IDC_ADDRESS_EDIT,
-                node[kModbusDeviceAddressPropTypeId].value().get_or(0), FALSE);
+                node[id::ModbusDeviceType_Address].value().get_or(0), FALSE);
   SetDlgItemInt(IDC_REPEAT_COUNT_EDIT,
-                node[kModbusDeviceRepeatCountPropTypeId].value().get_or(0),
+                node[id::ModbusDeviceType_SendRetryCount].value().get_or(0),
                 FALSE);
 }
 
@@ -1230,9 +1230,9 @@ void ModbusDeviceEditor::GetModifiedProperties(
     scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  properties.emplace_back(kModbusDeviceAddressPropTypeId, address_);
+  properties.emplace_back(id::ModbusDeviceType_Address, address_);
   properties.emplace_back(id::DeviceType_Disabled, disabled_);
-  properties.emplace_back(kModbusDeviceRepeatCountPropTypeId, repeat_count_);
+  properties.emplace_back(id::ModbusDeviceType_SendRetryCount, repeat_count_);
 }
 
 HistoricalDBEditor::HistoricalDBEditor(RecordEditorContext&& context)
@@ -1257,7 +1257,7 @@ void HistoricalDBEditor::ReadControlsData() {
 void HistoricalDBEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  auto depth = node[kHistoricalDbDepthPropTypeId].value().get_or(0);
+  auto depth = node[id::HistoricalDatabaseType_Depth].value().get_or(0);
   SetDlgItemInt(IDC_DEPTH_EDIT, depth, FALSE);
 }
 
@@ -1267,7 +1267,7 @@ void HistoricalDBEditor::GetModifiedProperties(
     scada::NodeReferences& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
-  properties.emplace_back(kHistoricalDbDepthPropTypeId, depth_);
+  properties.emplace_back(id::HistoricalDatabaseType_Depth, depth_);
 }
 
 // Iec61850DeviceEditor

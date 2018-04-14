@@ -68,10 +68,10 @@ LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
   if (node_) {
     SetDlgItemText(IDC_DESC, node_.display_name().c_str());
 
-    auto lolo = node_[kTitLimitLoLoPropTypeId].value();
-    auto hihi = node_[kTitLimitHiHiPropTypeId].value();
-    auto lo = node_[kTitLimitLoPropTypeId].value();
-    auto hi = node_[kTitLimitHiPropTypeId].value();
+    auto lolo = node_[id::AnalogItemType_LimitLoLo].value();
+    auto hihi = node_[id::AnalogItemType_LimitHiHi].value();
+    auto lo = node_[id::AnalogItemType_LimitLo].value();
+    auto hi = node_[id::AnalogItemType_LimitHi].value();
 
     SetDlgItemText(IDC_LIMIT_LOLO, FormatValue(node_, lolo, {}, 0).c_str());
     SetDlgItemText(IDC_LIMIT_HIHI, FormatValue(node_, hihi, {}, 0).c_str());
@@ -102,10 +102,10 @@ LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
       str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
 
   scada::NodeProperties properties;
-  properties.emplace_back(kTitLimitLoPropTypeId, limit_lo);
-  properties.emplace_back(kTitLimitHiPropTypeId, limit_hi);
-  properties.emplace_back(kTitLimitLoLoPropTypeId, limit_lolo);
-  properties.emplace_back(kTitLimitHiHiPropTypeId, limit_hihi);
+  properties.emplace_back(id::AnalogItemType_LimitLo, limit_lo);
+  properties.emplace_back(id::AnalogItemType_LimitHi, limit_hi);
+  properties.emplace_back(id::AnalogItemType_LimitLoLo, limit_lolo);
+  properties.emplace_back(id::AnalogItemType_LimitHiHi, limit_hihi);
 
   task_manager_.PostUpdateTask(node_.id(), {}, properties);
 

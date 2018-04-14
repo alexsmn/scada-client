@@ -105,7 +105,7 @@ bool TransmissionView::OnGridEditCellText(views::GridView& sender,
 
   auto& row_item = model_->row(row);
   scada::NodeProperties properties;
-  properties.emplace_back(kIecTransmitTargetInfoAddressPropTypeId,
+  properties.emplace_back(id::TransmissionItemType_SourceAddress,
                           static_cast<int>(value));
   task_manager_.PostUpdateTask(row_item.transmission.id(), {}, properties);
 

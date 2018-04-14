@@ -132,7 +132,7 @@ bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
       return node && node[id::DataItemType_Locked].value().get_or(false);
 
     case ID_WRITE:
-      return node && !node[kObjectOutputPropTypeId].value().is_null();
+      return node && !node[id::DataItemType_Output].value().is_null();
 
     case ID_ITEM_ENABLE:
     case ID_ITEM_DISABLE: {
@@ -293,10 +293,10 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_DEV1_REFR:
-      call_command_id = kDeviceInterrogateCommandId;
+      call_command_id = id::DeviceType_Interrogate;
       break;
     case ID_DEV1_SYNC:
-      call_command_id = kDeviceClockSyncCommandId;
+      call_command_id = id::DeviceType_SyncClock;
       break;
   }
 
