@@ -51,6 +51,7 @@ target_link_libraries(client_core PUBLIC
   base_i18n
   modus
   scada_core_remote
+  scada_core_vidicon
   ui_base
 )
 

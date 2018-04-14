@@ -19,6 +19,8 @@
 #include "components/modus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "core/configuration_impl.h"
+#include "core/generic_node_factory.h"
+#include "core/types.h"
 #include "net/transport_factory_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
@@ -41,7 +43,9 @@ extern bool CreateOpcUaServices(const DataServicesContext& context,
                                 DataServices& services);
 
 REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
-// REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
+#ifndef NDEBUG
+REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
+#endif
 // REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
 
 namespace {
@@ -175,6 +179,17 @@ std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
 
 std::shared_ptr<NodeService>
 ClientApplication::CreateAddressSpaceNodeService() {
+  class ClientAddressSpace : public ConfigurationImpl {
+   public:
+    explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
+        : ConfigurationImpl{logger},
+          node_factory{logger, *this} {
+      CreateScadaAddressSpace(*this, node_factory);
+    }
+
+    GenericNodeFactory node_factory;
+  };
+
   struct Context {
     Context(std::shared_ptr<Logger> input_logger, MasterDataServices& services)
         : logger{std::move(input_logger)},
@@ -190,6 +205,7 @@ ClientApplication::CreateAddressSpaceNodeService() {
           services,
           services,
           address_space,
+          address_space.node_factory,
           base::CommandLine::ForCurrentProcess()->HasSwitch("smart-node-fetch"),
           [this](const scada::NodeId& node_id, const NodeFetchStatus& status) {
             node_service.OnNodeFetchStatusChanged(node_id, status);
@@ -211,7 +227,7 @@ ClientApplication::CreateAddressSpaceNodeService() {
 
     const std::shared_ptr<Logger> logger;
     MasterDataServices& services;
-    ConfigurationImpl address_space;
+    ClientAddressSpace address_space;
     AddressSpaceFetcher address_space_fetcher;
     SessionProxyNotifier<AddressSpaceFetcher> address_space_fetcher_notifier;
     AddressSpaceNodeService node_service;

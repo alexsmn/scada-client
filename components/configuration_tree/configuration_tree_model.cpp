@@ -10,15 +10,6 @@
 
 namespace {
 
-bool CanCreate(const NodeRef& type, const NodeRef& parent_type) {
-  for (auto parent_supertype = parent_type; parent_supertype;
-       parent_supertype = parent_supertype.supertype()) {
-    if (HasComponent(parent_type, type))
-      return true;
-  }
-  return false;
-}
-
 DropAction MakeMoveDropAction(TaskManager& task_manager,
                               const scada::NodeId& node_id,
                               const scada::NodeId& old_parent_id,
@@ -275,10 +266,6 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   if (!dragging_node)
     return ui::DragDropTypes::DRAG_NONE;
 
-  auto dragging_type = dragging_node.type_definition();
-  if (!dragging_type)
-    return ui::DragDropTypes::DRAG_NONE;
-
   // Dropping of IEC-61850 channel into id::DataGroupType causes
   // creation of new id::DataItemType.
   bool is_iec61850_channel =
@@ -313,7 +300,7 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   {
     for (; target_node; target_node = target_node->parent()) {
       auto type_definition = target_node->data_node().type_definition();
-      if (type_definition && CanCreate(dragging_type, type_definition))
+      if (type_definition && CanCreate(dragging_node, type_definition))
         break;
     }
 

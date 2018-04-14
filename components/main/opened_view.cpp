@@ -38,12 +38,8 @@ NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
   if (!component_type)
     return nullptr;
 
-  for (auto parent : {suggested_parent, root}) {
-    if (!parent)
-      continue;
-
-    auto type = parent.type_definition();
-    if (type && HasComponent(type, component_type))
+  for (const auto& parent : {suggested_parent, root}) {
+    if (parent && CanCreate(parent, component_type))
       return parent;
   }
 
