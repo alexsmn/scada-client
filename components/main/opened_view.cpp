@@ -46,68 +46,6 @@ NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
   return nullptr;
 }
 
-void AwaitNode(const NodeRef& node, const std::function<void()>& callback) {
-  class Awaiter final : public std::enable_shared_from_this<Awaiter>,
-                        private NodeRefObserver {
-   public:
-    ~Awaiter() { Reset(); }
-
-    void Await(const NodeRef& node, const std::function<void()>& callback) {
-      assert(callback);
-
-      node_ = node;
-      if (!node_ || node_.fetched()) {
-        callback();
-        return;
-      }
-
-      self_ = shared_from_this();
-      callback_ = std::move(callback);
-      node_.Subscribe(*this);
-    }
-
-   private:
-    void Check() {
-      if (!node_.fetched())
-        return;
-
-      assert(callback_);
-      auto callback = std::move(callback_);
-      Reset();
-      self_ = nullptr;
-      base::ThreadTaskRunnerHandle::Get()->PostTask(
-          FROM_HERE, base::Bind(&Awaiter::Invoke, callback));
-    }
-
-    void Reset() {
-      if (node_) {
-        node_.Unsubscribe(*this);
-        node_ = nullptr;
-      }
-      callback_ = nullptr;
-    }
-
-    static void Invoke(const std::function<void()>& callback) { callback(); }
-
-    // NodeRefObserver
-    virtual void OnModelChanged(const scada::ModelChangeEvent& event) override {
-      assert(event.node_id == node_.id());
-      Check();
-    }
-
-    virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override {
-      assert(node_id == node_.id());
-      Check();
-    }
-
-    NodeRef node_;
-    std::function<void()> callback_;
-    std::shared_ptr<Awaiter> self_;
-  };
-
-  std::make_shared<Awaiter>()->Await(node, callback);
-}
-
 }  // namespace
 
 OpenedView::OpenedView(OpenedViewContext&& context)
@@ -389,13 +327,14 @@ void OpenedView::OnCreateRecordComplete(
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
   auto node = node_service_.GetNode(node_id);
-  AwaitNode(node, [weak_ptr, node] {
-    if (auto* ptr = weak_ptr.get()) {
-      ptr->controller_->OnViewNodeCreated(node);
-      auto def = MakeWindowDefinition(node, ID_PROPERTY_VIEW, false);
-      ::OpenView(&ptr->main_window(), def, true);
-    }
-  });
+  node.Fetch(NodeFetchStatus::NodeOnly(),
+             [weak_ptr, node](const NodeRef& node) {
+               if (auto* ptr = weak_ptr.get()) {
+                 ptr->controller_->OnViewNodeCreated(node);
+                 auto def = MakeWindowDefinition(node, ID_PROPERTY_VIEW, false);
+                 ::OpenView(&ptr->main_window(), def, true);
+               }
+             });
 }
 
 void OpenedView::SetSelection(const scada::NodeId& item_id) {
