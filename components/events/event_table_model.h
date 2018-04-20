@@ -106,8 +106,6 @@ class EventTableModel : public ui::TableModel,
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeFetched(const scada::NodeId& node_id,
-                             bool children) override;
 
   // events::EventObserver
   virtual void OnEventReported(const scada::Event& event) override;

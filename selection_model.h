@@ -50,8 +50,6 @@ class SelectionModel final : private SelectionModelContext,
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeFetched(const scada::NodeId& node_id,
-                             bool children) override;
 
   enum Type { EMPTY, NODE, SPEC, MULTI };
   Type type_ = EMPTY;

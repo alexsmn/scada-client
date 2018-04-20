@@ -195,42 +195,20 @@ ClientApplication::CreateAddressSpaceNodeService() {
         : logger{std::move(input_logger)},
           services{services},
           address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
-          address_space_fetcher{MakeAddressSpaceFetcherContext()},
-          address_space_fetcher_notifier{address_space_fetcher, services},
-          node_service{MakeAddressSpaceNodeServiceContext()} {}
-
-    AddressSpaceFetcherContext MakeAddressSpaceFetcherContext() {
-      return {
-          std::make_shared<NestedLogger>(logger, "AddressSpaceFetcher"),
-          services,
-          services,
-          address_space,
-          address_space.node_factory,
-          base::CommandLine::ForCurrentProcess()->HasSwitch("smart-node-fetch"),
-          [this](const scada::NodeId& node_id, const NodeFetchStatus& status) {
-            node_service.OnNodeFetchStatusChanged(node_id, status);
-          },
-      };
-    }
+          node_service{MakeAddressSpaceNodeServiceContext()},
+          node_service_notifier{node_service, services} {}
 
     AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
       return {std::make_shared<NestedLogger>(logger, "NodeService"),
-              [this](const scada::NodeId& node_id) {
-                return address_space_fetcher.GetNodeFetchStatus(node_id);
-              },
-              [this](const scada::NodeId& node_id,
-                     const NodeFetchStatus& requested_status) {
-                address_space_fetcher.FetchNode(node_id, requested_status);
-              },
-              address_space};
+              services, services,
+              address_space, address_space.node_factory};
     }
 
     const std::shared_ptr<Logger> logger;
     MasterDataServices& services;
     ClientAddressSpace address_space;
-    AddressSpaceFetcher address_space_fetcher;
-    SessionProxyNotifier<AddressSpaceFetcher> address_space_fetcher_notifier;
     AddressSpaceNodeService node_service;
+    SessionProxyNotifier<AddressSpaceNodeService> node_service_notifier;
   };
 
   auto logger =

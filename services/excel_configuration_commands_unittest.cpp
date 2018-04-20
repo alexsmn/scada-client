@@ -7,6 +7,8 @@
 #include <gmock/gmock.h>
 #include <sstream>
 
+using namespace testing;
+
 TEST(ExcelConfigurationCommands, ExportImport) {
   AddressSpaceNodeServiceTestContext context;
 
@@ -14,7 +16,11 @@ TEST(ExcelConfigurationCommands, ExportImport) {
   TableWriter writer{stream};
   ExportConfiguration(context.node_service, writer);
 
-  context.data_item1.SetDisplayName(L"DataItem1 renamed");
+  auto* node_state = context.server_address_space.GetNode(
+      context.server_address_space.kTestNode1Id);
+  ASSERT_NE(node_state, nullptr);
+  node_state->attributes.display_name = L"Renamed node";
+  context.server_address_space.NotifyNodeSemanticsChanged(node_state->node_id);
 
   TableReader reader{stream};
   auto import_data = ImportConfiguration(context.node_service, reader);

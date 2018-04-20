@@ -234,11 +234,6 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   UpdateAffectedRows(event.node_id);
 }
 
-void EventTableModel::OnNodeFetched(const scada::NodeId& node_id,
-                                    bool children) {
-  UpdateAffectedRows(node_id);
-}
-
 void EventTableModel::OnEventReported(const scada::Event& event) {
   if (IsEventShown(event))
     AddRow(CURRENT_EVENT, event);
