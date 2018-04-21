@@ -46,10 +46,12 @@ PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
   assert(parent_node.fetched());
 
   std::set<NodeRef> child_type_definitions;
+  for (auto& creates : parent_node.targets(id::Creates))
+    child_type_definitions.emplace(creates);
   for (auto node_type = parent_node.type_definition(); node_type;
        node_type = node_type.supertype()) {
-    for (auto& component_decl : node_type.components())
-      child_type_definitions.emplace(component_decl.type_definition());
+    for (auto& creates : node_type.targets(id::Creates))
+      child_type_definitions.emplace(creates);
   }
 
   std::set<NodeRef> property_declarations;

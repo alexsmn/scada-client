@@ -24,11 +24,15 @@
 
 namespace {
 
-bool HasComponents(NodeRef parent_type) {
-  for (auto type = parent_type; type; type = type.supertype()) {
-    if (!type.components().empty())
+bool CanCreateSomething(const NodeRef& node) {
+  if (node.target(id::Creates, true))
+    return true;
+
+  for (auto type = node.type_definition(); type; type = type.supertype()) {
+    if (type.target(id::Creates, true))
       return true;
   }
+
   return false;
 }
 
@@ -61,8 +65,7 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
     case ID_TABLE_CONFIG: {
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
-      auto type = node.type_definition();
-      return type && HasComponents(type) ? this : nullptr;
+      return CanCreateSomething(node) ? this : nullptr;
     }
 
     case ID_OPEN_TABLE:
