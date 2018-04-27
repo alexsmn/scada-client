@@ -1,7 +1,7 @@
-﻿#include "components/modus/views/modus_object.h"
+﻿#include "components/modus/activex/modus_object.h"
 
 #include "base/stl_util.h"
-#include "components/modus/views/modus_element.h"
+#include "components/modus/activex/modus_element.h"
 
 namespace modus {
 

@@ -23,10 +23,12 @@ class ModusController : public Controller {
   virtual void ExecuteCommand(unsigned command) override;
 
  private:
+  QWidget* CreateModusView();
   QWidget* CreateModusView2();
 
   void OpenPath(const base::FilePath& path);
 
+  std::unique_ptr<ModusView> view_;
   std::unique_ptr<ModusView2> view2_;
   ModusViewWrapper* wrapper_;
 

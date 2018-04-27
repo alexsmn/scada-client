@@ -1,15 +1,12 @@
-﻿#include "components/modus/views/modus_loader.h"
+﻿#include "components/modus/activex/modus_loader.h"
 
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_service.h"
-#include "components/modus/modus.h"
-#include "components/modus/views/modus_element.h"
-#include "components/modus/views/modus_object.h"
-#include "components/modus/views/modus_view.h"
-#include "address_space/address_space_util.h"
+#include "components/modus/activex/modus.h"
+#include "components/modus/activex/modus_document.h"
+#include "components/modus/activex/modus_element.h"
+#include "components/modus/activex/modus_object.h"
 #include "services/file_cache_updater.h"
-#include "views/client_utils_views.h"
 #include "window_info.h"
 
 namespace modus {
@@ -17,21 +14,21 @@ namespace modus {
 ModusLoader::ModusLoader(ModusLoaderContext&& context)
     : ModusLoaderContext{std::move(context)} {}
 
-void ModusLoader::Load(SDECore::ISDEDocument50& document,
+void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
                        const base::FilePath& path,
-                       ModusView* view) {
-  view_ = view;
+                       ModusDocument* document) {
+  document_ = document;
 
   {
     base::win::ScopedBstr bstr;
-    document.get_Title(bstr.Receive());
+    sde_document.get_Title(bstr.Receive());
     if (bstr && bstr != L"без имени")
       title_ = bstr;
   }
 
   if (title_.empty()) {
     base::win::ScopedBstr bstr;
-    document.get_Name(bstr.Receive());
+    sde_document.get_Name(bstr.Receive());
     if (bstr)
       title_ = bstr;
   }
@@ -48,7 +45,7 @@ void ModusLoader::Load(SDECore::ISDEDocument50& document,
   });
 
   base::win::ScopedComPtr<SDECore::ISDEPage50> page;
-  document.get_CurrentPage(page.Receive());
+  sde_document.get_CurrentPage(page.Receive());
   if (page) {
     base::win::ScopedComPtr<SDECore::ISDEObjects2> objects;
     page->get_SDEObjects(objects.Receive());
@@ -57,7 +54,7 @@ void ModusLoader::Load(SDECore::ISDEDocument50& document,
   }
 }
 
-void ModusLoader::AddElement(ModusObject*& object,
+void ModusLoader::AddElement(std::unique_ptr<ModusObject>& object,
                              SDECore::ISDEObject50& sde_object,
                              SDECore::IParams& params,
                              const base::string16& binding,
@@ -82,9 +79,9 @@ void ModusLoader::AddElement(ModusObject*& object,
     formula = base::SysWideToNativeMB(binding.substr(p + 1));
   }
 
-  if (view_) {
+  if (document_) {
     if (!object)
-      object = new ModusObject(sde_object);
+      object = std::make_unique<ModusObject>(sde_object);
 
     ModusElement* element = new ModusElement(*object, params, prop_name);
     element->timed_data().Connect(timed_data_service_, formula);
@@ -111,7 +108,7 @@ void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
   long count = 0;
   techs->get_Count(&count);
 
-  ModusObject* object = NULL;
+  std::unique_ptr<ModusObject> object;
 
   for (long i = 0; i < count; ++i) {
     base::win::ScopedComPtr<SDECore::INamedPB> named_pb;
@@ -136,12 +133,11 @@ void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
   if (object)
     object->Init();
 
-  if (view_ && object) {
-    view_->objects_.push_back(object);
+  if (document_ && object) {
+    auto& added_object = document_->objects_.emplace_back(std::move(object));
 
-    // TODO: ModusObject should do this.
     if (id != -1)
-      view_->object_map_[id] = object;
+      document_->object_map_[id] = added_object.get();
   }
 }
 

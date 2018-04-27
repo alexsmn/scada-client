@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "base/files/file_path.h"
-#include "components/modus/modus_binding2.h"
+#include "components/modus/libmodus/modus_binding2.h"
 #include "components/modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"
 #include "libmodus/render/renderer_delegate.h"
@@ -64,6 +64,7 @@ class ModusView2 : private ModusView2Context,
   virtual void Open(const base::FilePath& path) override;
   virtual base::FilePath GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
+  virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
   // views::View
   virtual gfx::Size GetPreferredSize() const override;

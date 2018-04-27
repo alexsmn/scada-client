@@ -3,8 +3,8 @@
 #include "base/strings/string_split.h"
 #include "base/win/scoped_gdi_object.h"
 #include "client_utils.h"
-#include "components/modus/modus_binding2.h"
-#include "components/modus/modus_module2.h"
+#include "components/modus/libmodus/modus_binding2.h"
+#include "components/modus/libmodus/modus_module2.h"
 #include "libmodus/gfx/canvas.h"
 #include "libmodus/render/renderer.h"
 #include "libmodus/render/shape.h"
@@ -254,4 +254,8 @@ void ModusView2::ZoomAtPoint(const gfx::Point& point, float factor) {
 
 modus::Shape* ModusView2::GetShapeAt(const modus::Point& point) const {
   return renderer_->GetShapeAt(point, kHitTolerance);
+}
+
+htsde2::IHTSDEForm2* ModusView2::GetSdeForm() {
+  return nullptr;
 }

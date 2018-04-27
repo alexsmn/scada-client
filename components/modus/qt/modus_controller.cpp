@@ -5,6 +5,8 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "common_resources.h"
+#include "components/modus/modus_util.h"
+#include "components/modus/qt/modus_view.h"
 #include "components/modus/qt/modus_view2.h"
 #include "controller_factory.h"
 #include "selection_model.h"
@@ -21,6 +23,35 @@ ModusController::ModusController(const ControllerContext& context)
     : Controller{context}, wrapper_(nullptr) {}
 
 ModusController::~ModusController() {}
+
+QWidget* ModusController::CreateModusView() {
+  auto title_callback = [this](const base::string16& title) {
+    controller_delegate_.SetTitle(title);
+  };
+
+  auto navigation_callback = [this](const base::FilePath& path) {
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::Bind(&ModusController::OpenPath,
+                              weak_factory_.GetWeakPtr(), path));
+  };
+
+  auto selection_callback = [this](const rt::TimedDataSpec& spec) {
+    selection().SelectTimedData(spec);
+  };
+
+  // TODO: Change on ContextMenu.
+  auto context_menu_callback = [this](const gfx::Point& point) {
+    controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
+  };
+
+  view_ = std::make_unique<ModusView>(modus::ModusDocumentContext{
+      alias_resolver_, timed_data_service_, file_cache_, title_callback,
+      navigation_callback, selection_callback, context_menu_callback});
+
+  wrapper_ = view_.get();
+
+  return view_.get();
+}
 
 QWidget* ModusController::CreateModusView2() {
   view2_ = std::make_unique<ModusView2>(timed_data_service_);
@@ -40,28 +71,23 @@ QWidget* ModusController::CreateModusView2() {
 
   wrapper_ = view2_.get();
 
-  return view2_.get();
-}
-
-QWidget* ModusController::Init(const WindowDefinition& definition) {
-  bool modus2 = profile_.modus2;
-  if (auto* options = definition.FindItem("Options")) {
-    auto version = options->GetInt("version", 0);
-    if (version != 0)
-      modus2 = version >= 2;
-  }
-
-  if (!base::LowerCaseEqualsASCII(definition.path.Extension(), ".xsde"))
-    modus2 = false;
-
-  auto* view = CreateModusView2();
-  wrapper_->Open(GetPublicFilePath(definition.path));
-
   auto* scroll_area = new QScrollArea;
-  scroll_area->setWidget(view);
+  scroll_area->setWidget(view2_.get());
   scroll_area->setStyleSheet("background-color: white;");
 
   return scroll_area;
+}
+
+QWidget* ModusController::Init(const WindowDefinition& definition) {
+  QWidget* result = nullptr;
+  if (IsModus2(definition, profile_))
+    result = CreateModusView2();
+  else
+    result = CreateModusView();
+
+  wrapper_->Open(GetPublicFilePath(definition.path));
+
+  return result;
 }
 
 void ModusController::Save(WindowDefinition& definition) {

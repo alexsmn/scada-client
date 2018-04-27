@@ -5,12 +5,12 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "common_resources.h"
+#include "components/modus/modus_util.h"
 #include "components/modus/views/modus_view.h"
 #include "components/modus/views/modus_view2.h"
 #include "controller_factory.h"
 #include "selection_model.h"
 #include "services/file_cache.h"
-#include "services/profile.h"
 #include "window_definition.h"
 #include "window_info.h"
 
@@ -22,27 +22,28 @@ ModusController::ModusController(const ControllerContext& context)
 ModusController::~ModusController() {}
 
 views::View* ModusController::CreateModusView() {
-  view_ = std::make_unique<ModusView>(
-      ModusViewContext{alias_resolver_, timed_data_service_, file_cache_});
-
-  view_->title_callback_ = [this](const base::string16& title) {
+  auto title_callback = [this](const base::string16& title) {
     controller_delegate_.SetTitle(title);
   };
 
-  view_->navigation_callback_ = [this](const base::FilePath& path) {
+  auto navigation_callback = [this](const base::FilePath& path) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, base::Bind(&ModusController::OpenPath,
                               weak_factory_.GetWeakPtr(), path));
   };
 
-  view_->selection_callback_ = [this](const rt::TimedDataSpec& spec) {
+  auto selection_callback = [this](const rt::TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   };
 
   // TODO: Change on ContextMenu.
-  view_->popup_menu_callback_ = [this](const gfx::Point& point) {
+  auto context_menu_callback = [this](const gfx::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
   };
+
+  view_ = std::make_unique<ModusView>(modus::ModusDocumentContext{
+      alias_resolver_, timed_data_service_, file_cache_, title_callback,
+      navigation_callback, selection_callback, context_menu_callback});
 
   wrapper_ = view_.get();
 
@@ -75,18 +76,8 @@ views::View* ModusController::CreateModusView2() {
 }
 
 views::View* ModusController::Init(const WindowDefinition& definition) {
-  bool modus2 = profile_.modus2;
-  if (auto* options = definition.FindItem("Options")) {
-    auto version = options->GetInt("version", 0);
-    if (version != 0)
-      modus2 = version >= 2;
-  }
-
-  if (!base::LowerCaseEqualsASCII(definition.path.Extension(), ".xsde"))
-    modus2 = false;
-
   views::View* view = nullptr;
-  if (modus2)
+  if (IsModus2(definition, profile_))
     view = CreateModusView2();
   else
     view = CreateModusView();
@@ -106,45 +97,47 @@ bool ModusController::ShowContainedItem(const scada::NodeId& item_id) {
 }
 
 CommandHandler* ModusController::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_SETUP:
-    case ID_PRINT:
-    case ID_MODUS_TOOLBAR:
-    case ID_MODUS_STATUSBAR:
-      return view_ ? this : nullptr;
+  if (view_) {
+    switch (command_id) {
+      case ID_SETUP:
+      case ID_PRINT:
+      case ID_MODUS_TOOLBAR:
+      case ID_MODUS_STATUSBAR:
+        return this;
+    }
   }
 
   return __super::GetCommandHandler(command_id);
 }
 
 void ModusController::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_SETUP:
-      view_->sde_form_->ShowOptions();
-      break;
+  if (auto* sde_form = wrapper_->GetSdeForm()) {
+    switch (command) {
+      case ID_SETUP:
+        sde_form->ShowOptions();
+        return;
 
-    case ID_PRINT:
-      view_->sde_form_->Print();
-      break;
+      case ID_PRINT:
+        sde_form->Print();
+        return;
 
-    case ID_MODUS_TOOLBAR: {
-      VARIANT_BOOL visible = VARIANT_FALSE;
-      view_->sde_form_->get_ToolbarVisible(&visible);
-      view_->sde_form_->put_ToolbarVisible(!visible);
-      break;
+      case ID_MODUS_TOOLBAR: {
+        VARIANT_BOOL visible = VARIANT_FALSE;
+        sde_form->get_ToolbarVisible(&visible);
+        sde_form->put_ToolbarVisible(!visible);
+        return;
+      }
+
+      case ID_MODUS_STATUSBAR: {
+        VARIANT_BOOL visible = VARIANT_FALSE;
+        sde_form->get_StatusVisible(&visible);
+        sde_form->put_StatusVisible(!visible);
+        return;
+      }
     }
-
-    case ID_MODUS_STATUSBAR: {
-      VARIANT_BOOL visible = VARIANT_FALSE;
-      view_->sde_form_->get_StatusVisible(&visible);
-      view_->sde_form_->put_StatusVisible(!visible);
-      break;
-    }
-
-    default:
-      __super::ExecuteCommand(command);
-      break;
   }
+
+  __super::ExecuteCommand(command);
 }
 
 void ModusController::OpenPath(const base::FilePath& path) {

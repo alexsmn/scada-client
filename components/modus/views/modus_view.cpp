@@ -1,59 +1,17 @@
 ﻿#include "components/modus/views/modus_view.h"
 
-#include "base/logging.h"
-#include "base/win/scoped_bstr.h"
-#include "components/modus/views/modus_element.h"
-#include "components/modus/views/modus_loader.h"
-#include "components/modus/views/modus_object.h"
 #include "views/activex_host.h"
 #include "views/ambient_props.h"
 
-#include <atlwin.h>
-
-HRESULT ModusReindex(const base::FilePath& path,
-                     const AliasResolver& alias_resolver,
-                     TimedDataService& timed_data_service,
-                     FileCache& file_cache) {
-  HRESULT res;
-  CAxWindow win;
-  LPOLESTR ole_class;
-  if (FAILED(res = StringFromCLSID(__uuidof(htsde2::HTSDEForm2), &ole_class)))
-    return res;
-  if (!win.Create(NULL, NULL, NULL, WS_OVERLAPPEDWINDOW))
-    return E_FAIL;
-
-  res = win.CreateControl(ole_class);
-  CoTaskMemFree(ole_class);
-  if (FAILED(res))
-    return res;
-
-  base::win::ScopedComPtr<htsde2::IHTSDEForm2> form;
-  if (FAILED(res = win.QueryControl(__uuidof(htsde2::IHTSDEForm2),
-                                    form.ReceiveVoid())))
-    return res;
-  if (FAILED(res = form->Open(base::win::ScopedBstr(path.value().c_str()))))
-    return res;
-  base::win::ScopedComPtr<SDECore::ISDEDocument50> doc;
-  if (FAILED(res = form->get_Document(doc.Receive())))
-    return res;
-
-  modus::ModusLoader loader{modus::ModusLoaderContext{
-      alias_resolver, timed_data_service, file_cache}};
-  loader.Load(*doc, path, NULL);
-  return S_OK;
-}
-
 // ModusView
 
-ModusView::ModusView(ModusViewContext&& context)
-    : ModusViewContext{std::move(context)},
+ModusView::ModusView(ModusDocumentContext&& context)
+    : ModusDocumentContext{std::move(context)},
       views::ActiveXControl{ActiveXHost::instance()} {
   set_controller(this);
 }
 
-ModusView::~ModusView() {
-  DeleteObjects();
-}
+ModusView::~ModusView() {}
 
 void ModusView::Open(const base::FilePath& path) {
   path_ = path;
@@ -64,154 +22,16 @@ base::FilePath ModusView::GetPath() const {
 }
 
 bool ModusView::ShowContainedItem(const scada::NodeId& item_id) {
-  auto* object = FindObject(item_id);
-  if (!object)
-    return false;
-
-  sde_document_->DocHighLight(&object->sde_object(), RGB(0, 255, 0), false);
-
-  if (!object->elements().empty())
-    selection_callback_(object->elements()[0]->timed_data());
-
-  return true;
+  return document_ && document_->ShowContainedItem(item_id);
 }
 
-void ModusView::DeleteObjects() {
-  for (Objects::iterator i = objects_.begin(); i != objects_.end(); ++i)
-    delete *i;
-  objects_.clear();
-
-  sde_document_.Release();
-  if (sde_form_)
-    DispEventUnadvise(sde_form_.get());
-  sde_form_.Release();
-}
-
-void ModusView::OpenInternal(const base::FilePath& path) {
-  if (!sde_form_)
-    return;
-
-  assert(!sde_document_);
-  assert(objects_.empty());
-
-  sde_form_->Open(base::win::ScopedBstr(path.value().c_str()));
-
-  sde_form_->get_Document(sde_document_.Receive());
-  if (!sde_document_)
-    return;
-
-  {
-    modus::ModusLoader loader{modus::ModusLoaderContext{
-        alias_resolver_, timed_data_service_, file_cache_}};
-    loader.Load(*sde_document_, path, this);
-    title_ = loader.title();
-  }
-
-  path_ = path;
-
-  title_callback_(title_);
-}
-
-modus::ModusObject* ModusView::FindObject(const scada::NodeId& node_id) {
-  for (Objects::iterator i = objects_.begin(); i != objects_.end(); ++i) {
-    modus::ModusObject& object = **i;
-    for (auto* element : object.elements()) {
-      if (element->timed_data().GetNode().id() == node_id)
-        return &object;
-    }
-  }
-  return NULL;
-}
-
-STDMETHODIMP_(void)
-ModusView::OnDocPopup(ISDEDocument50* doc, VARIANT_BOOL* popup) {
-  assert(doc);
-  assert(popup);
-  *popup = FALSE;
-}
-
-STDMETHODIMP_(void)
-ModusView::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
-  assert(doc);
-  assert(info);
-
-  modus::ModusObject* object = NULL;
-
-  base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object;
-  info->get_Touched(sde_object.Receive());
-  if (sde_object) {
-    long id = -1;
-    sde_object->get_RTID(&id);
-    if (id != -1) {
-      ObjectMap::iterator i = object_map_.find(id);
-      if (i != object_map_.end())
-        object = i->second;
-    }
-  }
-
-  bool acked = false;
-  if (object) {
-    for (auto* element : object->elements()) {
-      if (element->timed_data().alerting()) {
-        element->timed_data().Acknowledge();
-        acked = true;
-      }
-    }
-  }
-
-  if (sde_object && !acked) {
-    base::string16 hyperlink = modus::GetHyperlink(*sde_object);
-    if (!hyperlink.empty())
-      navigation_callback_(base::FilePath(hyperlink));
-  }
-}
-
-STDMETHODIMP_(void)
-ModusView::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
-  assert(doc);
-  assert(info);
-
-  long button = 0;
-  info->get_Button(&button);
-
-  static const long LeftBtn = 0;
-  static const long RightBtn = 2;
-
-  /*	long x = 0, y = 0;
-    info->get_X(&x);
-    info->get_Y(&y);*/
-
-  modus::ModusObject* object = NULL;
-
-  base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object;
-  info->get_Touched(sde_object.Receive());
-  if (sde_object) {
-    long id = -1;
-    sde_object->get_RTID(&id);
-
-    if (id != -1) {
-      ObjectMap::iterator i = object_map_.find(id);
-      if (i != object_map_.end())
-        object = i->second;
-    }
-  }
-
-  if (!object) {
-    selection_callback_(rt::TimedDataSpec());
-    return;
-  }
-
-  if (!object->elements().empty())
-    selection_callback_(object->elements()[0]->timed_data());
-
-  if (button == RightBtn) {
-    POINT pt;
-    GetCursorPos(&pt);
-    popup_menu_callback_(gfx::Point(pt));
-  }
+htsde2::IHTSDEForm2* ModusView::GetSdeForm() {
+  return document_ ? &document_->sde_form() : nullptr;
 }
 
 void ModusView::OnControlCreated(views::ActiveXControl& sender) {
+  assert(!document_);
+
   // set ambient properties
   {
     base::win::ScopedComPtr<IAxWinAmbientDispatchEx> ambientEx;
@@ -228,18 +48,16 @@ void ModusView::OnControlCreated(views::ActiveXControl& sender) {
   if (!CreateControl(L"{001F373C-29D3-5C7E-A000-A0FC803D82EE}"))
     CreateControl(L"{001F373C-29D3-5F7E-A000-A0FC803D82EE}");
 
-  QueryControl(__uuidof(htsde2::IHTSDEForm2), sde_form_.ReceiveVoid());
-  if (sde_form_) {
-    DispEventAdvise(sde_form_.get());
-    sde_form_->put_StatusVisible(VARIANT_FALSE);
-    sde_form_->put_ToolbarVisible(VARIANT_FALSE);
-    // sde_form_->put_PagesVisible(SDECore::txPagesHidden);
-    sde_form_->put_AxBorderStyle(htsde2::afbNone);
-  }
+  base::win::ScopedComPtr<htsde2::IHTSDEForm2> sde_form;
+  QueryControl(__uuidof(htsde2::IHTSDEForm2), sde_form.ReceiveVoid());
+  if (!sde_form)
+    return;
 
-  OpenInternal(path_);
+  document_ = std::make_unique<modus::ModusDocument>(
+      ModusDocumentContext{*this}, *sde_form, path_);
+  title_callback_(document_->title());
 }
 
 void ModusView::OnContractDestroyed(views::ActiveXControl& sender) {
-  DeleteObjects();
+  document_.reset();
 }

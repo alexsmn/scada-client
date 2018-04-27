@@ -1,11 +1,11 @@
-﻿#include "components/modus/views/modus_element.h"
+﻿#include "components/modus/activex/modus_element.h"
 
 #include "base/format.h"
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
 #include "common/event_manager.h"
 #include "common/scada_node_ids.h"
-#include "components/modus/views/modus_object.h"
+#include "components/modus/activex/modus_object.h"
 #include "core/monitored_item_service.h"
 
 namespace modus {

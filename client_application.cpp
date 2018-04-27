@@ -16,7 +16,7 @@
 #include "common/remote_node_service.h"
 #include "components/main/action.h"
 #include "components/main/main_window_manager.h"
-#include "components/modus/modus_module2.h"
+#include "components/modus/libmodus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "address_space/address_space_impl.h"
 #include "address_space/generic_node_factory.h"

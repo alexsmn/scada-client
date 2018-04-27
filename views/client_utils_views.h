@@ -6,6 +6,7 @@
 #include "client_utils.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
+#include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/point.h"
 
 namespace ui {

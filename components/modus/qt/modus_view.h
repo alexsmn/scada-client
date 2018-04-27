@@ -5,6 +5,8 @@
 #include "core/configuration_types.h"
 #include "ui/views/controls/activex_control.h"
 
+#include <QAxWidget>
+
 namespace base {
 class FilePath;
 }
@@ -12,9 +14,8 @@ class FilePath;
 class ModusController;
 
 class ModusView : private modus::ModusDocumentContext,
-                  public views::ActiveXControl,
-                  public ModusViewWrapper,
-                  private views::ActiveXControl::Controller {
+                  public QAxWidget,
+                  public ModusViewWrapper {
  public:
   explicit ModusView(modus::ModusDocumentContext&& context);
   virtual ~ModusView();
@@ -27,10 +28,6 @@ class ModusView : private modus::ModusDocumentContext,
 
  protected:
   friend class ModusController;
-
-  // views::ActiveXControl::Controller
-  virtual void OnControlCreated(views::ActiveXControl& sender) override;
-  virtual void OnContractDestroyed(views::ActiveXControl& sender) override;
 
   base::FilePath path_;
 

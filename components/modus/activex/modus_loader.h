@@ -6,7 +6,6 @@
 
 class FileCache;
 class FileCacheUpdater;
-class ModusView;
 class TimedDataService;
 
 namespace base {
@@ -22,6 +21,7 @@ struct ISDEObjects2;
 
 namespace modus {
 
+class ModusDocument;
 class ModusObject;
 
 struct ModusLoaderContext {
@@ -36,12 +36,12 @@ class ModusLoader : private ModusLoaderContext {
 
   const base::string16& title() const { return title_; }
 
-  void Load(SDECore::ISDEDocument50& document,
+  void Load(SDECore::ISDEDocument50& sde_document,
             const base::FilePath& path,
-            ModusView* view);
+            ModusDocument* document);
 
  private:
-  void AddElement(ModusObject*& object,
+  void AddElement(std::unique_ptr<ModusObject>& object,
                   SDECore::ISDEObject50& sde_object,
                   SDECore::IParams& params,
                   const base::string16& binding,
@@ -51,7 +51,7 @@ class ModusLoader : private ModusLoaderContext {
 
   void LoadObjects(SDECore::ISDEObjects2& objects);
 
-  ModusView* view_;
+  ModusDocument* document_ = nullptr;
 
   base::string16 title_;
 

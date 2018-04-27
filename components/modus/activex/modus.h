@@ -1,8 +1,8 @@
 #pragma once
 
-#include "components/modus/sdecore.h"
+#include "components/modus/activex/sdecore.h"
 using SDECore::ISDEDocument50;
-#include "components/modus/htsde2.h"
+#include "components/modus/activex/htsde2.h"
 
 //#import "C:\Program Files\modus520\bin\sdecore.tlb" raw_interfaces_only
 //using SDECore::ISDEDocument50;
