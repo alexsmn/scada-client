@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>360</width>
+    <width>409</width>
     <height>146</height>
    </rect>
   </property>
@@ -38,7 +38,7 @@
         <bool>true</bool>
        </property>
        <property name="minimumContentsLength">
-        <number>50</number>
+        <number>30</number>
        </property>
       </widget>
      </item>
@@ -79,7 +79,7 @@
         <bool>true</bool>
        </property>
        <property name="minimumContentsLength">
-        <number>50</number>
+        <number>30</number>
        </property>
       </widget>
      </item>

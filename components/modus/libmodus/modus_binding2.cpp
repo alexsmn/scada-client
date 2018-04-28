@@ -1,8 +1,8 @@
-#include "components/modus/modus_binding2.h"
+#include "components/modus/libmodus/modus_binding2.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "components/modus/modus_module2.h"
-#include "components/modus/modus_style_library2.h"
+#include "components/modus/libmodus/modus_module2.h"
+#include "components/modus/libmodus/modus_style_library2.h"
 #include "core/configuration_types.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
