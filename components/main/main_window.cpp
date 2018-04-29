@@ -6,6 +6,7 @@
 #include "components/main/main_commands.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
+#include "components/main/opened_view_commands.h"
 #include "components/main/view_manager.h"
 #include "contents_model.h"
 #include "contents_observer.h"
@@ -230,27 +231,24 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
       def.size = gfx::Size(window_info.cx, window_info.cy);
   }
 
-  return std::make_unique<OpenedView>(
-      OpenedViewContext{this,
-                        alias_resolver_,
-                        task_manager_,
-                        method_service_,
-                        session_service_,
-                        node_management_service_,
-                        event_manager_,
-                        history_service_,
-                        monitored_item_service_,
-                        timed_data_service_,
-                        node_service_,
-                        portfolio_manager_,
-                        action_manager_,
-                        local_events_,
-                        favourites_,
-                        file_cache_,
-                        profile_,
-                        GetDialogService(),
-                        main_window_manager_,
-                        def});
+  auto& dialog_service = GetDialogService();
+
+  auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
+      this, def, action_manager_, dialog_service, controller_factory_});
+
+  auto commands =
+      std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
+          task_manager_, method_service_, session_service_,
+          node_management_service_, event_manager_, history_service_,
+          monitored_item_service_, timed_data_service_, node_service_,
+          portfolio_manager_, action_manager_, local_events_, favourites_,
+          file_cache_, profile_, main_window_manager_});
+
+  commands->SetContext(opened_view.get(), &dialog_service);
+
+  opened_view->commands = std::move(commands);
+
+  return opened_view;
 }
 
 void MainWindow::OnViewTitleUpdated(OpenedView& view,

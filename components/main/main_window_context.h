@@ -1,5 +1,7 @@
 #pragma once
 
+#include "controller_factory.h"
+
 namespace events {
 class EventManager;
 }
@@ -44,4 +46,5 @@ struct MainWindowContext {
   Speech& speech_;
   TaskManager& task_manager_;
   TimedDataService& timed_data_service_;
+  const ControllerFactory controller_factory_;
 };

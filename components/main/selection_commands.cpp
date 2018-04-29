@@ -45,8 +45,8 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
 
 void SelectionCommands::OpenWindow(unsigned type) {
   if (selection_ && !selection_->empty()) {
-    OpenView(&main_window_,
-             MakeWindowDefinition(selection_->node(), type, true), true);
+    ::OpenView(main_window_,
+               MakeWindowDefinition(selection_->node(), type, true), true);
   }
 }
 
@@ -154,6 +154,7 @@ bool SelectionCommands::IsCommandChecked(unsigned command_id) const {
 }
 
 void SelectionCommands::ExecuteCommand(unsigned command_id) {
+  assert(dialog_service_);
   assert(selection_);
 
   if (selection_->multiple()) {
@@ -173,7 +174,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
 
     auto title = selection_->GetTitle();
     auto items = selection_->GetMultipleNodeIds();
-    OpenView(&main_window_, MakeWindowDefinition(items, type, title.c_str()));
+    ::OpenView(main_window_, MakeWindowDefinition(items, type, title.c_str()));
     return;
   }
 
@@ -207,7 +208,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     }
     if (type) {
       const std::string& formula = selection_->GetTimedData().formula();
-      OpenView(&main_window_, MakeWindowDefinition(formula.c_str(), type));
+      ::OpenView(main_window_, MakeWindowDefinition(formula.c_str(), type));
     }
     return;
   }
@@ -219,16 +220,16 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_OPEN_GRAPH:
       // TODO: formula
-      OpenView(&main_window_, MakeWindowDefinition(node, ID_GRAPH_VIEW, true));
+      ::OpenView(main_window_, MakeWindowDefinition(node, ID_GRAPH_VIEW, true));
       return;
     case ID_OPEN_TABLE:
       // TODO: formula
-      OpenView(&main_window_, MakeWindowDefinition(node, ID_TABLE_VIEW, true));
+      ::OpenView(main_window_, MakeWindowDefinition(node, ID_TABLE_VIEW, true));
       return;
     case ID_OPEN_SUMMARY:
       // TODO: formula
-      OpenView(&main_window_,
-               MakeWindowDefinition(node, ID_SUMMARY_VIEW, true));
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_SUMMARY_VIEW, true));
       return;
     case ID_OPEN_EVENTS:
     case ID_HISTORICAL_EVENTS:
@@ -238,26 +239,26 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
             MakeWindowDefinition(node, ID_EVENT_JOURNAL_VIEW, true);
         if (command_id == ID_OPEN_EVENTS)
           win.AddItem("Window").SetString("mode", "Current");
-        main_window_.OpenView(win, true);
+        ::OpenView(main_window_, win, true);
       }
       return;
     case ID_OPEN_DISPLAY:
       OpenModusView(node);
       return;
     case ID_TIMED_DATA_VIEW:
-      OpenView(&main_window_,
-               MakeWindowDefinition(node, ID_TIMED_DATA_VIEW, true));
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_TIMED_DATA_VIEW, true));
       return;
     case ID_OPEN_GROUP_TABLE:
       if (auto win = MakeGroupWindowDefinition(node, ID_TABLE_VIEW))
-        OpenView(&main_window_, win.value());
+        ::OpenView(main_window_, win.value());
       return;
     case ID_WRITE:
-      ExecuteWriteDialog(dialog_service_, node_id, false, timed_data_service_,
+      ExecuteWriteDialog(*dialog_service_, node_id, false, timed_data_service_,
                          profile_);
       return;
     case ID_WRITE_MANUAL:
-      ExecuteWriteDialog(dialog_service_, node_id, true, timed_data_service_,
+      ExecuteWriteDialog(*dialog_service_, node_id, true, timed_data_service_,
                          profile_);
       return;
     case ID_UNLOCK_ITEM:
@@ -272,23 +273,24 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       event_manager_.AcknowledgeItemEvents(node_id);
       return;
     case ID_ITEM_PARAMS:
-      OpenView(&main_window_,
-               MakeWindowDefinition(node, ID_PROPERTY_VIEW, false));
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_PROPERTY_VIEW, false));
       return;
     case ID_TABLE_CONFIG:
-      OpenView(&main_window_,
-               MakeWindowDefinition(node, ID_TABLE_EDITOR, false));
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_TABLE_EDITOR, false));
       return;
     case ID_TRANSMISSION_VIEW:
-      OpenView(&main_window_,
-               MakeWindowDefinition(node, ID_TRANSMISSION_VIEW, false));
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_TRANSMISSION_VIEW, false));
       return;
     case ID_OPEN_WATCH:
-      OpenView(&main_window_, MakeWindowDefinition(node, ID_WATCH_VIEW, false));
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_WATCH_VIEW, false));
       return;
     case ID_OPEN_DEVICE_METRICS:
       if (auto win = MakeDeviceMetricsWindowDefinition(node))
-        OpenView(&main_window_, win.value());
+        ::OpenView(main_window_, win.value());
       return;
     case ID_ITEM_ENABLE:
     case ID_ITEM_DISABLE:
@@ -327,6 +329,9 @@ void SelectionCommands::DoIOCtrl(const scada::NodeId& node_id,
 }
 
 void SelectionCommands::OpenModusView(const NodeRef& node) {
+  assert(main_window_);
+  assert(dialog_service_);
+
   auto cached_items =
       file_cache_.GetList(VIEW_TYPE_MODUS).GetFilesContainingItem(node.id());
 
@@ -334,7 +339,7 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
     base::string16 msg =
         base::StringPrintf(L"Схема для объекта \"%ls\" не найдена.",
                            ToString16(node.display_name()).c_str());
-    dialog_service_.RunMessageBox(msg, L"Схема", MessageBoxMode::Info);
+    dialog_service_->RunMessageBox(msg, L"Схема", MessageBoxMode::Info);
     return;
   }
 
@@ -348,9 +353,17 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   } else {
     WindowDefinition win(GetWindowInfo(ID_MODUS_VIEW));
     win.path = path;
-    view = main_window_.OpenView(win, true);
+    view = main_window_->OpenView(win, true);
   }
 
   if (view)
     view->SetSelection(node.id());
+}
+
+void SelectionCommands::SetContext(MainWindow* main_window,
+                                   DialogService* dialog_service,
+                                   SelectionModel* selection) {
+  main_window_ = main_window;
+  dialog_service_ = dialog_service;
+  selection_ = selection;
 }

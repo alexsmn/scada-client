@@ -14,7 +14,6 @@ class MenuModel;
 }
 
 class ActionManager;
-class OpenedView;
 class MainWindowViews;
 
 HMENU CreatePopupMenu(unsigned resource_id,

@@ -2,6 +2,7 @@
 
 #include "command_handler.h"
 
+#include <memory>
 #include <type_traits>
 
 namespace events {
@@ -38,8 +39,8 @@ struct MainCommandsContext {
 
 class MainCommands : private MainCommandsContext, public CommandHandler {
  public:
-  explicit MainCommands(MainCommandsContext&& context)
-      : MainCommandsContext{std::move(context)} {}
+  explicit MainCommands(MainCommandsContext&& context);
+  ~MainCommands();
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);

@@ -28,7 +28,6 @@ class TaskManager;
 class TimedDataService;
 
 struct SelectionCommandsContext {
-  MainWindow& main_window_;
   TaskManager& task_manager_;
   scada::MethodService& method_service_;
   scada::SessionService& session_service_;
@@ -38,7 +37,6 @@ struct SelectionCommandsContext {
   LocalEvents& local_events_;
   FileCache& file_cache_;
   Profile& profile_;
-  DialogService& dialog_service_;
   MainWindowManager& main_window_manager_;
 };
 
@@ -47,7 +45,9 @@ class SelectionCommands : private SelectionCommandsContext,
  public:
   explicit SelectionCommands(SelectionCommandsContext&& context);
 
-  void set_selection(SelectionModel* selection) { selection_ = selection; }
+  void SetContext(MainWindow* main_window,
+                  DialogService* dialog_service,
+                  SelectionModel* selection);
 
   void OpenWindow(unsigned type);
 
@@ -64,4 +64,6 @@ class SelectionCommands : private SelectionCommandsContext,
   void OpenModusView(const NodeRef& node);
 
   SelectionModel* selection_ = nullptr;
+  MainWindow* main_window_ = nullptr;
+  DialogService* dialog_service_ = nullptr;
 };

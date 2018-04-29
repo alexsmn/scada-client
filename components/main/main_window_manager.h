@@ -25,6 +25,8 @@ class MainWindowManager : private MainWindowManagerContext {
   explicit MainWindowManager(MainWindowManagerContext&& context);
   ~MainWindowManager();
 
+  void Init();
+
   void CreateMainWindow();
   void OpenMainWindow(int window_id);
   void CloseMainWindow(int window_id);

@@ -5,6 +5,9 @@
 
 MainWindowManager::MainWindowManager(MainWindowManagerContext&& context)
     : MainWindowManagerContext{std::move(context)} {
+}
+
+void MainWindowManager::Init() {
   typedef Profile::MainWindows Windows;
   const Windows& window_defs = profile_.main_windows;
   if (window_defs.empty()) {

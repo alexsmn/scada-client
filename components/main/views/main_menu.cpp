@@ -5,20 +5,12 @@
 #include "components/main/views/context_menu_model.h"
 #include "views/client_utils_views.h"
 
-MainMenu::MainMenu(MainWindowViews& main_window,
-                   ActionManager& action_manager,
-                   Favourites& favourites,
-                   FileCache& file_cache,
-                   Profile& profile,
-                   DialogService& dialog_service,
-                   MainWindowManager& main_window_manager,
-                   ViewManager& view_manager,
-                   unsigned resource_id)
-    : model_{std::make_unique<MainMenuModel2>(MainMenuModel2Context{
-          main_window, favourites, file_cache, profile, dialog_service,
-          main_window_manager, view_manager})},
-      action_manager_{action_manager} {
-  handle_.LoadMenu(resource_id);
+MainMenu::MainMenu(MainMenuContext&& context)
+    : MainMenuContext{std::move(context)},
+      model_{std::make_unique<MainMenuModel2>(MainMenuModel2Context{
+          main_window_, favourites_, file_cache_, profile_, dialog_service_,
+          main_window_manager_, view_manager_})} {
+  handle_.LoadMenu(resource_id_);
 
   for (int i = 0; i < handle_.GetMenuItemCount(); ++i) {
     CMenuItemInfo mii;

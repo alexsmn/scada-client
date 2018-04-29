@@ -36,9 +36,9 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
       session_service_.HasPrivilege(scada::Privilege::Configure)
           ? IDR_MAINFRAME
           : IDR_MAIN_USER;
-  main_menu_ = std::make_unique<MainMenu>(
+  main_menu_ = std::make_unique<MainMenu>(MainMenuContext{
       *this, action_manager_, favourites_, file_cache_, profile_,
-      dialog_service_, main_window_manager_, *view_manager_, menu_id);
+      dialog_service_, main_window_manager_, *view_manager_, menu_id});
 
   status_bar_controller_ =
       std::make_unique<StatusBarController>(StatusBarControllerContext{

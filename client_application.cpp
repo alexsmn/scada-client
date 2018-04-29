@@ -303,14 +303,45 @@ void ClientApplication::SetServices(DataServices&& services) {
   profile_->Load(*event_manager_, *portfolio_manager_, *favourites_);
   profile_loaded_ = true;
 
-  auto main_window_factory = [this](int window_id) {
-    return std::make_unique<MainWindowType>(MainWindowContext{
-        *action_manager_, alias_resolver_, window_id, *event_manager_,
-        *favourites_, *file_cache_, *local_events_, *main_window_manager_,
-        *node_service_, *portfolio_manager_, *profile_, *master_data_services_,
-        *master_data_services_, *master_data_services_, *master_data_services_,
-        *master_data_services_, *speech_, *task_manager_, *timed_data_service_});
+  auto controller_factory = [this](unsigned type, ControllerDelegate& delegate,
+                                   DialogService& dialog_service) {
+    return CreateController(
+        type,
+        ControllerContext{delegate, alias_resolver_, *task_manager_,
+                          *master_data_services_, *event_manager_,
+                          *master_data_services_, *master_data_services_,
+                          *timed_data_service_, *node_service_,
+                          *portfolio_manager_, *local_events_, *favourites_,
+                          *file_cache_, *profile_, dialog_service});
   };
+
+  auto main_window_factory = [this, controller_factory](int window_id) {
+    return std::make_unique<MainWindowType>(
+        MainWindowContext{*action_manager_,
+                          alias_resolver_,
+                          window_id,
+                          *event_manager_,
+                          *favourites_,
+                          *file_cache_,
+                          *local_events_,
+                          *main_window_manager_,
+                          *node_service_,
+                          *portfolio_manager_,
+                          *profile_,
+                          *master_data_services_,
+                          *master_data_services_,
+                          *master_data_services_,
+                          *master_data_services_,
+                          *master_data_services_,
+                          *speech_,
+                          *task_manager_,
+                          *timed_data_service_,
+                          controller_factory});
+  };
+
+  main_window_manager_ = std::make_unique<MainWindowManager>(
+      MainWindowManagerContext{*profile_, main_window_factory, quit_handler_});
+  main_window_manager_->Init();
 }
 
 void ClientApplication::OnSessionCreated() {

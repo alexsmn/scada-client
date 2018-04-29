@@ -59,10 +59,16 @@ void OpenPublicFolder() {
 
 }  // namespace
 
+MainCommands::MainCommands(MainCommandsContext&& context)
+    : MainCommandsContext{std::move(context)} {}
+
+MainCommands::~MainCommands() {}
+
 CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
   auto* active_view = main_window_.GetActiveView();
   if (active_view) {
-    CommandHandler* handler = active_view->GetCommandHandler(command_id);
+    CommandHandler* handler =
+        active_view->commands->GetCommandHandler(command_id);
     if (handler)
       return handler;
   }

@@ -33,7 +33,8 @@ void ContextMenuModel::Rebuild() {
   std::vector<unsigned> commands;
   for (auto* action : action_manager_.actions()) {
     if (main_window_.active_view() &&
-        main_window_.active_view()->GetCommandHandler(action->command_id())) {
+        main_window_.active_view()->commands->GetCommandHandler(
+            action->command_id())) {
       commands.push_back(action->command_id());
     }
   }

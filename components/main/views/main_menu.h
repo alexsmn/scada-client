@@ -16,26 +16,27 @@ using std::min;
 #include <atlapp.h>
 #include <atlframe.h>
 
-namespace scada {
-class SessionService;
-}
-
 class ActionManager;
+class CommandHandler;
 class Favourites;
 class FileCache;
 class Profile;
 
-class MainMenu {
+struct MainMenuContext {
+  MainWindowViews& main_window_;
+  ActionManager& action_manager_;
+  Favourites& favourites_;
+  FileCache& file_cache_;
+  Profile& profile_;
+  DialogService& dialog_service_;
+  MainWindowManager& main_window_manager_;
+  ViewManager& view_manager_;
+  unsigned resource_id_;
+};
+
+class MainMenu : private MainMenuContext {
  public:
-  MainMenu(MainWindowViews& main_window,
-           ActionManager& action_manager,
-           Favourites& favourites,
-           FileCache& file_cache,
-           Profile& profile,
-           DialogService& dialog_service,
-           MainWindowManager& main_window_manager,
-           ViewManager& view_manager,
-           unsigned menu_id);
+  explicit MainMenu(MainMenuContext&& context);
 
   CMenuHandle handle() { return handle_; }
 
@@ -68,8 +69,6 @@ class MainMenu {
                     WPARAM /*wParam*/,
                     LPARAM /*lParam*/,
                     BOOL& /*bHandled*/);
-
-  ActionManager& action_manager_;
 
   std::unique_ptr<MainMenuModel2> model_;
 

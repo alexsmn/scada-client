@@ -2,15 +2,11 @@
 
 #include <memory>
 
-#include "base/memory/weak_ptr.h"
 #include "base/strings/string16.h"
 #include "base/timer/timer.h"
-#include "command_handler.h"
-#include "common/aliases.h"
 #include "controller_delegate.h"
+#include "controller_factory.h"
 #include "controls/types.h"
-#include "core/configuration_types.h"
-#include "core/status.h"
 #include "window_definition.h"
 
 #if defined(UI_VIEWS)
@@ -19,61 +15,24 @@
 #include "ui/views/drop_controller.h"
 #endif
 
-namespace events {
-class EventManager;
-}
-
-namespace scada {
-class HistoryService;
-class MethodService;
-class MonitoredItemService;
-class NodeManagementService;
-class SessionService;
-}  // namespace scada
-
 class ActionManager;
+class CommandHandler;
 class ContentsModel;
 class Controller;
 class DialogService;
-class Favourites;
-class FileCache;
-class LocalEvents;
 class MainWindow;
-class MainWindowManager;
-class NodeService;
-class PortfolioManager;
-class Profile;
-class SelectionCommands;
-class TaskManager;
-class TimedDataService;
 class WindowDefinition;
 struct WindowInfo;
 
 struct OpenedViewContext {
   MainWindow* main_window_;
-  const AliasResolver alias_resolver_;
-  TaskManager& task_manager_;
-  scada::MethodService& method_service_;
-  scada::SessionService& session_service_;
-  scada::NodeManagementService& node_management_service_;
-  events::EventManager& event_manager_;
-  scada::HistoryService& history_service_;
-  scada::MonitoredItemService& monitored_item_service_;
-  TimedDataService& timed_data_service_;
-  NodeService& node_service_;
-  PortfolioManager& portfolio_manager_;
-  ActionManager& action_manager_;
-  LocalEvents& local_events_;
-  Favourites& favourites_;
-  FileCache& file_cache_;
-  Profile& profile_;
-  DialogService& dialog_service_;
-  MainWindowManager& main_window_manager_;
   WindowDefinition& window_def_;
+  ActionManager& action_manager_;
+  DialogService& dialog_service_;
+  const ControllerFactory controller_factory_;
 };
 
 class OpenedView : private OpenedViewContext,
-                   public CommandHandler,
 #if defined(UI_VIEWS)
                    public views::DropController,
                    private views::ContextMenuController,
@@ -109,11 +68,6 @@ class OpenedView : private OpenedViewContext,
   base::string16 GetWindowTitle() const;
   void Close();
 
-  // CommandHandler
-  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command_id) override;
-  virtual bool IsCommandChecked(unsigned command_id) const override;
-
 #if defined(UI_VIEWS)
   // views::DropController
   virtual bool CanDrop(const ui::OSExchangeData& data) override;
@@ -131,15 +85,11 @@ class OpenedView : private OpenedViewContext,
   // TODO: Move to private.
   virtual void SetModified(bool modified) override;
 
+  std::unique_ptr<CommandHandler> commands;
+
  private:
   void UpdateWorking();
   void UpdateTitle();
-
-  bool CanCreateRecord(const scada::NodeId& type_node_id) const;
-  void CreateRecord(const scada::NodeId& type_node_id, int tag);
-  void OnCreateRecordComplete(const scada::LocalizedText& display_name,
-                              const scada::Status& status,
-                              const scada::NodeId& node_id);
 
   // ControllerDelegate
   virtual void SetTitle(const base::StringPiece16& title) override;
@@ -154,7 +104,6 @@ class OpenedView : private OpenedViewContext,
 
   std::unique_ptr<Controller> controller_;
 
-  std::unique_ptr<SelectionCommands> selection_commands_;
   bool modified_ = false;
 
   base::string16 title_;
@@ -173,6 +122,4 @@ class OpenedView : private OpenedViewContext,
   base::string16 user_title_;
   // Window is locked for adding of new items.
   bool locked_ = false;
-
-  base::WeakPtrFactory<OpenedView> weak_factory_{this};
 };
