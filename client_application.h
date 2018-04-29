@@ -27,6 +27,7 @@ class TransportFactory;
 }
 
 class ActionManager;
+class ConnectionStateReporter;
 class Favourites;
 class FileCache;
 class Logger;
@@ -91,6 +92,8 @@ class ClientApplication : private ClientApplicationContext,
   std::unique_ptr<FileCache> file_cache_;
 
   std::unique_ptr<ModusModule2> modus_module_;
+
+  std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
 
   std::unique_ptr<MainWindowManager> main_window_manager_;
 

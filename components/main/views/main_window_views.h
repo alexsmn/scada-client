@@ -26,12 +26,12 @@ class MainWindowViews final : public MainWindow,
   void OnNativeWindowClosed();
 
   // views::View
+  virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void Layout() override;
   virtual bool ExecuteWindowsCommand(int command_id) override;
 
  protected:
   // MainWindow
-  virtual DialogService& GetDialogService() override { return dialog_service_; }
   virtual void UpdateTitle() override;
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;

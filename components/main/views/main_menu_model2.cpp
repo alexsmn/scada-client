@@ -77,12 +77,12 @@ MainMenuModel2::MainMenuModel2(MainMenuModel2Context&& context)
 }
 
 bool MainMenuModel2::IsCommandIdChecked(int command_id) const {
-  auto* handler = main_window_.main_commands_->GetCommandHandler(command_id);
+  auto* handler = main_window_.commands().GetCommandHandler(command_id);
   return handler && handler->IsCommandChecked(command_id);
 }
 
 bool MainMenuModel2::IsCommandIdEnabled(int command_id) const {
-  auto* handler = main_window_.main_commands_->GetCommandHandler(command_id);
+  auto* handler = main_window_.commands().GetCommandHandler(command_id);
   return handler && handler->IsCommandEnabled(command_id);
 }
 
@@ -92,7 +92,7 @@ bool MainMenuModel2::GetAcceleratorForCommandId(int command_id,
 }
 
 void MainMenuModel2::ExecuteCommand(int command_id) {
-  auto* handler = main_window_.main_commands_->GetCommandHandler(command_id);
+  auto* handler = main_window_.commands().GetCommandHandler(command_id);
   if (handler)
     handler->ExecuteCommand(command_id);
 }

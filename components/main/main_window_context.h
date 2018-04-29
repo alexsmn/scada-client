@@ -18,8 +18,10 @@ class ActionManager;
 class Favourites;
 class FileCache;
 class LocalEvents;
+class MainWindow;
 class MainWindowManager;
 class NodeService;
+class OpenedView;
 class PortfolioManager;
 class Profile;
 class Speech;
@@ -47,4 +49,12 @@ struct MainWindowContext {
   TaskManager& task_manager_;
   TimedDataService& timed_data_service_;
   const ControllerFactory controller_factory_;
+  const std::function<std::unique_ptr<CommandHandler>(
+      MainWindow& main_window,
+      DialogService& dialog_service)>
+      main_commands_factory_;
+  const std::function<std::unique_ptr<CommandHandler>(
+      OpenedView& opened_view,
+      DialogService& dialog_service)>
+      view_commands_factory_;
 };

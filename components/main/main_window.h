@@ -14,7 +14,6 @@ namespace base {
 class FilePath;
 }
 
-class ConnectionStateReporter;
 class ContentsObserver;
 class DialogService;
 class EventsHelper;
@@ -68,11 +67,13 @@ class MainWindow : protected MainWindowContext,
   void OpenPane(unsigned type_id, bool activate);
   void ClosePane(unsigned type_id);
 
+  virtual DialogService& GetDialogService() = 0;
+
+  CommandHandler& commands() { return *commands_; }
+
  protected:
   void Init(ViewManager& view_manager);
   void BeforeClose();
-
-  virtual DialogService& GetDialogService() = 0;
 
   virtual void SetWindowFlashing(bool flashing) = 0;
 
@@ -87,7 +88,7 @@ class MainWindow : protected MainWindowContext,
   virtual void OnViewClosed(OpenedView& view) override;
   virtual void OnActiveViewChanged(OpenedView* view) override;
 
-  std::unique_ptr<MainCommands> main_commands_;
+  std::unique_ptr<CommandHandler> commands_;
 
  private:
   void SetActiveView(OpenedView* view);
@@ -108,9 +109,6 @@ class MainWindow : protected MainWindowContext,
   OpenedView* active_view_ = nullptr;
   // View to insert new items.
   OpenedView* active_data_view_ = nullptr;
-
-  // TODO: Move into application.
-  std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
 
   std::unique_ptr<EventsHelper> events_helper_;
 

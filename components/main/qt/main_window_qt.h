@@ -17,9 +17,11 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
 
   QMenu& context_menu() const { return *context_menu_; }
 
- protected:
   // MainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
+
+ protected:
+  // MainWindow
   virtual void UpdateTitle() override;
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;

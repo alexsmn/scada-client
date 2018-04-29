@@ -81,8 +81,9 @@ void MainWindowViews::CreateToolbar() {
   toolbar_->set_vertical(GetPrefs().toolbar_position != ID_TOOLBAR_TOP);
   AddChildView(toolbar_.get());
 
+  assert(commands_);
   toolbar_controller_ = std::make_unique<ToolbarController>(
-      action_manager_, *toolbar_, *main_commands_);
+      action_manager_, *toolbar_, *commands_);
 }
 
 gfx::NativeView MainWindowViews::GetWindowHandle() const {
@@ -211,7 +212,7 @@ void MainWindowViews::UpdateToolbarPosition() {
 }
 
 bool MainWindowViews::ExecuteWindowsCommand(int command_id) {
-  CommandHandler* handler = main_commands_->GetCommandHandler(command_id);
+  CommandHandler* handler = commands_->GetCommandHandler(command_id);
   if (handler) {
     handler->ExecuteCommand(command_id);
     return true;

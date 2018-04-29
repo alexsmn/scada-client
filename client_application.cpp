@@ -19,13 +19,16 @@
 #include "common/remote_node_service.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
+#include "components/main/main_commands.h"
 #include "components/main/main_window_manager.h"
+#include "components/main/opened_view_commands.h"
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "net/transport_factory_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
+#include "services/connection_state_reporter.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
 #include "services/local_events.h"
@@ -147,6 +150,7 @@ ClientApplication::~ClientApplication() {
   modus_module_.reset();
 
   file_cache_.reset();
+  connection_state_reporter_.reset();
 
   speech_.reset();
   action_manager_.reset();
@@ -283,6 +287,9 @@ void ClientApplication::SetServices(DataServices&& services) {
       *node_service_, *master_data_services_, *local_events_, *profile_});
   speech_.reset(new Speech);
 
+  connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(
+      ConnectionStateReporterContext{*master_data_services_, *local_events_});
+
   file_cache_ = std::make_unique<FileCache>();
   RegisterFileCacheType(*file_cache_, VIEW_TYPE_MODUS, L".sde;.xsde");
   RegisterFileCacheType(*file_cache_, VIEW_TYPE_VIDICON_DISPLAY, L".vds");
@@ -315,8 +322,32 @@ void ClientApplication::SetServices(DataServices&& services) {
                           *file_cache_, *profile_, dialog_service});
   };
 
-  auto main_window_factory = [this, controller_factory](int window_id) {
-    return std::make_unique<MainWindowType>(
+  auto main_commands_factory = [this](MainWindow& main_window,
+                                      DialogService& dialog_service) {
+    return std::make_unique<MainCommands>(MainCommandsContext{
+        main_window, *task_manager_, dialog_service, *master_data_services_,
+        *event_manager_, *node_service_, *local_events_, *favourites_, *speech_,
+        *profile_, *main_window_manager_});
+  };
+
+  auto view_commands_factory = [this](OpenedView& opened_view,
+                                      DialogService& dialog_service) {
+    auto commands =
+        std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
+            *task_manager_, *master_data_services_, *master_data_services_,
+            *master_data_services_, *event_manager_, *master_data_services_,
+            *master_data_services_, *timed_data_service_, *node_service_,
+            *portfolio_manager_, *action_manager_, *local_events_, *favourites_,
+            *file_cache_, *profile_, *main_window_manager_});
+
+    commands->SetContext(&opened_view, &dialog_service);
+
+    return commands;
+  };
+
+  auto main_window_factory = [this, controller_factory, main_commands_factory,
+                              view_commands_factory](int window_id) {
+    auto main_window = std::make_unique<MainWindowType>(
         MainWindowContext{*action_manager_,
                           alias_resolver_,
                           window_id,
@@ -336,7 +367,11 @@ void ClientApplication::SetServices(DataServices&& services) {
                           *speech_,
                           *task_manager_,
                           *timed_data_service_,
-                          controller_factory});
+                          controller_factory,
+                          main_commands_factory,
+                          view_commands_factory});
+
+    return main_window;
   };
 
   main_window_manager_ = std::make_unique<MainWindowManager>(

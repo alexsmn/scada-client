@@ -111,12 +111,12 @@ void MainWindowQt::CreateToolbar() {
     if (action_info->image_id() != 0)
       action->setIcon(QIcon(LoadPixmap(action_info->image_id())));
     auto command_id = action_info->command_id();
-    QObject::connect(
-        action, &QAction::triggered, [this, command_id](bool checked) {
-          auto* handler = main_commands_->GetCommandHandler(command_id);
-          if (handler && handler->IsCommandEnabled(command_id))
-            handler->ExecuteCommand(command_id);
-        });
+    QObject::connect(action, &QAction::triggered,
+                     [this, command_id](bool checked) {
+                       auto* handler = commands_->GetCommandHandler(command_id);
+                       if (handler && handler->IsCommandEnabled(command_id))
+                         handler->ExecuteCommand(command_id);
+                     });
     action_map_.emplace(action_info->command_id(), action);
   }
 
@@ -162,12 +162,12 @@ void MainWindowQt::CreateToolbar() {
     auto* action =
         new QAction(QString::fromWCharArray(window_info.title), this);
     auto command_id = window_info.command_id;
-    QObject::connect(
-        action, &QAction::triggered, [this, command_id](bool checked) {
-          auto* handler = main_commands_->GetCommandHandler(command_id);
-          if (handler && handler->IsCommandEnabled(command_id))
-            handler->ExecuteCommand(command_id);
-        });
+    QObject::connect(action, &QAction::triggered,
+                     [this, command_id](bool checked) {
+                       auto* handler = commands_->GetCommandHandler(command_id);
+                       if (handler && handler->IsCommandEnabled(command_id))
+                         handler->ExecuteCommand(command_id);
+                     });
     action_map_.emplace(command_id, action);
   }
 
@@ -205,7 +205,7 @@ void MainWindowQt::OnSelectionChanged() {
   for (auto& p : action_map_) {
     auto command_id = p.first;
     auto* action = p.second;
-    auto* handler = main_commands_->GetCommandHandler(p.first);
+    auto* handler = commands_->GetCommandHandler(p.first);
     action->setVisible(!!handler);
     if (handler) {
       bool enabled = handler->IsCommandEnabled(command_id);
