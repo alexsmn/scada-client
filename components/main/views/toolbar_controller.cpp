@@ -1,7 +1,7 @@
 #include "components/main/views/toolbar_controller.h"
 
 #include "command_handler.h"
-#include "components/main/action.h"
+#include "components/main/action_manager.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/views/controls/toolbar.h"
 

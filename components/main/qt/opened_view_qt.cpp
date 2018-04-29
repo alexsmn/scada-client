@@ -1,6 +1,6 @@
 #include "components/main/opened_view.h"
 
-#include "components/main/action.h"
+#include "components/main/action_manager.h"
 #include "components/main/main_window.h"
 #include "controller.h"
 #include "window_definition.h"

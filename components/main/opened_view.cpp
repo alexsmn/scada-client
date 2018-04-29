@@ -1,6 +1,5 @@
 ﻿#include "opened_view.h"
 
-#include "action.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "commands/add_multiple_items_dialog.h"
@@ -11,6 +10,7 @@
 #include "common/scada_node_ids.h"
 #include "common/static_types.h"
 #include "common_resources.h"
+#include "components/main/actions.h"
 #include "components/main/main_window_util.h"
 #include "components/main/selection_commands.h"
 #include "controller.h"

@@ -2,7 +2,7 @@
 
 #include "client_utils.h"
 #include "common_resources.h"
-#include "components/main/action.h"
+#include "components/main/action_manager.h"
 #include "components/main/main_commands.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"

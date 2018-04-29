@@ -2,8 +2,8 @@
 
 #include "base/color.h"
 #include "command_handler.h"
+#include "components/main/views/context_menu_model.h"
 #include "views/client_utils_views.h"
-#include "views/context_menu_model.h"
 
 MainMenu::MainMenu(MainWindowViews& main_window,
                    ActionManager& action_manager,

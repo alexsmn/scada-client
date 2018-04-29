@@ -3,7 +3,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "common/aliases.h"
-#include "components/main/action.h"
+#include "components/main/action_manager.h"
 #include "components/main/main_window_context.h"
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
@@ -53,8 +53,6 @@ class MainWindow : protected MainWindowContext,
 
   void AddContentsObserver(ContentsObserver& observer);
   void RemoveContentsObserver(ContentsObserver& observer);
-
-  base::WeakPtr<MainWindow> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   // MainWindow
   const Page* GetCurrentPage() const { return &current_page(); }

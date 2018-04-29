@@ -28,8 +28,10 @@ list(APPEND CORE_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/components/favourites/favourites_tree_model.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/login/login_controller.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/login/login_controller.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/action.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/action.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/action_manager.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/action_manager.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/actions.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/actions.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.h"
   # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/main_window.cpp"
@@ -102,3 +104,6 @@ set_property(TARGET client_core_unittests PROPERTY FOLDER ${client_folder})
 
 add_subdirectory(views)
 add_subdirectory(qt)
+
+# Experimental
+# add_subdirectory(components)

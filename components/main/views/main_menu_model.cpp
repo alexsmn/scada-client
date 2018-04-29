@@ -1,9 +1,9 @@
 ﻿#include "components/main/views/main_menu_model.h"
 
 #include "common_resources.h"
+#include "components/main/views/context_menu_model.h"
 #include "components/main/views/main_window_views.h"
 #include "services/favourites.h"
-#include "views/context_menu_model.h"
 #include "window_definition.h"
 #include "window_info.h"
 

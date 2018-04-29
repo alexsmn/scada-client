@@ -1,12 +1,9 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "core/node_id.h"
 
 #include <map>
 #include <vector>
-
-class NodeService;
 
 enum CommandCategory {
   CATEGORY_NEW,
@@ -81,22 +78,20 @@ class ActionManager {
  public:
   typedef std::map<unsigned, Action*> ActionMap;
 
-  explicit ActionManager(NodeService& node_service);
+  ActionManager();
   ~ActionManager();
+
+  ActionManager(const ActionManager&) = delete;
+  ActionManager& operator=(const ActionManager&) = delete;
 
   const ActionList& actions() const { return actions_; }
 
+  void AddAction(Action& action);
   Action* FindAction(unsigned command) const;
 
  private:
-  void AddAction(Action& action);
-
-  NodeService& node_service_;
-
   ActionMap action_map_;
   ActionList actions_;
-
-  DISALLOW_COPY_AND_ASSIGN(ActionManager);
 };
 
 typedef std::map<CommandCategory, ActionList> GroupedActions;
@@ -106,5 +101,3 @@ GroupedActions GroupCommands(ActionManager& action_manager,
 
 const base::char16* GetCommandCategoryTitle(CommandCategory category);
 bool CanExpandCommandCategory(CommandCategory category);
-
-scada::NodeId GetNewCommandTypeId(unsigned command_id);

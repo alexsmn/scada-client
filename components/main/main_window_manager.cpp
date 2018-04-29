@@ -1,14 +1,7 @@
 #include "components/main/main_window_manager.h"
 
+#include "components/main/main_window.h"
 #include "services/profile.h"
-
-#if defined(UI_VIEWS)
-#include "components/main/views/main_window_views.h"
-using MainWindowType = MainWindowViews;
-#elif defined(UI_QT)
-#include "components/main/qt/main_window_qt.h"
-using MainWindowType = MainWindowQt;
-#endif
 
 MainWindowManager::MainWindowManager(MainWindowManagerContext&& context)
     : MainWindowManagerContext{std::move(context)} {
@@ -29,8 +22,7 @@ void MainWindowManager::OpenMainWindow(int window_id) {
   if (main_windows_.find(window_id) != main_windows_.end())
     return;
 
-  auto window = CreateMainWindow(window_id);
-  if (window)
+  if (auto window = main_window_factory_(window_id))
     main_windows_[window_id] = std::move(window);
 }
 
@@ -41,15 +33,6 @@ void MainWindowManager::CloseMainWindow(int window_id) {
     quit_handler_();
   else
     profile_.main_windows.erase(window_id);
-}
-
-std::unique_ptr<MainWindow> MainWindowManager::CreateMainWindow(int window_id) {
-  return std::make_unique<MainWindowType>(MainWindowContext{
-      action_manager_, alias_resolver_, window_id, event_manager_, favourites_,
-      file_cache_, local_events_, *this, node_service_, portfolio_manager_,
-      profile_, history_service_, method_service_, monitored_item_service_,
-      node_management_service_, session_service_, speech_, task_manager_,
-      timed_data_service_});
 }
 
 bool MainWindowManager::IsPageOpened(int page_id) const {
@@ -73,8 +56,7 @@ Page* MainWindowManager::FindFirstNotOpenedPage() {
 OpenedView* MainWindowManager::FindOpenedViewByFilePath(
     const base::FilePath& path) {
   for (auto& p : main_windows_) {
-    auto view = p.second->FindOpenedViewByFilePath(path);
-    if (view)
+    if (auto* view = p.second->FindOpenedViewByFilePath(path))
       return view;
   }
   return NULL;

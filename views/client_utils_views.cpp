@@ -4,9 +4,9 @@
 #include "commands/write_dialog.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
+#include "components/main/views/context_menu_model.h"
 #include "controller.h"
 #include "remote/session_proxy.h"
-#include "views/context_menu_model.h"
 #include "window_info.h"
 
 #include <atlbase.h>

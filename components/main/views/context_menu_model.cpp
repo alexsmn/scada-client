@@ -1,6 +1,6 @@
-#include "views/context_menu_model.h"
+#include "components/main/views/context_menu_model.h"
 
-#include "components/main/action.h"
+#include "components/main/action_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/views/main_window_views.h"
 

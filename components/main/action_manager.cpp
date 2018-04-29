@@ -1,9 +1,6 @@
 ﻿#include "components/main/action_manager.h"
 
-#include "base/at_exit.h"
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_service.h"
-#include "common/scada_node_ids.h"
 #include "common_resources.h"
 
 GroupedActions GroupCommands(ActionManager& action_manager,
@@ -36,32 +33,6 @@ bool CanExpandCommandCategory(CommandCategory category) {
          category != CATEGORY_PERIOD && category != CATEGORY_NEW;
 }
 
-namespace {
-
-// TODO(semenov): Refactor to avoid listing the types.
-const scada::NodeId kNewCommandTypeIds[] = {
-    id::DataGroupType,          id::DiscreteItemType,
-    id::AnalogItemType,         id::UserType,
-    id::HistoricalDatabaseType, id::SimulationSignalType,
-    id::Iec60870DeviceType,     id::Iec61850DeviceType,
-    id::Iec61850RcbType,        id::ModbusLinkType,
-    id::ModbusDeviceType,       id::TsFormatType,
-    id::TransmissionItemType,
-};
-
-}  // namespace
-
-scada::NodeId GetNewCommandTypeId(unsigned command_id) {
-  if (command_id < ID_NEW)
-    return scada::NodeId();
-
-  auto index = command_id - ID_NEW;
-  if (index >= _countof(kNewCommandTypeIds))
-    return scada::NodeId();
-
-  return kNewCommandTypeIds[index];
-}
-
 // Action
 
 Action::Action(unsigned command,
@@ -77,23 +48,9 @@ Action::Action(unsigned command,
       image_id_(image_id),
       flags_(flags) {}
 
-class NodeAction : public Action {
- public:
-  NodeAction(unsigned command_id, CommandCategory category, const NodeRef& node)
-      : Action(command_id, category, {}), node_(std::move(node)) {}
-
-  virtual base::string16 GetTitle() const override {
-    return ToString16(node_.display_name());
-  }
-
- private:
-  const NodeRef node_;
-};
-
 // ActionManager
 
-ActionManager::ActionManager() {
-}
+ActionManager::ActionManager() {}
 
 ActionManager::~ActionManager() {
   for (ActionMap::iterator i = action_map_.begin(); i != action_map_.end(); ++i)

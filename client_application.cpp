@@ -1,5 +1,8 @@
 ﻿#include "client_application.h"
 
+#include "address_space/address_space_impl.h"
+#include "address_space/generic_node_factory.h"
+#include "address_space/scada_address_space.h"
 #include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
@@ -14,13 +17,11 @@
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
 #include "common/remote_node_service.h"
-#include "components/main/action.h"
+#include "components/main/action_manager.h"
+#include "components/main/actions.h"
 #include "components/main/main_window_manager.h"
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
-#include "address_space/address_space_impl.h"
-#include "address_space/generic_node_factory.h"
-#include "address_space/scada_address_space.h"
 #include "net/transport_factory_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
@@ -34,6 +35,14 @@
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_impl.h"
 #include "window_info.h"
+
+#if defined(UI_VIEWS)
+#include "components/main/views/main_window_views.h"
+using MainWindowType = MainWindowViews;
+#elif defined(UI_QT)
+#include "components/main/qt/main_window_qt.h"
+using MainWindowType = MainWindowQt;
+#endif
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
@@ -182,8 +191,7 @@ ClientApplication::CreateAddressSpaceNodeService() {
   class ClientAddressSpace : public AddressSpaceImpl {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl{logger},
-          node_factory{logger, *this} {
+        : AddressSpaceImpl{logger}, node_factory{logger, *this} {
       CreateScadaAddressSpace(*this, node_factory);
     }
 
@@ -199,9 +207,8 @@ ClientApplication::CreateAddressSpaceNodeService() {
           node_service_notifier{node_service, services} {}
 
     AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
-      return {std::make_shared<NestedLogger>(logger, "NodeService"),
-              services, services,
-              address_space, address_space.node_factory};
+      return {std::make_shared<NestedLogger>(logger, "NodeService"), services,
+              services, address_space, address_space.node_factory};
     }
 
     const std::shared_ptr<Logger> logger;
@@ -285,7 +292,8 @@ void ClientApplication::SetServices(DataServices&& services) {
   modus_module_.reset(new ModusModule2);
   ModusModule2::SetInstance(modus_module_.get());
 
-  action_manager_ = std::make_unique<ActionManager>(*node_service_);
+  action_manager_ = std::make_unique<ActionManager>();
+  AddGlobalActions(*action_manager_, *node_service_);
 
   favourites_ = std::make_unique<Favourites>();
 
@@ -295,13 +303,14 @@ void ClientApplication::SetServices(DataServices&& services) {
   profile_->Load(*event_manager_, *portfolio_manager_, *favourites_);
   profile_loaded_ = true;
 
-  main_window_manager_ =
-      std::make_unique<MainWindowManager>(MainWindowManagerContext{
-          alias_resolver_, *task_manager_, *master_data_services_,
-          *master_data_services_, *master_data_services_, *event_manager_,
-          *master_data_services_, *master_data_services_, *timed_data_service_,
-          *portfolio_manager_, *node_service_, *action_manager_, *local_events_,
-          *favourites_, *file_cache_, *speech_, *profile_, quit_handler_});
+  auto main_window_factory = [this](int window_id) {
+    return std::make_unique<MainWindowType>(MainWindowContext{
+        *action_manager_, alias_resolver_, window_id, *event_manager_,
+        *favourites_, *file_cache_, *local_events_, *main_window_manager_,
+        *node_service_, *portfolio_manager_, *profile_, *master_data_services_,
+        *master_data_services_, *master_data_services_, *master_data_services_,
+        *master_data_services_, *speech_, *task_manager_, *timed_data_service_});
+  };
 }
 
 void ClientApplication::OnSessionCreated() {
