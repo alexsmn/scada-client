@@ -22,6 +22,7 @@
 #include "components/main/main_commands.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view_commands.h"
+#include "components/main/status_bar_model_impl.h"
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "net/transport_factory_impl.h"
@@ -347,6 +348,10 @@ void ClientApplication::SetServices(DataServices&& services) {
 
   auto main_window_factory = [this, controller_factory, main_commands_factory,
                               view_commands_factory](int window_id) {
+    auto status_bar_model =
+        std::make_unique<StatusBarModelImpl>(StatusBarModelImplContext{
+            *master_data_services_, *event_manager_, *node_service_});
+
     auto main_window = std::make_unique<MainWindowType>(
         MainWindowContext{*action_manager_,
                           alias_resolver_,
@@ -369,7 +374,8 @@ void ClientApplication::SetServices(DataServices&& services) {
                           *timed_data_service_,
                           controller_factory,
                           main_commands_factory,
-                          view_commands_factory});
+                          view_commands_factory,
+                          std::move(status_bar_model)});
 
     return main_window;
   };

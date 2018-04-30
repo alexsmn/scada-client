@@ -1,40 +1,27 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "base/timer/timer.h"
+#include "controls/status_bar_model.h"
 
 #include <windows.h>
+#include <memory>
 
-namespace events {
-class EventManager;
-}
-
-namespace scada {
-class SessionService;
-}
-
-class NodeService;
-
-struct StatusBarControllerContext {
-  scada::SessionService& session_service_;
-  events::EventManager& event_manager_;
-  NodeService& node_service_;
-};
-
-class StatusBarController : private StatusBarControllerContext {
+class StatusBarController : private StatusBarModelObserver {
  public:
-  explicit StatusBarController(const StatusBarControllerContext& context);
+  explicit StatusBarController(std::shared_ptr<StatusBarModel> model);
+  ~StatusBarController();
 
   void Init(HWND hwnd);
 
   void Layout();
 
  private:
-  void Update();
-
   void SetPaneText(int pane, const base::string16& text);
 
-  HWND hwnd_ = nullptr;
+  // StatusBarModelObserver
+  virtual void OnPanesChanged(int index, int count) override;
 
-  base::RepeatingTimer update_timer_;
+  const std::shared_ptr<StatusBarModel> model_;
+
+  HWND hwnd_ = nullptr;
 };

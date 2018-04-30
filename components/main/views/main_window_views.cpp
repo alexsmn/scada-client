@@ -41,8 +41,7 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
       dialog_service_, main_window_manager_, *view_manager_, menu_id});
 
   status_bar_controller_ =
-      std::make_unique<StatusBarController>(StatusBarControllerContext{
-          session_service_, event_manager_, node_service_});
+      std::make_unique<StatusBarController>(std::move(status_bar_model_));
 
   main_window_ = new NativeMainWindow{
       NativeMainWindowContext{this, *main_menu_, *status_bar_controller_}};

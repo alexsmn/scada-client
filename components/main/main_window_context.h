@@ -25,6 +25,7 @@ class OpenedView;
 class PortfolioManager;
 class Profile;
 class Speech;
+class StatusBarModel;
 class TaskManager;
 class TimedDataService;
 
@@ -57,4 +58,5 @@ struct MainWindowContext {
       OpenedView& opened_view,
       DialogService& dialog_service)>
       view_commands_factory_;
+  const std::shared_ptr<StatusBarModel> status_bar_model_;
 };
