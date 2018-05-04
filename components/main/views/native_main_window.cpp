@@ -6,7 +6,9 @@
 #include "ui/views/widget/widget.h"
 
 NativeMainWindow::NativeMainWindow(NativeMainWindowContext&& context)
-    : NativeMainWindowContext{std::move(context)} {}
+    : NativeMainWindowContext{std::move(context)} {
+  menu_.SetModel(menu_model_.get());
+}
 
 NativeMainWindow::~NativeMainWindow() {}
 
@@ -31,7 +33,6 @@ void NativeMainWindow::Init(const gfx::Rect& bounds, bool maximized) {
 void NativeMainWindow::Close() {
   main_widget_.reset();
 
-  main_window_->OnNativeWindowClosed();
   main_window_ = NULL;
 
   DestroyWindow();
@@ -46,7 +47,7 @@ HWND NativeMainWindow::Create(HWND hWndParent,
                               LPVOID lpCreateParam) {
   // create
   return __super::Create(hWndParent, rect, szWindowName, dwStyle, dwExStyle,
-                         main_menu_.handle(), lpCreateParam);
+                         menu_.GetNativeMenu(), lpCreateParam);
 }
 
 LRESULT NativeMainWindow::OnCreate(UINT /*uMsg*/,
@@ -65,7 +66,8 @@ LRESULT NativeMainWindow::OnCreate(UINT /*uMsg*/,
   main_widget_->SetContentsView(main_window_);
 
   CreateSimpleStatusBar();
-  status_bar_controller_.Init(m_hWndStatusBar);
+  status_bar_controller_ =
+      std::make_unique<StatusBarController>(status_bar_model_, m_hWndStatusBar);
 
   UpdateLayout();
 
@@ -76,6 +78,8 @@ LRESULT NativeMainWindow::OnDestroy(UINT /*uMsg*/,
                                     WPARAM /*wParam*/,
                                     LPARAM /*lParam*/,
                                     BOOL& bHandled) {
+  status_bar_controller_.reset();
+
   // Suppress WM_QUIT from CFrameWindowImpl handler.
   bHandled = TRUE;
   return DefWindowProc();
@@ -95,7 +99,7 @@ LRESULT NativeMainWindow::OnSize(UINT /*uMsg*/,
                                  WPARAM /*wParam*/,
                                  LPARAM lParam,
                                  BOOL& bHandled) {
-  status_bar_controller_.Layout();
+  status_bar_controller_->Layout();
   bHandled = FALSE;
   return 0;
 }

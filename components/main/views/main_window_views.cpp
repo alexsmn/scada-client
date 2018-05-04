@@ -1,13 +1,10 @@
 ﻿#include "components/main/views/main_window_views.h"
 
-#include "base/win/win_util2.h"
 #include "common_resources.h"
-#include "components/main/action_manager.h"
-#include "components/main/main_commands.h"
 #include "components/main/opened_view.h"
+#include "components/main/views/context_menu_model.h"
 #include "components/main/views/main_menu_model.h"
 #include "components/main/views/native_main_window.h"
-#include "components/main/views/status_bar_controller.h"
 #include "components/main/views/toolbar_controller.h"
 #include "components/main/views/view_manager_views.h"
 #include "controller.h"
@@ -17,6 +14,7 @@
 #include "ui/events/event_utils.h"
 #include "ui/views/background.h"
 #include "views/client_utils_views.h"
+#include "views/controls/menu/native_menu_win.h"
 #include "window_info.h"
 
 static const int kToolbarWidth = 90;
@@ -32,19 +30,14 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
   // TODO: Use theme color.
   set_background(new views::ColorBackground(SkColorSetRGB(227, 227, 227)));
 
-  const unsigned menu_id =
-      session_service_.HasPrivilege(scada::Privilege::Configure)
-          ? IDR_MAINFRAME
-          : IDR_MAIN_USER;
-  main_menu_ = std::make_unique<MainMenu>(MainMenuContext{
-      *this, action_manager_, favourites_, file_cache_, profile_,
-      dialog_service_, main_window_manager_, *view_manager_, menu_id});
-
-  status_bar_controller_ =
-      std::make_unique<StatusBarController>(std::move(status_bar_model_));
+  auto main_menu_model = std::make_shared<MainMenuModel>(MainMenuContext{
+      main_window_manager_, *this, action_manager_, favourites_, file_cache_,
+      session_service_.HasPrivilege(scada::Privilege::Configure), profile_,
+      *view_manager_, *commands_});
 
   main_window_ = new NativeMainWindow{
-      NativeMainWindowContext{this, *main_menu_, *status_bar_controller_}};
+      NativeMainWindowContext{this, main_menu_model, status_bar_model_}};
+
   auto& prefs = GetPrefs();
   main_window_->Init(prefs.bounds, prefs.maximized);
 
@@ -67,11 +60,6 @@ MainWindowViews::~MainWindowViews() {
   MainWindowDef& prefs = GetPrefs();
   main_window_->GetPrefs(prefs.bounds, prefs.maximized);
   main_window_->Close();
-}
-
-void MainWindowViews::OnNativeWindowClosed() {
-  status_bar_controller_.reset();
-  main_menu_.reset();
 }
 
 void MainWindowViews::CreateToolbar() {

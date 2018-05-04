@@ -1,14 +1,16 @@
 #include "components/main/views/context_menu_model.h"
 
 #include "components/main/action_manager.h"
+#include "components/main/main_window.h"
 #include "components/main/opened_view.h"
-#include "components/main/views/main_window_views.h"
 
-ContextMenuModel::ContextMenuModel(MainWindowViews& main_window,
-                                   ActionManager& action_manager)
+ContextMenuModel::ContextMenuModel(MainWindow& main_window,
+                                   ActionManager& action_manager,
+                                   CommandHandler& command_handler)
     : ui::SimpleMenuModel{this},
       main_window_{main_window},
-      action_manager_{action_manager} {}
+      action_manager_{action_manager},
+      command_handler_{command_handler} {}
 
 void AddMenuActions(ui::SimpleMenuModel& menu,
                     const ActionList& actions,
@@ -71,5 +73,6 @@ void ContextMenuModel::MenuWillShow() {
 }
 
 void ContextMenuModel::ExecuteCommand(int command_id) {
-  main_window_.ExecuteWindowsCommand(command_id);
+  if (auto* handler = command_handler_.GetCommandHandler(command_id))
+    handler->ExecuteCommand(command_id);
 }

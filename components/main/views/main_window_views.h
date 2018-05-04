@@ -6,9 +6,7 @@
 #include "ui/views/controls/toolbar.h"
 #include "views/dialog_service_impl_views.h"
 
-class MainMenu;
 class NativeMainWindow;
-class StatusBarController;
 class ToolbarController;
 class ViewManagerViews;
 
@@ -22,8 +20,6 @@ class MainWindowViews final : public MainWindow,
   gfx::NativeView GetWindowHandle() const;
 
   base::string16 GetWindowTitle() const;
-
-  void OnNativeWindowClosed();
 
   // views::View
   virtual DialogService& GetDialogService() override { return dialog_service_; }
@@ -56,9 +52,6 @@ class MainWindowViews final : public MainWindow,
   std::unique_ptr<ViewManagerViews> view_manager_;
 
   NativeMainWindow* main_window_ = nullptr;
-
-  std::unique_ptr<MainMenu> main_menu_;
-  std::unique_ptr<StatusBarController> status_bar_controller_;
 
   std::unique_ptr<views::Toolbar> toolbar_;
   std::unique_ptr<ToolbarController> toolbar_controller_;

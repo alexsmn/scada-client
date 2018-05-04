@@ -14,11 +14,13 @@ class MenuModel;
 }
 
 class ActionManager;
-class MainWindowViews;
+class CommandHandler;
+class MainWindow;
 
 HMENU CreatePopupMenu(unsigned resource_id,
-                      MainWindowViews& main_window,
-                      ActionManager& action_manager);
+                      MainWindow& main_window,
+                      ActionManager& action_manager,
+                      CommandHandler& command_handler);
 
 void ShowPopupMenu(gfx::NativeView native_view,
                    HMENU popup_menu,

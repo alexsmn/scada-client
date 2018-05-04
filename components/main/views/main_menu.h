@@ -16,22 +16,14 @@ using std::min;
 #include <atlapp.h>
 #include <atlframe.h>
 
-class ActionManager;
-class CommandHandler;
-class Favourites;
-class FileCache;
-class Profile;
+namespace ui {
+class MenuModel;
+}
 
 struct MainMenuContext {
-  MainWindowViews& main_window_;
-  ActionManager& action_manager_;
-  Favourites& favourites_;
-  FileCache& file_cache_;
-  Profile& profile_;
-  DialogService& dialog_service_;
-  MainWindowManager& main_window_manager_;
-  ViewManager& view_manager_;
   unsigned resource_id_;
+  const std::shared_ptr<MainMenuModel2> model_;
+  const std::shared_ptr<ui::MenuModel> context_menu_model_;
 };
 
 class MainMenu : private MainMenuContext {
@@ -69,8 +61,6 @@ class MainMenu : private MainMenuContext {
                     WPARAM /*wParam*/,
                     LPARAM /*lParam*/,
                     BOOL& /*bHandled*/);
-
-  std::unique_ptr<MainMenuModel2> model_;
 
   CMenuHandle handle_;
 

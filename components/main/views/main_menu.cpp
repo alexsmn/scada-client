@@ -1,15 +1,10 @@
 ﻿#include "components/main/views/main_menu.h"
 
 #include "base/color.h"
-#include "command_handler.h"
-#include "components/main/views/context_menu_model.h"
 #include "views/client_utils_views.h"
 
 MainMenu::MainMenu(MainMenuContext&& context)
-    : MainMenuContext{std::move(context)},
-      model_{std::make_unique<MainMenuModel2>(MainMenuModel2Context{
-          main_window_, favourites_, file_cache_, profile_, dialog_service_,
-          main_window_manager_, view_manager_})} {
+    : MainMenuContext{std::move(context)} {
   handle_.LoadMenu(resource_id_);
 
   for (int i = 0; i < handle_.GetMenuItemCount(); ++i) {
@@ -69,10 +64,7 @@ LRESULT MainMenu::OnInitMenuPopup(UINT /*uMsg*/,
   if (handle_.GetSubMenu(index) == menu && index == context_menu_index_) {
     for (int i = menu.GetMenuItemCount() - 1; i >= 0; --i)
       menu.DeleteMenu(i, MF_BYPOSITION);
-    // if (main_window.active_view())
-    //  InsertMenuItemCommands(menu, 0, *main_window.active_view());
-    ContextMenuModel model{model_->main_window_, action_manager_};
-    BuildMenu(menu, model, 0);
+    BuildMenu(menu, *context_menu_model_, 0);
     return 0;
   }
 

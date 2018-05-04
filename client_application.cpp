@@ -349,7 +349,7 @@ void ClientApplication::SetServices(DataServices&& services) {
   auto main_window_factory = [this, controller_factory, main_commands_factory,
                               view_commands_factory](int window_id) {
     auto status_bar_model =
-        std::make_unique<StatusBarModelImpl>(StatusBarModelImplContext{
+        std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
             *master_data_services_, *event_manager_, *node_service_});
 
     auto main_window = std::make_unique<MainWindowType>(

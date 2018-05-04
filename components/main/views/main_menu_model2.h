@@ -46,6 +46,8 @@ class MainMenuModel2 : private MainMenuModel2Context,
   };
 
   bool GetMenuItems(UINT id, MenuItems& items);
+
+ private:
   void GetFavouritesMenuItems(MenuItems& items,
                               int type_count,
                               const unsigned* types);
@@ -62,7 +64,6 @@ class MainMenuModel2 : private MainMenuModel2Context,
   COMMAND_RANGE_HANDLER(ID_FAV_GRAPH_0, ID_FAV_GRAPH_0 + 99, OnFavGraph)
   END_MSG_MAP()
 
- private:
   LRESULT OnNewDisplay(WORD /*wNotifyCode*/,
                        WORD /*wID*/,
                        HWND /*hWndCtl*/,

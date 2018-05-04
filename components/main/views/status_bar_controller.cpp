@@ -13,22 +13,19 @@ using std::min;
 #include <atlapp.h>
 #include <atlctrls.h>
 
-StatusBarController::StatusBarController(std::shared_ptr<StatusBarModel> model)
-    : model_{std::move(model)} {
+StatusBarController::StatusBarController(std::shared_ptr<StatusBarModel> model,
+                                         HWND hwnd)
+    : model_{std::move(model)}, hwnd_{hwnd} {
   model_->AddObserver(*this);
-}
-
-StatusBarController::~StatusBarController() {
-  model_->RemoveObserver(*this);
-}
-
-void StatusBarController::Init(HWND hwnd) {
-  hwnd_ = hwnd;
 
   Layout();
 
   for (int i = 0; i < model_->GetPaneCount(); ++i)
     SetPaneText(i, model_->GetPaneText(i));
+}
+
+StatusBarController::~StatusBarController() {
+  model_->RemoveObserver(*this);
 }
 
 void StatusBarController::Layout() {

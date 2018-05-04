@@ -58,8 +58,9 @@ void BuildMenu(HMENU hmenu, ui::MenuModel& model, int start_position) {
 }
 
 HMENU CreatePopupMenu(unsigned resource_id,
-                      MainWindowViews& main_window,
-                      ActionManager& action_manager) {
+                      MainWindow& main_window,
+                      ActionManager& action_manager,
+                      CommandHandler& command_handler) {
   WTL::CMenuHandle menu;
   menu.LoadMenu(resource_id);
 
@@ -68,7 +69,7 @@ HMENU CreatePopupMenu(unsigned resource_id,
 
   int pos = win_util::RemoveMenuCommand(popup, ID_ITEM_COMMANDS);
   if (pos != -1) {
-    ContextMenuModel model{main_window, action_manager};
+    ContextMenuModel model{main_window, action_manager, command_handler};
     BuildMenu(popup, model, pos);
   }
   win_util::RemoveConsequentMenuSeparators(popup);
