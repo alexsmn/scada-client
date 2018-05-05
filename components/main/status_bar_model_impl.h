@@ -66,7 +66,7 @@ inline base::string16 StatusBarModelImpl::GetPaneText(int index) {
       return base::StringPrintf(L"Важность: %u", event_manager_.severity_min());
 
     case 3: {
-      auto& user_id = session_service_.GetUserId();
+      const auto& user_id = session_service_.GetUserId();
       return GetDisplayName(node_service_, user_id);
     }
 

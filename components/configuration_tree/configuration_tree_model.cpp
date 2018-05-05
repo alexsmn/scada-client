@@ -1,4 +1,4 @@
-#include "components/configuration_tree/configuration_tree_model.h"
+﻿#include "components/configuration_tree/configuration_tree_model.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/formula_util.h"
@@ -104,7 +104,14 @@ void ConfigurationTreeNode::Load() {
 }
 
 base::string16 ConfigurationTreeNode::GetText(int column_id) const {
-  return ToString16(data_node_.display_name());
+  auto text = ToString16(data_node_.display_name());
+
+  auto fetch_status = data_node_.fetch_status();
+  bool fetched = fetch_status.node_fetched && fetch_status.children_fetched;
+  if (!fetched)
+    text += L" [Загрузка]";
+
+  return text;
 }
 
 int ConfigurationTreeNode::GetIcon() const {
