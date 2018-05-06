@@ -182,7 +182,7 @@ void MainWindowQt::OnSelectionChanged() {
   }
 }
 
-void MainWindowQt::UpdateToolbarPosition() {}
+void MainWindowQt::SetToolbarPosition(unsigned position) {}
 
 void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
                                       const gfx::Point& point) {}

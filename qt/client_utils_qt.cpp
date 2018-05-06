@@ -1,5 +1,6 @@
 #include "client_utils_qt.h"
 
+#include "translation.h"
 #include "ui/base/models/menu_model.h"
 
 #include <QMenu>
@@ -46,4 +47,8 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
       }
     }
   }
+}
+
+base::string16 Translate(const char* text) {
+  return QObject::tr(text).toStdWString();
 }

@@ -239,7 +239,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     case ID_TOOLBAR_LEFT:
     case ID_TOOLBAR_HIDDEN:
       main_window_.GetPrefs().toolbar_position = command_id;
-      main_window_.UpdateToolbarPosition();
+      main_window_.SetToolbarPosition(command_id);
       return;
 
     case ID_VIEW_PUBLIC_FOLDER:

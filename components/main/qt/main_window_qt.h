@@ -23,7 +23,7 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
   virtual void UpdateTitle() override;
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;
-  virtual void UpdateToolbarPosition() override;
+  virtual void SetToolbarPosition(unsigned position) override;
 
   // ViewManagerDelegate
   virtual void OnShowTabPopupMenu(OpenedView& view,

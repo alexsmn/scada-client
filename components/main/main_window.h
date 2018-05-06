@@ -1,14 +1,11 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "common/aliases.h"
 #include "components/main/action_manager.h"
 #include "components/main/main_window_context.h"
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
-
-#include <map>
 
 namespace base {
 class FilePath;
@@ -20,7 +17,6 @@ class MainCommands;
 class MainMenuModel;
 class OpenedView;
 class Page;
-class PageLayoutBlock;
 class ViewManager;
 class WindowDefinition;
 struct MainWindowDef;
@@ -79,7 +75,7 @@ class MainWindow : protected MainWindowContext,
   virtual void OnSelectionChanged() = 0;
 
   virtual void UpdateTitle() = 0;
-  virtual void UpdateToolbarPosition() = 0;
+  virtual void SetToolbarPosition(unsigned position) = 0;
 
   // ViewManagerDelegate
   virtual std::unique_ptr<OpenedView> OnCreateView(
@@ -110,8 +106,6 @@ class MainWindow : protected MainWindowContext,
   OpenedView* active_data_view_ = nullptr;
 
   base::ObserverList<ContentsObserver> contents_observers_;
-
-  base::WeakPtrFactory<MainWindow> weak_factory_{this};
 
   friend class OpenedView;
   friend class NativeMainWindow;

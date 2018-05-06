@@ -43,8 +43,6 @@ class NativeMainWindow : private NativeMainWindowContext,
   void Close();
   void GetPrefs(gfx::Rect& bounds, bool& maximized);
 
-  void UpdateTitle();
-
   void UpdateLayout(BOOL bResizeBar = TRUE);
   void UpdateBarsPosition(RECT& rect, BOOL bResizeBars = TRUE);
 

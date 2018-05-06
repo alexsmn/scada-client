@@ -71,3 +71,7 @@ HMENU CreatePopupMenu(unsigned resource_id, ui::MenuModel& context_menu_model) {
 
   return menu;
 }
+
+base::string16 Translate(const char* text) {
+  return base::SysNativeMBToWide(text);
+}

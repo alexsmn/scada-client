@@ -187,9 +187,9 @@ base::string16 MainWindowViews::GetWindowTitle() const {
                             server.c_str());
 }
 
-void MainWindowViews::UpdateToolbarPosition() {
-  toolbar_->set_vertical(GetPrefs().toolbar_position == ID_TOOLBAR_LEFT);
-  toolbar_->SetVisible(GetPrefs().toolbar_position != ID_TOOLBAR_HIDDEN);
+void MainWindowViews::SetToolbarPosition(unsigned position) {
+  toolbar_->set_vertical(position == ID_TOOLBAR_LEFT);
+  toolbar_->SetVisible(position != ID_TOOLBAR_HIDDEN);
   Layout();
 }
 
@@ -203,5 +203,5 @@ bool MainWindowViews::ExecuteWindowsCommand(int command_id) {
 }
 
 void MainWindowViews::UpdateTitle() {
-  main_window_->UpdateTitle();
+  main_window_->SetWindowText(GetWindowTitle().c_str());
 }

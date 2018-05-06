@@ -108,11 +108,6 @@ LRESULT NativeMainWindow::OnSize(UINT /*uMsg*/,
   return 0;
 }
 
-void NativeMainWindow::UpdateTitle() {
-  auto title = main_window_->GetWindowTitle();
-  SetWindowText(title.c_str());
-}
-
 LPARAM NativeMainWindow::OnCommand(UINT uMsg,
                                    WPARAM wParam,
                                    LPARAM lParam,
