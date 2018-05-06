@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "base/strings/string16.h"
 #include "base/timer/timer.h"
 #include "controller_delegate.h"
@@ -15,7 +13,8 @@
 #include "ui/views/drop_controller.h"
 #endif
 
-class ActionManager;
+#include <memory>
+
 class CommandHandler;
 class ContentsModel;
 class Controller;
@@ -24,12 +23,16 @@ class MainWindow;
 class WindowDefinition;
 struct WindowInfo;
 
+namespace ui {
+class MenuModel;
+}
+
 struct OpenedViewContext {
   MainWindow* main_window_;
   WindowDefinition& window_def_;
-  ActionManager& action_manager_;
   DialogService& dialog_service_;
-  const ControllerFactory controller_factory_;
+  ControllerFactory controller_factory_;
+  ui::MenuModel& context_menu_model_;
 };
 
 class OpenedView : private OpenedViewContext,

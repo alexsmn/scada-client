@@ -1,5 +1,8 @@
 #pragma once
 
+#include "common_resources.h"
+#include "views/controls/menu/menu.h"
+
 #include <algorithm>
 #include <memory>
 
@@ -11,25 +14,23 @@ using std::min;
 #include <atlapp.h>
 #include <atlframe.h>
 
-#include "common_resources.h"
-#include "components/main/views/main_menu.h"
-
 namespace gfx {
 class Rect;
 }
 
 namespace views {
 class Widget;
-}
+}  // namespace views
 
 class MainMenu;
 class MainWindowViews;
 class StatusBarController;
+class StatusBarModel;
 
 struct NativeMainWindowContext {
   MainWindowViews* main_window_;
-  MainMenu& main_menu_;
-  StatusBarController& status_bar_controller_;
+  std::unique_ptr<ui::MenuModel> menu_model_;
+  std::shared_ptr<StatusBarModel> status_bar_model_;
 };
 
 class NativeMainWindow : private NativeMainWindowContext,
@@ -41,8 +42,6 @@ class NativeMainWindow : private NativeMainWindowContext,
   void Init(const gfx::Rect& bounds, bool maximized);
   void Close();
   void GetPrefs(gfx::Rect& bounds, bool& maximized);
-
-  void UpdateTitle();
 
   void UpdateLayout(BOOL bResizeBar = TRUE);
   void UpdateBarsPosition(RECT& rect, BOOL bResizeBars = TRUE);
@@ -60,7 +59,7 @@ class NativeMainWindow : private NativeMainWindowContext,
   MESSAGE_HANDLER(WM_SIZE, OnSize)
   MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
   MESSAGE_HANDLER(WM_MEASUREITEM, OnMeasureItem)
-  CHAIN_MSG_MAP_MEMBER(main_menu_);
+  CHAIN_MSG_MAP_MEMBER(menu_);
   MESSAGE_HANDLER(WM_COMMAND, OnCommand)
   MESSAGE_HANDLER(WM_CLOSE, OnClose);
   CHAIN_MSG_MAP(CFrameWindowImpl<NativeMainWindow>)
@@ -111,4 +110,8 @@ class NativeMainWindow : private NativeMainWindowContext,
   bool flashing_ = false;
 
   std::unique_ptr<views::Widget> main_widget_;
+
+  views::Menu menu_;
+
+  std::unique_ptr<StatusBarController> status_bar_controller_;
 };

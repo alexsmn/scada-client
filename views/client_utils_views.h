@@ -13,12 +13,7 @@ namespace ui {
 class MenuModel;
 }
 
-class ActionManager;
-class MainWindowViews;
-
-HMENU CreatePopupMenu(unsigned resource_id,
-                      MainWindowViews& main_window,
-                      ActionManager& action_manager);
+HMENU CreatePopupMenu(unsigned resource_id, ui::MenuModel& context_menu_model);
 
 void ShowPopupMenu(gfx::NativeView native_view,
                    HMENU popup_menu,

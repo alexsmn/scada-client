@@ -6,6 +6,7 @@
 #include "base/win/gdiplus_initializer.h"
 #include "client_application.h"
 #include "components/login/login_dialog.h"
+#include "components/main/views/main_window_views.h"
 #include "core/data_services_factory.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/views/focus/accelerator_handler.h"
@@ -29,8 +30,11 @@ int Run(int show = SW_SHOWDEFAULT) {
     base::MessageLoop message_loop(base::MessageLoop::TYPE_UI);
     base::RunLoop run_loop(&ActiveXHost::instance());
 
-    ClientApplication app{
-        ClientApplicationContext{[&run_loop] { run_loop.Quit(); }}};
+    ClientApplication app{ClientApplicationContext{
+        [](MainWindowContext&& context) {
+          return std::make_unique<MainWindowViews>(std::move(context));
+        },
+        [&run_loop] { run_loop.Quit(); }}};
 
     {
       DataServices services;

@@ -15,9 +15,7 @@ void OpenedView::ShowPopupMenu(unsigned resource_id,
   assert(main_window_);
 
   // TODO: Avoid the cast.
-  HMENU menu =
-      CreatePopupMenu(resource_id, *static_cast<MainWindowViews*>(main_window_),
-                      action_manager_);
+  HMENU menu = CreatePopupMenu(resource_id, context_menu_model_);
   if (!menu)
     return;
 

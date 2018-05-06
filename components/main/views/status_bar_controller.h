@@ -8,10 +8,8 @@
 
 class StatusBarController : private StatusBarModelObserver {
  public:
-  explicit StatusBarController(std::shared_ptr<StatusBarModel> model);
+  StatusBarController(std::shared_ptr<StatusBarModel> model, HWND hwnd);
   ~StatusBarController();
-
-  void Init(HWND hwnd);
 
   void Layout();
 

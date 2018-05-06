@@ -4,12 +4,15 @@
 #include "ui/base/models/simple_menu_model.h"
 
 class ActionManager;
-class MainWindowViews;
+class MainWindow;
+class CommandHandler;
 
 class ContextMenuModel final : public ui::SimpleMenuModel,
                                private ui::SimpleMenuModel::Delegate {
  public:
-  ContextMenuModel(MainWindowViews& main_window, ActionManager& action_manager);
+  ContextMenuModel(MainWindow& main_window,
+                   ActionManager& action_manager,
+                   CommandHandler& command_handler);
 
   // views::MenuModel
   virtual void MenuWillShow() override;
@@ -31,8 +34,9 @@ class ContextMenuModel final : public ui::SimpleMenuModel,
   }
   virtual void ExecuteCommand(int command_id) override;
 
-  MainWindowViews& main_window_;
+  MainWindow& main_window_;
   ActionManager& action_manager_;
+  CommandHandler& command_handler_;
 
   ScopedVector<ui::MenuModel> submenus_;
 };

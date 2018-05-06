@@ -1,5 +1,6 @@
 ﻿#include "components/main/qt/main_window_qt.h"
 
+#include "base/win/win_util2.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/main/action_manager.h"
@@ -9,9 +10,11 @@
 #include "components/main/qt/view_manager_qt.h"
 #include "components/main/selection_commands.h"
 #include "controller.h"
+#include "qt/client_utils_qt.h"
 #include "selection_model.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
+#include "ui/base/models/menu_model.h"
 #include "window_info.h"
 
 #include <QAction>
@@ -51,11 +54,11 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
               prefs.bounds.height());
 
-  CreateToolbar();
-
   view_manager_.reset(new ViewManagerQt{*this, *this});
 
   dialog_service_.parent_widget = this;
+
+  CreateToolbar();
 
   Init(*view_manager_);
 
@@ -70,36 +73,32 @@ MainWindowQt::~MainWindowQt() {
 void MainWindowQt::UpdateTitle() {}
 
 void MainWindowQt::CreateToolbar() {
-  context_menu_ = new QMenu(tr("Context"), this);
-
-  display_menu_ = new QMenu(tr("Display"), this);
-  FillDisplayMenu();
-
-  auto* graph_menu = new QMenu(tr("Graph"), this);
-  auto* table_menu = new QMenu(tr("Table"), this);
-  auto* rest_menu = new QMenu(tr("More"), this);
-  auto* page_menu = new QMenu(tr("Page"), this);
-
-  auto* settings_menu = new QMenu(tr("Settings"), this);
+  /*auto* settings_menu = new QMenu(tr("Settings"), this);
   auto* style_menu = new QMenu(tr("Style"), this);
   for (auto& style : QStyleFactory::keys())
     style_menu->addAction(style,
                           [this, style] { QApplication::setStyle(style); });
-  settings_menu->addMenu(style_menu);
+  settings_menu->addMenu(style_menu);*/
 
-  auto* menu_bar = new QMenuBar;
+  main_menu_model_ = main_menu_factory_(*this, dialog_service_, *view_manager_,
+                                        *commands_, *context_menu_model_);
+
+  auto* menu_bar = new QMenuBar(this);
   setMenuBar(menu_bar);
-  menu_bar->addMenu(display_menu_);
-  menu_bar->addMenu(graph_menu);
-  menu_bar->addMenu(table_menu);
-  menu_bar->addMenu(context_menu_);
-  menu_bar->addMenu(rest_menu);
-  menu_bar->addSeparator();
-  menu_bar->addMenu(page_menu);
-  menu_bar->addMenu(settings_menu);
-  menu_bar->addMenu(tr("Help"));
 
-  setStatusBar(new QStatusBar);
+  for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
+    auto* submenu = menu_bar->addMenu(
+        QString::fromStdWString(main_menu_model_->GetLabelAt(i)));
+    auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
+    assert(submenu_model);
+    QObject::connect(submenu, &QMenu::aboutToShow, this,
+                     [this, submenu, submenu_model] {
+                       submenu->clear();
+                       BuildMenu(*submenu, *submenu_model);
+                     });
+  }
+
+  setStatusBar(new QStatusBar(this));
 
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
@@ -122,7 +121,6 @@ void MainWindowQt::CreateToolbar() {
 
   toolbar_ = new QToolBar(this);
   toolbar_->setWindowTitle(tr("Toolbar"));
-  addToolBar(Qt::TopToolBarArea, toolbar_);
 
   {
     // Action order is important.
@@ -131,15 +129,13 @@ void MainWindowQt::CreateToolbar() {
       auto* action = FindAction(action_info->command_id());
       if (CanExpandCommandCategory(action_info->category_)) {
         toolbar_->addAction(action);
-        context_menu_->addAction(action);
         if (last_category != -1 && last_category != action_info->category_) {
           toolbar_->addSeparator();
-          context_menu_->addSeparator();
         }
       } else {
         auto& category_action = category_actions_[action_info->category_];
         if (!category_action.menu) {
-          auto* button = new QToolButton();
+          auto* button = new QToolButton(toolbar_);
           auto* menu = new QMenu(this);
           auto text = QString::fromWCharArray(
               GetCommandCategoryTitle(action_info->category_));
@@ -148,8 +144,6 @@ void MainWindowQt::CreateToolbar() {
           button->setText(text);
           category_action.menu = menu;
           category_action.toolbar_action = toolbar_->addWidget(button);
-          category_action.context_menu_action = context_menu_->addMenu(menu);
-          category_action.context_menu_action->setText(text);
         }
         category_action.menu->addAction(action);
       }
@@ -157,46 +151,7 @@ void MainWindowQt::CreateToolbar() {
     }
   }
 
-  for (int i = 0; i < VIEW_TYPE_COUNT; ++i) {
-    auto& window_info = g_window_infos[i];
-    auto* action =
-        new QAction(QString::fromWCharArray(window_info.title), this);
-    auto command_id = window_info.command_id;
-    QObject::connect(action, &QAction::triggered,
-                     [this, command_id](bool checked) {
-                       auto* handler = commands_->GetCommandHandler(command_id);
-                       if (handler && handler->IsCommandEnabled(command_id))
-                         handler->ExecuteCommand(command_id);
-                     });
-    action_map_.emplace(command_id, action);
-  }
-
-  graph_menu->addAction(FindAction(ID_GRAPH_VIEW));
-
-  table_menu->addAction(FindAction(ID_TABLE_VIEW));
-  table_menu->addAction(FindAction(ID_SHEET_VIEW));
-  table_menu->addAction(FindAction(ID_CELLS_VIEW));
-
-  rest_menu->addAction(FindAction(ID_OBJECT_VIEW));
-  rest_menu->addAction(FindAction(ID_EVENT_VIEW));
-  rest_menu->addAction(FindAction(ID_FAVOURITES_VIEW));
-  rest_menu->addAction(FindAction(ID_PORTFOLIO_VIEW));
-  rest_menu->addAction(FindAction(ID_HARDWARE_VIEW));
-  rest_menu->addAction(FindAction(ID_EVENT_JOURNAL_VIEW));
-  rest_menu->addAction(FindAction(ID_STATISTICS_VIEW));
-  rest_menu->addSeparator();
-  rest_menu->addAction(FindAction(ID_TYPES_VIEW));
-  rest_menu->addAction(FindAction(ID_TS_FORMATS_VIEW));
-  rest_menu->addAction(FindAction(ID_SIMULATION_ITEMS_VIEW));
-  rest_menu->addAction(FindAction(ID_USERS_VIEW));
-  rest_menu->addAction(FindAction(ID_HISTORICAL_DB_VIEW));
-  rest_menu->addSeparator();
-  rest_menu->addAction(FindAction(ID_EXPORT_CONFIGURATION_TO_EXCEL));
-  rest_menu->addAction(FindAction(ID_IMPORT_CONFIGURATION_FROM_EXCEL));
-
-  page_menu->addAction(FindAction(ID_PAGE_NEW));
-  page_menu->addAction(FindAction(ID_PAGE_DELETE));
-  page_menu->addAction(FindAction(ID_PAGE_RENAME));
+  addToolBar(Qt::TopToolBarArea, toolbar_);
 }
 
 void MainWindowQt::SetWindowFlashing(bool flashing) {}
@@ -224,36 +179,13 @@ void MainWindowQt::OnSelectionChanged() {
       }
     }
     p.second.toolbar_action->setVisible(visible);
-    p.second.context_menu_action->setVisible(visible);
   }
 }
 
-void MainWindowQt::UpdateToolbarPosition() {}
+void MainWindowQt::SetToolbarPosition(unsigned position) {}
 
 void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
                                       const gfx::Point& point) {}
-
-void MainWindowQt::FillDisplayMenu() {
-  display_menu_->clear();
-
-  for (auto& entry : file_cache_.GetList(VIEW_TYPE_MODUS)) {
-    auto* action =
-        display_menu_->addAction(QString::fromStdWString(entry.title));
-    auto path = entry.path;
-    QObject::connect(action, &QAction::triggered, [this, path] {
-      // find existing display
-      auto* view = main_window_manager_.FindOpenedViewByFilePath(path);
-      if (view) {
-        view->Activate();
-      } else {
-        // add new window
-        WindowDefinition def(GetWindowInfo(ID_MODUS_VIEW));
-        def.path = path;
-        OpenView(def, true);
-      }
-    });
-  }
-}
 
 QAction* MainWindowQt::FindAction(unsigned command_id) {
   auto i = action_map_.find(command_id);

@@ -361,7 +361,6 @@
 #define ID_Menu                         4025
 #define ID_VIEW_PUBLIC_FOLDER           4026
 #define ID_Menu4027                     4027
-#define ID_NODE_VIEW                    4028
 #define ID_NODES_VIEW                   4029
 #define ID_SORT_NONE                    4030
 #define ID_4031                         4031

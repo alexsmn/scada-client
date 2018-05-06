@@ -4,7 +4,7 @@
 #include "commands/write_dialog.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "components/main/views/context_menu_model.h"
+#include "components/main/context_menu_model.h"
 #include "controller.h"
 #include "remote/session_proxy.h"
 #include "window_info.h"
@@ -57,9 +57,7 @@ void BuildMenu(HMENU hmenu, ui::MenuModel& model, int start_position) {
   }
 }
 
-HMENU CreatePopupMenu(unsigned resource_id,
-                      MainWindowViews& main_window,
-                      ActionManager& action_manager) {
+HMENU CreatePopupMenu(unsigned resource_id, ui::MenuModel& context_menu_model) {
   WTL::CMenuHandle menu;
   menu.LoadMenu(resource_id);
 
@@ -67,11 +65,13 @@ HMENU CreatePopupMenu(unsigned resource_id,
   assert(popup);
 
   int pos = win_util::RemoveMenuCommand(popup, ID_ITEM_COMMANDS);
-  if (pos != -1) {
-    ContextMenuModel model{main_window, action_manager};
-    BuildMenu(popup, model, pos);
-  }
+  if (pos != -1)
+    BuildMenu(popup, context_menu_model, pos);
   win_util::RemoveConsequentMenuSeparators(popup);
 
   return menu;
+}
+
+base::string16 Translate(const char* text) {
+  return base::SysNativeMBToWide(text);
 }

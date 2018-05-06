@@ -1,12 +1,11 @@
 #pragma once
 
 #include "common/aliases.h"
+#include "components/main/main_window_context.h"
 #include "core/data_services_factory.h"
 #include "core/session_state_observer.h"
 
-#include <map>
 #include <memory>
-#include <string>
 
 namespace base {
 class Timer;
@@ -28,6 +27,7 @@ class TransportFactory;
 
 class ActionManager;
 class ConnectionStateReporter;
+class EventNotifier;
 class Favourites;
 class FileCache;
 class Logger;
@@ -43,7 +43,9 @@ class TimedDataService;
 class Speech;
 
 struct ClientApplicationContext {
-  const std::function<void()> quit_handler_;
+  std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>
+      main_window_factory_;
+  std::function<void()> quit_handler_;
 };
 
 class ClientApplication : private ClientApplicationContext,
@@ -61,6 +63,10 @@ class ClientApplication : private ClientApplicationContext,
  private:
   std::shared_ptr<NodeService> CreateRemoteNodeService();
   std::shared_ptr<NodeService> CreateAddressSpaceNodeService();
+
+  MainWindowContext MakeMainWindowContext(int window_id);
+
+  void OnEvents(bool has_events);
 
   // scada::SessionStateObserver
   virtual void OnSessionCreated() override;
@@ -83,6 +89,7 @@ class ClientApplication : private ClientApplicationContext,
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;
+  std::unique_ptr<EventNotifier> event_notifier_;
   std::unique_ptr<TaskManager> task_manager_;
   std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<PortfolioManager> portfolio_manager_;

@@ -15,8 +15,6 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
   explicit MainWindowQt(MainWindowContext&& context);
   ~MainWindowQt();
 
-  QMenu& context_menu() const { return *context_menu_; }
-
   // MainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
 
@@ -25,7 +23,7 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
   virtual void UpdateTitle() override;
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;
-  virtual void UpdateToolbarPosition() override;
+  virtual void SetToolbarPosition(unsigned position) override;
 
   // ViewManagerDelegate
   virtual void OnShowTabPopupMenu(OpenedView& view,
@@ -36,8 +34,6 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
 
   QAction* FindAction(unsigned command_id);
 
-  void FillDisplayMenu();
-
   std::unique_ptr<ViewManagerQt> view_manager_;
 
   std::map<unsigned /*command_id*/, QAction*> action_map_;
@@ -45,19 +41,13 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
   QToolBar* toolbar_ = nullptr;
 
   struct CategoryData {
-    CategoryData()
-        : menu(nullptr),
-          toolbar_action(nullptr),
-          context_menu_action(nullptr) {}
-    QMenu* menu;
-    QAction* toolbar_action;
-    QAction* context_menu_action;
+    QMenu* menu = nullptr;
+    QAction* toolbar_action = nullptr;
   };
 
   std::map<CommandCategory, CategoryData> category_actions_;
 
-  QMenu* display_menu_ = nullptr;
-  QMenu* context_menu_ = nullptr;
-
   DialogServiceImplQt dialog_service_;
+
+  std::unique_ptr<ui::MenuModel> main_menu_model_;
 };

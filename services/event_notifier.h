@@ -12,22 +12,23 @@ class EventManager;
 
 class Profile;
 
-struct EventsHelperContext {
+struct EventNotifierContext {
   events::EventManager& event_manager_;
   LocalEvents& local_events_;
   Profile& profile_;
-  const std::function<void(bool has_events)> events_handler_;
+  std::function<void(bool has_events)> events_handler_;
 };
 
-class EventsHelper final : private EventsHelperContext,
-                           private events::EventObserver,
-                           private LocalEvents::Observer {
+class EventNotifier final : private EventNotifierContext,
+                            private events::EventObserver,
+                            private LocalEvents::Observer {
  public:
-  explicit EventsHelper(EventsHelperContext&& context);
-  ~EventsHelper();
+  explicit EventNotifier(EventNotifierContext&& context);
+  ~EventNotifier();
 
  private:
-  void ShowEvents(bool added, bool delayed);
+  void ShowEventsDelayed(bool added);
+  void ShowEvents(bool added);
 
   // events::EventObserver
   virtual void OnEventReported(const scada::Event& event) override;
@@ -42,5 +43,5 @@ class EventsHelper final : private EventsHelperContext,
   bool showing_events_ = false;
   bool showing_events_added_ = false;
 
-  base::WeakPtrFactory<EventsHelper> weak_factory_{this};
+  base::WeakPtrFactory<EventNotifier> weak_factory_{this};
 };

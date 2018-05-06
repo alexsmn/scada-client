@@ -1,19 +1,15 @@
 ﻿#include "components/main/views/main_window_views.h"
 
-#include "base/win/win_util2.h"
 #include "common_resources.h"
-#include "components/main/action_manager.h"
-#include "components/main/main_commands.h"
 #include "components/main/opened_view.h"
-#include "components/main/views/main_menu_model.h"
 #include "components/main/views/native_main_window.h"
-#include "components/main/views/status_bar_controller.h"
 #include "components/main/views/toolbar_controller.h"
 #include "components/main/views/view_manager_views.h"
 #include "controller.h"
 #include "core/session_service.h"
 #include "services/page.h"
 #include "services/profile.h"
+#include "ui/base/models/menu_model.h"
 #include "ui/events/event_utils.h"
 #include "ui/views/background.h"
 #include "views/client_utils_views.h"
@@ -32,19 +28,12 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
   // TODO: Use theme color.
   set_background(new views::ColorBackground(SkColorSetRGB(227, 227, 227)));
 
-  const unsigned menu_id =
-      session_service_.HasPrivilege(scada::Privilege::Configure)
-          ? IDR_MAINFRAME
-          : IDR_MAIN_USER;
-  main_menu_ = std::make_unique<MainMenu>(MainMenuContext{
-      *this, action_manager_, favourites_, file_cache_, profile_,
-      dialog_service_, main_window_manager_, *view_manager_, menu_id});
+  auto main_menu_model = main_menu_factory_(
+      *this, dialog_service_, *view_manager_, *commands_, *context_menu_model_);
 
-  status_bar_controller_ =
-      std::make_unique<StatusBarController>(std::move(status_bar_model_));
+  main_window_ = new NativeMainWindow{NativeMainWindowContext{
+      this, std::move(main_menu_model), status_bar_model_}};
 
-  main_window_ = new NativeMainWindow{
-      NativeMainWindowContext{this, *main_menu_, *status_bar_controller_}};
   auto& prefs = GetPrefs();
   main_window_->Init(prefs.bounds, prefs.maximized);
 
@@ -67,11 +56,6 @@ MainWindowViews::~MainWindowViews() {
   MainWindowDef& prefs = GetPrefs();
   main_window_->GetPrefs(prefs.bounds, prefs.maximized);
   main_window_->Close();
-}
-
-void MainWindowViews::OnNativeWindowClosed() {
-  status_bar_controller_.reset();
-  main_menu_.reset();
 }
 
 void MainWindowViews::CreateToolbar() {
@@ -185,8 +169,7 @@ bool MainWindowViews::CanHandleAccelerators() const {
 }
 
 base::string16 MainWindowViews::GetWindowTitle() const {
-  base::string16 server =
-      base::SysNativeMBToWide(session_service_.GetHostName());
+  base::string16 server = connection_info_provider_();
   if (server.empty()) {
     static base::string16 local_server_string = win_util::LoadResourceString(
         WTL::ModuleHelper::GetResourceInstance(), IDS_LOCAL_SERVER);
@@ -204,9 +187,9 @@ base::string16 MainWindowViews::GetWindowTitle() const {
                             server.c_str());
 }
 
-void MainWindowViews::UpdateToolbarPosition() {
-  toolbar_->set_vertical(GetPrefs().toolbar_position == ID_TOOLBAR_LEFT);
-  toolbar_->SetVisible(GetPrefs().toolbar_position != ID_TOOLBAR_HIDDEN);
+void MainWindowViews::SetToolbarPosition(unsigned position) {
+  toolbar_->set_vertical(position == ID_TOOLBAR_LEFT);
+  toolbar_->SetVisible(position != ID_TOOLBAR_HIDDEN);
   Layout();
 }
 
@@ -220,5 +203,5 @@ bool MainWindowViews::ExecuteWindowsCommand(int command_id) {
 }
 
 void MainWindowViews::UpdateTitle() {
-  main_window_->UpdateTitle();
+  main_window_->SetWindowText(GetWindowTitle().c_str());
 }

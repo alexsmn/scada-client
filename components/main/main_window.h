@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "common/aliases.h"
 #include "components/main/action_manager.h"
@@ -8,20 +7,16 @@
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
 
-#include <map>
-
 namespace base {
 class FilePath;
 }
 
 class ContentsObserver;
 class DialogService;
-class EventsHelper;
 class MainCommands;
 class MainMenuModel;
 class OpenedView;
 class Page;
-class PageLayoutBlock;
 class ViewManager;
 class WindowDefinition;
 struct MainWindowDef;
@@ -53,6 +48,8 @@ class MainWindow : protected MainWindowContext,
   void AddContentsObserver(ContentsObserver& observer);
   void RemoveContentsObserver(ContentsObserver& observer);
 
+  virtual void SetWindowFlashing(bool flashing) = 0;
+
   // MainWindow
   const Page* GetCurrentPage() const { return &current_page(); }
   void OpenPage(const Page& page);
@@ -75,12 +72,10 @@ class MainWindow : protected MainWindowContext,
   void Init(ViewManager& view_manager);
   void BeforeClose();
 
-  virtual void SetWindowFlashing(bool flashing) = 0;
-
   virtual void OnSelectionChanged() = 0;
 
   virtual void UpdateTitle() = 0;
-  virtual void UpdateToolbarPosition() = 0;
+  virtual void SetToolbarPosition(unsigned position) = 0;
 
   // ViewManagerDelegate
   virtual std::unique_ptr<OpenedView> OnCreateView(
@@ -90,13 +85,13 @@ class MainWindow : protected MainWindowContext,
 
   std::unique_ptr<CommandHandler> commands_;
 
+  std::unique_ptr<ui::MenuModel> context_menu_model_;
+
  private:
   void SetActiveView(OpenedView* view);
   void SetActiveDataView(OpenedView* view);
 
   OpenedView* FindViewToRecycle(unsigned type);
-
-  void OnEvents(bool has_events);
 
   // ContentsObserver
   virtual void OnContainedItemsUpdate(
@@ -110,15 +105,9 @@ class MainWindow : protected MainWindowContext,
   // View to insert new items.
   OpenedView* active_data_view_ = nullptr;
 
-  std::unique_ptr<EventsHelper> events_helper_;
-
   base::ObserverList<ContentsObserver> contents_observers_;
 
-  base::WeakPtrFactory<MainWindow> weak_factory_{this};
-
   friend class OpenedView;
-  friend class MainMenu;
-  friend class MainMenuModel2;
   friend class NativeMainWindow;
   friend class MainCommands;
 };
