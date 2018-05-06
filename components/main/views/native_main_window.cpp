@@ -45,6 +45,9 @@ HWND NativeMainWindow::Create(HWND hWndParent,
                               DWORD dwExStyle,
                               HMENU hMenu,
                               LPVOID lpCreateParam) {
+  menu_.GetNativeMenu();
+  menu_.Update();
+
   // create
   return __super::Create(hWndParent, rect, szWindowName, dwStyle, dwExStyle,
                          menu_.GetNativeMenu(), lpCreateParam);

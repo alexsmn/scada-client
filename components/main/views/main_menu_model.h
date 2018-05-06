@@ -6,6 +6,7 @@
 
 class ActionManager;
 class CommandHandler;
+class DialogService;
 class Favourites;
 class MainWindow;
 class MainWindowManager;
@@ -23,31 +24,7 @@ struct MainMenuContext {
   Profile& profile_;
   ViewManager& view_manager_;
   CommandHandler& command_handler_;
-};
-
-class InplaceMenuModel : public ui::SimpleMenuModel {
- public:
-  explicit InplaceMenuModel(ui::SimpleMenuModel::Delegate* delegate);
-
-  void AddInplaceMenu(std::shared_ptr<ui::MenuModel> model);
-
-  // views::MenuModel
-  virtual void MenuWillShow() override;
-  virtual void ActivatedAt(int index) override;
-  virtual bool IsEnabledAt(int index) const override;
-
- private:
-  struct InplaceInfo {
-    const int index;
-    const std::shared_ptr<ui::MenuModel> model;
-    int count;
-    int offset;
-  };
-
-  std::pair<ui::MenuModel*, int> GetModelAndIndexAt(int index);
-  std::pair<const ui::MenuModel*, int> GetModelAndIndexAt(int index) const;
-
-  std::vector<InplaceInfo> inplace_models_;
+  DialogService& dialog_service_;
 };
 
 class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
@@ -63,6 +40,64 @@ class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   void AddItems(unsigned type);
 
   std::vector<base::FilePath> paths_;
+};
+
+class FavouritesMenuModel : private MainMenuContext,
+                            public ui::SimpleMenuModel {
+ public:
+  FavouritesMenuModel(const unsigned view_types[],
+                      const MainMenuContext& context);
+
+  // views::MenuModel
+  virtual void MenuWillShow() override;
+  virtual void ActivatedAt(int index) override;
+  virtual bool IsEnabledAt(int index) const override;
+
+ private:
+  const unsigned* view_types_;
+
+  std::vector<const WindowDefinition*> windows_;
+};
+
+class PageMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+ public:
+  explicit PageMenuModel(const MainMenuContext& context);
+
+  // views::MenuModel
+  virtual void MenuWillShow() override;
+  virtual void ActivatedAt(int index) override;
+  virtual bool IsItemCheckedAt(int index) const override;
+
+ private:
+  int active_index_ = -1;
+};
+
+class WindowMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+ public:
+  explicit WindowMenuModel(const MainMenuContext& context)
+      : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
+
+  // views::MenuModel
+  virtual void MenuWillShow() override;
+  virtual void ActivatedAt(int index) override;
+  virtual bool IsItemCheckedAt(int index) const override;
+
+ private:
+  int active_index_ = -1;
+};
+
+class TrashMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+ public:
+  explicit TrashMenuModel(const MainMenuContext& context)
+      : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
+
+  // views::MenuModel
+  virtual void MenuWillShow() override;
+  virtual void ActivatedAt(int index) override;
+  virtual bool IsEnabledAt(int index) const override;
+
+ private:
+  bool empty_ = true;
 };
 
 class MainMenuModel final : private MainMenuContext,
@@ -84,11 +119,16 @@ class MainMenuModel final : private MainMenuContext,
 
   DisplayMenuModel display_menu_model_;
   std::unique_ptr<ui::MenuModel> context_menu_;
-  InplaceMenuModel table_submenu_;
-  InplaceMenuModel graph_submenu_;
+  FavouritesMenuModel table_favourites_;
+  ui::SimpleMenuModel table_submenu_;
+  FavouritesMenuModel graph_favourites_;
+  ui::SimpleMenuModel graph_submenu_;
   ui::SimpleMenuModel more_submenu_;
-  InplaceMenuModel page_submenu_;
-  InplaceMenuModel window_submenu_;
+  PageMenuModel page_list_menu_;
+  ui::SimpleMenuModel page_submenu_;
+  WindowMenuModel window_list_menu_;
+  TrashMenuModel trash_menu_;
+  ui::SimpleMenuModel window_submenu_;
   ui::SimpleMenuModel settings_submenu_;
   ui::SimpleMenuModel help_submenu_;
 };

@@ -7,6 +7,7 @@
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
 #include "components/main/views/context_menu_model.h"
+#include "services/dialog_service.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
@@ -18,73 +19,6 @@
 const unsigned kTableTypes[] = {ID_TABLE_VIEW, ID_SHEET_VIEW,
                                 ID_TIMED_DATA_VIEW, 0};
 const unsigned kGraphTypes[] = {ID_GRAPH_VIEW, 0};
-
-// InplaceMenuModel
-
-InplaceMenuModel::InplaceMenuModel(ui::SimpleMenuModel::Delegate* delegate)
-    : ui::SimpleMenuModel{delegate} {}
-
-void InplaceMenuModel::AddInplaceMenu(std::shared_ptr<ui::MenuModel> model) {
-  int index = GetItemCount();
-  inplace_models_.emplace_back(InplaceInfo{index, std::move(model)});
-}
-
-void InplaceMenuModel::MenuWillShow() {
-  for (auto& inplace_model : inplace_models_)
-    DeleteItems(inplace_model.index, inplace_model.count);
-
-  for (auto& inplace_model : inplace_models_)
-    inplace_model.model->MenuWillShow();
-
-  int offset = 0;
-  for (auto& inplace_model : inplace_models_) {
-    auto& model = *inplace_model.model;
-    int count = model.GetItemCount();
-    for (int i = 0; i < count; ++i) {
-      InsertItemAt(offset + inplace_model.index + i, model.GetCommandIdAt(i),
-                   model.GetLabelAt(i));
-    }
-    inplace_model.offset = offset;
-    inplace_model.count = count;
-    offset += count;
-  }
-}
-
-std::pair<ui::MenuModel*, int> InplaceMenuModel::GetModelAndIndexAt(int index) {
-  for (auto& inplace_model : inplace_models_) {
-    if (index < inplace_model.index)
-      return {this, index};
-    if (inplace_model.index <= index &&
-        index < inplace_model.index + inplace_model.count) {
-      auto& model = *inplace_model.model;
-      int model_index = index - inplace_model.index;
-      return {&model, model_index};
-    }
-    index -= inplace_model.count;
-  }
-  return {this, index};
-}
-
-std::pair<const ui::MenuModel*, int> InplaceMenuModel::GetModelAndIndexAt(
-    int index) const {
-  return const_cast<InplaceMenuModel*>(this)->GetModelAndIndexAt(index);
-}
-
-bool InplaceMenuModel::IsEnabledAt(int index) const {
-  auto [model, model_index] = GetModelAndIndexAt(index);
-  if (model == this)
-    return ui::SimpleMenuModel::IsEnabledAt(model_index);
-  else
-    return model && model->IsEnabledAt(model_index);
-}
-
-void InplaceMenuModel::ActivatedAt(int index) {
-  auto [model, model_index] = GetModelAndIndexAt(index);
-  if (model == this)
-    return ui::SimpleMenuModel::ActivatedAt(model_index);
-  else if (model)
-    model->ActivatedAt(model_index);
-}
 
 // DisplayMenuModel
 
@@ -113,7 +47,7 @@ void DisplayMenuModel::ActivatedAt(int index) {
 }
 
 bool DisplayMenuModel::IsEnabledAt(int index) const {
-  return paths_.empty();
+  return !paths_.empty();
 }
 
 void DisplayMenuModel::AddItems(unsigned type) {
@@ -128,30 +62,10 @@ void DisplayMenuModel::AddItems(unsigned type) {
 
 // FavouritesMenuModel
 
-class FavouritesMenuModel : private MainMenuContext,
-                            public ui::SimpleMenuModel {
- public:
-  FavouritesMenuModel(ui::SimpleMenuModel::Delegate* delegate,
-                      const unsigned view_types[],
-                      const MainMenuContext& context);
-
-  // views::MenuModel
-  virtual void MenuWillShow() override;
-  virtual void ActivatedAt(int index) override;
-  virtual bool IsEnabledAt(int index) const override;
-
- private:
-  const unsigned* view_types_;
-
-  std::vector<const WindowDefinition*> windows_;
-};
-
-FavouritesMenuModel::FavouritesMenuModel(
-    ui::SimpleMenuModel::Delegate* delegate,
-    const unsigned view_types[],
-    const MainMenuContext& context)
+FavouritesMenuModel::FavouritesMenuModel(const unsigned view_types[],
+                                         const MainMenuContext& context)
     : MainMenuContext{std::move(context)},
-      ui::SimpleMenuModel{delegate},
+      ui::SimpleMenuModel{nullptr},
       view_types_{view_types} {}
 
 void FavouritesMenuModel::MenuWillShow() {
@@ -191,70 +105,115 @@ bool FavouritesMenuModel::IsEnabledAt(int index) const {
 
 // PageMenuModel
 
-class PageMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
- public:
-  explicit PageMenuModel(const MainMenuContext& context);
-
-  // views::MenuModel
-  virtual void MenuWillShow() override;
-  virtual void ActivatedAt(int index) override;
-};
-
 PageMenuModel::PageMenuModel(const MainMenuContext& context)
     : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
 
 void PageMenuModel::MenuWillShow() {
   Clear();
 
-  for (auto& p : profile_.pages)
-    AddItem(0, p.second.title);
+  active_index_ = -1;
+
+  int index = 0;
+  for (auto& p : profile_.pages) {
+    AddRadioItem(0, p.second.title, 0);
+    if (main_window_.current_page().id == p.first)
+      active_index_ = index;
+    ++index;
+  }
 }
 
 void PageMenuModel::ActivatedAt(int index) {
   auto p = profile_.pages.begin();
   std::advance(p, index);
-  // p->second
+
+  auto& page = p->second;
+
+  // check revert page
+  bool revert = page.id == main_window_.current_page().id;
+  if (revert) {
+    base::string16 title = main_window_.current_page().GetTitle();
+    base::string16 message = base::StringPrintf(
+        L"Вернуться к сохраненному листу %ls?", title.c_str());
+    if (dialog_service_.RunMessageBox(message, {},
+                                      MessageBoxMode::QuestionYesNo) ==
+        MessageBoxResult::No) {
+      return;
+    }
+  }
+
+  // Don't allow to open same page in different windows.
+  if (!revert && main_window_manager_.IsPageOpened(page.id)) {
+    dialog_service_.RunMessageBox(L"Указанный лист открыт в другом окне.", {},
+                                  MessageBoxMode::Info);
+    return;
+  }
+
+  if (!revert)
+    main_window_.SavePage();
+
+  main_window_.OpenPage(page);
+}
+
+bool PageMenuModel::IsItemCheckedAt(int index) const {
+  return index == active_index_;
 }
 
 // WindowMenuModel
 
-class WindowMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
- public:
-  explicit WindowMenuModel(const MainMenuContext& context)
-      : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
-
-  // views::MenuModel
-  virtual void MenuWillShow() override;
-  virtual void ActivatedAt(int index) override;
-};
-
 void WindowMenuModel::MenuWillShow() {
   Clear();
 
-  for (auto* opened_view : view_manager_.views())
-    AddItem(0, opened_view->GetWindowTitle());
+  active_index_ = -1;
+
+  int index = 0;
+  for (auto* opened_view : view_manager_.views()) {
+    AddRadioItem(0, opened_view->GetWindowTitle(), 0);
+    if (opened_view == main_window_.active_view())
+      active_index_ = index;
+    ++index;
+  }
 }
 
-void WindowMenuModel::ActivatedAt(int index) {}
+void WindowMenuModel::ActivatedAt(int index) {
+  auto& views = view_manager_.views();
+  assert(index < static_cast<int>(views.size()));
+  auto i = views.begin();
+  std::advance(i, index);
+  auto& opened_view = **i;
+  main_window_.ActivateView(opened_view);
+}
+
+bool WindowMenuModel::IsItemCheckedAt(int index) const {
+  return index == active_index_;
+}
 
 // TrashMenuModel
 
-class TrashMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
- public:
-  explicit TrashMenuModel(const MainMenuContext& context)
-      : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
-
-  // views::MenuModel
-  virtual void MenuWillShow() override;
-  virtual void ActivatedAt(int index) override;
-};
-
 void TrashMenuModel::MenuWillShow() {
-  if (GetItemCount() == 0)
+  Clear();
+
+  const auto& trash = profile_.trash;
+  for (int i = 0; i < trash.GetWindowCount(); ++i) {
+    auto& win = trash.GetWindow(i);
+    base::string16 label = L"Восстановить " + win.GetTitle();
+    AddItem(0, label);
+  }
+
+  empty_ = GetItemCount() == 0;
+  if (empty_)
     AddItem(0, L"<Корзина пуста>");
 }
 
-void TrashMenuModel::ActivatedAt(int index) {}
+void TrashMenuModel::ActivatedAt(int index) {
+  Page& trash = profile_.trash;
+  assert(index < trash.GetWindowCount());
+  main_window_.OpenView(trash.GetWindow(index), true);
+  trash.DeleteWindow(index);
+}
+
+bool TrashMenuModel::IsEnabledAt(int index) const {
+  return !empty_;
+}
 
 // MainMenuModel
 
@@ -262,10 +221,15 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
     : MainMenuContext{std::move(context)},
       ui::SimpleMenuModel{this},
       display_menu_model_{context},
+      table_favourites_{kTableTypes, context},
       table_submenu_{this},
+      graph_favourites_{kGraphTypes, context},
       graph_submenu_{this},
       more_submenu_{this},
+      page_list_menu_{context},
       page_submenu_{this},
+      window_list_menu_{context},
+      trash_menu_{context},
       window_submenu_{this},
       settings_submenu_{this},
       help_submenu_{this} {
@@ -281,33 +245,32 @@ void MainMenuModel::Rebuild() {
   table_submenu_.AddItem(ID_SHEET_VIEW, L"Новая п-таблица");
   table_submenu_.AddItem(ID_TIMED_DATA_VIEW, L"Новая таблица значений");
   table_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  table_submenu_.AddInplaceMenu(
-      std::make_shared<FavouritesMenuModel>(delegate(), kTableTypes, context));
+  table_submenu_.AddInplaceMenu(&table_favourites_);
   AddSubMenu(0, L"Таблица", &table_submenu_);
 
   graph_submenu_.AddItem(ID_GRAPH_VIEW, L"Новый");
   graph_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  graph_submenu_.AddInplaceMenu(
-      std::make_shared<FavouritesMenuModel>(delegate(), kGraphTypes, context));
+  graph_submenu_.AddInplaceMenu(&graph_favourites_);
   AddSubMenu(0, L"График", &graph_submenu_);
 
   context_menu_ = std::make_unique<ContextMenuModel>(
       main_window_, action_manager_, command_handler_);
   AddSubMenu(0, L"Объект", context_menu_.get());
 
-  more_submenu_.AddItem(ID_OBJECT_VIEW, L"Объекты");
-  more_submenu_.AddItem(ID_EVENT_VIEW, L"События");
-  more_submenu_.AddItem(ID_FAVOURITES_VIEW, L"Избранное");
-  more_submenu_.AddItem(ID_PORTFOLIO_VIEW, L"Портфолио");
-  more_submenu_.AddItem(ID_HARDWARE_VIEW, L"Оборудование");
-  more_submenu_.AddItem(ID_EVENT_JOURNAL_VIEW, L"Журнал событий");
+  more_submenu_.AddCheckItem(ID_OBJECT_VIEW, L"Объекты");
+  more_submenu_.AddCheckItem(ID_EVENT_VIEW, L"События");
+  more_submenu_.AddCheckItem(ID_FAVOURITES_VIEW, L"Избранное");
+  more_submenu_.AddCheckItem(ID_PORTFOLIO_VIEW, L"Портфолио");
+  more_submenu_.AddCheckItem(ID_HARDWARE_VIEW, L"Оборудование");
+  more_submenu_.AddCheckItem(ID_EVENT_JOURNAL_VIEW, L"Журнал событий");
   if (admin_) {
     more_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-    more_submenu_.AddItem(ID_NODES_VIEW, L"Узлы");
-    more_submenu_.AddItem(ID_TS_FORMATS_VIEW, L"Форматы");
-    more_submenu_.AddItem(ID_SIMULATION_ITEMS_VIEW, L"Эмулируемые сигналы");
-    more_submenu_.AddItem(ID_USERS_VIEW, L"Пользователи");
-    more_submenu_.AddItem(ID_HISTORICAL_DB_VIEW, L"Базы данных");
+    more_submenu_.AddCheckItem(ID_NODES_VIEW, L"Узлы");
+    more_submenu_.AddCheckItem(ID_TS_FORMATS_VIEW, L"Форматы");
+    more_submenu_.AddCheckItem(ID_SIMULATION_ITEMS_VIEW,
+                               L"Эмулируемые сигналы");
+    more_submenu_.AddCheckItem(ID_USERS_VIEW, L"Пользователи");
+    more_submenu_.AddCheckItem(ID_HISTORICAL_DB_VIEW, L"Базы данных");
     more_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
     more_submenu_.AddItem(ID_EXPORT_CONFIGURATION_TO_EXCEL,
                           L"Экспорт конфигурации в Excel...");
@@ -316,11 +279,13 @@ void MainMenuModel::Rebuild() {
   }
   AddSubMenu(0, L"Далее", &more_submenu_);
 
+  justify_index = GetItemCount();
+  
   page_submenu_.AddItem(ID_PAGE_NEW, L"Новый");
   page_submenu_.AddItem(ID_PAGE_DELETE, L"Удалить");
   page_submenu_.AddItem(ID_PAGE_RENAME, L"Переименовать");
   page_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  page_submenu_.AddInplaceMenu(std::make_shared<PageMenuModel>(context));
+  page_submenu_.AddInplaceMenu(&page_list_menu_);
   AddSubMenu(0, L"Лист", &page_submenu_);
 
   window_submenu_.AddItem(ID_WINDOW_NEW, L"Новое");
@@ -329,31 +294,32 @@ void MainMenuModel::Rebuild() {
   window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
   window_submenu_.AddItem(ID_VIEW_CLOSE, L"Закрыть");
   window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  window_submenu_.AddInplaceMenu(std::make_shared<WindowMenuModel>(context));
+  window_submenu_.AddInplaceMenu(&window_list_menu_);
   window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  window_submenu_.AddInplaceMenu(std::make_shared<TrashMenuModel>(context));
+  window_submenu_.AddInplaceMenu(&trash_menu_);
   AddSubMenu(0, L"Окно", &window_submenu_);
 
   // TODO:
-  settings_submenu_.AddItem(0, L"Панель инструментов");
-  settings_submenu_.AddItem(ID_VIEW_STATUS_BAR, L"Строка состояния");
+  settings_submenu_.AddCheckItem(0, L"Панель инструментов");
+  settings_submenu_.AddCheckItem(ID_VIEW_STATUS_BAR, L"Строка состояния");
   settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  settings_submenu_.AddItem(ID_WRITE_CONFIRMATION, L"Подтверждение управления");
-  settings_submenu_.AddItem(ID_SHOW_WRITEOK,
-                            L"Сообщение об успешном управлении");
+  settings_submenu_.AddCheckItem(ID_WRITE_CONFIRMATION,
+                                 L"Подтверждение управления");
+  settings_submenu_.AddCheckItem(ID_SHOW_WRITEOK,
+                                 L"Сообщение об успешном управлении");
   settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  settings_submenu_.AddItem(ID_SHOW_EVENTS,
-                            L"Показывать события при появлении");
-  settings_submenu_.AddItem(ID_HIDE_EVENTS,
-                            L"Скрывать события при квитировании");
-  settings_submenu_.AddItem(ID_EVENT_FLASH_WINDOW,
-                            L"Мигание основного окна по событию");
-  settings_submenu_.AddItem(ID_EVENT_PLAY_SOUND,
-                            L"Звуковая сигнализация по событию");
+  settings_submenu_.AddCheckItem(ID_SHOW_EVENTS,
+                                 L"Показывать события при появлении");
+  settings_submenu_.AddCheckItem(ID_HIDE_EVENTS,
+                                 L"Скрывать события при квитировании");
+  settings_submenu_.AddCheckItem(ID_EVENT_FLASH_WINDOW,
+                                 L"Мигание основного окна по событию");
+  settings_submenu_.AddCheckItem(ID_EVENT_PLAY_SOUND,
+                                 L"Звуковая сигнализация по событию");
   settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
   settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, L"Открыть папку схем");
-  settings_submenu_.AddItem(ID_MODUS2_MODE,
-                            L"Встроенный визуализатор схем MODUS");
+  settings_submenu_.AddCheckItem(ID_MODUS2_MODE,
+                                 L"Встроенный визуализатор схем MODUS");
   AddSubMenu(0, L"Настройки", &settings_submenu_);
 
   help_submenu_.AddItem(ID_HELP_MANUAL, L"Документация");
@@ -363,11 +329,13 @@ void MainMenuModel::Rebuild() {
 }
 
 bool MainMenuModel::IsCommandIdChecked(int command_id) const {
-  return false;
+  auto* handler = command_handler_.GetCommandHandler(command_id);
+  return handler && handler->IsCommandChecked(command_id);
 }
 
 bool MainMenuModel::IsCommandIdEnabled(int command_id) const {
-  return true;
+  auto* handler = command_handler_.GetCommandHandler(command_id);
+  return handler && handler->IsCommandEnabled(command_id);
 }
 
 bool MainMenuModel::GetAcceleratorForCommandId(int command_id,

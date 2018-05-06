@@ -33,7 +33,7 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
   auto main_menu_model = std::make_shared<MainMenuModel>(MainMenuContext{
       main_window_manager_, *this, action_manager_, favourites_, file_cache_,
       session_service_.HasPrivilege(scada::Privilege::Configure), profile_,
-      *view_manager_, *commands_});
+      *view_manager_, *commands_, dialog_service_});
 
   main_window_ = new NativeMainWindow{
       NativeMainWindowContext{this, main_menu_model, status_bar_model_}};
