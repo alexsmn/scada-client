@@ -7,6 +7,7 @@
 
 #if defined(UI_QT)
 #include "components/main/qt/main_window_qt.h"
+#include "qt/client_utils_qt.h"
 
 #include <QMenu>
 #endif
@@ -29,10 +30,9 @@ OpenedView::OpenedView(OpenedViewContext&& context)
   view_->setContextMenuPolicy(Qt::CustomContextMenu);
   QObject::connect(view_, &QWidget::customContextMenuRequested,
                    [this](const QPoint& pos) {
-                     // TODO: Avoid the cast.
-                     static_cast<MainWindowQt*>(main_window_)
-                         ->context_menu()
-                         .exec(view_->mapToGlobal(pos));
+                     QMenu menu;
+                     BuildMenu(menu, context_menu_model_);
+                     menu.exec(view_->mapToGlobal(pos));
                    });
 
 #elif defined(UI_VIEWS)
