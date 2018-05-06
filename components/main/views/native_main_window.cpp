@@ -3,6 +3,7 @@
 #include "base/color.h"
 #include "components/main/views/main_window_views.h"
 #include "components/main/views/status_bar_controller.h"
+#include "ui/base/models/menu_model.h"
 #include "ui/views/widget/widget.h"
 
 NativeMainWindow::NativeMainWindow(NativeMainWindowContext&& context)

@@ -19,7 +19,10 @@
 #include "common/remote_node_service.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
+#include "components/main/context_menu_model.h"
 #include "components/main/main_commands.h"
+#include "components/main/main_menu_model.h"
+#include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view_commands.h"
 #include "components/main/status_bar_model_impl.h"
@@ -30,6 +33,7 @@
 #include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
+#include "services/event_notifier.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
 #include "services/local_events.h"
@@ -39,14 +43,6 @@
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_impl.h"
 #include "window_info.h"
-
-#if defined(UI_VIEWS)
-#include "components/main/views/main_window_views.h"
-using MainWindowType = MainWindowViews;
-#elif defined(UI_QT)
-#include "components/main/qt/main_window_qt.h"
-using MainWindowType = MainWindowQt;
-#endif
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
@@ -158,6 +154,7 @@ ClientApplication::~ClientApplication() {
   favourites_.reset();
   portfolio_manager_.reset();
   task_manager_.reset();
+  event_notifier_.reset();
   local_events_.reset();
 
   profile_.reset();
@@ -284,6 +281,11 @@ void ClientApplication::SetServices(DataServices&& services) {
 
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
+
+  event_notifier_ = std::make_unique<EventNotifier>(
+      EventNotifierContext{*event_manager_, *local_events_, *profile_,
+                           [this](bool has_events) { OnEvents(has_events); }});
+
   task_manager_ = std::make_unique<TaskManagerImpl>(TaskManagerImplContext{
       *node_service_, *master_data_services_, *local_events_, *profile_});
   speech_.reset(new Speech);
@@ -311,6 +313,19 @@ void ClientApplication::SetServices(DataServices&& services) {
   profile_->Load(*event_manager_, *portfolio_manager_, *favourites_);
   profile_loaded_ = true;
 
+  main_window_manager_ =
+      std::make_unique<MainWindowManager>(MainWindowManagerContext{
+          *profile_,
+          [this](int window_id) {
+            return main_window_factory_(MakeMainWindowContext(window_id));
+          },
+          quit_handler_});
+
+  // |main_window_manager_| must be assigned.
+  main_window_manager_->Init();
+}
+
+MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
   auto controller_factory = [this](unsigned type, ControllerDelegate& delegate,
                                    DialogService& dialog_service) {
     return CreateController(
@@ -331,6 +346,24 @@ void ClientApplication::SetServices(DataServices&& services) {
         *profile_, *main_window_manager_});
   };
 
+  auto main_menu_factory =
+      [this](MainWindow& main_window, DialogService& dialog_service,
+             ViewManager& view_manager, CommandHandler& main_commands,
+             ui::MenuModel& context_menu_model) {
+        return std::make_unique<MainMenuModel>(MainMenuContext{
+            *main_window_manager_, main_window, *action_manager_, *favourites_,
+            *file_cache_,
+            master_data_services_->HasPrivilege(scada::Privilege::Configure),
+            *profile_, view_manager, main_commands, dialog_service,
+            context_menu_model});
+      };
+
+  auto context_menu_factory = [this](MainWindow& main_window,
+                                     CommandHandler& main_commands) {
+    return std::make_unique<ContextMenuModel>(main_window, *action_manager_,
+                                              main_commands);
+  };
+
   auto view_commands_factory = [this](OpenedView& opened_view,
                                       DialogService& dialog_service) {
     auto commands =
@@ -346,43 +379,26 @@ void ClientApplication::SetServices(DataServices&& services) {
     return commands;
   };
 
-  auto main_window_factory = [this, controller_factory, main_commands_factory,
-                              view_commands_factory](int window_id) {
-    auto status_bar_model =
-        std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
-            *master_data_services_, *event_manager_, *node_service_});
+  auto status_bar_model =
+      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
+          *master_data_services_, *event_manager_, *node_service_});
 
-    auto main_window = std::make_unique<MainWindowType>(
-        MainWindowContext{*action_manager_,
-                          alias_resolver_,
-                          window_id,
-                          *event_manager_,
-                          *favourites_,
-                          *file_cache_,
-                          *local_events_,
-                          *main_window_manager_,
-                          *node_service_,
-                          *portfolio_manager_,
-                          *profile_,
-                          *master_data_services_,
-                          *master_data_services_,
-                          *master_data_services_,
-                          *master_data_services_,
-                          *master_data_services_,
-                          *speech_,
-                          *task_manager_,
-                          *timed_data_service_,
-                          controller_factory,
-                          main_commands_factory,
-                          view_commands_factory,
-                          std::move(status_bar_model)});
-
-    return main_window;
+  auto connection_info_provider = [this] {
+    return base::SysNativeMBToWide(master_data_services_->GetHostName());
   };
 
-  main_window_manager_ = std::make_unique<MainWindowManager>(
-      MainWindowManagerContext{*profile_, main_window_factory, quit_handler_});
-  main_window_manager_->Init();
+  return MainWindowContext{*action_manager_,
+                           window_id,
+                           *file_cache_,
+                           *main_window_manager_,
+                           *profile_,
+                           controller_factory,
+                           main_commands_factory,
+                           view_commands_factory,
+                           std::move(status_bar_model),
+                           context_menu_factory,
+                           main_menu_factory,
+                           connection_info_provider};
 }
 
 void ClientApplication::OnSessionCreated() {
@@ -395,4 +411,20 @@ void ClientApplication::OnSessionDeleted(const scada::Status& status) {
 
 DataServicesContext ClientApplication::MakeDataServicesContext() {
   return {logger_, base::ThreadTaskRunnerHandle::Get(), *transport_factory_};
+}
+
+void ClientApplication::OnEvents(bool has_events) {
+  for (auto& p : main_window_manager_->main_windows()) {
+    auto& main_window = *p.second;
+    bool events_shown =
+        main_window.FindOpenedViewByType(ID_EVENT_VIEW) != nullptr;
+    if (has_events != events_shown) {
+      if (has_events && profile_->event_auto_show)
+        main_window.OpenPane(ID_EVENT_VIEW, false);
+      else if (!has_events && profile_->event_auto_hide)
+        main_window.ClosePane(ID_EVENT_VIEW);
+    }
+
+    main_window.SetWindowFlashing(has_events && profile_->event_flash_window);
+  }
 }

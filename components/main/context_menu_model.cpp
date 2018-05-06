@@ -1,4 +1,4 @@
-#include "components/main/views/context_menu_model.h"
+#include "components/main/context_menu_model.h"
 
 #include "components/main/action_manager.h"
 #include "components/main/main_window.h"

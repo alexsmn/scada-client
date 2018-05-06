@@ -29,8 +29,8 @@ class StatusBarModel;
 
 struct NativeMainWindowContext {
   MainWindowViews* main_window_;
-  const std::shared_ptr<ui::MenuModel> menu_model_;
-  const std::shared_ptr<StatusBarModel> status_bar_model_;
+  std::unique_ptr<ui::MenuModel> menu_model_;
+  std::shared_ptr<StatusBarModel> status_bar_model_;
 };
 
 class NativeMainWindow : private NativeMainWindowContext,

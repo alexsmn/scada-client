@@ -2,8 +2,6 @@
 
 #include "common_resources.h"
 #include "components/main/opened_view.h"
-#include "components/main/views/context_menu_model.h"
-#include "components/main/views/main_menu_model.h"
 #include "components/main/views/native_main_window.h"
 #include "components/main/views/toolbar_controller.h"
 #include "components/main/views/view_manager_views.h"
@@ -11,10 +9,10 @@
 #include "core/session_service.h"
 #include "services/page.h"
 #include "services/profile.h"
+#include "ui/base/models/menu_model.h"
 #include "ui/events/event_utils.h"
 #include "ui/views/background.h"
 #include "views/client_utils_views.h"
-#include "views/controls/menu/native_menu_win.h"
 #include "window_info.h"
 
 static const int kToolbarWidth = 90;
@@ -30,13 +28,11 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
   // TODO: Use theme color.
   set_background(new views::ColorBackground(SkColorSetRGB(227, 227, 227)));
 
-  auto main_menu_model = std::make_shared<MainMenuModel>(MainMenuContext{
-      main_window_manager_, *this, action_manager_, favourites_, file_cache_,
-      session_service_.HasPrivilege(scada::Privilege::Configure), profile_,
-      *view_manager_, *commands_, dialog_service_});
+  auto main_menu_model = main_menu_factory_(
+      *this, dialog_service_, *view_manager_, *commands_, *context_menu_model_);
 
-  main_window_ = new NativeMainWindow{
-      NativeMainWindowContext{this, main_menu_model, status_bar_model_}};
+  main_window_ = new NativeMainWindow{NativeMainWindowContext{
+      this, std::move(main_menu_model), status_bar_model_}};
 
   auto& prefs = GetPrefs();
   main_window_->Init(prefs.bounds, prefs.maximized);
@@ -173,8 +169,7 @@ bool MainWindowViews::CanHandleAccelerators() const {
 }
 
 base::string16 MainWindowViews::GetWindowTitle() const {
-  base::string16 server =
-      base::SysNativeMBToWide(session_service_.GetHostName());
+  base::string16 server = connection_info_provider_();
   if (server.empty()) {
     static base::string16 local_server_string = win_util::LoadResourceString(
         WTL::ModuleHelper::GetResourceInstance(), IDS_LOCAL_SERVER);

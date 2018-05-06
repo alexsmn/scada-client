@@ -2,7 +2,6 @@
 
 #include "client_utils.h"
 #include "common_resources.h"
-#include "components/main/events_helper.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
@@ -10,19 +9,17 @@
 #include "contents_observer.h"
 #include "controller.h"
 #include "services/profile.h"
+#include "ui/base/models/menu_model.h"
 #include "window_info.h"
 
 MainWindow::MainWindow(MainWindowContext&& context,
                        DialogService& dialog_service)
     : MainWindowContext{std::move(context)},
-      commands_{main_commands_factory_(*this, dialog_service)} {}
+      commands_{main_commands_factory_(*this, dialog_service)},
+      context_menu_model_{context_menu_factory_(*this, *commands_)} {}
 
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
-
-  events_helper_ = std::make_unique<EventsHelper>(
-      EventsHelperContext{event_manager_, local_events_, profile_,
-                          [this](bool has_events) { OnEvents(has_events); }});
 
   Page* page = nullptr;
   auto& pages = profile_.pages;
@@ -226,7 +223,7 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
   auto& dialog_service = GetDialogService();
 
   auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
-      this, def, action_manager_, dialog_service, controller_factory_});
+      this, def, dialog_service, controller_factory_, *context_menu_model_});
 
   opened_view->commands = view_commands_factory_(*opened_view, dialog_service);
 
@@ -273,16 +270,4 @@ void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
                                         bool added) {
   FOR_EACH_OBSERVER(ContentsObserver, contents_observers_,
                     OnContainedItemChanged(item_id, added));
-}
-
-void MainWindow::OnEvents(bool has_events) {
-  bool events_shown = FindOpenedViewByType(ID_EVENT_VIEW) != nullptr;
-  if (has_events != events_shown) {
-    if (has_events && profile_.event_auto_show)
-      OpenPane(ID_EVENT_VIEW, false);
-    else if (!has_events && profile_.event_auto_hide)
-      ClosePane(ID_EVENT_VIEW);
-  }
-
-  SetWindowFlashing(has_events && profile_.event_flash_window);
 }

@@ -3,10 +3,11 @@
 #include "base/at_exit.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
-#include "base/win/gdiplus_initializer.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/win/gdiplus_initializer.h"
 #include "client_paths.h"
 #include "components/login/qt/login_dialog.h"
+#include "components/main/qt/main_window_qt.h"
 #include "qt/message_loop_qt.h"
 
 #include <QApplication>
@@ -54,7 +55,11 @@ int main(int argc, char* argv[]) {
   int result = 0;
 
   try {
-    ClientApplication app{ClientApplicationContext{[&qapp] { qapp.quit(); }}};
+    ClientApplication app{ClientApplicationContext{
+        [](MainWindowContext&& context) {
+          return std::make_unique<MainWindowQt>(std::move(context));
+        },
+        [&qapp] { qapp.quit(); }}};
 
     {
       LoginDialog login_dialog{app.MakeDataServicesContext()};

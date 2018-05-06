@@ -16,7 +16,6 @@ class FilePath;
 
 class ContentsObserver;
 class DialogService;
-class EventsHelper;
 class MainCommands;
 class MainMenuModel;
 class OpenedView;
@@ -53,6 +52,8 @@ class MainWindow : protected MainWindowContext,
   void AddContentsObserver(ContentsObserver& observer);
   void RemoveContentsObserver(ContentsObserver& observer);
 
+  virtual void SetWindowFlashing(bool flashing) = 0;
+
   // MainWindow
   const Page* GetCurrentPage() const { return &current_page(); }
   void OpenPage(const Page& page);
@@ -75,8 +76,6 @@ class MainWindow : protected MainWindowContext,
   void Init(ViewManager& view_manager);
   void BeforeClose();
 
-  virtual void SetWindowFlashing(bool flashing) = 0;
-
   virtual void OnSelectionChanged() = 0;
 
   virtual void UpdateTitle() = 0;
@@ -90,13 +89,13 @@ class MainWindow : protected MainWindowContext,
 
   std::unique_ptr<CommandHandler> commands_;
 
+  std::unique_ptr<ui::MenuModel> context_menu_model_;
+
  private:
   void SetActiveView(OpenedView* view);
   void SetActiveDataView(OpenedView* view);
 
   OpenedView* FindViewToRecycle(unsigned type);
-
-  void OnEvents(bool has_events);
 
   // ContentsObserver
   virtual void OnContainedItemsUpdate(
@@ -110,15 +109,11 @@ class MainWindow : protected MainWindowContext,
   // View to insert new items.
   OpenedView* active_data_view_ = nullptr;
 
-  std::unique_ptr<EventsHelper> events_helper_;
-
   base::ObserverList<ContentsObserver> contents_observers_;
 
   base::WeakPtrFactory<MainWindow> weak_factory_{this};
 
   friend class OpenedView;
-  friend class MainMenu;
-  friend class MainMenuModel2;
   friend class NativeMainWindow;
   friend class MainCommands;
 };

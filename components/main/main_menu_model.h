@@ -25,6 +25,7 @@ struct MainMenuContext {
   ViewManager& view_manager_;
   CommandHandler& command_handler_;
   DialogService& dialog_service_;
+  ui::MenuModel& context_menu_model_;
 };
 
 class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
@@ -118,7 +119,6 @@ class MainMenuModel final : private MainMenuContext,
   virtual void ExecuteCommand(int command_id) override;
 
   DisplayMenuModel display_menu_model_;
-  std::unique_ptr<ui::MenuModel> context_menu_;
   FavouritesMenuModel table_favourites_;
   ui::SimpleMenuModel table_submenu_;
   FavouritesMenuModel graph_favourites_;

@@ -1,12 +1,12 @@
-﻿#include "components/main/views/main_menu_model.h"
+﻿#include "components/main/main_menu_model.h"
 
 #include "command_handler.h"
 #include "common_resources.h"
+#include "components/main/context_menu_model.h"
 #include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
-#include "components/main/views/context_menu_model.h"
 #include "services/dialog_service.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
@@ -253,9 +253,7 @@ void MainMenuModel::Rebuild() {
   graph_submenu_.AddInplaceMenu(&graph_favourites_);
   AddSubMenu(0, L"График", &graph_submenu_);
 
-  context_menu_ = std::make_unique<ContextMenuModel>(
-      main_window_, action_manager_, command_handler_);
-  AddSubMenu(0, L"Объект", context_menu_.get());
+  AddSubMenu(0, L"Объект", &context_menu_model_);
 
   more_submenu_.AddCheckItem(ID_OBJECT_VIEW, L"Объекты");
   more_submenu_.AddCheckItem(ID_EVENT_VIEW, L"События");
@@ -280,7 +278,7 @@ void MainMenuModel::Rebuild() {
   AddSubMenu(0, L"Далее", &more_submenu_);
 
   justify_index = GetItemCount();
-  
+
   page_submenu_.AddItem(ID_PAGE_NEW, L"Новый");
   page_submenu_.AddItem(ID_PAGE_DELETE, L"Удалить");
   page_submenu_.AddItem(ID_PAGE_RENAME, L"Переименовать");
