@@ -1,11 +1,8 @@
 #include "client_application.h"
 
 #include "base/at_exit.h"
-#include "base/files/file_util.h"
-#include "base/path_service.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
-#include "client_paths.h"
 #include "components/main/qt/main_window_qt.h"
 #include "qt/message_loop_qt.h"
 
@@ -21,9 +18,9 @@ const char kRegistryKey[] =
 }
 
 int main(int argc, char* argv[]) {
-  GdiplusInitializer gdiplus;
-
   base::AtExitManager at_exit;
+
+  GdiplusInitializer gdiplus;
 
   QApplication qapp(argc, argv);
 

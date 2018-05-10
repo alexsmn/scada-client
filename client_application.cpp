@@ -304,8 +304,13 @@ ClientApplication::CreateAddressSpaceNodeService() {
           node_service_notifier{node_service, services} {}
 
     AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
-      return {std::make_shared<NestedLogger>(logger, "NodeService"), services,
-              services, address_space, address_space.node_factory};
+      return {std::make_shared<NestedLogger>(logger, "NodeService"),
+              services,
+              services,
+              address_space,
+              address_space.node_factory,
+              services,
+              services};
     }
 
     const std::shared_ptr<Logger> logger;
