@@ -57,8 +57,10 @@ class ClientApplication : private ClientApplicationContext,
   ClientApplication(const ClientApplication&) = delete;
   ClientApplication& operator=(const ClientApplication&) = delete;
 
-  DataServicesContext MakeDataServicesContext();
-  void SetServices(DataServices&& services);
+  bool Login();
+
+  // Called after Login().
+  void Start();
 
  private:
   std::shared_ptr<NodeService> CreateRemoteNodeService();

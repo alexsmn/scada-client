@@ -5,7 +5,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/win/gdiplus_initializer.h"
 #include "client_application.h"
-#include "components/login/login_dialog.h"
 #include "components/main/views/main_window_views.h"
 #include "core/data_services_factory.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -36,16 +35,13 @@ int Run(int show = SW_SHOWDEFAULT) {
         },
         [&run_loop] { run_loop.Quit(); }}};
 
-    {
-      DataServices services;
-      if (!ExecuteLoginDialog(app.MakeDataServicesContext(), services))
-        throw std::runtime_error{"Login failed"};
-      app.SetServices(std::move(services));
-    }
+    if (!app.Login())
+      throw std::runtime_error("Login failed");
 
     views::AcceleratorHandler accelerator_handler;
     ActiveXHost::instance().AddMessageDispatcher(accelerator_handler);
 
+    app.Start();
     run_loop.Run();
 
     ActiveXHost::instance().RemoveMessageDispatcher(accelerator_handler);

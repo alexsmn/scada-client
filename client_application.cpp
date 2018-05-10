@@ -17,6 +17,7 @@
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
 #include "common/remote_node_service.h"
+#include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
 #include "components/main/context_menu_model.h"
@@ -172,66 +173,7 @@ ClientApplication::~ClientApplication() {
   io_context_.reset();
 }
 
-std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
-  struct Context {
-    Context(const std::shared_ptr<Logger>& logger, MasterDataServices& services)
-        : node_service{RemoteNodeServiceContext{
-              std::make_shared<NestedLogger>(logger, "RemoteNodeService"),
-              services, services}},
-          node_service_notifier{node_service, services} {}
-
-    RemoteNodeService node_service;
-    SessionProxyNotifier<RemoteNodeService> node_service_notifier;
-  };
-
-  auto context = std::make_shared<Context>(logger_, *master_data_services_);
-  return std::shared_ptr<NodeService>{context, &context->node_service};
-}
-
-std::shared_ptr<NodeService>
-ClientApplication::CreateAddressSpaceNodeService() {
-  class ClientAddressSpace : public AddressSpaceImpl {
-   public:
-    explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl{logger}, node_factory{logger, *this} {
-      CreateScadaAddressSpace(*this, node_factory);
-    }
-
-    GenericNodeFactory node_factory;
-  };
-
-  struct Context {
-    Context(std::shared_ptr<Logger> input_logger, MasterDataServices& services)
-        : logger{std::move(input_logger)},
-          services{services},
-          address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
-          node_service{MakeAddressSpaceNodeServiceContext()},
-          node_service_notifier{node_service, services} {}
-
-    AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
-      return {std::make_shared<NestedLogger>(logger, "NodeService"), services,
-              services, address_space, address_space.node_factory};
-    }
-
-    const std::shared_ptr<Logger> logger;
-    MasterDataServices& services;
-    ClientAddressSpace address_space;
-    AddressSpaceNodeService node_service;
-    SessionProxyNotifier<AddressSpaceNodeService> node_service_notifier;
-  };
-
-  auto logger =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("verbose-logging")
-          ? logger_
-          : static_cast<std::shared_ptr<Logger>>(
-                std::make_shared<NullLogger>());
-
-  auto context = std::make_shared<Context>(logger, *master_data_services_);
-  return std::shared_ptr<NodeService>{context, &context->node_service};
-}
-
-void ClientApplication::SetServices(DataServices&& services) {
-  master_data_services_->SetServices(std::move(services));
+void ClientApplication::Start() {
   master_data_services_->AddObserver(*this);
 
   event_manager_ =
@@ -325,6 +267,64 @@ void ClientApplication::SetServices(DataServices&& services) {
   main_window_manager_->Init();
 }
 
+std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
+  struct Context {
+    Context(const std::shared_ptr<Logger>& logger, MasterDataServices& services)
+        : node_service{RemoteNodeServiceContext{
+              std::make_shared<NestedLogger>(logger, "RemoteNodeService"),
+              services, services}},
+          node_service_notifier{node_service, services} {}
+
+    RemoteNodeService node_service;
+    SessionProxyNotifier<RemoteNodeService> node_service_notifier;
+  };
+
+  auto context = std::make_shared<Context>(logger_, *master_data_services_);
+  return std::shared_ptr<NodeService>{context, &context->node_service};
+}
+
+std::shared_ptr<NodeService>
+ClientApplication::CreateAddressSpaceNodeService() {
+  class ClientAddressSpace : public AddressSpaceImpl {
+   public:
+    explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
+        : AddressSpaceImpl{logger}, node_factory{logger, *this} {
+      CreateScadaAddressSpace(*this, node_factory);
+    }
+
+    GenericNodeFactory node_factory;
+  };
+
+  struct Context {
+    Context(std::shared_ptr<Logger> input_logger, MasterDataServices& services)
+        : logger{std::move(input_logger)},
+          services{services},
+          address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
+          node_service{MakeAddressSpaceNodeServiceContext()},
+          node_service_notifier{node_service, services} {}
+
+    AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
+      return {std::make_shared<NestedLogger>(logger, "NodeService"), services,
+              services, address_space, address_space.node_factory};
+    }
+
+    const std::shared_ptr<Logger> logger;
+    MasterDataServices& services;
+    ClientAddressSpace address_space;
+    AddressSpaceNodeService node_service;
+    SessionProxyNotifier<AddressSpaceNodeService> node_service_notifier;
+  };
+
+  auto logger =
+      base::CommandLine::ForCurrentProcess()->HasSwitch("verbose-logging")
+          ? logger_
+          : static_cast<std::shared_ptr<Logger>>(
+                std::make_shared<NullLogger>());
+
+  auto context = std::make_shared<Context>(logger, *master_data_services_);
+  return std::shared_ptr<NodeService>{context, &context->node_service};
+}
+
 MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
   auto controller_factory = [this](unsigned type, ControllerDelegate& delegate,
                                    DialogService& dialog_service) {
@@ -338,12 +338,20 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
                           *file_cache_, *profile_, dialog_service});
   };
 
-  auto main_commands_factory = [this](MainWindow& main_window,
-                                      DialogService& dialog_service) {
+  auto login_handler = [this](bool login) {
+    if (login)
+      Login();
+    else
+      master_data_services_->SetServices({});
+  };
+
+  auto main_commands_factory = [this, login_handler](
+                                   MainWindow& main_window,
+                                   DialogService& dialog_service) {
     return std::make_unique<MainCommands>(MainCommandsContext{
         main_window, *task_manager_, dialog_service, *master_data_services_,
         *event_manager_, *node_service_, *local_events_, *favourites_, *speech_,
-        *profile_, *main_window_manager_});
+        *profile_, *main_window_manager_, login_handler});
   };
 
   auto main_menu_factory =
@@ -409,10 +417,6 @@ void ClientApplication::OnSessionDeleted(const scada::Status& status) {
   event_manager_->OnChannelClosed();
 }
 
-DataServicesContext ClientApplication::MakeDataServicesContext() {
-  return {logger_, base::ThreadTaskRunnerHandle::Get(), *transport_factory_};
-}
-
 void ClientApplication::OnEvents(bool has_events) {
   for (auto& p : main_window_manager_->main_windows()) {
     auto& main_window = *p.second;
@@ -427,4 +431,15 @@ void ClientApplication::OnEvents(bool has_events) {
 
     main_window.SetWindowFlashing(has_events && profile_->event_flash_window);
   }
+}
+
+bool ClientApplication::Login() {
+  DataServicesContext services_context{
+      logger_, base::ThreadTaskRunnerHandle::Get(), *transport_factory_};
+  DataServices services;
+  if (!ExecuteLoginDialog(std::move(services_context), services))
+    return false;
+
+  master_data_services_->SetServices(std::move(services));
+  return true;
 }

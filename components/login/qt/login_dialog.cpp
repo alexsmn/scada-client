@@ -79,3 +79,12 @@ void LoginDialog::EnableControls(bool enable) {
   ui.autoLoginCheckBox->setEnabled(enable);
   ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(enable);
 }
+
+bool ExecuteLoginDialog(DataServicesContext&& services_context,
+                        DataServices& services) {
+  LoginDialog login_dialog{std::move(services_context)};
+  if (login_dialog.exec() == QDialog::Rejected)
+    return false;
+  services = std::move(login_dialog.services);
+  return true;
+}

@@ -2,6 +2,7 @@
 
 #include "command_handler.h"
 
+#include <functional>
 #include <memory>
 #include <type_traits>
 
@@ -35,6 +36,7 @@ struct MainCommandsContext {
   Speech& speech_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
+  std::function<void(bool login)> login_handler_;
 };
 
 class MainCommands : private MainCommandsContext, public CommandHandler {

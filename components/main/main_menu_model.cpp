@@ -275,6 +275,11 @@ void MainMenuModel::Rebuild() {
     more_submenu_.AddItem(ID_IMPORT_CONFIGURATION_FROM_EXCEL,
                           L"Импорт конфигурации из Excel...");
   }
+#if !defined(NDEBUG)
+  more_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  more_submenu_.AddItem(ID_LOGIN, L"Подключиться к серверу...");
+  more_submenu_.AddItem(ID_LOGOFF, L"Отключиться от сервера");
+#endif
   AddSubMenu(0, L"Далее", &more_submenu_);
 
   justify_index = GetItemCount();

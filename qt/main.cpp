@@ -6,13 +6,13 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
 #include "client_paths.h"
-#include "components/login/qt/login_dialog.h"
 #include "components/main/qt/main_window_qt.h"
 #include "qt/message_loop_qt.h"
 
 #include <QApplication>
 #include <QLibraryInfo>
 #include <QSettings>
+#include <QStyle>
 #include <QTranslator>
 
 namespace {
@@ -61,13 +61,10 @@ int main(int argc, char* argv[]) {
         },
         [&qapp] { qapp.quit(); }}};
 
-    {
-      LoginDialog login_dialog{app.MakeDataServicesContext()};
-      if (login_dialog.exec() == QDialog::Rejected)
-        throw std::runtime_error{"Login failed"};
-      app.SetServices(std::move(login_dialog.services));
-    }
+    if (!app.Login())
+      throw std::runtime_error("Login failed");
 
+    app.Start();
     result = qapp.exec();
 
   } catch (const std::exception&) {

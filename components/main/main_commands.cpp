@@ -101,6 +101,10 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_VIEW_STATUS_BAR:
       return this;
 
+    case ID_LOGIN:
+    case ID_LOGOFF:
+      return this;
+
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
       break;
@@ -145,6 +149,11 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
     case ID_VIEW_ADD_TO_FAVOURITES:
     case ID_VIEW_CHANGE_TITLE:
       return active_view && !active_view->window_info().is_pane();
+
+    case ID_LOGIN:
+      return !session_service_.IsConnected();
+    case ID_LOGOFF:
+      return session_service_.IsConnected();
   }
 
   return true;
@@ -244,6 +253,11 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
 
     case ID_VIEW_PUBLIC_FOLDER:
       OpenPublicFolder();
+      return;
+
+    case ID_LOGIN:
+    case ID_LOGOFF:
+      login_handler_(command_id == ID_LOGIN);
       return;
 
     case ID_OPEN_TABLE:
