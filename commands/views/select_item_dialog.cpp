@@ -86,7 +86,7 @@ LRESULT SelectItemDialog::OnInitDialog(UINT /*uMsg*/,
   list.SetImageList(images, LVSIL_SMALL);
 
   auto tree = node_service_.GetNode(id::DataItems);
-  for (auto node : tree.components()) {
+  for (const auto& node : tree.targets(scada::id::HasComponent)) {
     if (IsInstanceOf(node, id::DataGroupType))
       InsertTree(node);
   }
@@ -157,12 +157,12 @@ HTREEITEM SelectItemDialog::InsertTree(const NodeRef& node, HTREEITEM parent) {
   UINT mask = TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
   HTREEITEM item =
       tree.InsertItem(mask, name.c_str(), img, img, 0, 0,
-                      (LPARAM)node.id().numeric_id(), parent, TVI_LAST);
+                      (LPARAM)node.node_id().numeric_id(), parent, TVI_LAST);
   assert(item);
-  tree_r2i.insert(R2I::value_type(node.id(), item));
+  tree_r2i.insert(R2I::value_type(node.node_id(), item));
 
   // insert children
-  for (auto& child : node.components()) {
+  for (const auto& child : node.targets(scada::id::HasComponent)) {
     if (IsInstanceOf(child, id::DataGroupType))
       InsertTree(child, item);
   }
@@ -180,8 +180,8 @@ void SelectItemDialog::LoadItems() {
   list_data.clear();
 
   int p = 0;
-  for (auto& child : node.components()) {
-    list_data.push_back(child.id());
+  for (const auto& child : node.targets(scada::id::HasComponent)) {
+    list_data.push_back(child.node_id());
     base::string16 name = child.display_name();
     int img = GetImage(child);
     int n = list.AddItem(p, 0, name.c_str(), img);

@@ -50,7 +50,7 @@ views::View* PropertyPageView::Init(const WindowDefinition& definition) {
 void PropertyPageView::Save(WindowDefinition& definition) {
   if (node_) {
     WindowItem& item = definition.AddItem("Item");
-    item.SetString("path", NodeIdToScadaString(node_.id()));
+    item.SetString("path", NodeIdToScadaString(node_.node_id()));
   }
 }
 
@@ -66,7 +66,7 @@ bool PropertyPageViewContents::DispatchNativeEvent(
 
 void PropertyPageView::OnModelChanged(const scada::ModelChangeEvent& event) {
   if ((event.verb & scada::ModelChangeEvent::NodeDeleted) &&
-      (node_.id() == event.node_id))
+      (node_.node_id() == event.node_id))
     controller_delegate_.Close();
 }
 

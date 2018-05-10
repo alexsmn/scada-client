@@ -30,9 +30,9 @@ NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
       auto* def = p.second;
       Property prop;
       prop.name = def->GetTitle(*this, prop_decl);
-      prop.string_value = def->GetText(*this, node_, prop_decl.id());
+      prop.string_value = def->GetText(*this, node_, prop_decl.node_id());
       prop.def = def;
-      prop.prop_type_id = p.first.id();
+      prop.prop_type_id = p.first.node_id();
       properties_.emplace_back(std::move(prop));
     }
   }
@@ -66,7 +66,7 @@ void NodePropertyModel::SetValue(int index, const base::string16& value) {
 
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
-    if (node_.id() == event.node_id) {
+    if (node_.node_id() == event.node_id) {
       node_.Unsubscribe(*this);
       node_ = nullptr;
     }
@@ -165,7 +165,7 @@ void NodePropertyModel::SetText(void* node,
     prop.def->SetText(*this, node_, prop.prop_type_id, text);
   else {
     task_manager_.PostUpdateTask(
-        node_.id(),
+        node_.node_id(),
         scada::NodeAttributes().set_browse_name(
             scada::QualifiedName{base::SysWideToNativeMB(text), 0}),
         {});

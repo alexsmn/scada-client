@@ -149,7 +149,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
 void NodeTableController::Save(WindowDefinition& definition) {
   if (auto parent_node = model_->parent_node()) {
-    auto path = NodeIdToScadaString(parent_node.id());
+    auto path = NodeIdToScadaString(parent_node.node_id());
     definition.AddItem("Item").SetString("path", path);
   }
 }
@@ -190,7 +190,7 @@ void NodeTableController::CopyToClipboard() {
 
   auto parent_node = model_->parent_node();
   scada::NodeId parent_id =
-      parent_node ? parent_node.id() : scada::id::RootFolder;
+      parent_node ? parent_node.node_id() : scada::id::RootFolder;
 
   std::vector<scada::NodeState> browse_nodes;
 
@@ -216,7 +216,7 @@ void NodeTableController::PasteFromClipboard() {
 
   auto parent_node = model_->parent_node();
   scada::NodeId parent_id =
-      parent_node ? parent_node.id() : scada::id::RootFolder;
+      parent_node ? parent_node.node_id() : scada::id::RootFolder;
   if (!PasteRecords(task_manager_, parent_id))
     LOG(ERROR) << "Paste records error";
 }

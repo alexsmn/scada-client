@@ -23,9 +23,9 @@ void GetTypeProperties(const NodeRef& type_definition,
   assert(type_definition.fetched());
   for (auto supertype_definition = type_definition; supertype_definition;
        supertype_definition = supertype_definition.supertype()) {
-    for (auto& p : supertype_definition.properties())
+    for (const auto& p : supertype_definition.targets(scada::id::HasProperty))
       property_declarations.emplace(p);
-    for (auto& r : supertype_definition.references()) {
+    for (const auto& r : supertype_definition.references()) {
       if (!IsSubtypeOf(r.reference_type, scada::id::HasProperty))
         property_declarations.emplace(r.reference_type);
     }
@@ -60,7 +60,7 @@ PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
 
   PropertyDefs result;
   for (const auto& p : property_declarations) {
-    if (auto* def = GetPropertyDef(p.id()))
+    if (auto* def = GetPropertyDef(p.node_id()))
       result.emplace_back(p, def);
   }
 
@@ -112,7 +112,7 @@ int NodeTableModel::GetRowCount() {
 }
 
 base::string16 NodeTableModel::GetRowTitle(int row) {
-  return base::SysNativeMBToWide(NodeIdToScadaString(nodes_[row].id()));
+  return base::SysNativeMBToWide(NodeIdToScadaString(nodes_[row].node_id()));
 }
 
 void NodeTableModel::GetCell(ui::GridCell& cell) {
@@ -126,11 +126,12 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
-  else if (column.prop_def->IsReadOnly(node, column.property_declaration.id()))
+  else if (column.prop_def->IsReadOnly(node,
+                                       column.property_declaration.node_id()))
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   else
-    cell.text =
-        column.prop_def->GetText(*this, node, column.property_declaration.id());
+    cell.text = column.prop_def->GetText(*this, node,
+                                         column.property_declaration.node_id());
 }
 
 bool NodeTableModel::SetCellText(int row,
@@ -144,16 +145,16 @@ bool NodeTableModel::SetCellText(int row,
   auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::BrowseName) {
     task_manager_.PostUpdateTask(
-        node.id(),
+        node.node_id(),
         scada::NodeAttributes().set_browse_name(base::SysWideToNativeMB(text)),
         {});
   } else if (c.attr_id == scada::AttributeId::DisplayName) {
     task_manager_.PostUpdateTask(
-        node.id(),
+        node.node_id(),
         scada::NodeAttributes().set_display_name(scada::ToLocalizedText(text)),
         {});
   } else {
-    c.prop_def->SetText(*this, node, c.property_declaration.id(), text);
+    c.prop_def->SetText(*this, node, c.property_declaration.node_id(), text);
   }
   return true;
 }
@@ -168,7 +169,7 @@ PropertyEditor NodeTableModel::GetCellEditor(int row, int column) {
   const auto& type_definition = node.type_definition();
   return type_definition
              ? c.prop_def->GetPropertyEditor(*this, type_definition,
-                                             c.property_declaration.id())
+                                             c.property_declaration.node_id())
              : PropertyEditor{PropertyEditor::NONE};
 }
 
@@ -177,7 +178,7 @@ void NodeTableModel::Update() {
   nodes_.clear();
 
   if (parent_node_) {
-    for (const auto& node : parent_node_.organizes())
+    for (const auto& node : parent_node_.targets(scada::id::Organizes))
       nodes_.push_back(node);
 
     InitColumns();
@@ -188,14 +189,14 @@ void NodeTableModel::Update() {
 
 int NodeTableModel::FindRecord(const scada::NodeId& node_id) const {
   for (size_t i = 0; i < nodes_.size(); i++) {
-    if (nodes_[i].id() == node_id)
+    if (nodes_[i].node_id() == node_id)
       return static_cast<int>(i);
   }
   return -1;
 }
 
 void NodeTableModel::Update(const NodeRef& node) {
-  int ix = FindRecord(node.id());
+  int ix = FindRecord(node.node_id());
   if (ix != -1) {
     NotifyRowsChanged(ix, 1);
   } else {

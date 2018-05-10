@@ -35,7 +35,7 @@ void NodeComboBox::Fill(const NodeRef& root,
 
 bool NodeComboBox::Select(const scada::NodeId& node_id) {
   for (size_t i = 0; i < nodes_.size(); ++i) {
-    if (nodes_[i].second.id() == node_id) {
+    if (nodes_[i].second.node_id() == node_id) {
       combo_box_.SetCurSel(static_cast<int>(i));
       return true;
     }
@@ -102,17 +102,17 @@ void ItemComboBox::AddNodesRecursive(
   assert(node_service_);
 
   for (auto& reference_type_id : reference_type_ids) {
-    for (auto& child :
-         node_service_->GetNode(parent_id).targets(reference_type_id, true)) {
+    for (const auto& child :
+         node_service_->GetNode(parent_id).targets(reference_type_id)) {
       auto name = name_prefix + ToString16(child.display_name());
 
       if (child.node_class() == scada::NodeClass::Variable) {
-        items_.emplace(name, child.id());
-        node_ids_.emplace(child.id(), name);
+        items_.emplace(name, child.node_id());
+        node_ids_.emplace(child.node_id(), name);
         combo_box_.AddString(name.c_str());
       }
 
-      AddNodesRecursive(child.id(), reference_type_ids, name + L" : ");
+      AddNodesRecursive(child.node_id(), reference_type_ids, name + L" : ");
     }
   }
 }

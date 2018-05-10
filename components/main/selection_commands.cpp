@@ -25,11 +25,11 @@
 namespace {
 
 bool CanCreateSomething(const NodeRef& node) {
-  if (node.target(id::Creates, true))
+  if (node.target(id::Creates))
     return true;
 
   for (auto type = node.type_definition(); type; type = type.supertype()) {
-    if (type.target(id::Creates, true))
+    if (type.target(id::Creates))
       return true;
   }
 
@@ -189,7 +189,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     }
   }
 
-  auto node_id = selection_->node().id();
+  auto node_id = selection_->node().node_id();
   if (node_id == scada::NodeId() && selection_->GetTimedData().connected()) {
     unsigned type = 0;
     switch (command_id) {
@@ -306,7 +306,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   }
 
   if (!call_command_id.is_null() && IsInstanceOf(node, id::DataItemType)) {
-    DoIOCtrl(node.id(), call_command_id, {});
+    DoIOCtrl(node.node_id(), call_command_id, {});
     return;
   }
 
@@ -332,8 +332,8 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   assert(main_window_);
   assert(dialog_service_);
 
-  auto cached_items =
-      file_cache_.GetList(VIEW_TYPE_MODUS).GetFilesContainingItem(node.id());
+  auto cached_items = file_cache_.GetList(VIEW_TYPE_MODUS)
+                          .GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
     base::string16 msg =
@@ -357,7 +357,7 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   }
 
   if (view)
-    view->SetSelection(node.id());
+    view->SetSelection(node.node_id());
 }
 
 void SelectionCommands::SetContext(MainWindow* main_window,

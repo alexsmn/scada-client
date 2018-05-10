@@ -40,8 +40,8 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
       auto item2 = right->timed_data().GetNode();
       if (!item1 || !item2)
         return item2 != nullptr;
-      const auto& type_id1 = item1.type_definition().id();
-      const auto& type_id2 = item2.type_definition().id();
+      const auto& type_id1 = item1.type_definition().node_id();
+      const auto& type_id2 = item2.type_definition().node_id();
       if (type_id1 != type_id2)
         return type_id1 < type_id2;
       auto channel1 =
@@ -133,7 +133,7 @@ void TableModel::GetCellEx(CellEx& cell) {
       // last unacked event
       if (node) {
         const events::EventSet* events =
-            event_manager_.GetItemUnackedEvents(node.id());
+            event_manager_.GetItemUnackedEvents(node.node_id());
         if (events && !events->empty()) {
           const scada::Event& event = **events->rbegin();
           cell.text = event.message;
@@ -190,7 +190,7 @@ bool TableModel::DeleteRows(int start, int count) {
     if (!row)
       continue;
 
-    auto item_id = row->timed_data().GetNode().id();
+    auto item_id = row->timed_data().GetNode().node_id();
     if (!item_id.is_null())
       item_ids.insert(item_id);
 
@@ -251,13 +251,13 @@ bool TableModel::SetFormula(int row, const std::string& formula) {
   DCHECK(rows_[row]);
   TableRow& trow = *rows_[row];
 
-  auto old_node_id = trow.timed_data().GetNode().id();
+  auto old_node_id = trow.timed_data().GetNode().node_id();
   try {
     trow.SetFormula(formula);
   } catch (const std::exception&) {
     return false;
   }
-  auto new_node_id = trow.timed_data().GetNode().id();
+  auto new_node_id = trow.timed_data().GetNode().node_id();
 
   if (item_changed_ && old_node_id != new_node_id) {
     if (!old_node_id.is_null() && FindItem(old_node_id) == -1)
@@ -274,7 +274,7 @@ bool TableModel::SetFormula(int row, const std::string& formula) {
 int TableModel::FindItem(const scada::NodeId& node_id) const {
   for (int i = 0; i < (int)rows_.size(); i++) {
     const TableRow* row = GetRow(i);
-    if (row && row->timed_data().GetNode().id() == node_id)
+    if (row && row->timed_data().GetNode().node_id() == node_id)
       return i;
   }
   return -1;

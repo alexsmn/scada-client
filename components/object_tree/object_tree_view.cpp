@@ -40,9 +40,9 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     auto* contents_model = controller_delegate_.GetActiveContentsModel();
     if (contents_model) {
       if (checked)
-        contents_model->RemoveContainedItem(n->data_node().id());
+        contents_model->RemoveContainedItem(n->data_node().node_id());
       else
-        contents_model->AddContainedItem(n->data_node().id(),
+        contents_model->AddContainedItem(n->data_node().node_id(),
                                          ContentsModel::APPEND);
     }
   });
@@ -143,7 +143,7 @@ void ObjectTreeView::OnContainedItemsUpdate(
   for (auto& p : model().node_map()) {
     ConfigurationTreeNode& node = *p.second;
     bool check = node.data_node() &&
-                 item_ids.find(node.data_node().id()) != item_ids.end();
+                 item_ids.find(node.data_node().node_id()) != item_ids.end();
     tree_view().SetChecked(&node, check);
   }
 #endif

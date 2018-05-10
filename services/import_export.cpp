@@ -20,7 +20,7 @@ namespace {
 using NodeRefs = std::vector<NodeRef>;
 
 void GetNodesRecursive(NodeRef parent_node, NodeRefs& nodes) {
-  for (auto& node : parent_node.organizes()) {
+  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     nodes.emplace_back(node);
     GetNodesRecursive(node, nodes);
   }
@@ -32,7 +32,7 @@ void GetTypePids(const NodeRef& type, NodeRefs& pids, bool recursive) {
       GetTypePids(supertype, pids, true);
   }
 
-  for (auto p : type.properties())
+  for (auto p : type.targets(scada::id::HasProperty))
     pids.emplace_back(p);
   for (auto r : type.references())
     pids.emplace_back(r.reference_type);
@@ -57,10 +57,10 @@ void ScanDeleteNodes(const NodeRef& parent_node,
                      const scada::NodeId& type_id,
                      const std::set<scada::NodeId>& exclude_ids,
                      std::vector<scada::NodeId>& results) {
-  for (auto node : parent_node.organizes()) {
+  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, type_id)) {
-      if (exclude_ids.find(node.id()) == exclude_ids.end())
-        results.emplace_back(node.id());
+      if (exclude_ids.find(node.node_id()) == exclude_ids.end())
+        results.emplace_back(node.node_id());
     }
     ScanDeleteNodes(node, type_id, exclude_ids, results);
   }
@@ -100,7 +100,7 @@ ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
 
     auto node = node_service.GetNode(node_id);
     if (node)
-      listed_nodes.emplace(node.id());
+      listed_nodes.emplace(node.node_id());
 
     // Parent.
     if (!reader.NextCell(cell))
@@ -133,7 +133,7 @@ ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
       auto pid = prop_type_ids[pid_index++];
       if (auto property_declaration = type_definition[pid]) {
         scada::Variant new_value;
-        if (!StringToValue(cell, property_declaration.data_type().id(),
+        if (!StringToValue(cell, property_declaration.data_type().node_id(),
                            new_value)) {
           auto prop_type = property_declaration.data_type();
           auto prop_type_name = prop_type ? ToString16(prop_type.display_name())
@@ -144,16 +144,17 @@ ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
         }
 
         if (node) {
-          auto value = node[property_declaration.id()].value();
+          auto value = node[property_declaration.node_id()].value();
           if (value == new_value)
             continue;
         }
 
-        props.emplace_back(property_declaration.id(), std::move(new_value));
+        props.emplace_back(property_declaration.node_id(),
+                           std::move(new_value));
 
       } else if (type_definition.target(pid)) {
         auto referenced_id = ParseReferenceCell(cell);
-        auto old_target_id = node.target(pid).id();
+        auto old_target_id = node.target(pid).node_id();
         if (old_target_id != referenced_id)
           refs.push_back({pid, old_target_id, referenced_id});
       }
@@ -161,11 +162,11 @@ ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
 
     if (node) {
       if (!attrs.empty() || !props.empty() || !refs.empty())
-        import_data.modify_nodes.push_back({node_id, type_definition.id(),
+        import_data.modify_nodes.push_back({node_id, type_definition.node_id(),
                                             parent_id, std::move(attrs),
                                             std::move(props), std::move(refs)});
     } else {
-      import_data.create_nodes.push_back({node_id, type_definition.id(),
+      import_data.create_nodes.push_back({node_id, type_definition.node_id(),
                                           parent_id, std::move(attrs),
                                           std::move(props), std::move(refs)});
     }
@@ -192,28 +193,30 @@ void ExportConfiguration(NodeService& node_service, TableWriter& writer) {
   writer.WriteCell(L"Тип");
   writer.WriteCell(L"Имя");
   for (auto prop : props)
-    writer.WriteCell(FormatReferenceCell(prop.display_name(), prop.id()));
+    writer.WriteCell(FormatReferenceCell(prop.display_name(), prop.node_id()));
 
   // Rows
   for (auto node : nodes) {
     assert(node);
     writer.StartRow();
-    writer.WriteCell(base::SysNativeMBToWide(NodeIdToScadaString(node.id())));
     writer.WriteCell(
-        base::SysNativeMBToWide(NodeIdToScadaString(node.parent().id())));
+        base::SysNativeMBToWide(NodeIdToScadaString(node.node_id())));
+    writer.WriteCell(
+        base::SysNativeMBToWide(NodeIdToScadaString(node.parent().node_id())));
     auto type = node.type_definition();
-    writer.WriteCell(type ? FormatReferenceCell(type.display_name(), type.id())
-                          : base::string16{});
+    writer.WriteCell(
+        type ? FormatReferenceCell(type.display_name(), type.node_id())
+             : base::string16{});
     writer.WriteCell(node.display_name());
     for (auto prop : props) {
       if (prop.node_class() == scada::NodeClass::ReferenceType) {
-        auto referenced_node = node.target(prop.id());
+        auto referenced_node = node.target(prop.node_id());
         writer.WriteCell(referenced_node ? FormatReferenceCell(
                                                referenced_node.display_name(),
-                                               referenced_node.id())
+                                               referenced_node.node_id())
                                          : base::string16{});
       } else {
-        auto value = node[prop.id()].value();
+        auto value = node[prop.node_id()].value();
         auto str = value.get_or(std::string());
         writer.WriteCell(base::SysNativeMBToWide(str));
       }

@@ -43,7 +43,7 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
       if (IsInstanceOf(node, id::DataGroupType))
         ExpandGroupItemIds(node, trids);
       else
-        trids.insert(node.id());
+        trids.insert(node.node_id());
       unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
       for (NodeIdSet::iterator i = trids.begin(); i != trids.end(); ++i) {
         contents->AddContainedItem(*i, flags);

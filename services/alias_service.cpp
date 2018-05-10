@@ -60,9 +60,9 @@ void AliasService::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 void AliasService::UpdateRecursive(const NodeRef& node) {
   ++fetch_count_;
   node.Fetch(NodeFetchStatus::NodeAndChildren(), [this](const NodeRef& node) {
-    assert(node.fetch_status().children_fetched);
+    assert(node.children_fetched());
 
-    for (auto& child : node.organizes()) {
+    for (const auto& child : node.targets(scada::id::Organizes)) {
       Update(child);
       UpdateRecursive(child);
     }
@@ -75,13 +75,13 @@ void AliasService::UpdateRecursive(const NodeRef& node) {
 
 void AliasService::Update(const NodeRef& node) {
   node.Fetch(NodeFetchStatus::NodeOnly(), [this](const NodeRef& node) {
-    assert(node.fetch_status().node_fetched);
+    assert(node.fetched());
 
     if (!IsInstanceOf(node, id::DataItemType))
       return;
 
     auto alias = node[id::DataItemType_Alias].value().get_or(std::string{});
-    Set(node.id(), std::move(alias));
+    Set(node.node_id(), std::move(alias));
   });
 }
 

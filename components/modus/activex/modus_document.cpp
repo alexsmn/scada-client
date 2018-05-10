@@ -57,7 +57,7 @@ bool ModusDocument::ShowContainedItem(const scada::NodeId& item_id) {
 modus::ModusObject* ModusDocument::FindObject(const scada::NodeId& node_id) {
   for (auto& object : objects_) {
     for (auto* element : object->elements()) {
-      if (element->timed_data().GetNode().id() == node_id)
+      if (element->timed_data().GetNode().node_id() == node_id)
         return object.get();
     }
   }

@@ -82,7 +82,7 @@ void AddServiceItemsDialog::OnOK() {
     auto display_name = win_util::GetListBoxItemText(components_list_box_, i);
     const auto& component = components_[i].second;
     auto formula = MakeNodeIdFormula(
-        MakeNestedNodeId(device.id(), component.browse_name().name()));
+        MakeNestedNodeId(device.node_id(), component.browse_name().name()));
     auto type_definition_id =
         IsSubtypeOf(component.data_type(), scada::id::Boolean)
             ? id::DiscreteItemType

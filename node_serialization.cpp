@@ -9,24 +9,25 @@
 void NodeToData(const NodeRef& source, scada::NodeState& target) {
   assert(source.node_class().has_value());
 
-  target.node_id = source.id();
+  target.node_id = source.node_id();
   target.node_class = source.node_class().value();
 
   if (auto type_definition = source.type_definition())
-    target.type_definition_id = type_definition.id();
+    target.type_definition_id = type_definition.node_id();
 
   target.attributes.browse_name = source.browse_name();
   target.attributes.display_name = source.display_name();
 
   if (auto data_type = source.data_type())
-    target.attributes.data_type = data_type.id();
+    target.attributes.data_type = data_type.node_id();
 
   for (auto type_definition = source.type_definition(); type_definition;
        type_definition = type_definition.supertype()) {
-    for (auto prop_type : type_definition.properties()) {
-      auto value = source[prop_type.id()].value();
+    for (const auto& prop_type :
+         type_definition.targets(scada::id::HasProperty)) {
+      auto value = source[prop_type.node_id()].value();
       if (!value.is_null())
-        target.properties.emplace_back(prop_type.id(), std::move(value));
+        target.properties.emplace_back(prop_type.node_id(), std::move(value));
     }
   }
 
@@ -35,7 +36,7 @@ void NodeToData(const NodeRef& source, scada::NodeState& target) {
     // Skip type definitions.
     if (!IsSubtypeOf(ref.reference_type, scada::id::HasTypeDefinition)) {
       target.references.push_back(
-          {ref.reference_type.id(), ref.forward, ref.target.id()});
+          {ref.reference_type.node_id(), ref.forward, ref.target.node_id()});
     }
   }
 }

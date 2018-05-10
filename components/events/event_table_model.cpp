@@ -168,7 +168,7 @@ bool EventTableModel::IsEventShown(const scada::Event& event) const {
   // Check any containing node is in filter.
   for (auto node = node_service_.GetNode(event.node_id); node;
        node = node.parent()) {
-    if (filter_node_ids_.find(node.id()) != filter_node_ids_.end())
+    if (filter_node_ids_.find(node.node_id()) != filter_node_ids_.end())
       return true;
   }
 

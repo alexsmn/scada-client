@@ -113,9 +113,9 @@ void ReportRequestResult(const base::string16& title,
 }
 
 void ExpandGroupItemIds(const NodeRef& node, NodeIdSet& item_ids) {
-  for (auto& child : node.organizes()) {
+  for (const auto& child : node.targets(scada::id::Organizes)) {
     if (child.node_class() == scada::NodeClass::Variable)
-      item_ids.insert(child.id());
+      item_ids.insert(child.node_id());
 
     ExpandGroupItemIds(child, item_ids);
 
@@ -134,7 +134,7 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
   if (expand_groups && node && node.node_class() == scada::NodeClass::Object)
     ExpandGroupItemIds(node, item_ids);
   else
-    item_ids.insert(node.id());
+    item_ids.insert(node.node_id());
 
   const WindowInfo& window_info = GetWindowInfo(type);
   WindowDefinition win(window_info);
@@ -174,7 +174,7 @@ bool ExecuteDisableItem(TaskManager& task_manager,
   if (!node[id::DeviceType_Disabled])
     return false;
 
-  task_manager.PostUpdateTask(node.id(), {},
+  task_manager.PostUpdateTask(node.node_id(), {},
                               {{id::DeviceType_Disabled, disable}});
   return true;
 }
@@ -188,7 +188,7 @@ void DeleteTreeRecordsRecursive(TaskManager& task_manager,
   /*for (auto* child : scada::GetComponents(node))
     DeleteTreeRecordsRecursive(*child);*/
 
-  task_manager.PostDeleteTask(node.id());
+  task_manager.PostDeleteTask(node.node_id());
 }
 
 WindowDefinition MakeWindowDefinition(const NodeIdSet& items,
@@ -242,7 +242,7 @@ void SortNamedNodes(NamedNodes& list) {
 void GetNamedNodesHelper(const NodeRef& parent,
                          const scada::NodeId& type_definition_id,
                          NamedNodes& result) {
-  for (auto& child : parent.organizes()) {
+  for (const auto& child : parent.targets(scada::id::Organizes)) {
     if (IsInstanceOf(child, type_definition_id)) {
       result.emplace_back(GetFullDisplayName(child), child);
       GetNamedNodesHelper(child, type_definition_id, result);

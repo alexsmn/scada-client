@@ -107,7 +107,7 @@ LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
   properties.emplace_back(id::AnalogItemType_LimitLoLo, limit_lolo);
   properties.emplace_back(id::AnalogItemType_LimitHiHi, limit_hihi);
 
-  task_manager_.PostUpdateTask(node_.id(), {}, properties);
+  task_manager_.PostUpdateTask(node_.node_id(), {}, properties);
 
   EndDialog(IDOK);
   return 0;

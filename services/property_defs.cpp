@@ -23,7 +23,7 @@ static const base::char16 kChoiceNone[] = L"<Нет>";
 NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
                               const base::StringPiece16& name,
                               const scada::NodeId& node_type_id) {
-  for (auto& node : parent_node.organizes()) {
+  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, node_type_id)) {
       const auto& node_name = GetFullDisplayName(node);
       if (IsEqualNoCase(node_name, name))
@@ -38,7 +38,7 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
 void GetNodeNamesRecursive(const NodeRef& parent_node,
                            const scada::NodeId& type_definition_id,
                            std::vector<base::string16>& names) {
-  for (auto& node : parent_node.organizes()) {
+  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, type_definition_id))
       names.emplace_back(GetFullDisplayName(node));
     GetNodeNamesRecursive(node, type_definition_id, names);
@@ -125,11 +125,10 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
     {id::Iec60870LinkType_ReceiveQueueSize, &kIntPropDef},
     {id::Iec60870LinkType_ConfirmationTimeout, &kIntPropDef},  // time delta
-    {id::Iec60870LinkType_TerminationTimeout,
-     &kIntPropDef},  // time delta
+    {id::Iec60870LinkType_TerminationTimeout, &kIntPropDef},   // time delta
     // IEC-60870 Link
     {id::Iec60870LinkType_Protocol, &kIntPropDef},  // TODO: Enum
-    {id::Iec60870LinkType_Mode, &kIntPropDef},    // TODO: Enum
+    {id::Iec60870LinkType_Mode, &kIntPropDef},      // TODO: Enum
     {id::Iec60870LinkType_ConnectTimeout, &kIntPropDef},
     {id::Iec60870LinkType_DeviceAddressSize, &kIntPropDef},
     {id::Iec60870LinkType_COTSize, &kIntPropDef},
@@ -203,14 +202,14 @@ PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
   properties.reserve(32);
   for (auto supertype = type_definition; supertype;
        supertype = supertype.supertype()) {
-    for (const auto& p : supertype.properties()) {
-      if (auto* def = GetPropertyDef(p.id()))
+    for (const auto& p : supertype.targets(scada::id::HasProperty)) {
+      if (auto* def = GetPropertyDef(p.node_id()))
         properties.emplace_back(p, def);
     }
     for (const auto& r : supertype.references()) {
       if (IsSubtypeOf(r.reference_type, scada::id::HasProperty))
         continue;
-      if (auto* def = GetPropertyDef(r.reference_type.id()))
+      if (auto* def = GetPropertyDef(r.reference_type.node_id()))
         properties.emplace_back(r.reference_type, def);
     }
   }
@@ -249,10 +248,10 @@ void PropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   scada::Variant value;
-  if (!StringToValue(text, property.data_type().id(), value))
+  if (!StringToValue(text, property.data_type().node_id(), value))
     return;
 
-  context.task_manager_.PostUpdateTask(node.id(), {},
+  context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, std::move(value)}});
 }
 
@@ -296,7 +295,7 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
   if (text != kChoiceNone) {
     target = FindNodeByNameAndType(
         context.node_service_.GetNode(scada::id::RootFolder), text,
-        target_type_definition.id());
+        target_type_definition.node_id());
   }
 
   auto old_ref_node = node.target(prop_decl_id);
@@ -304,12 +303,12 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   if (old_ref_node) {
-    context.task_manager_.PostDeleteReference(prop_decl_id, node.id(),
-                                              old_ref_node.id());
+    context.task_manager_.PostDeleteReference(prop_decl_id, node.node_id(),
+                                              old_ref_node.node_id());
   }
   if (target) {
-    context.task_manager_.PostAddReference(prop_decl_id, node.id(),
-                                           target.id());
+    context.task_manager_.PostAddReference(prop_decl_id, node.node_id(),
+                                           target.node_id());
   }
 }
 
@@ -323,7 +322,7 @@ PropertyEditor ReferencePropertyDefinition::GetPropertyEditor(
           GetTargetTypeDefinition(type_definition, prop_decl_id)) {
     result.choices.emplace_back(kChoiceNone);
     GetNodeNamesRecursive(context.node_service_.GetNode(scada::id::RootFolder),
-                          target_type_definition.id(), result.choices);
+                          target_type_definition.node_id(), result.choices);
   }
 
   return result;
@@ -399,7 +398,7 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   int int_value = i - enum_strings->begin();
-  context.task_manager_.PostUpdateTask(node.id(), {},
+  context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, int_value}});
 }
 
@@ -466,7 +465,7 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
     new_device_id =
         FindNodeByNameAndType(context.node_service_.GetNode(id::Devices), text,
                               id::DeviceType)
-            .id();
+            .node_id();
   }
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -496,7 +495,7 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
     formula = item_path;
   }
 
-  context.task_manager_.PostUpdateTask(node.id(), {},
+  context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, std::move(formula)}});
 }
 
@@ -542,7 +541,8 @@ void ColorPropertyDefinition::SetText(const PropertyContext& context,
     return;
 
   int color = palette::FindColorName(text.c_str());
-  context.task_manager_.PostUpdateTask(node.id(), {}, {{prop_decl_id, color}});
+  context.task_manager_.PostUpdateTask(node.node_id(), {},
+                                       {{prop_decl_id, color}});
 }
 
 PropertyEditor ColorPropertyDefinition::GetPropertyEditor(

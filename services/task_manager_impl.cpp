@@ -106,7 +106,7 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
           if (!attributes.empty())
             nodes.emplace_back(node_id, std::move(attributes));
           for (auto& [prop_decl_id, value] : properties) {
-            auto prop_id = node[prop_decl_id].id();
+            auto prop_id = node[prop_decl_id].node_id();
             assert(!prop_id.is_null());
             scada::NodeAttributes attributes;
             attributes.value = std::move(value);

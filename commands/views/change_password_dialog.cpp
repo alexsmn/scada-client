@@ -42,7 +42,7 @@ void ShowChangePasswordDialog(
     return;
 
   node_management_service.ChangeUserPassword(
-      user.id(), dialog.current_password(), dialog.new_password(),
+      user.node_id(), dialog.current_password(), dialog.new_password(),
       [user, &local_events, &profile](const scada::Status& status) {
         base::string16 title =
             base::StringPrintf(L"Смена пароля пользователя %ls",

@@ -120,11 +120,11 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
 
     case ID_NEW_SERVICE_ITEMS:
       ShowAddServiceItemsDialog(node_service_, task_manager_,
-                                controller_->selection().node().id());
+                                controller_->selection().node().node_id());
       return;
     case ID_ADD_MULTIPLE_ITEMS:
       ShowAddMultipleItemsDialog(node_service_, task_manager_,
-                                 controller_->selection().node().id());
+                                 controller_->selection().node().node_id());
       return;
 
     case ID_TIME_RANGE_DAY:
@@ -229,8 +229,8 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   auto dispay_name = attributes.display_name;
   auto weak_ptr = weak_factory_.GetWeakPtr();
   task_manager_.PostInsertTask(
-      scada::NodeId(), parent_node.id(), type_node_id, std::move(attributes),
-      std::move(properties),
+      scada::NodeId(), parent_node.node_id(), type_node_id,
+      std::move(attributes), std::move(properties),
       [weak_ptr, dispay_name](const scada::Status& status,
                               const scada::NodeId& node_id) {
         if (auto ptr = weak_ptr.get())

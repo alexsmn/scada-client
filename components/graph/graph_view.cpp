@@ -668,7 +668,7 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
   if (contents_observer()) {
     MetrixGraph::MetrixLine& metrix_line =
         static_cast<MetrixGraph::MetrixLine&>(line);
-    auto node_id = metrix_line.data_source().timed_data().GetNode().id();
+    auto node_id = metrix_line.data_source().timed_data().GetNode().node_id();
     contents_observer()->OnContainedItemChanged(node_id, true);
   }
 }

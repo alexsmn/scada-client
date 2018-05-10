@@ -23,10 +23,10 @@ namespace {
 
 void FillDeviceItems(const NodeRef& parent,
                      std::map<base::string16, scada::NodeId>& items) {
-  for (auto& node : parent.organizes()) {
+  for (auto& node : parent.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, id::DeviceType)) {
       auto title = GetFullDisplayName(node);
-      items.emplace(std::move(title), node.id());
+      items.emplace(std::move(title), node.node_id());
       FillDeviceItems(node, items);
     }
   }

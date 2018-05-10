@@ -356,8 +356,8 @@ void TableView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 
   auto node = node_service_.GetNode(node_id);
   if (IsInstanceOf(node, id::DataGroupType)) {
-    for (auto& child : node.components())
-      AddContainedItem(child.id(), flags | APPEND);
+    for (auto& child : node.targets(scada::id::HasComponent))
+      AddContainedItem(child.node_id(), flags | APPEND);
     return;
   }
 
@@ -441,7 +441,7 @@ NodeIdSet TableView::GetMultipleSelection() {
     for (auto row_index = range.top(); row_index <= range.bottom();
          ++row_index) {
       auto* row = model_->GetRow(row_index);
-      const auto& node_id = row->timed_data().GetNode().id();
+      const auto& node_id = row->timed_data().GetNode().node_id();
       if (!node_id.is_null())
         node_ids.emplace(node_id);
     }
@@ -458,7 +458,7 @@ NodeIdSet TableView::GetMultipleSelection() {
     if (!row)
       continue;
 
-    auto node_id = row->timed_data().GetNode().id();
+    auto node_id = row->timed_data().GetNode().node_id();
     if (!node_id.is_null())
       node_ids.emplace(std::move(node_id));
   }
@@ -473,7 +473,7 @@ NodeIdSet TableView::GetContainedItems() const {
     const TableRow* row = model_->GetRow(i);
     if (!row)
       continue;
-    auto node_id = row->timed_data().GetNode().id();
+    auto node_id = row->timed_data().GetNode().node_id();
     if (!node_id.is_null())
       items.emplace(std::move(node_id));
   }

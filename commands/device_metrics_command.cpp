@@ -21,7 +21,7 @@ void DeviceMetricsItems(const NodeRef& node,
 
   rows.push_back({node, 0});
 
-  for (auto& n : node.organizes())
+  for (const auto& n : node.targets(scada::id::Organizes))
     DeviceMetricsItems(n, rows);
 }
 
@@ -77,7 +77,7 @@ std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
         WindowItem& cell = win.AddItem("SheetCell");
         cell.SetInt("row", j + 2);
         cell.SetInt("col", i + 2);
-        cell.SetString("text", '=' + MakeNodeIdFormula(variable.id()));
+        cell.SetString("text", '=' + MakeNodeIdFormula(variable.node_id()));
       }
     }
   }

@@ -94,13 +94,13 @@ void SelectionModel::Changed() {
 }
 
 void SelectionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  if (node_.id() == node_id)
+  if (node_.node_id() == node_id)
     Changed();
 }
 
 void SelectionModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   if ((event.verb & scada::ModelChangeEvent::NodeDeleted) &&
-      (event.node_id == node_.id())) {
+      (event.node_id == node_.node_id())) {
     Clear();
   }
 }

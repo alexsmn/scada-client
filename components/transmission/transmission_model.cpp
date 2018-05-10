@@ -92,13 +92,13 @@ void TransmissionModel::Update(NodeRef transmission) {
 
   auto device = transmission.target(id::HasTransmissionTarget);
   if (device != device_) {
-    Delete(transmission.id());
+    Delete(transmission.node_id());
     return;
   }
 
-  auto source_id = transmission.target(id::HasTransmissionSource).id();
+  auto source_id = transmission.target(id::HasTransmissionSource).node_id();
 
-  int i = FindRow(transmission.id());
+  int i = FindRow(transmission.node_id());
   if (i == -1) {
     rows_.push_back(Row{transmission, source_id});
     GridModel::NotifyRowsAdded(rows_.size() - 1, 1);
@@ -128,7 +128,7 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
   auto transmission = rows_[i].transmission;
   auto source = transmission.target(id::HasTransmissionSource);
   if (source && contents_observer())
-    contents_observer()->OnContainedItemChanged(source.id(), false);
+    contents_observer()->OnContainedItemChanged(source.node_id(), false);
 
   rows_.erase(rows_.begin() + i);
   GridModel::NotifyModelChanged();
@@ -136,7 +136,7 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
 
 int TransmissionModel::FindRow(const scada::NodeId& transmission_id) const {
   for (int i = 0; i < (int)rows_.size(); i++)
-    if (rows_[i].transmission.id() == transmission_id)
+    if (rows_[i].transmission.node_id() == transmission_id)
       return i;
   return -1;
 }
@@ -145,7 +145,7 @@ int TransmissionModel::FindSource(const scada::NodeId& source_id) const {
   for (int i = 0; i < (int)rows_.size(); i++) {
     auto& row = rows_[i];
     auto source = row.transmission.target(id::HasTransmissionSource);
-    if (source && source.id() == source_id)
+    if (source && source.node_id() == source_id)
       return i;
   }
   return -1;
@@ -155,7 +155,7 @@ NodeIdSet TransmissionModel::GetContainedItems() const {
   NodeIdSet items;
   for (auto& row : rows()) {
     if (auto source = row.transmission.target(id::HasTransmissionSource))
-      items.emplace(source.id());
+      items.emplace(source.node_id());
   }
   return items;
 }
@@ -165,7 +165,7 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   if (!device())
     return;
 
-  auto device_id = device().id();
+  auto device_id = device().node_id();
   task_manager_.PostInsertTask(
       scada::NodeId(), id::TransmissionItems, id::TransmissionItemType, {}, {},
       [node_id, device_id, &task_manager = task_manager_](
@@ -187,7 +187,7 @@ void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {
 
   for (auto& row : rows()) {
     if (row.transmission.target(id::HasTransmissionSource) == source)
-      task_manager_.PostDeleteTask(row.transmission.id());
+      task_manager_.PostDeleteTask(row.transmission.node_id());
   }
 }
 

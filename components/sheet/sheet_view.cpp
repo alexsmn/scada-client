@@ -392,7 +392,7 @@ NodeIdSet SheetView::GetSelectedNodeIdList() {
     for (int column = range.column(); column <= range.last_column(); ++column) {
       SheetCell* cell = model_->FindCell(row, column);
       if (cell) {
-        auto node_id = cell->timed_data().GetNode().id();
+        auto node_id = cell->timed_data().GetNode().node_id();
         if (node_id.is_null())
           result.insert(node_id);
       }

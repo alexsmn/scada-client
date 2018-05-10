@@ -70,7 +70,7 @@ void TransmissionView::DeleteSelection() {
     return;
 
   for (int i = range.row(); i <= range.last_row(); i++)
-    task_manager_.PostDeleteTask(model_->row(i).transmission.id());
+    task_manager_.PostDeleteTask(model_->row(i).transmission.node_id());
 #endif
 }
 
@@ -107,7 +107,7 @@ bool TransmissionView::OnGridEditCellText(views::GridView& sender,
   scada::NodeProperties properties;
   properties.emplace_back(id::TransmissionItemType_SourceAddress,
                           static_cast<int>(value));
-  task_manager_.PostUpdateTask(row_item.transmission.id(), {}, properties);
+  task_manager_.PostUpdateTask(row_item.transmission.node_id(), {}, properties);
 
   return true;
 }

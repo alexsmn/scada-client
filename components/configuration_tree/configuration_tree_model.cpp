@@ -71,11 +71,11 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
                                              const NodeRef& data_node)
     : model_{model}, data_node_{data_node} {
   assert(&data_node_);
-  model_.node_map_[data_node_.id()] = this;
+  model_.node_map_[data_node_.node_id()] = this;
 }
 
 ConfigurationTreeNode::~ConfigurationTreeNode() {
-  model_.node_map_.erase(data_node_.id());
+  model_.node_map_.erase(data_node_.node_id());
 }
 
 int ConfigurationTreeNode::GetChildCount() const {
@@ -92,9 +92,9 @@ void ConfigurationTreeNode::Load() {
   loaded_ = true;
 
   int n = 0;
-  for (auto& reference_type_id : model_.reference_type_ids_) {
-    const auto& children = data_node_.targets(reference_type_id, true);
-    for (auto data_child : children) {
+  for (const auto& reference_type_id : model_.reference_type_ids_) {
+    const auto& children = data_node_.targets(reference_type_id);
+    for (const auto& data_child : children) {
       if (auto child = model_.CreateNodeIfMatches(data_child)) {
         auto* child_ptr = child.get();
         Add(n, std::move(child));
@@ -106,8 +106,7 @@ void ConfigurationTreeNode::Load() {
 base::string16 ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(data_node_.display_name());
 
-  auto fetch_status = data_node_.fetch_status();
-  bool fetched = fetch_status.node_fetched && fetch_status.children_fetched;
+  bool fetched = data_node_.fetched() && data_node_.children_fetched();
   if (!fetched)
     text += L" [Загрузка]";
 
@@ -150,7 +149,8 @@ ConfigurationTreeModel::ConfigurationTreeModel(
       task_manager_{task_manager},
       reference_type_ids_{std::move(reference_type_ids)},
       type_definition_ids_{std::move(type_definition_ids)} {
-  set_root(std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
+  set_root(
+      std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
@@ -169,7 +169,7 @@ void ConfigurationTreeModel::UpdateNode(const scada::ModelChangeEvent& event) {
   auto node = node_service_.GetNode(event.node_id);
 
   NodeRef::Reference parent_ref =
-      node.reference(scada::id::HierarchicalReferences, false);
+      node.inverse_reference(scada::id::HierarchicalReferences);
   if (!parent_ref.target)
     return;
 
@@ -190,7 +190,8 @@ void ConfigurationTreeModel::UpdateNode(const scada::ModelChangeEvent& event) {
     return;
   }
 
-  ConfigurationTreeNode* new_parent_node = FindNode(parent_ref.target.id());
+  ConfigurationTreeNode* new_parent_node =
+      FindNode(parent_ref.target.node_id());
   if (!new_parent_node || !new_parent_node->loaded())
     return;
 
@@ -245,7 +246,7 @@ std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateNode(
 std::unique_ptr<ConfigurationTreeNode>
 ConfigurationTreeModel::CreateNodeIfMatches(const NodeRef& data_node) {
   assert(data_node);
-  assert(!FindNode(data_node.id()));
+  assert(!FindNode(data_node.node_id()));
 
   if (!type_definition_ids_.empty()) {
     bool matches = false;
@@ -284,11 +285,11 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
     scada::NodeAttributes attributes;
     attributes.browse_name = dragging_node.browse_name();
     attributes.display_name = dragging_node.display_name();
-    attributes.data_type = dragging_node.data_type().id();
-    auto formula = MakeNodeIdFormula(dragging_node.id());
+    attributes.data_type = dragging_node.data_type().node_id();
+    auto formula = MakeNodeIdFormula(dragging_node.node_id());
     action = MakeCreateDataItemAction(
-        task_manager_, target_node->data_node().id(), std::move(attributes),
-        std::move(formula),
+        task_manager_, target_node->data_node().node_id(),
+        std::move(attributes), std::move(formula),
         IsInstanceOf(dragging_node, id::Iec61850ControlObjectType));
     return ui::DragDropTypes::DRAG_COPY;
   }
@@ -296,9 +297,9 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   // Dropping of IEC-61850 channel on id::DataItem assigns its' channel.
   if (is_iec61850_channel &&
       IsInstanceOf(target_node->data_node(), id::DataItemType)) {
-    auto formula = MakeNodeIdFormula(dragging_node.id());
+    auto formula = MakeNodeIdFormula(dragging_node.node_id());
     action = MakeAssignChannelAction(
-        task_manager_, target_node->data_node().id(), std::move(formula),
+        task_manager_, target_node->data_node().node_id(), std::move(formula),
         IsInstanceOf(dragging_node, id::Iec61850ControlObjectType));
     return ui::DragDropTypes::DRAG_LINK;
   }
@@ -313,8 +314,8 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
 
     if (target_node && target_node->data_node() != dragging_node &&
         target_node->data_node() != dragging_node.parent()) {
-      auto old_parent_id = dragging_node.parent().id();
-      auto new_parent_id = target_node->data_node().id();
+      auto old_parent_id = dragging_node.parent().node_id();
+      auto new_parent_id = target_node->data_node().node_id();
       action = MakeMoveDropAction(task_manager_, dragging_id, old_parent_id,
                                   new_parent_id);
       return ui::DragDropTypes::DRAG_MOVE;

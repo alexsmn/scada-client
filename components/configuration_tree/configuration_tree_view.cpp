@@ -81,8 +81,8 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
       return !!a < !!b ? 1 : -1;
     if (a.fetched() != b.fetched())
       return a.fetched() < b.fetched() ? 1 : -1;
-    const auto& ta = a.type_definition().id();
-    const auto& tb = b.type_definition().id();
+    const auto& ta = a.type_definition().node_id();
+    const auto& tb = b.type_definition().node_id();
     bool fa = a.node_class() != scada::NodeClass::Variable;
     bool fb = b.node_class() != scada::NodeClass::Variable;
     if (fa != fb)
@@ -134,7 +134,7 @@ void ConfigurationTreeView::ExecuteCommand(unsigned command) {
 }
 
 void ConfigurationTreeView::OnViewNodeCreated(const NodeRef& node) {
-  if (auto* tree_node = model_->FindNode(node.id()))
+  if (auto* tree_node = model_->FindNode(node.node_id()))
     tree_view().SelectNode(tree_node);
 }
 
@@ -158,7 +158,7 @@ void ConfigurationTreeView::StartDrag(void* node) {
   if (!cfg_node->data_node())
     return;
 
-  scada::NodeId item_id = cfg_node->data_node().id();
+  scada::NodeId item_id = cfg_node->data_node().node_id();
   if (item_id.is_null())
     return;
 
