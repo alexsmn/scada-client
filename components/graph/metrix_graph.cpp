@@ -7,7 +7,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/win/scoped_handle.h"
 #include "components/graph/metrix_data_source.h"
-#include "core/monitored_item_service.h"
 
 #if defined(UI_QT)
 #include <qpainter.h>

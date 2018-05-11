@@ -9,8 +9,6 @@
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "contents_model.h"
-#include "core/method_service.h"
-#include "core/monitored_item_service.h"
 #include "remote/session_proxy.h"
 #include "services/file_cache.h"
 #include "services/local_events.h"

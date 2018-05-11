@@ -31,8 +31,8 @@ REGISTER_CONTROLLER(WatchView, ID_WATCH_VIEW);
 
 WatchView::WatchView(const ControllerContext& context)
     : Controller{context},
-      model_{std::make_unique<WatchModel>(WatchModelContext{
-          context.node_service_, context.monitored_item_service_})} {}
+      model_{std::make_unique<WatchModel>(
+          WatchModelContext{context.node_service_})} {}
 
 WatchView::~WatchView() {
   model_->observers().RemoveObserver(this);
@@ -40,11 +40,11 @@ WatchView::~WatchView() {
 
 void WatchView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
-  item.SetString("path", NodeIdToScadaString(model_->device_id()));
+  item.SetString("path", NodeIdToScadaString(model_->device().node_id()));
 }
 
 base::string16 WatchView::MakeTitle() const {
-  base::string16 title = GetDisplayName(node_service_, model_->device_id());
+  base::string16 title = ToString16(model_->device().display_name());
   if (model_->paused())
     title += L" [Пауза]";
   return title;
@@ -56,12 +56,10 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
       ui::TableColumn(1, L"Устройство", 100, ui::TableColumn::LEFT),
       ui::TableColumn(2, L"Событие", 400, ui::TableColumn::LEFT)};
 
-  const WindowItem* item = definition.FindItem("Item");
-  if (item) {
+  if (const WindowItem* item = definition.FindItem("Item")) {
     std::string path = item->GetString("path");
     auto device_id = NodeIdFromScadaString(path);
-    if (!device_id.is_null())
-      model_->SetDeviceID(device_id);
+    model_->SetDevice(node_service_.GetNode(device_id));
   }
 
 #if defined(UI_QT)

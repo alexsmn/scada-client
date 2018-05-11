@@ -8,7 +8,6 @@
 #include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
-#include "core/monitored_item_service.h"
 #include "core/node_management_service.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"

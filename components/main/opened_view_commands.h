@@ -19,7 +19,6 @@ class EventManager;
 
 namespace scada {
 class HistoryService;
-class MethodService;
 class MonitoredItemService;
 class NodeManagementService;
 class SessionService;
@@ -44,12 +43,10 @@ class TimedDataService;
 
 struct OpenedViewCommandsContext {
   TaskManager& task_manager_;
-  scada::MethodService& method_service_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;
   events::EventManager& event_manager_;
   scada::HistoryService& history_service_;
-  scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
   PortfolioManager& portfolio_manager_;

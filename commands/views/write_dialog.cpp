@@ -8,7 +8,6 @@
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "core/monitored_item_service.h"
 #include "core/status.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"

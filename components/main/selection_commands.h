@@ -9,7 +9,6 @@ class EventManager;
 }
 
 namespace scada {
-class MethodService;
 class NodeId;
 class NodeManagementService;
 class SessionService;
@@ -29,7 +28,6 @@ class TimedDataService;
 
 struct SelectionCommandsContext {
   TaskManager& task_manager_;
-  scada::MethodService& method_service_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;
   events::EventManager& event_manager_;
@@ -58,9 +56,9 @@ class SelectionCommands : private SelectionCommandsContext,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-  void DoIOCtrl(const scada::NodeId& node_id,
-                const scada::NodeId& method_id,
-                const std::vector<scada::Variant>& arguments);
+  void CallMethod(const NodeRef& node,
+                  const scada::NodeId& method_id,
+                  const std::vector<scada::Variant>& arguments);
   void OpenModusView(const NodeRef& node);
 
   SelectionModel* selection_ = nullptr;

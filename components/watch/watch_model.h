@@ -1,30 +1,29 @@
 #pragma once
 
-#include <deque>
-#include <memory>
-
 #include "base/files/file_path.h"
+#include "common/node_ref.h"
 #include "core/event.h"
 #include "ui/base/models/table_model.h"
 
+#include <deque>
+#include <memory>
+
 namespace scada {
 class MonitoredItem;
-class MonitoredItemService;
 }  // namespace scada
 
 class NodeService;
 
 struct WatchModelContext {
   NodeService& node_service_;
-  scada::MonitoredItemService& monitored_item_service_;
 };
 
 class WatchModel : private WatchModelContext, public ui::TableModel {
  public:
   explicit WatchModel(WatchModelContext&& context);
 
-  const scada::NodeId& device_id() const { return device_id_; }
-  void SetDeviceID(scada::NodeId device_id);
+  const NodeRef& device() const { return device_; }
+  void SetDevice(NodeRef device);
 
   bool paused() const { return paused_; }
   void set_paused(bool paused) { paused_ = paused; }
@@ -44,7 +43,7 @@ class WatchModel : private WatchModelContext, public ui::TableModel {
   typedef std::deque<scada::Event> Events;
   Events events_;
 
-  scada::NodeId device_id_;
+  NodeRef device_;
   std::unique_ptr<scada::MonitoredItem> monitored_item_;
 
   bool paused_ = false;

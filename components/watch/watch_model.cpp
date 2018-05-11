@@ -5,7 +5,6 @@
 #include "common/node_util.h"
 #include "core/event_service.h"
 #include "core/monitored_item.h"
-#include "core/monitored_item_service.h"
 
 #include <fstream>
 
@@ -40,16 +39,16 @@ void WatchModel::AddLine(const scada::Event& event) {
   }
 }
 
-void WatchModel::SetDeviceID(scada::NodeId device_id) {
-  if (device_id_ == device_id)
+void WatchModel::SetDevice(NodeRef device) {
+  if (device_ == device)
     return;
 
   monitored_item_.reset();
 
-  device_id_ = device_id;
-  if (device_id_ != scada::NodeId()) {
-    monitored_item_ = monitored_item_service_.CreateMonitoredItem(
-        {device_id_, scada::AttributeId::EventNotifier});
+  device_ = std::move(device);
+  if (device_) {
+    monitored_item_ =
+        device_.CreateMonitoredItem(scada::AttributeId::EventNotifier);
     monitored_item_->set_event_handler(
         [this](const scada::Status& status, const scada::Event& event) {
           OnEvent(status, event);

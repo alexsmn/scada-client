@@ -382,10 +382,10 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     auto commands =
         std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
             *task_manager_, *master_data_services_, *master_data_services_,
-            *master_data_services_, *event_manager_, *master_data_services_,
-            *master_data_services_, *timed_data_service_, *node_service_,
-            *portfolio_manager_, *action_manager_, *local_events_, *favourites_,
-            *file_cache_, *profile_, *main_window_manager_});
+            *event_manager_, *master_data_services_, *timed_data_service_,
+            *node_service_, *portfolio_manager_, *action_manager_,
+            *local_events_, *favourites_, *file_cache_, *profile_,
+            *main_window_manager_});
 
     commands->SetContext(&opened_view, &dialog_service);
 

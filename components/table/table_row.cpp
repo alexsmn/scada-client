@@ -1,7 +1,6 @@
 #include "components/table/table_row.h"
 
 #include "components/table/table_model.h"
-#include "core/monitored_item_service.h"
 
 TableRow::TableRow(TableModel& model, int index)
     : model_{model}, index_{index} {

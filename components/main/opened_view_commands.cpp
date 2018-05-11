@@ -49,9 +49,9 @@ OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
     : OpenedViewCommandsContext{std::move(context)} {
   selection_commands_ =
       std::make_unique<SelectionCommands>(SelectionCommandsContext{
-          task_manager_, method_service_, session_service_,
-          node_management_service_, event_manager_, timed_data_service_,
-          local_events_, file_cache_, profile_, main_window_manager_});
+          task_manager_, session_service_, node_management_service_,
+          event_manager_, timed_data_service_, local_events_, file_cache_,
+          profile_, main_window_manager_});
 }
 
 OpenedViewCommands::~OpenedViewCommands() {}

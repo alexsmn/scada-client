@@ -12,7 +12,6 @@
 #include "components/main/main_window_manager.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
-#include "core/method_service.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
 #include "main_window.h"
@@ -215,7 +214,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
 
   auto node = selection_->node();
 
-  scada::NodeId call_command_id;
+  scada::NodeId method_id;
 
   switch (command_id) {
     case ID_OPEN_GRAPH:
@@ -298,15 +297,15 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_DEV1_REFR:
-      call_command_id = id::DeviceType_Interrogate;
+      method_id = id::DeviceType_Interrogate;
       break;
     case ID_DEV1_SYNC:
-      call_command_id = id::DeviceType_SyncClock;
+      method_id = id::DeviceType_SyncClock;
       break;
   }
 
-  if (!call_command_id.is_null() && IsInstanceOf(node, id::DataItemType)) {
-    DoIOCtrl(node.node_id(), call_command_id, {});
+  if (!method_id.is_null() && IsInstanceOf(node, id::DataItemType)) {
+    CallMethod(node, method_id, {});
     return;
   }
 
@@ -314,18 +313,16 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   assert(false);
 }
 
-void SelectionCommands::DoIOCtrl(const scada::NodeId& node_id,
-                                 const scada::NodeId& method_id,
-                                 const std::vector<scada::Variant>& arguments) {
-  method_service_.Call(
-      node_id, method_id, arguments, {},
-      [node_id, &local_events = local_events_,
-       &profile = profile_](const scada::Status& status) {
-        // TODO: Fill |title|.
-        base::string16 title =
-            base::SysNativeMBToWide(NodeIdToScadaString(node_id));
-        ReportRequestResult(title, status, local_events, profile);
-      });
+void SelectionCommands::CallMethod(
+    const NodeRef& node,
+    const scada::NodeId& method_id,
+    const std::vector<scada::Variant>& arguments) {
+  node.Call(method_id, arguments,
+            [node, &local_events = local_events_,
+             &profile = profile_](const scada::Status& status) {
+              base::string16 title = ToString16(node.display_name());
+              ReportRequestResult(title, status, local_events, profile);
+            });
 }
 
 void SelectionCommands::OpenModusView(const NodeRef& node) {

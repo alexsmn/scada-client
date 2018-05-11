@@ -15,7 +15,6 @@ class TimedDataSpec;
 }
 
 namespace scada {
-class MethodService;
 class Status;
 }  // namespace scada
 
