@@ -73,3 +73,5 @@ void SortNamedNodes(NamedNodes& list);
 
 NamedNodes GetNamedNodes(const NodeRef& root,
                          const scada::NodeId& type_definition_id);
+
+base::string16 FormatHostName(const std::string& host_name);

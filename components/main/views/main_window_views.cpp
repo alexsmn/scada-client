@@ -169,12 +169,7 @@ bool MainWindowViews::CanHandleAccelerators() const {
 }
 
 base::string16 MainWindowViews::GetWindowTitle() const {
-  base::string16 server = connection_info_provider_();
-  if (server.empty()) {
-    static base::string16 local_server_string = win_util::LoadResourceString(
-        WTL::ModuleHelper::GetResourceInstance(), IDS_LOCAL_SERVER);
-    server = local_server_string;
-  }
+  base::string16 server = FormatHostName(connection_info_provider_());
 
   static base::string16 application_title = win_util::LoadResourceString(
       WTL::ModuleHelper::GetResourceInstance(), IDR_MAINFRAME);

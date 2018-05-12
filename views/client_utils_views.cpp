@@ -75,3 +75,14 @@ HMENU CreatePopupMenu(unsigned resource_id, ui::MenuModel& context_menu_model) {
 base::string16 Translate(const char* text) {
   return base::SysNativeMBToWide(text);
 }
+
+base::string16 FormatHostName(const std::string& host_name) {
+  if (host_name.empty()) {
+    static const base::string16 local_server_string =
+        win_util::LoadResourceString(WTL::ModuleHelper::GetResourceInstance(),
+                                     IDS_LOCAL_SERVER);
+    return local_server_string;
+  } else {
+    return base::SysNativeMBToWide(host_name);
+  }
+}

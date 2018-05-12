@@ -397,7 +397,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
           *master_data_services_, *event_manager_, *node_service_});
 
   auto connection_info_provider = [this] {
-    return base::SysNativeMBToWide(master_data_services_->GetHostName());
+    return master_data_services_->GetHostName();
   };
 
   return MainWindowContext{*action_manager_,

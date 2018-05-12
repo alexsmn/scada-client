@@ -1,5 +1,6 @@
 #include "client_utils_qt.h"
 
+#include "base/strings/sys_string_conversions.h"
 #include "translation.h"
 #include "ui/base/models/menu_model.h"
 
@@ -51,4 +52,8 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
 
 base::string16 Translate(const char* text) {
   return QObject::tr(text).toStdWString();
+}
+
+base::string16 FormatHostName(const std::string& host_name) {
+  return base::SysNativeMBToWide(host_name);
 }

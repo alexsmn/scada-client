@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/timer/timer.h"
 #include "core/session_state_observer.h"
 
 namespace scada {
@@ -23,7 +24,12 @@ class ConnectionStateReporter final : private ConnectionStateReporterContext,
   ConnectionStateReporter& operator=(const ConnectionStateReporter&) = delete;
  
  private:
+  void OnReconnectTimer();
+
   // scada::SessionStateObserver
   virtual void OnSessionCreated() override;
   virtual void OnSessionDeleted(const scada::Status& status) override;
+
+  base::OneShotTimer reconnect_timer_;
+  unsigned reconnect_retry_ = 0;
 };

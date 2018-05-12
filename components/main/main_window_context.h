@@ -3,6 +3,7 @@
 #include "controller_factory.h"
 
 #include <memory>
+#include <string>
 
 namespace ui {
 class MenuModel;
@@ -41,5 +42,5 @@ struct MainWindowContext {
       CommandHandler& main_commands,
       ui::MenuModel& context_menu_model)>
       main_menu_factory_;
-  std::function<base::string16()> connection_info_provider_;
+  std::function<std::string()> connection_info_provider_;
 };
