@@ -185,6 +185,7 @@ void NodeTableModel::Update() {
   }
 
   Sort();
+  NotifyModelChanged();
 }
 
 int NodeTableModel::FindRecord(const scada::NodeId& node_id) const {

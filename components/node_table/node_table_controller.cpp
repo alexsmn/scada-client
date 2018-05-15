@@ -92,9 +92,14 @@ template <scada::NumericId kNodeId>
 class NodeTableControllerImpl : public NodeTableController {
  public:
   explicit NodeTableControllerImpl(const ControllerContext& context)
-      : NodeTableController(context,
-                            context.node_service_.GetNode(scada::NodeId{
-                                kNodeId, NamespaceIndexes::SCADA})) {}
+      : NodeTableController(context, GetParentNode(context.node_service_)) {}
+
+ private:
+  static NodeRef GetParentNode(NodeService& node_service) {
+    return kNodeId != 0 ? node_service.GetNode(
+                              scada::NodeId{kNodeId, NamespaceIndexes::SCADA})
+                        : nullptr;
+  }
 };
 
 REGISTER_CONTROLLER(NodeTableControllerImpl<0>, ID_TABLE_EDITOR);
@@ -113,7 +118,8 @@ NodeTableController::NodeTableController(const ControllerContext& context,
     : Controller{context},
       model_{std::make_unique<NodeTableModel>(context.node_service_,
                                               context.task_manager_)} {
-  model_->SetParentNode(parent_node);
+  if (parent_node)
+    model_->SetParentNode(parent_node);
 }
 
 NodeTableController::~NodeTableController() {}
