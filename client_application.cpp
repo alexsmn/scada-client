@@ -285,10 +285,10 @@ std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
 
 std::shared_ptr<NodeService>
 ClientApplication::CreateAddressSpaceNodeService() {
-  class ClientAddressSpace : public AddressSpaceImpl {
+  class ClientAddressSpace : public AddressSpaceImpl2 {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl{logger}, node_factory{logger, *this} {
+        : AddressSpaceImpl2{logger}, node_factory{logger, *this} {
       CreateScadaAddressSpace(*this, node_factory);
     }
 
