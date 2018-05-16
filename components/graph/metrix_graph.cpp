@@ -238,11 +238,11 @@ MetrixGraph::MetrixLine::~MetrixLine() {
 void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
   views::GraphLine::OnDataSourceHistoryChanged();
 
-  const rt::TimedDataSpec& timed_data = data_source_->timed_data();
+  const auto& timed_data = data_source_->timed_data();
 
   assert(timed_data.historical());
 
-  const rt::TimedVQMap* values = timed_data.values();
+  const auto* values = timed_data.values();
   if (!values || values->empty())
     return;
 

@@ -27,7 +27,7 @@ class MetrixPointEnum : public views::PointEnumerator {
 
  private:
   rt::TimedDataSpec& timed_data_;
-  rt::TimedVQMap::const_iterator enum_position_;
+  rt::DataValues::const_iterator enum_position_;
   double enum_right_bound_;
   bool enum_include_right_bound_;
   bool enum_current_passed_;
@@ -44,7 +44,7 @@ bool MetrixPointEnum::Reset(double x_from,
   if (!timed_data_.connected())
     return false;
 
-  const rt::TimedVQMap* values = timed_data_.values();
+  const rt::DataValues* values = timed_data_.values();
   if (!values)
     return false;
 
@@ -52,7 +52,7 @@ bool MetrixPointEnum::Reset(double x_from,
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
 
-  enum_position_ = values->lower_bound(base::Time::FromDoubleT(x_from));
+  enum_position_ = rt::LowerBound(*values, base::Time::FromDoubleT(x_from));
   if (include_left_bound && enum_position_ != values->begin())
     --enum_position_;
 
@@ -62,14 +62,14 @@ bool MetrixPointEnum::Reset(double x_from,
 }
 
 bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
-  const rt::TimedVQMap* values = timed_data_.values();
+  const rt::DataValues* values = timed_data_.values();
   assert(values);
 
   if (enum_position_ != values->end()) {
-    point.x = enum_position_->first.ToDoubleT();
-    point.y = enum_position_->second.vq.value.get_or(0.0);
-    point.good = enum_position_->second.vq.qualifier.good();
-    last_value_time_ = enum_position_->first;
+    point.x = enum_position_->source_timestamp.ToDoubleT();
+    point.y = enum_position_->value.get_or(0.0);
+    point.good = enum_position_->qualifier.good();
+    last_value_time_ = enum_position_->source_timestamp;
     ++enum_position_;
 
   } else if (!enum_current_passed_) {
@@ -123,18 +123,12 @@ void MetrixDataSource::SetTimedData(const rt::TimedDataSpec& spec) {
   OnItemChanged();
 }
 
-bool MetrixDataSource::XToData(double& x, scada::VQ& val) const {
+bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
   if (!connected())
     return false;
 
-  const auto& value = timed_data_.GetValueAt(base::Time::FromDoubleT(x));
-  if (value.is_null())
-    return false;
-
-  x = value.source_timestamp.ToDoubleT();
-  val.value = value.value;
-  val.qualifier = value.qualifier;
-  return true;
+  val = timed_data_.GetValueAt(base::Time::FromDoubleT(x));
+  return !val.is_null();
 }
 
 views::PointEnumerator* MetrixDataSource::EnumPoints(double from,

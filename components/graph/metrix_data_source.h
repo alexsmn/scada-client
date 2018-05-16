@@ -30,7 +30,7 @@ class MetrixDataSource : public views::GraphDataSource {
   std::string GetPath() const { return timed_data_.formula(); }
   const base::string16& title() const { return title_; }
 
-  bool XToData(double& x, scada::VQ& val) const;
+  bool XToData(double& x, scada::DataValue& val) const;
 
   // views::GraphDataSource
   virtual views::PointEnumerator* EnumPoints(double from,

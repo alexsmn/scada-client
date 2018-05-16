@@ -52,15 +52,13 @@ void TimedDataModel::SetTimedData(rt::TimedDataSpec timed_data) {
 }
 
 void TimedDataModel::Update() {
-  cached_index_ = -1;
-
   int old_count = count_;
   count_ = 0;
   if (timed_data_.connected() && timed_data_.values()) {
     auto& values = *timed_data_.values();
-    begin_iterator_ = values.lower_bound(timed_data_.from());
-    end_iterator_ =
-        end_time_.is_null() ? values.end() : values.upper_bound(end_time_);
+    begin_iterator_ = rt::LowerBound(values, timed_data_.from());
+    auto end_iterator_ =
+        end_time_.is_null() ? values.end() : rt::UpperBound(values, end_time_);
     count_ = std::distance(begin_iterator_, end_iterator_);
   }
 
@@ -70,52 +68,10 @@ void TimedDataModel::Update() {
     NotifyModelChanged();
 }
 
-void TimedDataModel::Iterate(int index) {
-  const rt::TimedVQMap* values = timed_data_.values();
-  assert(values);
-
-  assert(index < count_);
-
-  if (cached_index_ == -1) {
-    cached_index_ = 0;
-    cached_iterator_ = begin_iterator_;
-  }
-
-  if (index != cached_index_) {
-    if (index > cached_index_) {
-      if (index - cached_index_ > count_ - index) {
-        cached_index_ = count_ - 1;
-        cached_iterator_ = end_iterator_;
-        --cached_iterator_;
-      }
-    } else {
-      if (cached_index_ - index > index) {
-        cached_index_ = 0;
-        cached_iterator_ = begin_iterator_;
-      }
-    }
-    while (index != cached_index_) {
-      if (index > cached_index_) {
-        assert(cached_iterator_ != end_iterator_);
-        ++cached_iterator_;
-        ++cached_index_;
-      } else {
-        assert(cached_iterator_ != begin_iterator_);
-        --cached_iterator_;
-        --cached_index_;
-      }
-    }
-  }
-}
-
-scada::DataValue TimedDataModel::GetRowTVQ(int row) {
-  if (row >= (int)timed_data_.values()->size())
-    return timed_data_.current();
-
-  Iterate(row);
-  return scada::DataValue(
-      cached_iterator_->second.vq.value, cached_iterator_->second.vq.qualifier,
-      cached_iterator_->first, cached_iterator_->second.server_timestamp);
+const scada::DataValue& TimedDataModel::value(int row) const {
+  assert(row <= count_);
+  auto i = begin_iterator_ + row;
+  return *i;
 }
 
 int TimedDataModel::GetRowCount() {
@@ -123,7 +79,7 @@ int TimedDataModel::GetRowCount() {
 }
 
 void TimedDataModel::GetCell(ui::TableCell& cell) {
-  scada::DataValue tvq = GetRowTVQ(cell.row);
+  const auto& tvq = value(cell.row);
 
   switch (cell.column_id) {
     case CID_TIME:
@@ -154,14 +110,14 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
 }
 
 void TimedDataModel::SetFormula(const std::string& formula) {
-  cached_index_ = -1;
-
   rt::TimedDataSpec timed_data;
   try {
     timed_data.SetFrom(base::Time::Now() - base::TimeDelta::FromHours(1));
     timed_data.Connect(timed_data_service_, formula);
+
   } catch (const std::exception&) {
   }
+
   SetTimedData(timed_data);
 }
 

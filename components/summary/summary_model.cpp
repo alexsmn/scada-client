@@ -119,17 +119,13 @@ void SummaryModel::Column::UpdateHistory() {
     cells_[i].Clear();
 
   // History.
-  const rt::TimedVQMap* values = timed_data_.values();
-  if (values) {
-    auto i = values->lower_bound(model_.start_time_);
-    auto end = values->upper_bound(model_.end_time_);
+  if (const rt::DataValues* values = timed_data_.values()) {
+    auto i = rt::LowerBound(*values, model_.start_time_);
+    auto end = rt::UpperBound(*values, model_.end_time_);
     for (; i != end; ++i) {
-      int row = model_.GetRowForTime(i->first);
-      if (row != -1) {
-        cells_[row].Update(scada::DataValue(i->second.vq.value,
-                                            i->second.vq.qualifier, i->first,
-                                            i->second.server_timestamp));
-      }
+      int row = model_.GetRowForTime(i->source_timestamp);
+      if (row != -1)
+        cells_[row].Update(*i);
     }
   }
 

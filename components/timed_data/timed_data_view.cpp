@@ -168,21 +168,21 @@ void TimedDataView::ExportToExcel() {
     }
 
     int row = 2;
-    for (auto i = model_->begin(); i != model_->end(); ++i, ++row) {
-      base::Time time = i->first;
-      const rt::TimedDataEntry& entry = i->second;
+    for (const auto& data_value : *model_) {
       base::win::ScopedVariant value;
-      ValueToVariant(entry.vq.value, value);
+      ValueToVariant(data_value.value, value);
       sheet.SetData(
           row, 1,
-          base::win::ScopedVariant(COleDateTime(time.ToFileTime()), VT_DATE));
+          base::win::ScopedVariant(
+              COleDateTime(data_value.source_timestamp.ToFileTime()), VT_DATE));
       sheet.SetData(row, 2, value);
-      base::string16 qualifier_string = FormatQuality(entry.vq.qualifier);
+      base::string16 qualifier_string = FormatQuality(data_value.qualifier);
       sheet.SetData(row, 3, base::win::ScopedVariant(qualifier_string.c_str()));
       sheet.SetData(
           row, 4,
           base::win::ScopedVariant(
-              COleDateTime(entry.server_timestamp.ToFileTime()), VT_DATE));
+              COleDateTime(data_value.server_timestamp.ToFileTime()), VT_DATE));
+      ++row;
     }
 
     Excel excel;
