@@ -371,16 +371,15 @@ void EventTableModel::Update() {
 
     auto runner = base::ThreadTaskRunnerHandle::Get();
     auto weak_ptr = weak_factory_.GetWeakPtr();
-    history_service_.HistoryRead(
-        {scada::id::RootFolder, scada::AttributeId::EventNotifier}, from, to,
-        {{scada::Event::ACKED}},
+    history_service_.HistoryReadEvents(
+        scada::id::RootFolder, from, to, {scada::Event::ACKED},
         [this, runner, weak_ptr](scada::Status status,
-                                 scada::QueryValuesResults values,
-                                 scada::QueryEventsResults events) {
-          runner->PostTask(FROM_HERE,
-                           base::Bind(&EventTableModel::OnQueryEventsCompleted,
-                                      weak_ptr, base::Passed(std::move(status)),
-                                      base::Passed(std::move(events))));
+                                 std::vector<scada::Event> events) {
+          runner->PostTask(
+              FROM_HERE,
+              base::Bind(&EventTableModel::OnHistoryReadEventsCompleted,
+                         weak_ptr, base::Passed(std::move(status)),
+                         base::Passed(std::move(events))));
         });
   }
 
@@ -392,14 +391,13 @@ void EventTableModel::CancelRequest() {
   request_running_ = false;
 }
 
-void EventTableModel::OnQueryEventsCompleted(scada::Status status,
-                                             scada::QueryEventsResults events) {
+void EventTableModel::OnHistoryReadEventsCompleted(
+    scada::Status&& status,
+    std::vector<scada::Event>&& events) {
   assert(request_running_);
 
-  if (events)
-    historical_events_.assign(events->begin(), events->end());
-  else
-    historical_events_.clear();
+  historical_events_.assign(std::make_move_iterator(events.begin()),
+                            std::make_move_iterator(events.end()));
 
   request_running_ = false;
   RefilterNow();

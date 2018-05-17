@@ -100,8 +100,8 @@ class EventTableModel : public ui::TableModel,
 
   void UpdateAffectedRows(const scada::NodeId& node_id);
 
-  void OnQueryEventsCompleted(scada::Status status,
-                              scada::QueryEventsResults events);
+  void OnHistoryReadEventsCompleted(scada::Status&& status,
+                                    std::vector<scada::Event>&& events);
 
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
