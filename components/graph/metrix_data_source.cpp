@@ -23,11 +23,14 @@ class MetrixPointEnum : public views::PointEnumerator {
              bool include_right_bound);
 
   // PointEnumerator
+  virtual size_t GetCount() const;
   virtual bool EnumNext(views::GraphPoint& point);
 
  private:
   rt::TimedDataSpec& timed_data_;
   rt::DataValues::const_iterator enum_position_;
+  rt::DataValues::const_iterator last_;
+  std::size_t count_ = 0;
   double enum_right_bound_;
   bool enum_include_right_bound_;
   bool enum_current_passed_;
@@ -41,31 +44,45 @@ bool MetrixPointEnum::Reset(double x_from,
                             double x_to,
                             bool include_left_bound,
                             bool include_right_bound) {
-  if (!timed_data_.connected())
-    return false;
-
-  const rt::DataValues* values = timed_data_.values();
-  if (!values)
-    return false;
-
+  count_ = 0;
+  last_value_time_ = base::Time();
   enum_right_bound_ = x_to;
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
 
-  enum_position_ = rt::LowerBound(*values, base::Time::FromDoubleT(x_from));
-  if (include_left_bound && enum_position_ != values->begin())
-    --enum_position_;
+  const rt::DataValues* values = timed_data_.values();
+  if (values) {
+    enum_position_ = rt::LowerBound(*values, base::Time::FromDoubleT(x_from));
+    if (include_left_bound && enum_position_ != values->begin())
+      --enum_position_;
 
-  last_value_time_ = base::Time();
+    last_ = rt::UpperBound(*values, base::Time::FromDoubleT(x_to));
+    if (include_right_bound && last_ != values->end())
+      ++last_;
+
+    count_ += last_ - enum_position_;
+  }
+
+  if (!timed_data_.current().is_null()) {
+    if (!values || values->empty() ||
+        values->back().source_timestamp <
+            timed_data_.current().source_timestamp) {
+      ++count_;
+    }
+  }
 
   return true;
 }
 
-bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
-  const rt::DataValues* values = timed_data_.values();
-  assert(values);
+size_t MetrixPointEnum::GetCount() const {
+  return count_;
+}
 
-  if (enum_position_ != values->end()) {
+bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
+  if (count_ == 0)
+    return false;
+
+  if (enum_position_ != last_) {
     point.x = enum_position_->source_timestamp.ToDoubleT();
     point.y = enum_position_->value.get_or(0.0);
     point.good = enum_position_->qualifier.good();
@@ -76,7 +93,7 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
     enum_current_passed_ = true;
 
     const auto& current = timed_data_.current();
-    if (last_value_time_ == current.source_timestamp)
+    if (last_value_time_ >= current.source_timestamp)
       return false;
 
     point.x = current.source_timestamp.ToDoubleT();
@@ -154,22 +171,23 @@ void MetrixDataSource::UpdateRange() {
   if (IsInstanceOf(node, id::AnalogItemType)) {
     range_ = views::GraphRange(
         node[id::AnalogItemType_EuLo].value().get_or(views::kGraphUnknownValue),
-        node[id::AnalogItemType_EuHi].value().get_or(views::kGraphUnknownValue));
+        node[id::AnalogItemType_EuHi].value().get_or(
+            views::kGraphUnknownValue));
   }
 }
 
 void MetrixDataSource::UpdateLimits() {
   if (auto node = timed_data_.GetNode()) {
-    limit_lo_ =
-        node[id::AnalogItemType_LimitLo].value().get_or(views::kGraphUnknownValue);
-    limit_hi_ =
-        node[id::AnalogItemType_LimitHi].value().get_or(views::kGraphUnknownValue);
+    limit_lo_ = node[id::AnalogItemType_LimitLo].value().get_or(
+        views::kGraphUnknownValue);
+    limit_hi_ = node[id::AnalogItemType_LimitHi].value().get_or(
+        views::kGraphUnknownValue);
     ;
-    limit_lolo_ =
-        node[id::AnalogItemType_LimitLoLo].value().get_or(views::kGraphUnknownValue);
+    limit_lolo_ = node[id::AnalogItemType_LimitLoLo].value().get_or(
+        views::kGraphUnknownValue);
     ;
-    limit_hihi_ =
-        node[id::AnalogItemType_LimitHiHi].value().get_or(views::kGraphUnknownValue);
+    limit_hihi_ = node[id::AnalogItemType_LimitHiHi].value().get_or(
+        views::kGraphUnknownValue);
     ;
   } else {
     limit_lo_ = views::kGraphUnknownValue;
