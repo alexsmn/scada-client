@@ -123,9 +123,10 @@ bool ModusView2::OnMousePressed(const ui::MouseEvent& event) {
 
   if (event.IsDoubleClick()) {
     auto link = shape->element().GetValue("Links[0]");
-    if (!link.empty() && navigation_signal_)
+    if (!link.empty() && navigation_signal_) {
       navigation_signal_(
-          base::FilePath(modus::GetLinkFilePath(link.as_string_piece())));
+          base::FilePath(modus::GetLinkFilePath(link.as_string_view())));
+    }
 
     if (double_click_signal_)
       double_click_signal_();

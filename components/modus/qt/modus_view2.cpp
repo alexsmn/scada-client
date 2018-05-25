@@ -132,9 +132,10 @@ void ModusView2::mouseDoubleClickEvent(QMouseEvent* e) {
     return;
 
   auto link = shape->element().GetValue("Links[0]");
-  if (!link.empty() && navigation_signal_)
+  if (!link.empty() && navigation_signal_) {
     navigation_signal_(
-        base::FilePath(modus::GetLinkFilePath(link.as_string_piece())));
+        base::FilePath(modus::GetLinkFilePath(link.as_string_view())));
+  }
 
   if (double_click_signal_)
     double_click_signal_();
