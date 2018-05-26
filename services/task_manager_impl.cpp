@@ -101,10 +101,15 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
         NodeFetchStatus::NodeOnly(),
         [weak_ptr, node_id, &node_management_service = node_management_service_,
          attributes, properties, callback](const NodeRef& node) {
+          assert(node.status());
+          if (!node.status())
+            return;
+
           std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
           nodes.reserve(1 + properties.size());
           if (!attributes.empty())
             nodes.emplace_back(node_id, std::move(attributes));
+
           for (auto& [prop_decl_id, value] : properties) {
             auto prop_id = node[prop_decl_id].node_id();
             assert(!prop_id.is_null());
