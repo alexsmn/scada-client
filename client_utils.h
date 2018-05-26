@@ -75,3 +75,12 @@ NamedNodes GetNamedNodes(const NodeRef& root,
                          const scada::NodeId& type_definition_id);
 
 base::string16 FormatHostName(const std::string& host_name);
+
+void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes);
+
+void CopyNodesToClipboard(const std::vector<NodeRef>& nodes);
+bool PasteNodesFromClipboard(TaskManager& task_manager,
+                             const scada::NodeId& new_parent_id);
+NodeRef GetPasteParentNode(NodeService& node_service,
+                           const NodeRef& selected_node,
+                           const NodeRef& root_node);

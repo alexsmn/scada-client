@@ -1298,40 +1298,6 @@ IDR_MAINFRAME           ICON                    "..\\res\\client.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// PNG
-//
-
-IDB_WRITE_MANUAL        PNG                     "..\\res\\write_manual.png"
-
-IDB_WRITE               PNG                     "..\\res\\execute.png"
-
-IDB_UNLOCK              PNG                     "..\\res\\unlock.png"
-
-IDB_TIMED_DATA          PNG                     "..\\res\\doc_table.png"
-
-ID_TABLE_VIEW           PNG                     "..\\res\\table.png"
-
-IDB_SUMMARY             PNG                     "..\\res\\summary.png"
-
-IDB_RECORD_EDITOR       PNG                     "..\\res\\record_editor.png"
-
-IDB_PRINTER             PNG                     "..\\res\\printer.png"
-
-IDB_OPEN_EVENTS         PNG                     "..\\res\\events3.png"
-
-ID_GRAPH_VIEW           PNG                     "..\\res\\chart_curve.png"
-
-ID_EVENT_VIEW           PNG                     "..\\res\\event_view.png"
-
-ID_MODUS_VIEW           PNG                     "..\\res\\display.png"
-
-IDB_DELETE              PNG                     "..\\res\\delete.png"
-
-IDB_ACKNOWLEDGE_ALL     PNG                     "..\\res\\acknowledge_all.png"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // Toolbar
 //
 
@@ -1547,6 +1513,44 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MDICHILD            ICON                    "..\\res\\idr_mdic.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// PNG
+//
+
+IDB_WRITE_MANUAL        PNG                     "..\\res\\write_manual.png"
+
+IDB_WRITE               PNG                     "..\\res\\execute.png"
+
+IDB_UNLOCK              PNG                     "..\\res\\unlock.png"
+
+IDB_TIMED_DATA          PNG                     "..\\res\\doc_table.png"
+
+ID_TABLE_VIEW           PNG                     "..\\res\\table.png"
+
+IDB_SUMMARY             PNG                     "..\\res\\summary.png"
+
+IDB_RECORD_EDITOR       PNG                     "..\\res\\record_editor.png"
+
+IDB_PRINTER             PNG                     "..\\res\\printer.png"
+
+IDB_OPEN_EVENTS         PNG                     "..\\res\\events3.png"
+
+ID_GRAPH_VIEW           PNG                     "..\\res\\chart_curve.png"
+
+ID_EVENT_VIEW           PNG                     "..\\res\\event_view.png"
+
+ID_MODUS_VIEW           PNG                     "..\\res\\display.png"
+
+IDB_DELETE              PNG                     "..\\res\\delete.png"
+
+IDB_ACKNOWLEDGE_ALL     PNG                     "..\\res\\acknowledge_all.png"
+
+IDB_COPY                PNG                     "..\\res\\copy.png"
+
+IDB_PASTE               PNG                     "..\\res\\paste.png"
 
 
 /////////////////////////////////////////////////////////////////////////////

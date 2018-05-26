@@ -1,14 +1,18 @@
 ﻿#include "client_utils.h"
 
 #include "base/format_time.h"
+#include "base/win/clipboard.h"
 #include "common/event_manager.h"
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
 #include "common/node_service.h"
+#include "common/node_state.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "contents_model.h"
+#include "node_serialization.h"
+#include "remote/protocol_utils.h"
 #include "remote/session_proxy.h"
 #include "services/file_cache.h"
 #include "services/local_events.h"
@@ -16,6 +20,13 @@
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
 #include "window_info.h"
+
+namespace {
+const UINT kNodeTreeHeaderFormat =
+    ::RegisterClipboardFormat(L"CE4D311D-FB1C-4972-9EA8-3C2C1FB5091A");
+const UINT kNodeTreeFormat =
+    ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
+}  // namespace
 
 inline void AppendHint(base::string16& hint,
                        const base::char16* title,
@@ -29,34 +40,6 @@ base::string16 GetTimedDataTooltipText(const rt::TimedDataSpec& timed_data) {
   base::string16 name = timed_data.GetTitle();
 
   base::string16 val = timed_data.GetCurrentString();
-  // TODO: Read user.
-  /*if (item.value_user) {
-    const scada::User* user = static_cast<const scada::User*>(
-      monitored_item_service.table(NamespaceIndexes::USER).FindRecord(item.value_user));
-    if (user)
-      val += base::StringPrintf(" (%s)", user->name);
-  }*/
-
-  // source
-  base::string16 source;
-
-  /*scada::Node* node = monitored_item_service.object_tree().FindNode(tbl.id,
-  item.id); bool simulated = node && node->IsSimulated(true);
-
-  if (simulated) {
-    std::string sim_item_name = monitored_item_service.GetNodeTitle(
-      NamespaceIndexes::SIM_ITEM, item.simulation_signal);
-    source = "Эмулятор - " + sim_item_name;
-
-  } else {
-    const scada::Item::Channel* chan = item.get_channel();
-    if (chan) {
-      std::string device_name = monitored_item_service.
-        GetDeviceName(chan->device_type, chan->device_id);
-      source = base::StringPrintf("%s : %s", device_name.c_str(),
-  chan->item_path);
-    }
-  }*/
 
   base::string16 str_time = base::SysNativeMBToWide(
       FormatTime(timed_data.change_time(),
@@ -69,7 +52,6 @@ base::string16 GetTimedDataTooltipText(const rt::TimedDataSpec& timed_data) {
   AppendHint(str, L"Значение", val);
   AppendHint(str, L"Время", str_time);
   AppendHint(str, L"Обновлен", str_utime);
-  AppendHint(str, L"Источник", source);
 
   // events
   const events::EventSet* events = timed_data.GetEvents();
@@ -254,4 +236,119 @@ NamedNodes GetNamedNodes(const NodeRef& root,
   result.reserve(32);
   GetNamedNodesHelper(root, type_definition_id, result);
   return result;
+}
+
+void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes) {
+  for (auto& node : parent.targets(scada::id::Organizes)) {
+    nodes.emplace_back(node);
+    GetNodesRecursive(node, nodes);
+  }
+}
+
+std::string ReadClipboard(UINT format) {
+  size_t size = 0;
+  char* data = nullptr;
+  if (!Clipboard().GetData(format, data, size))
+    return std::string();
+
+  std::string v(data, data + size);
+  delete[] data;
+  return v;
+}
+
+void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
+  assert(!nodes.empty());
+
+  Clipboard clipboard;
+
+  {
+    protocol::NodeId message;
+    ToProto(nodes.front().type_definition().node_id(), message);
+    auto buffer = message.SerializePartialAsString();
+    if (!clipboard.SetData(kNodeTreeHeaderFormat, buffer.data(), buffer.size()))
+      LOG(ERROR) << "Can't set clipboard data";
+  }
+
+  {
+    std::vector<scada::NodeState> browse_nodes;
+    browse_nodes.reserve(nodes.size());
+
+    for (auto& node : nodes) {
+      browse_nodes.emplace_back();
+      NodeToData(node, browse_nodes.back(), true);
+    }
+
+    protocol::NodeTree message;
+    ContainerToProto(browse_nodes, *message.mutable_node());
+    auto buffer = message.SerializePartialAsString();
+
+    if (!clipboard.SetData(kNodeTreeFormat, buffer.data(), buffer.size()))
+      LOG(ERROR) << "Can't set clipboard data";
+  }
+}
+
+void PasteNodesFromClipboardHelper(TaskManager& task_manager,
+                                   scada::NodeState&& node_state) {
+  task_manager.PostInsertTask(
+      {}, node_state.parent_id, node_state.type_definition_id,
+      std::move(node_state.attributes), std::move(node_state.properties),
+      [&task_manager, references = std::move(node_state.references),
+       children = std::move(node_state.children)](
+          const scada::Status& status, const scada::NodeId& node_id) mutable {
+        if (!status)
+          return;
+
+        for (auto& reference : references) {
+          if (reference.forward)
+            task_manager.PostAddReference(reference.reference_type_id, node_id,
+                                          reference.node_id);
+        }
+
+        for (auto& child : children) {
+          assert(child.reference_type_id == scada::id::Organizes);
+          child.parent_id = node_id;
+          PasteNodesFromClipboardHelper(task_manager, std::move(child));
+        }
+      });
+}
+
+bool PasteNodesFromClipboard(TaskManager& task_manager,
+                             const scada::NodeId& new_parent_id) {
+  const auto buffer = ReadClipboard(kNodeTreeFormat);
+  if (buffer.empty())
+    return false;
+
+  protocol::NodeTree message;
+  if (!message.ParseFromString(buffer))
+    return false;
+
+  for (const auto& packed_node : message.node()) {
+    auto node_state = FromProto(packed_node);
+    assert(node_state.reference_type_id == scada::id::Organizes);
+    node_state.parent_id = new_parent_id;
+    PasteNodesFromClipboardHelper(task_manager, std::move(node_state));
+  }
+
+  return true;
+}
+
+NodeRef GetPasteParentNode(NodeService& node_service,
+                           const NodeRef& selected_node,
+                           const NodeRef& root_node) {
+  const auto buffer = ReadClipboard(kNodeTreeHeaderFormat);
+  protocol::NodeId message;
+  if (!message.ParseFromString(buffer))
+    return false;
+
+  const auto& type_definition_id = FromProto(message);
+  const auto& type_definition = node_service.GetNode(type_definition_id);
+
+  for (const auto& node : {selected_node, root_node}) {
+    for (auto n = node; n; n = n.parent()) {
+      if (CanCreate(n, type_definition))
+        return n;
+    }
+  }
+
+  return nullptr;
 }

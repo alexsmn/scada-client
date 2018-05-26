@@ -6,11 +6,18 @@
 #include "node_serialization.h"
 #include "remote/protocol_utils.h"
 
-void NodeToData(const NodeRef& source, scada::NodeState& target) {
+void NodeToData(const NodeRef& source,
+                scada::NodeState& target,
+                bool recursive) {
   assert(source.node_class().has_value());
 
   target.node_id = source.node_id();
   target.node_class = source.node_class().value();
+
+  const auto& parent_ref =
+      source.inverse_reference(scada::id::HierarchicalReferences);
+  target.parent_id = parent_ref.target.node_id();
+  target.reference_type_id = parent_ref.reference_type.node_id();
 
   if (auto type_definition = source.type_definition())
     target.type_definition_id = type_definition.node_id();
@@ -38,6 +45,11 @@ void NodeToData(const NodeRef& source, scada::NodeState& target) {
       target.references.push_back(
           {ref.reference_type.node_id(), ref.forward, ref.target.node_id()});
     }
+  }
+
+  if (recursive) {
+    for (const auto& child : source.targets(scada::id::Organizes))
+      NodeToData(child, target.children.emplace_back(), true);
   }
 }
 
@@ -84,6 +96,9 @@ void ToProto(const scada::NodeState& source, protocol::Node& target) {
   ToProto(source.attributes, *target.mutable_attributes());
   ToProto(source.properties, *target.mutable_property());
   ToProto(source.references, *target.mutable_reference());
+
+  if (!source.children.empty())
+    ToProto(source.children, *target.mutable_children());
 }
 
 scada::NodeState FromProto(const protocol::Node& source) {
@@ -97,5 +112,7 @@ scada::NodeState FromProto(const protocol::Node& source) {
                               : scada::NodeAttributes{},
       VectorFromProto<scada::NodeProperty>(source.property()),
       VectorFromProto<scada::ReferenceDescription>(source.reference()),
+      {},
+      VectorFromProto<scada::NodeState>(source.children()),
   };
 }

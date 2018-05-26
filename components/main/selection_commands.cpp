@@ -5,6 +5,7 @@
 #include "commands/write_dialog.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
+#include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
@@ -53,9 +54,11 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
   if (!selection_)
     return nullptr;
 
-  auto node = selection_->node();
+  const auto& node = selection_->node();
 
   switch (command_id) {
+    case ID_DELETE:
+    case ID_COPY:
     case ID_ITEM_PARAMS:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
@@ -124,9 +127,13 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
 }
 
 bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
-  auto node = selection_->node();
+  const auto& node = selection_->node();
 
   switch (command_id) {
+    case ID_DELETE:
+    case ID_COPY:
+      return !selection_->empty();
+
     case ID_ACKNOWLEDGE_CURRENT:
       return selection_->GetTimedData().alerting();
 
@@ -152,43 +159,35 @@ bool SelectionCommands::IsCommandChecked(unsigned command_id) const {
   return false;
 }
 
-void SelectionCommands::ExecuteCommand(unsigned command_id) {
-  assert(dialog_service_);
-  assert(selection_);
+void SelectionCommands::ExecuteMultiCommand(unsigned command_id) {
+  UINT type = 0;
+  if (command_id == ID_OPEN_TABLE)
+    type = ID_TABLE_VIEW;
+  else if (command_id == ID_OPEN_GRAPH)
+    type = ID_GRAPH_VIEW;
+  else if (command_id == ID_OPEN_SUMMARY)
+    type = ID_SUMMARY_VIEW;
+  else if (command_id == ID_OPEN_EVENTS)
+    type = ID_EVENT_JOURNAL_VIEW;
 
-  if (selection_->multiple()) {
-    UINT type;
-    if (command_id == ID_OPEN_TABLE)
-      type = ID_TABLE_VIEW;
-    else if (command_id == ID_OPEN_GRAPH)
-      type = ID_GRAPH_VIEW;
-    else if (command_id == ID_OPEN_SUMMARY)
-      type = ID_SUMMARY_VIEW;
-    else if (command_id == ID_OPEN_EVENTS)
-      type = ID_EVENT_JOURNAL_VIEW;
-    else {
-      assert(false);
-      return;
-    }
-
+  if (type != 0) {
     auto title = selection_->GetTitle();
     auto items = selection_->GetMultipleNodeIds();
     ::OpenView(main_window_, MakeWindowDefinition(items, type, title.c_str()));
     return;
   }
+}
 
-  switch (command_id) {
-    case ID_CHANGE_PASSWORD: {
-      auto node = selection_->node();
-      if (IsInstanceOf(node, id::UserType)) {
-        ShowChangePasswordDialog(node, node_management_service_, local_events_,
-                                 profile_);
-      }
-      return;
-    }
+void SelectionCommands::ExecuteCommand(unsigned command_id) {
+  assert(dialog_service_);
+  assert(selection_);
+
+  if (selection_->multiple()) {
+    ExecuteMultiCommand(command_id);
+    return;
   }
 
-  auto node_id = selection_->node().node_id();
+  const auto& node_id = selection_->node().node_id();
   if (node_id == scada::NodeId() && selection_->GetTimedData().connected()) {
     unsigned type = 0;
     switch (command_id) {
@@ -296,6 +295,21 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       ExecuteDisableItem(task_manager_, node, command_id == ID_ITEM_DISABLE);
       return;
 
+    case ID_CHANGE_PASSWORD: {
+      auto node = selection_->node();
+      if (IsInstanceOf(node, id::UserType)) {
+        ShowChangePasswordDialog(node, node_management_service_, local_events_,
+                                 profile_);
+      }
+      return;
+    }
+    case ID_DELETE:
+      DeleteSelection();
+      return;
+    case ID_COPY:
+      CopyToClipboard();
+      return;
+
     case ID_DEV1_REFR:
       method_id = id::DeviceType_Interrogate;
       break;
@@ -363,4 +377,35 @@ void SelectionCommands::SetContext(MainWindow* main_window,
   main_window_ = main_window;
   dialog_service_ = dialog_service;
   selection_ = selection;
+}
+
+void SelectionCommands::DeleteSelection() {
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
+    return;
+
+  if (selection_->multiple()) {
+    for (const auto& node_id : selection_->GetMultipleNodeIds())
+      DeleteTreeRecordsRecursive(task_manager_, node_service_.GetNode(node_id));
+
+  } else if (const auto& node = selection_->node()) {
+    DeleteTreeRecordsRecursive(task_manager_, node);
+  }
+}
+
+void SelectionCommands::CopyToClipboard() {
+  std::vector<NodeRef> nodes;
+
+  if (selection_->multiple()) {
+    for (const auto& node_id : selection_->GetMultipleNodeIds()) {
+      const auto& node = node_service_.GetNode(node_id);
+      nodes.emplace_back(node);
+      GetNodesRecursive(node, nodes);
+    }
+
+  } else if (const auto& node = selection_->node()) {
+    nodes.emplace_back(node);
+  }
+
+  if (!nodes.empty())
+    CopyNodesToClipboard(nodes);
 }

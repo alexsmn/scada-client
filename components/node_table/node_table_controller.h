@@ -60,10 +60,6 @@ class NodeTableController : public Controller,
  private:
   void SetSorting(const scada::NodeId& property_id);
 
-  void DeleteSelection();
-  void CopyToClipboard();
-  void PasteFromClipboard();
-
   std::unique_ptr<NodeTableModel> model_;
 
 #if defined(UI_QT)

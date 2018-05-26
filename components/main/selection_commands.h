@@ -21,6 +21,7 @@ class LocalEvents;
 class MainWindow;
 class MainWindowManager;
 class NodeRef;
+class NodeService;
 class Profile;
 class SelectionModel;
 class TaskManager;
@@ -36,6 +37,7 @@ struct SelectionCommandsContext {
   FileCache& file_cache_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
+  NodeService& node_service_;
 };
 
 class SelectionCommands : private SelectionCommandsContext,
@@ -56,6 +58,11 @@ class SelectionCommands : private SelectionCommandsContext,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
+  void ExecuteMultiCommand(unsigned command_id);
+
+  void DeleteSelection();
+  void CopyToClipboard();
+
   void CallMethod(const NodeRef& node,
                   const scada::NodeId& method_id,
                   const std::vector<scada::Variant>& arguments);

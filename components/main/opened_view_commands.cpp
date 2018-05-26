@@ -51,7 +51,7 @@ OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
       std::make_unique<SelectionCommands>(SelectionCommandsContext{
           task_manager_, session_service_, node_management_service_,
           event_manager_, timed_data_service_, local_events_, file_cache_,
-          profile_, main_window_manager_});
+          profile_, main_window_manager_, node_service_});
 }
 
 OpenedViewCommands::~OpenedViewCommands() {}
@@ -74,7 +74,12 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
   if (auto* handler = controller_->GetCommandHandler(command_id))
     return handler;
 
+  if (auto* handler = selection_commands_->GetCommandHandler(command_id))
+    return handler;
+
   switch (command_id) {
+    case ID_PASTE:
+      return this;
     case ID_VIEW_CLOSE:
     case ID_PRINT:
       return this;
@@ -95,16 +100,19 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
   }
 
   auto node_id = GetNewCommandTypeId(command_id);
-  if (node_id != scada::NodeId())
+  if (!node_id.is_null())
     return CanCreateRecord(node_id) ? this : NULL;
 
-  return selection_commands_->GetCommandHandler(command_id);
+  return nullptr;
 }
 
 void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
   assert(opened_view_);
 
   switch (command_id) {
+    case ID_PASTE:
+      PasteFromClipboard();
+      return;
     case ID_VIEW_CLOSE:
       opened_view_->Close();
       return;
@@ -166,6 +174,17 @@ bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
 
     default:
       return false;
+  }
+}
+
+bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {
+  switch (command_id) {
+    case ID_PASTE:
+      return session_service_.HasPrivilege(scada::Privilege::Configure) &&
+             GetPasteParentNode(node_service_, controller_->selection().node(),
+                                controller_->GetRootNode());
+    default:
+      return true;
   }
 }
 
@@ -259,4 +278,18 @@ void OpenedViewCommands::OnCreateRecordComplete(
                  ::OpenView(ptr->main_window_, def, true);
                }
              });
+}
+
+void OpenedViewCommands::PasteFromClipboard() {
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
+    return;
+
+  const auto& parent_node =
+      GetPasteParentNode(node_service_, controller_->selection().node(),
+                         controller_->GetRootNode());
+  if (!parent_node)
+    return;
+
+  if (!PasteNodesFromClipboard(task_manager_, parent_node.node_id()))
+    LOG(ERROR) << "Paste records error";
 }

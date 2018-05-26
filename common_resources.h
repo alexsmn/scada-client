@@ -32,7 +32,10 @@
 #define ID_SUMMARY_VIEW                 113
 #define ID_TIMED_DATA_VIEW              114
 #define ID_WRITE                        115
+#define IDB_COPY                        115
 #define ID_WRITE_MANUAL                 116
+#define IDB_PNG2                        116
+#define IDB_PASTE                       116
 #define ID_UNLOCK_ITEM                  117
 #define ID_EDIT_LIMITS                  118
 #define ID_ITEM_PARAMS                  119
@@ -427,7 +430,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        115
+#define _APS_NEXT_RESOURCE_VALUE        117
 #define _APS_NEXT_COMMAND_VALUE         4033
 #define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           184

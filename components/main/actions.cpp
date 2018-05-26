@@ -151,6 +151,10 @@ void AddGlobalActions(ActionManager& action_manager,
                                        L"Добавить объекты"));
   action_manager.AddAction(
       *new Action(ID_RENAME, CATEGORY_EDIT, L"Переименовать"));
+  action_manager.AddAction(*new Action(ID_COPY, CATEGORY_EDIT, L"Копировать",
+                                       base::string16(), IDB_COPY));
+  action_manager.AddAction(*new Action(ID_PASTE, CATEGORY_EDIT, L"Вставить",
+                                       base::string16(), IDB_PASTE));
   action_manager.AddAction(*new Action(ID_DELETE, CATEGORY_EDIT, L"Удалить",
                                        base::string16(), IDB_DELETE));
   action_manager.AddAction(

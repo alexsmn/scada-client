@@ -70,6 +70,7 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
+  virtual bool IsCommandEnabled(unsigned command_id) const override;
 
  private:
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
@@ -77,6 +78,8 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   void OnCreateRecordComplete(const scada::LocalizedText& display_name,
                               const scada::Status& status,
                               const scada::NodeId& node_id);
+
+  void PasteFromClipboard();
 
   OpenedView* opened_view_ = nullptr;
   Controller* controller_ = nullptr;
