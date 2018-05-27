@@ -38,9 +38,10 @@ endif()
 
 find_package(Qt5LinguistTools REQUIRED)
 file(GLOB TRANSLATIONS "*.ts")
-qt5_create_translation(translations_out ${SOURCES} ${TRANSLATIONS})
+qt5_create_translation(TRANSLATIONS_OUT ${SOURCES_QT} ${TRANSLATIONS})
 qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
-target_sources(client_qt PUBLIC ${TRANSLATIONS})
+target_sources(client_qt PUBLIC ${TRANSLATIONS} ${TRANSLATIONS_OUT})
+install(FILES ${TRANSLATIONS_OUT} DESTINATION "bin")
 
 # UT-s
 
