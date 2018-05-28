@@ -30,6 +30,9 @@ class Page {
   void Load(const xml::Node& node);
   void Save(xml::Node& node, bool current) const;
 
+  base::DictionaryValue LoadJson();
+  void SaveJson(base::DictionaryValue& json) const;
+
   int id;
   base::string16 title;
 

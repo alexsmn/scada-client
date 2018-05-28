@@ -220,10 +220,8 @@ void Page::Load(const xml::Node& node) {
           ParseWithDefault<int>(docke->GetAttribute("place").c_str(), 0);
       LoadLayoutBlock(dock, *docke);
     }
-    if (auto* blobe = layoute->select("Blob")) {
-      std::string encoded_blob = base::SysWideToNativeMB(blobe->get_text());
-      base::Base64Decode(encoded_blob, &layout.blob);
-    }
+    if (auto* blobe = layoute->select("Blob"))
+      layout.blob = base::SysWideToNativeMB(blobe->get_value());
   }
 }
 
@@ -278,10 +276,8 @@ void Page::Save(xml::Node& node, bool current) const {
     SaveLayoutBlock(dock, docke);
   }
   if (!layout.blob.empty()) {
-    std::string encoded_blob;
-    base::Base64Encode(layout.blob, &encoded_blob);
-    node.AddElement("Blob").set_text(
-        base::SysNativeMBToWide(encoded_blob).c_str());
+    layoute.AddElement("Blob").set_value(
+        base::SysNativeMBToWide(layout.blob).c_str());
   }
 }
 
@@ -349,4 +345,10 @@ void Page::DeleteWindow(int index) {
 
 void Page::Clear() {
   windows_.clear();
+}
+
+void Page::SaveJson(base::DictionaryValue& json) const {}
+
+base::DictionaryValue Page::LoadJson() {
+  return {};
 }

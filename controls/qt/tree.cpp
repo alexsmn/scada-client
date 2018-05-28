@@ -6,8 +6,18 @@
 Tree::Tree(ui::TreeModel& model) : model_adapter_(new TreeModelAdapter(model)) {
   setHeaderHidden(true);
   setModel(model_adapter_.get());
-  /*for (int i = 0; i < model_adapter_->columnCount(); ++i)
-    resizeColumnToContents(i);*/
+
+  // https://stackoverflow.com/questions/26011291/initial-width-of-column-in-qtableview-via-model
+  // If you need to initialize column widths based on Qt::SizeHintRole you need
+  // to:
+  // - inherit your class from QTableView;
+  // - reimplement method setModel and use and set initial widths of columns
+  // based on Qt::SizeHintRole using method QTableView::setColumnWidth.
+  for (int i = 0; i < model_adapter_->columnCount(); ++i) {
+    int width = model.GetColumnPreferredSize(i);
+    if (width != 0)
+      setColumnWidth(i, width);
+  }
 }
 
 Tree::~Tree() {}

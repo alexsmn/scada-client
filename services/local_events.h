@@ -10,7 +10,7 @@
 
 class LocalEvents {
  public:
-  enum Severity { SEV_INFO, kSeverityWarning, SEV_ERROR };
+  enum Severity { SEV_INFO, SEV_WARNING, SEV_ERROR };
 
   class Observer {
    public:

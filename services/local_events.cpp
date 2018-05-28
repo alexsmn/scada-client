@@ -68,7 +68,7 @@ scada::EventSeverity LocalEvents::SeverityToEvent(Severity severity) {
   switch (severity) {
     case SEV_ERROR:
       return scada::kSeverityCritical;
-    case kSeverityWarning:
+    case SEV_WARNING:
       return scada::kSeverityWarning;
     case SEV_INFO:
       return scada::kSeverityNormal;

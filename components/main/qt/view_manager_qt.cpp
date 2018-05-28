@@ -77,6 +77,25 @@ QTabWidget* GetFirstTabBlock(QWidget& widget) {
   }
 }
 
+struct ScopedNames {
+  explicit ScopedNames(const std::list<OpenedView*>& views) : views_{views} {
+    for (auto* opened_view : views_) {
+      if (auto* dock = GetDockWidget(*opened_view))
+        dock->setObjectName(QString{"dock-%1"}.arg(opened_view->window_id()));
+    }
+  }
+
+  ~ScopedNames() {
+    for (auto* opened_view : views_) {
+      if (auto* dock = GetDockWidget(*opened_view))
+        dock->setObjectName({});
+    }
+  }
+
+ private:
+  const std::list<OpenedView*>& views_;
+};
+
 }  // namespace
 
 ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
@@ -99,7 +118,10 @@ void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
       AddView(*opened_view);
   }
 
-  main_window_.restoreState(QByteArray::fromStdString(layout.blob));
+  if (!layout.blob.empty()) {
+    ScopedNames names{views_};
+    main_window_.restoreState(QByteArray::fromStdString(layout.blob));
+  }
 }
 
 std::unique_ptr<QTabWidget> ViewManagerQt::CreateTabBlock() {
@@ -233,15 +255,8 @@ void ViewManagerQt::SaveLayout(PageLayout& layout) {
   if (main_window_.centralWidget())
     SaveLayoutBlock(layout.main, *main_window_.centralWidget());
 
-  for (auto* opened_view : views_) {
-    if (auto* dock = GetDockWidget(*opened_view))
-      dock->setObjectName(QString{"dock-%1"}.arg(opened_view->window_id()));
-  }
+  ScopedNames names{views_};
   layout.blob = main_window_.saveState().toStdString();
-  for (auto* opened_view : views_) {
-    if (auto* dock = GetDockWidget(*opened_view))
-      dock->setObjectName({});
-  }
 }
 
 void ViewManagerQt::SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget) {

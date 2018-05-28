@@ -43,26 +43,31 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
                    : *std::prev(std::end(kReconnectDelays));
   reconnect_retry_++;
 
-  base::string16 message =
-      status ? base::StringPrintf(L"Отключение от сервера %ls. ",
-                                  host_name.c_str())
-             : status.code() == scada::StatusCode::Bad_SessionForcedLogoff
-                   ? base::StringPrintf(
-                         L"Разрыв связи со стороны сервера %ls. "
-                         L"Переподключение через %u секунд.",
-                         host_name.c_str(),
-                         static_cast<unsigned>(delay.InSeconds()))
-                   : base::StringPrintf(
-                         L"Разрыв связи с сервером %ls. %ls. Переподключение "
-                         L"через %u секунд.",
-                         host_name.c_str(), ToString16(status).c_str(),
-                         static_cast<unsigned>(delay.InSeconds()));
-
-  local_events_.ReportEvent(LocalEvents::SEV_ERROR, message);
-
   // User chose "Disconnect" from the menu.
-  if (status)
+  if (status) {
+    local_events_.ReportEvent(
+        LocalEvents::SEV_INFO,
+        base::StringPrintf(L"Отключение от сервера %ls. ", host_name.c_str()));
     return;
+  }
+
+  // User logged on from another computer.
+  if (status.code() == scada::StatusCode::Bad_SessionForcedLogoff) {
+    local_events_.ReportEvent(
+        LocalEvents::SEV_ERROR,
+        base::StringPrintf(
+            L"Отключение от сервера %ls. Данные реквизиты используются для "
+            L"входа в систему с другого рабочего места.",
+            host_name.c_str()));
+    return;
+  }
+
+  local_events_.ReportEvent(
+      LocalEvents::SEV_WARNING,
+      base::StringPrintf(
+          L"Разрыв связи с сервером %ls. %ls. Переподключение через %u секунд.",
+          host_name.c_str(), ToString16(status).c_str(),
+          static_cast<unsigned>(delay.InSeconds())));
 
   reconnect_timer_.Start(FROM_HERE, delay,
                          base::Bind(&ConnectionStateReporter::OnReconnectTimer,

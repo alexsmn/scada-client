@@ -79,29 +79,31 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
 
   switch (command_id) {
     case ID_PASTE:
-      return this;
+      return session_service_.HasPrivilege(scada::Privilege::Configure)
+                 ? this
+                 : nullptr;
     case ID_VIEW_CLOSE:
     case ID_PRINT:
       return this;
 
     case ID_NEW_SERVICE_ITEMS:
     case ID_ADD_MULTIPLE_ITEMS:
-      return CanCreateRecord(id::DiscreteItemType) ? this : NULL;
+      return CanCreateRecord(id::DiscreteItemType) ? this : nullptr;
 
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
-      return CanCreateRecord(id::Iec60870LinkType) ? this : NULL;
+      return CanCreateRecord(id::Iec60870LinkType) ? this : nullptr;
 
     case ID_TIME_RANGE_DAY:
     case ID_TIME_RANGE_WEEK:
     case ID_TIME_RANGE_MONTH:
     case ID_TIME_RANGE_CUSTOM:
-      return controller_->GetTimeModel() != nullptr ? this : NULL;
+      return controller_->GetTimeModel() != nullptr ? this : nullptr;
   }
 
   auto node_id = GetNewCommandTypeId(command_id);
   if (!node_id.is_null())
-    return CanCreateRecord(node_id) ? this : NULL;
+    return CanCreateRecord(node_id) ? this : nullptr;
 
   return nullptr;
 }

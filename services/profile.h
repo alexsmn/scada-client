@@ -104,6 +104,9 @@ class Profile {
 
   NodeTableController node_table;
 
+  void LoadJson(const base::DictionaryValue& json);
+  base::DictionaryValue SaveJson() const;
+
  private:
   base::FilePath GetFilePath();
 };
