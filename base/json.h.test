@@ -1,0 +1,114 @@
+#pragma once
+
+inline base::Value ToJson(bool value) {
+  return base::Value{value};
+}
+
+inline base::Value ToJson(int value) {
+  return base::Value{value};
+}
+
+inline base::Value ToJson(base::StringPiece value) {
+  return base::Value{value};
+}
+
+inline base::Value ToJson(std::string&& value) {
+  return base::Value{std::move(value)};
+}
+
+inline std::string ToJsonKey(int value) {
+  return base::NumberToString(value);
+}
+
+inline void FromJson(const base::Value& json, bool& value) {
+  value = json.GetBool();
+}
+
+inline void FromJson(const base::Value& json, int& value) {
+  value = json.GetInt();
+}
+
+template <class T>
+inline void FromJson(const base::Value& dict, T& s) {
+  EnumJson(s, [&](base::StringPiece key, auto& value) {
+    if (const auto* key_json = dict.FindKey(key))
+      FromJson(*key_json, value);
+  });
+}
+
+template <class T>
+inline base::Value ToJson(const T& s) {
+  base::Value json;
+  EnumJson(s, [&](base::StringPiece key, const auto& value) {
+    json.SetKey(key, ToJson(value));
+  });
+  return json;
+}
+
+template <class T>
+inline T KeyFromJson(const std::string& str);
+
+template <>
+inline int KeyFromJson(const std::string& str) {
+  int value = 0;
+  base::StringToInt(str, &value);
+  return value;
+}
+
+template <>
+inline std::string KeyFromJson(const std::string& str) {
+  return str;
+}
+
+template <class Key, class Value>
+inline void FromJson(const base::Value& json, std::map<Key, Value>& map) {
+  for (auto& [key, value_json] : json.DictItems()) {
+    Value value;
+    FromJson(value_json, value);
+    map.try_emplace(KeyFromJson<Key>(key), std::move(value));
+  }
+}
+
+template <class Key, class Value>
+inline base::Value ToJson(const std::map<Key, Value>& map) {
+  base::Value json;
+  for (const auto& [key, value] : map)
+    json.SetKey(ToJsonKey(key), ToJson(value));
+  return json;
+}
+
+///////////////////
+
+void FromJson(const base::Value& json, gfx::Rect& bounds) {
+  if (const auto* key = json.FindKey("x"))
+    bounds.set_x(key->GetInt());
+  if (const auto* key = json.FindKey("y"))
+    bounds.set_y(key->GetInt());
+  if (const auto* key = json.FindKey("width"))
+    bounds.set_width(key->GetInt());
+  if (const auto* key = json.FindKey("height"))
+    bounds.set_height(key->GetInt());
+}
+
+base::Value ToJson(const gfx::Rect& bounds) {
+  base::Value json;
+  json.SetKey("x", ToJson(bounds.x()));
+  json.SetKey("y", ToJson(bounds.y()));
+  json.SetKey("width", ToJson(bounds.width()));
+  json.SetKey("height", ToJson(bounds.height()));
+  return json;
+}
+
+template <class Visitor,
+          class T = std::enable_if_t<
+              std::is_same_v<MainWindowDef, std::remove_const_t<T>>>>
+void EnumJson(T& window, const Visitor& visitor) {
+  visitor("bounds", window.bounds);
+  visitor("maximized", window.maximized);
+  visitor("page-id", window.page_id);
+}
+
+template <class Visitor>
+void EnumJson(Profile& profile, const Visitor& visitor) {
+  visitor("windows", profile.main_windows);
+}

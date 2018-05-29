@@ -157,21 +157,6 @@ void LoadMainWindowDef(MainWindowDef& main_window, xml::Node& node) {
   main_window.page_id = ParseWithDefault(node.GetAttribute("page"), 0);
 }
 
-base::DictionaryValue SaveJson(const gfx::Rect& bounds) {
-  /*base::DictionaryValue json;
-  json.SetIntegerWithoutPathExpansion("x", bounds.x());
-  json.SetIntegerWithoutPathExpansion("y", bounds.y());
-  json.SetIntegerWithoutPathExpansion("width", bounds.width());
-  json.SetIntegerWithoutPathExpansion("height", bounds.height());
-  return json;*/
-  return {};
-}
-
-template <class T>
-std::unique_ptr<T> MakeUniquePtr(T&& value) {
-  return std::make_unique<T>(std::move(value));
-}
-
 }  // namespace
 
 // MainWindowDef
@@ -482,20 +467,9 @@ MainWindowDef& Profile::GetMainWindow(int id) {
   return window;
 }
 
-base::DictionaryValue Profile::SaveJson() const {
-  /*base::DictionaryValue json;
-  base::ListValue windows_json;
-  for (const auto& p : main_windows) {
-    const MainWindowDef& window = p.second;
-    base::DictionaryValue window_json;
-    window_json.SetIntegerWithoutPathExpansion("id", window.id);
-    window_json.SetWithoutPathExpansion(
-        "id", MakeUniquePtr(::SaveJson(window.bounds)));
-    windows_json.Append(MakeUniquePtr(std::move(window_json)));
-  }
-  json.SetWithoutPathExpansion("windows",
-                               MakeUniquePtr(std::move(windows_json)));*/
+base::Value Profile::ToJson() const {
   return {};
 }
 
-void Profile::LoadJson(const base::DictionaryValue& json) {}
+void Profile::FromJson(const base::Value& json) {
+}

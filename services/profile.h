@@ -23,7 +23,7 @@ struct MainWindowDef {
   gfx::Rect bounds;
   bool maximized;
   UINT toolbar_position;
-  unsigned page_id;
+  int page_id;
 };
 
 class Profile {
@@ -104,8 +104,8 @@ class Profile {
 
   NodeTableController node_table;
 
-  void LoadJson(const base::DictionaryValue& json);
-  base::DictionaryValue SaveJson() const;
+  void FromJson(const base::Value& json);
+  base::Value ToJson() const;
 
  private:
   base::FilePath GetFilePath();

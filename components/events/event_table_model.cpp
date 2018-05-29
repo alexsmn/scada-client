@@ -263,6 +263,7 @@ void EventTableModel::AckRows(int first, int count) {
         historical_event.acked = true;
         row.type = HISTORICAL_EVENT;
         row.event = &historical_event;
+        row.Update(node_service_);
       }
     }
     NotifyItemsChanged(first, count);
