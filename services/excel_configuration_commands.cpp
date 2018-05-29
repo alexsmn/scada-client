@@ -89,7 +89,7 @@ void ShowImportReport(const ImportData& import_data,
   }
 
   base::FilePath system_path;
-  PathService::Get(base::DIR_WINDOWS, &system_path);
+  base::PathService::Get(base::DIR_WINDOWS, &system_path);
 
   auto command_line = L"\"" + system_path.AsEndingWithSeparator().value() +
                       L"notepad.exe\" report.txt";

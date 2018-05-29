@@ -170,7 +170,7 @@ void Page::Load(const xml::Node& node) {
           }
       }
       if (found) {
-        assert(FALSE);
+        assert(false);
         // don't load window
         continue;
       }

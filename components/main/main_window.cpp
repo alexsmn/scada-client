@@ -262,12 +262,12 @@ void MainWindow::RemoveContentsObserver(ContentsObserver& observer) {
 
 void MainWindow::OnContainedItemsUpdate(
     const std::set<scada::NodeId>& item_ids) {
-  FOR_EACH_OBSERVER(ContentsObserver, contents_observers_,
-                    OnContainedItemsUpdate(item_ids));
+  for (auto& o : contents_observers_)
+    o.OnContainedItemsUpdate(item_ids);
 }
 
 void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
                                         bool added) {
-  FOR_EACH_OBSERVER(ContentsObserver, contents_observers_,
-                    OnContainedItemChanged(item_id, added));
+  for (auto& o : contents_observers_)
+    o.OnContainedItemChanged(item_id, added);
 }

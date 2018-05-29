@@ -60,22 +60,22 @@ HRESULT AutoWrap(int autoType,
   return hr;
 }
 
-base::win::ScopedComPtr<IDispatch> GetProperty(IDispatch& object,
-                                               const wchar_t* property_name) {
+Microsoft::WRL::ComPtr<IDispatch> GetProperty(IDispatch& object,
+                                              const wchar_t* property_name) {
   base::win::ScopedVariant variant;
   AutoWrap(DISPATCH_PROPERTYGET, variant.Receive(), &object,
            const_cast<LPOLESTR>(property_name));
-  return base::win::ScopedComPtr<IDispatch>(variant.AsInput()->pdispVal);
+  return Microsoft::WRL::ComPtr<IDispatch>(variant.AsInput()->pdispVal);
 }
 
-base::win::ScopedComPtr<IDispatch> GetIndexedProperty(
+Microsoft::WRL::ComPtr<IDispatch> GetIndexedProperty(
     IDispatch& object,
     const wchar_t* property_name,
     const VARIANT& index) {
   base::win::ScopedVariant result;
   AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), &object,
            const_cast<LPOLESTR>(property_name), {index});
-  return base::win::ScopedComPtr<IDispatch>(result.AsInput()->pdispVal);
+  return Microsoft::WRL::ComPtr<IDispatch>(result.AsInput()->pdispVal);
 }
 
 }  // namespace
@@ -109,7 +109,8 @@ Excel::Excel() {
   HRESULT hr = CLSIDFromProgID(L"Excel.Application", &clsid);
   if (FAILED(hr))
     throw hr;
-  if (FAILED(hr = excel.CreateInstance(clsid, NULL, CLSCTX_LOCAL_SERVER)))
+  if (FAILED(hr = ::CoCreateInstance(clsid, nullptr, CLSCTX_LOCAL_SERVER,
+                                     IID_PPV_ARGS(&excel))))
     throw hr;
 }
 
@@ -117,27 +118,27 @@ void Excel::SetVisible(bool visible) {
   VARIANT x;
   x.vt = VT_I4;
   x.lVal = visible ? 1 : 0;
-  AutoWrap(DISPATCH_PROPERTYPUT, NULL, excel.get(), L"Visible", {x});
+  AutoWrap(DISPATCH_PROPERTYPUT, NULL, excel.Get(), L"Visible", {x});
 }
 
 void Excel::NewWorkbook() {
   base::win::ScopedVariant result;
-  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), excel.get(), L"Workbooks");
-  base::win::ScopedComPtr<IDispatch> books(result.AsInput()->pdispVal);
+  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), excel.Get(), L"Workbooks");
+  Microsoft::WRL::ComPtr<IDispatch> books(result.AsInput()->pdispVal);
 
   result.Reset();
-  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), books.get(), L"Add");
+  AutoWrap(DISPATCH_PROPERTYGET, result.Receive(), books.Get(), L"Add");
   workbook = result.AsInput()->pdispVal;
 }
 
-base::win::ScopedComPtr<IDispatch> Excel::GetRange(const wchar_t* name) {
+Microsoft::WRL::ComPtr<IDispatch> Excel::GetRange(const wchar_t* name) {
   base::win::ScopedVariant parm(name);
-  return GetIndexedProperty(*sheet, L"Range", parm);
+  return GetIndexedProperty(*sheet.Get(), L"Range", parm);
 }
 
 void Excel::NewSheet(const ExcelSheetModel& sheet) {
   // sheet = Application.ActiveSheet
-  this->sheet = GetProperty(*excel, L"ActiveSheet");
+  this->sheet = GetProperty(*excel.Get(), L"ActiveSheet");
 
   // range = sheet.Range[A1:XY]
   auto str = base::StringPrintf(L"A1:%lc%d", L'A' + sheet.cols - 1, sheet.rows);
@@ -145,7 +146,7 @@ void Excel::NewSheet(const ExcelSheetModel& sheet) {
 
   // range.Value = data
   auto hr =
-      AutoWrap(DISPATCH_PROPERTYPUT, NULL, range.get(), L"Value", {sheet.data});
+      AutoWrap(DISPATCH_PROPERTYPUT, NULL, range.Get(), L"Value", {sheet.data});
   if (FAILED(hr))
     throw hr;
 

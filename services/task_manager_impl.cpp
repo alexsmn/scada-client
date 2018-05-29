@@ -8,6 +8,8 @@
 #include "services/local_events.h"
 #include "services/profile.h"
 
+#undef ReportEvent
+
 namespace {
 
 base::string16 FormatReference(NodeService& node_service,

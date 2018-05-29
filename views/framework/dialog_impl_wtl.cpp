@@ -26,7 +26,7 @@ unsigned DialogImplWtl::Execute(HWND parent) {
   }
 
   {
-    base::MessageLoop::ScopedNestableTaskAllower allow(base::MessageLoopForUI::current());
+    base::MessageLoop::ScopedNestableTaskAllower allow;
     base::RunLoop run_loop(this);
 
     run_loop.Run();

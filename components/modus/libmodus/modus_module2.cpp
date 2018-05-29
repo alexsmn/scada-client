@@ -10,7 +10,7 @@ ModusModule2* ModusModule2::s_instance = nullptr;
 
 ModusModule2::ModusModule2() : style_library_(new ModusStyleLibrary2) {
   base::FilePath path;
-  PathService::Get(client::DIR_DATA, &path);
+  base::PathService::Get(client::DIR_DATA, &path);
   path = path.Append(FILE_PATH_LITERAL("Library.txt"));
   master_library_ = modus::LoadMasterLibrary(path.AsUTF8Unsafe());
 }

@@ -13,42 +13,42 @@ bool PathProvider(int key, base::FilePath* result) {
   base::FilePath cur;
   switch (key) {
     case DIR_INSTALL:
-      if (!PathService::Get(base::DIR_EXE, &cur))
+      if (!base::PathService::Get(base::DIR_EXE, &cur))
         return false;
       cur = cur.DirName();
       create_dir = false;
       break;
 
     case DIR_DATA:
-      if (!PathService::Get(DIR_INSTALL, &cur))
+      if (!base::PathService::Get(DIR_INSTALL, &cur))
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("data"));
       create_dir = false;
       break;
 
     case DIR_PUBLIC:
-      if (!PathService::Get(base::DIR_COMMON_APP_DATA, &cur))
+      if (!base::PathService::Get(base::DIR_COMMON_APP_DATA, &cur))
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("Telecontrol/SCADA Client"));
       create_dir = true;
       break;
 
     case DIR_PRIVATE:
-      if (!PathService::Get(base::DIR_APP_DATA, &cur))
+      if (!base::PathService::Get(base::DIR_APP_DATA, &cur))
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("Telecontrol/SCADA Client"));
       create_dir = true;
       break;
 
     case DIR_DOCUMENTATION:
-      if (!PathService::Get(client::DIR_INSTALL, &cur))
+      if (!base::PathService::Get(client::DIR_INSTALL, &cur))
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("docs"));
       create_dir = false;
       break;
 
     case DIR_LOG:
-      if (!PathService::Get(base::DIR_LOCAL_APP_DATA, &cur))
+      if (!base::PathService::Get(base::DIR_LOCAL_APP_DATA, &cur))
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("Telecontrol/SCADA Client/logs"));
       create_dir = true;
@@ -66,7 +66,7 @@ bool PathProvider(int key, base::FilePath* result) {
 }
 
 void RegisterPathProvider() {
-  PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
+  base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
 }
 
 } // namespace client

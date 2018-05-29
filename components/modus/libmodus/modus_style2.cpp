@@ -73,5 +73,6 @@ bool ModusStyle2::IsAnimated() const {
 
 void ModusStyle2::OnBlink(bool state) {
   assert(IsAnimated());
-  FOR_EACH_OBSERVER(AnimationObserver, animation_observers_, OnAnimationStep());
+  for (auto& o : animation_observers_)
+    o.OnAnimationStep();
 }

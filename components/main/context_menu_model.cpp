@@ -58,7 +58,7 @@ void ContextMenuModel::Rebuild() {
 
     } else {
       ui::SimpleMenuModel* submenu = new ui::SimpleMenuModel(this);
-      submenus_.push_back(submenu);
+      submenus_.emplace_back(submenu);
       AddMenuActions(*submenu, commands, main_window_.active_view());
 
       const base::char16* category_title = GetCommandCategoryTitle(category);

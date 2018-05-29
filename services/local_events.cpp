@@ -27,7 +27,8 @@ void LocalEvents::ReportEvent(Severity severity,
   events_.push_back(&event);
 
   const scada::Event& e = *events_.back();
-  FOR_EACH_OBSERVER(Observer, observers_, OnLocalEvent(e));
+  for (auto& o : observers_)
+    o.OnLocalEvent(e);
 }
 
 void LocalEvents::AcknowledgeEvent(unsigned ack_id) {
@@ -38,7 +39,8 @@ void LocalEvents::AcknowledgeEvent(unsigned ack_id) {
   event.acked = true;
   events_.erase(i);
 
-  FOR_EACH_OBSERVER(Observer, observers_, OnLocalEvent(event));
+  for (auto& o : observers_)
+    o.OnLocalEvent(event);
 
   delete &event;
 }
@@ -50,7 +52,8 @@ void LocalEvents::AcknowledgeAll() {
   for (Events::iterator i = events.begin(); i != events.end(); ++i) {
     scada::Event& event = **i;
     event.acked = true;
-    FOR_EACH_OBSERVER(Observer, observers_, OnLocalEvent(event));
+    for (auto& o : observers_)
+      o.OnLocalEvent(event);
     delete &event;
   }
 }

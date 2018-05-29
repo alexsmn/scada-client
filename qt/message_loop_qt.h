@@ -6,33 +6,34 @@
 #include "base/pending_task.h"
 #include "base/single_thread_task_runner.h"
 
-class MessageLoopQt : public base::SingleThreadTaskRunner {
+class MessageLoopQt final : public base::SingleThreadTaskRunner {
  public:
   MessageLoopQt();
   ~MessageLoopQt();
 
   void Run();
 
-  virtual bool PostDelayedTask(const tracked_objects::Location& from_here,
-                               const base::Closure& task,
+  virtual bool PostDelayedTask(const base::Location& from_here,
+                               base::OnceClosure task,
                                base::TimeDelta delay) override {
-    return PostTaskHelper(from_here, task, delay, false);
+    return PostTaskHelper(from_here, std::move(task), delay,
+                          base::Nestable::kNestable);
   }
 
-  virtual bool RunsTasksOnCurrentThread() const override { return true; }
-
-  virtual bool PostNonNestableDelayedTask(
-      const tracked_objects::Location& from_here,
-      const base::Closure& task,
-      base::TimeDelta delay) override {
-    return PostTaskHelper(from_here, task, delay, false);
+  virtual bool PostNonNestableDelayedTask(const base::Location& from_here,
+                                          base::OnceClosure task,
+                                          base::TimeDelta delay) override {
+    return PostTaskHelper(from_here, std::move(task), delay,
+                          base::Nestable::kNonNestable);
   }
+
+  virtual bool RunsTasksInCurrentSequence() const override { return true; }
 
  private:
-  bool PostTaskHelper(const tracked_objects::Location& from_here,
-                      const base::Closure& task,
+  bool PostTaskHelper(const base::Location& from_here,
+                      base::OnceClosure task,
                       base::TimeDelta delay,
-                      bool nestable);
+                      base::Nestable nestable);
 
   QTimer timer_;
 

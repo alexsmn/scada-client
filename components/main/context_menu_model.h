@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/memory/scoped_vector.h"
 #include "ui/base/models/simple_menu_model.h"
 
 class ActionManager;
@@ -38,5 +37,5 @@ class ContextMenuModel final : public ui::SimpleMenuModel,
   ActionManager& action_manager_;
   CommandHandler& command_handler_;
 
-  ScopedVector<ui::MenuModel> submenus_;
+  std::vector<std::unique_ptr<ui::MenuModel>> submenus_;
 };

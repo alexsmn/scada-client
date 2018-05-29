@@ -79,8 +79,8 @@ bool ParseTime(const char* str, base::Time& time) {
   e.second = s;
   e.millisecond = ms;
 
-  base::Time t = base::Time::FromUTCExploded(e);
-  if (t.is_null())
+  base::Time t;
+  if (!base::Time::FromUTCExploded(e, &t))
     return false;
 
   time = t;

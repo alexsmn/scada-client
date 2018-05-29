@@ -15,7 +15,7 @@
 
 base::FilePath GetPublicFilePath(const base::FilePath& path) {
   base::FilePath public_path;
-  PathService::Get(client::DIR_PUBLIC, &public_path);
+  base::PathService::Get(client::DIR_PUBLIC, &public_path);
   return public_path.Append(path);
 }
 
@@ -27,7 +27,7 @@ namespace {
 
 base::FilePath GetCachePath() {
   base::FilePath path;
-  PathService::Get(client::DIR_PUBLIC, &path);
+  base::PathService::Get(client::DIR_PUBLIC, &path);
   return path.Append(FILE_PATH_LITERAL("file-cache.xml"));
 }
 
@@ -202,7 +202,7 @@ std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
 
 void FileCache::Refresh() {
   base::FilePath public_path;
-  PathService::Get(client::DIR_PUBLIC, &public_path);
+  base::PathService::Get(client::DIR_PUBLIC, &public_path);
 
   // Add new files.
   // WARNING: FileEnumerator matches ".tsdt" by "*.tsd". Need to check

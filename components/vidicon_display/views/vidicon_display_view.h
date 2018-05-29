@@ -2,12 +2,11 @@
 
 #include "base/files/file_path.h"
 #include "base/timer/timer.h"
-#include "base/win/scoped_comptr.h"
 #include "components/vidicon_display/views/displayviewerx.h"
 #include "controller.h"
 #include "ui/views/controls/activex_control.h"
 
-class VidiconClient;
+#include <wrl/client.h>
 
 class VidiconDisplayView : public Controller,
                            private views::ActiveXControl::Controller {
@@ -29,7 +28,7 @@ class VidiconDisplayView : public Controller,
   base::FilePath path_;
 
   std::unique_ptr<views::ActiveXControl> control_;
-  base::win::ScopedComPtr<ViewerX::IViewerForm> form_;
+  Microsoft::WRL::ComPtr<ViewerX::IViewerForm> form_;
 
   base::Timer synchronize_timer_;
 };

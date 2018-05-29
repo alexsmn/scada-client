@@ -11,7 +11,7 @@ ModusDocument::ModusDocument(ModusDocumentContext&& context,
                              htsde2::IHTSDEForm2& sde_form,
                              const base::FilePath& path)
     : ModusDocumentContext{std::move(context)}, sde_form_{&sde_form} {
-  DispEventAdvise(sde_form_.get());
+  DispEventAdvise(sde_form_.Get());
   sde_form_->put_StatusVisible(VARIANT_FALSE);
   sde_form_->put_ToolbarVisible(VARIANT_FALSE);
   // sde_form_->put_PagesVisible(SDECore::txPagesHidden);
@@ -19,14 +19,14 @@ ModusDocument::ModusDocument(ModusDocumentContext&& context,
 
   sde_form_->Open(base::win::ScopedBstr(path.value().c_str()));
 
-  sde_form_->get_Document(sde_document_.Receive());
+  sde_form_->get_Document(sde_document_.GetAddressOf());
   if (!sde_document_)
     return;
 
   {
     modus::ModusLoader loader{modus::ModusLoaderContext{
         alias_resolver_, timed_data_service_, file_cache_}};
-    loader.Load(*sde_document_, path, this);
+    loader.Load(*sde_document_.Get(), path, this);
     title_ = loader.title();
   }
 }
@@ -35,10 +35,10 @@ ModusDocument::~ModusDocument() {
   object_map_.clear();
   objects_.clear();
 
-  sde_document_.Release();
+  sde_document_.Reset();
   if (sde_form_)
-    DispEventUnadvise(sde_form_.get());
-  sde_form_.Release();
+    DispEventUnadvise(sde_form_.Get());
+  sde_form_.Reset();
 }
 
 bool ModusDocument::ShowContainedItem(const scada::NodeId& item_id) {
@@ -56,7 +56,7 @@ bool ModusDocument::ShowContainedItem(const scada::NodeId& item_id) {
 
 modus::ModusObject* ModusDocument::FindObject(const scada::NodeId& node_id) {
   for (auto& object : objects_) {
-    for (auto* element : object->elements()) {
+    for (auto& element : object->elements()) {
       if (element->timed_data().GetNode().node_id() == node_id)
         return object.get();
     }
@@ -78,8 +78,8 @@ ModusDocument::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
 
   modus::ModusObject* object = NULL;
 
-  base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object;
-  info->get_Touched(sde_object.Receive());
+  Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
+  info->get_Touched(sde_object.GetAddressOf());
   if (sde_object) {
     ObjectId id = -1;
     sde_object->get_RTID(&id);
@@ -92,7 +92,7 @@ ModusDocument::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
 
   bool acked = false;
   if (object) {
-    for (auto* element : object->elements()) {
+    for (auto& element : object->elements()) {
       if (element->timed_data().alerting()) {
         element->timed_data().Acknowledge();
         acked = true;
@@ -101,7 +101,7 @@ ModusDocument::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   }
 
   if (sde_object && !acked) {
-    base::string16 hyperlink = modus::GetHyperlink(*sde_object);
+    base::string16 hyperlink = modus::GetHyperlink(*sde_object.Get());
     if (!hyperlink.empty())
       navigation_callback_(base::FilePath(hyperlink));
   }
@@ -120,8 +120,8 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
 
   modus::ModusObject* object = NULL;
 
-  base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object;
-  info->get_Touched(sde_object.Receive());
+  Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
+  info->get_Touched(sde_object.GetAddressOf());
   if (sde_object) {
     ObjectId id = -1;
     sde_object->get_RTID(&id);

@@ -20,9 +20,7 @@ SheetModel::SheetModel(SheetModelContext&& context)
   Blinker::Start();
 }
 
-SheetModel::~SheetModel() {
-  base::STLDeleteElements(&cells_);
-}
+SheetModel::~SheetModel() {}
 
 void SheetModel::SetSizes(int row_count, int column_count) {
   assert(row_count > 0);
@@ -31,20 +29,13 @@ void SheetModel::SetSizes(int row_count, int column_count) {
   if (row_count_ == row_count && column_count_ == column_count)
     return;
 
-  std::vector<SheetCell*> new_cells(row_count * column_count);
+  std::vector<std::unique_ptr<SheetCell>> new_cells(row_count * column_count);
 
   int crow = (std::min)(row_count, row_count_);        // rows to copy
   int ccol = (std::min)(column_count, column_count_);  // columns to copy
   for (int i = 0; i < crow; i++) {
     for (int j = 0; j < ccol; j++)
-      new_cells[i * row_count + j] = FindCell(i, j);
-  }
-
-  // Clear old cells.
-  for (int i = 0; i < row_count_; ++i) {
-    int start_col = (i < crow) ? ccol : 0;
-    for (int j = start_col; j < column_count_; ++j)
-      delete FindCell(i, j);
+      new_cells[i * row_count + j] = std::move(mutable_cell(i, j));
   }
 
   cells_.swap(new_cells);
@@ -67,7 +58,7 @@ int SheetModel::GetRowCount() {
 }
 
 void SheetModel::GetCell(ui::GridCell& cell) {
-  SheetCell* c = FindCell(cell.row, cell.column);
+  const SheetCell* c = this->cell(cell.row, cell.column);
   if (!c)
     return;
 
@@ -81,9 +72,9 @@ void SheetModel::GetCell(ui::GridCell& cell) {
 }
 
 SheetCell& SheetModel::GetCell(int row, int column) {
-  SheetCell*& cell = FindCell(row, column);
+  auto& cell = mutable_cell(row, column);
   if (!cell)
-    cell = new SheetCell(*this, row, column);
+    cell.reset(new SheetCell(*this, row, column));
   return *cell;
 }
 
@@ -94,10 +85,9 @@ void SheetModel::ClearRange(const ui::GridRange& range) {
 
   for (int row = range.row(); row <= range.last_row(); ++row) {
     for (int column = range.column(); column <= range.last_column(); ++column) {
-      SheetCell*& cell = FindCell(row, column);
+      auto& cell = mutable_cell(row, column);
       if (cell) {
-        delete cell;
-        cell = NULL;
+        cell.reset();
         update_range.Expand(row, column);
       }
     }

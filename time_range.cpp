@@ -46,7 +46,7 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
       base::Time::Exploded ts;
       now.LocalMidnight().LocalExplode(&ts);
       ts.day_of_month = 1;
-      from = base::Time::FromLocalExploded(ts);
+      base::Time::FromLocalExploded(ts, &from);
       break;
     }
 

@@ -38,8 +38,8 @@ class SheetModel : private SheetModelContext,
   void SetEditing(bool editing);
 
   // Get pointer to cell. May return NULL.
-  SheetCell*& FindCell(int row, int column);
-  const SheetCell* FindCell(int row, int column) const;
+  std::unique_ptr<SheetCell>& mutable_cell(int row, int column);
+  const SheetCell* cell(int row, int column) const;
   // Returns existing cell or creates new one.
   SheetCell& GetCell(int row, int column);
 
@@ -68,7 +68,7 @@ class SheetModel : private SheetModelContext,
 
   int row_count_ = 0;
   int column_count_ = 0;
-  std::vector<SheetCell*> cells_;
+  std::vector<std::unique_ptr<SheetCell>> cells_;
 
   SheetFormatPool formats_;
 
@@ -81,14 +81,14 @@ class SheetModel : private SheetModelContext,
   SheetColumnModel column_model_;
 };
 
-inline SheetCell*& SheetModel::FindCell(int row, int col) {
+inline std::unique_ptr<SheetCell>& SheetModel::mutable_cell(int row, int col) {
   assert(row >= 0 && row < row_count_);
   assert(col >= 0 && col < column_count_);
   return cells_[row * column_count() + col];
 }
 
-inline const SheetCell* SheetModel::FindCell(int row, int col) const {
+inline const SheetCell* SheetModel::cell(int row, int col) const {
   assert(row >= 0 && row < row_count_);
   assert(col >= 0 && col < column_count_);
-  return cells_[row * column_count() + col];
+  return cells_[row * column_count() + col].get();
 }

@@ -29,11 +29,9 @@ typedef enum SPEAKFLAGS {
   SPF_UNUSED_FLAGS = ~(SPF_VOICE_MASK)
 } SPEAKFLAGS;
 
-Speech::Speech() : voice_(NULL) {
-  SpeechLib::ISpVoice* voice = nullptr;
-  CoCreateInstance(__uuidof(SpeechLib::SpVoice), NULL, CLSCTX_ALL,
-                   __uuidof(SpeechLib::ISpVoice), (void**)&voice);
-  voice_.swap(&voice);
+Speech::Speech() {
+  CoCreateInstance(__uuidof(SpeechLib::SpVoice), nullptr, CLSCTX_ALL,
+                   IID_PPV_ARGS(&voice_));
 }
 
 Speech::~Speech() {}

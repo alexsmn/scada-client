@@ -65,7 +65,7 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   GetLocalTime(&time);
 
   base::FilePath path;
-  PathService::Get(base::DIR_EXE, &path);
+  base::PathService::Get(base::DIR_EXE, &path);
   path = path.Append(L"logs");
   base::CreateDirectory(path);
 
@@ -105,7 +105,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   // Initialize logging.
   {
     base::FilePath path;
-    PathService::Get(client::DIR_LOG, &path);
+    base::PathService::Get(client::DIR_LOG, &path);
     base::CreateDirectory(path);
     path = path.Append(FILE_PATH_LITERAL("client.log"));
     logging::LoggingSettings log;

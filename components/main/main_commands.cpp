@@ -51,7 +51,7 @@ static bool Profile::*GetOption(UINT id) {
 
 void OpenPublicFolder() {
   base::FilePath path;
-  if (!PathService::Get(client::DIR_PUBLIC, &path))
+  if (!base::PathService::Get(client::DIR_PUBLIC, &path))
     return;
   ShellExecuteW(nullptr, L"open", path.value().c_str(), nullptr, nullptr,
                 SW_SHOWNORMAL);

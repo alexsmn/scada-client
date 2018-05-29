@@ -2,17 +2,18 @@
 
 #include "base/strings/string16.h"
 #include "base/win/scoped_bstr.h"
-#include "base/win/scoped_comptr.h"
 #include "base/win/scoped_variant.h"
 #include "components/modus/activex/modus.h"
 #include "timed_data/timed_data_spec.h"
+
+#include <wrl/client.h>
 
 namespace modus {
 
 class ModusObject;
 
-typedef base::win::ScopedComPtr<SDECore::IParam> SDEParam;
-typedef base::win::ScopedComPtr<SDECore::IParams> SDEParams;
+typedef Microsoft::WRL::ComPtr<SDECore::IParam> SDEParam;
+typedef Microsoft::WRL::ComPtr<SDECore::IParams> SDEParams;
 
 enum class Limit { LoLo = 0, Lo, Hi, HiHi, Count };
 

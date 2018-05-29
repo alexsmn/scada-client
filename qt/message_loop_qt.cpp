@@ -20,16 +20,16 @@ void MessageLoopQt::Run() {
   }
 }
 
-bool MessageLoopQt::PostTaskHelper(const tracked_objects::Location& from_here,
-                                   const base::Closure& task,
+bool MessageLoopQt::PostTaskHelper(const base::Location& from_here,
+                                   base::OnceClosure task,
                                    base::TimeDelta delay,
-                                   bool nestable) {
+                                   base::Nestable nestable) {
   assert(task);
 
   auto ticks = base::TimeTicks::Now() + delay;
 
   std::lock_guard<std::recursive_mutex> lock{mutex_};
-  base::PendingTask pending_task(from_here, task, ticks, nestable);
+  base::PendingTask pending_task(from_here, std::move(task), ticks, nestable);
   pending_task.sequence_num = sequence_num_++;
   queue_.emplace(std::move(pending_task));
 

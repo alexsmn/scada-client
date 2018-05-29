@@ -24,7 +24,7 @@ const double kNoLimit = std::numeric_limits<double>::max();
 
 SDEParam GetParam(SDECore::IParams& params, const VARIANT& index) {
   SDEParam param;
-  params.get_Item(index, param.Receive());
+  params.get_Item(index, param.GetAddressOf());
   return param;
 }
 
@@ -57,11 +57,11 @@ bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR val) {
 
 base::string16 GetHyperlink(SDECore::ISDEObject50& object) {
   SDEParams params;
-  object.get_Params(params.Receive());
+  object.get_Params(params.GetAddressOf());
   if (!params)
     return base::string16();
 
-  SDEParam param = GetParam(*params, kParameterHyperlink);
+  SDEParam param = GetParam(*params.Get(), kParameterHyperlink);
   if (!param)
     return base::string16();
 
@@ -155,8 +155,8 @@ ModusElement::ModusElement(ModusObject& object,
 }
 
 void ModusElement::Init() {
-  state_strings_ = GetStateStrings(*sde_params_, prop_name_);
-  has_limits_ = HasParam(*sde_params_, kParameterLimits);
+  state_strings_ = GetStateStrings(*sde_params_.Get(), prop_name_);
+  has_limits_ = HasParam(*sde_params_.Get(), kParameterLimits);
 
   UpdateData(true);
 }
@@ -188,7 +188,8 @@ void ModusElement::UpdateData(bool init) {
         text = WideFormat(value_);
       }
 
-      SetParamValue(*sde_params_, base::win::ScopedVariant(prop_name_.c_str()),
+      SetParamValue(*sde_params_.Get(),
+                    base::win::ScopedVariant(prop_name_.c_str()),
                     base::win::ScopedBstr(text.c_str()));
     }
 
@@ -207,12 +208,12 @@ void ModusElement::UpdateData(bool init) {
       if (init || limits_ != limits) {
         limits_ = limits;
         auto limit_set_string = GetLimitSetString(limits_);
-        SetParamValue(*sde_params_, kParameterLimits,
+        SetParamValue(*sde_params_.Get(), kParameterLimits,
                       base::win::ScopedBstr(limit_set_string.c_str()));
         for (size_t i = 0; i < static_cast<size_t>(Limit::Count); ++i) {
           if (limits.limits[i] != kNoLimit) {
             SetParamValue(
-                *sde_params_,
+                *sde_params_.Get(),
                 base::win::ScopedVariant(ToString(static_cast<Limit>(i))),
                 base::win::ScopedBstr(WideFormat(limits.limits[i]).c_str()));
           }

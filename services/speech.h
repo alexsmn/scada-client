@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/memory/ref_counted.h"
 #include "base/strings/string_piece.h"
+
+#include <wrl/client.h>
 
 namespace SpeechLib {
 struct ISpVoice;
@@ -17,5 +18,5 @@ class Speech {
   void Speak(const base::StringPiece16& text);
 
  private:
-  scoped_refptr<SpeechLib::ISpVoice> voice_;
+  Microsoft::WRL::ComPtr<SpeechLib::ISpVoice> voice_;
 };

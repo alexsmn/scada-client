@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/win/scoped_comptr.h"
 #include "base/win/scoped_variant.h"
+
+#include <wrl/client.h>
 
 class ExcelSheetModel {
  public:
@@ -26,9 +27,9 @@ class Excel {
 
   void NewSheet(const ExcelSheetModel& sheet);
 
-  base::win::ScopedComPtr<IDispatch> GetRange(const wchar_t* name);
+  Microsoft::WRL::ComPtr<IDispatch> GetRange(const wchar_t* name);
 
-  base::win::ScopedComPtr<IDispatch> excel;
-  base::win::ScopedComPtr<IDispatch> workbook;
-  base::win::ScopedComPtr<IDispatch> sheet;
+  Microsoft::WRL::ComPtr<IDispatch> excel;
+  Microsoft::WRL::ComPtr<IDispatch> workbook;
+  Microsoft::WRL::ComPtr<IDispatch> sheet;
 };

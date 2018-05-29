@@ -34,8 +34,8 @@ void ModusView::OnControlCreated(views::ActiveXControl& sender) {
 
   // set ambient properties
   {
-    base::win::ScopedComPtr<IAxWinAmbientDispatchEx> ambientEx;
-    QueryHost(IID_IAxWinAmbientDispatchEx, ambientEx.ReceiveVoid());
+    Microsoft::WRL::ComPtr<IAxWinAmbientDispatchEx> ambientEx;
+    QueryHost(IID_PPV_ARGS(&ambientEx));
     assert(ambientEx);
     CComObject<AmbientProps>* ambient = NULL;
     CComObject<AmbientProps>::CreateInstance(&ambient);
@@ -48,13 +48,13 @@ void ModusView::OnControlCreated(views::ActiveXControl& sender) {
   if (!CreateControl(L"{001F373C-29D3-5C7E-A000-A0FC803D82EE}"))
     CreateControl(L"{001F373C-29D3-5F7E-A000-A0FC803D82EE}");
 
-  base::win::ScopedComPtr<htsde2::IHTSDEForm2> sde_form;
-  QueryControl(__uuidof(htsde2::IHTSDEForm2), sde_form.ReceiveVoid());
+  Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form;
+  QueryControl(IID_PPV_ARGS(&sde_form));
   if (!sde_form)
     return;
 
   document_ = std::make_unique<modus::ModusDocument>(
-      ModusDocumentContext{*this}, *sde_form, path_);
+      ModusDocumentContext{*this}, *sde_form.Get(), path_);
   title_callback_(document_->title());
 }
 

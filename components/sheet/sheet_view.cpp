@@ -181,8 +181,7 @@ void SheetView::Save(WindowDefinition& definition) {
 
   for (int i = 0; i < model_->GetRowCount(); i++) {
     for (int j = 0; j < model_->column_count(); j++) {
-      SheetCell* cell = model_->FindCell(i, j);
-      if (cell) {
+      if (const SheetCell* cell = model_->cell(i, j)) {
         WindowItem& item = definition.AddItem("SheetCell");
         // coords
         item.SetInt("row", i + 1);
@@ -309,7 +308,7 @@ void SheetView::UpdateFormulaRow() {
 
   base::string16 text;
   if (!range.empty()) {
-    SheetCell* cell = model_->FindCell(range.row(), range.column());
+    const SheetCell* cell = model_->cell(range.row(), range.column());
     if (cell)
       text = base::SysNativeMBToWide(cell->formula());
   }
@@ -325,7 +324,7 @@ void SheetView::OnGridSelectionChanged(views::GridView& sender) {
   if (range.empty()) {
     selection().Clear();
   } else if (range.is_cell()) {
-    SheetCell* cell = model_->FindCell(range.row(), range.column());
+    const SheetCell* cell = model_->cell(range.row(), range.column());
     if (cell)
       selection().SelectTimedData(cell->timed_data_);
     else
@@ -360,8 +359,8 @@ bool SheetView::OnKeyPressed(views::GridView& sender,
 }
 
 bool SheetView::OnDoubleClick() {
-  SheetCell* cell =
-      model_->FindCell(grid_->selected_row(), grid_->selected_column());
+  const SheetCell* cell =
+      model_->cell(grid_->selected_row(), grid_->selected_column());
   if (!cell)
     return false;
 
@@ -390,7 +389,7 @@ NodeIdSet SheetView::GetSelectedNodeIdList() {
 
   for (int row = range.row(); row <= range.last_row(); ++row) {
     for (int column = range.column(); column <= range.last_column(); ++column) {
-      SheetCell* cell = model_->FindCell(row, column);
+      const SheetCell* cell = model_->cell(row, column);
       if (cell) {
         auto node_id = cell->timed_data().GetNode().node_id();
         if (node_id.is_null())

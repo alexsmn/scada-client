@@ -44,13 +44,13 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
       file_cache_,
   });
 
-  base::win::ScopedComPtr<SDECore::ISDEPage50> page;
-  sde_document.get_CurrentPage(page.Receive());
+  Microsoft::WRL::ComPtr<SDECore::ISDEPage50> page;
+  sde_document.get_CurrentPage(page.GetAddressOf());
   if (page) {
-    base::win::ScopedComPtr<SDECore::ISDEObjects2> objects;
-    page->get_SDEObjects(objects.Receive());
+    Microsoft::WRL::ComPtr<SDECore::ISDEObjects2> objects;
+    page->get_SDEObjects(objects.GetAddressOf());
     if (objects)
-      LoadObjects(*objects);
+      LoadObjects(*objects.Get());
   }
 }
 
@@ -94,8 +94,8 @@ void ModusLoader::AddElement(std::unique_ptr<ModusObject>& object,
 }
 
 void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
-  base::win::ScopedComPtr<SDECore::INamedPBs> techs;
-  sde_object.get_Techs(techs.Receive());
+  Microsoft::WRL::ComPtr<SDECore::INamedPBs> techs;
+  sde_object.get_Techs(techs.GetAddressOf());
   if (!techs)
     return;
 
@@ -111,23 +111,23 @@ void ModusLoader::AddObject(SDECore::ISDEObject50& sde_object) {
   std::unique_ptr<ModusObject> object;
 
   for (long i = 0; i < count; ++i) {
-    base::win::ScopedComPtr<SDECore::INamedPB> named_pb;
-    techs->get_Item(base::win::ScopedVariant(i), named_pb.Receive());
+    Microsoft::WRL::ComPtr<SDECore::INamedPB> named_pb;
+    techs->get_Item(base::win::ScopedVariant(i), named_pb.GetAddressOf());
 
     SDEParams params;
-    named_pb->get_Params(params.Receive());
+    named_pb->get_Params(params.GetAddressOf());
     if (!params)
       continue;
 
     // key
-    base::string16 bindings = GetParamValue(*params, kParameterBinding);
+    base::string16 bindings = GetParamValue(*params.Get(), kParameterBinding);
     if (bindings.empty())
       continue;
 
     auto binding_list = base::SplitString(bindings, L";", base::TRIM_WHITESPACE,
                                           base::SPLIT_WANT_NONEMPTY);
     for (auto& binding : binding_list)
-      AddElement(object, sde_object, *params, binding, tag);
+      AddElement(object, sde_object, *params.Get(), binding, tag);
   }
 
   if (object)
@@ -145,18 +145,18 @@ void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
   long count = 0;
   objects.get_Count(&count);
   for (long i = 0; i < count; i++) {
-    base::win::ScopedComPtr<SDECore::ISDEObject50> object;
-    objects.get_Item(base::win::ScopedVariant(i), object.Receive());
+    Microsoft::WRL::ComPtr<SDECore::ISDEObject50> object;
+    objects.get_Item(base::win::ScopedVariant(i), object.GetAddressOf());
     if (!object)
       continue;
 
-    AddObject(*object);
+    AddObject(*object.Get());
 
     // Process child objects.
-    base::win::ScopedComPtr<SDECore::ISDEObjects2> children;
-    object->get_Elements(children.Receive());
+    Microsoft::WRL::ComPtr<SDECore::ISDEObjects2> children;
+    object->get_Elements(children.GetAddressOf());
     if (children)
-      LoadObjects(*children);
+      LoadObjects(*children.Get());
   }
 }
 

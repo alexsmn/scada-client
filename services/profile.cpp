@@ -455,7 +455,7 @@ void Profile::Save(const events::EventManager& event_manager,
 
 base::FilePath Profile::GetFilePath() {
   base::FilePath path;
-  PathService::Get(client::DIR_PRIVATE, &path);
+  base::PathService::Get(client::DIR_PRIVATE, &path);
   return path.Append(L"config.xml");
 }
 

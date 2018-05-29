@@ -1,13 +1,14 @@
 #pragma once
 
-#include "base/win/scoped_comptr.h"
 #include "components/vidicon_display/teleclient.h"
+
+#include <wrl/client.h>
 
 class VidiconClient {
  public:
   typedef TeleClientLib::IClient TeleClient;
 
-  TeleClient* GetTeleClient() { return teleclient_.get(); }
+  TeleClient* GetTeleClient() { return teleclient_.Get(); }
 
   static VidiconClient& GetInstance();
   static void CleanupInstance();
@@ -16,7 +17,7 @@ class VidiconClient {
   VidiconClient();
   ~VidiconClient();
 
-  base::win::ScopedComPtr<TeleClient> teleclient_;
+  Microsoft::WRL::ComPtr<TeleClient> teleclient_;
 
   static VidiconClient* s_instance;
 };

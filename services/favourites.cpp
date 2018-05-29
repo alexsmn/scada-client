@@ -53,32 +53,37 @@ void Favourites::Delete(const WindowDefinition& win, const Page& folder) {
   if (index == -1)
     return;
 
-  FOR_EACH_OBSERVER(Observer, observers_,
-                    OnFavouriteDeleted(local_folder, win));
+  for (auto& o : observers_)
+    o.OnFavouriteDeleted(local_folder, win);
 
   local_folder.DeleteWindow(index);
 }
 
 void Favourites::NotifyWindowAdded(const Page& folder,
                                    const WindowDefinition& win) const {
-  FOR_EACH_OBSERVER(Observer, observers_, OnFavouriteAdded(folder, win));
+  for (auto& o : observers_)
+    o.OnFavouriteAdded(folder, win);
 }
 
 void Favourites::NotifyFolderAdded(const Page& folder) const {
-  FOR_EACH_OBSERVER(Observer, observers_, OnFolderAdded(folder));
+  for (auto& o : observers_)
+    o.OnFolderAdded(folder);
 }
 
 void Favourites::NotifyFolderDeleted(const Page& folder) const {
-  FOR_EACH_OBSERVER(Observer, observers_, OnFolderDeleted(folder));
+  for (auto& o : observers_)
+    o.OnFolderDeleted(folder);
 }
 
 void Favourites::NotifyFolderChanged(const Page& folder) const {
-  FOR_EACH_OBSERVER(Observer, observers_, OnFolderChanged(folder));
+  for (auto& o : observers_)
+    o.OnFolderChanged(folder);
 }
 
 void Favourites::NotifyWindowChanged(const Page& folder,
                                      const WindowDefinition& window) const {
-  FOR_EACH_OBSERVER(Observer, observers_, OnWindowChanged(folder, window));
+  for (auto& o : observers_)
+    o.OnWindowChanged(folder, window);
 }
 
 void Favourites::Load(const xml::Node& root_node) {

@@ -8,9 +8,7 @@ namespace modus {
 ModusObject::ModusObject(SDECore::ISDEObject50& sde_object)
     : sde_object_(&sde_object), current_states_(0) {}
 
-ModusObject::~ModusObject() {
-  base::STLDeleteElements(&elements_);
-}
+ModusObject::~ModusObject() {}
 
 void ModusObject::Init() {
   for (Elements::iterator i = elements_.begin(); i != elements_.end(); ++i)
@@ -52,10 +50,10 @@ void ModusObject::UpdateStyle(bool init) {
     style.insert(style.begin(), L'[');
     style += L']';
 
-    base::win::ScopedComPtr<SDECore::IParams> params;
-    sde_object().get_Params(params.Receive());
+    Microsoft::WRL::ComPtr<SDECore::IParams> params;
+    sde_object().get_Params(params.GetAddressOf());
     if (params)
-      SetParamValue(*params, kParameterStyle,
+      SetParamValue(*params.Get(), kParameterStyle,
                     base::win::ScopedBstr(style.c_str()));
   }
 }

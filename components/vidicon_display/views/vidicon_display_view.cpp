@@ -1,7 +1,6 @@
 #include "components/vidicon_display/views/vidicon_display_view.h"
 
 #include "base/win/scoped_bstr.h"
-#include "base/win/scoped_comptr.h"
 #include "components/vidicon_display/teleclient.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "components/vidicon_display/views/telecontrolview.h"
@@ -10,6 +9,8 @@
 #include "views/activex_host.h"
 #include "views/ambient_props.h"
 #include "window_definition.h"
+
+#include <wrl/client.h>
 
 //#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"
 // raw_interfaces_only #import "c:\Program
@@ -70,8 +71,8 @@ void VidiconDisplayView::SynchronizeView() {
 void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
   // set ambient properties
   {
-    base::win::ScopedComPtr<IAxWinAmbientDispatchEx> ambientEx;
-    control_->QueryHost(IID_IAxWinAmbientDispatchEx, ambientEx.ReceiveVoid());
+    Microsoft::WRL::ComPtr<IAxWinAmbientDispatchEx> ambientEx;
+    control_->QueryHost(IID_PPV_ARGS(&ambientEx));
     assert(ambientEx);
     CComObject<AmbientProps>* ambient = NULL;
     CComObject<AmbientProps>::CreateInstance(&ambient);
@@ -96,9 +97,8 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
     // form->put_AxBorderStyle(htsde2::afbNone);
 
     // TODO: Extract method, log all possible errors.
-    base::win::ScopedComPtr<TelecontrolView::ITelecontrolView> view;
-    control_->QueryControl(__uuidof(TelecontrolView::ITelecontrolView),
-                           view.ReceiveVoid());
+    Microsoft::WRL::ComPtr<TelecontrolView::ITelecontrolView> view;
+    control_->QueryControl(IID_PPV_ARGS(&view));
     if (view) {
       VidiconClient::TeleClient* teleclient =
           VidiconClient::GetInstance().GetTeleClient();
@@ -122,5 +122,5 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
 
 void VidiconDisplayView::OnContractDestroyed(views::ActiveXControl& sender) {
   synchronize_timer_.Reset();
-  form_.Release();
+  form_.Reset();
 }

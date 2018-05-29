@@ -1,12 +1,11 @@
 #include "components/vidicon_display/vidicon_client.h"
 
-#include "base/logging.h"
-
 VidiconClient* VidiconClient::s_instance = NULL;
 
 VidiconClient::VidiconClient() {
-  HRESULT res = teleclient_.CreateInstance(__uuidof(TeleClientLib::Client));
-  DCHECK(SUCCEEDED(res));
+  HRESULT res = ::CoCreateInstance(__uuidof(TeleClientLib::Client), nullptr,
+                                   CLSCTX_ALL, IID_PPV_ARGS(&teleclient_));
+  assert(SUCCEEDED(res));
 }
 
 VidiconClient::~VidiconClient() {}

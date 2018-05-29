@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/files/file_path.h"
-#include "base/win/scoped_comptr.h"
 #include "common/aliases.h"
 #include "components/modus/activex/modus.h"
 #include "gfx/point.h"
@@ -11,6 +10,7 @@
 #include <atlcom.h>
 #include <functional>
 #include <map>
+#include <wrl/client.h>
 
 namespace rt {
 class TimedDataSpec;
@@ -50,7 +50,7 @@ class ModusDocument
                 const base::FilePath& path);
   ~ModusDocument();
 
-  htsde2::IHTSDEForm2& sde_form() { return *sde_form_; }
+  htsde2::IHTSDEForm2& sde_form() { return *sde_form_.Get(); }
   const base::string16& title() const { return title_; }
 
   // Find entity by TRID. Method has linear complexity.
@@ -81,8 +81,8 @@ class ModusDocument
   (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
 
  protected:
-  base::win::ScopedComPtr<htsde2::IHTSDEForm2> sde_form_;
-  base::win::ScopedComPtr<SDECore::ISDEDocument50> sde_document_;
+  Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form_;
+  Microsoft::WRL::ComPtr<SDECore::ISDEDocument50> sde_document_;
 
   std::vector<std::unique_ptr<modus::ModusObject>> objects_;
 

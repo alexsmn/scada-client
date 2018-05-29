@@ -1,8 +1,9 @@
 #pragma once
 
-#include "base/win/scoped_comptr.h"
 #include "components/modus/activex/sdecore.h"
 
+#include <memory>
+#include <wrl/client.h>
 #include <vector>
 
 namespace SDECore {
@@ -16,27 +17,28 @@ class ModusElement;
 
 class ModusObject {
  public:
-  typedef std::vector<ModusElement*> Elements;
+  typedef std::vector<std::unique_ptr<ModusElement>> Elements;
 
   explicit ModusObject(SDECore::ISDEObject50& sde_object);
   ~ModusObject();
 
-  SDECore::ISDEObject50& sde_object() const { return *sde_object_; }
+  ModusObject(const ModusObject&) = delete;
+  ModusObject& operator=(const ModusObject&) = delete;
+
+  SDECore::ISDEObject50& sde_object() const { return *sde_object_.Get(); }
   const Elements& elements() const { return elements_; }
 
-  void AddElement(ModusElement& element) { elements_.push_back(&element); }
+  void AddElement(ModusElement& element) { elements_.emplace_back(&element); }
 
   void Init();
   void UpdateStyle(bool init);
 
  private:
-  base::win::ScopedComPtr<SDECore::ISDEObject50> sde_object_;
+  Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object_;
 
   Elements elements_;
 
   unsigned current_states_;
-
-  DISALLOW_COPY_AND_ASSIGN(ModusObject);
 };
 
 }  // namespace modus
