@@ -1,5 +1,7 @@
 #include "components/vidicon_display/vidicon_client.h"
 
+#include <cassert>
+
 VidiconClient* VidiconClient::s_instance = NULL;
 
 VidiconClient::VidiconClient() {
