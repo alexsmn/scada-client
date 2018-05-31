@@ -336,12 +336,17 @@ NodeRef GetPasteParentNode(NodeService& node_service,
                            const NodeRef& selected_node,
                            const NodeRef& root_node) {
   const auto buffer = ReadClipboard(kNodeTreeHeaderFormat);
+  if (buffer.empty())
+    return false;
+
   protocol::NodeId message;
   if (!message.ParseFromString(buffer))
     return false;
 
   const auto& type_definition_id = FromProto(message);
   const auto& type_definition = node_service.GetNode(type_definition_id);
+  if (!type_definition)
+    return false;
 
   for (const auto& node : {selected_node, root_node}) {
     for (auto n = node; n; n = n.parent()) {

@@ -289,7 +289,6 @@ ClientApplication::CreateAddressSpaceNodeService() {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
         : AddressSpaceImpl2{logger}, node_factory{logger, *this} {
-      CreateScadaAddressSpace(*this, node_factory);
     }
 
     GenericNodeFactory node_factory;
