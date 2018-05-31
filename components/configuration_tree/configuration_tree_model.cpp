@@ -250,7 +250,7 @@ ConfigurationTreeModel::CreateNodeIfMatches(const NodeRef& data_node) {
 
   if (!type_definition_ids_.empty()) {
     bool matches = false;
-    const auto type_definition = data_node.type_definition();
+    const auto& type_definition = data_node.type_definition();
     for (auto& filter_type_definition_id : type_definition_ids_) {
       if (IsSubtypeOf(type_definition, filter_type_definition_id)) {
         matches = true;

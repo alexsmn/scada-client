@@ -294,7 +294,7 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
   NodeRef target;
   if (text != kChoiceNone) {
     target = FindNodeByNameAndType(
-        context.node_service_.GetNode(scada::id::RootFolder), text,
+        context.node_service_.GetNode(scada::id::ObjectsFolder), text,
         target_type_definition.node_id());
   }
 
@@ -321,7 +321,7 @@ PropertyEditor ReferencePropertyDefinition::GetPropertyEditor(
   if (auto target_type_definition =
           GetTargetTypeDefinition(type_definition, prop_decl_id)) {
     result.choices.emplace_back(kChoiceNone);
-    GetNodeNamesRecursive(context.node_service_.GetNode(scada::id::RootFolder),
+    GetNodeNamesRecursive(context.node_service_.GetNode(scada::id::ObjectsFolder),
                           target_type_definition.node_id(), result.choices);
   }
 
