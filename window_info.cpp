@@ -35,7 +35,6 @@ const WindowInfo g_window_infos[] = {
   { ID_TRANSMISSION_VIEW, "Transmission", L"Ретрансляция", WIN_INS | WIN_DISALLOW_NEW, 0, 0, 0 },
   { ID_EXCEL_REPORT_VIEW, "ExcelReport", L"Отчет", WIN_CAN_PRINT, 0, 0, 0 },
   { ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", WIN_CAN_PRINT, 0, 0, 0 },
-  { ID_TYPES_VIEW, "Types", L"Типы", WIN_SING | WIN_REQUIRES_ADMIN, 200, 400, 0 },
   { ID_NODES_VIEW, "Nodes", L"Узлы", WIN_SING | WIN_REQUIRES_ADMIN, 200, 400, 0 },
 };
 

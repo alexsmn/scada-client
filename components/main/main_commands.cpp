@@ -106,7 +106,6 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
       return this;
 
 #ifdef NDEBUG
-    case ID_TYPES_VIEW:
     case ID_NODES_VIEW:
       // Hide NodeView for Release build.
       return nullptr;

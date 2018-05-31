@@ -18,20 +18,6 @@
 #include "ui/views/widget/widget.h"
 #endif
 
-class TypesView : public ConfigurationTreeView {
- public:
-  explicit TypesView(const ControllerContext& context)
-      : ConfigurationTreeView{
-            context, *new ConfigurationTreeModel{
-                         context.node_service_,
-                         context.task_manager_,
-                         context.node_service_.GetNode(scada::id::TypesFolder),
-                         {scada::id::HierarchicalReferences},
-                         {}}} {}
-};
-
-// REGISTER_CONTROLLER(TypesView, ID_TYPES_VIEW);
-
 class NodesView : public ConfigurationTreeView {
  public:
   explicit NodesView(const ControllerContext& context)
