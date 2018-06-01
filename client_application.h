@@ -70,6 +70,8 @@ class ClientApplication : private ClientApplicationContext,
 
   void OnEvents(bool has_events);
 
+  void Quit();
+
   // scada::SessionStateObserver
   virtual void OnSessionCreated() override;
   virtual void OnSessionDeleted(const scada::Status& status) override;

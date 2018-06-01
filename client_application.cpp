@@ -8,6 +8,7 @@
 #include "base/files/file_util.h"
 #include "base/nested_logger.h"
 #include "base/path_service.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/dump.h"
 #include "client_paths.h"
@@ -160,12 +161,13 @@ ClientApplication::~ClientApplication() {
 
   profile_.reset();
 
+  master_data_services_->RemoveObserver(*this);
+
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
   event_manager_.reset();
   node_service_.reset();
 
-  master_data_services_->RemoveObserver(*this);
   master_data_services_ = nullptr;
 
   transport_factory_.reset();
@@ -261,7 +263,7 @@ void ClientApplication::Start() {
           [this](int window_id) {
             return main_window_factory_(MakeMainWindowContext(window_id));
           },
-          quit_handler_});
+          [this] { Quit(); }});
 
   // |main_window_manager_| must be assigned.
   main_window_manager_->Init();
@@ -288,8 +290,7 @@ ClientApplication::CreateAddressSpaceNodeService() {
   class ClientAddressSpace : public AddressSpaceImpl2 {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl2{logger}, node_factory{logger, *this} {
-    }
+        : AddressSpaceImpl2{logger}, node_factory{logger, *this} {}
 
     GenericNodeFactory node_factory;
   };
@@ -414,11 +415,13 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
 }
 
 void ClientApplication::OnSessionCreated() {
-  event_manager_->OnChannelOpened(master_data_services_->GetUserId());
+  if (event_manager_)
+    event_manager_->OnChannelOpened(master_data_services_->GetUserId());
 }
 
 void ClientApplication::OnSessionDeleted(const scada::Status& status) {
-  event_manager_->OnChannelClosed();
+  if (event_manager_)
+    event_manager_->OnChannelClosed();
 }
 
 void ClientApplication::OnEvents(bool has_events) {
@@ -446,4 +449,17 @@ bool ClientApplication::Login() {
 
   master_data_services_->SetServices(std::move(services));
   return true;
+}
+
+void ClientApplication::Quit() {
+  if (!master_data_services_) {
+    quit_handler_();
+    return;
+  }
+
+  local_events_->ReportEvent(LocalEvents::SEV_ERROR,
+                             base::WideToUTF16(L"Отключение от сервера..."));
+
+  master_data_services_->Disconnect(
+      [this](const scada::Status& status) { quit_handler_(); });
 }
