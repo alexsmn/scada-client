@@ -32,7 +32,7 @@ LoginController::LoginController(DataServicesContext&& services_context,
     : services_context_{std::move(services_context)},
       dialog_service_{dialog_service} {
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
-  user_name = scada::ToLocalizedText(reg.GetString(L"User"));
+  user_name = reg.GetString(L"User");
   base::string16 users = reg.GetString(L"UserList");
   for (size_t p = 0; p < users.length();) {
     size_t n = users.find(',', p);
@@ -48,7 +48,7 @@ LoginController::LoginController(DataServicesContext&& services_context,
   }
   server_host = base::SysWideToNativeMB(reg.GetString(L"Host"));
   server_type = base::SysWideToNativeMB(reg.GetString(L"ServerType"));
-  password = base::SysWideToNativeMB(reg.GetString(L"Password"));
+  password = reg.GetString(L"Password");
   auto_login = reg.GetDWORD(L"AutoLogin") != 0;
   // Don't perform automatic login if Shift is pressed.
   if (GetAsyncKeyState(VK_CONTROL) < 0)
@@ -93,7 +93,7 @@ void LoginController::OnLoginCompleted() {
   reg.SetString(L"ServerType", base::SysNativeMBToWide(server_type).c_str());
   reg.SetDWORD(L"AutoLogin", auto_login);
   if (auto_login)
-    reg.SetString(L"Password", base::SysNativeMBToWide(password).c_str());
+    reg.SetString(L"Password", password.c_str());
 
   if (auto_login && login_message_)
     dialog_service_.RunMessageBox(kAutoLoginMessage, {}, MessageBoxMode::Info);
@@ -134,7 +134,7 @@ void LoginController::Connect(bool allow_remote_logoff) {
   }
 
   services_.session_service_->Connect(
-      server_host, scada::ToLocalizedText(user_name), password,
+      server_host, scada::ToLocalizedText(user_name), scada::ToLocalizedText(password),
       allow_remote_logoff,
       [this](const scada::Status& status) { OnLoginResult(status); });
 }

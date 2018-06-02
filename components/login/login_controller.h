@@ -21,7 +21,7 @@ class LoginController {
   std::function<void()> error_handler;
 
   base::string16 user_name;
-  std::string password;
+  base::string16 password;
   std::string server_host;
   std::string server_type;
   std::vector<base::string16> user_list;

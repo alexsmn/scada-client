@@ -195,7 +195,7 @@ void ClientApplication::Start() {
           : CreateAddressSpaceNodeService();
 
   auto alias_logger =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("verbose-logging")
+      base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
           ? static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NestedLogger>(logger_, "AliasService"))
           : static_cast<std::shared_ptr<Logger>>(
@@ -321,7 +321,7 @@ ClientApplication::CreateAddressSpaceNodeService() {
   };
 
   auto logger =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("verbose-logging")
+      base::CommandLine::ForCurrentProcess()->HasSwitch("log-node-service")
           ? logger_
           : static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NullLogger>());
@@ -441,8 +441,22 @@ void ClientApplication::OnEvents(bool has_events) {
 }
 
 bool ClientApplication::Login() {
-  DataServicesContext services_context{
-      logger_, base::ThreadTaskRunnerHandle::Get(), *transport_factory_};
+  assert(base::CommandLine::ForCurrentProcess());
+  auto& command_line = *base::CommandLine::ForCurrentProcess();
+
+  scada::ServiceLogParams service_log_params{
+      command_line.HasSwitch("log-service-read"),
+      command_line.HasSwitch("log-service-browse"),
+      command_line.HasSwitch("log-service-history"),
+      command_line.HasSwitch("log-service-event"),
+      command_line.HasSwitch("log-service-model-change-event"),
+      command_line.HasSwitch("log-service-node-semantics-change-event"),
+  };
+
+  DataServicesContext services_context{logger_,
+                                       base::ThreadTaskRunnerHandle::Get(),
+                                       *transport_factory_, service_log_params};
+
   DataServices services;
   if (!ExecuteLoginDialog(std::move(services_context), services))
     return false;

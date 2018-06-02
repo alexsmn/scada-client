@@ -54,7 +54,7 @@ LoginDialog::LoginDialog(DataServicesContext&& services_context)
   ui.autoLoginCheckBox->setChecked(controller_.auto_login);
 
   if (controller_.auto_login) {
-    ui.passwordLineEdit->setText(QString::fromStdString(controller_.password));
+    ui.passwordLineEdit->setText(QString::fromStdWString(controller_.password));
     accept();
   }
 }
@@ -66,7 +66,7 @@ void LoginDialog::accept() {
 
   controller_.server_host = ui.serverComboBox->currentText().toStdString();
   controller_.user_name = ui.userNameComboBox->currentText().toStdWString();
-  controller_.password = ui.passwordLineEdit->text().toStdString();
+  controller_.password = ui.passwordLineEdit->text().toStdWString();
   controller_.auto_login = ui.autoLoginCheckBox->isChecked();
 
   controller_.Login();

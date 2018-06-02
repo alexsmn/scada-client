@@ -90,14 +90,14 @@ void LoginDialog::OnInitDialog() {
   SetItemText(IDC_STATUS, L"");
 
   if (controller_.auto_login) {
-    SetItemText(IDC_PASSWORD, base::SysNativeMBToWide(controller_.password));
+    SetItemText(IDC_PASSWORD, controller_.password);
     OnOK();
   }
 }
 
 void LoginDialog::OnOK() {
   controller_.user_name = GetItemText(IDC_NAME);
-  controller_.password = base::SysWideToNativeMB(GetItemText(IDC_PASSWORD));
+  controller_.password = GetItemText(IDC_PASSWORD);
   controller_.server_host = base::SysWideToNativeMB(GetItemText(IDC_HOST));
   {
     int server_type_index =
