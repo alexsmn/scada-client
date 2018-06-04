@@ -16,11 +16,12 @@ TEST(ExcelConfigurationCommands, ExportImport) {
   TableWriter writer{stream};
   ExportConfiguration(context.node_service, writer);
 
-  auto* node_state = context.server_address_space.GetNode(
+  auto* node = context.server_address_space.GetNode(
       context.server_address_space.kTestNode1Id);
-  ASSERT_NE(node_state, nullptr);
-  node_state->attributes.display_name = L"Renamed node";
-  context.server_address_space.NotifyNodeSemanticsChanged(node_state->node_id);
+  ASSERT_NE(node, nullptr);
+  node->SetDisplayName(L"Renamed node");
+  context.server_address_space.NotifySemanticChanged(
+      node->id(), scada::GetTypeDefinitionId(*node));
 
   TableReader reader{stream};
   auto import_data = ImportConfiguration(context.node_service, reader);

@@ -9,12 +9,22 @@ using namespace testing;
 
 namespace {
 
-scada::NodeState& CreateDataItem(TestAddressSpace& address_space,
-                                 const scada::NodeId& node_id) {
-  auto& node_state = address_space.nodes.emplace_back(
-      scada::NodeState{node_id, scada::NodeClass::Variable, id::AnalogItemType,
-                       id::DataItems, scada::id::Organizes});
-  return node_state;
+scada::Variable& CreateDataItem(TestAddressSpace& address_space,
+                                const scada::NodeId& node_id) {
+  auto* type_definition =
+      scada::AsVariableType(address_space.GetNode(id::AnalogItemType));
+  assert(type_definition);
+
+  auto& node = address_space.AddStaticNode<scada::GenericVariable>(
+      node_id, scada::QualifiedName{}, scada::LocalizedText{},
+      type_definition->data_type(), scada::Variant{});
+
+  scada::AddReference(address_space, scada::id::HasTypeDefinition, node,
+                      *type_definition);
+  scada::AddReference(address_space, scada::id::Organizes, id::DataItems,
+                      node_id);
+
+  return node;
 }
 
 }  // namespace
@@ -25,7 +35,7 @@ TEST(AliasService, Init) {
   const scada::NodeId kDataItem1{1, 100};
   auto& data_item1 = CreateDataItem(context.server_address_space, kDataItem1);
   const char kAlias[] = "TestAlias";
-  SetProperty(data_item1, id::DataItemType_Alias, kAlias);
+  data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias);
 
   AliasService alias_service{AliasServiceContext{
       std::make_shared<NullLogger>(),
@@ -52,7 +62,7 @@ TEST(AliasService, ModifyAlias) {
   const scada::NodeId kDataItem1{1, 100};
   auto& data_item1 = CreateDataItem(context.server_address_space, kDataItem1);
   const char kAlias[] = "TestAlias";
-  SetProperty(data_item1, id::DataItemType_Alias, kAlias);
+  data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias);
 
   AliasService alias_service{AliasServiceContext{
       std::make_shared<NullLogger>(),
@@ -60,8 +70,9 @@ TEST(AliasService, ModifyAlias) {
   }};
 
   const char kAlias2[] = "TestAlias2";
-  SetProperty(data_item1, id::DataItemType_Alias, kAlias2);
-  context.server_address_space.NotifyNodeSemanticsChanged(kDataItem1);
+  data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias2);
+  context.server_address_space.NotifySemanticChanged(
+      kDataItem1, scada::GetTypeDefinitionId(data_item1));
 
   alias_service.Resolve(
       kAlias, [&](scada::Status&& status, const scada::NodeId& node_id) {
@@ -81,7 +92,7 @@ TEST(AliasService, ClearAlias) {
   const scada::NodeId kDataItem1{1, 100};
   auto& data_item1 = CreateDataItem(context.server_address_space, kDataItem1);
   const char kAlias[] = "TestAlias";
-  SetProperty(data_item1, id::DataItemType_Alias, kAlias);
+  data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias);
 
   AliasService alias_service{AliasServiceContext{
       std::make_shared<NullLogger>(),
@@ -89,8 +100,9 @@ TEST(AliasService, ClearAlias) {
   }};
 
   const char kAlias2[] = "TestAlias2";
-  SetProperty(data_item1, id::DataItemType_Alias, kAlias2);
-  context.server_address_space.NotifyNodeSemanticsChanged(kDataItem1);
+  data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias2);
+  context.server_address_space.NotifySemanticChanged(
+      kDataItem1, scada::GetTypeDefinitionId(data_item1));
 
   alias_service.Resolve(
       kAlias, [&](scada::Status&& status, const scada::NodeId& node_id) {
@@ -109,9 +121,9 @@ TEST(AliasService, CreateDataItem) {
   const scada::NodeId kDataItem1{1, 100};
   auto& data_item1 = CreateDataItem(context.server_address_space, kDataItem1);
   const char kAlias[] = "TestAlias";
-  SetProperty(data_item1, id::DataItemType_Alias, kAlias);
+  data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias);
   context.server_address_space.NotifyModelChanged(
-      {data_item1.node_id, data_item1.type_definition_id,
+      {data_item1.id(), scada::GetTypeDefinitionId(data_item1),
        scada::ModelChangeEvent::NodeAdded});
 
   alias_service.Resolve(
@@ -134,13 +146,13 @@ TEST(AliasService, DeleteDataItem) {
 
   {
     auto& data_item1 = CreateDataItem(context.server_address_space, kDataItem1);
-    SetProperty(data_item1, id::DataItemType_Alias, kAlias);
+    data_item1.SetPropertyValue(id::DataItemType_Alias, kAlias);
     context.server_address_space.NotifyModelChanged(
-        {data_item1.node_id, data_item1.type_definition_id,
+        {data_item1.id(), scada::GetTypeDefinitionId(data_item1),
          scada::ModelChangeEvent::NodeAdded});
   }
 
-  context.server_address_space.DeleteNode(kDataItem1);
+  context.server_address_space.RemoveNode(kDataItem1);
   context.server_address_space.NotifyModelChanged(
       {kDataItem1, {}, scada::ModelChangeEvent::NodeDeleted});
 
