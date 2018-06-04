@@ -368,6 +368,7 @@ void EventTableModel::Update() {
 
     LOG(INFO) << "Query events from " << FormatTime(from).c_str();
 
+    assert(!request_running_);
     request_running_ = true;
 
     auto runner = base::ThreadTaskRunnerHandle::Get();
@@ -396,6 +397,9 @@ void EventTableModel::OnHistoryReadEventsCompleted(
     scada::Status&& status,
     std::vector<scada::Event>&& events) {
   assert(request_running_);
+  // Only acked events were requested.
+  assert(std::all_of(events.begin(), events.end(),
+                     [](const scada::Event& event) { return event.acked; }));
 
   historical_events_.assign(std::make_move_iterator(events.begin()),
                             std::make_move_iterator(events.end()));
