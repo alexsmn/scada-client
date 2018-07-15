@@ -22,6 +22,7 @@ namespace views {
 class Widget;
 }  // namespace views
 
+class CommandHandler;
 class MainMenu;
 class MainWindowViews;
 class StatusBarController;
@@ -31,6 +32,7 @@ struct NativeMainWindowContext {
   MainWindowViews* main_window_;
   std::unique_ptr<ui::MenuModel> menu_model_;
   std::shared_ptr<StatusBarModel> status_bar_model_;
+  CommandHandler& commands_;
 };
 
 class NativeMainWindow : private NativeMainWindowContext,
@@ -57,6 +59,7 @@ class NativeMainWindow : private NativeMainWindowContext,
   MESSAGE_HANDLER(WM_CREATE, OnCreate)
   MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
   MESSAGE_HANDLER(WM_SIZE, OnSize)
+  MESSAGE_HANDLER(WM_INITMENUPOPUP, OnInitMenuPopup)
   MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
   MESSAGE_HANDLER(WM_MEASUREITEM, OnMeasureItem)
   CHAIN_MSG_MAP_MEMBER(menu_);
@@ -86,6 +89,10 @@ class NativeMainWindow : private NativeMainWindowContext,
                     WPARAM /*wParam*/,
                     LPARAM /*lParam*/,
                     BOOL& /*bHandled*/);
+  LRESULT OnInitMenuPopup(UINT /*uMsg*/,
+                          WPARAM /*wParam*/,
+                          LPARAM /*lParam*/,
+                          BOOL& /*bHandled*/);
   LRESULT OnDrawItem(UINT /*uMsg*/,
                      WPARAM /*wParam*/,
                      LPARAM lParam,

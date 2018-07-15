@@ -9,14 +9,21 @@
 #include "core/session_service.h"
 #include "services/page.h"
 #include "services/profile.h"
+#include "simple_menu_command_handler.h"
 #include "ui/base/models/menu_model.h"
+#include "ui/base/models/simple_menu_model.h"
 #include "ui/events/event_utils.h"
 #include "ui/views/background.h"
+#include "ui/views/controls/menu/menu_2.h"
 #include "views/client_utils_views.h"
 #include "window_info.h"
 
-static const int kToolbarWidth = 90;
-static const int kToolbarHeight = 27;
+namespace {
+
+const int kToolbarWidth = 90;
+const int kToolbarHeight = 27;
+
+}  // namespace
 
 MainWindowViews::MainWindowViews(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
@@ -32,7 +39,7 @@ MainWindowViews::MainWindowViews(MainWindowContext&& context)
       *this, dialog_service_, *view_manager_, *commands_, *context_menu_model_);
 
   main_window_ = new NativeMainWindow{NativeMainWindowContext{
-      this, std::move(main_menu_model), status_bar_model_}};
+      this, std::move(main_menu_model), status_bar_model_, *commands_}};
 
   auto& prefs = GetPrefs();
   main_window_->Init(prefs.bounds, prefs.maximized);
@@ -80,14 +87,15 @@ void MainWindowViews::OnSelectionChanged() {
 
 void MainWindowViews::OnShowTabPopupMenu(OpenedView& view,
                                          const gfx::Point& point) {
-  CMenu menu;
-  menu.CreatePopupMenu();
-  menu.AppendMenu(MFT_STRING, ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
-  menu.AppendMenu(MFT_STRING, ID_VIEW_CHANGE_TITLE, L"Переименовать");
-  menu.AppendMenu(MFT_STRING | MFT_SEPARATOR);
-  menu.AppendMenu(MFT_STRING, ID_VIEW_CLOSE, L"Закрыть");
+  SimpleMenuCommandHandler handler{*commands_};
+  ui::SimpleMenuModel model{&handler};
+  model.AddItem(ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
+  model.AddItem(ID_VIEW_CHANGE_TITLE, L"Переименовать");
+  model.AddSeparator(ui::NORMAL_SEPARATOR);
+  model.AddItem(ID_VIEW_CLOSE, L"Закрыть");
 
-  ShowPopupMenu(GetWindowHandle(), menu, point, false);
+  views::Menu2 menu{&model};
+  menu.RunContextMenuAt(point);
 }
 
 void MainWindowViews::OnExecuteToolbarCommand(views::Toolbar& sender,

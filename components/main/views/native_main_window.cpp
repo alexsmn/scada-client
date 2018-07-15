@@ -167,6 +167,59 @@ void NativeMainWindow::UpdateBarsPosition(RECT& rect, BOOL bResizeBars) {
   }
 }
 
+LRESULT NativeMainWindow::OnInitMenuPopup(UINT /*uMsg*/,
+                                          WPARAM wParam,
+                                          LPARAM lParam,
+                                          BOOL& bHandled) {
+  HMENU hmenu = reinterpret_cast<HMENU>(wParam);
+  bool is_window_menu = HIWORD(lParam) != 0;
+  int index = LOWORD(lParam);
+
+  if (!::IsMenu(hmenu))
+    return 0;
+
+  WTL::CMenuHandle menu(hmenu);
+
+  int pos = 0;
+  while (pos < menu.GetMenuItemCount()) {
+    UINT id = menu.GetMenuItemID(pos);
+
+    if (id == ID_COLORS) {
+      menu.DeleteMenu(pos, MF_BYPOSITION);
+      int n = 0;
+      for (size_t i = 0; i < palette::GetColorCount(); i++) {
+        MENUITEMINFO item;
+        memset(&item, 0, sizeof(item));
+        item.cbSize = sizeof(item);
+        item.fMask = MIIM_FTYPE | MIIM_ID | MIIM_STRING | MIIM_STATE;
+        item.fType = MFT_STRING | MFT_OWNERDRAW;
+        item.wID = ID_COLOR_0 + n++;
+        item.dwTypeData = (LPTSTR)(LPCTSTR)palette::GetColorName(i);
+        menu.InsertMenuItem(pos++, TRUE, &item);
+      }
+
+    } else {
+      if (id != 0 && id != static_cast<UINT>(-1)) {
+        UINT state = 0;
+        auto* handler = commands_.GetCommandHandler(id);
+        if (!handler || !handler->IsCommandEnabled(id))
+          state |= MFS_DISABLED;
+        if (handler && handler->IsCommandChecked(id))
+          state |= MFS_CHECKED;
+
+        MENUITEMINFO mii = {sizeof(MENUITEMINFO)};
+        mii.fMask = MIIM_STATE;
+        mii.fState = state;
+        menu.SetMenuItemInfo(pos, TRUE, &mii);
+      }
+
+      pos++;
+    }
+  }
+
+  return 0;
+}
+
 LRESULT NativeMainWindow::OnMeasureItem(UINT /*uMsg*/,
                                         WPARAM /*wParam*/,
                                         LPARAM lParam,
