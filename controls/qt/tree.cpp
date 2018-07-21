@@ -47,14 +47,14 @@ bool Tree::IsExpanded(void* node, bool up_to_root) const {
 }
 
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
-  QObject::connect(this, &QTreeView::expanded,
-                   [this, handler](const QModelIndex& index) {
-                     handler(model_adapter_->GetNode(index), true);
-                   });
-  QObject::connect(this, &QTreeView::collapsed,
-                   [this, handler](const QModelIndex& index) {
-                     handler(model_adapter_->GetNode(index), false);
-                   });
+  connect(this, &QTreeView::expanded,
+          [this, handler](const QModelIndex& index) {
+            handler(model_adapter_->GetNode(index), true);
+          });
+  connect(this, &QTreeView::collapsed,
+          [this, handler](const QModelIndex& index) {
+            handler(model_adapter_->GetNode(index), false);
+          });
 }
 
 void Tree::StartEditing(void* node) {}
@@ -64,8 +64,7 @@ void Tree::SetDoubleClickHandler(DoubleClickHandler handler) {
 }
 
 void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {
-  QObject::connect(selectionModel(), &QItemSelectionModel::selectionChanged,
-                   handler);
+  connect(selectionModel(), &QItemSelectionModel::selectionChanged, handler);
 }
 
 void Tree::SetEditHandler(TreeEditHandler handler) {}
@@ -77,3 +76,11 @@ void Tree::SetRootVisible(bool visible) {}
 void Tree::SetEditable(bool editable) {}
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {}
+
+void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
+  setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(this, &QWidget::customContextMenuRequested,
+          [this, handler](const QPoint& pos) {
+            handler(viewport()->mapToGlobal(pos));
+          });
+}

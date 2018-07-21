@@ -62,42 +62,31 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
     model_->SetDevice(node_service_.GetNode(device_id));
   }
 
-#if defined(UI_QT)
   table_.reset(new Table(*model_, {columns, columns + _countof(columns)}));
+
+#if defined(UI_QT)
   QObject::connect(
       table_->selectionModel(), &QItemSelectionModel::currentRowChanged,
       [this](const QModelIndex& current, const QModelIndex& previous) {
         auto_scroll_ = current.row() == model_->GetRowCount() - 1;
       });
 
-  // Must be after |table_| is bound.
-  model_->observers().AddObserver(this);
-
-  return table_.get();
-
 #elif defined(UI_VIEWS)
-  table_.reset(new views::TableView(*model_));
   table_->set_controller(this);
   table_->set_show_grid(false);
-  table_->SetColumns(_countof(columns), columns);
+#endif
+
+  table_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_LOG_POPUP, point, true);
+  });
 
   // Must be after |table_| is bound.
   model_->observers().AddObserver(this);
 
-  return &table_->CreateParentIfNecessary();
-#endif
+  return table_->CreateParentIfNecessary();
 }
 
 #if defined(UI_VIEWS)
-void WatchView::ShowContextMenu(gfx::Point point) {
-  WTL::CMenu menu;
-  menu.LoadMenu(IDR_LOG_POPUP);
-  WTL::CMenuHandle popup = menu.GetSubMenu(0);
-  popup.CheckMenuItem(
-      ID_PAUSE, MF_BYCOMMAND | (model_->paused() ? MF_CHECKED : MF_UNCHECKED));
-  ::ShowPopupMenu(dialog_service_.GetDialogOwningWindow(), popup, point, true);
-}
-
 void WatchView::OnSelectionChanged(views::TableView& sender) {
   auto_scroll_ = table_->selection_model().size() == 1 &&
                  table_->selection_model().selected_indices()[0] ==

@@ -1,17 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "controller.h"
 
-#if defined(UI_QT)
-class QTableView;
-#elif defined(UI_VIEWS)
-namespace views {
-class GridView;
-}
-#endif
+#include <memory>
 
+class Grid;
 class SummaryModel;
 
 class SummaryView : public Controller {
@@ -26,13 +19,8 @@ class SummaryView : public Controller {
   virtual TimeModel* GetTimeModel() override;
 
  private:
-   void ExportToExcel();
+  void ExportToExcel();
 
   std::unique_ptr<SummaryModel> model_;
-
-#if defined(UI_QT)
-  std::unique_ptr<QTableView> grid_;
-#elif defined(UI_VIEWS)
-  std::unique_ptr<views::GridView> grid_;
-#endif
+  std::unique_ptr<Grid> grid_;
 };

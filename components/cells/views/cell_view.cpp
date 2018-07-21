@@ -46,6 +46,7 @@ CellView::CellView(const ControllerContext& context)
   grid_->SetColumnModel(&column_model_);
   grid_->set_controller(this);
   grid_->SetColumnHeadersVisible(false);
+  grid_->set_context_menu_controller(this);
 }
 
 CellView::~CellView() {
@@ -95,10 +96,7 @@ void CellView::GetCell(ui::GridCell& cell) {
   cell.text = c->value_spec_.GetCurrentString();
 }
 
-bool CellView::OnGridEditCellText(views::GridView& sender,
-                                  int row,
-                                  int column,
-                                  const base::string16& text) {
+bool CellView::SetCellText(int row, int column, const base::string16& text) {
   try {
     SetCellFormula(row, column, base::SysWideToNativeMB(text));
   } catch (const std::exception& e) {
@@ -282,4 +280,9 @@ views::View* CellView::Init(const WindowDefinition& definition) {
   }
 
   return grid_->CreateParentIfNecessary();
+}
+
+void CellView::ShowContextMenuForView(views::View* source,
+                                      const gfx::Point& point) {
+  controller_delegate_.ShowPopupMenu(0, point, true);
 }

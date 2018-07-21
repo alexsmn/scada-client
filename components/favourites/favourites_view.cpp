@@ -17,9 +17,11 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   tree_view_.reset(new Tree(*favourites_tree_model_));
   tree_view_->LoadIcons(IDB_WIN_TYPES, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
+  tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_FAVOR_POPUP, point, true);
+  });
 
 #if defined(UI_VIEWS)
-  // TODO: controller_delegate_.ShowPopupMenu(IDR_FAVOR_POPUP, point, true);
   tree_view_->SetEditable(true);
 #endif
 

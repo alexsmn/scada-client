@@ -47,8 +47,8 @@ class TableViewPainter : public views::TablePainter {
 REGISTER_CONTROLLER(TableView, ID_TABLE_VIEW);
 
 TableView::TableView(const ControllerContext& context) : Controller{context} {
-  model_ = std::make_unique<TableModel>(
-      TableModelContext{timed_data_service_, event_manager_, profile_});
+  model_ = std::make_unique<TableModel>(TableModelContext{
+      timed_data_service_, event_manager_, profile_, dialog_service_});
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
     if (contents_observer())
       contents_observer()->OnContainedItemChanged(item_id, added);
@@ -92,6 +92,10 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
   WTL::CBitmap items_bitmap = WTL::AtlLoadBitmapImage(IDB_ITEMS);
   image_list_->Add(items_bitmap, RGB(255, 0, 255));
 #endif
+
+  view_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_TABLE_POPUP, point, true);
+  });
 
   selection().multiple_handler = [this] { return GetMultipleSelection(); };
 }
@@ -204,29 +208,6 @@ views::ComboTextfield* TableView::OnCreateEditor(views::TableView& sender,
 
   return editor;
 }
-
-bool TableView::OnEditCellText(views::TableView& sender,
-                               int row,
-                               int column_id,
-                               const base::string16& text) {
-  assert(column_id == TableModel::COLUMN_TITLE);
-
-  std::string text2 = base::SysWideToNativeMB(text);
-  if (!text2.empty() && text2[0] == L'=')
-    text2.erase(0, 1);
-
-  if (!model_->SetFormula(row, text2)) {
-    dialog_service_.RunMessageBox(L"Неверное выражение.", {},
-                                  MessageBoxMode::Error);
-    return false;
-  }
-
-  return true;
-}
-
-bool TableView::CanEditCell(views::TableView& sender, int row, int column) {
-  return column == 0;
-}
 #endif
 
 UiView* TableView::Init(const WindowDefinition& definition) {
@@ -254,13 +235,7 @@ UiView* TableView::Init(const WindowDefinition& definition) {
     }
   }
 
-#if defined(UI_QT)
-  return view_.get();
-
-#elif defined(UI_VIEWS)
-  view_->Layout();
-  return &view_->CreateParentIfNecessary();
-#endif
+  return view_->CreateParentIfNecessary();
 }
 
 void TableView::Save(WindowDefinition& definition) {
@@ -321,10 +296,6 @@ bool TableView::OnKeyPressed(views::TableView& sender,
   }
 
   return __super::OnKeyPressed(sender, key_code);
-}
-
-void TableView::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_TABLE_POPUP, point, true);
 }
 
 bool TableView::OnDoubleClick() {

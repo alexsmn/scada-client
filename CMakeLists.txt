@@ -12,50 +12,6 @@ add_subdirectory("${deps}/modus" modus)
 add_definitions(
   -DMODUS_GDIP)
 
-file(GLOB CORE_SOURCES
-  "base/*.cpp"
-  "base/*.h"
-  "services/*.cpp"
-  "services/*.h"
-)
-
-list(APPEND CORE_SOURCES
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/configuration_tree/configuration_tree_model.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/configuration_tree/configuration_tree_model.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/events/event_table_model.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/events/event_table_model.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/favourites/favourites_tree_model.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/favourites/favourites_tree_model.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/login/login_controller.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/login/login_controller.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/action_manager.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/action_manager.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/actions.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/main/actions.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/components/object_tree/object_tree_model.h"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/main_window.cpp"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/components/main/main_window.h"
-)
-
-file(GLOB CORE_UT_SOURCES
-  "base/*_unittest.*"
-  "services/*_unittest.*"
-)
-
-list(REMOVE_ITEM CORE_SOURCES ${CORE_UT_SOURCES})
-
-add_library(client_core ${CORE_SOURCES})
-set_property(TARGET client_core PROPERTY FOLDER ${client_folder})
-
-target_link_libraries(client_core PUBLIC
-  address_space_common
-  base_i18n
-  modus
-  scada_core_remote
-  scada_core_vidicon
-  ui_base
-)
 
 file(GLOB_RECURSE PATHS
   "*.cpp"
@@ -63,7 +19,6 @@ file(GLOB_RECURSE PATHS
   "*.rc"
   "*.ui"
 )
-list(REMOVE_ITEM PATHS ${CORE_SOURCES})
 
 foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest")
@@ -96,11 +51,6 @@ file(GLOB CLIENT_UT_SOURCES
   "models/*_unittest.cpp"
   "services/*_unittest.cpp"
 )
-
-add_executable(client_core_unittests ${CORE_UT_SOURCES})
-target_link_libraries(client_core_unittests PUBLIC client_core gmock_main)
-add_test(NAME client_core_unittests COMMAND client_core_unittests)
-set_property(TARGET client_core_unittests PROPERTY FOLDER ${client_folder})
 
 add_subdirectory(views)
 add_subdirectory(qt)

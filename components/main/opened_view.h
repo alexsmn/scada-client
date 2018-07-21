@@ -9,7 +9,6 @@
 
 #if defined(UI_VIEWS)
 #include "ui/gfx/image/image.h"
-#include "ui/views/context_menu_controller.h"
 #include "ui/views/drop_controller.h"
 #endif
 
@@ -38,7 +37,6 @@ struct OpenedViewContext {
 class OpenedView : private OpenedViewContext,
 #if defined(UI_VIEWS)
                    public views::DropController,
-                   private views::ContextMenuController,
 #endif
                    private ControllerDelegate {
  public:
@@ -78,10 +76,6 @@ class OpenedView : private OpenedViewContext,
   virtual int OnDragUpdated(const ui::DropTargetEvent& event) override;
   virtual void OnDragDone() override;
   virtual int OnPerformDrop(const ui::DropTargetEvent& event) override;
-
-  // views::ContextMenuController
-  virtual void ShowContextMenuForView(views::View* source,
-                                      const gfx::Point& point) override;
 #endif
 
   // ControllerDelegate
@@ -97,7 +91,7 @@ class OpenedView : private OpenedViewContext,
   // ControllerDelegate
   virtual void SetTitle(const base::StringPiece16& title) override;
   virtual void ShowPopupMenu(unsigned resource_id,
-                             const gfx::Point& point,
+                             const UiPoint& point,
                              bool right_click) override;
   virtual void OpenView(const WindowDefinition& def) override;
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override;

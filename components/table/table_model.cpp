@@ -1,4 +1,4 @@
-#include "components/table/table_model.h"
+﻿#include "components/table/table_model.h"
 
 #include "base/color.h"
 #include "base/format_time.h"
@@ -10,6 +10,7 @@
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
+#include "services/dialog_service.h"
 #include "services/profile.h"
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
@@ -308,4 +309,26 @@ TableRow* TableModel::GetRow(int index) {
 
 const TableRow* TableModel::GetRow(int index) const {
   return const_cast<TableModel*>(this)->GetRow(index);
+}
+
+bool TableModel::SetCellText(int row,
+                             int column_id,
+                             const base::string16& text) {
+  assert(column_id == TableModel::COLUMN_TITLE);
+
+  std::string text2 = base::SysWideToNativeMB(text);
+  if (!text2.empty() && text2[0] == L'=')
+    text2.erase(0, 1);
+
+  if (!SetFormula(row, text2)) {
+    dialog_service_.RunMessageBox(L"Неверное выражение.", {},
+                                  MessageBoxMode::Error);
+    return false;
+  }
+
+  return true;
+}
+
+bool TableModel::IsEditable(int row, int column) {
+  return column == 0;
 }

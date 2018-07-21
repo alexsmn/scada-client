@@ -46,6 +46,8 @@ class TransmissionModel : public ui::GridModel,
   virtual int GetRowCount() override;
   virtual base::string16 GetRowTitle(int row) override;
   virtual void GetCell(ui::GridCell& cell) override;
+  virtual bool IsEditable(int row, int column) override;
+  virtual bool SetCellText(int row, int column, const base::string16& text) override;
 
  private:
   int FindRow(const scada::NodeId& transmission_id) const;

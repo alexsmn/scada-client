@@ -27,7 +27,7 @@ StatisticsView::StatisticsView(const ControllerContext& context)
 }
 
 views::View* StatisticsView::Init(const WindowDefinition& definition) {
-  return &table_->CreateParentIfNecessary();
+  return table_->CreateParentIfNecessary();
 }
 
 void StatisticsView::UpdateStatistics() {

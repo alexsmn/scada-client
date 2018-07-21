@@ -66,13 +66,6 @@ class TableView : public Controller,
   virtual views::ComboTextfield* OnCreateEditor(views::TableView& sender,
                                                 int row,
                                                 int column_id) override;
-  virtual bool OnEditCellText(views::TableView& sender,
-                              int row,
-                              int column_id,
-                              const base::string16& text) override;
-  virtual bool CanEditCell(views::TableView& sender,
-                           int row,
-                           int column_id) override;
   virtual void OnGetAutocompleteList(
       views::TableView& sender,
       const base::string16& text,
@@ -80,7 +73,6 @@ class TableView : public Controller,
       std::vector<base::string16>& list) override;
   virtual void OnSelectionChanged(views::TableView& sender) override;
   virtual bool OnDoubleClick() override;
-  virtual void ShowContextMenu(gfx::Point point) override;
   virtual bool OnKeyPressed(views::TableView& sender,
                             ui::KeyboardCode key_code) override;
 #endif

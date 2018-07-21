@@ -3,10 +3,10 @@
 #include <memory>
 
 #include "controller.h"
-#include "ui/views/controls/tree/tree_controller.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/drop_controller.h"
+#include "ui/views/controls/tree/tree_controller.h"
 #endif
 
 namespace ui {

@@ -60,10 +60,9 @@ class EventView : public Controller,
 
  protected:
 #if defined(UI_VIEWS)
-  // view::TableController overrides
+  // views::TableController overrides
   virtual void OnSelectionChanged(views::TableView& sender) override;
   virtual bool OnDoubleClick() override;
-  virtual void ShowContextMenu(gfx::Point point) override;
   virtual bool OnKeyPressed(views::TableView& sender,
                             ui::KeyboardCode key_code) override;
 #endif

@@ -97,3 +97,14 @@ void Tree::SetCompareHandler(TreeCompareHandler handler) {
 int Tree::OnCompare(TreeView& sender, void* left, void* right) {
   return compare_handler_ ? compare_handler_(left, right) : 0;
 }
+
+void Tree::ShowContextMenuForView(views::View* source,
+                                  const gfx::Point& point) {
+  if (context_menu_handler_)
+    context_menu_handler_(point);
+}
+
+void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
+  context_menu_handler_ = std::move(handler);
+  set_context_menu_controller(this);
+}

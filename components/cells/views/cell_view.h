@@ -7,13 +7,15 @@
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"
+#include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
 
 class CellView : public Controller,
                  public ContentsModel,
                  private ui::GridModel,
                  private views::FixedRowModel::Delegate,
-                 private views::GridController {
+                 private views::GridController,
+                 private views::ContextMenuController {
  public:
   explicit CellView(const ControllerContext& context);
   virtual ~CellView();
@@ -65,15 +67,6 @@ class CellView : public Controller,
                               int row,
                               int col,
                               const gfx::Rect& rect) override;
-  virtual bool CanEditCell(views::GridView& sender,
-                           int row,
-                           int column) override {
-    return true;
-  }
-  virtual bool OnGridEditCellText(views::GridView& sender,
-                                  int row,
-                                  int column,
-                                  const base::string16& text) override;
   virtual void OnGridSelectionChanged(views::GridView& sender) override;
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
@@ -81,6 +74,11 @@ class CellView : public Controller,
   // GridModel
   virtual int GetRowCount() override;
   virtual void GetCell(ui::GridCell& data) override;
+  virtual bool SetCellText(int row, int column, const base::string16& text) override;
+
+  // views::ContextMenuController
+  virtual void ShowContextMenuForView(views::View* source,
+                                      const gfx::Point& point) override;
 
   int row_count_;
   int column_count_;

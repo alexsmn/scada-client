@@ -140,5 +140,11 @@ void SheetModel::SetRangeColor(const ui::GridRange& range, SkColor color) {
 
 bool SheetModel::SetCellText(int row, int column, const base::string16& text) {
   GetCell(row, column).SetFormula(base::SysWideToNativeMB(text));
+  // TODO: Update formula row on model change notification.
+  // UpdateFormulaRow();
   return true;
+}
+
+bool SheetModel::IsEditable(int row, int column) {
+  return is_editing();
 }

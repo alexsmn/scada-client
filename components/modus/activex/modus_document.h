@@ -3,14 +3,14 @@
 #include "base/files/file_path.h"
 #include "common/aliases.h"
 #include "components/modus/activex/modus.h"
-#include "gfx/point.h"
+#include "controls/types.h"
 
 #include <atlbase.h>
 
 #include <atlcom.h>
+#include <wrl/client.h>
 #include <functional>
 #include <map>
-#include <wrl/client.h>
 
 namespace rt {
 class TimedDataSpec;
@@ -33,7 +33,7 @@ struct ModusDocumentContext {
   const std::function<void(const base::FilePath& path)> navigation_callback_;
   const std::function<void(const rt::TimedDataSpec& selection)>
       selection_callback_;
-  const std::function<void(const gfx::Point& point)> context_menu_callback_;
+  const ContextMenuHandler context_menu_callback_;
 };
 
 class ModusDocument

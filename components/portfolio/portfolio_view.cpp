@@ -50,13 +50,12 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
   tree_->SetEditHandler(
       [this](void* node) { return model_->AsNode(node)->is_portfolio(); });
 
+  tree_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
+  });
+
   return tree_.get();
 }
-
-/*void PortfolioView::OnShowContextMenu(views::TreeView& sender,
-                                      const gfx::Point& point) {
-  controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
-}*/
 
 void PortfolioView::DeleteSelection() {
   PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());

@@ -11,6 +11,7 @@ namespace events {
 class EventManager;
 }
 
+class DialogService;
 class Profile;
 class TableRow;
 class TimedDataService;
@@ -19,6 +20,7 @@ struct TableModelContext {
   TimedDataService& timed_data_service_;
   events::EventManager& event_manager_;
   Profile& profile_;
+  DialogService& dialog_service_;
 };
 
 class TableModel : private TableModelContext,
@@ -61,6 +63,10 @@ class TableModel : private TableModelContext,
   virtual int GetRowCount() override;
   virtual void GetCell(ui::TableCell& cell) override;
   virtual base::string16 GetTooltip(int row, int column_id) override;
+  virtual bool SetCellText(int row,
+                           int column_id,
+                           const base::string16& text) override;
+  virtual bool TableModel::IsEditable(int row, int column) override;
 
   std::function<void(const scada::NodeId& item_id, bool added)> item_changed_;
 

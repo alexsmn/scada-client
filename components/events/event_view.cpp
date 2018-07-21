@@ -16,7 +16,7 @@
 #include "services/dialog_service.h"
 
 #if defined(UI_QT)
-#include <qheaderview.h>
+#include <QHeaderView>
 #elif defined(UI_VIEWS)
 #include <atlbase.h>
 
@@ -91,6 +91,10 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->SetColumns(count, kEventViewColumns);
   table_->set_controller(this);
 #endif
+
+  table_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
+  });
 
   selection().multiple_handler = [this] { return GetSelectedNodeIds(); };
 }
@@ -198,15 +202,9 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   return table_.get();
 
 #elif defined(UI_VIEWS)
-  return &table_->CreateParentIfNecessary();
+  return table_->CreateParentIfNecessary();
 #endif
 }
-
-#if defined(UI_VIEWS)
-void EventView::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
-}
-#endif
 
 #if defined(UI_VIEWS)
 bool EventView::OnKeyPressed(views::TableView& sender,

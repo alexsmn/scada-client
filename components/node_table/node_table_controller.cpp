@@ -7,6 +7,7 @@
 #include "common_resources.h"
 #include "components/node_table/node_table_model.h"
 #include "controller_factory.h"
+#include "controls/grid.h"
 #include "remote/session_proxy.h"
 #include "services/profile.h"
 #include "services/property_defs.h"
@@ -83,15 +84,9 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
-#if defined(UI_QT)
   table_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
-  return table_.get();
 
-#elif defined(UI_VIEWS)
-  table_.reset(new views::GridView);
-  table_->SetColumnModel(&model_->column_model());
-  table_->SetRowModel(&model_->row_model());
-  table_->SetModel(model_.get());
+#if defined(UI_VIEWS)
   table_->set_controller(this);
   table_->SetRowHeadersVisible(true);
   table_->set_allow_column_select(true);
@@ -99,8 +94,13 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   table_->SetTopHeaderHeight(19);
   table_->SetRowHeaderWidth(70);
   table_->SelectCell(0, 0, true);
-  return table_->CreateParentIfNecessary();
 #endif
+
+  table_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(0, point, true);
+  });
+
+  return table_->CreateParentIfNecessary();
 }
 
 void NodeTableController::Save(WindowDefinition& definition) {
@@ -111,33 +111,6 @@ void NodeTableController::Save(WindowDefinition& definition) {
 }
 
 #if defined(UI_VIEWS)
-void NodeTableController::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_GRID_POPUP, point, true);
-}
-#endif
-
-#if defined(UI_VIEWS)
-bool NodeTableController::OnGridEditCellText(views::GridView& sender,
-                                             int row,
-                                             int column,
-                                             const base::string16& text) {
-  ui::GridRange range = table_->GetSelectionRange();
-  if (range.empty())
-    return true;
-
-  for (int row = range.row(); row <= range.last_row(); row++)
-    for (int col = range.column(); col <= range.last_column(); col++)
-      model_->SetCellText(row, col, text);
-
-  return true;
-}
-
-bool NodeTableController::CanEditCell(views::GridView& sender,
-                                      int row,
-                                      int column) {
-  return true;
-}
-
 views::ComboTextfield* NodeTableController::OnGridCreateEditor(
     views::GridView& sender,
     int row,

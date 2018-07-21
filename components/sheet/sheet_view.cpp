@@ -136,26 +136,16 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
   contents_view_->set_drop_controller(NULL);
 #endif
 
+  grid_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
+  });
+
   UpdateEditing();
 
   return contents_view_.get();
 }
 
 #if defined(UI_VIEWS)
-void SheetView::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_SHEET_POPUP, point, true);
-}
-
-bool SheetView::OnGridEditCellText(views::GridView& sender,
-                                   int row,
-                                   int column,
-                                   const base::string16& text) {
-  model_->SetCellText(row, column, text);
-  // TODO: Update formula row on model change notification.
-  UpdateFormulaRow();
-  return true;
-}
-
 void SheetView::OnGridGetAutocompleteList(views::GridView& sender,
                                           const base::string16& text,
                                           int& start,
@@ -288,12 +278,6 @@ void SheetView::ClearSelection() {
     model_->ClearRange(range);
 #endif
 }
-
-#if defined(UI_VIEWS)
-bool SheetView::CanEditCell(views::GridView& sender, int row, int column) {
-  return model_->is_editing();
-}
-#endif
 
 void SheetView::UpdateFormulaRow() {
 #if defined(UI_VIEWS)

@@ -38,6 +38,8 @@ class Tree : public QTreeView {
 
   void SetCompareHandler(TreeCompareHandler handler);
 
+  void SetContextMenuHandler(ContextMenuHandler handler);
+
  private:
   std::unique_ptr<TreeModelAdapter> model_adapter_;
 };

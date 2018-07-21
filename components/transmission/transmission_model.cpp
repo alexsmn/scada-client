@@ -61,6 +61,33 @@ void TransmissionModel::GetCell(ui::GridCell& cell) {
   }
 }
 
+bool TransmissionModel::IsEditable(int row, int column) {
+  return column != 0;
+}
+
+bool TransmissionModel::SetCellText(int row,
+                                    int column,
+                                    const base::string16& text) {
+  assert(row >= 0 && row < GetRowCount());
+
+  /*	GridRange range = selection();
+    for (int row = range.top; row <= range.bottom; row++)
+      for (int col = range.left; col <= range.right; col++)
+        WriteCell(row, col, text);*/
+
+  int value;
+  if (!Parse(text, value))
+    return false;
+
+  auto& row_item = this->row(row);
+  scada::NodeProperties properties;
+  properties.emplace_back(id::TransmissionItemType_SourceAddress,
+                          static_cast<int>(value));
+  task_manager_.PostUpdateTask(row_item.transmission.node_id(), {}, properties);
+
+  return true;
+}
+
 void TransmissionModel::Update() {
   rows_.clear();
 

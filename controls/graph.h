@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(UI_VIEWS)
-#include "views/controls/graph.h"
+#include "controls/views/graph.h"
 #elif defined(UI_QT)
-#include "qt/controls/graph.h"
+#include "controls/qt/graph.h"
 #endif

@@ -5,15 +5,10 @@
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller_factory.h"
+#include "controls/grid.h"
 #include "services/dialog_service.h"
 #include "time_range.h"
 #include "window_definition.h"
-
-#if defined(UI_QT)
-#include "controls/qt/grid.h"
-#elif defined(UI_VIEWS)
-#include "ui/views/controls/grid/grid_view.h"
-#endif
 
 REGISTER_CONTROLLER(SummaryView, ID_SUMMARY_VIEW);
 
@@ -25,19 +20,18 @@ SummaryView::SummaryView(const ControllerContext& context)
 UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
-#if defined(UI_QT)
   grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
-  return grid_.get();
 
-#elif defined(UI_VIEWS)
-  grid_.reset(new views::GridView);
-  grid_->SetModel(model_.get());
-  grid_->SetRowModel(&model_->row_model());
-  grid_->SetColumnModel(&model_->column_model());
+  grid_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(0, point, true);
+  });
+
+#if defined(UI_VIEWS)
   grid_->SetRowHeaderWidth(150);
   grid_->SetRowHeadersVisible(true);
-  return grid_->CreateParentIfNecessary();
 #endif
+
+  return grid_->CreateParentIfNecessary();
 }
 
 void SummaryView::Save(WindowDefinition& definition) {

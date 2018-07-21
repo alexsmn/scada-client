@@ -1,10 +1,10 @@
 #pragma once
 
-#include <qheaderview.h>
-#include <qtableview.h>
-
-#include "ui/base/models/table_model.h"
 #include "qt/table_model_adapter.h"
+#include "ui/base/models/table_model.h"
+
+#include <QHeaderView>
+#include <QTableView>
 
 class Table : public QTableView {
  public:
@@ -16,6 +16,16 @@ class Table : public QTableView {
     resizeColumnsToContents();
     setShowGrid(false);
   }
+
+  void SetContextMenuHandler(ContextMenuHandler handler) {
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, &QWidget::customContextMenuRequested,
+            [this, handler](const QPoint& pos) {
+              handler(viewport()->mapToGlobal(pos));
+            });
+  }
+
+  QWidget* CreateParentIfNecessary() { return this; }
 
  private:
   TableModelAdapter model_adapter_;

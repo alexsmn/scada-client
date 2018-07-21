@@ -58,6 +58,7 @@ class SheetModel : private SheetModelContext,
   virtual bool SetCellText(int row,
                            int column,
                            const base::string16& text) override;
+  virtual bool IsEditable(int row, int column) override;
 
  protected:
   friend class SheetCell;

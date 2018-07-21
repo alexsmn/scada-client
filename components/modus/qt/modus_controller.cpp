@@ -40,13 +40,13 @@ QWidget* ModusController::CreateModusView() {
   };
 
   // TODO: Change on ContextMenu.
-  auto context_menu_callback = [this](const gfx::Point& point) {
+  auto context_menu_handler = [this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
   };
 
   view_ = std::make_unique<ModusView>(modus::ModusDocumentContext{
       alias_resolver_, timed_data_service_, file_cache_, title_callback,
-      navigation_callback, selection_callback, context_menu_callback});
+      navigation_callback, selection_callback, context_menu_handler});
 
   wrapper_ = view_.get();
 

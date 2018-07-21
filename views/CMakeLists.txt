@@ -11,7 +11,12 @@ target_include_directories(client_views PUBLIC
 )
 
 target_link_libraries(client_views PUBLIC
-  client_core
+  address_space_common
+  base_i18n
+  modus
+  scada_core_remote
+  scada_core_vidicon
+  ui_base
   views
 )
 

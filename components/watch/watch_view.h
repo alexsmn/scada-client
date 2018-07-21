@@ -9,14 +9,7 @@
 #include "ui/views/controls/table/table_controller.h"
 #endif
 
-#if defined(UI_QT)
-class QTableView;
-#elif defined(UI_VIEWS)
-namespace views {
-class TableView;
-}
-#endif
-
+class Table;
 class WatchModel;
 
 class WatchView : public Controller,
@@ -45,7 +38,6 @@ class WatchView : public Controller,
 
 #if defined(UI_VIEWS)
   // GridController
-  virtual void ShowContextMenu(gfx::Point point) override;
   virtual void OnSelectionChanged(views::TableView& sender) override;
 #endif
 
@@ -53,9 +45,5 @@ class WatchView : public Controller,
 
   bool auto_scroll_ = false;
 
-#if defined(UI_QT)
-  std::unique_ptr<QTableView> table_;
-#elif defined(UI_VIEWS)
-  std::unique_ptr<views::TableView> table_;
-#endif
+  std::unique_ptr<Table> table_;
 };

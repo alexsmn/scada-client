@@ -82,9 +82,9 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   tree_view_->SetDragHandler([this](void* node) { StartDrag(node); });
 #endif
 
-  /*tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
+  tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
-  });*/
+  });
 }
 
 ConfigurationTreeView::~ConfigurationTreeView() {}

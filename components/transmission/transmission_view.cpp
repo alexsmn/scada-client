@@ -6,15 +6,10 @@
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "controller_factory.h"
+#include "controls/grid.h"
 #include "remote/session_proxy.h"
 #include "services/task_manager.h"
 #include "window_definition.h"
-
-#if defined(UI_QT)
-#include "controls/qt/grid.h"
-#elif defined(UI_VIEWS)
-#include "ui/views/controls/grid/grid_view.h"
-#endif
 
 REGISTER_CONTROLLER(TransmissionView, ID_TRANSMISSION_VIEW);
 
@@ -37,28 +32,16 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
       ui::TableColumn(1, L"Адрес", 100, ui::TableColumn::RIGHT)};
   column_model_.SetColumns(_countof(columns), columns);
 
-#if defined(UI_QT)
   grid_.reset(new Grid(*model_, *model_, column_model_));
-  return grid_.get();
 
-#elif defined(UI_VIEWS)
-  grid_.reset(new views::GridView);
-  grid_->SetModel(model_.get());
-  grid_->SetRowModel(model_.get());
-  grid_->SetColumnModel(&column_model_);
-  grid_->set_controller(this);
+#if defined(UI_VIEWS)
   grid_->SetRowHeadersVisible(true);
   grid_->set_allow_row_select(true);
   grid_->SetRowHeaderWidth(15);
-  return grid_->CreateParentIfNecessary();
 #endif
-}
 
-#if defined(UI_VIEWS)
-void TransmissionView::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
+  return grid_->CreateParentIfNecessary();
 }
-#endif
 
 void TransmissionView::DeleteSelection() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
@@ -73,45 +56,6 @@ void TransmissionView::DeleteSelection() {
     task_manager_.PostDeleteTask(model_->row(i).transmission.node_id());
 #endif
 }
-
-void TransmissionView::WriteCell(int row, int col, LPCTSTR text) {}
-
-#if defined(UI_VIEWS)
-bool TransmissionView::CanEditCell(views::GridView& sender,
-                                   int row,
-                                   int column) {
-  assert(row >= 0 && row < model_->GetRowCount());
-
-  if (column == 0)
-    return false;
-
-  return true;
-}
-
-bool TransmissionView::OnGridEditCellText(views::GridView& sender,
-                                          int row,
-                                          int column,
-                                          const base::string16& text) {
-  assert(row >= 0 && row < model_->GetRowCount());
-
-  /*	GridRange range = selection();
-    for (int row = range.top; row <= range.bottom; row++)
-      for (int col = range.left; col <= range.right; col++)
-        WriteCell(row, col, text);*/
-
-  int value;
-  if (!Parse(text, value))
-    return false;
-
-  auto& row_item = model_->row(row);
-  scada::NodeProperties properties;
-  properties.emplace_back(id::TransmissionItemType_SourceAddress,
-                          static_cast<int>(value));
-  task_manager_.PostUpdateTask(row_item.transmission.node_id(), {}, properties);
-
-  return true;
-}
-#endif
 
 CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {

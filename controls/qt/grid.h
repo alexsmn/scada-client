@@ -16,6 +16,18 @@ class Grid : public QTableView {
     resizeColumnsToContents();
   }
 
+  QWidget* CreateParentIfNecessary() { return this; }
+
+  void SetContextMenuHandler(ContextMenuHandler handler) {
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, &QWidget::customContextMenuRequested,
+            [this, handler](const QPoint& pos) {
+              handler(viewport()->mapToGlobal(pos));
+            });
+  }
+
  private:
   GridModelAdapter model_adapter_;
+
+  ContextMenuHandler context_menu_handler_;
 };

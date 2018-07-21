@@ -1,26 +1,15 @@
 #pragma once
 
-#include <memory>
-
 #include "contents_model.h"
 #include "controller.h"
 
-#if defined(UI_VIEWS)
-#include "ui/views/controls/table/table_controller.h"
-#endif
+#include <memory>
 
+class Table;
 class TimedDataModel;
-
-#if defined(UI_QT)
-class QTableView;
-#endif
 
 class TimedDataView : public Controller,
                       public ContentsModel
-#if defined(UI_VIEWS)
-    ,
-                      private views::TableController
-#endif
 {
  public:
   explicit TimedDataView(const ControllerContext& context);
@@ -44,16 +33,7 @@ class TimedDataView : public Controller,
 
   void ExportToExcel();
 
-#if defined(UI_VIEWS)
-  // views::TableController overrides
-  virtual void ShowContextMenu(gfx::Point point) override;
-#endif
-
   std::unique_ptr<TimedDataModel> model_;
 
-#if defined(UI_QT)
-  std::unique_ptr<QTableView> view_;
-#elif defined(UI_VIEWS)
-  std::unique_ptr<views::TableView> view_;
-#endif
+  std::unique_ptr<Table> view_;
 };

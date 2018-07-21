@@ -2,10 +2,11 @@
 
 #include "contents_model.h"
 #include "controller.h"
-#include "ui/views/controls/grid/grid_controller.h"
-#include "ui/views/controls/textfield/textfield_controller.h"
 
 #if defined(UI_VIEWS)
+#include "ui/views/context_menu_controller.h"
+#include "ui/views/controls/grid/grid_controller.h"
+#include "ui/views/controls/textfield/textfield_controller.h"
 #include "ui/views/drop_controller.h"
 #endif
 
@@ -78,25 +79,17 @@ class SheetView : public Controller,
 
 #if defined(UI_VIEWS)
   // GridController
-  virtual bool OnGridEditCellText(views::GridView& sender,
-                                  int row,
-                                  int column,
-                                  const base::string16& text) override;
-  virtual bool CanEditCell(views::GridView& sender,
-                           int row,
-                           int column) override;
   virtual void OnGridGetAutocompleteList(
       views::GridView& sender,
       const base::string16& text,
       int& start,
       std::vector<base::string16>& list) override;
   virtual void OnGridSelectionChanged(views::GridView& sender) override;
-  virtual void ShowContextMenu(gfx::Point point) override;
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
   virtual bool OnDoubleClick() override;
 
-  // private views::TextfieldController
+  // views::TextfieldController
   virtual void ContentsChanged(views::Textfield* sender,
                                const base::string16& new_contents) override;
 #endif

@@ -4,22 +4,9 @@
 
 #include "base/timer/timer.h"
 #include "components/graph/metrix_data_source.h"
+#include "controls/graph.h"
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_delegate.h"
-
-#if defined(UI_QT)
-#include "graph_qt/graph.h"
-#include "graph_qt/graph_line.h"
-#include "graph_qt/graph_pane.h"
-#include "graph_qt/graph_plot.h"
-#include "graph_qt/graph_widget.h"
-#elif defined(UI_VIEWS)
-#include "ui/views/controls/graph/graph.h"
-#include "ui/views/controls/graph/graph_line.h"
-#include "ui/views/controls/graph/graph_pane.h"
-#include "ui/views/controls/graph/graph_plot.h"
-#include "ui/views/controls/graph/graph_widget.h"
-#endif
 
 class TimedDataService;
 
@@ -27,14 +14,14 @@ struct MetrixGraphContext {
   TimedDataService& timed_data_service_;
 };
 
-class MetrixGraph : private MetrixGraphContext, public views::Graph {
+class MetrixGraph : private MetrixGraphContext, public Graph {
  public:
   //  typedef std::map<long, Bar> BarMap;
 
   class MetrixPane;
   class MetrixLine;
 
-  class MetrixWidget : public views::GraphWidget {
+  class MetrixWidget : public GraphWidget {
    public:
     explicit MetrixWidget(MetrixPane& pane) : GraphWidget(pane) {}
 
@@ -63,7 +50,7 @@ class MetrixGraph : private MetrixGraphContext, public views::Graph {
     int title_width_;
   };
 
-  class MetrixPane : public views::GraphPane {
+  class MetrixPane : public GraphPane {
    public:
     MetrixGraph& graph() const {
       return static_cast<MetrixGraph&>(GraphPane::graph());
@@ -82,7 +69,7 @@ class MetrixGraph : private MetrixGraphContext, public views::Graph {
     std::unique_ptr<Legend> legend_;
   };
 
-  class MetrixLine : public views::GraphLine {
+  class MetrixLine : public GraphLine {
    public:
     MetrixLine();
     virtual ~MetrixLine();

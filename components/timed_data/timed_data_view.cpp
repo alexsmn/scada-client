@@ -10,15 +10,9 @@
 #include "common_resources.h"
 #include "components/timed_data/timed_data_model.h"
 #include "controller_factory.h"
+#include "controls/table.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
-
-#if defined(UI_QT)
-#include "controls/qt/table.h"
-#elif defined(UI_VIEWS)
-#include "skia/ext/skia_utils_win.h"
-#include "ui/views/controls/table/table_view.h"
-#endif
 
 #include <ATLComTime.h>
 
@@ -80,19 +74,20 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item"))
     model_->SetFormula(item->GetString("path"));
 
-#if defined(UI_QT)
   view_.reset(new Table(*model_, {s_columns, s_columns + _countof(s_columns)}));
+
+#if defined(UI_QT)
   return view_.get();
 
 #elif defined(UI_VIEWS)
-  view_.reset(new views::TableView(*model_));
   view_->set_show_grid(true);
-  view_->set_controller(this);
-
-  view_->SetColumns(_countof(s_columns), s_columns);
-
-  return &view_->CreateParentIfNecessary();
 #endif
+
+  view_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_TIMEVAL_POPUP, point, true);
+  });
+
+  return view_->CreateParentIfNecessary();
 }
 
 void TimedDataView::Save(WindowDefinition& definition) {
@@ -127,12 +122,6 @@ void TimedDataView::AddContainedItem(const scada::NodeId& node_id,
                                      unsigned flags) {
   model_->SetFormula(MakeNodeIdFormula(node_id));
 }
-
-#if defined(UI_VIEWS)
-void TimedDataView::ShowContextMenu(gfx::Point point) {
-  controller_delegate_.ShowPopupMenu(IDR_TIMEVAL_POPUP, point, true);
-}
-#endif
 
 CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {

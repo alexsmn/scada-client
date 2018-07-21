@@ -192,6 +192,10 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   // Don't set controller until graph is initialized.
   graph_->set_controller(this);
 
+  graph_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(0, point, true);
+  });
+
   return graph_.get();
 }
 

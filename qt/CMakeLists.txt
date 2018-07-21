@@ -21,10 +21,15 @@ target_compile_definitions(client_qt PUBLIC
 
 find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
 target_link_libraries(client_qt PUBLIC
-  client_core
+  address_space_common
+  base_i18n
   gdiplus
   graph_qt
+  modus
   Qt5::Widgets
+  scada_core_remote
+  scada_core_vidicon
+  ui_base
 )
 
 if(WIN32)

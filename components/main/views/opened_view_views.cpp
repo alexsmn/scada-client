@@ -14,6 +14,9 @@ void OpenedView::ShowPopupMenu(unsigned resource_id,
                                bool right_click) {
   assert(main_window_);
 
+  if (resource_id == 0)
+    resource_id = IDR_ITEM_POPUP;
+
   // TODO: Avoid the cast.
   HMENU menu = CreatePopupMenu(resource_id, context_menu_model_);
   if (!menu)
@@ -114,12 +117,4 @@ void OpenedView::Print() {
   view.m_sizeCurPhysOffset.cx = printer_dc.GetDeviceCaps(PHYSICALOFFSETX);
   view.m_sizeCurPhysOffset.cy = printer_dc.GetDeviceCaps(PHYSICALOFFSETY);
   view.SetEnhMetaFile(meta_dc.Close()); */
-}
-
-void OpenedView::ShowContextMenuForView(views::View* source,
-                                        const gfx::Point& point) {
-  auto menu_id = window_info().menu;
-  if (menu_id == 0)
-    menu_id = IDR_ITEM_POPUP;
-  ShowPopupMenu(menu_id, point, true);
 }

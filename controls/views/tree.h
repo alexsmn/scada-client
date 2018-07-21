@@ -2,17 +2,20 @@
 
 #include <memory>
 
-#include "ui/views/controls/tree/tree_view.h"
 #include "controls/types.h"
+#include "ui/views/context_menu_controller.h"
+#include "ui/views/controls/tree/tree_view.h"
 
 namespace WTL {
-template <bool t_bManaged> class CImageListT;
-typedef CImageListT<false>   CImageList;
-typedef CImageListT<true>    CImageListManaged;
-}
+template <bool t_bManaged>
+class CImageListT;
+typedef CImageListT<false> CImageList;
+typedef CImageListT<true> CImageListManaged;
+}  // namespace WTL
 
 class Tree : public views::TreeView,
-             private views::TreeController {
+             private views::TreeController,
+             private views::ContextMenuController {
  public:
   explicit Tree(ui::TreeModel& model);
   virtual ~Tree();
@@ -28,17 +31,27 @@ class Tree : public views::TreeView,
   void SetDragHandler(TreeDragHandler handler);
   void SetEditHandler(TreeEditHandler handler);
   void SetCompareHandler(TreeCompareHandler handler);
+  void SetContextMenuHandler(ContextMenuHandler handler);
 
  private:
   // TreeController
   virtual void OnDoubleClick(views::TreeView& sender) override;
-  virtual void OnShowContextMenu(views::TreeView& sender, const gfx::Point& point) override;
+  virtual void OnShowContextMenu(views::TreeView& sender,
+                                 const gfx::Point& point) override;
   virtual void OnSelectionChanged(views::TreeView& sender) override;
   virtual void OnDrag(views::TreeView& sender, void* node) override;
-  virtual void OnExpanded(views::TreeView& sender, void* node, bool expanded) override;
-  virtual void OnChecked(views::TreeView& sender, void* node, bool checked) override;
+  virtual void OnExpanded(views::TreeView& sender,
+                          void* node,
+                          bool expanded) override;
+  virtual void OnChecked(views::TreeView& sender,
+                         void* node,
+                         bool checked) override;
   virtual bool CanEdit(TreeView& sender, void* node) override;
   virtual int OnCompare(TreeView& sender, void* left, void* right) override;
+
+  // views::ContextMenuController
+  virtual void ShowContextMenuForView(views::View* source,
+                                      const gfx::Point& point) override;
 
   DoubleClickHandler double_click_handler_;
   SelectionChangedHandler selection_changed_handler_;
@@ -47,6 +60,7 @@ class Tree : public views::TreeView,
   TreeDragHandler drag_handler_;
   TreeEditHandler edit_handler_;
   TreeCompareHandler compare_handler_;
+  ContextMenuHandler context_menu_handler_;
 
   std::unique_ptr<WTL::CImageList> images_;
 };

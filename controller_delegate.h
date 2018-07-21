@@ -1,9 +1,10 @@
 #pragma once
 
 #include "base/strings/string_piece.h"
+#include "controls/types.h"
 
-namespace gfx {
-class Point;
+namespace ui {
+class MenuModel;
 }
 
 class ContentsModel;
@@ -18,7 +19,7 @@ class ControllerDelegate {
   // |point| is in _screen_ coordinates.
   // |right_click| should be set if popup is initated by right-click.
   virtual void ShowPopupMenu(unsigned resource_id,
-                             const gfx::Point& point,
+                             const UiPoint& point,
                              bool right_click) = 0;
 
   virtual void SetModified(bool modified) = 0;

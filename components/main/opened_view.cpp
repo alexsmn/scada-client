@@ -5,13 +5,6 @@
 #include "controller.h"
 #include "window_info.h"
 
-#if defined(UI_QT)
-#include "components/main/qt/main_window_qt.h"
-#include "qt/client_utils_qt.h"
-
-#include <QMenu>
-#endif
-
 OpenedView::OpenedView(OpenedViewContext&& context)
     : OpenedViewContext{std::move(context)} {
   controller_ = controller_factory_(window_def_.window_info().command_id, *this,
@@ -26,19 +19,9 @@ OpenedView::OpenedView(OpenedViewContext&& context)
     throw std::runtime_error{"Can't create widget"};
   view_ = view;
 
-#if defined(UI_QT)
-  view_->setContextMenuPolicy(Qt::CustomContextMenu);
-  QObject::connect(view_, &QWidget::customContextMenuRequested,
-                   [this](const QPoint& pos) {
-                     QMenu menu;
-                     BuildMenu(menu, context_menu_model_);
-                     menu.exec(view_->mapToGlobal(pos));
-                   });
-
-#elif defined(UI_VIEWS)
+#if defined(UI_VIEWS)
   view_->set_parent_owned(false);
   view_->set_drop_controller(this);
-  view_->set_context_menu_controller(this);
 #endif
 
   update_working_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(100),

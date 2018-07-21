@@ -144,7 +144,7 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   if (button == RightBtn) {
     POINT pt;
     GetCursorPos(&pt);
-    context_menu_callback_(gfx::Point(pt));
+    context_menu_callback_(ToUiPoint(pt));
   }
 }
 

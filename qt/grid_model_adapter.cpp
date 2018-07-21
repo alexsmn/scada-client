@@ -2,8 +2,8 @@
 
 #include <QtCore/qsize.h>
 
-#include "ui/base/models/grid_range.h"
 #include "base/qt/color_qt.h"
+#include "ui/base/models/grid_range.h"
 
 namespace {
 
@@ -20,12 +20,12 @@ Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
   }
 }
 
-} // namespace
+}  // namespace
 
-GridModelAdapter::GridModelAdapter(ui::GridModel& model, ui::HeaderModel& row_model, ui::HeaderModel& column_model)
-    : model_(model),
-      row_model_(row_model),
-      column_model_(column_model) {
+GridModelAdapter::GridModelAdapter(ui::GridModel& model,
+                                   ui::HeaderModel& row_model,
+                                   ui::HeaderModel& column_model)
+    : model_(model), row_model_(row_model), column_model_(column_model) {
   model_.observers().AddObserver(this);
 }
 
@@ -33,15 +33,15 @@ GridModelAdapter::~GridModelAdapter() {
   model_.observers().RemoveObserver(this);
 }
 
-int GridModelAdapter::rowCount(const QModelIndex &parent) const {
+int GridModelAdapter::rowCount(const QModelIndex& parent) const {
   return row_model_.GetCount();
 }
 
-int GridModelAdapter::columnCount(const QModelIndex &parent) const {
+int GridModelAdapter::columnCount(const QModelIndex& parent) const {
   return column_model_.GetCount();
 }
 
-QVariant GridModelAdapter::data(const QModelIndex &index, int role) const {
+QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::TextAlignmentRole:
       return column_model_.GetAlignment(index.column());
@@ -64,10 +64,19 @@ QVariant GridModelAdapter::data(const QModelIndex &index, int role) const {
   }
 }
 
-QVariant GridModelAdapter::headerData(int section, Qt::Orientation orientation, int role) const {
+Qt::ItemFlags GridModelAdapter::flags(const QModelIndex& index) const {
+  auto flags = QAbstractTableModel::flags(index);
+  if (!model_.IsEditable(index.row(), index.column()))
+    flags &= ~Qt::ItemIsEditable;
+  return flags;
+}
+
+QVariant GridModelAdapter::headerData(int section,
+                                      Qt::Orientation orientation,
+                                      int role) const {
   if (orientation != Qt::Horizontal)
     return QVariant();
-  
+
   switch (role) {
     case Qt::DisplayRole:
       return QString::fromStdWString(column_model_.GetTitle(section));
@@ -83,16 +92,21 @@ void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRangeChanged(ui::GridModel& model, const ui::GridRange& range) {
-  dataChanged(
-      index(range.row(), range.column()),
-      index(range.row() + range.row_count() - 1, range.column() + range.column_count() - 1));
+void GridModelAdapter::OnGridRangeChanged(ui::GridModel& model,
+                                          const ui::GridRange& range) {
+  dataChanged(index(range.row(), range.column()),
+              index(range.row() + range.row_count() - 1,
+                    range.column() + range.column_count() - 1));
 }
 
-void GridModelAdapter::OnGridRowsAdded(ui::GridModel& model, int first, int count) {
+void GridModelAdapter::OnGridRowsAdded(ui::GridModel& model,
+                                       int first,
+                                       int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model, int first, int count) {
+void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
+                                         int first,
+                                         int count) {
   layoutChanged();
 }
