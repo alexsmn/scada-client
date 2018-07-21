@@ -17,5 +17,5 @@ void OpenedView::ShowPopupMenu(unsigned resource_id,
                                bool right_click) {
   QMenu menu;
   BuildMenu(menu, context_menu_model_);
-  menu.popup(point);
+  menu.exec(point);
 }

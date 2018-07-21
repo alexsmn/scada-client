@@ -20,17 +20,11 @@ class ContextMenuModel final : public ui::SimpleMenuModel,
   void Rebuild();
 
   // ui::SimpleMenuModel::Delegate
-  virtual bool IsCommandIdChecked(int command_id) const override {
-    return false;
-  }
-  virtual bool IsCommandIdEnabled(int command_id) const override {
-    return false;
-  }
+  virtual bool IsCommandIdChecked(int command_id) const override;
+  virtual bool IsCommandIdEnabled(int command_id) const override;
   virtual bool GetAcceleratorForCommandId(
       int command_id,
-      ui::Accelerator* accelerator) override {
-    return false;
-  }
+      ui::Accelerator* accelerator) override;
   virtual void ExecuteCommand(int command_id) override;
 
   MainWindow& main_window_;

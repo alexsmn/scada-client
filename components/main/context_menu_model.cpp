@@ -76,3 +76,19 @@ void ContextMenuModel::ExecuteCommand(int command_id) {
   if (auto* handler = command_handler_.GetCommandHandler(command_id))
     handler->ExecuteCommand(command_id);
 }
+
+bool ContextMenuModel::IsCommandIdChecked(int command_id) const {
+  auto* handler = command_handler_.GetCommandHandler(command_id);
+  return handler && handler->IsCommandChecked(command_id);
+}
+
+bool ContextMenuModel::IsCommandIdEnabled(int command_id) const {
+  auto* handler = command_handler_.GetCommandHandler(command_id);
+  return handler && handler->IsCommandEnabled(command_id);
+}
+
+bool ContextMenuModel::GetAcceleratorForCommandId(
+    int command_id,
+    ui::Accelerator* accelerator) {
+  return false;
+}
