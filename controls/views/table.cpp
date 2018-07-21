@@ -3,6 +3,7 @@
 Table::Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
     : TableView(model) {
   SetColumns(columns.size(), columns.data());
+  set_show_grid(false);
 }
 
 void Table::SetContextMenuHandler(ContextMenuHandler handler) {

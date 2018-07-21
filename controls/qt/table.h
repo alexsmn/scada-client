@@ -17,6 +17,8 @@ class Table : public QTableView {
     setShowGrid(false);
   }
 
+  void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
+
   void SetContextMenuHandler(ContextMenuHandler handler) {
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QWidget::customContextMenuRequested,
@@ -24,6 +26,19 @@ class Table : public QTableView {
               handler(viewport()->mapToGlobal(pos));
             });
   }
+
+  std::vector<int> GetSelectedRows() const {
+    std::vector<int> rows;
+    if (selectionModel()) {
+      auto indexes = selectionModel()->selectedRows();
+      rows.reserve(indexes.size());
+      for (const auto& index : indexes)
+        rows.emplace_back(index.row());
+    }
+    return rows;
+  }
+
+  void SelectRow(int row) { selectRow(row); }
 
   QWidget* CreateParentIfNecessary() { return this; }
 

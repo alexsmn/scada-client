@@ -8,6 +8,14 @@ class Table : public views::TableView, private views::ContextMenuController {
  public:
   Table(ui::TableModel& model, std::vector<ui::TableColumn> columns);
 
+  void SetShowGrid(bool show_grid) { set_show_grid(show_grid); }
+
+  auto GetSelectedRows() const {
+    return selection_model().selected_indices();
+  }
+
+  void SelectRow(int row) { Select(row, true); }
+
   void SetContextMenuHandler(ContextMenuHandler handler);
 
  private:

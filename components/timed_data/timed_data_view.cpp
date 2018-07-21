@@ -75,13 +75,7 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
     model_->SetFormula(item->GetString("path"));
 
   view_.reset(new Table(*model_, {s_columns, s_columns + _countof(s_columns)}));
-
-#if defined(UI_QT)
-  return view_.get();
-
-#elif defined(UI_VIEWS)
-  view_->set_show_grid(true);
-#endif
+  view_->SetShowGrid(true);
 
   view_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_TIMEVAL_POPUP, point, true);

@@ -16,7 +16,7 @@ namespace {
 
 class CustomDockWidget : public QDockWidget {
  public:
-  CustomDockWidget(QWidget* parent = nullptr) : QDockWidget(parent) {}
+  explicit CustomDockWidget(QWidget* parent = nullptr) : QDockWidget(parent) {}
 
   typedef std::function<void()> ClosedHandler;
   void SetClosedHandler(ClosedHandler handler) {
@@ -305,7 +305,7 @@ void ViewManagerQt::AddDockView(OpenedView& view) {
   // Open HardwareView to the bottom of opened view.
   if (view.window_info().command_id != ID_HARDWARE_VIEW) {
     for (auto* dock : main_window_.findChildren<CustomDockWidget*>()) {
-      if (main_window_.dockWidgetArea(dock) == Qt::LeftDockWidgetArea) {
+      if (main_window_.dockWidgetArea(dock) == area) {
         tabify_to = dock;
         break;
       }

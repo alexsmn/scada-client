@@ -86,8 +86,6 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
       WTL::AtlLoadBitmapImage(IDB_EVENT_SEVERITIES);
   severities_image_list_->Add(severities_bitmap, RGB(0, 255, 0));
 
-  // table_->set_show_grid(true);
-
   table_->SetColumns(count, kEventViewColumns);
   table_->set_controller(this);
 #endif
@@ -110,12 +108,9 @@ NodeIdSet EventView::GetContainedItems() const {
 }
 
 void EventView::AcknowledgeSelection() {
-#if defined(UI_VIEWS)
-  typedef ui::ListSelectionModel::SelectedIndices Indices;
-  Indices indices = table_->selection_model().selected_indices();
-  for (Indices::reverse_iterator i = indices.rbegin(); i != indices.rend(); ++i)
+  auto rows = table_->GetSelectedRows();
+  for (auto i = rows.rbegin(); i != rows.rend(); ++i)
     model_->AcknowledgeRow(*i);
-#endif
 }
 
 #if defined(UI_VIEWS)
@@ -133,15 +128,12 @@ void EventView::OnSelectionChanged(views::TableView& sender) {
 #endif
 
 bool EventView::CanAcknowledgeSelection() const {
-#if defined(UI_VIEWS)
-  typedef ui::ListSelectionModel::SelectedIndices Indices;
-  const Indices& indices = table_->selection_model().selected_indices();
-  for (Indices::const_iterator i = indices.begin(); i != indices.end(); ++i) {
+  auto rows = table_->GetSelectedRows();
+  for (auto i = rows.begin(); i != rows.end(); ++i) {
     const scada::Event& event = model_->event_at(*i);
     if (!event.acked)
       return true;
   }
-#endif
   return false;
 }
 

@@ -73,7 +73,6 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
 
 #elif defined(UI_VIEWS)
   table_->set_controller(this);
-  table_->set_show_grid(false);
 #endif
 
   table_->SetContextMenuHandler([this](const UiPoint& point) {
@@ -158,10 +157,5 @@ void WatchView::OnItemsAdded(int first, int count) {
     return;
 
   auto last_row = first + count - 1;
-
-#if defined(UI_QT)
-  table_->selectRow(last_row);
-#elif defined(UI_VIEWS)
-  table_->Select(last_row, true);
-#endif
+  table_->SelectRow(last_row);
 }
