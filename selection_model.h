@@ -32,7 +32,7 @@ class SelectionModel final : private SelectionModelContext,
   base::string16 GetTitle() const;
   NodeIdSet GetMultipleNodeIds() const;
   const NodeRef& node() const { return node_; }
-  const rt::TimedDataSpec& GetTimedData() const { return timed_data_; }
+  const rt::TimedDataSpec& timed_data() const { return timed_data_; }
 
   using ChangeHandler = std::function<void()>;
   ChangeHandler change_handler;

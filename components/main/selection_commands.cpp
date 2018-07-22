@@ -74,8 +74,8 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
     case ID_OPEN_GRAPH:
     case ID_OPEN_SUMMARY:
     case ID_OPEN_EVENTS:
-      return selection_->multiple() || selection_->GetTimedData().connected() ||
-                     (node && node.node_class() == scada::NodeClass::Object)
+      return selection_->multiple() || selection_->timed_data().connected() ||
+                     IsInstanceOf(node, id::DataGroupType)
                  ? this
                  : nullptr;
 
@@ -84,7 +84,7 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
     case ID_HISTORICAL_EVENTS:
     case ID_TIMED_DATA_VIEW:
     case ID_OPEN_GROUP_TABLE:
-      return selection_->GetTimedData().connected() ? this : nullptr;
+      return selection_->timed_data().connected() ? this : nullptr;
 
     case ID_DEV1_REFR:
     case ID_DEV1_SYNC:
@@ -135,7 +135,7 @@ bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
       return !selection_->empty();
 
     case ID_ACKNOWLEDGE_CURRENT:
-      return selection_->GetTimedData().alerting();
+      return selection_->timed_data().alerting();
 
     case ID_UNLOCK_ITEM:
       return node && node[id::DataItemType_Locked].value().get_or(false);
@@ -188,7 +188,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   }
 
   const auto& node_id = selection_->node().node_id();
-  if (node_id == scada::NodeId() && selection_->GetTimedData().connected()) {
+  if (node_id.is_null() && selection_->timed_data().connected()) {
     unsigned type = 0;
     switch (command_id) {
       case ID_OPEN_GRAPH:
@@ -205,7 +205,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
         break;
     }
     if (type) {
-      const std::string& formula = selection_->GetTimedData().formula();
+      const std::string& formula = selection_->timed_data().formula();
       ::OpenView(main_window_, MakeWindowDefinition(formula.c_str(), type));
     }
     return;

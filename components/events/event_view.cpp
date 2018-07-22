@@ -390,15 +390,11 @@ void EventView::SelectSeverity() {
 
 NodeIdSet EventView::GetSelectedNodeIds() const {
   NodeIdSet node_ids;
-#if defined(UI_VIEWS)
-  typedef ui::ListSelectionModel::SelectedIndices Indices;
-  const Indices& indices = table_->selection_model().selected_indices();
-  for (Indices::const_iterator i = indices.begin(); i != indices.end(); ++i) {
-    const scada::Event& event = model_->event_at(*i);
+  for (auto row : table_->GetSelectedRows()) {
+    const scada::Event& event = model_->event_at(row);
     if (!event.node_id.is_null())
       node_ids.insert(event.node_id);
   }
-#endif
   return node_ids;
 }
 

@@ -64,7 +64,7 @@ views::View* ModusController::CreateModusView2() {
   });
 
   view2_->set_double_click_signal(
-      [this] { selection().GetTimedData().Acknowledge(); });
+      [this] { selection().timed_data().Acknowledge(); });
 
   view2_->title_changed_handler = [this](base::StringPiece16 new_title) {
     controller_delegate_.SetTitle(new_title);

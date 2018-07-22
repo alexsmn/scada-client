@@ -67,7 +67,7 @@ QWidget* ModusController::CreateModusView2() {
   });
 
   view2_->set_double_click_signal(
-      [this] { selection().GetTimedData().Acknowledge(); });
+      [this] { selection().timed_data().Acknowledge(); });
 
   wrapper_ = view2_.get();
 

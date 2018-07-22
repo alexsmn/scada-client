@@ -91,9 +91,9 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_VIEW_CLOSE:
       return active_view ? this : NULL;
 
-    case ID_PRINT:
+    /*case ID_PRINT:
       return active_view && active_view->window_info().printable() ? this
-                                                                   : NULL;
+                                                                   : NULL;*/
 
     case ID_TOOLBAR_TOP:
     case ID_TOOLBAR_LEFT:
