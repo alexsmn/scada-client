@@ -1,5 +1,6 @@
 ﻿#include "components/main/actions.h"
 
+#include "components/main/action.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"

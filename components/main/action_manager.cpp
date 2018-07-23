@@ -2,6 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
+#include "components/main/action.h"
 
 GroupedActions GroupCommands(ActionManager& action_manager,
                              const std::vector<unsigned>& commands) {
@@ -32,21 +33,6 @@ bool CanExpandCommandCategory(CommandCategory category) {
   return category != CATEGORY_CREATE && category != CATEGORY_DEVICE &&
          category != CATEGORY_PERIOD && category != CATEGORY_NEW;
 }
-
-// Action
-
-Action::Action(unsigned command,
-               CommandCategory category,
-               base::string16 title,
-               base::string16 short_title,
-               int image_id,
-               unsigned flags)
-    : command_id_(command),
-      category_(category),
-      title_(std::move(title)),
-      short_title_(std::move(short_title)),
-      image_id_(image_id),
-      flags_(flags) {}
 
 // ActionManager
 
