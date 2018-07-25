@@ -42,9 +42,12 @@ class Action {
   virtual base::string16 GetTitle() const { return title_; }
 
   unsigned command_id() const { return command_id_; }
+
   base::string16 GetShortTitle() const {
     return short_title_.empty() ? title_ : short_title_;
   }
+  void SetTitle(base::string16 title) { title_ = std::move(title); }
+
   int image_id() const { return image_id_; }
   bool enabled() const { return GetFlag(ENABLED); }
   bool checked() const { return GetFlag(CHECKED); }

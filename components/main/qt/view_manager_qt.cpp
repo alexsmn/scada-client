@@ -199,11 +199,12 @@ OpenedView* ViewManagerQt::FindViewByWidget(const QWidget* widget) {
                         [widget](OpenedView* opened_view) {
                           return opened_view->view() == widget;
                         });
-  return i == views_.end() ? nullptr : *i;
+  return i != views_.end() ? *i : nullptr;
 }
 
-void ViewManagerQt::OnFocusChanged() {
-  SetActiveView(GetActiveView());
+void ViewManagerQt::OnFocusChanged(QObject* focus_object) {
+  if (auto* view = GetActiveView())
+    SetActiveView(view);
 }
 
 void ViewManagerQt::ActivateView(OpenedView& opened_view) {
@@ -236,7 +237,9 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
 }
 
 OpenedView* ViewManagerQt::GetActiveView() {
-  return FindViewByWidget(QApplication::focusWidget());
+  // WARNING: Can't use |focusWidget()| because it updates after
+  // |focusObjectChanged()| signaled.
+  return FindViewByWidget(qobject_cast<QWidget*>(QApplication::focusObject()));
 }
 
 void ViewManagerQt::SetViewTitle(OpenedView& opened_view,

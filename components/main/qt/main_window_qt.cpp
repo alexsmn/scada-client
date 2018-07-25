@@ -7,6 +7,7 @@
 #include "components/main/main_commands.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
+#include "components/main/qt/status_bar_controller.h"
 #include "components/main/qt/view_manager_qt.h"
 #include "components/main/selection_commands.h"
 #include "controller.h"
@@ -48,8 +49,6 @@ QPixmap LoadPixmap(unsigned resource_id) {
 
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
-  setWindowTitle(tr("Telecontrol SCADA Client"));
-
   auto& prefs = GetPrefs();
   setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
               prefs.bounds.height());
@@ -99,6 +98,8 @@ void MainWindowQt::CreateToolbar() {
   }
 
   setStatusBar(new QStatusBar(this));
+  status_bar_controller_ =
+      std::make_unique<StatusBarController>(*statusBar(), *status_bar_model_);
 
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
@@ -179,6 +180,16 @@ void MainWindowQt::OnSelectionChanged() {
       }
     }
     p.second.toolbar_action->setVisible(visible);
+  }
+
+  bool adjucent_separator = false;
+  for (auto* toolbar_action : toolbar_->actions()) {
+    if (toolbar_action->isSeparator()) {
+      toolbar_action->setVisible(!adjucent_separator);
+      adjucent_separator = true;
+    } else if (toolbar_action->isVisible()) {
+      adjucent_separator = false;
+    }
   }
 }
 

@@ -40,7 +40,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
 
   OpenedView* FindViewByWidget(const QWidget* widget);
 
-  void OnFocusChanged();
+  void OnFocusChanged(QObject* focus_object);
 
   QMainWindow& main_window_;
 };

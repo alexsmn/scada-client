@@ -1,9 +1,11 @@
 ﻿#include "components/main/actions.h"
 
-#include "components/main/action.h"
+#include "base/strings/utf_string_conversions.h"
+#include "common/node_observer.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
+#include "components/main/action.h"
 #include "components/main/action_manager.h"
 
 namespace {
@@ -19,17 +21,35 @@ const scada::NodeId kNewCommandTypeIds[] = {
     id::TransmissionItemType,
 };
 
-class NodeAction : public Action {
+class NodeAction : private NodeRefObserver, public Action {
  public:
   NodeAction(unsigned command_id, CommandCategory category, const NodeRef& node)
-      : Action(command_id, category, {}), node_(std::move(node)) {}
+      : Action(command_id, category, {}), node_(std::move(node)) {
+    std::weak_ptr<NodeAction*> weak_ptr = weak_ptr_factory_;
+    node.Fetch(NodeFetchStatus::NodeOnly(), [weak_ptr](const NodeRef& node) {
+      if (auto ptr = weak_ptr.lock())
+        (*ptr)->UpdateTitle();
+    });
+  }
 
   virtual base::string16 GetTitle() const override {
     return ToString16(node_.display_name());
   }
 
  private:
+  // NodeRefObserver
+  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override {
+    UpdateTitle();
+  }
+
+  void UpdateTitle() {
+    SetTitle(base::WideToUTF16(L"Создать ") + ToString16(node_.display_name()));
+  }
+
   const NodeRef node_;
+
+  const std::shared_ptr<NodeAction*> weak_ptr_factory_ =
+      std::make_shared<NodeAction*>(this);
 };
 
 }  // namespace

@@ -6,40 +6,39 @@
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="20"/>
         <source>Login</source>
-        <translation type="unfinished"></translation>
+        <translation>Вход в систему</translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="31"/>
         <source>User name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Имя:</translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="48"/>
         <source>Password:</source>
-        <translation type="unfinished"></translation>
+        <translation>Пароль:</translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="62"/>
         <source>Auto-Login:</source>
-        <translation type="unfinished"></translation>
+        <translation>Авто:</translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="72"/>
         <source>Server:</source>
-        <translation type="unfinished"></translation>
+        <translation>Сервер:</translation>
     </message>
 </context>
 <context>
     <name>MainWindowQt</name>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="51"/>
         <source>Telecontrol SCADA Client</source>
-        <translation type="unfinished"></translation>
+        <translation type="vanished">Клиент ОИК Телеконтроль</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="123"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="124"/>
         <source>Toolbar</source>
-        <translation type="unfinished"></translation>
+        <translation>Панель инструментов</translation>
     </message>
 </context>
 </TS>

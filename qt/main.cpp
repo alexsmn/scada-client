@@ -12,39 +12,44 @@
 #include <QStyle>
 #include <QTranslator>
 
-namespace {
-const char kRegistryKey[] =
-    "HKEY_CURRENT_USER\\Software\\Telecontrol\\Workplace";
-}
-
 int main(int argc, char* argv[]) {
   base::AtExitManager at_exit;
 
   GdiplusInitializer gdiplus;
 
   QApplication qapp(argc, argv);
+  qapp.setApplicationName("Telecontrol SCADA Client");
+  qapp.setOrganizationName("Telecontrol");
+  qapp.setOrganizationDomain("telecontrol.ru");
 
-  // Load translations.
-  {
-    QTranslator qt_translator;
-    qt_translator.load("qt_" + QLocale::system().name(),
-                       QLibraryInfo::location(QLibraryInfo::TranslationsPath));
-    QApplication::installTranslator(&qt_translator);
-
-    QTranslator app_translator;
-    app_translator.load("client_" + QLocale::system().name());
-    QApplication::installTranslator(&app_translator);
-  }
-
-  // Set custom style.
   {
     // TODO: Const
-    QSettings settings{kRegistryKey, QSettings::NativeFormat};
+    QSettings settings;
+
+    // Set custom style.
     // TODO: Const
     auto style = settings.value("Style").toString();
     if (!style.isEmpty())
       QApplication::setStyle(style);
+
+    // Load translations.
+    auto system_name = settings.value("SystemName").toString();
+    if (system_name.isEmpty())
+      system_name = QLocale::system().name();
+
+    QTranslator qt_translator;
+    if (qt_translator.load(
+            "qt_" + system_name,
+            QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
+      QApplication::installTranslator(&qt_translator);
+
+    QTranslator app_translator;
+    if (app_translator.load("client_" + system_name,
+                            QApplication::applicationDirPath()))
+      QApplication::installTranslator(&app_translator);
   }
+
+  qapp.setApplicationDisplayName(qapp.tr("Telecontrol SCADA Client"));
 
   // QApplication must be created.
   base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};
@@ -68,13 +73,11 @@ int main(int argc, char* argv[]) {
     result = -1;
   }
 
+  QSettings settings;
+
   // Save custom style.
-  if (auto* style = QApplication::style()) {
-    // TODO: Const
-    QSettings settings{kRegistryKey, QSettings::NativeFormat};
-    // TODO: Const
+  if (auto* style = QApplication::style())
     settings.setValue("Style", style->objectName());
-  }
 
   return result;
 }

@@ -8,6 +8,7 @@
 class QAction;
 class QMenu;
 class QWidget;
+class StatusBarController;
 class ViewManagerQt;
 
 class MainWindowQt final : public MainWindow, public QMainWindow {
@@ -50,4 +51,6 @@ class MainWindowQt final : public MainWindow, public QMainWindow {
   DialogServiceImplQt dialog_service_;
 
   std::unique_ptr<ui::MenuModel> main_menu_model_;
+
+  std::unique_ptr<StatusBarController> status_bar_controller_;
 };
