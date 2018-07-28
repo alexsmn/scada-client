@@ -44,6 +44,3 @@ class Page {
   typedef std::vector<std::unique_ptr<WindowDefinition>> Windows;
   Windows windows_;
 };
-
-base::FilePath GetPagePath(const char* name);
-base::FilePath GetPagePath(int id);

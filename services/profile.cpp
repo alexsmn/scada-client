@@ -3,6 +3,7 @@
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
 #include "base/xml.h"
 #include "client_paths.h"
@@ -451,6 +452,7 @@ Page& Profile::CreatePage() {
 
   Page& page = pages[id];
   page.id = id;
+  page.title = base::WideToUTF16(L"Лист ") + base::NumberToString16(id);
   return page;
 }
 
@@ -471,5 +473,4 @@ base::Value Profile::ToJson() const {
   return {};
 }
 
-void Profile::FromJson(const base::Value& json) {
-}
+void Profile::FromJson(const base::Value& json) {}

@@ -24,6 +24,9 @@ class GridModelAdapter : public QAbstractTableModel,
   virtual QVariant headerData(int section,
                               Qt::Orientation orientation,
                               int role = Qt::DisplayRole) const override;
+  virtual bool setData(const QModelIndex& index,
+                       const QVariant& value,
+                       int role) override;
 
   // ui::GridModel::Observer
   virtual void OnGridModelChanged(ui::GridModel& model) override;

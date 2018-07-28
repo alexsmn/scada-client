@@ -27,8 +27,6 @@ class NodeTableModel : private PropertyContext,
   typedef std::vector<NodeRef> Nodes;
   const Nodes& nodes() const { return nodes_; }
 
-  PropertyEditor GetCellEditor(int row, int column);
-
   const scada::NodeId& sort_property_id() const { return sort_property_id_; }
   void SetSorting(const scada::NodeId& property_id);
 
@@ -37,6 +35,7 @@ class NodeTableModel : private PropertyContext,
   virtual bool SetCellText(int row,
                            int column,
                            const base::string16& text) override;
+  virtual ui::EditData GetEditData(int row, int column) override;
 
  private:
   void SetFetchedParentNode(const NodeRef& parent_node);

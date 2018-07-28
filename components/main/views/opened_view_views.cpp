@@ -15,6 +15,8 @@ void OpenedView::ShowPopupMenu(unsigned resource_id,
   assert(main_window_);
 
   if (resource_id == 0)
+    resource_id = window_info().menu;
+  if (resource_id == 0)
     resource_id = IDR_ITEM_POPUP;
 
   // TODO: Avoid the cast.

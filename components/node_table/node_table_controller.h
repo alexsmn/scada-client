@@ -35,9 +35,6 @@ class NodeTableController : public Controller,
 #if defined(UI_VIEWS)
   // GridController overrides
   virtual void OnGridSelectionChanged(views::GridView& sender) override;
-  virtual views::ComboTextfield* OnGridCreateEditor(views::GridView& sender,
-                                                    int row,
-                                                    int column) override;
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
   virtual void ShowHeaderContextMenu(gfx::Point point) override;
@@ -48,7 +45,7 @@ class NodeTableController : public Controller,
   void SetSorting(const scada::NodeId& property_id);
 
   std::unique_ptr<NodeTableModel> model_;
-  std::unique_ptr<Grid> table_;
+  std::unique_ptr<Grid> grid_;
 
   base::WeakPtrFactory<NodeTableController> weak_ptr_factory_{this};
 };

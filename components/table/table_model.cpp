@@ -32,9 +32,7 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
 
   switch (command_id_) {
     case ID_SORT_NAME:
-      return HumanCompareText(
-                 base::SysWideToNativeMB(left->GetTitle()).c_str(),
-                 base::SysWideToNativeMB(right->GetTitle()).c_str()) < 0;
+      return HumanCompareText(left->GetTitle(), right->GetTitle()) < 0;
 
     case ID_SORT_CHANNEL: {
       auto item1 = left->timed_data().GetNode();

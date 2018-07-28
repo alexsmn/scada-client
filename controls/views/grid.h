@@ -1,9 +1,12 @@
 #pragma once
 
 #include "ui/views/context_menu_controller.h"
+#include "ui/views/controls/grid/grid_controller.h"
 #include "ui/views/controls/grid/grid_view.h"
 
-class Grid : public views::GridView, private views::ContextMenuController {
+class Grid : private views::ContextMenuController,
+             private views::GridController,
+             public views::GridView {
  public:
   Grid(ui::GridModel& model,
        ui::HeaderModel& row_model,

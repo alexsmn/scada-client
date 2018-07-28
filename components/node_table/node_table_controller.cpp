@@ -84,23 +84,23 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
-  table_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
+  grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
 
 #if defined(UI_VIEWS)
-  table_->set_controller(this);
-  table_->SetRowHeadersVisible(true);
-  table_->set_allow_column_select(true);
-  table_->set_allow_expand(true);
-  table_->SetTopHeaderHeight(19);
-  table_->SetRowHeaderWidth(70);
-  table_->SelectCell(0, 0, true);
+  grid_->set_controller(this);
+  grid_->SetRowHeadersVisible(true);
+  grid_->set_allow_column_select(true);
+  grid_->set_allow_expand(true);
+  grid_->SetTopHeaderHeight(19);
+  grid_->SetRowHeaderWidth(70);
+  grid_->SelectCell(0, 0, true);
 #endif
 
-  table_->SetContextMenuHandler([this](const UiPoint& point) {
+  grid_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
-  return table_->CreateParentIfNecessary();
+  return grid_->CreateParentIfNecessary();
 }
 
 void NodeTableController::Save(WindowDefinition& definition) {
@@ -109,32 +109,6 @@ void NodeTableController::Save(WindowDefinition& definition) {
     definition.AddItem("Item").SetString("path", path);
   }
 }
-
-#if defined(UI_VIEWS)
-views::ComboTextfield* NodeTableController::OnGridCreateEditor(
-    views::GridView& sender,
-    int row,
-    int column) {
-  auto result = model_->GetCellEditor(row, column);
-  if (result.type == PropertyEditor::NONE)
-    return nullptr;
-
-  views::ComboTextfield* editor =
-      __super::OnGridCreateEditor(sender, row, column);
-  assert(editor);
-
-  if (result.type == PropertyEditor::DROPDOWN) {
-    editor->set_type(views::ComboTextfield::DROP_LIST);
-    for (auto& choice : result.choices)
-      editor->AddChoice(choice);
-
-  } else if (result.type == PropertyEditor::BUTTON) {
-    editor->set_type(views::ComboTextfield::BUTTON);
-  }
-
-  return editor;
-}
-#endif
 
 CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
@@ -167,8 +141,8 @@ void NodeTableController::ExecuteCommand(unsigned command) {
   switch (command) {
     case ID_RENAME:
 #if defined(UI_VIEWS)
-      if (auto selection = table_->GetSelectionRange(); !selection.empty())
-        table_->OpenEditor(selection.row(), selection.column());
+      if (auto selection = grid_->GetSelectionRange(); !selection.empty())
+        grid_->OpenEditor(selection.row(), selection.column());
 #endif
       break;
     case ID_SORT_NONE:
@@ -190,8 +164,8 @@ NodeRef NodeTableController::GetRootNode() const {
 bool NodeTableController::OnKeyPressed(views::GridView& sender,
                                        ui::KeyboardCode key_code) {
   // Clear selection when Delete is pressed.
-  if (key_code == ui::VKEY_DELETE && !table_->editing()) {
-    ui::GridRange range = table_->GetSelectionRange();
+  if (key_code == ui::VKEY_DELETE && !grid_->editing()) {
+    ui::GridRange range = grid_->GetSelectionRange();
     if (!range.empty()) {
       for (int row = range.row(); row <= range.last_row(); row++)
         for (int col = range.column(); col <= range.last_column(); col++)
@@ -206,7 +180,7 @@ bool NodeTableController::OnKeyPressed(views::GridView& sender,
 void NodeTableController::OnGridSelectionChanged(views::GridView& sender) {
   __super::OnGridSelectionChanged(sender);
 
-  int row = table_->selected_row();
+  int row = grid_->selected_row();
   // TODO: Investigate why |row == 0| on empty table.
   // Left-click in table header to reproduce.
   if (row == -1 || row >= model_->nodes().size()) {

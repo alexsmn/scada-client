@@ -159,18 +159,21 @@ bool NodeTableModel::SetCellText(int row,
   return true;
 }
 
-PropertyEditor NodeTableModel::GetCellEditor(int row, int column) {
+ui::EditData NodeTableModel::GetEditData(int row, int column) {
   const auto& node = nodes_[row];
   assert(node);
+
   auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::BrowseName ||
       c.attr_id == scada::AttributeId::DisplayName)
-    return PropertyEditor{PropertyEditor::SIMPLE};
+    return {ui::EditData::EditorType::TEXT};
+
   const auto& type_definition = node.type_definition();
-  return type_definition
-             ? c.prop_def->GetPropertyEditor(*this, type_definition,
-                                             c.property_declaration.node_id())
-             : PropertyEditor{PropertyEditor::NONE};
+  if (!type_definition)
+    return {ui::EditData::EditorType::NONE};
+
+  return c.prop_def->GetPropertyEditor(*this, type_definition,
+                                       c.property_declaration.node_id());
 }
 
 void NodeTableModel::Update() {
@@ -242,9 +245,9 @@ void NodeTableModel::Sort() {
 
   struct CompareNodes {
     bool operator()(const NodeRef& left, const NodeRef& right) const {
-      const auto& a = left[property_id].value().get_or(std::string());
-      const auto& b = right[property_id].value().get_or(std::string());
-      return a < b;
+      const auto& a = left[property_id].value().get_or(base::string16());
+      const auto& b = right[property_id].value().get_or(base::string16());
+      return HumanCompareText(a, b) < 0;
     }
 
     const scada::NodeId property_id;

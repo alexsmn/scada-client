@@ -54,6 +54,7 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
 
   switch (role) {
     case Qt::DisplayRole:
+    case Qt::EditRole:
       return QString::fromStdWString(cell.text);
     case Qt::TextColorRole:
       return ColorToQt(cell.text_color);
@@ -66,8 +67,8 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
 
 Qt::ItemFlags GridModelAdapter::flags(const QModelIndex& index) const {
   auto flags = QAbstractTableModel::flags(index);
-  if (!model_.IsEditable(index.row(), index.column()))
-    flags &= ~Qt::ItemIsEditable;
+  if (model_.IsEditable(index.row(), index.column()))
+    flags |= Qt::ItemIsEditable;
   return flags;
 }
 
@@ -85,6 +86,13 @@ QVariant GridModelAdapter::headerData(int section,
     default:
       return QVariant();
   }
+}
+
+bool GridModelAdapter::setData(const QModelIndex& index,
+                               const QVariant& value,
+                               int role) {
+  return model_.SetCellText(index.row(), index.column(),
+                            value.toString().toStdWString());
 }
 
 void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {

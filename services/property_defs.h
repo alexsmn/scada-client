@@ -5,6 +5,7 @@
 #include "base/strings/string16.h"
 #include "common/node_ref.h"
 #include "core/configuration_types.h"
+#include "ui/base/models/grid_model.h"
 #include "ui/base/models/table_column.h"
 
 class NodeService;
@@ -16,15 +17,6 @@ typedef std::pair<base::string16, bool /*read_only*/> PropertyValue;
 struct PropertyContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
-};
-
-struct PropertyEditor {
-  enum Type { NONE, SIMPLE, DROPDOWN, BUTTON };
-
-  explicit PropertyEditor(Type type) : type(type) {}
-
-  Type type;
-  std::vector<base::string16> choices;
 };
 
 class PropertyDefinition {
@@ -52,7 +44,7 @@ class PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const base::string16& text) const;
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const;
@@ -93,7 +85,7 @@ class ReferencePropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const override;
@@ -110,7 +102,7 @@ class BoolPropertyDefinition : public PropertyDefinition {
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const override;
@@ -129,7 +121,7 @@ class EnumPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const override;
@@ -154,7 +146,7 @@ class ChannelPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const override;
@@ -169,7 +161,7 @@ class TransportPropertyDefinition : public PropertyDefinition {
   TransportPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const override;
@@ -188,7 +180,7 @@ class ColorPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const base::string16& text) const override;
-  virtual PropertyEditor GetPropertyEditor(
+  virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& type_definition,
       const scada::NodeId& prop_decl_id) const override;
