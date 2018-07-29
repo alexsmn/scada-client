@@ -100,6 +100,16 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
+  selection().multiple_handler = [this] {
+    NodeIdSet node_ids;
+    int first_row = grid_->selection().row();
+    for (int i = 0; i < grid_->selection().row_count(); ++i) {
+      int row = first_row + i;
+      node_ids.emplace(model_->nodes()[row].node_id());
+    }
+    return node_ids;
+  };
+
   return grid_->CreateParentIfNecessary();
 }
 
@@ -185,6 +195,11 @@ void NodeTableController::OnGridSelectionChanged(views::GridView& sender) {
   // Left-click in table header to reproduce.
   if (row == -1 || row >= model_->nodes().size()) {
     selection().Clear();
+    return;
+  }
+
+  if (grid_->selection().row_count() >= 2) {
+    selection().SelectMultiple();
     return;
   }
 

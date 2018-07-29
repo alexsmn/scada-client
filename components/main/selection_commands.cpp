@@ -59,6 +59,10 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_DELETE:
     case ID_COPY:
+      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
+        return nullptr;
+      return !selection_->empty() ? this : nullptr;
+
     case ID_ITEM_PARAMS:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
@@ -182,6 +186,15 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   assert(dialog_service_);
   assert(selection_);
 
+  switch (command_id) {
+    case ID_DELETE:
+      DeleteSelection();
+      return;
+    case ID_COPY:
+      CopyToClipboard();
+      return;
+  }
+
   if (selection_->multiple()) {
     ExecuteMultiCommand(command_id);
     return;
@@ -303,12 +316,6 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       }
       return;
     }
-    case ID_DELETE:
-      DeleteSelection();
-      return;
-    case ID_COPY:
-      CopyToClipboard();
-      return;
 
     case ID_DEV1_REFR:
       method_id = id::DeviceType_Interrogate;
