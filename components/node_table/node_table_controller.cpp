@@ -102,11 +102,13 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   selection().multiple_handler = [this] {
     NodeIdSet node_ids;
+#if defined(UI_VIEWS)
     int first_row = grid_->selection().row();
     for (int i = 0; i < grid_->selection().row_count(); ++i) {
       int row = first_row + i;
       node_ids.emplace(model_->nodes()[row].node_id());
     }
+#endif
     return node_ids;
   };
 
