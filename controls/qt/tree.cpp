@@ -71,8 +71,6 @@ void Tree::SetCheckedHandler(TreeCheckedHandler handler) {}
 
 void Tree::SetRootVisible(bool visible) {}
 
-void Tree::SetEditable(bool editable) {}
-
 void Tree::SetCompareHandler(TreeCompareHandler handler) {}
 
 void Tree::SetContextMenuHandler(ContextMenuHandler handler) {

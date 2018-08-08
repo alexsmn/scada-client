@@ -24,7 +24,6 @@ PortfolioView::~PortfolioView() {}
 UiView* PortfolioView::Init(const WindowDefinition& definition) {
   tree_.reset(new Tree(*model_));
   tree_->SetRootVisible(false);
-  tree_->SetEditable(true);
   tree_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
 
   tree_->SetDoubleClickHandler([this] {

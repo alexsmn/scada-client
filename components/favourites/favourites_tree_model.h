@@ -26,7 +26,7 @@ class FavouritesRootNode : public FavouritesNode {
   int FindFolderNode(const Page& folder) const;
 
   // TreeNode
-  virtual base::string16 GetText(int column_id) const {
+  virtual base::string16 GetText(int column_id) const override {
     return base::string16();
   }
 };
@@ -38,12 +38,13 @@ class FavouritesFolderNode : public FavouritesNode {
   int FindWindowNode(const WindowDefinition& window) const;
 
   // FavouritesNode
-  virtual base::string16 GetText(int column_id) const {
+  virtual base::string16 GetText(int column_id) const override {
     return folder_.GetTitle();
   }
-  virtual int GetIcon() const { return 2; }
-  virtual void SetTitle(const base::string16& title);
-  virtual void Delete();
+  virtual int GetIcon() const override { return 2; }
+  virtual void SetText(int column_id, const base::string16& title) override;
+  virtual bool IsEditable(int column_id) const override { return true; }
+  virtual void Delete() override;
 
   const Page& folder_;
 };
@@ -58,14 +59,17 @@ class FavouritesWindowNode : public FavouritesNode {
   const WindowDefinition& window() const { return window_; }
 
   // FavouritesNode
-  virtual base::string16 GetText(int column_id) const {
+  virtual base::string16 GetText(int column_id) const override {
     return window_.GetTitle();
   }
-  virtual int GetIcon() const;
-  virtual void SetTitle(const base::string16& title);
-  virtual void Delete();
-  virtual FavouritesWindowNode* AsWindowNode() { return this; }
-  virtual const FavouritesWindowNode* AsWindowNode() const { return this; }
+  virtual int GetIcon() const override;
+  virtual void SetText(int column_id, const base::string16& title) override;
+  virtual bool IsEditable(int column_id) const override { return true; }
+  virtual void Delete() override;
+  virtual FavouritesWindowNode* AsWindowNode() override { return this; }
+  virtual const FavouritesWindowNode* AsWindowNode() const override {
+    return this;
+  }
 
  private:
   const Page& folder_;
@@ -85,15 +89,15 @@ class FavouritesTreeModel : public ui::TreeNodeModel<FavouritesNode>,
 
  protected:
   // Favorites::Observer
-  virtual void OnFolderAdded(const Page& folder);
-  virtual void OnFolderDeleted(const Page& folder);
-  virtual void OnFolderChanged(const Page& folder);
+  virtual void OnFolderAdded(const Page& folder) override;
+  virtual void OnFolderDeleted(const Page& folder) override;
+  virtual void OnFolderChanged(const Page& folder) override;
   virtual void OnFavouriteAdded(const Page& folder,
-                                const WindowDefinition& window);
+                                const WindowDefinition& window) override;
   virtual void OnFavouriteDeleted(const Page& folder,
-                                  const WindowDefinition& window);
+                                  const WindowDefinition& window) override;
   virtual void OnWindowChanged(const Page& folder,
-                               const WindowDefinition& window);
+                               const WindowDefinition& window) override;
 
  private:
   Favourites& favourites_;

@@ -28,7 +28,6 @@ class Tree : public QTreeView {
   bool IsExpanded(void* node, bool up_to_root) const;
   void SetExpandedHandler(TreeExpandedHandler handler);
 
-  void SetEditable(bool editable);
   void StartEditing(void* node);
 
   void SetCheckedHandler(TreeCheckedHandler handler);

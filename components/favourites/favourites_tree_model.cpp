@@ -43,7 +43,7 @@ int FavouritesFolderNode::FindWindowNode(const WindowDefinition& window) const {
   return -1;
 }
 
-void FavouritesFolderNode::SetTitle(const base::string16& title) {
+void FavouritesFolderNode::SetText(int column_id, const base::string16& title) {
   // TODO: Rename using intendent Favourites method.
   const_cast<Page&>(folder_).title = title;
   favourites_.NotifyFolderChanged(folder_);
@@ -53,7 +53,7 @@ void FavouritesFolderNode::Delete() {
   favourites_.DeleteFolder(folder_);
 }
 
-void FavouritesWindowNode::SetTitle(const base::string16& title) {
+void FavouritesWindowNode::SetText(int column_id, const base::string16& title) {
   const_cast<WindowDefinition&>(window_).title = title;
   favourites_.NotifyWindowChanged(folder_, window_);
 }
