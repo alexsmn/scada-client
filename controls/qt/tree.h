@@ -3,6 +3,7 @@
 #include <qtreeview.h>
 
 #include "controls/types.h"
+#include "item_delegate.h"
 #include "qt/tree_model_adapter.h"
 
 namespace ui {
@@ -14,7 +15,7 @@ class Tree : public QTreeView {
   explicit Tree(ui::TreeModel& model);
   virtual ~Tree();
 
-  TreeModelAdapter& model_adapter() { return *model_adapter_; }
+  TreeModelAdapter& model_adapter() { return model_adapter_; }
 
   void SetRootVisible(bool visible);
 
@@ -39,5 +40,7 @@ class Tree : public QTreeView {
   void SetContextMenuHandler(ContextMenuHandler handler);
 
  private:
-  std::unique_ptr<TreeModelAdapter> model_adapter_;
+  TreeModelAdapter model_adapter_;
+
+  ItemDelegate item_delegate_;
 };

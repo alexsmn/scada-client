@@ -3,9 +3,13 @@
 #include "base/qt/color_qt.h"
 #include "qt/tree_model_adapter.h"
 
-Tree::Tree(ui::TreeModel& model) : model_adapter_(new TreeModelAdapter(model)) {
+Tree::Tree(ui::TreeModel& model)
+    : model_adapter_{model}, item_delegate_{[&model](const QModelIndex& index) {
+        return model.GetEditData(index.internalPointer(), index.column());
+      }} {
   setHeaderHidden(true);
-  setModel(model_adapter_.get());
+  setModel(&model_adapter_);
+  setItemDelegate(&item_delegate_);
 
   // https://stackoverflow.com/questions/26011291/initial-width-of-column-in-qtableview-via-model
   // If you need to initialize column widths based on Qt::SizeHintRole you need
@@ -13,21 +17,24 @@ Tree::Tree(ui::TreeModel& model) : model_adapter_(new TreeModelAdapter(model)) {
   // - inherit your class from QTableView;
   // - reimplement method setModel and use and set initial widths of columns
   // based on Qt::SizeHintRole using method QTableView::setColumnWidth.
-  for (int i = 0; i < model_adapter_->columnCount(); ++i) {
+  for (int i = 0; i < model_adapter_.columnCount(); ++i) {
     int width = model.GetColumnPreferredSize(i);
     if (width != 0)
       setColumnWidth(i, width);
   }
 }
 
-Tree::~Tree() {}
+Tree::~Tree() {
+  setModel(nullptr);
+  setItemDelegate(nullptr);
+}
 
 void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
-  model_adapter_->LoadIcons(resource_id, width, ColorToQt(mask_color));
+  model_adapter_.LoadIcons(resource_id, width, ColorToQt(mask_color));
 }
 
 void Tree::SelectNode(void* node) {
-  selectionModel()->select(model_adapter_->GetNodeIndex(node, 0),
+  selectionModel()->select(model_adapter_.GetNodeIndex(node, 0),
                            QItemSelectionModel::ClearAndSelect);
 }
 
@@ -39,25 +46,27 @@ void* Tree::GetSelectedNode() {
   auto rows = selectionModel()->selectedRows();
   if (rows.size() != 1)
     return nullptr;
-  return model_adapter_->GetNode(rows.front());
+  return model_adapter_.GetNode(rows.front());
 }
 
 bool Tree::IsExpanded(void* node, bool up_to_root) const {
-  return isExpanded(model_adapter_->GetNodeIndex(node, 0));
+  return isExpanded(model_adapter_.GetNodeIndex(node, 0));
 }
 
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
   connect(this, &QTreeView::expanded,
           [this, handler](const QModelIndex& index) {
-            handler(model_adapter_->GetNode(index), true);
+            handler(model_adapter_.GetNode(index), true);
           });
   connect(this, &QTreeView::collapsed,
           [this, handler](const QModelIndex& index) {
-            handler(model_adapter_->GetNode(index), false);
+            handler(model_adapter_.GetNode(index), false);
           });
 }
 
-void Tree::StartEditing(void* node) {}
+void Tree::StartEditing(void* node) {
+  openPersistentEditor(model_adapter_.GetNodeIndex(node, 0));
+}
 
 void Tree::SetDoubleClickHandler(DoubleClickHandler handler) {
   connect(this, &QTreeView::doubleClicked, handler);
@@ -69,7 +78,9 @@ void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {
 
 void Tree::SetCheckedHandler(TreeCheckedHandler handler) {}
 
-void Tree::SetRootVisible(bool visible) {}
+void Tree::SetRootVisible(bool visible) {
+  setRootIsDecorated(visible);
+}
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {}
 

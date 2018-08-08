@@ -23,6 +23,7 @@ class NodePropertyModel : protected PropertyContext, private NodeRefObserver {
   virtual base::string16 GetValue(int index);
   virtual bool IsInherited(int index);
   virtual void SetValue(int index, const base::string16& value);
+  virtual ui::EditData GetEditData(int index);
 
  private:
   void Update();
@@ -67,6 +68,7 @@ class NodePropertyTreeModel : protected NodePropertyModel,
                        int column_id,
                        const base::string16& text) override;
   virtual bool IsEditable(void* node, int column_id) const override;
+  virtual ui::EditData GetEditData(void* node, int column_id) override;
 
  protected:
   // NodePropertyModel

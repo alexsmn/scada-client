@@ -178,3 +178,19 @@ base::string16 NodePropertyTreeModel::GetColumnText(int column_id) const {
 bool NodePropertyTreeModel::IsEditable(void* node, int column_id) const {
   return column_id == 1;
 }
+
+ui::EditData NodePropertyTreeModel::GetEditData(void* node, int column_id) {
+  int index = NodeToIndex(node);
+  if (index == -1)
+    return {};
+
+  return NodePropertyModel::GetEditData(index);
+}
+
+ui::EditData NodePropertyModel::GetEditData(int index) {
+  auto& prop = properties_[index];
+  if (prop.def)
+    return prop.def->GetPropertyEditor(*this, node_.type_definition(), prop.prop_decl_id);
+  else
+    return {};
+}
