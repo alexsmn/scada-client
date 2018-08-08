@@ -150,10 +150,16 @@ bool TreeModelAdapter::setData(const QModelIndex& index,
 }
 
 Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
+  if (!index.isValid())
+    return 0;
+
+  void* node = GetNode(index);
+  assert(node);
+
   auto flags = QAbstractItemModel::flags(index);
   if (checkable_ && index.column() == 0)
     flags |= Qt::ItemIsUserCheckable;
-  if (IsEditable(index.column()))
+  if (model_.IsEditable(node, index.column()))
     flags |= Qt::ItemIsEditable;
   return flags;
 }
@@ -182,9 +188,4 @@ void TreeModelAdapter::OnTreeNodesDeleted(void* parent, int start, int count) {
 void TreeModelAdapter::OnTreeNodeChanged(void* node) {
   dataChanged(GetNodeIndex(node, 0),
               GetNodeIndex(node, model_.GetColumnCount() - 1));
-}
-
-bool TreeModelAdapter::IsEditable(int column_id) const {
-  return std::find(editable_column_ids_.begin(), editable_column_ids_.end(),
-                   column_id) != editable_column_ids_.end();
 }

@@ -29,7 +29,6 @@ class Tree : public views::TreeView,
   void SetExpandedHandler(TreeExpandedHandler handler);
   void SetCheckedHandler(TreeCheckedHandler handler);
   void SetDragHandler(TreeDragHandler handler);
-  void SetEditHandler(TreeEditHandler handler);
   void SetCompareHandler(TreeCompareHandler handler);
   void SetContextMenuHandler(ContextMenuHandler handler);
 
@@ -46,7 +45,6 @@ class Tree : public views::TreeView,
   virtual void OnChecked(views::TreeView& sender,
                          void* node,
                          bool checked) override;
-  virtual bool CanEdit(TreeView& sender, void* node) override;
   virtual int OnCompare(TreeView& sender, void* left, void* right) override;
 
   // views::ContextMenuController
@@ -58,7 +56,6 @@ class Tree : public views::TreeView,
   TreeExpandedHandler expanded_handler_;
   TreeCheckedHandler checked_handler_;
   TreeDragHandler drag_handler_;
-  TreeEditHandler edit_handler_;
   TreeCompareHandler compare_handler_;
   ContextMenuHandler context_menu_handler_;
 

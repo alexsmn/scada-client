@@ -5,7 +5,7 @@
 #include "common/node_util.h"
 #include "services/portfolio.h"
 
-void PortfolioTreeNode::SetTitle(const base::string16& title) {
+void PortfolioTreeNode::SetText(int column_id, const base::string16& title) {
   if (!is_portfolio())
     return;
 

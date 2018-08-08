@@ -47,9 +47,6 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
       selection().SelectNode(node_service_.GetNode(node->item_id()));
   });
 
-  tree_->SetEditHandler(
-      [this](void* node) { return model_->AsNode(node)->is_portfolio(); });
-
   tree_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
   });

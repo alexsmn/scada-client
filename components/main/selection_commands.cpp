@@ -284,8 +284,13 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       event_manager_.AcknowledgeItemEvents(node_id);
       return;
     case ID_ITEM_PARAMS:
+#if defined(NDEBUG)
       ::OpenView(main_window_,
                  MakeWindowDefinition(node, ID_PROPERTY_VIEW, false));
+#else
+      ::OpenView(main_window_,
+                 MakeWindowDefinition(node, ID_NEW_PROPERTY_VIEW, false));
+#endif
       return;
     case ID_TABLE_CONFIG:
       ::OpenView(main_window_,

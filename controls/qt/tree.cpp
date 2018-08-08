@@ -67,8 +67,6 @@ void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {
   connect(selectionModel(), &QItemSelectionModel::selectionChanged, handler);
 }
 
-void Tree::SetEditHandler(TreeEditHandler handler) {}
-
 void Tree::SetCheckedHandler(TreeCheckedHandler handler) {}
 
 void Tree::SetRootVisible(bool visible) {}

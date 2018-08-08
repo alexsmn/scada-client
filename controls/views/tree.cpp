@@ -81,14 +81,6 @@ int Tree::GetSelectionSize() const {
   return GetSelectedNode() ? 1 : 0;
 }
 
-bool Tree::CanEdit(TreeView& sender, void* node) {
-  return edit_handler_ && edit_handler_(node);
-}
-
-void Tree::SetEditHandler(TreeEditHandler handler) {
-  edit_handler_ = std::move(handler);
-}
-
 void Tree::SetCompareHandler(TreeCompareHandler handler) {
   compare_handler_ = std::move(handler);
   SetSorted(!!compare_handler_);

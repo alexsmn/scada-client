@@ -21,9 +21,10 @@ class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
   void set_item_id(const scada::NodeId& item_id) { item_id_ = item_id; }
 
   // TreeNode.
-  virtual base::string16 GetText(int column_id) const { return title_; }
-  virtual int GetIcon() const { return icon_; }
-  virtual void SetTitle(const base::string16& title);
+  virtual base::string16 GetText(int column_id) const override { return title_; }
+  virtual int GetIcon() const override { return icon_; }
+  virtual void SetText(int column_id, const base::string16& title) override;
+  virtual bool IsEditable(int column_id) const override { return is_portfolio(); }
 
  private:
   PortfolioManager& portfolio_manager_;

@@ -30,7 +30,6 @@ class Tree : public QTreeView {
 
   void SetEditable(bool editable);
   void StartEditing(void* node);
-  void SetEditHandler(TreeEditHandler handler);
 
   void SetCheckedHandler(TreeCheckedHandler handler);
 

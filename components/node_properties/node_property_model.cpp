@@ -13,12 +13,14 @@ NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
 
   properties_ = {{
                      L"(Идентификатор)",
-                     base::SysNativeMBToWide(node_.browse_name().name()),
-                     scada::AttributeId::BrowseName,
+                     scada::AttributeId::NodeId,
                  },
                  {
                      L"(Имя)",
-                     ToString16(node_.display_name()),
+                     scada::AttributeId::BrowseName,
+                 },
+                 {
+                     L"(Описание)",
                      scada::AttributeId::DisplayName,
                  }};
 
@@ -30,9 +32,8 @@ NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
       auto* def = p.second;
       Property prop;
       prop.name = def->GetTitle(*this, prop_decl);
-      prop.string_value = def->GetText(*this, node_, prop_decl.node_id());
       prop.def = def;
-      prop.prop_type_id = p.first.node_id();
+      prop.prop_decl_id = prop_decl.node_id();
       properties_.emplace_back(std::move(prop));
     }
   }
@@ -52,7 +53,11 @@ base::string16 NodePropertyModel::GetName(int index) {
 }
 
 base::string16 NodePropertyModel::GetValue(int index) {
-  return properties_[index].string_value;
+  auto& prop = properties_[index];
+  if (prop.def)
+    return prop.def->GetText(*this, node_, prop.prop_decl_id);
+  else
+    return ToString16(node_.attribute(prop.attribute_id));
 }
 
 bool NodePropertyModel::IsInherited(int index) {
@@ -61,7 +66,16 @@ bool NodePropertyModel::IsInherited(int index) {
 
 void NodePropertyModel::SetValue(int index, const base::string16& value) {
   auto& prop = properties_[index];
-  prop.def->SetText(*this, node_, prop.prop_type_id, value);
+  if (prop.def)
+    prop.def->SetText(*this, node_, prop.prop_decl_id, value);
+  else {
+    // TODO: attribute id.
+    task_manager_.PostUpdateTask(
+        node_.node_id(),
+        scada::NodeAttributes().set_browse_name(
+            scada::QualifiedName{base::SysWideToNativeMB(value), 0}),
+        {});
+  }
 }
 
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
@@ -83,26 +97,12 @@ void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 }
 
 void NodePropertyModel::Update() {
-  for (auto attribute_id :
-       {scada::AttributeId::BrowseName, scada::AttributeId::DisplayName}) {
-    int index = FindProperty(attribute_id);
-    if (index != -1) {
-      auto& prop = properties_[index];
-      prop.string_value = ToString16(
-          node_.attribute(attribute_id).get_or(scada::LocalizedText{}));
-      TreeNodeChanged(&prop);
-    }
-  }
-
-  for (auto& prop : properties_) {
-    prop.string_value = prop.def->GetText(*this, node_, prop.prop_type_id);
-    TreeNodeChanged(&prop);
-  }
+  PropertiesChanged(0, static_cast<int>(properties_.size()));
 }
 
-int NodePropertyModel::FindProperty(const scada::NodeId& prop_type_id) const {
+int NodePropertyModel::FindProperty(const scada::NodeId& prop_decl_id) const {
   for (int i = 0; i < properties_.size(); ++i) {
-    if (properties_[i].prop_type_id == prop_type_id)
+    if (properties_[i].prop_decl_id == prop_decl_id)
       return i;
   }
   return -1;
@@ -116,43 +116,32 @@ int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
   return -1;
 }
 
-void* NodePropertyModel::GetParent(void* node) {
+void* NodePropertyTreeModel::GetParent(void* node) {
   return node == this ? nullptr : this;
 }
 
-int NodePropertyModel::GetChildCount(void* parent) {
+int NodePropertyTreeModel::GetChildCount(void* parent) {
   if (parent != this)
     return 0;
   return GetCount();
 }
 
-void* NodePropertyModel::GetChild(void* parent, int index) {
+void* NodePropertyTreeModel::GetChild(void* parent, int index) {
   if (parent != this)
     return nullptr;
-  assert(index < static_cast<int>(properties_.size()));
-  return &properties_[index];
+  return IndexToNode(index);
 }
 
-int NodePropertyModel::NodeToIndex(void* node) const {
-  size_t index =
-      std::find_if(properties_.begin(), properties_.end(),
-                   [node](const Property& prop) { return &prop == node; }) -
-      properties_.begin();
-  if (index >= properties_.size())
-    return -1;
-  return static_cast<int>(index);
-}
-
-base::string16 NodePropertyModel::GetText(void* node, int column_id) {
+base::string16 NodePropertyTreeModel::GetText(void* node, int column_id) {
   int index = NodeToIndex(node);
   if (index == -1)
     return {};
   return column_id == 0 ? GetName(index) : GetValue(index);
 }
 
-void NodePropertyModel::SetText(void* node,
-                                int column_id,
-                                const base::string16& text) {
+void NodePropertyTreeModel::SetText(void* node,
+                                    int column_id,
+                                    const base::string16& text) {
   if (column_id != 1)
     return;
 
@@ -160,14 +149,32 @@ void NodePropertyModel::SetText(void* node,
   if (index == -1)
     return;
 
-  auto& prop = properties_[index];
-  if (prop.def)
-    prop.def->SetText(*this, node_, prop.prop_type_id, text);
-  else {
-    task_manager_.PostUpdateTask(
-        node_.node_id(),
-        scada::NodeAttributes().set_browse_name(
-            scada::QualifiedName{base::SysWideToNativeMB(text), 0}),
-        {});
-  }
+  SetValue(index, text);
+}
+
+void NodePropertyModel::PropertiesChanged(int first, int index) {}
+
+void NodePropertyTreeModel::PropertiesChanged(int first, int count) {
+  for (int i = 0; i < count; ++i)
+    TreeNodeChanged(IndexToNode(first + i));
+}
+
+NodePropertyTreeModel::NodePropertyTreeModel(PropertyContext&& context,
+                                             NodeRef node)
+    : NodePropertyModel{std::move(context), std::move(node)} {}
+
+int NodePropertyTreeModel::NodeToIndex(void* node) const {
+  return reinterpret_cast<int>(node) - 1;
+}
+
+void* NodePropertyTreeModel::IndexToNode(int index) const {
+  return reinterpret_cast<void*>(index + 1);
+}
+
+base::string16 NodePropertyTreeModel::GetColumnText(int column_id) const {
+  return column_id == 0 ? L"Свойство" : L"Значение";
+}
+
+bool NodePropertyTreeModel::IsEditable(void* node, int column_id) const {
+  return column_id == 1;
 }

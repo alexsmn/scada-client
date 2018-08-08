@@ -18,9 +18,6 @@ class TreeModelAdapter : public QAbstractItemModel,
 
   void set_checkable(bool checkable) { checkable_ = checkable; }
 
-  using ColumnIds = std::vector<int>;
-  void set_editable_column_ids(ColumnIds ids) { editable_column_ids_ = std::move(ids); }
-
   void LoadIcons(unsigned resource_id, int width, QColor mask_color);
 
   void* GetNode(const QModelIndex& index) const;
@@ -38,7 +35,6 @@ class TreeModelAdapter : public QAbstractItemModel,
 
  private:
   int GetIndexOf(void* node) const;
-  bool IsEditable(int column_id) const;
 
   // private ui::TreeModelObserver
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
@@ -51,5 +47,4 @@ class TreeModelAdapter : public QAbstractItemModel,
 
   bool checkable_;
   std::set<void*> checked_nodes_;
-  ColumnIds editable_column_ids_;
 };
