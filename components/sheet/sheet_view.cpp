@@ -137,7 +137,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
 #endif
 
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
-    controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(IDR_SHEET_POPUP, point, true);
   });
 
   UpdateEditing();

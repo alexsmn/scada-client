@@ -60,18 +60,15 @@ class SheetModel : private SheetModelContext,
                            const base::string16& text) override;
   virtual bool IsEditable(int row, int column) override;
 
- protected:
-  friend class SheetCell;
-
  private:
   // Blinker
   virtual void OnBlink(bool state);
 
+  SheetFormatPool formats_;
+
   int row_count_ = 0;
   int column_count_ = 0;
   std::vector<std::unique_ptr<SheetCell>> cells_;
-
-  SheetFormatPool formats_;
 
   typedef std::set<SheetCell*> CellSet;
   CellSet blinking_cells_;
@@ -80,6 +77,8 @@ class SheetModel : private SheetModelContext,
 
   views::FixedRowModel row_model_{*this};
   SheetColumnModel column_model_;
+
+  friend class SheetCell;
 };
 
 inline std::unique_ptr<SheetCell>& SheetModel::mutable_cell(int row, int col) {
