@@ -5,10 +5,9 @@
 #include "common/scada_node_ids.h"
 #include "components/node_properties/node_property_model.h"
 #include "controller_factory.h"
+#include "controls/property_tree_model.h"
 #include "controls/tree.h"
 #include "window_definition.h"
-
-const float ROW_HEIGHT = 22.0f;
 
 // NodePropertyController
 
@@ -28,16 +27,17 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
     node = node_service_.GetNode(node_id);
   }
 
-  model_ = std::make_unique<NodePropertyTreeModel>(
+  property_model_ = std::make_unique<NodePropertyModel>(
       PropertyContext{node_service_, task_manager_}, std::move(node));
-  view_ = std::make_unique<Tree>(*model_);
-  /*view_->SetColumnWidth(0, 150);
-  view_->SetColumnWidth(1, 200);*/
+  tree_model_ = std::make_unique<PropertyTreeModel>(*property_model_);
+  tree_view_ = std::make_unique<Tree>(*tree_model_);
+  /*tree_view_->SetColumnWidth(0, 150);
+  tree_view_->SetColumnWidth(1, 200);*/
 
 #if defined(UI_QT)
-  view_->setHeaderHidden(false);
-  view_->setColumnWidth(0, 200);
+  tree_view_->setHeaderHidden(false);
+  tree_view_->setColumnWidth(0, 200);
 #endif
 
-  return view_.get();
+  return tree_view_.get();
 }

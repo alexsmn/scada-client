@@ -116,81 +116,16 @@ int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
   return -1;
 }
 
-void* NodePropertyTreeModel::GetParent(void* node) {
-  return node == this ? nullptr : this;
-}
-
-int NodePropertyTreeModel::GetChildCount(void* parent) {
-  if (parent != this)
-    return 0;
-  return GetCount();
-}
-
-void* NodePropertyTreeModel::GetChild(void* parent, int index) {
-  if (parent != this)
-    return nullptr;
-  return IndexToNode(index);
-}
-
-base::string16 NodePropertyTreeModel::GetText(void* node, int column_id) {
-  int index = NodeToIndex(node);
-  if (index == -1)
-    return {};
-  return column_id == 0 ? GetName(index) : GetValue(index);
-}
-
-void NodePropertyTreeModel::SetText(void* node,
-                                    int column_id,
-                                    const base::string16& text) {
-  if (column_id != 1)
-    return;
-
-  int index = NodeToIndex(node);
-  if (index == -1)
-    return;
-
-  SetValue(index, text);
-}
-
-void NodePropertyModel::PropertiesChanged(int first, int index) {}
-
-void NodePropertyTreeModel::PropertiesChanged(int first, int count) {
-  for (int i = 0; i < count; ++i)
-    TreeNodeChanged(IndexToNode(first + i));
-}
-
-NodePropertyTreeModel::NodePropertyTreeModel(PropertyContext&& context,
-                                             NodeRef node)
-    : NodePropertyModel{std::move(context), std::move(node)} {}
-
-int NodePropertyTreeModel::NodeToIndex(void* node) const {
-  return reinterpret_cast<int>(node) - 1;
-}
-
-void* NodePropertyTreeModel::IndexToNode(int index) const {
-  return reinterpret_cast<void*>(index + 1);
-}
-
-base::string16 NodePropertyTreeModel::GetColumnText(int column_id) const {
-  return column_id == 0 ? L"Свойство" : L"Значение";
-}
-
-bool NodePropertyTreeModel::IsEditable(void* node, int column_id) const {
-  return column_id == 1;
-}
-
-ui::EditData NodePropertyTreeModel::GetEditData(void* node, int column_id) {
-  int index = NodeToIndex(node);
-  if (index == -1)
-    return {};
-
-  return NodePropertyModel::GetEditData(index);
+void NodePropertyModel::PropertiesChanged(int first, int index) {
+  if (properties_changed_handler)
+    properties_changed_handler(first, index);
 }
 
 ui::EditData NodePropertyModel::GetEditData(int index) {
   auto& prop = properties_[index];
   if (prop.def)
-    return prop.def->GetPropertyEditor(*this, node_.type_definition(), prop.prop_decl_id);
+    return prop.def->GetPropertyEditor(*this, node_.type_definition(),
+                                       prop.prop_decl_id);
   else
     return {};
 }

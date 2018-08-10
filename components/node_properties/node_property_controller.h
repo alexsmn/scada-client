@@ -8,6 +8,7 @@ namespace ui {
 class TreeModel;
 }
 
+class PropertyModel;
 class Tree;
 
 class NodePropertyController : public Controller {
@@ -19,7 +20,8 @@ class NodePropertyController : public Controller {
   virtual UiView* Init(const WindowDefinition& definition) override;
 
  private:
-  std::unique_ptr<ui::TreeModel> model_;
+  std::unique_ptr<PropertyModel> property_model_;
+  std::unique_ptr<ui::TreeModel> tree_model_;
 
-  std::unique_ptr<Tree> view_;
+  std::unique_ptr<Tree> tree_view_;
 };

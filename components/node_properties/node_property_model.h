@@ -1,29 +1,30 @@
 #pragma once
 
-#include <map>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "common/node_observer.h"
 #include "common/node_ref.h"
+#include "controls/property_model.h"
 #include "services/property_defs.h"
-#include "ui/base/models/tree_model.h"
 
 class PropertyDefinition;
 class TaskManager;
 struct PropertyContext;
 
-class NodePropertyModel : protected PropertyContext, private NodeRefObserver {
+class NodePropertyModel : protected PropertyContext,
+                          private NodeRefObserver,
+                          public PropertyModel {
  public:
   NodePropertyModel(PropertyContext&& context, NodeRef node);
   virtual ~NodePropertyModel();
 
-  virtual int GetCount();
-  virtual base::string16 GetName(int index);
-  virtual base::string16 GetValue(int index);
-  virtual bool IsInherited(int index);
-  virtual void SetValue(int index, const base::string16& value);
-  virtual ui::EditData GetEditData(int index);
+  virtual int GetCount() override;
+  virtual base::string16 GetName(int index) override;
+  virtual base::string16 GetValue(int index) override;
+  virtual bool IsInherited(int index) override;
+  virtual void SetValue(int index, const base::string16& value) override;
+  virtual ui::EditData GetEditData(int index) override;
 
  private:
   void Update();
@@ -31,7 +32,7 @@ class NodePropertyModel : protected PropertyContext, private NodeRefObserver {
   int FindProperty(const scada::NodeId& prop_decl_id) const;
   int FindProperty(scada::AttributeId attribute_id) const;
 
-  virtual void PropertiesChanged(int first, int count);
+  void PropertiesChanged(int first, int count);
 
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
@@ -49,32 +50,4 @@ class NodePropertyModel : protected PropertyContext, private NodeRefObserver {
   std::vector<Property> properties_;
 
   base::WeakPtrFactory<NodePropertyModel> weak_ptr_factory_{this};
-};
-
-class NodePropertyTreeModel : protected NodePropertyModel,
-                              public ui::TreeModel {
- public:
-  NodePropertyTreeModel(PropertyContext&& context, NodeRef node);
-
-  // ui::TreeModel
-  virtual int GetColumnCount() const { return 2; }
-  virtual base::string16 GetColumnText(int column_id) const;
-  virtual void* GetRoot() override { return this; }
-  virtual void* GetParent(void* node) override;
-  virtual int GetChildCount(void* parent) override;
-  virtual void* GetChild(void* parent, int index) override;
-  virtual base::string16 GetText(void* node, int column_id) override;
-  virtual void SetText(void* node,
-                       int column_id,
-                       const base::string16& text) override;
-  virtual bool IsEditable(void* node, int column_id) const override;
-  virtual ui::EditData GetEditData(void* node, int column_id) override;
-
- protected:
-  // NodePropertyModel
-  virtual void PropertiesChanged(int first, int count) override;
-
- private:
-  int NodeToIndex(void* node) const;
-  void* IndexToNode(int index) const;
 };

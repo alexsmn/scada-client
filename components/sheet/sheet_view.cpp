@@ -218,10 +218,11 @@ void SheetView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 }
 
 void SheetView::UpdateEditing() {
+  grid_->SetExpandAllowed(model_->is_editing());
+
 #if defined(UI_VIEWS)
   grid_->SetColumnHeadersVisible(model_->is_editing());
   grid_->SetRowHeadersVisible(model_->is_editing());
-  grid_->set_allow_expand(model_->is_editing());
   UpdateFormulaRow();
   contents_view_->Layout();
 #endif
