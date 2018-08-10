@@ -101,6 +101,18 @@ class TrashMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   bool empty_ = true;
 };
 
+#if defined(UI_QT)
+class StyleMenuModel : public ui::SimpleMenuModel {
+ public:
+  StyleMenuModel();
+
+  // views::MenuModel
+  virtual void ActivatedAt(int index) override;
+  virtual bool IsItemCheckedAt(int index) const override;
+};
+
+#endif // defined(UI_QT)
+
 class MainMenuModel final : private MainMenuContext,
                             private ui::SimpleMenuModel::Delegate,
                             public ui::SimpleMenuModel {
@@ -129,6 +141,9 @@ class MainMenuModel final : private MainMenuContext,
   WindowMenuModel window_list_menu_;
   TrashMenuModel trash_menu_;
   ui::SimpleMenuModel window_submenu_;
+#if defined(UI_QT)
+  StyleMenuModel style_submenu_;
+#endif
   ui::SimpleMenuModel settings_submenu_;
   ui::SimpleMenuModel help_submenu_;
 };

@@ -16,6 +16,12 @@
 
 #include <atlres.h>
 
+#if defined(UI_QT)
+#include <QApplication>
+#include <QStyle>
+#include <QStyleFactory>
+#endif
+
 const unsigned kTableTypes[] = {ID_TABLE_VIEW, ID_SHEET_VIEW,
                                 ID_TIMED_DATA_VIEW, 0};
 const unsigned kGraphTypes[] = {ID_GRAPH_VIEW, 0};
@@ -215,6 +221,27 @@ bool TrashMenuModel::IsEnabledAt(int index) const {
   return !empty_;
 }
 
+#if defined(UI_QT)
+
+// StyleMenuModel
+
+StyleMenuModel::StyleMenuModel() : ui::SimpleMenuModel{nullptr} {
+  for (const auto& style : QStyleFactory::keys())
+    AddRadioItem(0, style.toStdWString(), 0);
+}
+
+void StyleMenuModel::ActivatedAt(int index) {
+  const auto& style = QString::fromStdWString(GetLabelAt(index));
+  QApplication::setStyle(style);
+}
+
+bool StyleMenuModel::IsItemCheckedAt(int index) const {
+  const auto& style = QString::fromStdWString(GetLabelAt(index));
+  return QApplication::style() && QApplication::style()->objectName() == style;
+}
+
+#endif  // defined(UI_QT)
+
 // MainMenuModel
 
 MainMenuModel::MainMenuModel(const MainMenuContext& context)
@@ -323,6 +350,12 @@ void MainMenuModel::Rebuild() {
   settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, L"Открыть папку схем");
   settings_submenu_.AddCheckItem(ID_MODUS2_MODE,
                                  L"Встроенный визуализатор схем MODUS");
+
+#if defined(UI_QT)
+  settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSubMenu(0, L"Стиль", &style_submenu_);
+#endif
+
   AddSubMenu(0, L"Настройки", &settings_submenu_);
 
   help_submenu_.AddItem(ID_HELP_MANUAL, L"Документация");
