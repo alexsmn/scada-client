@@ -55,5 +55,9 @@ base::string16 Translate(const char* text) {
 }
 
 base::string16 FormatHostName(const std::string& host_name) {
-  return base::SysNativeMBToWide(host_name);
+  if (host_name.empty()) {
+    return QObject::tr("Local").toStdWString();
+  } else {
+    return base::SysNativeMBToWide(host_name);
+  }
 }

@@ -22,6 +22,9 @@ int main(int argc, char* argv[]) {
   qapp.setOrganizationName("Telecontrol");
   qapp.setOrganizationDomain("telecontrol.ru");
 
+  QTranslator qt_translator;
+  QTranslator app_translator;
+
   {
     // TODO: Const
     QSettings settings;
@@ -37,19 +40,17 @@ int main(int argc, char* argv[]) {
     if (system_name.isEmpty())
       system_name = QLocale::system().name();
 
-    QTranslator qt_translator;
     if (qt_translator.load(
             "qt_" + system_name,
             QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
       QApplication::installTranslator(&qt_translator);
 
-    QTranslator app_translator;
     if (app_translator.load("client_" + system_name,
                             QApplication::applicationDirPath()))
       QApplication::installTranslator(&app_translator);
   }
 
-  qapp.setApplicationDisplayName(qapp.tr("Telecontrol SCADA Client"));
+  qapp.setApplicationDisplayName(QObject::tr("Telecontrol SCADA Client"));
 
   // QApplication must be created.
   base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};

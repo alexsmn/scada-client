@@ -69,7 +69,14 @@ MainWindowQt::~MainWindowQt() {
   view_manager_.reset();
 }
 
-void MainWindowQt::UpdateTitle() {}
+void MainWindowQt::UpdateTitle() {
+  QString server =
+      QString::fromStdWString(FormatHostName(connection_info_provider_()));
+  QString page =
+      QString::fromStdWString(view_manager_->current_page().GetTitle());
+  QString title = tr("%1 (Server: %2)").arg(page).arg(server);
+  setWindowTitle(title);
+}
 
 void MainWindowQt::CreateToolbar() {
   /*auto* settings_menu = new QMenu(tr("Settings"), this);

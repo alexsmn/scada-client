@@ -11,7 +11,9 @@ class QWidget;
 class StatusBarController;
 class ViewManagerQt;
 
-class MainWindowQt final : public MainWindow, public QMainWindow {
+class MainWindowQt final : public QMainWindow, public MainWindow {
+  Q_OBJECT
+
  public:
   explicit MainWindowQt(MainWindowContext&& context);
   ~MainWindowQt();
