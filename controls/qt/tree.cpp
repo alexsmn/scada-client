@@ -76,7 +76,17 @@ void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {
   connect(selectionModel(), &QItemSelectionModel::selectionChanged, handler);
 }
 
-void Tree::SetCheckedHandler(TreeCheckedHandler handler) {}
+void Tree::SetShowChecks(bool show) {
+  model_adapter_.SetCheckable(true);
+}
+
+void Tree::SetCheckedHandler(TreeCheckedHandler handler) {
+  model_adapter_.SetCheckedHandler(std::move(handler));
+}
+
+void Tree::SetChecked(void* node, bool checked) {
+  model_adapter_.SetChecked(node, checked);
+}
 
 void Tree::SetRootVisible(bool visible) {
   setRootIsDecorated(visible);

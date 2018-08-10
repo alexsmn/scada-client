@@ -140,13 +140,24 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
 bool TreeModelAdapter::setData(const QModelIndex& index,
                                const QVariant& value,
                                int role) {
-  if (role != Qt::EditRole)
-    return QAbstractItemModel::setData(index, value, role);
-
   void* node = GetNode(index);
   assert(node);
-  model_.SetText(node, index.column(), value.toString().toStdWString());
-  return true;
+  if (!node)
+    return false;
+
+  if (role == Qt::EditRole) {
+    model_.SetText(node, index.column(), value.toString().toStdWString());
+    return true;
+
+  } else if (role == Qt::CheckStateRole) {
+    bool checked = value == Qt::Checked;
+    if (checked_handler_)
+      checked_handler_(node, checked);
+    return true;
+
+  } else {
+    return false;
+  }
 }
 
 Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
@@ -188,4 +199,18 @@ void TreeModelAdapter::OnTreeNodesDeleted(void* parent, int start, int count) {
 void TreeModelAdapter::OnTreeNodeChanged(void* node) {
   dataChanged(GetNodeIndex(node, 0),
               GetNodeIndex(node, model_.GetColumnCount() - 1));
+}
+
+void TreeModelAdapter::SetChecked(void* node, bool checked) {
+  bool changed = false;
+
+  if (checked)
+    changed = checked_nodes_.emplace(node).second;
+  else
+    changed = checked_nodes_.erase(node) != 0;
+
+  if (changed) {
+    auto index = GetNodeIndex(node, 0);
+    dataChanged(index, index, {Qt::CheckStateRole});
+  }
 }

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <memory>
 #include <qabstractitemmodel.h>
 #include <qicon.h>
+#include <memory>
 
 #include "ui/base/models/tree_node_model.h"
 
@@ -16,7 +16,14 @@ class TreeModelAdapter : public QAbstractItemModel,
   explicit TreeModelAdapter(ui::TreeModel& model);
   virtual ~TreeModelAdapter();
 
-  void set_checkable(bool checkable) { checkable_ = checkable; }
+  void SetCheckable(bool checkable) { checkable_ = checkable; }
+
+  using CheckedHandler = std::function<void(void* node, bool checked)>;
+  void SetCheckedHandler(CheckedHandler handler) {
+    checked_handler_ = std::move(handler);
+  }
+
+  void SetChecked(void* node, bool checked);
 
   void LoadIcons(unsigned resource_id, int width, QColor mask_color);
 
@@ -24,14 +31,24 @@ class TreeModelAdapter : public QAbstractItemModel,
   QModelIndex GetNodeIndex(void* node, int column) const;
 
   // QAbstractItemModel
-  virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
-  virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-  virtual QModelIndex parent(const QModelIndex &child) const override;
-  virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-  virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-  virtual bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
-  virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
+  virtual QVariant headerData(int section,
+                              Qt::Orientation orientation,
+                              int role = Qt::DisplayRole) const override;
+  virtual QModelIndex index(
+      int row,
+      int column,
+      const QModelIndex& parent = QModelIndex()) const override;
+  virtual QModelIndex parent(const QModelIndex& child) const override;
+  virtual int rowCount(
+      const QModelIndex& parent = QModelIndex()) const override;
+  virtual int columnCount(
+      const QModelIndex& parent = QModelIndex()) const override;
+  virtual QVariant data(const QModelIndex& index,
+                        int role = Qt::DisplayRole) const override;
+  virtual bool setData(const QModelIndex& index,
+                       const QVariant& value,
+                       int role = Qt::EditRole) override;
+  virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 
  private:
   int GetIndexOf(void* node) const;
@@ -45,6 +62,7 @@ class TreeModelAdapter : public QAbstractItemModel,
 
   std::vector<QIcon> icons_;
 
-  bool checkable_;
+  bool checkable_ = false;
+  CheckedHandler checked_handler_;
   std::set<void*> checked_nodes_;
 };

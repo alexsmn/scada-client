@@ -24,12 +24,12 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
                        context.node_service_.GetNode(id::DataItems),
                        context.timed_data_service_, context.profile_}}} {
 #if defined(UI_QT)
-  tree_view().model_adapter().set_checkable(true);
   tree_view().setHeaderHidden(false);
 #elif defined(UI_VIEWS)
   tree_view().set_custom_painter(this);
-  tree_view().SetShowChecks(true);
 #endif
+
+  tree_view().SetShowChecks(true);
 
   tree_view().SetExpandedHandler([this](void* node, bool expanded) {
     UpdateNodesVisibility(*static_cast<ConfigurationTreeNode*>(node), expanded);
@@ -40,10 +40,10 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     auto* contents_model = controller_delegate_.GetActiveContentsModel();
     if (contents_model) {
       if (checked)
-        contents_model->RemoveContainedItem(n->data_node().node_id());
-      else
         contents_model->AddContainedItem(n->data_node().node_id(),
                                          ContentsModel::APPEND);
+      else
+        contents_model->RemoveContainedItem(n->data_node().node_id());
     }
   });
 
@@ -139,20 +139,16 @@ void ObjectTreeView::OnTreeNodesDeleted(void* parent, int start, int count) {
 
 void ObjectTreeView::OnContainedItemsUpdate(
     const std::set<scada::NodeId>& item_ids) {
-#if defined(UI_VIEWS)
   for (auto& p : model().node_map()) {
     ConfigurationTreeNode& node = *p.second;
     bool check = node.data_node() &&
                  item_ids.find(node.data_node().node_id()) != item_ids.end();
     tree_view().SetChecked(&node, check);
   }
-#endif
 }
 
 void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& item_id,
                                             bool added) {
-#if defined(UI_VIEWS)
   if (auto* node = model().FindNode(item_id))
     tree_view().SetChecked(node, added);
-#endif
 }
