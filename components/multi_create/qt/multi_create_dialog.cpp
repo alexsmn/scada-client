@@ -4,7 +4,7 @@
 #include "services/dialog_service.h"
 #include "ui_multi_create_dialog.h"
 
-class MultiCreateDialog : public QDialog {
+class MultiCreateDialog final : public QDialog {
   Q_OBJECT
 
  public:

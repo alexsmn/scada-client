@@ -2,6 +2,29 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>CreateServiceItemDialog</name>
+    <message>
+        <location filename="../components/create_service_item/qt/create_service_item.ui" line="14"/>
+        <source>Create Service Items</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/create_service_item/qt/create_service_item.ui" line="25"/>
+        <source>Device:</source>
+        <translation type="unfinished">Устройство:</translation>
+    </message>
+    <message>
+        <location filename="../components/create_service_item/qt/create_service_item.ui" line="74"/>
+        <source>OK</source>
+        <translation type="unfinished">ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/create_service_item/qt/create_service_item.ui" line="81"/>
+        <source>Cancel</source>
+        <translation type="unfinished">Отмена</translation>
+    </message>
+</context>
+<context>
     <name>Dialog</name>
     <message>
         <source>OK</source>
@@ -25,34 +48,34 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="30"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="33"/>
         <source>Critical Limits</source>
         <translation>Аварийные уставки</translation>
     </message>
     <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="38"/>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="79"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="41"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="82"/>
         <source>High:</source>
         <translation>Верхняя:</translation>
     </message>
     <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="52"/>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="86"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="55"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="89"/>
         <source>Low:</source>
         <translation>Нижняя:</translation>
     </message>
     <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="71"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="74"/>
         <source>Limits</source>
         <translation>Предаварийные уставки</translation>
     </message>
     <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="142"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="145"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="149"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="152"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
@@ -191,52 +214,52 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="41"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="44"/>
         <source>Current value:</source>
         <translation>Текущее значение:</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="48"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="51"/>
         <source>New value:</source>
         <translation>Новое значение:</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="73"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="76"/>
         <source>units</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="83"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="86"/>
         <source>Lock:</source>
         <translation>Блокировка:</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="93"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="96"/>
         <source>Condition:</source>
         <translation>Условие:</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="100"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="103"/>
         <source>(Condition)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="107"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="110"/>
         <source>(Value)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="133"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="136"/>
         <source>(Status)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="153"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="156"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.ui" line="160"/>
+        <location filename="../components/write/qt/write_dialog.ui" line="163"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>

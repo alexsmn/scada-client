@@ -272,6 +272,8 @@ void MainMenuModel::Rebuild() {
   table_submenu_.AddItem(ID_SHEET_VIEW, L"Новая п-таблица");
   table_submenu_.AddItem(ID_TIMED_DATA_VIEW, L"Новая таблица значений");
   table_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  table_submenu_.AddItem(ID_OPEN_GROUP_TABLE, L"Таблица группы");
+  table_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
   table_submenu_.AddInplaceMenu(&table_favourites_);
   AddSubMenu(0, L"Таблица", &table_submenu_);
 

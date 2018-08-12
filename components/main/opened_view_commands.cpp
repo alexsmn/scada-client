@@ -1,13 +1,13 @@
 ﻿#include "opened_view_commands.h"
 
 #include "client_utils.h"
-#include "commands/add_service_items_dialog.h"
 #include "commands/time_range_dialog.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common/static_types.h"
 #include "common_resources.h"
+#include "components/create_service_item/create_service_item_dialog.h"
 #include "components/main/actions.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
@@ -129,8 +129,9 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_NEW_SERVICE_ITEMS:
-      ShowAddServiceItemsDialog(node_service_, task_manager_,
-                                controller_->selection().node().node_id());
+      ShowCreateServiceItemDialog(*dialog_service_,
+                                  {node_service_, task_manager_,
+                                   controller_->selection().node().node_id()});
       return;
     case ID_ADD_MULTIPLE_ITEMS:
       ShowMultiCreateDialog(*dialog_service_,

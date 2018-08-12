@@ -13,9 +13,9 @@
 #include <atlapp.h>
 #include <atlctrls.h>
 
-class MultiCreateDialog : public framework::Dialog,
-                          private framework::ButtonController,
-                          private framework::EditBoxController {
+class MultiCreateDialog final : public framework::Dialog,
+                                private framework::ButtonController,
+                                private framework::EditBoxController {
  public:
   explicit MultiCreateDialog(MultiCreateModel& model);
 
