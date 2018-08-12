@@ -15,6 +15,7 @@ class Table : public QTableView {
     setModel(&model_adapter_);
     resizeColumnsToContents();
     setShowGrid(false);
+    setSelectionBehavior(SelectRows);
   }
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }

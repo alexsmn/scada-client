@@ -74,8 +74,6 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
       std::vector<ui::TableColumn>(columns, columns + _countof(columns)));
 
 #if defined(UI_QT)
-  view_->setSelectionBehavior(QAbstractItemView::SelectRows);
-
   QObject::connect(
       view_->selectionModel(), &QItemSelectionModel::selectionChanged,
       [this](const QItemSelection& selected, const QItemSelection& deselected) {

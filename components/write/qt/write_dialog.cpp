@@ -25,7 +25,9 @@ class WriteDialog : public QDialog {
 WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
     : QDialog{parent}, model_{model} {
   ui.setupUi(this);
+
   dialog_service_.parent_widget = this;
+  model_.set_dialog_service(&dialog_service_);
 
   setWindowTitle(QString::fromStdWString(model_.GetWindowTitle()));
 

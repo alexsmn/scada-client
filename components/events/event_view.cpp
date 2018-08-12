@@ -3,12 +3,12 @@
 #include "base/excel.h"
 #include "client_utils.h"
 #include "commands/prompt_dialog.h"
-#include "commands/time_range_dialog.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common_resources.h"
 #include "components/events/event_table_model.h"
+#include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
 #include "controller_factory.h"
 #include "controls/table.h"
@@ -91,7 +91,6 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->verticalHeader()->setDefaultSectionSize(19);
   table_->setShowGrid(false);
   table_->resizeColumnsToContents();
-  table_->setSelectionBehavior(Table::SelectRows);
 
   QObject::connect(
       table_->selectionModel(), &QItemSelectionModel::selectionChanged,

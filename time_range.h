@@ -8,8 +8,11 @@
 struct TimeRange {
   TimeRange() {}
   explicit TimeRange(unsigned command_id) : command_id{command_id} {}
-  TimeRange(base::Time start, base::Time end)
-      : start{start}, end{end}, command_id{ID_TIME_RANGE_CUSTOM} {}
+  TimeRange(base::Time start, base::Time end, bool dates = false)
+      : start{start},
+        end{end},
+        dates{dates},
+        command_id{ID_TIME_RANGE_CUSTOM} {}
 
   unsigned command_id = ID_TIME_RANGE_DAY;
   base::Time start;

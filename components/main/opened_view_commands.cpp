@@ -1,7 +1,6 @@
 ﻿#include "opened_view_commands.h"
 
 #include "client_utils.h"
-#include "commands/time_range_dialog.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
@@ -13,6 +12,7 @@
 #include "components/main/opened_view.h"
 #include "components/main/selection_commands.h"
 #include "components/multi_create/multi_create_dialog.h"
+#include "components/time_range/time_range_dialog.h"
 #include "controller.h"
 #include "controller_factory.h"
 #include "core/node_management_service.h"
@@ -150,7 +150,8 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       if (auto* model = controller_->GetTimeModel()) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
-        if (ShowTimeRangeDialog(profile_, range, time_required))
+        if (ShowTimeRangeDialog(*dialog_service_,
+                                {profile_, range, time_required}))
           model->SetTimeRange(range);
       }
       return;
