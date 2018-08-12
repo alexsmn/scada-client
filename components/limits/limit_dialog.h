@@ -1,6 +1,14 @@
 #pragma once
 
-class NodeRef;
+#include "common/node_ref.h"
+
+class DialogService;
 class TaskManager;
 
-void ShowLimitsDialog(TaskManager& task_manager, const NodeRef& node);
+struct LimitDialogContext {
+  const NodeRef node_;
+  TaskManager& task_manager_;
+};
+
+void ShowLimitsDialog(DialogService& dialog_service,
+                      LimitDialogContext&& context);

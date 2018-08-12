@@ -4,8 +4,6 @@
 #include "qt/dialog_service_impl_qt.h"
 #include "ui_write_dialog.h"
 
-#include <QDialog>
-
 class WriteDialog : public QDialog {
   Q_OBJECT
 

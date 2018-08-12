@@ -278,7 +278,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     case ID_EDIT_LIMITS:
       if (IsInstanceOf(node, id::AnalogItemType))
-        ShowLimitsDialog(task_manager_, node);
+        ShowLimitsDialog(*dialog_service_, {node, task_manager_});
       return;
     case ID_ACKNOWLEDGE_CURRENT:
       event_manager_.AcknowledgeItemEvents(node_id);

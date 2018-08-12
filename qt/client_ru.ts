@@ -2,6 +2,51 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>LimitDialog</name>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="14"/>
+        <source>Уставки</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="23"/>
+        <source>(Description)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="30"/>
+        <source>Critical Limits</source>
+        <translation>Аварийные уставки</translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="38"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="79"/>
+        <source>High:</source>
+        <translation>Верхняя:</translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="52"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="86"/>
+        <source>Low:</source>
+        <translation>Нижняя:</translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="71"/>
+        <source>Limits</source>
+        <translation>Предаварийные уставки</translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="142"/>
+        <source>OK</source>
+        <translation>ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="149"/>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+</context>
+<context>
     <name>LoginDialog</name>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="20"/>
@@ -74,12 +119,12 @@
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="41"/>
         <source>Current value:</source>
-        <translation type="unfinished"></translation>
+        <translation>Текущее значение:</translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="48"/>
         <source>New value:</source>
-        <translation type="unfinished"></translation>
+        <translation>Новое значение:</translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="73"/>
@@ -89,12 +134,12 @@
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="83"/>
         <source>Lock:</source>
-        <translation type="unfinished"></translation>
+        <translation>Блокировка:</translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="93"/>
         <source>Condition:</source>
-        <translation type="unfinished"></translation>
+        <translation>Условие:</translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="100"/>
@@ -114,22 +159,22 @@
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="153"/>
         <source>OK</source>
-        <translation type="unfinished"></translation>
+        <translation>ОК</translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="160"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="64"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="62"/>
         <source>Satisfied</source>
-        <translation type="unfinished"></translation>
+        <translation>Выполнено</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="65"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="63"/>
         <source>Unsatisfied</source>
-        <translation type="unfinished"></translation>
+        <translation>Нарушено</translation>
     </message>
 </context>
 </TS>

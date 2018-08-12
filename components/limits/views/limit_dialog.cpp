@@ -1,14 +1,8 @@
 #include "components/limits/limit_dialog.h"
 
-#include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
-#include "common/format.h"
-#include "common/node_format.h"
-#include "common/node_service.h"
-#include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "core/data_value.h"
-#include "services/task_manager.h"
+#include "components/limits/limit_model.h"
+#include "services/dialog_service.h"
 #include "views/client_utils_views.h"
 
 #include <atlbase.h>
@@ -19,9 +13,9 @@
 
 class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
  public:
-  LimitsDialog(TaskManager& task_manager, const NodeRef& node);
+  explicit LimitsDialog(LimitModel& model);
 
-  bool Execute();
+  bool Execute(gfx::NativeView parent = nullptr);
 
  protected:
   friend class ATL::CDialogImpl<LimitsDialog>;
@@ -48,37 +42,29 @@ class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
                    BOOL& /*bHandled*/);
 
  private:
-  TaskManager& task_manager_;
-  const NodeRef node_;
+  LimitModel& model_;
 };
 
-LimitsDialog::LimitsDialog(TaskManager& task_manager, const NodeRef& node)
-    : task_manager_{task_manager}, node_{node} {}
+LimitsDialog::LimitsDialog(LimitModel& model) : model_{model} {}
 
-bool LimitsDialog::Execute() {
-  return DoModal() == IDOK;
+bool LimitsDialog::Execute(gfx::NativeView parent) {
+  return DoModal(parent) == IDOK;
 }
 
 LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
                                    WPARAM /*wParam*/,
                                    LPARAM /*lParam*/,
-                                   BOOL& /*bHandled*/) {
+                                   BOOL&
+                                   /*bHandled*/) {
   CenterWindow(GetParent());
 
-  if (node_) {
-    SetDlgItemText(IDC_DESC, node_.display_name().c_str());
+  SetDlgItemText(IDC_DESC, model_.GetSourceTitle().c_str());
 
-    auto lolo = node_[id::AnalogItemType_LimitLoLo].value();
-    auto hihi = node_[id::AnalogItemType_LimitHiHi].value();
-    auto lo = node_[id::AnalogItemType_LimitLo].value();
-    auto hi = node_[id::AnalogItemType_LimitHi].value();
-
-    SetDlgItemText(IDC_LIMIT_LOLO, FormatValue(node_, lolo, {}, 0).c_str());
-    SetDlgItemText(IDC_LIMIT_HIHI, FormatValue(node_, hihi, {}, 0).c_str());
-
-    SetDlgItemText(IDC_LIMIT_LO, FormatValue(node_, lo, {}, 0).c_str());
-    SetDlgItemText(IDC_LIMIT_HI, FormatValue(node_, hi, {}, 0).c_str());
-  }
+  auto limits = model_.GetLimits();
+  SetDlgItemText(IDC_LIMIT_LOLO, limits.lolo.c_str());
+  SetDlgItemText(IDC_LIMIT_HIHI, limits.hihi.c_str());
+  SetDlgItemText(IDC_LIMIT_LO, limits.lo.c_str());
+  SetDlgItemText(IDC_LIMIT_HI, limits.hi.c_str());
 
   return TRUE;
 }
@@ -86,28 +72,20 @@ LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
 LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
                            WORD /*wID*/,
                            HWND /*hWndCtl*/,
-                           BOOL& /*bHandled*/) {
+                           BOOL&
+                           /*bHandled*/) {
+  LimitModel::Limits limits = {};
   ATL::CString str;
   GetDlgItemText(IDC_LIMIT_LO, str);
-  auto limit_lo =
-      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  limits.lo = str;
   GetDlgItemText(IDC_LIMIT_HI, str);
-  auto limit_hi =
-      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  limits.hi = str;
   GetDlgItemText(IDC_LIMIT_LOLO, str);
-  auto limit_lolo =
-      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  limits.lolo = str;
   GetDlgItemText(IDC_LIMIT_HIHI, str);
-  auto limit_hihi =
-      str.IsEmpty() ? scada::Variant() : ParseWithDefault(str.GetString(), 0.0);
+  limits.hihi = str;
 
-  scada::NodeProperties properties;
-  properties.emplace_back(id::AnalogItemType_LimitLo, limit_lo);
-  properties.emplace_back(id::AnalogItemType_LimitHi, limit_hi);
-  properties.emplace_back(id::AnalogItemType_LimitLoLo, limit_lolo);
-  properties.emplace_back(id::AnalogItemType_LimitHiHi, limit_hihi);
-
-  task_manager_.PostUpdateTask(node_.node_id(), {}, properties);
+  model_.WriteLimits(limits);
 
   EndDialog(IDOK);
   return 0;
@@ -116,11 +94,15 @@ LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
 LRESULT LimitsDialog::OnCancel(WORD /*wNotifyCode*/,
                                WORD /*wID*/,
                                HWND /*hWndCtl*/,
-                               BOOL& /*bHandled*/) {
+                               BOOL&
+                               /*bHandled*/) {
   EndDialog(IDCANCEL);
   return 0;
 }
 
-void ShowLimitsDialog(TaskManager& task_manager, const NodeRef& node) {
-  LimitsDialog{task_manager, node}.Execute();
+void ShowLimitsDialog(DialogService& dialog_service,
+                      LimitDialogContext&& context) {
+  LimitModel model{std::move(context)};
+  LimitsDialog dialog{model};
+  dialog.Execute(dialog_service.GetDialogOwningWindow());
 }
