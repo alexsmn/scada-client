@@ -2,7 +2,6 @@
 
 #include "client_utils.h"
 #include "commands/change_password_dialog.h"
-#include "commands/write_dialog.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
 #include "common/node_service.h"
@@ -13,6 +12,7 @@
 #include "components/main/main_window_manager.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
+#include "components/write/write_dialog.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
 #include "main_window.h"
@@ -265,12 +265,12 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
         ::OpenView(main_window_, win.value());
       return;
     case ID_WRITE:
-      ExecuteWriteDialog(*dialog_service_, node_id, false, timed_data_service_,
-                         profile_);
+      ExecuteWriteDialog(*dialog_service_,
+                         {timed_data_service_, node_id, profile_, false});
       return;
     case ID_WRITE_MANUAL:
-      ExecuteWriteDialog(*dialog_service_, node_id, true, timed_data_service_,
-                         profile_);
+      ExecuteWriteDialog(*dialog_service_,
+                         {timed_data_service_, node_id, profile_, true});
       return;
     case ID_UNLOCK_ITEM:
       task_manager_.PostUpdateTask(node_id, {},

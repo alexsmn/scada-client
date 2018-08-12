@@ -3,6 +3,10 @@
 #include "base/strings/string_piece.h"
 #include "gfx/native_widget_types.h"
 
+#if defined(UI_QT)
+class QWidget;
+#endif
+
 enum class MessageBoxMode {
   Info,
   Error,
@@ -18,6 +22,10 @@ class DialogService {
   virtual ~DialogService() {}
 
   virtual gfx::NativeView GetDialogOwningWindow() const = 0;
+
+#if defined(UI_QT)
+  virtual QWidget* GetParentWidget() const = 0;
+#endif
 
   virtual MessageBoxResult RunMessageBox(base::StringPiece16 message,
                                          base::StringPiece16 title,

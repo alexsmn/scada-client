@@ -59,4 +59,77 @@
         <translation>Локальный</translation>
     </message>
 </context>
+<context>
+    <name>WriteDialog</name>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="20"/>
+        <source>Dialog</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="32"/>
+        <source>(Description)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="41"/>
+        <source>Current value:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="48"/>
+        <source>New value:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="73"/>
+        <source>units</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="83"/>
+        <source>Lock:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="93"/>
+        <source>Condition:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="100"/>
+        <source>(Condition)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="107"/>
+        <source>(Value)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="133"/>
+        <source>(Status)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="153"/>
+        <source>OK</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.ui" line="160"/>
+        <source>Cancel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.cpp" line="64"/>
+        <source>Satisfied</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.cpp" line="65"/>
+        <source>Unsatisfied</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
 </TS>

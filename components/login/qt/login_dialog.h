@@ -26,7 +26,6 @@ class LoginDialog : public QDialog {
   virtual void accept() override;
 
  private:
-  void Login();
   void EnableControls(bool enable);
 
   Ui::LoginDialog ui;

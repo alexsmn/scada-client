@@ -8,6 +8,7 @@ class DialogServiceImplQt final : public DialogService {
  public:
   // DialogService
   virtual gfx::NativeView GetDialogOwningWindow() const override;
+  virtual QWidget* GetParentWidget() const override;
   virtual MessageBoxResult RunMessageBox(base::StringPiece16 message,
                                          base::StringPiece16 title,
                                          MessageBoxMode mode) override;
@@ -21,7 +22,8 @@ inline MessageBoxResult DialogServiceImplQt::RunMessageBox(
     MessageBoxMode mode) {
   auto* message_box = new QMessageBox{parent_widget};
   message_box->setText(QString::fromWCharArray(message.data(), message.size()));
-  message_box->setWindowTitle(QString::fromWCharArray(title.data(), title.size()));
+  message_box->setWindowTitle(
+      QString::fromWCharArray(title.data(), title.size()));
 
   switch (mode) {
     case MessageBoxMode::Info:
@@ -60,4 +62,8 @@ inline MessageBoxResult DialogServiceImplQt::RunMessageBox(
 
 inline gfx::NativeView DialogServiceImplQt::GetDialogOwningWindow() const {
   return nullptr;
+}
+
+inline QWidget* DialogServiceImplQt::GetParentWidget() const {
+  return parent_widget;
 }

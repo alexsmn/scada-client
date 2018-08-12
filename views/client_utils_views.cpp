@@ -1,10 +1,10 @@
 #include "views/client_utils_views.h"
 
 #include "base/win/win_util2.h"
-#include "commands/write_dialog.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/context_menu_model.h"
+#include "components/write/write_dialog.h"
 #include "controller.h"
 #include "remote/session_proxy.h"
 #include "window_info.h"
