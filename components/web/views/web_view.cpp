@@ -13,7 +13,9 @@
 #include <exdisp.h>
 #include <wrl/client.h>
 
-REGISTER_CONTROLLER(WebView, ID_WEB_VIEW);
+const WindowInfo kWindowInfo = {ID_WEB_VIEW, "Web", L"Web"};
+
+REGISTER_CONTROLLER(WebView, kWindowInfo);
 
 WebView::WebView(const ControllerContext& context)
     : Controller{context}, ActiveXControl{ActiveXHost::instance()} {}

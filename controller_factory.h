@@ -4,31 +4,34 @@
 
 #include "common_resources.h"
 #include "controller.h"
+#include "window_info.h"
 
 class ControllerDelegate;
 class DialogService;
 
 using ControllerFactory =
-    std::function<std::unique_ptr<Controller>(unsigned type,
+    std::function<std::unique_ptr<Controller>(unsigned command_id,
                                               ControllerDelegate& delegate,
                                               DialogService& dialog_service)>;
 
-std::unique_ptr<Controller> CreateController(unsigned command_id,
-                                             const ControllerContext& context);
-
 class ControllerRegistrarBase {
  public:
-  explicit ControllerRegistrarBase(unsigned command_id);
+  explicit ControllerRegistrarBase(const WindowInfo& window_info);
+
+  const WindowInfo& window_info() const { return window_info_; }
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) = 0;
+
+ private:
+  const WindowInfo& window_info_;
 };
 
 template <class ControllerClass>
 class ControllerRegistrar final : public ControllerRegistrarBase {
  public:
-  explicit ControllerRegistrar(unsigned command_id)
-      : ControllerRegistrarBase(command_id) {}
+  explicit ControllerRegistrar(const WindowInfo& window_info)
+      : ControllerRegistrarBase{window_info} {}
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) override {
@@ -36,9 +39,12 @@ class ControllerRegistrar final : public ControllerRegistrarBase {
   }
 };
 
+ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id);
+ControllerRegistrarBase* FindControllerRegistrar(std::string_view name);
+
 #define COMBINE1(X, Y) X##Y  // helper macro
 #define COMBINE(X, Y) COMBINE1(X, Y)
 
-#define REGISTER_CONTROLLER(ControllerClass, command_id)          \
-  static ControllerRegistrar<ControllerClass> COMBINE(g_factory_, \
-                                                      __COUNTER__)(command_id)
+#define REGISTER_CONTROLLER(ControllerClass, window_info) \
+  static ControllerRegistrar<ControllerClass> COMBINE(    \
+      g_factory_, __COUNTER__)(window_info)

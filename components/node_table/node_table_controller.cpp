@@ -1,4 +1,4 @@
-#include "components/node_table/node_table_controller.h"
+﻿#include "components/node_table/node_table_controller.h"
 
 #include "client_utils.h"
 #include "common/node_id_util.h"
@@ -53,14 +53,48 @@ class NodeTableControllerImpl : public NodeTableController {
   }
 };
 
-REGISTER_CONTROLLER(NodeTableControllerImpl<0>, ID_TABLE_EDITOR);
+const WindowInfo kTableEditorWindowInfo = {
+    ID_TABLE_EDITOR,
+    "TableEditor",
+    L"Конфигурация",
+    WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
+    0,
+    0,
+    IDR_GRID_POPUP};
+
+const WindowInfo kTsFormatsWindowInfo = {
+    ID_TS_FORMATS_VIEW, "Params", L"Форматы", WIN_REQUIRES_ADMIN, 0, 0,
+    IDR_GRID_POPUP};
+
+const WindowInfo kUsersWindowInfo = {
+    ID_USERS_VIEW, "Users", L"Пользователи", WIN_REQUIRES_ADMIN, 0, 0,
+    IDR_GRID_POPUP};
+
+const WindowInfo kSimulationSignalsWindowInfo = {ID_SIMULATION_ITEMS_VIEW,
+                                                 "SimulationItems",
+                                                 L"Эмулируемые сигналы",
+                                                 WIN_REQUIRES_ADMIN,
+                                                 0,
+                                                 0,
+                                                 IDR_GRID_POPUP};
+
+const WindowInfo kHistoricalDatabasesWindowInfo = {ID_HISTORICAL_DB_VIEW,
+                                                   "HistoricalDB",
+                                                   L"Базы данных",
+                                                   WIN_REQUIRES_ADMIN,
+                                                   0,
+                                                   0,
+                                                   IDR_GRID_POPUP};
+
+REGISTER_CONTROLLER(NodeTableControllerImpl<0>, kTableEditorWindowInfo);
 REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::TsFormats>,
-                    ID_TS_FORMATS_VIEW);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::Users>, ID_USERS_VIEW);
+                    kTsFormatsWindowInfo);
+REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::Users>,
+                    kUsersWindowInfo);
 REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::SimulationSignals>,
-                    ID_SIMULATION_ITEMS_VIEW);
+                    kSimulationSignalsWindowInfo);
 REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::HistoricalDatabases>,
-                    ID_HISTORICAL_DB_VIEW);
+                    kHistoricalDatabasesWindowInfo);
 
 // NodeTableController
 

@@ -35,8 +35,8 @@ void DisplayMenuModel::MenuWillShow() {
   Clear();
   paths_.clear();
 
-  AddItems(VIEW_TYPE_MODUS);
-  AddItems(VIEW_TYPE_VIDICON_DISPLAY);
+  AddItems(ID_MODUS_VIEW);
+  AddItems(ID_VIDICON_DISPLAY_VIEW);
 }
 
 void DisplayMenuModel::ActivatedAt(int index) {

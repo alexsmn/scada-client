@@ -30,7 +30,11 @@ class NodesView : public ConfigurationTreeView {
                          {}}} {}
 };
 
-REGISTER_CONTROLLER(NodesView, ID_NODES_VIEW);
+const WindowInfo kWindowInfo = {
+    ID_NODES_VIEW, "Nodes", L"Узлы", WIN_SING | WIN_REQUIRES_ADMIN,
+    200,           400,     0};
+
+REGISTER_CONTROLLER(NodesView, kWindowInfo);
 
 ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
                                              ConfigurationTreeModel& model)

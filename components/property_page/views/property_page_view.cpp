@@ -1,4 +1,4 @@
-#include "components/property_page/views/property_page_view.h"
+﻿#include "components/property_page/views/property_page_view.h"
 
 #include "client_utils.h"
 #include "common/node_id_util.h"
@@ -11,7 +11,10 @@
 #include "ui/views/widget/widget.h"
 #include "window_definition.h"
 
-REGISTER_CONTROLLER(PropertyPageView, ID_PROPERTY_VIEW);
+const WindowInfo kWindowInfo = {ID_PROPERTY_VIEW, "RecEditor", L"Параметры",
+                                WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN};
+
+REGISTER_CONTROLLER(PropertyPageView, kWindowInfo);
 
 PropertyPageView::PropertyPageView(const ControllerContext& context)
     : Controller(context) {}

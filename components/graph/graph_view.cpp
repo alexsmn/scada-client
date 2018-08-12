@@ -89,7 +89,11 @@ bool ParseTime(const char* str, base::Time& time) {
 
 // GraphView
 
-REGISTER_CONTROLLER(GraphView, ID_GRAPH_VIEW);
+const WindowInfo kWindowInfo = {ID_GRAPH_VIEW,           "Graph", L"График",
+                                WIN_INS | WIN_CAN_PRINT, 0,       0,
+                                IDR_GRAPH_POPUP};
+
+REGISTER_CONTROLLER(GraphView, kWindowInfo);
 
 GraphView::GraphView(const ControllerContext& context)
     : ::Controller{context} {}

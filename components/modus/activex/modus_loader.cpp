@@ -1,5 +1,6 @@
 ﻿#include "components/modus/activex/modus_loader.h"
 
+#include "common_resources.h"
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/modus/activex/modus.h"
@@ -37,7 +38,7 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
     title_ = path.BaseName().RemoveExtension().value();
 
   cache_updater_ = FileCacheUpdater::Create(FileCacheUpdaterContext{
-      VIEW_TYPE_MODUS,
+      ID_MODUS_VIEW,
       FullFilePathToPublic(path),
       title_,
       alias_resolver_,

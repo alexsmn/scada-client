@@ -63,7 +63,15 @@ const ui::TableColumn s_columns[] = {
 
 // TimedDataView
 
-REGISTER_CONTROLLER(TimedDataView, ID_TIMED_DATA_VIEW);
+const WindowInfo kWindowInfo = {ID_TIMED_DATA_VIEW,
+                                "TimeVal",
+                                L"Времена и значения",
+                                WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT,
+                                0,
+                                0,
+                                0};
+
+REGISTER_CONTROLLER(TimedDataView, kWindowInfo);
 
 TimedDataView::TimedDataView(const ControllerContext& context)
     : Controller{context},

@@ -1,4 +1,4 @@
-#include "components/vidicon_display/views/vidicon_display_view.h"
+﻿#include "components/vidicon_display/views/vidicon_display_view.h"
 
 #include "base/win/scoped_bstr.h"
 #include "components/vidicon_display/teleclient.h"
@@ -40,7 +40,15 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-REGISTER_CONTROLLER(VidiconDisplayView, ID_VIDICON_DISPLAY_VIEW);
+const WindowInfo kWindowInfo = {ID_VIDICON_DISPLAY_VIEW,
+                                "VidiconDisplay",
+                                L"Схема",
+                                WIN_CAN_PRINT,
+                                0,
+                                0,
+                                0};
+
+REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);
 
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
     : ::Controller{context},
@@ -77,7 +85,7 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
     CComObject<AmbientProps>* ambient = NULL;
     CComObject<AmbientProps>::CreateInstance(&ambient);
     assert(ambient);
-    ambient->display_name = OLESTR("�����");
+    ambient->display_name = OLESTR("Ñõåìà");
     ambientEx->SetAmbientDispatch(ambient);
     ambientEx->put_MessageReflect(ATL_VARIANT_TRUE);
   }

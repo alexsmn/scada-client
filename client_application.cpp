@@ -82,10 +82,10 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
 }
 
 void RegisterFileCacheType(FileCache& cache,
-                           ViewType type,
+                           unsigned command_id,
                            const base::string16& ext) {
-  base::string16 name = base::SysNativeMBToWide(ViewTypeToString(type));
-  cache.RegisterType(type, name, ext);
+  base::string16 name = base::SysNativeMBToWide(ViewTypeToString(command_id));
+  cache.RegisterType(command_id, name, ext);
 }
 
 void PollIoContext(boost::asio::io_context* context) {
@@ -238,9 +238,9 @@ void ClientApplication::Start() {
       ConnectionStateReporterContext{*master_data_services_, *local_events_});
 
   file_cache_ = std::make_unique<FileCache>();
-  RegisterFileCacheType(*file_cache_, VIEW_TYPE_MODUS, L".sde;.xsde");
-  RegisterFileCacheType(*file_cache_, VIEW_TYPE_VIDICON_DISPLAY, L".vds");
-  RegisterFileCacheType(*file_cache_, VIEW_TYPE_EXCEL_REPORT, L".tsr");
+  RegisterFileCacheType(*file_cache_, ID_MODUS_VIEW, L".sde;.xsde");
+  RegisterFileCacheType(*file_cache_, ID_VIDICON_DISPLAY_VIEW, L".vds");
+  RegisterFileCacheType(*file_cache_, ID_EXCEL_REPORT_VIEW, L".tsr");
   file_cache_->Init();
 
   modus_module_.reset(new ModusModule2);
@@ -331,16 +331,18 @@ ClientApplication::CreateAddressSpaceNodeService() {
 }
 
 MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
-  auto controller_factory = [this](unsigned type, ControllerDelegate& delegate,
-                                   DialogService& dialog_service) {
-    return CreateController(
-        type,
-        ControllerContext{delegate, alias_resolver_, *task_manager_,
-                          *master_data_services_, *event_manager_,
-                          *master_data_services_, *master_data_services_,
-                          *timed_data_service_, *node_service_,
-                          *portfolio_manager_, *local_events_, *favourites_,
-                          *file_cache_, *profile_, dialog_service});
+  auto controller_factory =
+      [this](unsigned command_id, ControllerDelegate& delegate,
+             DialogService& dialog_service) -> std::unique_ptr<Controller> {
+    auto* registrar = GetControllerRegistrar(command_id);
+    if (!registrar)
+      return nullptr;
+
+    return registrar->CreateController(ControllerContext{
+        delegate, alias_resolver_, *task_manager_, *master_data_services_,
+        *event_manager_, *master_data_services_, *master_data_services_,
+        *timed_data_service_, *node_service_, *portfolio_manager_,
+        *local_events_, *favourites_, *file_cache_, *profile_, dialog_service});
   };
 
   auto login_handler = [this](bool login) {

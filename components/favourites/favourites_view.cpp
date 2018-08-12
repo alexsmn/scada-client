@@ -1,11 +1,14 @@
-#include "components/favourites/favourites_view.h"
+﻿#include "components/favourites/favourites_view.h"
 
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
 
-REGISTER_CONTROLLER(FavouritesView, ID_FAVOURITES_VIEW);
+const WindowInfo kWindowInfo = {ID_FAVOURITES_VIEW, "Favorites", L"Избранное",
+                                WIN_SING,           200,         400};
+
+REGISTER_CONTROLLER(FavouritesView, kWindowInfo);
 
 FavouritesView::FavouritesView(const ControllerContext& context)
     : Controller{context},

@@ -4,26 +4,36 @@
 #include <map>
 
 #include "base/lazy_instance.h"
-#include "window_info.h"
 
 namespace {
 
-typedef std::map<unsigned /*command_id*/, ControllerRegistrarBase*> ControllerRegistrarMap;
+typedef std::map<unsigned /*command_id*/, ControllerRegistrarBase*>
+    ControllerRegistrarMap;
 
 base::LazyInstance<ControllerRegistrarMap>::Leaky g_controller_registrar_map =
-    LAZY_INSTANCE_INITIALIZER; 
+    LAZY_INSTANCE_INITIALIZER;
 
-} // namespace
+}  // namespace
 
-ControllerRegistrarBase::ControllerRegistrarBase(unsigned command_id) {
+ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info)
+    : window_info_{window_info} {
   auto& registrar = g_controller_registrar_map.Get();
-  assert(registrar.find(command_id) == registrar.end());
-  registrar.emplace(command_id, this);
+  assert(registrar.find(window_info.command_id) == registrar.end());
+  registrar.emplace(window_info.command_id, this);
 }
 
-std::unique_ptr<Controller> CreateController(unsigned command_id, const ControllerContext& context) {
+ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id) {
   assert(g_controller_registrar_map.Pointer());
-  auto& registrar = g_controller_registrar_map.Get();
-  auto i = registrar.find(command_id);
-  return i == registrar.end() ? nullptr : i->second->CreateController(context);
+  auto& map = g_controller_registrar_map.Get();
+  auto i = map.find(command_id);
+  return i == map.end() ? nullptr : i->second;
+}
+
+ControllerRegistrarBase* FindControllerRegistrar(std::string_view name) {
+  for (const auto& p : g_controller_registrar_map.Get()) {
+    auto& registrar = *p.second;
+    if (registrar.window_info().name == name)
+      return &registrar;
+  }
+  return nullptr;
 }

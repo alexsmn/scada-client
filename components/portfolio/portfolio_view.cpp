@@ -1,4 +1,4 @@
-#include "components/portfolio/portfolio_view.h"
+﻿#include "components/portfolio/portfolio_view.h"
 
 #include "commands/select_item_dialog.h"
 #include "common/node_service.h"
@@ -8,7 +8,15 @@
 #include "controls/tree.h"
 #include "selection_model.h"
 
-REGISTER_CONTROLLER(PortfolioView, ID_PORTFOLIO_VIEW);
+const WindowInfo kWindowInfo = {ID_PORTFOLIO_VIEW,
+                                "Portfolio",
+                                L"Портфолио",
+                                WIN_SING | WIN_INS,
+                                200,
+                                400,
+                                0};
+
+REGISTER_CONTROLLER(PortfolioView, kWindowInfo);
 
 // PortfolioView
 

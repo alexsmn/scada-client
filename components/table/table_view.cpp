@@ -44,7 +44,10 @@ class TableViewPainter : public views::TablePainter {
 
 // TableView
 
-REGISTER_CONTROLLER(TableView, ID_TABLE_VIEW);
+const WindowInfo kWindowInfo = {ID_TABLE_VIEW,           "Table", L"Таблица",
+                                WIN_INS | WIN_CAN_PRINT, 620,     400};
+
+REGISTER_CONTROLLER(TableView, kWindowInfo);
 
 TableView::TableView(const ControllerContext& context) : Controller{context} {
   model_ = std::make_unique<TableModel>(TableModelContext{

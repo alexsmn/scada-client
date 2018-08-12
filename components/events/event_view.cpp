@@ -36,8 +36,20 @@ class EventJournal : public EventView {
       : EventView(context, false) {}
 };
 
-REGISTER_CONTROLLER(EventPanel, ID_EVENT_VIEW);
-REGISTER_CONTROLLER(EventJournal, ID_EVENT_JOURNAL_VIEW);
+const WindowInfo kEventWindowInfo = {
+    ID_EVENT_VIEW, "Event", L"События", WIN_SING | WIN_DOCKB | WIN_CAN_PRINT,
+    800,           200,     0};
+
+const WindowInfo kEventJournalWindowInfo = {ID_EVENT_JOURNAL_VIEW,
+                                            "EventJournal",
+                                            L"Журнал событий",
+                                            WIN_INS | WIN_CAN_PRINT,
+                                            0,
+                                            0,
+                                            0};
+
+REGISTER_CONTROLLER(EventPanel, kEventWindowInfo);
+REGISTER_CONTROLLER(EventJournal, kEventJournalWindowInfo);
 
 // EventView
 

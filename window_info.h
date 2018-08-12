@@ -2,38 +2,6 @@
 
 #include "base/strings/string16.h"
 
-enum ViewType {
-  VIEW_TYPE_NEW_PROPERTIES,
-  VIEW_TYPE_CELLS,
-  VIEW_TYPE_SHEET,
-  VIEW_TYPE_EVENTS,
-  VIEW_TYPE_EVENT_JOURNAL,
-  VIEW_TYPE_FAVOURITES,
-  VIEW_TYPE_TS_FORMATS,
-  VIEW_TYPE_GRAPH,
-  VIEW_TYPE_WATCH,
-  VIEW_TYPE_MODUS,
-  VIEW_TYPE_PORTFOLIO,
-  VIEW_TYPE_OBJECTS,
-  VIEW_TYPE_TABLE,
-  VIEW_TYPE_SIMULATION_ITEMS,
-  VIEW_TYPE_HISTORICAL_DB,
-  VIEW_TYPE_STATUS,
-  VIEW_TYPE_SUMMARY,
-  VIEW_TYPE_TIMED_DATA,
-  VIEW_TYPE_USERS,
-  VIEW_TYPE_WEB,
-  VIEW_TYPE_PRINT_PREVIEW,
-  VIEW_TYPE_RECORD_EDITOR,
-  VIEW_TYPE_DEVICES,
-  VIEW_TYPE_TABLE_RECORD_EDITOR,
-  VIEW_TYPE_TRANSMISSION,
-  VIEW_TYPE_EXCEL_REPORT,
-  VIEW_TYPE_VIDICON_DISPLAY,
-  VIEW_TYPE_NODES,
-  VIEW_TYPE_COUNT
-};
-
 enum WindowFlags {
   WIN_SING            = 0x0001,	// only single window allowed for page
   WIN_INS             = 0x0002,	// items can be inserted into this window
@@ -64,7 +32,6 @@ const WindowInfo* FindWindowInfo(unsigned command_id);
 const WindowInfo& GetWindowInfo(unsigned command_id);
 
 unsigned ParseWindowType(const char* str);
-
-const char* ViewTypeToString(ViewType type);
+const char* ViewTypeToString(unsigned command_id);
 
 extern const WindowInfo g_window_infos[];

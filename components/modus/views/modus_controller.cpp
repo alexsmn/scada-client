@@ -1,4 +1,4 @@
-#include "components/modus/views/modus_controller.h"
+﻿#include "components/modus/views/modus_controller.h"
 
 #include "base/bind.h"
 #include "base/strings/string_util.h"
@@ -14,7 +14,10 @@
 #include "window_definition.h"
 #include "window_info.h"
 
-REGISTER_CONTROLLER(ModusController, ID_MODUS_VIEW);
+const WindowInfo kWindowInfo = {
+    ID_MODUS_VIEW, "Modus", L"Схема", WIN_CAN_PRINT, 0, 0, IDR_MODUS_POPUP};
+
+REGISTER_CONTROLLER(ModusController, kWindowInfo);
 
 ModusController::ModusController(const ControllerContext& context)
     : Controller{context}, wrapper_(nullptr) {}

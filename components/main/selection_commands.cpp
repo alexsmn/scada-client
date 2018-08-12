@@ -355,7 +355,7 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   assert(main_window_);
   assert(dialog_service_);
 
-  auto cached_items = file_cache_.GetList(VIEW_TYPE_MODUS)
+  auto cached_items = file_cache_.GetList(ID_MODUS_VIEW)
                           .GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {

@@ -25,9 +25,12 @@
 #include <atluser.h>
 #endif
 
-// WatchView
+const WindowInfo kWindowInfo = {
+    ID_WATCH_VIEW, "Log", L"Наблюдение", WIN_DISALLOW_NEW, 0, 0, 0};
 
-REGISTER_CONTROLLER(WatchView, ID_WATCH_VIEW);
+REGISTER_CONTROLLER(WatchView, kWindowInfo);
+
+// WatchView
 
 WatchView::WatchView(const ControllerContext& context)
     : Controller{context},

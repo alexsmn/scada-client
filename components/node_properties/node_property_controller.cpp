@@ -1,4 +1,4 @@
-#include "components/node_properties/node_property_controller.h"
+﻿#include "components/node_properties/node_property_controller.h"
 
 #include "common/node_id_util.h"
 #include "common/node_service.h"
@@ -9,9 +9,16 @@
 #include "controls/tree.h"
 #include "window_definition.h"
 
-// NodePropertyController
+const WindowInfo kWindowInfo = {ID_NEW_PROPERTY_VIEW,
+                                "NewProps",
+                                L"Параметры",
+                                WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
+                                200,
+                                400};
 
-REGISTER_CONTROLLER(NodePropertyController, ID_NEW_PROPERTY_VIEW);
+REGISTER_CONTROLLER(NodePropertyController, kWindowInfo);
+
+// NodePropertyController
 
 NodePropertyController::NodePropertyController(const ControllerContext& context)
     : Controller{context} {}

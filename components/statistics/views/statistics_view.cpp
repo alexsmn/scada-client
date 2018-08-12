@@ -11,7 +11,10 @@ static const base::char16* kStatisticTitles[] = {
 
 // StatisticsView
 
-REGISTER_CONTROLLER(StatisticsView, ID_STATISTICS_VIEW);
+const WindowInfo kWindowInfo = {ID_STATISTICS_VIEW, "Stat", L"Статус",
+                                WIN_SING,           300,    400};
+
+REGISTER_CONTROLLER(StatisticsView, kWindowInfo);
 
 StatisticsView::StatisticsView(const ControllerContext& context)
     : Controller{context} {
@@ -52,23 +55,23 @@ void StatisticsView::GetCell(ui::TableCell& cell) {
     //	  break;
     //  case 1:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumBytesReceived));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumBytesReceived));
     //	  break;
     //  case 2:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumBytesSent));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumBytesSent));
     //	  break;
     //  case 3:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumMessagesReceived));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumMessagesReceived));
     //	  break;
     //  case 4:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumMessagesSent));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumMessagesSent));
     //	  break;
     //  case 5:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumBytesQueued));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumBytesQueued));
     //	  break;
     //  case 6:
     //	  /*{
@@ -82,15 +85,15 @@ void StatisticsView::GetCell(ui::TableCell& cell) {
     //	  break;
     //  case 8:
     //	  // cell.text =
-    //Format(g_session->GetStatistics(SessionProxy::kNumCompletedRequests));
+    // Format(g_session->GetStatistics(SessionProxy::kNumCompletedRequests));
     //	  break;
     //  case 9:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumRunningRequests));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumRunningRequests));
     //	  break;
     //  case 10:
     //	  cell.text =
-    //base::IntToString16(g_session->GetStatistics(SessionProxy::kNumUpdatedRecords));
+    // base::IntToString16(g_session->GetStatistics(SessionProxy::kNumUpdatedRecords));
     //	  break;
     //}
   }

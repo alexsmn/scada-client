@@ -1,4 +1,4 @@
-#include "components/excel_report/views/excel_report_view.h"
+﻿#include "components/excel_report/views/excel_report_view.h"
 
 #include "controller_factory.h"
 #include "ui/views/controls/activex_control.h"
@@ -23,7 +23,10 @@ void ExcelView::NativeControlCreated(HWND window_handle) {
 
 // ExcelReportView
 
-REGISTER_CONTROLLER(ExcelReportView, ID_EXCEL_REPORT_VIEW);
+const WindowInfo kWindowInfo = {
+    ID_EXCEL_REPORT_VIEW, "ExcelReport", L"Отчет", WIN_CAN_PRINT, 0, 0, 0};
+
+REGISTER_CONTROLLER(ExcelReportView, kWindowInfo);
 
 ExcelReportView::ExcelReportView(const ControllerContext& context)
     : Controller{context}, excel_(new ExcelView{ActiveXHost::instance()}) {}

@@ -1,4 +1,4 @@
-#include "components/configuration_tree/configuration_tree_view.h"
+﻿#include "components/configuration_tree/configuration_tree_view.h"
 
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
@@ -14,4 +14,7 @@ class HardwareTreeView : public ConfigurationTreeView {
                                    context.timed_data_service_}} {}
 };
 
-REGISTER_CONTROLLER(HardwareTreeView, ID_HARDWARE_VIEW);
+const WindowInfo kWindowInfo = {ID_HARDWARE_VIEW, "Subsystems", L"Оборудование",
+                                WIN_SING,         200,          400};
+
+REGISTER_CONTROLLER(HardwareTreeView, kWindowInfo);

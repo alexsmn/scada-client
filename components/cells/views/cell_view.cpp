@@ -32,7 +32,10 @@ CellView::Cell::Cell(CellView& view, int row, int column)
 
 // CellView
 
-REGISTER_CONTROLLER(CellView, ID_CELLS_VIEW);
+const WindowInfo kWindowInfo = {
+    ID_CELLS_VIEW, "Cells", L"Ячейки", WIN_INS | WIN_CAN_PRINT, 0, 0, 0};
+
+REGISTER_CONTROLLER(CellView, kWindowInfo);
 
 CellView::CellView(const ControllerContext& context)
     : Controller{context},
