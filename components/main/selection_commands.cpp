@@ -1,13 +1,13 @@
 ﻿#include "components/main/selection_commands.h"
 
 #include "client_utils.h"
-#include "commands/change_password_dialog.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
+#include "components/change_password/change_password_dialog.h"
 #include "components/limits/limit_dialog.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/main_window_util.h"
@@ -316,8 +316,9 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     case ID_CHANGE_PASSWORD: {
       auto node = selection_->node();
       if (IsInstanceOf(node, id::UserType)) {
-        ShowChangePasswordDialog(node, node_management_service_, local_events_,
-                                 profile_);
+        ShowChangePasswordDialog(
+            *dialog_service_,
+            {node, node_management_service_, local_events_, profile_});
       }
       return;
     }
@@ -355,8 +356,8 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   assert(main_window_);
   assert(dialog_service_);
 
-  auto cached_items = file_cache_.GetList(ID_MODUS_VIEW)
-                          .GetFilesContainingItem(node.node_id());
+  auto cached_items =
+      file_cache_.GetList(ID_MODUS_VIEW).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
     base::string16 msg =

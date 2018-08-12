@@ -2,6 +2,44 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>ChangePasswordDialog</name>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.ui" line="14"/>
+        <source>Change Password</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.ui" line="25"/>
+        <source>Current:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.ui" line="39"/>
+        <source>New:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.ui" line="53"/>
+        <source>Repeat:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.ui" line="99"/>
+        <source>OK</source>
+        <translation type="unfinished">ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.ui" line="106"/>
+        <source>Cancel</source>
+        <translation type="unfinished">Отмена</translation>
+    </message>
+    <message>
+        <location filename="../components/change_password/qt/change_password_dialog.cpp" line="38"/>
+        <source>New and repeated password do not match.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>CreateServiceItemDialog</name>
     <message>
         <location filename="../components/create_service_item/qt/create_service_item.ui" line="14"/>

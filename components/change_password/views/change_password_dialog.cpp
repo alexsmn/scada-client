@@ -1,10 +1,7 @@
-﻿#include "commands/change_password_dialog.h"
+﻿#include "components/change_password/change_password_dialog.h"
 
-#include "base/strings/stringprintf.h"
-#include "client_utils.h"
-#include "common/node_ref.h"
 #include "common_resources.h"
-#include "core/node_management_service.h"
+#include "components/change_password/change_password.h"
 #include "views/framework/dialog.h"
 
 class ChangePasswordDialog : public framework::Dialog {
@@ -15,7 +12,7 @@ class ChangePasswordDialog : public framework::Dialog {
   const base::string16& new_password() const { return new_password_; }
 
  protected:
-  virtual void OnOK() {
+  virtual void OnOK() override {
     current_password_ = GetItemText(IDC_CUR_PASSW);
     new_password_ = GetItemText(IDC_PASSWORD);
     auto password2 = GetItemText(IDC_PASSW2);
@@ -24,6 +21,7 @@ class ChangePasswordDialog : public framework::Dialog {
                  L"Задать пароль", MB_ICONSTOP);
       return;
     }
+
     Dialog::OnOK();
   }
 
@@ -32,21 +30,12 @@ class ChangePasswordDialog : public framework::Dialog {
   base::string16 new_password_;
 };
 
-void ShowChangePasswordDialog(
-    const NodeRef& user,
-    scada::NodeManagementService& node_management_service,
-    LocalEvents& local_events,
-    Profile& profile) {
+void ShowChangePasswordDialog(DialogService& dialog_service,
+                              ChangePasswordContext&& context) {
   ChangePasswordDialog dialog;
   if (dialog.Execute() != IDOK)
     return;
 
-  node_management_service.ChangeUserPassword(
-      user.node_id(), dialog.current_password(), dialog.new_password(),
-      [user, &local_events, &profile](const scada::Status& status) {
-        base::string16 title =
-            base::StringPrintf(L"Смена пароля пользователя %ls",
-                               ToString16(user.display_name()).c_str());
-        ReportRequestResult(title, status, local_events, profile);
-      });
+  ChangePassword(std::move(context), dialog.current_password(),
+                 dialog.new_password());
 }
