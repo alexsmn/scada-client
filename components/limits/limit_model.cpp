@@ -1,12 +1,9 @@
 #include "limit_model.h"
 
 #include "base/format.h"
-#include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
 #include "common/format.h"
 #include "common/node_format.h"
 #include "common/scada_node_ids.h"
-#include "core/data_value.h"
 #include "services/task_manager.h"
 
 LimitModel::LimitModel(LimitDialogContext&& context)

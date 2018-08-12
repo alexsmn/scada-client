@@ -1,7 +1,6 @@
 ﻿#include "opened_view_commands.h"
 
 #include "client_utils.h"
-#include "commands/add_multiple_items_dialog.h"
 #include "commands/add_service_items_dialog.h"
 #include "commands/time_range_dialog.h"
 #include "common/node_service.h"
@@ -13,6 +12,7 @@
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
 #include "components/main/selection_commands.h"
+#include "components/multi_create/multi_create_dialog.h"
 #include "controller.h"
 #include "controller_factory.h"
 #include "core/node_management_service.h"
@@ -133,8 +133,9 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
                                 controller_->selection().node().node_id());
       return;
     case ID_ADD_MULTIPLE_ITEMS:
-      ShowAddMultipleItemsDialog(node_service_, task_manager_,
-                                 controller_->selection().node().node_id());
+      ShowMultiCreateDialog(*dialog_service_,
+                            {node_service_, task_manager_,
+                             controller_->selection().node().node_id()});
       return;
 
     case ID_TIME_RANGE_DAY:

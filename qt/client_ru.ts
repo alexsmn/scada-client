@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>Dialog</name>
+    <message>
+        <source>OK</source>
+        <translation type="obsolete">ОК</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="obsolete">Отмена</translation>
+    </message>
+</context>
+<context>
     <name>LimitDialog</name>
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="14"/>
@@ -89,6 +100,69 @@
         <location filename="../components/main/qt/main_window_qt.cpp" line="131"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
+    </message>
+</context>
+<context>
+    <name>MultiCreateDialog</name>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="20"/>
+        <source>Multiple Create</source>
+        <translation>Создание серии объектов</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="28"/>
+        <source>Type:</source>
+        <translation>Тип:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="50"/>
+        <source>Discrete</source>
+        <translation>ТС</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="60"/>
+        <source>Analog</source>
+        <translation>ТИТ</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="70"/>
+        <source>Count:</source>
+        <translation>Количество:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="90"/>
+        <source>Name prefix:</source>
+        <translation>Префикс имени:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="100"/>
+        <source>Starting number:</source>
+        <translation>Начальный номер:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="117"/>
+        <source>Device:</source>
+        <translation>Устройство:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="127"/>
+        <source>Address prefix:</source>
+        <translation>Префикс адреса:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="137"/>
+        <source>Starting address:</source>
+        <translation>Начальный адрес:</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="186"/>
+        <source>OK</source>
+        <translation>ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="193"/>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
     </message>
 </context>
 <context>
