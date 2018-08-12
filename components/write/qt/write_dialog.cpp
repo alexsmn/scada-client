@@ -82,6 +82,12 @@ void WriteDialog::accept() {
   } else {
     ui.valueComboBox->currentText();
   }
+
+  bool lock = false;
+  if (model_.lock_allowed())
+    lock = ui.lockCheckBox->isChecked();
+
+  model_.Write(value, lock);
 }
 
 void ExecuteWriteDialog(DialogService& dialog_service, WriteContext&& context) {

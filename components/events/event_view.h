@@ -75,6 +75,8 @@ class EventView : public Controller,
 
   NodeIdSet EventView::GetSelectedNodeIds() const;
 
+  void OnSelectionChanged();
+
   bool is_panel_;
 
   std::unique_ptr<EventTableModel> model_;

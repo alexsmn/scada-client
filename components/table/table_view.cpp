@@ -302,7 +302,7 @@ bool TableView::OnDoubleClick() {
   if (view_->selection_model().empty())
     return false;
 
-  TableRow* row = model_->GetRow(view_->FirstSelectedRow());
+  TableRow* row = model_->GetRow(view_->GetCurrentRow());
   if (!row)
     return false;
 
@@ -468,16 +468,12 @@ CommandHandler* TableView::GetCommandHandler(unsigned command_id) {
 void TableView::ExecuteCommand(unsigned command) {
   switch (command) {
     case ID_DELETE:
-#if defined(UI_VIEWS)
-      view_->CloseEditor(FALSE);
-#endif
+      view_->CloseEditor();
       DeleteSelection();
       return;
 
     case ID_RENAME:
-#if defined(UI_VIEWS)
-      view_->OpenEditor(view_->FirstSelectedRow());
-#endif
+      view_->OpenEditor(view_->GetCurrentRow());
       return;
 
     case ID_MOVE_UP:
@@ -497,15 +493,13 @@ void TableView::ExecuteCommand(unsigned command) {
 }
 
 void TableView::MoveRow(bool up) {
-#if defined(UI_VIEWS)
-  int row = view_->FirstSelectedRow();
+  int row = view_->GetCurrentRow();
   if (row == -1)
     return;
 
   auto row2 = model_->MoveRow(row, up);
   if (row2 != -1)
-    view_->Select(row2, true);
-#endif
+    view_->SelectRow(row2, true);
 }
 
 #if defined(UI_QT)

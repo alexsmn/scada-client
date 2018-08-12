@@ -8,7 +8,7 @@
 #include "common_resources.h"
 
 const WindowInfo g_window_infos[] = {
-  { ID_NEW_PROPERTY_VIEW, "NewProps", L"Свойства", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN, 200, 400 },
+  { ID_NEW_PROPERTY_VIEW, "NewProps", L"Параметры", WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN, 200, 400 },
   { ID_CELLS_VIEW, "Cells", L"Ячейки", WIN_INS | WIN_CAN_PRINT, 0, 0, 0 },
   { ID_SHEET_VIEW, "CusTable", L"Пользовательская таблица", WIN_INS | WIN_CAN_PRINT, 0, 0, IDR_SHEET_POPUP },
   { ID_EVENT_VIEW, "Event", L"События", WIN_SING | WIN_DOCKB | WIN_CAN_PRINT, 800, 200, 0 },

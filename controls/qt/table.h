@@ -27,6 +27,8 @@ class Table : public QTableView {
             });
   }
 
+  int GetCurrentRow() const { return currentIndex().row(); }
+
   std::vector<int> GetSelectedRows() const {
     std::vector<int> rows;
     if (selectionModel()) {
@@ -38,7 +40,13 @@ class Table : public QTableView {
     return rows;
   }
 
-  void SelectRow(int row) { selectRow(row); }
+  void SelectRow(int row, bool make_visible = true) { selectRow(row); }
+
+  void OpenEditor(int row) {
+    openPersistentEditor(model()->index(row, 0, rootIndex()));
+  }
+
+  void CloseEditor() { closePersistentEditor(currentIndex()); }
 
   QWidget* CreateParentIfNecessary() { return this; }
 

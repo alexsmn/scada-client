@@ -14,7 +14,7 @@ class Table : public views::TableView, private views::ContextMenuController {
     return selection_model().selected_indices();
   }
 
-  void SelectRow(int row) { Select(row, true); }
+  void SelectRow(int row, bool make_visible = true) { Select(row, make_visible); }
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 

@@ -79,6 +79,16 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->verticalHeader()->setDefaultSectionSize(19);
   table_->setShowGrid(false);
   table_->resizeColumnsToContents();
+  table_->setSelectionBehavior(Table::SelectRows);
+
+  QObject::connect(
+      table_->selectionModel(), &QItemSelectionModel::selectionChanged,
+      [this](const QItemSelection& selected, const QItemSelection& deselected) {
+        OnSelectionChanged();
+      });
+
+  QObject::connect(table_.get(), &Table::doubleClicked,
+                   [this] { AcknowledgeSelection(); });
 
 #elif defined(UI_VIEWS)
   severities_image_list_->Create(16, 16, ILC_MASK | ILC_COLOR32, 0, 0);
@@ -113,17 +123,21 @@ void EventView::AcknowledgeSelection() {
     model_->AcknowledgeRow(*i);
 }
 
-#if defined(UI_VIEWS)
-void EventView::OnSelectionChanged(views::TableView& sender) {
-  if (table_->selection_model().empty())
+void EventView::OnSelectionChanged() {
+  auto rows = table_->GetSelectedRows();
+  if (rows.empty())
     selection().Clear();
-  else if (table_->selection_model().selected_indices().size() >= 2)
+  else if (rows.size() >= 2)
     selection().SelectMultiple();
   else {
-    auto& indices = table_->selection_model().selected_indices();
-    const scada::Event& event = model_->event_at(indices[0]);
+    const scada::Event& event = model_->event_at(rows.front());
     selection().SelectNode(node_service_.GetNode(event.node_id));
   }
+}
+
+#if defined(UI_VIEWS)
+void EventView::OnSelectionChanged(views::TableView& sender) {
+  OnSelectionChanged();
 }
 #endif
 

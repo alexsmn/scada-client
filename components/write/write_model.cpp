@@ -79,6 +79,8 @@ base::string16 WriteModel::GetAnalogUnits() const {
 void WriteModel::Write(double value, bool lock) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
 
+  write_value_ = value;
+
   scada::WriteFlags flags;
   if (manual_) {
     spec_.Call(id::DataItemType_WriteManual, {write_value_, lock}, {},
