@@ -1,6 +1,7 @@
-#include "commands/add_favourites_dialog.h"
+#include "components/favourites/add_favourites_dialog.h"
 
 #include "common_resources.h"
+#include "services/dialog_service.h"
 #include "services/favourites.h"
 #include "views/framework/dialog.h"
 
@@ -25,14 +26,8 @@ class AddFavouritesDialog : public framework::Dialog {
     SetItemText(IDC_NAME, name_);
 
     folder_combo_ = GetItem(IDC_FOLDER);
-
-    const Favourites::Folders& folders = favourites_.folders();
-    for (Favourites::Folders::const_iterator i = folders.begin();
-         i != folders.end(); ++i) {
-      const Page& folder = *i;
+    for (auto& folder : favourites_.folders())
       folder_combo_.AddString(folder.GetTitle().c_str());
-    }
-
     folder_combo_.SetCurSel(0);
   }
 
@@ -52,14 +47,14 @@ class AddFavouritesDialog : public framework::Dialog {
   WTL::CComboBox folder_combo_;
 };
 
-bool ShowAddFavouritesDialog(Favourites& favourites,
-                             base::string16& title,
-                             base::string16& folder_name) {
-  AddFavouritesDialog dlg{favourites};
-  dlg.set_name(title);
-  if (dlg.Execute() != IDOK)
+bool ShowAddFavouritesDialog(DialogService& dialog_service,
+                             AddFavouritesContext&& context) {
+  AddFavouritesDialog dlg{context.favourites_};
+  dlg.set_name(context.window_def_.title);
+  if (dlg.Execute(dialog_service.GetDialogOwningWindow()) != IDOK)
     return false;
-  title = dlg.name();
-  folder_name = dlg.folder();
+
+  const Page& folder = context.favourites_.GetOrAddFolder(dlg.folder().c_str());
+  context.favourites_.Add(context.window_def_, folder);
   return true;
 }

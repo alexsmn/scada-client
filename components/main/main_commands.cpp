@@ -3,11 +3,11 @@
 #include "base/path_service.h"
 #include "client_paths.h"
 #include "client_utils.h"
-#include "commands/add_favourites_dialog.h"
 #include "commands/prompt_dialog.h"
 #include "common/event_manager.h"
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
+#include "components/favourites//add_favourites_dialog.h"
 #include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
@@ -91,9 +91,9 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_VIEW_CLOSE:
       return active_view ? this : NULL;
 
-    /*case ID_PRINT:
-      return active_view && active_view->window_info().printable() ? this
-                                                                   : NULL;*/
+      /*case ID_PRINT:
+        return active_view && active_view->window_info().printable() ? this
+                                                                     : NULL;*/
 
     case ID_TOOLBAR_TOP:
     case ID_TOOLBAR_LEFT:
@@ -311,18 +311,12 @@ void MainCommands::AddToFavourites() {
   if (view->window_info().is_pane())
     return;
 
-  auto title = view->GetWindowTitle();
-  base::string16 folder_name;
-  if (!ShowAddFavouritesDialog(favourites_, title, folder_name))
-    return;
-
   view->Save();
 
   auto definition = view->window_def();
-  definition.title = title;
+  definition.title = view->GetWindowTitle();
 
-  const Page& folder = favourites_.GetOrAddFolder(folder_name.c_str());
-  favourites_.Add(definition, folder);
+  ShowAddFavouritesDialog(dialog_service_, {favourites_, std::move(definition)});
 }
 
 void MainCommands::ShowRenameWindowDialog() {

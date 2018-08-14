@@ -2,41 +2,49 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>AddFavouritesDialog</name>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="33"/>
+        <source>(No Folder)</source>
+        <translation>(Нет группы)</translation>
+    </message>
+</context>
+<context>
     <name>ChangePasswordDialog</name>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="14"/>
         <source>Change Password</source>
-        <translation type="unfinished"></translation>
+        <translation>Смена пароля</translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="25"/>
         <source>Current:</source>
-        <translation type="unfinished"></translation>
+        <translation>Текущий:</translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="39"/>
         <source>New:</source>
-        <translation type="unfinished"></translation>
+        <translation>Новый:</translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="53"/>
         <source>Repeat:</source>
-        <translation type="unfinished"></translation>
+        <translation>Повтор:</translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="99"/>
         <source>OK</source>
-        <translation type="unfinished">ОК</translation>
+        <translation>ОК</translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="106"/>
         <source>Cancel</source>
-        <translation type="unfinished">Отмена</translation>
+        <translation>Отмена</translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.cpp" line="38"/>
         <source>New and repeated password do not match.</source>
-        <translation type="unfinished"></translation>
+        <translation>Новый и повторенный пароль не совпадают.</translation>
     </message>
 </context>
 <context>
