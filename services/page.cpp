@@ -220,8 +220,10 @@ void Page::Load(const xml::Node& node) {
           ParseWithDefault<int>(docke->GetAttribute("place").c_str(), 0);
       LoadLayoutBlock(dock, *docke);
     }
-    if (auto* blobe = layoute->select("Blob"))
-      layout.blob = base::SysWideToNativeMB(blobe->get_value());
+    if (auto* blobe = layoute->select("Blob")) {
+      auto blob = base::SysWideToNativeMB(blobe->get_text());
+      base::Base64Decode(blob, &layout.blob);
+    }
   }
 }
 
@@ -276,8 +278,9 @@ void Page::Save(xml::Node& node, bool current) const {
     SaveLayoutBlock(dock, docke);
   }
   if (!layout.blob.empty()) {
-    layoute.AddElement("Blob").set_value(
-        base::SysNativeMBToWide(layout.blob).c_str());
+    std::string blob;
+    base::Base64Encode(layout.blob, &blob);
+    layoute.AddElement("Blob").set_text(base::SysNativeMBToWide(blob).c_str());
   }
 }
 
