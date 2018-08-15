@@ -1,3 +1,5 @@
 #pragma once
 
-void ShowAboutDialog();
+class DialogService;
+
+void ShowAboutDialog(DialogService& dialog_service);

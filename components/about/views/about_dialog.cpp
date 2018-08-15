@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "project.h"
 #include "views/framework/dialog.h"
+#include "services/dialog_service.h"
 
 #include <atlbase.h>
 
@@ -29,6 +30,7 @@ class AboutDialog : public framework::Dialog {
   }
 };
 
-void ShowAboutDialog() {
-  AboutDialog().Execute();
+void ShowAboutDialog(DialogService& dialog_service) {
+  AboutDialog dialog;
+  dialog.Execute(dialog_service.GetDialogOwningWindow());
 }

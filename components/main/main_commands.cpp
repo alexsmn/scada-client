@@ -12,6 +12,7 @@
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "core/session_service.h"
+#include "services/dialog_service.h"
 #include "services/excel_configuration_commands.h"
 #include "services/favourites.h"
 #include "services/local_events.h"
@@ -23,6 +24,10 @@
 
 #include <atlres.h>
 #include <shellapi.h>
+
+#if defined(UI_QT)
+#include <QMessageBox>
+#endif
 
 namespace {
 
@@ -111,6 +116,11 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
       return nullptr;
 #endif
 
+#if defined(ID_ABOUT_QT)
+    case ID_ABOUT_QT:
+      return this;
+#endif
+
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
       break;
@@ -196,7 +206,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     }
 
     case ID_APP_ABOUT:
-      ShowAboutDialog();
+      ShowAboutDialog(dialog_service_);
       return;
 
     case ID_ACKNOWLEDGE_ALL:
@@ -266,6 +276,11 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       login_handler_(command_id == ID_LOGIN);
       return;
 
+#if defined(UI_QT)
+    case ID_ABOUT_QT:
+      return QMessageBox::aboutQt(dialog_service_.GetParentWidget());
+#endif
+
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
       break;
@@ -316,7 +331,8 @@ void MainCommands::AddToFavourites() {
   auto definition = view->window_def();
   definition.title = view->GetWindowTitle();
 
-  ShowAddFavouritesDialog(dialog_service_, {favourites_, std::move(definition)});
+  ShowAddFavouritesDialog(dialog_service_,
+                          {favourites_, std::move(definition)});
 }
 
 void MainCommands::ShowRenameWindowDialog() {

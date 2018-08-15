@@ -8,6 +8,26 @@
         <source>(No Folder)</source>
         <translation>(Нет группы)</translation>
     </message>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="14"/>
+        <source>Add to Favourites</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="25"/>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="74"/>
+        <source>OK</source>
+        <translation type="unfinished">ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="81"/>
+        <source>Cancel</source>
+        <translation type="unfinished">Отмена</translation>
+    </message>
 </context>
 <context>
     <name>ChangePasswordDialog</name>
@@ -241,6 +261,11 @@
         <location filename="client_utils_qt.cpp" line="59"/>
         <source>Local</source>
         <translation>Локальный</translation>
+    </message>
+    <message>
+        <location filename="../components/about/qt/about_dialog.cpp" line="13"/>
+        <source>About</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

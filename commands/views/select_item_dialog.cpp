@@ -86,7 +86,7 @@ LRESULT SelectItemDialog::OnInitDialog(UINT /*uMsg*/,
   list.SetImageList(images, LVSIL_SMALL);
 
   auto tree = node_service_.GetNode(id::DataItems);
-  for (const auto& node : tree.targets(scada::id::HasComponent)) {
+  for (const auto& node : tree.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, id::DataGroupType))
       InsertTree(node);
   }
@@ -162,7 +162,7 @@ HTREEITEM SelectItemDialog::InsertTree(const NodeRef& node, HTREEITEM parent) {
   tree_r2i.insert(R2I::value_type(node.node_id(), item));
 
   // insert children
-  for (const auto& child : node.targets(scada::id::HasComponent)) {
+  for (const auto& child : node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(child, id::DataGroupType))
       InsertTree(child, item);
   }
