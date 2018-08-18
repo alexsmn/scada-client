@@ -8,9 +8,38 @@
 #include "controls/property_model.h"
 #include "services/property_defs.h"
 
+class NodePropertyModel;
 class PropertyDefinition;
 class TaskManager;
 struct PropertyContext;
+
+class NodeGroupModel : public PropertyGroup {
+ public:
+  explicit NodeGroupModel(NodePropertyModel& property_model);
+  ~NodeGroupModel();
+
+  virtual int GetCount() const override;
+  virtual PropertyGroup* GetSubgroup(int index) const override;
+  virtual base::string16 GetName(int index) const override;
+  virtual base::string16 GetValue(int index) const override;
+  virtual bool IsInherited(int index) const override;
+  virtual void SetValue(int index, const base::string16& value) override;
+  virtual ui::EditData GetEditData(int index) const override;
+
+  struct Property {
+    base::string16 name;
+    scada::AttributeId attribute_id;
+    const PropertyDefinition* def;
+    scada::NodeId prop_decl_id;
+    std::unique_ptr<NodeGroupModel> submodel;
+  };
+
+  base::string16 group_title;
+  std::vector<Property> properties;
+
+ private:
+  NodePropertyModel& property_model_;
+};
 
 class NodePropertyModel : protected PropertyContext,
                           private NodeRefObserver,
@@ -18,13 +47,6 @@ class NodePropertyModel : protected PropertyContext,
  public:
   NodePropertyModel(PropertyContext&& context, NodeRef node);
   virtual ~NodePropertyModel();
-
-  virtual int GetCount() override;
-  virtual base::string16 GetName(int index) override;
-  virtual base::string16 GetValue(int index) override;
-  virtual bool IsInherited(int index) override;
-  virtual void SetValue(int index, const base::string16& value) override;
-  virtual ui::EditData GetEditData(int index) override;
 
  private:
   void Update();
@@ -34,20 +56,18 @@ class NodePropertyModel : protected PropertyContext,
 
   void PropertiesChanged(int first, int count);
 
+  // PropertyModel
+  virtual PropertyGroup& GetRootGroup() { return root_; }
+
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
+  NodeGroupModel root_{*this};
+
   NodeRef node_;
 
-  struct Property {
-    base::string16 name;
-    scada::AttributeId attribute_id;
-    const PropertyDefinition* def;
-    scada::NodeId prop_decl_id;
-  };
-
-  std::vector<Property> properties_;
-
   base::WeakPtrFactory<NodePropertyModel> weak_ptr_factory_{this};
+
+  friend class NodeGroupModel;
 };

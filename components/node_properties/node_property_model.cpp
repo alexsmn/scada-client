@@ -7,34 +7,69 @@
 
 #include <algorithm>
 
+NodeGroupModel::NodeGroupModel(NodePropertyModel& property_model)
+    : property_model_{property_model} {}
+
+NodeGroupModel::~NodeGroupModel() {}
+
 NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
     : PropertyContext{std::move(context)}, node_{std::move(node)} {
   node_.Subscribe(*this);
 
-  properties_ = {{
-                     L"(Идентификатор)",
-                     scada::AttributeId::NodeId,
-                 },
-                 {
-                     L"(Имя)",
-                     scada::AttributeId::BrowseName,
-                 },
-                 {
-                     L"(Описание)",
-                     scada::AttributeId::DisplayName,
-                 }};
+  {
+    auto group = std::make_unique<NodeGroupModel>(*this);
+    group->properties.push_back({
+        L"(Идентификатор)",
+        scada::AttributeId::NodeId,
+    });
+    group->properties.push_back({
+        L"(Имя)",
+        scada::AttributeId::BrowseName,
+    });
+    group->properties.push_back({
+        L"(Описание)",
+        scada::AttributeId::DisplayName,
+    });
+    root_.properties.push_back({L"Атрибуты", scada::AttributeId::NodeId,
+                                nullptr, scada::NodeId{}, std::move(group)});
+  }
 
   if (const auto& type_definition = node_.type_definition()) {
+    std::unique_ptr<NodeGroupModel> group;
+
     for (auto& p : GetTypeProperties(type_definition)) {
       const auto& prop_decl = p.first;
       if (!prop_decl)
         continue;
-      auto* def = p.second;
-      Property prop;
-      prop.name = def->GetTitle(*this, prop_decl);
-      prop.def = def;
+
+      if (!group)
+        group = std::make_unique<NodeGroupModel>(*this);
+
+      auto& def = *p.second;
+
+      NodeGroupModel::Property prop;
+      prop.name = def.GetTitle(*this, prop_decl);
+      prop.def = &def;
       prop.prop_decl_id = prop_decl.node_id();
-      properties_.emplace_back(std::move(prop));
+
+      if (auto* hierarchical_prop = def.AsHierarchical()) {
+        prop.submodel = std::make_unique<NodeGroupModel>(*this);
+        for (auto* child : hierarchical_prop->children()) {
+          NodeGroupModel::Property child_prop;
+          child_prop.name = child->GetTitle(*this, prop_decl);
+          child_prop.def = child;
+          child_prop.prop_decl_id = prop_decl.node_id();
+          prop.submodel->properties.emplace_back(std::move(child_prop));
+        }
+      }
+
+      group->properties.emplace_back(std::move(prop));
+    }
+
+    if (group) {
+      root_.properties.push_back({ToString16(type_definition.display_name()),
+                                  scada::AttributeId::NodeId, nullptr,
+                                  scada::NodeId{}, std::move(group)});
     }
   }
 }
@@ -44,34 +79,40 @@ NodePropertyModel::~NodePropertyModel() {
     node_.Unsubscribe(*this);
 }
 
-int NodePropertyModel::GetCount() {
-  return properties_.size();
+int NodeGroupModel::GetCount() const {
+  return properties.size();
 }
 
-base::string16 NodePropertyModel::GetName(int index) {
-  return properties_[index].name;
+PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
+  return properties[index].submodel.get();
 }
 
-base::string16 NodePropertyModel::GetValue(int index) {
-  auto& prop = properties_[index];
+base::string16 NodeGroupModel::GetName(int index) const {
+  return properties[index].name;
+}
+
+base::string16 NodeGroupModel::GetValue(int index) const {
+  auto& prop = properties[index];
   if (prop.def)
-    return prop.def->GetText(*this, node_, prop.prop_decl_id);
+    return prop.def->GetText(property_model_, property_model_.node_,
+                             prop.prop_decl_id);
   else
-    return ToString16(node_.attribute(prop.attribute_id));
+    return ToString16(property_model_.node_.attribute(prop.attribute_id));
 }
 
-bool NodePropertyModel::IsInherited(int index) {
+bool NodeGroupModel::IsInherited(int index) const {
   return false;
 }
 
-void NodePropertyModel::SetValue(int index, const base::string16& value) {
-  auto& prop = properties_[index];
+void NodeGroupModel::SetValue(int index, const base::string16& value) {
+  auto& prop = properties[index];
   if (prop.def)
-    prop.def->SetText(*this, node_, prop.prop_decl_id, value);
+    prop.def->SetText(property_model_, property_model_.node_, prop.prop_decl_id,
+                      value);
   else {
     // TODO: attribute id.
-    task_manager_.PostUpdateTask(
-        node_.node_id(),
+    property_model_.task_manager_.PostUpdateTask(
+        property_model_.node_.node_id(),
         scada::NodeAttributes().set_browse_name(
             scada::QualifiedName{base::SysWideToNativeMB(value), 0}),
         {});
@@ -97,20 +138,22 @@ void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 }
 
 void NodePropertyModel::Update() {
-  PropertiesChanged(0, static_cast<int>(properties_.size()));
+  PropertiesChanged(0, static_cast<int>(root_.properties.size()));
 }
 
 int NodePropertyModel::FindProperty(const scada::NodeId& prop_decl_id) const {
-  for (int i = 0; i < properties_.size(); ++i) {
-    if (properties_[i].prop_decl_id == prop_decl_id)
+  auto& properties = root_.properties;
+  for (int i = 0; i < properties.size(); ++i) {
+    if (properties[i].prop_decl_id == prop_decl_id)
       return i;
   }
   return -1;
 }
 
 int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
-  for (int i = 0; i < properties_.size(); ++i) {
-    if (properties_[i].attribute_id == attribute_id)
+  auto& properties = root_.properties;
+  for (int i = 0; i < properties.size(); ++i) {
+    if (properties[i].attribute_id == attribute_id)
       return i;
   }
   return -1;
@@ -118,13 +161,14 @@ int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
 
 void NodePropertyModel::PropertiesChanged(int first, int index) {
   if (properties_changed_handler)
-    properties_changed_handler(first, index);
+    properties_changed_handler(root_, first, index);
 }
 
-ui::EditData NodePropertyModel::GetEditData(int index) {
-  auto& prop = properties_[index];
+ui::EditData NodeGroupModel::GetEditData(int index) const {
+  auto& prop = properties[index];
   if (prop.def)
-    return prop.def->GetPropertyEditor(*this, node_.type_definition(),
+    return prop.def->GetPropertyEditor(property_model_,
+                                       property_model_.node_.type_definition(),
                                        prop.prop_decl_id);
   else
     return {};

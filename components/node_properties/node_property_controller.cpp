@@ -44,6 +44,8 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
 #if defined(UI_QT)
   tree_view_->setHeaderHidden(false);
   tree_view_->setColumnWidth(0, 200);
+  tree_view_->setAlternatingRowColors(true);
+  tree_view_->expandAll();
 #endif
 
   return tree_view_.get();
