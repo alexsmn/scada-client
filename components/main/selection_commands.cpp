@@ -284,7 +284,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       event_manager_.AcknowledgeItemEvents(node_id);
       return;
     case ID_ITEM_PARAMS:
-#if defined(NDEBUG)
+#if !defined(UI_QT) && defined(NDEBUG)
       ::OpenView(main_window_,
                  MakeWindowDefinition(node, ID_PROPERTY_VIEW, false));
 #else

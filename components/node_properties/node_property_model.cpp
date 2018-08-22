@@ -14,64 +14,10 @@ NodeGroupModel::~NodeGroupModel() {}
 
 NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
     : PropertyContext{std::move(context)}, node_{std::move(node)} {
+  node_.Fetch(NodeFetchStatus::NodeOnly());
   node_.Subscribe(*this);
 
-  {
-    auto group = std::make_unique<NodeGroupModel>(*this);
-    group->properties.push_back({
-        L"(Идентификатор)",
-        scada::AttributeId::NodeId,
-    });
-    group->properties.push_back({
-        L"(Имя)",
-        scada::AttributeId::BrowseName,
-    });
-    group->properties.push_back({
-        L"(Описание)",
-        scada::AttributeId::DisplayName,
-    });
-    root_.properties.push_back({L"Атрибуты", scada::AttributeId::NodeId,
-                                nullptr, scada::NodeId{}, std::move(group)});
-  }
-
-  if (const auto& type_definition = node_.type_definition()) {
-    std::unique_ptr<NodeGroupModel> group;
-
-    for (auto& p : GetTypeProperties(type_definition)) {
-      const auto& prop_decl = p.first;
-      if (!prop_decl)
-        continue;
-
-      if (!group)
-        group = std::make_unique<NodeGroupModel>(*this);
-
-      auto& def = *p.second;
-
-      NodeGroupModel::Property prop;
-      prop.name = def.GetTitle(*this, prop_decl);
-      prop.def = &def;
-      prop.prop_decl_id = prop_decl.node_id();
-
-      if (auto* hierarchical_prop = def.AsHierarchical()) {
-        prop.submodel = std::make_unique<NodeGroupModel>(*this);
-        for (auto* child : hierarchical_prop->children()) {
-          NodeGroupModel::Property child_prop;
-          child_prop.name = child->GetTitle(*this, prop_decl);
-          child_prop.def = child;
-          child_prop.prop_decl_id = prop_decl.node_id();
-          prop.submodel->properties.emplace_back(std::move(child_prop));
-        }
-      }
-
-      group->properties.emplace_back(std::move(prop));
-    }
-
-    if (group) {
-      root_.properties.push_back({ToString16(type_definition.display_name()),
-                                  scada::AttributeId::NodeId, nullptr,
-                                  scada::NodeId{}, std::move(group)});
-    }
-  }
+  Update();
 }
 
 NodePropertyModel::~NodePropertyModel() {
@@ -129,16 +75,81 @@ void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 
   } else if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
                            scada::ModelChangeEvent::ReferenceDeleted)) {
-    Update();
+  if (!root_.properties.empty())
+    PropertiesChanged(0, static_cast<int>(root_.properties.size()));
   }
 }
 
 void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  if (!root_.properties.empty())
+    PropertiesChanged(0, static_cast<int>(root_.properties.size()));
+}
+
+void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id, bool children) {
   Update();
+  if (model_changed_handler)
+    model_changed_handler();
 }
 
 void NodePropertyModel::Update() {
-  PropertiesChanged(0, static_cast<int>(root_.properties.size()));
+  root_.properties.clear();
+
+  {
+    auto group = std::make_unique<NodeGroupModel>(*this);
+    group->properties.push_back({
+        L"Идентификатор",
+        scada::AttributeId::NodeId,
+    });
+    group->properties.push_back({
+        L"Имя",
+        scada::AttributeId::BrowseName,
+    });
+    group->properties.push_back({
+        L"Описание",
+        scada::AttributeId::DisplayName,
+    });
+    root_.properties.push_back({L"Атрибуты", scada::AttributeId::NodeId,
+                                nullptr, scada::NodeId{}, std::move(group)});
+  }
+
+  if (const auto& type_definition = node_.type_definition()) {
+    std::unique_ptr<NodeGroupModel> group;
+
+    for (auto& p : GetTypeProperties(type_definition)) {
+      const auto& prop_decl = p.first;
+      if (!prop_decl)
+        continue;
+
+      if (!group)
+        group = std::make_unique<NodeGroupModel>(*this);
+
+      auto& def = *p.second;
+
+      NodeGroupModel::Property prop;
+      prop.name = def.GetTitle(*this, prop_decl);
+      prop.def = &def;
+      prop.prop_decl_id = prop_decl.node_id();
+
+      if (auto* hierarchical_prop = def.AsHierarchical()) {
+        prop.submodel = std::make_unique<NodeGroupModel>(*this);
+        for (auto* child : hierarchical_prop->children()) {
+          NodeGroupModel::Property child_prop;
+          child_prop.name = child->GetTitle(*this, prop_decl);
+          child_prop.def = child;
+          child_prop.prop_decl_id = prop_decl.node_id();
+          prop.submodel->properties.emplace_back(std::move(child_prop));
+        }
+      }
+
+      group->properties.emplace_back(std::move(prop));
+    }
+
+    if (group) {
+      root_.properties.push_back({ToString16(type_definition.display_name()),
+                                  scada::AttributeId::NodeId, nullptr,
+                                  scada::NodeId{}, std::move(group)});
+    }
+  }
 }
 
 int NodePropertyModel::FindProperty(const scada::NodeId& prop_decl_id) const {
@@ -159,9 +170,9 @@ int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
   return -1;
 }
 
-void NodePropertyModel::PropertiesChanged(int first, int index) {
+void NodePropertyModel::PropertiesChanged(int first, int count) {
   if (properties_changed_handler)
-    properties_changed_handler(root_, first, index);
+    properties_changed_handler(root_, first, count);
 }
 
 ui::EditData NodeGroupModel::GetEditData(int index) const {

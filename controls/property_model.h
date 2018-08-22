@@ -24,6 +24,9 @@ class PropertyModel {
 
   virtual PropertyGroup& GetRootGroup() = 0;
 
+  using ModelChangedHandler = std::function<void()>;
+  ModelChangedHandler model_changed_handler;
+
   using PropertiesChangedHandler = std::function<void(PropertyGroup& group, int first, int count)>;
   PropertiesChangedHandler properties_changed_handler;
 };

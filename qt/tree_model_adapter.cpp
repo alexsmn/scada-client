@@ -188,12 +188,22 @@ int TreeModelAdapter::GetIndexOf(void* node) const {
   return -1;
 }
 
+void TreeModelAdapter::OnTreeNodesAdding(void* parent, int start, int count) {
+  auto parent_index = GetNodeIndex(parent, 0);
+  beginInsertRows(parent_index, start, start + count - 1);
+}
+
 void TreeModelAdapter::OnTreeNodesAdded(void* parent, int start, int count) {
-  layoutChanged();
+  endInsertRows();
+}
+
+void TreeModelAdapter::OnTreeNodesDeleting(void* parent, int start, int count) {
+  auto parent_index = GetNodeIndex(parent, 0);
+  beginRemoveRows(parent_index, start, start + count - 1);
 }
 
 void TreeModelAdapter::OnTreeNodesDeleted(void* parent, int start, int count) {
-  layoutChanged();
+  endRemoveRows();
 }
 
 void TreeModelAdapter::OnTreeNodeChanged(void* node) {
@@ -213,4 +223,12 @@ void TreeModelAdapter::SetChecked(void* node, bool checked) {
     auto index = GetNodeIndex(node, 0);
     dataChanged(index, index, {Qt::CheckStateRole});
   }
+}
+
+void TreeModelAdapter::OnTreeModelResetting() {
+  beginResetModel();
+}
+
+void TreeModelAdapter::OnTreeModelReset() {
+  endResetModel();
 }

@@ -4,11 +4,6 @@
 <context>
     <name>AddFavouritesDialog</name>
     <message>
-        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="33"/>
-        <source>(No Folder)</source>
-        <translation>(Нет группы)</translation>
-    </message>
-    <message>
         <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="14"/>
         <source>Add to Favourites</source>
         <translation type="unfinished"></translation>
@@ -21,12 +16,17 @@
     <message>
         <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="74"/>
         <source>OK</source>
-        <translation type="unfinished">ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="81"/>
         <source>Cancel</source>
-        <translation type="unfinished">Отмена</translation>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="33"/>
+        <source>(No Folder)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -34,37 +34,37 @@
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="14"/>
         <source>Change Password</source>
-        <translation>Смена пароля</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="25"/>
         <source>Current:</source>
-        <translation>Текущий:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="39"/>
         <source>New:</source>
-        <translation>Новый:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="53"/>
         <source>Repeat:</source>
-        <translation>Повтор:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="99"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.ui" line="106"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/change_password/qt/change_password_dialog.cpp" line="38"/>
         <source>New and repeated password do not match.</source>
-        <translation>Новый и повторенный пароль не совпадают.</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -72,37 +72,32 @@
     <message>
         <location filename="../components/create_service_item/qt/create_service_item.ui" line="14"/>
         <source>Create Service Items</source>
-        <translation>Создание сервисных объектов</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/create_service_item/qt/create_service_item.ui" line="25"/>
         <source>Device:</source>
-        <translation>Устройство:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/create_service_item/qt/create_service_item.ui" line="74"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/create_service_item/qt/create_service_item.ui" line="81"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
-    </message>
-</context>
-<context>
-    <name>Dialog</name>
-    <message>
-        <source>OK</source>
-        <translation type="obsolete">ОК</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="obsolete">Отмена</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>LimitDialog</name>
+    <message>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="14"/>
+        <location filename="../components/limits/qt/limit_dialog.ui" line="74"/>
+        <source>Limits</source>
+        <translation type="unfinished"></translation>
+    </message>
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="23"/>
         <source>(Description)</source>
@@ -111,35 +106,29 @@
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="33"/>
         <source>Critical Limits</source>
-        <translation>Аварийные уставки</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="41"/>
         <location filename="../components/limits/qt/limit_dialog.ui" line="82"/>
         <source>High:</source>
-        <translation>Верхняя:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="55"/>
         <location filename="../components/limits/qt/limit_dialog.ui" line="89"/>
         <source>Low:</source>
-        <translation>Нижняя:</translation>
-    </message>
-    <message>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="14"/>
-        <location filename="../components/limits/qt/limit_dialog.ui" line="74"/>
-        <source>Limits</source>
-        <translation>Уставки</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="145"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/limits/qt/limit_dialog.ui" line="152"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -147,44 +136,40 @@
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="20"/>
         <source>Login</source>
-        <translation>Вход в систему</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="31"/>
         <source>User name:</source>
-        <translation>Имя:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="48"/>
         <source>Password:</source>
-        <translation>Пароль:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="62"/>
         <source>Auto-Login:</source>
-        <translation>Авто:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/login/qt/login_dialog.ui" line="72"/>
         <source>Server:</source>
-        <translation>Сервер:</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MainWindowQt</name>
     <message>
-        <source>Local</source>
-        <translation type="vanished">Локальный</translation>
-    </message>
-    <message>
         <location filename="../components/main/qt/main_window_qt.cpp" line="77"/>
         <source>%1 (Server: %2)</source>
-        <translation>%1 (Сервер: %2)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/main/qt/main_window_qt.cpp" line="131"/>
         <source>Toolbar</source>
-        <translation>Панель инструментов</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -192,62 +177,62 @@
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="20"/>
         <source>Multiple Create</source>
-        <translation>Создание серии объектов</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="28"/>
         <source>Type:</source>
-        <translation>Тип:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="50"/>
         <source>Discrete</source>
-        <translation>ТС</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="60"/>
         <source>Analog</source>
-        <translation>ТИТ</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="70"/>
         <source>Count:</source>
-        <translation>Количество:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="90"/>
         <source>Name prefix:</source>
-        <translation>Префикс имени:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="100"/>
         <source>Starting number:</source>
-        <translation>Начальный номер:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="117"/>
         <source>Device:</source>
-        <translation>Устройство:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="127"/>
         <source>Address prefix:</source>
-        <translation>Префикс адреса:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="137"/>
         <source>Starting address:</source>
-        <translation>Начальный адрес:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="186"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="193"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -255,12 +240,12 @@
     <message>
         <location filename="main.cpp" line="53"/>
         <source>Telecontrol SCADA Client</source>
-        <translation>Клиент ОИК Телеконтроль</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="client_utils_qt.cpp" line="59"/>
         <source>Local</source>
-        <translation>Локальный</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/about/qt/about_dialog.cpp" line="13"/>
@@ -273,39 +258,39 @@
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="20"/>
         <source>Time Range</source>
-        <translation>Период</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="31"/>
         <source>Date</source>
-        <translation>Дата</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="39"/>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="75"/>
         <source>Start:</source>
-        <translation>Начало:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="49"/>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="85"/>
         <source>End:</source>
-        <translation>Конец:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="64"/>
         <source>Time</source>
-        <translation>Время</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="132"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="139"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -323,12 +308,12 @@
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="44"/>
         <source>Current value:</source>
-        <translation>Текущее значение:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="51"/>
         <source>New value:</source>
-        <translation>Новое значение:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="76"/>
@@ -338,12 +323,12 @@
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="86"/>
         <source>Lock:</source>
-        <translation>Блокировка:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="96"/>
         <source>Condition:</source>
-        <translation>Условие:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="103"/>
@@ -363,22 +348,22 @@
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="156"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.ui" line="163"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.cpp" line="64"/>
         <source>Satisfied</source>
-        <translation>Выполнено</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../components/write/qt/write_dialog.cpp" line="65"/>
         <source>Unsatisfied</source>
-        <translation>Нарушено</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

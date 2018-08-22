@@ -48,6 +48,8 @@ class NodePropertyModel : protected PropertyContext,
   NodePropertyModel(PropertyContext&& context, NodeRef node);
   virtual ~NodePropertyModel();
 
+  const NodeRef& node() const { return node_; }
+
  private:
   void Update();
 
@@ -62,6 +64,7 @@ class NodePropertyModel : protected PropertyContext,
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  virtual void OnNodeFetched(const scada::NodeId& node_id, bool children) override;
 
   NodeGroupModel root_{*this};
 

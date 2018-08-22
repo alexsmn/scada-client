@@ -54,9 +54,13 @@ class TreeModelAdapter : public QAbstractItemModel,
   int GetIndexOf(void* node) const;
 
   // private ui::TreeModelObserver
+  virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
+  virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleted(void* parent, int start, int count) override;
   virtual void OnTreeNodeChanged(void* node) override;
+  virtual void OnTreeModelResetting() override;
+  virtual void OnTreeModelReset() override;
 
   ui::TreeModel& model_;
 

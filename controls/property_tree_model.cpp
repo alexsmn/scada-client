@@ -7,6 +7,13 @@
 PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
                                              base::string16 title)
     : property_group{property_group}, title{std::move(title)} {
+  Update();
+}
+
+void PropertyGroupTreeNode::Update() {
+  for (int i = GetChildCount() - 1; i >= 0;  --i)
+    Remove(i);
+
   for (int i = 0; i < property_group.GetCount(); ++i) {
     std::unique_ptr<PropertyTreeNode> node;
     if (auto* subgroup = property_group.GetSubgroup(i))
@@ -52,6 +59,13 @@ ui::EditData PropertyItemTreeNode::GetEditData(int column_id) {
 
 PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
     : property_model_{property_model} {
+  assert(!property_model_.model_changed_handler);
+  property_model_.model_changed_handler = [this] {
+    TreeModelResetting();
+    static_cast<PropertyGroupTreeNode*>(root())->Update();
+    TreeModelReset();
+  };
+
   assert(!property_model_.properties_changed_handler);
   property_model_.properties_changed_handler = [this](PropertyGroup& group,
                                                       int first, int count) {
@@ -63,6 +77,7 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
 }
 
 PropertyTreeModel::~PropertyTreeModel() {
+  property_model_.model_changed_handler = nullptr;
   property_model_.properties_changed_handler = nullptr;
 }
 

@@ -279,7 +279,12 @@ void OpenedViewCommands::OnCreateRecordComplete(
              [weak_ptr, node](const NodeRef& node) {
                if (auto* ptr = weak_ptr.get()) {
                  ptr->controller_->OnViewNodeCreated(node);
-                 auto def = MakeWindowDefinition(node, ID_PROPERTY_VIEW, false);
+#if !defined(UI_QT) && defined(NDEBUG)
+                 const unsigned command_id = ID_PROPERTY_VIEW;
+#else
+                 const unsigned command_id = ID_NEW_PROPERTY_VIEW;
+#endif
+                 auto def = MakeWindowDefinition(node, command_id, false);
                  ::OpenView(ptr->main_window_, def, true);
                }
              });

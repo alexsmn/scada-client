@@ -45,8 +45,13 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   tree_view_->setHeaderHidden(false);
   tree_view_->setColumnWidth(0, 200);
   tree_view_->setAlternatingRowColors(true);
-  tree_view_->expandAll();
+  tree_view_->expandToDepth(0);
 #endif
 
   return tree_view_.get();
+}
+
+void NodePropertyController::Save(WindowDefinition& definition) {
+  definition.AddItem("Item").SetString(
+      "path", NodeIdToScadaString(property_model_->node().node_id()));
 }

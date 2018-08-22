@@ -130,7 +130,7 @@ void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {
   }
 }
 
-void ObjectTreeView::OnTreeNodesDeleted(void* parent, int start, int count) {
+void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
   ConfigurationTreeNode& parent_node = *model().AsNode(parent);
   if (tree_view().IsExpanded(&parent_node, true)) {
     for (int i = 0; i < count; ++i) {

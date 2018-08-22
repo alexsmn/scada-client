@@ -14,6 +14,8 @@ class PropertyGroupTreeNode : public PropertyTreeNode {
  public:
   PropertyGroupTreeNode(PropertyGroup& property_group, base::string16 title);
 
+  void Update();
+
   // PropertyTreeNode
   virtual PropertyGroupTreeNode* AsGroup() { return this; }
 
