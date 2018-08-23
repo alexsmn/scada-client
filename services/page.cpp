@@ -4,8 +4,10 @@
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/stl_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
 #include "base/xml.h"
 #include "services/profile_utils.h"
@@ -221,8 +223,10 @@ void Page::Load(const xml::Node& node) {
       LoadLayoutBlock(dock, *docke);
     }
     if (auto* blobe = layoute->select("Blob")) {
-      auto blob = base::SysWideToNativeMB(blobe->get_text());
-      base::Base64Decode(blob, &layout.blob);
+      auto blob = base::UTF16ToASCII(blobe->get_text());
+      auto trimmed_blob =
+          base::TrimString(blob, base::kWhitespaceASCII, base::TRIM_ALL);
+      base::Base64Decode(trimmed_blob, &layout.blob);
     }
   }
 }
@@ -280,7 +284,7 @@ void Page::Save(xml::Node& node, bool current) const {
   if (!layout.blob.empty()) {
     std::string blob;
     base::Base64Encode(layout.blob, &blob);
-    layoute.AddElement("Blob").set_text(base::SysNativeMBToWide(blob).c_str());
+    layoute.AddElement("Blob").set_value(base::ASCIIToUTF16(blob).c_str());
   }
 }
 
