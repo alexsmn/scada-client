@@ -33,36 +33,36 @@ DisplayMenuModel::DisplayMenuModel(const MainMenuContext& context)
 
 void DisplayMenuModel::MenuWillShow() {
   Clear();
-  paths_.clear();
+  items_.clear();
 
   AddItems(ID_MODUS_VIEW);
   AddItems(ID_VIDICON_DISPLAY_VIEW);
 }
 
 void DisplayMenuModel::ActivatedAt(int index) {
-  auto& path = paths_[index];
+  auto& item = items_[index];
   // find existing display
-  if (auto* view = main_window_manager_.FindOpenedViewByFilePath(path)) {
+  if (auto* view = main_window_manager_.FindOpenedViewByFilePath(item.path)) {
     view->Activate();
   } else {
     // add new window
-    WindowDefinition def(GetWindowInfo(ID_MODUS_VIEW));
-    def.path = path;
+    WindowDefinition def(GetWindowInfo(item.command_id));
+    def.path = item.path;
     main_window_.OpenView(def, true);
   }
 }
 
 bool DisplayMenuModel::IsEnabledAt(int index) const {
-  return !paths_.empty();
+  return !items_.empty();
 }
 
-void DisplayMenuModel::AddItems(unsigned type) {
-  for (auto& entry : file_cache_.GetList(type)) {
+void DisplayMenuModel::AddItems(unsigned command_id) {
+  for (auto& entry : file_cache_.GetList(command_id)) {
     AddItem(0, entry.title);
-    paths_.emplace_back(entry.path);
+    items_.push_back(Item{command_id, entry.path});
   }
 
-  if (paths_.empty())
+  if (items_.empty())
     AddItem(0, L"<Нет схем>");
 }
 

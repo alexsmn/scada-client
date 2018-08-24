@@ -38,9 +38,14 @@ class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  void AddItems(unsigned type);
+  void AddItems(unsigned command_id);
 
-  std::vector<base::FilePath> paths_;
+  struct Item {
+    unsigned command_id;
+    base::FilePath path;
+  };
+
+  std::vector<Item> items_;
 };
 
 class FavouritesMenuModel : private MainMenuContext,
