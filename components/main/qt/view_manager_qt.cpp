@@ -98,6 +98,8 @@ struct ScopedNames {
 
 }  // namespace
 
+// ViewManagerQt
+
 ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
                              ViewManagerDelegate& delegate)
     : ViewManager{delegate}, main_window_{main_window} {
@@ -185,7 +187,9 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
                           static_cast<int>(LayoutWidgetType::Splitter));
     splitter->addWidget(widget1.release());
     splitter->addWidget(widget2.release());
-    splitter->setStretchFactor(1, block.pos);
+    splitter->setSizes(
+        {std::numeric_limits<int>::max() / 100 * block.pos,
+         std::numeric_limits<int>::max() / 100 * (100 - block.pos)});
     return std::move(splitter);
 
   } else {
@@ -270,7 +274,10 @@ void ViewManagerQt::SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget) {
   if (type == LayoutWidgetType::Splitter) {
     auto& splitter = static_cast<QSplitter&>(widget);
     block.split(splitter.orientation() == Qt::Vertical);
-    block.pos = 50;
+    auto sizes = splitter.sizes();
+    assert(sizes.size() == 2);
+    block.pos = sizes[0] * 100 / (sizes[0] + sizes[1]);
+    // block.pos = !sizes.empty() ? sizes.front() : 50;
     if (auto* left = splitter.widget(0))
       SaveLayoutBlock(*block.left, *left);
     if (auto* right = splitter.widget(1))
@@ -337,4 +344,45 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
   tabs->addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
 
   added_views_.emplace_back(&view);
+}
+
+void ViewManagerQt::SplitView(OpenedView& view, bool vertically) {
+  if (view.window_info().is_pane())
+    return;
+
+  auto* tabs = GetTabWidget(view);
+  if (!tabs || tabs->count() < 2)
+    return;
+
+  // Doesn't delete the view.
+  auto tab_index = tabs->indexOf(view.view());
+  assert(tab_index != -1);
+  tabs->removeTab(tab_index);
+
+  auto* splitter = new QSplitter;
+  splitter->setProperty(sc_layoutWidgetTypeProp,
+                        static_cast<int>(LayoutWidgetType::Splitter));
+  splitter->setOrientation(vertically ? Qt::Vertical : Qt::Horizontal);
+  splitter->setChildrenCollapsible(false);
+
+  if (tabs == main_window_.centralWidget()) {
+    // Reset ownership.
+    tabs->setParent(nullptr);
+    main_window_.setCentralWidget(splitter);
+
+  } else {
+    auto* parent_splitter = qobject_cast<QSplitter*>(tabs->parentWidget());
+    assert(parent_splitter);
+    int parent_index = parent_splitter->indexOf(tabs);
+    assert(parent_index != -1);
+    // Doesn't delete the splitter.
+    parent_splitter->replaceWidget(parent_index, splitter);
+  }
+
+  splitter->addWidget(tabs);
+
+  auto second_tabs = CreateTabBlock();
+  second_tabs->addTab(view.view(),
+                      QString::fromStdWString(view.GetWindowTitle()));
+  splitter->addWidget(second_tabs.release());
 }

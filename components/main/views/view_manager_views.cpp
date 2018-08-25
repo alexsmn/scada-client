@@ -208,3 +208,7 @@ void ViewManagerViews::OnViewClosed(views::View& view) {
 OpenedView* ViewManagerViews::GetActiveView() {
   return FindViewByViewsView(focus_manager_->GetFocusedView());
 }
+
+void ViewManagerViews::SplitView(OpenedView& view, bool vertically) {
+  assert(false);
+}

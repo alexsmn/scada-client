@@ -271,3 +271,7 @@ void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
   for (auto& o : contents_observers_)
     o.OnContainedItemChanged(item_id, added);
 }
+
+void MainWindow::SplitView(OpenedView& view, bool vertically) {
+  view_manager_->SplitView(view, vertically);
+}

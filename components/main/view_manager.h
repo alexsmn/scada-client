@@ -41,6 +41,8 @@ class ViewManager {
 
   virtual void SetViewTitle(OpenedView& view, const base::string16& title) = 0;
 
+  virtual void SplitView(OpenedView& view, bool vertically) = 0;
+
  protected:
   explicit ViewManager(ViewManagerDelegate& delegate);
 

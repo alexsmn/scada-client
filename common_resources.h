@@ -102,6 +102,8 @@
 #define ID_OPEN_GROUP_TABLE             180
 #define ID_VIDICON_DISPLAY_VIEW         182
 #define ID_ABOUT_QT                     184
+#define ID_WINDOW_SPLIT_HORZ            185
+#define ID_WINDOW_SPLIT_VERT            186
 #define IDR_STRUCT_POPUP                201
 #define IDD_LOGIN                       202
 #define IDR_EVENT_POPUP                 202
@@ -433,6 +435,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        117
 #define _APS_NEXT_COMMAND_VALUE         4033
 #define _APS_NEXT_CONTROL_VALUE         1052
-#define _APS_NEXT_SYMED_VALUE           185
+#define _APS_NEXT_SYMED_VALUE           187
 #endif
 #endif

@@ -21,6 +21,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
                             const base::string16& title) override;
   virtual void ActivateView(OpenedView& view) override;
   virtual void CloseView(OpenedView& view) override;
+  virtual void SplitView(OpenedView& view, bool vertically) override;
 
  protected:
   // ViewManager

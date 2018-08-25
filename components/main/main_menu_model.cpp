@@ -325,6 +325,11 @@ void MainMenuModel::Rebuild() {
   window_submenu_.AddItem(ID_VIEW_CHANGE_TITLE, L"Переименовать");
   window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
   window_submenu_.AddItem(ID_VIEW_CLOSE, L"Закрыть");
+#if defined(UI_QT)
+  window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ, L"Разделить по горизонтали");
+  window_submenu_.AddItem(ID_WINDOW_SPLIT_VERT, L"Разделить по вертикали");
+#endif
   window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&window_list_menu_);
   window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);

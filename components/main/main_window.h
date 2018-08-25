@@ -42,6 +42,7 @@ class MainWindow : protected MainWindowContext,
 
   void ActivateView(OpenedView& view);
   void CloseView(OpenedView& view);
+  void SplitView(OpenedView& view, bool vertically);
 
   void OnViewTitleUpdated(OpenedView& view, const base::string16& title);
 

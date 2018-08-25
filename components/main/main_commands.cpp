@@ -11,6 +11,7 @@
 #include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
+#include "components/main/view_manager.h"
 #include "core/session_service.h"
 #include "services/dialog_service.h"
 #include "services/excel_configuration_commands.h"
@@ -94,6 +95,10 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_VIEW_ADD_TO_FAVOURITES:
     case ID_VIEW_CHANGE_TITLE:
     case ID_VIEW_CLOSE:
+#if defined(UI_QT)
+    case ID_WINDOW_SPLIT_HORZ:
+    case ID_WINDOW_SPLIT_VERT:
+#endif
       return active_view ? this : NULL;
 
       /*case ID_PRINT:
@@ -277,6 +282,12 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       return;
 
 #if defined(UI_QT)
+    case ID_WINDOW_SPLIT_HORZ:
+    case ID_WINDOW_SPLIT_VERT:
+      if (auto* active_view = main_window_.GetActiveView())
+        main_window_.SplitView(*active_view, command_id == ID_WINDOW_SPLIT_HORZ);
+      return;
+
     case ID_ABOUT_QT:
       return QMessageBox::aboutQt(dialog_service_.GetParentWidget());
 #endif

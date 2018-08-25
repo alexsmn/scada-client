@@ -29,6 +29,7 @@ class ViewManagerViews final : public ViewManager,
   virtual void CloseView(OpenedView& view) override;
   virtual void SetViewTitle(OpenedView& view,
                             const base::string16& title) override;
+  virtual void SplitView(OpenedView& view, bool vertically) override;
 
  protected:
   // ViewManager
