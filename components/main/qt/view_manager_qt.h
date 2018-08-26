@@ -34,6 +34,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
   void AddDockView(OpenedView& view);
 
   std::unique_ptr<QTabWidget> CreateTabBlock();
+  void DeleteTabBlock(QTabWidget& tabs);
 
   std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page,
                                            const PageLayoutBlock& block);

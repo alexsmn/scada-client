@@ -144,6 +144,38 @@ std::unique_ptr<QTabWidget> ViewManagerQt::CreateTabBlock() {
   return tabs;
 }
 
+void ViewManagerQt::DeleteTabBlock(QTabWidget& tabs) {
+  assert(tabs.count() == 0);
+  assert(&tabs != main_window_.centralWidget());
+
+  auto* splitter = qobject_cast<QSplitter*>(tabs.parentWidget());
+  assert(splitter);
+
+  int index = splitter->indexOf(&tabs);
+  assert(index != -1);
+
+  int other_index = (index + 1) % 2;
+  auto* other_widget = splitter->widget(other_index);
+  assert(other_widget);
+
+  if (splitter == main_window_.centralWidget()) {
+    // Deletes |tabs| and owns |other_widget|.
+    main_window_.setCentralWidget(other_widget);
+
+  } else {
+    auto* parent_splitter = qobject_cast<QSplitter*>(splitter->parentWidget());
+    assert(parent_splitter);
+
+    int splitter_index = parent_splitter->indexOf(splitter);
+    assert(splitter_index != -1);
+
+    // Releases |splitter| ownership and owns |other_widget|.
+    parent_splitter->replaceWidget(splitter_index, other_widget);
+    // Deletes |splitter| and |tabs|.
+    delete splitter;
+  }
+}
+
 std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
     const Page& page,
     const PageLayoutBlock& block) {
@@ -214,8 +246,8 @@ void ViewManagerQt::OnFocusChanged(QObject* focus_object) {
 void ViewManagerQt::ActivateView(OpenedView& opened_view) {
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
-    if (index != -1)
-      tabs->setCurrentIndex(index);
+    assert(index != -1);
+    tabs->setCurrentIndex(index);
 
   } else if (auto* dock = GetDockWidget(opened_view)) {
     // Detach from parent to avoid deletion by dock.
@@ -227,12 +259,19 @@ void ViewManagerQt::ActivateView(OpenedView& opened_view) {
 void ViewManagerQt::CloseView(OpenedView& opened_view) {
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
-    if (index != -1)
-      tabs->removeTab(index);
-    // TODO: Remove tab widget.
+    assert(index != -1);
+    // Doesn't delete |opened_view.view()|.
+    tabs->removeTab(index);
+
+    // Detach from parent to avoid deletion by parent.
+    opened_view.view()->setParent(nullptr);
+
+    // Remove tab widget.
+    if (tabs->count() == 0 && tabs != main_window_.centralWidget())
+      DeleteTabBlock(*tabs);
 
   } else if (auto* dock = GetDockWidget(opened_view)) {
-    // Detach from parent to avoid deletion by dock.
+    // Detach from parent to avoid deletion by parent.
     opened_view.view()->setParent(nullptr);
     delete dock;
   }
