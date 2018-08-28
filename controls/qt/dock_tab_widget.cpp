@@ -85,8 +85,7 @@ DockTabWidget::DockTabWidget(QWidget* parent) : QTabWidget{parent} {
 void DockTabWidget::dragEnterEvent(QDragEnterEvent* event) {
   QTabWidget::dragEnterEvent(event);
 
-  if (event->source() != tabBar() && event->mimeData() &&
-      event->mimeData()->data(kMimeType) == kMimeData) {
+  if (event->mimeData() && event->mimeData()->data(kMimeType) == kMimeData) {
     assert(!rubber_band_);
     rubber_band_ = std::make_unique<QRubberBand>(QRubberBand::Rectangle, this);
 
@@ -124,12 +123,9 @@ void DockTabWidget::dropEvent(QDropEvent* event) {
   auto side = CalcDropSide(rect, event->pos(), tab_bar_height);
 
   auto* source_tab_bar = static_cast<QTabBar*>(event->source());
-  assert(source_tab_bar != tabBar());
-
   auto* source_tab_widget =
       static_cast<DockTabWidget*>(source_tab_bar->parentWidget());
   assert(source_tab_widget);
-  assert(source_tab_widget != this);
 
   int source_tab_index = source_tab_widget->currentIndex();
   assert(source_tab_index != -1);

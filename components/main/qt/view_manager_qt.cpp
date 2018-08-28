@@ -133,7 +133,9 @@ std::unique_ptr<DockTabWidget> ViewManagerQt::CreateTabBlock() {
   tabs->setTabsClosable(true);
   tabs->setProperty(sc_layoutWidgetTypeProp,
                     static_cast<int>(LayoutWidgetType::Tabs));
+
   auto* tabs_ptr = tabs.get();
+
   QObject::connect(tabs_ptr, &DockTabWidget::tabCloseRequested, this,
                    [this, tabs_ptr](int index) {
                      auto* opened_view =
@@ -141,24 +143,30 @@ std::unique_ptr<DockTabWidget> ViewManagerQt::CreateTabBlock() {
                      if (opened_view)
                        CloseView(*opened_view);
                    });
-  QObject::connect(tabs_ptr, &DockTabWidget::tabDropped, this,
-                   [this, tabs_ptr](DockTabWidget& source, int source_index,
-                                    DockTabWidget::DropSide side) {
-                     auto* source_widget = source.widget(source_index);
-                     assert(source_widget);
-                     auto source_text = source.tabText(source_index);
-                     source.removeTab(source_index);
 
-                     auto* target = tabs_ptr;
-                     if (side != DockTabWidget::DropSide::Center)
-                       target = &SplitView(*tabs_ptr, side);
+  QObject::connect(
+      tabs_ptr, &DockTabWidget::tabDropped, this,
+      [this, tabs_ptr](DockTabWidget& source, int source_index,
+                       DockTabWidget::DropSide side) {
+        if (&source == tabs_ptr && side == DockTabWidget::DropSide::Center)
+          return;
 
-                     int index = target->addTab(source_widget, source_text);
-                     target->setCurrentIndex(index);
+        auto* source_widget = source.widget(source_index);
+        assert(source_widget);
+        auto source_text = source.tabText(source_index);
+        source.removeTab(source_index);
 
-                     if (source.count() == 0)
-                       DeleteTabBlock(source, true);
-                   });
+        auto* target = tabs_ptr;
+        if (side != DockTabWidget::DropSide::Center)
+          target = &SplitTabBlock(*tabs_ptr, side);
+
+        int index = target->addTab(source_widget, source_text);
+        target->setCurrentIndex(index);
+
+        if (source.count() == 0)
+          DeleteTabBlock(source, true);
+      });
+
   return tabs;
 }
 
@@ -425,12 +433,12 @@ void ViewManagerQt::SplitView(OpenedView& view, bool vertically) {
 
   auto side = vertically ? DockTabWidget::DropSide::Right
                          : DockTabWidget::DropSide::Bottom;
-  auto& new_tabs = SplitView(*tabs, side);
+  auto& new_tabs = SplitTabBlock(*tabs, side);
   new_tabs.addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
 }
 
-DockTabWidget& ViewManagerQt::SplitView(DockTabWidget& tabs,
-                                        DockTabWidget::DropSide side) {
+DockTabWidget& ViewManagerQt::SplitTabBlock(DockTabWidget& tabs,
+                                            DockTabWidget::DropSide side) {
   assert(side != DockTabWidget::DropSide::Center);
 
   auto* splitter = new QSplitter;

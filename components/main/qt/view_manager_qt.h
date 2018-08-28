@@ -33,6 +33,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
 
   std::unique_ptr<DockTabWidget> CreateTabBlock();
   void DeleteTabBlock(DockTabWidget& tabs, bool later);
+  DockTabWidget& SplitTabBlock(DockTabWidget& tabs, DockTabWidget::DropSide side);
 
   std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page,
                                            const PageLayoutBlock& block);
@@ -41,8 +42,6 @@ class ViewManagerQt final : public QObject, public ViewManager {
   OpenedView* FindViewByWidget(const QWidget* widget);
 
   void OnFocusChanged(QObject* focus_object);
-
-  DockTabWidget& SplitView(DockTabWidget& tabs, DockTabWidget::DropSide side);
 
   QMainWindow& main_window_;
 };
