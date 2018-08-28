@@ -44,7 +44,7 @@ QDockWidget* GetDockWidget(OpenedView& opened_view) {
              : nullptr;
 }
 
-QTabWidget* GetTabWidget(OpenedView& opened_view) {
+DockTabWidget* GetTabWidget(OpenedView& opened_view) {
   if (opened_view.window_info().is_pane())
     return nullptr;
   if (!opened_view.view())
@@ -52,10 +52,10 @@ QTabWidget* GetTabWidget(OpenedView& opened_view) {
   auto* parent = opened_view.view()->parentWidget();
   if (!parent)
     return nullptr;
-  return static_cast<QTabWidget*>(parent->parentWidget());
+  return static_cast<DockTabWidget*>(parent->parentWidget());
 }
 
-QTabWidget* GetFirstTabBlock(QWidget& widget) {
+DockTabWidget* GetFirstTabBlock(QWidget& widget) {
   auto type_prop = widget.property(sc_layoutWidgetTypeProp);
   assert(!type_prop.isNull());
 
@@ -70,7 +70,7 @@ QTabWidget* GetFirstTabBlock(QWidget& widget) {
       return nullptr;
 
   } else if (type == LayoutWidgetType::Tabs) {
-    return &static_cast<QTabWidget&>(widget);
+    return &static_cast<DockTabWidget&>(widget);
 
   } else {
     return nullptr;
@@ -126,25 +126,43 @@ void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
   }
 }
 
-std::unique_ptr<QTabWidget> ViewManagerQt::CreateTabBlock() {
-  auto tabs = std::make_unique<QTabWidget>();
+std::unique_ptr<DockTabWidget> ViewManagerQt::CreateTabBlock() {
+  auto tabs = std::make_unique<DockTabWidget>();
   tabs->setDocumentMode(true);
   tabs->setMovable(true);
   tabs->setTabsClosable(true);
   tabs->setProperty(sc_layoutWidgetTypeProp,
                     static_cast<int>(LayoutWidgetType::Tabs));
   auto* tabs_ptr = tabs.get();
-  QObject::connect(tabs.get(), &QTabWidget::tabCloseRequested, this,
+  QObject::connect(tabs_ptr, &DockTabWidget::tabCloseRequested, this,
                    [this, tabs_ptr](int index) {
                      auto* opened_view =
                          FindViewByWidget(tabs_ptr->widget(index));
                      if (opened_view)
                        CloseView(*opened_view);
                    });
+  QObject::connect(tabs_ptr, &DockTabWidget::tabDropped, this,
+                   [this, tabs_ptr](DockTabWidget& source, int source_index,
+                                    DockTabWidget::DropSide side) {
+                     auto* source_widget = source.widget(source_index);
+                     assert(source_widget);
+                     auto source_text = source.tabText(source_index);
+                     source.removeTab(source_index);
+
+                     auto* target = tabs_ptr;
+                     if (side != DockTabWidget::DropSide::Center)
+                       target = &SplitView(*tabs_ptr, side);
+
+                     int index = target->addTab(source_widget, source_text);
+                     target->setCurrentIndex(index);
+
+                     if (source.count() == 0)
+                       DeleteTabBlock(source, true);
+                   });
   return tabs;
 }
 
-void ViewManagerQt::DeleteTabBlock(QTabWidget& tabs) {
+void ViewManagerQt::DeleteTabBlock(DockTabWidget& tabs, bool later) {
   assert(tabs.count() == 0);
   assert(&tabs != main_window_.centralWidget());
 
@@ -157,6 +175,11 @@ void ViewManagerQt::DeleteTabBlock(QTabWidget& tabs) {
   int other_index = (index + 1) % 2;
   auto* other_widget = splitter->widget(other_index);
   assert(other_widget);
+
+  if (later) {
+    tabs.setParent(nullptr);
+    tabs.deleteLater();
+  }
 
   if (splitter == main_window_.centralWidget()) {
     // Deletes |tabs| and owns |other_widget|.
@@ -268,7 +291,7 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
 
     // Remove tab widget.
     if (tabs->count() == 0 && tabs != main_window_.centralWidget())
-      DeleteTabBlock(*tabs);
+      DeleteTabBlock(*tabs, false);
 
   } else if (auto* dock = GetDockWidget(opened_view)) {
     // Detach from parent to avoid deletion by parent.
@@ -323,7 +346,7 @@ void ViewManagerQt::SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget) {
       SaveLayoutBlock(*block.right, *right);
 
   } else if (type == LayoutWidgetType::Tabs) {
-    auto& tabs = static_cast<QTabWidget&>(widget);
+    auto& tabs = static_cast<DockTabWidget&>(widget);
     for (int i = 0; i < tabs.count(); ++i) {
       auto* opened_view = FindViewByWidget(tabs.widget(i));
       if (opened_view)
@@ -376,10 +399,12 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
   auto* tabs = active_view_ ? GetTabWidget(*active_view_) : nullptr;
   if (!tabs && main_window_.centralWidget())
     tabs = GetFirstTabBlock(*main_window_.centralWidget());
+
   if (!tabs) {
     tabs = CreateTabBlock().release();
     main_window_.setCentralWidget(tabs);
   }
+
   tabs->addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
 
   added_views_.emplace_back(&view);
@@ -398,30 +423,49 @@ void ViewManagerQt::SplitView(OpenedView& view, bool vertically) {
   assert(tab_index != -1);
   tabs->removeTab(tab_index);
 
+  auto side = vertically ? DockTabWidget::DropSide::Right
+                         : DockTabWidget::DropSide::Bottom;
+  auto& new_tabs = SplitView(*tabs, side);
+  new_tabs.addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
+}
+
+DockTabWidget& ViewManagerQt::SplitView(DockTabWidget& tabs,
+                                        DockTabWidget::DropSide side) {
+  assert(side != DockTabWidget::DropSide::Center);
+
   auto* splitter = new QSplitter;
   splitter->setProperty(sc_layoutWidgetTypeProp,
                         static_cast<int>(LayoutWidgetType::Splitter));
-  splitter->setOrientation(vertically ? Qt::Vertical : Qt::Horizontal);
+  splitter->setOrientation((side == DockTabWidget::DropSide::Top ||
+                            side == DockTabWidget::DropSide::Bottom)
+                               ? Qt::Vertical
+                               : Qt::Horizontal);
   splitter->setChildrenCollapsible(false);
 
-  if (tabs == main_window_.centralWidget()) {
+  if (&tabs == main_window_.centralWidget()) {
     // Reset ownership.
-    tabs->setParent(nullptr);
+    tabs.setParent(nullptr);
     main_window_.setCentralWidget(splitter);
 
   } else {
-    auto* parent_splitter = qobject_cast<QSplitter*>(tabs->parentWidget());
+    auto* parent_splitter = qobject_cast<QSplitter*>(tabs.parentWidget());
     assert(parent_splitter);
-    int parent_index = parent_splitter->indexOf(tabs);
+    int parent_index = parent_splitter->indexOf(&tabs);
     assert(parent_index != -1);
     // Doesn't delete the splitter.
     parent_splitter->replaceWidget(parent_index, splitter);
   }
 
-  splitter->addWidget(tabs);
+  auto* new_tabs = CreateTabBlock().release();
 
-  auto second_tabs = CreateTabBlock();
-  second_tabs->addTab(view.view(),
-                      QString::fromStdWString(view.GetWindowTitle()));
-  splitter->addWidget(second_tabs.release());
+  if (side == DockTabWidget::DropSide::Right ||
+      side == DockTabWidget::DropSide::Bottom) {
+    splitter->addWidget(&tabs);
+    splitter->addWidget(new_tabs);
+  } else {
+    splitter->addWidget(new_tabs);
+    splitter->addWidget(&tabs);
+  }
+
+  return *new_tabs;
 }

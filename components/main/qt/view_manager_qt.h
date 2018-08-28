@@ -1,11 +1,9 @@
 #pragma once
 
 #include "components/main/view_manager.h"
-
-#include <QObject>
+#include "controls/qt/dock_tab_widget.h"
 
 class QMainWindow;
-class QTabWidget;
 class QWidget;
 
 class ViewManagerQt final : public QObject, public ViewManager {
@@ -33,8 +31,8 @@ class ViewManagerQt final : public QObject, public ViewManager {
   void AddTabView(OpenedView& view);
   void AddDockView(OpenedView& view);
 
-  std::unique_ptr<QTabWidget> CreateTabBlock();
-  void DeleteTabBlock(QTabWidget& tabs);
+  std::unique_ptr<DockTabWidget> CreateTabBlock();
+  void DeleteTabBlock(DockTabWidget& tabs, bool later);
 
   std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page,
                                            const PageLayoutBlock& block);
@@ -43,6 +41,8 @@ class ViewManagerQt final : public QObject, public ViewManager {
   OpenedView* FindViewByWidget(const QWidget* widget);
 
   void OnFocusChanged(QObject* focus_object);
+
+  DockTabWidget& SplitView(DockTabWidget& tabs, DockTabWidget::DropSide side);
 
   QMainWindow& main_window_;
 };
