@@ -266,7 +266,7 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
 void MainMenuModel::Rebuild() {
   const MainMenuContext& context = *this;
 
-  AddSubMenu(0, L"Схемы", &display_menu_model_);
+  AddSubMenu(0, L"Схема", &display_menu_model_);
 
   table_submenu_.AddItem(ID_TABLE_VIEW, L"Новая таблица");
   table_submenu_.AddItem(ID_SHEET_VIEW, L"Новая п-таблица");
