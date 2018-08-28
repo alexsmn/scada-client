@@ -43,5 +43,8 @@ class ViewManagerQt final : public QObject, public ViewManager {
 
   void OnFocusChanged(QObject* focus_object);
 
+  void SetRootWidget(QWidget* widget);
+
   QMainWindow& main_window_;
+  QWidget* root_widget_ = nullptr;
 };

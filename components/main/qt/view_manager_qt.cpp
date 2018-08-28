@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QDockWidget>
+#include <QHBoxLayout>
 #include <QMainWindow>
 #include <QSplitter>
 
@@ -103,6 +104,11 @@ struct ScopedNames {
 ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
                              ViewManagerDelegate& delegate)
     : ViewManager{delegate}, main_window_{main_window} {
+  auto* central_widget = new QWidget;
+  central_widget->setLayout(new QHBoxLayout);
+  central_widget->layout()->setMargin(0);
+  main_window_.setCentralWidget(central_widget);
+
   QObject::connect(static_cast<QGuiApplication*>(QApplication::instance()),
                    &QGuiApplication::focusObjectChanged, this,
                    &ViewManagerQt::OnFocusChanged);
@@ -111,8 +117,7 @@ ViewManagerQt::ViewManagerQt(QMainWindow& main_window,
 ViewManagerQt::~ViewManagerQt() {}
 
 void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
-  main_window_.setCentralWidget(
-      OpenLayoutBlock(page, page.layout.main).release());
+  SetRootWidget(OpenLayoutBlock(page, page.layout.main).release());
 
   // Open windows not opended by layout.
   for (auto* opened_view : views_) {
@@ -172,7 +177,7 @@ std::unique_ptr<DockTabWidget> ViewManagerQt::CreateTabBlock() {
 
 void ViewManagerQt::DeleteTabBlock(DockTabWidget& tabs, bool later) {
   assert(tabs.count() == 0);
-  assert(&tabs != main_window_.centralWidget());
+  assert(&tabs != root_widget_);
 
   auto* splitter = qobject_cast<QSplitter*>(tabs.parentWidget());
   assert(splitter);
@@ -189,9 +194,9 @@ void ViewManagerQt::DeleteTabBlock(DockTabWidget& tabs, bool later) {
     tabs.deleteLater();
   }
 
-  if (splitter == main_window_.centralWidget()) {
-    // Deletes |tabs| and owns |other_widget|.
-    main_window_.setCentralWidget(other_widget);
+  if (splitter == root_widget_) {
+    // Deletes |splitter| and |tabs|, owns |other_widget|.
+    SetRootWidget(other_widget);
 
   } else {
     auto* parent_splitter = qobject_cast<QSplitter*>(splitter->parentWidget());
@@ -298,7 +303,7 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
     opened_view.view()->setParent(nullptr);
 
     // Remove tab widget.
-    if (tabs->count() == 0 && tabs != main_window_.centralWidget())
+    if (tabs->count() == 0 && tabs != root_widget_)
       DeleteTabBlock(*tabs, false);
 
   } else if (auto* dock = GetDockWidget(opened_view)) {
@@ -329,8 +334,8 @@ void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
 }
 
 void ViewManagerQt::SaveLayout(PageLayout& layout) {
-  if (main_window_.centralWidget())
-    SaveLayoutBlock(layout.main, *main_window_.centralWidget());
+  if (root_widget_)
+    SaveLayoutBlock(layout.main, *root_widget_);
 
   ScopedNames names{views_};
   layout.blob = main_window_.saveState().toStdString();
@@ -405,12 +410,12 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
   assert(!IsViewAdded(view));
 
   auto* tabs = active_view_ ? GetTabWidget(*active_view_) : nullptr;
-  if (!tabs && main_window_.centralWidget())
-    tabs = GetFirstTabBlock(*main_window_.centralWidget());
+  if (!tabs && root_widget_)
+    tabs = GetFirstTabBlock(*root_widget_);
 
   if (!tabs) {
     tabs = CreateTabBlock().release();
-    main_window_.setCentralWidget(tabs);
+    SetRootWidget(tabs);
   }
 
   tabs->addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
@@ -450,10 +455,11 @@ DockTabWidget& ViewManagerQt::SplitTabBlock(DockTabWidget& tabs,
                                : Qt::Horizontal);
   splitter->setChildrenCollapsible(false);
 
-  if (&tabs == main_window_.centralWidget()) {
+  if (&tabs == root_widget_) {
     // Reset ownership.
     tabs.setParent(nullptr);
-    main_window_.setCentralWidget(splitter);
+    root_widget_ = nullptr;
+    SetRootWidget(splitter);
 
   } else {
     auto* parent_splitter = qobject_cast<QSplitter*>(tabs.parentWidget());
@@ -476,4 +482,23 @@ DockTabWidget& ViewManagerQt::SplitTabBlock(DockTabWidget& tabs,
   }
 
   return *new_tabs;
+}
+
+void ViewManagerQt::SetRootWidget(QWidget* widget) {
+  if (root_widget_ == widget)
+    return;
+
+  if (root_widget_) {
+    // Prevent from deletion if was hosted by |root_widget|.
+    if (widget)
+      widget->setParent(nullptr);
+
+    delete root_widget_;
+    root_widget_ = nullptr;
+  }
+
+  root_widget_ = widget;
+
+  if (root_widget_)
+    main_window_.centralWidget()->layout()->addWidget(root_widget_);
 }
