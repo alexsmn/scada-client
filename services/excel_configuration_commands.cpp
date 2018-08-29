@@ -1,6 +1,7 @@
 ﻿#include "services/excel_configuration_commands.h"
 
 #include "base/base_paths.h"
+#include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
@@ -12,11 +13,21 @@
 #include "services/dialog_service.h"
 #include "services/import_export.h"
 #include "services/task_manager.h"
+
+#if defined(UI_QT)
+#include <QFileDialog>
+#elif defined(UI_VIEWS)
 #include "ui/base/dialogs/select_file_dialog.h"
+#endif
 
 #include <algorithm>
 #include <fstream>
 #include <set>
+
+namespace {
+const base::char16 kImportTitle[] = L"Импорт";
+const base::char16 kExportTitle[] = L"Экспорт";
+}  // namespace
 
 void PrintProps(NodeService& node_service,
                 const scada::NodeProperties& props,
@@ -135,6 +146,8 @@ void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
 
 namespace {
 
+#if defined(UI_VIEWS)
+
 template <class Handler>
 class FileSelector : public ui::SelectFileDialog::Listener {
  public:
@@ -155,6 +168,8 @@ auto MakeFileSelector(Handler&& handler) {
   return FileSelector<Handler>{std::forward<Handler>(handler)};
 }
 
+#endif  // defined(UI_VIEWS)
+
 }  // namespace
 
 void ExportConfigurationToExcel(NodeService& node_service,
@@ -169,22 +184,31 @@ void ExportConfigurationToExcel(NodeService& node_service,
     ExportConfiguration(node_service, writer);
 
   } catch (const ResourceError& e) {
-    dialog_service.RunMessageBox((e.message() + L".").c_str(), L"Экспорт",
+    dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,
                                  MessageBoxMode::Error);
   }
 }
 
 void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service) {
+#if defined(UI_VIEWS)
   static auto selector = MakeFileSelector([&](const base::FilePath& path) {
     ExportConfigurationToExcel(node_service, dialog_service, path);
   });
 
   ui::SelectFileDialog::Create(&selector, nullptr)
-      ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE, L"Экспорт",
+      ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE, kExportTitle,
                    base::FilePath(L"configuration.csv"), nullptr, -1,
                    base::string16(), dialog_service.GetDialogOwningWindow(),
                    nullptr);
+
+#elif defined(UI_QT)
+  auto path = QFileDialog::getSaveFileName(
+      dialog_service.GetParentWidget(), QString::fromWCharArray(kExportTitle));
+  if (!path.isEmpty())
+    ExportConfigurationToExcel(node_service, dialog_service,
+                               base::FilePath{path.toStdWString().c_str()});
+#endif
 }
 
 void ImportConfigurationFromExcel(NodeService& node_service,
@@ -193,7 +217,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
                                   const base::FilePath& path) {
   std::wifstream stream{path.value()};
   if (!stream) {
-    dialog_service.RunMessageBox(L"Не удалось открыть файл.", L"Импорт",
+    dialog_service.RunMessageBox(L"Не удалось открыть файл.", kImportTitle,
                                  MessageBoxMode::Error);
     return;
   }
@@ -207,13 +231,13 @@ void ImportConfigurationFromExcel(NodeService& node_service,
     auto message = base::StringPrintf(
         L"Ошибка при импорте строки %d, столбца %d: %ls.", reader.row_index(),
         reader.cell_index(), e.message().c_str());
-    dialog_service.RunMessageBox(message.c_str(), L"Импорт",
+    dialog_service.RunMessageBox(message.c_str(), kImportTitle,
                                  MessageBoxMode::Error);
     return;
   }
 
   if (import_data.IsEmpty()) {
-    dialog_service.RunMessageBox(L"Изменений не найдено.", L"Импорт",
+    dialog_service.RunMessageBox(L"Изменений не найдено.", kImportTitle,
                                  MessageBoxMode::Info);
     return;
   }
@@ -221,7 +245,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
   ShowImportReport(import_data, node_service);
 
   bool confirmed =
-      dialog_service.RunMessageBox(L"Применить изменения?", L"Импорт",
+      dialog_service.RunMessageBox(L"Применить изменения?", kImportTitle,
                                    MessageBoxMode::QuestionYesNoDefaultNo) ==
       MessageBoxResult::Yes;
 
@@ -232,13 +256,22 @@ void ImportConfigurationFromExcel(NodeService& node_service,
 void ImportConfigurationFromExcel(NodeService& node_service,
                                   TaskManager& task_manager,
                                   DialogService& dialog_service) {
+#if defined(UI_VIEWS)
   static auto selector = MakeFileSelector([&](const base::FilePath& path) {
     ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
                                  path);
   });
 
   ui::SelectFileDialog::Create(&selector, nullptr)
-      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, L"Импорт",
+      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, kImportTitle,
                    base::FilePath(), nullptr, -1, base::string16(),
                    dialog_service.GetDialogOwningWindow(), nullptr);
+
+#elif defined(UI_QT)
+  auto path = QFileDialog::getOpenFileName(
+      dialog_service.GetParentWidget(), QString::fromWCharArray(kImportTitle));
+  if (!path.isEmpty())
+    ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
+                                 base::FilePath{path.toStdWString().c_str()});
+#endif
 }

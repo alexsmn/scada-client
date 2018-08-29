@@ -177,12 +177,12 @@
         <translation type="vanished">Локальный</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="77"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="81"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="131"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="135"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>
@@ -306,6 +306,65 @@
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="139"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
+    </message>
+</context>
+<context>
+    <name>TransportDialog</name>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="14"/>
+        <source>Transport</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="25"/>
+        <source>Type:</source>
+        <translation type="unfinished">Тип:</translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="44"/>
+        <source>Host:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="57"/>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="121"/>
+        <source>Port:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="84"/>
+        <source>Flow Control:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="91"/>
+        <source>Stop Bits:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="98"/>
+        <source>Bit Count:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="105"/>
+        <source>Parity:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="128"/>
+        <source>Baud Rate:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="188"/>
+        <source>OK</source>
+        <translation type="unfinished">ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/transport/qt/transport_dialog.ui" line="195"/>
+        <source>Cancel</source>
+        <translation type="unfinished">Отмена</translation>
     </message>
 </context>
 <context>
