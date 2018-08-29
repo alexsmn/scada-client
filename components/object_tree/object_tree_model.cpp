@@ -18,7 +18,7 @@ int ObjectTreeModel::GetColumnCount() const {
 }
 
 base::string16 ObjectTreeModel::GetColumnText(int column_id) const {
-  return column_id == 0 ? L"Объект" : L"Значение";
+  return column_id == 0 ? L"Имя" : L"Значение";
 }
 
 int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {
