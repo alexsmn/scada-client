@@ -61,10 +61,14 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
   Init(*view_manager_);
 
+  action_manager_.Subscribe(*this);
+
   show();
 }
 
 MainWindowQt::~MainWindowQt() {
+  action_manager_.Unsubscribe(*this);
+
   BeforeClose();
   view_manager_.reset();
 }
@@ -165,18 +169,8 @@ void MainWindowQt::CreateToolbar() {
 void MainWindowQt::SetWindowFlashing(bool flashing) {}
 
 void MainWindowQt::OnSelectionChanged() {
-  for (auto& p : action_map_) {
-    auto command_id = p.first;
-    auto* action = p.second;
-    auto* handler = commands_->GetCommandHandler(p.first);
-    action->setVisible(!!handler);
-    if (handler) {
-      bool enabled = handler->IsCommandEnabled(command_id);
-      action->setEnabled(enabled);
-      if (enabled)
-        action->setChecked(handler->IsCommandChecked(command_id));
-    }
-  }
+  for (auto& p : action_map_)
+    UpdateAction(*p.second, p.first);
 
   for (auto& p : category_actions_) {
     bool visible = false;
@@ -208,4 +202,21 @@ void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
 QAction* MainWindowQt::FindAction(unsigned command_id) {
   auto i = action_map_.find(command_id);
   return i == action_map_.end() ? nullptr : i->second;
+}
+
+void MainWindowQt::OnActionUpdated(Action& action) {
+  auto i = action_map_.find(action.command_id());
+  if (i != action_map_.end())
+    UpdateAction(*i->second, i->first);
+}
+
+void MainWindowQt::UpdateAction(QAction& action, unsigned command_id) {
+  auto* handler = commands_->GetCommandHandler(command_id);
+  action.setVisible(!!handler);
+  if (handler) {
+    bool enabled = handler->IsCommandEnabled(command_id);
+    action.setEnabled(enabled);
+    if (enabled)
+      action.setChecked(handler->IsCommandChecked(command_id));
+  }
 }

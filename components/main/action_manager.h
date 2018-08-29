@@ -1,11 +1,19 @@
 #pragma once
 
+#include "base/observer_list.h"
 #include "components/main/action.h"
 
 #include <map>
 #include <vector>
 
 using ActionList = std::vector<Action*>;
+
+class ActionObserver {
+ public:
+  virtual ~ActionObserver() {}
+
+  virtual void OnActionUpdated(Action& action) = 0;
+};
 
 class ActionManager {
  public:
@@ -22,9 +30,15 @@ class ActionManager {
   void AddAction(Action& action);
   Action* FindAction(unsigned command) const;
 
+  void Subscribe(ActionObserver& observer);
+  void Unsubscribe(ActionObserver& observer);
+
+  void NotifyActionUpdated(unsigned command_id);
+
  private:
   ActionMap action_map_;
   ActionList actions_;
+  base::ObserverList<ActionObserver> observers_;
 };
 
 typedef std::map<CommandCategory, ActionList> GroupedActions;

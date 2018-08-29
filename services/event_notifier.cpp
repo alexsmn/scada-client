@@ -3,6 +3,8 @@
 #include "base/bind.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "common/event_manager.h"
+#include "common_resources.h"
+#include "components/main/action_manager.h"
 #include "services/profile.h"
 
 #include <MMSystem.h>
@@ -53,6 +55,11 @@ void EventNotifier::ShowEvents(bool added) {
 
   bool has_events = !event_manager_.unacked_events().empty() ||
                     !local_events_.events().empty();
+
+  if (has_events != has_events_) {
+    has_events_ = has_events;
+    action_manager_.NotifyActionUpdated(ID_ACKNOWLEDGE_ALL);
+  }
 
   // Never show window if event removed.
   if (has_events && !added)

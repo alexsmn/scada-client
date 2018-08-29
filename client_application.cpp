@@ -152,11 +152,11 @@ ClientApplication::~ClientApplication() {
   connection_state_reporter_.reset();
 
   speech_.reset();
+  event_notifier_.reset();
   action_manager_.reset();
   favourites_.reset();
   portfolio_manager_.reset();
   task_manager_.reset();
-  event_notifier_.reset();
   local_events_.reset();
 
   profile_.reset();
@@ -226,10 +226,6 @@ void ClientApplication::Start() {
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
 
-  event_notifier_ = std::make_unique<EventNotifier>(
-      EventNotifierContext{*event_manager_, *local_events_, *profile_,
-                           [this](bool has_events) { OnEvents(has_events); }});
-
   task_manager_ = std::make_unique<TaskManagerImpl>(TaskManagerImplContext{
       *node_service_, *master_data_services_, *local_events_, *profile_});
   speech_.reset(new Speech);
@@ -248,6 +244,10 @@ void ClientApplication::Start() {
 
   action_manager_ = std::make_unique<ActionManager>();
   AddGlobalActions(*action_manager_, *node_service_);
+
+  event_notifier_ = std::make_unique<EventNotifier>(EventNotifierContext{
+      *event_manager_, *local_events_, *profile_,
+      [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 
   favourites_ = std::make_unique<Favourites>();
 

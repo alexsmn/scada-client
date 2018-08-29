@@ -10,6 +10,7 @@ namespace events {
 class EventManager;
 }
 
+class ActionManager;
 class Profile;
 
 struct EventNotifierContext {
@@ -17,6 +18,7 @@ struct EventNotifierContext {
   LocalEvents& local_events_;
   Profile& profile_;
   std::function<void(bool has_events)> events_handler_;
+  ActionManager& action_manager_;
 };
 
 class EventNotifier final : private EventNotifierContext,
@@ -40,6 +42,7 @@ class EventNotifier final : private EventNotifierContext,
 
   bool playing_alarm_sound_ = false;
 
+  bool has_events_ = false;
   bool showing_events_ = false;
   bool showing_events_added_ = false;
 

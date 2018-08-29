@@ -1,5 +1,6 @@
 #pragma once
 
+#include "components/main/action_manager.h"
 #include "components/main/main_window.h"
 #include "qt/dialog_service_impl_qt.h"
 
@@ -11,7 +12,9 @@ class QWidget;
 class StatusBarController;
 class ViewManagerQt;
 
-class MainWindowQt final : public QMainWindow, public MainWindow {
+class MainWindowQt final : public QMainWindow,
+                           public MainWindow,
+                           private ActionObserver {
   Q_OBJECT
 
  public:
@@ -36,6 +39,11 @@ class MainWindowQt final : public QMainWindow, public MainWindow {
   void CreateToolbar();
 
   QAction* FindAction(unsigned command_id);
+
+  void UpdateAction(QAction& action, unsigned command_id);
+
+  // ActionObserver
+  virtual void OnActionUpdated(Action& action) override;
 
   std::unique_ptr<ViewManagerQt> view_manager_;
 

@@ -53,3 +53,20 @@ Action* ActionManager::FindAction(unsigned command) const {
   ActionMap::const_iterator i = action_map_.find(command);
   return i != action_map_.end() ? i->second : NULL;
 }
+
+void ActionManager::Subscribe(ActionObserver& observer) {
+  observers_.AddObserver(&observer);
+}
+
+void ActionManager::Unsubscribe(ActionObserver& observer) {
+  observers_.RemoveObserver(&observer);
+}
+
+void ActionManager::NotifyActionUpdated(unsigned command_id) {
+  auto* action = FindAction(command_id);
+  if (!action)
+    return;
+
+  for (auto& obs : observers_)
+    obs.OnActionUpdated(*action);
+}
