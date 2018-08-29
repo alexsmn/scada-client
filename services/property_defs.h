@@ -8,6 +8,7 @@
 #include "ui/base/models/grid_model.h"
 #include "ui/base/models/table_column.h"
 
+class DialogService;
 class NodeService;
 class HierachicalPropertyDefinition;
 class TaskManager;
@@ -17,6 +18,7 @@ typedef std::pair<base::string16, bool /*read_only*/> PropertyValue;
 struct PropertyContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
+  DialogService& dialog_service_;
 };
 
 class PropertyDefinition {

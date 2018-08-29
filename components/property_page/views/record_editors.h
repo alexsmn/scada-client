@@ -25,10 +25,12 @@ namespace scada {
 struct NodeAttributes;
 }
 
+class DialogService;
 class NodeService;
 class TaskManager;
 
 struct RecordEditorContext {
+  DialogService& dialog_service_;
   TaskManager& task_manager_;
   NodeService& node_service_;
 };

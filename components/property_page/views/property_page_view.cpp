@@ -89,7 +89,7 @@ PropertyPageViewContents::PropertyPageViewContents(
     : editor_{std::move(editor)} {}
 
 void PropertyPageView::SetNode(const NodeRef& node) {
-  RecordEditorContext context{task_manager_, node_service_};
+  RecordEditorContext context{dialog_service_, task_manager_, node_service_};
 
   std::unique_ptr<RecordEditor> editor;
   if (IsInstanceOf(node, id::DataGroupType))

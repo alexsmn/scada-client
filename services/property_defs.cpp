@@ -12,7 +12,9 @@
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
+#include "components/transport/transport_dialog.h"
 #include "core/node_management_service.h"
+#include "net/transport_string.h"
 #include "services/task_manager.h"
 
 namespace {
@@ -519,7 +521,18 @@ ui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& type_definition,
     const scada::NodeId& prop_decl_id) const {
-  return ui::EditData{ui::EditData::EditorType::BUTTON};
+  ui::EditData data{ui::EditData::EditorType::BUTTON};
+
+  data.action_handler = [& dialog_service =
+                             context.dialog_service_](base::string16& text) {
+    net::TransportString transport_string{base::SysWideToNativeMB(text)};
+    if (!ShowTransportDialog(dialog_service, transport_string))
+      return false;
+    text = base::SysNativeMBToWide(transport_string.ToString());
+    return true;
+  };
+
+  return data;
 }
 
 base::string16 ColorPropertyDefinition::GetText(

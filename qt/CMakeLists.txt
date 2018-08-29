@@ -11,6 +11,7 @@ add_subdirectory("${deps}/qt/graph_qt" "graph_qt")
 add_executable(client_qt WIN32
   ${SOURCES}
   ${SOURCES_QT}
+  "../res/client.qrc"
 )
 
 set_property(TARGET client_qt PROPERTY FOLDER ${client_folder})

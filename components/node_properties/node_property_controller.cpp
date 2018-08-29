@@ -35,7 +35,8 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   }
 
   property_model_ = std::make_unique<NodePropertyModel>(
-      PropertyContext{node_service_, task_manager_}, std::move(node));
+      PropertyContext{node_service_, task_manager_, dialog_service_},
+      std::move(node));
   tree_model_ = std::make_unique<PropertyTreeModel>(*property_model_);
   tree_view_ = std::make_unique<Tree>(*tree_model_);
   /*tree_view_->SetColumnWidth(0, 150);

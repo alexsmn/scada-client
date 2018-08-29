@@ -101,8 +101,9 @@ REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::HistoricalDatabases>,
 NodeTableController::NodeTableController(const ControllerContext& context,
                                          const NodeRef& parent_node)
     : Controller{context},
-      model_{std::make_unique<NodeTableModel>(context.node_service_,
-                                              context.task_manager_)} {
+      model_{std::make_unique<NodeTableModel>(
+          PropertyContext{context.node_service_, context.task_manager_,
+                          context.dialog_service_})} {
   if (parent_node)
     model_->SetParentNode(parent_node);
 }

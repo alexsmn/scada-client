@@ -71,9 +71,8 @@ PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
 
 }  // namespace
 
-NodeTableModel::NodeTableModel(NodeService& node_service,
-                               TaskManager& task_manager)
-    : PropertyContext{node_service, task_manager}, node_service_{node_service} {
+NodeTableModel::NodeTableModel(PropertyContext&& context)
+    : PropertyContext{std::move(context)} {
   row_model_.set_row_height(19);
 }
 

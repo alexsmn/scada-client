@@ -15,7 +15,7 @@ class NodeTableModel : private PropertyContext,
                        private views::FixedRowModel::Delegate,
                        public NodeRefObserver {
  public:
-  NodeTableModel(NodeService& node_service, TaskManager& task_manager);
+  explicit NodeTableModel(PropertyContext&& context);
   virtual ~NodeTableModel() override;
 
   const NodeRef& parent_node() const { return parent_node_; }
@@ -63,7 +63,6 @@ class NodeTableModel : private PropertyContext,
   views::FixedRowModel row_model_{*this};
   ui::ColumnHeaderModel column_model_;
 
-  NodeService& node_service_;
   NodeRef parent_node_;
 
   Nodes nodes_;

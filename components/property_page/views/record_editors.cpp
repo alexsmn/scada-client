@@ -3,11 +3,12 @@
 #include "base/color.h"
 #include "base/string_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "commands/views/transport_dialog.h"
+#include "base/win/win_util2.h"
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
+#include "components/transport/transport_dialog.h"
 #include "core/node_management_service.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
@@ -732,9 +733,7 @@ LRESULT LinkEditor::OnEditTransport(WORD /*wNotifyCode*/,
                                     WORD /*wID*/,
                                     HWND /*hWndCtl*/,
                                     BOOL& /*bHandled*/) {
-  TransportDialog dialog(transport_string_);
-  if (dialog.Execute() == IDOK) {
-    transport_string_ = dialog.transport_string();
+  if (ShowTransportDialog(dialog_service_, transport_string_)) {
     UpdateTransportString();
     SetModified();
   }

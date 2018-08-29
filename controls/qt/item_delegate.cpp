@@ -1,9 +1,10 @@
 #include "item_delegate.h"
 
-#include <cassert>
+#include <QAction>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QPushButton>
+#include <cassert>
 
 QWidget* ItemDelegate::createEditor(QWidget* parent,
                                     const QStyleOptionViewItem& option,
@@ -19,8 +20,22 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       return line_edit;
     }
 
-    case ui::EditData::EditorType::BUTTON:
-      return new QPushButton{parent};
+    case ui::EditData::EditorType::BUTTON: {
+      auto* line_edit = new QLineEdit{parent};
+      line_edit->setFrame(false);
+      QIcon icon{":/device.png"};
+      auto* action = line_edit->addAction(icon, QLineEdit::TrailingPosition);
+      connect(action, &QAction::triggered,
+              [index, line_edit, handler = edit_data.action_handler] {
+                auto text = line_edit->text().toStdWString();
+                if (handler(text)) {
+                  const_cast<QAbstractItemModel*>(index.model())
+                      ->setData(index, QString::fromStdWString(text),
+                                Qt::EditRole);
+                }
+              });
+      return line_edit;
+    }
 
     case ui::EditData::EditorType::DROPDOWN: {
       auto* combo_box = new QComboBox{parent};

@@ -3,7 +3,6 @@
 #include "base/path_service.h"
 #include "client_paths.h"
 #include "client_utils.h"
-#include "commands/prompt_dialog.h"
 #include "common/event_manager.h"
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
@@ -12,6 +11,7 @@
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
+#include "components/prompt/prompt_dialog.h"
 #include "core/session_service.h"
 #include "services/dialog_service.h"
 #include "services/excel_configuration_commands.h"
@@ -285,7 +285,8 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     case ID_WINDOW_SPLIT_HORZ:
     case ID_WINDOW_SPLIT_VERT:
       if (auto* active_view = main_window_.GetActiveView())
-        main_window_.SplitView(*active_view, command_id == ID_WINDOW_SPLIT_HORZ);
+        main_window_.SplitView(*active_view,
+                               command_id == ID_WINDOW_SPLIT_HORZ);
       return;
 
     case ID_ABOUT_QT:

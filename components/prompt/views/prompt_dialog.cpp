@@ -1,4 +1,4 @@
-#include "commands/prompt_dialog.h"
+#include "components/prompt/prompt_dialog.h"
 
 #include "common_resources.h"
 #include "services/dialog_service.h"
