@@ -246,7 +246,9 @@ std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateNode(
 std::unique_ptr<ConfigurationTreeNode>
 ConfigurationTreeModel::CreateNodeIfMatches(const NodeRef& data_node) {
   assert(data_node);
-  assert(!FindNode(data_node.node_id()));
+
+  if (FindNode(data_node.node_id()))
+    return nullptr;
 
   if (!type_definition_ids_.empty()) {
     bool matches = false;

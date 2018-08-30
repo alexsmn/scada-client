@@ -20,10 +20,12 @@ class LoginController {
   std::function<void(DataServices& services)> completion_handler;
   std::function<void()> error_handler;
 
+  std::vector<base::string16> server_type_list;
+  int server_type_index = 0;
+
   base::string16 user_name;
   base::string16 password;
   std::string server_host;
-  std::string server_type;
   std::vector<base::string16> user_list;
   // Automatic startup login is performed.
   bool auto_login = false;
@@ -41,6 +43,8 @@ class LoginController {
   bool login_message_ = false;
   bool connecting_ = false;
   DataServices services_;
+
+  std::string server_type_;
 
   base::WeakPtrFactory<LoginController> weak_factory_{this};
 };

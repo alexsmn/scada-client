@@ -46,10 +46,20 @@ LoginController::LoginController(DataServicesContext&& services_context,
       break;
     p = n + 1;
   }
+
   server_host = base::SysWideToNativeMB(reg.GetString(L"Host"));
-  server_type = base::SysWideToNativeMB(reg.GetString(L"ServerType"));
+  auto server_type = base::SysWideToNativeMB(reg.GetString(L"ServerType"));
   password = reg.GetString(L"Password");
   auto_login = reg.GetDWORD(L"AutoLogin") != 0;
+
+  auto& list = GetDataServicesInfoList();
+  for (size_t i = 0; i < list.size(); ++i) {
+    auto& info = list[i];
+    server_type_list.emplace_back(info.display_name);
+    if (EqualDataServicesName(info.name, server_type))
+      server_type_index = i;
+  }
+
   // Don't perform automatic login if Shift is pressed.
   if (GetAsyncKeyState(VK_CONTROL) < 0)
     auto_login = false;
@@ -57,6 +67,8 @@ LoginController::LoginController(DataServicesContext&& services_context,
 }
 
 void LoginController::Login() {
+  server_type_ = GetDataServicesInfoList()[server_type_index].name;
+
   Connect(false);
 }
 
@@ -90,7 +102,7 @@ void LoginController::OnLoginCompleted() {
   reg.SetString(L"User", ToString16(user_name).c_str());
   reg.SetString(L"UserList", user_list_string.c_str());
   reg.SetString(L"Host", base::SysNativeMBToWide(server_host).c_str());
-  reg.SetString(L"ServerType", base::SysNativeMBToWide(server_type).c_str());
+  reg.SetString(L"ServerType", base::SysNativeMBToWide(server_type_).c_str());
   reg.SetDWORD(L"AutoLogin", auto_login);
   if (auto_login)
     reg.SetString(L"Password", password.c_str());
@@ -128,7 +140,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
 void LoginController::Connect(bool allow_remote_logoff) {
   connecting_ = true;
 
-  if (!CreateDataServices(server_type, services_context_, services_)) {
+  if (!CreateDataServices(server_type_, services_context_, services_)) {
     OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);
     return;
   }

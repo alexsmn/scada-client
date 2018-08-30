@@ -43,6 +43,10 @@ LoginDialog::LoginDialog(DataServicesContext&& services_context)
     ui.userNameComboBox->lineEdit()->selectAll();
   };
 
+  ui.serverTypeComboBox->addItems(
+      MakeQStringList(controller_.server_type_list));
+  ui.serverTypeComboBox->setCurrentIndex(controller_.server_type_index);
+
   ui.serverComboBox->setCurrentText(
       QString::fromStdString(controller_.server_host));
 
@@ -64,6 +68,7 @@ LoginDialog::~LoginDialog() {}
 void LoginDialog::accept() {
   EnableControls(false);
 
+  controller_.server_type_index = ui.serverTypeComboBox->currentIndex();
   controller_.server_host = ui.serverComboBox->currentText().toStdString();
   controller_.user_name = ui.userNameComboBox->currentText().toStdWString();
   controller_.password = ui.passwordLineEdit->text().toStdWString();

@@ -313,58 +313,58 @@
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="14"/>
         <source>Transport</source>
-        <translation type="unfinished"></translation>
+        <translation>Транспорт</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="25"/>
         <source>Type:</source>
-        <translation type="unfinished">Тип:</translation>
+        <translation>Тип:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="44"/>
         <source>Host:</source>
-        <translation type="unfinished"></translation>
+        <translation>Хост:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="57"/>
         <location filename="../components/transport/qt/transport_dialog.ui" line="121"/>
         <source>Port:</source>
-        <translation type="unfinished"></translation>
+        <translation>Порт:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="84"/>
         <source>Flow Control:</source>
-        <translation type="unfinished"></translation>
+        <translation>Управление потоком:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="91"/>
         <source>Stop Bits:</source>
-        <translation type="unfinished"></translation>
+        <translation>Стоповые биты:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="98"/>
         <source>Bit Count:</source>
-        <translation type="unfinished"></translation>
+        <translation>Биты данных:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="105"/>
         <source>Parity:</source>
-        <translation type="unfinished"></translation>
+        <translation>Четность:</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="128"/>
         <source>Baud Rate:</source>
-        <translation type="unfinished"></translation>
+        <translation>Скорость (бод):</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="188"/>
         <source>OK</source>
-        <translation type="unfinished">ОК</translation>
+        <translation>ОК</translation>
     </message>
     <message>
         <location filename="../components/transport/qt/transport_dialog.ui" line="195"/>
         <source>Cancel</source>
-        <translation type="unfinished">Отмена</translation>
+        <translation>Отмена</translation>
     </message>
 </context>
 <context>

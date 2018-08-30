@@ -21,8 +21,8 @@ class LoginDialog : public framework::Dialog {
 
  protected:
   // Dialog
-  virtual void OnInitDialog();
-  virtual void OnOK();
+  virtual void OnInitDialog() override;
+  virtual void OnOK() override;
 
  private:
   void UpdateControls(bool enable);
@@ -75,15 +75,9 @@ void LoginDialog::OnInitDialog() {
   // Server type.
   {
     WTL::CComboBox server_type_combo = GetItem(IDC_SERVER_TYPE);
-    int selected_index = 0;
-    auto& list = GetDataServicesInfoList();
-    for (size_t i = 0; i < list.size(); ++i) {
-      auto& info = list[i];
-      server_type_combo.AddString(info.display_name.c_str());
-      if (EqualDataServicesName(info.name, controller_.server_type))
-        selected_index = i;
-    }
-    server_type_combo.SetCurSel(selected_index);
+    for (auto& item : controller_.server_type_list)
+      server_type_combo.AddString(item.c_str());
+    server_type_combo.SetCurSel(controller_.server_type_index);
   }
 
   UpdateControls(true);
@@ -102,8 +96,7 @@ void LoginDialog::OnOK() {
   {
     int server_type_index =
         WTL::CComboBox(GetItem(IDC_SERVER_TYPE)).GetCurSel();
-    server_type_index = std::max(server_type_index, 0);
-    controller_.server_type = GetDataServicesInfoList()[server_type_index].name;
+    controller_.server_type_index = std::max(server_type_index, 0);
   }
   controller_.auto_login =
       WTL::CButton(GetItem(IDC_AUTO_LOGIN)).GetState() == BST_CHECKED;
