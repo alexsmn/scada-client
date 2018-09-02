@@ -56,12 +56,19 @@ void NodeGroupModel::SetValue(int index, const base::string16& value) {
     prop.def->SetText(property_model_, property_model_.node_, prop.prop_decl_id,
                       value);
   else {
-    // TODO: attribute id.
+    scada::NodeAttributes attributes;
+    // TODO: Other attributes.
+    switch (prop.attribute_id) {
+      case scada::AttributeId::DisplayName:
+        attributes.set_display_name(scada::ToLocalizedText(value));
+        break;
+    }
+
+    if (attributes.empty())
+      return;
+
     property_model_.task_manager_.PostUpdateTask(
-        property_model_.node_.node_id(),
-        scada::NodeAttributes().set_browse_name(
-            scada::QualifiedName{base::SysWideToNativeMB(value), 0}),
-        {});
+        property_model_.node_.node_id(), attributes, {});
   }
 }
 
@@ -75,8 +82,8 @@ void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 
   } else if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
                            scada::ModelChangeEvent::ReferenceDeleted)) {
-  if (!root_.properties.empty())
-    PropertiesChanged(0, static_cast<int>(root_.properties.size()));
+    if (!root_.properties.empty())
+      PropertiesChanged(0, static_cast<int>(root_.properties.size()));
   }
 }
 
@@ -85,7 +92,8 @@ void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     PropertiesChanged(0, static_cast<int>(root_.properties.size()));
 }
 
-void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id, bool children) {
+void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id,
+                                      bool children) {
   Update();
   if (model_changed_handler)
     model_changed_handler();
