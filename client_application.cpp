@@ -455,8 +455,7 @@ bool ClientApplication::Login() {
       command_line.HasSwitch("log-service-node-semantics-change-event"),
   };
 
-  DataServicesContext services_context{logger_,
-                                       base::ThreadTaskRunnerHandle::Get(),
+  DataServicesContext services_context{logger_, *io_context_,
                                        *transport_factory_, service_log_params};
 
   DataServices services;

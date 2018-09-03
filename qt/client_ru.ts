@@ -150,22 +150,22 @@
         <translation>Вход в систему</translation>
     </message>
     <message>
-        <location filename="../components/login/qt/login_dialog.ui" line="31"/>
+        <location filename="../components/login/qt/login_dialog.ui" line="34"/>
         <source>User name:</source>
         <translation>Имя:</translation>
     </message>
     <message>
-        <location filename="../components/login/qt/login_dialog.ui" line="48"/>
+        <location filename="../components/login/qt/login_dialog.ui" line="51"/>
         <source>Password:</source>
         <translation>Пароль:</translation>
     </message>
     <message>
-        <location filename="../components/login/qt/login_dialog.ui" line="62"/>
+        <location filename="../components/login/qt/login_dialog.ui" line="65"/>
         <source>Auto-Login:</source>
         <translation>Авто:</translation>
     </message>
     <message>
-        <location filename="../components/login/qt/login_dialog.ui" line="72"/>
+        <location filename="../components/login/qt/login_dialog.ui" line="75"/>
         <source>Server:</source>
         <translation>Сервер:</translation>
     </message>
