@@ -141,10 +141,11 @@ void TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
            [=, &node_management_service = node_management_service_] {
              node_management_service.DeleteNode(
                  node_id, true,
-                 [weak_ptr](const scada::Status& status,
-                            const scada::NodeIdSet* relations) {
+                 [weak_ptr](scada::Status&& status,
+                            std::vector<scada::NodeId>&& dependencies) {
                    if (auto ptr = weak_ptr.get())
-                     ptr->OnDeleteRecordComplete(status, relations);
+                     ptr->OnDeleteRecordComplete(std::move(status),
+                                                 std::move(dependencies));
                  });
            });
 }
@@ -194,16 +195,16 @@ void TaskManagerImpl::StartTask(Task&& task) {
 }
 
 void TaskManagerImpl::OnDeleteRecordComplete(
-    const scada::Status& status,
-    const std::set<scada::NodeId>* relations) {
-  base::string16 relations_text;
-  for (auto& node_id : *relations) {
-    if (!relations_text.empty())
-      relations_text += L'\n';
-    relations_text += GetDisplayName(node_service_, node_id);
+    scada::Status&& status,
+    std::vector<scada::NodeId>&& dependencies) {
+  base::string16 dependencies_text;
+  for (auto& node_id : dependencies) {
+    if (!dependencies_text.empty())
+      dependencies_text += L'\n';
+    dependencies_text += GetDisplayName(node_service_, node_id);
   }
 
-  ReportRequestCompletion(status, relations_text);
+  ReportRequestCompletion(status, dependencies_text);
 }
 
 void TaskManagerImpl::ReportRequestCompletion(

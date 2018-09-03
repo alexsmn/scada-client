@@ -66,8 +66,8 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
   void PostTask(base::StringPiece16 title, TaskMethod task);
   void StartTask(Task&& task);
 
-  void OnDeleteRecordComplete(const scada::Status& status,
-                              const std::set<scada::NodeId>* relations);
+  void OnDeleteRecordComplete(scada::Status&& status,
+                              std::vector<scada::NodeId>&& dependencies);
 
   void ReportRequestCompletion(const scada::Status& status,
                                const base::string16& result_text);
