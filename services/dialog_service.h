@@ -3,6 +3,8 @@
 #include "base/strings/string_piece.h"
 #include "gfx/native_widget_types.h"
 
+#include <filesystem>
+
 #if defined(UI_QT)
 class QWidget;
 #endif
@@ -30,4 +32,10 @@ class DialogService {
   virtual MessageBoxResult RunMessageBox(base::StringPiece16 message,
                                          base::StringPiece16 title,
                                          MessageBoxMode mode) = 0;
+
+  virtual std::filesystem::path SelectOpenFile(base::StringPiece16 title) = 0;
+
+  virtual std::filesystem::path SelectSaveFile(
+      base::StringPiece16 title,
+      const std::filesystem::path& default_path = {}) = 0;
 };
