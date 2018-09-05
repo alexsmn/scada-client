@@ -78,6 +78,7 @@ void LoginDialog::accept() {
 }
 
 void LoginDialog::EnableControls(bool enable) {
+  ui.serverTypeComboBox->setEnabled(enable);
   ui.serverComboBox->setEnabled(enable);
   ui.userNameComboBox->setEnabled(enable);
   ui.passwordLineEdit->setEnabled(enable);
