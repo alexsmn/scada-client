@@ -24,18 +24,20 @@ base::string16 StringToCsv(base::StringPiece16 raw_value) {
   return result;
 }
 
-} // namespace
+}  // namespace
 
-TableWriter::TableWriter(std::wostream& stream)
-    : stream_{stream} {
-}
+TableWriter::TableWriter(std::wostream& stream) : stream_{stream} {}
 
 void TableWriter::StartRow() {
   auto skip = skip_start_;
   skip_start_ = false;
   if (skip)
     return;
+
   stream_ << std::endl;
+  if (!stream_)
+    throw std::runtime_error("Write error");
+
   start_of_line_ = true;
 }
 
@@ -45,4 +47,6 @@ void TableWriter::WriteCell(base::StringPiece16 str) {
   start_of_line_ = false;
 
   stream_ << StringToCsv(str.as_string());
+  if (!stream_)
+    throw std::runtime_error("Write error");
 }

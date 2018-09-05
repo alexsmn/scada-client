@@ -4,6 +4,8 @@
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/table_model.h"
 
+#include <filesystem>
+
 class TimedDataService;
 
 struct TimedDataModelContext {
@@ -32,6 +34,7 @@ class TimedDataModel : private TimedDataModelContext,
 
   void Update();
 
+  void ExportToCsv(const std::filesystem::path& path);
 
   // ui::TableModel overrides
   virtual int GetRowCount() override;
@@ -51,5 +54,3 @@ class TimedDataModel : private TimedDataModelContext,
   // Can be null.
   base::Time end_time_;
 };
-
-base::string16 FormatQuality(scada::Qualifier qualifier);

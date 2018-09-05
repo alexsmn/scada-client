@@ -1,9 +1,6 @@
 ﻿#include "components/timed_data/timed_data_view.h"
 
-#include "base/excel.h"
-#include "base/strings/sys_string_conversions.h"
-#include "base/win/scoped_variant.h"
-#include "client_utils.h"
+#include "base/win/win_util2.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
@@ -14,32 +11,11 @@
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
-#include <ATLComTime.h>
-
 namespace {
 
 const base::char16 kValueColumnTitle[] = L"Значение";
 
-void ValueToVariant(const scada::Variant& value,
-                    base::win::ScopedVariant& result) {
-  switch (value.type()) {
-    case scada::Variant::BOOL:
-      result.Set(value.as_bool());
-      break;
-    case scada::Variant::INT32:
-      result.Set(value.as_int32());
-      break;
-    case scada::Variant::INT64:
-      result.Set(value.as_int64());
-      break;
-    case scada::Variant::DOUBLE:
-      result.Set(value.as_double());
-      break;
-    case scada::Variant::STRING:
-      result.Set(base::SysNativeMBToWide(value.as_string()).c_str());
-      break;
-  }
-}
+const base::char16 kExportTitle[] = L"Экспорт";
 
 const ui::TableColumn s_columns[] = {
     ui::TableColumn(TimedDataModel::CID_TIME,
@@ -57,7 +33,8 @@ const ui::TableColumn s_columns[] = {
     ui::TableColumn(TimedDataModel::CID_COLLECTION_TIME,
                     L"Время приема",
                     150,
-                    ui::TableColumn::LEFT)};
+                    ui::TableColumn::LEFT),
+};
 
 }  // namespace
 
@@ -137,7 +114,7 @@ CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
 void TimedDataView::ExecuteCommand(unsigned command) {
   switch (command) {
     case ID_EXPORT:
-      ExportToExcel();
+      Export();
       break;
     default:
       __super::ExecuteCommand(command);
@@ -145,46 +122,25 @@ void TimedDataView::ExecuteCommand(unsigned command) {
   }
 }
 
-void TimedDataView::ExportToExcel() {
+void TimedDataView::Export() {
+  auto title = model_->timed_data().GetTitle();
+  auto path = dialog_service_.SelectSaveFile(kExportTitle, title + L".csv");
+  if (path.empty())
+    return;
+
   try {
-    if (model_->empty())
-      throw E_FAIL;
+    model_->ExportToCsv(path);
 
-    ExcelSheetModel sheet;
-
-    sheet.SetDataSize(model_->GetRowCount(), _countof(s_columns));
-    for (size_t i = 0; i < _countof(s_columns); ++i) {
-      const ui::TableColumn& column = s_columns[i];
-      sheet.SetData(1, i + 1, base::win::ScopedVariant(column.title.c_str()));
-    }
-
-    int row = 2;
-    for (const auto& data_value : *model_) {
-      base::win::ScopedVariant value;
-      ValueToVariant(data_value.value, value);
-      sheet.SetData(
-          row, 1,
-          base::win::ScopedVariant(
-              COleDateTime(data_value.source_timestamp.ToFileTime()), VT_DATE));
-      sheet.SetData(row, 2, value);
-      base::string16 qualifier_string = FormatQuality(data_value.qualifier);
-      sheet.SetData(row, 3, base::win::ScopedVariant(qualifier_string.c_str()));
-      sheet.SetData(
-          row, 4,
-          base::win::ScopedVariant(
-              COleDateTime(data_value.server_timestamp.ToFileTime()), VT_DATE));
-      ++row;
-    }
-
-    Excel excel;
-    excel.NewWorkbook();
-    excel.NewSheet(sheet);
-    excel.SetVisible();
-
-  } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(L"Ошибка при экспорте.", L"Экспорт",
+  } catch (const std::runtime_error&) {
+    dialog_service_.RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
                                   MessageBoxMode::Error);
+    return;
   }
+
+  if (dialog_service_.RunMessageBox(
+          L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+          MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
+    win_util::OpenWithAssociatedProgram(path);
 }
 
 bool TimedDataView::IsWorking() const {

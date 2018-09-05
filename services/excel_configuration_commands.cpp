@@ -7,18 +7,13 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/table_reader.h"
 #include "base/table_writer.h"
+#include "base/win/win_util2.h"
 #include "common/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "services/dialog_service.h"
 #include "services/import_export.h"
 #include "services/task_manager.h"
-
-#if defined(UI_QT)
-#include <QFileDialog>
-#elif defined(UI_VIEWS)
-#include "ui/base/dialogs/select_file_dialog.h"
-#endif
 
 #include <algorithm>
 #include <fstream>
@@ -27,6 +22,7 @@
 namespace {
 const base::char16 kImportTitle[] = L"Импорт";
 const base::char16 kExportTitle[] = L"Экспорт";
+const char kDefaultFileName[] = "configuration.csv";
 }  // namespace
 
 void PrintProps(NodeService& node_service,
@@ -144,41 +140,17 @@ void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
     task_manager.PostDeleteTask(p);
 }
 
-namespace {
-
-#if defined(UI_VIEWS)
-
-template <class Handler>
-class FileSelector : public ui::SelectFileDialog::Listener {
- public:
-  explicit FileSelector(Handler&& handler)
-      : handler_{std::forward<Handler>(handler)} {}
-
-  virtual void FileSelected(const base::FilePath& path,
-                            int index,
-                            void* params) final {
-    handler_(path);
-  }
-
-  Handler handler_;
-};
-
-template <class Handler>
-auto MakeFileSelector(Handler&& handler) {
-  return FileSelector<Handler>{std::forward<Handler>(handler)};
-}
-
-#endif  // defined(UI_VIEWS)
-
-}  // namespace
-
 void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service,
-                                const base::FilePath& path) {
+                                const std::filesystem::path& path) {
   try {
-    std::wofstream stream{path.value()};
+    std::wofstream stream{path};
     if (!stream)
       throw ResourceError{L"Не удалось открыть файл."};
+
+    // https://stackoverflow.com/questions/11610583/wostream-fails-to-output-wstring
+    stream.imbue(
+        std::locale(stream.getloc(), new std::codecvt_utf8_utf16<wchar_t>));
 
     TableWriter writer{stream};
     ExportConfiguration(node_service, writer);
@@ -186,36 +158,34 @@ void ExportConfigurationToExcel(NodeService& node_service,
   } catch (const ResourceError& e) {
     dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,
                                  MessageBoxMode::Error);
+    return;
+
+  } catch (const std::runtime_error&) {
+    dialog_service.RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
+                                 MessageBoxMode::Error);
+    return;
   }
+
+  if (dialog_service.RunMessageBox(
+          L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+          MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
+    win_util::OpenWithAssociatedProgram(path);
 }
 
 void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service) {
-#if defined(UI_VIEWS)
-  static auto selector = MakeFileSelector([&](const base::FilePath& path) {
-    ExportConfigurationToExcel(node_service, dialog_service, path);
-  });
+  auto path = dialog_service.SelectSaveFile(kExportTitle, kDefaultFileName);
+  if (path.empty())
+    return;
 
-  ui::SelectFileDialog::Create(&selector, nullptr)
-      ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE, kExportTitle,
-                   base::FilePath(L"configuration.csv"), nullptr, -1,
-                   base::string16(), dialog_service.GetDialogOwningWindow(),
-                   nullptr);
-
-#elif defined(UI_QT)
-  auto path = QFileDialog::getSaveFileName(
-      dialog_service.GetParentWidget(), QString::fromWCharArray(kExportTitle));
-  if (!path.isEmpty())
-    ExportConfigurationToExcel(node_service, dialog_service,
-                               base::FilePath{path.toStdWString().c_str()});
-#endif
+  ExportConfigurationToExcel(node_service, dialog_service, path);
 }
 
 void ImportConfigurationFromExcel(NodeService& node_service,
                                   TaskManager& task_manager,
                                   DialogService& dialog_service,
-                                  const base::FilePath& path) {
-  std::wifstream stream{path.value()};
+                                  const std::filesystem::path& path) {
+  std::wifstream stream{path};
   if (!stream) {
     dialog_service.RunMessageBox(L"Не удалось открыть файл.", kImportTitle,
                                  MessageBoxMode::Error);
@@ -256,22 +226,10 @@ void ImportConfigurationFromExcel(NodeService& node_service,
 void ImportConfigurationFromExcel(NodeService& node_service,
                                   TaskManager& task_manager,
                                   DialogService& dialog_service) {
-#if defined(UI_VIEWS)
-  static auto selector = MakeFileSelector([&](const base::FilePath& path) {
-    ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
-                                 path);
-  });
+  auto path = dialog_service.SelectOpenFile(kImportTitle);
+  if (path.empty())
+    return;
 
-  ui::SelectFileDialog::Create(&selector, nullptr)
-      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, kImportTitle,
-                   base::FilePath(), nullptr, -1, base::string16(),
-                   dialog_service.GetDialogOwningWindow(), nullptr);
-
-#elif defined(UI_QT)
-  auto path = QFileDialog::getOpenFileName(
-      dialog_service.GetParentWidget(), QString::fromWCharArray(kImportTitle));
-  if (!path.isEmpty())
-    ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
-                                 base::FilePath{path.toStdWString().c_str()});
-#endif
+  ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
+                               path);
 }

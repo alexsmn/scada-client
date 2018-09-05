@@ -2,29 +2,10 @@
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/table_writer.h"
+#include "core/date_time.h"
 
-base::string16 FormatQuality(scada::Qualifier qualifier) {
-  base::string16 text;
-  if (qualifier.bad())
-    text += L"Недост ";
-  if (qualifier.backup())
-    text += L"Резерв ";
-  if (qualifier.offline())
-    text += L"НетСвязи ";
-  if (qualifier.manual())
-    text += L"Ручной ";
-  if (qualifier.misconfigured())
-    text += L"НеСконф ";
-  if (qualifier.simulated())
-    text += L"Эмулирован ";
-  if (qualifier.sporadic())
-    text += L"Спорадика ";
-  if (qualifier.stale())
-    text += L"Устарел ";
-  if (qualifier.failed())
-    text += L"Ошибка ";
-  return text;
-}
+#include <fstream>
 
 // TimedDataModel
 
@@ -83,9 +64,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
 
   switch (cell.column_id) {
     case CID_TIME:
-      cell.text = base::SysNativeMBToWide(
-          FormatTime(tvq.source_timestamp,
-                     TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
+      cell.text = ToString16(tvq.source_timestamp);
       break;
 
     case CID_VALUE:
@@ -94,7 +73,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
       break;
 
     case CID_QUALITY:
-      cell.text = FormatQuality(tvq.qualifier);
+      cell.text = ToString16(tvq.qualifier);
       break;
 
     case CID_COLLECTION_TIME:
@@ -138,4 +117,30 @@ void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   end_time_ = time_range.end;
 
   Update();
+}
+
+void TimedDataModel::ExportToCsv(const std::filesystem::path& path) {
+  std::wofstream stream{path};
+
+  // https://stackoverflow.com/questions/11610583/wostream-fails-to-output-wstring
+  stream.imbue(
+      std::locale(stream.getloc(), new std::codecvt_utf8_utf16<wchar_t>));
+
+  TableWriter writer{stream};
+
+  writer.StartRow();
+  writer.WriteCell(L"Время");
+  writer.WriteCell(L"Значение");
+  writer.WriteCell(L"Качество");
+  writer.WriteCell(L"Время приема");
+
+  for (int i = 0; i < GetRowCount(); ++i) {
+    const auto& row = this->value(i);
+
+    writer.StartRow();
+    writer.WriteCell(ToString16(row.source_timestamp));
+    writer.WriteCell(timed_data_.GetValueString(row.value, row.qualifier, 0));
+    writer.WriteCell(ToString16(row.qualifier));
+    writer.WriteCell(ToString16(row.server_timestamp));
+  }
 }

@@ -31,7 +31,7 @@ class TimedDataView : public Controller,
   base::string16 MakeTitle() const;
   void UpdateColumnTitles();
 
-  void ExportToExcel();
+  void Export();
 
   std::unique_ptr<TimedDataModel> model_;
 
