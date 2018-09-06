@@ -110,6 +110,11 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
   if (!type)
     type = ID_GRAPH_VIEW;
 
+#if defined(UI_QT)
+  if (type == ID_PROPERTY_VIEW)
+    type = ID_NEW_PROPERTY_VIEW;
+#endif
+
   NodeIdSet item_ids;
   if (expand_groups && node && node.node_class() == scada::NodeClass::Object)
     ExpandGroupItemIds(node, item_ids);
