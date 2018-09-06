@@ -7,6 +7,7 @@ Tree::Tree(ui::TreeModel& model)
     : model_adapter_{model}, item_delegate_{[&model](const QModelIndex& index) {
         return model.GetEditData(index.internalPointer(), index.column());
       }} {
+  setRootIsDecorated(false);
   setHeaderHidden(true);
   setModel(&model_adapter_);
   setItemDelegate(&item_delegate_);
@@ -22,6 +23,8 @@ Tree::Tree(ui::TreeModel& model)
     if (width != 0)
       setColumnWidth(i, width);
   }
+
+  expand(model_adapter_.GetNodeIndex(model.GetRoot(), 0));
 }
 
 Tree::~Tree() {
@@ -88,9 +91,7 @@ void Tree::SetChecked(void* node, bool checked) {
   model_adapter_.SetChecked(node, checked);
 }
 
-void Tree::SetRootVisible(bool visible) {
-  setRootIsDecorated(visible);
-}
+void Tree::SetRootVisible(bool visible) {}
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {}
 
