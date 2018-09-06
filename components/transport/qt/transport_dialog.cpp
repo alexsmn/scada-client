@@ -16,6 +16,8 @@ class TransportDialog : public QDialog {
   virtual void accept() override;
 
  private:
+  void SetTypeIndex(int index);
+
   Ui::TransportDialog ui;
 
   TransportDialogModel& model_;
@@ -58,13 +60,10 @@ TransportDialog::TransportDialog(TransportDialogModel& model, QWidget* parent)
     ui.stopBitsComboBox->addItem(QString::fromStdWString(item));
   ui.stopBitsComboBox->setCurrentIndex(model_.stop_bits_index);
 
-  connect(ui.typeComboBox, QOverload<int>::of(&QComboBox::activated),
-          [this](int index) {
-            bool serial_port = model_.IsSerialPortType(index);
-            ui.stackedWidget->setCurrentIndex(serial_port ? 1 : 0);
-          });
-
   ui.typeComboBox->setCurrentIndex(model_.type_index);
+  SetTypeIndex(model_.type_index);
+  connect(ui.typeComboBox, QOverload<int>::of(&QComboBox::activated),
+          [this](int index) { SetTypeIndex(index); });
 }
 
 void TransportDialog::accept() {
@@ -83,6 +82,11 @@ void TransportDialog::accept() {
   model_.Save();
 
   QDialog::accept();
+}
+
+void TransportDialog::SetTypeIndex(int index) {
+  bool serial_port = model_.IsSerialPortType(model_.type_index);
+  ui.stackedWidget->setCurrentIndex(serial_port ? 1 : 0);
 }
 
 bool ShowTransportDialog(DialogService& dialog_service,
