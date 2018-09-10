@@ -195,57 +195,57 @@
         <translation>Создание серии объектов</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="28"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="31"/>
         <source>Type:</source>
         <translation>Тип:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="50"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="53"/>
         <source>Discrete</source>
         <translation>ТС</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="60"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="63"/>
         <source>Analog</source>
         <translation>ТИТ</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="70"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="73"/>
         <source>Count:</source>
         <translation>Количество:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="90"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="93"/>
         <source>Name prefix:</source>
         <translation>Префикс имени:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="100"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="103"/>
         <source>Starting number:</source>
         <translation>Начальный номер:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="117"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="120"/>
         <source>Device:</source>
         <translation>Устройство:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="127"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="130"/>
         <source>Address prefix:</source>
         <translation>Префикс адреса:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="137"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="140"/>
         <source>Starting address:</source>
         <translation>Начальный адрес:</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="186"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="189"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="193"/>
+        <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="196"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
@@ -253,7 +253,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="main.cpp" line="53"/>
+        <location filename="main.cpp" line="61"/>
         <source>Telecontrol SCADA Client</source>
         <translation>Клиент ОИК Телеконтроль</translation>
     </message>

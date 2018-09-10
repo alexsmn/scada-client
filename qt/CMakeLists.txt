@@ -47,7 +47,14 @@ file(GLOB TRANSLATIONS "*.ts")
 qt5_create_translation(TRANSLATIONS_OUT ${SOURCES_QT} ${TRANSLATIONS})
 qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
 target_sources(client_qt PUBLIC ${TRANSLATIONS} ${TRANSLATIONS_OUT})
-install(FILES ${TRANSLATIONS_OUT} DESTINATION "bin")
+
+set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
+
+install(TARGETS client_qt
+  RUNTIME DESTINATION "bin"
+  COMPONENT Client)
+
+install(FILES ${TRANSLATIONS_OUT} DESTINATION "bin/translations" COMPONENT Client)
 
 # UT-s
 

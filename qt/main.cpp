@@ -12,6 +12,10 @@
 #include <QStyle>
 #include <QTranslator>
 
+namespace {
+const char kDefaultStyle[] = "Fusion";
+}
+
 int main(int argc, char* argv[]) {
   base::AtExitManager at_exit;
 
@@ -26,27 +30,31 @@ int main(int argc, char* argv[]) {
   QTranslator app_translator;
 
   {
-    // TODO: Const
     QSettings settings;
 
     // Set custom style.
-    // TODO: Const
     auto style = settings.value("Style").toString();
-    if (!style.isEmpty())
-      QApplication::setStyle(style);
+    if (style.isEmpty())
+      style = kDefaultStyle;
+    QApplication::setStyle(style);
 
     // Load translations.
     auto system_name = settings.value("SystemName").toString();
     if (system_name.isEmpty())
       system_name = QLocale::system().name();
 
-    if (qt_translator.load(
-            "qt_" + system_name,
-            QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
+    const auto local_translation_dir =
+        QApplication::applicationDirPath() + "/translations";
+    const auto global_translation_dir =
+        QLibraryInfo::location(QLibraryInfo::TranslationsPath);
+
+    const auto qt_translation_name = "qt_" + system_name;
+    if (qt_translator.load(qt_translation_name, local_translation_dir) ||
+        qt_translator.load(qt_translation_name, global_translation_dir))
       QApplication::installTranslator(&qt_translator);
 
-    if (app_translator.load("client_" + system_name,
-                            QApplication::applicationDirPath()))
+    const auto client_translation_name = "client_" + system_name;
+    if (app_translator.load(client_translation_name, local_translation_dir))
       QApplication::installTranslator(&app_translator);
   }
 
