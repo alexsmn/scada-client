@@ -170,7 +170,7 @@ void MainWindowQt::SetWindowFlashing(bool flashing) {}
 
 void MainWindowQt::OnSelectionChanged() {
   for (auto& p : action_map_)
-    UpdateAction(*p.second, p.first);
+    UpdateAction(*p.second, p.first, ActionChangeMask::AllButTitle);
 
   for (auto& p : category_actions_) {
     bool visible = false;
@@ -204,13 +204,22 @@ QAction* MainWindowQt::FindAction(unsigned command_id) {
   return i == action_map_.end() ? nullptr : i->second;
 }
 
-void MainWindowQt::OnActionUpdated(Action& action) {
+void MainWindowQt::OnActionChanged(Action& action,
+                                   ActionChangeMask change_mask) {
   auto i = action_map_.find(action.command_id());
   if (i != action_map_.end())
-    UpdateAction(*i->second, i->first);
+    UpdateAction(*i->second, i->first, change_mask);
 }
 
-void MainWindowQt::UpdateAction(QAction& action, unsigned command_id) {
+void MainWindowQt::UpdateAction(QAction& action,
+                                unsigned command_id,
+                                ActionChangeMask change_mask) {
+  if (static_cast<unsigned>(change_mask) &
+      static_cast<unsigned>(ActionChangeMask::Title)) {
+    if (auto* a = action_manager_.FindAction(command_id))
+      action.setText(QString::fromStdWString(a->GetTitle()));
+  }
+
   auto* handler = commands_->GetCommandHandler(command_id);
   action.setVisible(!!handler);
   if (handler) {

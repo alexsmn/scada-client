@@ -62,11 +62,12 @@ void ActionManager::Unsubscribe(ActionObserver& observer) {
   observers_.RemoveObserver(&observer);
 }
 
-void ActionManager::NotifyActionUpdated(unsigned command_id) {
+void ActionManager::NotifyActionChanged(unsigned command_id,
+                                        ActionChangeMask change_mask) {
   auto* action = FindAction(command_id);
   if (!action)
     return;
 
   for (auto& obs : observers_)
-    obs.OnActionUpdated(*action);
+    obs.OnActionChanged(*action, change_mask);
 }

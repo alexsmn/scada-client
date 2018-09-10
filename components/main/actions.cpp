@@ -23,14 +23,17 @@ const scada::NodeId kNewCommandTypeIds[] = {
 
 class NodeAction : private NodeRefObserver, public Action {
  public:
-  NodeAction(unsigned command_id, CommandCategory category, const NodeRef& node)
-      : Action(command_id, category, {}), node_(std::move(node)) {
-    std::weak_ptr<NodeAction*> weak_ptr = weak_ptr_factory_;
-    node.Fetch(NodeFetchStatus::NodeOnly(), [weak_ptr](const NodeRef& node) {
-      if (auto ptr = weak_ptr.lock())
-        (*ptr)->UpdateTitle();
-    });
+  NodeAction(ActionManager& action_manager,
+             unsigned command_id,
+             CommandCategory category,
+             const NodeRef& node)
+      : Action(command_id, category, {}),
+        action_manager_(action_manager),
+        node_(std::move(node)) {
+    node_.Subscribe(*this);
   }
+
+  ~NodeAction() { node_.Unsubscribe(*this); }
 
   virtual base::string16 GetTitle() const override {
     return ToString16(node_.display_name());
@@ -39,12 +42,10 @@ class NodeAction : private NodeRefObserver, public Action {
  private:
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override {
-    UpdateTitle();
+    action_manager_.NotifyActionChanged(command_id_, ActionChangeMask::Title);
   }
 
-  void UpdateTitle() {
-    SetTitle(base::WideToUTF16(L"Создать ") + ToString16(node_.display_name()));
-  }
+  ActionManager& action_manager_;
 
   const NodeRef node_;
 
@@ -191,7 +192,7 @@ void AddGlobalActions(ActionManager& action_manager,
                                        L"Направление МЭК-60870-104"));
   for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i) {
     action_manager.AddAction(
-        *new NodeAction(ID_NEW + i, CATEGORY_CREATE,
+        *new NodeAction(action_manager, ID_NEW + i, CATEGORY_CREATE,
                         node_service.GetNode(kNewCommandTypeIds[i])));
   }
 }

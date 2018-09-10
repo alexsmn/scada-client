@@ -8,11 +8,21 @@
 
 using ActionList = std::vector<Action*>;
 
+enum class ActionChangeMask : unsigned {
+  Title = 0x01,
+  Visible = 0x02,
+  Enabled = 0x04,
+  Checked = 0x08,
+  All = 0xFF,
+  AllButTitle = All & ~Title,
+};
+
 class ActionObserver {
  public:
   virtual ~ActionObserver() {}
 
-  virtual void OnActionUpdated(Action& action) = 0;
+  virtual void OnActionChanged(Action& action,
+                               ActionChangeMask change_mask) = 0;
 };
 
 class ActionManager {
@@ -33,7 +43,9 @@ class ActionManager {
   void Subscribe(ActionObserver& observer);
   void Unsubscribe(ActionObserver& observer);
 
-  void NotifyActionUpdated(unsigned command_id);
+  void NotifyActionChanged(
+      unsigned command_id,
+      ActionChangeMask change_mask = ActionChangeMask::AllButTitle);
 
  private:
   ActionMap action_map_;

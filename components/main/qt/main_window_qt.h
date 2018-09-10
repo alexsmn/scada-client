@@ -40,10 +40,13 @@ class MainWindowQt final : public QMainWindow,
 
   QAction* FindAction(unsigned command_id);
 
-  void UpdateAction(QAction& action, unsigned command_id);
+  void UpdateAction(QAction& qaction,
+                    unsigned command_id,
+                    ActionChangeMask change_mask);
 
   // ActionObserver
-  virtual void OnActionUpdated(Action& action) override;
+  virtual void OnActionChanged(Action& action,
+                               ActionChangeMask change_mask) override;
 
   std::unique_ptr<ViewManagerQt> view_manager_;
 

@@ -58,7 +58,7 @@ void EventNotifier::ShowEvents(bool added) {
 
   if (has_events != has_events_) {
     has_events_ = has_events;
-    action_manager_.NotifyActionUpdated(ID_ACKNOWLEDGE_ALL);
+    action_manager_.NotifyActionChanged(ID_ACKNOWLEDGE_ALL);
   }
 
   // Never show window if event removed.
