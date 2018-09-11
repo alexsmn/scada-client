@@ -2,6 +2,34 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>AboutDialog</name>
+    <message>
+        <location filename="../components/about/qt/about_dialog.ui" line="14"/>
+        <source>About</source>
+        <translation>О программе</translation>
+    </message>
+    <message>
+        <location filename="../components/about/qt/about_dialog.ui" line="84"/>
+        <source>OK</source>
+        <translation>ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/about/qt/about_dialog.ui" line="91"/>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <location filename="../components/about/qt/about_dialog.cpp" line="21"/>
+        <source>Version %1</source>
+        <translation>Версия %1</translation>
+    </message>
+    <message>
+        <location filename="../components/about/qt/about_dialog.cpp" line="22"/>
+        <source>Telecontrol</source>
+        <translation>Телеконтроль</translation>
+    </message>
+</context>
+<context>
     <name>AddFavouritesDialog</name>
     <message>
         <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="33"/>
@@ -177,12 +205,12 @@
         <translation type="vanished">Локальный</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="81"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="64"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="135"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="118"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>
@@ -263,9 +291,8 @@
         <translation>Локальный</translation>
     </message>
     <message>
-        <location filename="../components/about/qt/about_dialog.cpp" line="13"/>
         <source>About</source>
-        <translation>О программе</translation>
+        <translation type="vanished">О программе</translation>
     </message>
 </context>
 <context>

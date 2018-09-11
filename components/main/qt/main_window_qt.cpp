@@ -30,23 +30,6 @@
 #include <QToolBar>
 #include <QToolButton>
 
-namespace {
-
-QPixmap LoadPixmap(unsigned resource_id) {
-  HRSRC hres = FindResource(NULL, MAKEINTRESOURCE(resource_id), L"PNG");
-  DWORD size = SizeofResource(NULL, hres);
-
-  HGLOBAL resource = LoadResource(NULL, hres);
-
-  LPVOID resource_data = LockResource(resource);
-
-  QPixmap pixmap;
-  pixmap.loadFromData(static_cast<const uchar*>(resource_data), size);
-  return pixmap;
-}
-
-}  // namespace
-
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
   auto& prefs = GetPrefs();

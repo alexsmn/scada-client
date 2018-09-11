@@ -61,3 +61,16 @@ base::string16 FormatHostName(const std::string& host_name) {
     return base::SysNativeMBToWide(host_name);
   }
 }
+
+QPixmap LoadPixmap(unsigned resource_id) {
+  HRSRC hres = FindResource(NULL, MAKEINTRESOURCE(resource_id), L"PNG");
+  DWORD size = SizeofResource(NULL, hres);
+
+  HGLOBAL resource = LoadResource(NULL, hres);
+
+  LPVOID resource_data = LockResource(resource);
+
+  QPixmap pixmap;
+  pixmap.loadFromData(static_cast<const uchar*>(resource_data), size);
+  return pixmap;
+}

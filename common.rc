@@ -1544,6 +1544,8 @@ IDB_COPY                PNG                     "..\\res\\copy.png"
 
 IDB_PASTE               PNG                     "..\\res\\paste.png"
 
+ID_APPLICATION          PNG                     "res\\settings\\settings64-32bit.png"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

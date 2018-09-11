@@ -37,6 +37,8 @@
 #define IDB_PNG2                        116
 #define IDB_PASTE                       116
 #define ID_UNLOCK_ITEM                  117
+#define IDB_APP                         117
+#define ID_APPLICATION                  117
 #define ID_EDIT_LIMITS                  118
 #define ID_ITEM_PARAMS                  119
 #define ID_TABLE_CONFIG                 120
@@ -432,7 +434,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        117
+#define _APS_NEXT_RESOURCE_VALUE        118
 #define _APS_NEXT_COMMAND_VALUE         4033
 #define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           187
