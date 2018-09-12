@@ -14,9 +14,8 @@
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../components/about/qt/about_dialog.ui" line="91"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="vanished">Отмена</translation>
     </message>
     <message>
         <location filename="../components/about/qt/about_dialog.cpp" line="21"/>
