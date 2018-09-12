@@ -7,7 +7,7 @@
 ContextMenuModel::ContextMenuModel(MainWindow& main_window,
                                    ActionManager& action_manager,
                                    CommandHandler& command_handler)
-    : ui::SimpleMenuModel{this},
+    : ui::SimpleMenuModel{&command_handler_},
       main_window_{main_window},
       action_manager_{action_manager},
       command_handler_{command_handler} {}
@@ -57,7 +57,7 @@ void ContextMenuModel::Rebuild() {
       }
 
     } else {
-      ui::SimpleMenuModel* submenu = new ui::SimpleMenuModel(this);
+      auto* submenu = new ui::SimpleMenuModel{&command_handler_};
       submenus_.emplace_back(submenu);
       AddMenuActions(*submenu, commands, main_window_.active_view());
 
@@ -70,25 +70,4 @@ void ContextMenuModel::Rebuild() {
 
 void ContextMenuModel::MenuWillShow() {
   Rebuild();
-}
-
-void ContextMenuModel::ExecuteCommand(int command_id) {
-  if (auto* handler = command_handler_.GetCommandHandler(command_id))
-    handler->ExecuteCommand(command_id);
-}
-
-bool ContextMenuModel::IsCommandIdChecked(int command_id) const {
-  auto* handler = command_handler_.GetCommandHandler(command_id);
-  return handler && handler->IsCommandChecked(command_id);
-}
-
-bool ContextMenuModel::IsCommandIdEnabled(int command_id) const {
-  auto* handler = command_handler_.GetCommandHandler(command_id);
-  return handler && handler->IsCommandEnabled(command_id);
-}
-
-bool ContextMenuModel::GetAcceleratorForCommandId(
-    int command_id,
-    ui::Accelerator* accelerator) {
-  return false;
 }

@@ -3,7 +3,6 @@
 #include "base/color.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
-#include "client_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
@@ -15,6 +14,7 @@
 #include "selection_model.h"
 #include "services/profile.h"
 #include "time_range.h"
+#include "ui/base/models/simple_menu_model.h"
 
 #if defined(UI_QT)
 #include "base/qt/color_qt.h"
@@ -270,51 +270,6 @@ void GraphView::Save(WindowDefinition& definition) {
     pane_ix++;
   }
 }
-
-// LRESULT GraphView::OnPrompt(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/,
-// BOOL& /*bHandled*/)
-//{
-//  MetrixPane* pane = selected_pane();
-//  assert(pane);
-//
-//  CString text = (LPCTSTR)wParam;
-//  int i = text.Find(',');
-//  if (i != -1) {
-//    StrToIntEx(text.Mid(i + 1), STIF_DEFAULT, &line_ival);	// TODO: check
-//    result line_type = line_ival ? MetrixLine::BARS : MetrixLine::TIMED_DATA;
-//    text.Truncate(i);
-//  }
-//  if (text.IsEmpty()) {
-//    // update interval
-//    if (!pane->lines().empty()) {
-//      MetrixLine* line = (MetrixLine*)selected_pane()->lines().front();
-//      line->type = line_type;
-//      line->set_interval(line_ival);
-//      line->bars.clear();
-//      line->UpdateTimeRange();
-//      pane->Invalidate(true);
-//    }
-//  } else {
-//    // empty selected pane
-//    Lines lines = selected_pane()->lines();
-//    for (Lines::iterator i = lines.begin(); i != lines.end(); i++)
-//      DeleteLine(**i);
-//    // add line
-//    MetrixLine& line = NewLine((const char*)text, *pane);
-//    line.type = line_type;
-//    line.color = NewColor();
-//    line.set_interval(line_ival);
-//    line.UpdateTimeRange();
-//    line.UpdateRange();
-//    pane->Invalidate(true);
-//    SetModified(true);
-//  }
-//
-//  pane->UpdateLegend();
-//
-//  UpdateTitle();
-//  return 0;
-//}
 
 void GraphView::DeleteSelectedPane() {
   MetrixGraph::MetrixPane* pane = graph_->selected_pane();

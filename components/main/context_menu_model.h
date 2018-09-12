@@ -1,13 +1,13 @@
 #pragma once
 
 #include "ui/base/models/simple_menu_model.h"
+#include "simple_menu_command_handler.h"
 
 class ActionManager;
 class MainWindow;
 class CommandHandler;
 
-class ContextMenuModel final : public ui::SimpleMenuModel,
-                               private ui::SimpleMenuModel::Delegate {
+class ContextMenuModel final : public ui::SimpleMenuModel {
  public:
   ContextMenuModel(MainWindow& main_window,
                    ActionManager& action_manager,
@@ -19,17 +19,9 @@ class ContextMenuModel final : public ui::SimpleMenuModel,
  private:
   void Rebuild();
 
-  // ui::SimpleMenuModel::Delegate
-  virtual bool IsCommandIdChecked(int command_id) const override;
-  virtual bool IsCommandIdEnabled(int command_id) const override;
-  virtual bool GetAcceleratorForCommandId(
-      int command_id,
-      ui::Accelerator* accelerator) override;
-  virtual void ExecuteCommand(int command_id) override;
-
   MainWindow& main_window_;
   ActionManager& action_manager_;
-  CommandHandler& command_handler_;
 
+  SimpleMenuCommandHandler command_handler_;
   std::vector<std::unique_ptr<ui::MenuModel>> submenus_;
 };

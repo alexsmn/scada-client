@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_handler.h"
 #include "ui/base/models/simple_menu_model.h"
 
 class SimpleMenuCommandHandler : public ui::SimpleMenuModel::Delegate {
