@@ -267,10 +267,10 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
 }
 
 OpenedView* ViewManagerQt::FindViewByWidget(const QWidget* widget) {
-  auto i = std::find_if(views_.begin(), views_.end(),
-                        [widget](OpenedView* opened_view) {
-                          return opened_view->view() == widget;
-                        });
+  auto i = std::find_if(
+      views_.begin(), views_.end(), [widget](OpenedView* opened_view) {
+        return opened_view->view() && opened_view->view()->isAncestorOf(widget);
+      });
   return i != views_.end() ? *i : nullptr;
 }
 
