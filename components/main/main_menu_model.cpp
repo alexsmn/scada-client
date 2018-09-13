@@ -237,7 +237,8 @@ void StyleMenuModel::ActivatedAt(int index) {
 
 bool StyleMenuModel::IsItemCheckedAt(int index) const {
   const auto& style = QString::fromStdWString(GetLabelAt(index));
-  return QApplication::style() && QApplication::style()->objectName() == style;
+  return QApplication::style() && QApplication::style()->objectName().compare(
+                                      style, Qt::CaseInsensitive) == 0;
 }
 
 #endif  // defined(UI_QT)

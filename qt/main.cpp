@@ -4,6 +4,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/main/qt/main_window_qt.h"
+#include "project.h"
 #include "qt/message_loop_qt.h"
 
 #include <QApplication>
@@ -25,6 +26,7 @@ int main(int argc, char* argv[]) {
   qapp.setApplicationName("Telecontrol SCADA Client");
   qapp.setOrganizationName("Telecontrol");
   qapp.setOrganizationDomain("telecontrol.ru");
+  qapp.setApplicationVersion(PROJECT_VERSION_DOTTED_STRING);
 
   QTranslator qt_translator;
   QTranslator app_translator;

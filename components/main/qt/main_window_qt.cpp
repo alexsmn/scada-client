@@ -33,8 +33,10 @@
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
   auto& prefs = GetPrefs();
-  setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
-              prefs.bounds.height());
+  if (!prefs.bounds.IsEmpty()) {
+    setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
+                prefs.bounds.height());
+  }
 
   view_manager_.reset(new ViewManagerQt{*this, *this});
 
@@ -46,11 +48,19 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
   action_manager_.Subscribe(*this);
 
-  show();
+  if (prefs.maximized)
+    showMaximized();
+  else
+    show();
 }
 
 MainWindowQt::~MainWindowQt() {
   action_manager_.Unsubscribe(*this);
+
+  auto& prefs = GetPrefs();
+  const auto& g = geometry();
+  prefs.bounds = gfx::Rect{g.x(), g.y(), g.width(), g.height()};
+  prefs.maximized = isMaximized();
 
   BeforeClose();
   view_manager_.reset();

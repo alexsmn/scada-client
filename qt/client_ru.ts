@@ -204,12 +204,12 @@
         <translation type="vanished">Локальный</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="64"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="74"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="118"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="128"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>
@@ -280,7 +280,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="main.cpp" line="61"/>
+        <location filename="main.cpp" line="63"/>
         <source>Telecontrol SCADA Client</source>
         <translation>Клиент ОИК Телеконтроль</translation>
     </message>
