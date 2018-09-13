@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "common/node_ref.h"
 #include "core/event.h"
 #include "ui/base/models/table_model.h"
 
 #include <deque>
+#include <filesystem>
 #include <memory>
 
 namespace scada {
@@ -30,7 +30,7 @@ class WatchModel : private WatchModelContext, public ui::TableModel {
 
   void Clear();
 
-  void SaveLog(const base::FilePath& path);
+  void SaveLog(const std::filesystem::path& path);
 
   // ui::TableModel
   virtual int GetRowCount() override;

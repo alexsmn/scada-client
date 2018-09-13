@@ -57,8 +57,8 @@ void WatchModel::SetDevice(NodeRef device) {
   }
 }
 
-void WatchModel::SaveLog(const base::FilePath& path) {
-  std::ofstream str(path.value().c_str());
+void WatchModel::SaveLog(const std::filesystem::path& path) {
+  std::ofstream str(path);
   for (int i = 0; i < GetRowCount(); ++i) {
     for (int j = 0; j < 3; j++) {
       std::string text = base::SysWideToNativeMB(GetCellText(i, j));

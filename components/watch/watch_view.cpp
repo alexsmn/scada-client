@@ -15,14 +15,6 @@
 #include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/point.h"
 #include "views/client_utils_views.h"
-
-// TODO: Remove.
-#include <atlbase.h>
-
-#include <atlapp.h>
-#include <atldlgs.h>
-#include <atlstr.h>
-#include <atluser.h>
 #endif
 
 const WindowInfo kWindowInfo = {
@@ -97,23 +89,16 @@ void WatchView::OnSelectionChanged(views::TableView& sender) {
 #endif
 
 void WatchView::SaveLog() {
-#if defined(UI_VIEWS)
   SYSTEMTIME time;
   GetLocalTime(&time);
 
-  base::string16 name =
-      base::StringPrintf(L"%04d%02d%02d_%02d%02d%02d", time.wYear, time.wMonth,
-                         time.wDay, time.wHour, time.wMinute, time.wSecond);
+  base::string16 name = base::StringPrintf(
+      L"%04d%02d%02d_%02d%02d%02d.log", time.wYear, time.wMonth, time.wDay,
+      time.wHour, time.wMinute, time.wSecond);
 
-  WTL::CFileDialog dlg(
-      FALSE, L"*.log", name.c_str(),
-      OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST,
-      L"Файлы Log\0*.log\0Все файлы\0*.*\0");
-  if (dlg.DoModal() != IDOK)
-    return;
-
-  model_->SaveLog(base::FilePath(dlg.m_ofn.lpstrFile));
-#endif
+  auto path = dialog_service_.SelectSaveFile(L"Сохранить как", name);
+  if (!path.empty())
+    model_->SaveLog(path);
 }
 
 CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {
