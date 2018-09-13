@@ -567,6 +567,7 @@ class ModbusDeviceEditor : public NamedRecordEditor {
   bool disabled_;
   int address_;
   int repeat_count_;
+  int response_timeout_;
 };
 
 class HistoricalDBEditor : public NamedRecordEditor {

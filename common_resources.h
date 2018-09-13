@@ -250,8 +250,11 @@
 #define IDC_REPEAT_COUNT_SPIN           1032
 #define IDC_FMT                         1033
 #define IDC_TYPE_COMBO                  1033
+#define IDC_REPEAT_COUNT_EDIT2          1033
+#define IDC_RESPONSE_TIMEOUT            1033
 #define IDC_SEV_SPIN                    1034
 #define IDC_EDIT_TRANSPORT              1034
+#define IDC_REPEAT_COUNT_SPIN2          1034
 #define IDC_LIMIT_LOLO                  1035
 #define IDC_TRANSPORT_EDIT              1035
 #define IDC_LIMIT_HIHI                  1036
@@ -434,7 +437,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        118
+#define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         4033
 #define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           187

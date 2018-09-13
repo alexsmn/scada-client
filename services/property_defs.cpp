@@ -171,6 +171,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     // Modbus Dev
     {id::ModbusDeviceType_Address, &kIntPropDef},
     {id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
+    {id::ModbusDeviceType_ResponseTimeout, &kIntPropDef},
     // IEC-81650 Device
     {id::Iec61850DeviceType_Host, &kStringPropDef},
     {id::Iec61850DeviceType_Port, &kIntPropDef},

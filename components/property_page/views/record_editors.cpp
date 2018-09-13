@@ -1199,6 +1199,7 @@ void ModbusDeviceEditor::ReadControlsData() {
   disabled_ = WTL::CButton(GetDlgItem(IDC_DISABLED)).GetCheck() == BST_CHECKED;
   address_ = win_util::GetWindowInt(GetDlgItem(IDC_ADDRESS_EDIT));
   repeat_count_ = win_util::GetWindowInt(GetDlgItem(IDC_REPEAT_COUNT_EDIT));
+  response_timeout_ = win_util::GetWindowInt(GetDlgItem(IDC_RESPONSE_TIMEOUT));
 }
 
 void ModbusDeviceEditor::ReadNodeToControls(const NodeRef& node) {
@@ -1212,6 +1213,9 @@ void ModbusDeviceEditor::ReadNodeToControls(const NodeRef& node) {
   SetDlgItemInt(IDC_REPEAT_COUNT_EDIT,
                 node[id::ModbusDeviceType_SendRetryCount].value().get_or(0),
                 FALSE);
+  SetDlgItemInt(IDC_RESPONSE_TIMEOUT,
+                node[id::ModbusDeviceType_ResponseTimeout].value().get_or(0),
+                FALSE);
 }
 
 void ModbusDeviceEditor::GetModifiedProperties(
@@ -1223,6 +1227,8 @@ void ModbusDeviceEditor::GetModifiedProperties(
   properties.emplace_back(id::ModbusDeviceType_Address, address_);
   properties.emplace_back(id::DeviceType_Disabled, disabled_);
   properties.emplace_back(id::ModbusDeviceType_SendRetryCount, repeat_count_);
+  properties.emplace_back(id::ModbusDeviceType_ResponseTimeout,
+                          response_timeout_);
 }
 
 HistoricalDBEditor::HistoricalDBEditor(RecordEditorContext&& context)
