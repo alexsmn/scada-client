@@ -369,7 +369,7 @@ void MainMenuModel::Rebuild() {
   help_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
   help_submenu_.AddItem(ID_APP_ABOUT, L"О программе...");
 #if defined(UI_QT)
-  help_submenu_.AddItem(ID_ABOUT_QT, L"О QT...");
+  help_submenu_.AddItem(ID_ABOUT_QT, L"О Qt...");
 #endif
   AddSubMenu(0, L"Справка", &help_submenu_);
 }
