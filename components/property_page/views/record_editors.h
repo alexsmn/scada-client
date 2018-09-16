@@ -51,7 +51,8 @@ class RecordEditor : protected RecordEditorContext,
   virtual void ReadNodeToControls(const NodeRef& node) {}
   virtual void GetModifiedProperties(scada::NodeAttributes& attributes,
                                      scada::NodeProperties& properties,
-                                     scada::NodeReferences& references) {}
+                                     scada::ReferenceDescriptions& references) {
+  }
 
   void UpdateData();
   BOOL SaveData();
@@ -119,7 +120,7 @@ class NamedRecordEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
  private:
   scada::LocalizedText display_name_;
@@ -143,7 +144,7 @@ class GroupEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
  private:
   scada::LocalizedText display_name_;
@@ -188,7 +189,7 @@ class ItemEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
  private:
   bool SelectDevice(const scada::NodeId& device_id);
@@ -244,7 +245,7 @@ class TsEditor : public ItemEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(TsEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -272,7 +273,7 @@ class TitEditor : public ItemEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(TitEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -323,7 +324,7 @@ class TsFormatEditor : public RecordEditor,
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   // COwnerDraw overrides
   void DrawItem(LPDRAWITEMSTRUCT dis);
@@ -358,7 +359,7 @@ class LinkEditor : public NamedRecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(LinkEditor)
   COMMAND_ID_HANDLER(IDC_EDIT_TRANSPORT, OnEditTransport)
@@ -391,7 +392,7 @@ class Iec60870LinkEditor : public LinkEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(Iec60870LinkEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -439,7 +440,7 @@ class ModbusLinkEditor : public LinkEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
  private:
   cfg::ModbusEncoding mode_;
@@ -454,7 +455,7 @@ class Iec60870DeviceEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   void UpdateSync();
 
@@ -510,7 +511,7 @@ class SimulationItemEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
  private:
   scada::LocalizedText display_name_;
@@ -554,7 +555,7 @@ class ModbusDeviceEditor : public NamedRecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(ModbusDeviceEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -581,7 +582,7 @@ class HistoricalDBEditor : public NamedRecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(HistoricalDBEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -603,7 +604,7 @@ class Iec61850DeviceEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(Iec61850DeviceEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -632,7 +633,7 @@ class Iec61850RCBEditor : public RecordEditor {
   virtual void GetModifiedProperties(
       scada::NodeAttributes& attributes,
       scada::NodeProperties& properties,
-      scada::NodeReferences& references) override;
+      scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(Iec61850RCBEditor)
   MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)

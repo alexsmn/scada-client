@@ -41,7 +41,7 @@ BOOL RecordEditor::SaveData() {
 
     scada::NodeAttributes attributes;
     scada::NodeProperties properties;
-    scada::NodeReferences references;
+    scada::ReferenceDescriptions references;
     GetModifiedProperties(attributes, properties, references);
 
     if (!attributes.empty() || !properties.empty()) {
@@ -50,13 +50,19 @@ BOOL RecordEditor::SaveData() {
     }
 
     for (auto& ref : references) {
-      auto ref_id = node_.target(ref.first).node_id();
-      if (ref_id == ref.second)
+      auto ref_id = node_.target(ref.reference_type_id).node_id();
+      if (ref_id == ref.node_id)
         continue;
-      if (!ref_id.is_null())
-        task_manager_.PostDeleteReference(ref.first, node_.node_id(), ref_id);
-      if (!ref.second.is_null())
-        task_manager_.PostAddReference(ref.first, node_.node_id(), ref.second);
+
+      if (!ref_id.is_null()) {
+        task_manager_.PostDeleteReference(ref.reference_type_id,
+                                          node_.node_id(), ref_id);
+      }
+
+      if (!ref.node_id.is_null()) {
+        task_manager_.PostAddReference(ref.reference_type_id, node_.node_id(),
+                                       ref.node_id);
+      }
     }
   }
 
@@ -146,7 +152,7 @@ void NamedRecordEditor::ReadNodeToControls(const NodeRef& node) {
 void NamedRecordEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   attributes.set_display_name(display_name_);
 }
 
@@ -177,9 +183,10 @@ void GroupEditor::ReadNodeToControls(const NodeRef& node) {
       .SetCheck(simulated ? BST_CHECKED : BST_UNCHECKED);
 }
 
-void GroupEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
-                                        scada::NodeProperties& properties,
-                                        scada::NodeReferences& references) {
+void GroupEditor::GetModifiedProperties(
+    scada::NodeAttributes& attributes,
+    scada::NodeProperties& properties,
+    scada::ReferenceDescriptions& references) {
   attributes.set_display_name(display_name_);
 
   properties.emplace_back(id::DataGroupType_Simulated, simulate_);
@@ -368,9 +375,10 @@ void ItemEditor::ReadNodeToControls(const NodeRef& node) {
       simulation_signal_id);
 }
 
-void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
-                                       scada::NodeProperties& properties,
-                                       scada::NodeReferences& references) {
+void ItemEditor::GetModifiedProperties(
+    scada::NodeAttributes& attributes,
+    scada::NodeProperties& properties,
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   // name and alias - only for single item mode
@@ -380,7 +388,7 @@ void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
   }
 
   properties.emplace_back(id::DataItemType_Severity, sev);
-  references.emplace_back(id::HasHistoricalDatabase, historical_db_id_);
+  references.push_back({id::HasHistoricalDatabase, true, historical_db_id_});
 
   // channels
   properties.emplace_back(id::DataItemType_Input1, channels_[0]);
@@ -391,7 +399,7 @@ void ItemEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
 
   // Simulation.
   properties.emplace_back(id::DataItemType_Simulated, simulate);
-  references.emplace_back(id::HasSimulationSignal, simulation_signal_id_);
+  references.push_back({id::HasSimulationSignal, true, simulation_signal_id_});
 }
 
 LRESULT ItemEditor::OnStaleCheckClicked(WORD /*wNotifyCode*/,
@@ -460,11 +468,11 @@ void TsEditor::ReadNodeToControls(const NodeRef& node) {
 
 void TsEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
                                      scada::NodeProperties& properties,
-                                     scada::NodeReferences& references) {
+                                     scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::DiscreteItemType_Inversion, inversion);
-  references.emplace_back(id::HasTsFormat, format_id_);
+  references.push_back({id::HasTsFormat, true, format_id_});
 }
 
 LRESULT TsEditor::OnInitDialog(UINT uMsg,
@@ -538,9 +546,10 @@ void TitEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_units.SetWindowText(base::SysNativeMBToWide(units).c_str());
 }
 
-void TitEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
-                                      scada::NodeProperties& properties,
-                                      scada::NodeReferences& references) {
+void TitEditor::GetModifiedProperties(
+    scada::NodeAttributes& attributes,
+    scada::NodeProperties& properties,
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::AnalogItemType_EuLo, eu_lo);
@@ -620,9 +629,10 @@ void TsFormatEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_clr_close.SetCurSel(node[id::TsFormatType_CloseColor].value().get_or(0));
 }
 
-void TsFormatEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
-                                           scada::NodeProperties& properties,
-                                           scada::NodeReferences& references) {
+void TsFormatEditor::GetModifiedProperties(
+    scada::NodeAttributes& attributes,
+    scada::NodeProperties& properties,
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   attributes.set_display_name(display_name_);
@@ -720,9 +730,10 @@ void LinkEditor::ReadNodeToControls(const NodeRef& node) {
   UpdateTransportString();
 }
 
-void LinkEditor::GetModifiedProperties(scada::NodeAttributes& attributes,
-                                       scada::NodeProperties& properties,
-                                       scada::NodeReferences& references) {
+void LinkEditor::GetModifiedProperties(
+    scada::NodeAttributes& attributes,
+    scada::NodeProperties& properties,
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::DeviceType_Disabled, disabled_);
@@ -835,7 +846,7 @@ void Iec60870LinkEditor::ReadNodeToControls(const NodeRef& node) {
 void Iec60870LinkEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   auto mode = transport_string().IsActive() ? cfg::Iec60870Mode::MASTER
@@ -982,7 +993,7 @@ void Iec60870DeviceEditor::ReadNodeToControls(const NodeRef& node) {
 void Iec60870DeviceEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   attributes.set_display_name(display_name_);
@@ -1080,7 +1091,7 @@ void ModbusLinkEditor::ReadNodeToControls(const NodeRef& node) {
 void ModbusLinkEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::ModbusLinkType_Protocol, static_cast<int>(mode_));
@@ -1156,7 +1167,7 @@ void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
 void SimulationItemEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   attributes.set_display_name(display_name_);
 
   properties.emplace_back(id::SimulationSignalType_Type,
@@ -1221,7 +1232,7 @@ void ModbusDeviceEditor::ReadNodeToControls(const NodeRef& node) {
 void ModbusDeviceEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::ModbusDeviceType_Address, address_);
@@ -1260,7 +1271,7 @@ void HistoricalDBEditor::ReadNodeToControls(const NodeRef& node) {
 void HistoricalDBEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   properties.emplace_back(id::HistoricalDatabaseType_Depth, depth_);
@@ -1298,7 +1309,7 @@ void Iec61850DeviceEditor::ReadNodeToControls(const NodeRef& node) {
 void Iec61850DeviceEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   attributes.set_display_name(display_name_);
@@ -1347,7 +1358,7 @@ void Iec61850RCBEditor::ReadNodeToControls(const NodeRef& node) {
 void Iec61850RCBEditor::GetModifiedProperties(
     scada::NodeAttributes& attributes,
     scada::NodeProperties& properties,
-    scada::NodeReferences& references) {
+    scada::ReferenceDescriptions& references) {
   __super::GetModifiedProperties(attributes, properties, references);
 
   attributes.set_display_name(display_name_);
