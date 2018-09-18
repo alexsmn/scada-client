@@ -168,6 +168,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::Iec60870DeviceType_InterrogationPeriodGroup16, &kIntPropDef},
     // Modbus Link
     {id::ModbusLinkType_Protocol, &kIntPropDef},  // TODO: Enum
+    {id::ModbusLinkType_RequestDelay, &kIntPropDef},
     // Modbus Dev
     {id::ModbusDeviceType_Address, &kIntPropDef},
     {id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
