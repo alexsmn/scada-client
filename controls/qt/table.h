@@ -18,6 +18,10 @@ class Table : public QTableView {
     setSelectionBehavior(SelectRows);
   }
 
+  const std::vector<ui::TableColumn>& columns() const {
+    return model_adapter_.columns();
+  }
+
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 
   void SetContextMenuHandler(ContextMenuHandler handler) {

@@ -11,6 +11,7 @@
 #include "contents_observer.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "print_util.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
@@ -385,6 +386,10 @@ void TableView::DeleteSelection() {
        ++i)
     model_->DeleteRows(*i, 1);
 #endif
+}
+
+void TableView::Print(PrintService& print_service) {
+  PrintTable(PrintTableContext{print_service, *model_, view_->columns()});
 }
 
 #if defined(UI_VIEWS)

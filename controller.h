@@ -28,6 +28,7 @@ class LocalEvents;
 class NodeService;
 class PortfolioManager;
 class Profile;
+class PrintService;
 class TaskManager;
 class TimedDataService;
 class TimeModel;
@@ -80,6 +81,8 @@ class Controller : protected ControllerContext, public CommandHandler {
 
   // View root node for creation.
   virtual NodeRef GetRootNode() const { return nullptr; }
+
+  virtual void Print(PrintService& print_service) {}
 
  private:
   SelectionModel selection_;

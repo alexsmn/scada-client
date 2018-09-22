@@ -20,6 +20,7 @@ class Controller;
 class DialogService;
 class MainWindow;
 class WindowDefinition;
+class PrintService;
 struct WindowInfo;
 
 namespace ui {
@@ -59,7 +60,7 @@ class OpenedView : private OpenedViewContext,
   const gfx::Image& image() const { return image_; }
 #endif
 
-  void Print();
+  void Print(PrintService& print_service);
 
   void Activate();
   void SetSelection(const scada::NodeId& item_id);

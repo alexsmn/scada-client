@@ -17,6 +17,8 @@ class TableModelAdapter : public QAbstractTableModel,
                     std::vector<ui::TableColumn> columns);
   virtual ~TableModelAdapter();
 
+  const std::vector<ui::TableColumn>& columns() const { return columns_; }
+
   // QAbstractTableModel
   virtual int rowCount(
       const QModelIndex& parent = QModelIndex()) const override;

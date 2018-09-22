@@ -27,6 +27,7 @@ class WatchView : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command) const override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual void Print(PrintService& print_service) override;
 
  private:
   base::string16 MakeTitle() const;

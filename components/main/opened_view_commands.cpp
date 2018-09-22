@@ -12,12 +12,14 @@
 #include "components/main/opened_view.h"
 #include "components/main/selection_commands.h"
 #include "components/multi_create/multi_create_dialog.h"
+#include "components/print_preview/print_preview.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller.h"
 #include "controller_factory.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
 #include "net/transport_string.h"
+#include "services/print_service.h"
 #include "services/task_manager.h"
 #include "time_model.h"
 
@@ -118,8 +120,13 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
     case ID_VIEW_CLOSE:
       opened_view_->Close();
       return;
-    case ID_PRINT:
-      opened_view_->Print();
+    case ID_PRINT: {
+      PrintService print_service;
+      ShowPrintPreviewDialog(*dialog_service_, print_service,
+                             [opened_view = opened_view_, &print_service] {
+                               opened_view->Print(print_service);
+                             });
+    }
       return;
     case ID_NEW_IEC60870_LINK101:
       CreateRecord(id::Iec60870LinkType, 0);

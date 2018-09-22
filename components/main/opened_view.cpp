@@ -138,3 +138,7 @@ void OpenedView::AddContentsObserver(ContentsObserver& observer) {
 void OpenedView::RemoveContentsObserver(ContentsObserver& observer) {
   main_window_->RemoveContentsObserver(observer);
 }
+
+void OpenedView::Print(PrintService& print_service) {
+  controller_->Print(print_service);
+}

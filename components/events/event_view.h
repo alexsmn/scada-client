@@ -47,6 +47,7 @@ class EventView : public Controller,
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
+  virtual void Print(PrintService& print_service) override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,

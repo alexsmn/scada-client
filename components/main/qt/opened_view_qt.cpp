@@ -54,8 +54,6 @@ void BuildMenuModel(CMenuHandle menu_handle,
 
 }  // namespace
 
-void OpenedView::Print() {}
-
 void OpenedView::ShowPopupMenu(unsigned resource_id,
                                const UiPoint& point,
                                bool right_click) {

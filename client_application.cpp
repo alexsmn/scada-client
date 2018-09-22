@@ -290,7 +290,7 @@ ClientApplication::CreateAddressSpaceNodeService() {
   class ClientAddressSpace : public AddressSpaceImpl2 {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl2{logger}, node_factory{logger, *this} {}
+        : AddressSpaceImpl2{logger}, node_factory{*this} {}
 
     GenericNodeFactory node_factory;
   };

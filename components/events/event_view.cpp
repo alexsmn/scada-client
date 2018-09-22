@@ -12,6 +12,7 @@
 #include "contents_observer.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "print_util.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 
@@ -425,4 +426,8 @@ NodeIdSet EventView::GetSelectedNodeIds() const {
 
 TimeModel* EventView::GetTimeModel() {
   return model_->current_events() ? nullptr : this;
+}
+
+void EventView::Print(PrintService& print_service) {
+  PrintTable({print_service, *model_, table_->columns()});
 }

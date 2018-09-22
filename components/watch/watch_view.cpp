@@ -7,6 +7,7 @@
 #include "components/watch/watch_model.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "print_util.h"
 #include "remote/session_proxy.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
@@ -146,4 +147,8 @@ void WatchView::OnItemsAdded(int first, int count) {
 
   auto last_row = first + count - 1;
   table_->SelectRow(last_row);
+}
+
+void WatchView::Print(PrintService& print_service) {
+  PrintTable({print_service, *model_, table_->columns()});
 }

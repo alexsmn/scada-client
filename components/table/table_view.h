@@ -37,6 +37,7 @@ class TableView : public Controller,
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
+  virtual void Print(PrintService& print_service) override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,

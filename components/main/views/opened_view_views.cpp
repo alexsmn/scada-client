@@ -92,31 +92,3 @@ int OpenedView::OnPerformDrop(const ui::DropTargetEvent& event) {
 
   return ui::DragDropTypes::DRAG_NONE;
 }
-
-void OpenedView::Print() {
-  /*assert(active_view());
-
-  CPrinter printer;
-  printer.OpenDefaultPrinter();
-  CDC printer_dc = printer.CreatePrinterDC();
-  if (!printer_dc)
-    return;	// TODO: message
-
-  int iWidth = printer_dc.GetDeviceCaps(PHYSICALWIDTH);
-  int iHeight = printer_dc.GetDeviceCaps(PHYSICALHEIGHT);
-  int nLogx = printer_dc.GetDeviceCaps(LOGPIXELSX);
-  int nLogy = printer_dc.GetDeviceCaps(LOGPIXELSY);
-
-  RECT rcMM = { 0, 0, ::MulDiv(iWidth, 2540, nLogx), ::MulDiv(iHeight, 2540,
-  nLogy) };
-
-  CEnhMetaFileDC meta_dc(printer_dc, &rcMM);
-  if (!active_view()->Print((HDC)meta_dc))
-    return;
-
-  WindowDefinition def(GetWindowInfo(ID_PRINT_PREVIEW));
-  PrintPreviewView& view = static_cast<PrintPreviewView&>(OpenView(def));
-  view.m_sizeCurPhysOffset.cx = printer_dc.GetDeviceCaps(PHYSICALOFFSETX);
-  view.m_sizeCurPhysOffset.cy = printer_dc.GetDeviceCaps(PHYSICALOFFSETY);
-  view.SetEnhMetaFile(meta_dc.Close()); */
-}

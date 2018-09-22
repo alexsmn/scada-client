@@ -20,7 +20,7 @@ target_compile_definitions(client_qt PUBLIC
   "-DUI_QT"
 )
 
-find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt PUBLIC
   address_space_common
   base_i18n
@@ -28,6 +28,7 @@ target_link_libraries(client_qt PUBLIC
   graph_qt
   modus
   Qt5::Widgets
+  Qt5::PrintSupport
   scada_core_remote
   scada_core_vidicon
   ui_base
@@ -36,7 +37,7 @@ target_link_libraries(client_qt PUBLIC
 if(WIN32)
   find_package(Qt5 COMPONENTS AxContainer WinExtras REQUIRED)
   target_link_libraries(client_qt PUBLIC
-	Qt5::AxContainer
+    Qt5::AxContainer
     Qt5::WinExtras
     Qt5::WinMain
   )

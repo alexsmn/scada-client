@@ -8,9 +8,7 @@
 class Table;
 class TimedDataModel;
 
-class TimedDataView : public Controller,
-                      public ContentsModel
-{
+class TimedDataView : public Controller, public ContentsModel {
  public:
   explicit TimedDataView(const ControllerContext& context);
 
@@ -22,6 +20,7 @@ class TimedDataView : public Controller,
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
+  virtual void Print(PrintService& print_service) override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,

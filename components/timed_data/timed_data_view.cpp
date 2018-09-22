@@ -8,6 +8,7 @@
 #include "components/timed_data/timed_data_model.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "print_util.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
@@ -149,4 +150,8 @@ bool TimedDataView::IsWorking() const {
 
 TimeModel* TimedDataView::GetTimeModel() {
   return model_.get();
+}
+
+void TimedDataView::Print(PrintService& print_service) {
+  PrintTable({print_service, *model_, view_->columns()});
 }
