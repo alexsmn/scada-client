@@ -89,9 +89,8 @@ bool ParseTime(const char* str, base::Time& time) {
 
 // GraphView
 
-const WindowInfo kWindowInfo = {ID_GRAPH_VIEW,           "Graph", L"График",
-                                WIN_INS | WIN_CAN_PRINT, 0,       0,
-                                IDR_GRAPH_POPUP};
+const WindowInfo kWindowInfo = {
+    ID_GRAPH_VIEW, "Graph", L"График", WIN_INS, 0, 0, IDR_GRAPH_POPUP};
 
 REGISTER_CONTROLLER(GraphView, kWindowInfo);
 

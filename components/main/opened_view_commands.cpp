@@ -85,8 +85,13 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
                  ? this
                  : nullptr;
     case ID_VIEW_CLOSE:
-    case ID_PRINT:
       return this;
+
+#if defined(UI_QT)
+    case ID_PRINT:
+      return (opened_view_->window_info().flags & WIN_CAN_PRINT) ? this
+                                                                 : nullptr;
+#endif
 
     case ID_NEW_SERVICE_ITEMS:
     case ID_ADD_MULTIPLE_ITEMS:

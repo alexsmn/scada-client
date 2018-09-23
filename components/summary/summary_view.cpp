@@ -10,8 +10,7 @@
 #include "time_range.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {ID_SUMMARY_VIEW, "Summ", L"Сводка",
-                                WIN_INS | WIN_CAN_PRINT};
+const WindowInfo kWindowInfo = {ID_SUMMARY_VIEW, "Summ", L"Сводка", WIN_INS};
 
 REGISTER_CONTROLLER(SummaryView, kWindowInfo);
 

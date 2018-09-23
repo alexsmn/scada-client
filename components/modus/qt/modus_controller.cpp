@@ -17,8 +17,8 @@
 
 #include <qscrollarea.h>
 
-const WindowInfo kWindowInfo = {
-    ID_MODUS_VIEW, "Modus", L"Схема", WIN_CAN_PRINT, 0, 0, IDR_MODUS_POPUP};
+const WindowInfo kWindowInfo = {ID_MODUS_VIEW,  "Modus", L"Схема", 0, 0, 0,
+                                IDR_MODUS_POPUP};
 
 REGISTER_CONTROLLER(ModusController, kWindowInfo);
 

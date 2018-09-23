@@ -9,9 +9,9 @@
 #include "views/ambient_props.h"
 #include "window_definition.h"
 
+#include <wrl/client.h>
 #include <QAxWidget>
 #include <QUuid>
-#include <wrl/client.h>
 
 //#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"
 // raw_interfaces_only #import "c:\Program
@@ -41,20 +41,13 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-const WindowInfo kWindowInfo = {ID_VIDICON_DISPLAY_VIEW,
-                                "VidiconDisplay",
-                                L"Схема",
-                                WIN_CAN_PRINT,
-                                0,
-                                0,
-                                0};
+const WindowInfo kWindowInfo = {
+    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
 
 REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);
 
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
-    : ::Controller{context},
-      synchronize_timer_(false, true) {
-}
+    : ::Controller{context}, synchronize_timer_(false, true) {}
 
 VidiconDisplayView::~VidiconDisplayView() {}
 

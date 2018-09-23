@@ -40,13 +40,8 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-const WindowInfo kWindowInfo = {ID_VIDICON_DISPLAY_VIEW,
-                                "VidiconDisplay",
-                                L"Схема",
-                                WIN_CAN_PRINT,
-                                0,
-                                0,
-                                0};
+const WindowInfo kWindowInfo = {
+    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
 
 REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);
 

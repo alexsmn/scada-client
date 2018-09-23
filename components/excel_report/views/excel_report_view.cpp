@@ -24,7 +24,7 @@ void ExcelView::NativeControlCreated(HWND window_handle) {
 // ExcelReportView
 
 const WindowInfo kWindowInfo = {
-    ID_EXCEL_REPORT_VIEW, "ExcelReport", L"Отчет", WIN_CAN_PRINT, 0, 0, 0};
+    ID_EXCEL_REPORT_VIEW, "ExcelReport", L"Отчет", 0, 0, 0, 0};
 
 REGISTER_CONTROLLER(ExcelReportView, kWindowInfo);
 

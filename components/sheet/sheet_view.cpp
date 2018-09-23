@@ -29,8 +29,7 @@
 const int kFormulaRowHeight = 20;
 
 const WindowInfo kWindowInfo = {
-    ID_SHEET_VIEW,           "CusTable", L"Пользовательская таблица",
-    WIN_INS | WIN_CAN_PRINT, 0,          0,
+    ID_SHEET_VIEW,  "CusTable", L"Пользовательская таблица", WIN_INS, 0, 0,
     IDR_SHEET_POPUP};
 
 REGISTER_CONTROLLER(SheetView, kWindowInfo);
