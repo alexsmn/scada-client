@@ -30,6 +30,7 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
       UpdateDeviceState();
     };
 
+    assert(!component.node_id().is_null());
     spec.Connect(timed_data_service, component);
   }
 

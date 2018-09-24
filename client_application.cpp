@@ -56,8 +56,8 @@ extern bool CreateOpcUaServices(const DataServicesContext& context,
 REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
 #ifndef NDEBUG
 REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
+REGISTER_DATA_SERVICES("OpcUa", L"OPC-UA", CreateOpcUaServices);
 #endif
-// REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
 
 namespace {
 
