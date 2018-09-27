@@ -112,7 +112,6 @@ scada::NodeState FromProto(const protocol::Node& source) {
                               : scada::NodeAttributes{},
       VectorFromProto<scada::NodeProperty>(source.property()),
       VectorFromProto<scada::ReferenceDescription>(source.reference()),
-      {},
       VectorFromProto<scada::NodeState>(source.children()),
   };
 }
