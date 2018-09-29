@@ -287,10 +287,10 @@ std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
 
 std::shared_ptr<NodeService>
 ClientApplication::CreateAddressSpaceNodeService() {
-  class ClientAddressSpace : public AddressSpaceImpl2 {
+  class ClientAddressSpace : public AddressSpaceImpl {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl2{logger}, node_factory{*this} {}
+        : AddressSpaceImpl{logger}, node_factory{*this} {}
 
     GenericNodeFactory node_factory;
   };
