@@ -47,11 +47,9 @@ class Table : public QTableView {
 
   void SelectRow(int row, bool make_visible = true) { selectRow(row); }
 
-  void OpenEditor(int row) {
-    openPersistentEditor(model()->index(row, 0, rootIndex()));
-  }
+  void OpenEditor(int row) { edit(model()->index(row, 0, rootIndex())); }
 
-  void CloseEditor() { closePersistentEditor(currentIndex()); }
+  void CloseEditor() {}
 
   QWidget* CreateParentIfNecessary() { return this; }
 

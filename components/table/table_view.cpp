@@ -379,13 +379,8 @@ void TableView::OnGetAutocompleteList(views::TableView& sender,
 #endif
 
 void TableView::DeleteSelection() {
-#if defined(UI_VIEWS)
-  typedef ui::ListSelectionModel::SelectedIndices Indices;
-  Indices selection = view_->selection_model().selected_indices();
-  for (Indices::reverse_iterator i = selection.rbegin(); i != selection.rend();
-       ++i)
-    model_->DeleteRows(*i, 1);
-#endif
+  for (int row : view_->GetSelectedRows())
+    model_->DeleteRows(row, 1);
 }
 
 void TableView::Print(PrintService& print_service) {

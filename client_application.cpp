@@ -33,7 +33,7 @@
 #include "net/transport_factory_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
-#include "services/alias_service.h"
+#include "services/alias_service2.h"
 #include "services/connection_state_reporter.h"
 #include "services/event_notifier.h"
 #include "services/favourites.h"
@@ -200,7 +200,7 @@ void ClientApplication::Start() {
                 std::make_shared<NestedLogger>(logger_, "AliasService"))
           : static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NullLogger>());
-  auto alias_service = std::make_shared<AliasService>(AliasServiceContext{
+  auto alias_service = std::make_shared<AliasService2>(AliasService2Context{
       alias_logger,
       *node_service_,
   });

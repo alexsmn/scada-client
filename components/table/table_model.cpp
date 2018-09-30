@@ -73,8 +73,13 @@ void TableModel::GetCellEx(CellEx& cell) {
   if (cell.column_id == COLUMN_TITLE)
     cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
 
-  if (cell.row == rows_.size())
+  if (cell.row == rows_.size()) {
+    if (cell.column_id == 0) {
+      cell.text = L"Введите выражение";
+      cell.text_color = SkColorSetRGB(192, 192, 192);
+    }
     return;
+  }
 
   const TableRow* trow = rows_[cell.row];
   if (!trow) {

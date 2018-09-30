@@ -55,6 +55,7 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
 
   switch (role) {
     case Qt::DisplayRole:
+    case Qt::EditRole:
       return QString::fromStdWString(cell.text);
     case Qt::TextColorRole:
       return ColorToQt(cell.text_color);
@@ -62,6 +63,19 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
       return ColorToQt(cell.cell_color);
     default:
       return QVariant();
+  }
+}
+
+bool TableModelAdapter::setData(const QModelIndex& index,
+                                const QVariant& value,
+                                int role) {
+  switch (role) {
+    case Qt::EditRole:
+      return model_.SetCellText(index.row(), columns_[index.column()].id,
+                                value.toString().toStdWString());
+
+    default:
+      return false;
   }
 }
 
@@ -81,6 +95,13 @@ QVariant TableModelAdapter::headerData(int section,
     default:
       return QVariant();
   }
+}
+
+Qt::ItemFlags TableModelAdapter::flags(const QModelIndex& index) const {
+  auto flags = QAbstractItemModel::flags(index);
+  if (model_.IsEditable(index.row(), columns_[index.column()].id))
+    flags |= Qt::ItemIsEditable;
+  return flags;
 }
 
 void TableModelAdapter::OnModelChanged() {
