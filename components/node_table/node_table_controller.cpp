@@ -188,10 +188,8 @@ bool NodeTableController::IsCommandChecked(unsigned command_id) const {
 void NodeTableController::ExecuteCommand(unsigned command) {
   switch (command) {
     case ID_RENAME:
-#if defined(UI_VIEWS)
-      if (auto selection = grid_->GetSelectionRange(); !selection.empty())
-        grid_->OpenEditor(selection.row(), selection.column());
-#endif
+      if (auto index = grid_->GetCurrentIndex(); index.is_valid())
+        grid_->OpenEditor(index);
       break;
     case ID_SORT_NONE:
     case ID_SORT_ALIAS:

@@ -21,6 +21,10 @@ class Grid : public QTableView {
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 
+  ui::GridModelIndex GetCurrentIndex() const;
+
+  void OpenEditor(const ui::GridModelIndex& index);
+
  protected:
   // QTableView
   virtual void mousePressEvent(QMouseEvent* event) override;

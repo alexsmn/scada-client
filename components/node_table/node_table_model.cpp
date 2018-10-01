@@ -13,9 +13,11 @@
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
+#include "string_const.h"
 
 namespace {
 
+const auto kParentReferenceTypeId = scada::id::Organizes;
 const auto kSortDelay = base::TimeDelta::FromMilliseconds(300);
 
 void GetTypeProperties(const NodeRef& type_definition,
@@ -121,7 +123,10 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
   const auto& node = nodes_[cell.row];
   auto& column = columns_[cell.column];
 
-  if (column.attr_id == scada::AttributeId::BrowseName)
+  if (column.attr_id == scada::AttributeId::NodeId) {
+    cell.text = base::SysNativeMBToWide(NodeIdToScadaString(node.node_id()));
+    cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
+  } else if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::SysNativeMBToWide(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
@@ -163,6 +168,9 @@ ui::EditData NodeTableModel::GetEditData(int row, int column) {
   assert(node);
 
   auto& c = columns_[column];
+  if (c.attr_id == scada::AttributeId::NodeId)
+    return {ui::EditData::EditorType::NONE};
+
   if (c.attr_id == scada::AttributeId::BrowseName ||
       c.attr_id == scada::AttributeId::DisplayName)
     return {ui::EditData::EditorType::TEXT};
@@ -180,7 +188,7 @@ void NodeTableModel::Update() {
   nodes_.clear();
 
   if (parent_node_) {
-    for (const auto& node : parent_node_.targets(scada::id::Organizes))
+    for (const auto& node : parent_node_.targets(kParentReferenceTypeId))
       nodes_.push_back(node);
 
     InitColumns();
@@ -218,12 +226,18 @@ void NodeTableModel::Delete(const scada::NodeId& node_id) {
   }
 }
 
+bool NodeTableModel::IsMatchingNode(const NodeRef& node) const {
+  auto parent_ref = node.inverse_reference(scada::id::HierarchicalReferences);
+  return parent_ref.target == parent_node_ &&
+         IsSubtypeOf(parent_ref.reference_type, kParentReferenceTypeId);
+}
+
 void NodeTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     Delete(event.node_id);
   } else {
     auto node = node_service_.GetNode(event.node_id);
-    if (node.parent() == parent_node_)
+    if (IsMatchingNode(node))
       Update(node);
     else
       Delete(event.node_id);
@@ -232,7 +246,7 @@ void NodeTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 
 void NodeTableModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   auto node = node_service_.GetNode(node_id);
-  if (node.parent() == parent_node_)
+  if (IsMatchingNode(node))
     Update(node);
 }
 
@@ -291,8 +305,14 @@ void NodeTableModel::InitColumns() {
 
   // Display name
   {
+    columns_.push_back({scada::AttributeId::NodeId});
+    columns.emplace_back(columns.size(), kNodeIdAttributeString.as_string(), 50,
+                         ui::TableColumn::LEFT);
+
     columns_.push_back({scada::AttributeId::DisplayName});
-    columns.emplace_back(columns.size(), L"Имя", 75, ui::TableColumn::LEFT);
+    columns.emplace_back(columns.size(),
+                         kDisplayNameAttributeString.as_string(), 75,
+                         ui::TableColumn::LEFT);
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,

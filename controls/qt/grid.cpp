@@ -273,3 +273,14 @@ void Grid::Expand(const QItemSelectionRange& range,
   for (const auto& index : fill_range.indexes())
     model()->setData(index, text, Qt::EditRole);
 }
+
+ui::GridModelIndex Grid::GetCurrentIndex() const {
+  auto index = currentIndex();
+  return index.isValid() ? ui::GridModelIndex{index.row(), index.column()}
+                         : ui::GridModelIndex{};
+}
+
+void Grid::OpenEditor(const ui::GridModelIndex& index) {
+  assert(index.is_valid());
+  edit(model()->index(index.row, index.column));
+}

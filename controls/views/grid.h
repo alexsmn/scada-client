@@ -21,6 +21,14 @@ class Grid : private views::ContextMenuController,
     set_context_menu_controller(this);
   }
 
+  ui::GridModelIndex GetCurrentIndex() const {
+    return {selection().row(), selection().column()};
+  }
+
+  void OpenEditor(const ui::GridModelIndex& index) {
+    views::GridView::OpenEditor(index.row, index.column);
+  }
+
  private:
   // views::ContextMenuController
   virtual void ShowContextMenuForView(views::View* source,

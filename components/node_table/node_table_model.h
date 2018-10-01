@@ -44,6 +44,7 @@ class NodeTableModel : private PropertyContext,
 
   void InitColumns();
 
+  bool IsMatchingNode(const NodeRef& node) const;
   void Update(const NodeRef& node);
   void Delete(const scada::NodeId& node_id);
   int FindRecord(const scada::NodeId& node_id) const;

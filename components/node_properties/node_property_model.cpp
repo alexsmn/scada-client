@@ -4,6 +4,7 @@
 #include "common/node_service.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
+#include "string_const.h"
 
 #include <algorithm>
 
@@ -59,6 +60,9 @@ void NodeGroupModel::SetValue(int index, const base::string16& value) {
     scada::NodeAttributes attributes;
     // TODO: Other attributes.
     switch (prop.attribute_id) {
+      case scada::AttributeId::BrowseName:
+        attributes.set_browse_name(ToString(value));
+        break;
       case scada::AttributeId::DisplayName:
         attributes.set_display_name(scada::ToLocalizedText(value));
         break;
@@ -105,15 +109,15 @@ void NodePropertyModel::Update() {
   {
     auto group = std::make_unique<NodeGroupModel>(*this);
     group->properties.push_back({
-        L"Идентификатор",
+        kNodeIdAttributeString.as_string(),
         scada::AttributeId::NodeId,
     });
     group->properties.push_back({
-        L"Имя",
+        kBrowseNameAttributeString.as_string(),
         scada::AttributeId::BrowseName,
     });
     group->properties.push_back({
-        L"Описание",
+        kDisplayNameAttributeString.as_string(),
         scada::AttributeId::DisplayName,
     });
     root_.properties.push_back({L"Атрибуты", scada::AttributeId::NodeId,
