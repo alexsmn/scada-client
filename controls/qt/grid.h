@@ -8,7 +8,7 @@
 #include <QPen>
 #include <QTableView>
 
-class Grid : public QTableView {
+class Grid final : public QTableView {
  public:
   Grid(ui::GridModel& model,
        ui::HeaderModel& row_model,
@@ -22,6 +22,20 @@ class Grid : public QTableView {
   void SetContextMenuHandler(ContextMenuHandler handler);
 
   ui::GridModelIndex GetCurrentIndex() const;
+
+  auto GetSelectedRows() const {
+    std::vector<int> rows;
+    if (selectionModel()) {
+      for (const QItemSelectionRange& range : selectionModel()->selection()) {
+        rows.reserve(rows.size() + range.height());
+        for (int row = range.top(); row <= range.bottom(); ++row)
+          rows.emplace_back(row);
+      }
+    }
+    return rows;
+  }
+
+  void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
   void OpenEditor(const ui::GridModelIndex& index);
 

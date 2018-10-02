@@ -280,6 +280,11 @@ ui::GridModelIndex Grid::GetCurrentIndex() const {
                          : ui::GridModelIndex{};
 }
 
+void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
+  connect(QTableView::selectionModel(), &QItemSelectionModel::selectionChanged,
+          handler);
+}
+
 void Grid::OpenEditor(const ui::GridModelIndex& index) {
   assert(index.is_valid());
   edit(model()->index(index.row, index.column));

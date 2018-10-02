@@ -1,12 +1,14 @@
 #pragma once
 
+#include <boost/range/irange.hpp>
+
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
 #include "ui/views/controls/grid/grid_view.h"
 
-class Grid : private views::ContextMenuController,
-             private views::GridController,
-             public views::GridView {
+class Grid final : private views::ContextMenuController,
+                   private views::GridController,
+                   public views::GridView {
  public:
   Grid(ui::GridModel& model,
        ui::HeaderModel& row_model,
@@ -14,6 +16,7 @@ class Grid : private views::ContextMenuController,
     SetModel(&model);
     SetRowModel(&row_model);
     SetColumnModel(&column_model);
+    set_controller(this);
   }
 
   void SetContextMenuHandler(ContextMenuHandler handler) {
@@ -25,11 +28,26 @@ class Grid : private views::ContextMenuController,
     return {selection().row(), selection().column()};
   }
 
+  auto GetSelectedRows() const {
+    return boost::irange(selection().row(),
+                         selection().row() + selection().row_count());
+  }
+
+  void SetSelectionChangeHandler(SelectionChangeHandler handler) {
+    selection_changed_handler_ = std::move(handler);
+  }
+
   void OpenEditor(const ui::GridModelIndex& index) {
     views::GridView::OpenEditor(index.row, index.column);
   }
 
  private:
+  // views::GridController
+  virtual void OnGridSelectionChanged(GridView& sender) override {
+    if (selection_changed_handler_)
+      selection_changed_handler_();
+  }
+
   // views::ContextMenuController
   virtual void ShowContextMenuForView(views::View* source,
                                       const gfx::Point& point) override {
@@ -37,5 +55,6 @@ class Grid : private views::ContextMenuController,
       context_menu_handler_(point);
   }
 
+  SelectionChangedHandler selection_changed_handler_;
   ContextMenuHandler context_menu_handler_;
 };

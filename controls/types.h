@@ -36,6 +36,7 @@ typedef std::function<void(void* node)> TreeDragHandler;
 typedef std::function<bool(void* node)> TreeEditHandler;
 typedef std::function<int(void* left, void* right)> TreeCompareHandler;
 typedef std::function<void(const UiPoint& point)> ContextMenuHandler;
+typedef std::function<void()> SelectionChangeHandler;
 
 #define UiColorRGB(r, g, b) SkColorSetRGB(r, g, b)
 

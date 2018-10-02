@@ -124,7 +124,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   grid_->SetExpandAllowed(true);
 
 #if defined(UI_VIEWS)
-  grid_->set_controller(this);
+  // grid_->set_controller(this);
   grid_->SetRowHeadersVisible(true);
   grid_->set_allow_column_select(true);
   grid_->SetTopHeaderHeight(19);
@@ -132,19 +132,32 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   grid_->SelectCell(0, 0, true);
 #endif
 
+  grid_->SetSelectionChangeHandler([this] {
+    auto rows = grid_->GetSelectedRows();
+    if (rows.empty()) {
+      selection().Clear();
+      return;
+    }
+
+    if (rows.size() >= 2) {
+      selection().SelectMultiple();
+      return;
+    }
+
+    auto node = model_->nodes()[rows.front()];
+    assert(node);
+
+    selection().SelectNode(node);
+  });
+
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
   selection().multiple_handler = [this] {
     NodeIdSet node_ids;
-#if defined(UI_VIEWS)
-    int first_row = grid_->selection().row();
-    for (int i = 0; i < grid_->selection().row_count(); ++i) {
-      int row = first_row + i;
+    for (auto row : grid_->GetSelectedRows())
       node_ids.emplace(model_->nodes()[row].node_id());
-    }
-#endif
     return node_ids;
   };
 
@@ -221,28 +234,6 @@ bool NodeTableController::OnKeyPressed(views::GridView& sender,
   }
 
   return false;
-}
-
-void NodeTableController::OnGridSelectionChanged(views::GridView& sender) {
-  __super::OnGridSelectionChanged(sender);
-
-  int row = grid_->selected_row();
-  // TODO: Investigate why |row == 0| on empty table.
-  // Left-click in table header to reproduce.
-  if (row == -1 || row >= model_->nodes().size()) {
-    selection().Clear();
-    return;
-  }
-
-  if (grid_->selection().row_count() >= 2) {
-    selection().SelectMultiple();
-    return;
-  }
-
-  auto node = model_->nodes()[row];
-  assert(node);
-
-  selection().SelectNode(node);
 }
 
 void NodeTableController::ShowHeaderContextMenu(gfx::Point point) {

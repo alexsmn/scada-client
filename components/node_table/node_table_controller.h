@@ -34,7 +34,6 @@ class NodeTableController : public Controller,
  protected:
 #if defined(UI_VIEWS)
   // GridController overrides
-  virtual void OnGridSelectionChanged(views::GridView& sender) override;
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
   virtual void ShowHeaderContextMenu(gfx::Point point) override;
