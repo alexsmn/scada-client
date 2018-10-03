@@ -121,7 +121,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::AnalogItemType_LimitHiHi, &kDoublePropDef},
     {id::DataItemType_StalePeriod, &kIntPropDef},
     {id::HasHistoricalDatabase, &kRefPropDef},
-    {id::AnalogItemType_Clamping, &kEnumPropDef},  // TODO: Enum
+    {id::AnalogItemType_Clamping, &kEnumPropDef},
     // Link
     {id::LinkType_Transport, &kLinkTransportPropDef},
     {id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
@@ -167,7 +167,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::Iec60870DeviceType_InterrogationPeriodGroup15, &kIntPropDef},
     {id::Iec60870DeviceType_InterrogationPeriodGroup16, &kIntPropDef},
     // Modbus Link
-    {id::ModbusLinkType_Protocol, &kIntPropDef},  // TODO: Enum
+    {id::ModbusLinkType_Protocol, &kEnumPropDef},
     {id::ModbusLinkType_RequestDelay, &kIntPropDef},
     // Modbus Dev
     {id::ModbusDeviceType_Address, &kIntPropDef},
@@ -373,8 +373,7 @@ base::string16 EnumPropertyDefinition::GetText(
   if (!property.value().get(int_value))
     return base::string16();
 
-  auto enum_strings_value =
-      property.data_type()[scada::id::EnumStrings].value();
+  auto enum_strings_value = property.data_type()["EnumStrings"].value();
   auto* enum_strings =
       enum_strings_value.get_if<std::vector<scada::LocalizedText>>();
   if (!enum_strings || int_value < 0 || int_value >= enum_strings->size())
@@ -391,8 +390,7 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
   if (!property)
     return;
 
-  auto enum_strings_value =
-      property.data_type()[scada::id::EnumStrings].value();
+  auto enum_strings_value = property.data_type()["EnumStrings"].value();
   auto* enum_strings =
       enum_strings_value.get_if<std::vector<scada::LocalizedText>>();
   if (!enum_strings)
@@ -418,7 +416,7 @@ ui::EditData EnumPropertyDefinition::GetPropertyEditor(
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
 
   auto enum_strings_value =
-      property_declaration.data_type()[scada::id::EnumStrings].value();
+      property_declaration.data_type()["EnumStrings"].value();
   if (auto* enum_strings =
           enum_strings_value.get_if<std::vector<scada::LocalizedText>>()) {
     result.choices = *enum_strings;
