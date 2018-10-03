@@ -36,7 +36,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
     : QDialog{parent}, TimeRangeContext{std::move(context)} {
   ui.setupUi(this);
 
-  ui.timeGroupBox->setChecked(time_range_.dates);
+  ui.timeGroupBox->setChecked(!time_range_.dates);
 
   auto bounds = GetTimeRangeBounds(time_range_);
   auto start = ToQDateTime(bounds.first);
@@ -50,7 +50,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 }
 
 void TimeRangeDialog::accept() {
-  bool dates = ui.timeGroupBox->isChecked();
+  bool dates = !ui.timeGroupBox->isChecked();
   QDateTime start{ui.startDateEdit->date(), ui.startTimeEdit->time()};
   QDateTime end{ui.endDateEdit->date(), ui.endTimeEdit->time()};
 
