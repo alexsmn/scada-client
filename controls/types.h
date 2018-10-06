@@ -1,6 +1,7 @@
 #pragma once
 
 // TODO: Move out.
+#include "base/values.h"
 #include "core/configuration_types.h"
 #include "gfx/point.h"
 

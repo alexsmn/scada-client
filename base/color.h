@@ -15,7 +15,7 @@ int FindColor(SkColor color);
 const base::char16* GetColorName(int index);
 int FindColorName(const base::char16* str);
 
-SkColor StringToColor(const std::string& str);
+SkColor StringToColor(base::StringPiece str);
 std::string ColorToString(SkColor color);
 
 }  // namespace palette

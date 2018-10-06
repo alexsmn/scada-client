@@ -72,10 +72,10 @@ int FindColorName(const base::char16* str) {
   return -1;
 }
 
-SkColor StringToColor(const std::string& str) {
+SkColor StringToColor(base::StringPiece str) {
   if (!str.empty() && str[0] == '#') {
     unsigned color = 0;
-    if (sscanf(str.c_str(), "#%08X", &color) != 1)
+    if (sscanf(str.as_string().c_str(), "#%08X", &color) != 1)
       return SK_ColorBLACK;
     return static_cast<SkColor>(color);
   }

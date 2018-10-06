@@ -90,8 +90,6 @@ QVariant TableModelAdapter::headerData(int section,
   switch (role) {
     case Qt::DisplayRole:
       return QString::fromStdWString(column.title);
-    case Qt::SizeHintRole:
-      return QSize(column.width, 19);
     default:
       return QVariant();
   }

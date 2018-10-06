@@ -54,7 +54,7 @@ class CellView : public Controller,
   }
 
   void SetSizes(int row_count, int column_count);
-  void SetCellFormula(int row, int column, const std::string& formula);
+  void SetCellFormula(int row, int column, base::StringPiece formula);
 
   bool FindEmptyCell(int& row, int& column);
 

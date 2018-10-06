@@ -4,10 +4,6 @@
 #include "services/page_layout.h"
 #include "window_definition.h"
 
-namespace xml {
-class Node;
-}
-
 class Page {
  public:
   Page() : id(0) {}
@@ -27,11 +23,8 @@ class Page {
   int GetWindowCount() const { return windows_.size(); }
   WindowDefinition& GetWindow(int index) const { return *windows_[index]; }
 
-  void Load(const xml::Node& node);
-  void Save(xml::Node& node, bool current) const;
-
-  base::DictionaryValue LoadJson();
-  void SaveJson(base::DictionaryValue& json) const;
+  void Load(const base::Value& value);
+  base::Value Save(bool current) const;
 
   int id;
   base::string16 title;

@@ -127,7 +127,7 @@ void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
 
   if (!layout.blob.empty()) {
     ScopedNames names{views_};
-    main_window_.restoreState(QByteArray::fromStdString(layout.blob));
+    main_window_.restoreState(QByteArray::fromRawData(layout.blob.data(), layout.blob.size()));
   }
 }
 
@@ -338,7 +338,8 @@ void ViewManagerQt::SaveLayout(PageLayout& layout) {
     SaveLayoutBlock(layout.main, *root_widget_);
 
   ScopedNames names{views_};
-  layout.blob = main_window_.saveState().toStdString();
+  auto blob = main_window_.saveState().toStdString();
+  layout.blob.assign(blob.begin(), blob.end());
 }
 
 void ViewManagerQt::SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget) {

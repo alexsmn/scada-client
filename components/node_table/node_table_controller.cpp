@@ -112,7 +112,7 @@ NodeTableController::~NodeTableController() {}
 
 UiView* NodeTableController::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
-    std::string path = item->GetString("path");
+    auto path = item->GetString("path");
     auto node_id = NodeIdFromScadaString(path);
     model_->SetParentNode(node_service_.GetNode(node_id));
   }

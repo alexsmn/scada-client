@@ -80,12 +80,12 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
 
       SheetCell& cell = model_->GetCell(row, col);
 
-      std::string formula = item.GetString("text");
-      cell.SetFormula(formula);
+      auto formula = item.GetString("text");
+      cell.SetFormula(formula.as_string());
 
       SheetFormatBase format;
 
-      std::string align = item.GetString("align", "left");
+      auto align = item.GetString("align", "left");
       if (align == "right")
         format.align = DT_RIGHT;
       else if (align == "center")
@@ -93,7 +93,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
       else
         format.align = DT_LEFT;
 
-      std::string color_string = item.GetString("color");
+      auto color_string = item.GetString("color");
       if (!color_string.empty()) {
         format.transparent = false;
         format.color = palette::StringToColor(color_string);

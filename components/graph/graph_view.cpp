@@ -1,6 +1,7 @@
 ﻿#include "components/graph/graph_view.h"
 
 #include "base/color.h"
+#include "base/strings/string_util.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "common/formula_util.h"
@@ -43,9 +44,9 @@ std::string FormatTimeDelta(base::TimeDelta delta) {
                             static_cast<int>(m), static_cast<int>(s));
 }
 
-bool ParseTimeDelta(const char* str, base::TimeDelta& delta) {
+bool ParseTimeDelta(base::StringPiece str, base::TimeDelta& delta) {
   int h, m, s;
-  if (sscanf(str, "%d:%d:%d", &h, &m, &s) != 3)
+  if (sscanf(str.as_string().c_str(), "%d:%d:%d", &h, &m, &s) != 3)
     return false;
 
   if (h < 0 || m < 0 || s < 0)
@@ -64,10 +65,10 @@ base::string16 FormatTime(base::Time time) {
                             e.second, e.millisecond);
 }
 
-bool ParseTime(const char* str, base::Time& time) {
+bool ParseTime(base::StringPiece str, base::Time& time) {
   int d, m, y, h, n, s, ms;
-  if (sscanf_s(str, "%02d-%02d-%04d %02d:%02d:%02d.%03d", &d, &m, &y, &h, &n,
-               &s, &ms) != 7)
+  if (sscanf_s(str.as_string().c_str(), "%02d-%02d-%04d %02d:%02d:%02d.%03d",
+               &d, &m, &y, &h, &n, &s, &ms) != 7)
     return false;
 
   base::Time::Exploded e = {0};
@@ -127,9 +128,9 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
     } else if (item.name_is("Item")) {
       if (graph_->panes().size() >= kMaxPanes)
         continue;
-      std::string path = item.GetString("path");
-      std::string stype = item.GetString("type", "GraphLine");
-      std::string color_string = item.GetString("clr");
+      auto path = item.GetString("path");
+      auto stype = item.GetString("type", "GraphLine");
+      auto color_string = item.GetString("clr");
       bool dots = item.GetInt("dots", 1) != 0;
       bool stepped = item.GetInt("stepped", 1) != 0;
       // pane
@@ -151,16 +152,16 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       line.set_stepped(stepped);
 
     } else if (item.name_is("TimeScale")) {
-      std::string srange = item.GetString("span");
-      std::string stime = item.GetString("time");
+      auto srange = item.GetString("span");
+      auto stime = item.GetString("time");
       base::Time from, to;
-      graph_->m_time_fit = _stricmp(stime.c_str(), "Now") == 0;
-      if (graph_->m_time_fit || !ParseTime(stime.c_str(), to)) {
+      graph_->m_time_fit = base::EqualsCaseInsensitiveASCII(stime, "Now");
+      if (graph_->m_time_fit || !ParseTime(stime, to)) {
         graph_->m_time_fit = true;
         to = base::Time::Now();
       }
       base::TimeDelta span = base::TimeDelta::FromHours(1);
-      ParseTimeDelta(srange.c_str(), span);
+      ParseTimeDelta(srange, span);
       from = to - span;
       graph_->horizontal_axis().SetRange(views::GraphRange(
           from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));

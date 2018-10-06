@@ -182,13 +182,10 @@ void MetrixDataSource::UpdateLimits() {
         views::kGraphUnknownValue);
     limit_hi_ = node[id::AnalogItemType_LimitHi].value().get_or(
         views::kGraphUnknownValue);
-    ;
     limit_lolo_ = node[id::AnalogItemType_LimitLoLo].value().get_or(
         views::kGraphUnknownValue);
-    ;
     limit_hihi_ = node[id::AnalogItemType_LimitHiHi].value().get_or(
         views::kGraphUnknownValue);
-    ;
   } else {
     limit_lo_ = views::kGraphUnknownValue;
     limit_hi_ = views::kGraphUnknownValue;

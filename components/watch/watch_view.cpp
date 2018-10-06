@@ -53,7 +53,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
       ui::TableColumn(2, L"Событие", 400, ui::TableColumn::LEFT)};
 
   if (const WindowItem* item = definition.FindItem("Item")) {
-    std::string path = item->GetString("path");
+    auto path = item->GetString("path");
     auto device_id = NodeIdFromScadaString(path);
     model_->SetDevice(node_service_.GetNode(device_id));
   }

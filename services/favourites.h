@@ -37,8 +37,8 @@ class Favourites {
     observers_.RemoveObserver(&observer);
   }
 
-  void Load(const xml::Node& root_node);
-  void Save(xml::Node& root_node) const;
+  void Load(const base::Value& value);
+  base::Value Save() const;
 
   // TODO: Move into private.
   void NotifyFolderAdded(const Page& folder) const;

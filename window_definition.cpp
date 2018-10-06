@@ -1,25 +1,55 @@
-#include "base/values.h"
-#include "window_info.h"
 #include "window_definition.h"
 
-WindowItem::WindowItem()
-    : attrs_(new base::DictionaryValue) {
-}
+#include "base/strings/string_util.h"
+#include "base/values.h"
+#include "value_util.h"
+#include "window_info.h"
 
 WindowItem::WindowItem(const WindowItem& source)
-    : name_(source.name_),
-      attrs_(source.attrs_->DeepCopy()) {
-}
+    : name{source.name}, attributes{source.attributes.Clone()} {}
 
 WindowItem& WindowItem::operator=(const WindowItem& source) {
-  name_ = source.name_;
-  attrs_.reset(source.attrs_->DeepCopy());
+  if (&source != this) {
+    name = source.name;
+    attributes = source.attributes.Clone();
+  }
   return *this;
 }
 
-WindowDefinition::WindowDefinition(const WindowInfo& window_info)
-    : window_info_(&window_info) {
+bool WindowItem::name_is(base::StringPiece n) const {
+  return base::EqualsCaseInsensitiveASCII(name, n);
 }
+
+int WindowItem::GetInt(base::StringPiece attr, int default) const {
+  return ::GetInt(attributes, attr, default);
+}
+
+base::StringPiece WindowItem::GetString(base::StringPiece attr,
+                                        base::StringPiece default) const {
+  return ::GetString(attributes, attr, default);
+}
+
+base::string16 WindowItem::GetString16(base::StringPiece attr,
+                                       base::StringPiece16 default) const {
+  return ::GetString16(attributes, attr, default);
+}
+
+void WindowItem::SetInt(base::StringPiece attr, int value) {
+  SetKey(attributes, attr, value);
+}
+
+void WindowItem::SetString(base::StringPiece attr, base::StringPiece value) {
+  SetKey(attributes, attr, value);
+}
+
+void WindowItem::SetString(base::StringPiece attr, base::StringPiece16 value) {
+  SetKey(attributes, attr, base::UTF16ToUTF8(value));
+}
+
+// WindowDefinition
+
+WindowDefinition::WindowDefinition(const WindowInfo& window_info)
+    : window_info_(&window_info) {}
 
 WindowDefinition::WindowDefinition(const WindowDefinition& other)
     : window_info_(other.window_info_),
@@ -30,11 +60,9 @@ WindowDefinition::WindowDefinition(const WindowDefinition& other)
       visible(other.visible),
       locked(other.locked),
       items(other.items),
-      storage_(other.storage_ ? other.storage_->DeepCopy() : NULL) {
-}
+      storage_(other.storage_ ? other.storage_->DeepCopy() : NULL) {}
 
-WindowDefinition::~WindowDefinition() {
-}
+WindowDefinition::~WindowDefinition() {}
 
 WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
   window_info_ = other.window_info_;
@@ -59,10 +87,9 @@ base::string16 WindowDefinition::GetTitle() const {
   return title;
 }
 
-WindowItem& WindowDefinition::AddItem(const char* name) {
-  items.push_back(WindowItem());
-  WindowItem& item = items.back();
-  item.set_name(name);
+WindowItem& WindowDefinition::AddItem(std::string name) {
+  WindowItem& item = items.emplace_back();
+  item.name = std::move(name);
   return item;
 }
 

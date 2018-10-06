@@ -18,6 +18,9 @@ class Table : public views::TableView, private views::ContextMenuController {
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 
+  base::Value SaveState() const;
+  void RestoreState(const base::Value& data);
+
  private:
   // views::ContextMenuController
   virtual void ShowContextMenuForView(views::View* source,

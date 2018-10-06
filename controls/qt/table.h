@@ -1,5 +1,6 @@
 #pragma once
 
+#include "controls/types.h"
 #include "qt/table_model_adapter.h"
 #include "ui/base/models/table_model.h"
 
@@ -8,15 +9,7 @@
 
 class Table : public QTableView {
  public:
-  Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
-      : model_adapter_(model, std::move(columns)) {
-    horizontalHeader()->setHighlightSections(false);
-    verticalHeader()->setDefaultSectionSize(19);
-    setModel(&model_adapter_);
-    resizeColumnsToContents();
-    setShowGrid(false);
-    setSelectionBehavior(SelectRows);
-  }
+  Table(ui::TableModel& model, std::vector<ui::TableColumn> columns);
 
   const std::vector<ui::TableColumn>& columns() const {
     return model_adapter_.columns();
@@ -24,26 +17,11 @@ class Table : public QTableView {
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 
-  void SetContextMenuHandler(ContextMenuHandler handler) {
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &QWidget::customContextMenuRequested,
-            [this, handler](const QPoint& pos) {
-              handler(viewport()->mapToGlobal(pos));
-            });
-  }
+  void SetContextMenuHandler(ContextMenuHandler handler);
 
   int GetCurrentRow() const { return currentIndex().row(); }
 
-  std::vector<int> GetSelectedRows() const {
-    std::vector<int> rows;
-    if (selectionModel()) {
-      auto indexes = selectionModel()->selectedRows();
-      rows.reserve(indexes.size());
-      for (const auto& index : indexes)
-        rows.emplace_back(index.row());
-    }
-    return rows;
-  }
+  std::vector<int> GetSelectedRows() const;
 
   void SelectRow(int row, bool make_visible = true) { selectRow(row); }
 
@@ -52,6 +30,9 @@ class Table : public QTableView {
   void CloseEditor() {}
 
   QWidget* CreateParentIfNecessary() { return this; }
+
+  base::Value SaveState() const;
+  void RestoreState(const base::Value& data);
 
  private:
   TableModelAdapter model_adapter_;

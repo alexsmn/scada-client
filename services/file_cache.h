@@ -16,7 +16,7 @@ class FileCache {
   FileCache();
   ~FileCache();
 
-  void RegisterType(int id, const base::string16& name, const base::string16& extensions);
+  void RegisterType(int id, std::string name, std::string extensions);
 
   void Init();
 
@@ -30,7 +30,8 @@ class FileCache {
    public:
     int Find(const base::FilePath& path) const;
 
-    std::vector<DisplayItem> GetFilesContainingItem(const scada::NodeId& item_id) const;
+    std::vector<DisplayItem> GetFilesContainingItem(
+        const scada::NodeId& item_id) const;
   };
 
   const FileList& GetList(int type_id) const;
@@ -39,21 +40,23 @@ class FileCache {
 
   void Refresh();
 
-  void Update(int type_id, const base::FilePath& path, const base::string16& title,
+  void Update(int type_id,
+              const base::FilePath& path,
+              const base::string16& title,
               ItemMap& items);
-  
+
  private:
   struct TypeEntry {
-    base::string16 name;
-    std::vector<base::string16> extensions;
+    std::string name;
+    std::vector<std::string> extensions;
     FileList list;
   };
 
   // Map of type id on TypeEntry.
   typedef std::map<int, TypeEntry> TypeMap;
 
-  TypeMap::iterator FindTypeByName(const base::string16& name);
-  TypeMap::iterator FindTypeByExtension(const base::string16& ext);
+  TypeEntry* FindTypeByName(base::StringPiece name);
+  TypeEntry* FindTypeByExtension(base::StringPiece ext);
 
   FileList& GetMutableList(int type_id);
 

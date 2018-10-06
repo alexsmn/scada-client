@@ -1,6 +1,7 @@
 ﻿#include "components/events/event_view.h"
 
 #include "base/excel.h"
+#include "base/strings/string_util.h"
 #include "client_utils.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
@@ -179,32 +180,25 @@ UiView* EventView::Init(const WindowDefinition& definition) {
 
   for (auto& window_item : definition.items) {
     if (window_item.name_is("Item")) {
-      std::string path = window_item.GetString("path");
+      auto path = window_item.GetString("path");
       auto item_id = NodeIdFromScadaString(path);
       if (!item_id.is_null())
         model_->AddFilteredItem(item_id);
 
-    } else if (window_item.name_is("Column")) {
-#if defined(UI_VIEWS)
-      int index = window_item.GetInt("index", -1);
-      int width = window_item.GetInt("width", 0);
-      if (index >= 0 &&
-          index < static_cast<int>(table_->visible_columns().size()) &&
-          width > 0)
-        table_->SetVisibleColumnWidth(index, width);
-#endif
+    } else if (window_item.name_is("State")) {
+      table_->RestoreState(window_item.attributes);
 
     } else if (window_item.name_is("Window")) {
-      std::string smode = window_item.GetString("mode");
-      if (_stricmp(smode.c_str(), "Day") == 0)
+      auto smode = window_item.GetString("mode");
+      if (base::EqualsCaseInsensitiveASCII(smode, "Day"))
         mode = ID_TIME_RANGE_DAY;
-      else if (_stricmp(smode.c_str(), "Week") == 0)
+      else if (base::EqualsCaseInsensitiveASCII(smode, "Week"))
         mode = ID_TIME_RANGE_WEEK;
-      else if (_stricmp(smode.c_str(), "Month") == 0)
+      else if (base::EqualsCaseInsensitiveASCII(smode, "Month"))
         mode = ID_TIME_RANGE_MONTH;
-      else if (_stricmp(smode.c_str(), "Current") == 0)
+      else if (base::EqualsCaseInsensitiveASCII(smode, "Current"))
         mode = ID_CURRENT_EVENTS;
-      else if (_stricmp(smode.c_str(), "Custom") == 0) {
+      else if (base::EqualsCaseInsensitiveASCII(smode, "Custom")) {
         mode = ID_TIME_RANGE_CUSTOM;
       }
     }
@@ -216,12 +210,7 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   if (!is_panel_)
     controller_delegate_.SetTitle(MakeTitle());
 
-#if defined(UI_QT)
-  return table_.get();
-
-#elif defined(UI_VIEWS)
   return table_->CreateParentIfNecessary();
-#endif
 }
 
 #if defined(UI_VIEWS)
@@ -247,16 +236,10 @@ base::string16 EventView::MakeTitle() const {
 }
 
 void EventView::Save(WindowDefinition& definition) {
+  definition.AddItem("State").attributes = table_->SaveState();
+
   const char* mode_string = FormatTimeRange(model_->time_range().command_id);
   definition.AddItem("Window").SetString("mode", mode_string);
-
-#if defined(UI_VIEWS)
-  for (size_t i = 0; i < table_->visible_columns().size(); ++i) {
-    WindowItem& window_item = definition.AddItem("Column");
-    window_item.SetInt("index", i);
-    window_item.SetInt("width", table_->visible_columns()[i].width);
-  }
-#endif
 
   for (auto& item : model_->filter_items()) {
     WindowItem& window_item = definition.AddItem("Item");

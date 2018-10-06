@@ -241,7 +241,7 @@ int TableModel::MoveRow(int row, bool up) {
   return row2;
 }
 
-bool TableModel::SetFormula(int row, const std::string& formula) {
+bool TableModel::SetFormula(int row, std::string formula) {
   if (row == -1)
     row = static_cast<int>(rows_.size());
 
@@ -257,7 +257,7 @@ bool TableModel::SetFormula(int row, const std::string& formula) {
 
   auto old_node_id = trow.timed_data().GetNode().node_id();
   try {
-    trow.SetFormula(formula);
+    trow.SetFormula(std::move(formula));
   } catch (const std::exception&) {
     return false;
   }

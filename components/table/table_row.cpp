@@ -25,8 +25,8 @@ base::string16 TableRow::GetTitle() const {
   return timed_data_.GetTitle();
 }
 
-void TableRow::SetFormula(const std::string& formula) {
-  formula_ = formula;
+void TableRow::SetFormula(std::string formula) {
+  formula_ = std::move(formula);
   if (!formula_.empty() && formula_[0] == '=')
     formula_.erase(formula_.begin());
 

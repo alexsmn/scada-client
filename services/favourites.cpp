@@ -1,7 +1,6 @@
 #include "services/favourites.h"
 
 #include "base/utils.h"
-#include "base/xml.h"
 
 const Page* Favourites::GetFolder(const base::char16* folder) const {
   if (!folder)
@@ -86,30 +85,18 @@ void Favourites::NotifyWindowChanged(const Page& folder,
     o.OnWindowChanged(folder, window);
 }
 
-void Favourites::Load(const xml::Node& root_node) {
-  for (const xml::Node* node = root_node.first_child; node; node = node->next) {
-    const xml::Node& pagee = *node;
-    if (pagee.type != xml::NodeTypeElement)
-      continue;
-    if (pagee.name.compare("Folder") != 0)
-      continue;
+void Favourites::Load(const base::Value& value) {
+  if (value.is_list())
+    return;
 
-    Page folder;
-    try {
-      folder.Load(pagee);
-    } catch (HRESULT err) {
-      LOG(ERROR) << "Error " << static_cast<int>(err)
-                 << " on load favorite folder " << folder.id;
-      continue;
-    }
-
-    folders_.push_back(folder);
-  }
+  for (const auto& folder_data : value.GetList())
+    folders_.emplace_back().Load(folder_data);
 }
 
-void Favourites::Save(xml::Node& root_node) const {
-  for (auto& folder : folders_) {
-    xml::Node& pagee = root_node.AddElement("Folder");
-    folder.Save(pagee, false);
-  }
+base::Value Favourites::Save() const {
+  base::Value::ListStorage list;
+  list.reserve(folders_.size());
+  for (auto& folder : folders_)
+    list.emplace_back(folder.Save(false));
+  return base::Value{std::move(list)};
 }

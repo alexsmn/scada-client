@@ -29,7 +29,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   NodeRef node;
 
   if (const WindowItem* window_item = definition.FindItem("Item")) {
-    std::string path = window_item->GetString("path");
+    auto path = window_item->GetString("path");
     auto node_id = NodeIdFromScadaString(path);
     node = node_service_.GetNode(node_id);
   }

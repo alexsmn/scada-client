@@ -28,7 +28,7 @@ class SummaryModel : private SummaryModelContext,
   base::TimeDelta interval() const { return interval_; }
   void SetTimes(const TimeRange& time_range, base::TimeDelta interval);
 
-  int AddColumn(const std::string& formula);
+  int AddColumn(base::StringPiece formula);
 
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);

@@ -6,12 +6,14 @@
 #include "base/logger.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/xml.h"
+#include "base/values.h"
 #include "client_paths.h"
 #include "common/node_id_util.h"
+#include "value_util.h"
 
-#include <fstream>
+#include <optional>
 
 base::FilePath GetPublicFilePath(const base::FilePath& path) {
   base::FilePath public_path;
@@ -28,68 +30,46 @@ namespace {
 base::FilePath GetCachePath() {
   base::FilePath path;
   base::PathService::Get(client::DIR_PUBLIC, &path);
-  return path.Append(FILE_PATH_LITERAL("file-cache.xml"));
+  return path.Append(FILE_PATH_LITERAL("file-cache.json"));
 }
 
-void LoadFileList(FileCache::FileList& list, const xml::Node& parent) {
-  for (const xml::Node* node = parent.first_child; node; node = node->next) {
-    if (node->name != "Display" && node->name != "File")
-      continue;
+FileCache::FileEntry LoadFileEntry(const base::Value& data) {
+  base::FilePath path{GetString16(data, "path")};
 
-    const xml::Node& display_node = *node;
-    base::FilePath path(display_node.GetAttribute("name"));
+  FileCache::FileEntry entry{path, GetString16(data, "title")};
 
-    // Skip removed displays.
-    if (!base::PathExists(GetPublicFilePath(path)))
-      continue;
+  // Old format could contain empty title.
+  if (entry.title.empty())
+    entry.title = path.RemoveExtension().value();
 
-    FileCache::FileEntry entry{path, display_node.GetAttribute("title")};
-    // Old format could contain empty title.
-    if (entry.title.empty())
-      entry.title = path.RemoveExtension().value();
-
-    for (const xml::Node* node = display_node.first_child; node;
-         node = node->next) {
-      if (node->name != "Item")
-        continue;
-
-      std::string path = node->GetAttributeA("path");
-
-      int key = ParseWithDefault<int>(node->GetAttribute("key"), -1);
-      if (key == -1)
-        continue;
-
-      auto item_id = NodeIdFromScadaString(path);
-      if (item_id.is_null())
-        continue;
-
-      entry.items[item_id] = key;
+  if (auto* items_data = GetDict(data, "items")) {
+    for (auto& [key, value] : items_data->DictItems()) {
+      auto node_id = NodeIdFromScadaString(key);
+      int key = value.is_int() ? value.GetInt() : -1;
+      entry.items.emplace(std::move(node_id), key);
     }
-
-    list.push_back(std::move(entry));
   }
+
+  return entry;
 }
 
-void SaveFileList(const FileCache::FileList& list, xml::Node& parent) {
-  for (size_t i = 0; i < list.size(); ++i) {
-    const FileCache::FileEntry& entry = list[i];
+base::Value SaveFileEntry(const FileCache::FileEntry& entry,
+                          base::StringPiece type_name) {
+  base::Value file_data{base::Value::Type::DICTIONARY};
 
-    xml::Node& display_node = parent.AddElement("File");
+  SetKey(file_data, "type", type_name);
+  SetKey(file_data, "path", entry.path.value());
+  if (!entry.title.empty())
+    SetKey(file_data, "title", entry.title);
 
-    display_node.SetAttribute("name", entry.path.value());
-    if (!entry.title.empty())
-      display_node.SetAttribute("title", entry.title);
-
-    for (FileCache::ItemMap::const_iterator i = entry.items.begin();
-         i != entry.items.end(); ++i) {
-      const scada::NodeId& item = i->first;
-      int key = i->second;
-
-      xml::Node& item_node = display_node.AddElement("Item");
-      item_node.SetAttribute("path", NodeIdToScadaString(item));
-      item_node.SetAttribute("key", Format(key));
-    }
+  if (!entry.items.empty()) {
+    base::Value items_data{base::Value::Type::DICTIONARY};
+    for (auto& [node_id, key] : entry.items)
+      SetKey(items_data, NodeIdToScadaString(node_id), key);
+    file_data.SetKey("items", std::move(items_data));
   }
+
+  return file_data;
 }
 
 }  // namespace
@@ -105,14 +85,12 @@ void FileCache::Init() {
   Refresh();
 }
 
-void FileCache::RegisterType(int id,
-                             const base::string16& name,
-                             const base::string16& extensions) {
+void FileCache::RegisterType(int id, std::string name, std::string extensions) {
   DCHECK(type_map_.find(id) == type_map_.end());
 
   TypeEntry& entry = type_map_[id];
   entry.name = name;
-  entry.extensions = base::SplitString(extensions, L";", base::TRIM_WHITESPACE,
+  entry.extensions = base::SplitString(extensions, ";", base::TRIM_WHITESPACE,
                                        base::SPLIT_WANT_NONEMPTY);
 }
 
@@ -128,29 +106,23 @@ void FileCache::Load() {
   base::FilePath cache_path = GetCachePath();
   LOG(INFO) << "Loading file cache from " << cache_path.value();
 
-  try {
-    std::ifstream stream(cache_path.value().c_str(),
-                         std::ios::in | std::ios::binary);
-    xml::TextReader reader(stream);
-    xml::Document cache_xml;
-    cache_xml.Load(reader);
+  std::string error_message;
+  auto data = LoadJson(cache_path, &error_message);
+  if (!data) {
+    LOG(ERROR) << "Error on load file cache - " << error_message;
+    return;
+  }
 
-    const xml::Node* root = cache_xml.GetDocumentElement();
-    if (!root)
-      return;
-
-    for (const xml::Node* e = root->first_child; e; e = e->next) {
-      if (e->name != "Type")
-        continue;
-
-      base::string16 name = e->GetAttribute("name");
-      TypeMap::iterator i = FindTypeByName(name);
-      if (i != type_map_.end())
-        LoadFileList(i->second.list, *e);
+  if (data->is_list()) {
+    for (auto& file_data : data->GetList()) {
+      if (auto* type = FindTypeByName(GetString(file_data, "type"))) {
+        auto entry = LoadFileEntry(file_data);
+        // Skip removed displays.
+        if (!base::PathExists(GetPublicFilePath(entry.path)))
+          continue;
+        type->list.emplace_back(std::move(entry));
+      }
     }
-
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "Error on load file cache - " << e.what();
   }
 }
 
@@ -158,31 +130,16 @@ void FileCache::Save() {
   base::FilePath cache_path = GetCachePath();
   LOG(INFO) << "Saving file cache to " << cache_path.value();
 
-  try {
-    xml::Document cache_xml;
-    cache_xml.SetEncoding(xml::EncodingUtf8);
+  base::Value::ListStorage list_data;
+  for (auto& [id, type] : type_map_) {
+    if (type.list.empty())
+      continue;
 
-    xml::Node& root = cache_xml.AddElement("Cache");
-
-    for (TypeMap::const_iterator i = type_map_.begin(); i != type_map_.end();
-         ++i) {
-      const TypeEntry& type = i->second;
-      if (type.list.empty())
-        continue;
-
-      xml::Node& e = root.AddElement("Type");
-      e.SetAttribute("name", type.name);
-      SaveFileList(type.list, e);
-    }
-
-    std::ofstream stream(cache_path.value().c_str(),
-                         std::ios::out | std::ios::binary);
-    xml::TextWriter writer(stream);
-    cache_xml.Save(writer);
-
-  } catch (const std::exception& e) {
-    LOG(ERROR) << "Error on save file cache - " << e.what();
+    for (auto& entry : type.list)
+      list_data.emplace_back(SaveFileEntry(entry, type.name));
   }
+
+  SaveJson(base::Value{std::move(list_data)}, cache_path);
 }
 
 std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
@@ -210,19 +167,18 @@ void FileCache::Refresh() {
   base::FileEnumerator find(public_path, false, base::FileEnumerator::FILES);
   base::FilePath full_path;
   while (!(full_path = find.Next()).empty()) {
-    base::FilePath path = full_path.BaseName();
-
-    TypeMap::iterator i = FindTypeByExtension(path.Extension());
-    if (i == type_map_.end())
+    auto path = full_path.BaseName();
+    auto* entry =
+        FindTypeByExtension(base::SysWideToNativeMB(path.Extension()));
+    if (!entry)
       continue;
 
-    FileList& list = i->second.list;
+    FileList& list = entry->list;
     if (list.Find(path) != -1)
       continue;
 
     base::string16 title = path.RemoveExtension().value();
-    FileEntry entry = {path, title};
-    list.push_back(entry);
+    list.emplace_back(FileEntry{std::move(path), std::move(title)});
   }
 }
 
@@ -249,11 +205,11 @@ void FileCache::Update(int type_id,
 }
 
 void FileCache::Remove(const base::FilePath& path) {
-  TypeMap::iterator p = FindTypeByExtension(path.Extension());
-  if (p != type_map_.end())
+  auto* type = FindTypeByExtension(base::SysWideToNativeMB(path.Extension()));
+  if (!type)
     return;
 
-  FileList& list = p->second.list;
+  FileList& list = type->list;
   int i = list.Find(path);
   if (i != -1)
     list.erase(list.begin() + i);
@@ -264,28 +220,25 @@ const FileCache::FileList& FileCache::GetList(int type_id) const {
 }
 
 FileCache::FileList& FileCache::GetMutableList(int type_id) {
-  TypeMap::iterator i = type_map_.find(type_id);
-  DCHECK(i != type_map_.end());
+  auto i = type_map_.find(type_id);
+  assert(i != type_map_.end());
   return i->second.list;
 }
 
-FileCache::TypeMap::iterator FileCache::FindTypeByName(
-    const base::string16& name) {
-  for (TypeMap::iterator i = type_map_.begin(); i != type_map_.end(); ++i) {
-    if (_wcsicmp(i->second.name.c_str(), name.c_str()) == 0)
-      return i;
+FileCache::TypeEntry* FileCache::FindTypeByName(base::StringPiece name) {
+  for (auto& [id, entry] : type_map_) {
+    if (base::EqualsCaseInsensitiveASCII(entry.name, name))
+      return &entry;
   }
-  return type_map_.end();
+  return nullptr;
 }
 
-FileCache::TypeMap::iterator FileCache::FindTypeByExtension(
-    const base::string16& ext) {
-  for (TypeMap::iterator i = type_map_.begin(); i != type_map_.end(); ++i) {
-    TypeEntry& entry = i->second;
-    for (size_t j = 0; j < entry.extensions.size(); ++j) {
-      if (_wcsicmp(entry.extensions[j].c_str(), ext.c_str()) == 0)
-        return i;
+FileCache::TypeEntry* FileCache::FindTypeByExtension(base::StringPiece ext) {
+  for (auto& [id, entry] : type_map_) {
+    for (auto& e : entry.extensions) {
+      if (base::EqualsCaseInsensitiveASCII(e, ext))
+        return &entry;
     }
   }
-  return type_map_.end();
+  return nullptr;
 }

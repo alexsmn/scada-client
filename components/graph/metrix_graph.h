@@ -104,7 +104,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     return pane ? pane->primary_line() : NULL;
   }
 
-  MetrixLine& NewLine(const std::string& path, MetrixPane& pane);
+  MetrixLine& NewLine(base::StringPiece path, MetrixPane& pane);
   MetrixPane& NewPane();
 
   void UpdateData();

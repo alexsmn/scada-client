@@ -104,9 +104,14 @@ class Profile {
 
   NodeTableController node_table;
 
-  void FromJson(const base::Value& json);
-  base::Value ToJson() const;
-
  private:
+  void Load(const base::Value& data,
+            events::EventManager& event_manager,
+            PortfolioManager& portfolio_manager,
+            Favourites& favourites);
+  base::Value SaveToValue(const events::EventManager& event_manager,
+                          const PortfolioManager& portfolio_manager,
+                          const Favourites& favourites) const;
+
   base::FilePath GetFilePath();
 };

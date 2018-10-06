@@ -254,9 +254,9 @@ ui::HeaderModel& SummaryModel::column_model() {
   return *column_model_;
 }
 
-int SummaryModel::AddColumn(const std::string& formula) {
+int SummaryModel::AddColumn(base::StringPiece formula) {
   int index = static_cast<int>(columns_.size());
-  columns_.emplace_back(new Column(*this, index, formula));
+  columns_.emplace_back(new Column(*this, index, formula.as_string()));
   return index;
 }
 
@@ -268,7 +268,7 @@ void SummaryModel::Load(const WindowDefinition& definition) {
   for (size_t i = 0; i < count; ++i) {
     const WindowItem& item = definition.items[i];
     if (item.name_is("Item")) {
-      std::string path = item.GetString("path");
+      auto path = item.GetString("path");
       int width = item.GetInt("width", 100);
       int index = AddColumn(path);
       columns_[index]->set_width(width);

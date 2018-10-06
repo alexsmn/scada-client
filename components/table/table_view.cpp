@@ -213,27 +213,16 @@ views::ComboTextfield* TableView::OnCreateEditor(views::TableView& sender,
 #endif
 
 UiView* TableView::Init(const WindowDefinition& definition) {
-  for (WindowItems::const_iterator i = definition.items.begin();
-       i != definition.items.end(); i++) {
-    const WindowItem& item = *i;
-
-    if (item.name_is("Col")) {
-#if defined(UI_VIEWS)
-      int i = item.GetInt("ix", 0) - 1;
-      if (i < 0 || i >= static_cast<int>(view_->visible_columns().size()))
-        continue;
-
-      int width = item.GetInt("width", -1);
-      if (width != -1)
-        view_->SetVisibleColumnWidth(i, width);
-#endif
+  for (auto& item : definition.items) {
+    if (item.name_is("State")) {
+      view_->RestoreState(item.attributes);
 
     } else if (item.name_is("Item")) {
       int ix = item.GetInt("ix", 0) - 1;
       if (ix == -1)
         ix = model_->row_count();
-      std::string path = item.GetString("path");
-      model_->SetFormula(ix, path);
+      auto path = item.GetString("path");
+      model_->SetFormula(ix, path.as_string());
     }
   }
 
@@ -241,29 +230,13 @@ UiView* TableView::Init(const WindowDefinition& definition) {
 }
 
 void TableView::Save(WindowDefinition& definition) {
-  // Save column widths as default.
-  Profile::Columns default_columns;
-#if defined(UI_VIEWS)
-  for (size_t i = 0; i < view_->visible_columns().size(); ++i) {
-    const views::TableView::VisibleColumn& column = view_->visible_columns()[i];
-    Profile::Column c = {column.column.id, column.width};
-    default_columns.push_back(c);
-  }
-#endif
-  profile_.default_table_columns = std::move(default_columns);
-
-#if defined(UI_VIEWS)
-  for (size_t i = 0; i < view_->visible_columns().size(); ++i) {
-    WindowItem& item = definition.AddItem("Col");
-    item.SetInt("ix", i + 1);
-    item.SetInt("width", view_->visible_columns()[i].width);
-  }
-#endif
+  definition.AddItem("State").attributes = view_->SaveState();
 
   for (int i = 0; i < model_->row_count(); i++) {
     TableRow* row = model_->GetRow(i);
     if (!row)
       continue;
+
     WindowItem& item = definition.AddItem("Item");
     item.SetInt("ix", i + 1);
     item.SetString("path", row->GetFormula());

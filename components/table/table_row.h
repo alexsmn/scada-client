@@ -18,7 +18,7 @@ class TableRow {
   std::string GetFormula() const;
   base::string16 GetTitle() const;
 
-  void SetFormula(const std::string& formula);
+  void SetFormula(std::string formula);
 
   void NotifyUpdate();
 

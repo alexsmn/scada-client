@@ -21,7 +21,7 @@ class SheetCell {
   const rt::TimedDataSpec& timed_data() const { return timed_data_; }
 
   const std::string& formula() const { return formula_; }
-  bool SetFormula(const std::string& formula);
+  bool SetFormula(std::string formula);
 
   rt::TimedDataSpec timed_data_;
 

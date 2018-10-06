@@ -53,7 +53,7 @@ class TableModel : private TableModelContext,
   bool DeleteRows(int start, int count);
   void Clear();
   int MoveRow(int row, bool up);
-  bool SetFormula(int row, const std::string& formula);
+  bool SetFormula(int row, std::string formula);
 
   int FindItem(const scada::NodeId& trid) const;
 

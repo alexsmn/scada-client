@@ -9,8 +9,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
-#include "base/xml.h"
-#include "services/profile_utils.h"
+#include "value_util.h"
+#include "window_definition_util.h"
 #include "window_info.h"
 
 #define MAX_TITLE 30
@@ -19,101 +19,82 @@ namespace {
 
 static const base::char16 kPageFileExtension[] = L"page";
 
-void LoadWinItem(WindowItem& item, const xml::Node& node) {
-  for (xml::AttributeMap::const_iterator i = node.attributes.begin();
-       i != node.attributes.end(); ++i) {
-    item.SetString(i->first.c_str(), i->second);
+void LoadWinItems(WindowItems& items, const base::Value& data) {
+  if (!data.is_dict())
+    return;
+
+  for (auto& [key, value] : data.DictItems()) {
+    auto& item = items.emplace_back();
+    item.name = key;
+    item.attributes = value.Clone();
   }
 }
 
-void LoadWinItems(WindowItems& items, const xml::Node& node) {
-  for (const xml::Node* child = node.first_child; child; child = child->next) {
-    items.push_back(WindowItem());
-    WindowItem& item = items.back();
-    item.set_name(child->name);
-    LoadWinItem(item, *child);
-  }
+base::Value SaveWinItems(const WindowItems& items) {
+  base::Value data{base::Value::Type::DICTIONARY};
+  for (const auto& item : items)
+    data.SetKey(item.name, item.attributes.Clone());
+  return data;
 }
 
-// load win item attributes
-void SaveWinItem(const WindowItem& item, xml::Node& node) {
-  const base::DictionaryValue& attrs = item.attributes();
-  for (base::DictionaryValue::Iterator i(attrs); !i.IsAtEnd(); i.Advance()) {
-    base::string16 s;
-    i.value().GetAsString(&s);
-    node.SetAttribute(i.key().c_str(), s);
-  }
-}
-
-void SaveWinItems(const WindowItems& items, xml::Node& elem) {
-  for (WindowItems::const_iterator i = items.begin(); i != items.end(); i++) {
-    const WindowItem& item = *i;
-    assert(!item.name().empty());
-    xml::Node& child = elem.AddElement(item.name());
-    SaveWinItem(item, child);
-  }
-}
-
-void LoadLayoutBlock(PageLayoutBlock& block, const xml::Node& node) {
+void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
   assert(block.type == PageLayoutBlock::PANE);
   assert(block.wins.empty());
   assert(!block.left && !block.right);
 
-  const xml::Node* splite = node.select("Split");
-  if (splite) {
-    bool horz = splite->GetAttribute("orientation").compare(L"Vertical") != 0;
+  auto type = GetString(value, "type");
+  if (base::EqualsCaseInsensitiveASCII(type, "split")) {
+    auto orientation = GetString(value, "orientation");
+    bool horz = base::EqualsCaseInsensitiveASCII(orientation, "horizontal");
     block.split(horz);
-    block.pos =
-        ParseWithDefault<int>(splite->GetAttribute("position").c_str(), -1);
-    const xml::Node* pane1e = splite->select("Pane1");
-    const xml::Node* pane2e = splite->select("Pane2");
-    if (pane1e)
-      LoadLayoutBlock(*block.left, *pane1e);
-    if (pane2e)
-      LoadLayoutBlock(*block.right, *pane2e);
+    block.pos = GetInt(value, "pos", -1);
+    if (auto* pane = GetDict(value, "first"))
+      LoadLayoutBlock(*block.left, *pane);
+    if (auto* pane = GetDict(value, "second"))
+      LoadLayoutBlock(*block.right, *pane);
 
-  } else {
+  } else if (base::EqualsCaseInsensitiveASCII(type, "pane")) {
     assert(block.type == PageLayoutBlock::PANE);
-    for (const xml::Node* child = node.first_child; child;
-         child = child->next) {
-      if (child->type != xml::NodeTypeElement)
-        continue;
-      int id = ParseWithDefault<int>(child->GetAttribute("id").c_str(), 0);
-      if (!id)
-        continue;
-      block.wins.push_back(id);
+    if (auto* windows = GetList(value, "windows")) {
+      for (auto& window : *windows) {
+        if (window.is_int())
+          block.wins.push_back(window.GetInt());
+      }
     }
-
-    block.active_window =
-        ParseWithDefault(node.GetAttribute("active").c_str(), -1);
+    block.active_window = GetInt(value, "active", -1);
   }
 
-  block.central = ParseWithDefault<bool>(node.GetAttribute("central"), false);
+  block.central = GetBool(value, "central");
 }
 
-const char* dock_names[4] = {"DockBottom", "DockTop", "DockLeft", "DockRight"};
+const char* dock_names[4] = {"bottom", "top", "left", "right"};
 
-void SaveLayoutBlock(const PageLayoutBlock& block, xml::Node& node) {
+base::Value SaveLayoutBlock(const PageLayoutBlock& block) {
+  base::Value result{base::Value::Type::DICTIONARY};
+  SetKey(result, "type",
+         block.type == PageLayoutBlock::PANE ? "pane" : "split");
+
   if (block.type == PageLayoutBlock::SPLIT) {
-    xml::Node& node2 = node.AddElement("Split");
-    node2.SetAttribute("orientation", block.horz ? L"Horizontal" : L"Vertical");
-    node2.SetAttribute("position", WideFormat(block.pos).c_str());
-    SaveLayoutBlock(*block.left, node2.AddElement("Pane1"));
-    SaveLayoutBlock(*block.right, node2.AddElement("Pane2"));
+    SetKey(result, "orientation", block.horz ? L"horizontal" : L"vertical");
+    SetKey(result, "pos", block.pos);
+    result.SetKey("first", SaveLayoutBlock(*block.left));
+    result.SetKey("second", SaveLayoutBlock(*block.right));
 
   } else {
-    for (int i = 0; i < (int)block.wins.size(); ++i) {
-      int id = block.wins[i];
-      xml::Node& node2 = node.AddElement("Window");
-      node2.SetAttribute("id", WideFormat(id).c_str());
-    }
+    base::Value::ListStorage list;
+    list.reserve(block.wins.size());
+    for (auto window_id : block.wins)
+      list.emplace_back(base::Value{window_id});
+    result.SetKey("windows", base::Value{std::move(list)});
 
     if (block.active_window != -1)
-      node.SetAttribute("active", WideFormat(block.active_window).c_str());
+      SetKey(result, "active", block.active_window);
   }
 
   if (block.central)
-    node.SetAttribute("central", WideFormat(true));
+    SetKey(result, "central", true);
+
+  return result;
 }
 
 }  // namespace
@@ -142,22 +123,13 @@ Page& Page::operator=(const Page& source) {
   return *this;
 }
 
-void Page::Load(const xml::Node& node) {
-  std::wstring sid = node.GetAttribute("id");
-  if (!sid.empty())
-    id = ParseT<int>(sid);
-  title = node.GetAttribute("title");
+void Page::Load(const base::Value& data) {
+  id = GetInt(data, "id");
+  title = GetString16(data, "title");
 
-  const xml::Node* winse = node.select("Windows");
-  if (winse) {
-    for (const xml::Node* node = winse->first_child; node; node = node->next) {
-      const xml::Node& win = *node;
-      if (win.type != xml::NodeTypeElement)
-        continue;
-
-      const std::string& name = win.name;
-
-      UINT type = ParseWindowType(win.GetAttributeA("type").c_str());
+  if (const auto* winse = GetList(data, "windows")) {
+    for (auto& win : *winse) {
+      UINT type = ParseWindowType(GetString(win, "type"));
       const WindowInfo* info = FindWindowInfo(type);
       if (!info)
         continue;
@@ -178,18 +150,17 @@ void Page::Load(const xml::Node& node) {
       }
 
       auto w = std::make_unique<WindowDefinition>(*info);
-      w->id = ParseWithDefault<int>(win.GetAttribute("id"), 0);
+      w->id = GetInt(win, "id", 0);
       if (info->flags & WIN_SING)
-        w->visible = ParseWithDefault(win.GetAttribute("visible"), true);
-      w->title = win.GetAttribute("title");
-      w->path = base::FilePath(win.GetAttribute("path"));
-      w->size = gfx::Size(ParseT<unsigned>(win.GetAttribute("width")),
-                          ParseT<unsigned>(win.GetAttribute("height")));
-      LoadWinItems(w->items, win);
+        w->visible = GetBool(win, "visible", true);
+      w->title = GetString16(win, "title");
+      w->path = base::FilePath(GetString16(win, "path"));
+      w->size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
+      if (auto* items = GetDict(win, "items"))
+        LoadWinItems(w->items, *items);
 
-      std::string data = base::SysWideToNativeMB(win.get_text());
-      JSONStringValueDeserializer serializer(data);
-      w->set_storage(serializer.Deserialize(NULL, NULL));
+      if (auto* data = GetDict(win, "data"))
+        w->storage = data->Clone();
 
       windows_.emplace_back(std::move(w));
     }
@@ -208,84 +179,83 @@ void Page::Load(const xml::Node& node) {
   }
 
   // layout
-  const xml::Node* layoute = node.select("Layout");
-  if (layoute) {
-    if (const xml::Node* maine = layoute->select("Center"))
+  if (const auto* layoute = GetDict(data, "Layout")) {
+    if (const auto* maine = GetDict(*layoute, "Center"))
       LoadLayoutBlock(layout.main, *maine);
+
     for (int i = 0; i < 4; i++) {
-      const xml::Node* docke = layoute->select(dock_names[i]);
+      const auto* docke = GetDict(*layoute, dock_names[i]);
       if (!docke)
         continue;
+
       auto& dock = layout.dock[i];
-      dock.size = ParseWithDefault<int>(docke->GetAttribute("size").c_str(), 0);
-      dock.place =
-          ParseWithDefault<int>(docke->GetAttribute("place").c_str(), 0);
+      dock.size = GetInt(*docke, "size", 0);
+      dock.place = GetInt(*docke, "place", 0);
       LoadLayoutBlock(dock, *docke);
     }
-    if (auto* blobe = layoute->select("Blob")) {
-      auto blob = base::UTF16ToASCII(blobe->get_text());
-      auto trimmed_blob =
-          base::TrimString(blob, base::kWhitespaceASCII, base::TRIM_ALL);
-      base::Base64Decode(trimmed_blob, &layout.blob);
-    }
+
+    if (auto* blob = GetBlob(*layoute, "blob"))
+      layout.blob = *blob;
   }
 }
 
-void Page::Save(xml::Node& node, bool current) const {
+base::Value Page::Save(bool current) const {
+  base::Value result{base::Value::Type::DICTIONARY};
+
   // page attributes
   if (id)
-    node.SetAttribute("id", WideFormat(id));
+    SetKey(result, "id", id);
   if (!title.empty())
-    node.SetAttribute("title", title);
+    SetKey(result, "title", title);
 
-  xml::Node& winse = node.AddElement("Windows");
+  base::Value::ListStorage windows;
+  windows.reserve(GetWindowCount());
   for (int i = 0; i < GetWindowCount(); ++i) {
     WindowDefinition& def = GetWindow(i);
     const WindowInfo& window_info = def.window_info();
 
-    xml::Node& win = winse.AddElement("Window");
-    win.SetAttribute("type", window_info.name);
-    win.SetAttribute("id", WideFormat(def.id));
+    base::Value win{base::Value::Type::DICTIONARY};
+    SetKey(win, "type", window_info.name);
+    SetKey(win, "id", def.id);
     if (!def.visible) {
       assert(window_info.flags & WIN_SING);
-      win.SetAttribute("visible", WideFormat(def.visible));
+      SetKey(win, "visible", def.visible);
     }
     if (!def.title.empty())
-      win.SetAttribute("title", def.title);
+      SetKey(win, "title", def.title);
     if (!def.path.empty())
-      win.SetAttribute("path", def.path.value());
-    win.SetAttribute("width", WideFormat(def.size.width()));
-    win.SetAttribute("height", WideFormat(def.size.height()));
-    win.SetAttribute("locked", WideFormat(def.locked));
+      SetKey(win, "path", def.path.value());
+    SetKey(win, "width", def.size.width());
+    SetKey(win, "height", def.size.height());
+    SetKey(win, "locked", def.locked);
 
-    SaveWinItems(def.items, win);
+    win.SetKey("items", SaveWinItems(def.items));
+    win.SetKey("data", def.storage.Clone());
 
-    if (def.storage()) {
-      std::string data;
-      JSONStringValueSerializer serializer(&data);
-      serializer.Serialize(*def.storage());
-      win.set_text(base::SysNativeMBToWide(data).c_str());
-    }
+    windows.emplace_back(std::move(win));
   }
+  result.SetKey("windows", base::Value{std::move(windows)});
 
   // layout
-  xml::Node& layoute = node.AddElement("Layout");
+  base::Value layout_data{base::Value::Type::DICTIONARY};
   if (!layout.main.empty())
-    SaveLayoutBlock(layout.main, layoute.AddElement("Center"));
+    layout_data.SetKey("center", SaveLayoutBlock(layout.main));
   for (int i = 0; i < 4; i++) {
     auto& dock = layout.dock[i];
     if (dock.empty())
       continue;
-    xml::Node& docke = layoute.AddElement(dock_names[i]);
-    docke.SetAttribute("size", WideFormat(dock.size));
-    docke.SetAttribute("place", WideFormat(dock.place));
-    SaveLayoutBlock(dock, docke);
+    auto dock_data = SaveLayoutBlock(dock);
+    SetKey(dock_data, "size", dock.size);
+    SetKey(dock_data, "place", dock.place);
+    layout_data.SetKey(dock_names[i], std::move(dock_data));
   }
   if (!layout.blob.empty()) {
-    std::string blob;
-    base::Base64Encode(layout.blob, &blob);
-    layoute.AddElement("Blob").set_value(base::ASCIIToUTF16(blob).c_str());
+    SetKey(layout_data, "blob",
+           base::Value::BlobStorage{layout.blob.begin(), layout.blob.end()});
   }
+  result.SetKey("layout", std::move(layout_data));
+
+  return result;
 }
 
 base::string16 Page::GetTitle() const {
@@ -352,10 +322,4 @@ void Page::DeleteWindow(int index) {
 
 void Page::Clear() {
   windows_.clear();
-}
-
-void Page::SaveJson(base::DictionaryValue& json) const {}
-
-base::DictionaryValue Page::LoadJson() {
-  return {};
 }

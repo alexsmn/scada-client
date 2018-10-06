@@ -16,3 +16,9 @@ void Table::ShowContextMenuForView(views::View* source,
   if (context_menu_handler_)
     context_menu_handler_(point);
 }
+
+base::Value Table::SaveState() const {
+  return {};
+}
+
+void Table::RestoreState(const base::Value& data) {}

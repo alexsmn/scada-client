@@ -83,9 +83,9 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
 
 void RegisterFileCacheType(FileCache& cache,
                            unsigned command_id,
-                           const base::string16& ext) {
-  base::string16 name = base::SysNativeMBToWide(ViewTypeToString(command_id));
-  cache.RegisterType(command_id, name, ext);
+                           std::string ext) {
+  std::string name = ViewTypeToString(command_id);
+  cache.RegisterType(command_id, std::move(name), std::move(ext));
 }
 
 void PollIoContext(boost::asio::io_context* context) {
@@ -234,9 +234,9 @@ void ClientApplication::Start() {
       ConnectionStateReporterContext{*master_data_services_, *local_events_});
 
   file_cache_ = std::make_unique<FileCache>();
-  RegisterFileCacheType(*file_cache_, ID_MODUS_VIEW, L".sde;.xsde");
-  RegisterFileCacheType(*file_cache_, ID_VIDICON_DISPLAY_VIEW, L".vds");
-  RegisterFileCacheType(*file_cache_, ID_EXCEL_REPORT_VIEW, L".tsr");
+  RegisterFileCacheType(*file_cache_, ID_MODUS_VIEW, ".sde;.xsde");
+  RegisterFileCacheType(*file_cache_, ID_VIDICON_DISPLAY_VIEW, ".vds");
+  RegisterFileCacheType(*file_cache_, ID_EXCEL_REPORT_VIEW, ".tsr");
   file_cache_->Init();
 
   modus_module_.reset(new ModusModule2);

@@ -21,21 +21,21 @@ SheetCell::~SheetCell() {
   SetBlinking(false);
 }
 
-bool SheetCell::SetFormula(const std::string& formula) {
+bool SheetCell::SetFormula(std::string formula) {
   timed_data_.Reset();
   SetBlinking(false);
 
-  formula_ = formula;
+  formula_ = std::move(formula);
 
-  bool is_formula = !formula.empty() && formula[0] == '=';
+  bool is_formula = !formula_.empty() && formula_[0] == '=';
   if (is_formula) {
-    auto formula2 = base::StringPiece{formula}.substr(1);
+    auto formula2 = base::StringPiece{formula_}.substr(1);
     timed_data_.Connect(model_.timed_data_service(), formula2);
     SetBlinking(timed_data_.alerting());
     UpdateTextFromFormula();
 
   } else {
-    text_ = base::SysNativeMBToWide(formula);
+    text_ = base::SysNativeMBToWide(formula_);
     NotifyChanged();
   }
 

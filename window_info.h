@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
+#include "base/strings/string_piece.h"
 
 enum WindowFlags {
   WIN_SING            = 0x0001,	// only single window allowed for page
@@ -31,7 +32,7 @@ struct WindowInfo {
 const WindowInfo* FindWindowInfo(unsigned command_id);
 const WindowInfo& GetWindowInfo(unsigned command_id);
 
-unsigned ParseWindowType(const char* str);
+unsigned ParseWindowType(base::StringPiece str);
 const char* ViewTypeToString(unsigned command_id);
 
 extern const WindowInfo g_window_infos[];

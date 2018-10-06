@@ -2,10 +2,10 @@
 
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
-#include "base/xml.h"
 #include "client_paths.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
@@ -14,10 +14,10 @@
 #include "services/favourites.h"
 #include "services/portfolio.h"
 #include "services/portfolio_manager.h"
+#include "value_util.h"
 #include "window_info.h"
 
 #include <ATLComTime.h>
-#include <fstream>
 
 namespace {
 
@@ -32,32 +32,32 @@ std::wstring FormatTimeDelta(base::TimeDelta span) {
   return base::StringPrintf(L"%d:%02d:%02d", hours, minutes, seconds);
 }
 
-bool ParseTimeDelta(const wchar_t* str, base::TimeDelta& span) {
+bool ParseTimeDelta(base::StringPiece str, base::TimeDelta& span) {
   int h, m, s;
-  if (swscanf(str, L"%d:%d:%d", &h, &m, &s) != 3)
+  if (sscanf(str.as_string().c_str(), "%d:%d:%d", &h, &m, &s) != 3)
     return false;
   span = base::TimeDelta::FromHours(h) + base::TimeDelta::FromMinutes(m) +
          base::TimeDelta::FromSeconds(s);
   return true;
 }
 
-UINT ParseToolbarPosition(const std::wstring& str) {
-  if (_wcsicmp(str.c_str(), L"Top") == 0)
+UINT ParseToolbarPosition(base::StringPiece str) {
+  if (base::EqualsCaseInsensitiveASCII(str, "top"))
     return ID_TOOLBAR_TOP;
-  else if (_wcsicmp(str.c_str(), L"Hidden") == 0)
+  else if (base::EqualsCaseInsensitiveASCII(str, "hidden"))
     return ID_TOOLBAR_HIDDEN;
   else
     return ID_TOOLBAR_LEFT;
 }
 
-const wchar_t* FormatToolbarPosition(UINT position) {
+base::StringPiece FormatToolbarPosition(UINT position) {
   switch (position) {
     case ID_TOOLBAR_HIDDEN:
-      return L"Hidden";
+      return "hidden";
     case ID_TOOLBAR_TOP:
-      return L"Top";
+      return "top";
     default:
-      return L"Left";
+      return "left";
   }
 }
 
@@ -143,19 +143,18 @@ Page CreateInitialPage() {
   return page;
 }
 
-void LoadMainWindowDef(MainWindowDef& main_window, xml::Node& node) {
+void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
   const int inval = (unsigned)(-1) / 2;
-  int left = ParseWithDefault(node.GetAttribute("left"), inval);
-  int top = ParseWithDefault(node.GetAttribute("top"), inval);
-  int width = ParseWithDefault(node.GetAttribute("width"), inval);
-  int height = ParseWithDefault(node.GetAttribute("height"), inval);
+  int left = GetInt(data, "left", inval);
+  int top = GetInt(data, "top", inval);
+  int width = GetInt(data, "width", inval);
+  int height = GetInt(data, "height", inval);
   if (left != inval && top != inval && width != inval && height != inval)
     main_window.bounds = gfx::Rect(left, top, width, height);
-  main_window.maximized =
-      ParseWithDefault(node.GetAttribute("maximized"), false);
+  main_window.maximized = GetBool(data, "maximized", false);
   main_window.toolbar_position =
-      ParseToolbarPosition(node.GetAttribute("toolbar"));
-  main_window.page_id = ParseWithDefault(node.GetAttribute("page"), 0);
+      ParseToolbarPosition(GetString(data, "toolbar"));
+  main_window.page_id = GetInt(data, "page", 0);
 }
 
 }  // namespace
@@ -174,64 +173,50 @@ void Profile::Load(events::EventManager& event_manager,
                    Favourites& favourites) {
   LOG(INFO) << "Load profile";
 
-  try {
-    std::ifstream stream(GetFilePath().value().c_str(),
-                         std::ios::in | std::ios::binary);
-    if (stream.fail())
-      throw E_FAIL;
-    xml::TextReader reader(stream);
-    xml::Document doc;
-    doc.Load(reader);
+  std::string error_message;
+  if (auto data = LoadJson(GetFilePath(), &error_message))
+    Load(*data, event_manager, portfolio_manager, favourites);
+  else
+    LOG(ERROR) << "Profile load error " << error_message;
 
-    // root
-    xml::Node* doce = doc.GetDocumentElement();
-    if (!doce)
-      throw E_FAIL;
+  if (pages.empty()) {
+    Page page = CreateInitialPage();
+    pages[page.id] = page;
+  }
 
-    // common settings
-    xml::Node* paramse = doce->select("Profile");
-    if (paramse) {
-      show_write_ok =
-          ParseWithDefault(paramse->GetAttribute("showWriteOk"), show_write_ok);
-      event_auto_show = ParseWithDefault(paramse->GetAttribute("showEvents"),
-                                         event_auto_show);
-      event_auto_hide = ParseWithDefault(paramse->GetAttribute("hideEvents"),
-                                         event_auto_hide);
-      event_flash_window = ParseWithDefault(
-          paramse->GetAttribute("flashOnEvents"), event_flash_window);
-      event_play_sound = ParseWithDefault(
-          paramse->GetAttribute("soundOnEvents"), event_play_sound);
-      modus2 = ParseWithDefault(paramse->GetAttribute("modus2"), modus2);
+  LOG(INFO) << "Profile loaded";
+}
 
-      unsigned severity_min =
-          ParseWithDefault(paramse->GetAttribute("severityMin"),
-                           static_cast<unsigned>(scada::kSeverityMin));
-      event_manager.SetSeverityMin(severity_min);
+void Profile::Load(const base::Value& data,
+                   events::EventManager& event_manager,
+                   PortfolioManager& portfolio_manager,
+                   Favourites& favourites) {
+  // common settings
+  show_write_ok = GetBool(data, "showWriteOk", show_write_ok);
+  event_auto_show = GetBool(data, "showEvents", event_auto_show);
+  event_auto_hide = GetBool(data, "hideEvents", event_auto_hide);
+  event_flash_window = GetBool(data, "flashOnEvents", event_flash_window);
+  event_play_sound = GetBool(data, "soundOnEvents", event_play_sound);
+  modus2 = GetBool(data, "modus2", modus2);
+
+  unsigned severity_min =
+      GetInt(data, "severityMin", static_cast<unsigned>(scada::kSeverityMin));
+  event_manager.SetSeverityMin(severity_min);
+
+  // window settings
+  if (auto* list = GetList(data, "windows")) {
+    for (const auto& wine : *list) {
+      MainWindowDef def;
+      LoadMainWindowDef(def, wine);
+      if (def.id == 0 || main_windows.find(def.id) != main_windows.end())
+        def.id = CreateWindowId();
+      main_windows[def.id] = def;
     }
+  }
 
-    // window settings
-    for (xml::Node* wine = doce->first_child; wine; wine = wine->next) {
-      if (_stricmp(wine->name.c_str(), "MainWindow") == 0) {
-        MainWindowDef def;
-        LoadMainWindowDef(def, *wine);
-        if (def.id == 0 || main_windows.find(def.id) != main_windows.end())
-          def.id = CreateWindowId();
-        main_windows[def.id] = def;
-      }
-    }
-
-    // pages root
-    xml::Node* pagese = doce->select("Pages");
-    if (!pagese)
-      throw E_FAIL;
-
-    // pages
-    for (xml::Node* node = pagese->first_child; node; node = node->next) {
-      xml::Node& pagee = *node;
-      if (pagee.type != xml::NodeTypeElement)
-        continue;
-      if (pagee.name.compare("Page") != 0)
-        continue;
+  // pages root
+  if (auto* pagese = GetList(data, "pages")) {
+    for (auto& pagee : *pagese) {
       Page page;
       try {
         page.Load(pagee);
@@ -243,84 +228,47 @@ void Profile::Load(events::EventManager& event_manager,
       if (page.id)
         pages[page.id] = page;
     }
+  }
 
-    // out-of-page
-    xml::Node* out_pagese = doce->select("OutOfPage");
-    if (out_pagese)
-      out_wins.Load(*out_pagese);
+  // out-of-page
+  if (auto* out_pagese = GetDict(data, "floatingWindows"))
+    out_wins.Load(*out_pagese);
 
-    // favorites
-    xml::Node* favourites_root = doce->select("Favorites");
-    if (favourites_root)
-      favourites.Load(*favourites_root);
+  // favorites
+  if (auto* favourites_root = GetDict(data, "favorites"))
+    favourites.Load(*favourites_root);
 
-    // portfolios
-    xml::Node* pfoliose = doce->select("Portfolios");
-    if (pfoliose) {
-      auto& portfolios = portfolio_manager.portfolios;
-      for (xml::Node* node = pfoliose->first_child; node; node = node->next) {
-        xml::Node& pfolioe = *node;
-        if (pfolioe.type != xml::NodeTypeElement)
-          continue;
-        if (pfolioe.name.compare("Portfolio") != 0)
-          continue;
-        portfolios.push_back(Portfolio());
-        Portfolio& portfolio = portfolios.back();
-        portfolio.name = pfolioe.GetAttribute("name");
-        // items
-        for (xml::Node* node = pfolioe.first_child; node; node = node->next) {
-          xml::Node& iteme = *node;
-          if (iteme.type != xml::NodeTypeElement)
-            continue;
-          if (iteme.name.compare("Item") != 0)
-            continue;
-
-          std::string path =
-              base::SysWideToNativeMB(iteme.GetAttribute("path"));
+  // portfolios
+  if (auto* pfoliose = GetList(data, "portfolios")) {
+    auto& portfolios = portfolio_manager.portfolios;
+    for (auto& pfolioe : *pfoliose) {
+      Portfolio& portfolio = portfolios.emplace_back();
+      portfolio.name = GetString16(pfolioe, "name");
+      // items
+      if (auto* itemse = GetList(pfolioe, "items")) {
+        for (auto& iteme : *itemse) {
+          auto path = GetString(iteme, "path");
           auto node_id = NodeIdFromScadaString(path);
-          if (node_id.is_null()) {
-            // TODO: Log.
-            continue;
-          }
-
-          portfolio.items.insert(node_id);
+          if (!node_id.is_null())
+            portfolio.items.insert(node_id);
         }
       }
     }
-
-    // defaults
-    if (auto* defse = doce->select("Defaults")) {
-      if (auto* graphe = defse->select("Graph")) {
-        ParseTimeDelta(graphe->GetAttribute("def_span").c_str(),
-                       graph_view.default_span);
-        graph_view.default_width =
-            ParseWithDefault(graphe->GetAttribute("def_weight"), 1);
-      }
-
-      if (auto* node = defse->select("TimeRangeDialog")) {
-        time_range_dialog.width =
-            ParseWithDefault(node->GetAttribute("width"), 0);
-        time_range_dialog.height =
-            ParseWithDefault(node->GetAttribute("height"), 0);
-      }
-
-      if (auto* node = defse->select("NodeTable")) {
-        node_table.default_sort_property_id = NodeIdFromScadaString(
-            base::SysWideToNativeMB(node->GetAttribute("sort-property-id")));
-      }
-    }
-
-    LOG(INFO) << "Profile loaded";
-
-  } catch (HRESULT err) {
-    LOG(ERROR) << "Profile load error " << static_cast<int>(err);
-  } catch (const xml::Error& /*err*/) {
-    LOG(ERROR) << "Profile load XML error";
   }
 
-  if (pages.empty()) {
-    Page page = CreateInitialPage();
-    pages[page.id] = page;
+  if (auto* graphe = GetDict(data, "graph")) {
+    ParseTimeDelta(GetString(*graphe, "def_span"), graph_view.default_span);
+    graph_view.default_width = GetInt(*graphe, "def_weight", 1);
+  }
+
+  if (auto* node = GetDict(data, "timeRangeDialog")) {
+    time_range_dialog.width = GetInt(*node, "width", 0);
+    time_range_dialog.height = GetInt(*node, "height", 0);
+  }
+
+  if (auto* node = GetDict(data, "nodeTable")) {
+    node_table.default_sort_property_id =
+        NodeIdFromScadaString(GetString(*node, "sort-property-id"));
   }
 }
 
@@ -329,120 +277,109 @@ void Profile::Save(const events::EventManager& event_manager,
                    const Favourites& favourites) {
   LOG(INFO) << "Save profile";
 
-  try {
-    xml::Document doc;
+  auto data = SaveToValue(event_manager, portfolio_manager, favourites);
 
-    // xml declaration
-    doc.SetVersion(L"1.1");
-    doc.SetEncoding(xml::EncodingUtf8);
+  SaveJson(data, GetFilePath());
 
-    // root
-    xml::Node& doce = doc.AddElement("Workplace");
+  LOG(INFO) << "Profile saved";
+}
 
-    // common settings
-    xml::Node& paramse = doce.AddElement("Profile");
-    paramse.SetAttribute("showWriteOk", WideFormat(show_write_ok));
-    paramse.SetAttribute("showEvents", WideFormat(event_auto_show));
-    paramse.SetAttribute("hideEvents", WideFormat(event_auto_hide));
-    paramse.SetAttribute("flashOnEvents", WideFormat(event_flash_window));
-    paramse.SetAttribute("soundOnEvents", WideFormat(event_play_sound));
-    paramse.SetAttribute("severityMin",
-                         WideFormat(event_manager.severity_min()));
-    paramse.SetAttribute("modus2", WideFormat(modus2));
+base::Value Profile::SaveToValue(const events::EventManager& event_manager,
+                                 const PortfolioManager& portfolio_manager,
+                                 const Favourites& favourites) const {
+  base::Value data{base::Value::Type::DICTIONARY};
 
-    // window settings
-    for (MainWindows::iterator i = main_windows.begin();
-         i != main_windows.end(); ++i) {
-      const MainWindowDef& main_window = i->second;
-      xml::Node& wine = doce.AddElement("MainWindow");
-      wine.SetAttribute("id", WideFormat(main_window.id));
-      wine.SetAttribute("left", WideFormat(main_window.bounds.x()));
-      wine.SetAttribute("top", WideFormat(main_window.bounds.y()));
-      wine.SetAttribute("width", WideFormat(main_window.bounds.width()));
-      wine.SetAttribute("height", WideFormat(main_window.bounds.height()));
-      wine.SetAttribute("maximized", WideFormat(main_window.maximized));
-      wine.SetAttribute("toolbar",
-                        FormatToolbarPosition(main_window.toolbar_position));
-      wine.SetAttribute("page", WideFormat(main_window.page_id));
+  // common settings
+  SetKey(data, "showWriteOk", show_write_ok);
+  SetKey(data, "showEvents", event_auto_show);
+  SetKey(data, "hideEvents", event_auto_hide);
+  SetKey(data, "flashOnEvents", event_flash_window);
+  SetKey(data, "soundOnEvents", event_play_sound);
+  SetKey(data, "severityMin", static_cast<int>(event_manager.severity_min()));
+  SetKey(data, "modus2", modus2);
+
+  // window settings
+  {
+    base::Value::ListStorage list;
+    for (const auto& [id, main_window] : main_windows) {
+      base::Value wine{base::Value::Type::DICTIONARY};
+      SetKey(wine, "id", main_window.id);
+      SetKey(wine, "left", main_window.bounds.x());
+      SetKey(wine, "top", main_window.bounds.y());
+      SetKey(wine, "width", main_window.bounds.width());
+      SetKey(wine, "height", main_window.bounds.height());
+      SetKey(wine, "maximized", main_window.maximized);
+      SetKey(wine, "toolbar",
+             FormatToolbarPosition(main_window.toolbar_position));
+      SetKey(wine, "page", main_window.page_id);
+      list.emplace_back(std::move(wine));
     }
-
-    // pages root
-    xml::Node& pagese = doce.AddElement("Pages");
-    // pages
-    for (PageMap::iterator i = pages.begin(); i != pages.end(); i++) {
-      Page& page = i->second;
-      xml::Node& pagee = pagese.AddElement("Page");
-      page.Save(pagee, false);
-    }
-
-    // out-of-page
-    xml::Node& out_winse = doce.AddElement("OutOfPage");
-    out_wins.Save(out_winse, true);
-
-    // favorites
-    xml::Node& favourites_root = doce.AddElement("Favorites");
-    favourites.Save(favourites_root);
-
-    // portfolios
-    xml::Node& pfoliose = doce.AddElement("Portfolios");
-    for (auto& portfolio : portfolio_manager.portfolios) {
-      xml::Node& pfolioe = pfoliose.AddElement("Portfolio");
-      pfolioe.SetAttribute("name", portfolio.name);
-      for (std::set<scada::NodeId>::const_iterator j = portfolio.items.begin();
-           j != portfolio.items.end(); ++j) {
-        const scada::NodeId& node_id = *j;
-        xml::Node& iteme = pfolioe.AddElement("Item");
-        iteme.SetAttribute("path", NodeIdToScadaString(node_id));
-      }
-    }
-
-    // defaults
-    {
-      xml::Node& defse = doce.AddElement("Defaults");
-
-      // GraphView
-      {
-        xml::Node& graphe = defse.AddElement("Graph");
-        graphe.SetAttribute("def_span",
-                            FormatTimeDelta(graph_view.default_span));
-        graphe.SetAttribute("def_weight", WideFormat(graph_view.default_width));
-      }
-
-      // TimeRangeDialog
-      {
-        xml::Node& node = defse.AddElement("TimeRangeDialog");
-        node.SetAttribute("width", WideFormat(time_range_dialog.width));
-        node.SetAttribute("height", WideFormat(time_range_dialog.height));
-      }
-
-      {
-        xml::Node& node = defse.AddElement("NodeTable");
-        node.SetAttribute(
-            "sort-property-id",
-            NodeIdToScadaString(node_table.default_sort_property_id));
-      }
-    }
-
-    // save
-    std::ofstream stream(GetFilePath().value().c_str(),
-                         std::ios::out | std::ios::binary);
-    xml::TextWriter writer(stream);
-    writer.line_breaks = true;
-    doc.Save(writer);
-
-    LOG(INFO) << "Profile saved";
-
-  } catch (HRESULT err) {
-    LOG(ERROR) << "Profile save error " << static_cast<int>(err);
-  } catch (const xml::Error& /*err*/) {
-    LOG(ERROR) << "Profile save XML error";
+    data.SetKey("windows", base::Value{std::move(list)});
   }
+
+  // pages root
+  {
+    base::Value::ListStorage list;
+    for (const auto& [id, page] : pages)
+      list.emplace_back(page.Save(false));
+    data.SetKey("pages", base::Value{std::move(list)});
+  }
+
+  // out-of-page
+  data.SetKey("floatingWindows", out_wins.Save(true));
+
+  // favorites
+  data.SetKey("favourites", favourites.Save());
+
+  // portfolios
+  {
+    base::Value::ListStorage list;
+    for (auto& portfolio : portfolio_manager.portfolios) {
+      base::Value pfolioe{base::Value::Type::DICTIONARY};
+      SetKey(pfolioe, "name", portfolio.name);
+      {
+        base::Value::ListStorage list;
+        for (const auto& node_id : portfolio.items)
+          list.emplace_back(NodeIdToScadaString(node_id));
+        pfolioe.SetKey("items", base::Value{std::move(list)});
+      }
+      list.emplace_back(std::move(pfolioe));
+    }
+    data.SetKey("portfolios", base::Value{std::move(list)});
+  }
+
+  // GraphView
+  {
+    base::Value graphe{base::Value::Type::DICTIONARY};
+    SetKey(graphe, "def_span", FormatTimeDelta(graph_view.default_span));
+    SetKey(graphe, "def_weight", graph_view.default_width);
+    data.SetKey("graph", std::move(graphe));
+  }
+
+  // TimeRangeDialog
+  {
+    base::Value node{base::Value::Type::DICTIONARY};
+    SetKey(node, "width", time_range_dialog.width);
+    SetKey(node, "height", time_range_dialog.height);
+    data.SetKey("timeRangeDialog", std::move(node));
+  }
+
+  {
+    base::Value node{base::Value::Type::DICTIONARY};
+    if (!node_table.default_sort_property_id.is_null()) {
+      SetKey(node, "sort-property-id",
+             NodeIdToScadaString(node_table.default_sort_property_id));
+    }
+    data.SetKey("nodeTable", std::move(node));
+  }
+
+  return data;
 }
 
 base::FilePath Profile::GetFilePath() {
   base::FilePath path;
   base::PathService::Get(client::DIR_PRIVATE, &path);
-  return path.Append(L"config.xml");
+  return path.Append(L"profile.json");
 }
 
 Page& Profile::CreatePage() {
@@ -468,9 +405,3 @@ MainWindowDef& Profile::GetMainWindow(int id) {
   window.id = id;
   return window;
 }
-
-base::Value Profile::ToJson() const {
-  return {};
-}
-
-void Profile::FromJson(const base::Value& json) {}

@@ -112,7 +112,7 @@ bool CellView::SetCellText(int row, int column, const base::string16& text) {
   return true;
 }
 
-void CellView::SetCellFormula(int row, int column, const std::string& formula) {
+void CellView::SetCellFormula(int row, int column, base::StringPiece formula) {
   Cell*& cell = this->cell(row, column);
   if (!cell)
     cell = new Cell(*this, row, column);
@@ -264,9 +264,9 @@ views::View* CellView::Init(const WindowDefinition& definition) {
     if (item.name_is("Item")) {
       int row = item.GetInt("row", -1);
       int column = item.GetInt("column", -1);
-      std::string path = item.GetString("path");
+      auto path = item.GetString("path");
       if (row == -1 || column == -1)
-        free_items.push_back(path);
+        free_items.emplace_back(path.as_string());
       else
         SetCellFormula(row, column, path);
     }
