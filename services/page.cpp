@@ -194,8 +194,7 @@ void Page::Load(const base::Value& data) {
       LoadLayoutBlock(dock, *docke);
     }
 
-    if (auto* blob = GetBlob(*layoute, "blob"))
-      layout.blob = *blob;
+    layout.blob = RestoreBlob(GetString(*layoute, "blob"));
   }
 }
 
@@ -249,10 +248,8 @@ base::Value Page::Save(bool current) const {
     SetKey(dock_data, "place", dock.place);
     layout_data.SetKey(dock_names[i], std::move(dock_data));
   }
-  if (!layout.blob.empty()) {
-    SetKey(layout_data, "blob",
-           base::Value::BlobStorage{layout.blob.begin(), layout.blob.end()});
-  }
+  if (!layout.blob.empty())
+    SetKey(layout_data, "blob", SaveBlob(layout.blob));
   result.SetKey("layout", std::move(layout_data));
 
   return result;

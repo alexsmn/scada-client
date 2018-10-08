@@ -20,6 +20,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QEvent>
 #include <QLayout>
@@ -33,10 +34,14 @@
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
   auto& prefs = GetPrefs();
-  if (!prefs.bounds.IsEmpty()) {
-    setGeometry(prefs.bounds.x(), prefs.bounds.y(), prefs.bounds.width(),
-                prefs.bounds.height());
+  auto bounds = prefs.bounds;
+  if (bounds.IsEmpty()) {
+    auto desktop_size = QDesktopWidget{}.size();
+    bounds = {desktop_size.width() / 8, desktop_size.height() / 8,
+              desktop_size.width() * 3 / 4, desktop_size.height() * 3 / 4};
   }
+
+  setGeometry(bounds.x(), bounds.y(), bounds.width(), bounds.height());
 
   view_manager_.reset(new ViewManagerQt{*this, *this});
 

@@ -55,14 +55,6 @@ inline const base::Value::ListStorage* GetList(const base::Value& value,
     return nullptr;
 }
 
-inline const base::Value::BlobStorage* GetBlob(const base::Value& value,
-                                               base::StringPiece key) {
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::BINARY))
-    return &k->GetBlob();
-  else
-    return nullptr;
-}
-
 inline void SetKey(base::Value& dict, base::StringPiece key, bool value) {
   dict.SetKey(key, base::Value{value});
 }
@@ -95,15 +87,9 @@ inline void SetKey(base::Value& dict,
   dict.SetKey(key, base::Value{std::move(value)});
 }
 
-inline void SetKey(base::Value& dict,
-                   base::StringPiece key,
-                   base::Value::BlobStorage&& value) {
-  dict.SetKey(key, base::Value{std::move(value)});
-}
-
-inline void SaveJson(const base::Value& data, const base::FilePath& path) {
+inline bool SaveJson(const base::Value& data, const base::FilePath& path) {
   JSONFileValueSerializer serializer{path};
-  serializer.Serialize(data);
+  return serializer.Serialize(data);
 }
 
 inline std::unique_ptr<base::Value> LoadJson(

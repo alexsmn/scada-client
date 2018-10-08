@@ -279,9 +279,10 @@ void Profile::Save(const events::EventManager& event_manager,
 
   auto data = SaveToValue(event_manager, portfolio_manager, favourites);
 
-  SaveJson(data, GetFilePath());
-
-  LOG(INFO) << "Profile saved";
+  if (SaveJson(data, GetFilePath()))
+    LOG(INFO) << "Profile saved";
+  else
+    LOG(ERROR) << "Profile save error";
 }
 
 base::Value Profile::SaveToValue(const events::EventManager& event_manager,

@@ -111,7 +111,7 @@ class PageLayout {
 
   PageLayoutBlock main;
   Dock dock[4];
-  std::vector<char> blob;
+  std::string blob;
 
   void Clear() {
     main = PageLayoutBlock();
