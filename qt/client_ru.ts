@@ -204,12 +204,12 @@
         <translation type="vanished">Локальный</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="79"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="80"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="133"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="134"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>

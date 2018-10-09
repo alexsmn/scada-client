@@ -127,7 +127,8 @@ void ViewManagerQt::OpenLayout(Page& page, const PageLayout& layout) {
 
   if (!layout.blob.empty()) {
     ScopedNames names{views_};
-    main_window_.restoreState(QByteArray::fromRawData(layout.blob.data(), layout.blob.size()));
+    main_window_.restoreState(
+        QByteArray::fromRawData(layout.blob.data(), layout.blob.size()));
   }
 }
 

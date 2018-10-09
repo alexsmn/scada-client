@@ -245,14 +245,14 @@ bool TableModel::SetFormula(int row, std::string formula) {
   if (row == -1)
     row = static_cast<int>(rows_.size());
 
-  DCHECK(row <= (int)rows_.size());
+  int added_first = static_cast<int>(rows_.size());
+  int added_count = row - added_first + 1;
+  for (int i = 0; i < added_count; ++i)
+    rows_.push_back(new TableRow(*this, added_first + i));
+  if (added_count != 0)
+    NotifyItemsAdded(added_first, added_count);
 
-  if (row == (int)rows_.size()) {
-    rows_.push_back(new TableRow(*this, row));
-    NotifyItemsAdded(row, 1);
-  }
-
-  DCHECK(rows_[row]);
+  assert(rows_[row]);
   TableRow& trow = *rows_[row];
 
   auto old_node_id = trow.timed_data().GetNode().node_id();

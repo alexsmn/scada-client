@@ -36,9 +36,10 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   auto& prefs = GetPrefs();
   auto bounds = prefs.bounds;
   if (bounds.IsEmpty()) {
-    auto desktop_size = QDesktopWidget{}.size();
-    bounds = {desktop_size.width() / 8, desktop_size.height() / 8,
-              desktop_size.width() * 3 / 4, desktop_size.height() * 3 / 4};
+    auto desktop_bounds = QDesktopWidget{}.availableGeometry(this);
+    bounds = {desktop_bounds.left() + desktop_bounds.width() / 8,
+              desktop_bounds.top() + desktop_bounds.height() / 8,
+              desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};
   }
 
   setGeometry(bounds.x(), bounds.y(), bounds.width(), bounds.height());
