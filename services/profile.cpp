@@ -231,11 +231,11 @@ void Profile::Load(const base::Value& data,
   }
 
   // out-of-page
-  if (auto* out_pagese = GetDict(data, "floatingWindows"))
+  if (auto* out_pagese = data.FindKey("floatingWindows"))
     out_wins.Load(*out_pagese);
 
   // favorites
-  if (auto* favourites_root = GetDict(data, "favorites"))
+  if (auto* favourites_root = data.FindKey("favorites"))
     favourites.Load(*favourites_root);
 
   // portfolios
@@ -330,7 +330,7 @@ base::Value Profile::SaveToValue(const events::EventManager& event_manager,
   data.SetKey("floatingWindows", out_wins.Save(true));
 
   // favorites
-  data.SetKey("favourites", favourites.Save());
+  data.SetKey("favorites", favourites.Save());
 
   // portfolios
   {

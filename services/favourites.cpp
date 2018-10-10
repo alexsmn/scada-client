@@ -86,7 +86,7 @@ void Favourites::NotifyWindowChanged(const Page& folder,
 }
 
 void Favourites::Load(const base::Value& value) {
-  if (value.is_list())
+  if (!value.is_list())
     return;
 
   for (const auto& folder_data : value.GetList())
