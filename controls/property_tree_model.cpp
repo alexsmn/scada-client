@@ -11,8 +11,7 @@ PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
 }
 
 void PropertyGroupTreeNode::Update() {
-  for (int i = GetChildCount() - 1; i >= 0;  --i)
-    Remove(i);
+  assert(GetChildCount() == 0);
 
   for (int i = 0; i < property_group.GetCount(); ++i) {
     std::unique_ptr<PropertyTreeNode> node;
@@ -61,9 +60,11 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
     : property_model_{property_model} {
   assert(!property_model_.model_changed_handler);
   property_model_.model_changed_handler = [this] {
-    TreeModelResetting();
-    static_cast<PropertyGroupTreeNode*>(root())->Update();
-    TreeModelReset();
+    Remove(*root(), 0, root()->GetChildCount());
+    int count = root()->AsGroup()->property_group.GetCount();
+    TreeNodesAdding(root(), 0, count);
+    root()->AsGroup()->Update();
+    TreeNodesAdded(root(), 0, count);
   };
 
   assert(!property_model_.properties_changed_handler);

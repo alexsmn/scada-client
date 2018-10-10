@@ -7,10 +7,10 @@ Tree::Tree(ui::TreeModel& model)
     : model_adapter_{model}, item_delegate_{[&model](const QModelIndex& index) {
         return model.GetEditData(index.internalPointer(), index.column());
       }} {
-  setRootIsDecorated(false);
   setHeaderHidden(true);
   setModel(&model_adapter_);
   setItemDelegate(&item_delegate_);
+  SetRootVisible(false);
 
   // https://stackoverflow.com/questions/26011291/initial-width-of-column-in-qtableview-via-model
   // If you need to initialize column widths based on Qt::SizeHintRole you need
@@ -91,7 +91,13 @@ void Tree::SetChecked(void* node, bool checked) {
   model_adapter_.SetChecked(node, checked);
 }
 
-void Tree::SetRootVisible(bool visible) {}
+void Tree::SetRootVisible(bool visible) {
+  if (visible)
+    setRootIndex({});
+  else
+    setRootIndex(model()->index(0, 0));
+  setRootIsDecorated(!visible);
+}
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {}
 
