@@ -179,8 +179,8 @@ void Page::Load(const base::Value& data) {
   }
 
   // layout
-  if (const auto* layoute = GetDict(data, "Layout")) {
-    if (const auto* maine = GetDict(*layoute, "Center"))
+  if (const auto* layoute = GetDict(data, "layout")) {
+    if (const auto* maine = GetDict(*layoute, "center"))
       LoadLayoutBlock(layout.main, *maine);
 
     for (int i = 0; i < 4; i++) {
