@@ -48,7 +48,7 @@ class PropertyDefinition {
                        const base::string16& text) const;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const;
 
  private:
@@ -89,7 +89,7 @@ class ReferencePropertyDefinition : public PropertyDefinition {
                        const base::string16& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
   virtual bool IsReadOnly(const NodeRef& node,
                           const scada::NodeId& prop_decl_id) const override;
@@ -106,7 +106,7 @@ class BoolPropertyDefinition : public PropertyDefinition {
       const scada::NodeId& prop_decl_id) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 };
 
@@ -125,7 +125,7 @@ class EnumPropertyDefinition : public PropertyDefinition {
                        const base::string16& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 };
 
@@ -150,7 +150,7 @@ class ChannelPropertyDefinition : public PropertyDefinition {
                        const base::string16& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 
  private:
@@ -165,7 +165,7 @@ class TransportPropertyDefinition : public PropertyDefinition {
   // PropertyDefinition
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 };
 
@@ -184,7 +184,7 @@ class ColorPropertyDefinition : public PropertyDefinition {
                        const base::string16& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
-      const NodeRef& type_definition,
+      const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 };
 

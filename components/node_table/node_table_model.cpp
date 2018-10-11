@@ -175,11 +175,7 @@ ui::EditData NodeTableModel::GetEditData(int row, int column) {
       c.attr_id == scada::AttributeId::DisplayName)
     return {ui::EditData::EditorType::TEXT};
 
-  const auto& type_definition = node.type_definition();
-  if (!type_definition)
-    return {ui::EditData::EditorType::NONE};
-
-  return c.prop_def->GetPropertyEditor(*this, type_definition,
+  return c.prop_def->GetPropertyEditor(*this, node,
                                        c.property_declaration.node_id());
 }
 

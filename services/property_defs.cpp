@@ -56,6 +56,19 @@ NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
   return nullptr;
 }
 
+std::pair<scada::NodeId /*parent_id*/, base::StringPiece /*component_name*/>
+ParseChannelPath(base::StringPiece channel_path) {
+  scada::NodeId node_id;
+  scada::NodeId parent_id;
+  base::StringPiece component_name;
+  if (!IsNodeIdFormula(channel_path, node_id) ||
+      !IsNestedNodeId(node_id, parent_id, component_name)) {
+    parent_id = scada::NodeId();
+    component_name = channel_path;
+  }
+  return {parent_id, component_name};
+}
+
 const PropertyDefinition kNamePropDef(ui::TableColumn::LEFT, 150);
 const PropertyDefinition kStringPropDef(ui::TableColumn::LEFT);
 const PropertyDefinition kIntPropDef(ui::TableColumn::RIGHT);
@@ -261,8 +274,9 @@ void PropertyDefinition::SetText(const PropertyContext& context,
 
 ui::EditData PropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
+  const auto& type_definition = node.type_definition();
   const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
     return ui::EditData{ui::EditData::EditorType::NONE};
@@ -318,10 +332,11 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
 
 ui::EditData ReferencePropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
 
+  const auto& type_definition = node.type_definition();
   if (auto target_type_definition =
           GetTargetTypeDefinition(type_definition, prop_decl_id)) {
     result.choices.emplace_back(kChoiceNone);
@@ -354,7 +369,7 @@ base::string16 BoolPropertyDefinition::GetText(
 
 ui::EditData BoolPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
   result.choices = {scada::Variant::kFalseString, scada::Variant::kTrueString};
@@ -407,8 +422,9 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
 
 ui::EditData EnumPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
+  const auto& type_definition = node.type_definition();
   const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
     return ui::EditData{ui::EditData::EditorType::NONE};
@@ -472,14 +488,7 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
   }
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
-  scada::NodeId node_id;
-  scada::NodeId parent_id;
-  base::StringPiece component_name;
-  if (!IsNodeIdFormula(channel_path, node_id) ||
-      !IsNestedNodeId(node_id, parent_id, component_name)) {
-    parent_id = scada::NodeId();
-    component_name = channel_path;
-  }
+  auto [parent_id, component_name] = ParseChannelPath(channel_path);
 
   auto item_path = component_name.as_string();
   if (device_)
@@ -504,22 +513,31 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
 
 ui::EditData ChannelPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
+  ui::EditData result{ui::EditData::EditorType::DROPDOWN};
+
   if (device_) {
-    ui::EditData result{ui::EditData::EditorType::DROPDOWN};
     result.choices.emplace_back(kChoiceNone);
     GetNodeNamesRecursive(context.node_service_.GetNode(id::Devices),
                           id::DeviceType, result.choices);
-    return result;
+
+  } else {
+    auto channel_path = node[prop_decl_id].value().get_or(std::string{});
+    auto [parent_id, component_name] = ParseChannelPath(channel_path);
+    const auto& parent = context.node_service_.GetNode(parent_id);
+    for (auto& component : GetDataVariables(parent)) {
+      result.choices.emplace_back(
+          scada::ToLocalizedText(component.browse_name().name()));
+    }
   }
 
-  return ui::EditData{ui::EditData::EditorType::TEXT};
+  return result;
 }
 
 ui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   ui::EditData data{ui::EditData::EditorType::BUTTON};
 
@@ -561,7 +579,7 @@ void ColorPropertyDefinition::SetText(const PropertyContext& context,
 
 ui::EditData ColorPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
-    const NodeRef& type_definition,
+    const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
   result.choices.reserve(1 + palette::GetColorCount());
