@@ -44,6 +44,7 @@ class SummaryModel::Cell {
 };
 
 bool SummaryModel::Cell::Update(const scada::DataValue& data_value) {
+  // TODO: Check it's an update.
   if (data_value.server_timestamp <= tvq_.server_timestamp)
     return false;
 
@@ -55,7 +56,7 @@ bool SummaryModel::Cell::Update(const scada::DataValue& data_value) {
 
 class SummaryModel::Column {
  public:
-  Column(SummaryModel& model, int index, const std::string& formula);
+  Column(SummaryModel& model, int index, base::StringPiece formula);
 
   const base::string16& title() const { return title_; }
 
@@ -90,7 +91,7 @@ class SummaryModel::Column {
 
 SummaryModel::Column::Column(SummaryModel& model,
                              int index,
-                             const std::string& formula)
+                             base::StringPiece formula)
     : model_(model), index_(index), cells_(model.row_count_), width_(100) {
   timed_data_.correction_handler = [this](size_t count,
                                           const scada::DataValue* tvqs) {
@@ -256,7 +257,7 @@ ui::HeaderModel& SummaryModel::column_model() {
 
 int SummaryModel::AddColumn(base::StringPiece formula) {
   int index = static_cast<int>(columns_.size());
-  columns_.emplace_back(new Column(*this, index, formula.as_string()));
+  columns_.emplace_back(new Column(*this, index, formula));
   return index;
 }
 
@@ -353,14 +354,17 @@ void SummaryModel::SetTimes(const TimeRange& time_range,
 
   // Can update |interval_|.
   auto delta = end_time - start_time;
-  int64_t row_count = (delta + base::TimeDelta::FromMicroseconds(1)) / interval;
+  int64_t row_count = std::max(base::TimeDelta(),
+                               delta - base::TimeDelta::FromMicroseconds(1)) /
+                          interval +
+                      1;
   row_count = std::min(row_count, static_cast<int64_t>(kMaxRowCount));
 
   time_range_ = time_range;
   start_time_ = start_time;
   end_time_ = start_time_ + interval * row_count;
+  interval_ = interval;
   row_count_ = row_count;
-  interval_ = (end_time_ - start_time) / row_count;
 
   assert(!interval_.is_zero());
   assert(!start_time_.is_null());
@@ -371,5 +375,5 @@ void SummaryModel::SetTimes(const TimeRange& time_range,
   for (size_t i = 0; i < columns_.size(); ++i)
     columns_[i]->UpdateTimes();
 
-  row_model_->NotifyModelChanged();
+  NotifyModelChanged();
 }

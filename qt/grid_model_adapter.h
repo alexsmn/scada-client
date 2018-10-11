@@ -5,8 +5,9 @@
 
 #include "ui/base/models/grid_model.h"
 
-class GridModelAdapter : public QAbstractTableModel,
-                         private ui::GridModel::Observer {
+class GridModelAdapter final : public QAbstractTableModel,
+                               private ui::GridModel::Observer,
+                               private ui::ColumnHeaderModel::Observer {
  public:
   GridModelAdapter(ui::GridModel& model,
                    ui::HeaderModel& row_model,
@@ -38,6 +39,9 @@ class GridModelAdapter : public QAbstractTableModel,
   virtual void OnGridRowsRemoved(ui::GridModel& model,
                                  int first,
                                  int count) override;
+
+  // ui::ColumnHeaderModel::Observer
+  virtual void OnModelChanged(ui::HeaderModel& model) override;
 
  private:
   ui::GridModel& model_;

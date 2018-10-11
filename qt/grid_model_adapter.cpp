@@ -27,10 +27,12 @@ GridModelAdapter::GridModelAdapter(ui::GridModel& model,
                                    ui::HeaderModel& column_model)
     : model_(model), row_model_(row_model), column_model_(column_model) {
   model_.observers().AddObserver(this);
+  column_model_.observers().AddObserver(this);
 }
 
 GridModelAdapter::~GridModelAdapter() {
   model_.observers().RemoveObserver(this);
+  column_model_.observers().RemoveObserver(this);
 }
 
 int GridModelAdapter::rowCount(const QModelIndex& parent) const {
@@ -117,4 +119,9 @@ void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
                                          int first,
                                          int count) {
   layoutChanged();
+}
+
+void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
+  if (&model == &column_model_)
+    headerDataChanged(Qt::Horizontal, 0, model.GetCount());
 }
