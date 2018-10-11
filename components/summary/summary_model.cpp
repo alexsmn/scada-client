@@ -44,8 +44,7 @@ class SummaryModel::Cell {
 };
 
 bool SummaryModel::Cell::Update(const scada::DataValue& data_value) {
-  // TODO: Check it's an update.
-  if (data_value.server_timestamp <= tvq_.server_timestamp)
+  if (!scada::IsUpdate(tvq_, data_value))
     return false;
 
   tvq_ = data_value;
