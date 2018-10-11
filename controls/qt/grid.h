@@ -19,6 +19,11 @@ class Grid final : public QTableView {
 
   void SetExpandAllowed(bool allowed);
 
+  void SetColumnHeaderVisible(bool visible);
+  void SetColumnHeaderHeight(int height);
+  void SetRowHeaderVisible(bool visible);
+  void SetRowHeaderWidth(int width);
+
   void SetContextMenuHandler(ContextMenuHandler handler);
 
   ui::GridModelIndex GetCurrentIndex() const;

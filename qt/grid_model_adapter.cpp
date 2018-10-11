@@ -77,16 +77,27 @@ Qt::ItemFlags GridModelAdapter::flags(const QModelIndex& index) const {
 QVariant GridModelAdapter::headerData(int section,
                                       Qt::Orientation orientation,
                                       int role) const {
-  if (orientation != Qt::Horizontal)
-    return QVariant();
+  if (orientation == Qt::Horizontal) {
+    switch (role) {
+      case Qt::DisplayRole:
+        return QString::fromStdWString(column_model_.GetTitle(section));
+      case Qt::SizeHintRole:
+        return QSize(column_model_.GetSize(section), 19);
+      default:
+        return QVariant();
+    }
 
-  switch (role) {
-    case Qt::DisplayRole:
-      return QString::fromStdWString(column_model_.GetTitle(section));
-    case Qt::SizeHintRole:
-      return QSize(column_model_.GetSize(section), 19);
-    default:
-      return QVariant();
+  } else if (orientation == Qt::Vertical) {
+    switch (role) {
+      case Qt::DisplayRole:
+        return QString::fromStdWString(row_model_.GetTitle(section));
+      default:
+        return QVariant();
+    }
+
+  } else {
+    assert(false);
+    return QVariant();
   }
 }
 
@@ -124,4 +135,6 @@ void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
 void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
   if (&model == &column_model_)
     headerDataChanged(Qt::Horizontal, 0, model.GetCount());
+  else if (&model == &row_model_)
+    headerDataChanged(Qt::Vertical, 0, model.GetCount());
 }

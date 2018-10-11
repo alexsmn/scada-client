@@ -301,10 +301,6 @@ void NodeTableModel::InitColumns() {
 
   // Display name
   {
-    columns_.push_back({scada::AttributeId::NodeId});
-    columns.emplace_back(columns.size(), kNodeIdAttributeString.as_string(), 50,
-                         ui::TableColumn::LEFT);
-
     columns_.push_back({scada::AttributeId::DisplayName});
     columns.emplace_back(columns.size(),
                          kDisplayNameAttributeString.as_string(), 75,

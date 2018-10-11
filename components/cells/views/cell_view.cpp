@@ -48,7 +48,7 @@ CellView::CellView(const ControllerContext& context)
   grid_->SetRowModel(&row_model_);
   grid_->SetColumnModel(&column_model_);
   grid_->set_controller(this);
-  grid_->SetColumnHeadersVisible(false);
+  grid_->SetColumnHeaderVisible(false);
   grid_->set_context_menu_controller(this);
 }
 

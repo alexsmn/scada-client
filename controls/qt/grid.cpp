@@ -47,6 +47,7 @@ Grid::Grid(ui::GridModel& model,
         return model.GetEditData(index.row(), index.column());
       }} {
   horizontalHeader()->setHighlightSections(false);
+  verticalHeader()->setHighlightSections(false);
   verticalHeader()->setDefaultSectionSize(19);
   setModel(&model_adapter_);
   resizeColumnsToContents();
@@ -67,6 +68,22 @@ void Grid::SetExpandAllowed(bool allowed) {
   UpdateSelectionRange();
 
   setMouseTracking(expand_allowed_);
+}
+
+void Grid::SetColumnHeaderVisible(bool visible) {
+  horizontalHeader()->setVisible(visible);
+}
+
+void Grid::SetColumnHeaderHeight(int height) {
+  horizontalHeader()->setFixedHeight(height);
+}
+
+void Grid::SetRowHeaderVisible(bool visible) {
+  verticalHeader()->setVisible(visible);
+}
+
+void Grid::SetRowHeaderWidth(int width) {
+  verticalHeader()->setFixedWidth(width);
 }
 
 void Grid::SetContextMenuHandler(ContextMenuHandler handler) {

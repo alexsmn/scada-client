@@ -42,10 +42,11 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
 
   grid_.reset(new Grid(*model_, *model_, column_model_));
 
-#if defined(UI_VIEWS)
-  grid_->SetRowHeadersVisible(true);
-  grid_->set_allow_row_select(true);
+  grid_->SetRowHeaderVisible(true);
   grid_->SetRowHeaderWidth(15);
+
+#if defined(UI_VIEWS)
+  grid_->set_allow_row_select(true);
 #endif
 
   return grid_->CreateParentIfNecessary();

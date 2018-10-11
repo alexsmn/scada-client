@@ -122,13 +122,13 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
 
   grid_->SetExpandAllowed(true);
+  grid_->SetRowHeaderVisible(true);
+  grid_->SetColumnHeaderHeight(19);
+  grid_->SetRowHeaderWidth(70);
 
 #if defined(UI_VIEWS)
   // grid_->set_controller(this);
-  grid_->SetRowHeadersVisible(true);
   grid_->set_allow_column_select(true);
-  grid_->SetTopHeaderHeight(19);
-  grid_->SetRowHeaderWidth(70);
   grid_->SelectCell(0, 0, true);
 #endif
 

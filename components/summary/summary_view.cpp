@@ -28,10 +28,8 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
-#if defined(UI_VIEWS)
   grid_->SetRowHeaderWidth(150);
-  grid_->SetRowHeadersVisible(true);
-#endif
+  grid_->SetRowHeaderVisible(true);
 
   return grid_->CreateParentIfNecessary();
 }
