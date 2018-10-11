@@ -237,9 +237,14 @@ void TableView::Save(WindowDefinition& definition) {
     if (!row)
       continue;
 
+    auto formula = row->GetFormula();
+    if (formula.empty())
+      continue;
+
     WindowItem& item = definition.AddItem("Item");
     item.SetInt("ix", i + 1);
-    item.SetString("path", row->GetFormula());
+    // WARNING: |SetString()| argument mustn't be an xvalue.
+    item.SetString("path", formula);
   }
 }
 

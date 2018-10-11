@@ -18,7 +18,7 @@ TableRow::~TableRow() {
 }
 
 std::string TableRow::GetFormula() const {
-  return '=' + formula_;
+  return formula_.empty() ? std::string{} : '=' + formula_;
 }
 
 base::string16 TableRow::GetTitle() const {

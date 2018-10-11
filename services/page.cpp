@@ -20,21 +20,27 @@ namespace {
 static const base::char16 kPageFileExtension[] = L"page";
 
 void LoadWinItems(WindowItems& items, const base::Value& data) {
-  if (!data.is_dict())
+  if (!data.is_list())
     return;
 
-  for (auto& [key, value] : data.DictItems()) {
+  for (auto& item_data : data.GetList()) {
     auto& item = items.emplace_back();
-    item.name = key;
-    item.attributes = value.Clone();
+    item.name = GetString(item_data, "name").as_string();
+    item.attributes = item_data.Clone();
+    item.attributes.RemoveKey("name");
   }
 }
 
 base::Value SaveWinItems(const WindowItems& items) {
-  base::Value data{base::Value::Type::DICTIONARY};
-  for (const auto& item : items)
-    data.SetKey(item.name, item.attributes.Clone());
-  return data;
+  base::Value::ListStorage list;
+  list.reserve(items.size());
+  for (const auto& item : items) {
+    assert(!item.attributes.FindKey("name"));
+    auto item_data = item.attributes.Clone();
+    SetKey(item_data, "name", item.name);
+    list.emplace_back(std::move(item_data));
+  }
+  return base::Value{std::move(list)};
 }
 
 void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
@@ -156,7 +162,7 @@ void Page::Load(const base::Value& data) {
       w->title = GetString16(win, "title");
       w->path = base::FilePath(GetString16(win, "path"));
       w->size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
-      if (auto* items = GetDict(win, "items"))
+      if (auto* items = win.FindKey("items"))
         LoadWinItems(w->items, *items);
 
       if (auto* data = GetDict(win, "data"))
