@@ -68,7 +68,7 @@ void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
 }
 
 void Tree::StartEditing(void* node) {
-  openPersistentEditor(model_adapter_.GetNodeIndex(node, 0));
+  edit(model_adapter_.GetNodeIndex(node, 0));
 }
 
 void Tree::SetDoubleClickHandler(DoubleClickHandler handler) {
