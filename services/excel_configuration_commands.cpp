@@ -31,7 +31,7 @@ void PrintProps(NodeService& node_service,
   for (auto& v : props) {
     const auto& prop = node_service.GetNode(v.first);
     report << L"  " << ToString16(prop.display_name()) << L" = "
-           << v.second.get_or(L"(Ошибка)") << std::endl;
+           << v.second.get_or(base::string16{L"(Ошибка)"}) << std::endl;
   }
 }
 

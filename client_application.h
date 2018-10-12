@@ -30,6 +30,7 @@ class ConnectionStateReporter;
 class EventNotifier;
 class Favourites;
 class FileCache;
+class FileSynchronizer;
 class Logger;
 class LocalEvents;
 class MainWindowManager;
@@ -90,6 +91,7 @@ class ClientApplication : private ClientApplicationContext,
 
   std::unique_ptr<events::EventManager> event_manager_;
   AliasResolver alias_resolver_;
+  std::unique_ptr<FileSynchronizer> file_synchronizer_;
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;

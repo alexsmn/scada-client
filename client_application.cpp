@@ -38,6 +38,7 @@
 #include "services/event_notifier.h"
 #include "services/favourites.h"
 #include "services/file_cache.h"
+#include "services/file_synchronizer.h"
 #include "services/local_events.h"
 #include "services/portfolio_manager.h"
 #include "services/profile.h"
@@ -208,6 +209,16 @@ void ClientApplication::Start() {
                                     const AliasResolveCallback& callback) {
     alias_service->Resolve(alias, callback);
   };
+
+  base::FilePath public_dir;
+  if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
+    file_synchronizer_ =
+        std::make_unique<FileSynchronizer>(FileSynchronizerContext{
+            std::make_shared<NestedLogger>(logger_, "FileSynchronizer"),
+            *node_service_,
+            public_dir.value(),
+        });
+  }
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
       TimedDataContext{
