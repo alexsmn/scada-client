@@ -2,29 +2,24 @@
 
 #include "base/files/file_util.h"
 #include "base/logger.h"
-#include "common/file_system.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
 
 namespace {
 
-bool IsFileEqual(const std::filesystem::path& path,
-                 const scada::ByteString& hash,
-                 scada::UInt64 size) {
-  if (size != 0 && hash.empty())
-    return false;
-
-  std::error_code ec;
-  auto actual_size = std::filesystem::file_size(path, ec);
-  if (ec)
-    return false;
-
-  if (actual_size != size)
-    return false;
-
-  auto actual_hash = CalculateFileHash(path);
-  return actual_hash == hash;
+std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
+  if (time.is_null())
+    return std::filesystem::file_time_type{};
+  else if (time.is_min())
+    return std::filesystem::file_time_type::min();
+  else if (time.is_max())
+    return std::filesystem::file_time_type::max();
+  else {
+    auto delta = time - scada::DateTime::UnixEpoch();
+    return std::filesystem::file_time_type{
+        std::chrono::microseconds(delta.InMicroseconds())};
+  }
 }
 
 }  // namespace
@@ -56,12 +51,14 @@ void FileSynchronizer::AddNode(const NodeRef& node,
   if (!IsInstanceOf(node, id::FileType))
     return;
 
-  const auto& hash =
-      node[id::FileType_Hash].value().get_or(scada::ByteString{});
+  auto last_update_time = ToFileTime(
+      node[id::FileType_LastUpdateTime].value().get_or(scada::DateTime{}));
   auto size =
       node[id::FileType_Size].value().get_or(static_cast<scada::UInt64>(0));
 
-  if (IsFileEqual(path, hash, size)) {
+  std::error_code ec;
+  auto actual_last_update_time = std::filesystem::last_write_time(path, ec);
+  if (actual_last_update_time == last_update_time) {
     logger_->WriteF(LogSeverity::Normal, "File '%s' is actual",
                     path.string().c_str());
     return;
@@ -70,7 +67,8 @@ void FileSynchronizer::AddNode(const NodeRef& node,
   logger_->WriteF(LogSeverity::Normal, "Download outdated '%s'...",
                   path.string().c_str());
 
-  node.Read(scada::AttributeId::Value, [this, path](scada::DataValue&& value) {
+  node.Read(scada::AttributeId::Value, [this, path, last_update_time](
+                                           scada::DataValue&& value) {
     if (!scada::IsGood(value.status_code)) {
       logger_->WriteF(LogSeverity::Warning, "Download '%s' error: %s",
                       path.string().c_str(),
@@ -89,5 +87,8 @@ void FileSynchronizer::AddNode(const NodeRef& node,
     logger_->WriteF(LogSeverity::Normal, "Download '%s' complete",
                     path.string().c_str());
     base::WriteFile(base::FilePath{path.wstring()}, data->data(), data->size());
+
+    std::error_code ec;
+    std::filesystem::last_write_time(path, last_update_time, ec);
   });
 }
