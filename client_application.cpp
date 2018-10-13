@@ -166,6 +166,7 @@ ClientApplication::~ClientApplication() {
 
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
+  file_synchronizer_.reset();
   event_manager_.reset();
   node_service_.reset();
 
