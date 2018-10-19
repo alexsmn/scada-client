@@ -406,9 +406,9 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     return commands;
   };
 
-  auto status_bar_model =
-      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
-          *master_data_services_, *event_manager_, *node_service_});
+  auto status_bar_model = std::make_shared<StatusBarModelImpl>(
+      StatusBarModelImplContext{*master_data_services_, *event_manager_,
+                                *node_service_, *task_manager_});
 
   auto connection_info_provider = [this] {
     return master_data_services_->GetHostName();

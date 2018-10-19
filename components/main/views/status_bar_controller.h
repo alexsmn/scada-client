@@ -18,6 +18,7 @@ class StatusBarController : private StatusBarModelObserver {
 
   // StatusBarModelObserver
   virtual void OnPanesChanged(int index, int count) override;
+  virtual void OnProgressChanged() override;
 
   const std::shared_ptr<StatusBarModel> model_;
 

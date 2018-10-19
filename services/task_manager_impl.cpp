@@ -39,7 +39,16 @@ TaskManagerImpl::~TaskManagerImpl() {
 }
 
 void TaskManagerImpl::CancelProgressDialog() {
+  // WARNING: Limit callback count.
+
+  if (!progress_dialog_)
+    return;
+
   progress_dialog_.reset();
+
+  const TaskManagerObserver::Status status{false};
+  for (auto& o : observers_)
+    o.OnTaskManagerStatus(status);
 }
 
 void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
@@ -248,8 +257,14 @@ void TaskManagerImpl::Run() {
     if (!progress_dialog_ && GetTickCount() - start_time >= 300)
       progress_dialog_ = CreateProgressDialog();
 
-    if (progress_dialog_)
+    if (progress_dialog_) {
       progress_dialog_->SetProgress(count, count - tasks_.size());
+
+      const TaskManagerObserver::Status status{
+          true, count, count - static_cast<int>(tasks_.size())};
+      for (auto& o : observers_)
+        o.OnTaskManagerStatus(status);
+    }
 
   } else {
     CancelProgressDialog();
@@ -267,4 +282,12 @@ void TaskManagerImpl::Run() {
 
 void TaskManagerImpl::PostTask(base::StringPiece16 title, TaskMethod task) {
   tasks_.push({title.as_string(), std::move(task)});
+}
+
+void TaskManagerImpl::AddObserver(TaskManagerObserver& observer) {
+  observers_.AddObserver(&observer);
+}
+
+void TaskManagerImpl::RemoveObserver(TaskManagerObserver& observer) {
+  observers_.RemoveObserver(&observer);
 }

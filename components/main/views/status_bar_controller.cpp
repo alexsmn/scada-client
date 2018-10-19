@@ -61,3 +61,5 @@ void StatusBarController::OnPanesChanged(int index, int count) {
   for (int i = 0; i < count; ++i)
     SetPaneText(index + i, model_->GetPaneText(index + i));
 }
+
+void StatusBarController::OnProgressChanged() {}

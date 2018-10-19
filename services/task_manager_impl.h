@@ -4,6 +4,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "core/status.h"
+#include "base/observer_list.h"
 #include "services/task_manager.h"
 
 #include <functional>
@@ -49,6 +50,8 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
   virtual void PostDeleteReference(const scada::NodeId& reference_type_id,
                                    const scada::NodeId& source_id,
                                    const scada::NodeId& target_id) override;
+  virtual void AddObserver(TaskManagerObserver& observer) override;
+  virtual void RemoveObserver(TaskManagerObserver& observer) override;
 
  private:
   using TaskMethod = std::function<void()>;
@@ -82,6 +85,8 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
   base::RepeatingTimer timer_;
 
   Task running_task_;
+
+  base::ObserverList<TaskManagerObserver> observers_;
 
   base::WeakPtrFactory<TaskManagerImpl> weak_factory_{this};
 };

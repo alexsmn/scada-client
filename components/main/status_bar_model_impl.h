@@ -4,6 +4,7 @@
 #include "base/timer/timer.h"
 #include "common/node_util.h"
 #include "controls/status_bar_model.h"
+#include "services/task_manager.h"
 
 namespace events {
 class EventManager;
@@ -19,34 +20,50 @@ struct StatusBarModelImplContext {
   scada::SessionService& session_service_;
   events::EventManager& event_manager_;
   NodeService& node_service_;
+  TaskManager& task_manager_;
 };
 
 class StatusBarModelImpl final : private StatusBarModelImplContext,
-                                 public StatusBarModel {
+                                 public StatusBarModel,
+                                 private TaskManagerObserver {
  public:
   explicit StatusBarModelImpl(StatusBarModelImplContext&& context);
+  ~StatusBarModelImpl();
 
+  // StatusBarModel
   virtual int GetPaneCount() override;
   virtual base::string16 GetPaneText(int index) override;
   virtual int GetPaneSize(int index) override;
-
+  virtual Progress GetProgress() const override;
   virtual void AddObserver(StatusBarModelObserver& observer) override;
   virtual void RemoveObserver(StatusBarModelObserver& observer) override;
 
  private:
-  void Update();
+  void UpdatePanes();
+
+  // TaskManagerObserver
+  virtual void OnTaskManagerStatus(
+      const TaskManagerObserver::Status& status) override;
 
   base::ObserverList<StatusBarModelObserver> observers_;
 
   base::RepeatingTimer update_timer_;
+
+  Progress progress_{false};
 };
 
 inline StatusBarModelImpl::StatusBarModelImpl(
     StatusBarModelImplContext&& context)
     : StatusBarModelImplContext{std::move(context)} {
+  task_manager_.AddObserver(*this);
+
   update_timer_.Start(
       FROM_HERE, base::TimeDelta::FromMilliseconds(500),
-      base::Bind(&StatusBarModelImpl::Update, base::Unretained(this)));
+      base::Bind(&StatusBarModelImpl::UpdatePanes, base::Unretained(this)));
+}
+
+inline StatusBarModelImpl::~StatusBarModelImpl() {
+  task_manager_.RemoveObserver(*this);
 }
 
 inline int StatusBarModelImpl::GetPaneCount() {
@@ -95,6 +112,10 @@ inline int StatusBarModelImpl::GetPaneSize(int index) {
   return kSizes[index];
 }
 
+StatusBarModel::Progress StatusBarModelImpl::GetProgress() const {
+  return progress_;
+}
+
 inline void StatusBarModelImpl::AddObserver(StatusBarModelObserver& observer) {
   observers_.AddObserver(&observer);
 }
@@ -104,7 +125,14 @@ inline void StatusBarModelImpl::RemoveObserver(
   observers_.RemoveObserver(&observer);
 }
 
-inline void StatusBarModelImpl::Update() {
+inline void StatusBarModelImpl::UpdatePanes() {
   for (auto& o : observers_)
     o.OnPanesChanged(0, 6);
+}
+
+inline void StatusBarModelImpl::OnTaskManagerStatus(
+    const TaskManagerObserver::Status& status) {
+  progress_ = {status.active, status.range, status.current};
+  for (auto& o : observers_)
+    o.OnProgressChanged();
 }
