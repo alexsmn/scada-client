@@ -78,10 +78,7 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
     case ID_OPEN_GRAPH:
     case ID_OPEN_SUMMARY:
     case ID_OPEN_EVENTS:
-      return selection_->multiple() || selection_->timed_data().connected() ||
-                     IsInstanceOf(node, id::DataGroupType)
-                 ? this
-                 : nullptr;
+      return !selection_->empty() ? this : nullptr;
 
     case ID_ACKNOWLEDGE_CURRENT:
     case ID_OPEN_DISPLAY:

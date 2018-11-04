@@ -96,11 +96,17 @@ void ExpandGroupItemIds(const NodeRef& node, NodeIdSet& item_ids) {
   for (const auto& child : node.targets(scada::id::Organizes)) {
     if (child.node_class() == scada::NodeClass::Variable)
       item_ids.insert(child.node_id());
-
     ExpandGroupItemIds(child, item_ids);
-
     if (item_ids.size() >= kTableLimitation)
-      break;
+      return;
+  }
+
+  for (const auto& child : node.targets(scada::id::HasComponent)) {
+    if (child.node_class() == scada::NodeClass::Variable)
+      item_ids.insert(child.node_id());
+    ExpandGroupItemIds(child, item_ids);
+    if (item_ids.size() >= kTableLimitation)
+      return;
   }
 }
 
