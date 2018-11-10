@@ -85,7 +85,7 @@ void TransportDialog::accept() {
 }
 
 void TransportDialog::SetTypeIndex(int index) {
-  bool serial_port = model_.IsSerialPortType(model_.type_index);
+  bool serial_port = model_.IsSerialPortType(index);
   ui.stackedWidget->setCurrentIndex(serial_port ? 1 : 0);
 }
 
