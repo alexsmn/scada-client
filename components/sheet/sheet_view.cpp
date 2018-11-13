@@ -306,7 +306,7 @@ void SheetView::UpdateFormulaRow() {
   if (!range.empty()) {
     const SheetCell* cell = model_->cell(range.row(), range.column());
     if (cell)
-      text = base::SysNativeMBToWide(cell->formula());
+      text = cell->formula();
   }
   formula_row_->SetText(text);
 #endif
@@ -421,8 +421,8 @@ int SheetView::OnPerformDrop(const ui::DropTargetEvent& event) {
     int row = 0, col = 0;
     if (grid_->GetCellAt(event.location(), row, col)) {
       SheetCell& cell = model_->GetCell(row, col);
-      std::string formula = '=' + MakeNodeIdFormula(item_data.item_id());
-      cell.SetFormula(formula);
+      cell.SetFormula(L'=' + base::SysNativeMBToWide(
+                                 MakeNodeIdFormula(item_data.item_id())));
       return ui::DragDropTypes::DRAG_COPY;
     }
   }
@@ -437,6 +437,6 @@ void SheetView::ContentsChanged(views::Textfield* sender,
   DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);
 
   model_->GetCell(grid_->selected_row(), grid_->selected_column())
-      .SetFormula(base::SysWideToNativeMB(new_contents));
+      .SetFormula(new_contents);
 }
 #endif
