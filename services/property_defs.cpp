@@ -205,6 +205,10 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::TsFormatType_CloseColor, &kColorPropDef},
     // Historical DB
     {id::HistoricalDatabaseType_Depth, &kIntPropDef},  // time delta
+    // Transmission Item
+    {id::TransmissionItemType_SourceAddress, &kIntPropDef},
+    {id::HasTransmissionSource, &kRefPropDef},
+    {id::HasTransmissionTarget, &kRefPropDef},
 };
 
 }  // namespace
