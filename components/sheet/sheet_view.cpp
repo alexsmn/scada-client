@@ -80,8 +80,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
 
       SheetCell& cell = model_->GetCell(row, col);
 
-      auto formula = item.GetString("text");
-      cell.SetFormula(formula.as_string());
+      cell.SetFormula(item.GetString16("text"));
 
       SheetFormatBase format;
 
@@ -118,10 +117,13 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
 
   grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
 
+  auto* layout = new QVBoxLayout;
+  layout->setSpacing(0);
+  layout->addWidget(formula_row_.get());
+  layout->addWidget(grid_.get());
+
   contents_view_.reset(new QWidget);
-  contents_view_->setLayout(new QVBoxLayout);
-  contents_view_->layout()->addWidget(formula_row_.get());
-  contents_view_->layout()->addWidget(grid_.get());
+  contents_view_->setLayout(layout);
 
 #elif defined(UI_VIEWS)
   formula_row_.reset(new views::Textfield);
@@ -216,7 +218,7 @@ void SheetView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
       grid_->selected_row() != -1) {
     SheetCell& cell =
         model_->GetCell(grid_->selected_row(), grid_->selected_column());
-    cell.SetFormula('=' + MakeNodeIdFormula(node_id));
+    cell.SetFormula(L'=' + base::SysNativeMBToWide(MakeNodeIdFormula(node_id)));
   }
 #endif
 }
@@ -287,7 +289,10 @@ void SheetView::ClearSelection() {
 }
 
 void SheetView::UpdateFormulaRow() {
-#if defined(UI_VIEWS)
+#if defined(UI_QT)
+  formula_row_->setVisible(model_->is_editing());
+
+#elif defined(UI_VIEWS)
   formula_row_->SetVisible(model_->is_editing());
 
   if (!model_->is_editing())

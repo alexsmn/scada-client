@@ -20,8 +20,8 @@ class SheetCell {
   bool is_blinking() const { return blinking_; }
   const rt::TimedDataSpec& timed_data() const { return timed_data_; }
 
-  const std::string& formula() const { return formula_; }
-  bool SetFormula(std::string formula);
+  const base::string16& formula() const { return formula_; }
+  bool SetFormula(base::string16 formula);
 
   rt::TimedDataSpec timed_data_;
 
@@ -38,7 +38,7 @@ class SheetCell {
   int row_;
   int column_;
 
-  std::string formula_;
+  base::string16 formula_;
   base::string16 text_;
 
   bool blinking_;

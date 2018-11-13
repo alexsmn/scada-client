@@ -62,7 +62,7 @@ void SheetModel::GetCell(ui::GridCell& cell) {
   if (!c)
     return;
 
-  cell.text = editing_ ? base::SysNativeMBToWide(c->formula()) : c->text();
+  cell.text = editing_ ? c->formula() : c->text();
 
   if (c->format_ && !c->format_->transparent)
     cell.cell_color = c->format_->color;
@@ -139,7 +139,7 @@ void SheetModel::SetRangeColor(const ui::GridRange& range, SkColor color) {
 }
 
 bool SheetModel::SetCellText(int row, int column, const base::string16& text) {
-  GetCell(row, column).SetFormula(base::SysWideToNativeMB(text));
+  GetCell(row, column).SetFormula(text);
   // TODO: Update formula row on model change notification.
   // UpdateFormulaRow();
   return true;
