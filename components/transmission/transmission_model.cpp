@@ -103,14 +103,18 @@ void TransmissionModel::Update() {
 }
 
 void TransmissionModel::OnModelChanged(const scada::ModelChangeEvent& event) {
-  if (event.verb & scada::ModelChangeEvent::NodeDeleted)
+  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
     Delete(event.node_id);
-  else if (auto node = node_service_.GetNode(event.node_id))
-    Update(node);
+  } else {
+    auto node = node_service_.GetNode(event.node_id);
+    if (IsInstanceOf(node, id::TransmissionItemType))
+      Update(node);
+  }
 }
 
 void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  if (auto node = node_service_.GetNode(node_id))
+  auto node = node_service_.GetNode(node_id);
+  if (IsInstanceOf(node, id::TransmissionItemType))
     Update(node);
 }
 
