@@ -38,6 +38,7 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
 }
 
 void AddFavouritesDialog::accept() {
+  window_def_.title = ui.nameLineEdit->text().toStdWString();
   auto* item = ui.folderListWidget->currentItem();
   auto folder_name =
       item && item != empty_folder_item_ ? item->text() : nullptr;
