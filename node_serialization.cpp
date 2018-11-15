@@ -41,7 +41,8 @@ void NodeToData(const NodeRef& source,
   for (auto& ref : source.references()) {
     assert(ref.forward);
     // Skip type definitions.
-    if (!IsSubtypeOf(ref.reference_type, scada::id::HasTypeDefinition)) {
+    if (!IsSubtypeOf(ref.reference_type, scada::id::HasTypeDefinition) &&
+        !IsSubtypeOf(ref.reference_type, scada::id::HasProperty)) {
       target.references.push_back(
           {ref.reference_type.node_id(), ref.forward, ref.target.node_id()});
     }
