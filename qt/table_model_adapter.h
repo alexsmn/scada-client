@@ -38,7 +38,9 @@ class TableModelAdapter : public QAbstractTableModel,
   // ui::TableModelObserver
   virtual void OnModelChanged() override;
   virtual void OnItemsChanged(int first, int count) override;
+  virtual void OnItemsAdding(int first, int count) override;
   virtual void OnItemsAdded(int first, int count) override;
+  virtual void OnItemsRemoving(int first, int count) override;
   virtual void OnItemsRemoved(int first, int count) override;
 
  private:

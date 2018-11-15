@@ -5,6 +5,7 @@
 #include "ui/base/models/table_model.h"
 
 #include <QHeaderView>
+#include <QSortFilterProxyModel>
 #include <QTableView>
 
 class Table : public QTableView {
@@ -23,9 +24,9 @@ class Table : public QTableView {
 
   std::vector<int> GetSelectedRows() const;
 
-  void SelectRow(int row, bool make_visible = true) { selectRow(row); }
+  void SelectRow(int row, bool make_visible = true);
 
-  void OpenEditor(int row) { edit(model()->index(row, 0, rootIndex())); }
+  void OpenEditor(int row);
 
   void CloseEditor() {}
 
@@ -36,4 +37,6 @@ class Table : public QTableView {
 
  private:
   TableModelAdapter model_adapter_;
+
+  QSortFilterProxyModel proxy_model_;
 };

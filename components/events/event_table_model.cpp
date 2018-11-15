@@ -193,6 +193,7 @@ void EventTableModel::AddRow(EventType type, const scada::Event& event) {
     if (index != -1) {
       Row row{type, event};
       row.Update(node_service_);
+      NotifyItemsAdding(index, 1);
       rows_.insert(rows_.begin() + index, std::move(row));
       NotifyItemsAdded(index, 1);
     }
@@ -206,6 +207,7 @@ void EventTableModel::AddRow(EventType type, const scada::Event& event) {
 }
 
 void EventTableModel::RemoveRows(int first, int count) {
+  NotifyItemsRemoving(first, count);
   rows_.erase(rows_.begin() + first, rows_.begin() + (first + count));
   NotifyItemsRemoved(first, count);
 }

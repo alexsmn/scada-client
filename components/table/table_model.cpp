@@ -201,6 +201,8 @@ bool TableModel::DeleteRows(int start, int count) {
     delete row;
   }
 
+  NotifyItemsRemoving(start, count);
+
   rows_.erase(rows_.begin() + start, rows_.begin() + start + count);
 
   for (int i = start; i < (int)rows_.size(); ++i)
@@ -247,10 +249,13 @@ bool TableModel::SetFormula(int row, std::string formula) {
 
   int added_first = static_cast<int>(rows_.size());
   int added_count = row - added_first + 1;
-  for (int i = 0; i < added_count; ++i)
-    rows_.push_back(new TableRow(*this, added_first + i));
-  if (added_count != 0)
+
+  if (added_count != 0) {
+    NotifyItemsAdding(added_first, added_count);
+    for (int i = 0; i < added_count; ++i)
+      rows_.push_back(new TableRow(*this, added_first + i));
     NotifyItemsAdded(added_first, added_count);
+  }
 
   assert(rows_[row]);
   TableRow& trow = *rows_[row];

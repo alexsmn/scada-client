@@ -29,11 +29,13 @@ void WatchModel::OnEvent(const scada::Status& status,
 
 void WatchModel::AddLine(const scada::Event& event) {
   int index = static_cast<int>(events_.size());
+  NotifyItemsAdding(index, 1);
   events_.push_back(event);
   NotifyItemsAdded(index, 1);
 
   if (events_.size() > kMaxLines) {
     int delete_count = static_cast<int>(events_.size()) - kMaxLines;
+    NotifyItemsRemoving(0, delete_count);
     events_.erase(events_.begin(), events_.begin() + delete_count);
     NotifyItemsRemoved(0, delete_count);
   }
@@ -99,6 +101,7 @@ void WatchModel::GetCell(ui::TableCell& cell) {
 
 void WatchModel::Clear() {
   int row_count = GetRowCount();
+  NotifyItemsRemoving(0, row_count);
   events_.clear();
   NotifyItemsRemoved(0, row_count);
 }

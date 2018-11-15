@@ -7,9 +7,16 @@ Table::Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
     : model_adapter_(model, std::move(columns)) {
   horizontalHeader()->setHighlightSections(false);
   verticalHeader()->setDefaultSectionSize(19);
-  setModel(&model_adapter_);
+
+  proxy_model_.setSourceModel(&model_adapter_);
+  proxy_model_.setDynamicSortFilter(true);
+  setModel(&proxy_model_);
+  setSortingEnabled(true);
+  sortByColumn(0, Qt::AscendingOrder);
+
   for (int i = 0; i < static_cast<int>(model_adapter_.columns().size()); ++i)
     setColumnWidth(i, model_adapter_.columns()[i].width);
+
   setShowGrid(false);
   setSelectionBehavior(SelectRows);
   connect(horizontalHeader(), &QHeaderView::sectionResized,
@@ -32,9 +39,17 @@ std::vector<int> Table::GetSelectedRows() const {
     auto indexes = selectionModel()->selectedRows();
     rows.reserve(indexes.size());
     for (const auto& index : indexes)
-      rows.emplace_back(index.row());
+      rows.emplace_back(proxy_model_.mapToSource(index).row());
   }
   return rows;
+}
+
+void Table::SelectRow(int row, bool make_visible) {
+  selectRow(proxy_model_.mapFromSource(model_adapter_.index(row, 0)).row());
+}
+
+void Table::OpenEditor(int row) {
+  edit(proxy_model_.mapFromSource(model_adapter_.index(row, 0)));
 }
 
 base::Value Table::SaveState() const {

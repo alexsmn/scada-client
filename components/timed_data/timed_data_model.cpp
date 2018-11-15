@@ -33,20 +33,33 @@ void TimedDataModel::SetTimedData(rt::TimedDataSpec timed_data) {
 }
 
 void TimedDataModel::Update() {
-  int old_count = count_;
-  count_ = 0;
+  auto new_begin = begin_iterator_;
+  auto new_count = count_;
+
+  new_count = 0;
   if (timed_data_.connected() && timed_data_.values()) {
     auto& values = *timed_data_.values();
-    begin_iterator_ = rt::LowerBound(values, timed_data_.from());
-    auto end_iterator_ =
+    new_begin = rt::LowerBound(values, timed_data_.from());
+    auto end_iterator =
         end_time_.is_null() ? values.end() : rt::UpperBound(values, end_time_);
-    count_ = std::distance(begin_iterator_, end_iterator_);
+    new_count = std::distance(new_begin, end_iterator);
   }
 
-  if (count_ > old_count)
-    NotifyItemsAdded(old_count, count_ - old_count);
-  else if (count_ < old_count)
-    NotifyModelChanged();
+  // TODO: Fixme.
+  if (new_count > count_) {
+    int first = count_, count = new_count - count_;
+    NotifyItemsAdding(first, count);
+    begin_iterator_ = new_begin;
+    count_ = new_count;
+    NotifyItemsAdded(first, count);
+
+  } else if (new_count < count_) {
+    int first = new_count, count = count_ - new_count;
+    NotifyItemsRemoving(first, count);
+    begin_iterator_ = new_begin;
+    count_ = new_count;
+    NotifyItemsRemoved(first, count);
+  }
 }
 
 const scada::DataValue& TimedDataModel::value(int row) const {
