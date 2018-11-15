@@ -4,8 +4,11 @@
 #include "qt/tree_model_adapter.h"
 
 Tree::Tree(ui::TreeModel& model)
-    : model_adapter_{model}, item_delegate_{[&model](const QModelIndex& index) {
-        return model.GetEditData(index.internalPointer(), index.column());
+    : model_adapter_{model},
+      item_delegate_{[this, &model](const QModelIndex& index) {
+        auto source_index = proxy_model_.mapToSource(index);
+        return model.GetEditData(source_index.internalPointer(),
+                                 source_index.column());
       }} {
   setHeaderHidden(true);
   setItemDelegate(&item_delegate_);
@@ -76,7 +79,7 @@ void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
 }
 
 void Tree::StartEditing(void* node) {
-  edit(model_adapter_.GetNodeIndex(node, 0));
+  edit(proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(node, 0)));
 }
 
 void Tree::SetDoubleClickHandler(DoubleClickHandler handler) {
