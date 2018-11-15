@@ -1,6 +1,7 @@
 #pragma once
 
-#include <qtreeview.h>
+#include <QSortFilterProxyModel>
+#include <QTreeView>
 
 #include "controls/types.h"
 #include "item_delegate.h"
@@ -10,12 +11,12 @@ namespace ui {
 class TreeModel;
 }
 
+class QSortFilterProxyModel;
+
 class Tree : public QTreeView {
  public:
   explicit Tree(ui::TreeModel& model);
   virtual ~Tree();
-
-  TreeModelAdapter& model_adapter() { return model_adapter_; }
 
   void SetRootVisible(bool visible);
 
@@ -43,6 +44,7 @@ class Tree : public QTreeView {
 
  private:
   TreeModelAdapter model_adapter_;
+  QSortFilterProxyModel proxy_model_;
 
   ItemDelegate item_delegate_;
 };

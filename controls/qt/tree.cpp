@@ -8,9 +8,15 @@ Tree::Tree(ui::TreeModel& model)
         return model.GetEditData(index.internalPointer(), index.column());
       }} {
   setHeaderHidden(true);
-  setModel(&model_adapter_);
   setItemDelegate(&item_delegate_);
+
+  proxy_model_.setDynamicSortFilter(true);
+  proxy_model_.setSourceModel(&model_adapter_);
+  setModel(&proxy_model_);
+
   SetRootVisible(false);
+  setSortingEnabled(true);
+  sortByColumn(0, Qt::AscendingOrder);
 
   // https://stackoverflow.com/questions/26011291/initial-width-of-column-in-qtableview-via-model
   // If you need to initialize column widths based on Qt::SizeHintRole you need
@@ -18,13 +24,13 @@ Tree::Tree(ui::TreeModel& model)
   // - inherit your class from QTableView;
   // - reimplement method setModel and use and set initial widths of columns
   // based on Qt::SizeHintRole using method QTableView::setColumnWidth.
-  for (int i = 0; i < model_adapter_.columnCount(); ++i) {
+  for (int i = 0; i < this->model()->columnCount(); ++i) {
     int width = model.GetColumnPreferredSize(i);
     if (width != 0)
       setColumnWidth(i, width);
   }
 
-  expand(model_adapter_.GetNodeIndex(model.GetRoot(), 0));
+  expand(this->model()->index(0, 0));
 }
 
 Tree::~Tree() {
@@ -37,8 +43,9 @@ void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
 }
 
 void Tree::SelectNode(void* node) {
-  selectionModel()->select(model_adapter_.GetNodeIndex(node, 0),
-                           QItemSelectionModel::ClearAndSelect);
+  selectionModel()->select(
+      proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(node, 0)),
+      QItemSelectionModel::ClearAndSelect);
 }
 
 int Tree::GetSelectionSize() const {
@@ -49,22 +56,23 @@ void* Tree::GetSelectedNode() {
   auto rows = selectionModel()->selectedRows();
   if (rows.size() != 1)
     return nullptr;
-  return model_adapter_.GetNode(rows.front());
+  return model_adapter_.GetNode(proxy_model_.mapToSource(rows.front()));
 }
 
 bool Tree::IsExpanded(void* node, bool up_to_root) const {
-  return isExpanded(model_adapter_.GetNodeIndex(node, 0));
+  return isExpanded(
+      proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(node, 0)));
 }
 
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
-  connect(this, &QTreeView::expanded,
-          [this, handler](const QModelIndex& index) {
-            handler(model_adapter_.GetNode(index), true);
-          });
-  connect(this, &QTreeView::collapsed,
-          [this, handler](const QModelIndex& index) {
-            handler(model_adapter_.GetNode(index), false);
-          });
+  connect(
+      this, &QTreeView::expanded, [this, handler](const QModelIndex& index) {
+        handler(model_adapter_.GetNode(proxy_model_.mapToSource(index)), true);
+      });
+  connect(
+      this, &QTreeView::collapsed, [this, handler](const QModelIndex& index) {
+        handler(model_adapter_.GetNode(proxy_model_.mapToSource(index)), false);
+      });
 }
 
 void Tree::StartEditing(void* node) {
