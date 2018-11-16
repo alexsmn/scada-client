@@ -10,6 +10,15 @@
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
+namespace {
+const base::char16 kDiscreteConfirmationQuestion[] =
+    L"Перевести %ls в состояние %ls?";
+const base::char16 kAnalogConfirmationQuestion[] =
+    L"Записать в %ls значение %ls?";
+const base::char16 kSecondStagePrefix[] =
+    L"Удаленное устройство готово к исполнению команды.\n\n";
+}  // namespace
+
 WriteModel::WriteModel(WriteContext&& context)
     : WriteContext{std::move(context)} {
   spec_.Connect(timed_data_service_, MakeNodeIdFormula(node_id_));
@@ -31,6 +40,7 @@ WriteModel::WriteModel(WriteContext&& context)
       node
           ? node[id::DataItemType_OutputCondition].value().get_or(std::string())
           : std::string();
+  two_staged_ = node[id::DataItemType_OutputTwoStaged].value().get_or(true);
   has_condition_ = !condition.empty();
   if (has_condition_)
     condition_.Connect(timed_data_service_, condition);
@@ -80,6 +90,7 @@ void WriteModel::Write(double value, bool lock) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
 
   write_value_ = value;
+  write_selecting_ = false;
 
   scada::WriteFlags flags;
   if (manual_) {
@@ -90,7 +101,7 @@ void WriteModel::Write(double value, bool lock) {
                                            weak_ptr, status));
                });
 
-  } else {
+  } else if (two_staged_) {
     write_selecting_ = true;
     flags.set_select();
     spec_.Write(
@@ -99,6 +110,9 @@ void WriteModel::Write(double value, bool lock) {
               FROM_HERE,
               base::Bind(&WriteModel::OnWriteComplete, weak_ptr, status));
         });
+
+  } else {
+    StartWriting(false);
   }
 }
 
@@ -120,36 +134,40 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
     return;
   }
 
-  if (!manual_ && write_selecting_) {
-    // Request confirmation from user.
-    if (profile_.control_confirmation) {
-      base::string16 title = spec_.GetTitle();
-      base::string16 value_str =
-          spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
-      base::string16 message = base::StringPrintf(
-          L"Удаленное устройство готово к исполнению команды.\n\n"
-          L"Перевести %ls в состояние %ls?",
-          title.c_str(), value_str.c_str());
-      if (dialog_service_->RunMessageBox(
-              message, title, MessageBoxMode::QuestionYesNoDefaultNo) !=
-          MessageBoxResult::Yes) {
-        completion_handler(false);
-        return;
-      }
-    }
-
-    write_selecting_ = false;
-    status_change_handler();
-
-    // Execute actual Write.
-    auto weak_ptr = weak_factory_.GetWeakPtr();
-    spec_.Write(write_value_, {}, {}, [weak_ptr](const scada::Status& status) {
-      if (auto ptr = weak_ptr.get())
-        ptr->OnWriteComplete(status);
-    });
-
+  if (write_selecting_) {
+    StartWriting(true);
     return;
   }
 
   completion_handler(true);
+}
+
+void WriteModel::StartWriting(bool second_stage) {
+  // Request confirmation from user.
+  if (profile_.control_confirmation) {
+    base::string16 title = spec_.GetTitle();
+    base::string16 value_str =
+        spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
+    base::string16 message = base::StringPrintf(
+        discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
+        title.c_str(), value_str.c_str());
+    if (second_stage)
+      message.insert(0, kSecondStagePrefix);
+    if (dialog_service_->RunMessageBox(
+            message, title, MessageBoxMode::QuestionYesNoDefaultNo) !=
+        MessageBoxResult::Yes) {
+      completion_handler(false);
+      return;
+    }
+  }
+
+  write_selecting_ = false;
+  status_change_handler();
+
+  // Execute actual Write.
+  auto weak_ptr = weak_factory_.GetWeakPtr();
+  spec_.Write(write_value_, {}, {}, [weak_ptr](const scada::Status& status) {
+    if (auto ptr = weak_ptr.get())
+      ptr->OnWriteComplete(status);
+  });
 }

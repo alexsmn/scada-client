@@ -15,6 +15,7 @@ class WriteModel : private WriteContext {
   bool discrete() const { return discrete_; }
   bool lock_allowed() const { return manual_; }
   bool has_condition() const { return has_condition_; }
+  bool two_staged() const { return two_staged_; }
 
   base::string16 GetWindowTitle() const;
   base::string16 GetSourceTitle() const;
@@ -37,6 +38,8 @@ class WriteModel : private WriteContext {
  private:
   void OnWriteComplete(const scada::Status& status);
 
+  void StartWriting(bool second_stage);
+
   DialogService* dialog_service_ = nullptr;
 
   rt::TimedDataSpec spec_;
@@ -45,6 +48,7 @@ class WriteModel : private WriteContext {
   double write_value_ = 0;
 
   bool has_condition_ = false;
+  bool two_staged_ = false;
   rt::TimedDataSpec condition_;
 
   base::WeakPtrFactory<WriteModel> weak_factory_{this};

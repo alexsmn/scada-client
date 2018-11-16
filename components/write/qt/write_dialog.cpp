@@ -82,7 +82,14 @@ void WriteDialog::accept() {
     auto index = ui.valueComboBox->currentIndex();
     value = index ? 1.0 : 0.0;
   } else {
-    ui.valueComboBox->currentText();
+    bool ok = false;
+    value = ui.valueComboBox->currentText().toDouble(&ok);
+    if (!ok) {
+      dialog_service_.RunMessageBox(
+          tr("Incorrect floating point value.").toStdWString(), {},
+          MessageBoxMode::Error);
+      return;
+    }
   }
 
   bool lock = false;

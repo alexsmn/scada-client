@@ -465,5 +465,10 @@
         <source>Unsatisfied</source>
         <translation>Нарушено</translation>
     </message>
+    <message>
+        <location filename="../components/write/qt/write_dialog.cpp" line="89"/>
+        <source>Incorrect floating point value.</source>
+        <translation>Указано некорректное значение с плавающей точкой.</translation>
+    </message>
 </context>
 </TS>

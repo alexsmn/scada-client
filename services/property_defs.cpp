@@ -117,6 +117,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::DataItemType_Input2, &kObjectInput2PropDef},
     {id::DataItemType_Output, &kObjectOutputPropDef},
     {id::DataItemType_OutputCondition, &kStringPropDef},
+    {id::DataItemType_OutputTwoStaged, &kBoolPropDef},
     {id::DiscreteItemType_Inversion, &kBoolPropDef},
     {id::AnalogItemType_DisplayFormat, &kStringPropDef},     // TODO: Editor
     {id::AnalogItemType_EngineeringUnits, &kStringPropDef},  // TODO: Combo
