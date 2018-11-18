@@ -8,6 +8,7 @@
 
 class ModusView;
 class ModusView2;
+class ModusView3;
 class ModusViewWrapper;
 
 class ModusController : public Controller {
@@ -25,11 +26,13 @@ class ModusController : public Controller {
  private:
   QWidget* CreateModusView();
   QWidget* CreateModusView2();
+  QWidget* CreateModusView3();
 
   void OpenPath(const base::FilePath& path);
 
   std::unique_ptr<ModusView> view_;
   std::unique_ptr<ModusView2> view2_;
+  std::unique_ptr<ModusView3> view3_;
   ModusViewWrapper* wrapper_;
 
   base::WeakPtrFactory<ModusController> weak_factory_{this};

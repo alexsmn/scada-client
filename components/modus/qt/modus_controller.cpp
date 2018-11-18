@@ -8,6 +8,7 @@
 #include "components/modus/modus_util.h"
 #include "components/modus/qt/modus_view.h"
 #include "components/modus/qt/modus_view2.h"
+#include "components/modus/qt/modus_view3.h"
 #include "controller_factory.h"
 #include "selection_model.h"
 #include "services/file_cache.h"
@@ -81,10 +82,18 @@ QWidget* ModusController::CreateModusView2() {
   return scroll_area;
 }
 
+QWidget* ModusController::CreateModusView3() {
+  view3_ = std::make_unique<ModusView3>(timed_data_service_);
+
+  wrapper_ = view3_.get();
+
+  return view3_.get();
+}
+
 QWidget* ModusController::Init(const WindowDefinition& definition) {
   QWidget* result = nullptr;
   if (IsModus2(definition, profile_))
-    result = CreateModusView2();
+    result = CreateModusView3();
   else
     result = CreateModusView();
 

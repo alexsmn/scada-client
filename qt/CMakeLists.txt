@@ -7,6 +7,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory("${deps}/qt/graph_qt" "graph_qt") 
+add_subdirectory("${deps}/qt/schematic" "schematic") 
 
 add_executable(client_qt WIN32
   ${SOURCES}
@@ -32,6 +33,7 @@ target_link_libraries(client_qt PUBLIC
   scada_core_opcua
   scada_core_remote
   scada_core_vidicon
+  schematic
   ui_base
 )
 
