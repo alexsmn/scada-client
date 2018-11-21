@@ -3,16 +3,23 @@
 #include "value_util.h"
 #include "window_definition_util.h"
 
-Table::Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
+Table::Table(ui::TableModel& model,
+             std::vector<ui::TableColumn> columns,
+             bool sorting)
     : model_adapter_(model, std::move(columns)) {
   horizontalHeader()->setHighlightSections(false);
   verticalHeader()->setDefaultSectionSize(19);
 
-  proxy_model_.setSourceModel(&model_adapter_);
-  proxy_model_.setDynamicSortFilter(true);
-  setModel(&proxy_model_);
-  setSortingEnabled(true);
-  sortByColumn(0, Qt::AscendingOrder);
+  if (sorting) {
+    proxy_model_ = std::make_unique<QSortFilterProxyModel>();
+    proxy_model_->setSourceModel(&model_adapter_);
+    proxy_model_->setDynamicSortFilter(true);
+    setModel(proxy_model_.get());
+    setSortingEnabled(true);
+    sortByColumn(0, Qt::AscendingOrder);
+  } else {
+    setModel(&model_adapter_);
+  }
 
   for (int i = 0; i < static_cast<int>(model_adapter_.columns().size()); ++i)
     setColumnWidth(i, model_adapter_.columns()[i].width);
@@ -23,6 +30,10 @@ Table::Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
           [this](int index, int old_size, int new_size) {
             model_adapter_.columns()[index].width = new_size;
           });
+}
+
+Table::~Table() {
+  setModel(nullptr);
 }
 
 void Table::SetContextMenuHandler(ContextMenuHandler handler) {
@@ -39,17 +50,17 @@ std::vector<int> Table::GetSelectedRows() const {
     auto indexes = selectionModel()->selectedRows();
     rows.reserve(indexes.size());
     for (const auto& index : indexes)
-      rows.emplace_back(proxy_model_.mapToSource(index).row());
+      rows.emplace_back(IndexToRow(index));
   }
   return rows;
 }
 
 void Table::SelectRow(int row, bool make_visible) {
-  selectRow(proxy_model_.mapFromSource(model_adapter_.index(row, 0)).row());
+  selectRow(RowToIndex(row).row());
 }
 
 void Table::OpenEditor(int row) {
-  edit(proxy_model_.mapFromSource(model_adapter_.index(row, 0)));
+  edit(RowToIndex(row));
 }
 
 base::Value Table::SaveState() const {
@@ -83,4 +94,18 @@ void Table::RestoreState(const base::Value& data) {
     for (; visual_index < header.count(); ++visual_index)
       header.hideSection(header.logicalIndex(visual_index));
   }
+}
+
+QModelIndex Table::RowToIndex(int row) const {
+  auto index = model_adapter_.index(row, 0);
+  if (proxy_model_)
+    index = proxy_model_->mapFromSource(index);
+  return index;
+}
+
+int Table::IndexToRow(const QModelIndex& index) const {
+  auto index2 = index;
+  if (proxy_model_)
+    index2 = proxy_model_->mapToSource(index);
+  return index2.row();
 }

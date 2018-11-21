@@ -1,6 +1,8 @@
 #include "controls/views/table.h"
 
-Table::Table(ui::TableModel& model, std::vector<ui::TableColumn> columns)
+Table::Table(ui::TableModel& model,
+             std::vector<ui::TableColumn> columns,
+             bool sorting)
     : TableView(model) {
   SetColumns(columns.size(), columns.data());
   set_show_grid(false);

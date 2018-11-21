@@ -84,9 +84,10 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   if (is_panel)
     count -= 2;
 
-  table_.reset(
-      new Table(*model_, std::vector<ui::TableColumn>(
-                             kEventViewColumns, kEventViewColumns + count)));
+  table_.reset(new Table(*model_,
+                         std::vector<ui::TableColumn>(
+                             kEventViewColumns, kEventViewColumns + count),
+                         true));
 
 #if defined(UI_QT)
   table_->horizontalHeader()->setHighlightSections(false);

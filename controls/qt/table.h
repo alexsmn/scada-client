@@ -10,7 +10,10 @@
 
 class Table : public QTableView {
  public:
-  Table(ui::TableModel& model, std::vector<ui::TableColumn> columns);
+  Table(ui::TableModel& model,
+        std::vector<ui::TableColumn> columns,
+        bool sorting = false);
+  ~Table();
 
   const std::vector<ui::TableColumn>& columns() const {
     return model_adapter_.columns();
@@ -36,7 +39,10 @@ class Table : public QTableView {
   void RestoreState(const base::Value& data);
 
  private:
+  QModelIndex RowToIndex(int row) const;
+  int IndexToRow(const QModelIndex& index) const;
+
   TableModelAdapter model_adapter_;
 
-  QSortFilterProxyModel proxy_model_;
+  std::unique_ptr<QSortFilterProxyModel> proxy_model_;
 };
