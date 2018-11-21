@@ -106,6 +106,19 @@
 #define ID_ABOUT_QT                     184
 #define ID_WINDOW_SPLIT_HORZ            185
 #define ID_WINDOW_SPLIT_VERT            186
+#define ID_AGGREGATION_LAST             187
+#define ID_AGGREGATION_COUNT            188
+#define ID_AGGREGATION_MIN              189
+#define ID_AGGREGATION_MAX              190
+#define ID_AGGREGATION_AVG              191
+#define ID_AGGREGATION_SUM              192
+#define ID_INTERVAL_1M                  193
+#define ID_INTERVAL_5M                  194
+#define ID_INTERVAL_15M                 195
+#define ID_INTERVAL_30M                 196
+#define ID_INTERVAL_1H                  197
+#define ID_INTERVAL_12H                 198
+#define ID_INTERVAL_1D                  199
 #define IDR_STRUCT_POPUP                201
 #define IDD_LOGIN                       202
 #define IDR_EVENT_POPUP                 202
@@ -440,6 +453,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         4033
 #define _APS_NEXT_CONTROL_VALUE         1052
-#define _APS_NEXT_SYMED_VALUE           187
+#define _APS_NEXT_SYMED_VALUE           200
 #endif
 #endif

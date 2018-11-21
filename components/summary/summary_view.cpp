@@ -38,24 +38,90 @@ void SummaryView::Save(WindowDefinition& definition) {
   model_->Save(definition);
 }
 
+std::optional<SummaryModel::AggregationFunction> GetAggregationType(
+    unsigned command_id) {
+  switch (command_id) {
+    case ID_AGGREGATION_COUNT:
+      return SummaryModel::AggregationFunction::Count;
+    case ID_AGGREGATION_LAST:
+      return SummaryModel::AggregationFunction::Last;
+    case ID_AGGREGATION_MIN:
+      return SummaryModel::AggregationFunction::Min;
+    case ID_AGGREGATION_MAX:
+      return SummaryModel::AggregationFunction::Max;
+    case ID_AGGREGATION_SUM:
+      return SummaryModel::AggregationFunction::Sum;
+    case ID_AGGREGATION_AVG:
+      return SummaryModel::AggregationFunction::Avg;
+    default:
+      return std::nullopt;
+  }
+}
+
+std::optional<base::TimeDelta> GetInterval(unsigned command_id) {
+  switch (command_id) {
+    case ID_INTERVAL_1M:
+      return base::TimeDelta::FromMinutes(1);
+    case ID_INTERVAL_5M:
+      return base::TimeDelta::FromMinutes(5);
+    case ID_INTERVAL_15M:
+      return base::TimeDelta::FromMinutes(15);
+    case ID_INTERVAL_30M:
+      return base::TimeDelta::FromMinutes(30);
+    case ID_INTERVAL_1H:
+      return base::TimeDelta::FromHours(1);
+    case ID_INTERVAL_12H:
+      return base::TimeDelta::FromHours(12);
+    case ID_INTERVAL_1D:
+      return base::TimeDelta::FromDays(1);
+    default:
+      return std::nullopt;
+  }
+}
+
 CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_EXPORT:
       return this;
   }
 
+  if (GetInterval(command_id))
+    return this;
+
+  if (GetAggregationType(command_id))
+    return this;
+
   return __super::GetCommandHandler(command_id);
 }
 
-void SummaryView::ExecuteCommand(unsigned command) {
-  switch (command) {
+bool SummaryView::IsCommandChecked(unsigned command_id) const {
+  if (auto interval = GetInterval(command_id))
+    return model_->interval() == *interval;
+
+  if (auto aggregation_function = GetAggregationType(command_id))
+    return model_->aggregation_function() == *aggregation_function;
+
+  return CommandHandler::IsCommandChecked(command_id);
+}
+
+void SummaryView::ExecuteCommand(unsigned command_id) {
+  switch (command_id) {
     case ID_EXPORT:
       ExportToExcel();
       break;
-    default:
-      __super::ExecuteCommand(command);
-      break;
   }
+
+  if (auto interval = GetInterval(command_id)) {
+    model_->SetInterval(*interval);
+    return;
+  }
+
+  if (auto aggregation_function = GetAggregationType(command_id)) {
+    model_->SetAggregationFunction(*aggregation_function);
+    return;
+  }
+
+  __super::ExecuteCommand(command_id);
 }
 
 void SummaryView::ExportToExcel() {

@@ -158,6 +158,34 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(*new Action(ID_TIME_RANGE_CUSTOM, CATEGORY_PERIOD,
                                        L"Другой...", L"Другой"));
 
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_1M, CATEGORY_INTERVAL, L"Минутный"));
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_5M, CATEGORY_INTERVAL, L"5 минут"));
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_15M, CATEGORY_INTERVAL, L"15 минут"));
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_30M, CATEGORY_INTERVAL, L"30 минут"));
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_1H, CATEGORY_INTERVAL, L"Часовой"));
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_12H, CATEGORY_INTERVAL, L"12 часов"));
+  action_manager.AddAction(
+      *new Action(ID_INTERVAL_1D, CATEGORY_INTERVAL, L"Суточный"));
+
+  action_manager.AddAction(
+      *new Action(ID_AGGREGATION_LAST, CATEGORY_AGGREGATION, L"Последнее"));
+  action_manager.AddAction(
+      *new Action(ID_AGGREGATION_COUNT, CATEGORY_AGGREGATION, L"Количество"));
+  action_manager.AddAction(
+      *new Action(ID_AGGREGATION_MIN, CATEGORY_AGGREGATION, L"Минимум"));
+  action_manager.AddAction(
+      *new Action(ID_AGGREGATION_MAX, CATEGORY_AGGREGATION, L"Максимум"));
+  action_manager.AddAction(
+      *new Action(ID_AGGREGATION_SUM, CATEGORY_AGGREGATION, L"Сумма"));
+  action_manager.AddAction(
+      *new Action(ID_AGGREGATION_AVG, CATEGORY_AGGREGATION, L"Среднее"));
+
   action_manager.AddAction(*new Action(ID_ITEM_PARAMS, CATEGORY_EDIT,
                                        L"Параметры", base::string16(),
                                        IDB_RECORD_EDITOR));

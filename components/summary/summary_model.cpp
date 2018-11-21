@@ -37,18 +37,77 @@ class SummaryModel::Cell {
 
   void Clear() { tvq_ = scada::DataValue(); }
 
-  bool Update(const scada::DataValue& data_value);
+  bool Update(AggregationFunction aggregation_function,
+              const scada::DataValue& data_value);
 
  private:
   scada::DataValue tvq_;
+  size_t count_ = 0;
+  std::optional<double> double_value_;
 };
 
-bool SummaryModel::Cell::Update(const scada::DataValue& data_value) {
-  if (!scada::IsUpdate(tvq_, data_value))
-    return false;
+bool SummaryModel::Cell::Update(AggregationFunction aggregation_function,
+                                const scada::DataValue& data_value) {
+  double double_value = 0.0;
 
-  tvq_ = data_value;
-  return true;
+  switch (aggregation_function) {
+    case AggregationFunction::Last:
+      if (!scada::IsUpdate(tvq_, data_value))
+        return false;
+      tvq_ = data_value;
+      ++count_;
+      return true;
+
+    case AggregationFunction::Count:
+      ++count_;
+      tvq_ = data_value;
+      tvq_.value = count_;
+      return true;
+
+    case AggregationFunction::Min:
+      if (!data_value.value.get(double_value))
+        return false;
+      if (double_value_ && *double_value_ <= double_value)
+        return false;
+      double_value_ = double_value;
+      tvq_ = data_value;
+      return true;
+
+    case AggregationFunction::Max:
+      if (!data_value.value.get(double_value))
+        return false;
+      if (double_value_ && *double_value_ >= double_value)
+        return false;
+      double_value_ = double_value;
+      tvq_ = data_value;
+      return true;
+
+    case AggregationFunction::Avg:
+      if (!data_value.value.get(double_value))
+        return false;
+      if (double_value_)
+        *double_value_ += double_value;
+      else
+        double_value_ = double_value;
+      ++count_;
+      tvq_ = data_value;
+      tvq_.value = *double_value_ / count_;
+      return true;
+
+    case AggregationFunction::Sum:
+      if (!data_value.value.get(double_value))
+        return false;
+      if (double_value_)
+        *double_value_ += double_value;
+      else
+        double_value_ = double_value;
+      tvq_ = data_value;
+      tvq_.value = *double_value_;
+      return true;
+
+    default:
+      return false;
+  }
 }
 
 // SummaryModel::Column -------------------------------------------------------
@@ -125,20 +184,20 @@ void SummaryModel::Column::UpdateHistory() {
     for (; i != end; ++i) {
       int row = model_.GetRowForTime(i->source_timestamp);
       if (row != -1)
-        cells_[row].Update(*i);
+        cells_[row].Update(model_.aggregation_function_, *i);
     }
   }
 
   // Current.
   int row = model_.GetRowForTime(timed_data_.current().source_timestamp);
   if (row != -1)
-    cells_[row].Update(timed_data_.current());
+    cells_[row].Update(model_.aggregation_function_, timed_data_.current());
 }
 
 void SummaryModel::Column::OnTvq(const scada::DataValue& data_value) {
   int row = model_.GetRowForTime(data_value.source_timestamp);
   if (row != -1) {
-    if (cells_[row].Update(data_value))
+    if (cells_[row].Update(model_.aggregation_function_, data_value))
       model_.OnCellChanged(index_, row);
   }
 }
@@ -262,7 +321,8 @@ int SummaryModel::AddColumn(base::StringPiece formula) {
 
 void SummaryModel::Load(const WindowDefinition& definition) {
   // TODO: Load time range and interval.
-  SetTimes(TimeRange{ID_TIME_RANGE_DAY}, base::TimeDelta::FromHours(1));
+  SetParams(TimeRange{ID_TIME_RANGE_DAY}, base::TimeDelta::FromHours(1),
+            AggregationFunction::Last);
 
   size_t count = std::min(10u, definition.items.size());
   for (size_t i = 0; i < count; ++i) {
@@ -294,8 +354,12 @@ void SummaryModel::GetCell(ui::GridCell& c) {
   Cell& cell = column.GetCell(c.row);
 
   const scada::DataValue& data_value = cell.data_value();
-  c.text = column.timed_data().GetValueString(data_value.value,
-                                              data_value.qualifier);
+  if (IsCustomUnits(aggregation_function_)) {
+    c.text = ToString16(data_value.value);
+  } else {
+    c.text = column.timed_data().GetValueString(data_value.value,
+                                                data_value.qualifier);
+  }
 
   if (!column.timed_data().ready())
     c.cell_color = SkColorSetRGB(227, 227, 227);
@@ -342,11 +406,21 @@ TimeRange SummaryModel::GetTimeRange() const {
 }
 
 void SummaryModel::SetTimeRange(const TimeRange& time_range) {
-  SetTimes(time_range, interval_);
+  SetParams(time_range, interval_, aggregation_function_);
 }
 
-void SummaryModel::SetTimes(const TimeRange& time_range,
-                            base::TimeDelta interval) {
+void SummaryModel::SetAggregationFunction(
+    AggregationFunction aggregation_function) {
+  SetParams(time_range_, interval_, aggregation_function);
+}
+
+void SummaryModel::SetInterval(base::TimeDelta interval) {
+  SetParams(time_range_, interval, aggregation_function_);
+}
+
+void SummaryModel::SetParams(const TimeRange& time_range,
+                             base::TimeDelta interval,
+                             AggregationFunction aggregation_function) {
   assert(!interval.is_zero());
 
   auto [start_time, end_time] = GetTimeRangeBounds(time_range);
@@ -364,6 +438,7 @@ void SummaryModel::SetTimes(const TimeRange& time_range,
   end_time_ = start_time_ + interval * row_count;
   interval_ = interval;
   row_count_ = row_count;
+  aggregation_function_ = aggregation_function;
 
   assert(!interval_.is_zero());
   assert(!start_time_.is_null());
@@ -375,4 +450,9 @@ void SummaryModel::SetTimes(const TimeRange& time_range,
     columns_[i]->UpdateTimes();
 
   NotifyModelChanged();
+}
+
+// static
+bool SummaryModel::IsCustomUnits(AggregationFunction aggregation_function) {
+  return aggregation_function == AggregationFunction::Count;
 }

@@ -22,11 +22,23 @@ class SummaryModel : private SummaryModelContext,
                      public ui::GridModel,
                      public TimeModel {
  public:
+  enum class AggregationFunction { Last, Avg, Min, Sum, Count, Max };
+
   explicit SummaryModel(SummaryModelContext&& context);
 
   const TimeRange& time_range() const { return time_range_; }
+
   base::TimeDelta interval() const { return interval_; }
-  void SetTimes(const TimeRange& time_range, base::TimeDelta interval);
+  void SetInterval(base::TimeDelta interval);
+
+  AggregationFunction aggregation_function() const {
+    return aggregation_function_;
+  }
+  void SetAggregationFunction(AggregationFunction aggregation_function);
+
+  void SetParams(const TimeRange& time_range,
+                 base::TimeDelta interval,
+                 AggregationFunction aggregation_function);
 
   int AddColumn(base::StringPiece formula);
 
@@ -44,6 +56,8 @@ class SummaryModel : private SummaryModelContext,
   // TimeModel
   virtual TimeRange GetTimeRange() const override;
   virtual void SetTimeRange(const TimeRange& time_range) override;
+
+  static bool IsCustomUnits(AggregationFunction aggregation_function);
 
  private:
   class Cell;
@@ -64,6 +78,7 @@ class SummaryModel : private SummaryModelContext,
   base::Time end_time_;
   base::TimeDelta interval_;
   TimeRange time_range_;
+  AggregationFunction aggregation_function_ = AggregationFunction::Last;
 
   size_t row_count_ = 0;
 
