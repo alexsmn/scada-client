@@ -13,7 +13,7 @@ class TimedDataService;
 class SheetColumnModel : public ui::ColumnHeaderModel {
  public:
   // ui::HeaderModel
-  virtual base::string16 GetTitle(int index) override;
+  virtual base::string16 GetTitle(int index) const override;
 };
 
 struct SheetModelContext {

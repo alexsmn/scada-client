@@ -235,9 +235,9 @@ class SummaryModel::RowModel : public ui::HeaderModel {
   explicit RowModel(SummaryModel& model);
 
   // ui::HeaderModel
-  virtual int GetCount() override { return model_.row_count_; }
-  virtual int GetSize(int index) override { return 18; }
-  virtual base::string16 GetTitle(int index) override;
+  virtual int GetCount() const override { return model_.row_count_; }
+  virtual int GetSize(int index) const override { return 18; }
+  virtual base::string16 GetTitle(int index) const override;
 
  private:
   friend class SummaryModel;
@@ -249,7 +249,7 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
   SetFixedSize(true);
 }
 
-base::string16 SummaryModel::RowModel::GetTitle(int index) {
+base::string16 SummaryModel::RowModel::GetTitle(int index) const {
   base::Time time = model_.GetRowTime(index);
   return base::SysNativeMBToWide(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
@@ -262,11 +262,11 @@ class SummaryModel::ColumnModel : public ui::HeaderModel {
   explicit ColumnModel(SummaryModel& model) : model_(model) {}
 
   // ui::HeaderModel
-  virtual int GetCount() override;
-  virtual int GetSize(int index) override;
+  virtual int GetCount() const override;
+  virtual int GetSize(int index) const override;
   virtual void SetSize(int index, int new_size) override;
-  virtual base::string16 GetTitle(int index) override;
-  virtual ui::TableColumn::Alignment GetAlignment(int index) override;
+  virtual base::string16 GetTitle(int index) const override;
+  virtual ui::TableColumn::Alignment GetAlignment(int index) const override;
 
  private:
   friend class SummaryModel;
@@ -274,11 +274,11 @@ class SummaryModel::ColumnModel : public ui::HeaderModel {
   SummaryModel& model_;
 };
 
-int SummaryModel::ColumnModel::GetCount() {
+int SummaryModel::ColumnModel::GetCount() const {
   return static_cast<int>(model_.columns_.size());
 }
 
-int SummaryModel::ColumnModel::GetSize(int index) {
+int SummaryModel::ColumnModel::GetSize(int index) const {
   return model_.columns_[index]->width();
 }
 
@@ -290,11 +290,12 @@ void SummaryModel::ColumnModel::SetSize(int index, int new_size) {
   }
 }
 
-base::string16 SummaryModel::ColumnModel::GetTitle(int index) {
+base::string16 SummaryModel::ColumnModel::GetTitle(int index) const {
   return model_.columns_[index]->title();
 }
 
-ui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(int index) {
+ui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(
+    int index) const {
   return ui::TableColumn::RIGHT;
 }
 

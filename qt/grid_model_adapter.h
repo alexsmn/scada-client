@@ -12,7 +12,10 @@ class GridModelAdapter final : public QAbstractTableModel,
   GridModelAdapter(ui::GridModel& model,
                    ui::HeaderModel& row_model,
                    ui::HeaderModel& column_model);
-  virtual ~GridModelAdapter();
+  ~GridModelAdapter();
+
+  ui::HeaderModel& row_model() { return row_model_; }
+  ui::HeaderModel& column_model() { return column_model_; }
 
   // QAbstractTableModel
   virtual int rowCount(

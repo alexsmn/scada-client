@@ -15,6 +15,9 @@ class Grid final : public QTableView {
        ui::HeaderModel& column_model);
   ~Grid();
 
+  ui::HeaderModel& row_model() { return model_adapter_.row_model(); }
+  ui::HeaderModel& column_model() { return model_adapter_.column_model(); }
+
   QWidget* CreateParentIfNecessary() { return this; }
 
   void SetExpandAllowed(bool allowed);

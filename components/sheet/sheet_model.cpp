@@ -7,7 +7,7 @@
 
 // SheetColumnModel -----------------------------------------------------------
 
-base::string16 SheetColumnModel::GetTitle(int index) {
+base::string16 SheetColumnModel::GetTitle(int index) const {
   assert(index >= 0);
   base::char16 ch = L'A' + static_cast<char>(index);
   return base::string16(1, ch);
