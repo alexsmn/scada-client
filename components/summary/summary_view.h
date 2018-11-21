@@ -18,6 +18,7 @@ class SummaryView : public Controller {
 	virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual TimeModel* GetTimeModel() override;
+  virtual void Print(PrintService& print_service) override;
 
  private:
   void ExportToExcel();

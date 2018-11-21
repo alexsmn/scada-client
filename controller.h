@@ -82,6 +82,7 @@ class Controller : protected ControllerContext, public CommandHandler {
   // View root node for creation.
   virtual NodeRef GetRootNode() const { return nullptr; }
 
+  // WindowInfo must have the WIN_CAN_PRINT flag.
   virtual void Print(PrintService& print_service) {}
 
  private:

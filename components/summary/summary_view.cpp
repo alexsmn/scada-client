@@ -6,11 +6,13 @@
 #include "components/summary/summary_model.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
+#include "print_util.h"
 #include "services/dialog_service.h"
 #include "time_range.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {ID_SUMMARY_VIEW, "Summ", L"Сводка", WIN_INS};
+const WindowInfo kWindowInfo = {ID_SUMMARY_VIEW, "Summ", L"Сводка",
+                                WIN_INS | WIN_CAN_PRINT};
 
 REGISTER_CONTROLLER(SummaryView, kWindowInfo);
 
@@ -168,4 +170,9 @@ void SummaryView::ExportToExcel() {
 
 TimeModel* SummaryView::GetTimeModel() {
   return model_.get();
+}
+
+void SummaryView::Print(PrintService& print_service) {
+  PrintGrid(PrintGridContext{print_service, *model_, grid_->column_model(),
+                             grid_->row_model()});
 }
