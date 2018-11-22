@@ -147,44 +147,69 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(*new Action(ID_SAVE_AS, CATEGORY_VIEW,
                                        L"Сохранить как...", L"Сохранить"));
 
-  action_manager.AddAction(
-      *new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, L"Текущие"));
-  action_manager.AddAction(
-      *new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, L"День"));
-  action_manager.AddAction(
-      *new Action(ID_TIME_RANGE_WEEK, CATEGORY_PERIOD, L"Неделя"));
-  action_manager.AddAction(
-      *new Action(ID_TIME_RANGE_MONTH, CATEGORY_PERIOD, L"Месяц"));
-  action_manager.AddAction(*new Action(ID_TIME_RANGE_CUSTOM, CATEGORY_PERIOD,
-                                       L"Другой...", L"Другой"));
+  action_manager
+      .AddAction(*new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, L"Текущие"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, L"День"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_TIME_RANGE_WEEK, CATEGORY_PERIOD, L"Неделя"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_TIME_RANGE_MONTH, CATEGORY_PERIOD, L"Месяц"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_TIME_RANGE_CUSTOM, CATEGORY_PERIOD,
+                             L"Другой...", L"Другой"))
+      .set_checkable(true);
 
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_1M, CATEGORY_INTERVAL, L"Минутный"));
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_5M, CATEGORY_INTERVAL, L"5 минут"));
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_15M, CATEGORY_INTERVAL, L"15 минут"));
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_30M, CATEGORY_INTERVAL, L"30 минут"));
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_1H, CATEGORY_INTERVAL, L"Часовой"));
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_12H, CATEGORY_INTERVAL, L"12 часов"));
-  action_manager.AddAction(
-      *new Action(ID_INTERVAL_1D, CATEGORY_INTERVAL, L"Суточный"));
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_1M, CATEGORY_INTERVAL, L"Минутный"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_5M, CATEGORY_INTERVAL, L"5 минут"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_15M, CATEGORY_INTERVAL, L"15 минут"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_30M, CATEGORY_INTERVAL, L"30 минут"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_1H, CATEGORY_INTERVAL, L"Часовой"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_12H, CATEGORY_INTERVAL, L"12 часов"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_INTERVAL_1D, CATEGORY_INTERVAL, L"Суточный"))
+      .set_checkable(true);
 
-  action_manager.AddAction(
-      *new Action(ID_AGGREGATION_LAST, CATEGORY_AGGREGATION, L"Последнее"));
-  action_manager.AddAction(
-      *new Action(ID_AGGREGATION_COUNT, CATEGORY_AGGREGATION, L"Количество"));
-  action_manager.AddAction(
-      *new Action(ID_AGGREGATION_MIN, CATEGORY_AGGREGATION, L"Минимум"));
-  action_manager.AddAction(
-      *new Action(ID_AGGREGATION_MAX, CATEGORY_AGGREGATION, L"Максимум"));
-  action_manager.AddAction(
-      *new Action(ID_AGGREGATION_SUM, CATEGORY_AGGREGATION, L"Сумма"));
-  action_manager.AddAction(
-      *new Action(ID_AGGREGATION_AVG, CATEGORY_AGGREGATION, L"Среднее"));
+  action_manager
+      .AddAction(
+          *new Action(ID_AGGREGATION_LAST, CATEGORY_AGGREGATION, L"Последнее"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_AGGREGATION_COUNT, CATEGORY_AGGREGATION,
+                             L"Количество"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(
+          *new Action(ID_AGGREGATION_MIN, CATEGORY_AGGREGATION, L"Минимум"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(
+          *new Action(ID_AGGREGATION_MAX, CATEGORY_AGGREGATION, L"Максимум"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(
+          *new Action(ID_AGGREGATION_SUM, CATEGORY_AGGREGATION, L"Сумма"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(
+          *new Action(ID_AGGREGATION_AVG, CATEGORY_AGGREGATION, L"Среднее"))
+      .set_checkable(true);
 
   action_manager.AddAction(*new Action(ID_ITEM_PARAMS, CATEGORY_EDIT,
                                        L"Параметры", base::string16(),

@@ -49,10 +49,11 @@ ActionManager::~ActionManager() {
     delete i->second;
 }
 
-void ActionManager::AddAction(Action& action) {
+Action& ActionManager::AddAction(Action& action) {
   assert(!FindAction(action.command_id()));
   action_map_[action.command_id()] = &action;
   actions_.push_back(&action);
+  return action;
 }
 
 Action* ActionManager::FindAction(unsigned command) const {

@@ -37,7 +37,7 @@ class ActionManager {
 
   const ActionList& actions() const { return actions_; }
 
-  void AddAction(Action& action);
+  Action& AddAction(Action& action);
   Action* FindAction(unsigned command) const;
 
   void Subscribe(ActionObserver& observer);

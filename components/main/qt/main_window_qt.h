@@ -43,6 +43,7 @@ class MainWindowQt final : public QMainWindow,
   void UpdateAction(QAction& qaction,
                     unsigned command_id,
                     ActionChangeMask change_mask);
+  void UpdateMenuActions(QMenu& menu);
 
   // ActionObserver
   virtual void OnActionChanged(Action& action,
@@ -51,6 +52,7 @@ class MainWindowQt final : public QMainWindow,
   std::unique_ptr<ViewManagerQt> view_manager_;
 
   std::map<unsigned /*command_id*/, QAction*> action_map_;
+  std::map<QAction*, unsigned /*command_id*/> action_command_ids_;
 
   QToolBar* toolbar_ = nullptr;
 

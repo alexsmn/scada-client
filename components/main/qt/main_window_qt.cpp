@@ -120,6 +120,7 @@ void MainWindowQt::CreateToolbar() {
     action->setVisible(false);
     if (action_info->image_id() != 0)
       action->setIcon(QIcon(LoadPixmap(action_info->image_id())));
+    action->setCheckable(action_info->checkable());
     auto command_id = action_info->command_id();
     QObject::connect(action, &QAction::triggered,
                      [this, command_id](bool checked) {
@@ -128,6 +129,7 @@ void MainWindowQt::CreateToolbar() {
                          handler->ExecuteCommand(command_id);
                      });
     action_map_.emplace(action_info->command_id(), action);
+    action_command_ids_.emplace(action, action_info->command_id());
   }
 
   toolbar_ = new QToolBar(this);
@@ -155,6 +157,8 @@ void MainWindowQt::CreateToolbar() {
           button->setText(text);
           category_action.menu = menu;
           category_action.toolbar_action = toolbar_->addWidget(button);
+          connect(menu, &QMenu::aboutToShow,
+                  [this, menu] { UpdateMenuActions(*menu); });
         }
         category_action.menu->addAction(action);
       }
@@ -226,5 +230,13 @@ void MainWindowQt::UpdateAction(QAction& action,
     action.setEnabled(enabled);
     if (enabled)
       action.setChecked(handler->IsCommandChecked(command_id));
+  }
+}
+
+void MainWindowQt::UpdateMenuActions(QMenu& menu) {
+  for (auto* action : menu.actions()) {
+    auto i = action_command_ids_.find(action);
+    if (i != action_command_ids_.end())
+      UpdateAction(*action, i->second, ActionChangeMask::All);
   }
 }

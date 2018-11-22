@@ -209,7 +209,7 @@
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="134"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="136"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>

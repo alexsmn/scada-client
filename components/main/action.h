@@ -24,7 +24,8 @@ class Action {
     ENABLED = 0x0001,
     CHECKED = 0x0002,
     VISIBLE = 0x0004,
-    ALWAYS_VISIBLE = 0x0008
+    ALWAYS_VISIBLE = 0x0008,
+    CHECKABLE = 0x0016,
   };
 
   Action(unsigned command_id,
@@ -39,6 +40,7 @@ class Action {
   Action& operator=(const Action&) = delete;
 
   void set_enabled(bool enabled) { SetFlag(ENABLED, enabled); }
+  void set_checkable(bool checkable) { SetFlag(CHECKABLE, checkable); }
   void set_checked(bool checked) { SetFlag(CHECKED, checked); }
   void set_visible(bool visible) { SetFlag(VISIBLE, visible); }
 
@@ -53,6 +55,7 @@ class Action {
 
   int image_id() const { return image_id_; }
   bool enabled() const { return GetFlag(ENABLED); }
+  bool checkable() const { return GetFlag(CHECKABLE); }
   bool checked() const { return GetFlag(CHECKED); }
   bool visible() const { return GetFlag(VISIBLE); }
   bool always_visible() const { return GetFlag(ALWAYS_VISIBLE); }
