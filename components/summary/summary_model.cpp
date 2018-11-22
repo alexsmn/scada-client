@@ -35,7 +35,7 @@ class SummaryModel::Cell {
  public:
   const scada::DataValue& data_value() const { return tvq_; }
 
-  void Clear() { tvq_ = scada::DataValue(); }
+  void Clear();
 
   bool Update(AggregationFunction aggregation_function,
               const scada::DataValue& data_value);
@@ -45,6 +45,12 @@ class SummaryModel::Cell {
   size_t count_ = 0;
   std::optional<double> double_value_;
 };
+
+void SummaryModel::Cell::Clear() {
+  tvq_ = {};
+  count_ = 0;
+  double_value_.reset();
+}
 
 bool SummaryModel::Cell::Update(AggregationFunction aggregation_function,
                                 const scada::DataValue& data_value) {
@@ -451,6 +457,10 @@ void SummaryModel::SetParams(const TimeRange& time_range,
     columns_[i]->UpdateTimes();
 
   NotifyModelChanged();
+}
+
+const rt::TimedDataSpec& SummaryModel::timed_data(int column) const {
+  return columns_[column]->timed_data();
 }
 
 // static

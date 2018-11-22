@@ -3,9 +3,14 @@
 #include <memory>
 
 #include "base/time/time.h"
+#include "common/node_ref.h"
 #include "core/configuration_types.h"
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
+
+namespace rt {
+class TimedDataSpec;
+}
 
 namespace scada {
 class DataValue;
@@ -49,6 +54,8 @@ class SummaryModel : private SummaryModelContext,
   ui::HeaderModel& column_model();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
+
+  const rt::TimedDataSpec& timed_data(int column) const;
 
   // ui::GridModel
   virtual void GetCell(ui::GridCell& cell) override;
