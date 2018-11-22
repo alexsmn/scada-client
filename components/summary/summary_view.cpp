@@ -36,6 +36,15 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
       selection().SelectMultiple();
   });
 
+  selection().multiple_handler = [this] {
+    NodeIdSet node_ids;
+    for (int column : grid_->GetSelectedColumns()) {
+      if (auto node = model_->timed_data(column).GetNode())
+        node_ids.emplace(node.node_id());
+    }
+    return node_ids;
+  };
+
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
