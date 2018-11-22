@@ -43,6 +43,18 @@ class Grid final : public QTableView {
     return rows;
   }
 
+  auto GetSelectedColumns() const {
+    std::vector<int> columns;
+    if (selectionModel()) {
+      for (const QItemSelectionRange& range : selectionModel()->selection()) {
+        columns.reserve(columns.size() + range.width());
+        for (int column = range.left(); column <= range.right(); ++column)
+          columns.emplace_back(column);
+      }
+    }
+    return columns;
+  }
+
   void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
   void OpenEditor(const ui::GridModelIndex& index);

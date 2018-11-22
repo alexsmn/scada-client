@@ -26,6 +26,16 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
 
   grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
 
+  grid_->SetSelectionChangeHandler([this] {
+    auto columns = grid_->GetSelectedColumns();
+    if (columns.empty())
+      selection().Clear();
+    else if (columns.size() == 1)
+      selection().SelectTimedData(model_->timed_data(columns[0]));
+    else
+      selection().SelectMultiple();
+  });
+
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
@@ -107,12 +117,6 @@ bool SummaryView::IsCommandChecked(unsigned command_id) const {
 }
 
 void SummaryView::ExecuteCommand(unsigned command_id) {
-  switch (command_id) {
-    case ID_EXPORT:
-      ExportToExcel();
-      break;
-  }
-
   if (auto interval = GetInterval(command_id)) {
     model_->SetInterval(*interval);
     return;
@@ -123,14 +127,19 @@ void SummaryView::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  __super::ExecuteCommand(command_id);
+  switch (command_id) {
+    case ID_EXPORT:
+      ExportToExcel();
+      break;
+    default:
+      __super::ExecuteCommand(command_id);
+  }
 }
 
 void SummaryView::ExportToExcel() {
   try {
     ExcelSheetModel sheet;
 
-#if defined(UI_VIEWS)
     int row_count = grid_->row_model().GetCount();
     int column_count = grid_->column_model().GetCount();
 
@@ -151,11 +160,10 @@ void SummaryView::ExportToExcel() {
     // Cells.
     for (int i = 0; i < row_count; ++i) {
       for (int j = 0; j < column_count; ++j) {
-        const auto& text = grid_->model().GetCellText(i, j);
+        const auto& text = model_->GetCellText(i, j);
         sheet.SetData(2 + i, 2 + j, base::win::ScopedVariant(text.c_str()));
       }
     }
-#endif
 
     Excel excel;
     excel.NewWorkbook();

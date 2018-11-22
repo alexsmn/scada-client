@@ -33,6 +33,11 @@ class Grid final : private views::ContextMenuController,
                          selection().row() + selection().row_count());
   }
 
+  auto GetSelectedColumns() const {
+    return boost::irange(selection().column(),
+                         selection().column() + selection().column_count());
+  }
+
   void SetSelectionChangeHandler(SelectionChangeHandler handler) {
     selection_changed_handler_ = std::move(handler);
   }
