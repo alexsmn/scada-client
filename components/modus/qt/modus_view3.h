@@ -2,17 +2,19 @@
 
 #include "base/files/file_path.h"
 #include "components/modus/modus_view_wrapper.h"
-#include "timed_data/timed_data_spec.h"
+#include "modus_binding3.h"
 
+#include <schematic/document.h>
+#include <schematic/view.h>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 #include <functional>
 #include <map>
 #include <memory>
-#include <schematic/document.h>
-#include <schematic/view.h>
 
 class TimedDataService;
 
-class ModusView3 : public Schematic::View,
+class ModusView3 : public QGraphicsView,
                    public ModusViewWrapper {
  public:
   explicit ModusView3(TimedDataService& timed_data_service);
@@ -25,10 +27,17 @@ class ModusView3 : public Schematic::View,
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
  private:
+  void CreateBindings(Schematic::Element& element);
+
   TimedDataService& timed_data_service_;
 
   base::FilePath path_;
   base::string16 title_;
 
   Schematic::Document document_;
+
+  QGraphicsScene scene_;
+  Schematic::View view_{scene_};
+
+  std::vector<ModusBinding3> bindings_;
 };

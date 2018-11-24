@@ -1,43 +1,44 @@
 #include "components/modus/qt/modus_view3.h"
 
+#include "timed_data/timed_data_spec.h"
+
 #include <QtWinExtras/qwinfunctions.h>
 #include <qevent.h>
 #include <qpaintengine.h>
 #include <qpainter.h>
 
-#include "base/win/scoped_gdi_object.h"
-#include "base/win/scoped_hdc.h"
-#include "client_utils.h"
-#include "components/modus/libmodus/modus_binding2.h"
-#include "components/modus/libmodus/modus_module2.h"
-
-#include "libmodus/gfx/canvas.h"
-#include "libmodus/render/renderer.h"
-#include "libmodus/render/shape.h"
-#include "libmodus/scheme/element.h"
-#include "libmodus/scheme/property_def.h"
-#include "libmodus/scheme/scheme.h"
-#include "libmodus/scheme/serialization.h"
-#include "libmodus/scheme/value.h"
-
 namespace {
+
 const int kSelectionInset = 3;
 const float kHitTolerance = 6.0f;
+
+QString GetDefaultPropertyName(const Schematic::Element& element) {
+  int type = static_cast<QString>(element["typ"]).toInt();
+  if (type == 134)
+    return "Tech.value";
+  else
+    return "Tech.closed";
+}
+
 }  // namespace
+
+// ModusView3
 
 ModusView3::ModusView3(TimedDataService& timed_data_service)
     : timed_data_service_{timed_data_service} {
-  setDocument(&document_);
+  setScene(&scene_);
+  view_.setDocument(&document_);
 }
 
-ModusView3::~ModusView3() {
-  setDocument(nullptr);
-}
+ModusView3::~ModusView3() {}
 
 void ModusView3::Open(const base::FilePath& path) {
   path_ = path;
 
   document_.Load(QString::fromStdWString(path_.value()));
+
+  for (auto* element : document_.elements())
+    CreateBindings(*element);
 }
 
 base::FilePath ModusView3::GetPath() const {
@@ -51,4 +52,24 @@ bool ModusView3::ShowContainedItem(const scada::NodeId& item_id) {
 
 htsde2::IHTSDEForm2* ModusView3::GetSdeForm() {
   return nullptr;
+}
+
+void ModusView3::CreateBindings(Schematic::Element& element) {
+  QString binding_strings = element["Tech.keyLink"];
+  if (binding_strings.isEmpty())
+    return;
+
+  auto& binding = bindings_.emplace_back(element);
+
+  for (const auto& binding_string :
+       binding_strings.split('=', QString::SkipEmptyParts)) {
+    const auto& parts = binding_string.split('=');
+    if (parts.size() == 1)
+      binding.Bind(GetDefaultPropertyName(element), timed_data_service_,
+                   parts[0]);
+    else if (parts.size() == 2)
+      binding.Bind(parts[0], timed_data_service_, parts[1]);
+  }
+
+  binding.Update();
 }
