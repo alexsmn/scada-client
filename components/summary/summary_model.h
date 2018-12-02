@@ -55,6 +55,7 @@ class SummaryModel : private SummaryModelContext,
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
+  const scada::DataValue& data_value(int row, int column) const;
   const rt::TimedDataSpec& timed_data(int column) const;
 
   // ui::GridModel

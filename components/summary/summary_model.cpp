@@ -459,6 +459,12 @@ void SummaryModel::SetParams(const TimeRange& time_range,
   NotifyModelChanged();
 }
 
+const scada::DataValue& SummaryModel::data_value(int row, int column) const {
+  Column& col = *columns_[column];
+  Cell& cell = col.GetCell(row);
+  return cell.data_value();
+}
+
 const rt::TimedDataSpec& SummaryModel::timed_data(int column) const {
   return columns_[column]->timed_data();
 }

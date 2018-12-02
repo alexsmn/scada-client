@@ -10,6 +10,7 @@ class ExcelSheetModel {
 
   void SetDataSize(int rows, int cols);
 
+  void SetData(int row, int col, base::win::ScopedVariant&& val);
   void SetData(int row, int col, const VARIANT& val);
 
   base::win::ScopedVariant data;
