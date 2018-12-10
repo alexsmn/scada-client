@@ -93,21 +93,17 @@ void ReportRequestResult(const base::string16& title,
 }
 
 void ExpandGroupItemIds(const NodeRef& node, NodeIdSet& item_ids) {
-  for (const auto& child : node.targets(scada::id::Organizes)) {
-    if (child.node_class() == scada::NodeClass::Variable)
-      item_ids.insert(child.node_id());
-    ExpandGroupItemIds(child, item_ids);
-    if (item_ids.size() >= kTableLimitation)
-      return;
-  }
+  if (item_ids.size() >= kTableLimitation)
+    return;
 
-  for (const auto& child : node.targets(scada::id::HasComponent)) {
-    if (child.node_class() == scada::NodeClass::Variable)
-      item_ids.insert(child.node_id());
+  if (node.node_class() == scada::NodeClass::Variable)
+    item_ids.insert(node.node_id());
+
+  for (const auto& child : node.targets(scada::id::Organizes))
     ExpandGroupItemIds(child, item_ids);
-    if (item_ids.size() >= kTableLimitation)
-      return;
-  }
+
+  for (const auto& child : node.targets(scada::id::HasComponent))
+    ExpandGroupItemIds(child, item_ids);
 }
 
 WindowDefinition MakeWindowDefinition(const NodeRef& node,
