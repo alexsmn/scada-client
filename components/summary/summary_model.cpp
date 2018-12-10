@@ -8,7 +8,8 @@
 
 namespace {
 
-const unsigned kMaxRowCount = 10000;
+const size_t kMaxColumnCount = 1000;
+const size_t kMaxRowCount = 10000;
 
 base::Time AlignTime(base::Time time, base::TimeDelta interval, bool upper) {
   base::Time midnight = time.LocalMidnight();
@@ -331,7 +332,7 @@ void SummaryModel::Load(const WindowDefinition& definition) {
   SetParams(TimeRange{ID_TIME_RANGE_DAY}, base::TimeDelta::FromHours(1),
             AggregationFunction::Last);
 
-  size_t count = std::min(10u, definition.items.size());
+  size_t count = std::min(kMaxColumnCount, definition.items.size());
   for (size_t i = 0; i < count; ++i) {
     const WindowItem& item = definition.items[i];
     if (item.name_is("Item")) {
