@@ -4,6 +4,7 @@
 
 #include "base/time/time.h"
 #include "common/node_ref.h"
+#include "contents_model.h"
 #include "core/configuration_types.h"
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
@@ -16,15 +17,18 @@ namespace scada {
 class DataValue;
 }
 
+class NodeService;
 class TimedDataService;
 class WindowDefinition;
 
 struct SummaryModelContext {
+  NodeService& node_service_;
   TimedDataService& timed_data_service_;
 };
 
 class SummaryModel : private SummaryModelContext,
                      public ui::GridModel,
+                     public ContentsModel,
                      public TimeModel {
  public:
   enum class AggregationFunction { Last, Avg, Min, Sum, Count, Max };
@@ -46,6 +50,8 @@ class SummaryModel : private SummaryModelContext,
                  AggregationFunction aggregation_function);
 
   int AddColumn(base::StringPiece formula);
+  void DeleteColumn(int index);
+  int FindColumn(const scada::NodeId& node_id, int starting_index = 0) const;
 
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);
@@ -60,6 +66,12 @@ class SummaryModel : private SummaryModelContext,
 
   // ui::GridModel
   virtual void GetCell(ui::GridCell& cell) override;
+
+  // ContentsModel
+  virtual void AddContainedItem(const scada::NodeId& node_id,
+                                unsigned flags) override;
+  virtual void RemoveContainedItem(const scada::NodeId& node_id) override;
+  virtual NodeIdSet GetContainedItems() const override;
 
   // TimeModel
   virtual TimeRange GetTimeRange() const override;

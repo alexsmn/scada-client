@@ -17,6 +17,7 @@ class SummaryView : public Controller {
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
 	virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
   virtual void Print(PrintService& print_service) override;
 

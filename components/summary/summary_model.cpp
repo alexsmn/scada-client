@@ -2,6 +2,9 @@
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
+#include "client_utils.h"
+#include "common/formula_util.h"
+#include "common/node_service.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/grid_range.h"
 #include "window_definition.h"
@@ -129,6 +132,7 @@ class SummaryModel::Column {
   void set_width(int width) { width_ = width; }
 
   const rt::TimedDataSpec& timed_data() const { return timed_data_; }
+  scada::NodeId GetNodeId() const { return timed_data_.GetNode().node_id(); }
 
   void UpdateTimes();
 
@@ -323,8 +327,33 @@ ui::HeaderModel& SummaryModel::column_model() {
 
 int SummaryModel::AddColumn(base::StringPiece formula) {
   int index = static_cast<int>(columns_.size());
-  columns_.emplace_back(new Column(*this, index, formula));
+  auto& column = columns_.emplace_back(new Column(*this, index, formula));
+  column_model_->NotifyModelChanged();
+
+  auto node_id = column->GetNodeId();
+  if (!node_id.is_null())
+    NotifyContainedItemChanged(node_id, true);
+
   return index;
+}
+
+void SummaryModel::DeleteColumn(int index) {
+  auto node_id = columns_[index]->GetNodeId();
+
+  columns_.erase(columns_.begin() + index);
+  column_model_->NotifyModelChanged();
+
+  if (!node_id.is_null() && FindColumn(node_id) == -1)
+    NotifyContainedItemChanged(node_id, false);
+}
+
+int SummaryModel::FindColumn(const scada::NodeId& node_id,
+                             int starting_index) const {
+  for (int i = starting_index; i < columns_.size(); ++i) {
+    if (columns_[i]->GetNodeId() == node_id)
+      return i;
+  }
+  return -1;
 }
 
 void SummaryModel::Load(const WindowDefinition& definition) {
@@ -407,6 +436,32 @@ void SummaryModel::OnColumnChanged(int column) {
 
 void SummaryModel::OnColumnTitleChanged(int column) {
   column_model_->NotifyModelChanged();
+}
+
+void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
+                                    unsigned flags) {
+  NodeIdSet node_ids;
+  ExpandGroupItemIds(node_service_.GetNode(node_id), node_ids);
+
+  for (const auto& node_id : node_ids)
+    AddColumn(MakeNodeIdFormula(node_id));
+}
+
+void SummaryModel::RemoveContainedItem(const scada::NodeId& node_id) {
+  for (int index = FindColumn(node_id); index != -1;
+       index = FindColumn(node_id, index)) {
+    DeleteColumn(index);
+  }
+}
+
+NodeIdSet SummaryModel::GetContainedItems() const {
+  NodeIdSet node_ids;
+  for (auto& column : columns_) {
+    auto node_id = column->GetNodeId();
+    if (!node_id.is_null())
+      node_ids.emplace(node_id);
+  }
+  return node_ids;
 }
 
 TimeRange SummaryModel::GetTimeRange() const {

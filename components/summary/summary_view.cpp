@@ -75,7 +75,7 @@ REGISTER_CONTROLLER(SummaryView, kWindowInfo);
 SummaryView::SummaryView(const ControllerContext& context)
     : Controller{context},
       model_{std::make_unique<SummaryModel>(
-          SummaryModelContext{timed_data_service_})} {}
+          SummaryModelContext{node_service_, timed_data_service_})} {}
 
 UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
@@ -243,6 +243,10 @@ void SummaryView::ExportToExcel() {
         L"Microsoft Excel.",
         L"Экспорт", MessageBoxMode::Error);
   }
+}
+
+ContentsModel* SummaryView::GetContentsModel() {
+  return model_.get();
 }
 
 TimeModel* SummaryView::GetTimeModel() {
