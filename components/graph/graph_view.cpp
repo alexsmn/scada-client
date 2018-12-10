@@ -297,9 +297,7 @@ void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
     MetrixGraph::MetrixLine& line =
         static_cast<MetrixGraph::MetrixLine&>(*lines.front());
     // TODO: Check if there are still another lines for this item.
-    if (contents_observer())
-      contents_observer()->OnContainedItemChanged(line.data_source().trid(),
-                                                  false);
+    NotifyContainedItemChanged(line.data_source().trid(), false);
     pane.plot().DeleteLine(line);
   }
 }
@@ -343,9 +341,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   line.UpdateTimeRange();
   graph_->Fit();
 
-  if (contents_observer())
-    contents_observer()->OnContainedItemChanged(line.data_source().trid(),
-                                                true);
+  NotifyContainedItemChanged(line.data_source().trid(), true);
 
   pane->ShowLegend(true);
 
@@ -474,8 +470,7 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
   }
 
   // All lines corresponding to |item| were removed.
-  if (contents_observer())
-    contents_observer()->OnContainedItemChanged(node_id, false);
+  NotifyContainedItemChanged(node_id, false);
 }
 
 CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
@@ -628,12 +623,10 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
   if (&line == graph_->primary_line())
     controller_delegate_.SetTitle(MakeTitle());
 
-  if (contents_observer()) {
-    MetrixGraph::MetrixLine& metrix_line =
-        static_cast<MetrixGraph::MetrixLine&>(line);
-    auto node_id = metrix_line.data_source().timed_data().GetNode().node_id();
-    contents_observer()->OnContainedItemChanged(node_id, true);
-  }
+  MetrixGraph::MetrixLine& metrix_line =
+      static_cast<MetrixGraph::MetrixLine&>(line);
+  auto node_id = metrix_line.data_source().timed_data().GetNode().node_id();
+  NotifyContainedItemChanged(node_id, true);
 }
 
 void GraphView::UndoZoom() {

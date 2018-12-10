@@ -95,7 +95,7 @@ class MainWindow : protected MainWindowContext,
   OpenedView* FindViewToRecycle(unsigned type);
 
   // ContentsObserver
-  virtual void OnContainedItemsUpdate(
+  virtual void OnContentsChanged(
       const std::set<scada::NodeId>& item_ids) override;
   virtual void OnContainedItemChanged(const scada::NodeId& item_id,
                                       bool added) override;

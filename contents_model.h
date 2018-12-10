@@ -1,7 +1,8 @@
 #pragma once
 
-#include "core/configuration_types.h"
+#include "contents_observer.h"
 #include "controls/types.h"
+#include "core/configuration_types.h"
 
 class ContentsObserver;
 
@@ -9,20 +10,30 @@ class ContentsModel {
  public:
   virtual ~ContentsModel() {}
 
-  void set_contents_observer(ContentsObserver* observer) {
-    contents_observer_ = observer;
-  }
-
   // AddContainedItem() flags.
   enum { APPEND = 0x0001 };
+
   virtual void AddContainedItem(const scada::NodeId& node_id, unsigned flags) {}
+
   virtual void RemoveContainedItem(const scada::NodeId& node_id) {}
 
-  virtual NodeIdSet GetContainedItems() const { return NodeIdSet(); }
+  virtual NodeIdSet GetContainedItems() const { return {}; }
+
+  ContentsObserver* contents_observer = nullptr;
 
  protected:
-  ContentsObserver* contents_observer() { return contents_observer_; }
-
- private:
-  ContentsObserver* contents_observer_ = nullptr;
+  void NotifyContentsChanged(const NodeIdSet& contents);
+  void NotifyContainedItemChanged(const scada::NodeId& item_id, bool added);
 };
+
+inline void ContentsModel::NotifyContentsChanged(const NodeIdSet& contents) {
+  if (contents_observer)
+    contents_observer->OnContentsChanged(contents);
+}
+
+inline void ContentsModel::NotifyContainedItemChanged(
+    const scada::NodeId& node_id,
+    bool added) {
+  if (contents_observer)
+    contents_observer->OnContainedItemChanged(node_id, added);
+}

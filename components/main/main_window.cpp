@@ -101,7 +101,7 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
   if (active_data_view_) {
     auto* contents = active_data_view_->controller().GetContentsModel();
     if (contents)
-      contents->set_contents_observer(nullptr);
+      contents->contents_observer = nullptr;
   }
 
   active_data_view_ = view;
@@ -112,14 +112,14 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
                          ? active_data_view_->controller().GetContentsModel()
                          : nullptr;
     if (contents) {
-      contents->set_contents_observer(this);
+      contents->contents_observer = this;
       if (!view_manager_->is_closing_page()) {
-        OnContainedItemsUpdate(contents->GetContainedItems());
+        OnContentsChanged(contents->GetContainedItems());
         set = true;
       }
     }
     if (!set)
-      OnContainedItemsUpdate({});
+      OnContentsChanged({});
   }
 }
 
@@ -260,10 +260,9 @@ void MainWindow::RemoveContentsObserver(ContentsObserver& observer) {
   contents_observers_.RemoveObserver(&observer);
 }
 
-void MainWindow::OnContainedItemsUpdate(
-    const std::set<scada::NodeId>& item_ids) {
+void MainWindow::OnContentsChanged(const std::set<scada::NodeId>& item_ids) {
   for (auto& o : contents_observers_)
-    o.OnContainedItemsUpdate(item_ids);
+    o.OnContentsChanged(item_ids);
 }
 
 void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,

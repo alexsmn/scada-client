@@ -133,8 +133,8 @@ void TransmissionModel::Update(NodeRef transmission) {
   if (i == -1) {
     rows_.push_back(Row{transmission, source_id});
     GridModel::NotifyRowsAdded(rows_.size() - 1, 1);
-    if (contents_observer() && !source_id.is_null())
-      contents_observer()->OnContainedItemChanged(source_id, true);
+    if (!source_id.is_null())
+      NotifyContainedItemChanged(source_id, true);
     return;
   }
 
@@ -143,11 +143,10 @@ void TransmissionModel::Update(NodeRef transmission) {
   auto old_source_id = rows_[i].source_id;
   if (old_source_id != source_id) {
     rows_[i].source_id = source_id;
-    if (contents_observer() && !old_source_id.is_null() &&
-        FindSource(old_source_id) == -1)
-      contents_observer()->OnContainedItemChanged(old_source_id, false);
-    if (contents_observer() && !source_id.is_null())
-      contents_observer()->OnContainedItemChanged(source_id, true);
+    if (!old_source_id.is_null() && FindSource(old_source_id) == -1)
+      NotifyContainedItemChanged(old_source_id, false);
+    if (!source_id.is_null())
+      NotifyContainedItemChanged(source_id, true);
   }
 }
 
@@ -158,8 +157,8 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
 
   auto transmission = rows_[i].transmission;
   auto source = transmission.target(id::HasTransmissionSource);
-  if (source && contents_observer())
-    contents_observer()->OnContainedItemChanged(source.node_id(), false);
+  if (source)
+    NotifyContainedItemChanged(source.node_id(), false);
 
   rows_.erase(rows_.begin() + i);
   GridModel::NotifyModelChanged();

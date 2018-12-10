@@ -291,16 +291,16 @@ void EventView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   if (is_panel_)
     return;
 
-  if (model_->AddFilteredItem(node_id) && contents_observer())
-    contents_observer()->OnContainedItemChanged(node_id, true);
+  if (model_->AddFilteredItem(node_id))
+    NotifyContainedItemChanged(node_id, true);
 }
 
 void EventView::RemoveContainedItem(const scada::NodeId& node_id) {
   if (is_panel_)
     return;
 
-  if (model_->RemoveFilteredItem(node_id) && contents_observer())
-    contents_observer()->OnContainedItemChanged(node_id, false);
+  if (model_->RemoveFilteredItem(node_id))
+    NotifyContainedItemChanged(node_id, false);
 }
 
 TimeRange EventView::GetTimeRange() const {

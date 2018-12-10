@@ -31,10 +31,14 @@ class ObjectTreeView : public ConfigurationTreeView,
 
 #if defined(UI_VIEWS)
   // views::TreeView::CustomPainter
-  virtual void OnPaintNode(gfx::Canvas* canvas, const gfx::Rect& node_bounds, void* node) override;
+  virtual void OnPaintNode(gfx::Canvas* canvas,
+                           const gfx::Rect& node_bounds,
+                           void* node) override;
 #endif
 
   // ContentsObserver
-  virtual void OnContainedItemsUpdate(const std::set<scada::NodeId>& item_ids) override;
-  virtual void OnContainedItemChanged(const scada::NodeId& item_id, bool added) override;
+  virtual void OnContentsChanged(
+      const std::set<scada::NodeId>& item_ids) override;
+  virtual void OnContainedItemChanged(const scada::NodeId& item_id,
+                                      bool added) override;
 };

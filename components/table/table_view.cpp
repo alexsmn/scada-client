@@ -54,8 +54,7 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
   model_ = std::make_unique<TableModel>(TableModelContext{
       timed_data_service_, event_manager_, profile_, dialog_service_});
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
-    if (contents_observer())
-      contents_observer()->OnContainedItemChanged(item_id, added);
+    NotifyContainedItemChanged(item_id, added);
   };
 
   const ui::TableColumn columns[] = {

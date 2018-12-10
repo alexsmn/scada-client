@@ -140,7 +140,7 @@ void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
   }
 }
 
-void ObjectTreeView::OnContainedItemsUpdate(
+void ObjectTreeView::OnContentsChanged(
     const std::set<scada::NodeId>& item_ids) {
   for (auto& p : model().node_map()) {
     ConfigurationTreeNode& node = *p.second;
