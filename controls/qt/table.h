@@ -21,7 +21,13 @@ class Table : public QTableView {
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 
+  void SetSelectionChangeHandler(SelectionChangeHandler handler);
+
   void SetContextMenuHandler(ContextMenuHandler handler);
+
+  void SetDoubleClickHandler(DoubleClickHandler handler);
+
+  void SetKeyPressHandler(KeyPressHandler handler);
 
   int GetCurrentRow() const { return currentIndex().row(); }
 
@@ -29,14 +35,19 @@ class Table : public QTableView {
 
   void SelectRow(int row, bool make_visible = true);
 
-  void OpenEditor(int row);
+  bool editing() const { return state() == State::EditingState; };
 
+  void OpenEditor(int row);
   void CloseEditor() {}
 
   QWidget* CreateParentIfNecessary() { return this; }
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
+
+ protected:
+  // QTableView
+  virtual void keyPressEvent(QKeyEvent* event) override;
 
  private:
   QModelIndex RowToIndex(int row) const;
@@ -45,4 +56,6 @@ class Table : public QTableView {
   TableModelAdapter model_adapter_;
 
   std::unique_ptr<QSortFilterProxyModel> proxy_model_;
+
+  KeyPressHandler key_press_handler_;
 };

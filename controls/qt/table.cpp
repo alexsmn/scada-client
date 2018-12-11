@@ -3,6 +3,8 @@
 #include "value_util.h"
 #include "window_definition_util.h"
 
+#include <QKeyEvent>
+
 Table::Table(ui::TableModel& model,
              std::vector<ui::TableColumn> columns,
              bool sorting)
@@ -36,12 +38,20 @@ Table::~Table() {
   setModel(nullptr);
 }
 
+void Table::SetSelectionChangeHandler(SelectionChangeHandler handler) {
+  connect(selectionModel(), &QItemSelectionModel::selectionChanged, handler);
+}
+
 void Table::SetContextMenuHandler(ContextMenuHandler handler) {
   setContextMenuPolicy(Qt::CustomContextMenu);
   connect(this, &QWidget::customContextMenuRequested,
           [this, handler](const QPoint& pos) {
             handler(viewport()->mapToGlobal(pos));
           });
+}
+
+void Table::SetKeyPressHandler(KeyPressHandler handler) {
+  key_press_handler_ = std::move(handler);
 }
 
 std::vector<int> Table::GetSelectedRows() const {
@@ -108,4 +118,16 @@ int Table::IndexToRow(const QModelIndex& index) const {
   if (proxy_model_)
     index2 = proxy_model_->mapToSource(index);
   return index2.row();
+}
+
+void Table::SetDoubleClickHandler(DoubleClickHandler handler) {
+  QObject::connect(this, &Table::doubleClicked, handler);
+}
+
+void Table::keyPressEvent(QKeyEvent* event) {
+  if (key_press_handler_ &&
+      key_press_handler_(static_cast<KeyCode>(event->key())))
+    return;
+
+  QTableView::keyPressEvent(event);
 }

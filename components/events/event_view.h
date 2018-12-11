@@ -7,10 +7,6 @@
 #include "time_model.h"
 
 #if defined(UI_VIEWS)
-#include "ui/views/controls/table/table_controller.h"
-#endif
-
-#if defined(UI_VIEWS)
 namespace WTL {
 template <bool t_bManaged>
 class CImageListT;
@@ -25,10 +21,6 @@ class EventTableModel;
 class EventView : public Controller,
                   public ContentsModel,
                   public TimeModel
-#if defined(UI_VIEWS)
-    ,
-                  protected views::TableController
-#endif
 {
  public:
   EventView(const ControllerContext& context, bool is_panel);
@@ -59,15 +51,6 @@ class EventView : public Controller,
   virtual TimeRange GetTimeRange() const override;
   virtual void SetTimeRange(const TimeRange& time_range) override;
 
- protected:
-#if defined(UI_VIEWS)
-  // views::TableController overrides
-  virtual void OnSelectionChanged(views::TableView& sender) override;
-  virtual bool OnDoubleClick() override;
-  virtual bool OnKeyPressed(views::TableView& sender,
-                            ui::KeyboardCode key_code) override;
-#endif
-
  private:
   base::string16 MakeTitle() const;
 
@@ -77,6 +60,8 @@ class EventView : public Controller,
   NodeIdSet EventView::GetSelectedNodeIds() const;
 
   void OnSelectionChanged();
+
+  bool OnKeyPressed(KeyCode key_code);
 
   bool is_panel_;
 

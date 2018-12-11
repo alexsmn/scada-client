@@ -73,20 +73,12 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
       *model_,
       std::vector<ui::TableColumn>(columns, columns + _countof(columns)));
 
-#if defined(UI_QT)
-  QObject::connect(
-      view_->selectionModel(), &QItemSelectionModel::selectionChanged,
-      [this](const QItemSelection& selected, const QItemSelection& deselected) {
-        OnSelectionChanged();
-      });
-
-#elif defined(UI_VIEWS)
+#if defined(UI_VIEWS)
   new_row_font_ = ui::ResourceBundle::GetSharedInstance().GetFont(
       ui::ResourceBundle::ITALIC_FONT);
 
   view_->set_show_hint(true);
   view_->SetPainter(*new TableViewPainter);
-  view_->set_controller(this);
 
   image_list_.reset(new WTL::CImageListManaged);
   image_list_->Create(16, 16, ILC_MASK | ILC_COLOR32, 0, 0);
@@ -94,17 +86,23 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
   image_list_->Add(items_bitmap, RGB(255, 0, 255));
 #endif
 
+  view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
+
   view_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_TABLE_POPUP, point, true);
   });
+
+  view_->SetDoubleClickHandler([this] { OnDoubleClick(); });
+
+  view_->SetKeyPressHandler(
+      [this](KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection().multiple_handler = [this] { return GetMultipleSelection(); };
 }
 
 TableView::~TableView() {}
 
-#if defined(UI_VIEWS)
-bool TableView::OnDrawCell(views::TableView& sender,
+/*bool TableView::OnDrawCell(views::TableView& sender,
                            gfx::Canvas* canvas,
                            int row,
                            int col,
@@ -208,8 +206,7 @@ views::ComboTextfield* TableView::OnCreateEditor(views::TableView& sender,
     editor->SetText(base::SysNativeMBToWide(r->GetFormula()));
 
   return editor;
-}
-#endif
+}*/
 
 UiView* TableView::Init(const WindowDefinition& definition) {
   for (auto& item : definition.items) {
@@ -247,58 +244,52 @@ void TableView::Save(WindowDefinition& definition) {
   }
 }
 
-#if defined(UI_VIEWS)
-bool TableView::OnKeyPressed(views::TableView& sender,
-                             ui::KeyboardCode key_code) {
+bool TableView::OnKeyPressed(KeyCode key_code) {
   switch (key_code) {
-    case ui::VKEY_RETURN:
+    case KeyCode::Enter:
       if (!view_->editing()) {
         OnDoubleClick();
         return true;
       }
       break;
 
-    case ui::VKEY_DELETE:
+    case KeyCode::Delete:
       if (!view_->editing()) {
         DeleteSelection();
         return true;
       }
       break;
 
-    case ui::VKEY_UP:
-    case ui::VKEY_DOWN:
+    case KeyCode::Up:
+    case KeyCode::Down:
       if (GetAsyncKeyState(VK_CONTROL) < 0) {
-        MoveRow(key_code == ui::VKEY_UP);
+        MoveRow(key_code == KeyCode::Up);
         return true;
       }
       break;
   }
 
-  return __super::OnKeyPressed(sender, key_code);
+  return false;
 }
 
-bool TableView::OnDoubleClick() {
-  if (view_->selection_model().empty())
-    return false;
+void TableView::OnDoubleClick() {
+  int index = view_->GetCurrentRow();
+  if (index < 0)
+    return;
 
-  TableRow* row = model_->GetRow(view_->GetCurrentRow());
+  auto* row = model_->GetRow(index);
   if (!row)
-    return false;
+    return;
 
   if (row->is_blinking()) {
     row->timed_data().Acknowledge();
 
   } else {
     const auto& node = row->timed_data().GetNode();
-    if (!node)
-      return false;
-
-    controller_delegate_.ExecuteDefaultNodeCommand(node);
+    if (node)
+      controller_delegate_.ExecuteDefaultNodeCommand(node);
   }
-
-  return true;
 }
-#endif
 
 void TableView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   if (!(flags & APPEND))
@@ -316,18 +307,14 @@ void TableView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 
   int ix = model_->FindItem(node_id);
   if (ix != -1) {
-#if defined(UI_VIEWS)
-    view_->Select(ix, true);
-#endif
+    view_->SelectRow(ix, true);
     return;
   }
 
   ix = model_->row_count();
   model_->SetFormula(ix, MakeNodeIdFormula(node_id));
 
-#if defined(UI_VIEWS)
-  view_->Select(ix, true);
-#endif
+  view_->SelectRow(ix, true);
 
   controller_delegate_.SetModified(true);
 }
@@ -338,23 +325,6 @@ void TableView::RemoveContainedItem(const scada::NodeId& node_id) {
     model_->DeleteRows(ix, 1);
 }
 
-bool TableView::CanClose() const {
-  /*if (AtlMessageBox(m_hWnd, _T("Закрытие окна приведет к потере таблицы.
-  Продолжить?"), (LPCTSTR)frame->GetTitle(),
-  MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
-    // cancel close
-    return FALSE;
-  }*/
-  return true;
-}
-
-#if defined(UI_VIEWS)
-void TableView::OnGetAutocompleteList(views::TableView& sender,
-                                      const base::string16& text,
-                                      int& start,
-                                      std::vector<base::string16>& list) {}
-#endif
-
 void TableView::DeleteSelection() {
   for (int row : view_->GetSelectedRows())
     model_->DeleteRows(row, 1);
@@ -364,55 +334,14 @@ void TableView::Print(PrintService& print_service) {
   PrintTable(PrintTableContext{print_service, *model_, view_->columns()});
 }
 
-#if defined(UI_VIEWS)
-void TableView::OnSelectionChanged(views::TableView& sender) {
-  if (view_->selection_model().empty())
-    selection().Clear();
-  else if (view_->selection_model().size() >= 2)
-    selection().SelectMultiple();
-  else {
-    TableRow* row =
-        model_->GetRow(view_->selection_model().selected_indices()[0]);
-    if (row)
-      selection().SelectTimedData(row->timed_data());
-    else
-      selection().Clear();
-  }
-}
-#endif
-
 NodeIdSet TableView::GetMultipleSelection() {
   NodeIdSet node_ids;
-
-#if defined(UI_QT)
-  const auto& ranges = view_->selectionModel()->selection();
-  for (auto& range : ranges) {
-    for (auto row_index = range.top(); row_index <= range.bottom();
-         ++row_index) {
-      auto* row = model_->GetRow(row_index);
-      const auto& node_id = row->timed_data().GetNode().node_id();
-      if (!node_id.is_null())
-        node_ids.emplace(node_id);
-    }
-  }
-
-#elif defined(UI_VIEWS)
-  typedef ui::ListSelectionModel::SelectedIndices Indices;
-  const Indices& indices = view_->selection_model().selected_indices();
-  if (indices.empty())
-    return node_ids;
-
-  for (Indices::const_iterator i = indices.begin(); i != indices.end(); ++i) {
-    const TableRow* row = model_->GetRow(*i);
-    if (!row)
-      continue;
-
-    auto node_id = row->timed_data().GetNode().node_id();
+  for (auto row_index : view_->GetSelectedRows()) {
+    auto* row = model_->GetRow(row_index);
+    const auto& node_id = row->timed_data().GetNode().node_id();
     if (!node_id.is_null())
-      node_ids.emplace(std::move(node_id));
+      node_ids.emplace(node_id);
   }
-#endif
-
   return node_ids;
 }
 
@@ -480,15 +409,12 @@ void TableView::MoveRow(bool up) {
     view_->SelectRow(row2, true);
 }
 
-#if defined(UI_QT)
 void TableView::OnSelectionChanged() {
-  const auto& ranges = view_->selectionModel()->selection();
-  if (ranges.empty()) {
+  auto rows = view_->GetSelectedRows();
+  if (rows.empty()) {
     selection().Clear();
-  } else if (ranges.size() == 1 &&
-             ranges.front().top() == ranges.front().bottom()) {
-    auto* row = model_->GetRow(ranges.front().top());
-    if (row)
+  } else if (rows.size() == 1) {
+    if (auto* row = model_->GetRow(rows.front()))
       selection().SelectTimedData(row->timed_data());
     else
       selection().Clear();
@@ -496,4 +422,3 @@ void TableView::OnSelectionChanged() {
     selection().SelectMultiple();
   }
 }
-#endif

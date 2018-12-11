@@ -12,12 +12,6 @@
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
-#if defined(UI_VIEWS)
-#include "skia/ext/skia_utils_win.h"
-#include "ui/gfx/point.h"
-#include "views/client_utils_views.h"
-#endif
-
 const WindowInfo kWindowInfo = {
     ID_WATCH_VIEW, "Log", L"Наблюдение", WIN_DISALLOW_NEW, 0, 0, 0};
 
@@ -60,16 +54,9 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
 
   table_.reset(new Table(*model_, {columns, columns + _countof(columns)}));
 
-#if defined(UI_QT)
-  QObject::connect(
-      table_->selectionModel(), &QItemSelectionModel::currentRowChanged,
-      [this](const QModelIndex& current, const QModelIndex& previous) {
-        auto_scroll_ = current.row() == model_->GetRowCount() - 1;
-      });
-
-#elif defined(UI_VIEWS)
-  table_->set_controller(this);
-#endif
+  table_->SetSelectionChangeHandler([this] {
+    auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;
+  });
 
   table_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_LOG_POPUP, point, true);
@@ -80,14 +67,6 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
 
   return table_->CreateParentIfNecessary();
 }
-
-#if defined(UI_VIEWS)
-void WatchView::OnSelectionChanged(views::TableView& sender) {
-  auto_scroll_ = table_->selection_model().size() == 1 &&
-                 table_->selection_model().selected_indices()[0] ==
-                     model_->GetRowCount() - 1;
-}
-#endif
 
 void WatchView::SaveLog() {
   SYSTEMTIME time;

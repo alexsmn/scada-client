@@ -60,7 +60,8 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   });
 
   tree_view_->SetDoubleClickHandler([this] {
-    if (const auto& node = selection().node())
+    const auto& node = selection().node();
+    if (node)
       controller_delegate_.ExecuteDefaultNodeCommand(node);
   });
 

@@ -5,7 +5,6 @@
 
 #if defined(UI_VIEWS)
 #include "ui/gfx/font.h"
-#include "ui/views/controls/table/table_controller.h"
 #endif
 
 #if defined(UI_VIEWS)
@@ -19,13 +18,7 @@ typedef CImageListT<true> CImageListManaged;
 class Table;
 class TableModel;
 
-class TableView : public Controller,
-                  public ContentsModel
-#if defined(UI_VIEWS)
-    ,
-                  private views::TableController
-#endif
-{
+class TableView : public Controller, public ContentsModel {
  public:
   explicit TableView(const ControllerContext& context);
   virtual ~TableView();
@@ -33,7 +26,6 @@ class TableView : public Controller,
   void DeleteSelection();
 
   // Controller
-  virtual bool CanClose() const override;
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
@@ -54,29 +46,9 @@ class TableView : public Controller,
 
   NodeIdSet GetMultipleSelection();
 
-#if defined(UI_QT)
   void OnSelectionChanged();
-
-#elif defined(UI_VIEWS)
-  // TableController
-  virtual bool OnDrawCell(views::TableView& sender,
-                          gfx::Canvas* canvas,
-                          int row,
-                          int visible_column_index,
-                          const gfx::Rect& rect) override;
-  virtual views::ComboTextfield* OnCreateEditor(views::TableView& sender,
-                                                int row,
-                                                int column_id) override;
-  virtual void OnGetAutocompleteList(
-      views::TableView& sender,
-      const base::string16& text,
-      int& start,
-      std::vector<base::string16>& list) override;
-  virtual void OnSelectionChanged(views::TableView& sender) override;
-  virtual bool OnDoubleClick() override;
-  virtual bool OnKeyPressed(views::TableView& sender,
-                            ui::KeyboardCode key_code) override;
-#endif
+  void OnDoubleClick();
+  bool OnKeyPressed(KeyCode key_code);
 
   std::unique_ptr<TableModel> model_;
   std::unique_ptr<Table> view_;

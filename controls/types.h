@@ -1,7 +1,7 @@
 #pragma once
 
-// TODO: Move out.
 #include "base/values.h"
+#include "controls/key_codes.h"
 #include "core/configuration_types.h"
 #include "gfx/point.h"
 
@@ -38,6 +38,8 @@ typedef std::function<bool(void* node)> TreeEditHandler;
 typedef std::function<int(void* left, void* right)> TreeCompareHandler;
 typedef std::function<void(const UiPoint& point)> ContextMenuHandler;
 typedef std::function<void()> SelectionChangeHandler;
+
+typedef std::function<bool(KeyCode key_code)> KeyPressHandler;
 
 #define UiColorRGB(r, g, b) SkColorSetRGB(r, g, b)
 

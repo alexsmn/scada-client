@@ -95,15 +95,6 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->setShowGrid(false);
   table_->resizeColumnsToContents();
 
-  QObject::connect(
-      table_->selectionModel(), &QItemSelectionModel::selectionChanged,
-      [this](const QItemSelection& selected, const QItemSelection& deselected) {
-        OnSelectionChanged();
-      });
-
-  QObject::connect(table_.get(), &Table::doubleClicked,
-                   [this] { AcknowledgeSelection(); });
-
 #elif defined(UI_VIEWS)
   severities_image_list_->Create(16, 16, ILC_MASK | ILC_COLOR32, 0, 0);
   WTL::CBitmap severities_bitmap =
@@ -111,12 +102,18 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   severities_image_list_->Add(severities_bitmap, RGB(0, 255, 0));
 
   table_->SetColumns(count, kEventViewColumns);
-  table_->set_controller(this);
 #endif
 
   table_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
   });
+
+  table_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
+
+  table_->SetDoubleClickHandler([this] { AcknowledgeSelection(); });
+
+  table_->SetKeyPressHandler(
+      [this](KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection().multiple_handler = [this] { return GetSelectedNodeIds(); };
 }
@@ -149,12 +146,6 @@ void EventView::OnSelectionChanged() {
   }
 }
 
-#if defined(UI_VIEWS)
-void EventView::OnSelectionChanged(views::TableView& sender) {
-  OnSelectionChanged();
-}
-#endif
-
 bool EventView::CanAcknowledgeSelection() const {
   auto rows = table_->GetSelectedRows();
   for (auto i = rows.begin(); i != rows.end(); ++i) {
@@ -164,13 +155,6 @@ bool EventView::CanAcknowledgeSelection() const {
   }
   return false;
 }
-
-#if defined(UI_VIEWS)
-bool EventView::OnDoubleClick() {
-  AcknowledgeSelection();
-  return true;
-}
-#endif
 
 UiView* EventView::Init(const WindowDefinition& definition) {
   model_->LockUpdate();
@@ -214,11 +198,9 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   return table_->CreateParentIfNecessary();
 }
 
-#if defined(UI_VIEWS)
-bool EventView::OnKeyPressed(views::TableView& sender,
-                             ui::KeyboardCode key_code) {
+bool EventView::OnKeyPressed(KeyCode key_code) {
   switch (key_code) {
-    case VK_ESCAPE:
+    case KeyCode::Escape:
       model_->CancelRequest();
       return true;
 
@@ -226,7 +208,6 @@ bool EventView::OnKeyPressed(views::TableView& sender,
       return false;
   }
 }
-#endif
 
 bool EventView::IsWorking() const {
   return model_->IsWorking();
