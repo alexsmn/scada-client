@@ -16,33 +16,6 @@
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
-#if defined(UI_VIEWS)
-#include "base/color_string.h"
-#include "ui/base/resource/resource_bundle.h"
-#include "ui/gfx/canvas.h"
-#include "ui/views/controls/table/table_painter.h"
-#include "ui/views/controls/textfield/combo_textfield.h"
-
-// TODO: Remove.
-#include <atlbase.h>
-
-#include <atlapp.h>
-#include <atlctrls.h>
-#endif
-
-#if defined(UI_VIEWS)
-// TableViewPainter
-class TableViewPainter : public views::TablePainter {
- public:
-  virtual void PaintSelectionBackground(gfx::Canvas* canvas,
-                                        int index,
-                                        const gfx::Rect& bounds) override {}
-  virtual void PaintSelection(gfx::Canvas* canvas,
-                              int index,
-                              const gfx::Rect& bounds) override {}
-};
-#endif
-
 // TableView
 
 const WindowInfo kWindowInfo = {ID_TABLE_VIEW,           "Table", L"Таблица",
@@ -72,19 +45,6 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
   view_ = std::make_unique<Table>(
       *model_,
       std::vector<ui::TableColumn>(columns, columns + _countof(columns)));
-
-#if defined(UI_VIEWS)
-  new_row_font_ = ui::ResourceBundle::GetSharedInstance().GetFont(
-      ui::ResourceBundle::ITALIC_FONT);
-
-  view_->set_show_hint(true);
-  view_->SetPainter(*new TableViewPainter);
-
-  image_list_.reset(new WTL::CImageListManaged);
-  image_list_->Create(16, 16, ILC_MASK | ILC_COLOR32, 0, 0);
-  WTL::CBitmap items_bitmap = WTL::AtlLoadBitmapImage(IDB_ITEMS);
-  image_list_->Add(items_bitmap, RGB(255, 0, 255));
-#endif
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 

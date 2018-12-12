@@ -3,18 +3,6 @@
 #include "contents_model.h"
 #include "controller.h"
 
-#if defined(UI_VIEWS)
-#include "ui/gfx/font.h"
-#endif
-
-#if defined(UI_VIEWS)
-namespace WTL {
-template <bool t_bManaged>
-class CImageListT;
-typedef CImageListT<true> CImageListManaged;
-}  // namespace WTL
-#endif
-
 class Table;
 class TableModel;
 
@@ -52,10 +40,4 @@ class TableView : public Controller, public ContentsModel {
 
   std::unique_ptr<TableModel> model_;
   std::unique_ptr<Table> view_;
-
-#if defined(UI_VIEWS)
-  std::unique_ptr<WTL::CImageListManaged> image_list_;
-
-  gfx::Font new_row_font_;
-#endif
 };

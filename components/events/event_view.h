@@ -1,27 +1,15 @@
 #pragma once
 
-#include <memory>
-
 #include "contents_model.h"
 #include "controller.h"
 #include "time_model.h"
 
-#if defined(UI_VIEWS)
-namespace WTL {
-template <bool t_bManaged>
-class CImageListT;
-typedef CImageListT<false> CImageList;
-typedef CImageListT<true> CImageListManaged;
-}  // namespace WTL
-#endif
+#include <memory>
 
 class Table;
 class EventTableModel;
 
-class EventView : public Controller,
-                  public ContentsModel,
-                  public TimeModel
-{
+class EventView : public Controller, public ContentsModel, public TimeModel {
  public:
   EventView(const ControllerContext& context, bool is_panel);
   virtual ~EventView();
@@ -67,9 +55,4 @@ class EventView : public Controller,
 
   std::unique_ptr<EventTableModel> model_;
   std::unique_ptr<Table> table_;
-
-#if defined(UI_VIEWS)
-  // TODO: Use gfx image list.
-  std::unique_ptr<WTL::CImageList> severities_image_list_;
-#endif
 };

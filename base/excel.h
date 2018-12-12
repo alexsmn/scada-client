@@ -1,21 +1,24 @@
 #pragma once
 
+#include "base/strings/string16.h"
 #include "base/win/scoped_variant.h"
 
 #include <wrl/client.h>
 
 class ExcelSheetModel {
  public:
-  ExcelSheetModel() : rows(0), cols(0) {}
+  ExcelSheetModel() {}
+  ExcelSheetModel(int rows, int cols) { SetDataSize(rows, cols); }
 
   void SetDataSize(int rows, int cols);
 
   void SetData(int row, int col, base::win::ScopedVariant&& val);
   void SetData(int row, int col, const VARIANT& val);
+  void SetData(int row, int col, const base::string16& val);
 
   base::win::ScopedVariant data;
-  int rows;
-  int cols;
+  int rows = 0;
+  int cols = 0;
 };
 
 class Excel {

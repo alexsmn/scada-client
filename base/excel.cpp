@@ -97,13 +97,19 @@ void ExcelSheetModel::SetDataSize(int rows, int cols) {
   this->rows = rows;
 }
 
-void ExcelSheetModel::SetData(int row, int col, base::win::ScopedVariant&& val) {
+void ExcelSheetModel::SetData(int row,
+                              int col,
+                              base::win::ScopedVariant&& val) {
   LONG ixs[] = {row, col};
   SafeArrayPutElement(data.AsInput()->parray, ixs, val.AsInput());
 }
 
 void ExcelSheetModel::SetData(int row, int col, const VARIANT& val) {
   SetData(row, col, base::win::ScopedVariant{val});
+}
+
+void ExcelSheetModel::SetData(int row, int col, const base::string16& val) {
+  SetData(row, col, base::win::ScopedVariant{val.c_str()});
 }
 
 // Excel

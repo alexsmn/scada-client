@@ -17,15 +17,6 @@
 #include "selection_model.h"
 #include "services/dialog_service.h"
 
-#if defined(UI_QT)
-#include <QHeaderView>
-#elif defined(UI_VIEWS)
-#include <atlbase.h>
-
-#include <atlapp.h>
-#include <atlctrls.h>
-#endif
-
 class EventPanel : public EventView {
  public:
   explicit EventPanel(const ControllerContext& context)
@@ -58,9 +49,6 @@ REGISTER_CONTROLLER(EventJournal, kEventJournalWindowInfo);
 EventView::EventView(const ControllerContext& context, bool is_panel)
     : Controller{context},
       is_panel_{is_panel},
-#if defined(UI_VIEWS)
-      severities_image_list_{std::make_unique<WTL::CImageList>()},
-#endif
       model_{std::make_unique<EventTableModel>(EventTableModelContext{
           context.node_service_, context.event_manager_, context.local_events_,
           context.history_service_, is_panel_})} {
@@ -89,21 +77,6 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
                              kEventViewColumns, kEventViewColumns + count),
                          true));
 
-#if defined(UI_QT)
-  table_->horizontalHeader()->setHighlightSections(false);
-  table_->verticalHeader()->setDefaultSectionSize(19);
-  table_->setShowGrid(false);
-  table_->resizeColumnsToContents();
-
-#elif defined(UI_VIEWS)
-  severities_image_list_->Create(16, 16, ILC_MASK | ILC_COLOR32, 0, 0);
-  WTL::CBitmap severities_bitmap =
-      WTL::AtlLoadBitmapImage(IDB_EVENT_SEVERITIES);
-  severities_image_list_->Add(severities_bitmap, RGB(0, 255, 0));
-
-  table_->SetColumns(count, kEventViewColumns);
-#endif
-
   table_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
   });
@@ -118,11 +91,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   selection().multiple_handler = [this] { return GetSelectedNodeIds(); };
 }
 
-EventView::~EventView() {
-#if defined(UI_VIEWS)
-  severities_image_list_->Destroy();
-#endif
-}
+EventView::~EventView() {}
 
 NodeIdSet EventView::GetContainedItems() const {
   return model_->filter_items();
@@ -238,24 +207,19 @@ void EventView::ExportToExcel() {
   }
 
   try {
-    ExcelSheetModel sheet;
+    ExcelSheetModel sheet{rows + 1, EventColumnCount};
 
-    sheet.SetDataSize(rows + 1, EventColumnCount);
-
-#if defined(UI_VIEWS)
-    const views::TableView::TableColumns& columns = table_->columns();
+    const auto& columns = table_->columns();
 
     for (size_t i = 0; i < columns.size(); ++i)
-      sheet.SetData(1, i + 1,
-                    base::win::ScopedVariant(columns[i].title.c_str()));
+      sheet.SetData(1, i + 1, columns[i].title);
 
     for (int row = 0; row < model_->GetRowCount(); ++row) {
       for (size_t col = 0; col < columns.size(); ++col) {
         base::string16 text = model_->GetCellText(row, columns[col].id);
-        sheet.SetData(2 + row, col + 1, base::win::ScopedVariant(text.c_str()));
+        sheet.SetData(2 + row, col + 1, text);
       }
     }
-#endif
 
     Excel excel;
     excel.NewWorkbook();
