@@ -165,9 +165,8 @@ void TableModel::GetCell(ui::TableCell& cell) {
 }
 
 void TableModel::OnBlink(bool state) {
-  for (RowSet::iterator i = blinking_rows_.begin(); i != blinking_rows_.end();
-       ++i)
-    (*i)->NotifyUpdate();
+  for (auto* row : blinking_rows_)
+    row->NotifyUpdate();
 }
 
 void TableModel::Clear() {
@@ -211,10 +210,9 @@ bool TableModel::DeleteRows(int start, int count) {
   NotifyItemsRemoved(start, count);
 
   if (item_changed_) {
-    for (NodeIdSet::const_iterator i = item_ids.begin(); i != item_ids.end();
-         ++i) {
-      if (FindItem(*i) == -1)
-        item_changed_(*i, false);
+    for (auto& item_id : item_ids) {
+      if (FindItem(item_id) == -1)
+        item_changed_(item_id, false);
     }
   }
 
