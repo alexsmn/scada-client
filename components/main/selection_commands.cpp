@@ -336,7 +336,7 @@ void SelectionCommands::CallMethod(
     const NodeRef& node,
     const scada::NodeId& method_id,
     const std::vector<scada::Variant>& arguments) {
-  node.Call(method_id, arguments,
+  node.Call(method_id, arguments, {},
             [node, &local_events = local_events_,
              &profile = profile_](const scada::Status& status) {
               base::string16 title = ToString16(node.display_name());
