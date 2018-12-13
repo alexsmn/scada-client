@@ -5,6 +5,7 @@
 #include "base/time/time.h"
 #include "common/node_ref.h"
 #include "contents_model.h"
+#include "core/aggregation.h"
 #include "core/configuration_types.h"
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
@@ -31,25 +32,21 @@ class SummaryModel : private SummaryModelContext,
                      public ContentsModel,
                      public TimeModel {
  public:
-  enum class AggregationFunction { Last, Avg, Min, Sum, Count, Max };
-
   explicit SummaryModel(SummaryModelContext&& context);
 
   const TimeRange& time_range() const { return time_range_; }
 
-  base::TimeDelta interval() const { return interval_; }
+  base::TimeDelta interval() const { return aggregation_.interval; }
   void SetInterval(base::TimeDelta interval);
 
-  AggregationFunction aggregation_function() const {
-    return aggregation_function_;
+  const scada::NodeId& aggregation_id() const {
+    return aggregation_.aggregation_id;
   }
-  void SetAggregationFunction(AggregationFunction aggregation_function);
+  void SetAggregationId(scada::NodeId aggregation_id);
 
-  void SetParams(const TimeRange& time_range,
-                 base::TimeDelta interval,
-                 AggregationFunction aggregation_function);
+  void SetParams(const TimeRange& time_range, scada::Aggregation aggregation);
 
-  int AddColumn(base::StringPiece formula);
+  int AddColumn(std::string formula);
   void DeleteColumn(int index);
   int FindColumn(const scada::NodeId& node_id, int starting_index = 0) const;
 
@@ -61,7 +58,7 @@ class SummaryModel : private SummaryModelContext,
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
-  const scada::DataValue& data_value(int row, int column) const;
+  scada::DataValue GetDataValue(int row, int column) const;
   const rt::TimedDataSpec& timed_data(int column) const;
 
   // ui::GridModel
@@ -77,10 +74,9 @@ class SummaryModel : private SummaryModelContext,
   virtual TimeRange GetTimeRange() const override;
   virtual void SetTimeRange(const TimeRange& time_range) override;
 
-  static bool IsCustomUnits(AggregationFunction aggregation_function);
+  static bool IsCustomUnits(const scada::NodeId& aggregation_id);
 
  private:
-  class Cell;
   class Column;
   class ColumnModel;
   class RowModel;
@@ -96,9 +92,8 @@ class SummaryModel : private SummaryModelContext,
 
   base::Time start_time_;
   base::Time end_time_;
-  base::TimeDelta interval_;
   TimeRange time_range_;
-  AggregationFunction aggregation_function_ = AggregationFunction::Last;
+  scada::Aggregation aggregation_;
 
   size_t row_count_ = 0;
 

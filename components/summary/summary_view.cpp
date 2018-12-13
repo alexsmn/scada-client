@@ -115,23 +115,22 @@ void SummaryView::Save(WindowDefinition& definition) {
   model_->Save(definition);
 }
 
-std::optional<SummaryModel::AggregationFunction> GetAggregationType(
-    unsigned command_id) {
+scada::NodeId GetAggregationId(unsigned command_id) {
   switch (command_id) {
     case ID_AGGREGATION_COUNT:
-      return SummaryModel::AggregationFunction::Count;
+      return scada::id::AggregateFunction_Count;
     case ID_AGGREGATION_LAST:
-      return SummaryModel::AggregationFunction::Last;
+      return scada::id::AggregateFunction_End;
     case ID_AGGREGATION_MIN:
-      return SummaryModel::AggregationFunction::Min;
+      return scada::id::AggregateFunction_Minimum;
     case ID_AGGREGATION_MAX:
-      return SummaryModel::AggregationFunction::Max;
+      return scada::id::AggregateFunction_Maximum;
     case ID_AGGREGATION_SUM:
-      return SummaryModel::AggregationFunction::Sum;
+      return scada::id::AggregateFunction_Total;
     case ID_AGGREGATION_AVG:
-      return SummaryModel::AggregationFunction::Avg;
+      return scada::id::AggregateFunction_Average;
     default:
-      return std::nullopt;
+      return {};
   }
 }
 
@@ -165,7 +164,7 @@ CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
   if (GetInterval(command_id))
     return this;
 
-  if (GetAggregationType(command_id))
+  if (!GetAggregationId(command_id).is_null())
     return this;
 
   return __super::GetCommandHandler(command_id);
@@ -175,8 +174,9 @@ bool SummaryView::IsCommandChecked(unsigned command_id) const {
   if (auto interval = GetInterval(command_id))
     return model_->interval() == *interval;
 
-  if (auto aggregation_function = GetAggregationType(command_id))
-    return model_->aggregation_function() == *aggregation_function;
+  auto aggregation_id = GetAggregationId(command_id);
+  if (!aggregation_id.is_null())
+    return model_->aggregation_id() == aggregation_id;
 
   return CommandHandler::IsCommandChecked(command_id);
 }
@@ -187,8 +187,9 @@ void SummaryView::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  if (auto aggregation_function = GetAggregationType(command_id)) {
-    model_->SetAggregationFunction(*aggregation_function);
+  auto aggregation_id = GetAggregationId(command_id);
+  if (!aggregation_id.is_null()) {
+    model_->SetAggregationId(std::move(aggregation_id));
     return;
   }
 
@@ -225,7 +226,7 @@ void SummaryView::ExportToExcel() {
   base::win::ScopedVariant data;
   for (int i = 0; i < row_count; ++i) {
     for (int j = 0; j < column_count; ++j) {
-      const auto& data_value = model_->data_value(i, j);
+      const auto& data_value = model_->GetDataValue(i, j);
       if (Convert(data_value.value, data))
         sheet.SetData(2 + i, 2 + j, std::move(data));
     }
