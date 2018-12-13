@@ -102,6 +102,10 @@ void Tree::SetChecked(void* node, bool checked) {
   model_adapter_.SetChecked(node, checked);
 }
 
+void Tree::SetCheckedNodes(std::set<void*> nodes) {
+  model_adapter_.SetCheckedNodes(std::move(nodes));
+}
+
 void Tree::SetRootVisible(bool visible) {
   if (visible)
     setRootIndex({});

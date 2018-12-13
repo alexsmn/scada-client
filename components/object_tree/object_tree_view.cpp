@@ -138,16 +138,21 @@ void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
       model().SetNodeVisible(child, false);
     }
   }
+
+  for (int i = 0; i < count; ++i) {
+    ConfigurationTreeNode& child = parent_node.GetChild(start + i);
+    tree_view().SetChecked(&child, false);
+  }
 }
 
-void ObjectTreeView::OnContentsChanged(
-    const std::set<scada::NodeId>& item_ids) {
-  for (auto& p : model().node_map()) {
-    ConfigurationTreeNode& node = *p.second;
-    bool check = node.data_node() &&
-                 item_ids.find(node.data_node().node_id()) != item_ids.end();
-    tree_view().SetChecked(&node, check);
+void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
+  std::set<void*> nodes;
+  for (auto& node_id : node_ids) {
+    if (auto* node = model().FindNode(node_id))
+      nodes.emplace(node);
   }
+
+  tree_view().SetCheckedNodes(std::move(nodes));
 }
 
 void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& item_id,

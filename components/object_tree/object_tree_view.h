@@ -37,8 +37,7 @@ class ObjectTreeView : public ConfigurationTreeView,
 #endif
 
   // ContentsObserver
-  virtual void OnContentsChanged(
-      const std::set<scada::NodeId>& item_ids) override;
+  virtual void OnContentsChanged(const NodeIdSet& node_ids) override;
   virtual void OnContainedItemChanged(const scada::NodeId& item_id,
                                       bool added) override;
 };

@@ -249,8 +249,7 @@ bool TableModel::SetFormula(int row, std::string formula) {
 
   int added_first = static_cast<int>(rows_.size());
   int added_count = row - added_first + 1;
-
-  if (added_count != 0) {
+  if (added_count > 0) {
     NotifyItemsAdding(added_first, added_count);
     for (int i = 0; i < added_count; ++i)
       rows_.push_back(new TableRow(*this, added_first + i));

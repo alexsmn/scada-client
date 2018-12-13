@@ -11,7 +11,6 @@
 #include "core/node_management_service.h"
 #include "core/session_service.h"
 #include "services/dialog_service.h"
-#include "ui/base/models/sorted_tree_model.h"
 #include "views/item_drag_data.h"
 
 #if defined(UI_VIEWS)
@@ -40,8 +39,6 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
                                              ConfigurationTreeModel& model)
     : Controller{context}, model_(&model) {
   model_->Init();
-
-  // sorted_model_ = std::make_unique<ui::SortedTreeModel>(*model_);
 
   tree_view_.reset(new Tree(*model_));
   tree_view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));

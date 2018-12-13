@@ -60,7 +60,6 @@ class ConfigurationTreeView : public Controller
   void DeleteSelection();
 
   std::unique_ptr<ConfigurationTreeModel> model_;
-  std::unique_ptr<ui::SortedTreeModel> sorted_model_;
 
   scada::NodeId dragging_item_id_;
   DropAction drop_action_;

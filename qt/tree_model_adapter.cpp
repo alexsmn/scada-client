@@ -228,6 +228,25 @@ void TreeModelAdapter::SetChecked(void* node, bool checked) {
   }
 }
 
+void TreeModelAdapter::SetCheckedNodes(std::set<void*> nodes) {
+  std::vector<void*> changed_nodes;
+  if (nodes.empty())
+    changed_nodes.reserve(checked_nodes_.size());
+  else if (checked_nodes_.empty())
+    changed_nodes.reserve(nodes.size());
+  std::set_symmetric_difference(nodes.begin(), nodes.end(),
+                                checked_nodes_.begin(), checked_nodes_.end(),
+                                std::back_inserter(changed_nodes));
+
+  checked_nodes_ = std::move(nodes);
+
+  const QVector<int> roles = {Qt::CheckStateRole};
+  for (auto* node : changed_nodes) {
+    auto index = GetNodeIndex(node, 0);
+    dataChanged(index, index, roles);
+  }
+}
+
 void TreeModelAdapter::OnTreeModelResetting() {
   beginResetModel();
 }

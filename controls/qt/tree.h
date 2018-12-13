@@ -35,6 +35,7 @@ class Tree : public QTreeView {
   void SetShowChecks(bool show);
   void SetCheckedHandler(TreeCheckedHandler handler);
   void SetChecked(void* node, bool checked);
+  void SetCheckedNodes(std::set<void*> nodes);
 
   void SetDoubleClickHandler(DoubleClickHandler handler);
 

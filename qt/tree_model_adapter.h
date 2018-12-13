@@ -24,6 +24,7 @@ class TreeModelAdapter : public QAbstractItemModel,
   }
 
   void SetChecked(void* node, bool checked);
+  void SetCheckedNodes(std::set<void*> nodes);
 
   void LoadIcons(unsigned resource_id, int width, QColor mask_color);
 
