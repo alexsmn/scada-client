@@ -214,6 +214,10 @@ void TreeModelAdapter::OnTreeNodeChanged(void* node) {
               GetNodeIndex(node, model_.GetColumnCount() - 1));
 }
 
+bool TreeModelAdapter::IsChecked(void* node) const {
+  return checked_nodes_.find(node) != checked_nodes_.end();
+}
+
 void TreeModelAdapter::SetChecked(void* node, bool checked) {
   bool changed = false;
 

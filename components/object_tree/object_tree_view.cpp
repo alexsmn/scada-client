@@ -1,5 +1,6 @@
 ﻿#include "components/object_tree/object_tree_view.h"
 
+#include "client_utils.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "components/object_tree/object_tree_model.h"
@@ -42,11 +43,14 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     ConfigurationTreeNode* n = reinterpret_cast<ConfigurationTreeNode*>(node);
     auto* contents_model = controller_delegate_.GetActiveContentsModel();
     if (contents_model) {
-      if (checked)
-        contents_model->AddContainedItem(n->data_node().node_id(),
-                                         ContentsModel::APPEND);
-      else
-        contents_model->RemoveContainedItem(n->data_node().node_id());
+      NodeIdSet node_ids;
+      ExpandGroupItemIds(n->data_node(), node_ids);
+      for (auto& node_id : node_ids) {
+        if (checked)
+          contents_model->AddContainedItem(node_id, ContentsModel::APPEND);
+        else
+          contents_model->RemoveContainedItem(node_id);
+      }
     }
   });
 
@@ -146,17 +150,62 @@ void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
 }
 
 void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
-  std::set<void*> nodes;
+  std::set<void*> checked_nodes;
+
+  std::vector<void*> pending_nodes;
+  pending_nodes.reserve(node_ids.size());
   for (auto& node_id : node_ids) {
     if (auto* node = model().FindNode(node_id))
-      nodes.emplace(node);
+      pending_nodes.emplace_back(node);
   }
 
-  tree_view().SetCheckedNodes(std::move(nodes));
+  std::unordered_map<void* /*parent*/, int /*checked_child_count*/>
+      parent_checks;
+
+  while (!pending_nodes.empty()) {
+    // Allow adding nulls for performance and remove it then.
+    for (auto* node : pending_nodes)
+      ++parent_checks[model().GetParent(node)];
+    parent_checks.erase(nullptr);
+
+    checked_nodes.insert(pending_nodes.begin(), pending_nodes.end());
+    pending_nodes.clear();
+
+    for (auto [parent, checked_child_count] : parent_checks) {
+      int child_count = model().GetChildCount(parent);
+      if (child_count == checked_child_count)
+        pending_nodes.emplace_back(parent);
+    }
+    parent_checks.clear();
+  }
+
+  tree_view().SetCheckedNodes(std::move(checked_nodes));
 }
 
 void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& item_id,
                                             bool added) {
-  if (auto* node = model().FindNode(item_id))
+  void* node = model().FindNode(item_id);
+  while (node && tree_view().IsChecked(node) != added) {
     tree_view().SetChecked(node, added);
+
+    auto* parent = model().GetParent(node);
+    if (!parent)
+      break;
+
+    if (added) {
+      bool all_children_checked = true;
+      for (int i = 0; i < model().GetChildCount(parent); ++i) {
+        auto* child = model().GetChild(parent, i);
+        if (!tree_view().IsChecked(child)) {
+          all_children_checked = false;
+          break;
+        }
+      }
+
+      if (!all_children_checked)
+        break;
+    }
+
+    node = parent;
+  }
 }

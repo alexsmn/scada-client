@@ -23,6 +23,7 @@ class TreeModelAdapter : public QAbstractItemModel,
     checked_handler_ = std::move(handler);
   }
 
+  bool IsChecked(void* node) const;
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 

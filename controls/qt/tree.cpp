@@ -98,6 +98,10 @@ void Tree::SetCheckedHandler(TreeCheckedHandler handler) {
   model_adapter_.SetCheckedHandler(std::move(handler));
 }
 
+bool Tree::IsChecked(void* node) const {
+  return model_adapter_.IsChecked(node);
+}
+
 void Tree::SetChecked(void* node, bool checked) {
   model_adapter_.SetChecked(node, checked);
 }
