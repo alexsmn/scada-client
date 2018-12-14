@@ -36,15 +36,16 @@ class SummaryModel : private SummaryModelContext,
 
   const TimeRange& time_range() const { return time_range_; }
 
-  base::TimeDelta interval() const { return aggregation_.interval; }
+  base::TimeDelta interval() const { return aggregate_filter_.interval; }
   void SetInterval(base::TimeDelta interval);
 
-  const scada::NodeId& aggregation_id() const {
-    return aggregation_.aggregation_id;
+  const scada::NodeId& aggregate_type() const {
+    return aggregate_filter_.aggregate_type;
   }
-  void SetAggregationId(scada::NodeId aggregation_id);
+  void SetAggregateType(scada::NodeId aggregate_type);
 
-  void SetParams(const TimeRange& time_range, scada::Aggregation aggregation);
+  void SetParams(const TimeRange& time_range,
+                 scada::AggregateFilter aggregate_filter);
 
   int AddColumn(std::string formula);
   void DeleteColumn(int index);
@@ -93,7 +94,7 @@ class SummaryModel : private SummaryModelContext,
   base::Time start_time_;
   base::Time end_time_;
   TimeRange time_range_;
-  scada::Aggregation aggregation_;
+  scada::AggregateFilter aggregate_filter_;
 
   size_t row_count_ = 0;
 

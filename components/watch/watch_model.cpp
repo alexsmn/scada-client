@@ -4,7 +4,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_util.h"
 #include "core/event_service.h"
-#include "core/monitored_item.h"
+#include "core/monitored_item_service.h"
 
 #include <fstream>
 
@@ -50,7 +50,7 @@ void WatchModel::SetDevice(NodeRef device) {
   device_ = std::move(device);
   if (device_) {
     monitored_item_ =
-        device_.CreateMonitoredItem(scada::AttributeId::EventNotifier);
+        device_.CreateMonitoredItem(scada::AttributeId::EventNotifier, {});
     monitored_item_->set_event_handler(
         [this](const scada::Status& status, const scada::Event& event) {
           OnEvent(status, event);

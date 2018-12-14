@@ -115,7 +115,7 @@ void SummaryView::Save(WindowDefinition& definition) {
   model_->Save(definition);
 }
 
-scada::NodeId GetAggregationId(unsigned command_id) {
+scada::NodeId GetAggregateType(unsigned command_id) {
   switch (command_id) {
     case ID_AGGREGATION_COUNT:
       return scada::id::AggregateFunction_Count;
@@ -164,7 +164,7 @@ CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
   if (GetInterval(command_id))
     return this;
 
-  if (!GetAggregationId(command_id).is_null())
+  if (!GetAggregateType(command_id).is_null())
     return this;
 
   return __super::GetCommandHandler(command_id);
@@ -174,9 +174,9 @@ bool SummaryView::IsCommandChecked(unsigned command_id) const {
   if (auto interval = GetInterval(command_id))
     return model_->interval() == *interval;
 
-  auto aggregation_id = GetAggregationId(command_id);
-  if (!aggregation_id.is_null())
-    return model_->aggregation_id() == aggregation_id;
+  auto aggregate_type = GetAggregateType(command_id);
+  if (!aggregate_type.is_null())
+    return model_->aggregate_type() == aggregate_type;
 
   return CommandHandler::IsCommandChecked(command_id);
 }
@@ -187,9 +187,9 @@ void SummaryView::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  auto aggregation_id = GetAggregationId(command_id);
-  if (!aggregation_id.is_null()) {
-    model_->SetAggregationId(std::move(aggregation_id));
+  auto aggregate_type = GetAggregateType(command_id);
+  if (!aggregate_type.is_null()) {
+    model_->SetAggregateType(std::move(aggregate_type));
     return;
   }
 
