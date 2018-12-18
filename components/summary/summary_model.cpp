@@ -260,7 +260,8 @@ int SummaryModel::FindColumn(const scada::NodeId& node_id,
 void SummaryModel::Load(const WindowDefinition& definition) {
   // TODO: Load time range and interval.
   SetParams(TimeRange{ID_TIME_RANGE_DAY},
-            scada::AggregateFilter{scada::Duration::FromHours(1),
+            scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
+                                   scada::Duration::FromHours(1),
                                    scada::id::AggregateFunction_End});
 
   size_t count = std::min(kMaxColumnCount, definition.items.size());
