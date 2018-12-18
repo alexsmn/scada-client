@@ -89,6 +89,8 @@ class SummaryModel : private SummaryModelContext,
   void OnColumnChanged(int column);
   void OnColumnTitleChanged(int column);
 
+  bool path_title_ = true;
+
   std::vector<std::unique_ptr<Column>> columns_;
 
   base::Time start_time_;

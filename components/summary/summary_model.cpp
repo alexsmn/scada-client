@@ -5,6 +5,7 @@
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/grid_range.h"
 #include "window_definition.h"
@@ -42,7 +43,7 @@ class SummaryModel::Column {
   int width() const { return width_; }
   void set_width(int width) { width_ = width; }
 
-  base::string16 GetTitle() const { return timed_data_.GetTitle(); }
+  base::string16 GetTitle() const;
   scada::NodeId GetNodeId() const { return timed_data_.GetNode().node_id(); }
 
   void UpdateTimes();
@@ -82,6 +83,18 @@ SummaryModel::Column::Column(SummaryModel& model,
         OnPropertyChanged(properies);
       };
   UpdateTimes();
+}
+
+base::string16 SummaryModel::Column::GetTitle() const {
+  if (model_.path_title_) {
+    if (auto node = timed_data_.GetNode()) {
+      auto title = GetFullDisplayName(node);
+      if (!title.empty())
+        return title;
+    }
+  }
+
+  return timed_data_.GetTitle();
 }
 
 void SummaryModel::Column::UpdateTimes() {
