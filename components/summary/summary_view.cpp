@@ -119,7 +119,9 @@ scada::NodeId GetAggregateType(unsigned command_id) {
   switch (command_id) {
     case ID_AGGREGATION_COUNT:
       return scada::id::AggregateFunction_Count;
-    case ID_AGGREGATION_LAST:
+    case ID_AGGREGATION_START:
+      return scada::id::AggregateFunction_Start;
+    case ID_AGGREGATION_END:
       return scada::id::AggregateFunction_End;
     case ID_AGGREGATION_MIN:
       return scada::id::AggregateFunction_Minimum;

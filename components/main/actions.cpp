@@ -188,7 +188,11 @@ void AddGlobalActions(ActionManager& action_manager,
 
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_LAST, CATEGORY_AGGREGATION, L"Последнее"))
+          *new Action(ID_AGGREGATION_START, CATEGORY_AGGREGATION, L"Первое"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(
+          *new Action(ID_AGGREGATION_END, CATEGORY_AGGREGATION, L"Последнее"))
       .set_checkable(true);
   action_manager
       .AddAction(*new Action(ID_AGGREGATION_COUNT, CATEGORY_AGGREGATION,
