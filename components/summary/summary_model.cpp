@@ -15,23 +15,6 @@ namespace {
 const size_t kMaxColumnCount = 1000;
 const size_t kMaxRowCount = 10000;
 
-base::Time AlignTime(base::Time time, base::TimeDelta interval, bool upper) {
-  base::Time midnight = time.LocalMidnight();
-
-  // Align to day if interval is larger or equal to day.
-  if (interval.InDays() > 0) {
-    return upper ? midnight + base::TimeDelta::FromDays(1) : midnight;
-  }
-
-  // For intraday intervals align to midnight.
-  base::TimeDelta day_offset = time - midnight;
-  time -= base::TimeDelta::FromMicroseconds(day_offset.InMicroseconds() %
-                                            interval.InMicroseconds());
-  if (upper)
-    time += interval;
-  return time;
-}
-
 }  // namespace
 
 // SummaryModel::Column -------------------------------------------------------
