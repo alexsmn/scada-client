@@ -1,5 +1,8 @@
 #include "grid.h"
 
+#include "ui/base/models/grid_model_util.h"
+#include "ui/base/models/grid_range.h"
+
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QPainter>
@@ -12,28 +15,9 @@ const int kSelectionRectWidth = 3;
 const Qt::GlobalColor kExpandRectColor = Qt::blue;
 const int kExpandHandleSize = 5;
 
-void SetLeft(QItemSelectionRange& range, int value) {
-  range = QItemSelectionRange{
-      range.model()->index(range.top(), value, range.parent()),
-      range.bottomRight()};
-}
-
-void SetTop(QItemSelectionRange& range, int value) {
-  range = QItemSelectionRange{
-      range.model()->index(value, range.left(), range.parent()),
-      range.bottomRight()};
-}
-
-void SetRight(QItemSelectionRange& range, int value) {
-  range = QItemSelectionRange{
-      range.topLeft(),
-      range.model()->index(range.bottom(), value, range.parent())};
-}
-
-void SetBottom(QItemSelectionRange& range, int value) {
-  range = QItemSelectionRange{
-      range.topLeft(),
-      range.model()->index(value, range.right(), range.parent())};
+ui::GridRange ToUiGridRange(const QItemSelectionRange& range) {
+  return ui::GridRange::Range(range.top(), range.left(), range.height(),
+                              range.width());
 }
 
 }  // namespace
@@ -275,20 +259,9 @@ void Grid::Expand(const QItemSelectionRange& range,
   if (!range.isValid() || !expand_range.isValid())
     return;
 
-  // Calculate range to fill with values. It's |new_range| excluding |range|.
-  auto fill_range = expand_range;
-  if (fill_range.left() < range.left())
-    SetRight(fill_range, range.left() - 1);
-  else if (fill_range.right() > range.right())
-    SetLeft(fill_range, range.right() + 1);
-  else if (fill_range.top() < range.top())
-    SetBottom(fill_range, range.top() - 1);
-  else if (fill_range.bottom() > range.bottom())
-    SetTop(fill_range, range.bottom() + 1);
-
-  auto text = model()->data(range.bottomRight(), Qt::EditRole);
-  for (const auto& index : fill_range.indexes())
-    model()->setData(index, text, Qt::EditRole);
+  const bool ctrl_pressed = GetAsyncKeyState(VK_CONTROL) < 0;
+  ui::ExpandGridRange(model_, ToUiGridRange(range), ToUiGridRange(expand_range),
+                      !ctrl_pressed);
 }
 
 ui::GridModelIndex Grid::GetCurrentIndex() const {
