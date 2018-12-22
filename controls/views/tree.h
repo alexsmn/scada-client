@@ -15,10 +15,15 @@ typedef CImageListT<true> CImageListManaged;
 
 class Tree : public views::TreeView,
              private views::TreeController,
-             private views::ContextMenuController {
+             private views::ContextMenuController,
+             private views::TreeView::CustomPainter {
  public:
   explicit Tree(ui::TreeModel& model);
   virtual ~Tree();
+
+  void SetHeaderVisible(bool visible);
+
+  std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
   void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
 
@@ -50,6 +55,11 @@ class Tree : public views::TreeView,
   // views::ContextMenuController
   virtual void ShowContextMenuForView(views::View* source,
                                       const gfx::Point& point) override;
+
+  // views::TreeView::CustomPainter
+  virtual void OnPaintNode(gfx::Canvas* canvas,
+                           const gfx::Rect& node_bounds,
+                           void* node) override;
 
   DoubleClickHandler double_click_handler_;
   SelectionChangedHandler selection_changed_handler_;

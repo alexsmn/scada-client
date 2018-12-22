@@ -19,8 +19,11 @@ class Tree : public QTreeView {
   virtual ~Tree();
 
   void SetRootVisible(bool visible);
+  void SetHeaderVisible(bool visible);
 
   void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
+
+  std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
   int GetSelectionSize() const;
   void* GetSelectedNode();

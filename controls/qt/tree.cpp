@@ -127,3 +127,30 @@ void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
             handler(viewport()->mapToGlobal(pos));
           });
 }
+
+std::vector<void*> Tree::GetOrderedNodes(void* root, bool checked) const {
+  struct Helper {
+    void Traverse(const QModelIndex& proxy_index) {
+      auto* node = tree.model_adapter_.GetNode(
+          tree.proxy_model_.mapToSource(proxy_index));
+      if (tree.model_adapter_.IsChecked(node) != checked)
+        return;
+      nodes.emplace_back(node);
+      for (int i = 0; i < tree.proxy_model_.rowCount(proxy_index); ++i)
+        Traverse(tree.proxy_model_.index(i, 0, proxy_index));
+    }
+
+    const Tree& tree;
+    const bool checked;
+    std::vector<void*> nodes;
+  };
+
+  Helper helper{*this, checked};
+  helper.Traverse(
+      proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(root, 0)));
+  return std::move(helper.nodes);
+}
+
+void Tree::SetHeaderVisible(bool visible) {
+  setHeaderHidden(!visible);
+}

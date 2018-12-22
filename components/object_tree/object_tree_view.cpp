@@ -16,6 +16,21 @@
 #include "ui/gfx/canvas.h"
 #endif
 
+namespace {
+
+// Must keep |nodes| order.
+std::vector<scada::NodeId> GetVariableNodeIds(const std::vector<void*>& nodes) {
+  std::vector<scada::NodeId> node_ids;
+  for (auto* node : nodes) {
+    auto& n = *static_cast<ConfigurationTreeNode*>(node);
+    if (n.data_node().node_class() == scada::NodeClass::Variable)
+      node_ids.emplace_back(n.data_node().node_id());
+  }
+  return node_ids;
+}
+
+}  // namespace
+
 const WindowInfo kWindowInfo = {
     ID_OBJECT_VIEW, "Struct", L"Объекты", WIN_SING, 200, 400, 0};
 
@@ -27,12 +42,7 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
                        context.node_service_, context.task_manager_,
                        context.node_service_.GetNode(id::DataItems),
                        context.timed_data_service_, context.profile_}}} {
-#if defined(UI_QT)
-  tree_view().setHeaderHidden(false);
-#elif defined(UI_VIEWS)
-  tree_view().set_custom_painter(this);
-#endif
-
+  tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);
 
   tree_view().SetExpandedHandler([this](void* node, bool expanded) {
@@ -43,8 +53,9 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     ConfigurationTreeNode* n = reinterpret_cast<ConfigurationTreeNode*>(node);
     auto* contents_model = controller_delegate_.GetActiveContentsModel();
     if (contents_model) {
-      NodeIdSet node_ids;
-      ExpandGroupItemIds(n->data_node(), node_ids);
+      // Objects must be added in the order as they are listed in the tree view.
+      auto node_ids =
+          GetVariableNodeIds(tree_view().GetOrderedNodes(n, !checked));
       for (auto& node_id : node_ids) {
         if (checked)
           contents_model->AddContainedItem(node_id, ContentsModel::APPEND);
@@ -82,47 +93,6 @@ void ObjectTreeView::UpdateNodesVisibility(ConfigurationTreeNode& parent_node,
       UpdateNodesVisibility(child, expanded);
   }
 }
-
-#if defined(UI_VIEWS)
-void ObjectTreeView::OnPaintNode(gfx::Canvas* canvas,
-                                 const gfx::Rect& node_bounds,
-                                 void* node) {
-  ConfigurationTreeNode& cfg_node = *model().AsNode(node);
-  auto* timed_data = model().GetTimedData(&cfg_node);
-  if (!timed_data)
-    return;
-
-  // TODO: Refactor.
-
-  base::string16 value =
-      timed_data->GetCurrentString(FORMAT_DEFAULT | FORMAT_COLOR);
-
-  SkColor color = SK_ColorBLACK;
-  if (timed_data->current().qualifier.general_bad())
-    color = profile_.bad_value_color;
-
-  RECT rc = node_bounds.ToRECT();
-
-  RECT text_rect = rc;
-  const gfx::Font& font = ui::ResourceBundle::GetSharedInstance().GetFont(
-      ui::ResourceBundle::BASE_FONT);
-  MeasureColoredString(canvas, font, color, text_rect, value,
-                       DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
-
-  gfx::Rect fill_rect = node_bounds;
-  fill_rect.set_x(text_rect.left);
-  fill_rect.set_width(text_rect.right - text_rect.left);
-  SkColor fill_color = skia::COLORREFToSkColor(GetSysColor(COLOR_WINDOW));
-  if (Blinker::GetState() && timed_data->alerting())
-    fill_color = SK_ColorYELLOW;
-  canvas->FillRect(fill_rect, fill_color);
-
-  rc.right -= 5;
-  // draw text
-  DrawColoredString(canvas, font, color, rc, value,
-                    DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
-}
-#endif
 
 void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {
   ConfigurationTreeNode& parent_node = *model().AsNode(parent);

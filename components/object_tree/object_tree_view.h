@@ -10,9 +10,6 @@ class ConfigurationTreeNode;
 class ObjectTreeModel;
 
 class ObjectTreeView : public ConfigurationTreeView,
-#if defined(UI_VIEWS)
-                       private views::TreeView::CustomPainter,
-#endif
                        protected ui::TreeModelObserver,
                        private ContentsObserver {
  public:
@@ -28,13 +25,6 @@ class ObjectTreeView : public ConfigurationTreeView,
 
  private:
   ObjectTreeModel& model();
-
-#if defined(UI_VIEWS)
-  // views::TreeView::CustomPainter
-  virtual void OnPaintNode(gfx::Canvas* canvas,
-                           const gfx::Rect& node_bounds,
-                           void* node) override;
-#endif
 
   // ContentsObserver
   virtual void OnContentsChanged(const NodeIdSet& node_ids) override;

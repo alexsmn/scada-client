@@ -1,6 +1,8 @@
 #include "controls/views/tree.h"
 
+#include "gfx/canvas.h"
 #include "skia/ext/skia_utils_win.h"
+#include "ui/base/resource/resource_bundle.h"
 #include "ui/views/widget/widget.h"
 
 #include <atlbase.h>
@@ -12,10 +14,14 @@
 Tree::Tree(ui::TreeModel& model) {
   SetController(this);
   SetModel(&model);
+
+  if (model.GetColumnCount() != 1)
+    set_custom_painter(this);
 }
 
 Tree::~Tree() {
   SetController(nullptr);
+  set_custom_painter(nullptr);
 
   if (images_)
     images_->Destroy();
@@ -100,3 +106,51 @@ void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
   context_menu_handler_ = std::move(handler);
   set_context_menu_controller(this);
 }
+
+std::vector<void*> Tree::GetOrderedNodes(void* root, bool checked) const {
+  struct Helper {
+    void Traverse(void* root) {
+      if (tree.IsChecked(root) != checked)
+        return;
+      nodes.emplace_back(root);
+      for (int i = 0; i < tree.model()->GetChildCount(root); ++i)
+        Traverse(tree.model()->GetChild(root, i));
+    }
+
+    const Tree& tree;
+    const bool checked;
+    std::vector<void*> nodes;
+  };
+
+  Helper helper{*this, checked};
+  helper.Traverse(root);
+  return std::move(helper.nodes);
+}
+
+void Tree::OnPaintNode(gfx::Canvas* canvas,
+                       const gfx::Rect& node_bounds,
+                       void* node) {
+  const int column_id = 1;
+
+  base::string16 text = model()->GetText(node, column_id);
+
+  SkColor color = model()->GetTextColor(node, column_id);
+
+  const gfx::Font& font = ui::ResourceBundle::GetSharedInstance().GetFont(
+      ui::ResourceBundle::BASE_FONT);
+  auto size = gfx::Canvas::GetStringSize(text, font);
+
+  gfx::Rect fill_rect = node_bounds;
+  fill_rect.set_x(fill_rect.right() - size.width() - 5);
+  fill_rect.set_width(size.width());
+
+  SkColor fill_color = model()->GetBackgroundColor(node, column_id);
+  if (fill_color != SK_ColorTRANSPARENT)
+    canvas->FillRect(fill_rect, fill_color);
+
+  // draw text
+  canvas->DrawString(text, font, color, fill_rect,
+                     DT_RIGHT | DT_SINGLELINE | DT_VCENTER);
+}
+
+void Tree::SetHeaderVisible(bool visible) {}
