@@ -67,7 +67,8 @@ void OpenedViewCommands::SetContext(OpenedView* opened_view,
 
   auto* selection =
       opened_view_ ? &opened_view_->controller().selection() : nullptr;
-  selection_commands_->SetContext(main_window_, dialog_service_, selection);
+  selection_commands_->SetContext(main_window_, dialog_service_, controller_,
+                                  selection);
 }
 
 CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {

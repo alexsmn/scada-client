@@ -173,8 +173,10 @@ void SelectionCommands::ExecuteMultiCommand(unsigned command_id) {
 
   if (type != 0) {
     auto title = selection_->GetTitle();
-    auto items = selection_->GetMultipleNodeIds();
-    ::OpenView(main_window_, MakeWindowDefinition(items, type, title.c_str()));
+    auto node_ids = selection_->GetMultipleNodeIds();
+    ::OpenView(main_window_,
+               MakeWindowDefinition({node_ids.begin(), node_ids.end()}, type,
+                                    title.c_str()));
     return;
   }
 }
@@ -228,23 +230,21 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_OPEN_GRAPH:
       // TODO: formula
-      ::OpenView(main_window_, MakeWindowDefinition(node, ID_GRAPH_VIEW, true));
+      ::OpenView(main_window_, GetOpenWindowDefinition(ID_GRAPH_VIEW));
       return;
     case ID_OPEN_TABLE:
       // TODO: formula
-      ::OpenView(main_window_, MakeWindowDefinition(node, ID_TABLE_VIEW, true));
+      ::OpenView(main_window_, GetOpenWindowDefinition(ID_TABLE_VIEW));
       return;
     case ID_OPEN_SUMMARY:
       // TODO: formula
-      ::OpenView(main_window_,
-                 MakeWindowDefinition(node, ID_SUMMARY_VIEW, true));
+      ::OpenView(main_window_, GetOpenWindowDefinition(ID_SUMMARY_VIEW));
       return;
     case ID_OPEN_EVENTS:
     case ID_HISTORICAL_EVENTS:
       if (IsInstanceOf(node, id::DataGroupType) ||
           IsInstanceOf(node, id::DataItemType)) {
-        WindowDefinition win =
-            MakeWindowDefinition(node, ID_EVENT_JOURNAL_VIEW, true);
+        WindowDefinition win = GetOpenWindowDefinition(ID_EVENT_JOURNAL_VIEW);
         if (command_id == ID_OPEN_EVENTS)
           win.AddItem("Window").SetString("mode", "Current");
         ::OpenView(main_window_, win, true);
@@ -254,8 +254,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       OpenModusView(node);
       return;
     case ID_TIMED_DATA_VIEW:
-      ::OpenView(main_window_,
-                 MakeWindowDefinition(node, ID_TIMED_DATA_VIEW, true));
+      ::OpenView(main_window_, GetOpenWindowDefinition(ID_TIMED_DATA_VIEW));
       return;
     case ID_OPEN_GROUP_TABLE:
       if (auto win = MakeGroupWindowDefinition(node, ID_TABLE_VIEW))
@@ -378,9 +377,11 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
 
 void SelectionCommands::SetContext(MainWindow* main_window,
                                    DialogService* dialog_service,
+                                   Controller* controller,
                                    SelectionModel* selection) {
   main_window_ = main_window;
   dialog_service_ = dialog_service;
+  controller_ = controller;
   selection_ = selection;
 }
 
@@ -413,4 +414,14 @@ void SelectionCommands::CopyToClipboard() {
 
   if (!nodes.empty())
     CopyNodesToClipboard(nodes);
+}
+
+WindowDefinition SelectionCommands::GetOpenWindowDefinition(
+    unsigned type) const {
+  auto open_context = controller_->GetOpenContext();
+  if (open_context.applicable)
+    return MakeWindowDefinition(open_context.node_ids, type,
+                                open_context.title.c_str());
+  else
+    return MakeWindowDefinition(selection_->node(), type, true);
 }

@@ -3,6 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common/node_service.h"
+#include "common/node_util.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_model.h"
@@ -138,6 +139,33 @@ void ConfigurationTreeView::DeleteSelection() {
     if (choice == MessageBoxResult::Yes)
       DeleteTreeRecordsRecursive(task_manager_, node);
   }
+}
+
+// Must keep |nodes| order.
+std::vector<scada::NodeId> ConfigurationTreeView::GetVariableNodeIds(
+    const std::vector<void*>& nodes) const {
+  std::vector<scada::NodeId> node_ids;
+  for (auto* node : nodes) {
+    auto& n = *static_cast<ConfigurationTreeNode*>(node);
+    if (n.data_node().node_class() == scada::NodeClass::Variable)
+      node_ids.emplace_back(n.data_node().node_id());
+  }
+  return node_ids;
+}
+
+OpenContext ConfigurationTreeView::GetOpenContext() const {
+  OpenContext context;
+  auto* tree_node =
+      static_cast<ConfigurationTreeNode*>(tree_view().GetSelectedNode());
+  if (!tree_node)
+    tree_node = static_cast<ConfigurationTreeNode*>(model().GetRoot());
+  if (tree_node) {
+    context.applicable = true;
+    context.title = GetFullDisplayName(tree_node->data_node());
+    context.node_ids =
+        GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
+  }
+  return context;
 }
 
 #if defined(UI_VIEWS)

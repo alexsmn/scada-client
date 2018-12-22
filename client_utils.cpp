@@ -178,9 +178,10 @@ void DeleteTreeRecordsRecursive(TaskManager& task_manager,
   task_manager.PostDeleteTask(node.node_id());
 }
 
-WindowDefinition MakeWindowDefinition(const NodeIdSet& items,
-                                      unsigned type,
-                                      const base::char16* title) {
+WindowDefinition MakeWindowDefinition(
+    const std::vector<scada::NodeId>& node_ids,
+    unsigned type,
+    const base::char16* title) {
   if (!type)
     type = ID_TABLE_VIEW;
 
@@ -188,7 +189,7 @@ WindowDefinition MakeWindowDefinition(const NodeIdSet& items,
   if (title)
     win.title = title;
 
-  for (auto& node_id : items) {
+  for (auto& node_id : node_ids) {
     WindowItem& item = win.AddItem("Item");
     item.SetString("path", NodeIdToScadaString(node_id));
   }

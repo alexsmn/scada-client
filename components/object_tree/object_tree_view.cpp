@@ -16,21 +16,6 @@
 #include "ui/gfx/canvas.h"
 #endif
 
-namespace {
-
-// Must keep |nodes| order.
-std::vector<scada::NodeId> GetVariableNodeIds(const std::vector<void*>& nodes) {
-  std::vector<scada::NodeId> node_ids;
-  for (auto* node : nodes) {
-    auto& n = *static_cast<ConfigurationTreeNode*>(node);
-    if (n.data_node().node_class() == scada::NodeClass::Variable)
-      node_ids.emplace_back(n.data_node().node_id());
-  }
-  return node_ids;
-}
-
-}  // namespace
-
 const WindowInfo kWindowInfo = {
     ID_OBJECT_VIEW, "Struct", L"Объекты", WIN_SING, 200, 400, 0};
 

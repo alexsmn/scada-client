@@ -1,6 +1,7 @@
 #pragma once
 
 #include "command_handler.h"
+#include "window_definition.h"
 
 #include <vector>
 
@@ -15,6 +16,7 @@ class SessionService;
 class Variant;
 }  // namespace scada
 
+class Controller;
 class DialogService;
 class FileCache;
 class LocalEvents;
@@ -47,6 +49,7 @@ class SelectionCommands : private SelectionCommandsContext,
 
   void SetContext(MainWindow* main_window,
                   DialogService* dialog_service,
+                  Controller* controller,
                   SelectionModel* selection);
 
   void OpenWindow(unsigned type);
@@ -68,7 +71,10 @@ class SelectionCommands : private SelectionCommandsContext,
                   const std::vector<scada::Variant>& arguments);
   void OpenModusView(const NodeRef& node);
 
+  WindowDefinition GetOpenWindowDefinition(unsigned type) const;
+
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;
+  Controller* controller_ = nullptr;
 };

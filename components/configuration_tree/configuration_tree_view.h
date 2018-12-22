@@ -5,8 +5,8 @@
 #include "controller.h"
 
 #if defined(UI_VIEWS)
-#include "ui/views/drop_controller.h"
 #include "ui/views/controls/tree/tree_controller.h"
+#include "ui/views/drop_controller.h"
 #endif
 
 namespace ui {
@@ -34,14 +34,18 @@ class ConfigurationTreeView : public Controller
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;
+  virtual OpenContext GetOpenContext() const override;
 #if defined(UI_VIEWS)
   virtual views::DropController* GetDropController() override { return this; }
 #endif
 
  protected:
-  ConfigurationTreeModel& model() { return *model_; }
+  ConfigurationTreeModel& model() const { return *model_; }
 
-  Tree& tree_view() { return *tree_view_; }
+  Tree& tree_view() const { return *tree_view_; }
+
+  std::vector<scada::NodeId> GetVariableNodeIds(
+      const std::vector<void*>& nodes) const;
 
 #if defined(UI_QT)
 #elif defined(UI_VIEWS)

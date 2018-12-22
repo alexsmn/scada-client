@@ -45,9 +45,10 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
                                       unsigned type,
                                       const NodeIdSet& item_ids);
 WindowDefinition MakeWindowDefinition(const char* formula, unsigned type);
-WindowDefinition MakeWindowDefinition(const NodeIdSet& items,
-                                      unsigned type,
-                                      const base::char16* title = nullptr);
+WindowDefinition MakeWindowDefinition(
+    const std::vector<scada::NodeId>& node_ids,
+    unsigned type,
+    const base::char16* title = nullptr);
 
 std::optional<WindowDefinition> MakeGroupWindowDefinition(const NodeRef& node,
                                                           unsigned type);

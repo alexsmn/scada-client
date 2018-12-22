@@ -52,6 +52,12 @@ struct ControllerContext {
   DialogService& dialog_service_;
 };
 
+struct OpenContext {
+  bool applicable = false;
+  std::vector<scada::NodeId> node_ids;
+  base::string16 title;
+};
+
 class Controller : protected ControllerContext, public CommandHandler {
  public:
   explicit Controller(const ControllerContext& context)
@@ -81,6 +87,8 @@ class Controller : protected ControllerContext, public CommandHandler {
 
   // View root node for creation.
   virtual NodeRef GetRootNode() const { return nullptr; }
+
+  virtual OpenContext GetOpenContext() const { return {}; }
 
   // WindowInfo must have the WIN_CAN_PRINT flag.
   virtual void Print(PrintService& print_service) {}
