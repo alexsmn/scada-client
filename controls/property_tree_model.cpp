@@ -67,6 +67,10 @@ bool PropertyItemTreeNode::IsEditable(int column_id) const {
   return column_id == 1;
 }
 
+bool PropertyItemTreeNode::IsSelectable(int column_id) const {
+  return column_id == 1;
+}
+
 ui::EditData PropertyItemTreeNode::GetEditData(int column_id) {
   return property_group.GetEditData(index);
 }

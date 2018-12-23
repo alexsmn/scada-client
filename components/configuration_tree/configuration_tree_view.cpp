@@ -44,6 +44,7 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   tree_view_.reset(new Tree(*model_));
   tree_view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetRootVisible(true);
+  tree_view_->SetSorted(true);
 
   tree_view_->SetSelectionChangedHandler([this] {
     auto selection_size = tree_view_->GetSelectionSize();

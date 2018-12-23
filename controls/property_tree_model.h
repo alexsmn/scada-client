@@ -26,6 +26,7 @@ class PropertyGroupTreeNode : public PropertyTreeNode {
   virtual base::string16 GetText(int column_id) const override;
   virtual SkColor GetTextColor(int column_id) const override;
   virtual SkColor GetBackgroundColor(int column_id) const override;
+  virtual bool IsSelectable(int column_id) const override { return false; }
 
   PropertyGroup& property_group;
   PropertyGroup::ItemType type;
@@ -41,6 +42,7 @@ class PropertyItemTreeNode : public PropertyTreeNode {
   virtual base::string16 GetText(int column_id) const override;
   virtual void SetText(int column_id, const base::string16& text) override;
   virtual bool IsEditable(int column_id) const override;
+  virtual bool IsSelectable(int column_id) const override;
   virtual ui::EditData GetEditData(int column_id) override;
 
   PropertyGroup& property_group;

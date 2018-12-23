@@ -5,13 +5,20 @@
 
 #include <QPainter>
 
+// TreeProxyModel
+
+void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
+  compare_handler_ = std::move(handler);
+  invalidateFilter();
+}
+
 bool TreeProxyModel::lessThan(const QModelIndex& source_left,
                               const QModelIndex& source_right) const {
   assert(source_left.column() == source_right.column());
 
-  if (compare_handler && source_left.column() == 0) {
-    return compare_handler(tree_.model_adapter_.GetNode(source_left),
-                           tree_.model_adapter_.GetNode(source_right)) < 0;
+  if (compare_handler_ && source_left.column() == 0) {
+    return compare_handler_(tree_.model_adapter_.GetNode(source_left),
+                            tree_.model_adapter_.GetNode(source_right)) < 0;
   }
 
   return QSortFilterProxyModel::lessThan(source_left, source_right);
@@ -35,8 +42,6 @@ Tree::Tree(ui::TreeModel& model)
   setModel(&proxy_model_);
 
   SetRootVisible(false);
-  setSortingEnabled(true);
-  sortByColumn(0, Qt::AscendingOrder);
 
   // https://stackoverflow.com/questions/26011291/initial-width-of-column-in-qtableview-via-model
   // If you need to initialize column widths based on Qt::SizeHintRole you need
@@ -60,6 +65,8 @@ Tree::~Tree() {
 
 void Tree::SetSorted(bool sorted) {
   setSortingEnabled(sorted);
+  if (sorted)
+    sortByColumn(0, Qt::SortOrder::AscendingOrder);
 }
 
 void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
@@ -138,7 +145,7 @@ void Tree::SetRootVisible(bool visible) {
 }
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {
-  proxy_model_.compare_handler = std::move(handler);
+  proxy_model_.SetCompareHandler(std::move(handler));
 }
 
 void Tree::SetContextMenuHandler(ContextMenuHandler handler) {

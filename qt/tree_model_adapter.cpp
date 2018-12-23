@@ -167,15 +167,19 @@ bool TreeModelAdapter::setData(const QModelIndex& index,
 Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
   assert(index.isValid());
 
-  void* node = GetNode(index);
-
   auto flags = QAbstractItemModel::flags(index);
 
-  if (checkable_ && index.column() == 0 && node != model_.GetRoot())
-    flags |= Qt::ItemIsUserCheckable;
+  void* node = GetNode(index);
 
-  if (model_.IsEditable(node, index.column()))
-    flags |= Qt::ItemIsEditable;
+  bool selectable = model_.IsSelectable(node, index.column());
+  flags.setFlag(Qt::ItemIsSelectable, selectable);
+
+  bool checkable =
+      checkable_ && index.column() == 0 && node != model_.GetRoot();
+  flags.setFlag(Qt::ItemIsUserCheckable, checkable);
+
+  bool editable = model_.IsEditable(node, index.column());
+  flags.setFlag(Qt::ItemIsEditable, editable);
 
   return flags;
 }

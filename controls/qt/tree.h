@@ -17,7 +17,7 @@ class TreeProxyModel : public QSortFilterProxyModel {
  public:
   explicit TreeProxyModel(Tree& tree) : tree_{tree} {}
 
-  TreeCompareHandler compare_handler;
+  void SetCompareHandler(TreeCompareHandler handler);
 
  protected:
   // QSortFilterProxyModel
@@ -26,6 +26,7 @@ class TreeProxyModel : public QSortFilterProxyModel {
 
  private:
   Tree& tree_;
+  TreeCompareHandler compare_handler_;
 };
 
 class Tree : public QTreeView {
