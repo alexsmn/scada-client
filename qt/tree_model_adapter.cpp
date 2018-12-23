@@ -58,7 +58,7 @@ QVariant TreeModelAdapter::headerData(int section,
     case Qt::SizeHintRole: {
       auto size =
           QAbstractItemModel::headerData(section, orientation, role).toSize();
-      size.setHeight(row_height);
+      size.setHeight(20);
       int peferred_width = model_.GetColumnPreferredSize(section);
       if (peferred_width != 0)
         size.setWidth(peferred_width);
@@ -130,6 +130,8 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
                  ? icons_[icon_index]
                  : QVariant();
     }
+    case Qt::SizeHintRole:
+      return QSize{-1, row_height};
     case Qt::CheckStateRole:
       if (!checkable_ || index.column() != 0 || node == model_.GetRoot())
         return QVariant();

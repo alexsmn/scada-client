@@ -44,7 +44,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   tree_view_->SetColumnWidth(1, 200);*/
 
   tree_view_->SetHeaderVisible(true);
-  tree_view_->SetRowHeight(22);
+  tree_view_->SetRowHeight(21);
 
   tree_view_->SetCompareHandler([this](void* left, void* right) {
     auto& left_node = *static_cast<PropertyTreeModel::Node*>(left);
@@ -59,6 +59,10 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   });
 
 #if defined(UI_QT)
+  tree_view_->setEditTriggers(QAbstractItemView::EditTrigger::AnyKeyPressed |
+                              QAbstractItemView::EditTrigger::DoubleClicked |
+                              QAbstractItemView::EditTrigger::EditKeyPressed |
+                              QAbstractItemView::EditTrigger::SelectedClicked);
   tree_view_->setColumnWidth(0, 200);
   tree_view_->setAlternatingRowColors(true);
   tree_view_->expandAll();

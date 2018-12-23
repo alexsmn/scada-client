@@ -52,7 +52,7 @@ class TreeModelAdapter : public QAbstractItemModel,
                        int role = Qt::EditRole) override;
   virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-  int row_height = 20;
+  int row_height = 18;
 
  private:
   int GetIndexOf(void* node) const;
