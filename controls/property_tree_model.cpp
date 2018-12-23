@@ -81,11 +81,14 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
     : property_model_{property_model} {
   assert(!property_model_.model_changed_handler);
   property_model_.model_changed_handler = [this] {
-    Remove(*root(), 0, root()->GetChildCount());
+    if (root()->GetChildCount() != 0)
+      Remove(*root(), 0, root()->GetChildCount());
     int count = root()->AsGroup()->property_group.GetCount();
-    TreeNodesAdding(root(), 0, count);
-    root()->AsGroup()->Update();
-    TreeNodesAdded(root(), 0, count);
+    if (count != 0) {
+      TreeNodesAdding(root(), 0, count);
+      root()->AsGroup()->Update();
+      TreeNodesAdded(root(), 0, count);
+    }
   };
 
   assert(!property_model_.properties_changed_handler);

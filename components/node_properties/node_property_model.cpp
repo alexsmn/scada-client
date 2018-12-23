@@ -111,13 +111,21 @@ void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id,
 void NodePropertyModel::Update() {
   root_.properties.clear();
 
+  std::map<NodeRef /*category*/, std::unique_ptr<NodeGroupModel>> groups;
+  std::vector<NodeRef> ordered_groups;
+
   {
-    auto group = std::make_unique<NodeGroupModel>(*this);
+    auto& group = groups[{}];
+    group = std::make_unique<NodeGroupModel>(*this);
+    ordered_groups.emplace_back();
+
+#ifndef NDEBUG
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
         kNodeIdAttributeString.as_string(),
         scada::AttributeId::NodeId,
     });
+#endif
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
         kBrowseNameAttributeString.as_string(),
@@ -128,12 +136,7 @@ void NodePropertyModel::Update() {
         kDisplayNameAttributeString.as_string(),
         scada::AttributeId::DisplayName,
     });
-    root_.properties.push_back({PropertyGroup::ItemType::Category, L"Атрибуты",
-                                scada::AttributeId::NodeId, nullptr,
-                                scada::NodeId{}, std::move(group)});
   }
-
-  std::map<NodeRef /*category*/, std::unique_ptr<NodeGroupModel>> groups;
 
   if (const auto& type_definition = node_.type_definition()) {
     for (auto& p : GetTypeProperties(type_definition)) {
@@ -143,8 +146,10 @@ void NodePropertyModel::Update() {
 
       const auto& category = prop_decl.target(id::HasPropertyCategory);
       auto& group = groups[category];
-      if (!group)
+      if (!group) {
         group = std::make_unique<NodeGroupModel>(*this);
+        ordered_groups.emplace_back(category);
+      }
 
       auto& def = *p.second;
 
@@ -170,11 +175,12 @@ void NodePropertyModel::Update() {
       group->properties.emplace_back(std::move(prop));
     }
 
-    for (auto& [category, group] : groups) {
+    for (auto& category : ordered_groups) {
       auto title = category ? ToString16(category.display_name()) : L"Общие";
       root_.properties.push_back({PropertyGroup::ItemType::Category,
                                   std::move(title), scada::AttributeId::NodeId,
-                                  nullptr, scada::NodeId{}, std::move(group)});
+                                  nullptr, scada::NodeId{},
+                                  std::move(groups[category])});
     }
   }
 }

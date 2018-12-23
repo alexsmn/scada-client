@@ -222,8 +222,15 @@ const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_decl_id) {
 PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
   PropertyDefs properties;
   properties.reserve(32);
+
+  std::vector<NodeRef> type_definitions;
   for (auto supertype = type_definition; supertype;
-       supertype = supertype.supertype()) {
+       supertype = supertype.supertype())
+    type_definitions.emplace_back(supertype);
+
+  std::reverse(type_definitions.begin(), type_definitions.end());
+
+  for (const auto supertype : type_definitions) {
     for (const auto& p : supertype.targets(scada::id::HasProperty)) {
       if (auto* def = GetPropertyDef(p.node_id()))
         properties.emplace_back(p, def);
