@@ -34,6 +34,8 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
     node = node_service_.GetNode(node_id);
   }
 
+  selection().SelectNode(node);
+
   property_model_ = std::make_unique<NodePropertyModel>(
       PropertyContext{node_service_, task_manager_, dialog_service_},
       std::move(node));
