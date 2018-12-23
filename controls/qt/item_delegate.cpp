@@ -78,12 +78,14 @@ void ItemDelegate::setEditorData(QWidget* editor,
 void ItemDelegate::setModelData(QWidget* editor,
                                 QAbstractItemModel* model,
                                 const QModelIndex& index) const {
-  if (auto* line_edit = qobject_cast<QLineEdit*>(editor))
-    model->setData(index, line_edit->text(), Qt::EditRole);
-  else if (auto* combo_box = qobject_cast<QComboBox*>(editor))
+  if (auto* line_edit = qobject_cast<QLineEdit*>(editor)) {
+    if (line_edit->isModified())
+      model->setData(index, line_edit->text(), Qt::EditRole);
+  } else if (auto* combo_box = qobject_cast<QComboBox*>(editor)) {
     model->setData(index, combo_box->currentText(), Qt::EditRole);
-  else
+  } else {
     QItemDelegate::setModelData(editor, model, index);
+  }
 }
 
 void ItemDelegate::CommitAndCloseEditor() {
