@@ -63,9 +63,9 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
       controller_delegate_.ExecuteDefaultNodeCommand(node);
   });
 
-  tree_view_->SetCompareHandler([this](void* left, void* right) {
-    auto& a = static_cast<ConfigurationTreeNode*>(left)->data_node();
-    auto& b = static_cast<ConfigurationTreeNode*>(right)->data_node();
+  tree_view_->SetCompareHandler([](void* left, void* right) {
+    const auto& a = static_cast<ConfigurationTreeNode*>(left)->data_node();
+    const auto& b = static_cast<ConfigurationTreeNode*>(right)->data_node();
     if (!!a != !!b)
       return !!a < !!b ? 1 : -1;
     if (a.fetched() != b.fetched())

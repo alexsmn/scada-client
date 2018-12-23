@@ -11,7 +11,22 @@ namespace ui {
 class TreeModel;
 }
 
-class QSortFilterProxyModel;
+class Tree;
+
+class TreeProxyModel : public QSortFilterProxyModel {
+ public:
+  explicit TreeProxyModel(Tree& tree) : tree_{tree} {}
+
+  TreeCompareHandler compare_handler;
+
+ protected:
+  // QSortFilterProxyModel
+  virtual bool lessThan(const QModelIndex& source_left,
+                        const QModelIndex& source_right) const override;
+
+ private:
+  Tree& tree_;
+};
 
 class Tree : public QTreeView {
  public:
@@ -48,8 +63,13 @@ class Tree : public QTreeView {
   void SetContextMenuHandler(ContextMenuHandler handler);
 
  private:
+  void* GetNode(const QModelIndex& index) const;
+  QModelIndex GetIndex(void* node, int column_id) const;
+
   TreeModelAdapter model_adapter_;
-  QSortFilterProxyModel proxy_model_;
+  TreeProxyModel proxy_model_;
 
   ItemDelegate item_delegate_;
+
+  friend class TreeProxyModel;
 };

@@ -3,8 +3,23 @@
 #include "base/qt/color_qt.h"
 #include "qt/tree_model_adapter.h"
 
+bool TreeProxyModel::lessThan(const QModelIndex& source_left,
+                              const QModelIndex& source_right) const {
+  assert(source_left.column() == source_right.column());
+
+  if (compare_handler && source_left.column() == 0) {
+    return compare_handler(tree_.model_adapter_.GetNode(source_left),
+                           tree_.model_adapter_.GetNode(source_right)) < 0;
+  }
+
+  return QSortFilterProxyModel::lessThan(source_left, source_right);
+}
+
+// Tree
+
 Tree::Tree(ui::TreeModel& model)
     : model_adapter_{model},
+      proxy_model_{*this},
       item_delegate_{[this, &model](const QModelIndex& index) {
         auto source_index = proxy_model_.mapToSource(index);
         return model.GetEditData(source_index.internalPointer(),
@@ -46,9 +61,8 @@ void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
 }
 
 void Tree::SelectNode(void* node) {
-  selectionModel()->select(
-      proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(node, 0)),
-      QItemSelectionModel::ClearAndSelect);
+  selectionModel()->select(GetIndex(node, 0),
+                           QItemSelectionModel::ClearAndSelect);
 }
 
 int Tree::GetSelectionSize() const {
@@ -59,23 +73,22 @@ void* Tree::GetSelectedNode() {
   auto rows = selectionModel()->selectedRows();
   if (rows.size() != 1)
     return nullptr;
-  return model_adapter_.GetNode(proxy_model_.mapToSource(rows.front()));
+  return GetNode(rows.front());
 }
 
 bool Tree::IsExpanded(void* node, bool up_to_root) const {
-  return isExpanded(
-      proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(node, 0)));
+  return isExpanded(GetIndex(node, 0));
 }
 
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
-  connect(
-      this, &QTreeView::expanded, [this, handler](const QModelIndex& index) {
-        handler(model_adapter_.GetNode(proxy_model_.mapToSource(index)), true);
-      });
-  connect(
-      this, &QTreeView::collapsed, [this, handler](const QModelIndex& index) {
-        handler(model_adapter_.GetNode(proxy_model_.mapToSource(index)), false);
-      });
+  connect(this, &QTreeView::expanded,
+          [this, handler](const QModelIndex& index) {
+            handler(GetNode(index), true);
+          });
+  connect(this, &QTreeView::collapsed,
+          [this, handler](const QModelIndex& index) {
+            handler(GetNode(index), false);
+          });
 }
 
 void Tree::StartEditing(void* node) {
@@ -118,7 +131,9 @@ void Tree::SetRootVisible(bool visible) {
   setRootIsDecorated(!visible);
 }
 
-void Tree::SetCompareHandler(TreeCompareHandler handler) {}
+void Tree::SetCompareHandler(TreeCompareHandler handler) {
+  proxy_model_.compare_handler = std::move(handler);
+}
 
 void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
   setContextMenuPolicy(Qt::CustomContextMenu);
@@ -130,14 +145,13 @@ void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
 
 std::vector<void*> Tree::GetOrderedNodes(void* root, bool checked) const {
   struct Helper {
-    void Traverse(const QModelIndex& proxy_index) {
-      auto* node = tree.model_adapter_.GetNode(
-          tree.proxy_model_.mapToSource(proxy_index));
+    void Traverse(const QModelIndex& index) {
+      auto* node = tree.GetNode(index);
       if (tree.model_adapter_.IsChecked(node) != checked)
         return;
       nodes.emplace_back(node);
-      for (int i = 0; i < tree.proxy_model_.rowCount(proxy_index); ++i)
-        Traverse(tree.proxy_model_.index(i, 0, proxy_index));
+      for (int i = 0; i < tree.proxy_model_.rowCount(index); ++i)
+        Traverse(tree.proxy_model_.index(i, 0, index));
     }
 
     const Tree& tree;
@@ -146,11 +160,19 @@ std::vector<void*> Tree::GetOrderedNodes(void* root, bool checked) const {
   };
 
   Helper helper{*this, checked};
-  helper.Traverse(
-      proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(root, 0)));
+  helper.Traverse(GetIndex(root, 0));
   return std::move(helper.nodes);
 }
 
 void Tree::SetHeaderVisible(bool visible) {
   setHeaderHidden(!visible);
+}
+
+void* Tree::GetNode(const QModelIndex& index) const {
+  return model_adapter_.GetNode(proxy_model_.mapToSource(index));
+}
+
+QModelIndex Tree::GetIndex(void* node, int column_id) const {
+  return proxy_model_.mapFromSource(
+      model_adapter_.GetNodeIndex(node, column_id));
 }
