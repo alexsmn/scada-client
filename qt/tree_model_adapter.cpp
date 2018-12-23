@@ -58,7 +58,7 @@ QVariant TreeModelAdapter::headerData(int section,
     case Qt::SizeHintRole: {
       auto size =
           QAbstractItemModel::headerData(section, orientation, role).toSize();
-      size.setHeight(20);
+      size.setHeight(row_height);
       int peferred_width = model_.GetColumnPreferredSize(section);
       if (peferred_width != 0)
         size.setWidth(peferred_width);

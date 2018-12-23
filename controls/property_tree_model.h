@@ -12,17 +12,24 @@ class PropertyTreeNode : public ui::TreeNode<PropertyTreeNode> {
 
 class PropertyGroupTreeNode : public PropertyTreeNode {
  public:
-  PropertyGroupTreeNode(PropertyGroup& property_group, base::string16 title);
+  PropertyGroupTreeNode(PropertyGroup& property_group,
+                        PropertyGroup::ItemType type,
+                        int index,
+                        base::string16 title);
 
   void Update();
 
   // PropertyTreeNode
-  virtual PropertyGroupTreeNode* AsGroup() { return this; }
+  virtual PropertyGroupTreeNode* AsGroup() override { return this; }
 
   // ui::TreeNode
   virtual base::string16 GetText(int column_id) const override;
+  virtual SkColor GetTextColor(int column_id) const override;
+  virtual SkColor GetBackgroundColor(int column_id) const override;
 
   PropertyGroup& property_group;
+  PropertyGroup::ItemType type;
+  const int index;
   const base::string16 title;
 };
 
@@ -42,6 +49,8 @@ class PropertyItemTreeNode : public PropertyTreeNode {
 
 class PropertyTreeModel : public ui::TreeNodeModel<PropertyTreeNode> {
  public:
+  using Node = PropertyTreeNode;
+
   explicit PropertyTreeModel(PropertyModel& property_model);
   ~PropertyTreeModel();
 
@@ -58,4 +67,3 @@ class PropertyTreeModel : public ui::TreeNodeModel<PropertyTreeNode> {
 
   PropertyModel& property_model_;
 };
-

@@ -3,6 +3,8 @@
 #include "base/qt/color_qt.h"
 #include "qt/tree_model_adapter.h"
 
+#include <QPainter>
+
 bool TreeProxyModel::lessThan(const QModelIndex& source_left,
                               const QModelIndex& source_right) const {
   assert(source_left.column() == source_right.column());
@@ -54,6 +56,10 @@ Tree::Tree(ui::TreeModel& model)
 Tree::~Tree() {
   setModel(nullptr);
   setItemDelegate(nullptr);
+}
+
+void Tree::SetSorted(bool sorted) {
+  setSortingEnabled(sorted);
 }
 
 void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
@@ -175,4 +181,19 @@ void* Tree::GetNode(const QModelIndex& index) const {
 QModelIndex Tree::GetIndex(void* node, int column_id) const {
   return proxy_model_.mapFromSource(
       model_adapter_.GetNodeIndex(node, column_id));
+}
+
+void Tree::drawBranches(QPainter* painter,
+                        const QRect& rect,
+                        const QModelIndex& index) const {
+  const auto& brush =
+      proxy_model_.data(index, Qt::BackgroundRole).value<QBrush>();
+  if (brush != Qt::NoBrush)
+    painter->fillRect(rect, brush);
+
+  QTreeView::drawBranches(painter, rect, index);
+}
+
+void Tree::SetRowHeight(int row_height) {
+  model_adapter_.row_height = row_height;
 }

@@ -39,11 +39,26 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
       std::move(node));
   tree_model_ = std::make_unique<PropertyTreeModel>(*property_model_);
   tree_view_ = std::make_unique<Tree>(*tree_model_);
+
   /*tree_view_->SetColumnWidth(0, 150);
   tree_view_->SetColumnWidth(1, 200);*/
 
+  tree_view_->SetHeaderVisible(true);
+  tree_view_->SetRowHeight(22);
+
+  tree_view_->SetCompareHandler([this](void* left, void* right) {
+    auto& left_node = *static_cast<PropertyTreeModel::Node*>(left);
+    auto& right_node = *static_cast<PropertyTreeModel::Node*>(right);
+    auto* left_group = left_node.AsGroup();
+    auto* right_group = right_node.AsGroup();
+    if (left_group && right_group)
+      return left_group->index - right_group->index;
+    const auto& left_text = left_node.GetText(0);
+    const auto& right_text = right_node.GetText(0);
+    return left_text.compare(right_text);
+  });
+
 #if defined(UI_QT)
-  tree_view_->setHeaderHidden(false);
   tree_view_->setColumnWidth(0, 200);
   tree_view_->setAlternatingRowColors(true);
   tree_view_->expandAll();

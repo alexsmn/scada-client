@@ -2,6 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_service.h"
+#include "common/scada_node_ids.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "string_const.h"
@@ -45,6 +46,10 @@ base::string16 NodeGroupModel::GetValue(int index) const {
                              prop.prop_decl_id);
   else
     return ToString16(property_model_.node_.attribute(prop.attribute_id));
+}
+
+PropertyGroup::ItemType NodeGroupModel::GetType(int index) const {
+  return properties[index].type;
 }
 
 bool NodeGroupModel::IsInherited(int index) const {
@@ -109,43 +114,52 @@ void NodePropertyModel::Update() {
   {
     auto group = std::make_unique<NodeGroupModel>(*this);
     group->properties.push_back({
+        PropertyGroup::ItemType::Property,
         kNodeIdAttributeString.as_string(),
         scada::AttributeId::NodeId,
     });
     group->properties.push_back({
+        PropertyGroup::ItemType::Property,
         kBrowseNameAttributeString.as_string(),
         scada::AttributeId::BrowseName,
     });
     group->properties.push_back({
+        PropertyGroup::ItemType::Property,
         kDisplayNameAttributeString.as_string(),
         scada::AttributeId::DisplayName,
     });
-    root_.properties.push_back({L"Атрибуты", scada::AttributeId::NodeId,
-                                nullptr, scada::NodeId{}, std::move(group)});
+    root_.properties.push_back({PropertyGroup::ItemType::Category, L"Атрибуты",
+                                scada::AttributeId::NodeId, nullptr,
+                                scada::NodeId{}, std::move(group)});
   }
 
-  if (const auto& type_definition = node_.type_definition()) {
-    std::unique_ptr<NodeGroupModel> group;
+  std::map<NodeRef /*category*/, std::unique_ptr<NodeGroupModel>> groups;
 
+  if (const auto& type_definition = node_.type_definition()) {
     for (auto& p : GetTypeProperties(type_definition)) {
       const auto& prop_decl = p.first;
       if (!prop_decl)
         continue;
 
+      const auto& category = prop_decl.target(id::HasPropertyCategory);
+      auto& group = groups[category];
       if (!group)
         group = std::make_unique<NodeGroupModel>(*this);
 
       auto& def = *p.second;
 
       NodeGroupModel::Property prop;
+      prop.type = PropertyGroup::ItemType::Property;
       prop.name = def.GetTitle(*this, prop_decl);
       prop.def = &def;
       prop.prop_decl_id = prop_decl.node_id();
 
       if (auto* hierarchical_prop = def.AsHierarchical()) {
+        prop.type = PropertyGroup::ItemType::Group;
         prop.submodel = std::make_unique<NodeGroupModel>(*this);
         for (auto* child : hierarchical_prop->children()) {
           NodeGroupModel::Property child_prop;
+          child_prop.type = PropertyGroup::ItemType::Property;
           child_prop.name = child->GetTitle(*this, prop_decl);
           child_prop.def = child;
           child_prop.prop_decl_id = prop_decl.node_id();
@@ -156,10 +170,11 @@ void NodePropertyModel::Update() {
       group->properties.emplace_back(std::move(prop));
     }
 
-    if (group) {
-      root_.properties.push_back({ToString16(type_definition.display_name()),
-                                  scada::AttributeId::NodeId, nullptr,
-                                  scada::NodeId{}, std::move(group)});
+    for (auto& [category, group] : groups) {
+      auto title = category ? ToString16(category.display_name()) : L"Общие";
+      root_.properties.push_back({PropertyGroup::ItemType::Category,
+                                  std::move(title), scada::AttributeId::NodeId,
+                                  nullptr, scada::NodeId{}, std::move(group)});
     }
   }
 }

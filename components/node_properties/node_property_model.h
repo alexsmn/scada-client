@@ -22,11 +22,13 @@ class NodeGroupModel : public PropertyGroup {
   virtual PropertyGroup* GetSubgroup(int index) const override;
   virtual base::string16 GetName(int index) const override;
   virtual base::string16 GetValue(int index) const override;
+  virtual ItemType GetType(int index) const override;
   virtual bool IsInherited(int index) const override;
   virtual void SetValue(int index, const base::string16& value) override;
   virtual ui::EditData GetEditData(int index) const override;
 
   struct Property {
+    ItemType type;
     base::string16 name;
     scada::AttributeId attribute_id;
     const PropertyDefinition* def;

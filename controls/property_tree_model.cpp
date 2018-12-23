@@ -5,8 +5,13 @@
 // PropertyGroupTreeNode
 
 PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
+                                             PropertyGroup::ItemType type,
+                                             int index,
                                              base::string16 title)
-    : property_group{property_group}, title{std::move(title)} {
+    : property_group{property_group},
+      type{type},
+      index{index},
+      title{std::move(title)} {
   Update();
 }
 
@@ -16,8 +21,8 @@ void PropertyGroupTreeNode::Update() {
   for (int i = 0; i < property_group.GetCount(); ++i) {
     std::unique_ptr<PropertyTreeNode> node;
     if (auto* subgroup = property_group.GetSubgroup(i))
-      node = std::make_unique<PropertyGroupTreeNode>(*subgroup,
-                                                     property_group.GetName(i));
+      node = std::make_unique<PropertyGroupTreeNode>(
+          *subgroup, property_group.GetType(i), i, property_group.GetName(i));
     else
       node = std::make_unique<PropertyItemTreeNode>(property_group, i);
     Add(i, std::move(node));
@@ -26,6 +31,18 @@ void PropertyGroupTreeNode::Update() {
 
 base::string16 PropertyGroupTreeNode::GetText(int column_id) const {
   return column_id == 0 ? title : base::string16{};
+}
+
+SkColor PropertyGroupTreeNode::GetTextColor(int column_id) const {
+  if (type == PropertyGroup::ItemType::Category)
+    return SK_ColorWHITE;
+  return PropertyTreeNode::GetTextColor(column_id);
+}
+
+SkColor PropertyGroupTreeNode::GetBackgroundColor(int column_id) const {
+  if (type == PropertyGroup::ItemType::Category)
+    return SK_ColorGRAY;
+  return PropertyTreeNode::GetBackgroundColor(column_id);
 }
 
 // PropertyItemTreeNode
@@ -74,7 +91,8 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
   };
 
   set_root(std::make_unique<PropertyGroupTreeNode>(
-      property_model_.GetRootGroup(), base::string16{}));
+      property_model_.GetRootGroup(), PropertyGroup::ItemType::Category, 0,
+      base::string16{}));
 }
 
 PropertyTreeModel::~PropertyTreeModel() {

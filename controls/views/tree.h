@@ -22,6 +22,7 @@ class Tree : public views::TreeView,
   virtual ~Tree();
 
   void SetHeaderVisible(bool visible);
+  void SetRowHeight(int row_height);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 

@@ -56,11 +56,19 @@ class Tree : public QTreeView {
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 
+  void SetRowHeight(int row_height);
+
   void SetDoubleClickHandler(DoubleClickHandler handler);
 
+  void SetSorted(bool sorted);
   void SetCompareHandler(TreeCompareHandler handler);
 
   void SetContextMenuHandler(ContextMenuHandler handler);
+
+ protected:
+  virtual void drawBranches(QPainter* painter,
+                            const QRect& rect,
+                            const QModelIndex& index) const override;
 
  private:
   void* GetNode(const QModelIndex& index) const;

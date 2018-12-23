@@ -9,10 +9,14 @@ class PropertyGroup {
  public:
   virtual ~PropertyGroup() {}
 
+  // Category is colored differently.
+  enum class ItemType { Property, Group, Category };
+
   virtual int GetCount() const = 0;
   virtual PropertyGroup* GetSubgroup(int index) const = 0;
   virtual base::string16 GetName(int index) const = 0;
   virtual base::string16 GetValue(int index) const = 0;
+  virtual ItemType GetType(int index) const = 0;
   virtual bool IsInherited(int index) const = 0;
   virtual void SetValue(int index, const base::string16& value) = 0;
   virtual ui::EditData GetEditData(int index) const = 0;
@@ -27,6 +31,7 @@ class PropertyModel {
   using ModelChangedHandler = std::function<void()>;
   ModelChangedHandler model_changed_handler;
 
-  using PropertiesChangedHandler = std::function<void(PropertyGroup& group, int first, int count)>;
+  using PropertiesChangedHandler =
+      std::function<void(PropertyGroup& group, int first, int count)>;
   PropertiesChangedHandler properties_changed_handler;
 };
