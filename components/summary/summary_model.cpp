@@ -3,6 +3,7 @@
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
+#include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"

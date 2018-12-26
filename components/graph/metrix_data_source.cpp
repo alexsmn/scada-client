@@ -28,8 +28,8 @@ class MetrixPointEnum : public views::PointEnumerator {
 
  private:
   rt::TimedDataSpec& timed_data_;
-  rt::DataValues::const_iterator enum_position_;
-  rt::DataValues::const_iterator last_;
+  DataValues::const_iterator enum_position_;
+  DataValues::const_iterator last_;
   std::size_t count_ = 0;
   double enum_right_bound_;
   bool enum_include_right_bound_;
@@ -50,13 +50,13 @@ bool MetrixPointEnum::Reset(double x_from,
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
 
-  const rt::DataValues* values = timed_data_.values();
+  const auto* values = timed_data_.values();
   if (values) {
-    enum_position_ = rt::LowerBound(*values, base::Time::FromDoubleT(x_from));
+    enum_position_ = LowerBound(*values, base::Time::FromDoubleT(x_from));
     if (include_left_bound && enum_position_ != values->begin())
       --enum_position_;
 
-    last_ = rt::UpperBound(*values, base::Time::FromDoubleT(x_to));
+    last_ = UpperBound(*values, base::Time::FromDoubleT(x_to));
     if (include_right_bound && last_ != values->end())
       ++last_;
 

@@ -5,7 +5,7 @@
 #include "base/time/time.h"
 #include "common/node_ref.h"
 #include "contents_model.h"
-#include "core/aggregation.h"
+#include "core/aggregate_filter.h"
 #include "core/configuration_types.h"
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
