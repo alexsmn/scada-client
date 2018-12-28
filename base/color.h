@@ -5,6 +5,10 @@
 
 #include <SkColor.h>
 
+#if defined(UI_QT)
+#include "base/qt/color_qt.h"
+#endif
+
 namespace palette {
 
 size_t GetColorCount();

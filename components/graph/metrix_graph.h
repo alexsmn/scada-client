@@ -30,7 +30,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
   class Legend : public MetrixWidget {
    public:
-    explicit Legend(MetrixPane& pane) : MetrixWidget(pane) {}
+    explicit Legend(MetrixPane& pane);
 
 #if defined(UI_QT)
     // QWidget
@@ -47,7 +47,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     static const int GRAPH_LEG_MARGY = 2;  // margin inside legend
     static const int GRAPH_LEG_ROW = 13;   // legend row height
 
-    int title_width_;
+    int title_width_ = 0;
   };
 
   class MetrixPane : public GraphPane {

@@ -54,7 +54,9 @@ void MetrixGraph::MetrixPane::ShowLegend(bool show) {
     legend_.reset(new Legend(*this));
     plot().AddWidget(*legend_);
 
-#if defined(UI_VIEWS)
+#if defined(UI_QT)
+    legend_->show();
+#elif defined(UI_VIEWS)
     gfx::Size size = legend_->GetPreferredSize();
     legend_->SetBoundsRect(gfx::Rect(legend_->location(), size));
 #endif
@@ -69,6 +71,8 @@ void MetrixGraph::MetrixPane::ShowLegend(bool show) {
 }
 
 // MetrixGraph::Legend
+
+MetrixGraph::Legend::Legend(MetrixPane& pane) : MetrixWidget(pane) {}
 
 #if defined(UI_QT)
 void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {

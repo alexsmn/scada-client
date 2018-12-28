@@ -3,6 +3,7 @@
 #include "controls/types.h"
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/graph/graph.h"
+#include "ui/views/controls/graph/graph_axis.h"
 #include "ui/views/controls/graph/graph_line.h"
 #include "ui/views/controls/graph/graph_pane.h"
 #include "ui/views/controls/graph/graph_plot.h"

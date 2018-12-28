@@ -2,6 +2,7 @@
 
 #include "controls/types.h"
 #include "graph_qt/graph.h"
+#include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_line.h"
 #include "graph_qt/graph_pane.h"
 #include "graph_qt/graph_plot.h"

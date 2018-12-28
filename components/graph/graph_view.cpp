@@ -3,33 +3,18 @@
 #include "base/color.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
-#include "base/utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "common_resources.h"
-#include "components/graph/graph_setup_dialog.h"
 #include "components/time_range/time_range_dialog.h"
-#include "contents_observer.h"
 #include "controller_factory.h"
 #include "selection_model.h"
 #include "services/profile.h"
 #include "time_range.h"
-#include "ui/base/models/simple_menu_model.h"
 
-#if defined(UI_QT)
-#include "base/qt/color_qt.h"
-#include "graph_qt/graph_axis.h"
-#include "graph_qt/graph_pane.h"
-#include "graph_qt/graph_plot.h"
-#elif defined(UI_VIEWS)
-#include "skia/ext/skia_utils_win.h"
-#include "ui/events/event.h"
-#include "ui/gfx/canvas.h"
-#include "ui/views/background.h"
-#include "ui/views/controls/graph/graph_axis.h"
-#include "ui/views/controls/graph/graph_pane.h"
-#include "ui/views/controls/graph/graph_plot.h"
+#if defined(UI_VIEWS)
+#include "components/graph/graph_setup_dialog.h"
 #endif
 
 static const size_t kMaxPanes = 10;
