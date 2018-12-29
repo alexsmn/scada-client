@@ -70,7 +70,7 @@ void Tree::SetSorted(bool sorted) {
 }
 
 void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
-  model_adapter_.LoadIcons(resource_id, width, ColorToQt(mask_color));
+  model_adapter_.LoadIcons(resource_id, width, ToQColor(mask_color));
 }
 
 void Tree::SelectNode(void* node) {

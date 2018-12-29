@@ -121,6 +121,7 @@
 #define ID_INTERVAL_1D                  199
 #define ID_AGGREGATION_START            200
 #define IDR_STRUCT_POPUP                201
+#define ID_GRAPH_COLOR                  201
 #define IDD_LOGIN                       202
 #define IDR_EVENT_POPUP                 202
 #define IDR_PAGE_BTN                    203
@@ -386,6 +387,7 @@
 #define ID_NODES_VIEW                   4029
 #define ID_SORT_NONE                    4030
 #define ID_SORT_ALIAS                   4032
+#define ID_POPUP_4033                   4033
 #define ID_PAGE_DELETE                  32787
 #define ID_VIEW_LEGEND                  32797
 #define ID_NOW                          32830
@@ -452,8 +454,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
-#define _APS_NEXT_COMMAND_VALUE         4033
+#define _APS_NEXT_COMMAND_VALUE         4034
 #define _APS_NEXT_CONTROL_VALUE         1052
-#define _APS_NEXT_SYMED_VALUE           201
+#define _APS_NEXT_SYMED_VALUE           202
 #endif
 #endif

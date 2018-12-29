@@ -9,6 +9,11 @@
 #include "base/qt/color_qt.h"
 #endif
 
+// For convenience.
+inline SkColor ToSkColor(SkColor color) {
+  return color;
+}
+
 namespace palette {
 
 size_t GetColorCount();

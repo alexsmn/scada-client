@@ -15,6 +15,8 @@
 
 #if defined(UI_VIEWS)
 #include "components/graph/graph_setup_dialog.h"
+#elif defined(UI_QT)
+#include <QColorDialog>
 #endif
 
 static const size_t kMaxPanes = 10;
@@ -132,7 +134,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       // add line
       MetrixGraph::MetrixLine& line =
           graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
-      line.color = color;
+      line.SetColor(color);
       line.set_dots_shown(dots);
       line.set_stepped(stepped);
 
@@ -195,7 +197,7 @@ bool GraphView::FindColor(SkColor color) const {
     const views::GraphPlot::Lines& lines = pane.plot().lines();
     for (views::GraphPlot::Lines::const_iterator i = lines.begin();
          i != lines.end(); ++i)
-      if ((*i)->color == color)
+      if ((*i)->color() == color)
         return true;
   }
   return false;
@@ -245,9 +247,7 @@ void GraphView::Save(WindowDefinition& definition) {
       WindowItem& item = definition.AddItem("Item");
       item.SetInt("pane", pane_ix);
       item.SetString("path", line.data_source().GetPath());
-#if defined(UI_VIEWS)
-      item.SetString("clr", palette::ColorToString(line.color));
-#endif
+      item.SetString("clr", palette::ColorToString(ToSkColor(line.color())));
       item.SetInt("dots", line.dots_shown() ? 1 : 0);
       item.SetInt("stepped", line.stepped() ? 1 : 0);
     }
@@ -310,11 +310,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   const views::GraphPlot::Lines& lines = pane->plot().lines();
   if (!lines.empty()) {
     // empty selected pane
-#if defined(UI_QT)
-    color = ColorFromQt(lines.front()->color);
-#elif defined(UI_VIEWS)
-    color = lines.front()->color;
-#endif
+    color = ToSkColor(lines.front()->color());
     ClearPane(*pane);
   }
 
@@ -322,7 +318,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 
   MetrixGraph::MetrixLine& line =
       graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
-  line.color = color;
+  line.SetColor(color);
   line.UpdateTimeRange();
   graph_->Fit();
 
@@ -465,6 +461,7 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
 
     case ID_GRAPH_DOTS:
     case ID_GRAPH_STEPS:
+    case ID_GRAPH_COLOR:
       return graph_->primary_line() ? this : NULL;
 
     case ID_NOW:
@@ -559,6 +556,10 @@ void GraphView::ExecuteCommand(unsigned command_id) {
       }
       break;
 
+    case ID_GRAPH_COLOR:
+      ChooseLineColor();
+      break;
+
     case ID_GRAPH_ZOOM:
       if (graph_->selected_pane()) {
         graph_->selected_pane()->plot().set_zooming(
@@ -577,10 +578,7 @@ void GraphView::ExecuteCommand(unsigned command_id) {
         SkColor color = palette::GetColor(command_id - ID_COLOR_0);
         if (MetrixGraph::MetrixPane* pane = graph_->selected_pane()) {
           views::GraphLine* line = pane->plot().lines().front();
-          line->color = color;
-#if defined(UI_VIEWS)
-          pane->SchedulePaint();
-#endif
+          line->SetColor(color);
         }
       } else {
         __super::ExecuteCommand(command_id);
@@ -634,4 +632,16 @@ void GraphView::OnGraphModified() {
       base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
   if (span.InSeconds() >= 1)
     profile_.graph_view.default_span = span;
+}
+
+void GraphView::ChooseLineColor() {
+  auto* line = graph_->primary_line();
+  if (!line)
+    return;
+
+#if defined(UI_QT)
+  auto new_color = QColorDialog::getColor(line->color(), graph_.get());
+  if (new_color.isValid())
+    line->SetColor(new_color);
+#endif
 }

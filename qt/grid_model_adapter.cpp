@@ -59,9 +59,9 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdWString(cell.text);
     case Qt::TextColorRole:
-      return ColorToQt(cell.text_color);
+      return ToQColor(cell.text_color);
     case Qt::BackgroundColorRole:
-      return ColorToQt(cell.cell_color);
+      return ToQColor(cell.cell_color);
     default:
       return QVariant();
   }

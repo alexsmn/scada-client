@@ -121,9 +121,9 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdWString(model_.GetText(node, index.column()));
     case Qt::TextColorRole:
-      return ColorToQt(model_.GetTextColor(node, index.column()));
+      return ToQColor(model_.GetTextColor(node, index.column()));
     case Qt::BackgroundColorRole:
-      return ColorToQt(model_.GetBackgroundColor(node, index.column()));
+      return ToQColor(model_.GetBackgroundColor(node, index.column()));
     case Qt::DecorationRole: {
       auto icon_index = index.column() == 0 ? model_.GetIcon(node) : -1;
       return (icon_index >= 0 && icon_index < icons_.size())

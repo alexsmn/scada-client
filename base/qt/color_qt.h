@@ -3,5 +3,5 @@
 #include <SkColor.h>
 #include <QColor>
 
-QColor ColorToQt(SkColor color);
-SkColor ColorFromQt(QColor qcolor);
+QColor ToQColor(SkColor color);
+SkColor ToSkColor(QColor qcolor);
