@@ -774,19 +774,15 @@ IDR_GRAPH_POPUP MENU
 BEGIN
     POPUP "Popup"
     BEGIN
-        MENUITEM "Легенда",                     ID_VIEW_LEGEND
-        MENUITEM "Узлы",                        ID_GRAPH_DOTS
-        MENUITEM "Ступенчатый",                 ID_GRAPH_STEPS
+        MENUITEM "Легенда",                     ID_VIEW_LEGEND, CHECKED
+        MENUITEM "Узлы",                        ID_GRAPH_DOTS, CHECKED
+        MENUITEM "Ступенчатый",                 ID_GRAPH_STEPS, CHECKED
+        MENUITEM "Цвет...",                     ID_GRAPH_COLOR
         MENUITEM SEPARATOR
-        MENUITEM "Текущее время",               ID_NOW
+        MENUITEM "Текущее время",               ID_NOW, CHECKED
         MENUITEM SEPARATOR
         MENUITEM "Добавить панель",             ID_GRAPH_ADD_PANE
         MENUITEM "Удалить панель",              ID_GRAPH_DELETE_PANE
-        MENUITEM SEPARATOR
-        POPUP "Цвет"
-        BEGIN
-            MENUITEM "<Цвета>",                     ID_COLORS
-        END
     END
 END
 
@@ -813,8 +809,8 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Упорядочить"
         BEGIN
-            MENUITEM "Имя",                         ID_SORT_NAME
-            MENUITEM "Канал",                       ID_SORT_CHANNEL
+            MENUITEM "Имя",                         ID_SORT_NAME, CHECKED
+            MENUITEM "Канал",                       ID_SORT_CHANNEL, CHECKED
         END
     END
 END
@@ -836,7 +832,7 @@ IDR_LOG_POPUP MENU
 BEGIN
     POPUP "Popup"
     BEGIN
-        MENUITEM "Пауза",                       ID_PAUSE
+        MENUITEM "Пауза",                       ID_PAUSE, CHECKED
         MENUITEM SEPARATOR
         MENUITEM "Сохранить как...",            ID_SAVE_AS
         MENUITEM SEPARATOR
@@ -1067,9 +1063,9 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "Упорядочить"
         BEGIN
-            MENUITEM "Нет",                         ID_SORT_NONE
-            MENUITEM "Алиас",                       ID_SORT_ALIAS
-            MENUITEM "Канал",                       ID_SORT_CHANNEL
+            MENUITEM "Нет",                         ID_SORT_NONE, CHECKED
+            MENUITEM "Алиас",                       ID_SORT_ALIAS, CHECKED
+            MENUITEM "Канал",                       ID_SORT_CHANNEL, CHECKED
         END
     END
 END

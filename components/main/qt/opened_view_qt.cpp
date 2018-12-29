@@ -27,7 +27,8 @@ void BuildMenuModel(CMenuHandle menu_handle,
     wchar_t title[64] = {};
 
     CMenuItemInfo menu_info;
-    menu_info.fMask |= MIIM_FTYPE | MIIM_ID | MIIM_STRING | MIIM_SUBMENU;
+    menu_info.fMask |=
+        MIIM_FTYPE | MIIM_ID | MIIM_STRING | MIIM_SUBMENU | MIIM_STATE;
     menu_info.cch = std::size(title);
     menu_info.dwTypeData = title;
     menu_handle.GetMenuItemInfo(i, TRUE, &menu_info);
@@ -42,6 +43,9 @@ void BuildMenuModel(CMenuHandle menu_handle,
 
     } else if (menu_info.fType & MFT_SEPARATOR) {
       menu_model.AddSeparator(ui::NORMAL_SEPARATOR);
+
+    } else if (menu_info.fState & MFS_CHECKED) {
+      menu_model.AddCheckItem(menu_info.wID, title);
 
     } else if (menu_info.wID == ID_ITEM_COMMANDS) {
       menu_model.AddInplaceMenu(&context_menu_model);
