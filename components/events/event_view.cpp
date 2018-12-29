@@ -77,6 +77,10 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
                              kEventViewColumns, kEventViewColumns + count),
                          true));
 
+#if defined(UI_QT)
+  table_->sortByColumn(0, Qt::DescendingOrder);
+#endif
+
   table_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
   });
