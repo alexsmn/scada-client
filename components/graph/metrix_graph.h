@@ -32,6 +32,8 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
    public:
     explicit Legend(MetrixPane& pane);
 
+    void Update();
+
 #if defined(UI_QT)
     // QWidget
     virtual void paintEvent(QPaintEvent* e) override;
@@ -43,11 +45,18 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 #endif
 
    private:
-    static const int GRAPH_LEG_MARGX = 5;  // margin inside legend
-    static const int GRAPH_LEG_MARGY = 2;  // margin inside legend
-    static const int GRAPH_LEG_ROW = 13;   // legend row height
+    scada::DataValue GetCurrentValue(const MetrixDataSource& data_source) const;
+    base::string16 GetText(const MetrixDataSource& data_source,
+                           int column_id) const;
+    int GetColumnWidth(int column_id) const;
+    int GetColumnCount() const;
 
-    int title_width_ = 0;
+    static const int MARGX = 5;  // margin inside legend
+    static const int MARGY = 5;  // margin inside legend
+    static const int INDENTX = 2;  // distance between columns
+    static const int ROW = 13;   // legend row height
+
+    mutable int title_width_ = 0;
   };
 
   class MetrixPane : public GraphPane {
@@ -88,10 +97,10 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
    protected:
     // MetrixDataSource::Observer
-    virtual void OnDataSourceHistoryChanged();
-    virtual void OnDataSourceCurrentValueChanged();
-    virtual void OnDataSourceItemChanged();
-    virtual void OnDataSourceDeleted();
+    virtual void OnDataSourceHistoryChanged() override;
+    virtual void OnDataSourceCurrentValueChanged() override;
+    virtual void OnDataSourceItemChanged() override;
+    virtual void OnDataSourceDeleted() override;
   };
 
   explicit MetrixGraph(MetrixGraphContext&& context);

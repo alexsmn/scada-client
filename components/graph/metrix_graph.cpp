@@ -5,6 +5,7 @@
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_handle.h"
 #include "components/graph/metrix_data_source.h"
 
@@ -19,6 +20,8 @@
 #include "ui/views/controls/graph/graph_axis.h"
 #include "ui/views/controls/graph/graph_cursor.h"
 #endif
+
+namespace {
 
 template <class TimedVQMap, class Iter, typename Arg>
 void GetDrawRange(TimedVQMap& values, Arg x1, Arg x2, Iter& begin, Iter& end) {
@@ -35,34 +38,53 @@ void GetDrawRange(TimedVQMap& values, Arg x1, Arg x2, Iter& begin, Iter& end) {
   }
 }
 
+int GetPercentReady(const rt::TimedDataSpec& timed_data) {
+  auto to = timed_data.current().source_timestamp;
+  auto ready_from = timed_data.ready_from();
+  auto requested_from = timed_data.from();
+
+  if (ready_from <= requested_from)
+    return 100;
+
+  if (to.is_null() || ready_from.is_null() || requested_from.is_null())
+    return 0;
+
+  auto total = (to - requested_from).InMillisecondsF();
+  auto ready = (to - ready_from).InMillisecondsF();
+
+  if (total < 0 || ready < 0)
+    return 0;
+
+  if (total <= ready)
+    return 100;
+
+  if (std::abs(total) < std::numeric_limits<decltype(total)>::epsilon())
+    return 1000;
+
+  return ready / total * 100;
+}
+
+} // namespace
+
 // MetrixGraph::MetrixPane
 
 void MetrixGraph::MetrixPane::UpdateLegend() {
-  if (legend_.get()) {
-#if defined(UI_VIEWS)
-    gfx::Size size = legend_->GetPreferredSize();
-    legend_->SetBoundsRect(gfx::Rect(legend_->location(), size));
-#endif
-  }
+  if (legend_)
+    legend_->Update();
 }
 
 void MetrixGraph::MetrixPane::ShowLegend(bool show) {
   if (show) {
-    if (legend_.get())
+    if (legend_)
       return;
 
     legend_.reset(new Legend(*this));
     plot().AddWidget(*legend_);
 
-#if defined(UI_QT)
-    legend_->show();
-#elif defined(UI_VIEWS)
-    gfx::Size size = legend_->GetPreferredSize();
-    legend_->SetBoundsRect(gfx::Rect(legend_->location(), size));
-#endif
+    legend_->Update();
 
   } else {
-    if (!legend_.get())
+    if (!legend_)
       return;
 
     plot().RemoveWidget(*legend_);
@@ -74,6 +96,80 @@ void MetrixGraph::MetrixPane::ShowLegend(bool show) {
 
 MetrixGraph::Legend::Legend(MetrixPane& pane) : MetrixWidget(pane) {}
 
+scada::DataValue MetrixGraph::Legend::GetCurrentValue(
+    const MetrixDataSource& data_source) const {
+  scada::DataValue value;
+  const views::GraphCursor* cursor = graph().selected_cursor();
+  if (cursor && cursor->axis_->is_vertical()) {
+    base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
+    return data_source.timed_data().GetValueAt(cursor_time);
+  } else {
+    return data_source.timed_data().current();
+  }
+}
+
+base::string16 MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
+                                            int column_id) const {
+  switch (column_id) {
+    case 0: {
+      return data_source.title();
+    }
+    case 1: {
+      auto data_value = GetCurrentValue(data_source);
+      return L"= " + data_source.timed_data().GetValueString(
+                         data_value.value, data_value.qualifier);
+    }
+    case 2: {
+      auto data_value = GetCurrentValue(data_source);
+      return base::ASCIIToUTF16(FormatTime(data_value.source_timestamp));
+    }
+    case 3: {
+      auto percent = GetPercentReady(data_source.timed_data());
+      return base::ASCIIToUTF16(std::to_string(percent) + '%');
+    }
+    default:
+      return {};
+  }
+}
+
+int MetrixGraph::Legend::GetColumnWidth(int column_id) const {
+  switch (column_id) {
+    case 0:
+      return title_width_;
+    case 1:
+      return 80;
+    case 2:
+      return 150;
+    case 3:
+      return 50;
+    default:
+      return 0;
+  }
+}
+
+int MetrixGraph::Legend::GetColumnCount() const {
+  return 3;
+}
+
+void MetrixGraph::Legend::Update() {
+#if defined(UI_VIEWS)
+  gfx::Size size = GetPreferredSize();
+  SetBoundsRect(gfx::Rect(location(), size));
+
+#elif defined(UI_QT)
+  title_width_ = 0;
+  for (auto i = plot().lines().begin(); i != plot().lines().end(); ++i) {
+    MetrixLine& line = static_cast<MetrixLine&>(**i);
+    auto title = QString::fromStdWString(line.data_source().title());
+    auto width = QFontMetrics(font()).width(title);
+    title_width_ = std::max(title_width_, width);
+  }
+
+  adjustSize();
+  show();
+#endif
+}
+
 #if defined(UI_QT)
 void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
   QPainter painter(this);
@@ -82,50 +178,21 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
 
   //	dc.Rectangle(rect.left, rect.top, rect.right + 1, rect.bottom + 1);
 
-  int y = GRAPH_LEG_MARGY;
-  for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-       i != plot().lines().end(); i++) {
+  int top = MARGY;
+  for (auto i = plot().lines().begin(); i != plot().lines().end(); i++) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
+    auto& data_source = static_cast<MetrixDataSource&>(line.data_source());
 
-    QRect box(GRAPH_LEG_MARGX, y + 3, GRAPH_LEG_ROW - 6, GRAPH_LEG_ROW - 6);
-
-    //		CBrush brush;
-    //		brush.CreateSolidBrush(line.color);
-    //		dc.FillRect(&box, brush);
-
-    scada::DataValue value;
-    const views::GraphCursor* cursor = graph.selected_cursor();
-    if (cursor && cursor->axis_->is_vertical()) {
-      base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
-      value = line.data_source().timed_data().GetValueAt(cursor_time);
-    } else {
-      value = line.data_source().timed_data().current();
+    int left = MARGX;
+    for (int i = 0; i < GetColumnCount(); ++i) {
+      auto text = QString::fromStdWString(GetText(data_source, i));
+      int width = GetColumnWidth(i);
+      QRect rect{left, top, width, ROW};
+      painter.drawText(rect, Qt::AlignLeft | Qt::AlignVCenter, text);
+      left += width + INDENTX;
     }
 
-    // Draw title.
-    auto title = QString::fromStdWString(line.data_source().title());
-    int p = box.x() + box.width() + 3;
-    QRect rc(p, y, std::max(0, title_width_ - p), GRAPH_LEG_ROW);
-    // TODO: End ellipsis.
-    painter.drawText(rc, Qt::AlignLeft | Qt::AlignVCenter, title);
-
-    // Draw value.
-    auto text =
-        QStringLiteral("= ") +
-        QString::fromStdWString(line.data_source().timed_data().GetValueString(
-            value.value, value.qualifier));
-    rc = QRect(title_width_, y, 80, GRAPH_LEG_ROW);
-    // TODO: End ellipsis.
-    painter.drawText(rc, Qt::AlignLeft | Qt::AlignVCenter, text);
-
-    // Draw time.
-    auto time_text = QString::fromStdString(FormatTime(value.source_timestamp));
-    p = title_width_ + 80;
-    rc = QRect(p, y, std::max(0, width() - GRAPH_LEG_MARGX - p), GRAPH_LEG_ROW);
-    // TODO: End ellipsis.
-    painter.drawText(rc, Qt::AlignLeft | Qt::AlignVCenter, time_text);
-
-    y += GRAPH_LEG_ROW;
+    top += ROW;
   }
 }
 #elif defined(UI_VIEWS)
@@ -134,12 +201,12 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
 
   //	dc.Rectangle(rect.left, rect.top, rect.right + 1, rect.bottom + 1);
 
-  int y = GRAPH_LEG_MARGY;
+  int top = MARGY;
   for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
        i != plot().lines().end(); i++) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
 
-    gfx::Rect box(GRAPH_LEG_MARGX, y + 3, GRAPH_LEG_ROW - 6, GRAPH_LEG_ROW - 6);
+    gfx::Rect box(MARGX, top + 3, ROW - 6, ROW - 6);
 
     //		CBrush brush;
     //		brush.CreateSolidBrush(line.color);
@@ -157,7 +224,7 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
     // Draw title.
     const auto& title = line.data_source().title();
     int p = box.x() + box.width() + 3;
-    gfx::Rect rc(p, y, std::max(0, title_width_ - p), GRAPH_LEG_ROW);
+    gfx::Rect rc(p, top, std::max(0, title_width_ - p), ROW);
     canvas->DrawString(title, graph.font_, SK_ColorBLACK, rc,
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
@@ -165,45 +232,34 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
     base::string16 text =
         L"= " + line.data_source().timed_data().GetValueString(value.value,
                                                                value.qualifier);
-    rc = gfx::Rect(title_width_, y, 80, GRAPH_LEG_ROW);
+    rc = gfx::Rect(title_width_, top, 80, ROW);
     canvas->DrawString(text, graph.font_, SK_ColorBLACK, rc,
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw time.
     std::string time_text = FormatTime(value.source_timestamp);
     p = title_width_ + 80;
-    rc = gfx::Rect(p, y, std::max(0, width() - GRAPH_LEG_MARGX - p),
-                   GRAPH_LEG_ROW);
+    rc = gfx::Rect(p, top, std::max(0, width() - MARGX - p), ROW);
     canvas->DrawString(time_text, graph.font_, SK_ColorBLACK, rc,
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
-    y += GRAPH_LEG_ROW;
+    top += ROW;
   }
 }
 #endif
 
 #if defined(UI_QT)
 QSize MetrixGraph::Legend::sizeHint() const {
-  MetrixGraph& graph = pane().graph();
+  int total_width = MARGX * 2;
+  for (int i = 0; i < GetColumnCount(); ++i)
+    total_width += GetColumnWidth(i);
+  total_width += INDENTX * (GetColumnCount() - 1);
 
-  int width = 30;
+  int total_height = MARGY * 2 + plot().lines().size() * ROW;
 
-  for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-       i != plot().lines().end(); ++i) {
-    MetrixLine& line = static_cast<MetrixLine&>(**i);
-    auto title = QString::fromStdWString(line.data_source().title());
-    auto size = QFontMetrics(font()).width(title);
-    if (size > width)
-      width = size;
-  }
-  width += GRAPH_LEG_MARGX * 2 + GRAPH_LEG_ROW - 6 + 5;
-  int height = plot().lines().empty() ? GRAPH_LEG_ROW
-                                      : GRAPH_LEG_ROW * plot().lines().size();
-  height += 2 * GRAPH_LEG_MARGY;
-
-  const_cast<Legend*>(this)->title_width_ = width;
-  return QSize(width + 80 + 150, height);
+  return QSize{total_width, total_height};
 }
+
 #elif defined(UI_VIEWS)
 gfx::Size MetrixGraph::Legend::GetPreferredSize() const {
   MetrixGraph& graph = pane().graph();
@@ -218,10 +274,9 @@ gfx::Size MetrixGraph::Legend::GetPreferredSize() const {
     if (size.width() > width)
       width = size.width();
   }
-  width += GRAPH_LEG_MARGX * 2 + GRAPH_LEG_ROW - 6 + 5;
-  int height = plot().lines().empty() ? GRAPH_LEG_ROW
-                                      : GRAPH_LEG_ROW * plot().lines().size();
-  height += 2 * GRAPH_LEG_MARGY;
+  width += MARGX * 2 + ROW - 6 + 5;
+  int height = plot().lines().empty() ? ROW : ROW * plot().lines().size();
+  height += 2 * MARGY;
 
   const_cast<Legend*>(this)->title_width_ = width;
   return gfx::Size(width + 80 + 150, height);
