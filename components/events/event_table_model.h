@@ -91,8 +91,6 @@ class EventTableModel : public ui::TableModel,
 
   void AckRows(int first, int count);
 
-  int GetInsertIndex(EventType type, const scada::Event& event);
-
   bool IsEventShown(const scada::Event& event) const;
 
   void RefilterNow();
@@ -142,8 +140,6 @@ class EventTableModel : public ui::TableModel,
 
   typedef std::vector<Row> Rows;
   Rows rows_;
-
-  struct RowsComparer;
 
   bool request_running_ = false;
 

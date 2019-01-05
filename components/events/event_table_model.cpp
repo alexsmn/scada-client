@@ -17,22 +17,6 @@
 
 const base::char16 kLocalEventSource[] = L"Локальное событие";
 
-struct EventTableModel::RowsComparer {
-  bool operator()(const Row& left, const Row& right) const {
-    // desc by time
-    if (left.event->time != right.event->time)
-      return left.event->time > right.event->time;
-    // asct by severity
-    if (left.event->severity != right.event->severity)
-      return left.event->severity < right.event->severity;
-    // asc by source
-    if (left.event->node_id != right.event->node_id)
-      return left.event->node_id < right.event->node_id;
-    // TODO: sort by object name
-    return left.event < right.event;
-  }
-};
-
 static void GetEventColors(const scada::Event& event,
                            SkColor& text_color,
                            SkColor& back_color) {
@@ -175,26 +159,15 @@ bool EventTableModel::IsEventShown(const scada::Event& event) const {
   return false;
 }
 
-int EventTableModel::GetInsertIndex(EventType type, const scada::Event& event) {
-  if (!IsEventShown(event))
-    return -1;
-
-  Row row(type, event);
-  Rows::iterator i =
-      std::upper_bound(rows_.begin(), rows_.end(), row, RowsComparer());
-  return i != rows_.end() ? static_cast<int>(i - rows_.begin())
-                          : static_cast<int>(rows_.size());
-}
-
 void EventTableModel::AddRow(EventType type, const scada::Event& event) {
   int index = FindRow(event);
   if (index == -1) {
-    index = GetInsertIndex(type, event);
-    if (index != -1) {
+    if (IsEventShown(event)) {
       Row row{type, event};
       row.Update(node_service_);
+      index = static_cast<int>(rows_.size());
       NotifyItemsAdding(index, 1);
-      rows_.insert(rows_.begin() + index, std::move(row));
+      rows_.emplace_back(std::move(row));
       NotifyItemsAdded(index, 1);
     }
   } else {
@@ -347,7 +320,6 @@ void EventTableModel::RefilterNow() {
     }
   }
 
-  std::sort(rows_.begin(), rows_.end(), RowsComparer());
   // Mustn't be RangeChanged as rows are reordered.
   NotifyModelChanged();
 }
