@@ -64,7 +64,7 @@ int GetPercentReady(const rt::TimedDataSpec& timed_data) {
   return ready / total * 100;
 }
 
-} // namespace
+}  // namespace
 
 // MetrixGraph::MetrixPane
 
@@ -368,9 +368,15 @@ void MetrixGraph::UpdateCurBox() {
 }
 
 void MetrixGraph::MetrixLine::UpdateTimeRange() {
-  if (data_source().connected())
-    data_source().SetFrom(
-        base::Time::FromDoubleT(graph().horizontal_axis().range().low()));
+  if (!data_source().connected())
+    return;
+
+  auto& graph_range = graph().horizontal_axis().range();
+
+  auto from = base::Time::FromDoubleT(graph_range.low());
+  auto to = base::Time::FromDoubleT(graph_range.high());
+
+  data_source().SetRange({from, to});
 }
 
 void MetrixGraph::UpdateData() {

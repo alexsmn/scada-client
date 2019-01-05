@@ -140,6 +140,14 @@ void MetrixDataSource::SetTimedData(const rt::TimedDataSpec& spec) {
   OnItemChanged();
 }
 
+void MetrixDataSource::SetRange(const scada::DateTimeRange& range) {
+#ifdef TIMED_DATA_RANGE_SUPPORT
+  timed_data_.SetRange(range);
+#else
+  timed_data_.SetFrom(range.first);
+#endif
+}
+
 bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
   if (!connected())
     return false;

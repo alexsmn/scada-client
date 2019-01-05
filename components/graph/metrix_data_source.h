@@ -21,7 +21,7 @@ class MetrixDataSource : public views::GraphDataSource {
   virtual ~MetrixDataSource();
 
   void SetTimedData(const rt::TimedDataSpec& spec);
-  void SetFrom(base::Time time) { timed_data_.SetFrom(time); }
+  void SetRange(const scada::DateTimeRange& range);
 
   bool is_ready() const { return timed_data_.ready(); }
   scada::NodeId trid() const { return timed_data_.GetNode().node_id(); }
