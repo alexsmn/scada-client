@@ -124,8 +124,12 @@ void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   if (!timed_data_.connected())
     return;
 
+#ifdef TIMED_DATA_RANGE_SUPPORT
+  timed_data_.SetRange({start, end});
+#else
   timed_data_.SetFrom(start);
   end;
+#endif
 
   end_time_ = time_range.end;
 

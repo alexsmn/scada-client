@@ -87,7 +87,11 @@ void SummaryModel::Column::UpdateTimes() {
 
   timed_data_.Reset();
   timed_data_.SetAggregateFilter(model_.aggregate_filter_);
+#ifdef TIMED_DATA_RANGE_SUPPORT
+  timed_data_.SetRange({model_.start_time_, model_.end_time_});
+#else
   timed_data_.SetFrom(model_.start_time_);
+#endif
   timed_data_.Connect(model_.timed_data_service(), formula_);
   model_.OnColumnChanged(index_);
 }
@@ -133,7 +137,12 @@ scada::DataValue SummaryModel::Column::GetDataValue(int row) const {
 
 bool SummaryModel::Column::IsReady(int row) const {
   auto time = model_.GetRowTime(row);
+#ifdef TIMED_DATA_RANGE_SUPPORT
+  scada::DateTimeRange range{time, time + model_.interval()};
+  return timed_data_.range_ready(range);
+#else
   return time >= timed_data_.ready_from();
+#endif
 }
 
 // SummaryModel::RowModel -----------------------------------------------------

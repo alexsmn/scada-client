@@ -374,7 +374,8 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
   auto& graph_range = graph().horizontal_axis().range();
 
   auto from = base::Time::FromDoubleT(graph_range.low());
-  auto to = base::Time::FromDoubleT(graph_range.high());
+  auto to = graph().m_time_fit ? rt::kTimedDataCurrentOnly
+                               : base::Time::FromDoubleT(graph_range.high());
 
   data_source().SetRange({from, to});
 }
