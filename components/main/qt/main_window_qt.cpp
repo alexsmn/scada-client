@@ -200,7 +200,11 @@ void MainWindowQt::OnSelectionChanged() {
 void MainWindowQt::SetToolbarPosition(unsigned position) {}
 
 void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
-                                      const gfx::Point& point) {}
+                                      const gfx::Point& point) {
+  QMenu menu;
+  BuildMenu(menu, *tab_popup_menu_);
+  menu.exec({point.x(), point.y()});
+}
 
 QAction* MainWindowQt::FindAction(unsigned command_id) {
   auto i = action_map_.find(command_id);

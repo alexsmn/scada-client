@@ -1,4 +1,4 @@
-#include "components/main/main_window.h"
+﻿#include "components/main/main_window.h"
 
 #include "client_utils.h"
 #include "common_resources.h"
@@ -9,14 +9,35 @@
 #include "contents_observer.h"
 #include "controller.h"
 #include "services/profile.h"
+#include "simple_menu_command_handler.h"
 #include "ui/base/models/menu_model.h"
+#include "ui/base/models/simple_menu_model.h"
 #include "window_info.h"
+
+namespace {
+
+class TabPopupMenu : public ui::SimpleMenuModel {
+ public:
+  explicit TabPopupMenu(CommandHandler& commands)
+      : ui::SimpleMenuModel{&handler_}, handler_{commands} {
+    AddItem(ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
+    AddItem(ID_VIEW_CHANGE_TITLE, L"Переименовать");
+    AddSeparator(ui::NORMAL_SEPARATOR);
+    AddItem(ID_VIEW_CLOSE, L"Закрыть");
+  }
+
+ private:
+  SimpleMenuCommandHandler handler_;
+};
+
+}  // namespace
 
 MainWindow::MainWindow(MainWindowContext&& context,
                        DialogService& dialog_service)
     : MainWindowContext{std::move(context)},
       commands_{main_commands_factory_(*this, dialog_service)},
-      context_menu_model_{context_menu_factory_(*this, *commands_)} {}
+      context_menu_model_{context_menu_factory_(*this, *commands_)},
+      tab_popup_menu_{std::make_unique<TabPopupMenu>(*commands_)} {}
 
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;

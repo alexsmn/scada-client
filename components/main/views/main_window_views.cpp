@@ -10,9 +10,7 @@
 #include "core/session_service.h"
 #include "services/page.h"
 #include "services/profile.h"
-#include "simple_menu_command_handler.h"
 #include "ui/base/models/menu_model.h"
-#include "ui/base/models/simple_menu_model.h"
 #include "ui/events/event_utils.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/menu/menu_2.h"
@@ -88,14 +86,7 @@ void MainWindowViews::OnSelectionChanged() {
 
 void MainWindowViews::OnShowTabPopupMenu(OpenedView& view,
                                          const gfx::Point& point) {
-  SimpleMenuCommandHandler handler{*commands_};
-  ui::SimpleMenuModel model{&handler};
-  model.AddItem(ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
-  model.AddItem(ID_VIEW_CHANGE_TITLE, L"Переименовать");
-  model.AddSeparator(ui::NORMAL_SEPARATOR);
-  model.AddItem(ID_VIEW_CLOSE, L"Закрыть");
-
-  views::Menu2 menu{&model};
+  views::Menu2 menu{tab_popup_menu_.get()};
   menu.RunContextMenuAt(point);
 }
 

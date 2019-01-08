@@ -88,6 +88,8 @@ class MainWindow : protected MainWindowContext,
 
   std::unique_ptr<ui::MenuModel> context_menu_model_;
 
+  std::unique_ptr<ui::MenuModel> tab_popup_menu_;
+
  private:
   void SetActiveView(OpenedView* view);
   void SetActiveDataView(OpenedView* view);

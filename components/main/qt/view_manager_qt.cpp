@@ -1,8 +1,10 @@
 #include "components/main/qt/view_manager_qt.h"
 
 #include "base/auto_reset.h"
+#include "client_utils_qt.h"
 #include "common_resources.h"
 #include "components/main/opened_view.h"
+#include "components/main/view_manager_delegate.h"
 #include "services/page.h"
 #include "window_info.h"
 
@@ -171,6 +173,21 @@ std::unique_ptr<DockTabWidget> ViewManagerQt::CreateTabBlock() {
 
         if (source.count() == 0)
           DeleteTabBlock(source, true);
+      });
+
+  auto tab_bar = tabs_ptr->tabBar();
+  tab_bar->setContextMenuPolicy(Qt::CustomContextMenu);
+  QObject::connect(
+      tab_bar, &DockTabWidget::customContextMenuRequested, this,
+      [this, tabs_ptr, tab_bar](const QPoint& pos) {
+        int index = tab_bar->tabAt(pos);
+        if (index == -1)
+          return;
+        auto* view = FindViewByWidget(tabs_ptr->widget(index));
+        if (!view)
+          return;
+        auto global_pos = tab_bar->mapToGlobal(pos);
+        delegate_.OnShowTabPopupMenu(*view, {global_pos.x(), global_pos.y()});
       });
 
   return tabs;
