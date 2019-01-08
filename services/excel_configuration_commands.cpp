@@ -144,13 +144,9 @@ void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service,
                                 const std::filesystem::path& path) {
   try {
-    std::wofstream stream{path};
+    std::ofstream stream{path};
     if (!stream)
       throw ResourceError{L"Не удалось открыть файл."};
-
-    // https://stackoverflow.com/questions/11610583/wostream-fails-to-output-wstring
-    stream.imbue(
-        std::locale(stream.getloc(), new std::codecvt_utf8_utf16<wchar_t>));
 
     TableWriter writer{stream};
     ExportConfiguration(node_service, writer);

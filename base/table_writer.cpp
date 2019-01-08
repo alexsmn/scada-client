@@ -1,23 +1,24 @@
 #include "base/table_writer.h"
 
 #include "base/strings/string_util.h"
+#include "base/strings/sys_string_conversions.h"
 
 namespace {
 
 // chrome/src/components/password_manager/core/browser/import/csv_writer.cc
-base::string16 StringToCsv(base::StringPiece16 raw_value) {
-  base::string16 result;
+std::string StringToCsv(base::StringPiece raw_value) {
+  std::string result;
   result.reserve(raw_value.size());
   // Fields containing line breaks (CRLF), double quotes, and commas should be
   // enclosed in double-quotes. If double-quotes are used to enclose fields,
   // then double-quotes appearing inside a field must be escaped by preceding
   // them with another double quote.
-  if (raw_value.find_first_of(L"\r\n\",") != std::string::npos) {
-    result.push_back(L'\"');
+  if (raw_value.find_first_of("\r\n\",") != std::string::npos) {
+    result.push_back('\"');
     result.append(raw_value.begin(), raw_value.end());
     base::ReplaceSubstringsAfterOffset(
-        &result, result.size() - raw_value.size(), L"\"", L"\"\"");
-    result.push_back(L'\"');
+        &result, result.size() - raw_value.size(), "\"", "\"\"");
+    result.push_back('\"');
   } else {
     result.append(raw_value.begin(), raw_value.end());
   }
@@ -26,7 +27,7 @@ base::string16 StringToCsv(base::StringPiece16 raw_value) {
 
 }  // namespace
 
-TableWriter::TableWriter(std::wostream& stream) : stream_{stream} {}
+TableWriter::TableWriter(std::ostream& stream) : stream_{stream} {}
 
 void TableWriter::StartRow() {
   auto skip = skip_start_;
@@ -46,7 +47,7 @@ void TableWriter::WriteCell(base::StringPiece16 str) {
     stream_ << L",";
   start_of_line_ = false;
 
-  stream_ << StringToCsv(str.as_string());
+  stream_ << StringToCsv(base::SysWideToNativeMB(str.as_string()));
   if (!stream_)
     throw std::runtime_error("Write error");
 }

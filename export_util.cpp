@@ -73,12 +73,7 @@ bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
 
 void ExportToCsv(ExportModel::TableExportData& table,
                  const std::filesystem::path& path) {
-  std::wofstream stream{path};
-
-  // https://stackoverflow.com/questions/11610583/wostream-fails-to-output-wstring
-  stream.imbue(
-      std::locale(stream.getloc(), new std::codecvt_utf8_utf16<wchar_t>));
-
+  std::ofstream stream{path};
   TableWriter writer{stream};
 
   writer.StartRow();
@@ -98,12 +93,7 @@ void ExportToCsv(ExportModel::TableExportData& table,
 
 void ExportToCsv(ExportModel::GridExportData& grid,
                  const std::filesystem::path& path) {
-  std::wofstream stream{path};
-
-  // https://stackoverflow.com/questions/11610583/wostream-fails-to-output-wstring
-  stream.imbue(
-      std::locale(stream.getloc(), new std::codecvt_utf8_utf16<wchar_t>));
-
+  std::ofstream stream{path};
   TableWriter writer{stream};
 
   writer.StartRow();
