@@ -21,6 +21,7 @@ const base::char16* GetCommandCategoryTitle(CommandCategory category) {
       L"Объект",      // CATEGORY_ITEM
       L"Устройство",  // CATEGORY_DEVICE
       L"Опции",       // CATEGORY_SETUP
+      L"Экспорт",     // CATEGORY_EXPORT
       L"Разное",      // CATEGORY_SPECIFIC
       L"Окно",        // CATEGORY_VIEW
       L"Период",      // CATEGORY_PERIOD
@@ -37,7 +38,8 @@ const base::char16* GetCommandCategoryTitle(CommandCategory category) {
 bool CanExpandCommandCategory(CommandCategory category) {
   return category != CATEGORY_CREATE && category != CATEGORY_DEVICE &&
          category != CATEGORY_PERIOD && category != CATEGORY_NEW &&
-         category != CATEGORY_AGGREGATION && category != CATEGORY_INTERVAL;
+         category != CATEGORY_AGGREGATION && category != CATEGORY_INTERVAL &&
+         category != CATEGORY_EXPORT;
 }
 
 // ActionManager

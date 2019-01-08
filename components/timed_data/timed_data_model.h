@@ -34,8 +34,6 @@ class TimedDataModel : private TimedDataModelContext,
 
   void Update();
 
-  void ExportToCsv(const std::filesystem::path& path);
-
   // ui::TableModel overrides
   virtual int GetRowCount() override;
   virtual void GetCell(ui::TableCell& cell) override;

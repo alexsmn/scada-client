@@ -8,15 +8,12 @@
 #include "components/timed_data/timed_data_model.h"
 #include "controller_factory.h"
 #include "controls/table.h"
-#include "print_util.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
 namespace {
 
 const base::char16 kValueColumnTitle[] = L"Значение";
-
-const base::char16 kExportTitle[] = L"Экспорт";
 
 const ui::TableColumn s_columns[] = {
     ui::TableColumn(TimedDataModel::CID_TIME,
@@ -104,44 +101,11 @@ void TimedDataView::AddContainedItem(const scada::NodeId& node_id,
 }
 
 CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_EXPORT:
-      return this;
-  }
-
   return __super::GetCommandHandler(command_id);
 }
 
 void TimedDataView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_EXPORT:
-      Export();
-      break;
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
-}
-
-void TimedDataView::Export() {
-  auto title = model_->timed_data().GetTitle();
-  auto path = dialog_service_.SelectSaveFile(kExportTitle, title + L".csv");
-  if (path.empty())
-    return;
-
-  try {
-    model_->ExportToCsv(path);
-
-  } catch (const std::runtime_error&) {
-    dialog_service_.RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
-                                  MessageBoxMode::Error);
-    return;
-  }
-
-  if (dialog_service_.RunMessageBox(
-          L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
-          MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
-    win_util::OpenWithAssociatedProgram(path);
+  __super::ExecuteCommand(command);
 }
 
 bool TimedDataView::IsWorking() const {
@@ -152,6 +116,6 @@ TimeModel* TimedDataView::GetTimeModel() {
   return model_.get();
 }
 
-void TimedDataView::Print(PrintService& print_service) {
-  PrintTable({print_service, *model_, view_->columns()});
+ExportModel::ExportData TimedDataView::GetExportData() {
+  return TableExportData{*model_, view_->columns()};
 }

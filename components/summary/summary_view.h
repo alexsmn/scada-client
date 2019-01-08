@@ -1,6 +1,7 @@
 #pragma once
 
 #include "controller.h"
+#include "export_model.h"
 
 #include <memory>
 
@@ -15,11 +16,11 @@ class SummaryView : public Controller {
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-	virtual bool IsCommandChecked(unsigned command_id) const override;
+  virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
-  virtual void Print(PrintService& print_service) override;
+  virtual ExportModel* GetExportModel() override;
 
  private:
   void ExportToExcel();

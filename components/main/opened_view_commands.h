@@ -81,6 +81,9 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
 
   void PasteFromClipboard();
 
+  void ExportToCsv();
+  void ExportToExcel();
+
   OpenedView* opened_view_ = nullptr;
   Controller* controller_ = nullptr;
   MainWindow* main_window_ = nullptr;

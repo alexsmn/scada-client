@@ -7,6 +7,7 @@
 #include "contents_model.h"
 #include "core/aggregate_filter.h"
 #include "core/configuration_types.h"
+#include "export_model.h"
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
 
@@ -30,7 +31,8 @@ struct SummaryModelContext {
 class SummaryModel : private SummaryModelContext,
                      public ui::GridModel,
                      public ContentsModel,
-                     public TimeModel {
+                     public TimeModel,
+                     public ExportModel {
  public:
   explicit SummaryModel(SummaryModelContext&& context);
 
@@ -74,6 +76,9 @@ class SummaryModel : private SummaryModelContext,
   // TimeModel
   virtual TimeRange GetTimeRange() const override;
   virtual void SetTimeRange(const TimeRange& time_range) override;
+
+  // ExportModel
+  virtual ExportData GetExportData() override;
 
   static bool IsCustomUnits(const scada::NodeId& aggregation_id);
 

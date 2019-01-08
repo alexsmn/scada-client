@@ -438,3 +438,7 @@ const rt::TimedDataSpec& SummaryModel::timed_data(int column) const {
 bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
   return aggregation_id == scada::id::AggregateFunction_Count;
 }
+
+ExportModel::ExportData SummaryModel::GetExportData() {
+  return GridExportData{*this, row_model(), column_model()};
+}

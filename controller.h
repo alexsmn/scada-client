@@ -22,13 +22,13 @@ class SessionService;
 class ContentsModel;
 class ControllerDelegate;
 class DialogService;
+class ExportModel;
 class Favourites;
 class FileCache;
 class LocalEvents;
 class NodeService;
 class PortfolioManager;
 class Profile;
-class PrintService;
 class TaskManager;
 class TimedDataService;
 class TimeModel;
@@ -81,6 +81,8 @@ class Controller : protected ControllerContext, public CommandHandler {
 
   virtual TimeModel* GetTimeModel() { return nullptr; }
 
+  virtual ExportModel* GetExportModel() { return nullptr; }
+
 #if defined(UI_VIEWS)
   virtual views::DropController* GetDropController() { return nullptr; }
 #endif
@@ -89,9 +91,6 @@ class Controller : protected ControllerContext, public CommandHandler {
   virtual NodeRef GetRootNode() const { return nullptr; }
 
   virtual OpenContext GetOpenContext() const { return {}; }
-
-  // WindowInfo must have the WIN_CAN_PRINT flag.
-  virtual void Print(PrintService& print_service) {}
 
  private:
   SelectionModel selection_;

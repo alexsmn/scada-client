@@ -3,13 +3,15 @@
 #include <memory>
 
 #include "controller.h"
+#include "export_model.h"
 #include "ui/base/models/table_model_observer.h"
 
 class Table;
 class WatchModel;
 
 class WatchView : public Controller,
-                  private ui::TableModelObserver {
+                  private ui::TableModelObserver,
+                  public ExportModel {
  public:
   explicit WatchView(const ControllerContext& context);
   virtual ~WatchView();
@@ -20,7 +22,10 @@ class WatchView : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command) const override;
   virtual void ExecuteCommand(unsigned command) override;
-  virtual void Print(PrintService& print_service) override;
+  virtual ExportModel* GetExportModel() override { return this; }
+
+  // ExportModel
+  virtual ExportData GetExportData() override;
 
  private:
   base::string16 MakeTitle() const;

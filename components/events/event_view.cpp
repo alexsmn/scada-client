@@ -13,7 +13,6 @@
 #include "contents_observer.h"
 #include "controller_factory.h"
 #include "controls/table.h"
-#include "print_util.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 
@@ -259,7 +258,6 @@ TimeRange EventView::GetTimeRange() const {
 CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_ACKNOWLEDGE_CURRENT:
-    case ID_EXPORT:
     case ID_SEVERITY_CUSTOM:
     case ID_SEVERITY_ALL:
       return this;
@@ -303,10 +301,6 @@ void EventView::ExecuteCommand(unsigned command) {
 
     case ID_SEVERITY_CUSTOM:
       SelectSeverity();
-      break;
-
-    case ID_EXPORT:
-      ExportToExcel();
       break;
 
     default:
@@ -361,6 +355,6 @@ TimeModel* EventView::GetTimeModel() {
   return model_->current_events() ? nullptr : this;
 }
 
-void EventView::Print(PrintService& print_service) {
-  PrintTable({print_service, *model_, table_->columns()});
+ExportModel::ExportData EventView::GetExportData() {
+  return TableExportData{*model_, table_->columns()};
 }

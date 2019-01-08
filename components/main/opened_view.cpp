@@ -3,6 +3,8 @@
 #include "components/main/main_window.h"
 #include "components/main/main_window_util.h"
 #include "controller.h"
+#include "export_model.h"
+#include "print_util.h"
 #include "window_info.h"
 
 OpenedView::OpenedView(OpenedViewContext&& context)
@@ -140,5 +142,13 @@ void OpenedView::RemoveContentsObserver(ContentsObserver& observer) {
 }
 
 void OpenedView::Print(PrintService& print_service) {
-  controller_->Print(print_service);
+  auto* export_model = controller_->GetExportModel();
+  if (!export_model)
+    return;
+
+  auto export_data = export_model->GetExportData();
+  if (auto* table = std::get_if<ExportModel::TableExportData>(&export_data))
+    PrintTable({print_service, table->model, table->columns});
+  else if (auto* grid = std::get_if<ExportModel::GridExportData>(&export_data))
+    PrintGrid({print_service, grid->model, grid->columns, grid->rows});
 }

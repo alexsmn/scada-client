@@ -2,6 +2,7 @@
 
 #include "contents_model.h"
 #include "controller.h"
+#include "export_model.h"
 #include "time_model.h"
 
 #include <memory>
@@ -9,7 +10,10 @@
 class Table;
 class EventTableModel;
 
-class EventView : public Controller, public ContentsModel, public TimeModel {
+class EventView : public Controller,
+                  public ContentsModel,
+                  public TimeModel,
+                  public ExportModel {
  public:
   EventView(const ControllerContext& context, bool is_panel);
   virtual ~EventView();
@@ -27,7 +31,7 @@ class EventView : public Controller, public ContentsModel, public TimeModel {
   virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
-  virtual void Print(PrintService& print_service) override;
+  virtual ExportModel* GetExportModel() override { return this; }
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
@@ -38,6 +42,9 @@ class EventView : public Controller, public ContentsModel, public TimeModel {
   // TimeModel
   virtual TimeRange GetTimeRange() const override;
   virtual void SetTimeRange(const TimeRange& time_range) override;
+
+  // ExportModel
+  virtual ExportData GetExportData() override;
 
  private:
   base::string16 MakeTitle() const;

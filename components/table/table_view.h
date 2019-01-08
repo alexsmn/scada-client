@@ -2,11 +2,12 @@
 
 #include "contents_model.h"
 #include "controller.h"
+#include "export_model.h"
 
 class Table;
 class TableModel;
 
-class TableView : public Controller, public ContentsModel {
+class TableView : public Controller, public ContentsModel, public ExportModel {
  public:
   explicit TableView(const ControllerContext& context);
   virtual ~TableView();
@@ -17,7 +18,7 @@ class TableView : public Controller, public ContentsModel {
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual ContentsModel* GetContentsModel() override { return this; }
-  virtual void Print(PrintService& print_service) override;
+  virtual ExportModel* GetExportModel() override { return this; }
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
@@ -26,8 +27,11 @@ class TableView : public Controller, public ContentsModel {
   virtual NodeIdSet GetContainedItems() const override;
 
   // CommandHandler
-  virtual CommandHandler* GetCommandHandler(unsigned command_id);
-  virtual void ExecuteCommand(unsigned command);
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+  virtual void ExecuteCommand(unsigned command) override;
+
+  // ExportModel
+  virtual ExportData GetExportData() override;
 
  private:
   void MoveRow(bool up);

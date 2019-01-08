@@ -62,7 +62,7 @@
 #define IDS_LOCAL_SERVER                131
 #define ID_SETUP                        132
 #define ID_PRINT                        133
-#define ID_EXPORT                       134
+#define ID_EXPORT_CSV                   134
 #define ID_NEW_IEC60870_LINK101         135
 #define ID_NEW_IEC60870_LINK104         136
 #define ID_OPEN_SUMMARY                 137
@@ -124,6 +124,7 @@
 #define ID_GRAPH_COLOR                  201
 #define IDD_LOGIN                       202
 #define IDR_EVENT_POPUP                 202
+#define ID_EXPORT_EXCEL                 202
 #define IDR_PAGE_BTN                    203
 #define IDB_ITEMS                       206
 #define IDD_SUMM                        207
@@ -456,6 +457,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         4034
 #define _APS_NEXT_CONTROL_VALUE         1052
-#define _APS_NEXT_SYMED_VALUE           202
+#define _APS_NEXT_SYMED_VALUE           203
 #endif
 #endif

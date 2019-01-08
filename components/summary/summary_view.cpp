@@ -1,71 +1,13 @@
 ﻿#include "components/summary/summary_view.h"
 
-#include "base/excel.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
-#include "print_util.h"
 #include "services/dialog_service.h"
 #include "time_range.h"
 #include "window_definition.h"
-
-bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
-  assert(!source.is_array());
-  if (source.is_array())
-    return false;
-
-  static_assert(scada::Variant::COUNT == 19);
-
-  switch (source.type()) {
-    case scada::Variant::Type::EMPTY:
-      target.Reset();
-      return true;
-    case scada::Variant::Type::BOOL:
-      target.Set(source.get<scada::Boolean>());
-      return true;
-    case scada::Variant::Type::INT8:
-      target.Set(source.get<scada::Int8>());
-      return true;
-    case scada::Variant::Type::UINT8:
-      target.Set(source.get<scada::UInt8>());
-      return true;
-    case scada::Variant::Type::INT16:
-      target.Set(source.get<scada::Int16>());
-      return true;
-    case scada::Variant::Type::UINT16:
-      target.Set(source.get<scada::UInt16>());
-      return true;
-    case scada::Variant::Type::INT32:
-      target.Set(source.get<scada::Int32>());
-      return true;
-    case scada::Variant::Type::UINT32:
-      target.Set(source.get<scada::UInt32>());
-      return true;
-    case scada::Variant::Type::INT64:
-      target.Set(source.get<scada::Int64>());
-      return true;
-    case scada::Variant::Type::UINT64:
-      target.Set(source.get<scada::UInt64>());
-      return true;
-    case scada::Variant::Type::DOUBLE:
-      target.Set(source.get<scada::Double>());
-      return true;
-    case scada::Variant::STRING:
-      target.Set(base::SysNativeMBToWide(source.get<scada::String>()).c_str());
-      return true;
-    case scada::Variant::LOCALIZED_TEXT:
-      target.Set(source.get<scada::LocalizedText>().c_str());
-      return true;
-    case scada::Variant::DATE_TIME:
-      target.Set(static_cast<DATE>(source.get<scada::DateTime>().ToDoubleT()));
-      return true;
-    default:
-      assert(false);
-      return false;
-  }
-}
 
 const WindowInfo kWindowInfo = {ID_SUMMARY_VIEW, "Summ", L"Сводка",
                                 WIN_INS | WIN_CAN_PRINT};
@@ -158,11 +100,6 @@ std::optional<base::TimeDelta> GetInterval(unsigned command_id) {
 }
 
 CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_EXPORT:
-      return this;
-  }
-
   if (GetInterval(command_id))
     return this;
 
@@ -195,57 +132,10 @@ void SummaryView::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  switch (command_id) {
-    case ID_EXPORT:
-      ExportToExcel();
-      break;
-    default:
-      __super::ExecuteCommand(command_id);
-  }
+  __super::ExecuteCommand(command_id);
 }
 
 void SummaryView::ExportToExcel() {
-  ExcelSheetModel sheet;
-
-  int row_count = grid_->row_model().GetCount();
-  int column_count = grid_->column_model().GetCount();
-
-  sheet.SetDataSize(row_count + 1, column_count + 1);
-
-  // Column titles.
-  for (int i = 0; i < column_count; ++i) {
-    const auto& title = grid_->column_model().GetTitle(i);
-    sheet.SetData(1, 2 + i, base::win::ScopedVariant(title.c_str()));
-  }
-
-  // Row titles.
-  for (int i = 0; i < row_count; ++i) {
-    const auto& title = grid_->row_model().GetTitle(i);
-    sheet.SetData(2 + i, 1, base::win::ScopedVariant(title.c_str()));
-  }
-
-  // Cells.
-  base::win::ScopedVariant data;
-  for (int i = 0; i < row_count; ++i) {
-    for (int j = 0; j < column_count; ++j) {
-      const auto& data_value = model_->GetDataValue(i, j);
-      if (Convert(data_value.value, data))
-        sheet.SetData(2 + i, 2 + j, std::move(data));
-    }
-  }
-
-  try {
-    Excel excel;
-    excel.NewWorkbook();
-    excel.NewSheet(sheet);
-    excel.SetVisible();
-
-  } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(
-        L"Не удалось выполнить экспорт. Проверьте корректность установки "
-        L"Microsoft Excel.",
-        L"Экспорт", MessageBoxMode::Error);
-  }
 }
 
 ContentsModel* SummaryView::GetContentsModel() {
@@ -256,7 +146,6 @@ TimeModel* SummaryView::GetTimeModel() {
   return model_.get();
 }
 
-void SummaryView::Print(PrintService& print_service) {
-  PrintGrid(PrintGridContext{print_service, *model_, grid_->column_model(),
-                             grid_->row_model()});
+ExportModel* SummaryView::GetExportModel() {
+  return model_.get();
 }

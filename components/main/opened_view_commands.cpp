@@ -1,5 +1,7 @@
 ﻿#include "opened_view_commands.h"
 
+#include "base/excel.h"
+#include "base/win/win_util2.h"
 #include "client_utils.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
@@ -18,7 +20,10 @@
 #include "controller_factory.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
+#include "export_model.h"
+#include "export_util.h"
 #include "net/transport_string.h"
+#include "services/dialog_service.h"
 #include "services/print_service.h"
 #include "services/task_manager.h"
 #include "time_model.h"
@@ -30,6 +35,8 @@
 #endif
 
 namespace {
+
+const base::char16 kExportTitle[] = L"Экспорт";
 
 NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
                             const NodeRef& root,
@@ -90,9 +97,10 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
 
 #if defined(UI_QT)
     case ID_PRINT:
-      return (opened_view_->window_info().flags & WIN_CAN_PRINT) ? this
-                                                                 : nullptr;
 #endif
+    case ID_EXPORT_CSV:
+    case ID_EXPORT_EXCEL:
+      return controller_->GetExportModel() ? this : nullptr;
 
     case ID_NEW_SERVICE_ITEMS:
     case ID_ADD_MULTIPLE_ITEMS:
@@ -126,14 +134,20 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
     case ID_VIEW_CLOSE:
       opened_view_->Close();
       return;
+    case ID_EXPORT_CSV:
+      ExportToCsv();
+      return;
+    case ID_EXPORT_EXCEL:
+      ExportToExcel();
+      return;
     case ID_PRINT: {
       PrintService print_service;
       ShowPrintPreviewDialog(*dialog_service_, print_service,
                              [opened_view = opened_view_, &print_service] {
                                opened_view->Print(print_service);
                              });
-    }
       return;
+    }
     case ID_NEW_IEC60870_LINK101:
       CreateRecord(id::Iec60870LinkType, 0);
       return;
@@ -310,4 +324,55 @@ void OpenedViewCommands::PasteFromClipboard() {
 
   if (!PasteNodesFromClipboard(task_manager_, parent_node.node_id()))
     LOG(ERROR) << "Paste records error";
+}
+
+void OpenedViewCommands::ExportToCsv() {
+  auto* export_model = controller_->GetExportModel();
+  if (!export_model)
+    return;
+
+  auto title = opened_view_->GetWindowTitle();
+  auto path = dialog_service_->SelectSaveFile(kExportTitle, title + L".csv");
+  if (path.empty())
+    return;
+
+  auto export_data = export_model->GetExportData();
+
+  try {
+    std::visit([&path](auto& data) { ::ExportToCsv(data, path); }, export_data);
+
+  } catch (const std::runtime_error&) {
+    dialog_service_->RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
+                                   MessageBoxMode::Error);
+    return;
+  }
+
+  if (dialog_service_->RunMessageBox(
+          L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+          MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
+    win_util::OpenWithAssociatedProgram(path);
+}
+
+void OpenedViewCommands::ExportToExcel() {
+  auto* export_model = controller_->GetExportModel();
+  if (!export_model)
+    return;
+
+  auto export_data = export_model->GetExportData();
+
+  try {
+    ExcelSheetModel sheet;
+    std::visit([&](auto& data) { ::ExportToExcel(data, sheet); }, export_data);
+
+    Excel excel;
+    excel.NewWorkbook();
+    excel.NewSheet(sheet);
+    excel.SetVisible();
+
+  } catch (HRESULT /*err*/) {
+    dialog_service_->RunMessageBox(
+        L"Не удалось выполнить экспорт. Проверьте корректность установки "
+        L"Microsoft Excel.",
+        L"Экспорт", MessageBoxMode::Error);
+  }
 }

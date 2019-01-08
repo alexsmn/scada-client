@@ -135,29 +135,3 @@ void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
 
   Update();
 }
-
-void TimedDataModel::ExportToCsv(const std::filesystem::path& path) {
-  std::wofstream stream{path};
-
-  // https://stackoverflow.com/questions/11610583/wostream-fails-to-output-wstring
-  stream.imbue(
-      std::locale(stream.getloc(), new std::codecvt_utf8_utf16<wchar_t>));
-
-  TableWriter writer{stream};
-
-  writer.StartRow();
-  writer.WriteCell(L"Время");
-  writer.WriteCell(L"Значение");
-  writer.WriteCell(L"Качество");
-  writer.WriteCell(L"Время приема");
-
-  for (int i = 0; i < GetRowCount(); ++i) {
-    const auto& row = this->value(i);
-
-    writer.StartRow();
-    writer.WriteCell(ToString16(row.source_timestamp));
-    writer.WriteCell(timed_data_.GetValueString(row.value, row.qualifier, 0));
-    writer.WriteCell(ToString16(row.qualifier));
-    writer.WriteCell(ToString16(row.server_timestamp));
-  }
-}
