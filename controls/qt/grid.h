@@ -59,6 +59,9 @@ class Grid final : public QTableView {
 
   void OpenEditor(const ui::GridModelIndex& index);
 
+  base::Value SaveState() const;
+  void RestoreState(const base::Value& data);
+
  protected:
   // QTableView
   virtual void mousePressEvent(QMouseEvent* event) override;

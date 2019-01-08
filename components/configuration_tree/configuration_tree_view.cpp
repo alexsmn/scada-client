@@ -94,7 +94,14 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
 ConfigurationTreeView::~ConfigurationTreeView() {}
 
 UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
+  if (auto* state = definition.FindItem("State"))
+    tree_view_->RestoreState(state->attributes);
+
   return tree_view_.get();
+}
+
+void ConfigurationTreeView::Save(WindowDefinition& definition) {
+  definition.AddItem("State").attributes = tree_view_->SaveState();
 }
 
 CommandHandler* ConfigurationTreeView::GetCommandHandler(unsigned command_id) {

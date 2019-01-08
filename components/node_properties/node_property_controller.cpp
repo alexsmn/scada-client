@@ -70,10 +70,14 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   tree_view_->expandAll();
 #endif
 
+  if (auto* state = definition.FindItem("State"))
+    tree_view_->RestoreState(state->attributes);
+
   return tree_view_.get();
 }
 
 void NodePropertyController::Save(WindowDefinition& definition) {
   definition.AddItem("Item").SetString(
       "path", NodeIdToScadaString(property_model_->node().node_id()));
+  definition.AddItem("State").attributes = tree_view_->SaveState();
 }

@@ -161,6 +161,9 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
     return node_ids;
   };
 
+  if (auto* state = definition.FindItem("State"))
+    grid_->RestoreState(state->attributes);
+
   return grid_->CreateParentIfNecessary();
 }
 
@@ -169,6 +172,8 @@ void NodeTableController::Save(WindowDefinition& definition) {
     auto path = NodeIdToScadaString(parent_node.node_id());
     definition.AddItem("Item").SetString("path", path);
   }
+
+  definition.AddItem("State").attributes = grid_->SaveState();
 }
 
 CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {

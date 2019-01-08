@@ -2,6 +2,7 @@
 
 #include "ui/base/models/grid_model_util.h"
 #include "ui/base/models/grid_range.h"
+#include "value_util.h"
 
 #include <QHeaderView>
 #include <QMouseEvent>
@@ -278,4 +279,37 @@ void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
 void Grid::OpenEditor(const ui::GridModelIndex& index) {
   assert(index.is_valid());
   edit(model()->index(index.row, index.column));
+}
+
+base::Value Grid::SaveState() const {
+  base::Value data{base::Value::Type::DICTIONARY};
+  auto& header = *horizontalHeader();
+  base::ListValue columns;
+  for (int i = 0;; ++i) {
+    int index = header.logicalIndex(i);
+    if (index == -1)
+      break;
+    base::DictionaryValue column;
+    column.SetInteger("ix", index);
+    column.SetInteger("size", header.sectionSize(index));
+    columns.GetList().emplace_back(std::move(column));
+  }
+  data.SetKey("columns", std::move(columns));
+  return data;
+}
+
+void Grid::RestoreState(const base::Value& data) {
+  if (auto* columns = GetList(data, "columns")) {
+    auto& header = *horizontalHeader();
+    int visual_index = 0;
+    for (auto& column : *columns) {
+      int index = GetInt(column, "ix");
+      int size = GetInt(column, "size");
+      header.resizeSection(index, size);
+      header.swapSections(header.visualIndex(index), visual_index);
+      ++visual_index;
+    }
+    for (; visual_index < header.count(); ++visual_index)
+      header.hideSection(header.logicalIndex(visual_index));
+  }
 }

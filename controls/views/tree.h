@@ -38,6 +38,9 @@ class Tree : public views::TreeView,
   void SetCompareHandler(TreeCompareHandler handler);
   void SetContextMenuHandler(ContextMenuHandler handler);
 
+  base::Value SaveState() const { return {}; }
+  void RestoreState(const base::Value& data) {}
+
  private:
   // TreeController
   virtual void OnDoubleClick(views::TreeView& sender) override;

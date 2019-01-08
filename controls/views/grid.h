@@ -46,6 +46,9 @@ class Grid final : private views::ContextMenuController,
     views::GridView::OpenEditor(index.row, index.column);
   }
 
+  base::Value SaveState() const { return {}; }
+  void RestoreState(const base::Value& data) {}
+
  private:
   // views::GridController
   virtual void OnGridSelectionChanged(GridView& sender) override {

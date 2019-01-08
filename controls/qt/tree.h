@@ -66,6 +66,9 @@ class Tree : public QTreeView {
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 
+  base::Value SaveState() const;
+  void RestoreState(const base::Value& data);
+
  protected:
   virtual void drawBranches(QPainter* painter,
                             const QRect& rect,

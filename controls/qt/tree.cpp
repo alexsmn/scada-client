@@ -2,7 +2,9 @@
 
 #include "base/qt/color_qt.h"
 #include "qt/tree_model_adapter.h"
+#include "value_util.h"
 
+#include <QHeaderView>
 #include <QPainter>
 
 // TreeProxyModel
@@ -203,4 +205,37 @@ void Tree::drawBranches(QPainter* painter,
 
 void Tree::SetRowHeight(int row_height) {
   model_adapter_.row_height = row_height;
+}
+
+base::Value Tree::SaveState() const {
+  base::Value data{base::Value::Type::DICTIONARY};
+  auto& header = *this->header();
+  base::ListValue columns;
+  for (int i = 0;; ++i) {
+    int index = header.logicalIndex(i);
+    if (index == -1)
+      break;
+    base::DictionaryValue column;
+    column.SetInteger("ix", index);
+    column.SetInteger("size", header.sectionSize(index));
+    columns.GetList().emplace_back(std::move(column));
+  }
+  data.SetKey("columns", std::move(columns));
+  return data;
+}
+
+void Tree::RestoreState(const base::Value& data) {
+  if (auto* columns = GetList(data, "columns")) {
+    auto& header = *this->header();
+    int visual_index = 0;
+    for (auto& column : *columns) {
+      int index = GetInt(column, "ix");
+      int size = GetInt(column, "size");
+      header.resizeSection(index, size);
+      header.swapSections(header.visualIndex(index), visual_index);
+      ++visual_index;
+    }
+    for (; visual_index < header.count(); ++visual_index)
+      header.hideSection(header.logicalIndex(visual_index));
+  }
 }

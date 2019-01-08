@@ -31,6 +31,7 @@ class ConfigurationTreeView : public Controller
 
   // View
   virtual UiView* Init(const WindowDefinition& definition) override;
+  virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;

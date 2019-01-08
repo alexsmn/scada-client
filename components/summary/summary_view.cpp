@@ -50,11 +50,16 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   grid_->SetRowHeaderWidth(150);
   grid_->SetRowHeaderVisible(true);
 
+  if (auto* state = definition.FindItem("State"))
+    grid_->RestoreState(state->attributes);
+
   return grid_->CreateParentIfNecessary();
 }
 
 void SummaryView::Save(WindowDefinition& definition) {
   model_->Save(definition);
+
+  definition.AddItem("State").attributes = grid_->SaveState();
 }
 
 scada::NodeId GetAggregateType(unsigned command_id) {
