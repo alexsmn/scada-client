@@ -67,9 +67,7 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   GetLocalTime(&time);
 
   base::FilePath path;
-  base::PathService::Get(base::DIR_EXE, &path);
-  path = path.Append(L"logs");
-  base::CreateDirectory(path);
+  base::PathService::Get(client::DIR_LOG, &path);
 
   // TODO: Take module name.
   std::wstring name = base::StringPrintf(
