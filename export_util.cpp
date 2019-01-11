@@ -119,7 +119,7 @@ void ExportToExcel(ExportModel::TableExportData& table,
   // Column titles.
   for (int i = 0; i < column_count; ++i) {
     const auto& title = table.columns[i].title;
-    sheet.SetData(1, 1 + i, base::win::ScopedVariant(title.c_str()));
+    sheet.SetData(1, 1 + i, title);
   }
 
   // Cells.
@@ -128,7 +128,7 @@ void ExportToExcel(ExportModel::TableExportData& table,
     for (int j = 0; j < column_count; ++j) {
       auto column_id = table.columns[j].id;
       auto text = table.model.GetCellText(i, column_id);
-      sheet.SetData(1 + i, 2 + j, std::move(text));
+      sheet.SetData(2 + i, 1 + j, std::move(text));
     }
   }
 }
