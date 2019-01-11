@@ -64,6 +64,9 @@ class SummaryModel : private SummaryModelContext,
   scada::DataValue GetDataValue(int row, int column) const;
   const rt::TimedDataSpec& timed_data(int column) const;
 
+  base::Time GetRowTime(int row) const;
+  int GetRowForTime(base::Time time) const;
+
   // ui::GridModel
   virtual void GetCell(ui::GridCell& cell) override;
 
@@ -86,9 +89,6 @@ class SummaryModel : private SummaryModelContext,
   class Column;
   class ColumnModel;
   class RowModel;
-
-  base::Time GetRowTime(int row) const;
-  int GetRowForTime(base::Time time) const;
 
   void OnCellChanged(int column, int row);
   void OnColumnChanged(int column);

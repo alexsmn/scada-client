@@ -10,6 +10,7 @@
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/grid_range.h"
 #include "window_definition.h"
+#include "window_definition_util.h"
 
 namespace {
 
@@ -264,8 +265,10 @@ int SummaryModel::FindColumn(const scada::NodeId& node_id,
 }
 
 void SummaryModel::Load(const WindowDefinition& definition) {
+  auto time_range = RestoreTimeRange(definition);
+
   // TODO: Load time range and interval.
-  SetParams(TimeRange{ID_TIME_RANGE_DAY},
+  SetParams(time_range ? *time_range : TimeRange{ID_TIME_RANGE_DAY},
             scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
                                    scada::Duration::FromHours(1),
                                    scada::id::AggregateFunction_End});
@@ -293,6 +296,8 @@ void SummaryModel::Save(WindowDefinition& definition) {
     item.SetString("path", column.timed_data().formula());
     item.SetInt("width", column.width());
   }
+
+  SaveTimeRange(definition, GetTimeRange());
 }
 
 void SummaryModel::GetCell(ui::GridCell& cell) {

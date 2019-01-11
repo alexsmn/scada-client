@@ -3,6 +3,53 @@
 #include "base/base64.h"
 #include "base/strings/string_piece.h"
 #include "base/strings/string_util.h"
+#include "base/time_utils.h"
+#include "time_range.h"
+#include "window_definition.h"
+
+#include <optional>
+
+template <class T>
+std::optional<T> FromJson(const base::Value& value);
+
+template <>
+inline std::optional<base::Time> FromJson(const base::Value& value) {
+  base::StringPiece str;
+  if (!value.GetAsString(&str))
+    return std::nullopt;
+
+  base::Time time;
+  if (!ParseTime(str, time))
+    return std::nullopt;
+
+  return time;
+}
+
+template <>
+inline std::optional<TimeRange> FromJson(const base::Value& value) {
+  auto* start_value = value.FindKey("start");
+  auto* end_value = value.FindKey("end");
+  if (!start_value || !end_value)
+    return std::nullopt;
+
+  auto start = FromJson<base::Time>(*start_value);
+  auto end = FromJson<base::Time>(*end_value);
+  if (!start.has_value() || !end.has_value())
+    return std::nullopt;
+
+  return TimeRange{*start, *end};
+}
+
+inline base::Value ToJson(base::Time time) {
+  return base::Value{FormatTime16(time)};
+}
+
+inline base::Value ToJson(const TimeRange& time_range) {
+  base::Value result{base::Value::Type::DICTIONARY};
+  result.SetKey("start", ToJson(time_range.start));
+  result.SetKey("end", ToJson(time_range.end));
+  return result;
+}
 
 inline std::string SaveBlob(base::StringPiece blob) {
   std::string text;
@@ -16,4 +63,18 @@ inline std::string RestoreBlob(base::StringPiece text) {
   std::string blob;
   base::Base64Decode(trimmed_text, &blob);
   return blob;
+}
+
+inline void SaveTimeRange(WindowDefinition& definition,
+                          const TimeRange& time_range) {
+  definition.AddItem("TimeRange").attributes = ToJson(time_range);
+}
+
+inline std::optional<TimeRange> RestoreTimeRange(
+    const WindowDefinition& definition) {
+  auto* item = definition.FindItem("TimeRange");
+  if (!item)
+    return std::nullopt;
+
+  return FromJson<TimeRange>(item->attributes);
 }

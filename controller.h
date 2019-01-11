@@ -8,6 +8,7 @@
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "selection_model.h"
+#include "time_range.h"
 
 namespace events {
 class EventManager;
@@ -56,6 +57,7 @@ struct OpenContext {
   bool applicable = false;
   std::vector<scada::NodeId> node_ids;
   base::string16 title;
+  std::optional<TimeRange> time_range;
 };
 
 class Controller : protected ControllerContext, public CommandHandler {

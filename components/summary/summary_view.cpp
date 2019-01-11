@@ -140,9 +140,6 @@ void SummaryView::ExecuteCommand(unsigned command_id) {
   __super::ExecuteCommand(command_id);
 }
 
-void SummaryView::ExportToExcel() {
-}
-
 ContentsModel* SummaryView::GetContentsModel() {
   return model_.get();
 }
@@ -153,4 +150,23 @@ TimeModel* SummaryView::GetTimeModel() {
 
 ExportModel* SummaryView::GetExportModel() {
   return model_.get();
+}
+
+OpenContext SummaryView::GetOpenContext() const {
+  OpenContext context{true};
+
+  for (auto i : grid_->GetSelectedColumns()) {
+    const auto& timed_data = model_->timed_data(i);
+    if (const auto& node = timed_data.GetNode())
+      context.node_ids.emplace_back(node.node_id());
+  }
+
+  if (auto rows = grid_->GetSelectedRows(); !rows.empty()) {
+    auto [min_row, max_row] = std::minmax_element(rows.begin(), rows.end());
+    auto start_time = model_->GetRowTime(*min_row);
+    auto end_time = model_->GetRowTime(*max_row) + model_->interval();
+    context.time_range = TimeRange{start_time, end_time};
+  }
+
+  return context;
 }

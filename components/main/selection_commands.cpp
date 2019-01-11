@@ -20,6 +20,7 @@
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/task_manager.h"
+#include "window_definition_util.h"
 #include "window_info.h"
 
 namespace {
@@ -419,9 +420,12 @@ void SelectionCommands::CopyToClipboard() {
 WindowDefinition SelectionCommands::GetOpenWindowDefinition(
     unsigned type) const {
   auto open_context = controller_->GetOpenContext();
-  if (open_context.applicable)
-    return MakeWindowDefinition(open_context.node_ids, type,
-                                open_context.title.c_str());
-  else
+  if (!open_context.applicable)
     return MakeWindowDefinition(selection_->node(), type, true);
+
+  auto definition = MakeWindowDefinition(open_context.node_ids, type,
+                                         open_context.title.c_str());
+  if (open_context.time_range.has_value())
+    SaveTimeRange(definition, *open_context.time_range);
+  return definition;
 }

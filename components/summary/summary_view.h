@@ -21,10 +21,9 @@ class SummaryView : public Controller {
   virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
   virtual ExportModel* GetExportModel() override;
+  virtual OpenContext GetOpenContext() const override;
 
  private:
-  void ExportToExcel();
-
   std::unique_ptr<SummaryModel> model_;
   std::unique_ptr<Grid> grid_;
 };

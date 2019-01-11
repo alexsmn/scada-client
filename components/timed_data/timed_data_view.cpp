@@ -10,6 +10,7 @@
 #include "controls/table.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
+#include "window_definition_util.h"
 
 namespace {
 
@@ -57,6 +58,9 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item"))
     model_->SetFormula(item->GetString("path"));
 
+  if (auto time_range = RestoreTimeRange(definition))
+    model_->SetTimeRange(*time_range);
+
   view_.reset(new Table(*model_, {s_columns, s_columns + _countof(s_columns)}));
   view_->SetShowGrid(true);
 
@@ -70,6 +74,7 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
 void TimedDataView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
   item.SetString("path", model_->timed_data().formula());
+  SaveTimeRange(definition, model_->GetTimeRange());
 }
 
 std::string GetTimedDataUnits(const rt::TimedDataSpec& spec) {
