@@ -287,7 +287,14 @@ void EventTableModel::SetSeverityMin(unsigned severity) {
 void EventTableModel::RefilterNow() {
   refilter_delay_timer_.Stop();
 
-  rows_.clear();
+  if (!rows_.empty()) {
+    int count = static_cast<int>(rows_.size());
+    NotifyItemsRemoving(0, count);
+    rows_.clear();
+    NotifyItemsRemoved(0, count);
+  }
+
+  std::vector<Row> rows;
 
   const LocalEvents::Events& local_events = local_events_.events();
   for (LocalEvents::Events::const_iterator i = local_events.begin();
@@ -295,7 +302,7 @@ void EventTableModel::RefilterNow() {
     const scada::Event& event = **i;
     Row row(LOCAL_EVENT, event);
     row.Update(node_service_);
-    rows_.emplace_back(std::move(row));
+    rows.emplace_back(std::move(row));
   }
 
   const auto& events = event_manager_.unacked_events();
@@ -304,7 +311,7 @@ void EventTableModel::RefilterNow() {
     if (IsEventShown(event)) {
       Row row(CURRENT_EVENT, event);
       row.Update(node_service_);
-      rows_.emplace_back(std::move(row));
+      rows.emplace_back(std::move(row));
     }
   }
 
@@ -315,13 +322,17 @@ void EventTableModel::RefilterNow() {
       if (IsEventShown(event)) {
         Row row(HISTORICAL_EVENT, event);
         row.Update(node_service_);
-        rows_.emplace_back(std::move(row));
+        rows.emplace_back(std::move(row));
       }
     }
   }
 
-  // Mustn't be RangeChanged as rows are reordered.
-  NotifyModelChanged();
+  if (!rows.empty()) {
+    int count = static_cast<int>(rows.size());
+    NotifyItemsAdding(0, count);
+    rows_ = std::move(rows);
+    NotifyItemsAdded(0, count);
+  }
 }
 
 void EventTableModel::Update() {
