@@ -97,11 +97,13 @@ void ExportToCsv(ExportModel::GridExportData& grid,
   TableWriter writer{stream};
 
   writer.StartRow();
+  writer.WriteCell({});
   for (int i = 0; i < grid.columns.GetCount(); ++i)
     writer.WriteCell(grid.columns.GetTitle(i));
 
   for (int i = 0; i < grid.rows.GetCount(); ++i) {
     writer.StartRow();
+    writer.WriteCell(grid.rows.GetTitle(i));
     for (int j = 0; j < grid.columns.GetCount(); ++j) {
       auto text = grid.model.GetCellText(i, j);
       writer.WriteCell(text);

@@ -36,6 +36,8 @@ inline std::optional<TimeRange> FromJson(const base::Value& value) {
   auto end = FromJson<base::Time>(*end_value);
   if (!start.has_value() || !end.has_value())
     return std::nullopt;
+  if (start->is_null())
+    return std::nullopt;
 
   return TimeRange{*start, *end};
 }
