@@ -3,6 +3,7 @@
 #include "base/files/file_path.h"
 #include "base/time/time.h"
 #include "core/node_id.h"
+#include "export_util.h"
 #include "services/page.h"
 #include "ui/gfx/rect.h"
 
@@ -103,6 +104,8 @@ class Profile {
   };
 
   NodeTableController node_table;
+
+  CsvExportParams csv_export_params;
 
  private:
   void Load(const base::Value& data,

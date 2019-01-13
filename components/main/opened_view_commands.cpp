@@ -9,6 +9,7 @@
 #include "common/static_types.h"
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_dialog.h"
+#include "components/csv_export/csv_export.h"
 #include "components/main/actions.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
@@ -25,6 +26,7 @@
 #include "net/transport_string.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"
+#include "services/profile.h"
 #include "services/task_manager.h"
 #include "time_model.h"
 
@@ -336,10 +338,15 @@ void OpenedViewCommands::ExportToCsv() {
   if (path.empty())
     return;
 
+  CsvExportParams& params = profile_.csv_export_params;
+  if (!ShowCsvExportDialog(*dialog_service_, params))
+    return;
+
   auto export_data = export_model->GetExportData();
 
   try {
-    std::visit([&path](auto& data) { ::ExportToCsv(data, path); }, export_data);
+    std::visit([&](auto& data) { ::ExportToCsv(data, params, path); },
+               export_data);
 
   } catch (const std::runtime_error&) {
     dialog_service_->RunMessageBox(L"Ошибка при экспорте.", kExportTitle,

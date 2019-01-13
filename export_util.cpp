@@ -8,6 +8,7 @@
 #include "ui/base/models/header_model.h"
 #include "ui/base/models/table_column.h"
 #include "ui/base/models/table_model.h"
+#include "value_util.h"
 
 #include <fstream>
 
@@ -72,9 +73,13 @@ bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
 }  // namespace
 
 void ExportToCsv(ExportModel::TableExportData& table,
+                 const CsvExportParams& params,
                  const std::filesystem::path& path) {
   std::ofstream stream{path};
   TableWriter writer{stream};
+  writer.unicode = params.unicode;
+  writer.delimiter = params.delimiter;
+  writer.quote = params.quote;
 
   writer.StartRow();
   for (int i = 0; i < static_cast<int>(table.columns.size()); ++i)
@@ -92,6 +97,7 @@ void ExportToCsv(ExportModel::TableExportData& table,
 }
 
 void ExportToCsv(ExportModel::GridExportData& grid,
+                 const CsvExportParams& params,
                  const std::filesystem::path& path) {
   std::ofstream stream{path};
   TableWriter writer{stream};
@@ -161,4 +167,29 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
       sheet.SetData(2 + i, 2 + j, std::move(text));
     }
   }
+}
+
+base::Value ToJson(const CsvExportParams& params) {
+  base::Value result{base::Value::Type::DICTIONARY};
+  SetKey(result, "unicode", params.unicode);
+  SetKey(result, "delimiter", std::string{params.delimiter});
+  SetKey(result, "quote", std::string{params.quote});
+  return result;
+}
+
+template <>
+std::optional<CsvExportParams> FromJson(const base::Value& value) {
+  CsvExportParams params;
+
+  params.unicode = GetBool(value, "unicode", params.unicode);
+
+  auto delimiter = GetString(value, "delimiter");
+  if (delimiter.size() == 1)
+    params.delimiter = delimiter.front();
+
+  auto quote = GetString(value, "quote");
+  if (quote.size() == 1)
+    params.quote = quote.front();
+
+  return params;
 }

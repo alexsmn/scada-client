@@ -9,7 +9,11 @@ class TableWriter {
   explicit TableWriter(std::ostream& stream);
 
   void StartRow();
-  void WriteCell(base::StringPiece16 str);
+  void WriteCell(base::StringPiece16 utf16);
+
+  bool unicode = false;
+  char delimiter = ',';
+  char quote = '"';
 
  private:
   std::ostream& stream_;

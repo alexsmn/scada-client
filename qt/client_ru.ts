@@ -118,6 +118,99 @@
     </message>
 </context>
 <context>
+    <name>CsvExportDialog</name>
+    <message>
+        <source>New and repeated password do not match.</source>
+        <translation type="obsolete">Новый и повторенный пароль не совпадают.</translation>
+    </message>
+    <message>
+        <source>Change Password</source>
+        <translation type="obsolete">Смена пароля</translation>
+    </message>
+    <message>
+        <source>Current:</source>
+        <translation type="obsolete">Текущий:</translation>
+    </message>
+    <message>
+        <source>New:</source>
+        <translation type="obsolete">Новый:</translation>
+    </message>
+    <message>
+        <source>Repeat:</source>
+        <translation type="obsolete">Повтор:</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="14"/>
+        <source>CSV parameters</source>
+        <translation>Параметры CSV</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="25"/>
+        <source>Encoding:</source>
+        <translation>Кодировка:</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="32"/>
+        <source>Delimiter:</source>
+        <translation>Разделитель:</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="39"/>
+        <source>Quote:</source>
+        <translation>Кавычки:</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="47"/>
+        <source>System</source>
+        <translation>Системная</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="52"/>
+        <source>Unicode (UTF-8)</source>
+        <translation>Юникод (UTF-8)</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="63"/>
+        <source>,</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="85"/>
+        <source>Tab</source>
+        <translation>Табуляция</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="90"/>
+        <source>Space</source>
+        <translation>Пробел</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="101"/>
+        <source>&quot;</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="153"/>
+        <source>OK</source>
+        <translation>ОК</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.ui" line="160"/>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="59"/>
+        <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
+        <translation>Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
+    </message>
+    <message>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="71"/>
+        <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
+        <translation>Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
+    </message>
+</context>
+<context>
     <name>Dialog</name>
     <message>
         <source>OK</source>

@@ -5,12 +5,10 @@
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
 #include "time_range.h"
+#include "value_util.h"
 #include "window_definition.h"
 
 #include <optional>
-
-template <class T>
-std::optional<T> FromJson(const base::Value& value);
 
 template <>
 inline std::optional<base::Time> FromJson(const base::Value& value) {

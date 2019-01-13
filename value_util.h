@@ -6,6 +6,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 
+#include <optional>
+
+template <class T>
+std::optional<T> FromJson(const base::Value& value);
+
 inline bool GetBool(const base::Value& value,
                     base::StringPiece key,
                     bool default = false) {

@@ -270,6 +270,11 @@ void Profile::Load(const base::Value& data,
     node_table.default_sort_property_id =
         NodeIdFromScadaString(GetString(*node, "sort-property-id"));
   }
+
+  if (auto* node = GetDict(data, "csv")) {
+    if (auto params = FromJson<CsvExportParams>(*node))
+      csv_export_params = std::move(*params);
+  }
 }
 
 void Profile::Save(const events::EventManager& event_manager,
@@ -373,6 +378,8 @@ base::Value Profile::SaveToValue(const events::EventManager& event_manager,
     }
     data.SetKey("nodeTable", std::move(node));
   }
+
+  data.SetKey("csv", ToJson(csv_export_params));
 
   return data;
 }
