@@ -333,10 +333,13 @@ void OpenedViewCommands::ExportToCsv() {
   if (!export_model)
     return;
 
-  auto title = opened_view_->GetWindowTitle();
-  auto path = dialog_service_->SelectSaveFile(kExportTitle, title + L".csv");
+  auto file_name = opened_view_->GetWindowTitle() + L".csv";
+  auto path = dialog_service_->SelectSaveFile(
+      kExportTitle, profile_.csv_export_dir / file_name);
   if (path.empty())
     return;
+
+  profile_.csv_export_dir = path.parent_path();
 
   CsvExportParams& params = profile_.csv_export_params;
   if (!ShowCsvExportDialog(*dialog_service_, params))

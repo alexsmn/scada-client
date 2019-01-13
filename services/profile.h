@@ -106,6 +106,7 @@ class Profile {
   NodeTableController node_table;
 
   CsvExportParams csv_export_params;
+  std::filesystem::path csv_export_dir;
 
  private:
   void Load(const base::Value& data,

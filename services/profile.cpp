@@ -275,6 +275,8 @@ void Profile::Load(const base::Value& data,
     if (auto params = FromJson<CsvExportParams>(*node))
       csv_export_params = std::move(*params);
   }
+
+  csv_export_dir = GetString16(data, "csvPath");
 }
 
 void Profile::Save(const events::EventManager& event_manager,
@@ -380,6 +382,7 @@ base::Value Profile::SaveToValue(const events::EventManager& event_manager,
   }
 
   data.SetKey("csv", ToJson(csv_export_params));
+  SetKey(data, "csvPath", csv_export_dir.wstring());
 
   return data;
 }
