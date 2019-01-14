@@ -1,4 +1,4 @@
-#include "components/summary/summary_model.h"
+﻿#include "components/summary/summary_model.h"
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
@@ -445,5 +445,5 @@ bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
 }
 
 ExportModel::ExportData SummaryModel::GetExportData() {
-  return GridExportData{*this, row_model(), column_model()};
+  return GridExportData{L"Время", *this, row_model(), column_model()};
 }

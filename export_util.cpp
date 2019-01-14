@@ -101,9 +101,12 @@ void ExportToCsv(ExportModel::GridExportData& grid,
                  const std::filesystem::path& path) {
   std::ofstream stream{path};
   TableWriter writer{stream};
+  writer.unicode = params.unicode;
+  writer.delimiter = params.delimiter;
+  writer.quote = params.quote;
 
   writer.StartRow();
-  writer.WriteCell({});
+  writer.WriteCell(grid.corner_title);
   for (int i = 0; i < grid.columns.GetCount(); ++i)
     writer.WriteCell(grid.columns.GetTitle(i));
 
@@ -148,15 +151,16 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
   sheet.SetDataSize(row_count + 1, column_count + 1);
 
   // Column titles.
+  sheet.SetData(1, 1, grid.corner_title);
   for (int i = 0; i < column_count; ++i) {
-    const auto& title = grid.columns.GetTitle(i);
-    sheet.SetData(1, 2 + i, base::win::ScopedVariant(title.c_str()));
+    auto title = grid.columns.GetTitle(i);
+    sheet.SetData(1, 2 + i, std::move(title));
   }
 
   // Row titles.
   for (int i = 0; i < row_count; ++i) {
-    const auto& title = grid.rows.GetTitle(i);
-    sheet.SetData(2 + i, 1, base::win::ScopedVariant(title.c_str()));
+    auto title = grid.rows.GetTitle(i);
+    sheet.SetData(2 + i, 1, std::move(title));
   }
 
   // Cells.

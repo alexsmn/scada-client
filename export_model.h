@@ -20,6 +20,7 @@ class ExportModel {
   };
 
   struct GridExportData {
+    base::string16 corner_title;
     ui::GridModel& model;
     ui::HeaderModel& rows;
     ui::HeaderModel& columns;
