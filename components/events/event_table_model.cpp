@@ -345,7 +345,13 @@ void EventTableModel::Update() {
 
   CancelRequest();
 
-  rows_.clear();
+  if (!rows_.empty()) {
+    int count = static_cast<int>(rows_.size());
+    NotifyItemsRemoving(0, count);
+    rows_.clear();
+    NotifyItemsRemoved(0, count);
+  }
+
   historical_events_.clear();
 
   if (!current_events_) {
