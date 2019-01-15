@@ -19,11 +19,12 @@ REGISTER_CONTROLLER(StatisticsView, kWindowInfo);
 StatisticsView::StatisticsView(const ControllerContext& context)
     : Controller{context} {
   ui::TableColumn columns[] = {
-      ui::TableColumn(0, L"Параметр", 150, ui::TableColumn::LEFT),
-      ui::TableColumn(1, L"Значение", 100, ui::TableColumn::RIGHT)};
+      {0, L"Параметр", 150, ui::TableColumn::LEFT},
+      {1, L"Значение", 100, ui::TableColumn::RIGHT},
+  };
 
   table_.reset(new views::TableView(*this));
-  table_->SetColumns(_countof(columns), columns);
+  table_->SetColumns(std::size(columns), columns);
 
   update_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(500), this,
                       &StatisticsView::UpdateStatistics);

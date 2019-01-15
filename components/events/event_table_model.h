@@ -73,6 +73,7 @@ class EventTableModel : public ui::TableModel,
   void Update();
   void LockUpdate();
   void UnlockUpdate();
+  bool IsUpdateLocked() const { return lock_update_; }
 
   void AcknowledgeRow(int row);
 

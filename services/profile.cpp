@@ -256,6 +256,11 @@ void Profile::Load(const base::Value& data,
     }
   }
 
+  if (auto* event_journal = GetDict(data, "eventJournal")) {
+    if (auto* state = GetDict(*event_journal, "defaultState"))
+      this->event_journal.default_state = state->Clone();
+  }
+
   if (auto* graphe = GetDict(data, "graph")) {
     ParseTimeDelta(GetString(*graphe, "def_span"), graph_view.default_span);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
@@ -354,6 +359,13 @@ base::Value Profile::SaveToValue(const events::EventManager& event_manager,
       list.emplace_back(std::move(pfolioe));
     }
     data.SetKey("portfolios", base::Value{std::move(list)});
+  }
+
+  // Event Journal
+  {
+    base::Value value{base::Value::Type::DICTIONARY};
+    value.SetKey("defaultState", event_journal.default_state.Clone());
+    data.SetKey("eventJournal", std::move(value));
   }
 
   // GraphView

@@ -55,3 +55,5 @@ bool Table::OnKeyPressed(views::TableView& sender, ui::KeyboardCode key_code) {
   return key_press_handler_ &&
          key_press_handler_(static_cast<KeyCode>(key_code));
 }
+
+void Table::SetStateChangeHandler(StateChangeHandler handler) {}

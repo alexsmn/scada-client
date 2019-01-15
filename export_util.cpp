@@ -106,7 +106,7 @@ void ExportToCsv(ExportModel::GridExportData& grid,
   writer.quote = params.quote;
 
   writer.StartRow();
-  writer.WriteCell(grid.corner_title);
+  writer.WriteCell(grid.row_title_column.title);
   for (int i = 0; i < grid.columns.GetCount(); ++i)
     writer.WriteCell(grid.columns.GetTitle(i));
 
@@ -151,7 +151,7 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
   sheet.SetDataSize(row_count + 1, column_count + 1);
 
   // Column titles.
-  sheet.SetData(1, 1, grid.corner_title);
+  sheet.SetData(1, 1, grid.row_title_column.title);
   for (int i = 0; i < column_count; ++i) {
     auto title = grid.columns.GetTitle(i);
     sheet.SetData(1, 2 + i, std::move(title));

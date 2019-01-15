@@ -15,6 +15,7 @@
 #include "controls/table.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
+#include "services/profile.h"
 
 class EventPanel : public EventView {
  public:
@@ -52,20 +53,17 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
           context.node_service_, context.event_manager_, context.local_events_,
           context.history_service_, is_panel_})} {
   const ui::TableColumn kEventViewColumns[] = {
-      ui::TableColumn(EventColumnTime, L"Время", 150, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnItem, L"Объект", 170, ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnSeverity, L"Важность", 45,
-                      ui::TableColumn::RIGHT),
-      ui::TableColumn(EventColumnValue, L"Значение", 100,
-                      ui::TableColumn::RIGHT),
-      ui::TableColumn(EventColumnMessage, L"Сообщение", 300,
-                      ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnUser, L"Инициатор", 100,
-                      ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnAckUser, L"Квитировал", 100,
-                      ui::TableColumn::LEFT),
-      ui::TableColumn(EventColumnAckTime, L"Время квитирования", 150,
-                      ui::TableColumn::LEFT)};
+      {EventColumnTime, L"Время", 150, ui::TableColumn::LEFT,
+       ui::TableColumn::DataType::DateTime},
+      {EventColumnItem, L"Объект", 170, ui::TableColumn::LEFT},
+      {EventColumnSeverity, L"Важность", 45, ui::TableColumn::RIGHT},
+      {EventColumnValue, L"Значение", 100, ui::TableColumn::RIGHT},
+      {EventColumnMessage, L"Сообщение", 300, ui::TableColumn::LEFT},
+      {EventColumnUser, L"Инициатор", 100, ui::TableColumn::LEFT},
+      {EventColumnAckUser, L"Квитировал", 100, ui::TableColumn::LEFT},
+      {EventColumnAckTime, L"Время квитирования", 150, ui::TableColumn::LEFT,
+       ui::TableColumn::DataType::DateTime},
+  };
 
   size_t count = std::size(kEventViewColumns);
   if (is_panel)
@@ -142,9 +140,6 @@ UiView* EventView::Init(const WindowDefinition& definition) {
       if (!item_id.is_null())
         model_->AddFilteredItem(item_id);
 
-    } else if (window_item.name_is("State")) {
-      table_->RestoreState(window_item.attributes);
-
     } else if (window_item.name_is("Window")) {
       auto smode = window_item.GetString("mode");
       if (base::EqualsCaseInsensitiveASCII(smode, "Day"))
@@ -162,6 +157,12 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   }
 
   model_->SetTimeRange(range);
+
+  if (auto* state = definition.FindItem("State"))
+    table_->RestoreState(state->attributes);
+  else if (!is_panel_)
+    table_->RestoreState(profile_.event_journal.default_state);
+
   model_->UnlockUpdate();
 
   if (!is_panel_)
@@ -199,6 +200,9 @@ void EventView::Save(WindowDefinition& definition) {
     WindowItem& window_item = definition.AddItem("Item");
     window_item.SetString("path", NodeIdToScadaString(item));
   }
+
+  if (!is_panel_)
+    profile_.event_journal.default_state = table_->SaveState();
 }
 
 void EventView::ExportToExcel() {

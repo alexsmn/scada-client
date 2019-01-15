@@ -41,6 +41,8 @@ typedef std::function<void()> SelectionChangeHandler;
 
 typedef std::function<bool(KeyCode key_code)> KeyPressHandler;
 
+typedef std::function<void()> StateChangeHandler;
+
 #define UiColorRGB(r, g, b) SkColorSetRGB(r, g, b)
 
 inline UiPoint ToUiPoint(POINT pt) {

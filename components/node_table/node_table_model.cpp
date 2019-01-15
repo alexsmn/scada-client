@@ -302,9 +302,9 @@ void NodeTableModel::InitColumns() {
   // Display name
   {
     columns_.push_back({scada::AttributeId::DisplayName});
-    columns.emplace_back(columns.size(),
-                         kDisplayNameAttributeString.as_string(), 75,
-                         ui::TableColumn::LEFT);
+    columns.emplace_back(ui::TableColumn{
+        static_cast<int>(columns.size()),
+        kDisplayNameAttributeString.as_string(), 75, ui::TableColumn::LEFT});
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,
@@ -312,7 +312,8 @@ void NodeTableModel::InitColumns() {
     columns_.push_back({scada::AttributeId::Value, property_declaration, &def});
     int width = def.width() ? def.width() : 75;
     auto title = def.GetTitle(*this, property_declaration);
-    columns.emplace_back(columns.size(), title, width, def.alignment());
+    columns.emplace_back(ui::TableColumn{static_cast<int>(columns.size()),
+                                         title, width, def.alignment()});
   };
 
   for (auto& prop : properties) {

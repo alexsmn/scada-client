@@ -131,3 +131,7 @@ void Table::keyPressEvent(QKeyEvent* event) {
 
   QTableView::keyPressEvent(event);
 }
+
+void Table::SetStateChangeHandler(StateChangeHandler handler) {
+  connect(horizontalHeader(), &QHeaderView::sectionResized, handler);
+}

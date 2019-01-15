@@ -36,9 +36,10 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   }
 
   const ui::TableColumn columns[] = {
-      ui::TableColumn(0, L"Объект", 250, ui::TableColumn::LEFT),
-      ui::TableColumn(1, L"Адрес", 100, ui::TableColumn::RIGHT)};
-  column_model_.SetColumns(_countof(columns), columns);
+      {0, L"Объект", 250, ui::TableColumn::LEFT},
+      {1, L"Адрес", 100, ui::TableColumn::RIGHT},
+  };
+  column_model_.SetColumns(std::size(columns), columns);
 
   grid_.reset(new Grid(*model_, *model_, column_model_));
 

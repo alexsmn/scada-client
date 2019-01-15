@@ -49,12 +49,11 @@ class Profile {
 
   SkColor bad_value_color = SkColorSetRGB(192, 192, 192);
 
-  struct Column {
-    int id;
-    int width;
+  struct EventJournal {
+    base::Value default_state;
   };
-  typedef std::vector<Column> Columns;
-  Columns default_table_columns;
+
+  EventJournal event_journal;
 
   void Load(events::EventManager& event_manager,
             PortfolioManager& portfolio_manager,

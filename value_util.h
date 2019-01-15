@@ -14,6 +14,8 @@ std::optional<T> FromJson(const base::Value& value);
 inline bool GetBool(const base::Value& value,
                     base::StringPiece key,
                     bool default = false) {
+  if (!value.is_dict())
+    return nullptr;
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::BOOLEAN))
     return k->GetBool();
   else
@@ -23,6 +25,8 @@ inline bool GetBool(const base::Value& value,
 inline int GetInt(const base::Value& value,
                   base::StringPiece key,
                   int default = 0) {
+  if (!value.is_dict())
+    return default;
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::INTEGER))
     return k->GetInt();
   else
@@ -32,6 +36,8 @@ inline int GetInt(const base::Value& value,
 inline base::StringPiece GetString(const base::Value& value,
                                    base::StringPiece key,
                                    base::StringPiece default = {}) {
+  if (!value.is_dict())
+    return default;
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING))
     return k->GetString();
   else
@@ -41,6 +47,8 @@ inline base::StringPiece GetString(const base::Value& value,
 inline base::string16 GetString16(const base::Value& value,
                                   base::StringPiece key,
                                   base::StringPiece16 default = {}) {
+  if (!value.is_dict())
+    return default.as_string();
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING))
     return base::UTF8ToUTF16(k->GetString());
   else
@@ -49,11 +57,15 @@ inline base::string16 GetString16(const base::Value& value,
 
 inline const base::Value* GetDict(const base::Value& value,
                                   base::StringPiece key) {
+  if (!value.is_dict())
+    return nullptr;
   return value.FindKeyOfType(key, base::Value::Type::DICTIONARY);
 }
 
 inline const base::Value::ListStorage* GetList(const base::Value& value,
                                                base::StringPiece key) {
+  if (!value.is_dict())
+    return nullptr;
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::LIST))
     return &k->GetList();
   else

@@ -29,6 +29,8 @@ class Table : public views::TableView,
 
   void SetKeyPressHandler(KeyPressHandler handler);
 
+  void SetStateChangeHandler(StateChangeHandler handler);
+
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
 

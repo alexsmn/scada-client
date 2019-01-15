@@ -29,6 +29,8 @@ class Table : public QTableView {
 
   void SetKeyPressHandler(KeyPressHandler handler);
 
+  void SetStateChangeHandler(StateChangeHandler handler);
+
   int GetCurrentRow() const { return currentIndex().row(); }
 
   std::vector<int> GetSelectedRows() const;

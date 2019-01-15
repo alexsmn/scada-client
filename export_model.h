@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ui/base/models/table_column.h"
+
 #include <variant>
 #include <vector>
 
@@ -20,7 +22,7 @@ class ExportModel {
   };
 
   struct GridExportData {
-    base::string16 corner_title;
+    ui::TableColumn row_title_column;
     ui::GridModel& model;
     ui::HeaderModel& rows;
     ui::HeaderModel& columns;

@@ -29,21 +29,17 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
     NotifyContainedItemChanged(item_id, added);
   };
 
-  const ui::TableColumn columns[] = {
-      ui::TableColumn(TableModel::COLUMN_TITLE, L"Имя", 150,
-                      ui::TableColumn::LEFT),
-      ui::TableColumn(TableModel::COLUMN_VALUE, L"Значение", 100,
-                      ui::TableColumn::RIGHT),
-      ui::TableColumn(TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
-                      ui::TableColumn::LEFT),
-      ui::TableColumn(TableModel::COLUMN_UPDATE_TIME, L"Время обновления", 170,
-                      ui::TableColumn::LEFT),
-      ui::TableColumn(TableModel::COLUMN_EVENT, L"Событие", 200,
-                      ui::TableColumn::LEFT)};
+  std::vector<ui::TableColumn> columns = {
+      {TableModel::COLUMN_TITLE, L"Имя", 150, ui::TableColumn::LEFT},
+      {TableModel::COLUMN_VALUE, L"Значение", 100, ui::TableColumn::RIGHT},
+      {TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
+       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_UPDATE_TIME, L"Время обновления", 170,
+       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_EVENT, L"Событие", 200, ui::TableColumn::LEFT},
+  };
 
-  view_ = std::make_unique<Table>(
-      *model_,
-      std::vector<ui::TableColumn>(columns, columns + _countof(columns)));
+  view_ = std::make_unique<Table>(*model_, std::move(columns));
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 

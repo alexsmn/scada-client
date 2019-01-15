@@ -17,22 +17,12 @@ namespace {
 const base::char16 kValueColumnTitle[] = L"Значение";
 
 const ui::TableColumn s_columns[] = {
-    ui::TableColumn(TimedDataModel::CID_TIME,
-                    L"Время",
-                    150,
-                    ui::TableColumn::LEFT),
-    ui::TableColumn(TimedDataModel::CID_VALUE,
-                    kValueColumnTitle,
-                    150,
-                    ui::TableColumn::RIGHT),
-    ui::TableColumn(TimedDataModel::CID_QUALITY,
-                    L"Качество",
-                    65,
-                    ui::TableColumn::LEFT),
-    ui::TableColumn(TimedDataModel::CID_COLLECTION_TIME,
-                    L"Время приема",
-                    150,
-                    ui::TableColumn::LEFT),
+    {TimedDataModel::CID_TIME, L"Время", 150, ui::TableColumn::LEFT,
+     ui::TableColumn::DataType::DateTime},
+    {TimedDataModel::CID_VALUE, kValueColumnTitle, 150, ui::TableColumn::RIGHT},
+    {TimedDataModel::CID_QUALITY, L"Качество", 65, ui::TableColumn::LEFT},
+    {TimedDataModel::CID_COLLECTION_TIME, L"Время приема", 150,
+     ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
 };
 
 }  // namespace
@@ -41,7 +31,7 @@ const ui::TableColumn s_columns[] = {
 
 const WindowInfo kWindowInfo = {ID_TIMED_DATA_VIEW,
                                 "TimeVal",
-                                L"Времена и значения",
+                                L"Данные",
                                 WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT,
                                 0,
                                 0,

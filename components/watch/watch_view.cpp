@@ -41,9 +41,11 @@ base::string16 WatchView::MakeTitle() const {
 
 UiView* WatchView::Init(const WindowDefinition& definition) {
   const ui::TableColumn columns[] = {
-      ui::TableColumn(0, L"Время", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(1, L"Устройство", 100, ui::TableColumn::LEFT),
-      ui::TableColumn(2, L"Событие", 400, ui::TableColumn::LEFT)};
+      {0, L"Время", 100, ui::TableColumn::LEFT,
+       ui::TableColumn::DataType::DateTime},
+      {1, L"Устройство", 100, ui::TableColumn::LEFT},
+      {2, L"Событие", 400, ui::TableColumn::LEFT},
+  };
 
   if (const WindowItem* item = definition.FindItem("Item")) {
     auto path = item->GetString("path");
