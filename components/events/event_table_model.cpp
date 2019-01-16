@@ -15,11 +15,13 @@
 #include "core/data_value.h"
 #include "ui/base/models/grid_range.h"
 
+namespace {
+
 const base::char16 kLocalEventSource[] = L"Локальное событие";
 
-static void GetEventColors(const scada::Event& event,
-                           SkColor& text_color,
-                           SkColor& back_color) {
+void GetEventColors(const scada::Event& event,
+                    SkColor& text_color,
+                    SkColor& back_color) {
   if (!event.acked) {
     back_color = SkColorSetRGB(99, 190, 123);
   } else if (event.severity >= scada::kSeverityCritical) {
@@ -28,6 +30,12 @@ static void GetEventColors(const scada::Event& event,
     back_color = SkColorSetRGB(255, 235, 132);
   }
 }
+
+int Compare(base::Time a, base::Time b) {
+  return a < b ? -1 : b < a ? 1 : 0;
+}
+
+}  // namespace
 
 // EventTableModel::Row
 
@@ -466,4 +474,18 @@ bool EventTableModel::IsWorking() const {
     return event_manager_.is_acking();
   else
     return request_running_;
+}
+
+int EventTableModel::CompareCells(int row1, int row2, int column_id) {
+  const auto& event1 = *rows_[row1].event;
+  const auto& event2 = *rows_[row2].event;
+
+  switch (column_id) {
+    case EventColumnTime:
+      return Compare(event1.time, event2.time);
+    case EventColumnAckTime:
+      return Compare(event1.acknowledged_time, event2.acknowledged_time);
+    default:
+      return ui::TableModel::CompareCells(row1, row2, column_id);
+  }
 }

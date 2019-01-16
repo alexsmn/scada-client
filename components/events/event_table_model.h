@@ -81,9 +81,10 @@ class EventTableModel : public ui::TableModel,
 
   base::string16 MakeTitle() const;
 
-  // ui::GridModel
+  // ui::TableModel
   virtual int GetRowCount() override;
   virtual void GetCell(ui::TableCell& cell) override;
+  virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:
   void AddRow(EventType type, const scada::Event& event);

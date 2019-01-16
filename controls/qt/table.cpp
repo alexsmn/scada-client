@@ -5,6 +5,32 @@
 
 #include <QKeyEvent>
 
+namespace {
+
+class TableProxyModel : public QSortFilterProxyModel {
+ public:
+  TableProxyModel(ui::TableModel& model,
+                  const std::vector<ui::TableColumn>& columns)
+      : model_{model}, columns_{columns} {}
+
+ protected:
+  virtual bool lessThan(const QModelIndex& source_left,
+                        const QModelIndex& source_right) const override;
+
+ private:
+  ui::TableModel& model_;
+  const std::vector<ui::TableColumn>& columns_;
+};
+
+bool TableProxyModel::lessThan(const QModelIndex& source_left,
+                               const QModelIndex& source_right) const {
+  assert(source_left.column() == source_right.column());
+  int column_id = columns_[source_left.column()].id;
+  return model_.CompareCells(source_left.row(), source_right.row(), column_id) < 0;
+}
+
+}  // namespace
+
 Table::Table(ui::TableModel& model,
              std::vector<ui::TableColumn> columns,
              bool sorting)
@@ -13,7 +39,8 @@ Table::Table(ui::TableModel& model,
   verticalHeader()->setDefaultSectionSize(19);
 
   if (sorting) {
-    proxy_model_ = std::make_unique<QSortFilterProxyModel>();
+    proxy_model_ = std::make_unique<TableProxyModel>(model_adapter_.model(),
+                                                     model_adapter_.columns());
     proxy_model_->setSourceModel(&model_adapter_);
     proxy_model_->setDynamicSortFilter(true);
     setModel(proxy_model_.get());

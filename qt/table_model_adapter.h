@@ -17,6 +17,9 @@ class TableModelAdapter : public QAbstractTableModel,
                     std::vector<ui::TableColumn> columns);
   virtual ~TableModelAdapter();
 
+  ui::TableModel& model() { return model_; }
+  const ui::TableModel& model() const { return model_; }
+
   std::vector<ui::TableColumn>& columns() { return columns_; }
   const std::vector<ui::TableColumn>& columns() const { return columns_; }
 
