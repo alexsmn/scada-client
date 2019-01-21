@@ -1,5 +1,6 @@
 ﻿#include "opened_view_commands.h"
 
+#include "base/command_line.h"
 #include "base/excel.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
@@ -57,7 +58,9 @@ NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
 }  // namespace
 
 OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
-    : OpenedViewCommandsContext{std::move(context)} {
+    : OpenedViewCommandsContext{std::move(context)},
+      excel_enabled_{
+          base::CommandLine::ForCurrentProcess()->HasSwitch("excel")} {
   selection_commands_ =
       std::make_unique<SelectionCommands>(SelectionCommandsContext{
           task_manager_, session_service_, node_management_service_,
@@ -97,11 +100,13 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
     case ID_VIEW_CLOSE:
       return this;
 
+    case ID_EXPORT_EXCEL:
+      if (!excel_enabled_)
+        return nullptr;
 #if defined(UI_QT)
     case ID_PRINT:
 #endif
     case ID_EXPORT_CSV:
-    case ID_EXPORT_EXCEL:
       return controller_->GetExportModel() ? this : nullptr;
 
     case ID_NEW_SERVICE_ITEMS:

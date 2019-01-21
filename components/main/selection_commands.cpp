@@ -1,5 +1,6 @@
 ﻿#include "components/main/selection_commands.h"
 
+#include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "common/event_manager.h"
 #include "common/node_id_util.h"
@@ -86,6 +87,7 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
     case ID_HISTORICAL_EVENTS:
     case ID_TIMED_DATA_VIEW:
     case ID_OPEN_GROUP_TABLE:
+    case ID_DUMP_DEBUG_INFO:
       return selection_->timed_data().connected() ? this : nullptr;
 
     case ID_DEV1_REFR:
@@ -315,6 +317,10 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     }
 
+    case ID_DUMP_DEBUG_INFO:
+      DumpDebugInfo();
+      return;
+
     case ID_DEV1_REFR:
       method_id = id::DeviceType_Interrogate;
       break;
@@ -428,4 +434,18 @@ WindowDefinition SelectionCommands::GetOpenWindowDefinition(
   if (open_context.time_range.has_value())
     SaveTimeRange(definition, *open_context.time_range);
   return definition;
+}
+
+void SelectionCommands::DumpDebugInfo() {
+  auto debug_info = selection_->timed_data().DumpDebugInfo();
+
+  Clipboard clipboard;
+  if (!clipboard.SetText(debug_info))
+    LOG(WARNING) << "Can't set clipboard data";
+  if (!clipboard.SetText(base::ASCIIToUTF16(debug_info)))
+    LOG(WARNING) << "Can't set clipboard data";
+
+  dialog_service_->RunMessageBox(
+      L"Отладочная информация скопирована в буфер обмена.", {},
+      MessageBoxMode::Info);
 }

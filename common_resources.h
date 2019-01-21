@@ -126,6 +126,7 @@
 #define IDR_EVENT_POPUP                 202
 #define ID_EXPORT_EXCEL                 202
 #define IDR_PAGE_BTN                    203
+#define ID_DUMP_DEBUG_INFO              203
 #define IDB_ITEMS                       206
 #define IDD_SUMM                        207
 #define IDR_GRAPH_POPUP                 209
@@ -457,6 +458,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         4034
 #define _APS_NEXT_CONTROL_VALUE         1052
-#define _APS_NEXT_SYMED_VALUE           203
+#define _APS_NEXT_SYMED_VALUE           204
 #endif
 #endif

@@ -118,8 +118,10 @@ void AddGlobalActions(ActionManager& action_manager,
                                        base::string16(), IDB_PRINTER));
   action_manager.AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, L"Правка"));
 
-  action_manager.AddAction(*new Action(ID_EXPORT_CSV, CATEGORY_EXPORT, L"Экспорт в CSV"));
-  action_manager.AddAction(*new Action(ID_EXPORT_EXCEL, CATEGORY_EXPORT, L"Экспорт в Excel"));
+  action_manager.AddAction(
+      *new Action(ID_EXPORT_CSV, CATEGORY_EXPORT, L"Экспорт в CSV"));
+  action_manager.AddAction(
+      *new Action(ID_EXPORT_EXCEL, CATEGORY_EXPORT, L"Экспорт в Excel"));
 
   action_manager.AddAction(
       *new Action(ID_OPEN_WATCH, CATEGORY_SPECIFIC, L"Наблюдение"));

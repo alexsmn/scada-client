@@ -73,6 +73,8 @@ class SelectionCommands : private SelectionCommandsContext,
 
   WindowDefinition GetOpenWindowDefinition(unsigned type) const;
 
+  void DumpDebugInfo();
+
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;

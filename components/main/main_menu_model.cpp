@@ -1,5 +1,6 @@
 ﻿#include "components/main/main_menu_model.h"
 
+#include "base/command_line.h"
 #include "command_handler.h"
 #include "common_resources.h"
 #include "components/main/context_menu_model.h"
@@ -368,6 +369,10 @@ void MainMenuModel::Rebuild() {
 
   help_submenu_.AddItem(ID_HELP_MANUAL, L"Документация");
   help_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch("debug")) {
+    help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, L"Отладочная информация");
+    help_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  }
   help_submenu_.AddItem(ID_APP_ABOUT, L"О программе...");
 #if defined(UI_QT)
   help_submenu_.AddItem(ID_ABOUT_QT, L"О Qt...");
