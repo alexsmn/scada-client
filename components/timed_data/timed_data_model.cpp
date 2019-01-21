@@ -38,11 +38,11 @@ void TimedDataModel::Update() {
 
   new_count = 0;
   if (timed_data_.connected() && timed_data_.values()) {
-    auto& values = *timed_data_.values();
+    span<const scada::DataValue> values = *timed_data_.values();
     new_begin = LowerBound(values, timed_data_.from());
-    auto end_iterator =
-        end_time_.is_null() ? values.end() : UpperBound(values, end_time_);
-    new_count = std::distance(new_begin, end_iterator);
+    auto new_end =
+        end_time_.is_null() ? values.size() : UpperBound(values, end_time_);
+    new_count = new_end - new_begin;
   }
 
   // TODO: Fixme.
@@ -64,8 +64,9 @@ void TimedDataModel::Update() {
 
 const scada::DataValue& TimedDataModel::value(int row) const {
   assert(row <= count_);
-  auto i = begin_iterator_ + row;
-  return *i;
+  assert(timed_data_.values());
+  auto& values = *timed_data_.values();
+  return values[begin_iterator_ + row];
 }
 
 int TimedDataModel::GetRowCount() {

@@ -20,9 +20,6 @@ class TimedDataModel : private TimedDataModelContext,
 
   explicit TimedDataModel(TimedDataModelContext&& context);
 
-  DataValues::const_iterator begin() const { return begin_iterator_; }
-  DataValues::const_iterator end() const { return begin_iterator_ + count_; }
-
   const scada::DataValue& value(int row) const;
   int count() const { return count_; }
   bool empty() const { return count_ == 0; }
@@ -45,7 +42,7 @@ class TimedDataModel : private TimedDataModelContext,
  private:
   rt::TimedDataSpec timed_data_;
 
-  DataValues::const_iterator begin_iterator_;
+  size_t begin_iterator_ = 0;
   int count_ = 0;
 
   TimeRange time_range_;

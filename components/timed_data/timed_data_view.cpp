@@ -58,6 +58,8 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(IDR_TIMEVAL_POPUP, point, true);
   });
 
+  selection().SelectTimedData(model_->timed_data());
+
   return view_->CreateParentIfNecessary();
 }
 
