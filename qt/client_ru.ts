@@ -31,7 +31,7 @@
 <context>
     <name>AddFavouritesDialog</name>
     <message>
-        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="33"/>
+        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="20"/>
         <source>(No Folder)</source>
         <translation>(Нет группы)</translation>
     </message>
@@ -46,12 +46,17 @@
         <translation>Имя:</translation>
     </message>
     <message>
-        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="74"/>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="35"/>
+        <source>Folder:</source>
+        <translation>Группа:</translation>
+    </message>
+    <message>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="84"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="81"/>
+        <location filename="../components/favourites/qt/add_favourites_dialog.ui" line="91"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>

@@ -17,7 +17,7 @@ class AddFavouritesDialog : public QDialog, private AddFavouritesContext {
  private:
   Ui::AddFavouritesDialog ui;
 
-  QListWidgetItem* empty_folder_item_ = nullptr;
+  const QString empty_folder_title_ = tr("(No Folder)");
 };
 
 #include "add_favourites_dialog.moc"
@@ -29,9 +29,7 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
 
   ui.nameLineEdit->setText(QString::fromStdWString(window_def_.title));
 
-  empty_folder_item_ =
-      new QListWidgetItem{tr("(No Folder)"), ui.folderListWidget};
-  ui.folderListWidget->addItem(empty_folder_item_);
+  ui.folderListWidget->addItem(empty_folder_title_);
   for (auto& folder : favourites_.folders())
     ui.folderListWidget->addItem(QString::fromStdWString(folder.GetTitle()));
   ui.folderListWidget->setCurrentRow(0);
@@ -39,9 +37,9 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
 
 void AddFavouritesDialog::accept() {
   window_def_.title = ui.nameLineEdit->text().toStdWString();
-  auto* item = ui.folderListWidget->currentItem();
-  auto folder_name =
-      item && item != empty_folder_item_ ? item->text() : nullptr;
+  auto folder_name = ui.folderLineEdit->text();
+  if (folder_name == empty_folder_title_)
+    folder_name.clear();
   const Page& folder =
       favourites_.GetOrAddFolder(folder_name.toStdWString().c_str());
   favourites_.Add(window_def_, folder);

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>245</height>
+    <width>313</width>
+    <height>275</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -28,6 +28,16 @@
      </item>
      <item row="0" column="1">
       <widget class="QLineEdit" name="nameLineEdit"/>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="folderLabel">
+       <property name="text">
+        <string>Folder:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="folderLineEdit"/>
      </item>
     </layout>
    </item>
@@ -117,6 +127,38 @@
     <hint type="destinationlabel">
      <x>179</x>
      <y>282</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>folderListWidget</sender>
+   <signal>currentTextChanged(QString)</signal>
+   <receiver>folderLineEdit</receiver>
+   <slot>setText(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>156</x>
+     <y>144</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>176</x>
+     <y>45</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>folderLineEdit</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>folderListWidget</receiver>
+   <slot>clearSelection()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>176</x>
+     <y>45</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>156</x>
+     <y>144</y>
     </hint>
    </hints>
   </connection>
