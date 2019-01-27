@@ -1,7 +1,50 @@
 #include "qt/dialog_service_impl_qt.h"
 
+#include "base/strings/string_util.h"
+
 #include <QFileDialog>
 #include <QMessageBox>
+
+namespace {
+
+std::string JoinStrings(span<const base::StringPiece> strings, char separator) {
+  if (strings.empty())
+    return {};
+
+  std::string result = strings[0].as_string();
+  for (size_t i = 1; i < strings.size(); ++i) {
+    result += separator;
+    result.append(strings[i].data(), strings[i].size());
+  }
+  return result;
+}
+
+QString MakeFilter(const DialogService::Filter& filter) {
+  assert(!filter.extensions.empty());
+
+  QString result =
+      QString::fromWCharArray(filter.title.data(), filter.title.size());
+  result += " (";
+  result += QString::fromStdString(JoinStrings(filter.extensions, ' '));
+  result += ')';
+
+  return result;
+}
+
+QString MakeFilter(span<const DialogService::Filter> filters) {
+  if (filters.empty())
+    return {};
+
+  QString result = MakeFilter(filters.front());
+  for (auto i = std::next(filters.begin()); i != filters.end(); ++i) {
+    result += ";;";
+    result += MakeFilter(*i);
+  }
+
+  return result;
+}
+
+}  // namespace
 
 MessageBoxResult DialogServiceImplQt::RunMessageBox(base::StringPiece16 message,
                                                     base::StringPiece16 title,
@@ -62,10 +105,11 @@ std::filesystem::path DialogServiceImplQt::SelectOpenFile(
 }
 
 std::filesystem::path DialogServiceImplQt::SelectSaveFile(
-    base::StringPiece16 title,
-    const std::filesystem::path& default_path) {
+    const SaveParams& params) {
   return QFileDialog::getSaveFileName(
-             parent_widget, QString::fromWCharArray(title.data(), title.size()),
-             QString::fromStdWString(default_path.wstring()))
+             parent_widget,
+             QString::fromWCharArray(params.title.data(), params.title.size()),
+             QString::fromStdWString(params.default_path.wstring()),
+             MakeFilter(params.filters))
       .toStdWString();
 }

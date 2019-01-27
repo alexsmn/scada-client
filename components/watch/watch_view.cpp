@@ -77,7 +77,7 @@ void WatchView::SaveLog() {
       L"%04d%02d%02d_%02d%02d%02d.log", time.wYear, time.wMonth, time.wDay,
       time.wHour, time.wMinute, time.wSecond);
 
-  auto path = dialog_service_.SelectSaveFile(L"Сохранить как", name);
+  auto path = dialog_service_.SelectSaveFile({L"Сохранить как", name});
   if (!path.empty())
     model_->SaveLog(path);
 }

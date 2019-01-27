@@ -41,6 +41,12 @@ namespace {
 
 const base::char16 kExportTitle[] = L"Экспорт";
 
+std::filesystem::path MakeFileName(base::StringPiece16 text) {
+  base::string16 result;
+  base::ReplaceChars(text.as_string(), L":", L"-", &result);
+  return result;
+}
+
 NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
                             const NodeRef& root,
                             const NodeRef& component_type) {
@@ -338,9 +344,19 @@ void OpenedViewCommands::ExportToCsv() {
   if (!export_model)
     return;
 
-  auto file_name = opened_view_->GetWindowTitle() + L".csv";
-  auto path = dialog_service_->SelectSaveFile(
-      kExportTitle, profile_.csv_export_dir / file_name);
+  const base::StringPiece kCsvExt[] = {"*.csv"};
+  const DialogService::Filter kFilters[] = {
+      {L"Файлы CSV", kCsvExt},
+  };
+
+  auto file_name = MakeFileName(opened_view_->GetWindowTitle());
+  file_name += ".csv";
+
+  DialogService::SaveParams save_params;
+  save_params.title = kExportTitle;
+  save_params.default_path = profile_.csv_export_dir / file_name;
+  save_params.filters = kFilters;
+  auto path = dialog_service_->SelectSaveFile(save_params);
   if (path.empty())
     return;
 
