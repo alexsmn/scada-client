@@ -53,6 +53,23 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
       [this](KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection().multiple_handler = [this] { return GetMultipleSelection(); };
+
+  delete_command_.execute_handler = [this] {
+    view_->CloseEditor();
+    DeleteSelection();
+  };
+
+  rename_command_.execute_handler = [this] {
+    view_->OpenEditor(view_->GetCurrentRow());
+  };
+
+  move_up_command_.execute_handler = [this] { MoveRow(true); };
+  move_down_command_.execute_handler = [this] { MoveRow(false); };
+
+  sort_name_command_.execute_handler = [this] { model_->Sort(ID_SORT_NAME); };
+  sort_channel_command_.execute_handler = [this] {
+    model_->Sort(ID_SORT_CHANNEL);
+  };
 }
 
 TableView::~TableView() {}
@@ -310,44 +327,7 @@ NodeIdSet TableView::GetContainedItems() const {
 }
 
 CommandHandler* TableView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_DELETE:
-    case ID_RENAME:
-    case ID_MOVE_UP:
-    case ID_MOVE_DOWN:
-    case ID_SORT_NAME:
-    case ID_SORT_CHANNEL:
-      return this;
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-void TableView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_DELETE:
-      view_->CloseEditor();
-      DeleteSelection();
-      return;
-
-    case ID_RENAME:
-      view_->OpenEditor(view_->GetCurrentRow());
-      return;
-
-    case ID_MOVE_UP:
-    case ID_MOVE_DOWN:
-      MoveRow(command == ID_MOVE_UP);
-      return;
-
-    case ID_SORT_NAME:
-    case ID_SORT_CHANNEL:
-      model_->Sort(command);
-      break;
-
-    default:
-      __super::ExecuteCommand(command);
-      return;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 void TableView::MoveRow(bool up) {
