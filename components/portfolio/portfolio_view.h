@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "services/portfolio.h"
@@ -9,7 +10,9 @@
 class PortfolioTreeModel;
 class Tree;
 
-class PortfolioView : public Controller, public ContentsModel {
+class PortfolioView : public Controller,
+                      public CommandHandler,
+                      public ContentsModel {
  public:
   explicit PortfolioView(const ControllerContext& context);
   virtual ~PortfolioView();
@@ -19,7 +22,7 @@ class PortfolioView : public Controller, public ContentsModel {
   virtual bool IsCommandEnabled(unsigned command_id) const override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command_id) override;
-  virtual ContentsModel* GetContentsModel() { return this; }
+  virtual ContentsModel* GetContentsModel() override { return this; }
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,

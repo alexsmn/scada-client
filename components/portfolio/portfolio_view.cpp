@@ -148,7 +148,7 @@ CommandHandler* PortfolioView::GetCommandHandler(unsigned command_id) {
       return this;
   }
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 bool PortfolioView::IsCommandEnabled(unsigned command_id) const {

@@ -246,7 +246,7 @@ CommandHandler* SheetView::GetCommandHandler(unsigned command_id) {
       command_id < ID_COLOR_0 + palette::GetColorCount())
     return model_->is_editing() ? this : NULL;
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 bool SheetView::IsCommandChecked(unsigned command_id) const {

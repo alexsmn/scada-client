@@ -63,7 +63,7 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
       return tree_view_->GetSelectedNode() ? this : NULL;
 
     default:
-      return __super::GetCommandHandler(command_id);
+      return Controller::GetCommandHandler(command_id);
   }
 }
 

@@ -1,5 +1,6 @@
 ﻿#include "opened_view.h"
 
+#include "command_handler.h"
 #include "components/main/main_window.h"
 #include "components/main/main_window_util.h"
 #include "controller.h"

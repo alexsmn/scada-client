@@ -73,7 +73,7 @@ CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
       return this;
   }
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 void TransmissionView::ExecuteCommand(unsigned command) {

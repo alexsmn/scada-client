@@ -185,7 +185,7 @@ CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
       return this;
   }
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 bool NodeTableController::IsCommandEnabled(unsigned command_id) const {

@@ -2,6 +2,7 @@
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
+#include "command_handler.h"
 #include "controller.h"
 
 #include <memory>
@@ -11,7 +12,7 @@ class ModusView2;
 class ModusView3;
 class ModusViewWrapper;
 
-class ModusController : public Controller {
+class ModusController : public Controller, public CommandHandler {
  public:
   explicit ModusController(const ControllerContext& context);
   virtual ~ModusController();

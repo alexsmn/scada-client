@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
-
+#include "command_handler.h"
 #include "controller.h"
+
+#include <memory>
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/tree/tree_controller.h"
@@ -18,7 +19,8 @@ class Tree;
 
 using DropAction = std::function<int()>;
 
-class ConfigurationTreeView : public Controller
+class ConfigurationTreeView : public Controller,
+                              public CommandHandler
 #if defined(UI_VIEWS)
     ,
                               protected views::DropController

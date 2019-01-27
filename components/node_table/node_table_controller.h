@@ -2,6 +2,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/win/dragdrop.h"
+#include "command_handler.h"
 #include "controller.h"
 
 #if defined(UI_QT)
@@ -13,6 +14,7 @@ class Grid;
 class NodeTableModel;
 
 class NodeTableController : public Controller,
+                            public CommandHandler,
 #if defined(UI_VIEWS)
                             private views::GridController,
 #endif

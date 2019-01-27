@@ -1,15 +1,17 @@
 #pragma once
 
-#include <memory>
-
+#include "command_handler.h"
 #include "controller.h"
 #include "export_model.h"
 #include "ui/base/models/table_model_observer.h"
+
+#include <memory>
 
 class Table;
 class WatchModel;
 
 class WatchView : public Controller,
+                  public CommandHandler,
                   private ui::TableModelObserver,
                   public ExportModel {
  public:

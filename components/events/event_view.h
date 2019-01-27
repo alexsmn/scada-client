@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "export_model.h"
@@ -11,6 +12,7 @@ class Table;
 class EventTableModel;
 
 class EventView : public Controller,
+                  public CommandHandler,
                   public ContentsModel,
                   public TimeModel,
                   public ExportModel {

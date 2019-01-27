@@ -432,7 +432,7 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
       command_id < ID_COLOR_0 + palette::GetColorCount())
     return this;
 
-  return __super::GetCommandHandler(command_id);
+  return ::Controller::GetCommandHandler(command_id);
 }
 
 bool GraphView::IsCommandChecked(unsigned command_id) const {

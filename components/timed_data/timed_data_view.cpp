@@ -98,7 +98,7 @@ void TimedDataView::AddContainedItem(const scada::NodeId& node_id,
 }
 
 CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 void TimedDataView::ExecuteCommand(unsigned command) {

@@ -111,7 +111,7 @@ CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
   if (!GetAggregateType(command_id).is_null())
     return this;
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 bool SummaryView::IsCommandChecked(unsigned command_id) const {

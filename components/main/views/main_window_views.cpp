@@ -1,6 +1,7 @@
 ﻿#include "components/main/views/main_window_views.h"
 
 #include "base/win/win_util2.h"
+#include "command_handler.h"
 #include "common_resources.h"
 #include "components/main/opened_view.h"
 #include "components/main/views/native_main_window.h"

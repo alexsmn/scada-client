@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_handler.h"
 #include "controller.h"
 #include "export_model.h"
 
@@ -8,7 +9,7 @@
 class Grid;
 class SummaryModel;
 
-class SummaryView : public Controller {
+class SummaryView : public Controller, public CommandHandler {
  public:
   explicit SummaryView(const ControllerContext& context);
 

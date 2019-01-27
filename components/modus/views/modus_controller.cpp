@@ -110,7 +110,7 @@ CommandHandler* ModusController::GetCommandHandler(unsigned command_id) {
     }
   }
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 void ModusController::ExecuteCommand(unsigned command) {

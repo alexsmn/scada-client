@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_handler.h"
 #include "components/graph/metrix_graph.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -13,6 +14,7 @@
 struct TimeRange;
 
 class GraphView : public Controller,
+                  public CommandHandler,
                   public ContentsModel,
                   public TimeModel,
                   private views::Graph::Controller {

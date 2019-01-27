@@ -90,7 +90,7 @@ CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {
       return this;
   }
 
-  return __super::GetCommandHandler(command_id);
+  return Controller::GetCommandHandler(command_id);
 }
 
 bool WatchView::IsCommandChecked(unsigned command_id) const {

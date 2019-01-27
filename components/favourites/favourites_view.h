@@ -2,13 +2,14 @@
 
 #include <memory>
 
+#include "command_handler.h"
 #include "controller.h"
 
 class Tree;
 class FavouritesTreeModel;
 class WindowDefinition;
 
-class FavouritesView : public Controller {
+class FavouritesView : public Controller, public CommandHandler {
  public:
   explicit FavouritesView(const ControllerContext& context);
   ~FavouritesView();

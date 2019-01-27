@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
 
@@ -30,7 +31,8 @@ class SheetModel;
 class Grid;
 
 class SheetView : public Controller,
-                  public ContentsModel
+                  public ContentsModel,
+                  public CommandHandler
 #if defined(UI_VIEWS)
     ,
                   private views::GridController,
@@ -48,7 +50,7 @@ class SheetView : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
-  virtual ContentsModel* GetContentsModel() { return this; }
+  virtual ContentsModel* GetContentsModel() override { return this; }
 #if defined(UI_VIEWS)
   virtual views::DropController* GetDropController() override { return this; }
 #endif

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "export_model.h"
@@ -7,7 +8,10 @@
 class Table;
 class TableModel;
 
-class TableView : public Controller, public ContentsModel, public ExportModel {
+class TableView : public Controller,
+                  public CommandHandler,
+                  public ContentsModel,
+                  public ExportModel {
  public:
   explicit TableView(const ControllerContext& context);
   virtual ~TableView();

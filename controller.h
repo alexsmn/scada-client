@@ -2,7 +2,6 @@
 
 #include <cassert>
 
-#include "command_handler.h"
 #include "common/aliases.h"
 #include "controller_delegate.h"
 #include "controls/types.h"
@@ -20,6 +19,7 @@ class HistoryService;
 class SessionService;
 }  // namespace scada
 
+class CommandHandler;
 class ContentsModel;
 class ControllerDelegate;
 class DialogService;
@@ -60,7 +60,7 @@ struct OpenContext {
   std::optional<TimeRange> time_range;
 };
 
-class Controller : protected ControllerContext, public CommandHandler {
+class Controller : protected ControllerContext {
  public:
   explicit Controller(const ControllerContext& context)
       : ControllerContext{context},
@@ -78,6 +78,10 @@ class Controller : protected ControllerContext, public CommandHandler {
   virtual void OnViewNodeCreated(const NodeRef& node) {}
 
   virtual bool ShowContainedItem(const scada::NodeId& item_id) { return false; }
+
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) {
+    return nullptr;
+  }
 
   virtual ContentsModel* GetContentsModel() { return nullptr; }
 

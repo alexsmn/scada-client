@@ -1,6 +1,7 @@
 #include "components/main/views/native_main_window.h"
 
 #include "base/color.h"
+#include "command_handler.h"
 #include "components/main/views/main_window_views.h"
 #include "components/main/views/status_bar_controller.h"
 #include "ui/base/models/menu_model.h"
