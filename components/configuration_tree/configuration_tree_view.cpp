@@ -104,49 +104,9 @@ void ConfigurationTreeView::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = tree_view_->SaveState();
 }
 
-CommandHandler* ConfigurationTreeView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_DELETE: {
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return NULL;
-
-      if (selection().node())
-        return this;
-    }
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-void ConfigurationTreeView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_DELETE:
-      DeleteSelection();
-      break;
-
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
-}
-
 void ConfigurationTreeView::OnViewNodeCreated(const NodeRef& node) {
   if (auto* tree_node = model_->FindNode(node.node_id()))
     tree_view().SelectNode(tree_node);
-}
-
-void ConfigurationTreeView::DeleteSelection() {
-  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-    return;
-
-  if (auto node = selection().node()) {
-    base::string16 message = base::StringPrintf(
-        L"Вы действительно хотите удалить %ls?", node.display_name().c_str());
-    auto choice = dialog_service_.RunMessageBox(message, L"Удаление",
-                                                MessageBoxMode::QuestionYesNo);
-    if (choice == MessageBoxResult::Yes)
-      DeleteTreeRecordsRecursive(task_manager_, node);
-  }
 }
 
 // Must keep |nodes| order.

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "command_handler.h"
 #include "controller.h"
 
 #include <memory>
@@ -19,8 +18,7 @@ class Tree;
 
 using DropAction = std::function<int()>;
 
-class ConfigurationTreeView : public Controller,
-                              public CommandHandler
+class ConfigurationTreeView : public Controller
 #if defined(UI_VIEWS)
     ,
                               protected views::DropController
@@ -34,8 +32,6 @@ class ConfigurationTreeView : public Controller,
   // View
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;
   virtual OpenContext GetOpenContext() const override;
 #if defined(UI_VIEWS)
@@ -64,8 +60,6 @@ class ConfigurationTreeView : public Controller,
 #endif
 
  private:
-  void DeleteSelection();
-
   std::unique_ptr<ConfigurationTreeModel> model_;
 
   scada::NodeId dragging_item_id_;

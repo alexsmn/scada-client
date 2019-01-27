@@ -397,10 +397,28 @@ void SelectionCommands::DeleteSelection() {
     return;
 
   if (selection_->multiple()) {
+    auto node_ids = selection_->GetMultipleNodeIds();
+    if (node_ids.empty())
+      return;
+
+    base::string16 message = base::StringPrintf(
+        L"Вы действительно хотите %Iu объектов?", node_ids.size());
+    auto choice = dialog_service_->RunMessageBox(message, L"Удаление",
+                                                 MessageBoxMode::QuestionYesNo);
+    if (choice != MessageBoxResult::Yes)
+      return;
+
     for (const auto& node_id : selection_->GetMultipleNodeIds())
       DeleteTreeRecordsRecursive(task_manager_, node_service_.GetNode(node_id));
 
   } else if (const auto& node = selection_->node()) {
+    base::string16 message = base::StringPrintf(
+        L"Вы действительно хотите удалить %ls?", node.display_name().c_str());
+    auto choice = dialog_service_->RunMessageBox(message, L"Удаление",
+                                                 MessageBoxMode::QuestionYesNo);
+    if (choice != MessageBoxResult::Yes)
+      return;
+
     DeleteTreeRecordsRecursive(task_manager_, node);
   }
 }
