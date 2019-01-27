@@ -170,7 +170,7 @@ void ExportConfigurationToExcel(NodeService& node_service,
 
 void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service) {
-  auto path = dialog_service.SelectSaveFile(kExportTitle, kDefaultFileName);
+  auto path = dialog_service.SelectSaveFile({kExportTitle, kDefaultFileName});
   if (path.empty())
     return;
 

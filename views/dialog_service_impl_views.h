@@ -12,8 +12,7 @@ class DialogServiceImplViews final : public DialogService {
   virtual std::filesystem::path SelectOpenFile(
       base::StringPiece16 title) override;
   virtual std::filesystem::path SelectSaveFile(
-      base::StringPiece16 title,
-      const std::filesystem::path& default_path) override;
+      const SaveParams& params) override;
 
   gfx::NativeView dialog_owning_window = nullptr;
 };

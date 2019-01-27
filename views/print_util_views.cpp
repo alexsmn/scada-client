@@ -1,8 +1,7 @@
 #include "print_util.h"
 
-#include "services/print_service.h"
-#include "ui/base/models/table_model.h"
+void Print(PrintService& print_service,
+           const ExportModel::TableExportData& table) {}
 
-void PrintTable(const PrintTableContext& context) {}
-
-void PrintGrid(const PrintGridContext& context) {}
+void Print(PrintService& print_service,
+           const ExportModel::GridExportData& grid) {}

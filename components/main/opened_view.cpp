@@ -147,8 +147,6 @@ void OpenedView::Print(PrintService& print_service) {
     return;
 
   auto export_data = export_model->GetExportData();
-  if (auto* table = std::get_if<ExportModel::TableExportData>(&export_data))
-    PrintTable({print_service, table->model, table->columns});
-  else if (auto* grid = std::get_if<ExportModel::GridExportData>(&export_data))
-    PrintGrid({print_service, grid->model, grid->columns, grid->rows});
+  std::visit([&print_service](auto& data) { ::Print(print_service, data); },
+             export_data);
 }

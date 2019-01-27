@@ -375,5 +375,6 @@ void TableView::OnSelectionChanged() {
 }
 
 ExportModel::ExportData TableView::GetExportData() {
-  return TableExportData{*model_, view_->columns()};
+  return TableExportData{*model_, view_->columns(),
+                         Range{0, model_->row_count()}};
 }

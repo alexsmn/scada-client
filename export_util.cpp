@@ -85,12 +85,13 @@ void ExportToCsv(ExportModel::TableExportData& table,
   for (int i = 0; i < static_cast<int>(table.columns.size()); ++i)
     writer.WriteCell(table.columns[i].title);
 
-  for (int i = 0; i < table.model.GetRowCount(); ++i) {
+  const auto row_range = table.GetRowRange();
+  for (int i = 0; i < row_range.count; ++i) {
     writer.StartRow();
 
     for (int j = 0; j < static_cast<int>(table.columns.size()); ++j) {
       auto column_id = table.columns[j].id;
-      auto text = table.model.GetCellText(i, column_id);
+      auto text = table.model.GetCellText(row_range.first + i, column_id);
       writer.WriteCell(text);
     }
   }
@@ -122,10 +123,10 @@ void ExportToCsv(ExportModel::GridExportData& grid,
 
 void ExportToExcel(ExportModel::TableExportData& table,
                    ExcelSheetModel& sheet) {
-  int row_count = table.model.GetRowCount();
-  int column_count = static_cast<int>(table.columns.size());
+  const auto row_range = table.GetRowRange();
+  const int column_count = static_cast<int>(table.columns.size());
 
-  sheet.SetDataSize(row_count + 1, column_count);
+  sheet.SetDataSize(row_range.count + 1, column_count);
 
   // Column titles.
   for (int i = 0; i < column_count; ++i) {
@@ -135,10 +136,10 @@ void ExportToExcel(ExportModel::TableExportData& table,
 
   // Cells.
   base::win::ScopedVariant data;
-  for (int i = 0; i < row_count; ++i) {
+  for (int i = 0; i < row_range.count; ++i) {
     for (int j = 0; j < column_count; ++j) {
       auto column_id = table.columns[j].id;
-      auto text = table.model.GetCellText(i, column_id);
+      auto text = table.model.GetCellText(row_range.first + i, column_id);
       sheet.SetData(2 + i, 1 + j, std::move(text));
     }
   }

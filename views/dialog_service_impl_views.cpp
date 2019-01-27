@@ -101,8 +101,7 @@ std::filesystem::path DialogServiceImplViews::SelectOpenFile(
 }
 
 std::filesystem::path DialogServiceImplViews::SelectSaveFile(
-    base::StringPiece16 title,
-    const std::filesystem::path& default_path) {
+    const SaveParams& params) {
   std::filesystem::path result;
 
   base::RunLoop nested_loop;
@@ -112,8 +111,9 @@ std::filesystem::path DialogServiceImplViews::SelectSaveFile(
   });
 
   base::WrapRefCounted(ui::SelectFileDialog::Create(selector, nullptr))
-      ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE, title.as_string(),
-                   base::FilePath{default_path.wstring()}, nullptr, -1,
+      ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
+                   params.title.as_string(),
+                   base::FilePath{params.default_path.wstring()}, nullptr, -1,
                    base::string16(), dialog_owning_window, nullptr);
 
   nested_loop.Run();

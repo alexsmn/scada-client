@@ -1,29 +1,11 @@
 #pragma once
 
-#include <vector>
-
-namespace ui {
-class GridModel;
-class HeaderModel;
-class TableModel;
-struct TableColumn;
-}  // namespace ui
+#include "export_model.h"
 
 class PrintService;
 
-struct PrintTableContext {
-  PrintService& print_service;
-  ui::TableModel& model;
-  const std::vector<ui::TableColumn>& columns;
-};
+void Print(PrintService& print_service,
+           const ExportModel::TableExportData& table);
 
-void PrintTable(const PrintTableContext& context);
-
-struct PrintGridContext {
-  PrintService& print_service;
-  ui::GridModel& model;
-  const ui::HeaderModel& column_model;
-  const ui::HeaderModel& row_model;
-};
-
-void PrintGrid(const PrintGridContext& context);
+void Print(PrintService& print_service,
+           const ExportModel::GridExportData& grid);

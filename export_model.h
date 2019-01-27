@@ -1,7 +1,9 @@
 #pragma once
 
 #include "ui/base/models/table_column.h"
+#include "ui/base/models/table_model.h"
 
+#include <optional>
 #include <variant>
 #include <vector>
 
@@ -16,9 +18,19 @@ class ExportModel {
  public:
   virtual ~ExportModel() {}
 
+  struct Range {
+    int first;
+    int count;
+  };
+
   struct TableExportData {
     ui::TableModel& model;
     const std::vector<ui::TableColumn>& columns;
+    std::optional<Range> row_range;
+
+    Range GetRowRange() const {
+      return row_range.has_value() ? *row_range : Range{0, model.GetRowCount()};
+    }
   };
 
   struct GridExportData {

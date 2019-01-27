@@ -105,31 +105,33 @@ QTextDocument& TableDocumentBuilder::Build() {
   return document_;
 }
 
-void PrintTable(const PrintTableContext& context) {
-  const int row_count = context.model.GetRowCount();
-  const int column_count = static_cast<int>(context.columns.size());
+void Print(PrintService& print_service,
+           const ExportModel::TableExportData& table) {
+  const auto row_range = table.GetRowRange();
+  const int column_count = static_cast<int>(table.columns.size());
 
-  TableDocumentBuilder builder{row_count, column_count};
+  TableDocumentBuilder builder{row_range.count, column_count};
 
   for (int i = 0; i < column_count; ++i) {
-    builder.SetColumn(i, context.columns[i].title,
-                      context.columns[i].alignment);
+    builder.SetColumn(i, table.columns[i].title, table.columns[i].alignment);
   }
 
-  for (int row = 0; row < row_count; ++row) {
+  for (int row = 0; row < row_range.count; ++row) {
     for (int column = 0; column < column_count; ++column) {
-      auto text = context.model.GetCellText(row, context.columns[column].id);
+      auto text = table.model.GetCellText(row_range.first + row,
+                                          table.columns[column].id);
       builder.SetCell(row, column, text);
     }
   }
 
   // Print to PDF
-  builder.Build().print(&context.print_service.printer);
+  builder.Build().print(&print_service.printer);
 }
 
-void PrintGrid(const PrintGridContext& context) {
-  const int row_count = context.row_model.GetCount();
-  const int column_count = context.column_model.GetCount();
+void Print(PrintService& print_service,
+           const ExportModel::GridExportData& grid) {
+  const int row_count = grid.rows.GetCount();
+  const int column_count = grid.columns.GetCount();
 
   // Add a row header.
 
@@ -137,16 +139,16 @@ void PrintGrid(const PrintGridContext& context) {
 
   builder.SetColumn(0, {}, ui::TableColumn::Alignment::RIGHT);
   for (int i = 0; i < column_count; ++i) {
-    builder.SetColumn(1 + i, context.column_model.GetTitle(i),
-                      context.column_model.GetAlignment(i));
+    builder.SetColumn(1 + i, grid.columns.GetTitle(i),
+                      grid.columns.GetAlignment(i));
   }
 
   for (int row = 0; row < row_count; ++row) {
-    builder.SetCell(row, 0, context.row_model.GetTitle(row));
+    builder.SetCell(row, 0, grid.rows.GetTitle(row));
     for (int column = 0; column < column_count; ++column)
-      builder.SetCell(row, 1 + column, context.model.GetCellText(row, column));
+      builder.SetCell(row, 1 + column, grid.model.GetCellText(row, column));
   }
 
   // Print to PDF
-  builder.Build().print(&context.print_service.printer);
+  builder.Build().print(&print_service.printer);
 }
