@@ -6,19 +6,16 @@
 #include "controls/status_bar_model.h"
 #include "services/task_manager.h"
 
-namespace events {
-class EventManager;
-}
-
 namespace scada {
 class SessionService;
 }
 
+class EventManager;
 class NodeService;
 
 struct StatusBarModelImplContext {
   scada::SessionService& session_service_;
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   NodeService& node_service_;
   TaskManager& task_manager_;
 };

@@ -38,7 +38,7 @@ void GetDrawRange(TimedVQMap& values, Arg x1, Arg x2, Iter& begin, Iter& end) {
   }
 }
 
-int GetPercentReady(const rt::TimedDataSpec& timed_data) {
+int GetPercentReady(const TimedDataSpec& timed_data) {
   auto to = timed_data.current().source_timestamp;
   auto ready_from = timed_data.ready_from();
   auto requested_from = timed_data.from();
@@ -374,7 +374,7 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
   auto& graph_range = graph().horizontal_axis().range();
 
   auto from = base::Time::FromDoubleT(graph_range.low());
-  auto to = graph().m_time_fit ? rt::kTimedDataCurrentOnly
+  auto to = graph().m_time_fit ? kTimedDataCurrentOnly
                                : base::Time::FromDoubleT(graph_range.high());
 
   data_source().SetRange({from, to});
@@ -396,7 +396,7 @@ MetrixGraph::MetrixLine& MetrixGraph::NewLine(base::StringPiece path,
   MetrixLine* line = new MetrixLine();
   pane.plot().AddLine(*line);
 
-  rt::TimedDataSpec spec;
+  TimedDataSpec spec;
   spec.Connect(timed_data_service_, path);
   line->data_source().SetTimedData(std::move(spec));
 

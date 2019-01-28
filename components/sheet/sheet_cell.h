@@ -18,12 +18,12 @@ class SheetCell {
 
   const base::string16& text() const { return text_; }
   bool is_blinking() const { return blinking_; }
-  const rt::TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const { return timed_data_; }
 
   const base::string16& formula() const { return formula_; }
   bool SetFormula(base::string16 formula);
 
-  rt::TimedDataSpec timed_data_;
+  TimedDataSpec timed_data_;
 
   scoped_refptr<SheetFormat> format_;
 

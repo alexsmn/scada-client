@@ -7,18 +7,15 @@
 #include "core/configuration_types.h"
 #include "ui/base/models/table_model.h"
 
-namespace events {
-class EventManager;
-}
-
 class DialogService;
+class EventManager;
 class Profile;
 class TableRow;
 class TimedDataService;
 
 struct TableModelContext {
   TimedDataService& timed_data_service_;
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   Profile& profile_;
   DialogService& dialog_service_;
 };

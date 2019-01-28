@@ -7,11 +7,10 @@
 
 SelectionModel::SelectionModel(SelectionModelContext&& context)
     : SelectionModelContext{std::move(context)} {
-  timed_data_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
-        if (properties.is_item_changed())
-          Clear();
-      };
+  timed_data_.property_change_handler = [this](const PropertySet& properties) {
+    if (properties.is_item_changed())
+      Clear();
+  };
 }
 
 SelectionModel::~SelectionModel() {
@@ -48,7 +47,7 @@ void SelectionModel::SelectNode(const NodeRef& node) {
   Changed();
 }
 
-void SelectionModel::SelectTimedData(const rt::TimedDataSpec& spec) {
+void SelectionModel::SelectTimedData(const TimedDataSpec& spec) {
   if (type_ == SPEC && timed_data_ == spec)
     return;
 
@@ -56,7 +55,7 @@ void SelectionModel::SelectTimedData(const rt::TimedDataSpec& spec) {
 
   type_ = SPEC;
   timed_data_ = spec;
-  timed_data_.SetFrom(rt::kTimedDataCurrentOnly);
+  timed_data_.SetFrom(kTimedDataCurrentOnly);
   node_ = timed_data_.GetNode();
   if (node_)
     node_.Subscribe(*this);

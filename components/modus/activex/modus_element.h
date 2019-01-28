@@ -36,7 +36,7 @@ class ModusElement {
                SDECore::IParams& sde_params,
                const base::string16& prop_name);
 
-  rt::TimedDataSpec& timed_data() { return data_spec_; }
+  TimedDataSpec& timed_data() { return data_spec_; }
 
   unsigned style() const { return style_; }
 
@@ -53,7 +53,7 @@ class ModusElement {
   Limits limits_{};
   std::vector<base::string16> state_strings_;
 
-  rt::TimedDataSpec data_spec_;
+  TimedDataSpec data_spec_;
 
   // data
   base::string16 text_;  // for LABEL

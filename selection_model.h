@@ -26,13 +26,13 @@ class SelectionModel final : private SelectionModelContext,
 
   void Clear();
   void SelectNode(const NodeRef& node);
-  void SelectTimedData(const rt::TimedDataSpec& spec);
+  void SelectTimedData(const TimedDataSpec& spec);
   void SelectMultiple();
 
   base::string16 GetTitle() const;
   NodeIdSet GetMultipleNodeIds() const;
   const NodeRef& node() const { return node_; }
-  const rt::TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const { return timed_data_; }
 
   using ChangeHandler = std::function<void()>;
   ChangeHandler change_handler;
@@ -54,6 +54,6 @@ class SelectionModel final : private SelectionModelContext,
   enum Type { EMPTY, NODE, SPEC, MULTI };
   Type type_ = EMPTY;
 
-  rt::TimedDataSpec timed_data_;
+  TimedDataSpec timed_data_;
   NodeRef node_;
 };

@@ -134,7 +134,7 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   }
 
   if (!object) {
-    selection_callback_(rt::TimedDataSpec());
+    selection_callback_(TimedDataSpec());
     return;
   }
 

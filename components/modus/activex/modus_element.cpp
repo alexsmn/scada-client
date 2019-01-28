@@ -148,7 +148,7 @@ ModusElement::ModusElement(ModusObject& object,
                            const base::string16& prop_name)
     : object_{object}, sde_params_{&sde_params}, prop_name_{prop_name} {
   data_spec_.property_change_handler =
-      [this](const rt::PropertySet& properties) { UpdateData(false); };
+      [this](const PropertySet& properties) { UpdateData(false); };
   data_spec_.node_modified_handler = [this] { UpdateData(false); };
   data_spec_.deletion_handler = [this] { UpdateData(false); };
   data_spec_.event_change_handler = [this] { UpdateData(false); };
@@ -222,7 +222,7 @@ void ModusElement::UpdateData(bool init) {
     }
   }
 
-  const events::EventSet* events = data_spec_.GetEvents();
+  const EventSet* events = data_spec_.GetEvents();
   if (events && !events->empty())
     style_ |= MODUS_ALERT;
   else

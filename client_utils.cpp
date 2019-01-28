@@ -36,7 +36,7 @@ inline void AppendHint(base::string16& hint,
   hint += base::StringPrintf(L"\n%ls: %ls", title, value.c_str());
 }
 
-base::string16 GetTimedDataTooltipText(const rt::TimedDataSpec& timed_data) {
+base::string16 GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   base::string16 name = timed_data.GetTitle();
 
   base::string16 val = timed_data.GetCurrentString();
@@ -54,10 +54,10 @@ base::string16 GetTimedDataTooltipText(const rt::TimedDataSpec& timed_data) {
   AppendHint(str, L"Обновлен", str_utime);
 
   // events
-  const events::EventSet* events = timed_data.GetEvents();
+  const EventSet* events = timed_data.GetEvents();
   if (events && !events->empty()) {
     size_t count = 0;
-    for (events::EventSet::const_reverse_iterator i = events->rbegin();
+    for (EventSet::const_reverse_iterator i = events->rbegin();
          i != events->rend(); ++i, ++count) {
       const scada::Event& event = **i;
       if (!count)

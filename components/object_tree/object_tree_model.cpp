@@ -60,7 +60,7 @@ void ObjectTreeModel::OnBlink(bool state) {
   }
 }
 
-const rt::TimedDataSpec* ObjectTreeModel::GetTimedData(void* node) const {
+const TimedDataSpec* ObjectTreeModel::GetTimedData(void* node) const {
   if (!node)
     return nullptr;
   auto i = visible_nodes_data_.find(static_cast<ConfigurationTreeNode*>(node));
@@ -77,10 +77,10 @@ void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& node,
         data_node.node_class() != scada::NodeClass::Variable)
       return;
 
-    rt::TimedDataSpec& spec = visible_nodes_data_[&node];
+    TimedDataSpec& spec = visible_nodes_data_[&node];
 
     spec.property_change_handler = [this,
-                                    &node](const rt::PropertySet& properties) {
+                                    &node](const PropertySet& properties) {
       const auto& data_node = node.data_node();
       if (data_node.fetched() &&
           data_node.node_class() != scada::NodeClass::Variable) {

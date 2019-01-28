@@ -24,8 +24,8 @@ class TimedDataModel : private TimedDataModelContext,
   int count() const { return count_; }
   bool empty() const { return count_ == 0; }
 
-  const rt::TimedDataSpec& timed_data() const { return timed_data_; }
-  void SetTimedData(rt::TimedDataSpec timed_data);
+  const TimedDataSpec& timed_data() const { return timed_data_; }
+  void SetTimedData(TimedDataSpec timed_data);
 
   void SetFormula(base::StringPiece formula);
 
@@ -40,7 +40,7 @@ class TimedDataModel : private TimedDataModelContext,
   virtual void SetTimeRange(const TimeRange& time_range) override;
 
  private:
-  rt::TimedDataSpec timed_data_;
+  TimedDataSpec timed_data_;
 
   size_t begin_iterator_ = 0;
   int count_ = 0;

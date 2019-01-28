@@ -11,7 +11,7 @@ SheetCell::SheetCell(SheetModel& model, int row, int column)
     SetBlinking(timed_data_.alerting());
   };
   timed_data_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
+      [this](const PropertySet& properties) {
         if (properties.is_current_changed())
           UpdateTextFromFormula();
       };

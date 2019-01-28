@@ -6,15 +6,12 @@
 #include <memory>
 #include <type_traits>
 
-namespace events {
-class EventManager;
-}
-
 namespace scada {
 class SessionService;
 }
 
 class DialogService;
+class EventManager;
 class Favourites;
 class LocalEvents;
 class MainWindow;
@@ -29,7 +26,7 @@ struct MainCommandsContext {
   TaskManager& task_manager_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   NodeService& node_service_;
   LocalEvents& local_events_;
   Favourites& favourites_;

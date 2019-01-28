@@ -15,10 +15,7 @@
 #include <list>
 #include <set>
 
-namespace events {
 class EventManager;
-}
-
 class NodeService;
 
 enum EventColumnId {
@@ -35,7 +32,7 @@ enum EventColumnId {
 
 struct EventTableModelContext {
   NodeService& node_service_;
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   LocalEvents& local_events_;
   scada::HistoryService& history_service_;
   const bool current_events_;
@@ -43,7 +40,7 @@ struct EventTableModelContext {
 
 class EventTableModel : public ui::TableModel,
                         private NodeRefObserver,
-                        private events::EventObserver,
+                        private EventObserver,
                         private LocalEvents::Observer,
                         private EventTableModelContext {
  public:
@@ -107,7 +104,7 @@ class EventTableModel : public ui::TableModel,
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
 
-  // events::EventObserver
+  // EventObserver
   virtual void OnEventReported(const scada::Event& event) override;
   virtual void OnEventAcknowledged(const scada::Event& event) override;
   virtual void OnAllEventsAcknowledged() override;

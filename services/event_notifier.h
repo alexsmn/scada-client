@@ -6,15 +6,12 @@
 
 #include <functional>
 
-namespace events {
-class EventManager;
-}
-
 class ActionManager;
+class EventManager;
 class Profile;
 
 struct EventNotifierContext {
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   LocalEvents& local_events_;
   Profile& profile_;
   std::function<void(bool has_events)> events_handler_;
@@ -22,7 +19,7 @@ struct EventNotifierContext {
 };
 
 class EventNotifier final : private EventNotifierContext,
-                            private events::EventObserver,
+                            private EventObserver,
                             private LocalEvents::Observer {
  public:
   explicit EventNotifier(EventNotifierContext&& context);
@@ -32,7 +29,7 @@ class EventNotifier final : private EventNotifierContext,
   void ShowEventsDelayed(bool added);
   void ShowEvents(bool added);
 
-  // events::EventObserver
+  // EventObserver
   virtual void OnEventReported(const scada::Event& event) override;
   virtual void OnEventAcknowledged(const scada::Event& event) override;
   virtual void OnAllEventsAcknowledged() override;

@@ -7,13 +7,17 @@
 
 class Command {
  public:
+  using ExecuteHandler = std::function<void()>;
+  using EnabledHandler = std::function<bool()>;
+  using CheckedHandler = std::function<bool()>;
+
   Command(unsigned command_id) : command_id{command_id} {}
 
   const unsigned command_id;
 
-  std::function<void()> execute_handler;
-  std::function<bool()> enabled_handler;
-  std::function<bool()> checked_handler;
+  ExecuteHandler execute_handler;
+  EnabledHandler enabled_handler;
+  CheckedHandler checked_handler;
 };
 
 class CommandHandlerImpl : private CommandHandler {

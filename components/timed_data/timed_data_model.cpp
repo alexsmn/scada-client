@@ -11,11 +11,10 @@
 
 TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
     : TimedDataModelContext{std::move(context)} {
-  timed_data_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
-        if (properties.is_current_changed())
-          Update();
-      };
+  timed_data_.property_change_handler = [this](const PropertySet& properties) {
+    if (properties.is_current_changed())
+      Update();
+  };
 
   timed_data_.correction_handler = [this](size_t count,
                                           const scada::DataValue* tvqs) {
@@ -27,7 +26,7 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
   timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
 }
 
-void TimedDataModel::SetTimedData(rt::TimedDataSpec timed_data) {
+void TimedDataModel::SetTimedData(TimedDataSpec timed_data) {
   timed_data_ = std::move(timed_data);
   Update();
 }
@@ -103,7 +102,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
 }
 
 void TimedDataModel::SetFormula(base::StringPiece formula) {
-  rt::TimedDataSpec timed_data;
+  TimedDataSpec timed_data;
   try {
     timed_data.SetFrom(base::Time::Now() - base::TimeDelta::FromHours(1));
     timed_data.Connect(timed_data_service_, formula);

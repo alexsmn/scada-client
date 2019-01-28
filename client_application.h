@@ -17,16 +17,13 @@ class io_context;
 }
 }  // namespace boost
 
-namespace events {
-class EventManager;
-}
-
 namespace net {
 class TransportFactory;
 }
 
 class ActionManager;
 class ConnectionStateReporter;
+class EventManager;
 class EventNotifier;
 class Favourites;
 class FileCache;
@@ -89,7 +86,7 @@ class ClientApplication : private ClientApplicationContext,
 
   std::shared_ptr<NodeService> node_service_;
 
-  std::unique_ptr<events::EventManager> event_manager_;
+  std::unique_ptr<EventManager> event_manager_;
   AliasResolver alias_resolver_;
   std::unique_ptr<FileSynchronizer> file_synchronizer_;
   std::unique_ptr<TimedDataService> timed_data_service_;

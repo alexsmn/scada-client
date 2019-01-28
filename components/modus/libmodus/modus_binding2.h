@@ -32,7 +32,7 @@ class ModusBinding2 : private ModusStyle2::AnimationObserver {
                 TimedDataService& timed_data_service);
   ~ModusBinding2();
 
-  const rt::TimedDataSpec& data_point() const { return data_point_; }
+  const TimedDataSpec& data_point() const { return data_point_; }
 
   void Paint(Gdiplus::Graphics& graphics, bool background);
 
@@ -48,7 +48,7 @@ class ModusBinding2 : private ModusStyle2::AnimationObserver {
   modus::Shape& shape_;
 
   std::string property_name_;
-  rt::TimedDataSpec data_point_;
+  TimedDataSpec data_point_;
 
   unsigned styles_;
 };

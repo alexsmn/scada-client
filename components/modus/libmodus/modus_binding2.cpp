@@ -52,7 +52,7 @@ ModusBinding2::ModusBinding2(Delegate& delegate,
                              TimedDataService& timed_data_service)
     : delegate_(delegate), shape_(shape), styles_(0) {
   data_point_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
+      [this](const PropertySet& properties) {
         if (Update())
           delegate_.SchedulePaintShape(shape_);
       };

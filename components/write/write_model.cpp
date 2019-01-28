@@ -24,13 +24,13 @@ WriteModel::WriteModel(WriteContext&& context)
   spec_.Connect(timed_data_service_, MakeNodeIdFormula(node_id_));
   discrete_ = spec_.logical();
 
-  spec_.property_change_handler = [this](const rt::PropertySet& properties) {
+  spec_.property_change_handler = [this](const PropertySet& properties) {
     if (current_change_handler)
       current_change_handler();
   };
 
   condition_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
+      [this](const PropertySet& properties) {
         if (current_change_handler)
           condition_change_handler();
       };

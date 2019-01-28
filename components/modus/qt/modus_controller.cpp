@@ -39,7 +39,7 @@ QWidget* ModusController::CreateModusView() {
                               weak_factory_.GetWeakPtr(), path));
   };
 
-  auto selection_callback = [this](const rt::TimedDataSpec& spec) {
+  auto selection_callback = [this](const TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   };
 
@@ -60,7 +60,7 @@ QWidget* ModusController::CreateModusView() {
 QWidget* ModusController::CreateModusView2() {
   view2_ = std::make_unique<ModusView2>(timed_data_service_);
 
-  view2_->set_selection_signal([this](const rt::TimedDataSpec& spec) {
+  view2_->set_selection_signal([this](const TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   });
 

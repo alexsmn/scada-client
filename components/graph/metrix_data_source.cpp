@@ -14,7 +14,7 @@
 
 class MetrixPointEnum : public views::PointEnumerator {
  public:
-  MetrixPointEnum(rt::TimedDataSpec& timed_data) : timed_data_(timed_data) {}
+  MetrixPointEnum(TimedDataSpec& timed_data) : timed_data_(timed_data) {}
 
   // Returns false if there is no data and iterator is invalid.
   bool Reset(double from,
@@ -27,7 +27,7 @@ class MetrixPointEnum : public views::PointEnumerator {
   virtual bool EnumNext(views::GraphPoint& point);
 
  private:
-  rt::TimedDataSpec& timed_data_;
+  TimedDataSpec& timed_data_;
   DataValues::const_iterator enum_position_;
   DataValues::const_iterator last_;
   std::size_t count_ = 0;
@@ -124,7 +124,7 @@ MetrixDataSource::MetrixDataSource() {
   };
   timed_data_.node_modified_handler = [this] { OnItemChanged(); };
   timed_data_.property_change_handler =
-      [this](const rt::PropertySet& properties) {
+      [this](const PropertySet& properties) {
         OnPropertyChanged(properties);
       };
   timed_data_.deletion_handler = [this] {
@@ -135,7 +135,7 @@ MetrixDataSource::MetrixDataSource() {
 
 MetrixDataSource::~MetrixDataSource() {}
 
-void MetrixDataSource::SetTimedData(const rt::TimedDataSpec& spec) {
+void MetrixDataSource::SetTimedData(const TimedDataSpec& spec) {
   timed_data_ = spec;
   OnItemChanged();
 }
@@ -220,7 +220,7 @@ void MetrixDataSource::OnHistoryChanged() {
     observer_->OnDataSourceHistoryChanged();
 }
 
-void MetrixDataSource::OnPropertyChanged(const rt::PropertySet& properties) {
+void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
   if (properties.is_current_changed()) {
     if (timed_data_.historical())
       OnHistoryChanged();

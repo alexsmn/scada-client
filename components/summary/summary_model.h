@@ -11,16 +11,13 @@
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
 
-namespace rt {
-class TimedDataSpec;
-}
-
 namespace scada {
 class DataValue;
 }
 
 class NodeService;
 class TimedDataService;
+class TimedDataSpec;
 class WindowDefinition;
 
 struct SummaryModelContext {
@@ -62,7 +59,7 @@ class SummaryModel : private SummaryModelContext,
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
   scada::DataValue GetDataValue(int row, int column) const;
-  const rt::TimedDataSpec& timed_data(int column) const;
+  const TimedDataSpec& timed_data(int column) const;
 
   base::Time GetRowTime(int row) const;
   int GetRowForTime(base::Time time) const;

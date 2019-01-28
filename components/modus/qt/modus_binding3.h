@@ -17,5 +17,5 @@ class ModusBinding3 {
  private:
   Schematic::Element& element_;
 
-  std::map<QString, rt::TimedDataSpec> bindings_;
+  std::map<QString, TimedDataSpec> bindings_;
 };

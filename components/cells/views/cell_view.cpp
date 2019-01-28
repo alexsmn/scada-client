@@ -25,7 +25,7 @@ CellView::Cell::Cell(CellView& view, int row, int column)
     view.ClearCell(row_, column_);
   };
   value_spec_.property_change_handler =
-      [this, &view](const rt::PropertySet& properties) {
+      [this, &view](const PropertySet& properties) {
         view.grid_->SchedulePaintCell(row_, column_);
       };
 }

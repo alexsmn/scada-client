@@ -23,7 +23,7 @@ class ObjectTreeModel : private ObjectTreeModelContext,
 
   void SetNodeVisible(ConfigurationTreeNode& node, bool visible);
 
-  const rt::TimedDataSpec* GetTimedData(void* node) const;
+  const TimedDataSpec* GetTimedData(void* node) const;
 
   // TreeModel
   virtual int GetColumnCount() const override;
@@ -36,6 +36,6 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   // Blinker
   virtual void OnBlink(bool state) override;
 
-  typedef std::map<ConfigurationTreeNode*, rt::TimedDataSpec> NodeDataMap;
+  typedef std::map<ConfigurationTreeNode*, TimedDataSpec> NodeDataMap;
   NodeDataMap visible_nodes_data_;
 };

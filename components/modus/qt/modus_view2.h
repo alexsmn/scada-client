@@ -35,7 +35,7 @@ class ModusView2 : public QWidget,
   modus::Shape* selection() { return selection_; }
   ModusBinding2* GetBinding(modus::Shape* shape) const;
 
-  typedef std::function<void(const rt::TimedDataSpec& spec)> SelectionSignal;
+  typedef std::function<void(const TimedDataSpec& spec)> SelectionSignal;
   void set_selection_signal(SelectionSignal signal) {
     selection_signal_ = std::move(signal);
   }

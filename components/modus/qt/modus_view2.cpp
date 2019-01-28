@@ -186,8 +186,7 @@ void ModusView2::SetSelection(modus::Shape* shape) {
 
   if (selection_signal_) {
     auto binding = GetBinding(selection_);
-    rt::TimedDataSpec spec =
-        binding ? binding->data_point() : rt::TimedDataSpec();
+    TimedDataSpec spec = binding ? binding->data_point() : TimedDataSpec();
     selection_signal_(spec);
   }
 }

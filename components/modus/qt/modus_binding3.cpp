@@ -48,7 +48,7 @@ void ModusBinding3::Bind(const QString& property_name,
                          TimedDataService& timed_data_service,
                          const QString& formula) {
   auto& spec = bindings_[property_name];
-  spec.property_change_handler = [this](const rt::PropertySet& properties) {
+  spec.property_change_handler = [this](const PropertySet& properties) {
     Update();
   };
   spec.Connect(timed_data_service, formula.toStdString());

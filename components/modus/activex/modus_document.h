@@ -12,12 +12,9 @@
 #include <functional>
 #include <map>
 
-namespace rt {
-class TimedDataSpec;
-}
-
 class FileCache;
 class TimedDataService;
+class TimedDataSpec;
 
 namespace modus {
 
@@ -31,7 +28,7 @@ struct ModusDocumentContext {
 
   const std::function<void(const base::string16& title)> title_callback_;
   const std::function<void(const base::FilePath& path)> navigation_callback_;
-  const std::function<void(const rt::TimedDataSpec& selection)>
+  const std::function<void(const TimedDataSpec& selection)>
       selection_callback_;
   const ContextMenuHandler context_menu_callback_;
 };

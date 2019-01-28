@@ -136,7 +136,7 @@ void TableModel::GetCellEx(CellEx& cell) {
     case COLUMN_EVENT:
       // last unacked event
       if (node) {
-        const events::EventSet* events =
+        const EventSet* events =
             event_manager_.GetItemUnackedEvents(node.node_id());
         if (events && !events->empty()) {
           const scada::Event& event = **events->rbegin();

@@ -69,7 +69,7 @@ void TimedDataView::Save(WindowDefinition& definition) {
   SaveTimeRange(definition, model_->GetTimeRange());
 }
 
-std::string GetTimedDataUnits(const rt::TimedDataSpec& spec) {
+std::string GetTimedDataUnits(const TimedDataSpec& spec) {
   auto node = spec.GetNode();
   if (!node)
     return std::string();

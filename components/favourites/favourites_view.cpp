@@ -28,6 +28,26 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   tree_view_->SetEditable(true);
 #endif
 
+  open_command_.enabled_handler = [this] {
+    auto* node =
+        static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+    return node && node->AsWindowNode();
+  };
+  open_command_.execute_handler = [this] { OpenSelection(); };
+
+  Command::EnabledHandler selection_enabled_handler = [this] {
+    return tree_view_->GetSelectedNode() != nullptr;
+  };
+
+  rename_command_.enabled_handler = selection_enabled_handler;
+  rename_command_.execute_handler = [this] {
+    if (void* node = tree_view_->GetSelectedNode())
+      tree_view_->StartEditing(node);
+  };
+
+  delete_command_.enabled_handler = selection_enabled_handler;
+  delete_command_.execute_handler = [this] { DeleteSelection(); };
+
   return tree_view_.get();
 }
 
@@ -51,39 +71,5 @@ void FavouritesView::OpenSelection() {
 }
 
 CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_OPEN: {
-      const FavouritesNode* node = reinterpret_cast<const FavouritesNode*>(
-          tree_view_->GetSelectedNode());
-      return node && node->AsWindowNode() ? this : NULL;
-    }
-
-    case ID_RENAME:
-    case ID_DELETE:
-      return tree_view_->GetSelectedNode() ? this : NULL;
-
-    default:
-      return Controller::GetCommandHandler(command_id);
-  }
-}
-
-void FavouritesView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_OPEN:
-      OpenSelection();
-      break;
-
-    case ID_RENAME:
-      if (void* node = tree_view_->GetSelectedNode())
-        tree_view_->StartEditing(node);
-      break;
-
-    case ID_DELETE:
-      DeleteSelection();
-      break;
-
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }

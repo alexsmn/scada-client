@@ -179,7 +179,7 @@ void ClientApplication::Start() {
   master_data_services_->AddObserver(*this);
 
   event_manager_ =
-      std::make_unique<events::EventManager>(events::EventManagerContext{
+      std::make_unique<EventManager>(EventManagerContext{
           *io_context_,
           *master_data_services_,
           *master_data_services_,

@@ -34,7 +34,7 @@ class CellView : public Controller,
    public:
     Cell(CellView& view, int row, int column);
 
-    rt::TimedDataSpec value_spec_;
+    TimedDataSpec value_spec_;
     int row_;
     int column_;
 

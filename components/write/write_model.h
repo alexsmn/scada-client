@@ -42,14 +42,14 @@ class WriteModel : private WriteContext {
 
   DialogService* dialog_service_ = nullptr;
 
-  rt::TimedDataSpec spec_;
+  TimedDataSpec spec_;
   bool discrete_ = false;
   bool write_selecting_ = false;
   double write_value_ = 0;
 
   bool has_condition_ = false;
   bool two_staged_ = false;
-  rt::TimedDataSpec condition_;
+  TimedDataSpec condition_;
 
   base::WeakPtrFactory<WriteModel> weak_factory_{this};
 };

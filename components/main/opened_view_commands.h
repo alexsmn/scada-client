@@ -13,10 +13,6 @@
 #include "core/status.h"
 #include "window_definition.h"
 
-namespace events {
-class EventManager;
-}
-
 namespace scada {
 class HistoryService;
 class MonitoredItemService;
@@ -28,6 +24,7 @@ class ActionManager;
 class ContentsModel;
 class Controller;
 class DialogService;
+class EventManager;
 class Favourites;
 class FileCache;
 class LocalEvents;
@@ -45,7 +42,7 @@ struct OpenedViewCommandsContext {
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   scada::HistoryService& history_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;

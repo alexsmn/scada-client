@@ -9,10 +9,6 @@
 #include "selection_model.h"
 #include "time_range.h"
 
-namespace events {
-class EventManager;
-}
-
 namespace scada {
 class MonitoredItemService;
 class HistoryService;
@@ -23,6 +19,7 @@ class CommandHandler;
 class ContentsModel;
 class ControllerDelegate;
 class DialogService;
+class EventManager;
 class ExportModel;
 class Favourites;
 class FileCache;
@@ -40,7 +37,7 @@ struct ControllerContext {
   const AliasResolver alias_resolver_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
-  events::EventManager& event_manager_;
+  EventManager& event_manager_;
   scada::HistoryService& history_service_;
   scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;

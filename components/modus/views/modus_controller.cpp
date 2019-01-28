@@ -35,7 +35,7 @@ views::View* ModusController::CreateModusView() {
                               weak_factory_.GetWeakPtr(), path));
   };
 
-  auto selection_callback = [this](const rt::TimedDataSpec& spec) {
+  auto selection_callback = [this](const TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   };
 
@@ -56,7 +56,7 @@ views::View* ModusController::CreateModusView() {
 views::View* ModusController::CreateModusView2() {
   view2_ = std::make_unique<ModusView2>(ModusView2Context{timed_data_service_});
 
-  view2_->set_selection_signal([this](const rt::TimedDataSpec& spec) {
+  view2_->set_selection_signal([this](const TimedDataSpec& spec) {
     selection().SelectTimedData(spec);
   });
 

@@ -22,9 +22,9 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
     if (!component)
       continue;
 
-    rt::TimedDataSpec& spec = specs_[i];
+    TimedDataSpec& spec = specs_[i];
     spec.property_change_handler = [this, component,
-                                    &spec](const rt::PropertySet& properties) {
+                                    &spec](const PropertySet& properties) {
       LOG(INFO) << "Component " << component.node_id().ToString() << " = "
                 << spec.current().value.get_or(std::string{});
       UpdateDeviceState();

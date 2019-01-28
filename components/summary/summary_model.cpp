@@ -36,14 +36,14 @@ class SummaryModel::Column {
   scada::DataValue GetDataValue(int row) const;
   bool IsReady(int row) const;
 
-  const rt::TimedDataSpec& timed_data() const { return timed_data_; }
+  const TimedDataSpec& timed_data() const { return timed_data_; }
 
  private:
   void OnTvq(const scada::DataValue& data_value);
 
   void OnTimedDataCorrections(size_t count, const scada::DataValue* tvqs);
   void OnTimedDataReady();
-  void OnPropertyChanged(const rt::PropertySet& properties);
+  void OnPropertyChanged(const PropertySet& properties);
 
   SummaryModel& model_;
   const int index_;
@@ -51,7 +51,7 @@ class SummaryModel::Column {
 
   int width_ = 0;
 
-  rt::TimedDataSpec timed_data_;
+  TimedDataSpec timed_data_;
 };
 
 SummaryModel::Column::Column(SummaryModel& model,
@@ -63,10 +63,9 @@ SummaryModel::Column::Column(SummaryModel& model,
     OnTimedDataCorrections(count, tvqs);
   };
   timed_data_.ready_handler = [this] { OnTimedDataReady(); };
-  timed_data_.property_change_handler =
-      [this](const rt::PropertySet& properies) {
-        OnPropertyChanged(properies);
-      };
+  timed_data_.property_change_handler = [this](const PropertySet& properies) {
+    OnPropertyChanged(properies);
+  };
   UpdateTimes();
 }
 
@@ -114,8 +113,7 @@ void SummaryModel::Column::OnTimedDataReady() {
   model_.OnColumnChanged(index_);
 }
 
-void SummaryModel::Column::OnPropertyChanged(
-    const rt::PropertySet& properties) {
+void SummaryModel::Column::OnPropertyChanged(const PropertySet& properties) {
   if (properties.is_current_changed())
     OnTvq(timed_data_.current());
 
@@ -435,7 +433,7 @@ scada::DataValue SummaryModel::GetDataValue(int row, int column) const {
   return col.GetDataValue(row);
 }
 
-const rt::TimedDataSpec& SummaryModel::timed_data(int column) const {
+const TimedDataSpec& SummaryModel::timed_data(int column) const {
   return columns_[column]->timed_data();
 }
 

@@ -10,10 +10,6 @@ namespace base {
 class FilePath;
 }
 
-namespace rt {
-class TimedDataSpec;
-}
-
 namespace scada {
 class Status;
 }  // namespace scada
@@ -27,8 +23,9 @@ class Page;
 class Profile;
 class OpenedView;
 class TaskManager;
+class TimedDataSpec;
 
-base::string16 GetTimedDataTooltipText(const rt::TimedDataSpec& timed_data);
+base::string16 GetTimedDataTooltipText(const TimedDataSpec& timed_data);
 
 // TODO: Move to different file.
 void ReportRequestResult(const base::string16& title,
