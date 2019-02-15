@@ -8,7 +8,8 @@
 
 void NodeToData(const NodeRef& source,
                 scada::NodeState& target,
-                bool recursive) {
+                bool recursive,
+                bool ignore_browse_name) {
   assert(source.node_class().has_value());
 
   target.node_id = source.node_id();
@@ -22,7 +23,9 @@ void NodeToData(const NodeRef& source,
   if (auto type_definition = source.type_definition())
     target.type_definition_id = type_definition.node_id();
 
-  target.attributes.browse_name = source.browse_name();
+  if (!ignore_browse_name)
+    target.attributes.browse_name = source.browse_name();
+
   target.attributes.display_name = source.display_name();
 
   if (auto data_type = source.data_type())
@@ -49,8 +52,10 @@ void NodeToData(const NodeRef& source,
   }
 
   if (recursive) {
-    for (const auto& child : source.targets(scada::id::Organizes))
-      NodeToData(child, target.children.emplace_back(), true);
+    for (const auto& child : source.targets(scada::id::Organizes)) {
+      NodeToData(child, target.children.emplace_back(), true,
+                 ignore_browse_name);
+    }
   }
 }
 

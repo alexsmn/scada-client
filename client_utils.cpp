@@ -283,7 +283,7 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
 
     for (auto& node : nodes) {
       browse_nodes.emplace_back();
-      NodeToData(node, browse_nodes.back(), true);
+      NodeToData(node, browse_nodes.back(), true, true);
     }
 
     protocol::NodeTree message;
