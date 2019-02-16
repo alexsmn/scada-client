@@ -311,10 +311,8 @@ void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
     return;
 
   double time = last_time.ToDoubleT();
-  if (graph().right_range_limit_ != std::numeric_limits<double>::max() &&
-      graph().right_range_limit_ < time) {
-    graph().right_range_limit_ = time;
-  }
+  if (graph().horizontal_axis().panning_range_max() < time)
+    graph().horizontal_axis().SetPanningRangeMax(time);
   graph().Fit();
 }
 
@@ -417,4 +415,17 @@ MetrixGraph::MetrixPane& MetrixGraph::NewPane() {
   SelectPane(&pane);
 
   return pane;
+}
+
+void MetrixGraph::Fit() {
+  auto range = horizontal_axis().range();
+
+  auto time_max_limit = horizontal_axis().panning_range_max();
+  if (m_time_fit && time_max_limit != std::numeric_limits<double>::max()) {
+    range = views::GraphRange{time_max_limit - range.delta(), time_max_limit,
+                              range.kind()};
+  }
+
+  AdjustTimeRange(range);
+  horizontal_axis().SetRange(range);
 }

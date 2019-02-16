@@ -116,10 +116,14 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   MetrixLine& NewLine(base::StringPiece path, MetrixPane& pane);
   MetrixPane& NewPane();
 
+  void Fit();
+
   void UpdateData();
 
   // Graph
   virtual void UpdateCurBox() override;
+
+  bool m_time_fit = true;
 
  private:
   base::RepeatingTimer update_data_timer_;

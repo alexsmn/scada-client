@@ -105,10 +105,10 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
 
   if (!time_set) {
     if (auto time_range = RestoreTimeRange(definition)) {
-      graph_->m_time_fit = false;
+      graph_->m_time_fit = time_range->type != TimeRange::Type::Custom;
+      auto [start, end] = GetTimeRangeBounds(*time_range);
       graph_->horizontal_axis().SetRange(views::GraphRange(
-          time_range->start.ToDoubleT(), time_range->end.ToDoubleT(),
-          views::GraphRange::TIME));
+          start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME));
       time_set = TRUE;
     } else {
       base::Time now = base::Time::Now();
@@ -118,7 +118,8 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
     }
   }
 
-  graph_->right_range_limit_ = graph_->horizontal_axis().range().high();
+  graph_->horizontal_axis().SetPanningRangeMax(
+      graph_->horizontal_axis().range().high());
   graph_->Fit();
 
   graph_->UpdateData();
@@ -545,18 +546,20 @@ void GraphView::ExecuteCommand(unsigned command_id) {
 }
 
 void GraphView::SetTimeRange(const TimeRange& range) {
+  graph_->m_time_fit = range.type != TimeRange::Type::Custom;
   auto [start_time, end_time] = GetTimeRangeBounds(range);
-
   double low = start_time.ToDoubleT();
-
-  graph_->m_time_fit = end_time.is_null();
-  double high =
-      graph_->m_time_fit ? graph_->right_range_limit_ : end_time.ToDoubleT();
-
+  double high = graph_->m_time_fit
+                    ? graph_->horizontal_axis().panning_range_max()
+                    : end_time.ToDoubleT();
   graph_->horizontal_axis().SetRange(
       views::GraphRange(low, high, views::GraphRange::TIME));
 
   controller_delegate_.SetModified(true);
+}
+
+void GraphView::OnGraphPannedHorizontally() {
+  graph_->m_time_fit = false;
 }
 
 void GraphView::OnLineItemChanged(views::GraphLine& line) {

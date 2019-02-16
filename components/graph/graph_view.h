@@ -62,6 +62,7 @@ class GraphView : public Controller,
   // views::Graph::Controller
   virtual void OnGraphModified() override;
   virtual void OnGraphSelectPane() override;
+  virtual void OnGraphPannedHorizontally() override;
   virtual void OnLineItemChanged(views::GraphLine& line) override;
 
   std::unique_ptr<MetrixGraph> graph_;
