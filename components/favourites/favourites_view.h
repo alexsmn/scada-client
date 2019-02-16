@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "command_handler_impl.h"
+#include "common_resources.h"
 #include "controller.h"
 
 class Tree;

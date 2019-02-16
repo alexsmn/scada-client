@@ -266,7 +266,7 @@ void SummaryModel::Load(const WindowDefinition& definition) {
   auto time_range = RestoreTimeRange(definition);
 
   // TODO: Load time range and interval.
-  SetParams(time_range ? *time_range : TimeRange{ID_TIME_RANGE_DAY},
+  SetParams(time_range ? *time_range : TimeRange::Type::Day,
             scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
                                    scada::Duration::FromHours(1),
                                    scada::id::AggregateFunction_End});

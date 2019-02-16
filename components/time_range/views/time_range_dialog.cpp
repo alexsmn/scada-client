@@ -144,11 +144,10 @@ LRESULT TimeRangeDialog::OnOK(WORD /*wNotifyCode*/,
                               WORD /*wID*/,
                               HWND /*hWndCtl*/,
                               BOOL& /*bHandled*/) {
-  time_range.command_id = ID_TIME_RANGE_CUSTOM;
-
   SYSTEMTIME times[2] = {};
   calendar_.GetSelRange(times);
 
+  time_range.type = TimeRange::Type::Custom;
   time_range.dates = !time_required && time_checkbox_.GetCheck() != BST_CHECKED;
   time_range.start = GetTimeBound(start_group_, times[0], time_range.dates);
   time_range.end = GetTimeBound(end_group_, times[1], time_range.dates);

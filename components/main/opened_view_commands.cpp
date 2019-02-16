@@ -61,6 +61,21 @@ NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
   return nullptr;
 }
 
+TimeRange::Type GetTimeRangeCommand(unsigned command_id) {
+  switch (command_id) {
+    case ID_TIME_RANGE_DAY:
+      return TimeRange::Type::Day;
+    case ID_TIME_RANGE_WEEK:
+      return TimeRange::Type::Week;
+    case ID_TIME_RANGE_MONTH:
+      return TimeRange::Type::Month;
+    case ID_TIME_RANGE_CUSTOM:
+      return TimeRange::Type::Custom;
+    default:
+      return TimeRange::Type::Count;
+  }
+}
+
 }  // namespace
 
 OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
@@ -178,27 +193,26 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
                             {node_service_, task_manager_,
                              controller_->selection().node().node_id()});
       return;
+  }
 
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-      if (auto* model = controller_->GetTimeModel())
-        model->SetTimeRange(TimeRange{command_id});
-      return;
-
-    case ID_TIME_RANGE_CUSTOM:
-      if (auto* model = controller_->GetTimeModel()) {
+  if (auto time_range_type = GetTimeRangeCommand(command_id);
+      time_range_type != TimeRange::Type::Count) {
+    if (auto* model = controller_->GetTimeModel()) {
+      if (time_range_type == TimeRange::Type::Custom) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
         if (ShowTimeRangeDialog(*dialog_service_,
                                 {profile_, range, time_required}))
           model->SetTimeRange(range);
+
+      } else {
+        model->SetTimeRange(time_range_type);
       }
-      return;
+    }
+    return;
   }
 
-  auto node_id = GetNewCommandTypeId(command_id);
-  if (node_id != scada::NodeId()) {
+  if (auto node_id = GetNewCommandTypeId(command_id); !node_id.is_null()) {
     CreateRecord(node_id, 0);
     return;
   }
@@ -208,18 +222,14 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
 }
 
 bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-    case ID_TIME_RANGE_CUSTOM:
-      if (auto* model = controller_->GetTimeModel())
-        return model->GetTimeRange().command_id == command_id;
-      return false;
-
-    default:
-      return false;
+  if (auto time_range_type = GetTimeRangeCommand(command_id);
+      time_range_type != TimeRange::Type::Count) {
+    if (auto* model = controller_->GetTimeModel())
+      return model->GetTimeRange().type == GetTimeRangeCommand(command_id);
+    return false;
   }
+
+  return false;
 }
 
 bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {

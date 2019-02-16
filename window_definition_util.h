@@ -25,6 +25,15 @@ inline std::optional<base::Time> FromJson(const base::Value& value) {
 
 template <>
 inline std::optional<TimeRange> FromJson(const base::Value& value) {
+  auto* type_string = value.FindKeyOfType("type", base::Value::Type::STRING);
+  if (type_string) {
+    auto type = ParseTimeRangeType(type_string->GetString());
+    if (type == TimeRange::Type::Count)
+      return std::nullopt;
+    if (type != TimeRange::Type::Custom)
+      return type;
+  }
+
   auto* start_value = value.FindKey("start");
   auto* end_value = value.FindKey("end");
   if (!start_value || !end_value)
@@ -46,8 +55,13 @@ inline base::Value ToJson(base::Time time) {
 
 inline base::Value ToJson(const TimeRange& time_range) {
   base::Value result{base::Value::Type::DICTIONARY};
-  result.SetKey("start", ToJson(time_range.start));
-  result.SetKey("end", ToJson(time_range.end));
+  if (time_range.type == TimeRange::Type::Custom) {
+    result.SetKey("start", ToJson(time_range.start));
+    result.SetKey("end", ToJson(time_range.end));
+    SetKey(result, "dates", time_range.dates);
+  } else {
+    SetKey(result, "type", ToString(time_range.type));
+  }
   return result;
 }
 

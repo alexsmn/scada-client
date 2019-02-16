@@ -1,6 +1,18 @@
 #include "time_range.h"
 
+#include "base/strings/string_piece.h"
+
 namespace {
+
+const base::StringPiece kTimeRangeStrings[] = {
+    "Custom",
+    "Day",
+    "Week",
+    "Month",
+};
+
+static_assert(std::size(kTimeRangeStrings) ==
+              static_cast<size_t>(TimeRange::Type::Count));
 
 inline bool CompareBounds(base::Time a, base::Time b, bool dates) {
   if (dates)
@@ -12,7 +24,7 @@ inline bool CompareBounds(base::Time a, base::Time b, bool dates) {
 }  // namespace
 
 bool operator==(const TimeRange& a, const TimeRange& b) {
-  if (a.command_id != b.command_id)
+  if (a.type != b.type)
     return false;
 
   if (a.dates != b.dates)
@@ -27,12 +39,12 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
   auto now = base::Time::Now();
   base::Time from, to;
 
-  switch (time_range.command_id) {
-    case ID_TIME_RANGE_DAY:
+  switch (time_range.type) {
+    case TimeRange::Type::Day:
       from = now.LocalMidnight();
       break;
 
-    case ID_TIME_RANGE_WEEK: {
+    case TimeRange::Type::Week: {
       base::Time cur = now.LocalMidnight();
       base::Time::Exploded ts = {};
       cur.LocalExplode(&ts);
@@ -42,7 +54,7 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
       break;
     }
 
-    case ID_TIME_RANGE_MONTH: {
+    case TimeRange::Type::Month: {
       base::Time::Exploded ts;
       now.LocalMidnight().LocalExplode(&ts);
       ts.day_of_month = 1;
@@ -50,7 +62,7 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
       break;
     }
 
-    case ID_TIME_RANGE_CUSTOM:
+    case TimeRange::Type::Custom:
       from = time_range.start;
       break;
 
@@ -80,17 +92,21 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
   return {from, to};
 }
 
-const char* FormatTimeRange(unsigned mode) {
-  switch (mode) {
-    case ID_TIME_RANGE_DAY:
-      return "Day";
-    case ID_TIME_RANGE_WEEK:
-      return "Week";
-    case ID_TIME_RANGE_MONTH:
-      return "Month";
-    case ID_TIME_RANGE_CUSTOM:
-      return "Custom";
-    default:
-      return "Current";
-  }
+std::string ToString(TimeRange::Type type) {
+  auto index = static_cast<size_t>(type);
+  return index < static_cast<size_t>(TimeRange::Type::Count)
+             ? kTimeRangeStrings[index].as_string()
+             : "Unknown";
+}
+
+std::string ToString(const TimeRange& time_range) {
+  return ToString(time_range.type);
+}
+
+TimeRange::Type ParseTimeRangeType(base::StringPiece str) {
+  auto i = std::find(std::begin(kTimeRangeStrings), std::end(kTimeRangeStrings),
+                     str);
+  return i != std::end(kTimeRangeStrings)
+             ? static_cast<TimeRange::Type>(i - std::begin(kTimeRangeStrings))
+             : TimeRange::Type::Count;
 }

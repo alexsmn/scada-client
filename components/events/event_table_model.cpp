@@ -446,17 +446,17 @@ base::string16 EventTableModel::MakeTitle() const {
   if (current_events_) {
     title = L"Текущие события";
   } else {
-    switch (time_range_.command_id) {
-      case ID_TIME_RANGE_DAY:
+    switch (time_range_.type) {
+      case TimeRange::Type::Day:
         title = L"Журнал событий за день";
         break;
-      case ID_TIME_RANGE_WEEK:
+      case TimeRange::Type::Week:
         title = L"Журнал событий за неделю";
         break;
-      case ID_TIME_RANGE_MONTH:
+      case TimeRange::Type::Month:
         title = L"Журнал событий за месяц";
         break;
-      case ID_TIME_RANGE_CUSTOM:
+      case TimeRange::Type::Custom:
       default:
         title = L"Журнал событий";  // TODO: Format time range.
         break;

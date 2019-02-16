@@ -1,20 +1,20 @@
 #pragma once
 
 #include "base/time/time.h"
-#include "common_resources.h"
 
 #include <cassert>
 
 struct TimeRange {
-  TimeRange() {}
-  explicit TimeRange(unsigned command_id) : command_id{command_id} {}
-  TimeRange(base::Time start, base::Time end, bool dates = false)
-      : start{start},
-        end{end},
-        dates{dates},
-        command_id{ID_TIME_RANGE_CUSTOM} {}
+  enum class Type { Custom, Day, Week, Month, Count };
 
-  unsigned command_id = ID_TIME_RANGE_DAY;
+  TimeRange() {}
+
+  TimeRange(Type type) : type{type} { assert(type != Type::Custom); }
+
+  TimeRange(base::Time start, base::Time end, bool dates = false)
+      : start{start}, end{end}, dates{dates}, type{Type::Custom} {}
+
+  Type type = Type::Day;
   base::Time start;
   base::Time end;
   bool dates = false;
@@ -25,4 +25,7 @@ bool operator==(const TimeRange& a, const TimeRange& b);
 std::pair<base::Time, base::Time> GetTimeRangeBounds(
     const TimeRange& time_range);
 
-const char* FormatTimeRange(unsigned mode);
+std::string ToString(TimeRange::Type type);
+std::string ToString(const TimeRange& time_range);
+
+TimeRange::Type ParseTimeRangeType(base::StringPiece str);

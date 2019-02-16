@@ -16,6 +16,7 @@
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
+#include "window_definition_util.h"
 
 class EventPanel : public EventView {
  public:
@@ -130,33 +131,19 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   model_->LockUpdate();
   model_->Update();
 
-  WORD mode = is_panel_ ? ID_CURRENT_EVENTS : ID_TIME_RANGE_DAY;
-  TimeRange range;
-
   for (auto& window_item : definition.items) {
     if (window_item.name_is("Item")) {
       auto path = window_item.GetString("path");
       auto item_id = NodeIdFromScadaString(path);
       if (!item_id.is_null())
         model_->AddFilteredItem(item_id);
-
-    } else if (window_item.name_is("Window")) {
-      auto smode = window_item.GetString("mode");
-      if (base::EqualsCaseInsensitiveASCII(smode, "Day"))
-        mode = ID_TIME_RANGE_DAY;
-      else if (base::EqualsCaseInsensitiveASCII(smode, "Week"))
-        mode = ID_TIME_RANGE_WEEK;
-      else if (base::EqualsCaseInsensitiveASCII(smode, "Month"))
-        mode = ID_TIME_RANGE_MONTH;
-      else if (base::EqualsCaseInsensitiveASCII(smode, "Current"))
-        mode = ID_CURRENT_EVENTS;
-      else if (base::EqualsCaseInsensitiveASCII(smode, "Custom")) {
-        mode = ID_TIME_RANGE_CUSTOM;
-      }
     }
   }
 
-  model_->SetTimeRange(range);
+  if (!is_panel_) {
+    if (auto time_range = RestoreTimeRange(definition))
+      model_->SetTimeRange(*time_range);
+  }
 
   if (auto* state = definition.FindItem("State"))
     table_->RestoreState(state->attributes);
@@ -193,8 +180,8 @@ base::string16 EventView::MakeTitle() const {
 void EventView::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = table_->SaveState();
 
-  const char* mode_string = FormatTimeRange(model_->time_range().command_id);
-  definition.AddItem("Window").SetString("mode", mode_string);
+  if (!is_panel_)
+    SaveTimeRange(definition, model_->time_range());
 
   for (auto& item : model_->filter_items()) {
     WindowItem& window_item = definition.AddItem("Item");

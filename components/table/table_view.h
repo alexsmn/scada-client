@@ -1,6 +1,7 @@
 #pragma once
 
 #include "command_handler_impl.h"
+#include "common_resources.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "export_model.h"

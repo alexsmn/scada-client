@@ -35,6 +35,7 @@ base::Value SaveWinItems(const WindowItems& items) {
   base::Value::ListStorage list;
   list.reserve(items.size());
   for (const auto& item : items) {
+    assert(item.attributes.is_dict());
     assert(!item.attributes.FindKey("name"));
     auto item_data = item.attributes.Clone();
     SetKey(item_data, "name", item.name);
