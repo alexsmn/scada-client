@@ -302,32 +302,6 @@ base::string16 GraphView::MakeTitle() const {
   return line ? line->data_source().title() : L"Нет объекта";
 }
 
-void GraphView::ShowSetupDialog() {
-#if defined(UI_VIEWS)
-  MetrixGraph::MetrixLine* line =
-      graph_->selected_pane() ? graph_->selected_pane()->primary_line() : NULL;
-
-  const views::ColorBackground* background =
-      static_cast<const views::ColorBackground*>(graph_->background());
-  SkColor color = background ? background->color() : SK_ColorWHITE;
-
-  GraphSetupDialog dlg;
-  dlg.color = color;
-  dlg.line_weight_ = line ? line->line_weight_ : 0;
-
-  if (dlg.DoModal() != IDOK)
-    return;
-
-  graph_->set_background(new views::ColorBackground(dlg.color));
-  profile_.graph_view.default_color = dlg.color;
-
-  if (line)
-    line->line_weight_ = dlg.line_weight_;
-
-  graph_->SchedulePaint();
-#endif
-}
-
 bool GraphView::CanClose() const {
   return true;
 }

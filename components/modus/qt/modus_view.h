@@ -14,7 +14,7 @@ class FilePath;
 class ModusController;
 
 class ModusView : private modus::ModusDocumentContext,
-                  public QAxWidget,
+                  public QWidget,
                   public ModusViewWrapper {
  public:
   explicit ModusView(modus::ModusDocumentContext&& context);
@@ -30,6 +30,10 @@ class ModusView : private modus::ModusDocumentContext,
   friend class ModusController;
 
   base::FilePath path_;
+
+  // WARNING: QAxWidget must be a child of the view widget. Otherwise, it's not
+  // responsive.
+  QAxWidget* ax_widget_ = nullptr;
 
   std::unique_ptr<modus::ModusDocument> document_;
 };

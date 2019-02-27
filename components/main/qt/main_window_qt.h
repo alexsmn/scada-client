@@ -35,6 +35,9 @@ class MainWindowQt final : public QMainWindow,
   virtual void OnShowTabPopupMenu(OpenedView& view,
                                   const gfx::Point& point) override;
 
+  // QWidget
+  virtual void closeEvent(QCloseEvent* event) override;
+
  private:
   void CreateToolbar();
 

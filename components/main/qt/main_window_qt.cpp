@@ -62,13 +62,6 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
 MainWindowQt::~MainWindowQt() {
   action_manager_.Unsubscribe(*this);
-
-  auto& prefs = GetPrefs();
-  const auto& g = geometry();
-  prefs.bounds = gfx::Rect{g.x(), g.y(), g.width(), g.height()};
-  prefs.maximized = isMaximized();
-
-  BeforeClose();
   view_manager_.reset();
 }
 
@@ -243,4 +236,17 @@ void MainWindowQt::UpdateMenuActions(QMenu& menu) {
     if (i != action_command_ids_.end())
       UpdateAction(*action, i->second, ActionChangeMask::All);
   }
+}
+
+void MainWindowQt::closeEvent(QCloseEvent* event) {
+  QMainWindow::closeEvent(event);
+
+  auto& prefs = GetPrefs();
+  const auto& g = geometry();
+  prefs.bounds = gfx::Rect{g.x(), g.y(), g.width(), g.height()};
+  prefs.maximized = isMaximized();
+
+  // ModusView-s must be destroyed before MainWindowQt destruction, to avoid an
+  // exception of unknown nature.
+  BeforeClose();
 }

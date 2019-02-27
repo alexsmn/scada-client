@@ -48,7 +48,6 @@ class GraphView : public Controller,
 
   void DeleteSelectedPane();
 
-  void ShowSetupDialog();
   void ChooseLineColor();
 
   void UndoZoom();
