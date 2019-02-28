@@ -13,9 +13,11 @@ class FilePath;
 
 class ModusController;
 
-class ModusView : private modus::ModusDocumentContext,
-                  public QWidget,
-                  public ModusViewWrapper {
+class ModusView : public QWidget,
+                  public ModusViewWrapper,
+                  private modus::ModusDocumentContext {
+  Q_OBJECT
+
  public:
   explicit ModusView(modus::ModusDocumentContext&& context);
   virtual ~ModusView();
@@ -25,6 +27,11 @@ class ModusView : private modus::ModusDocumentContext,
   virtual base::FilePath GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
+
+ protected slots:
+  void OnDocClick(IDispatch*, IDispatch*);
+  void OnDocDblClick(IDispatch*, IDispatch*);
+  void OnDocPopup(IDispatch*, bool&);
 
  protected:
   friend class ModusController;

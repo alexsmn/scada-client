@@ -115,9 +115,6 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   long button = 0;
   info->get_Button(&button);
 
-  static const long LeftBtn = 0;
-  static const long RightBtn = 2;
-
   modus::ModusObject* object = NULL;
 
   Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
@@ -141,7 +138,7 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   if (!object->elements().empty())
     selection_callback_(object->elements()[0]->timed_data());
 
-  if (button == RightBtn) {
+  if (button == SDECore::mbRight) {
     POINT pt;
     GetCursorPos(&pt);
     context_menu_callback_(ToUiPoint(pt));
