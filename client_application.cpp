@@ -14,6 +14,8 @@
 #include "client_paths.h"
 #include "common/address_space/address_space_fetcher.h"
 #include "common/address_space/address_space_node_service.h"
+#include "common/audit.h"
+#include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
@@ -178,14 +180,13 @@ ClientApplication::~ClientApplication() {
 void ClientApplication::Start() {
   master_data_services_->AddObserver(*this);
 
-  event_manager_ =
-      std::make_unique<EventManager>(EventManagerContext{
-          *io_context_,
-          *master_data_services_,
-          *master_data_services_,
-          *master_data_services_,
-          std::make_shared<NestedLogger>(logger_, "EventManager"),
-      });
+  event_manager_ = std::make_unique<EventManager>(EventManagerContext{
+      *io_context_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      std::make_shared<NestedLogger>(logger_, "EventManager"),
+  });
   if (master_data_services_->IsConnected())
     event_manager_->OnChannelOpened(master_data_services_->GetUserId());
 
@@ -472,7 +473,18 @@ bool ClientApplication::Login() {
   if (!ExecuteLoginDialog(std::move(services_context), services))
     return false;
 
+  auto audit = std::make_shared<Audit>(
+      *io_context_,
+      std::make_shared<AuditLoggerImpl>(
+          std::make_shared<NestedLogger>(logger_, "Audit")),
+      std::move(services.attribute_service_),
+      std::move(services.view_service_));
+
+  services.attribute_service_ = audit;
+  services.view_service_ = audit;
+
   master_data_services_->SetServices(std::move(services));
+
   return true;
 }
 

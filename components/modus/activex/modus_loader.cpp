@@ -29,7 +29,9 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
 
   if (title_.empty()) {
     base::win::ScopedBstr bstr;
+#ifdef NDEBUG
     sde_document.get_Name(bstr.Receive());
+#endif
     if (bstr)
       title_ = bstr;
   }
