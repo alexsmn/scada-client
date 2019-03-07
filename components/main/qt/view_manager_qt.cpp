@@ -327,7 +327,9 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
   } else if (auto* dock = GetDockWidget(opened_view)) {
     // Detach from parent to avoid deletion by parent.
     opened_view.view()->setParent(nullptr);
-    delete dock;
+    // Can't delete immediately, since it's called by close event handler that
+    // expects the widget to exist after the handler is processed.
+    dock->deleteLater();
   }
 
   DestroyView(opened_view);
