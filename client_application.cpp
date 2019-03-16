@@ -4,6 +4,8 @@
 #include "address_space/generic_node_factory.h"
 #include "address_space/scada_address_space.h"
 #include "base/bind.h"
+#include "base/boost_log.h"
+#include "base/boost_log_adapter.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/nested_logger.h"
@@ -106,23 +108,29 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 
   // Initialize logging.
   {
-    base::FilePath path;
-    base::PathService::Get(client::DIR_LOG, &path);
-    base::CreateDirectory(path);
-    path = path.Append(FILE_PATH_LITERAL("client.log"));
-    logging::LoggingSettings log;
-    log.logging_dest = logging::LOG_TO_FILE;
-    log.log_file = path.value().c_str();
-    log.lock_log = logging::LOCK_LOG_FILE;
-    log.delete_old = logging::APPEND_TO_OLD_LOG_FILE;
-    logging::InitLogging(log);
+    base::FilePath log_path;
+    base::PathService::Get(client::DIR_LOG, &log_path);
+    base::CreateDirectory(log_path);
+
+    {
+      auto path = log_path.Append(FILE_PATH_LITERAL("client.log"));
+      logging::LoggingSettings log;
+      log.logging_dest = logging::LOG_TO_FILE;
+      log.log_file = path.value().c_str();
+      log.lock_log = logging::LOCK_LOG_FILE;
+      log.delete_old = logging::APPEND_TO_OLD_LOG_FILE;
+      logging::InitLogging(log);
+    }
+
+    {
+      auto path = log_path.Append(FILE_PATH_LITERAL("components.log"));
+      InitBoostLogging(path.value(), true);
+    }
   }
 
   SetUnhandledExceptionFilter(ProcessUnhandledException);
 
-  logger_ = CreateFileLogger(
-      client::DIR_LOG, L"client",
-      "Telecontrol SCADA Client " PROJECT_VERSION_DOTTED_STRING);
+  logger_ = std::make_shared<BoostLogAdapter>("client");
 
   io_context_ = std::make_unique<boost::asio::io_context>();
   io_context_timer_ = std::make_unique<base::Timer>(true, true);

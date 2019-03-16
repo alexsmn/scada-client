@@ -3,6 +3,7 @@
 #include "base/files/file_path.h"
 #include "base/strings/string16.h"
 #include "common/aliases.h"
+#include "common/node_id_util.h"
 #include "file_cache.h"
 
 #include <memory>
@@ -29,6 +30,8 @@ class FileCacheUpdater : private FileCacheUpdaterContext,
   explicit FileCacheUpdater(FileCacheUpdaterContext&& context)
       : FileCacheUpdaterContext{std::move(context)} {}
 
+  BoostLogger logger_{LOG_NAME("FileCacheUpdater")};
+
   FileCache::ItemMap items_;
 };
 
@@ -45,10 +48,15 @@ inline FileCacheUpdater::~FileCacheUpdater() {
 
 inline void FileCacheUpdater::Add(base::StringPiece formula, int object_tag) {
   auto self = shared_from_this();
-  alias_resolver_(formula,
-                  [this, self, object_tag](const scada::Status& status,
-                                           const scada::NodeId& node_id) {
-                    if (!node_id.is_null())
-                      items_[node_id] = object_tag;
-                  });
+  alias_resolver_(
+      formula, [this, self, object_tag](const scada::Status& status,
+                                        const scada::NodeId& node_id) {
+        if (node_id.is_null())
+          return;
+
+        LOG_INFO(logger_) << "Set" << LOG_TAG("Path", path_.value())
+                          << LOG_TAG("NodeId", NodeIdToScadaString(node_id))
+                          << LOG_TAG("Tag", object_tag);
+        items_[node_id] = object_tag;
+      });
 }

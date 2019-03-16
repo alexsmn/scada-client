@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "base/strings/string16.h"
 #include "common/aliases.h"
 #include "services/file_cache.h"
@@ -41,15 +42,18 @@ class ModusLoader : private ModusLoaderContext {
             ModusDocument* document);
 
  private:
-  void AddElement(std::unique_ptr<ModusObject>& object,
-                  SDECore::ISDEObject50& sde_object,
-                  SDECore::IParams& params,
-                  const base::string16& binding,
-                  long object_tag);
+  void LoadElement(std::unique_ptr<ModusObject>& object,
+                   SDECore::ISDEObject50& sde_object,
+                   SDECore::IParams& params,
+                   const base::string16& binding,
+                   long object_tag,
+                   long tech_index);
 
-  void AddObject(SDECore::ISDEObject50& sde_object);
+  void LoadObject(SDECore::ISDEObject50& sde_object);
 
   void LoadObjects(SDECore::ISDEObjects2& objects);
+
+  BoostLogger logger_{LOG_NAME("ModusLoader")};
 
   ModusDocument* document_ = nullptr;
 

@@ -19,7 +19,7 @@ ModusDocument::ModusDocument(ModusDocumentContext&& context,
 
   sde_form_->Open(base::win::ScopedBstr(path.value().c_str()));
 
-  sde_form_->get_Document(sde_document_.GetAddressOf());
+  sde_form_->get_Document(sde_document_.ReleaseAndGetAddressOf());
   if (!sde_document_)
     return;
 
@@ -36,6 +36,7 @@ ModusDocument::~ModusDocument() {
   objects_.clear();
 
   sde_document_.Reset();
+
   if (sde_form_)
     DispEventUnadvise(sde_form_.Get());
   sde_form_.Reset();
@@ -79,7 +80,7 @@ ModusDocument::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   modus::ModusObject* object = NULL;
 
   Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
-  info->get_Touched(sde_object.GetAddressOf());
+  info->get_Touched(sde_object.ReleaseAndGetAddressOf());
   if (sde_object) {
     ObjectId id = -1;
     sde_object->get_RTID(&id);
@@ -118,7 +119,7 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   modus::ModusObject* object = NULL;
 
   Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
-  info->get_Touched(sde_object.GetAddressOf());
+  info->get_Touched(sde_object.ReleaseAndGetAddressOf());
   if (sde_object) {
     ObjectId id = -1;
     sde_object->get_RTID(&id);
@@ -130,13 +131,16 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
     }
   }
 
-  if (!object) {
+  modus::ModusElement* element = nullptr;
+  if (object && !object->elements().empty())
+    element = object->elements().front().get();
+
+  if (!element) {
     selection_callback_(TimedDataSpec());
     return;
   }
 
-  if (!object->elements().empty())
-    selection_callback_(object->elements()[0]->timed_data());
+  selection_callback_(element->timed_data());
 
   if (button == SDECore::mbRight) {
     POINT pt;

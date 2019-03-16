@@ -41,7 +41,9 @@ views::View* ModusController::CreateModusView() {
 
   // TODO: Change on ContextMenu.
   auto context_menu_callback = [this](const gfx::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::Bind(&ModusController::ShowPopupMenu,
+                              weak_factory_.GetWeakPtr(), point));
   };
 
   view_ = std::make_unique<ModusView>(modus::ModusDocumentContext{
@@ -56,9 +58,8 @@ views::View* ModusController::CreateModusView() {
 views::View* ModusController::CreateModusView2() {
   view2_ = std::make_unique<ModusView2>(ModusView2Context{timed_data_service_});
 
-  view2_->set_selection_signal([this](const TimedDataSpec& spec) {
-    selection().SelectTimedData(spec);
-  });
+  view2_->set_selection_signal(
+      [this](const TimedDataSpec& spec) { selection().SelectTimedData(spec); });
 
   view2_->set_navigation_signal([this](const base::FilePath& path) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -147,4 +148,8 @@ void ModusController::OpenPath(const base::FilePath& path) {
   WindowDefinition win(GetWindowInfo(ID_MODUS_VIEW));
   win.path = path;
   controller_delegate_.OpenView(win);
+}
+
+void ModusController::ShowPopupMenu(const gfx::Point& point) {
+  controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
 }

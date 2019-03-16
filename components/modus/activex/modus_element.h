@@ -14,6 +14,7 @@ class ModusObject;
 
 typedef Microsoft::WRL::ComPtr<SDECore::IParam> SDEParam;
 typedef Microsoft::WRL::ComPtr<SDECore::IParams> SDEParams;
+typedef Microsoft::WRL::ComPtr<SDECore::IParamInfo> SDEParamInfo;
 
 enum class Limit { LoLo = 0, Lo, Hi, HiHi, Count };
 
@@ -21,7 +22,15 @@ struct Limits {
   double limits[static_cast<size_t>(Limit::Count)];
 };
 
-class ModusElement {
+struct ModusElementContext {
+  ModusObject& object_;
+  const SDEParams sde_params_;
+  const base::string16 prop_name_;
+  const std::vector<base::string16> state_strings_;
+  const bool has_limits_ = false;
+};
+
+class ModusElement : private ModusElementContext {
  public:
   enum Type { UNKNOWN, SWITCH, LABEL, VALUE };
 
@@ -32,9 +41,7 @@ class ModusElement {
     MODUS_BADQ = 0x0008,   // bad quality
   };
 
-  ModusElement(ModusObject& object,
-               SDECore::IParams& sde_params,
-               const base::string16& prop_name);
+  explicit ModusElement(ModusElementContext&& context);
 
   TimedDataSpec& timed_data() { return data_spec_; }
 
@@ -45,13 +52,7 @@ class ModusElement {
  private:
   void UpdateData(bool init);
 
-  ModusObject& object_;
-  SDEParams sde_params_;
-  base::string16 prop_name_;
-
-  bool has_limits_ = false;
   Limits limits_{};
-  std::vector<base::string16> state_strings_;
 
   TimedDataSpec data_spec_;
 
@@ -75,6 +76,7 @@ extern const base::win::ScopedVariant kParameterText;
 extern const base::win::ScopedVariant kParameterValue;
 extern const base::win::ScopedVariant kParameterState;
 extern const base::win::ScopedVariant kParameterStyle;
+extern const base::win::ScopedVariant kParameterLimits;
 
 extern const base::win::ScopedBstr kBstrClose;
 extern const base::win::ScopedBstr kBstrOpen;

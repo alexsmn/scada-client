@@ -84,23 +84,6 @@ inline std::string StrTok(std::string& str, const char* delimiters) {
   return res;
 }
 
-std::vector<base::string16> GetStateStrings(SDECore::IParams& params,
-                                            base::StringPiece16 param_name) {
-  SDEParam param = GetParam(
-      params, base::win::ScopedVariant(param_name.as_string().c_str()));
-  if (!param)
-    return {};
-
-  base::win::ScopedBstr values;
-  if (FAILED(param->get_Values(values.Receive())))
-    return {};
-  if (!values)
-    return {};
-
-  return base::SplitString(base::string16(values), L";", base::TRIM_WHITESPACE,
-                           base::SPLIT_WANT_NONEMPTY);
-}
-
 Limits GetLimits(const NodeRef& node) {
   return {
       node[id::AnalogItemType_LimitLoLo].value().get_or(kNoLimit),
@@ -143,21 +126,17 @@ inline bool operator!=(const Limits& left, const Limits& right) {
 
 // ModusElement
 
-ModusElement::ModusElement(ModusObject& object,
-                           SDECore::IParams& sde_params,
-                           const base::string16& prop_name)
-    : object_{object}, sde_params_{&sde_params}, prop_name_{prop_name} {
-  data_spec_.property_change_handler =
-      [this](const PropertySet& properties) { UpdateData(false); };
+ModusElement::ModusElement(ModusElementContext&& context)
+    : ModusElementContext{std::move(context)} {
+  data_spec_.property_change_handler = [this](const PropertySet& properties) {
+    UpdateData(false);
+  };
   data_spec_.node_modified_handler = [this] { UpdateData(false); };
   data_spec_.deletion_handler = [this] { UpdateData(false); };
   data_spec_.event_change_handler = [this] { UpdateData(false); };
 }
 
 void ModusElement::Init() {
-  state_strings_ = GetStateStrings(*sde_params_.Get(), prop_name_);
-  has_limits_ = HasParam(*sde_params_.Get(), kParameterLimits);
-
   UpdateData(true);
 }
 
@@ -179,8 +158,8 @@ void ModusElement::UpdateData(bool init) {
         bool state = std::abs(value_) >= std::numeric_limits<double>::epsilon();
         size_t state_no = state ? 1 : 0;
         text = (state_no < state_strings_.size())
-                   ? state_strings_[state_no ? 1 : 0].c_str()
-                   : L"";
+                   ? state_strings_[state_no ? 1 : 0]
+                   : base::string16{};
         if (text.empty())
           text = state ? kStateClose : kStateOpen;
 
@@ -188,9 +167,10 @@ void ModusElement::UpdateData(bool init) {
         text = WideFormat(value_);
       }
 
-      SetParamValue(*sde_params_.Get(),
-                    base::win::ScopedVariant(prop_name_.c_str()),
-                    base::win::ScopedBstr(text.c_str()));
+      SetParamValue(
+          *sde_params_.Get(),
+          base::win::ScopedVariant(prop_name_.data(), prop_name_.size()),
+          base::win::ScopedBstr(text.c_str()));
     }
 
     // bad quality
