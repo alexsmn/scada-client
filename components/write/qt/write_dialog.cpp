@@ -43,6 +43,7 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
   ui.statusLabel->setText({});
   ui.lockLabel->setVisible(model_.lock_allowed());
   ui.lockCheckBox->setVisible(model_.lock_allowed());
+  ui.lockCheckBox->setChecked(model_.locked());
 
   if (model_.discrete()) {
     for (const auto& state : model_.GetDiscreteStates())

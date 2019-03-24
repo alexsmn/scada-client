@@ -14,6 +14,7 @@ class WriteModel : private WriteContext {
 
   bool discrete() const { return discrete_; }
   bool lock_allowed() const { return manual_; }
+  bool locked() const { return locked_; }
   bool has_condition() const { return has_condition_; }
   bool two_staged() const { return two_staged_; }
 
@@ -44,6 +45,7 @@ class WriteModel : private WriteContext {
 
   TimedDataSpec spec_;
   bool discrete_ = false;
+  bool locked_ = false;
   bool write_selecting_ = false;
   double write_value_ = 0;
 

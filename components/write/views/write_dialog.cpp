@@ -71,7 +71,7 @@ void WriteDialog::OnInitDialog() {
   }
 
   wnd_lock = GetItem(IDC_LOCK);
-  wnd_lock.SetCheck(BST_CHECKED);
+  wnd_lock.SetCheck(model_.locked() ? BST_CHECKED : BST_UNCHECKED);
   wnd_lock.ShowWindow(model_.lock_allowed() ? SW_SHOW : SW_HIDE);
 
   UpdateCondition();

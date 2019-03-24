@@ -29,17 +29,15 @@ WriteModel::WriteModel(WriteContext&& context)
       current_change_handler();
   };
 
-  condition_.property_change_handler =
-      [this](const PropertySet& properties) {
-        if (current_change_handler)
-          condition_change_handler();
-      };
+  condition_.property_change_handler = [this](const PropertySet& properties) {
+    if (current_change_handler)
+      condition_change_handler();
+  };
 
   const auto node = spec_.GetNode();
+  locked_ = node[id::DataItemType_Locked].value().get_or(false);
   auto condition =
-      node
-          ? node[id::DataItemType_OutputCondition].value().get_or(std::string())
-          : std::string();
+      node[id::DataItemType_OutputCondition].value().get_or(std::string());
   two_staged_ = node[id::DataItemType_OutputTwoStaged].value().get_or(true);
   has_condition_ = !condition.empty();
   if (has_condition_)
