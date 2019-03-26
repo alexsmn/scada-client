@@ -554,17 +554,17 @@
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="65"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="86"/>
         <source>Satisfied</source>
         <translation>Выполнено</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="66"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="87"/>
         <source>Unsatisfied</source>
         <translation>Нарушено</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="90"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="106"/>
         <source>Incorrect floating point value.</source>
         <translation>Указано некорректное значение с плавающей точкой.</translation>
     </message>

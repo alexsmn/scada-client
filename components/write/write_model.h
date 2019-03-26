@@ -46,6 +46,7 @@ class WriteModel : private WriteContext {
   TimedDataSpec spec_;
   bool discrete_ = false;
   bool locked_ = false;
+  bool writing_ = false;
   bool write_selecting_ = false;
   double write_value_ = 0;
 

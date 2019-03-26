@@ -36,12 +36,15 @@ WriteModel::WriteModel(WriteContext&& context)
 
   const auto node = spec_.GetNode();
   locked_ = node[id::DataItemType_Locked].value().get_or(false);
-  auto condition =
-      node[id::DataItemType_OutputCondition].value().get_or(std::string());
   two_staged_ = node[id::DataItemType_OutputTwoStaged].value().get_or(true);
-  has_condition_ = !condition.empty();
-  if (has_condition_)
-    condition_.Connect(timed_data_service_, condition);
+
+  if (!manual_) {
+    auto condition =
+        node[id::DataItemType_OutputCondition].value().get_or(std::string());
+    has_condition_ = !condition.empty();
+    if (has_condition_)
+      condition_.Connect(timed_data_service_, condition);
+  }
 }
 
 base::string16 WriteModel::GetWindowTitle() const {
@@ -87,6 +90,7 @@ base::string16 WriteModel::GetAnalogUnits() const {
 void WriteModel::Write(double value, bool lock) {
   auto weak_ptr = weak_factory_.GetWeakPtr();
 
+  writing_ = true;
   write_value_ = value;
   write_selecting_ = false;
 
@@ -115,16 +119,23 @@ void WriteModel::Write(double value, bool lock) {
 }
 
 base::string16 WriteModel::GetStatusText() const {
+  if (!writing_)
+    return {};
+
   return write_selecting_ ? L"Подготовка к управлению..." : L"Управление...";
 }
 
 bool WriteModel::IsConditionOk() const {
+  if (!has_condition_)
+    return true;
+
   const scada::DataValue& value = condition_.current();
   return !value.qualifier.general_bad() && value.value.get_or(false);
 }
 
 void WriteModel::OnWriteComplete(const scada::Status& status) {
   if (!status) {
+    writing_ = true;
     auto title = GetWindowTitle();
     base::string16 message = ToString16(status) + L'.';
     dialog_service_->RunMessageBox(message, title, MessageBoxMode::Error);
@@ -137,6 +148,7 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
     return;
   }
 
+  writing_ = true;
   completion_handler(true);
 }
 
@@ -154,6 +166,7 @@ void WriteModel::StartWriting(bool second_stage) {
     if (dialog_service_->RunMessageBox(
             message, title, MessageBoxMode::QuestionYesNoDefaultNo) !=
         MessageBoxResult::Yes) {
+      writing_ = false;
       completion_handler(false);
       return;
     }

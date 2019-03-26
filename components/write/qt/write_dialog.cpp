@@ -14,6 +14,10 @@ class WriteDialog : public QDialog {
   virtual void accept() override;
 
  private:
+  void UpdateCurrent();
+  void UpdateCondition();
+  void UpdateStatus();
+
   Ui::WriteDialog ui;
 
   WriteModel& model_;
@@ -44,6 +48,8 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
   ui.lockLabel->setVisible(model_.lock_allowed());
   ui.lockCheckBox->setVisible(model_.lock_allowed());
   ui.lockCheckBox->setChecked(model_.locked());
+  ui.conditionHeaderLabel->setVisible(model_.has_condition());
+  ui.conditionLabel->setVisible(model_.has_condition());
 
   if (model_.discrete()) {
     for (const auto& state : model_.GetDiscreteStates())
@@ -56,25 +62,34 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
     ui.unitLabel->setText(QString::fromStdWString(model_.GetAnalogUnits()));
   }
 
-  model_.current_change_handler = [this] {
-    ui.currentValueLabel->setText(
-        QString::fromStdWString(model_.GetCurrentValue(true)));
-  };
-
-  model_.condition_change_handler = [this] {
-    ui.conditionLabel->setText(model_.IsConditionOk() ? tr("Satisfied")
-                                                      : tr("Unsatisfied"));
-  };
-
-  model_.status_change_handler = [this] {
-    ui.statusLabel->setText(QString::fromStdWString(model_.GetStatusText()));
-  };
+  model_.current_change_handler = [this] { UpdateCurrent(); };
+  model_.condition_change_handler = [this] { UpdateCondition(); };
+  model_.status_change_handler = [this] { UpdateStatus(); };
 
   model_.completion_handler = [this](bool ok) {
     ui.statusLabel->setText({});
     if (ok)
       QDialog::accept();
   };
+
+  UpdateCurrent();
+  UpdateCondition();
+  UpdateStatus();
+}
+
+void WriteDialog::UpdateCurrent() {
+  ui.currentValueLabel->setText(
+      QString::fromStdWString(model_.GetCurrentValue(true)));
+}
+
+void WriteDialog::UpdateCondition() {
+  ui.conditionLabel->setText(model_.IsConditionOk() ? tr("Satisfied")
+                                                    : tr("Unsatisfied"));
+  ui.okButton->setEnabled(model_.IsConditionOk());
+}
+
+void WriteDialog::UpdateStatus() {
+  ui.statusLabel->setText(QString::fromStdWString(model_.GetStatusText()));
 }
 
 void WriteDialog::accept() {
@@ -82,6 +97,7 @@ void WriteDialog::accept() {
   if (model_.discrete()) {
     auto index = ui.valueComboBox->currentIndex();
     value = index ? 1.0 : 0.0;
+
   } else {
     bool ok = false;
     value = ui.valueComboBox->currentText().toDouble(&ok);
