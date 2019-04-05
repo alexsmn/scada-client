@@ -399,8 +399,18 @@ void SummaryModel::SetInterval(base::TimeDelta interval) {
 void SummaryModel::SetParams(const TimeRange& time_range,
                              scada::AggregateFilter aggregate_filter) {
   assert(!aggregate_filter.is_null());
+  assert(!aggregate_filter.interval.is_zero());
 
   auto [start_time, end_time] = GetTimeRangeBounds(time_range);
+
+  // Align bounds to the aggregation interval.
+  auto origin_time = scada::GetLocalAggregateStartTime();
+  start_time = scada::GetAggregateInterval(start_time, origin_time,
+                                           aggregate_filter.interval)
+                   .first;
+  end_time = scada::GetAggregateInterval(end_time, origin_time,
+                                         aggregate_filter.interval)
+                 .first;
 
   // Can update |interval_|.
   auto delta = end_time - start_time;
@@ -416,7 +426,6 @@ void SummaryModel::SetParams(const TimeRange& time_range,
   row_count_ = row_count;
   aggregate_filter_ = std::move(aggregate_filter);
 
-  assert(!aggregate_filter_.interval.is_zero());
   assert(!start_time_.is_null());
   assert(!end_time_.is_null());
   assert(start_time_ <= end_time_);

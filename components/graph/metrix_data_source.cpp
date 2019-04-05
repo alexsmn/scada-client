@@ -123,10 +123,9 @@ MetrixDataSource::MetrixDataSource() {
     OnHistoryChanged();
   };
   timed_data_.node_modified_handler = [this] { OnItemChanged(); };
-  timed_data_.property_change_handler =
-      [this](const PropertySet& properties) {
-        OnPropertyChanged(properties);
-      };
+  timed_data_.property_change_handler = [this](const PropertySet& properties) {
+    OnPropertyChanged(properties);
+  };
   timed_data_.deletion_handler = [this] {
     if (observer_)
       observer_->OnDataSourceDeleted();
