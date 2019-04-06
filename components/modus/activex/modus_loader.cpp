@@ -11,6 +11,8 @@
 #include "services/file_cache_updater.h"
 #include "window_info.h"
 
+#include "core/debug_util-inl.h"
+
 namespace modus {
 
 namespace {
