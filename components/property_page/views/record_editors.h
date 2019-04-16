@@ -306,7 +306,7 @@ class TitEditor : public ItemEditor {
   double eu_hi;
   double ir_lo;
   double ir_hi;
-  int conv;
+  scada::Int32 conv;
   int clamp;
   std::string fmt;
   std::string units;

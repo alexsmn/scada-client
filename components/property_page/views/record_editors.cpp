@@ -528,7 +528,8 @@ void TitEditor::ReadNodeToControls(const NodeRef& node) {
   auto clamping = node[id::AnalogItemType_Clamping].value().get_or(false);
   wnd_clamp.SetCheck(clamping ? BST_CHECKED : BST_UNCHECKED);
 
-  auto conversion = node[id::AnalogItemType_Conversion].value().get_or(false);
+  auto conversion = node[id::AnalogItemType_Conversion].value().get_or(
+      static_cast<scada::Int32>(0));
   wnd_conv_none.SetCheck(!conversion);
   wnd_conv_line.SetCheck(conversion);
   UpdateConv();
@@ -556,7 +557,7 @@ void TitEditor::GetModifiedProperties(
   properties.emplace_back(id::AnalogItemType_EuHi, eu_hi);
   properties.emplace_back(id::AnalogItemType_IrLo, ir_lo);
   properties.emplace_back(id::AnalogItemType_IrHi, ir_hi);
-  properties.emplace_back(id::AnalogItemType_Conversion, conv ? 1 : 0);
+  properties.emplace_back(id::AnalogItemType_Conversion, conv);
   properties.emplace_back(id::AnalogItemType_Clamping, clamp);
   properties.emplace_back(id::AnalogItemType_DisplayFormat, fmt);
   properties.emplace_back(id::AnalogItemType_EngineeringUnits, units);
