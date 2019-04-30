@@ -124,7 +124,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::AnalogItemType_Aperture, &kDoublePropDef},
     {id::AnalogItemType_Deadband, &kDoublePropDef},
     {id::HasTsFormat, &kRefPropDef},
-    {id::AnalogItemType_Conversion, &kEnumPropDef},  // TODO: Enum
+    {id::AnalogItemType_Conversion, &kEnumPropDef},
     {id::AnalogItemType_EuLo, &kDoublePropDef},
     {id::AnalogItemType_EuHi, &kDoublePropDef},
     {id::AnalogItemType_IrLo, &kDoublePropDef},
@@ -143,8 +143,8 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {id::Iec60870LinkType_ConfirmationTimeout, &kIntPropDef},  // time delta
     {id::Iec60870LinkType_TerminationTimeout, &kIntPropDef},   // time delta
     // IEC-60870 Link
-    {id::Iec60870LinkType_Protocol, &kIntPropDef},  // TODO: Enum
-    {id::Iec60870LinkType_Mode, &kIntPropDef},      // TODO: Enum
+    {id::Iec60870LinkType_Protocol, &kEnumPropDef},
+    {id::Iec60870LinkType_Mode, &kEnumPropDef},
     {id::Iec60870LinkType_ConnectTimeout, &kIntPropDef},
     {id::Iec60870LinkType_DeviceAddressSize, &kIntPropDef},
     {id::Iec60870LinkType_COTSize, &kIntPropDef},
@@ -193,7 +193,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     // IEC-81650 ConfigurableObject
     {id::Iec61850ConfigurableObjectType_Reference, &kStringPropDef},
     // Sim Signal
-    {id::SimulationSignalType_Type, &kIntPropDef},            // TODO: Enum
+    {id::SimulationSignalType_Type, &kEnumPropDef},
     {id::SimulationSignalType_Period, &kIntPropDef},          // time delta
     {id::SimulationSignalType_Phase, &kIntPropDef},           // time delta
     {id::SimulationSignalType_UpdateInterval, &kIntPropDef},  // time delta
