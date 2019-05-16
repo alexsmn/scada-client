@@ -17,7 +17,7 @@ inline std::optional<base::Time> FromJson(const base::Value& value) {
     return std::nullopt;
 
   base::Time time;
-  if (!ParseTime(str, time))
+  if (!ParseTime(str, time, true))
     return std::nullopt;
 
   return time;
@@ -50,7 +50,7 @@ inline std::optional<TimeRange> FromJson(const base::Value& value) {
 }
 
 inline base::Value ToJson(base::Time time) {
-  return base::Value{FormatTime16(time)};
+  return base::Value{FormatTime16(time, true)};
 }
 
 inline base::Value ToJson(const TimeRange& time_range) {

@@ -90,7 +90,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       auto stime = item.GetString("time");
       base::Time from, to;
       graph_->m_time_fit = base::EqualsCaseInsensitiveASCII(stime, "Now");
-      if (graph_->m_time_fit || !ParseTime(stime, to)) {
+      if (graph_->m_time_fit || !ParseTime(stime, to, true)) {
         graph_->m_time_fit = true;
         to = base::Time::Now();
       }
@@ -178,8 +178,8 @@ void GraphView::Save(WindowDefinition& definition) {
 
   // time scale
   WindowItem& item = definition.AddItem("TimeScale");
-  item.SetString(
-      "time", graph_->m_time_fit ? base::string16(L"Now") : FormatTime16(time));
+  item.SetString("time", graph_->m_time_fit ? base::string16(L"Now")
+                                            : FormatTime16(time, true));
   item.SetString("span", FormatTimeDelta(span));
 
   // value scale
