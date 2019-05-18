@@ -54,6 +54,10 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
   view_.reset(new Table(*model_, {s_columns, s_columns + _countof(s_columns)}));
   view_->SetShowGrid(true);
 
+  view_->SetContextMenuHandler([this](const UiPoint& point) {
+    controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
+  });
+
   selection().SelectTimedData(model_->timed_data());
 
   return view_->CreateParentIfNecessary();
