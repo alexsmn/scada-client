@@ -33,7 +33,7 @@ class ConfigurationTreeView : public Controller
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;
-  virtual OpenContext GetOpenContext() const override;
+  virtual std::optional<OpenContext> GetOpenContext() const override;
 #if defined(UI_VIEWS)
   virtual views::DropController* GetDropController() override { return this; }
 #endif

@@ -22,7 +22,7 @@ class SummaryView : public Controller, public CommandHandler {
   virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
   virtual ExportModel* GetExportModel() override;
-  virtual OpenContext GetOpenContext() const override;
+  virtual std::optional<OpenContext> GetOpenContext() const override;
 
  private:
   std::unique_ptr<SummaryModel> model_;

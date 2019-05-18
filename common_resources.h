@@ -146,7 +146,6 @@
 #define IDR_LOG_POPUP                   226
 #define IDD_PROGRESS                    227
 #define IDD_CHANGE_PASSWORD             229
-#define IDR_TIMEVAL_POPUP               229
 #define IDR_MODUS_POPUP                 230
 #define IDR_FAVOR_POPUP                 231
 #define IDR_PFOLIO_POPUP                232

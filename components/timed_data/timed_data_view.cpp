@@ -54,10 +54,6 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
   view_.reset(new Table(*model_, {s_columns, s_columns + _countof(s_columns)}));
   view_->SetShowGrid(true);
 
-  view_->SetContextMenuHandler([this](const UiPoint& point) {
-    controller_delegate_.ShowPopupMenu(IDR_TIMEVAL_POPUP, point, true);
-  });
-
   selection().SelectTimedData(model_->timed_data());
 
   return view_->CreateParentIfNecessary();
@@ -115,4 +111,29 @@ TimeModel* TimedDataView::GetTimeModel() {
 
 ExportModel::ExportData TimedDataView::GetExportData() {
   return TableExportData{*model_, view_->columns()};
+}
+
+std::optional<OpenContext> TimedDataView::GetOpenContext() const {
+  const auto& node = model_->timed_data().GetNode();
+  const auto& node_id = node.node_id();
+  if (node_id.is_null())
+    return std::nullopt;
+
+  OpenContext context;
+
+  context.title = model_->timed_data().GetTitle();
+  context.node_ids.emplace_back(node_id);
+
+  const auto& selected_rows = view_->GetSelectedRows();
+  if (selected_rows.size() >= 2) {
+    auto [first_row, last_row] =
+        std::minmax_element(selected_rows.begin(), selected_rows.end());
+    const auto& first_data_value = model_->value(*first_row);
+    const auto& last_data_value = model_->value(*last_row);
+    context.time_range = TimeRange{first_data_value.source_timestamp,
+                                   last_data_value.source_timestamp +
+                                       scada::Duration::FromMilliseconds(1)};
+  }
+
+  return std::move(context);
 }

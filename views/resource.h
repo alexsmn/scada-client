@@ -21,7 +21,6 @@
 #define IDD_BUSY                        205
 #define IDB_OBJECTS                     206
 #define IDR_MAIN_USER                   219
-#define IDR_TIMEVAL_POPUP               229
 #define IDR_WORKPLACE                   232
 #define IDR_DATABASE                    233
 #define IDB_ACTIONS                     240

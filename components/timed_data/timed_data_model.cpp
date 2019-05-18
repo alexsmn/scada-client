@@ -62,7 +62,7 @@ void TimedDataModel::Update() {
 }
 
 const scada::DataValue& TimedDataModel::value(int row) const {
-  assert(row <= count_);
+  assert(row < count_);
   assert(timed_data_.values());
   auto& values = *timed_data_.values();
   return values[begin_iterator_ + row];

@@ -152,10 +152,14 @@ ExportModel* SummaryView::GetExportModel() {
   return model_.get();
 }
 
-OpenContext SummaryView::GetOpenContext() const {
-  OpenContext context{true};
+std::optional<OpenContext> SummaryView::GetOpenContext() const {
+  const auto& selected_columns = grid_->GetSelectedColumns();
+  if (selected_columns.empty())
+    return std::nullopt;
 
-  for (auto i : grid_->GetSelectedColumns()) {
+  OpenContext context;
+
+  for (auto i : selected_columns) {
     const auto& timed_data = model_->timed_data(i);
     if (const auto& node = timed_data.GetNode())
       context.node_ids.emplace_back(node.node_id());
@@ -168,5 +172,5 @@ OpenContext SummaryView::GetOpenContext() const {
     context.time_range = TimeRange{start_time, end_time};
   }
 
-  return context;
+  return std::move(context);
 }

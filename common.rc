@@ -840,14 +840,6 @@ BEGIN
     END
 END
 
-IDR_TIMEVAL_POPUP MENU
-BEGIN
-    POPUP "Popup"
-    BEGIN
-        MENUITEM "Параметры...",                ID_SETUP
-    END
-END
-
 IDR_TABLE_BTN MENU
 BEGIN
     POPUP "Popup"

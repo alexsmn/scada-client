@@ -26,6 +26,7 @@ class TimedDataView : public Controller,
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
   virtual ExportModel* GetExportModel() override { return this; }
+  virtual std::optional<OpenContext> GetOpenContext() const override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
@@ -37,8 +38,6 @@ class TimedDataView : public Controller,
  private:
   base::string16 MakeTitle() const;
   void UpdateColumnTitles();
-
-  void Export();
 
   std::unique_ptr<TimedDataModel> model_;
 

@@ -58,8 +58,6 @@ class SelectionCommands : private SelectionCommandsContext,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-  void ExecuteMultiCommand(unsigned command_id);
-
   void DeleteSelection();
   void CopyToClipboard();
 

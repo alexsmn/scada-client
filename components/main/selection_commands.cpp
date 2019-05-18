@@ -163,27 +163,6 @@ bool SelectionCommands::IsCommandChecked(unsigned command_id) const {
   return false;
 }
 
-void SelectionCommands::ExecuteMultiCommand(unsigned command_id) {
-  UINT type = 0;
-  if (command_id == ID_OPEN_TABLE)
-    type = ID_TABLE_VIEW;
-  else if (command_id == ID_OPEN_GRAPH)
-    type = ID_GRAPH_VIEW;
-  else if (command_id == ID_OPEN_SUMMARY)
-    type = ID_SUMMARY_VIEW;
-  else if (command_id == ID_OPEN_EVENTS)
-    type = ID_EVENT_JOURNAL_VIEW;
-
-  if (type != 0) {
-    auto title = selection_->GetTitle();
-    auto node_ids = selection_->GetMultipleNodeIds();
-    ::OpenView(main_window_,
-               MakeWindowDefinition({node_ids.begin(), node_ids.end()}, type,
-                                    title.c_str()));
-    return;
-  }
-}
-
 void SelectionCommands::ExecuteCommand(unsigned command_id) {
   assert(dialog_service_);
   assert(selection_);
@@ -197,36 +176,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
   }
 
-  if (selection_->multiple()) {
-    ExecuteMultiCommand(command_id);
-    return;
-  }
-
-  const auto& node_id = selection_->node().node_id();
-  if (node_id.is_null() && selection_->timed_data().connected()) {
-    unsigned type = 0;
-    switch (command_id) {
-      case ID_OPEN_GRAPH:
-        type = ID_GRAPH_VIEW;
-        break;
-      case ID_OPEN_TABLE:
-        type = ID_TABLE_VIEW;
-        break;
-      case ID_OPEN_SUMMARY:
-        type = ID_SUMMARY_VIEW;
-        break;
-      case ID_TIMED_DATA_VIEW:
-        type = command_id;
-        break;
-    }
-    if (type) {
-      const std::string& formula = selection_->timed_data().formula();
-      ::OpenView(main_window_, MakeWindowDefinition(formula.c_str(), type));
-    }
-    return;
-  }
-
-  auto node = selection_->node();
+  const auto& node = selection_->node();
 
   scada::NodeId method_id;
 
@@ -244,15 +194,13 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       ::OpenView(main_window_, GetOpenWindowDefinition(ID_SUMMARY_VIEW));
       return;
     case ID_OPEN_EVENTS:
-    case ID_HISTORICAL_EVENTS:
-      if (IsInstanceOf(node, id::DataGroupType) ||
-          IsInstanceOf(node, id::DataItemType)) {
-        WindowDefinition win = GetOpenWindowDefinition(ID_EVENT_JOURNAL_VIEW);
-        if (command_id == ID_OPEN_EVENTS)
-          win.AddItem("Window").SetString("mode", "Current");
-        ::OpenView(main_window_, win, true);
-      }
+    case ID_HISTORICAL_EVENTS: {
+      WindowDefinition win = GetOpenWindowDefinition(ID_EVENT_JOURNAL_VIEW);
+      if (command_id == ID_OPEN_EVENTS)
+        win.AddItem("Window").SetString("mode", "Current");
+      ::OpenView(main_window_, win, true);
       return;
+    }
     case ID_OPEN_DISPLAY:
       OpenModusView(node);
       return;
@@ -264,15 +212,15 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
         ::OpenView(main_window_, win.value());
       return;
     case ID_WRITE:
-      ExecuteWriteDialog(*dialog_service_,
-                         {timed_data_service_, node_id, profile_, false});
+      ExecuteWriteDialog(*dialog_service_, {timed_data_service_, node.node_id(),
+                                            profile_, false});
       return;
     case ID_WRITE_MANUAL:
       ExecuteWriteDialog(*dialog_service_,
-                         {timed_data_service_, node_id, profile_, true});
+                         {timed_data_service_, node.node_id(), profile_, true});
       return;
     case ID_UNLOCK_ITEM:
-      task_manager_.PostUpdateTask(node_id, {},
+      task_manager_.PostUpdateTask(node.node_id(), {},
                                    {{id::DataItemType_Locked, false}});
       return;
     case ID_EDIT_LIMITS:
@@ -280,7 +228,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
         ShowLimitsDialog(*dialog_service_, {node, task_manager_});
       return;
     case ID_ACKNOWLEDGE_CURRENT:
-      event_manager_.AcknowledgeItemEvents(node_id);
+      event_manager_.AcknowledgeItemEvents(node.node_id());
       return;
     case ID_ITEM_PARAMS:
       ::OpenView(main_window_,
@@ -443,15 +391,30 @@ void SelectionCommands::CopyToClipboard() {
 
 WindowDefinition SelectionCommands::GetOpenWindowDefinition(
     unsigned type) const {
-  auto open_context = controller_->GetOpenContext();
-  if (!open_context.applicable)
-    return MakeWindowDefinition(selection_->node(), type, true);
+  assert(type != 0);
 
-  auto definition = MakeWindowDefinition(open_context.node_ids, type,
-                                         open_context.title.c_str());
-  if (open_context.time_range.has_value())
-    SaveTimeRange(definition, *open_context.time_range);
-  return definition;
+  if (auto open_context = controller_->GetOpenContext()) {
+    auto definition = MakeWindowDefinition(open_context->node_ids, type,
+                                           open_context->title.c_str());
+    if (open_context->time_range.has_value())
+      SaveTimeRange(definition, *open_context->time_range);
+    return definition;
+  }
+
+  if (selection_->multiple()) {
+    auto title = selection_->GetTitle();
+    auto node_ids = selection_->GetMultipleNodeIds();
+    return MakeWindowDefinition({node_ids.begin(), node_ids.end()}, type,
+                                title.c_str());
+  }
+
+  const auto& node_id = selection_->node().node_id();
+  if (node_id.is_null() && selection_->timed_data().connected()) {
+    const std::string& formula = selection_->timed_data().formula();
+    return MakeWindowDefinition(formula.c_str(), type);
+  }
+
+  return MakeWindowDefinition(selection_->node(), type, true);
 }
 
 void SelectionCommands::DumpDebugInfo() {

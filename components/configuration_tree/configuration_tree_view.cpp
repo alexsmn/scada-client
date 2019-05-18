@@ -121,19 +121,19 @@ std::vector<scada::NodeId> ConfigurationTreeView::GetVariableNodeIds(
   return node_ids;
 }
 
-OpenContext ConfigurationTreeView::GetOpenContext() const {
-  OpenContext context;
+std::optional<OpenContext> ConfigurationTreeView::GetOpenContext() const {
   auto* tree_node =
       static_cast<ConfigurationTreeNode*>(tree_view().GetSelectedNode());
   if (!tree_node)
     tree_node = static_cast<ConfigurationTreeNode*>(model().GetRoot());
-  if (tree_node) {
-    context.applicable = true;
-    context.title = GetFullDisplayName(tree_node->data_node());
-    context.node_ids =
-        GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
-  }
-  return context;
+  if (!tree_node)
+    return std::nullopt;
+
+  OpenContext context;
+  context.title = GetFullDisplayName(tree_node->data_node());
+  context.node_ids =
+      GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
+  return std::move(context);
 }
 
 #if defined(UI_VIEWS)

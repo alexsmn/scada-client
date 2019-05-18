@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <optional>
 
 #include "common/aliases.h"
 #include "controller_delegate.h"
@@ -51,7 +52,6 @@ struct ControllerContext {
 };
 
 struct OpenContext {
-  bool applicable = false;
   std::vector<scada::NodeId> node_ids;
   base::string16 title;
   std::optional<TimeRange> time_range;
@@ -93,7 +93,9 @@ class Controller : protected ControllerContext {
   // View root node for creation.
   virtual NodeRef GetRootNode() const { return nullptr; }
 
-  virtual OpenContext GetOpenContext() const { return {}; }
+  virtual std::optional<OpenContext> GetOpenContext() const {
+    return std::nullopt;
+  }
 
  private:
   SelectionModel selection_;
