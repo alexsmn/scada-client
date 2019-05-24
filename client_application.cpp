@@ -357,6 +357,11 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     if (!registrar)
       return nullptr;
 
+    if (registrar->window_info().requires_admin_rights() &&
+        !master_data_services_->HasPrivilege(scada::Privilege::Configure)) {
+      return nullptr;
+    }
+
     return registrar->CreateController(ControllerContext{
         delegate, alias_resolver_, *task_manager_, *master_data_services_,
         *event_manager_, *master_data_services_, *master_data_services_,
