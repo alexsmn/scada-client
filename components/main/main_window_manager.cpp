@@ -4,8 +4,7 @@
 #include "services/profile.h"
 
 MainWindowManager::MainWindowManager(MainWindowManagerContext&& context)
-    : MainWindowManagerContext{std::move(context)} {
-}
+    : MainWindowManagerContext{std::move(context)} {}
 
 void MainWindowManager::Init() {
   typedef Profile::MainWindows Windows;
@@ -68,4 +67,21 @@ OpenedView* MainWindowManager::FindOpenedViewByFilePath(
 void MainWindowManager::CreateMainWindow() {
   int window_id = profile_.CreateWindowId();
   OpenMainWindow(window_id);
+}
+
+void MainWindowManager::OnMainWindowClosed(int window_id) {
+  auto i = main_windows_.find(window_id);
+  assert(i != main_windows_.end());
+  if (i == main_windows_.end())
+    return;
+
+  i->second.release();
+  main_windows_.erase(i);
+
+  if (main_windows_.empty()) {
+    quit_handler_();
+
+  } else {
+    profile_.main_windows.erase(window_id);
+  }
 }

@@ -31,6 +31,8 @@ class MainWindowManager : private MainWindowManagerContext {
   void OpenMainWindow(int window_id);
   void CloseMainWindow(int window_id);
 
+  void OnMainWindowClosed(int window_id);
+
   typedef std::map<int /*window_id*/, std::unique_ptr<MainWindow>> MainWindows;
   const MainWindows& main_windows() const { return main_windows_; }
 

@@ -62,6 +62,8 @@ int main(int argc, char* argv[]) {
 
   qapp.setApplicationDisplayName(QObject::tr("Telecontrol SCADA Client"));
 
+  qapp.setQuitOnLastWindowClosed(false);
+
   // QApplication must be created.
   base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};
 

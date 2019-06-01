@@ -239,8 +239,6 @@ void MainWindowQt::UpdateMenuActions(QMenu& menu) {
 }
 
 void MainWindowQt::closeEvent(QCloseEvent* event) {
-  QMainWindow::closeEvent(event);
-
   auto& prefs = GetPrefs();
   const auto& g = geometry();
   prefs.bounds = gfx::Rect{g.x(), g.y(), g.width(), g.height()};
@@ -249,4 +247,8 @@ void MainWindowQt::closeEvent(QCloseEvent* event) {
   // ModusView-s must be destroyed before MainWindowQt destruction, to avoid an
   // exception of unknown nature.
   BeforeClose();
+
+  main_window_manager_.OnMainWindowClosed(window_id_);
+
+  QMainWindow::closeEvent(event);
 }
