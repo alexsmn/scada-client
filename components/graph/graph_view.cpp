@@ -90,12 +90,12 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       auto stime = item.GetString("time");
       base::Time from, to;
       graph_->m_time_fit = base::EqualsCaseInsensitiveASCII(stime, "Now");
-      if (graph_->m_time_fit || !ParseTime(stime, to, true)) {
+      if (graph_->m_time_fit || !Deserialize(stime, to)) {
         graph_->m_time_fit = true;
         to = base::Time::Now();
       }
       base::TimeDelta span = base::TimeDelta::FromHours(1);
-      ParseTimeDelta(srange, span);
+      Deserialize(srange, span);
       from = to - span;
       graph_->horizontal_axis().SetRange(views::GraphRange(
           from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));
@@ -178,9 +178,9 @@ void GraphView::Save(WindowDefinition& definition) {
 
   // time scale
   WindowItem& item = definition.AddItem("TimeScale");
-  item.SetString("time", graph_->m_time_fit ? base::string16(L"Now")
-                                            : FormatTime16(time, true));
-  item.SetString("span", FormatTimeDelta(span));
+  item.SetString("time", graph_->m_time_fit ? std::string("Now")
+                                            : SerializeToString(time));
+  item.SetString("span", SerializeToString(span));
 
   // value scale
   // WindowItem& item = def.AddItem(_T("ValueScale"));

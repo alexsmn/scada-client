@@ -165,7 +165,7 @@ std::optional<OpenContext> SummaryView::GetOpenContext() const {
       context.node_ids.emplace_back(node.node_id());
   }
 
-  if (auto rows = grid_->GetSelectedRows(); !rows.empty()) {
+  if (const auto& rows = grid_->GetSelectedRows(); !rows.empty()) {
     auto [min_row, max_row] = std::minmax_element(rows.begin(), rows.end());
     auto start_time = model_->GetRowTime(*min_row);
     auto end_time = model_->GetRowTime(*max_row) + model_->interval();
