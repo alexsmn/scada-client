@@ -10,20 +10,11 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "client_paths.h"
+#include "client_utils.h"
 #include "common/node_id_util.h"
 #include "value_util.h"
 
 #include <optional>
-
-base::FilePath GetPublicFilePath(const base::FilePath& path) {
-  base::FilePath public_path;
-  base::PathService::Get(client::DIR_PUBLIC, &public_path);
-  return public_path.Append(path);
-}
-
-base::FilePath FullFilePathToPublic(const base::FilePath& path) {
-  return path.BaseName();
-}
 
 namespace {
 

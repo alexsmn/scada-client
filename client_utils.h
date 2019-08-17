@@ -82,3 +82,9 @@ bool PasteNodesFromClipboard(TaskManager& task_manager,
 NodeRef GetPasteParentNode(NodeService& node_service,
                            const NodeRef& selected_node,
                            const NodeRef& root_node);
+
+bool IsWebUrl(base::StringPiece16 str);
+base::string16 MakeFileUrl(const base::FilePath& path);
+
+base::FilePath GetPublicFilePath(const base::FilePath& path);
+base::FilePath FullFilePathToPublic(const base::FilePath& path);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/files/file_path.h"
 #include "controller.h"
 
 class QAxWidget;
@@ -16,5 +17,5 @@ class WebView : public Controller {
  private:
   std::unique_ptr<QAxWidget> ax_widget_;
 
-  std::wstring url_;
+  base::FilePath path_;
 };

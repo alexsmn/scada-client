@@ -1,11 +1,11 @@
 ﻿#include "components/vidicon_display/views/vidicon_display_view.h"
 
 #include "base/win/scoped_bstr.h"
+#include "client_utils.h"
 #include "components/vidicon_display/teleclient.h"
 #include "components/vidicon_display/telecontrolview.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "controller_factory.h"
-#include "services/file_cache.h"
 #include "views/activex_host.h"
 #include "views/ambient_props.h"
 #include "window_definition.h"

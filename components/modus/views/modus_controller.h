@@ -27,7 +27,9 @@ class ModusController : public Controller, public CommandHandler {
   views::View* CreateModusView();
   views::View* CreateModusView2();
 
+  void OpenHyperlink(base::StringPiece16 hyperlink);
   void OpenPath(const base::FilePath& path);
+
   void ShowPopupMenu(const gfx::Point& point);
 
   std::unique_ptr<ModusView> view_;

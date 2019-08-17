@@ -2,6 +2,7 @@
 
 #include "base/strings/string_split.h"
 #include "base/strings/sys_string_conversions.h"
+#include "client_utils.h"
 #include "common_resources.h"
 #include "components/modus/activex/modus.h"
 #include "components/modus/activex/modus_document.h"

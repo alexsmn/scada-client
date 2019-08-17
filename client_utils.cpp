@@ -1,7 +1,9 @@
 ﻿#include "client_utils.h"
 
 #include "base/format_time.h"
+#include "base/path_service.h"
 #include "base/win/clipboard.h"
+#include "client_paths.h"
 #include "common/event_manager.h"
 #include "common/formula_util.h"
 #include "common/node_id_util.h"
@@ -22,10 +24,16 @@
 #include "window_info.h"
 
 namespace {
+
+const base::char16 kHttpPrefix[] = L"http://";
+const base::char16 kHttpsPrefix[] = L"https://";
+const base::char16 kFilePrefix[] = L"file://";
+
 const UINT kNodeTreeHeaderFormat =
     ::RegisterClipboardFormat(L"CE4D311D-FB1C-4972-9EA8-3C2C1FB5091A");
 const UINT kNodeTreeFormat =
     ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
+
 }  // namespace
 
 inline void AppendHint(base::string16& hint,
@@ -364,4 +372,22 @@ NodeRef GetPasteParentNode(NodeService& node_service,
   }
 
   return nullptr;
+}
+
+bool IsWebUrl(base::StringPiece16 str) {
+  return str.starts_with(kHttpPrefix) || str.starts_with(kHttpsPrefix);
+}
+
+base::string16 MakeFileUrl(const base::FilePath& path) {
+  return kFilePrefix + path.AsUTF16Unsafe();
+}
+
+base::FilePath GetPublicFilePath(const base::FilePath& path) {
+  base::FilePath public_path;
+  base::PathService::Get(client::DIR_PUBLIC, &public_path);
+  return public_path.Append(path);
+}
+
+base::FilePath FullFilePathToPublic(const base::FilePath& path) {
+  return path.BaseName();
 }

@@ -30,6 +30,7 @@ class ModusController : public Controller, public CommandHandler {
   QWidget* CreateModusView3();
 
   void OpenPath(const base::FilePath& path);
+  void OpenHyperlink(base::StringPiece16 hyperlink);
 
   std::unique_ptr<ModusView> view_;
   std::unique_ptr<ModusView2> view2_;

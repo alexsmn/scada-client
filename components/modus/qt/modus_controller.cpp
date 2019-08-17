@@ -1,7 +1,7 @@
 ﻿#include "components/modus/qt/modus_controller.h"
 
 #include "base/bind.h"
-#include "base/strings/string_util.h"
+#include "base/strings/strcat.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "common_resources.h"
@@ -11,6 +11,7 @@
 #include "components/modus/qt/modus_view3.h"
 #include "controller_factory.h"
 #include "selection_model.h"
+#include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
 #include "window_definition.h"
@@ -33,10 +34,11 @@ QWidget* ModusController::CreateModusView() {
     controller_delegate_.SetTitle(title);
   };
 
-  auto navigation_callback = [this](const base::FilePath& path) {
+  auto navigation_callback = [this](base::StringPiece16 hyperlink) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::Bind(&ModusController::OpenPath,
-                              weak_factory_.GetWeakPtr(), path));
+        FROM_HERE,
+        base::Bind(&ModusController::OpenHyperlink, weak_factory_.GetWeakPtr(),
+                   hyperlink.as_string()));
   };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
@@ -60,9 +62,8 @@ QWidget* ModusController::CreateModusView() {
 QWidget* ModusController::CreateModusView2() {
   view2_ = std::make_unique<ModusView2>(timed_data_service_);
 
-  view2_->set_selection_signal([this](const TimedDataSpec& spec) {
-    selection().SelectTimedData(spec);
-  });
+  view2_->set_selection_signal(
+      [this](const TimedDataSpec& spec) { selection().SelectTimedData(spec); });
 
   view2_->set_navigation_signal([this](const base::FilePath& path) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -142,6 +143,33 @@ void ModusController::ExecuteCommand(unsigned command) {
       __super::ExecuteCommand(command);
       break;
   }
+}
+
+void ModusController::OpenHyperlink(base::StringPiece16 hyperlink) {
+  if (IsWebUrl(hyperlink)) {
+    WindowDefinition win(GetWindowInfo(ID_WEB_VIEW));
+    win.path = base::FilePath{hyperlink};
+    controller_delegate_.OpenView(win);
+    return;
+  }
+
+  auto path = MakeModusFilePath(base::FilePath{hyperlink}, wrapper_->GetPath());
+  if (!path.has_value()) {
+    dialog_service_.RunMessageBox(
+        base::StrCat(
+            {L"Файл ", hyperlink, L" не найден или находится вне папки схем."}),
+        {}, MessageBoxMode::Error);
+    return;
+  }
+
+  if (!IsModusFilePath(*path)) {
+    WindowDefinition win(GetWindowInfo(ID_WEB_VIEW));
+    win.path = std::move(*path);
+    controller_delegate_.OpenView(win);
+    return;
+  }
+
+  OpenPath(std::move(*path));
 }
 
 void ModusController::OpenPath(const base::FilePath& path) {

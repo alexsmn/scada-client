@@ -67,6 +67,3 @@ class FileCache {
 
   DISALLOW_COPY_AND_ASSIGN(FileCache);
 };
-
-base::FilePath GetPublicFilePath(const base::FilePath& path);
-base::FilePath FullFilePathToPublic(const base::FilePath& path);
