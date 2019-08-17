@@ -127,6 +127,7 @@
 #define ID_EXPORT_EXCEL                 202
 #define IDR_PAGE_BTN                    203
 #define ID_DUMP_DEBUG_INFO              203
+#define ID_FAVOURITES_ADD_URL           204
 #define IDB_ITEMS                       206
 #define IDD_SUMM                        207
 #define IDR_GRAPH_POPUP                 209
@@ -389,6 +390,7 @@
 #define ID_SORT_NONE                    4030
 #define ID_SORT_ALIAS                   4032
 #define ID_POPUP_4033                   4033
+#define ID_POPUP_4034                   4034
 #define ID_PAGE_DELETE                  32787
 #define ID_VIEW_LEGEND                  32797
 #define ID_NOW                          32830
@@ -455,8 +457,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
-#define _APS_NEXT_COMMAND_VALUE         4034
+#define _APS_NEXT_COMMAND_VALUE         4035
 #define _APS_NEXT_CONTROL_VALUE         1052
-#define _APS_NEXT_SYMED_VALUE           204
+#define _APS_NEXT_SYMED_VALUE           205
 #endif
 #endif

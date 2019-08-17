@@ -12,8 +12,11 @@ class FavouritesNode : public ui::TreeNode<FavouritesNode> {
 
   virtual void Delete() {}
 
-  virtual FavouritesWindowNode* AsWindowNode() { return NULL; }
-  virtual const FavouritesWindowNode* AsWindowNode() const { return NULL; }
+  virtual FavouritesWindowNode* AsWindowNode() { return nullptr; }
+  virtual const FavouritesWindowNode* AsWindowNode() const { return nullptr; }
+
+  virtual FavouritesFolderNode* AsFolderNode() { return nullptr; }
+  virtual const FavouritesFolderNode* AsFolderNode() const { return nullptr; }
 
  protected:
   Favourites& favourites_;
@@ -35,6 +38,8 @@ class FavouritesFolderNode : public FavouritesNode {
  public:
   FavouritesFolderNode(Favourites& favourites, const Page& folder);
 
+  const Page& folder() const { return folder_; }
+
   int FindWindowNode(const WindowDefinition& window) const;
 
   // FavouritesNode
@@ -45,6 +50,10 @@ class FavouritesFolderNode : public FavouritesNode {
   virtual void SetText(int column_id, const base::string16& title) override;
   virtual bool IsEditable(int column_id) const override { return true; }
   virtual void Delete() override;
+  virtual FavouritesFolderNode* AsFolderNode() override { return this; }
+  virtual const FavouritesFolderNode* AsFolderNode() const override {
+    return this;
+  }
 
   const Page& folder_;
 };

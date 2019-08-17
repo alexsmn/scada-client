@@ -140,6 +140,9 @@ void AddGlobalActions(ActionManager& action_manager,
                                        IDB_ACKNOWLEDGE_ALL));
   action_manager.AddAction(*new Action(ID_SEVERITY_CUSTOM, CATEGORY_VIEW,
                                        L"Важность...", L"Важность"));
+  action_manager.AddAction(*new Action(ID_FAVOURITES_ADD_URL, CATEGORY_EDIT,
+                                       L"Добавить Web-страницу...",
+                                       L"Добавить Web-страницу"));
   action_manager.AddAction(
       *new Action(ID_MODUS_TOOLBAR, CATEGORY_VIEW, L"Панель инструментов"));
   action_manager.AddAction(

@@ -1,9 +1,16 @@
 ﻿#include "components/favourites/favourites_view.h"
 
+#include "client_utils.h"
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
+#include "components/prompt/prompt_dialog.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
+#include "services/dialog_service.h"
+
+namespace {
+const base::char16 kAddUrl[] = L"Добавить Web-страницу";
+}
 
 const WindowInfo kWindowInfo = {ID_FAVOURITES_VIEW, "Favorites", L"Избранное",
                                 WIN_SING,           200,         400};
@@ -48,6 +55,8 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   delete_command_.enabled_handler = selection_enabled_handler;
   delete_command_.execute_handler = [this] { DeleteSelection(); };
 
+  add_url_command_.execute_handler = [this] { AddUrl(); };
+
   return tree_view_.get();
 }
 
@@ -57,14 +66,14 @@ void FavouritesView::Save(WindowDefinition& definition) {
 
 void FavouritesView::DeleteSelection() {
   FavouritesNode* node =
-      reinterpret_cast<FavouritesNode*>(tree_view_->GetSelectedNode());
+      static_cast<FavouritesNode*>(tree_view_->GetSelectedNode());
   if (node)
     node->Delete();
 }
 
 void FavouritesView::OpenSelection() {
   const FavouritesNode* node =
-      reinterpret_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+      static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
   const FavouritesWindowNode* window_node = node ? node->AsWindowNode() : NULL;
   if (window_node)
     controller_delegate_.OpenView(window_node->window());
@@ -72,4 +81,31 @@ void FavouritesView::OpenSelection() {
 
 CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
   return command_handler_.GetCommandHandler(command_id);
+}
+
+void FavouritesView::AddUrl() {
+  base::string16 url;
+  if (!RunPromptDialog(dialog_service_, L"URL-адрес:", kAddUrl, url))
+    return;
+
+  if (!IsWebUrl(url)) {
+    dialog_service_.RunMessageBox(
+        L"Допустимый URL-адрес должен начинаться с \"http://\" или "
+        L"\"https://\".",
+        kAddUrl, MessageBoxMode::Error);
+    return;
+  }
+
+  const FavouritesNode* node =
+      static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+  if (!node->AsFolderNode())
+    node = node->parent();
+
+  const Page& folder = node && node->AsFolderNode()
+                           ? node->AsFolderNode()->folder()
+                           : favourites_.GetOrAddFolder();
+
+  WindowDefinition win{GetWindowInfo(ID_WEB_VIEW)};
+  win.path = base::FilePath{url};
+  favourites_.Add(win, folder);
 }

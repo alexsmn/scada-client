@@ -765,6 +765,8 @@ BEGIN
     BEGIN
         MENUITEM "Открыть",                     ID_OPEN
         MENUITEM SEPARATOR
+        MENUITEM "Добавить Web-страницу...",    ID_FAVOURITES_ADD_URL
+        MENUITEM SEPARATOR
         MENUITEM "Переименовать",               ID_RENAME
         MENUITEM "Удалить",                     ID_DELETE
     END

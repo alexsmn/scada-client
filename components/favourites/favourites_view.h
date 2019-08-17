@@ -24,6 +24,8 @@ class FavouritesView : public Controller {
   void OpenSelection();
   void DeleteSelection();
 
+  void AddUrl();
+
   std::unique_ptr<FavouritesTreeModel> favourites_tree_model_;
   std::unique_ptr<Tree> tree_view_;
 
@@ -31,4 +33,6 @@ class FavouritesView : public Controller {
   Command& open_command_ = command_handler_.AddCommand(ID_OPEN);
   Command& rename_command_ = command_handler_.AddCommand(ID_RENAME);
   Command& delete_command_ = command_handler_.AddCommand(ID_DELETE);
+  Command& add_url_command_ =
+      command_handler_.AddCommand(ID_FAVOURITES_ADD_URL);
 };
