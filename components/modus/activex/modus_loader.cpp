@@ -151,6 +151,18 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
   } else {
     prop_name = binding.substr(0, p);
     formula = base::SysWideToNativeMB(binding.substr(p + 1));
+
+    // WORKAROUND: Use object params to access to enumerable types.
+    if (tech_index == 0) {
+      SDEParams object_params;
+      sde_object.get_Params(object_params.ReleaseAndGetAddressOf());
+      if (object_params) {
+        LOG_WARNING(logger_) << "Substitute tech params by object params"
+                             << LOG_TAG("ShortPath", GetShortPath(sde_object))
+                             << LOG_TAG("Tag", object_tag);
+        params = std::move(object_params);
+      }
+    }
   }
 
   if (document_) {

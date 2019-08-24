@@ -39,6 +39,9 @@ Tree::Tree(ui::TreeModel& model)
   setHeaderHidden(true);
   setItemDelegate(&item_delegate_);
 
+  // Prevent from editing when double-clicked.
+  setEditTriggers(QTreeView::EditTrigger::SelectedClicked);
+
   proxy_model_.setDynamicSortFilter(true);
   proxy_model_.setSourceModel(&model_adapter_);
   setModel(&proxy_model_);

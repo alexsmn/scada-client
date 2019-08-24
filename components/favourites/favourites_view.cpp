@@ -98,7 +98,7 @@ void FavouritesView::AddUrl() {
 
   const FavouritesNode* node =
       static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
-  if (!node->AsFolderNode())
+  if (node && !node->AsFolderNode())
     node = node->parent();
 
   const Page& folder = node && node->AsFolderNode()
