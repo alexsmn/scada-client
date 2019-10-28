@@ -69,6 +69,10 @@ STDMETHODIMP_(void)
 ModusDocument::OnDocPopup(ISDEDocument50* doc, VARIANT_BOOL* popup) {
   assert(doc);
   assert(popup);
+
+  // WARNING: We can't use this event to show context menu, as it happens before
+  // OnDocClick() where we update selection.
+
   *popup = FALSE;
 }
 
@@ -110,11 +114,20 @@ ModusDocument::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
 
 STDMETHODIMP_(void)
 ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
-  assert(doc);
-  assert(info);
+  // WARNING: |info->get_Button()| doesn't always give the right button.
 
-  long button = 0;
-  info->get_Button(&button);
+  HandleClick(MouseButton::Left, info);
+}
+
+STDMETHODIMP_(void)
+ModusDocument::OnDocRightClick(ISDEDocument50* doc,
+                               SDECore::IUIEventInfo* info) {
+  HandleClick(MouseButton::Right, info);
+}
+
+void ModusDocument::HandleClick(MouseButton button,
+                                SDECore::IUIEventInfo* info) {
+  assert(info);
 
   modus::ModusObject* object = NULL;
 
@@ -142,7 +155,7 @@ ModusDocument::OnDocClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
 
   selection_callback_(element->timed_data());
 
-  if (button == SDECore::mbRight) {
+  if (button == MouseButton::Right) {
     POINT pt;
     GetCursorPos(&pt);
     context_menu_callback_(ToUiPoint(pt));

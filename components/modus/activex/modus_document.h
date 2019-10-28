@@ -28,8 +28,7 @@ struct ModusDocumentContext {
 
   const std::function<void(const base::string16& title)> title_callback_;
   const std::function<void(base::StringPiece16 hyperlink)> navigation_callback_;
-  const std::function<void(const TimedDataSpec& selection)>
-      selection_callback_;
+  const std::function<void(const TimedDataSpec& selection)> selection_callback_;
   const ContextMenuHandler context_menu_callback_;
 };
 
@@ -68,16 +67,22 @@ class ModusDocument
   SINK_ENTRY_EX(1,
                 __uuidof(htsde2::IHTSDEForm2Events),
                 0x00000019,
-                OnDocClick)  // right-click
+                OnDocRightClick)  // right-click
   END_SINK_MAP()
 
   STDMETHOD_(void, OnDocPopup)(ISDEDocument50* doc, VARIANT_BOOL* popup);
   STDMETHOD_(void, OnDocClick)
   (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
+  STDMETHOD_(void, OnDocRightClick)
+  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
   STDMETHOD_(void, OnDocDblClick)
   (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
 
  protected:
+  enum class MouseButton { Left, Right };
+
+  void HandleClick(MouseButton button, SDECore::IUIEventInfo* info);
+
   Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form_;
   Microsoft::WRL::ComPtr<SDECore::ISDEDocument50> sde_document_;
 

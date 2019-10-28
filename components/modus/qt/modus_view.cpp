@@ -33,6 +33,8 @@ void ModusView::Open(const base::FilePath& path) {
 
   connect(ax_widget_, SIGNAL(OnDocClick(IDispatch*, IDispatch*)), this,
           SLOT(OnDocClick(IDispatch*, IDispatch*)));
+  connect(ax_widget_, SIGNAL(OnDocRightClick(IDispatch*, IDispatch*)), this,
+          SLOT(OnDocRightClick(IDispatch*, IDispatch*)));
   connect(ax_widget_, SIGNAL(OnDocDblClick(IDispatch*, IDispatch*)), this,
           SLOT(OnDocDblClick(IDispatch*, IDispatch*)));
   connect(ax_widget_, SIGNAL(OnDocPopup(IDispatch*, bool&)), this,
@@ -59,6 +61,14 @@ void ModusView::OnDocClick(IDispatch* disp_doc, IDispatch* disp_info) {
 
   if (document_)
     document_->OnDocClick(doc.p, info.p);
+}
+
+void ModusView::OnDocRightClick(IDispatch* disp_doc, IDispatch* disp_info) {
+  CComQIPtr<SDECore::ISDEDocument50> doc(disp_doc);
+  CComQIPtr<SDECore::IUIEventInfo> info(disp_info);
+
+  if (document_)
+    document_->OnDocRightClick(doc.p, info.p);
 }
 
 void ModusView::OnDocDblClick(IDispatch* disp_doc, IDispatch* disp_info) {

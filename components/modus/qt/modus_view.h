@@ -30,6 +30,7 @@ class ModusView : public QWidget,
 
  protected slots:
   void OnDocClick(IDispatch*, IDispatch*);
+  void OnDocRightClick(IDispatch*, IDispatch*);
   void OnDocDblClick(IDispatch*, IDispatch*);
   void OnDocPopup(IDispatch*, bool&);
 
