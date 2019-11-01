@@ -9,6 +9,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
+#include "services/page_layout.h"
 #include "value_util.h"
 #include "window_definition_util.h"
 #include "window_info.h"
@@ -16,8 +17,8 @@
 #define MAX_TITLE 30
 
 namespace {
-
-static const base::char16 kPageFileExtension[] = L"page";
+  
+const base::char16 kPageFileExtension[] = L"page";
 
 void LoadWinItems(WindowItems& items, const base::Value& data) {
   if (!data.is_list())
@@ -42,66 +43,6 @@ base::Value SaveWinItems(const WindowItems& items) {
     list.emplace_back(std::move(item_data));
   }
   return base::Value{std::move(list)};
-}
-
-void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
-  assert(block.type == PageLayoutBlock::PANE);
-  assert(block.wins.empty());
-  assert(!block.left && !block.right);
-
-  auto type = GetString(value, "type");
-  if (base::EqualsCaseInsensitiveASCII(type, "split")) {
-    auto orientation = GetString(value, "orientation");
-    bool horz = base::EqualsCaseInsensitiveASCII(orientation, "horizontal");
-    block.split(horz);
-    block.pos = GetInt(value, "pos", -1);
-    if (auto* pane = GetDict(value, "first"))
-      LoadLayoutBlock(*block.left, *pane);
-    if (auto* pane = GetDict(value, "second"))
-      LoadLayoutBlock(*block.right, *pane);
-
-  } else if (base::EqualsCaseInsensitiveASCII(type, "pane")) {
-    assert(block.type == PageLayoutBlock::PANE);
-    if (auto* windows = GetList(value, "windows")) {
-      for (auto& window : *windows) {
-        if (window.is_int())
-          block.wins.push_back(window.GetInt());
-      }
-    }
-    block.active_window = GetInt(value, "active", -1);
-  }
-
-  block.central = GetBool(value, "central");
-}
-
-const char* dock_names[4] = {"bottom", "top", "left", "right"};
-
-base::Value SaveLayoutBlock(const PageLayoutBlock& block) {
-  base::Value result{base::Value::Type::DICTIONARY};
-  SetKey(result, "type",
-         block.type == PageLayoutBlock::PANE ? "pane" : "split");
-
-  if (block.type == PageLayoutBlock::SPLIT) {
-    SetKey(result, "orientation", block.horz ? L"horizontal" : L"vertical");
-    SetKey(result, "pos", block.pos);
-    result.SetKey("first", SaveLayoutBlock(*block.left));
-    result.SetKey("second", SaveLayoutBlock(*block.right));
-
-  } else {
-    base::Value::ListStorage list;
-    list.reserve(block.wins.size());
-    for (auto window_id : block.wins)
-      list.emplace_back(base::Value{window_id});
-    result.SetKey("windows", base::Value{std::move(list)});
-
-    if (block.active_window != -1)
-      SetKey(result, "active", block.active_window);
-  }
-
-  if (block.central)
-    SetKey(result, "central", true);
-
-  return result;
 }
 
 }  // namespace
@@ -187,21 +128,8 @@ void Page::Load(const base::Value& data) {
 
   // layout
   if (const auto* layoute = GetDict(data, "layout")) {
-    if (const auto* maine = GetDict(*layoute, "center"))
-      LoadLayoutBlock(layout.main, *maine);
-
-    for (int i = 0; i < 4; i++) {
-      const auto* docke = GetDict(*layoute, dock_names[i]);
-      if (!docke)
-        continue;
-
-      auto& dock = layout.dock[i];
-      dock.size = GetInt(*docke, "size", 0);
-      dock.place = GetInt(*docke, "place", 0);
-      LoadLayoutBlock(dock, *docke);
-    }
-
-    layout.blob = RestoreBlob(GetString(*layoute, "blob"));
+    if (auto l = FromJson<PageLayout>(*layoute))
+      layout = std::move(*l);
   }
 }
 
@@ -243,21 +171,7 @@ base::Value Page::Save(bool current) const {
   result.SetKey("windows", base::Value{std::move(windows)});
 
   // layout
-  base::Value layout_data{base::Value::Type::DICTIONARY};
-  if (!layout.main.empty())
-    layout_data.SetKey("center", SaveLayoutBlock(layout.main));
-  for (int i = 0; i < 4; i++) {
-    auto& dock = layout.dock[i];
-    if (dock.empty())
-      continue;
-    auto dock_data = SaveLayoutBlock(dock);
-    SetKey(dock_data, "size", dock.size);
-    SetKey(dock_data, "place", dock.place);
-    layout_data.SetKey(dock_names[i], std::move(dock_data));
-  }
-  if (!layout.blob.empty())
-    SetKey(layout_data, "blob", SaveBlob(layout.blob));
-  result.SetKey("layout", std::move(layout_data));
+  result.SetKey("layout", ToJson(layout));
 
   return result;
 }

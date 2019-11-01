@@ -88,6 +88,12 @@ inline void SetKey(base::Value& dict,
 
 inline void SetKey(base::Value& dict,
                    base::StringPiece key,
+                   const base::char16* value) {
+  dict.SetKey(key, base::Value{value});
+}
+
+inline void SetKey(base::Value& dict,
+                   base::StringPiece key,
                    base::StringPiece value) {
   dict.SetKey(key, base::Value{value});
 }
@@ -95,7 +101,7 @@ inline void SetKey(base::Value& dict,
 inline void SetKey(base::Value& dict,
                    base::StringPiece key,
                    base::StringPiece16 value) {
-  dict.SetKey(key, base::Value{base::UTF16ToUTF8(value)});
+  dict.SetKey(key, base::Value{value});
 }
 
 inline void SetKey(base::Value& dict,

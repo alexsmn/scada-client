@@ -1,5 +1,7 @@
 #pragma once
 
+#include "value_util.h"
+
 #include <cassert>
 #include <vector>
 
@@ -88,6 +90,28 @@ class PageLayoutBlock {
            (right && right->IsCentral());
   }
 
+  bool operator==(const PageLayoutBlock& other) const {
+    if (type != other.type)
+      return false;
+    if (central != other.central)
+      return false;
+
+    if (type == PANE) {
+      if (wins != other.wins)
+        return false;
+      if (active_window != other.active_window)
+        return false;
+      return true;
+
+    } else {
+      if (horz != other.horz)
+        return false;
+      if (pos != other.pos)
+        return false;
+      return *left == *other.left && *right == *other.right;
+    }
+  }
+
   Type type = PANE;
   bool horz = false;
   std::unique_ptr<PageLayoutBlock> left;
@@ -118,4 +142,11 @@ class PageLayout {
     for (int i = 0; i < 4; i++)
       dock[i] = Dock();
   }
+
+  bool operator==(const PageLayout&) const = default;
 };
+
+base::Value ToJson(const PageLayout& layout);
+
+template <>
+std::optional<PageLayout> FromJson(const base::Value& json);
