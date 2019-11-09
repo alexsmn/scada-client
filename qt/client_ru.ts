@@ -294,6 +294,11 @@
         <source>Server:</source>
         <translation>Сервер:</translation>
     </message>
+    <message>
+        <location filename="../components/login/qt/login_dialog.cpp" line="67"/>
+        <source>You can remove the highlighted user from list by pressing Delete.</source>
+        <translation>Отмеченного пользователя можно удалить из списка нажатием Delete.</translation>
+    </message>
 </context>
 <context>
     <name>MainWindowQt</name>

@@ -10,8 +10,10 @@
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qpushbutton.h>
+#include <QAbstractItemView>
 #include <QApplication>
 #include <QCheckBox>
+#include <QKeyEvent>
 #include <QSettings>
 
 namespace {
@@ -61,6 +63,11 @@ LoginDialog::LoginDialog(DataServicesContext&& services_context)
 
   ui.autoLoginCheckBox->setChecked(controller_.auto_login);
 
+  ui.userNameComboBox->view()->setToolTip(
+      tr("You can remove the highlighted user from list by pressing Delete."));
+
+  QApplication::instance()->installEventFilter(this);
+
   if (controller_.auto_login) {
     ui.passwordLineEdit->setText(QString::fromStdWString(controller_.password));
     accept();
@@ -90,6 +97,25 @@ void LoginDialog::EnableControls(bool enable) {
   ui.passwordLineEdit->setEnabled(enable);
   ui.autoLoginCheckBox->setEnabled(enable);
   ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(enable);
+}
+
+bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
+  if (object == ui.userNameComboBox->view()) {
+    if (event->type() == QEvent::KeyPress) {
+      QKeyEvent* key_event = static_cast<QKeyEvent*>(event);
+      if (key_event->key() == Qt::Key_Delete) {
+        int index = ui.userNameComboBox->view()->currentIndex().row();
+        if (index != -1) {
+          controller_.DeleteUserName(
+              ui.userNameComboBox->itemText(index).toStdWString());
+          ui.userNameComboBox->removeItem(index);
+        }
+        return true;
+      }
+    }
+  }
+
+  return QDialog::eventFilter(object, event);
 }
 
 bool ExecuteLoginDialog(DataServicesContext&& services_context,

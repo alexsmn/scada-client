@@ -25,6 +25,9 @@ class LoginDialog : public QDialog {
  public Q_SLOTS:
   virtual void accept() override;
 
+ protected:
+  virtual bool eventFilter(QObject* object, QEvent* event) override;
+
  private:
   void EnableControls(bool enable);
 

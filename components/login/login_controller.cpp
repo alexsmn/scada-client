@@ -87,20 +87,13 @@ void LoginController::OnLoginResult(const scada::Status& status) {
 }
 
 void LoginController::OnLoginCompleted() {
-  // save last users
   auto i = std::find(user_list.begin(), user_list.end(), user_name);
   if (i == user_list.end())
     user_list.emplace_back(user_name);
-  if (user_list.size() > 10) {
-    user_list.erase(user_list.begin(),
-                    user_list.begin() + user_list.size() - 10);
-  }
-
-  base::string16 user_list_string = base::JoinString(user_list, L",");
 
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
   reg.SetString(L"User", ToString16(user_name).c_str());
-  reg.SetString(L"UserList", user_list_string.c_str());
+  reg.SetString(L"UserList", GetUserListString().c_str());
   reg.SetString(L"Host", base::SysNativeMBToWide(server_host).c_str());
   reg.SetString(L"ServerType", base::SysNativeMBToWide(server_type_).c_str());
   reg.SetDWORD(L"AutoLogin", auto_login);
@@ -146,7 +139,26 @@ void LoginController::Connect(bool allow_remote_logoff) {
   }
 
   services_.session_service_->Connect(
-      server_host, scada::ToLocalizedText(user_name), scada::ToLocalizedText(password),
-      allow_remote_logoff,
+      server_host, scada::ToLocalizedText(user_name),
+      scada::ToLocalizedText(password), allow_remote_logoff,
       [this](const scada::Status& status) { OnLoginResult(status); });
+}
+
+void LoginController::DeleteUserName(base::StringPiece16 user_name) {
+  auto i = std::find(user_list.begin(), user_list.end(), user_name);
+  if (i == user_list.end())
+    return;
+
+  user_list.erase(i);
+
+  Registry reg(HKEY_CURRENT_USER, kRegistryKey);
+  reg.SetString(L"UserList", GetUserListString().c_str());
+}
+
+base::string16 LoginController::GetUserListString() const {
+  constexpr size_t kMaxCount = 10;
+  const size_t count = std::min(kMaxCount, user_list.size());
+  const std::vector<base::string16> truncated_user_list(
+      user_list.begin(), user_list.begin() + count);
+  return base::JoinString(truncated_user_list, L",");
 }
