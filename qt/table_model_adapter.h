@@ -37,6 +37,8 @@ class TableModelAdapter : public QAbstractTableModel,
                               Qt::Orientation orientation,
                               int role = Qt::DisplayRole) const override;
   virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
+  virtual void sort(int column,
+                    Qt::SortOrder order = Qt::AscendingOrder) override;
 
   // ui::TableModelObserver
   virtual void OnModelChanged() override;

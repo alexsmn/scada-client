@@ -1,9 +1,11 @@
 #pragma once
 
 #include "command_handler.h"
+#include "components/timed_data/timed_data_model.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "export_model.h"
+#include "ui/base/models/mirror_table_model.h"
 
 #include <memory>
 
@@ -39,7 +41,8 @@ class TimedDataView : public Controller,
   base::string16 MakeTitle() const;
   void UpdateColumnTitles();
 
-  std::unique_ptr<TimedDataModel> model_;
+  TimedDataModel model_{TimedDataModelContext{timed_data_service_}};
+  ui::MirrorTableModel mirror_model_{model_};
 
   std::unique_ptr<Table> view_;
 };

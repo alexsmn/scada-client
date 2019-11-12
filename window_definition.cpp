@@ -20,6 +20,10 @@ bool WindowItem::name_is(base::StringPiece n) const {
   return base::EqualsCaseInsensitiveASCII(name, n);
 }
 
+bool WindowItem::GetBool(base::StringPiece attr, bool default) const {
+  return ::GetBool(attributes, attr, default);
+}
+
 int WindowItem::GetInt(base::StringPiece attr, int default) const {
   return ::GetInt(attributes, attr, default);
 }
@@ -32,6 +36,10 @@ base::StringPiece WindowItem::GetString(base::StringPiece attr,
 base::string16 WindowItem::GetString16(base::StringPiece attr,
                                        base::StringPiece16 default) const {
   return ::GetString16(attributes, attr, default);
+}
+
+void WindowItem::SetBool(base::StringPiece attr, bool value) {
+  SetKey(attributes, attr, value);
 }
 
 void WindowItem::SetInt(base::StringPiece attr, int value) {

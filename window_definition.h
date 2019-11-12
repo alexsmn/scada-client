@@ -23,12 +23,14 @@ class WindowItem {
 
   bool name_is(base::StringPiece n) const;
 
+  bool GetBool(base::StringPiece attr, bool default = false) const;
   int GetInt(base::StringPiece attr, int default = 0) const;
   base::StringPiece GetString(base::StringPiece attr,
                               base::StringPiece default = {}) const;
   base::string16 GetString16(base::StringPiece attr,
                              base::StringPiece16 default = {}) const;
 
+  void SetBool(base::StringPiece attr, bool value);
   void SetInt(base::StringPiece attr, int value);
   void SetString(base::StringPiece attr, base::StringPiece value);
   void SetString(base::StringPiece attr, base::StringPiece16 value);

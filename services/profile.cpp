@@ -276,6 +276,9 @@ void Profile::Load(const base::Value& data,
         NodeIdFromScadaString(GetString(*node, "sort-property-id"));
   }
 
+  if (auto* node = GetDict(data, "timedData"))
+    timed_data.mirrored = GetBool(*node, "mirrored");
+
   if (auto* node = GetDict(data, "csv")) {
     if (auto params = FromJson<CsvExportParams>(*node))
       csv_export_params = std::move(*params);
@@ -384,6 +387,7 @@ base::Value Profile::SaveToValue(const EventManager& event_manager,
     data.SetKey("timeRangeDialog", std::move(node));
   }
 
+  // NodeTable
   {
     base::Value node{base::Value::Type::DICTIONARY};
     if (!node_table.default_sort_property_id.is_null()) {
@@ -391,6 +395,13 @@ base::Value Profile::SaveToValue(const EventManager& event_manager,
              NodeIdToScadaString(node_table.default_sort_property_id));
     }
     data.SetKey("nodeTable", std::move(node));
+  }
+
+  // TimedData
+  {
+    base::Value node{base::Value::Type::DICTIONARY};
+    SetKey(node, "mirrored", timed_data.mirrored);
+    data.SetKey("timedData", std::move(node));
   }
 
   data.SetKey("csv", ToJson(csv_export_params));

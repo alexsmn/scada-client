@@ -102,6 +102,10 @@ Qt::ItemFlags TableModelAdapter::flags(const QModelIndex& index) const {
   return flags;
 }
 
+void TableModelAdapter::sort(int column, Qt::SortOrder order) {
+  model_.Sort(columns_[column].id, order == Qt::AscendingOrder);
+}
+
 void TableModelAdapter::OnModelChanged() {
   resetInternalData();
   layoutChanged();

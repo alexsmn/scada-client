@@ -21,6 +21,8 @@ class Table : public views::TableView,
     Select(row, make_visible);
   }
 
+  void SetSortingEnabled(bool enabled) {}
+
   void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
   void SetContextMenuHandler(ContextMenuHandler handler);

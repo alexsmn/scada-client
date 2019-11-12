@@ -101,6 +101,12 @@ class Profile {
 
   NodeTableController node_table;
 
+  struct TimedData {
+    bool mirrored = false;
+  };
+
+  TimedData timed_data;
+
   CsvExportParams csv_export_params;
   std::filesystem::path csv_export_dir;
 
