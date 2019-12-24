@@ -5,7 +5,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "components/transport/transport_dialog.h"

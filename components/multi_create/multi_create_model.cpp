@@ -2,7 +2,7 @@
 
 #include "base/strings/stringprintf.h"
 #include "common/formula_util.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"

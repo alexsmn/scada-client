@@ -3,7 +3,7 @@
 #include "base/files/file_path.h"
 #include "base/strings/string16.h"
 #include "common/aliases.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "file_cache.h"
 
 #include <memory>

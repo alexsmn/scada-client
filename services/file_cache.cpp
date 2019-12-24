@@ -11,7 +11,7 @@
 #include "base/values.h"
 #include "client_paths.h"
 #include "client_utils.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "value_util.h"
 
 #include <optional>

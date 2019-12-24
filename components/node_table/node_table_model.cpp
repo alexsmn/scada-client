@@ -6,7 +6,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/utils.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"

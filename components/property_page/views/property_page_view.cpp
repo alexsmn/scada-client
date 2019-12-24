@@ -1,7 +1,7 @@
 ﻿#include "components/property_page/views/property_page_view.h"
 
 #include "client_utils.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"

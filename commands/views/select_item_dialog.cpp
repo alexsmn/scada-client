@@ -1,6 +1,6 @@
 #include "commands/select_item_dialog.h"
 
-#include "common/namespaces.h"
+#include "model/namespaces.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"

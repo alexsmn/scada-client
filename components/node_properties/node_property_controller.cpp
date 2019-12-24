@@ -1,6 +1,6 @@
 ﻿#include "components/node_properties/node_property_controller.h"
 
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/scada_node_ids.h"
 #include "components/node_properties/node_property_model.h"

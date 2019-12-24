@@ -4,7 +4,7 @@
 #include "base/strings/string_util.h"
 #include "client_utils.h"
 #include "common/event_manager.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common_resources.h"
 #include "components/events/event_table_model.h"

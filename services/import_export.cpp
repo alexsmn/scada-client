@@ -6,7 +6,7 @@
 #include "base/table_reader.h"
 #include "base/table_writer.h"
 #include "common/format.h"
-#include "common/node_id_util.h"
+#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common/scada_node_ids.h"
