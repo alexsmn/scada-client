@@ -2,7 +2,7 @@
 
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "controller.h"
 
 SelectionModel::SelectionModel(SelectionModelContext&& context)

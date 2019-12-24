@@ -11,7 +11,7 @@
 #include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "components/transport/transport_dialog.h"
 #include "core/node_management_service.h"
 #include "net/transport_string.h"

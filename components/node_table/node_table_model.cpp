@@ -9,7 +9,7 @@
 #include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"

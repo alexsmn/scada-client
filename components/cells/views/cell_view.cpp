@@ -3,7 +3,7 @@
 #include "base/format_time.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "controller_factory.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"

@@ -1,6 +1,6 @@
 #include "components/main/opened_view.h"
 
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/views/main_window_views.h"
 #include "contents_model.h"

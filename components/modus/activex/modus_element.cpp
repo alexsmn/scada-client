@@ -4,7 +4,7 @@
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
 #include "common/event_manager.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "components/modus/activex/modus_object.h"
 
 namespace modus {

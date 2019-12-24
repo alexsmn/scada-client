@@ -7,7 +7,7 @@
 #include "client_utils.h"
 #include "common/event_manager.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
 #include "services/dialog_service.h"

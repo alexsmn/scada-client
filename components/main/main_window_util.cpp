@@ -3,7 +3,7 @@
 #include "client_utils.h"
 #include "common/node_ref.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"

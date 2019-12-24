@@ -10,7 +10,7 @@
 #include "common/node_service.h"
 #include "common/node_state.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "contents_model.h"
 #include "node_serialization.h"

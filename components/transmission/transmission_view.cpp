@@ -2,7 +2,7 @@
 
 #include "model/node_id_util.h"
 #include "common/node_service.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "controller_factory.h"

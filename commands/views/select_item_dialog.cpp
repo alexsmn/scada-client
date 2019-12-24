@@ -3,7 +3,7 @@
 #include "model/namespaces.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "services/dialog_service.h"
 #include "views/client_utils_views.h"

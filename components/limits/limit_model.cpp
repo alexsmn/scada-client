@@ -3,7 +3,7 @@
 #include "base/format.h"
 #include "common/format.h"
 #include "common/node_format.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "services/task_manager.h"
 
 LimitModel::LimitModel(LimitDialogContext&& context)

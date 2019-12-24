@@ -5,7 +5,7 @@
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"

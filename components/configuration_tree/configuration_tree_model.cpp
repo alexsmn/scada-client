@@ -4,7 +4,7 @@
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "core/node_management_service.h"
 #include "services/task_manager.h"
 

@@ -4,7 +4,7 @@
 #include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "components/property_page/views/record_editors.h"
 #include "controller_factory.h"
 #include "ui/views/layout/fill_layout.h"

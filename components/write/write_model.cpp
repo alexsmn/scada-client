@@ -5,7 +5,7 @@
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "core/status.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"

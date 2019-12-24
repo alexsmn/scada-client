@@ -3,7 +3,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "common/node_observer.h"
 #include "common/node_service.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/action.h"
 #include "components/main/action_manager.h"

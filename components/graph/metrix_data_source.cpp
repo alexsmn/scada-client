@@ -2,7 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_types.h"

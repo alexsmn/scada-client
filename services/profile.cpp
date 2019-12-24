@@ -9,7 +9,7 @@
 #include "client_paths.h"
 #include "common/event_manager.h"
 #include "model/node_id_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "services/favourites.h"
 #include "services/portfolio.h"

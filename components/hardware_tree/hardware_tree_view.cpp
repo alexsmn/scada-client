@@ -1,6 +1,6 @@
 ﻿#include "components/configuration_tree/configuration_tree_view.h"
 
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/hardware_tree/hardware_tree_model.h"
 #include "controller_factory.h"

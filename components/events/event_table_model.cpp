@@ -10,7 +10,7 @@
 #include "common/node_format.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "core/data_value.h"
 #include "ui/base/models/grid_range.h"

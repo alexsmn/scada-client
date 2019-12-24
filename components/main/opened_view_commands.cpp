@@ -6,7 +6,7 @@
 #include "client_utils.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "common/static_types.h"
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_dialog.h"

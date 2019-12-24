@@ -2,7 +2,7 @@
 
 #include "client_utils.h"
 #include "common/node_service.h"
-#include "common/scada_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "components/object_tree/object_tree_model.h"
 #include "contents_model.h"
 #include "controller_factory.h"
