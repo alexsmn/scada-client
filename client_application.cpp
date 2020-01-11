@@ -123,8 +123,10 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
     }
 
     {
-      auto path = log_path.Append(FILE_PATH_LITERAL("components.log"));
-      InitBoostLogging(path.value(), true);
+      BoostLogParams params;
+      params.path =
+          log_path.Append(FILE_PATH_LITERAL("components.log")).value();
+      InitBoostLogging(params);
     }
   }
 
