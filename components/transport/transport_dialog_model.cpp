@@ -1,6 +1,7 @@
 ﻿#include "transport_dialog_model.h"
 
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/transport_string.h"
@@ -18,17 +19,17 @@ enum ConnectionType {
   CONNECTION_TYPE_COUNT
 };
 
-static const base::char16* kConnectionTypeStrings[] = {
+static const std::wstring_view kConnectionTypeStrings[] = {
     L"TCP-клиент", L"TCP-сервер", L"UDP-клиент", L"UDP-сервер", L"COM-порт"};
 
 static const unsigned kBaudRates[] = {
     75,   110,  134,  150,   300,   600,   1200,  1800,   2400,
     4800, 7200, 9600, 14400, 19200, 38400, 57600, 115200, 128000};
-static const char* kStopBitsStrings[] = {"1", "1.5", "2"};
+static const std::string_view kStopBitsStrings[] = {"1", "1.5", "2"};
 static const int kBitCountFirst = 4;
 static const int kBitCountLast = 8;
 
-typedef std::pair<const base::char16*, const char*> StringPair;
+typedef std::pair<std::wstring_view, std::string_view> StringPair;
 
 static const StringPair kParityStrings[] = {
     StringPair(L"Нет", "No"), StringPair(L"Чет", "Even"),
@@ -36,14 +37,26 @@ static const StringPair kParityStrings[] = {
     StringPair(L"Пробел", "Space")};
 
 static const StringPair kFlowControlStrings[] = {
-    StringPair(L"Нет", "No"), StringPair(L"XON/XOFF", "XON/XOFF"),
-    StringPair(L"Аппаратное", "Hardware")};
+    StringPair(L"Нет", net::TransportString::kFlowControlNone),
+    StringPair(L"XON/XOFF", net::TransportString::kFlowControlSoftware),
+    StringPair(L"Аппаратное", net::TransportString::kFlowControlHardware)};
 
 static const base::char16 kDefaultString[] = L"<Текущее>";
 
-static int FindString(const char* strs[], int count, const char* value) {
+inline constexpr base::StringPiece AsStringPiece(std::string_view str) {
+  return {str.data(), str.size()};
+}
+
+inline constexpr base::StringPiece16 AsStringPiece(std::wstring_view str) {
+  return {str.data(), str.size()};
+}
+
+static int FindString(const std::string_view strs[],
+                      int count,
+                      std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (_stricmp(strs[i], value) == 0)
+    if (base::CompareCaseInsensitiveASCII(AsStringPiece(strs[i]),
+                                          AsStringPiece(value)) == 0)
       return i;
   }
   return -1;
@@ -51,9 +64,10 @@ static int FindString(const char* strs[], int count, const char* value) {
 
 static int FindStringPair(const StringPair pairs[],
                           int count,
-                          const char* value) {
+                          std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (_stricmp(pairs[i].second, value) == 0)
+    if (base::CompareCaseInsensitiveASCII(AsStringPiece(pairs[i].second),
+                                          AsStringPiece(value)) == 0)
       return i;
   }
   return -1;
@@ -66,7 +80,7 @@ TransportDialogModel::TransportDialogModel(
     : transport_string_{transport_string} {
   static_assert(_countof(kConnectionTypeStrings) == CONNECTION_TYPE_COUNT,
                 "NotEnoughConnectionTypeStrings");
-  for (auto* str : kConnectionTypeStrings)
+  for (const auto& str : kConnectionTypeStrings)
     type_items.emplace_back(str);
 
   net::TransportString::Protocol protocol = transport_string_.GetProtocol();
@@ -108,21 +122,23 @@ TransportDialogModel::TransportDialogModel(
     parity_items.emplace_back(kParityStrings[i].first);
 
   stop_bits_items.emplace_back(kDefaultString);
-  for (int i = 0; i < std::size(kStopBitsStrings); ++i)
-    stop_bits_items.emplace_back(base::SysNativeMBToWide(kStopBitsStrings[i]));
+  for (int i = 0; i < std::size(kStopBitsStrings); ++i) {
+    stop_bits_items.emplace_back(
+        base::SysNativeMBToWide(AsStringPiece(kStopBitsStrings[i])));
+  }
 
   flow_control_items.emplace_back(kDefaultString);
   for (int i = 0; i < std::size(kFlowControlStrings); ++i)
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
-    network_host = base::SysNativeMBToWide(
-        transport_string_.GetParamStr(net::TransportString::kParamHost));
+    network_host = base::SysNativeMBToWide(AsStringPiece(
+        transport_string_.GetParamStr(net::TransportString::kParamHost)));
     network_port =
         transport_string_.GetParamInt(net::TransportString::kParamPort);
 
   } else {
-    std::string name =
+    const auto name =
         transport_string_.GetParamStr(net::TransportString::kParamName);
     int port_no = net::TransportString::ParseSerialPortNumber(name);
     serial_port_index = std::max(0, port_no - 1);
@@ -149,27 +165,26 @@ TransportDialogModel::TransportDialogModel(
     }
 
     {
-      std::string parity =
+      const auto parity =
           transport_string_.GetParamStr(net::TransportString::kParamParity);
-      int index = FindStringPair(kParityStrings, std::size(kParityStrings),
-                                 parity.c_str());
+      int index =
+          FindStringPair(kParityStrings, std::size(kParityStrings), parity);
       parity_index = index + 1;
     }
 
     {
-      std::string stopbits =
+      const auto stopbits =
           transport_string_.GetParamStr(net::TransportString::kParamStopBits);
-      int index = FindString(kStopBitsStrings, std::size(kStopBitsStrings),
-                             stopbits.c_str());
+      int index =
+          FindString(kStopBitsStrings, std::size(kStopBitsStrings), stopbits);
       stop_bits_index = index + 1;
     }
 
     {
-      std::string flowcontrol = transport_string_.GetParamStr(
+      const auto flowcontrol = transport_string_.GetParamStr(
           net::TransportString::kParamFlowControl);
-      int index =
-          FindStringPair(kFlowControlStrings, std::size(kFlowControlStrings),
-                         flowcontrol.c_str());
+      int index = FindStringPair(kFlowControlStrings,
+                                 std::size(kFlowControlStrings), flowcontrol);
       flow_control_index = index + 1;
     }
   }
