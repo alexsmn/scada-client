@@ -1,6 +1,6 @@
 #include "components/main/views/native_main_window.h"
 
-#include "base/color.h"
+#include "controls/color.h"
 #include "command_handler.h"
 #include "components/main/views/main_window_views.h"
 #include "components/main/views/status_bar_controller.h"
@@ -188,14 +188,15 @@ LRESULT NativeMainWindow::OnInitMenuPopup(UINT /*uMsg*/,
     if (id == ID_COLORS) {
       menu.DeleteMenu(pos, MF_BYPOSITION);
       int n = 0;
-      for (size_t i = 0; i < palette::GetColorCount(); i++) {
-        MENUITEMINFO item;
-        memset(&item, 0, sizeof(item));
+      for (size_t i = 0; i < aui::GetColorCount(); i++) {
+        const auto color_name = aui::GetColorName(i);
+        MENUITEMINFO item = {};
         item.cbSize = sizeof(item);
         item.fMask = MIIM_FTYPE | MIIM_ID | MIIM_STRING | MIIM_STATE;
         item.fType = MFT_STRING | MFT_OWNERDRAW;
         item.wID = ID_COLOR_0 + n++;
-        item.dwTypeData = (LPTSTR)(LPCTSTR)palette::GetColorName(i);
+        item.dwTypeData = const_cast<LPTSTR>(color_name.data());
+        item.cch = color_name.size();
         menu.InsertMenuItem(pos++, TRUE, &item);
       }
 
@@ -227,7 +228,7 @@ LRESULT NativeMainWindow::OnMeasureItem(UINT /*uMsg*/,
                                         BOOL& bHandled) {
   MEASUREITEMSTRUCT* info = (MEASUREITEMSTRUCT*)lParam;
   if (info->itemID >= ID_COLOR_0 &&
-      info->itemID < ID_COLOR_0 + palette::GetColorCount()) {
+      info->itemID < ID_COLOR_0 + aui::GetColorCount()) {
     info->itemWidth = 80;
     return TRUE;
   }
@@ -240,7 +241,7 @@ LRESULT NativeMainWindow::OnDrawItem(UINT /*uMsg*/,
                                      BOOL& bHandled) {
   DRAWITEMSTRUCT* info = (DRAWITEMSTRUCT*)lParam;
   if (info->itemID >= ID_COLOR_0 &&
-      info->itemID < ID_COLOR_0 + palette::GetColorCount()) {
+      info->itemID < ID_COLOR_0 + aui::GetColorCount()) {
     int color_index = info->itemID - ID_COLOR_0;
     WTL::CDCHandle dc(info->hDC);
     int save = dc.SaveDC();
@@ -253,14 +254,15 @@ LRESULT NativeMainWindow::OnDrawItem(UINT /*uMsg*/,
     RECT rect = info->rcItem;
     InflateRect(&rect, -2, -2);
     rect.right = rect.left + rect.bottom - rect.top;
-    dc.FillSolidRect(&rect,
-                     skia::SkColorToCOLORREF(palette::GetColor(color_index)));
+    dc.FillSolidRect(
+        &rect, skia::SkColorToCOLORREF(aui::GetColor(color_index).sk_color()));
     // text
     rect.left = rect.right + 5;  // text relative to icon offset
     rect.right = info->rcItem.right - 2;
     dc.SetBkColor(GetSysColor(back));
     dc.SetTextColor(GetSysColor(fore));
-    dc.DrawText(palette::GetColorName(color_index), -1, &rect,
+    const auto color_name = aui::GetColorName(color_index);
+    dc.DrawText(color_name.data(), color_name.size(), &rect,
                 DT_LEFT | DT_SINGLELINE | DT_VCENTER);
     dc.RestoreDC(save);
     return TRUE;

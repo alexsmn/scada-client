@@ -1,15 +1,15 @@
 ﻿#include "components/table/table_model.h"
 
-#include "base/color.h"
+#include "controls/color.h"
 #include "base/format_time.h"
 #include "base/time/time.h"
 #include "base/utils.h"
 #include "client_utils.h"
 #include "common/event_manager.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
+#include "model/scada_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
@@ -110,8 +110,8 @@ void TableModel::GetCellEx(CellEx& cell) {
                                   : id::TsFormatType_OpenColor;
             color_index = params[pid].value().get_or(-1);
           }
-          if (color_index >= 0 && color_index < palette::GetColorCount())
-            cell.text_color = palette::GetColor(color_index);
+          if (color_index >= 0 && color_index < aui::GetColorCount())
+            cell.text_color = aui::GetColor(color_index).sk_color();
           else
             cell.text_color = bool_value ? SK_ColorRED : SK_ColorBLACK;
         }

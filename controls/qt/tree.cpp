@@ -1,6 +1,6 @@
 #include "controls/qt/tree.h"
 
-#include "base/qt/color_qt.h"
+#include "controls/color.h"
 #include "qt/tree_model_adapter.h"
 #include "value_util.h"
 

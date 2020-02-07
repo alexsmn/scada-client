@@ -1,10 +1,10 @@
-#include "base/color.h"
+#include "controls/color.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
+#include "model/scada_node_ids.h"
 #include "window_info.h"
 
 namespace {
@@ -45,7 +45,7 @@ std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
     cell.SetInt("width", 200);
   }
 
-  const SkColor kHeaderColor = SkColorSetRGB(227, 227, 227);
+  const aui::Color kHeaderColor = aui::Rgba{227, 227, 227};
 
   // Header.
   auto components = GetDataVariables(device);
@@ -54,7 +54,7 @@ std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
     cell.SetInt("row", i + 2);
     cell.SetInt("col", 1);
     cell.SetString("text", ToString16(components[i].display_name()));
-    cell.SetString("color", palette::ColorToString(kHeaderColor));
+    cell.SetString("color", aui::ColorToString(kHeaderColor));
     cell.SetString("align", "right");
   }
 
@@ -68,7 +68,7 @@ std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
       cell.SetInt("row", 1);
       cell.SetInt("col", i + 2);
       cell.SetString("text", ToString16(item.node.display_name()));
-      cell.SetString("color", palette::ColorToString(kHeaderColor));
+      cell.SetString("color", aui::ColorToString(kHeaderColor));
     }
 
     // Metric cells.

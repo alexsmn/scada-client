@@ -3,17 +3,17 @@
 #include <iterator>
 #include <map>
 
-#include "base/color.h"
+#include "controls/color.h"
 #include "base/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/format.h"
 #include "common/formula_util.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "components/transport/transport_dialog.h"
 #include "core/node_management_service.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
 
@@ -553,7 +553,7 @@ ui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const scada::NodeId& prop_decl_id) const {
   ui::EditData data{ui::EditData::EditorType::BUTTON};
 
-  data.action_handler = [& dialog_service =
+  data.action_handler = [&dialog_service =
                              context.dialog_service_](base::string16& text) {
     net::TransportString transport_string{base::SysWideToNativeMB(text)};
     if (!ShowTransportDialog(dialog_service, transport_string))
@@ -571,8 +571,8 @@ base::string16 ColorPropertyDefinition::GetText(
     const scada::NodeId& prop_decl_id) const {
   auto value = node[prop_decl_id].value();
   auto color_index = value.get_or(-1);
-  if (color_index >= 0 && color_index < palette::GetColorCount())
-    return palette::GetColorName(color_index);
+  if (color_index >= 0 && color_index < aui::GetColorCount())
+    return aui::GetColorName(color_index).as_string();
   else
     return kDefaultColorString;
 }
@@ -584,7 +584,7 @@ void ColorPropertyDefinition::SetText(const PropertyContext& context,
   if (text.empty())
     return;
 
-  int color = palette::FindColorName(text.c_str());
+  int color = aui::FindColorName(text.c_str());
   context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, color}});
 }
@@ -594,9 +594,9 @@ ui::EditData ColorPropertyDefinition::GetPropertyEditor(
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
-  result.choices.reserve(1 + palette::GetColorCount());
+  result.choices.reserve(1 + aui::GetColorCount());
   result.choices.emplace_back(kDefaultColorString);
-  for (size_t i = 0; i < palette::GetColorCount(); i++)
-    result.choices.emplace_back(palette::GetColorName(i));
+  for (size_t i = 0; i < aui::GetColorCount(); i++)
+    result.choices.emplace_back(aui::GetColorName(i));
   return result;
 }

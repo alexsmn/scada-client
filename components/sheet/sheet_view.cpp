@@ -1,16 +1,16 @@
 ﻿#include "components/sheet/sheet_view.h"
 
-#include "base/color.h"
+#include "controls/color.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
+#include "model/scada_node_ids.h"
 #include "selection_model.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "views/item_drag_data.h"
@@ -95,7 +95,7 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
       auto color_string = item.GetString("color");
       if (!color_string.empty()) {
         format.transparent = false;
-        format.color = palette::StringToColor(color_string);
+        format.color = aui::StringToColor(color_string).sk_color();
       }
 
       cell.format_ = model_->formats().Get(format);
@@ -187,9 +187,10 @@ void SheetView::Save(WindowDefinition& definition) {
 
         if (cell->format_) {
           // color
-          if (!cell->format_->transparent)
-            item.SetString("color",
-                           palette::ColorToString(cell->format_->color));
+          if (!cell->format_->transparent) {
+            item.SetString("color", aui::ColorToString(aui::Color::FromSkColor(
+                                        cell->format_->color)));
+          }
 
           // align
           if (cell->format_->align == DT_RIGHT)
@@ -243,7 +244,7 @@ CommandHandler* SheetView::GetCommandHandler(unsigned command_id) {
   }
 
   if (command_id >= ID_COLOR_0 &&
-      command_id < ID_COLOR_0 + palette::GetColorCount())
+      command_id < ID_COLOR_0 + aui::GetColorCount())
     return model_->is_editing() ? this : NULL;
 
   return Controller::GetCommandHandler(command_id);
@@ -270,9 +271,9 @@ void SheetView::ExecuteCommand(unsigned command_id) {
       break;
     default:
       if (command_id >= ID_COLOR_0 &&
-          command_id < ID_COLOR_0 + palette::GetColorCount()) {
-        SkColor color = palette::GetColor(command_id - ID_COLOR_0);
-        SetSelectionColor(color);
+          command_id < ID_COLOR_0 + aui::GetColorCount()) {
+        auto color = aui::GetColor(command_id - ID_COLOR_0);
+        SetSelectionColor(color.sk_color());
       } else {
         __super::ExecuteCommand(command_id);
       }

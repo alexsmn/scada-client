@@ -1,5 +1,6 @@
 #pragma once
 
+#include "controls/color.h"
 #include "command_handler.h"
 #include "components/graph/metrix_graph.h"
 #include "contents_model.h"
@@ -55,8 +56,8 @@ class GraphView : public Controller,
   // Delete all pane lines and remove items.
   void ClearPane(MetrixGraph::MetrixPane& pane);
 
-  bool FindColor(SkColor color) const;
-  SkColor NewColor() const;
+  bool FindColor(aui::Color color) const;
+  aui::Color NewColor() const;
 
   // views::Graph::Controller
   virtual void OnGraphModified() override;

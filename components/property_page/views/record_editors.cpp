@@ -1,15 +1,15 @@
 ﻿#include "components/property_page/views/record_editors.h"
 
-#include "base/color.h"
+#include "controls/color.h"
 #include "base/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "components/transport/transport_dialog.h"
 #include "core/node_management_service.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
@@ -449,7 +449,7 @@ void TsEditor::ReadControlsData() {
 }
 
 static int GetSelColor(int sel) {
-  if (sel >= 0 && static_cast<unsigned>(sel) < palette::GetColorCount())
+  if (sel >= 0 && static_cast<unsigned>(sel) < aui::GetColorCount())
     return sel;
   else
     return 0;
@@ -656,7 +656,7 @@ LRESULT TsFormatEditor::OnInitDialog(UINT uMsg,
   wnd_clr_open = GetDlgItem(IDC_CLR_OPEN);
   wnd_clr_close = GetDlgItem(IDC_CLR_CLOSE);
 
-  for (size_t i = 0; i < palette::GetColorCount(); i++) {
+  for (size_t i = 0; i < aui::GetColorCount(); i++) {
     wnd_clr_close.AddString((LPCTSTR)i);
     wnd_clr_open.AddString((LPCTSTR)i);
   }
@@ -676,31 +676,32 @@ void TsFormatEditor::DrawItem(LPDRAWITEMSTRUCT dis) {
   dc.FillRect(&rect, brush);
 
   InflateRect(&rect, -3, -2);
-  LPCTSTR text = _T("");
+  base::StringPiece16 text;
 
-  if (dis->itemID >= 0 && dis->itemID < palette::GetColorCount()) {
+  if (dis->itemID >= 0 && dis->itemID < aui::GetColorCount()) {
     int color_index = dis->itemID;
     // draw color
     RECT crect = rect;
     crect.right = crect.left + crect.bottom - crect.top;
-    if (SkColorGetA(palette::GetColor(color_index)) != 0) {
+    const auto sk_color = aui::GetColor(color_index).sk_color();
+    if (SkColorGetA(sk_color) != 0) {
       dc.SelectStockBrush(DC_BRUSH);
-      dc.SetDCBrushColor(
-          skia::SkColorToCOLORREF(palette::GetColor(color_index)));
+      dc.SetDCBrushColor(skia::SkColorToCOLORREF(sk_color));
     } else {
       dc.SelectStockBrush(NULL_BRUSH);
     }
     dc.SelectStockPen(BLACK_PEN);
     dc.Rectangle(&crect);
     // draw text
-    text = palette::GetColorName(color_index);
+    text = aui::GetColorName(color_index);
     rect.left = crect.right + 3;
   }
 
   COLORREF color = GetSysColor(sel ? COLOR_HIGHLIGHTTEXT : COLOR_WINDOWTEXT);
   dc.SetTextColor(color);
   dc.SetBkMode(TRANSPARENT);
-  dc.DrawText(text, -1, &rect, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+  dc.DrawText(text.data(), text.size(), &rect,
+              DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
 
 // LinkEditor

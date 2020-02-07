@@ -1,6 +1,6 @@
 #include "qt/table_model_adapter.h"
 
-#include "base/qt/color_qt.h"
+#include "controls/color.h"
 #include "ui/base/models/table_model.h"
 
 #include <QSize>

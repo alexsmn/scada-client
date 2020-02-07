@@ -1,14 +1,14 @@
 ﻿#include "components/graph/graph_view.h"
 
-#include "base/color.h"
+#include "controls/color.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller_factory.h"
+#include "model/scada_node_ids.h"
 #include "selection_model.h"
 #include "services/profile.h"
 #include "time_range.h"
@@ -76,12 +76,12 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       else
         pane = &static_cast<MetrixGraph::MetrixPane&>(graph_->NewPane());
       // make color
-      auto color = color_string.empty() ? NewColor()
-                                        : palette::StringToColor(color_string);
+      auto color =
+          color_string.empty() ? NewColor() : aui::StringToColor(color_string);
       // add line
       MetrixGraph::MetrixLine& line =
           graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
-      line.SetColor(color);
+      line.SetColor(color.native_color());
       line.set_dots_shown(dots);
       line.set_stepped(stepped);
 
@@ -146,28 +146,26 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   return graph_.get();
 }
 
-bool GraphView::FindColor(SkColor color) const {
-  for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-       i != graph_->panes().end(); ++i) {
+bool GraphView::FindColor(aui::Color color) const {
+  for (auto i = graph_->panes().begin(); i != graph_->panes().end(); ++i) {
     views::GraphPane& pane = **i;
     const views::GraphPlot::Lines& lines = pane.plot().lines();
-    for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-         i != lines.end(); ++i)
-      if ((*i)->color() == color)
+    for (auto i = lines.begin(); i != lines.end(); ++i)
+      if (aui::Color::FromNativeColor((*i)->color()) == color)
         return true;
   }
   return false;
 }
 
-SkColor GraphView::NewColor() const {
-  for (unsigned i = 0; i < palette::GetColorCount(); i++) {
-    SkColor color = palette::GetColor(i);
-    if (color == SK_ColorWHITE)
+aui::Color GraphView::NewColor() const {
+  for (unsigned i = 0; i < aui::GetColorCount(); i++) {
+    const auto color = aui::GetColor(i);
+    if (color == aui::ColorCode::White || color == aui::ColorCode::Transparent)
       continue;
     if (!FindColor(color))
       return color;
   }
-  return palette::GetColor(rand() % palette::GetColorCount());
+  return aui::GetColor(rand() % aui::GetColorCount());
 }
 
 void GraphView::Save(WindowDefinition& definition) {
@@ -203,7 +201,8 @@ void GraphView::Save(WindowDefinition& definition) {
       WindowItem& item = definition.AddItem("Item");
       item.SetInt("pane", pane_ix);
       item.SetString("path", line.data_source().GetPath());
-      item.SetString("clr", palette::ColorToString(ToSkColor(line.color())));
+      item.SetString(
+          "clr", aui::ColorToString(aui::Color::FromNativeColor(line.color())));
       item.SetInt("dots", line.dots_shown() ? 1 : 0);
       item.SetInt("stepped", line.stepped() ? 1 : 0);
     }
@@ -268,7 +267,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   const views::GraphPlot::Lines& lines = pane->plot().lines();
   if (!lines.empty()) {
     // empty selected pane
-    color = ToSkColor(lines.front()->color());
+    color = aui::Color::FromNativeColor(lines.front()->color());
     ClearPane(*pane);
   }
 
@@ -276,7 +275,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 
   MetrixGraph::MetrixLine& line =
       graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
-  line.SetColor(color);
+  line.SetColor(color.native_color());
   line.UpdateTimeRange();
   graph_->Fit();
 
@@ -404,7 +403,7 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
   }
 
   if (command_id >= ID_COLOR_0 &&
-      command_id < ID_COLOR_0 + palette::GetColorCount())
+      command_id < ID_COLOR_0 + aui::GetColorCount())
     return this;
 
   return ::Controller::GetCommandHandler(command_id);
@@ -506,11 +505,11 @@ void GraphView::ExecuteCommand(unsigned command_id) {
 
     default:
       if (command_id >= ID_COLOR_0 &&
-          command_id < ID_COLOR_0 + palette::GetColorCount()) {
-        SkColor color = palette::GetColor(command_id - ID_COLOR_0);
+          command_id < ID_COLOR_0 + aui::GetColorCount()) {
         if (MetrixGraph::MetrixPane* pane = graph_->selected_pane()) {
           views::GraphLine* line = pane->plot().lines().front();
-          line->SetColor(color);
+          const auto color = aui::GetColor(command_id - ID_COLOR_0);
+          line->SetColor(color.native_color());
         }
       } else {
         __super::ExecuteCommand(command_id);
