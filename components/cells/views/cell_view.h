@@ -10,10 +10,74 @@
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
 
+class CellModel : public ui::GridModel, private views::FixedRowModel::Delegate {
+ public:
+  CellModel(TimedDataService& timed_data_service,
+            DialogService& dialog_service);
+  ~CellModel();
+
+  CellModel(const CellModel&) = delete;
+  CellModel& operator=(const CellModel&) = delete;
+
+  int row_count() const { return row_count_; }
+  int column_count() const { return column_count_; }
+
+  views::FixedRowModel& row_model() { return row_model_; }
+  ui::ColumnHeaderModel& column_model() { return column_model_; }
+
+  class Cell {
+   public:
+    Cell(CellModel& model, int row, int column);
+
+    Cell(const Cell&) = delete;
+    Cell& operator=(const Cell&) = delete;
+
+    CellModel& model_;
+    const int row_;
+    const int column_;
+
+    TimedDataSpec value_spec_;
+  };
+
+  Cell*& cell(int row, int column) { return cells_[GetCellIndex(row, column)]; }
+  const Cell* cell(int row, int column) const {
+    return cells_[GetCellIndex(row, column)];
+  }
+
+  void SetSizes(int row_count, int column_count);
+  void SetCellFormula(int row, int column, base::StringPiece formula);
+
+  bool FindEmptyCell(int& row, int& column);
+
+  void ClearCell(int row, int column);
+
+  // GridModel
+  virtual int GetRowCount() override;
+  virtual void GetCell(ui::GridCell& data) override;
+  virtual bool SetCellText(int row,
+                           int column,
+                           const base::string16& text) override;
+
+ private:
+  int GetCellIndex(int row, int column) const {
+    DCHECK(row >= 0 && row < row_count_);
+    DCHECK(column >= 0 && column < column_count_);
+    return row * column_count_ + column;
+  }
+
+  TimedDataService& timed_data_service_;
+  DialogService& dialog_service_;
+
+  int row_count_;
+  int column_count_;
+  std::vector<Cell*> cells_;
+
+  views::FixedRowModel row_model_{*this};
+  ui::ColumnHeaderModel column_model_;
+};
+
 class CellView : public Controller,
                  public ContentsModel,
-                 private ui::GridModel,
-                 private views::FixedRowModel::Delegate,
                  private views::GridController,
                  private views::ContextMenuController {
  public:
@@ -30,35 +94,6 @@ class CellView : public Controller,
                                 unsigned flags) override;
 
  private:
-  class Cell {
-   public:
-    Cell(CellView& view, int row, int column);
-
-    TimedDataSpec value_spec_;
-    int row_;
-    int column_;
-
-   private:
-    DISALLOW_COPY_AND_ASSIGN(Cell);
-  };
-
-  int GetCellIndex(int row, int column) const {
-    DCHECK(row >= 0 && row < row_count_);
-    DCHECK(column >= 0 && column < column_count_);
-    return row * column_count_ + column;
-  }
-
-  Cell*& cell(int row, int column) { return cells_[GetCellIndex(row, column)]; }
-  const Cell* cell(int row, int column) const {
-    return cells_[GetCellIndex(row, column)];
-  }
-
-  void SetSizes(int row_count, int column_count);
-  void SetCellFormula(int row, int column, base::StringPiece formula);
-
-  bool FindEmptyCell(int& row, int& column);
-
-  void ClearCell(int row, int column);
   void ClearSelection();
 
   // views::GridController
@@ -71,21 +106,11 @@ class CellView : public Controller,
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
 
-  // GridModel
-  virtual int GetRowCount() override;
-  virtual void GetCell(ui::GridCell& data) override;
-  virtual bool SetCellText(int row, int column, const base::string16& text) override;
-
   // views::ContextMenuController
   virtual void ShowContextMenuForView(views::View* source,
                                       const gfx::Point& point) override;
 
-  int row_count_;
-  int column_count_;
-  std::vector<Cell*> cells_;
-
-  views::FixedRowModel row_model_;
-  ui::ColumnHeaderModel column_model_;
+  CellModel model_;
 
   std::unique_ptr<views::GridView> grid_;
 };

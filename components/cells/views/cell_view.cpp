@@ -3,8 +3,8 @@
 #include "base/format_time.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "controller_factory.h"
+#include "model/scada_node_ids.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "timed_data/timed_data_service.h"
@@ -17,47 +17,30 @@
 
 #include <deque>
 
-// CellView::Cell
+// CellModel::Cell
 
-CellView::Cell::Cell(CellView& view, int row, int column)
-    : row_(row), column_(column) {
-  value_spec_.deletion_handler = [this, &view] {
-    view.ClearCell(row_, column_);
+CellModel::Cell::Cell(CellModel& model, int row, int column)
+    : model_{model}, row_(row), column_(column) {
+  value_spec_.deletion_handler = [this] { model_.ClearCell(row_, column_); };
+  value_spec_.property_change_handler = [this](const PropertySet& properties) {
+    model_.NotifyRangeChanged(ui::GridRange::Cell(row_, column_));
   };
-  value_spec_.property_change_handler =
-      [this, &view](const PropertySet& properties) {
-        view.grid_->SchedulePaintCell(row_, column_);
-      };
 }
 
-// CellView
+// CellModel
 
-const WindowInfo kWindowInfo = {
-    ID_CELLS_VIEW, "Cells", L"Ячейки", WIN_INS, 0, 0, 0};
-
-REGISTER_CONTROLLER(CellView, kWindowInfo);
-
-CellView::CellView(const ControllerContext& context)
-    : Controller{context},
-      row_model_(*this),
-      cells_(NULL),
-      grid_(new views::GridView) {
+CellModel::CellModel(TimedDataService& timed_data_service,
+                     DialogService& dialog_service)
+    : timed_data_service_{timed_data_service}, dialog_service_{dialog_service} {
   row_model_.SetSize(0, 100);
-
-  grid_->SetModel(this);
-  grid_->SetRowModel(&row_model_);
-  grid_->SetColumnModel(&column_model_);
-  grid_->set_controller(this);
-  grid_->SetColumnHeaderVisible(false);
-  grid_->set_context_menu_controller(this);
 }
 
-CellView::~CellView() {
+CellModel::~CellModel() {
   for (size_t i = 0; i != cells_.size(); ++i)
     delete cells_[i];
 }
 
-void CellView::SetSizes(int row_count, int column_count) {
+void CellModel::SetSizes(int row_count, int column_count) {
   DCHECK(row_count >= 0);
   DCHECK(column_count >= 0);
 
@@ -87,11 +70,11 @@ void CellView::SetSizes(int row_count, int column_count) {
   NotifyModelChanged();
 }
 
-int CellView::GetRowCount() {
+int CellModel::GetRowCount() {
   return row_count_;
 }
 
-void CellView::GetCell(ui::GridCell& cell) {
+void CellModel::GetCell(ui::GridCell& cell) {
   Cell* c = this->cell(cell.row, cell.column);
   if (!c)
     return;
@@ -99,7 +82,7 @@ void CellView::GetCell(ui::GridCell& cell) {
   cell.text = c->value_spec_.GetCurrentString();
 }
 
-bool CellView::SetCellText(int row, int column, const base::string16& text) {
+bool CellModel::SetCellText(int row, int column, const base::string16& text) {
   try {
     SetCellFormula(row, column, base::SysWideToNativeMB(text));
   } catch (const std::exception& e) {
@@ -108,19 +91,69 @@ bool CellView::SetCellText(int row, int column, const base::string16& text) {
     return false;
   }
 
-  grid_->SchedulePaintCell(row, column);
+  NotifyRangeChanged(ui::GridRange::Cell(row, column));
   return true;
 }
 
-void CellView::SetCellFormula(int row, int column, base::StringPiece formula) {
+void CellModel::SetCellFormula(int row, int column, base::StringPiece formula) {
   Cell*& cell = this->cell(row, column);
   if (!cell)
     cell = new Cell(*this, row, column);
 
   cell->value_spec_.Connect(timed_data_service_, formula);
 
-  grid_->SchedulePaintCell(row, column);
+  NotifyRangeChanged(ui::GridRange::Cell(row, column));
 }
+
+bool CellModel::FindEmptyCell(int& row, int& column) {
+  if (row == -1 || column == -1)
+    row = 0, column = 0;
+  else
+    ++column;
+
+  while (row < row_count_) {
+    while (column < column_model_.GetCount()) {
+      if (!cell(row, column))
+        return true;
+      ++column;
+    }
+    ++row;
+  }
+
+  return false;
+}
+
+void CellModel::ClearCell(int row, int column) {
+  Cell*& cell = this->cell(row, column);
+  if (!cell)
+    return;
+
+  delete cell;
+  cell = NULL;
+
+  NotifyRangeChanged(ui::GridRange::Cell(row, column));
+}
+
+// CellView
+
+const WindowInfo kWindowInfo = {
+    ID_CELLS_VIEW, "Cells", L"Ячейки", WIN_INS, 0, 0, 0};
+
+REGISTER_CONTROLLER(CellView, kWindowInfo);
+
+CellView::CellView(const ControllerContext& context)
+    : Controller{context},
+      grid_(new views::GridView),
+      model_{timed_data_service_, dialog_service_} {
+  grid_->SetModel(&model_);
+  grid_->SetRowModel(&model_.row_model());
+  grid_->SetColumnModel(&model_.column_model());
+  grid_->set_controller(this);
+  grid_->SetColumnHeaderVisible(false);
+  grid_->set_context_menu_controller(this);
+}
+
+CellView::~CellView() {}
 
 bool CellView::OnGridDrawCell(views::GridView& sender,
                               gfx::Canvas* canvas,
@@ -129,7 +162,7 @@ bool CellView::OnGridDrawCell(views::GridView& sender,
                               const gfx::Rect& rect) {
   canvas->FillRect(rect, ::GetSysColorBrush(COLOR_WINDOW));
 
-  Cell* cell = this->cell(row, col);
+  CellModel::Cell* cell = model_.cell(row, col);
   if (!cell)
     return true;
 
@@ -160,9 +193,9 @@ bool CellView::OnGridDrawCell(views::GridView& sender,
 }
 
 void CellView::Save(WindowDefinition& definition) {
-  for (int row = 0; row < row_count_; ++row) {
-    for (int column = 0; column < column_count_; ++column) {
-      if (Cell* cell = this->cell(row, column)) {
+  for (int row = 0; row < model_.row_count(); ++row) {
+    for (int column = 0; column < model_.column_count(); ++column) {
+      if (CellModel::Cell* cell = model_.cell(row, column)) {
         WindowItem& item = definition.AddItem("Item");
         item.SetInt("row", row);
         item.SetInt("column", column);
@@ -170,24 +203,6 @@ void CellView::Save(WindowDefinition& definition) {
       }
     }
   }
-}
-
-bool CellView::FindEmptyCell(int& row, int& column) {
-  if (row == -1 || column == -1)
-    row = 0, column = 0;
-  else
-    ++column;
-
-  while (row < row_count_) {
-    while (column < column_model_.GetCount()) {
-      if (!cell(row, column))
-        return true;
-      ++column;
-    }
-    ++row;
-  }
-
-  return false;
 }
 
 bool CellView::OnKeyPressed(views::GridView& sender,
@@ -204,17 +219,6 @@ bool CellView::OnKeyPressed(views::GridView& sender,
   }
 }
 
-void CellView::ClearCell(int row, int column) {
-  Cell*& cell = this->cell(row, column);
-  if (!cell)
-    return;
-
-  delete cell;
-  cell = NULL;
-
-  grid_->SchedulePaintCell(row, column);
-}
-
 void CellView::ClearSelection() {
   ui::GridRange range = grid_->GetSelectionRange();
   if (range.empty())
@@ -222,7 +226,7 @@ void CellView::ClearSelection() {
 
   for (int row = range.row(); row <= range.last_row(); ++row)
     for (int column = range.column(); column <= range.last_column(); ++column)
-      ClearCell(row, column);
+      model_.ClearCell(row, column);
 
   selection().Clear();
 }
@@ -230,11 +234,11 @@ void CellView::ClearSelection() {
 void CellView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   int row = grid_->selected_row();
   int column = grid_->selected_column();
-  if (!FindEmptyCell(row, column))
+  if (!model_.FindEmptyCell(row, column))
     return;
 
   std::string path = MakeNodeIdFormula(node_id);
-  SetCellFormula(row, column, path);
+  model_.SetCellFormula(row, column, path);
   grid_->SelectCell(row, column, true);
 }
 
@@ -245,7 +249,7 @@ void CellView::OnGridSelectionChanged(views::GridView& sender) {
   else if (range.row_count() >= 2)
     selection().SelectMultiple();
   else {
-    Cell* cell = this->cell(range.row(), range.column());
+    CellModel::Cell* cell = model_.cell(range.row(), range.column());
     if (cell)
       selection().SelectTimedData(cell->value_spec_);
     else
@@ -254,7 +258,7 @@ void CellView::OnGridSelectionChanged(views::GridView& sender) {
 }
 
 views::View* CellView::Init(const WindowDefinition& definition) {
-  SetSizes(10, 10);
+  model_.SetSizes(10, 10);
 
   std::deque<std::string> free_items;
 
@@ -268,7 +272,7 @@ views::View* CellView::Init(const WindowDefinition& definition) {
       if (row == -1 || column == -1)
         free_items.emplace_back(path.as_string());
       else
-        SetCellFormula(row, column, path);
+        model_.SetCellFormula(row, column, path);
     }
   }
 
@@ -277,9 +281,9 @@ views::View* CellView::Init(const WindowDefinition& definition) {
   for (std::deque<std::string>::const_iterator i = free_items.begin();
        i != free_items.end(); ++i) {
     const std::string& path = *i;
-    if (!FindEmptyCell(row, column))
+    if (!model_.FindEmptyCell(row, column))
       break;
-    SetCellFormula(row, column, path);
+    model_.SetCellFormula(row, column, path);
   }
 
   return grid_->CreateParentIfNecessary();
