@@ -3,6 +3,7 @@
 #include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "controls/color.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/context_menu_controller.h"
@@ -11,7 +12,6 @@
 #include "ui/views/drop_controller.h"
 #endif
 
-#include <SkColor.h>
 #include <memory>
 
 namespace ui {
@@ -75,10 +75,12 @@ class SheetController : public Controller,
   void UpdateFormulaRow();
   void ClearSelection();
 
-  void SetSelectionColor(SkColor color);
+  void ChooseSelectionColor();
+  void SetSelectionColor(aui::Color color);
 
   NodeIdSet GetSelectedNodeIdList();
 
+  void OnFormulaEdited();
   void OnSelectionChanged();
 
 #if defined(UI_VIEWS)

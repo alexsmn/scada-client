@@ -51,7 +51,8 @@ class SheetModel : private SheetModelContext,
   void ClearRange(const ui::GridRange& range);
   void ClearCell(int row, int col);
 
-  void SetRangeColor(const ui::GridRange& range, SkColor color);
+  aui::Color GetRangeColor(const ui::GridRange& range) const;
+  void SetRangeColor(const ui::GridRange& range, aui::Color color);
 
   SheetFormatPool& formats() { return formats_; }
 

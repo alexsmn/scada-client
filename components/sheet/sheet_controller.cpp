@@ -10,6 +10,7 @@
 #include "controller_factory.h"
 #include "controls/color.h"
 #include "controls/grid.h"
+#include "core/session_service.h"
 #include "model/scada_node_ids.h"
 #include "selection_model.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
@@ -17,6 +18,7 @@
 #include "window_definition.h"
 
 #if defined(UI_QT)
+#include <QColorDialog>
 #include <QLayout>
 #include <QLineEdit>
 #elif defined(UI_VIEWS)
@@ -28,9 +30,10 @@
 
 const int kFormulaRowHeight = 20;
 
+// NOTE: Context menu depends on edit mode.
 const WindowInfo kWindowInfo = {
-    ID_SHEET_VIEW,  "CusTable", L"Пользовательская таблица", WIN_INS, 0, 0,
-    IDR_SHEET_POPUP};
+    ID_SHEET_VIEW, "CusTable", L"Пользовательская таблица", WIN_INS, 0, 0,
+    IDR_ITEM_POPUP};
 
 REGISTER_CONTROLLER(SheetController, kWindowInfo);
 
@@ -72,10 +75,13 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
 #if defined(UI_QT)
   formula_row_.reset(new QLineEdit);
+  QObject::connect(formula_row_.get(), &QLineEdit::editingFinished,
+                   [this] { OnFormulaEdited(); });
 
   grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
 
   auto* layout = new QVBoxLayout;
+  layout->setMargin(0);
   layout->setSpacing(0);
   layout->addWidget(formula_row_.get());
   layout->addWidget(grid_.get());
@@ -103,7 +109,8 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
-    controller_delegate_.ShowPopupMenu(IDR_SHEET_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(
+        model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
   });
 
   UpdateEditing();
@@ -169,7 +176,12 @@ void SheetController::UpdateEditing() {
 CommandHandler* SheetController::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_EDIT:
-      return this;
+      return session_service_.HasPrivilege(scada::Privilege::Configure)
+                 ? this
+                 : nullptr;
+
+    case ID_GRAPH_COLOR:
+      return model_->is_editing() ? this : NULL;
   }
 
   if (command_id >= ID_COLOR_0 &&
@@ -198,16 +210,33 @@ void SheetController::ExecuteCommand(unsigned command_id) {
       model_->SetEditing(!model_->is_editing());
       UpdateEditing();
       break;
+
+    case ID_GRAPH_COLOR:
+      ChooseSelectionColor();
+      break;
+
     default:
       if (command_id >= ID_COLOR_0 &&
           command_id < ID_COLOR_0 + aui::GetColorCount()) {
         auto color = aui::GetColor(command_id - ID_COLOR_0);
-        SetSelectionColor(color.sk_color());
+        SetSelectionColor(color);
       } else {
         __super::ExecuteCommand(command_id);
       }
       break;
   }
+}
+
+void SheetController::ChooseSelectionColor() {
+#if defined(UI_QT)
+  const auto& range = grid_->GetSelectionRange();
+  const auto& current_color = model_->GetRangeColor(range);
+
+  const auto& new_color =
+      QColorDialog::getColor(current_color.qcolor(), grid_.get());
+  if (new_color.isValid())
+    model_->SetRangeColor(range, aui::Color::FromQColor(new_color));
+#endif
 }
 
 void SheetController::ClearSelection() {
@@ -248,6 +277,21 @@ void SheetController::UpdateFormulaRow() {
 #endif
 }
 
+void SheetController::OnFormulaEdited() {
+  const auto& current_index = grid_->GetCurrentIndex();
+  if (!current_index.is_valid())
+    return;
+
+#if defined(UI_QT)
+  const auto& text = formula_row_->text().toStdWString();
+#elif defined(UI_VIEWS)
+  const auto& text = formula_row_->GetText();
+#endif
+
+  if (model_->SetCellText(current_index.row, current_index.column, text))
+    grid_->setFocus();
+}
+
 void SheetController::OnSelectionChanged() {
   UpdateFormulaRow();
 
@@ -265,7 +309,7 @@ void SheetController::OnSelectionChanged() {
   }
 }
 
-void SheetController::SetSelectionColor(SkColor color) {
+void SheetController::SetSelectionColor(aui::Color color) {
   const auto& range = grid_->GetSelectionRange();
   if (!range.empty())
     model_->SetRangeColor(range, color);

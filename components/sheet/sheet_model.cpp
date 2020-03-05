@@ -47,10 +47,8 @@ void SheetModel::Load(const WindowDefinition& definition) {
         format.align = DT_LEFT;
 
       auto color_string = item.GetString("color");
-      if (!color_string.empty()) {
-        format.transparent = false;
-        format.color = aui::StringToColor(color_string).sk_color();
-      }
+      if (!color_string.empty())
+        format.color = aui::StringToColor(color_string);
 
       cell.format_ = formats().Get(format);
 
@@ -86,10 +84,8 @@ void SheetModel::Save(WindowDefinition& definition) {
 
         if (cell->format_) {
           // color
-          if (!cell->format_->transparent) {
-            item.SetString("color", aui::ColorToString(aui::Color::FromSkColor(
-                                        cell->format_->color)));
-          }
+          if (cell->format_->color != aui::ColorCode::Transparent)
+            item.SetString("color", aui::ColorToString(cell->format_->color));
 
           // align
           if (cell->format_->align == DT_RIGHT)
@@ -144,8 +140,8 @@ void SheetModel::GetCell(ui::GridCell& cell) {
 
   cell.text = editing_ ? c->formula() : c->text();
 
-  if (c->format_ && !c->format_->transparent)
-    cell.cell_color = c->format_->color;
+  if (c->format_ && c->format_->color != aui::ColorCode::Transparent)
+    cell.cell_color = c->format_->color.sk_color();
 
   if (!editing_ && c->is_blinking() && Blinker::GetState())
     cell.cell_color = SK_ColorYELLOW;
@@ -198,7 +194,18 @@ void SheetModel::OnBlink(bool state) {
   NotifyRangeChanged(range);
 }
 
-void SheetModel::SetRangeColor(const ui::GridRange& range, SkColor color) {
+aui::Color SheetModel::GetRangeColor(const ui::GridRange& range) const {
+  if (range.empty())
+    return aui::ColorCode::Transparent;
+
+  auto* cell = this->cell(range.row(), range.column());
+  if (!cell || !cell->format_)
+    return aui::ColorCode::Transparent;
+
+  return cell->format_->color;
+}
+
+void SheetModel::SetRangeColor(const ui::GridRange& range, aui::Color color) {
   ui::GridRange update_range;
 
   for (int column = range.column(); column <= range.last_column(); ++column) {
@@ -206,8 +213,7 @@ void SheetModel::SetRangeColor(const ui::GridRange& range, SkColor color) {
       SheetCell& cell = GetCell(row, column);
 
       SheetFormatBase format = cell.format_ ? *cell.format_ : SheetFormatBase();
-      if (format.transparent || format.color != color) {
-        format.transparent = false;
+      if (format.color != color) {
         format.color = color;
         cell.format_ = formats_.Get(format);
         update_range.Expand(cell.row(), cell.column());

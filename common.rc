@@ -823,10 +823,7 @@ BEGIN
     BEGIN
         MENUITEM "<Item>",                      ID_ITEM_COMMANDS
         MENUITEM SEPARATOR
-        POPUP "Цвет"
-        BEGIN
-            MENUITEM "<Цвета>",                     ID_COLORS
-        END
+        MENUITEM "Цвет...",                     ID_GRAPH_COLOR
     END
 END
 

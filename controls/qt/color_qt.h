@@ -19,7 +19,9 @@ struct Color {
     return FromQColor(ToQColor(sk_color));
   }
 
-  static Color FromQColor(::QColor qcolor) noexcept { return FromNativeColor(qcolor); }
+  static Color FromQColor(::QColor qcolor) noexcept {
+    return FromNativeColor(qcolor);
+  }
 
   static Color FromNativeColor(NativeColor native_color) {
     return Color{native_color};
@@ -32,6 +34,10 @@ struct Color {
   QColor qcolor() const noexcept { return native_color_; }
 
   bool operator==(const Color& other) const noexcept = default;
+  bool operator!=(const Color& other) const noexcept = default;
+  bool operator<(const Color& other) const noexcept {
+    return native_color_.rgba() < other.native_color_.rgba();
+  }
 
  private:
   explicit Color(NativeColor native_color) : native_color_{native_color} {}

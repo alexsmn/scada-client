@@ -1,19 +1,11 @@
 #pragma once
 
-#include <SkColor.h>
 #include "base/pool.h"
 #include "conditional_format.h"
+#include "controls/color.h"
 
 struct SheetFormatBase {
-  SheetFormatBase()
-      : align(DT_LEFT),
-        transparent(true),
-        color(SK_ColorWHITE) {
-  }
-
   bool operator<(const SheetFormatBase& other) const {
-    if (transparent != other.transparent)
-      return transparent < other.transparent;
     if (color != other.color)
       return color < other.color;
     if (align != other.align)
@@ -23,9 +15,8 @@ struct SheetFormatBase {
     return false;
   }
 
-  bool transparent;
-  SkColor color;
-  unsigned char align;
+  aui::Color color = aui::ColorCode::Transparent;
+  unsigned char align = DT_LEFT;
 
   scoped_refptr<ConditionalFormat> conditional_format_;
 };
@@ -33,9 +24,7 @@ struct SheetFormatBase {
 class SheetFormat : public SheetFormatBase,
                     public PoolItem<SheetFormatBase, SheetFormat> {
  public:
-  explicit SheetFormat(const SheetFormatBase& key)
-      : SheetFormatBase(key) {
-  }
+  explicit SheetFormat(const SheetFormatBase& key) : SheetFormatBase(key) {}
 };
 
 typedef Pool<SheetFormatBase, SheetFormat> SheetFormatPool;
