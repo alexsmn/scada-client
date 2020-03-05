@@ -322,3 +322,7 @@ void Grid::RestoreState(const base::Value& data) {
       header.hideSection(header.logicalIndex(visual_index));
   }
 }
+
+void Grid::RequestFocus() {
+  setFocus();
+}

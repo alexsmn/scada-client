@@ -289,7 +289,7 @@ void SheetController::OnFormulaEdited() {
 #endif
 
   if (model_->SetCellText(current_index.row, current_index.column, text))
-    grid_->setFocus();
+    grid_->RequestFocus();
 }
 
 void SheetController::OnSelectionChanged() {

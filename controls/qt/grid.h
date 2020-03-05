@@ -65,6 +65,8 @@ class Grid final : public QTableView {
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
 
+  void RequestFocus();
+
  protected:
   // QTableView
   virtual void mousePressEvent(QMouseEvent* event) override;
