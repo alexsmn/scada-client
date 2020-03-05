@@ -4,6 +4,7 @@
 #include "components/sheet/sheet_format.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"
+#include "window_definition.h"
 
 #include <set>
 
@@ -28,10 +29,14 @@ class SheetModel : private SheetModelContext,
   explicit SheetModel(SheetModelContext&& context);
   virtual ~SheetModel();
 
+  void Load(const WindowDefinition& definition);
+  void Save(WindowDefinition& definition);
+
   views::FixedRowModel& row_model() { return row_model_; }
   SheetColumnModel& column_model() { return column_model_; }
 
   int column_count() const { return column_count_; }
+  int row_count() const { return row_count_; }
   void SetSizes(int nrow, int ncol);
 
   bool is_editing() const { return editing_; }

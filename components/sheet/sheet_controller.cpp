@@ -1,6 +1,5 @@
-﻿#include "components/sheet/sheet_view.h"
+﻿#include "components/sheet/sheet_controller.h"
 
-#include "controls/color.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -9,6 +8,7 @@
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
 #include "controller_factory.h"
+#include "controls/color.h"
 #include "controls/grid.h"
 #include "model/scada_node_ids.h"
 #include "selection_model.h"
@@ -17,8 +17,8 @@
 #include "window_definition.h"
 
 #if defined(UI_QT)
-#include <qlayout.h>
-#include <qlineedit.h>
+#include <QLayout>
+#include <QLineEdit>
 #elif defined(UI_VIEWS)
 #include "skia/ext/skia_utils_win.h"
 #include "ui/events/event.h"
@@ -32,12 +32,12 @@ const WindowInfo kWindowInfo = {
     ID_SHEET_VIEW,  "CusTable", L"Пользовательская таблица", WIN_INS, 0, 0,
     IDR_SHEET_POPUP};
 
-REGISTER_CONTROLLER(SheetView, kWindowInfo);
+REGISTER_CONTROLLER(SheetController, kWindowInfo);
 
-// SheetView::ContentsView
+// SheetController::ContentsView
 
 #if defined(UI_VIEWS)
-class SheetView::ContentsView : public views::View {
+class SheetController::ContentsView : public views::View {
  public:
   virtual void Layout() {
     views::View* formula_row = child_at(0);
@@ -54,63 +54,21 @@ class SheetView::ContentsView : public views::View {
 };
 #endif
 
-// SheetView
+// SheetController
 
-SheetView::SheetView(const ControllerContext& context)
+SheetController::SheetController(const ControllerContext& context)
     : Controller{context},
       model_{std::make_unique<SheetModel>(
           SheetModelContext{timed_data_service_})} {
   selection().multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
-UiView* SheetView::Init(const WindowDefinition& definition) {
+UiView* SheetController::Init(const WindowDefinition& definition) {
   model_->SetSizes(100, 100);
   model_->column_model().SetColumnCount(model_->column_count(), 65);
 
   // load
-  int n = 0;
-  for (WindowItems::const_iterator i = definition.items.begin();
-       i != definition.items.end(); i++) {
-    const WindowItem& item = *i;
-    if (item.name_is("SheetCell")) {
-      long row = item.GetInt("row", 0) - 1;
-      long col = item.GetInt("col", 0) - 1;
-      if (row < 0 || col < 0)
-        continue;
-
-      SheetCell& cell = model_->GetCell(row, col);
-
-      cell.SetFormula(item.GetString16("text"));
-
-      SheetFormatBase format;
-
-      auto align = item.GetString("align", "left");
-      if (align == "right")
-        format.align = DT_RIGHT;
-      else if (align == "center")
-        format.align = DT_CENTER;
-      else
-        format.align = DT_LEFT;
-
-      auto color_string = item.GetString("color");
-      if (!color_string.empty()) {
-        format.transparent = false;
-        format.color = aui::StringToColor(color_string).sk_color();
-      }
-
-      cell.format_ = model_->formats().Get(format);
-
-    } else if (item.name_is("Column")) {
-      int ix = item.GetInt("ix", 0) - 1;
-      if (ix < 0)
-        continue;
-
-      int width = item.GetInt("width", 0);
-      if (width <= 0)
-        width = 100;
-      model_->column_model().SetSize(ix, width);
-    }
-  }
+  model_->Load(definition);
 
 #if defined(UI_QT)
   formula_row_.reset(new QLineEdit);
@@ -152,10 +110,11 @@ UiView* SheetView::Init(const WindowDefinition& definition) {
 }
 
 #if defined(UI_VIEWS)
-void SheetView::OnGridGetAutocompleteList(views::GridView& sender,
-                                          const base::string16& text,
-                                          int& start,
-                                          std::vector<base::string16>& list) {
+void SheetController::OnGridGetAutocompleteList(
+    views::GridView& sender,
+    const base::string16& text,
+    int& start,
+    std::vector<base::string16>& list) {
   if (text.empty() || text[0] != '=')
     return;
 
@@ -168,42 +127,11 @@ void SheetView::OnGridGetAutocompleteList(views::GridView& sender,
 }
 #endif
 
-void SheetView::Save(WindowDefinition& definition) {
-  for (int i = 0; i < model_->column_count(); ++i) {
-    WindowItem& item = definition.AddItem("Column");
-    item.SetInt("ix", i + 1);
-    item.SetInt("width", model_->column_model().GetSize(i));
-  }
-
-  for (int i = 0; i < model_->GetRowCount(); i++) {
-    for (int j = 0; j < model_->column_count(); j++) {
-      if (const SheetCell* cell = model_->cell(i, j)) {
-        WindowItem& item = definition.AddItem("SheetCell");
-        // coords
-        item.SetInt("row", i + 1);
-        item.SetInt("col", j + 1);
-        // data
-        item.SetString("text", cell->formula());
-
-        if (cell->format_) {
-          // color
-          if (!cell->format_->transparent) {
-            item.SetString("color", aui::ColorToString(aui::Color::FromSkColor(
-                                        cell->format_->color)));
-          }
-
-          // align
-          if (cell->format_->align == DT_RIGHT)
-            item.SetString("align", "right");
-          else if (cell->format_->align == DT_CENTER)
-            item.SetString("align", "center");
-        }
-      }
-    }
-  }
+void SheetController::Save(WindowDefinition& definition) {
+  model_->Save(definition);
 }
 
-bool SheetView::CanClose() const {
+bool SheetController::CanClose() const {
   /*if (AtlMessageBox(m_hWnd, _T("Закрытие окна приведет к потере таблицы.
   Продолжить?"), (LPCTSTR)frame->GetTitle(),
   MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
@@ -213,7 +141,8 @@ bool SheetView::CanClose() const {
   return true;
 }
 
-void SheetView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
+void SheetController::AddContainedItem(const scada::NodeId& node_id,
+                                       unsigned flags) {
 #if defined(UI_VIEWS)
   if (model_->is_editing() && grid_->selected_column() != -1 &&
       grid_->selected_row() != -1) {
@@ -224,7 +153,7 @@ void SheetView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 #endif
 }
 
-void SheetView::UpdateEditing() {
+void SheetController::UpdateEditing() {
   grid_->SetExpandAllowed(model_->is_editing());
 
   grid_->SetColumnHeaderVisible(model_->is_editing());
@@ -237,7 +166,7 @@ void SheetView::UpdateEditing() {
 #endif
 }
 
-CommandHandler* SheetView::GetCommandHandler(unsigned command_id) {
+CommandHandler* SheetController::GetCommandHandler(unsigned command_id) {
   switch (command_id) {
     case ID_EDIT:
       return this;
@@ -250,7 +179,7 @@ CommandHandler* SheetView::GetCommandHandler(unsigned command_id) {
   return Controller::GetCommandHandler(command_id);
 }
 
-bool SheetView::IsCommandChecked(unsigned command_id) const {
+bool SheetController::IsCommandChecked(unsigned command_id) const {
   switch (command_id) {
     case ID_EDIT:
       return model_->is_editing();
@@ -259,7 +188,7 @@ bool SheetView::IsCommandChecked(unsigned command_id) const {
   }
 }
 
-void SheetView::ExecuteCommand(unsigned command_id) {
+void SheetController::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_EDIT:
 #if defined(UI_VIEWS)
@@ -281,7 +210,7 @@ void SheetView::ExecuteCommand(unsigned command_id) {
   }
 }
 
-void SheetView::ClearSelection() {
+void SheetController::ClearSelection() {
 #if defined(UI_VIEWS)
   ui::GridRange range = grid_->GetSelectionRange();
   if (!range.empty())
@@ -289,7 +218,7 @@ void SheetView::ClearSelection() {
 #endif
 }
 
-void SheetView::UpdateFormulaRow() {
+void SheetController::UpdateFormulaRow() {
 #if defined(UI_QT)
   formula_row_->setVisible(model_->is_editing());
 
@@ -314,7 +243,7 @@ void SheetView::UpdateFormulaRow() {
 }
 
 #if defined(UI_VIEWS)
-void SheetView::OnGridSelectionChanged(views::GridView& sender) {
+void SheetController::OnGridSelectionChanged(views::GridView& sender) {
   UpdateFormulaRow();
 
   ui::GridRange range = grid_->GetSelectionRange();
@@ -332,7 +261,7 @@ void SheetView::OnGridSelectionChanged(views::GridView& sender) {
 }
 #endif
 
-void SheetView::SetSelectionColor(SkColor color) {
+void SheetController::SetSelectionColor(SkColor color) {
 #if defined(UI_VIEWS)
   ui::GridRange range = grid_->GetSelectionRange();
   if (!range.empty())
@@ -341,8 +270,8 @@ void SheetView::SetSelectionColor(SkColor color) {
 }
 
 #if defined(UI_VIEWS)
-bool SheetView::OnKeyPressed(views::GridView& sender,
-                             ui::KeyboardCode key_code) {
+bool SheetController::OnKeyPressed(views::GridView& sender,
+                                   ui::KeyboardCode key_code) {
   switch (key_code) {
     case ui::VKEY_DELETE:
       if (!grid_->editing()) {
@@ -355,7 +284,7 @@ bool SheetView::OnKeyPressed(views::GridView& sender,
   return __super::OnKeyPressed(sender, key_code);
 }
 
-bool SheetView::OnDoubleClick() {
+bool SheetController::OnDoubleClick() {
   const SheetCell* cell =
       model_->cell(grid_->selected_row(), grid_->selected_column());
   if (!cell)
@@ -376,7 +305,7 @@ bool SheetView::OnDoubleClick() {
 }
 #endif
 
-NodeIdSet SheetView::GetSelectedNodeIdList() {
+NodeIdSet SheetController::GetSelectedNodeIdList() {
   NodeIdSet result;
 
 #if defined(UI_VIEWS)
@@ -400,7 +329,7 @@ NodeIdSet SheetView::GetSelectedNodeIdList() {
 }
 
 #if defined(UI_VIEWS)
-bool SheetView::CanDrop(const ui::OSExchangeData& data) {
+bool SheetController::CanDrop(const ui::OSExchangeData& data) {
   if (!model_->is_editing())
     return false;
 
@@ -411,7 +340,7 @@ bool SheetView::CanDrop(const ui::OSExchangeData& data) {
   return false;
 }
 
-int SheetView::OnPerformDrop(const ui::DropTargetEvent& event) {
+int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
   grid_->SetDropRange(ui::GridRange());
 
   if (!model_->is_editing())
@@ -431,8 +360,8 @@ int SheetView::OnPerformDrop(const ui::DropTargetEvent& event) {
   return ui::DragDropTypes::DRAG_NONE;
 }
 
-void SheetView::ContentsChanged(views::Textfield* sender,
-                                const base::string16& new_contents) {
+void SheetController::ContentsChanged(views::Textfield* sender,
+                                      const base::string16& new_contents) {
   DCHECK(sender == formula_row_.get());
   DCHECK(model_->is_editing());
   DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);

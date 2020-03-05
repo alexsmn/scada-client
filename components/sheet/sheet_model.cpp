@@ -3,6 +3,7 @@
 #include "base/stl_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/sheet/sheet_cell.h"
+#include "controls/color.h"
 #include "ui/base/models/grid_range.h"
 
 // SheetColumnModel -----------------------------------------------------------
@@ -21,6 +22,85 @@ SheetModel::SheetModel(SheetModelContext&& context)
 }
 
 SheetModel::~SheetModel() {}
+
+void SheetModel::Load(const WindowDefinition& definition) {
+  int n = 0;
+  for (const auto& item : definition.items) {
+    if (item.name_is("SheetCell")) {
+      long row = item.GetInt("row", 0) - 1;
+      long col = item.GetInt("col", 0) - 1;
+      if (row < 0 || col < 0)
+        continue;
+
+      SheetCell& cell = GetCell(row, col);
+
+      cell.SetFormula(item.GetString16("text"));
+
+      SheetFormatBase format;
+
+      auto align = item.GetString("align", "left");
+      if (align == "right")
+        format.align = DT_RIGHT;
+      else if (align == "center")
+        format.align = DT_CENTER;
+      else
+        format.align = DT_LEFT;
+
+      auto color_string = item.GetString("color");
+      if (!color_string.empty()) {
+        format.transparent = false;
+        format.color = aui::StringToColor(color_string).sk_color();
+      }
+
+      cell.format_ = formats().Get(format);
+
+    } else if (item.name_is("Column")) {
+      int ix = item.GetInt("ix", 0) - 1;
+      if (ix < 0)
+        continue;
+
+      int width = item.GetInt("width", 0);
+      if (width <= 0)
+        width = 100;
+      column_model().SetSize(ix, width);
+    }
+  }
+}
+
+void SheetModel::Save(WindowDefinition& definition) {
+  for (int i = 0; i < column_count(); ++i) {
+    WindowItem& item = definition.AddItem("Column");
+    item.SetInt("ix", i + 1);
+    item.SetInt("width", column_model().GetSize(i));
+  }
+
+  for (int i = 0; i < row_count(); i++) {
+    for (int j = 0; j < column_count(); j++) {
+      if (const SheetCell* cell = this->cell(i, j)) {
+        WindowItem& item = definition.AddItem("SheetCell");
+        // coords
+        item.SetInt("row", i + 1);
+        item.SetInt("col", j + 1);
+        // data
+        item.SetString("text", cell->formula());
+
+        if (cell->format_) {
+          // color
+          if (!cell->format_->transparent) {
+            item.SetString("color", aui::ColorToString(aui::Color::FromSkColor(
+                                        cell->format_->color)));
+          }
+
+          // align
+          if (cell->format_->align == DT_RIGHT)
+            item.SetString("align", "right");
+          else if (cell->format_->align == DT_CENTER)
+            item.SetString("align", "center");
+        }
+      }
+    }
+  }
+}
 
 void SheetModel::SetSizes(int row_count, int column_count) {
   assert(row_count > 0);

@@ -30,18 +30,18 @@ class Textfield;
 class SheetModel;
 class Grid;
 
-class SheetView : public Controller,
-                  public ContentsModel,
-                  public CommandHandler
+class SheetController : public Controller,
+                        public ContentsModel,
+                        public CommandHandler
 #if defined(UI_VIEWS)
     ,
-                  private views::GridController,
-                  private views::TextfieldController,
-                  private views::DropController
+                        private views::GridController,
+                        private views::TextfieldController,
+                        private views::DropController
 #endif
 {
  public:
-  explicit SheetView(const ControllerContext& context);
+  explicit SheetController(const ControllerContext& context);
 
   // Controller
   virtual bool CanClose() const override;
