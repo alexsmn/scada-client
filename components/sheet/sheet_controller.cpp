@@ -100,6 +100,8 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   contents_view_->set_drop_controller(NULL);
 #endif
 
+  grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
+
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(IDR_SHEET_POPUP, point, true);
   });
@@ -143,14 +145,12 @@ bool SheetController::CanClose() const {
 
 void SheetController::AddContainedItem(const scada::NodeId& node_id,
                                        unsigned flags) {
-#if defined(UI_VIEWS)
-  if (model_->is_editing() && grid_->selected_column() != -1 &&
-      grid_->selected_row() != -1) {
-    SheetCell& cell =
-        model_->GetCell(grid_->selected_row(), grid_->selected_column());
+  const auto& current_index = grid_->GetCurrentIndex();
+  if (model_->is_editing() && current_index.column != -1 &&
+      current_index.row != -1) {
+    SheetCell& cell = model_->GetCell(current_index.row, current_index.column);
     cell.SetFormula(L'=' + base::SysNativeMBToWide(MakeNodeIdFormula(node_id)));
   }
-#endif
 }
 
 void SheetController::UpdateEditing() {
@@ -211,26 +211,28 @@ void SheetController::ExecuteCommand(unsigned command_id) {
 }
 
 void SheetController::ClearSelection() {
-#if defined(UI_VIEWS)
-  ui::GridRange range = grid_->GetSelectionRange();
+  const auto& range = grid_->GetSelectionRange();
   if (!range.empty())
     model_->ClearRange(range);
-#endif
 }
 
 void SheetController::UpdateFormulaRow() {
 #if defined(UI_QT)
   formula_row_->setVisible(model_->is_editing());
-
 #elif defined(UI_VIEWS)
   formula_row_->SetVisible(model_->is_editing());
+#endif
 
   if (!model_->is_editing())
     return;
 
   ui::GridRange range = grid_->GetSelectionRange();
 
+#if defined(UI_QT)
+  formula_row_->setEnabled(!range.empty());
+#elif defined(UI_VIEWS)
   formula_row_->SetEnabled(!range.empty());
+#endif
 
   base::string16 text;
   if (!range.empty()) {
@@ -238,12 +240,15 @@ void SheetController::UpdateFormulaRow() {
     if (cell)
       text = cell->formula();
   }
+
+#if defined(UI_QT)
+  formula_row_->setText(QString::fromStdWString(text));
+#elif defined(UI_VIEWS)
   formula_row_->SetText(text);
 #endif
 }
 
-#if defined(UI_VIEWS)
-void SheetController::OnGridSelectionChanged(views::GridView& sender) {
+void SheetController::OnSelectionChanged() {
   UpdateFormulaRow();
 
   ui::GridRange range = grid_->GetSelectionRange();
@@ -259,14 +264,11 @@ void SheetController::OnGridSelectionChanged(views::GridView& sender) {
     selection().SelectMultiple();
   }
 }
-#endif
 
 void SheetController::SetSelectionColor(SkColor color) {
-#if defined(UI_VIEWS)
-  ui::GridRange range = grid_->GetSelectionRange();
+  const auto& range = grid_->GetSelectionRange();
   if (!range.empty())
     model_->SetRangeColor(range, color);
-#endif
 }
 
 #if defined(UI_VIEWS)
@@ -308,8 +310,7 @@ bool SheetController::OnDoubleClick() {
 NodeIdSet SheetController::GetSelectedNodeIdList() {
   NodeIdSet result;
 
-#if defined(UI_VIEWS)
-  ui::GridRange range = grid_->GetSelectionRange();
+  const auto& range = grid_->GetSelectionRange();
   if (range.empty())
     return result;
 
@@ -323,7 +324,6 @@ NodeIdSet SheetController::GetSelectedNodeIdList() {
       }
     }
   }
-#endif
 
   return result;
 }

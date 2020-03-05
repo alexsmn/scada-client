@@ -4,6 +4,7 @@
 #include "item_delegate.h"
 #include "qt/grid_model_adapter.h"
 #include "ui/base/models/grid_model.h"
+#include "ui/base/models/grid_range.h"
 
 #include <QPen>
 #include <QTableView>
@@ -30,6 +31,8 @@ class Grid final : public QTableView {
   void SetContextMenuHandler(ContextMenuHandler handler);
 
   ui::GridModelIndex GetCurrentIndex() const;
+
+  ui::GridRange GetSelectionRange() const;
 
   auto GetSelectedRows() const {
     std::vector<int> rows;

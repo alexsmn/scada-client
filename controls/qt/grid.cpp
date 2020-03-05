@@ -271,6 +271,15 @@ ui::GridModelIndex Grid::GetCurrentIndex() const {
                          : ui::GridModelIndex{};
 }
 
+ui::GridRange Grid::GetSelectionRange() const {
+  if (!selection_range_.isValid() || selection_range_.isEmpty())
+    return {};
+
+  return ui::GridRange::Range(selection_range_.top(), selection_range_.left(),
+                              selection_range_.height(),
+                              selection_range_.width());
+}
+
 void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
   connect(QTableView::selectionModel(), &QItemSelectionModel::selectionChanged,
           handler);

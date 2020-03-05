@@ -79,6 +79,8 @@ class SheetController : public Controller,
 
   NodeIdSet GetSelectedNodeIdList();
 
+  void OnSelectionChanged();
+
 #if defined(UI_VIEWS)
   // GridController
   virtual void OnGridGetAutocompleteList(
@@ -86,7 +88,6 @@ class SheetController : public Controller,
       const base::string16& text,
       int& start,
       std::vector<base::string16>& list) override;
-  virtual void OnGridSelectionChanged(views::GridView& sender) override;
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
   virtual bool OnDoubleClick() override;
