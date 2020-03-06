@@ -263,13 +263,15 @@ int SummaryModel::FindColumn(const scada::NodeId& node_id,
 }
 
 void SummaryModel::Load(const WindowDefinition& definition) {
-  auto time_range = RestoreTimeRange(definition);
+  const auto time_range =
+      RestoreTimeRange(definition).value_or(TimeRange::Type::Day);
+  const auto interval = definition.Get<scada::Duration>("Interval")
+                            .value_or(scada::Duration::FromHours(1));
 
   // TODO: Load time range and interval.
-  SetParams(time_range ? *time_range : TimeRange::Type::Day,
+  SetParams(time_range,
             scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
-                                   scada::Duration::FromHours(1),
-                                   scada::id::AggregateFunction_End});
+                                   interval, scada::id::AggregateFunction_End});
 
   size_t count = std::min(kMaxColumnCount, definition.items.size());
   for (size_t i = 0; i < count; ++i) {
@@ -296,6 +298,7 @@ void SummaryModel::Save(WindowDefinition& definition) {
   }
 
   SaveTimeRange(definition, GetTimeRange());
+  definition.Set("Interval", interval());
 }
 
 void SummaryModel::GetCell(ui::GridCell& cell) {

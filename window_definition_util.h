@@ -49,6 +49,16 @@ inline std::optional<TimeRange> FromJson(const base::Value& value) {
   return TimeRange{*start, *end};
 }
 
+template <>
+inline std::optional<base::TimeDelta> FromJson(const base::Value& value) {
+  return base::TimeDelta::FromSeconds(
+             GetKey<int>(value, "seconds").value_or(0)) +
+         base::TimeDelta::FromMinutes(
+             GetKey<int>(value, "minutes").value_or(0)) +
+         base::TimeDelta::FromHours(GetKey<int>(value, "hours").value_or(0)) +
+         base::TimeDelta::FromDays(GetKey<int>(value, "days").value_or(0));
+}
+
 inline base::Value ToJson(base::Time time) {
   return base::Value{SerializeToString(time)};
 }
@@ -62,6 +72,23 @@ inline base::Value ToJson(const TimeRange& time_range) {
   } else {
     SetKey(result, "type", ToString(time_range.type));
   }
+  return result;
+}
+
+inline base::Value ToJson(base::TimeDelta duration) {
+  base::Value result{base::Value::Type::DICTIONARY};
+  auto value = duration.InSeconds();
+  if (auto seconds = value % 60)
+    SetKey(result, "seconds", static_cast<int>(seconds));
+  value /= 60;
+  if (auto minutes = value % 60)
+    SetKey(result, "minutes", static_cast<int>(minutes));
+  value /= 60;
+  if (auto hours = value % 24)
+    SetKey(result, "hours", static_cast<int>(hours));
+  value /= 24;
+  if (value)
+    SetKey(result, "days", static_cast<int>(value));
   return result;
 }
 

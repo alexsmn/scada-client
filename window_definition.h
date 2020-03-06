@@ -7,6 +7,7 @@
 #include "base/values.h"
 #include "ui/gfx/size.h"
 
+#include <optional>
 #include <vector>
 
 struct WindowInfo;
@@ -35,6 +36,11 @@ class WindowItem {
   void SetString(base::StringPiece attr, base::StringPiece value);
   void SetString(base::StringPiece attr, base::StringPiece16 value);
 
+  template <class T>
+  std::optional<T> Get() const;
+  template <class T>
+  void Set(const T& value);
+
   std::string name;
   base::Value attributes{base::Value::Type::DICTIONARY};
 };
@@ -60,8 +66,10 @@ class WindowDefinition {
   const WindowItem* FindItem(const char* name) const;
   void Clear();
 
-  //  const base::Value* storage() const { return storage_.get(); }
-  //  void SetStorage(base::Value* storage);
+  template <class T>
+  std::optional<T> Get(const char* name) const;
+  template <class T>
+  void Set(const char* name, const T& value);
 
   int id = 0;
   base::string16 title;
@@ -79,3 +87,26 @@ class WindowDefinition {
 
   std::unique_ptr<base::Value> storage_;
 };
+
+#include "window_definition_util.h"
+
+template <class T>
+inline std::optional<T> WindowItem::Get() const {
+  return FromJson<T>(attributes);
+}
+
+template <class T>
+inline void WindowItem::Set(const T& value) {
+  attributes = ToJson(value);
+}
+
+template <class T>
+inline std::optional<T> WindowDefinition::Get(const char* name) const {
+  auto* item = FindItem(name);
+  return item ? item->Get<T>() : std::nullopt;
+}
+
+template <class T>
+inline void WindowDefinition::Set(const char* name, const T& value) {
+  AddItem(name).Set(value);
+}

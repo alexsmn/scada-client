@@ -72,6 +72,16 @@ inline const base::Value::ListStorage* GetList(const base::Value& value,
     return nullptr;
 }
 
+template <class T>
+inline std::optional<T> GetKey(const base::Value& dict, base::StringPiece key);
+
+template <>
+inline std::optional<int> GetKey(const base::Value& dict,
+                                 base::StringPiece key) {
+  const auto* k = dict.FindKeyOfType(key, base::Value::Type::INTEGER);
+  return k ? std::make_optional(k->GetInt()) : std::nullopt;
+}
+
 inline void SetKey(base::Value& dict, base::StringPiece key, bool value) {
   dict.SetKey(key, base::Value{value});
 }
