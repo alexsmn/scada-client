@@ -295,7 +295,7 @@ std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
     Context(const std::shared_ptr<Logger>& logger, MasterDataServices& services)
         : node_service{RemoteNodeServiceContext{
               std::make_shared<NestedLogger>(logger, "RemoteNodeService"),
-              services, services}},
+              services, services, services}},
           node_service_notifier{node_service, services} {}
 
     RemoteNodeService node_service;

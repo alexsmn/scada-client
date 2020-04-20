@@ -10,9 +10,9 @@
 #include "common/node_format.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "core/data_value.h"
+#include "model/scada_node_ids.h"
 #include "ui/base/models/grid_range.h"
 
 namespace {
@@ -373,7 +373,7 @@ void EventTableModel::Update() {
     auto runner = base::ThreadTaskRunnerHandle::Get();
     auto weak_ptr = weak_factory_.GetWeakPtr();
     history_service_.HistoryReadEvents(
-        scada::id::RootFolder, from, to, {scada::Event::ACKED},
+        scada::id::RootFolder, from, to, {scada::EventFilter::ACKED},
         [this, runner, weak_ptr](scada::Status status,
                                  std::vector<scada::Event> events) {
           runner->PostTask(
