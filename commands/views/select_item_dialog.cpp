@@ -1,10 +1,11 @@
 #include "commands/select_item_dialog.h"
 
-#include "model/namespaces.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
+#include "model/data_items_node_ids.h"
+#include "model/namespaces.h"
+#include "model/scada_node_ids.h"
 #include "services/dialog_service.h"
 #include "views/client_utils_views.h"
 
@@ -85,9 +86,9 @@ LRESULT SelectItemDialog::OnInitDialog(UINT /*uMsg*/,
   tree.SetImageList(images);
   list.SetImageList(images, LVSIL_SMALL);
 
-  auto tree = node_service_.GetNode(id::DataItems);
+  auto tree = node_service_.GetNode(data_items::id::DataItems);
   for (const auto& node : tree.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(node, id::DataGroupType))
+    if (IsInstanceOf(node, data_items::id::DataGroupType))
       InsertTree(node);
   }
 
@@ -144,7 +145,7 @@ scada::NodeId SelectItemDialog::GetItemNodeId(HTREEITEM item) const {
 }
 
 inline int GetImage(const NodeRef& node) {
-  if (IsInstanceOf(node, id::DataGroupType))
+  if (IsInstanceOf(node, data_items::id::DataGroupType))
     return 0;
   else
     return 1;
@@ -163,7 +164,7 @@ HTREEITEM SelectItemDialog::InsertTree(const NodeRef& node, HTREEITEM parent) {
 
   // insert children
   for (const auto& child : node.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(child, id::DataGroupType))
+    if (IsInstanceOf(child, data_items::id::DataGroupType))
       InsertTree(child, item);
   }
 
