@@ -2,9 +2,11 @@
 
 #include "base/strings/stringprintf.h"
 #include "common/formula_util.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "services/task_manager.h"
 
@@ -13,7 +15,7 @@ namespace {
 void FillDeviceItems(const NodeRef& parent,
                      std::map<base::string16, scada::NodeId>& items) {
   for (auto& node : parent.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(node, id::DeviceType)) {
+    if (IsInstanceOf(node, devices::id::DeviceType)) {
       auto title = GetFullDisplayName(node);
       items.emplace(std::move(title), node.node_id());
       FillDeviceItems(node, items);
@@ -25,7 +27,7 @@ void FillDeviceItems(const NodeRef& parent,
 
 MultiCreateModel::MultiCreateModel(MultiCreateContext&& context)
     : MultiCreateContext{std::move(context)} {
-  FillDeviceItems(node_service_.GetNode(id::Devices), devices_);
+  FillDeviceItems(node_service_.GetNode(devices::id::Devices), devices_);
 }
 
 base::string16 MultiCreateModel::GetAutoName(bool ts) const {
@@ -36,8 +38,9 @@ void MultiCreateModel::Run(const RunParams& params) {
   auto i = devices_.find(params.device);
   auto device_id = i == devices_.end() ? scada::NodeId() : i->second;
 
-  scada::NodeId type_definition_id =
-      params.ts ? id::DiscreteItemType : id::AnalogItemType;
+  scada::NodeId type_definition_id = params.ts
+                                         ? data_items::id::DiscreteItemType
+                                         : data_items::id::AnalogItemType;
 
   for (int i = 0; i < params.count; ++i) {
     int number = params.starting_number + i;
@@ -52,6 +55,6 @@ void MultiCreateModel::Run(const RunParams& params) {
     task_manager_.PostInsertTask(
         scada::NodeId(), parent_id_, type_definition_id,
         scada::NodeAttributes().set_display_name(std::move(display_name)),
-        {{id::DataItemType_Input1, std::move(path)}});
+        {{data_items::id::DataItemType_Input1, std::move(path)}});
   }
 }

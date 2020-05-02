@@ -5,8 +5,9 @@
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "core/status.h"
+#include "model/data_items_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
@@ -35,12 +36,14 @@ WriteModel::WriteModel(WriteContext&& context)
   };
 
   const auto node = spec_.GetNode();
-  locked_ = node[id::DataItemType_Locked].value().get_or(false);
-  two_staged_ = node[id::DataItemType_OutputTwoStaged].value().get_or(true);
+  locked_ = node[data_items::id::DataItemType_Locked].value().get_or(false);
+  two_staged_ =
+      node[data_items::id::DataItemType_OutputTwoStaged].value().get_or(true);
 
   if (!manual_) {
     auto condition =
-        node[id::DataItemType_OutputCondition].value().get_or(std::string());
+        node[data_items::id::DataItemType_OutputCondition].value().get_or(
+            std::string());
     has_condition_ = !condition.empty();
     if (has_condition_)
       condition_.Connect(timed_data_service_, condition);
@@ -66,11 +69,13 @@ std::vector<base::string16> WriteModel::GetDiscreteStates() const {
   base::string16 open_label = kDefaultOpenLabel;
 
   const auto node = spec_.GetNode();
-  if (auto format = node.target(id::HasTsFormat)) {
+  if (auto format = node.target(data_items::id::HasTsFormat)) {
     close_label = base::SysNativeMBToWide(
-        format[id::TsFormatType_CloseLabel].value().get_or(std::string()));
+        format[data_items::id::TsFormatType_CloseLabel].value().get_or(
+            std::string()));
     open_label = base::SysNativeMBToWide(
-        format[id::TsFormatType_OpenLabel].value().get_or(std::string()));
+        format[data_items::id::TsFormatType_OpenLabel].value().get_or(
+            std::string()));
   }
 
   return {open_label, close_label};
@@ -83,7 +88,8 @@ int WriteModel::GetCurrentDiscreteState() const {
 base::string16 WriteModel::GetAnalogUnits() const {
   auto node = spec_.GetNode();
   auto units =
-      node[id::AnalogItemType_EngineeringUnits].value().get_or(std::string());
+      node[data_items::id::AnalogItemType_EngineeringUnits].value().get_or(
+          std::string());
   return base::SysNativeMBToWide(units);
 }
 
@@ -96,8 +102,8 @@ void WriteModel::Write(double value, bool lock) {
 
   scada::WriteFlags flags;
   if (manual_) {
-    spec_.Call(id::DataItemType_WriteManual, {write_value_, lock}, {},
-               [weak_ptr](const scada::Status& status) {
+    spec_.Call(data_items::id::DataItemType_WriteManual, {write_value_, lock},
+               {}, [weak_ptr](const scada::Status& status) {
                  base::ThreadTaskRunnerHandle::Get()->PostTask(
                      FROM_HERE, base::Bind(&WriteModel::OnWriteComplete,
                                            weak_ptr, status));

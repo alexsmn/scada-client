@@ -24,6 +24,8 @@
 #include "core/session_service.h"
 #include "export_model.h"
 #include "export_util.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "net/transport_string.h"
 #include "services/dialog_service.h"
@@ -133,11 +135,11 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
 
     case ID_NEW_SERVICE_ITEMS:
     case ID_ADD_MULTIPLE_ITEMS:
-      return CanCreateRecord(id::DiscreteItemType) ? this : nullptr;
+      return CanCreateRecord(data_items::id::DiscreteItemType) ? this : nullptr;
 
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
-      return CanCreateRecord(id::Iec60870LinkType) ? this : nullptr;
+      return CanCreateRecord(devices::id::Iec60870LinkType) ? this : nullptr;
 
     case ID_TIME_RANGE_DAY:
     case ID_TIME_RANGE_WEEK:
@@ -178,10 +180,10 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       return;
     }
     case ID_NEW_IEC60870_LINK101:
-      CreateRecord(id::Iec60870LinkType, 0);
+      CreateRecord(devices::id::Iec60870LinkType, 0);
       return;
     case ID_NEW_IEC60870_LINK104:
-      CreateRecord(id::Iec60870LinkType, 1);
+      CreateRecord(devices::id::Iec60870LinkType, 1);
       return;
 
     case ID_NEW_SERVICE_ITEMS:
@@ -275,17 +277,17 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
 
   // name
   attributes.display_name = node_type.display_name();
-  if (type_node_id == id::Iec60870LinkType) {
+  if (type_node_id == devices::id::Iec60870LinkType) {
     attributes.display_name =
         is104 ? L"Направление МЭК-60870-104" : L"Направление МЭК-60870-101";
   }
 
   // IEC link specific.
-  if (type_node_id == id::Iec60870LinkType) {
+  if (type_node_id == devices::id::Iec60870LinkType) {
     // type
     auto protocol =
         is104 ? cfg::Iec60870Protocol::IEC104 : cfg::Iec60870Protocol::IEC101;
-    properties.emplace_back(id::Iec60870LinkType_Protocol,
+    properties.emplace_back(devices::id::Iec60870LinkType_Protocol,
                             static_cast<int>(protocol));
 
     net::TransportString ts;
@@ -298,7 +300,7 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
       ts.SetParam(net::TransportString::kParamName, "COM1");
     }
     ts.SetParam(net::TransportString::kParamActive);
-    properties.emplace_back(id::LinkType_Transport, ts.ToString());
+    properties.emplace_back(devices::id::LinkType_Transport, ts.ToString());
   }
 
   auto dispay_name = attributes.display_name;

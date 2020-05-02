@@ -6,9 +6,9 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/utils.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
@@ -48,11 +48,11 @@ PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
   assert(parent_node.fetched());
 
   std::set<NodeRef> child_type_definitions;
-  for (auto& creates : parent_node.targets(id::Creates))
+  for (auto& creates : parent_node.targets(scada::id::Creates))
     child_type_definitions.emplace(creates);
   for (auto node_type = parent_node.type_definition(); node_type;
        node_type = node_type.supertype()) {
-    for (auto& creates : node_type.targets(id::Creates))
+    for (auto& creates : node_type.targets(scada::id::Creates))
       child_type_definitions.emplace(creates);
   }
 

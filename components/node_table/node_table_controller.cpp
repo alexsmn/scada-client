@@ -1,13 +1,16 @@
 ﻿#include "components/node_table/node_table_controller.h"
 
 #include "client_utils.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/node_table/node_table_model.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
+#include "model/data_items_node_ids.h"
+#include "model/history_node_ids.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
+#include "model/security_node_ids.h"
 #include "remote/session_proxy.h"
 #include "services/profile.h"
 #include "services/property_defs.h"
@@ -26,9 +29,9 @@ scada::NodeId GetSortCommandPropertyId(unsigned command_id) {
     case ID_SORT_NONE:
       return {};
     case ID_SORT_ALIAS:
-      return id::DataItemType_Alias;
+      return data_items::id::DataItemType_Alias;
     case ID_SORT_CHANNEL:
-      return id::DataItemType_Input1;
+      return data_items::id::DataItemType_Input1;
     default:
       assert(false);
       return {};
@@ -87,14 +90,16 @@ const WindowInfo kHistoricalDatabasesWindowInfo = {ID_HISTORICAL_DB_VIEW,
                                                    IDR_GRID_POPUP};
 
 REGISTER_CONTROLLER(NodeTableControllerImpl<0>, kTableEditorWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::TsFormats>,
+REGISTER_CONTROLLER(NodeTableControllerImpl<data_items::numeric_id::TsFormats>,
                     kTsFormatsWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::Users>,
+REGISTER_CONTROLLER(NodeTableControllerImpl<security::numeric_id::Users>,
                     kUsersWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::SimulationSignals>,
-                    kSimulationSignalsWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<numeric_id::HistoricalDatabases>,
-                    kHistoricalDatabasesWindowInfo);
+REGISTER_CONTROLLER(
+    NodeTableControllerImpl<data_items::numeric_id::SimulationSignals>,
+    kSimulationSignalsWindowInfo);
+REGISTER_CONTROLLER(
+    NodeTableControllerImpl<history::numeric_id::HistoricalDatabases>,
+    kHistoricalDatabasesWindowInfo);
 
 // NodeTableController
 

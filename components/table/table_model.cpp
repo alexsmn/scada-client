@@ -1,6 +1,5 @@
 ﻿#include "components/table/table_model.h"
 
-#include "controls/color.h"
 #include "base/format_time.h"
 #include "base/time/time.h"
 #include "base/utils.h"
@@ -9,6 +8,8 @@
 #include "common/node_util.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
+#include "controls/color.h"
+#include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
@@ -43,10 +44,10 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
       const auto& type_id2 = item2.type_definition().node_id();
       if (type_id1 != type_id2)
         return type_id1 < type_id2;
-      auto channel1 =
-          item1[id::DataItemType_Input1].value().get_or(std::string{});
-      auto channel2 =
-          item2[id::DataItemType_Input1].value().get_or(std::string{});
+      auto channel1 = item1[data_items::id::DataItemType_Input1].value().get_or(
+          std::string{});
+      auto channel2 = item2[data_items::id::DataItemType_Input1].value().get_or(
+          std::string{});
       return channel1 < channel2;
     }
 
@@ -100,14 +101,14 @@ void TableModel::GetCellEx(CellEx& cell) {
     case COLUMN_VALUE:
       cell.text = trow->timed_data().GetValueString(
           value.value, value.qualifier, kValueFormat);
-      if (IsInstanceOf(node, id::DiscreteItemType)) {
+      if (IsInstanceOf(node, data_items::id::DiscreteItemType)) {
         if (!value.value.is_null()) {
-          auto params = node.target(id::HasTsFormat);
+          auto params = node.target(data_items::id::HasTsFormat);
           int color_index = -1;
           bool bool_value;
           if (value.value.get(bool_value) && params) {
-            auto pid = bool_value ? id::TsFormatType_CloseColor
-                                  : id::TsFormatType_OpenColor;
+            auto pid = bool_value ? data_items::id::TsFormatType_CloseColor
+                                  : data_items::id::TsFormatType_OpenColor;
             color_index = params[pid].value().get_or(-1);
           }
           if (color_index >= 0 && color_index < aui::GetColorCount())

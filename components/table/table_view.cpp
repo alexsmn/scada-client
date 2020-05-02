@@ -4,13 +4,14 @@
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/table/table_model.h"
 #include "components/table/table_row.h"
 #include "contents_observer.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "model/data_items_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
@@ -268,7 +269,7 @@ void TableView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
     model_->Clear();
 
   auto node = node_service_.GetNode(node_id);
-  if (IsInstanceOf(node, id::DataGroupType)) {
+  if (IsInstanceOf(node, data_items::id::DataGroupType)) {
     for (auto& child : node.targets(scada::id::HasComponent))
       AddContainedItem(child.node_id(), flags | APPEND);
     return;

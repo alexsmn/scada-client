@@ -6,13 +6,15 @@
 #include "client_paths.h"
 #include "common/event_manager.h"
 #include "common/formula_util.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_state.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "contents_model.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
 #include "node_serialization.h"
 #include "remote/protocol_utils.h"
 #include "remote/session_proxy.h"
@@ -166,11 +168,11 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
 bool ExecuteDisableItem(TaskManager& task_manager,
                         const NodeRef& node,
                         bool disable) {
-  if (!node[id::DeviceType_Disabled])
+  if (!node[devices::id::DeviceType_Disabled])
     return false;
 
   task_manager.PostUpdateTask(node.node_id(), {},
-                              {{id::DeviceType_Disabled, disable}});
+                              {{devices::id::DeviceType_Disabled, disable}});
   return true;
 }
 
@@ -221,7 +223,7 @@ WindowDefinition MakeWindowDefinition(const char* formula, unsigned type) {
 std::optional<WindowDefinition> MakeGroupWindowDefinition(const NodeRef& node,
                                                           unsigned type) {
   auto parent = node.parent();
-  if (!IsInstanceOf(parent, id::DataGroupType))
+  if (!IsInstanceOf(parent, data_items::id::DataGroupType))
     return std::nullopt;
 
   NodeIdSet item_ids;

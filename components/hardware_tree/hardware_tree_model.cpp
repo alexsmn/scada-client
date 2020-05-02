@@ -3,6 +3,7 @@
 #include "common/node_ref.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "services/device_state_notifier.h"
 
@@ -31,7 +32,7 @@ HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(HardwareTreeModel& model,
 }
 
 int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
-  if (IsInstanceOf(data_node(), id::DeviceType)) {
+  if (IsInstanceOf(data_node(), devices::id::DeviceType)) {
     auto device_state = device_state_notifier_
                             ? device_state_notifier_->device_state()
                             : DEVICE_STATE_UNKNOWN;
@@ -59,7 +60,7 @@ void HardwareTreeModel::DeviceTreeNode::OnModelChanged(
 
 void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
   if (!device_state_notifier_ && data_node().fetched() &&
-      IsInstanceOf(data_node(), id::DeviceType)) {
+      IsInstanceOf(data_node(), devices::id::DeviceType)) {
     auto& model = static_cast<HardwareTreeModel&>(this->model());
     device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
         model.timed_data_service(), this->data_node(), [this] { Changed(); });
@@ -73,12 +74,13 @@ HardwareTreeModel::HardwareTreeModel(NodeService& node_service,
                                      TimedDataService& timed_data_service)
     : ConfigurationTreeModel{node_service,
                              task_manager,
-                             node_service.GetNode(id::Devices),
+                             node_service.GetNode(devices::id::Devices),
                              {scada::id::Organizes, scada::id::HasComponent},
-                             {id::DeviceType, id::Iec61850LogicalNodeType,
-                              id::Iec61850ConfigurableObjectType,
-                              id::Iec61850DataVariableType,
-                              id::Iec61850ControlObjectType}},
+                             {devices::id::DeviceType,
+                              devices::id::Iec61850LogicalNodeType,
+                              devices::id::Iec61850ConfigurableObjectType,
+                              devices::id::Iec61850DataVariableType,
+                              devices::id::Iec61850ControlObjectType}},
       timed_data_service_{timed_data_service} {}
 
 HardwareTreeModel::~HardwareTreeModel() {}

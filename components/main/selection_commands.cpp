@@ -3,10 +3,8 @@
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "common/event_manager.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"
 #include "components/limits/limit_dialog.h"
@@ -17,6 +15,11 @@
 #include "core/node_management_service.h"
 #include "core/session_service.h"
 #include "main_window.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
+#include "model/security_node_ids.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
@@ -27,11 +30,11 @@
 namespace {
 
 bool CanCreateSomething(const NodeRef& node) {
-  if (node.target(id::Creates))
+  if (node.target(scada::id::Creates))
     return true;
 
   for (auto type = node.type_definition(); type; type = type.supertype()) {
-    if (type.target(id::Creates))
+    if (type.target(scada::id::Creates))
       return true;
   }
 
@@ -97,34 +100,36 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
     case ID_UNLOCK_ITEM: {
       if (!session_service_.HasPrivilege(scada::Privilege::Control))
         return nullptr;
-      return IsInstanceOf(node, id::DataItemType) ? this : nullptr;
+      return IsInstanceOf(node, data_items::id::DataItemType) ? this : nullptr;
     }
 
     case ID_EDIT_LIMITS:
       if (!session_service_.HasPrivilege(scada::Privilege::Control))
         return nullptr;
-      return IsInstanceOf(node, id::AnalogItemType) ? this : nullptr;
+      return IsInstanceOf(node, data_items::id::AnalogItemType) ? this
+                                                                : nullptr;
 
     case ID_ITEM_ENABLE:
     case ID_ITEM_DISABLE: {
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
-      return node[id::DeviceType_Disabled] ? this : nullptr;
+      return node[devices::id::DeviceType_Disabled] ? this : nullptr;
     }
 
     case ID_TRANSMISSION_VIEW:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
-      return IsInstanceOf(node, id::Iec60870DeviceType) ? this : nullptr;
+      return IsInstanceOf(node, devices::id::Iec60870DeviceType) ? this
+                                                                 : nullptr;
 
     case ID_CHANGE_PASSWORD:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
-      return IsInstanceOf(node, id::UserType) ? this : nullptr;
+      return IsInstanceOf(node, security::id::UserType) ? this : nullptr;
 
     case ID_OPEN_WATCH:
     case ID_OPEN_DEVICE_METRICS:
-      return IsInstanceOf(node, id::DeviceType) ? this : nullptr;
+      return IsInstanceOf(node, devices::id::DeviceType) ? this : nullptr;
   }
 
   return nullptr;
@@ -142,16 +147,18 @@ bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
       return selection_->timed_data().alerting();
 
     case ID_UNLOCK_ITEM:
-      return node && node[id::DataItemType_Locked].value().get_or(false);
+      return node &&
+             node[data_items::id::DataItemType_Locked].value().get_or(false);
 
     case ID_WRITE:
-      return node && !node[id::DataItemType_Output].value().is_null();
+      return node &&
+             !node[data_items::id::DataItemType_Output].value().is_null();
 
     case ID_ITEM_ENABLE:
     case ID_ITEM_DISABLE: {
       bool enable = command_id == ID_ITEM_ENABLE;
-      return node &&
-             node[id::DeviceType_Disabled].value().get_or(false) == enable;
+      return node && node[devices::id::DeviceType_Disabled].value().get_or(
+                         false) == enable;
     }
 
     default:
@@ -220,11 +227,11 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
                          {timed_data_service_, node.node_id(), profile_, true});
       return;
     case ID_UNLOCK_ITEM:
-      task_manager_.PostUpdateTask(node.node_id(), {},
-                                   {{id::DataItemType_Locked, false}});
+      task_manager_.PostUpdateTask(
+          node.node_id(), {}, {{data_items::id::DataItemType_Locked, false}});
       return;
     case ID_EDIT_LIMITS:
-      if (IsInstanceOf(node, id::AnalogItemType))
+      if (IsInstanceOf(node, data_items::id::AnalogItemType))
         ShowLimitsDialog(*dialog_service_, {node, task_manager_});
       return;
     case ID_ACKNOWLEDGE_CURRENT:
@@ -257,7 +264,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
 
     case ID_CHANGE_PASSWORD: {
       auto node = selection_->node();
-      if (IsInstanceOf(node, id::UserType)) {
+      if (IsInstanceOf(node, security::id::UserType)) {
         ShowChangePasswordDialog(
             *dialog_service_,
             {node, node_management_service_, local_events_, profile_});
@@ -270,14 +277,15 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_DEV1_REFR:
-      method_id = id::DeviceType_Interrogate;
+      method_id = devices::id::DeviceType_Interrogate;
       break;
     case ID_DEV1_SYNC:
-      method_id = id::DeviceType_SyncClock;
+      method_id = devices::id::DeviceType_SyncClock;
       break;
   }
 
-  if (!method_id.is_null() && IsInstanceOf(node, id::DataItemType)) {
+  if (!method_id.is_null() &&
+      IsInstanceOf(node, data_items::id::DataItemType)) {
     CallMethod(node, method_id, {});
     return;
   }

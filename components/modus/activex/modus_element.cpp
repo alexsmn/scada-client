@@ -4,8 +4,9 @@
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
 #include "common/event_manager.h"
-#include "model/scada_node_ids.h"
 #include "components/modus/activex/modus_object.h"
+#include "model/data_items_node_ids.h"
+#include "model/scada_node_ids.h"
 
 namespace modus {
 
@@ -86,10 +87,10 @@ inline std::string StrTok(std::string& str, const char* delimiters) {
 
 Limits GetLimits(const NodeRef& node) {
   return {
-      node[id::AnalogItemType_LimitLoLo].value().get_or(kNoLimit),
-      node[id::AnalogItemType_LimitLo].value().get_or(kNoLimit),
-      node[id::AnalogItemType_LimitHi].value().get_or(kNoLimit),
-      node[id::AnalogItemType_LimitHiHi].value().get_or(kNoLimit),
+      node[data_items::id::AnalogItemType_LimitLoLo].value().get_or(kNoLimit),
+      node[data_items::id::AnalogItemType_LimitLo].value().get_or(kNoLimit),
+      node[data_items::id::AnalogItemType_LimitHi].value().get_or(kNoLimit),
+      node[data_items::id::AnalogItemType_LimitHiHi].value().get_or(kNoLimit),
   };
 }
 

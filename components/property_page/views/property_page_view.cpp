@@ -1,12 +1,12 @@
 ﻿#include "components/property_page/views/property_page_view.h"
 
 #include "client_utils.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "components/property_page/views/record_editors.h"
 #include "controller_factory.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
 #include "ui/views/layout/fill_layout.h"
 #include "ui/views/widget/widget.h"
 #include "window_definition.h"
@@ -92,18 +92,18 @@ void PropertyPageView::SetNode(const NodeRef& node) {
   RecordEditorContext context{dialog_service_, task_manager_, node_service_};
 
   std::unique_ptr<RecordEditor> editor;
-  if (IsInstanceOf(node, id::DataGroupType))
+  if (IsInstanceOf(node, data_items::id::DataGroupType))
     editor = std::make_unique<record_editors::GroupEditor>(std::move(context));
-  else if (IsInstanceOf(node, id::DiscreteItemType))
+  else if (IsInstanceOf(node, data_items::id::DiscreteItemType))
     editor = std::make_unique<record_editors::TsEditor>(std::move(context));
-  else if (IsInstanceOf(node, id::AnalogItemType))
+  else if (IsInstanceOf(node, data_items::id::AnalogItemType))
     editor = std::make_unique<record_editors::TitEditor>(std::move(context));
-  else if (IsInstanceOf(node, id::TsFormatType))
+  else if (IsInstanceOf(node, data_items::id::TsFormatType))
     editor =
         std::make_unique<record_editors::TsFormatEditor>(std::move(context));
-  else if (IsInstanceOf(node, id::Iec60870LinkType)) {
+  else if (IsInstanceOf(node, devices::id::Iec60870LinkType)) {
     const auto protocol = static_cast<cfg::Iec60870Protocol>(
-        node[id::Iec60870LinkType_Protocol].value().get_or(
+        node[devices::id::Iec60870LinkType_Protocol].value().get_or(
             static_cast<int>(cfg::Iec60870Protocol::IEC104)));
     switch (protocol) {
       case cfg::Iec60870Protocol::IEC101:
@@ -115,25 +115,25 @@ void PropertyPageView::SetNode(const NodeRef& node) {
             IDD_IEC60870_LINK104, std::move(context));
         break;
     }
-  } else if (IsInstanceOf(node, id::Iec60870DeviceType))
+  } else if (IsInstanceOf(node, devices::id::Iec60870DeviceType))
     editor = std::make_unique<record_editors::Iec60870DeviceEditor>(
         std::move(context));
-  else if (IsInstanceOf(node, id::Iec61850DeviceType))
+  else if (IsInstanceOf(node, devices::id::Iec61850DeviceType))
     editor = std::make_unique<record_editors::Iec61850DeviceEditor>(
         std::move(context));
-  else if (IsInstanceOf(node, id::Iec61850RcbType))
+  else if (IsInstanceOf(node, devices::id::Iec61850RcbType))
     editor =
         std::make_unique<record_editors::Iec61850RCBEditor>(std::move(context));
-  else if (IsInstanceOf(node, id::SimulationSignalType))
+  else if (IsInstanceOf(node, data_items::id::SimulationSignalType))
     editor = std::make_unique<record_editors::SimulationItemEditor>(
         std::move(context));
-  else if (IsInstanceOf(node, id::ModbusLinkType))
+  else if (IsInstanceOf(node, devices::id::ModbusLinkType))
     editor =
         std::make_unique<record_editors::ModbusLinkEditor>(std::move(context));
-  else if (IsInstanceOf(node, id::ModbusDeviceType))
+  else if (IsInstanceOf(node, devices::id::ModbusDeviceType))
     editor = std::make_unique<record_editors::ModbusDeviceEditor>(
         std::move(context));
-  else if (IsInstanceOf(node, id::HistoricalDatabaseType))
+  else if (IsInstanceOf(node, history::id::HistoricalDatabaseType))
     editor = std::make_unique<record_editors::HistoricalDBEditor>(
         std::move(context));
   else

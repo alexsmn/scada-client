@@ -1,6 +1,7 @@
 #include "device_state_notifier.h"
 
 #include "common/formula_util.h"
+#include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "timed_data/timed_data_service.h"
 
@@ -11,8 +12,8 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
   assert(device);
   assert(device.fetched());
 
-  const scada::NodeId kComponentIds[] = {id::DeviceType_Disabled,
-                                         id::DeviceType_Online};
+  const scada::NodeId kComponentIds[] = {devices::id::DeviceType_Disabled,
+                                         devices::id::DeviceType_Online};
   static_assert(_countof(kComponentIds) == FIELD_COUNT,
                 "NotEnoughFieldChannelNames");
 

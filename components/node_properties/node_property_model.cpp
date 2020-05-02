@@ -144,7 +144,7 @@ void NodePropertyModel::Update() {
       if (!prop_decl)
         continue;
 
-      const auto& category = prop_decl.target(id::HasPropertyCategory);
+      const auto& category = prop_decl.target(scada::id::HasPropertyCategory);
       auto& group = groups[category];
       if (!group) {
         group = std::make_unique<NodeGroupModel>(*this);

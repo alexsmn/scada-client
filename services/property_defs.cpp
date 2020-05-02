@@ -3,7 +3,6 @@
 #include <iterator>
 #include <map>
 
-#include "controls/color.h"
 #include "base/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/format.h"
@@ -11,9 +10,14 @@
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "components/transport/transport_dialog.h"
+#include "controls/color.h"
 #include "core/node_management_service.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/history_node_ids.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "model/security_node_ids.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
 
@@ -105,111 +109,117 @@ const TransportPropertyDefinition kLinkTransportPropDef;
 // TODO: Avoid property definitions.
 std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     // Default
-    {id::DataItemType_Severity, &kIntPropDef},
-    {id::DeviceType_Disabled, &kBoolPropDef},
-    {id::HasSimulationSignal, &kRefPropDef},
+    {data_items::id::DataItemType_Severity, &kIntPropDef},
+    {devices::id::DeviceType_Disabled, &kBoolPropDef},
+    {data_items::id::HasSimulationSignal, &kRefPropDef},
     // DataGroup
-    {id::DataGroupType_Simulated, &kBoolPropDef},
+    {data_items::id::DataGroupType_Simulated, &kBoolPropDef},
     // DataItem
-    {id::DataItemType_Simulated, &kBoolPropDef},
-    {id::DataItemType_Alias, &kStringPropDef},
-    {id::DataItemType_Input1, &kObjectInput1PropDef},
-    {id::DataItemType_Input2, &kObjectInput2PropDef},
-    {id::DataItemType_Output, &kObjectOutputPropDef},
-    {id::DataItemType_OutputCondition, &kStringPropDef},
-    {id::DataItemType_OutputTwoStaged, &kBoolPropDef},
-    {id::DiscreteItemType_Inversion, &kBoolPropDef},
-    {id::AnalogItemType_DisplayFormat, &kStringPropDef},     // TODO: Editor
-    {id::AnalogItemType_EngineeringUnits, &kStringPropDef},  // TODO: Combo
-    {id::AnalogItemType_Aperture, &kDoublePropDef},
-    {id::AnalogItemType_Deadband, &kDoublePropDef},
-    {id::HasTsFormat, &kRefPropDef},
-    {id::AnalogItemType_Conversion, &kEnumPropDef},
-    {id::AnalogItemType_EuLo, &kDoublePropDef},
-    {id::AnalogItemType_EuHi, &kDoublePropDef},
-    {id::AnalogItemType_IrLo, &kDoublePropDef},
-    {id::AnalogItemType_IrHi, &kDoublePropDef},
-    {id::AnalogItemType_LimitLoLo, &kDoublePropDef},
-    {id::AnalogItemType_LimitLo, &kDoublePropDef},
-    {id::AnalogItemType_LimitHi, &kDoublePropDef},
-    {id::AnalogItemType_LimitHiHi, &kDoublePropDef},
-    {id::DataItemType_StalePeriod, &kIntPropDef},
-    {id::HasHistoricalDatabase, &kRefPropDef},
-    {id::AnalogItemType_Clamping, &kEnumPropDef},
+    {data_items::id::DataItemType_Simulated, &kBoolPropDef},
+    {data_items::id::DataItemType_Alias, &kStringPropDef},
+    {data_items::id::DataItemType_Input1, &kObjectInput1PropDef},
+    {data_items::id::DataItemType_Input2, &kObjectInput2PropDef},
+    {data_items::id::DataItemType_Output, &kObjectOutputPropDef},
+    {data_items::id::DataItemType_OutputCondition, &kStringPropDef},
+    {data_items::id::DataItemType_OutputTwoStaged, &kBoolPropDef},
+    {data_items::id::DiscreteItemType_Inversion, &kBoolPropDef},
+    {data_items::id::AnalogItemType_DisplayFormat,
+     &kStringPropDef},  // TODO: Editor
+    {data_items::id::AnalogItemType_EngineeringUnits,
+     &kStringPropDef},  // TODO: Combo
+    {data_items::id::AnalogItemType_Aperture, &kDoublePropDef},
+    {data_items::id::AnalogItemType_Deadband, &kDoublePropDef},
+    {data_items::id::HasTsFormat, &kRefPropDef},
+    {data_items::id::AnalogItemType_Conversion, &kEnumPropDef},
+    {data_items::id::AnalogItemType_EuLo, &kDoublePropDef},
+    {data_items::id::AnalogItemType_EuHi, &kDoublePropDef},
+    {data_items::id::AnalogItemType_IrLo, &kDoublePropDef},
+    {data_items::id::AnalogItemType_IrHi, &kDoublePropDef},
+    {data_items::id::AnalogItemType_LimitLoLo, &kDoublePropDef},
+    {data_items::id::AnalogItemType_LimitLo, &kDoublePropDef},
+    {data_items::id::AnalogItemType_LimitHi, &kDoublePropDef},
+    {data_items::id::AnalogItemType_LimitHiHi, &kDoublePropDef},
+    {data_items::id::DataItemType_StalePeriod, &kIntPropDef},
+    {history::id::HasHistoricalDatabase, &kRefPropDef},
+    {data_items::id::AnalogItemType_Clamping, &kEnumPropDef},
     // Link
-    {id::LinkType_Transport, &kLinkTransportPropDef},
-    {id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
-    {id::Iec60870LinkType_ReceiveQueueSize, &kIntPropDef},
-    {id::Iec60870LinkType_ConfirmationTimeout, &kIntPropDef},  // time delta
-    {id::Iec60870LinkType_TerminationTimeout, &kIntPropDef},   // time delta
+    {devices::id::LinkType_Transport, &kLinkTransportPropDef},
+    {devices::id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
+    {devices::id::Iec60870LinkType_ReceiveQueueSize, &kIntPropDef},
+    {devices::id::Iec60870LinkType_ConfirmationTimeout,
+     &kIntPropDef},  // time delta
+    {devices::id::Iec60870LinkType_TerminationTimeout,
+     &kIntPropDef},  // time delta
     // IEC-60870 Link
-    {id::Iec60870LinkType_Protocol, &kEnumPropDef},
-    {id::Iec60870LinkType_Mode, &kEnumPropDef},
-    {id::Iec60870LinkType_ConnectTimeout, &kIntPropDef},
-    {id::Iec60870LinkType_DeviceAddressSize, &kIntPropDef},
-    {id::Iec60870LinkType_COTSize, &kIntPropDef},
-    {id::Iec60870LinkType_InfoAddressSize, &kIntPropDef},
-    {id::Iec60870LinkType_DataCollection, &kBoolPropDef},
-    {id::Iec60870LinkType_SendRetryCount, &kIntPropDef},
-    {id::Iec60870LinkType_CRCProtection, &kBoolPropDef},
-    {id::Iec60870LinkType_SendTimeout, &kIntPropDef},
-    {id::Iec60870LinkType_ReceiveTimeout, &kIntPropDef},
-    {id::Iec60870LinkType_IdleTimeout, &kIntPropDef},
-    {id::Iec60870LinkType_AnonymousMode, &kBoolPropDef},
+    {devices::id::Iec60870LinkType_Protocol, &kEnumPropDef},
+    {devices::id::Iec60870LinkType_Mode, &kEnumPropDef},
+    {devices::id::Iec60870LinkType_ConnectTimeout, &kIntPropDef},
+    {devices::id::Iec60870LinkType_DeviceAddressSize, &kIntPropDef},
+    {devices::id::Iec60870LinkType_COTSize, &kIntPropDef},
+    {devices::id::Iec60870LinkType_InfoAddressSize, &kIntPropDef},
+    {devices::id::Iec60870LinkType_DataCollection, &kBoolPropDef},
+    {devices::id::Iec60870LinkType_SendRetryCount, &kIntPropDef},
+    {devices::id::Iec60870LinkType_CRCProtection, &kBoolPropDef},
+    {devices::id::Iec60870LinkType_SendTimeout, &kIntPropDef},
+    {devices::id::Iec60870LinkType_ReceiveTimeout, &kIntPropDef},
+    {devices::id::Iec60870LinkType_IdleTimeout, &kIntPropDef},
+    {devices::id::Iec60870LinkType_AnonymousMode, &kBoolPropDef},
     // IEC-60870 Device
-    {id::Iec60870DeviceType_Address, &kIntPropDef},
-    {id::Iec60870DeviceType_LinkAddress, &kIntPropDef},
-    {id::Iec60870DeviceType_StartupInterrogation, &kBoolPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriod, &kIntPropDef},  // time delta
-    {id::Iec60870DeviceType_StartupClockSync, &kBoolPropDef},
-    {id::Iec60870DeviceType_ClockSyncPeriod, &kIntPropDef},
-    {id::Iec60870DeviceType_UtcTime, &kBoolPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup1, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup2, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup3, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup4, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup5, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup6, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup7, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup8, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup9, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup10, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup11, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup12, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup13, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup14, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup15, &kIntPropDef},
-    {id::Iec60870DeviceType_InterrogationPeriodGroup16, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_Address, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_LinkAddress, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_StartupInterrogation, &kBoolPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriod,
+     &kIntPropDef},  // time delta
+    {devices::id::Iec60870DeviceType_StartupClockSync, &kBoolPropDef},
+    {devices::id::Iec60870DeviceType_ClockSyncPeriod, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_UtcTime, &kBoolPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup1, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup2, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup3, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup4, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup5, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup6, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup7, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup8, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup9, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup10, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup11, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup12, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup13, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup14, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup15, &kIntPropDef},
+    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup16, &kIntPropDef},
     // Modbus Link
-    {id::ModbusLinkType_Protocol, &kEnumPropDef},
-    {id::ModbusLinkType_RequestDelay, &kIntPropDef},
+    {devices::id::ModbusLinkType_Protocol, &kEnumPropDef},
+    {devices::id::ModbusLinkType_RequestDelay, &kIntPropDef},
     // Modbus Dev
-    {id::ModbusDeviceType_Address, &kIntPropDef},
-    {id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
-    {id::ModbusDeviceType_ResponseTimeout, &kIntPropDef},
+    {devices::id::ModbusDeviceType_Address, &kIntPropDef},
+    {devices::id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
+    {devices::id::ModbusDeviceType_ResponseTimeout, &kIntPropDef},
     // IEC-81650 Device
-    {id::Iec61850DeviceType_Host, &kStringPropDef},
-    {id::Iec61850DeviceType_Port, &kIntPropDef},
+    {devices::id::Iec61850DeviceType_Host, &kStringPropDef},
+    {devices::id::Iec61850DeviceType_Port, &kIntPropDef},
     // IEC-81650 ConfigurableObject
-    {id::Iec61850ConfigurableObjectType_Reference, &kStringPropDef},
+    {devices::id::Iec61850ConfigurableObjectType_Reference, &kStringPropDef},
     // Sim Signal
-    {id::SimulationSignalType_Type, &kEnumPropDef},
-    {id::SimulationSignalType_Period, &kIntPropDef},          // time delta
-    {id::SimulationSignalType_Phase, &kIntPropDef},           // time delta
-    {id::SimulationSignalType_UpdateInterval, &kIntPropDef},  // time delta
+    {data_items::id::SimulationSignalType_Function, &kEnumPropDef},
+    {data_items::id::SimulationSignalType_Period, &kIntPropDef},  // time delta
+    {data_items::id::SimulationSignalType_Phase, &kIntPropDef},   // time delta
+    {data_items::id::SimulationSignalType_UpdateInterval,
+     &kIntPropDef},  // time delta
     // User
-    {id::UserType_AccessRights, &kIntPropDef},  // TODO: Set
+    {security::id::UserType_AccessRights, &kIntPropDef},  // TODO: Set
     // TsFormat
-    {id::TsFormatType_OpenLabel, &kStringPropDef},
-    {id::TsFormatType_CloseLabel, &kStringPropDef},
-    {id::TsFormatType_OpenColor, &kColorPropDef},
-    {id::TsFormatType_CloseColor, &kColorPropDef},
+    {data_items::id::TsFormatType_OpenLabel, &kStringPropDef},
+    {data_items::id::TsFormatType_CloseLabel, &kStringPropDef},
+    {data_items::id::TsFormatType_OpenColor, &kColorPropDef},
+    {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
     // Historical DB
-    {id::HistoricalDatabaseType_Depth, &kIntPropDef},  // time delta
+    {history::id::HistoricalDatabaseType_Depth, &kIntPropDef},  // time delta
     // Transmission Item
-    {id::TransmissionItemType_SourceAddress, &kIntPropDef},
-    {id::HasTransmissionSource, &kRefPropDef},
-    {id::HasTransmissionTarget, &kRefPropDef},
+    {devices::id::TransmissionItemType_SourceAddress, &kIntPropDef},
+    {devices::id::HasTransmissionSource, &kRefPropDef},
+    {devices::id::HasTransmissionTarget, &kRefPropDef},
 };
 
 }  // namespace
@@ -463,7 +473,7 @@ base::string16 ChannelPropertyDefinition::GetText(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  if (!IsInstanceOf(node, id::DataItemType))
+  if (!IsInstanceOf(node, data_items::id::DataItemType))
     return base::string16();
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -488,15 +498,15 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
                                         const NodeRef& node,
                                         const scada::NodeId& prop_decl_id,
                                         const base::string16& text) const {
-  if (!IsInstanceOf(node, id::DataItemType))
+  if (!IsInstanceOf(node, data_items::id::DataItemType))
     return;
 
   scada::NodeId new_device_id;
   if (device_) {
-    new_device_id =
-        FindNodeByNameAndType(context.node_service_.GetNode(id::Devices), text,
-                              id::DeviceType)
-            .node_id();
+    new_device_id = FindNodeByNameAndType(
+                        context.node_service_.GetNode(devices::id::Devices),
+                        text, devices::id::DeviceType)
+                        .node_id();
   }
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -511,8 +521,9 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
   std::string formula;
   if (!parent_id.is_null()) {
     if (item_path.empty()) {
-      item_path = ToString(
-          context.node_service_.GetNode(id::DeviceType_Online).browse_name());
+      item_path =
+          ToString(context.node_service_.GetNode(devices::id::DeviceType_Online)
+                       .browse_name());
     }
     formula = MakeNodeIdFormula(MakeNestedNodeId(parent_id, item_path));
   } else {
@@ -531,8 +542,8 @@ ui::EditData ChannelPropertyDefinition::GetPropertyEditor(
 
   if (device_) {
     result.choices.emplace_back(kChoiceNone);
-    GetNodeNamesRecursive(context.node_service_.GetNode(id::Devices),
-                          id::DeviceType, result.choices);
+    GetNodeNamesRecursive(context.node_service_.GetNode(devices::id::Devices),
+                          devices::id::DeviceType, result.choices);
 
   } else {
     auto channel_path = node[prop_decl_id].value().get_or(std::string{});
@@ -553,7 +564,7 @@ ui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const scada::NodeId& prop_decl_id) const {
   ui::EditData data{ui::EditData::EditorType::BUTTON};
 
-  data.action_handler = [&dialog_service =
+  data.action_handler = [& dialog_service =
                              context.dialog_service_](base::string16& text) {
     net::TransportString transport_string{base::SysWideToNativeMB(text)};
     if (!ShowTransportDialog(dialog_service, transport_string))

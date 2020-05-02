@@ -4,6 +4,7 @@
 #include "base/logger.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/filesystem_node_ids.h"
 #include "model/scada_node_ids.h"
 
 namespace {
@@ -23,8 +24,8 @@ std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
 }
 
 bool IsFileNode(const NodeRef& node) {
-  return IsSubtypeOf(node, id::FileDirectoryType) ||
-         IsSubtypeOf(node, id::FileType);
+  return IsSubtypeOf(node, filesystem::id::FileDirectoryType) ||
+         IsSubtypeOf(node, filesystem::id::FileType);
 }
 
 std::optional<std::filesystem::path> GetNodeRelativePath(const NodeRef& node) {
@@ -45,7 +46,7 @@ FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
 
   node_service_.Subscribe(*this);
 
-  const auto& root = node_service_.GetNode(id::FileSystem);
+  const auto& root = node_service_.GetNode(filesystem::id::FileSystem);
   FetchTree(root, [this, root] {
     logger_->WriteF(LogSeverity::Normal, "Fetch file tree completed");
     ProcessNodesRecursively(root, root_dir_);
@@ -70,9 +71,9 @@ bool FileSynchronizer::ProcessNode(const NodeRef& node,
                                    const std::filesystem::path& path) {
   assert(node.fetched());
 
-  if (IsInstanceOf(node, id::FileType))
+  if (IsInstanceOf(node, filesystem::id::FileType))
     return ProcessFileNode(node, path);
-  else if (IsInstanceOf(node, id::FileDirectoryType))
+  else if (IsInstanceOf(node, filesystem::id::FileDirectoryType))
     return ProcessFileDirectoryNode(node, path);
   else
     return false;
@@ -102,10 +103,11 @@ bool FileSynchronizer::ProcessFileDirectoryNode(
 
 bool FileSynchronizer::ProcessFileNode(const NodeRef& node,
                                        const std::filesystem::path& path) {
-  auto last_update_time = ToFileTime(
-      node[id::FileType_LastUpdateTime].value().get_or(scada::DateTime{}));
-  auto size =
-      node[id::FileType_Size].value().get_or(static_cast<scada::UInt64>(0));
+  auto last_update_time =
+      ToFileTime(node[filesystem::id::FileType_LastUpdateTime].value().get_or(
+          scada::DateTime{}));
+  auto size = node[filesystem::id::FileType_Size].value().get_or(
+      static_cast<scada::UInt64>(0));
 
   std::error_code ec;
   auto actual_last_update_time = std::filesystem::last_write_time(path, ec);

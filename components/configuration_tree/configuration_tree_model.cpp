@@ -4,8 +4,10 @@
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "core/node_management_service.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "services/task_manager.h"
 
 namespace {
@@ -37,10 +39,10 @@ DropAction MakeCreateDataItemAction(TaskManager& task_manager,
   return [=, &task_manager] {
     auto type_definition_id =
         (control_item || attributes.data_type == scada::id::Boolean)
-            ? id::DiscreteItemType
-            : id::AnalogItemType;
-    auto channel_prop_id =
-        control_item ? id::DataItemType_Output : id::DataItemType_Input1;
+            ? data_items::id::DiscreteItemType
+            : data_items::id::AnalogItemType;
+    auto channel_prop_id = control_item ? data_items::id::DataItemType_Output
+                                        : data_items::id::DataItemType_Input1;
     task_manager.PostInsertTask(
         {}, parent_id, std::move(type_definition_id), std::move(attributes),
         {{std::move(channel_prop_id), std::move(formula)}});
@@ -54,8 +56,8 @@ DropAction MakeAssignChannelAction(TaskManager& task_manager,
                                    std::string formula,
                                    bool control_item) {
   return [=, &task_manager] {
-    auto channel_prop_id =
-        control_item ? id::DataItemType_Output : id::DataItemType_Input1;
+    auto channel_prop_id = control_item ? data_items::id::DataItemType_Output
+                                        : data_items::id::DataItemType_Input1;
     task_manager.PostUpdateTask(
         node_id, {}, {{std::move(channel_prop_id), std::move(formula)}});
 
@@ -279,11 +281,11 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   // Dropping of IEC-61850 channel into id::DataGroupType causes
   // creation of new id::DataItemType.
   bool is_iec61850_channel =
-      IsInstanceOf(dragging_node, id::Iec61850DataVariableType) ||
-      IsInstanceOf(dragging_node, id::Iec61850ControlObjectType);
+      IsInstanceOf(dragging_node, devices::id::Iec61850DataVariableType) ||
+      IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType);
   if (is_iec61850_channel &&
       IsSubtypeOf(target_node->data_node().type_definition(),
-                  id::DataGroupType)) {
+                  data_items::id::DataGroupType)) {
     scada::NodeAttributes attributes;
     attributes.browse_name = dragging_node.browse_name();
     attributes.display_name = dragging_node.display_name();
@@ -292,17 +294,17 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
     action = MakeCreateDataItemAction(
         task_manager_, target_node->data_node().node_id(),
         std::move(attributes), std::move(formula),
-        IsInstanceOf(dragging_node, id::Iec61850ControlObjectType));
+        IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
     return ui::DragDropTypes::DRAG_COPY;
   }
 
   // Dropping of IEC-61850 channel on id::DataItem assigns its' channel.
   if (is_iec61850_channel &&
-      IsInstanceOf(target_node->data_node(), id::DataItemType)) {
+      IsInstanceOf(target_node->data_node(), data_items::id::DataItemType)) {
     auto formula = MakeNodeIdFormula(dragging_node.node_id());
     action = MakeAssignChannelAction(
         task_manager_, target_node->data_node().node_id(), std::move(formula),
-        IsInstanceOf(dragging_node, id::Iec61850ControlObjectType));
+        IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
     return ui::DragDropTypes::DRAG_LINK;
   }
 

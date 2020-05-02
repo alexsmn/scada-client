@@ -3,10 +3,11 @@
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "model/data_items_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 #include "window_definition.h"
@@ -100,7 +101,7 @@ std::string GetTimedDataUnits(const TimedDataSpec& spec) {
   auto node = spec.GetNode();
   if (!node)
     return std::string();
-  return node[id::AnalogItemType_EngineeringUnits].value().get_or(
+  return node[data_items::id::AnalogItemType_EngineeringUnits].value().get_or(
       std::string());
 }
 

@@ -1,9 +1,10 @@
-#include "controls/color.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
 #include "common_resources.h"
+#include "controls/color.h"
+#include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "window_info.h"
 
@@ -16,7 +17,7 @@ struct DeviceMetricsItem {
 
 void DeviceMetricsItems(const NodeRef& node,
                         std::vector<DeviceMetricsItem>& rows) {
-  if (!IsInstanceOf(node, id::DeviceType))
+  if (!IsInstanceOf(node, devices::id::DeviceType))
     return;
 
   rows.push_back({node, 0});

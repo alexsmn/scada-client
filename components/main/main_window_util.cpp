@@ -3,11 +3,13 @@
 #include "client_utils.h"
 #include "common/node_ref.h"
 #include "common/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
 #include "contents_model.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "window_info.h"
 
 #include <cassert>
@@ -25,11 +27,11 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
   assert(main_window);
 
   UINT type;
-  if (IsInstanceOf(node, id::DataGroupType))
+  if (IsInstanceOf(node, data_items::id::DataGroupType))
     type = ID_TABLE_VIEW;
-  else if (IsInstanceOf(node, id::DataItemType))
+  else if (IsInstanceOf(node, data_items::id::DataItemType))
     type = ID_GRAPH_VIEW;
-  else if (IsInstanceOf(node, id::DeviceType))
+  else if (IsInstanceOf(node, devices::id::DeviceType))
     type = ID_WATCH_VIEW;
   else
     type = (shift & MK_CONTROL) ? ID_TABLE_EDITOR : ID_PROPERTY_VIEW;
@@ -40,7 +42,7 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
     if ((view->window_info().command_id == type) || (shift & MK_CONTROL)) {
       // insert items into active frame
       NodeIdSet trids;
-      if (IsInstanceOf(node, id::DataGroupType))
+      if (IsInstanceOf(node, data_items::id::DataGroupType))
         ExpandGroupItemIds(node, trids);
       else
         trids.insert(node.node_id());

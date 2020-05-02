@@ -3,22 +3,27 @@
 #include "base/strings/utf_string_conversions.h"
 #include "common/node_observer.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/action.h"
 #include "components/main/action_manager.h"
+#include "model/data_items_node_ids.h"
+#include "model/devices_node_ids.h"
+#include "model/filesystem_node_ids.h"
+#include "model/history_node_ids.h"
+#include "model/scada_node_ids.h"
+#include "model/security_node_ids.h"
 
 namespace {
 
 // TODO(semenov): Refactor to avoid listing the types.
 const scada::NodeId kNewCommandTypeIds[] = {
-    id::DataGroupType,          id::DiscreteItemType,
-    id::AnalogItemType,         id::UserType,
-    id::HistoricalDatabaseType, id::SimulationSignalType,
-    id::Iec60870DeviceType,     id::Iec61850DeviceType,
-    id::Iec61850RcbType,        id::ModbusLinkType,
-    id::ModbusDeviceType,       id::TsFormatType,
-    id::TransmissionItemType,
+    data_items::id::DataGroupType,       data_items::id::DiscreteItemType,
+    data_items::id::AnalogItemType,      security::id::UserType,
+    history::id::HistoricalDatabaseType, data_items::id::SimulationSignalType,
+    devices::id::Iec60870DeviceType,     devices::id::Iec61850DeviceType,
+    devices::id::Iec61850RcbType,        devices::id::ModbusLinkType,
+    devices::id::ModbusDeviceType,       data_items::id::TsFormatType,
+    devices::id::TransmissionItemType,
 };
 
 class NodeAction : private NodeRefObserver, public Action {

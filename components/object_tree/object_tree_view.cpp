@@ -2,11 +2,12 @@
 
 #include "client_utils.h"
 #include "common/node_service.h"
-#include "model/scada_node_ids.h"
 #include "components/object_tree/object_tree_model.h"
 #include "contents_model.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
+#include "model/data_items_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "services/profile.h"
 
 #if defined(UI_VIEWS)
@@ -25,7 +26,7 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{
           context, *new ObjectTreeModel{ObjectTreeModelContext{
                        context.node_service_, context.task_manager_,
-                       context.node_service_.GetNode(id::DataItems),
+                       context.node_service_.GetNode(data_items::id::DataItems),
                        context.timed_data_service_, context.profile_}}} {
   tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);

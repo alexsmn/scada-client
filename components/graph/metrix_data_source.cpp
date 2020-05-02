@@ -2,6 +2,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/node_util.h"
+#include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 
 #if defined(UI_QT)
@@ -175,23 +176,24 @@ void MetrixDataSource::UpdateRange() {
   range_ = views::GraphRange();
 
   auto node = timed_data_.GetNode();
-  if (IsInstanceOf(node, id::AnalogItemType)) {
+  if (IsInstanceOf(node, data_items::id::AnalogItemType)) {
     range_ = views::GraphRange(
-        node[id::AnalogItemType_EuLo].value().get_or(views::kGraphUnknownValue),
-        node[id::AnalogItemType_EuHi].value().get_or(
+        node[data_items::id::AnalogItemType_EuLo].value().get_or(
+            views::kGraphUnknownValue),
+        node[data_items::id::AnalogItemType_EuHi].value().get_or(
             views::kGraphUnknownValue));
   }
 }
 
 void MetrixDataSource::UpdateLimits() {
   if (auto node = timed_data_.GetNode()) {
-    limit_lo_ = node[id::AnalogItemType_LimitLo].value().get_or(
+    limit_lo_ = node[data_items::id::AnalogItemType_LimitLo].value().get_or(
         views::kGraphUnknownValue);
-    limit_hi_ = node[id::AnalogItemType_LimitHi].value().get_or(
+    limit_hi_ = node[data_items::id::AnalogItemType_LimitHi].value().get_or(
         views::kGraphUnknownValue);
-    limit_lolo_ = node[id::AnalogItemType_LimitLoLo].value().get_or(
+    limit_lolo_ = node[data_items::id::AnalogItemType_LimitLoLo].value().get_or(
         views::kGraphUnknownValue);
-    limit_hihi_ = node[id::AnalogItemType_LimitHiHi].value().get_or(
+    limit_hihi_ = node[data_items::id::AnalogItemType_LimitHiHi].value().get_or(
         views::kGraphUnknownValue);
   } else {
     limit_lo_ = views::kGraphUnknownValue;

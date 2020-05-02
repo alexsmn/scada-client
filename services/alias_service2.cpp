@@ -3,11 +3,12 @@
 #include "base/logger.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 
 AliasService2::AliasService2(AliasService2Context&& context)
     : AliasService2Context{std::move(context)} {
-  aliases_ = node_service_.GetNode(id::Aliases);
+  aliases_ = node_service_.GetNode(data_items::id::Aliases);
 
   logger_->WriteF(LogSeverity::Normal, "Fetching");
 
@@ -62,7 +63,7 @@ void AliasService2::OnFetchCompleted() {
 
 scada::NodeId AliasService2::ResolveNow(const std::string& alias) const {
   auto alias_node = aliases_[alias];
-  auto aliased_node = alias_node.target(id::AliasOf);
+  auto aliased_node = alias_node.target(data_items::id::AliasOf);
   auto aliased_node_id = aliased_node.node_id();
 
   logger_->WriteF(LogSeverity::Normal, "%s = %s", alias.c_str(),

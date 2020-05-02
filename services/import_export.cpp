@@ -6,9 +6,10 @@
 #include "base/table_reader.h"
 #include "base/table_writer.h"
 #include "common/format.h"
-#include "model/node_id_util.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/data_items_node_ids.h"
+#include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "services/task_manager.h"
 
@@ -172,19 +173,22 @@ ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
     }
   }
 
-  ScanDeleteNodes(node_service.GetNode(id::DataItems), id::DataItemType,
-                  listed_nodes, import_data.delete_nodes);
+  ScanDeleteNodes(node_service.GetNode(data_items::id::DataItems),
+                  data_items::id::DataItemType, listed_nodes,
+                  import_data.delete_nodes);
 
   return import_data;
 }
 
 void ExportConfiguration(NodeService& node_service, TableWriter& writer) {
   NodeRefs props;
-  GetTypePids(node_service.GetNode(id::DiscreteItemType), props, true);
-  GetTypePids(node_service.GetNode(id::AnalogItemType), props, false);
+  GetTypePids(node_service.GetNode(data_items::id::DiscreteItemType), props,
+              true);
+  GetTypePids(node_service.GetNode(data_items::id::AnalogItemType), props,
+              false);
 
   NodeRefs nodes;
-  GetNodesRecursive(node_service.GetNode(id::DataItems), nodes);
+  GetNodesRecursive(node_service.GetNode(data_items::id::DataItems), nodes);
 
   // Headers
   writer.StartRow();

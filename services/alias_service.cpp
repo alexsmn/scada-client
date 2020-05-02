@@ -3,13 +3,14 @@
 #include "base/logger.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 
 AliasService::AliasService(AliasServiceContext&& context)
     : AliasServiceContext{std::move(context)} {
   node_service_.Subscribe(*this);
 
-  UpdateRecursive(node_service_.GetNode(id::DataItems));
+  UpdateRecursive(node_service_.GetNode(data_items::id::DataItems));
 }
 
 AliasService::~AliasService() {
@@ -48,7 +49,7 @@ void AliasService::OnModelChanged(const scada::ModelChangeEvent& event) {
   } else if (event.verb & scada::ModelChangeEvent::NodeAdded) {
     assert(!event.type_definition_id.is_null());
     auto type_definition = node_service_.GetNode(event.type_definition_id);
-    if (IsSubtypeOf(type_definition, id::DataItemType))
+    if (IsSubtypeOf(type_definition, data_items::id::DataItemType))
       Update(node_service_.GetNode(event.node_id));
   }
 }
@@ -77,10 +78,11 @@ void AliasService::Update(const NodeRef& node) {
   node.Fetch(NodeFetchStatus::NodeOnly(), [this](const NodeRef& node) {
     assert(node.fetched());
 
-    if (!IsInstanceOf(node, id::DataItemType))
+    if (!IsInstanceOf(node, data_items::id::DataItemType))
       return;
 
-    auto alias = node[id::DataItemType_Alias].value().get_or(std::string{});
+    auto alias =
+        node[data_items::id::DataItemType_Alias].value().get_or(std::string{});
     Set(node.node_id(), std::move(alias));
   });
 }
