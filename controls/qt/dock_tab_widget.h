@@ -2,6 +2,7 @@
 
 #include <QTabBar>
 #include <QTabWidget>
+#include <memory>
 
 class QRubberBand;
 

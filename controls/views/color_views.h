@@ -22,8 +22,12 @@ struct Color {
 
   constexpr SkColor sk_color() const noexcept { return native_color_; }
 
-  bool operator==(const Color& other) const noexcept = default;
-  bool operator!=(const Color& other) const noexcept = default;
+  bool operator==(const Color& other) const noexcept {
+    return native_color_ == other.native_color_;
+  }
+  bool operator!=(const Color& other) const noexcept {
+    return !operator==(other);
+  }
   bool operator<(const Color& other) const noexcept {
     return native_color_ < other.native_color_;
   }

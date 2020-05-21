@@ -11,7 +11,9 @@ struct Rgba {
   int b = 0;
   int a = 255;
 
-  constexpr bool operator==(const Rgba&) const noexcept = default;
+  constexpr bool operator==(const Rgba& other) const noexcept {
+    return r == other.r & g == other.g && b == other.b && a == other.a;
+  }
 };
 
 }  // namespace aui

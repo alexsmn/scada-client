@@ -143,7 +143,9 @@ class PageLayout {
       dock[i] = Dock();
   }
 
-  bool operator==(const PageLayout&) const = default;
+  bool operator==(const PageLayout& other) const noexcept {
+    return main == other.main && dock == other.dock && blob == other.blob;
+  }
 };
 
 base::Value ToJson(const PageLayout& layout);
