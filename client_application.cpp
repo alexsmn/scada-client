@@ -248,7 +248,12 @@ void ClientApplication::Start() {
   local_events_ = std::make_unique<LocalEvents>();
 
   task_manager_ = std::make_unique<TaskManagerImpl>(TaskManagerImplContext{
-      *node_service_, *master_data_services_, *local_events_, *profile_});
+      *node_service_,
+      *master_data_services_,
+      *master_data_services_,
+      *local_events_,
+      *profile_,
+  });
   speech_.reset(new Speech);
 
   connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(

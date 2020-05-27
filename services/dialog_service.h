@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/span.h"
+#include "base/containers/span.h"
 #include "base/strings/string_piece.h"
 #include "gfx/native_widget_types.h"
 
@@ -38,13 +38,13 @@ class DialogService {
 
   struct Filter {
     base::StringPiece16 title;
-    span<const base::StringPiece> extensions;
+    base::span<const base::StringPiece> extensions;
   };
 
   struct SaveParams {
     base::StringPiece16 title;
     std::filesystem::path default_path;
-    span<const Filter> filters;
+    base::span<const Filter> filters;
   };
 
   virtual std::filesystem::path SelectSaveFile(const SaveParams& params) = 0;

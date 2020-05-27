@@ -3,6 +3,7 @@
 #include "commands/views/progress_dialog.h"
 #include "common/node_service.h"
 #include "common/node_util.h"
+#include "core/attribute_service.h"
 #include "core/node_management_service.h"
 #include "core/status.h"
 #include "services/local_events.h"
@@ -110,34 +111,48 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
   PostTask(base::StringPrintf(L"Изменение %ls", title.c_str()), [=] {
     node_service_.GetNode(node_id).Fetch(
         NodeFetchStatus::NodeOnly(),
-        [weak_ptr, node_id, &node_management_service = node_management_service_,
-         attributes, properties, callback](const NodeRef& node) {
+        [weak_ptr, node_id, &attribute_service = attribute_service_, attributes,
+         properties, callback](const NodeRef& node) {
           assert(node.status());
           if (!node.status())
             return;
 
-          std::vector<std::pair<scada::NodeId, scada::NodeAttributes>> nodes;
-          nodes.reserve(1 + properties.size());
-          if (!attributes.empty())
-            nodes.emplace_back(node_id, std::move(attributes));
+          auto inputs = std::vector<scada::WriteValueId>();
+          inputs.reserve(1 + properties.size());
+          if (!attributes.display_name.empty()) {
+            inputs.emplace_back(
+                scada::WriteValueId{node_id, scada::AttributeId::DisplayName,
+                                    std::move(attributes.display_name)});
+          }
 
           for (auto& [prop_decl_id, value] : properties) {
             auto prop_id = node[prop_decl_id].node_id();
             assert(!prop_id.is_null());
-            scada::NodeAttributes attributes;
-            attributes.value = std::move(value);
-            nodes.emplace_back(std::move(prop_id), std::move(attributes));
+            inputs.emplace_back(scada::WriteValueId{std::move(prop_id),
+                                                    scada::AttributeId::Value,
+                                                    std::move(value)});
           }
 
-          node_management_service.ModifyNodes(
-              nodes, [weak_ptr, node_id, callback](
-                         const scada::Status& status,
-                         const std::vector<scada::Status>& results) {
+          attribute_service.Write(
+              inputs, {},
+              [weak_ptr, node_id, callback](
+                  scada::Status&& status,
+                  std::vector<scada::StatusCode>&& results) {
+                if (status) {
+                  // Find any failed status.
+                  auto i = std::find_if(
+                      results.begin(), results.end(),
+                      [](const auto& status) { return scada::IsBad(status); });
+                  if (i != results.end())
+                    status = std::move(*i);
+                }
+
                 if (auto* ptr = weak_ptr.get())
                   ptr->ReportRequestCompletion(status, base::string16());
 
+                // TODO: Handle |results|.
                 if (callback)
-                  callback(status);
+                  callback(std::move(status));
               });
         });
   });

@@ -2,9 +2,9 @@
 
 #include "base/callback_forward.h"
 #include "base/memory/weak_ptr.h"
+#include "base/observer_list.h"
 #include "base/timer/timer.h"
 #include "core/status.h"
-#include "base/observer_list.h"
 #include "services/task_manager.h"
 
 #include <functional>
@@ -12,8 +12,9 @@
 #include <set>
 
 namespace scada {
+class AttributeService;
 class NodeManagementService;
-}
+}  // namespace scada
 
 class LocalEvents;
 class NodeService;
@@ -23,6 +24,7 @@ class ProgressDialog;
 struct TaskManagerImplContext {
   NodeService& node_service_;
   scada::NodeManagementService& node_management_service_;
+  scada::AttributeService& attribute_service_;
   LocalEvents& local_events_;
   Profile& profile_;
 };
