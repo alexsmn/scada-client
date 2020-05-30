@@ -373,7 +373,7 @@ void EventTableModel::Update() {
     auto runner = base::ThreadTaskRunnerHandle::Get();
     auto weak_ptr = weak_factory_.GetWeakPtr();
     history_service_.HistoryReadEvents(
-        scada::id::RootFolder, from, to, {scada::EventFilter::ACKED},
+        scada::id::Server, from, to, {scada::EventFilter::ACKED},
         [this, runner, weak_ptr](scada::Status status,
                                  std::vector<scada::Event> events) {
           runner->PostTask(

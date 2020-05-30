@@ -181,11 +181,15 @@ void TaskManagerImpl::PostAddReference(const scada::NodeId& reference_type_id,
                                target_id, true);
   auto weak_ptr = weak_factory_.GetWeakPtr();
   PostTask(title, [=, &node_management_service = node_management_service_] {
-    node_management_service.AddReference(
-        reference_type_id, source_id, target_id,
-        [weak_ptr](const scada::Status& status) {
+    scada::AddReferencesItem input{
+        source_id, reference_type_id, true, {}, target_id};
+    node_management_service.AddReferences(
+        std::vector<scada::AddReferencesItem>(1, input),
+        [weak_ptr](const scada::Status& status,
+                   const std::vector<scada::Status>& results) {
+          auto& result = status ? results.front() : status;
           if (auto ptr = weak_ptr.get())
-            ptr->ReportRequestCompletion(status, base::string16());
+            ptr->ReportRequestCompletion(result, base::string16());
         });
   });
 }
@@ -198,11 +202,15 @@ void TaskManagerImpl::PostDeleteReference(
                                target_id, false);
   auto weak_ptr = weak_factory_.GetWeakPtr();
   PostTask(title, [=, &node_management_service = node_management_service_] {
-    node_management_service.DeleteReference(
-        reference_type_id, source_id, target_id,
-        [weak_ptr](const scada::Status& status) {
+    scada::DeleteReferencesItem input{source_id, reference_type_id, true,
+                                      target_id};
+    node_management_service.DeleteReferences(
+        std::vector<scada::DeleteReferencesItem>(1, input),
+        [weak_ptr](const scada::Status& status,
+                   const std::vector<scada::Status>& results) {
+          auto& result = status ? results.front() : status;
           if (auto ptr = weak_ptr.get())
-            ptr->ReportRequestCompletion(status, base::string16());
+            ptr->ReportRequestCompletion(result, base::string16());
         });
   });
 }

@@ -1,5 +1,13 @@
 #pragma once
 
+#include "common/node_ref.h"
+#include "common/static_types.h"
+#include "common_resources.h"
+#include "core/configuration_types.h"
+#include "core/view_service.h"
+#include "net/transport_string.h"
+#include "node_combo_box.h"
+
 #include <algorithm>
 #include <set>
 
@@ -13,13 +21,6 @@ using std::min;
 #include <atlframe.h>
 #include <atlscrl.h>
 #include <atlwin.h>
-
-#include "common/node_ref.h"
-#include "common/static_types.h"
-#include "common_resources.h"
-#include "core/configuration_types.h"
-#include "net/transport_string.h"
-#include "node_combo_box.h"
 
 namespace scada {
 struct NodeAttributes;
