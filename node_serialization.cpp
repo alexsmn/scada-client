@@ -59,65 +59,66 @@ void NodeToData(const NodeRef& source,
   }
 }
 
-scada::ReferenceDescription FromProto(const protocol::NodeReference& source) {
-  return {
-      FromProto(source.reference_type_id()),
-      source.forward(),
-      FromProto(source.node_id()),
-  };
+void Convert(const protocol::NodeReference& source,
+             scada::ReferenceDescription& target) {
+  Convert(source.reference_type_id(), target.reference_type_id);
+  target.forward = source.forward();
+  Convert(source.node_id(), target.node_id);
 }
 
-void ToProto(const scada::ReferenceDescription& source,
+void Convert(const scada::ReferenceDescription& source,
              protocol::NodeReference& target) {
-  ToProto(source.reference_type_id, *target.mutable_reference_type_id());
+  Convert(source.reference_type_id, *target.mutable_reference_type_id());
   target.set_forward(source.forward);
-  ToProto(source.node_id, *target.mutable_node_id());
+  Convert(source.node_id, *target.mutable_node_id());
 }
 
-scada::NodeProperty FromProto(const protocol::NodeProperty& source) {
-  return {FromProto(source.declaration_id()), FromProto(source.value())};
+void Convert(const protocol::NodeProperty& source,
+             scada::NodeProperty& target) {
+  Convert(source.declaration_id(), target.first);
+  Convert(source.value(), target.second);
 }
 
-void ToProto(const scada::NodeProperty& source,
+void Convert(const scada::NodeProperty& source,
              protocol::NodeProperty& target) {
-  ToProto(source.first, *target.mutable_declaration_id());
-  ToProto(source.second, *target.mutable_value());
+  Convert(source.first, *target.mutable_declaration_id());
+  Convert(source.second, *target.mutable_value());
 }
 
-void ToProto(const scada::NodeState& source, protocol::Node& target) {
+void Convert(const scada::NodeState& source, protocol::Node& target) {
   if (!source.parent_id.is_null())
-    ToProto(source.parent_id, *target.mutable_parent_id());
+    Convert(source.parent_id, *target.mutable_parent_id());
 
   if (!source.reference_type_id.is_null())
-    ToProto(source.reference_type_id, *target.mutable_reference_type_id());
+    Convert(source.reference_type_id, *target.mutable_reference_type_id());
 
-  ToProto(source.node_id, *target.mutable_node_id());
-  target.set_node_class(ToProto(source.node_class));
+  Convert(source.node_id, *target.mutable_node_id());
+  target.set_node_class(ConvertTo<protocol::NodeClass>(source.node_class));
 
   if (!source.type_definition_id.is_null()) {
     assert(!scada::IsTypeDefinition(source.node_class));
-    ToProto(source.type_definition_id, *target.mutable_type_definition_id());
+    Convert(source.type_definition_id, *target.mutable_type_definition_id());
   }
 
-  ToProto(source.attributes, *target.mutable_attributes());
-  ToProto(source.properties, *target.mutable_property());
-  ToProto(source.references, *target.mutable_reference());
+  Convert(source.attributes, *target.mutable_attributes());
+  Convert(source.properties, *target.mutable_property());
+  Convert(source.references, *target.mutable_reference());
 
   if (!source.children.empty())
-    ToProto(source.children, *target.mutable_children());
+    Convert(source.children, *target.mutable_children());
 }
 
-scada::NodeState FromProto(const protocol::Node& source) {
-  return {
-      FromProto(source.node_id()),
-      FromProto(source.node_class()),
-      FromProto(source.type_definition_id()),
-      FromProto(source.parent_id()),
-      FromProto(source.reference_type_id()),
-      source.has_attributes() ? FromProto(source.attributes())
-                              : scada::NodeAttributes{},
-      VectorFromProto<scada::NodeProperty>(source.property()),
-      VectorFromProto<scada::ReferenceDescription>(source.reference()),
-      VectorFromProto<scada::NodeState>(source.children()),
-  };
+void Convert(const protocol::Node& source, scada::NodeState& target) {
+  Convert(source.node_id(), target.node_id);
+  Convert(source.node_class(), target.node_class);
+  Convert(source.type_definition_id(), target.type_definition_id);
+  Convert(source.parent_id(), target.parent_id);
+  Convert(source.reference_type_id(), target.reference_type_id);
+  if (source.has_attributes())
+    Convert(source.attributes(), target.attributes);
+  else
+    target.attributes = {};
+  Convert(source.property(), target.properties);
+  Convert(source.reference(), target.references);
+  Convert(source.children(), target.children);
 }

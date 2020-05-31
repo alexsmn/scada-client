@@ -15,5 +15,5 @@ void NodeToData(const NodeRef& source,
                 bool recursive,
                 bool ignore_browse_name);
 
-scada::NodeState FromProto(const protocol::Node& source);
-void ToProto(const scada::NodeState& source, protocol::Node& target);
+void Convert(const protocol::Node& source, scada::NodeState& target);
+void Convert(const scada::NodeState& source, protocol::Node& target);

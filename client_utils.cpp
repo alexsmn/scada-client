@@ -281,7 +281,7 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
 
   {
     protocol::NodeId message;
-    ToProto(nodes.front().type_definition().node_id(), message);
+    Convert(nodes.front().type_definition().node_id(), message);
     auto buffer = message.SerializePartialAsString();
     if (!clipboard.SetData(kNodeTreeHeaderFormat, buffer.data(), buffer.size()))
       LOG(ERROR) << "Can't set clipboard data";
@@ -297,7 +297,7 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
     }
 
     protocol::NodeTree message;
-    ContainerToProto(browse_nodes, *message.mutable_node());
+    Convert(browse_nodes, *message.mutable_node());
     auto buffer = message.SerializePartialAsString();
 
     if (!clipboard.SetData(kNodeTreeFormat, buffer.data(), buffer.size()))
@@ -341,7 +341,7 @@ bool PasteNodesFromClipboard(TaskManager& task_manager,
     return false;
 
   for (const auto& packed_node : message.node()) {
-    auto node_state = FromProto(packed_node);
+    auto node_state = ConvertTo<scada::NodeState>(packed_node);
     assert(node_state.reference_type_id == scada::id::Organizes);
     node_state.parent_id = new_parent_id;
     PasteNodesFromClipboardHelper(task_manager, std::move(node_state));
@@ -361,7 +361,7 @@ NodeRef GetPasteParentNode(NodeService& node_service,
   if (!message.ParseFromString(buffer))
     return false;
 
-  const auto& type_definition_id = FromProto(message);
+  const auto& type_definition_id = ConvertTo<scada::NodeId>(message);
   const auto& type_definition = node_service.GetNode(type_definition_id);
   if (!type_definition)
     return false;
