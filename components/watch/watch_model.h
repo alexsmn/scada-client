@@ -44,7 +44,7 @@ class WatchModel : private WatchModelContext, public ui::TableModel {
   Events events_;
 
   NodeRef device_;
-  std::unique_ptr<scada::MonitoredItem> monitored_item_;
+  std::shared_ptr<scada::MonitoredItem> monitored_item_;
 
   bool paused_ = false;
 };
