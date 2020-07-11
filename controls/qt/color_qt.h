@@ -40,7 +40,7 @@ struct Color {
     return !operator==(other);
   }
   bool operator<(const Color& other) const noexcept {
-    return native_color_.rgba() < other.native_color_.rgba();
+    return sk_color() < other.sk_color();
   }
 
  private:
