@@ -7,7 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+#include "atlres.h"
 #include "project.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ END
 
 2 TEXTINCLUDE 
 BEGIN
-    "#include ""afxres.h""\r\n"
+    "#include ""atlres.h""\r\n"
     "#include ""project.h""\r\n"
     "\0"
 END
