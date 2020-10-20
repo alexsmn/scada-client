@@ -205,12 +205,12 @@
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="59"/>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="58"/>
         <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
         <translation>Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
     </message>
     <message>
-        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="71"/>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="70"/>
         <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
         <translation>Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
     </message>

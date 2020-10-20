@@ -3,7 +3,6 @@
 #include "services/dialog_service.h"
 #include "ui_csv_export_dialog.h"
 
-#include <icu/source/common/unicode/ucnv.h>
 #include <QMessageBox>
 
 class CsvExportDialog : public QDialog {
