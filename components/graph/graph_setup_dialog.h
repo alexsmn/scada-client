@@ -10,9 +10,9 @@ using std::min;
 
 #include <atlbase.h>
 
-#include <atlapp.h>
-#include <atlctrls.h>
-#include <atlframe.h>
+#include <wtl/atlapp.h>
+#include <wtl/atlctrls.h>
+#include <wtl/atlframe.h>
 
 class GraphSetupDialog : public ATL::CDialogImpl<GraphSetupDialog>,
                          protected WTL::COwnerDraw<GraphSetupDialog> {
