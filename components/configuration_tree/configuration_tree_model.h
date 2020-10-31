@@ -3,8 +3,8 @@
 #include <map>
 #include <memory>
 
-#include "common/node_observer.h"
-#include "common/node_ref.h"
+#include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
 #include "ui/base/models/tree_node_model.h"
 

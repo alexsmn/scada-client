@@ -1,8 +1,8 @@
 ﻿#include "services/task_manager_impl.h"
 
 #include "commands/views/progress_dialog.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "core/attribute_service.h"
 #include "core/node_management_service.h"
 #include "core/status.h"

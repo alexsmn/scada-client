@@ -1,8 +1,8 @@
 #include "components/portfolio/portfolio_tree_model.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/portfolio.h"
 
 void PortfolioTreeNode::SetText(int column_id, const base::string16& title) {

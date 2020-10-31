@@ -5,7 +5,7 @@
 #include "client_utils.h"
 #include "common/event_manager.h"
 #include "model/node_id_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/events/event_table_model.h"
 #include "components/prompt/prompt_dialog.h"

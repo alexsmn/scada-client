@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/memory/weak_ptr.h"
-#include "common/node_observer.h"
-#include "common/node_ref.h"
+#include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 #include "services/property_defs.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"

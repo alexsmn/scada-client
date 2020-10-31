@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/aliases.h"
-#include "common/node_observer.h"
+#include "node_service/node_observer.h"
 
 #include <map>
 #include <unordered_map>

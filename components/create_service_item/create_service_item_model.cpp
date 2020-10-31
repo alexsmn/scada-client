@@ -1,8 +1,8 @@
 #include "components/create_service_item/create_service_item_model.h"
 
 #include "common/formula_util.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"

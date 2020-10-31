@@ -5,7 +5,7 @@
 #include "base/utils.h"
 #include "client_utils.h"
 #include "common/event_manager.h"
-#include "common/node_util.h"
+#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
 #include "controls/color.h"

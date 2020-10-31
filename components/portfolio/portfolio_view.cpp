@@ -1,7 +1,7 @@
 ﻿#include "components/portfolio/portfolio_view.h"
 
 #include "commands/select_item_dialog.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/portfolio/portfolio_tree_model.h"
 #include "controller_factory.h"

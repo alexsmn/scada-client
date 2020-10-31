@@ -1,8 +1,8 @@
 ﻿#include "components/property_page/views/property_page_view.h"
 
 #include "client_utils.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "components/property_page/views/record_editors.h"
 #include "controller_factory.h"
 #include "model/data_items_node_ids.h"

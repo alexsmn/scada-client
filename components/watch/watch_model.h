@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 #include "core/event.h"
 #include "ui/base/models/table_model.h"
 

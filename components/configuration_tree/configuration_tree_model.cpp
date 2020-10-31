@@ -2,8 +2,8 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/formula_util.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "core/node_management_service.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"

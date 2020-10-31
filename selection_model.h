@@ -2,8 +2,8 @@
 
 #include <cassert>
 
-#include "common/node_observer.h"
-#include "common/node_ref.h"
+#include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "timed_data/timed_data_spec.h"

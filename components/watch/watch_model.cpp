@@ -2,7 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_util.h"
+#include "node_service/node_util.h"
 #include "core/event_service.h"
 #include "core/monitored_item_service.h"
 

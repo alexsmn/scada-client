@@ -2,7 +2,7 @@
 
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "controller_factory.h"
 #include "controls/table.h"

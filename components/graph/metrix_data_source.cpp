@@ -1,7 +1,7 @@
 #include "components/graph/metrix_data_source.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_util.h"
+#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 

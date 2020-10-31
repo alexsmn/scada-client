@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "common/node_observer.h"
-#include "common/node_ref.h"
+#include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 #include "controls/property_model.h"
 #include "services/property_defs.h"
 

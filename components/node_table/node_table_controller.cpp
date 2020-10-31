@@ -1,7 +1,7 @@
 ﻿#include "components/node_table/node_table_controller.h"
 
 #include "client_utils.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/node_table/node_table_model.h"
 #include "controller_factory.h"

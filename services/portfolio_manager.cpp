@@ -3,7 +3,7 @@
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
 #include "model/node_id_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "model/scada_node_ids.h"
 #include "services/portfolio.h"
 

@@ -1,7 +1,7 @@
 #include "commands/select_item_dialog.h"
 
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"

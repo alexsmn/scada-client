@@ -4,8 +4,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "model/node_id_util.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "core/standard_node_ids.h"
 
 namespace {

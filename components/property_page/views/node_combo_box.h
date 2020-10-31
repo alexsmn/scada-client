@@ -2,7 +2,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "client_utils.h"
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 
 #include <atlbase.h>
 

@@ -2,7 +2,7 @@
 
 #include "base/strings/stringprintf.h"
 #include "client_utils.h"
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 #include "components/change_password/change_password_dialog.h"
 #include "core/node_management_service.h"
 

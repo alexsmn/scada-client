@@ -1,7 +1,7 @@
 #include "selection_model.h"
 
 #include "common/formula_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "model/scada_node_ids.h"
 #include "controller.h"
 

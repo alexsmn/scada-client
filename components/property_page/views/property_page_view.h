@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "common/node_observer.h"
+#include "node_service/node_observer.h"
 #include "controller.h"
 #include "core/configuration_types.h"
 #include "ui/views/controls/native_control.h"

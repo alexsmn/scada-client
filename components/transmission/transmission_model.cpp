@@ -2,8 +2,8 @@
 
 #include "base/format.h"
 #include "base/strings/sys_string_conversions.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "contents_observer.h"
 #include "core/node_management_service.h"
 #include "model/devices_node_ids.h"
@@ -157,10 +157,9 @@ void TransmissionModel::Delete(const scada::NodeId& transmission_id) {
   if (i == -1)
     return;
 
-  auto transmission = rows_[i].transmission;
-  auto source = transmission.target(devices::id::HasTransmissionSource);
-  if (source)
-    NotifyContainedItemChanged(source.node_id(), false);
+  auto& row = rows_[i];
+  if (!row.source_id.is_null())
+    NotifyContainedItemChanged(row.source_id, false);
 
   rows_.erase(rows_.begin() + i);
   GridModel::NotifyModelChanged();
@@ -176,8 +175,7 @@ int TransmissionModel::FindRow(const scada::NodeId& transmission_id) const {
 int TransmissionModel::FindSource(const scada::NodeId& source_id) const {
   for (int i = 0; i < (int)rows_.size(); i++) {
     auto& row = rows_[i];
-    auto source = row.transmission.target(devices::id::HasTransmissionSource);
-    if (source && source.node_id() == source_id)
+    if (row.source_id == source_id)
       return i;
   }
   return -1;
@@ -185,11 +183,8 @@ int TransmissionModel::FindSource(const scada::NodeId& source_id) const {
 
 NodeIdSet TransmissionModel::GetContainedItems() const {
   NodeIdSet items;
-  for (auto& row : rows()) {
-    if (auto source =
-            row.transmission.target(devices::id::HasTransmissionSource))
-      items.emplace(source.node_id());
-  }
+  for (auto& row : rows())
+    items.emplace(row.source_id);
   return items;
 }
 
@@ -215,14 +210,14 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {
-  auto source = node_service_.GetNode(node_id);
-  if (!source)
-    return;
-
+  std::vector<scada::NodeId> transmission_ids;
   for (auto& row : rows()) {
-    if (row.transmission.target(devices::id::HasTransmissionSource) == source)
-      task_manager_.PostDeleteTask(row.transmission.node_id());
+    if (row.source_id == node_id)
+      transmission_ids.emplace_back(row.transmission.node_id());
   }
+
+  for (const auto& transmission_id : transmission_ids)
+    task_manager_.PostDeleteTask(transmission_id);
 }
 
 // static

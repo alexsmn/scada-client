@@ -4,7 +4,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "components/transport/transport_dialog.h"
 #include "controls/color.h"
 #include "core/node_management_service.h"

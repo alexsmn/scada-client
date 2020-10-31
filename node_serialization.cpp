@@ -1,7 +1,7 @@
 #include "node_serialization.h"
 
 #include "common/node_state.h"
-#include "common/node_util.h"
+#include "node_service/node_util.h"
 #include "core/standard_node_ids.h"
 #include "node_serialization.h"
 #include "remote/protocol_utils.h"

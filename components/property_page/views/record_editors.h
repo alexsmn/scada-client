@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 #include "common/static_types.h"
 #include "common_resources.h"
 #include "core/configuration_types.h"

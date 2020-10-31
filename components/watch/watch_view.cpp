@@ -1,8 +1,8 @@
 ﻿#include "components/watch/watch_view.h"
 
 #include "model/node_id_util.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/watch/watch_model.h"
 #include "controller_factory.h"

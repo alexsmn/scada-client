@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "common/node_observer.h"
+#include "node_service/node_observer.h"
 #include "core/configuration_types.h"
 
 #include <list>

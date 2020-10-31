@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 
 namespace protocol {
 class Node;

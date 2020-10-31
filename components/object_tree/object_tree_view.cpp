@@ -1,7 +1,7 @@
 ﻿#include "components/object_tree/object_tree_view.h"
 
 #include "client_utils.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "components/object_tree/object_tree_model.h"
 #include "contents_model.h"
 #include "controller_factory.h"

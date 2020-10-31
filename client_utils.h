@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 #include "controls/types.h"
 #include "core/node_id.h"
 #include "window_definition.h"

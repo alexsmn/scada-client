@@ -14,6 +14,7 @@ target_link_libraries(client_views PUBLIC
   address_space_common
   base_i18n
   modus
+  remote_node_service
   scada_core_opcua
   scada_core_remote
   scada_core_vidicon

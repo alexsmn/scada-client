@@ -2,8 +2,8 @@
 
 #include "client_utils.h"
 #include "common/formula_util.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/table/table_model.h"
 #include "components/table/table_row.h"

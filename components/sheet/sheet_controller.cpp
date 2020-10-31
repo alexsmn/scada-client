@@ -3,7 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"

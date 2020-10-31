@@ -3,8 +3,8 @@
 #include <functional>
 #include <vector>
 
-#include "common/node_observer.h"
-#include "common/node_ref.h"
+#include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 #include "contents_model.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"

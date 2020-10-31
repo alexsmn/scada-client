@@ -1,8 +1,8 @@
 #include "hardware_tree_model.h"
 
-#include "common/node_ref.h"
-#include "common/node_service.h"
-#include "common/node_util.h"
+#include "node_service/node_ref.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "services/device_state_notifier.h"

@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "base/time/time.h"
-#include "common/node_ref.h"
+#include "node_service/node_ref.h"
 #include "contents_model.h"
 #include "core/aggregate_filter.h"
 #include "core/configuration_types.h"

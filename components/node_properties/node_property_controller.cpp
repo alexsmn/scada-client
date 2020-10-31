@@ -1,7 +1,7 @@
 ﻿#include "components/node_properties/node_property_controller.h"
 
 #include "model/node_id_util.h"
-#include "common/node_service.h"
+#include "node_service/node_service.h"
 #include "model/scada_node_ids.h"
 #include "components/node_properties/node_property_model.h"
 #include "controller_factory.h"

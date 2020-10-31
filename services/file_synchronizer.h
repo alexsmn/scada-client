@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_observer.h"
+#include "node_service/node_observer.h"
 
 #include <filesystem>
 #include <memory>

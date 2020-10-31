@@ -1,12 +1,12 @@
 ﻿#include "components/transmission/transmission_view.h"
 
-#include "model/node_id_util.h"
-#include "common/node_service.h"
-#include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
 #include "remote/session_proxy.h"
 #include "services/task_manager.h"
 #include "window_definition.h"
@@ -57,14 +57,8 @@ void TransmissionView::DeleteSelection() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return;
 
-#if defined(UI_VIEWS)
-  ui::GridRange range = grid_->GetSelectionRange();
-  if (range.empty())
-    return;
-
-  for (int i = range.row(); i <= range.last_row(); i++)
-    task_manager_.PostDeleteTask(model_->row(i).transmission.node_id());
-#endif
+  for (auto row_index : grid_->GetSelectedRows())
+    task_manager_.PostDeleteTask(model_->row(row_index).transmission.node_id());
 }
 
 CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
