@@ -11,17 +11,15 @@
 #include "base/nested_logger.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task_runner_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/dump.h"
 #include "client_paths.h"
-#include "node_service/address_space/address_space_fetcher.h"
-#include "node_service/address_space/address_space_node_service.h"
 #include "common/audit.h"
 #include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
 #include "common/event_manager.h"
 #include "common/master_data_services.h"
-#include "node_service/remote/remote_node_service.h"
 #include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
@@ -35,6 +33,9 @@
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
 #include "net/transport_factory_impl.h"
+#include "node_service/address_space/address_space_fetcher.h"
+#include "node_service/address_space/address_space_node_service.h"
+#include "node_service/remote/remote_node_service.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
 #include "services/alias_service2.h"
@@ -135,6 +136,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
   io_context_ = std::make_unique<boost::asio::io_context>();
+  executor_ =
+      std::make_shared<TaskRunnerExecutor>(base::ThreadTaskRunnerHandle::Get());
   io_context_timer_ = std::make_unique<base::Timer>(true, true);
   io_context_timer_->Start(
       FROM_HERE, base::TimeDelta::FromMilliseconds(10),
@@ -184,6 +187,7 @@ ClientApplication::~ClientApplication() {
 
   transport_factory_.reset();
   io_context_timer_.reset();
+  executor_.reset();
   io_context_.reset();
 }
 
@@ -297,17 +301,20 @@ void ClientApplication::Start() {
 
 std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
   struct Context {
-    Context(const std::shared_ptr<Logger>& logger, MasterDataServices& services)
-        : node_service{RemoteNodeServiceContext{
-              std::make_shared<NestedLogger>(logger, "RemoteNodeService"),
-              services, services, services}},
+    Context(const std::shared_ptr<Logger>& logger,
+            boost::asio::io_context& io_context,
+            const std::shared_ptr<Executor> executor,
+            MasterDataServices& services)
+        : node_service{RemoteNodeServiceContext{io_context, executor, services,
+                                                services, services}},
           node_service_notifier{node_service, services} {}
 
     RemoteNodeService node_service;
     SessionProxyNotifier<RemoteNodeService> node_service_notifier;
   };
 
-  auto context = std::make_shared<Context>(logger_, *master_data_services_);
+  auto context = std::make_shared<Context>(logger_, *io_context_, executor_,
+                                           *master_data_services_);
   return std::shared_ptr<NodeService>{context, &context->node_service};
 }
 
@@ -322,25 +329,27 @@ ClientApplication::CreateAddressSpaceNodeService() {
   };
 
   struct Context {
-    Context(std::shared_ptr<Logger> input_logger, MasterDataServices& services)
-        : logger{std::move(input_logger)},
-          services{services},
-          address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
-          node_service{MakeAddressSpaceNodeServiceContext()},
+    Context(const std::shared_ptr<Logger>& logger,
+            boost::asio::io_context& io_context,
+            const std::shared_ptr<Executor> executor,
+            MasterDataServices& services)
+        : address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
+          node_service{MakeAddressSpaceNodeServiceContext(io_context,
+                                                          executor,
+                                                          services)},
           node_service_notifier{node_service, services} {}
 
-    AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext() {
-      return {std::make_shared<NestedLogger>(logger, "NodeService"),
-              services,
-              services,
-              address_space,
-              address_space.node_factory,
-              services,
-              services};
+    AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext(
+        boost::asio::io_context& io_context,
+        const std::shared_ptr<Executor> executor,
+        MasterDataServices& services) {
+      return {
+          io_context, executor,      services,
+          services,   address_space, address_space.node_factory,
+          services,   services,
+      };
     }
 
-    const std::shared_ptr<Logger> logger;
-    MasterDataServices& services;
     ClientAddressSpace address_space;
     AddressSpaceNodeService node_service;
     SessionProxyNotifier<AddressSpaceNodeService> node_service_notifier;
@@ -352,7 +361,8 @@ ClientApplication::CreateAddressSpaceNodeService() {
           : static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NullLogger>());
 
-  auto context = std::make_shared<Context>(logger, *master_data_services_);
+  auto context = std::make_shared<Context>(logger, *io_context_, executor_,
+                                           *master_data_services_);
   return std::shared_ptr<NodeService>{context, &context->node_service};
 }
 

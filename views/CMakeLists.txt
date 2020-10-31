@@ -11,7 +11,7 @@ target_include_directories(client_views PUBLIC
 )
 
 target_link_libraries(client_views PUBLIC
-  address_space_common
+  address_space_node_service
   base_i18n
   modus
   remote_node_service

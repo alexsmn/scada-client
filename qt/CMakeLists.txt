@@ -23,7 +23,7 @@ target_compile_definitions(client_qt PUBLIC
 
 find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt PUBLIC
-  address_space_common
+  address_space_node_service
   base_i18n
   gdiplus
   graph_qt

@@ -2,10 +2,11 @@
 
 #include "base/files/file_util.h"
 #include "base/logger.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
+#include "core/event.h"
 #include "model/filesystem_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 
 namespace {
 

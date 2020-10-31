@@ -1,19 +1,20 @@
 ﻿#include "components/node_table/node_table_model.h"
 
-#include <set>
-
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/utils.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
+#include "core/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
 #include "string_const.h"
+
+#include <set>
 
 namespace {
 

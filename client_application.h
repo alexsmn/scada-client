@@ -25,6 +25,7 @@ class ActionManager;
 class ConnectionStateReporter;
 class EventManager;
 class EventNotifier;
+class Executor;
 class Favourites;
 class FileCache;
 class FileSynchronizer;
@@ -77,6 +78,7 @@ class ClientApplication : private ClientApplicationContext,
   std::shared_ptr<Logger> logger_;
 
   std::unique_ptr<boost::asio::io_context> io_context_;
+  std::shared_ptr<Executor> executor_;
   std::unique_ptr<base::Timer> io_context_timer_;
   std::unique_ptr<net::TransportFactory> transport_factory_;
 

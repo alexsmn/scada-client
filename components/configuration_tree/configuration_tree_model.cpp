@@ -2,12 +2,13 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
+#include "core/event.h"
 #include "core/node_management_service.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
 
 namespace {
@@ -103,6 +104,8 @@ void ConfigurationTreeNode::Load() {
       }
     }
   }
+
+  data_node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);
 }
 
 base::string16 ConfigurationTreeNode::GetText(int column_id) const {

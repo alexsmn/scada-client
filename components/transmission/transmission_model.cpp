@@ -2,12 +2,13 @@
 
 #include "base/format.h"
 #include "base/strings/sys_string_conversions.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "contents_observer.h"
+#include "core/event.h"
 #include "core/node_management_service.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
 
 TransmissionModel::TransmissionModel(NodeService& node_service,

@@ -2,9 +2,10 @@
 
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
+#include "core/event.h"
 #include "model/node_id_util.h"
-#include "node_service/node_service.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "services/portfolio.h"
 
 PortfolioManager::PortfolioManager(PortfolioManagerContext&& context)

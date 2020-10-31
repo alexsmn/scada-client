@@ -1,10 +1,11 @@
 #include "alias_service.h"
 
 #include "base/logger.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
+#include "core/event.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 
 AliasService::AliasService(AliasServiceContext&& context)
     : AliasServiceContext{std::move(context)} {
