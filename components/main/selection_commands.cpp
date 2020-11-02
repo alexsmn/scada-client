@@ -2,7 +2,7 @@
 
 #include "base/win/clipboard.h"
 #include "client_utils.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "common_resources.h"
@@ -235,7 +235,7 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
         ShowLimitsDialog(*dialog_service_, {node, task_manager_});
       return;
     case ID_ACKNOWLEDGE_CURRENT:
-      event_manager_.AcknowledgeItemEvents(node.node_id());
+      event_fetcher_.AcknowledgeItemEvents(node.node_id());
       return;
     case ID_ITEM_PARAMS:
       ::OpenView(main_window_,

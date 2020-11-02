@@ -2,7 +2,7 @@
 
 #include "base/bind.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/main/action_manager.h"
 #include "services/profile.h"
@@ -15,7 +15,7 @@ const auto kDelay = base::TimeDelta::FromMilliseconds(300);
 
 EventNotifier::EventNotifier(EventNotifierContext&& context)
     : EventNotifierContext{std::move(context)} {
-  event_manager_.AddObserver(*this);
+  event_fetcher_.AddObserver(*this);
   local_events_.observers().AddObserver(this);
 
   ShowEventsDelayed(true);
@@ -23,7 +23,7 @@ EventNotifier::EventNotifier(EventNotifierContext&& context)
 
 EventNotifier::~EventNotifier() {
   local_events_.observers().RemoveObserver(this);
-  event_manager_.RemoveObserver(*this);
+  event_fetcher_.RemoveObserver(*this);
 }
 
 void EventNotifier::OnEventReported(const scada::Event& event) {
@@ -53,7 +53,7 @@ void EventNotifier::ShowEventsDelayed(bool added) {
 void EventNotifier::ShowEvents(bool added) {
   showing_events_ = false;
 
-  bool has_events = !event_manager_.unacked_events().empty() ||
+  bool has_events = !event_fetcher_.unacked_events().empty() ||
                     !local_events_.events().empty();
 
   if (has_events != has_events_) {

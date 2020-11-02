@@ -20,7 +20,7 @@ class CommandHandler;
 class ContentsModel;
 class ControllerDelegate;
 class DialogService;
-class EventManager;
+class EventFetcher;
 class ExportModel;
 class Favourites;
 class FileCache;
@@ -38,7 +38,7 @@ struct ControllerContext {
   const AliasResolver alias_resolver_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
-  EventManager& event_manager_;
+  EventFetcher& event_fetcher_;
   scada::HistoryService& history_service_;
   scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;

@@ -4,7 +4,7 @@
 #include "base/path_service.h"
 #include "base/win/clipboard.h"
 #include "client_paths.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "common/formula_util.h"
 #include "node_service/node_service.h"
 #include "common/node_state.h"

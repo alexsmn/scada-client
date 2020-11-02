@@ -24,7 +24,7 @@ class ActionManager;
 class ContentsModel;
 class Controller;
 class DialogService;
-class EventManager;
+class EventFetcher;
 class Favourites;
 class FileCache;
 class LocalEvents;
@@ -42,7 +42,7 @@ struct OpenedViewCommandsContext {
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;
-  EventManager& event_manager_;
+  EventFetcher& event_fetcher_;
   scada::HistoryService& history_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;

@@ -7,7 +7,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
 #include "client_paths.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "common_resources.h"
@@ -168,7 +168,7 @@ MainWindowDef::MainWindowDef()
 
 Profile::Profile() {}
 
-void Profile::Load(EventManager& event_manager,
+void Profile::Load(EventFetcher& event_manager,
                    PortfolioManager& portfolio_manager,
                    Favourites& favourites) {
   LOG(INFO) << "Load profile";
@@ -188,7 +188,7 @@ void Profile::Load(EventManager& event_manager,
 }
 
 void Profile::Load(const base::Value& data,
-                   EventManager& event_manager,
+                   EventFetcher& event_manager,
                    PortfolioManager& portfolio_manager,
                    Favourites& favourites) {
   // common settings
@@ -287,7 +287,7 @@ void Profile::Load(const base::Value& data,
   csv_export_dir = GetString16(data, "csvPath");
 }
 
-void Profile::Save(const EventManager& event_manager,
+void Profile::Save(const EventFetcher& event_manager,
                    const PortfolioManager& portfolio_manager,
                    const Favourites& favourites) {
   LOG(INFO) << "Save profile";
@@ -300,7 +300,7 @@ void Profile::Save(const EventManager& event_manager,
     LOG(ERROR) << "Profile save error";
 }
 
-base::Value Profile::SaveToValue(const EventManager& event_manager,
+base::Value Profile::SaveToValue(const EventFetcher& event_manager,
                                  const PortfolioManager& portfolio_manager,
                                  const Favourites& favourites) const {
   base::Value data{base::Value::Type::DICTIONARY};

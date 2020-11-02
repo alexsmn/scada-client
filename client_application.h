@@ -23,7 +23,7 @@ class TransportFactory;
 
 class ActionManager;
 class ConnectionStateReporter;
-class EventManager;
+class EventFetcher;
 class EventNotifier;
 class Executor;
 class Favourites;
@@ -88,7 +88,7 @@ class ClientApplication : private ClientApplicationContext,
 
   std::shared_ptr<NodeService> node_service_;
 
-  std::unique_ptr<EventManager> event_manager_;
+  std::unique_ptr<EventFetcher> event_fetcher_;
   AliasResolver alias_resolver_;
   std::unique_ptr<FileSynchronizer> file_synchronizer_;
   std::unique_ptr<TimedDataService> timed_data_service_;

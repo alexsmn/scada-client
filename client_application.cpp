@@ -18,7 +18,7 @@
 #include "common/audit.h"
 #include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "common/master_data_services.h"
 #include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
@@ -151,7 +151,7 @@ ClientApplication::~ClientApplication() {
   main_window_manager_.reset();
 
   if (profile_ && profile_loaded_)
-    profile_->Save(*event_manager_, *portfolio_manager_, *favourites_);
+    profile_->Save(*event_fetcher_, *portfolio_manager_, *favourites_);
 
   VidiconClient::CleanupInstance();
 
@@ -180,7 +180,7 @@ ClientApplication::~ClientApplication() {
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
   file_synchronizer_.reset();
-  event_manager_.reset();
+  event_fetcher_.reset();
   node_service_.reset();
 
   master_data_services_ = nullptr;
@@ -194,15 +194,15 @@ ClientApplication::~ClientApplication() {
 void ClientApplication::Start() {
   master_data_services_->AddObserver(*this);
 
-  event_manager_ = std::make_unique<EventManager>(EventManagerContext{
+  event_fetcher_ = std::make_unique<EventFetcher>(EventFetcherContext{
       *io_context_,
       *master_data_services_,
       *master_data_services_,
       *master_data_services_,
-      std::make_shared<NestedLogger>(logger_, "EventManager"),
+      std::make_shared<NestedLogger>(logger_, "EventFetcher"),
   });
   if (master_data_services_->IsConnected())
-    event_manager_->OnChannelOpened(master_data_services_->GetUserId());
+    event_fetcher_->OnChannelOpened(master_data_services_->GetUserId());
 
   node_service_ =
       base::CommandLine::ForCurrentProcess()->HasSwitch("new-node-service")
@@ -244,7 +244,7 @@ void ClientApplication::Start() {
           *master_data_services_,
           *master_data_services_,
           *master_data_services_,
-          *event_manager_,
+          *event_fetcher_,
       },
       std::make_shared<NestedLogger>(logger_, "TimedDataService"));
 
@@ -276,7 +276,7 @@ void ClientApplication::Start() {
   AddGlobalActions(*action_manager_, *node_service_);
 
   event_notifier_ = std::make_unique<EventNotifier>(EventNotifierContext{
-      *event_manager_, *local_events_, *profile_,
+      *event_fetcher_, *local_events_, *profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 
   favourites_ = std::make_unique<Favourites>();
@@ -284,7 +284,7 @@ void ClientApplication::Start() {
   portfolio_manager_ = std::make_unique<PortfolioManager>(
       PortfolioManagerContext{*node_service_});
 
-  profile_->Load(*event_manager_, *portfolio_manager_, *favourites_);
+  profile_->Load(*event_fetcher_, *portfolio_manager_, *favourites_);
   profile_loaded_ = true;
 
   main_window_manager_ =
@@ -381,7 +381,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
 
     return registrar->CreateController(ControllerContext{
         delegate, alias_resolver_, *task_manager_, *master_data_services_,
-        *event_manager_, *master_data_services_, *master_data_services_,
+        *event_fetcher_, *master_data_services_, *master_data_services_,
         *timed_data_service_, *node_service_, *portfolio_manager_,
         *local_events_, *favourites_, *file_cache_, *profile_, dialog_service});
   };
@@ -398,7 +398,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
                                    DialogService& dialog_service) {
     return std::make_unique<MainCommands>(MainCommandsContext{
         main_window, *task_manager_, dialog_service, *master_data_services_,
-        *event_manager_, *node_service_, *local_events_, *favourites_, *speech_,
+        *event_fetcher_, *node_service_, *local_events_, *favourites_, *speech_,
         *profile_, *main_window_manager_, login_handler});
   };
 
@@ -425,7 +425,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     auto commands =
         std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
             *task_manager_, *master_data_services_, *master_data_services_,
-            *event_manager_, *master_data_services_, *timed_data_service_,
+            *event_fetcher_, *master_data_services_, *timed_data_service_,
             *node_service_, *portfolio_manager_, *action_manager_,
             *local_events_, *favourites_, *file_cache_, *profile_,
             *main_window_manager_});
@@ -436,7 +436,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
   };
 
   auto status_bar_model = std::make_shared<StatusBarModelImpl>(
-      StatusBarModelImplContext{*master_data_services_, *event_manager_,
+      StatusBarModelImplContext{*master_data_services_, *event_fetcher_,
                                 *node_service_, *task_manager_});
 
   auto connection_info_provider = [this] {
@@ -458,13 +458,13 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
 }
 
 void ClientApplication::OnSessionCreated() {
-  if (event_manager_)
-    event_manager_->OnChannelOpened(master_data_services_->GetUserId());
+  if (event_fetcher_)
+    event_fetcher_->OnChannelOpened(master_data_services_->GetUserId());
 }
 
 void ClientApplication::OnSessionDeleted(const scada::Status& status) {
-  if (event_manager_)
-    event_manager_->OnChannelClosed();
+  if (event_fetcher_)
+    event_fetcher_->OnChannelClosed();
 }
 
 void ClientApplication::OnEvents(bool has_events) {

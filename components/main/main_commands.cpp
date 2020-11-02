@@ -3,7 +3,7 @@
 #include "base/path_service.h"
 #include "client_paths.h"
 #include "client_utils.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
 #include "components/favourites//add_favourites_dialog.h"
@@ -161,7 +161,7 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
 
   switch (command_id) {
     case ID_ACKNOWLEDGE_ALL:
-      return !event_manager_.unacked_events().empty() ||
+      return !event_fetcher_.unacked_events().empty() ||
              !local_events_.events().empty();
 
     case ID_OPT_SPEECH:
@@ -215,7 +215,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_ACKNOWLEDGE_ALL:
-      event_manager_.AcknowledgeAll();
+      event_fetcher_.AcknowledgeAll();
       local_events_.AcknowledgeAll();
       return;
 

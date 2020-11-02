@@ -8,14 +8,14 @@
 #include "ui/base/models/table_model.h"
 
 class DialogService;
-class EventManager;
+class EventFetcher;
 class Profile;
 class TableRow;
 class TimedDataService;
 
 struct TableModelContext {
   TimedDataService& timed_data_service_;
-  EventManager& event_manager_;
+  EventFetcher& event_fetcher_;
   Profile& profile_;
   DialogService& dialog_service_;
 };

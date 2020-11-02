@@ -10,12 +10,12 @@ namespace scada {
 class SessionService;
 }
 
-class EventManager;
+class EventFetcher;
 class NodeService;
 
 struct StatusBarModelImplContext {
   scada::SessionService& session_service_;
-  EventManager& event_manager_;
+  EventFetcher& event_fetcher_;
   NodeService& node_service_;
   TaskManager& task_manager_;
 };
@@ -70,14 +70,14 @@ inline int StatusBarModelImpl::GetPaneCount() {
 inline base::string16 StatusBarModelImpl::GetPaneText(int index) {
   switch (index) {
     case 1: {
-      size_t unacked_event_count = event_manager_.unacked_events().size();
+      size_t unacked_event_count = event_fetcher_.unacked_events().size();
       return unacked_event_count
                  ? base::StringPrintf(L"Событий: %u", unacked_event_count)
                  : L"Нет событий";
     }
 
     case 2:
-      return base::StringPrintf(L"Важность: %u", event_manager_.severity_min());
+      return base::StringPrintf(L"Важность: %u", event_fetcher_.severity_min());
 
     case 3: {
       const auto& user_id = session_service_.GetUserId();

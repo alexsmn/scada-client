@@ -14,7 +14,7 @@ class Variant;
 
 class Controller;
 class DialogService;
-class EventManager;
+class EventFetcher;
 class FileCache;
 class LocalEvents;
 class MainWindow;
@@ -30,7 +30,7 @@ struct SelectionCommandsContext {
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;
-  EventManager& event_manager_;
+  EventFetcher& event_fetcher_;
   TimedDataService& timed_data_service_;
   LocalEvents& local_events_;
   FileCache& file_cache_;

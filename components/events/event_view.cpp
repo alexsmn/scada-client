@@ -3,7 +3,7 @@
 #include "base/excel.h"
 #include "base/strings/string_util.h"
 #include "client_utils.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "common_resources.h"
@@ -51,7 +51,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
     : Controller{context},
       is_panel_{is_panel},
       model_{std::make_unique<EventTableModel>(EventTableModelContext{
-          context.node_service_, context.event_manager_, context.local_events_,
+          context.node_service_, context.event_fetcher_, context.local_events_,
           context.history_service_, is_panel_})} {
   const ui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, L"Время", 150, ui::TableColumn::LEFT,
@@ -306,7 +306,7 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
 }
 
 void EventView::SelectSeverity() {
-  unsigned severity = model_->current_events() ? event_manager_.severity_min()
+  unsigned severity = model_->current_events() ? event_fetcher_.severity_min()
                                                : model_->severity_min();
   const base::char16 prompt[] =
       L"Минимальный порог важности (0 - все события):";
@@ -325,7 +325,7 @@ void EventView::SelectSeverity() {
   }
 
   if (model_->current_events()) {
-    event_manager_.SetSeverityMin(severity);
+    event_fetcher_.SetSeverityMin(severity);
   } else {
     model_->SetSeverityMin(severity);
     controller_delegate_.SetTitle(MakeTitle());

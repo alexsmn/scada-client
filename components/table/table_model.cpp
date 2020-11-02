@@ -4,7 +4,7 @@
 #include "base/time/time.h"
 #include "base/utils.h"
 #include "client_utils.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
@@ -138,7 +138,7 @@ void TableModel::GetCellEx(CellEx& cell) {
       // last unacked event
       if (node) {
         const EventSet* events =
-            event_manager_.GetItemUnackedEvents(node.node_id());
+            event_fetcher_.GetItemUnackedEvents(node.node_id());
         if (events && !events->empty()) {
           const scada::Event& event = **events->rbegin();
           cell.text = event.message;

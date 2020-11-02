@@ -10,7 +10,7 @@
 #include <SkColor.h>
 #include <map>
 
-class EventManager;
+class EventFetcher;
 class Favourites;
 class PortfolioManager;
 
@@ -52,10 +52,10 @@ class Profile {
 
   EventJournal event_journal;
 
-  void Load(EventManager& event_manager,
+  void Load(EventFetcher& event_manager,
             PortfolioManager& portfolio_manager,
             Favourites& favourites);
-  void Save(const EventManager& event_manager,
+  void Save(const EventFetcher& event_manager,
             const PortfolioManager& portfolio_manager,
             const Favourites& favourites);
 
@@ -112,10 +112,10 @@ class Profile {
 
  private:
   void Load(const base::Value& data,
-            EventManager& event_manager,
+            EventFetcher& event_manager,
             PortfolioManager& portfolio_manager,
             Favourites& favourites);
-  base::Value SaveToValue(const EventManager& event_manager,
+  base::Value SaveToValue(const EventFetcher& event_manager,
                           const PortfolioManager& portfolio_manager,
                           const Favourites& favourites) const;
 

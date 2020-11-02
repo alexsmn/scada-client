@@ -25,7 +25,7 @@ REGISTER_CONTROLLER(TableView, kWindowInfo);
 
 TableView::TableView(const ControllerContext& context) : Controller{context} {
   model_ = std::make_unique<TableModel>(TableModelContext{
-      timed_data_service_, event_manager_, profile_, dialog_service_});
+      timed_data_service_, event_fetcher_, profile_, dialog_service_});
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
     NotifyContainedItemChanged(item_id, added);
   };

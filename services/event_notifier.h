@@ -7,11 +7,11 @@
 #include <functional>
 
 class ActionManager;
-class EventManager;
+class EventFetcher;
 class Profile;
 
 struct EventNotifierContext {
-  EventManager& event_manager_;
+  EventFetcher& event_fetcher_;
   LocalEvents& local_events_;
   Profile& profile_;
   std::function<void(bool has_events)> events_handler_;

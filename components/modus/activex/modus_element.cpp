@@ -3,7 +3,7 @@
 #include "base/format.h"
 #include "base/strings/string_split.h"
 #include "base/win/scoped_bstr.h"
-#include "common/event_manager.h"
+#include "common/event_fetcher.h"
 #include "components/modus/activex/modus_object.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
