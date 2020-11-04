@@ -2,6 +2,7 @@
 
 #include "common/aliases.h"
 #include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 
 #include <map>
 #include <unordered_map>
@@ -16,7 +17,7 @@ struct AliasServiceContext {
 };
 
 class AliasService final : private AliasServiceContext,
-                           private NodeRefObserver {
+                            private NodeRefObserver {
  public:
   explicit AliasService(AliasServiceContext&& context);
   ~AliasService();
@@ -24,19 +25,13 @@ class AliasService final : private AliasServiceContext,
   void Resolve(base::StringPiece alias, const AliasResolveCallback& callback);
 
  private:
-  void OnRecursiveUpdateCompleted();
-  void UpdateRecursive(const NodeRef& node);
-  void Update(const NodeRef& node);
-  void Set(const scada::NodeId& node_id, std::string alias);
+  void OnFetchCompleted();
 
-  // NodeRefObserver
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  scada::NodeId ResolveNow(const std::string& alias) const;
 
-  std::unordered_map<std::string, scada::NodeId> resolved_aliases_;
-  std::map<scada::NodeId, std::string> resolved_nodes_;
+  NodeRef aliases_;
 
-  unsigned fetch_count_ = 0;
+  bool fetched_ = false;
   std::unordered_map<std::string, std::vector<AliasResolveCallback>>
       pending_aliases_;
 };

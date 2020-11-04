@@ -38,7 +38,7 @@
 #include "node_service/remote/remote_node_service.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
-#include "services/alias_service2.h"
+#include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
 #include "services/event_notifier.h"
 #include "services/favourites.h"
@@ -215,7 +215,7 @@ void ClientApplication::Start() {
                 std::make_shared<NestedLogger>(logger_, "AliasService"))
           : static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NullLogger>());
-  auto alias_service = std::make_shared<AliasService2>(AliasService2Context{
+  auto alias_service = std::make_shared<AliasService>(AliasServiceContext{
       alias_logger,
       *node_service_,
   });
