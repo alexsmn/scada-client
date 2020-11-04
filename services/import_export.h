@@ -3,12 +3,12 @@
 #include "core/configuration_types.h"
 #include "core/node_attributes.h"
 
-// Can be used as a signature for TableReader.
+// Can be used as a signature for CsvReader.
 const wchar_t kNodeIdTitle[] = L"Ид";
 
 class NodeService;
-class TableReader;
-class TableWriter;
+class CsvReader;
+class CsvWriter;
 
 class ResourceError {
  public:
@@ -21,7 +21,7 @@ class ResourceError {
   const base::string16 message_;
 };
 
-void ExportConfiguration(NodeService& node_service, TableWriter& writer);
+void ExportConfiguration(NodeService& node_service, CsvWriter& writer);
 
 struct ImportData {
   struct Reference {
@@ -48,4 +48,4 @@ struct ImportData {
   std::vector<scada::NodeId> delete_nodes;
 };
 
-ImportData ImportConfiguration(NodeService& node_service, TableReader& reader);
+ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader);

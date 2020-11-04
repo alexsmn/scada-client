@@ -5,8 +5,8 @@
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/table_reader.h"
-#include "base/table_writer.h"
+#include "base/csv_reader.h"
+#include "base/csv_writer.h"
 #include "base/win/win_util2.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -148,7 +148,7 @@ void ExportConfigurationToExcel(NodeService& node_service,
     if (!stream)
       throw ResourceError{L"Не удалось открыть файл."};
 
-    TableWriter writer{stream};
+    CsvWriter writer{stream};
     ExportConfiguration(node_service, writer);
 
   } catch (const ResourceError& e) {
@@ -188,7 +188,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
     return;
   }
 
-  TableReader reader{stream, kNodeIdTitle};
+  CsvReader reader{stream, kNodeIdTitle};
   ImportData import_data;
   try {
     import_data = ImportConfiguration(node_service, reader);

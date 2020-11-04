@@ -3,8 +3,8 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/table_reader.h"
-#include "base/table_writer.h"
+#include "base/csv_reader.h"
+#include "base/csv_writer.h"
 #include "common/format.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -69,7 +69,7 @@ void ScanDeleteNodes(const NodeRef& parent_node,
 
 }  // namespace
 
-ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
+ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
   ImportData import_data;
 
   std::set<scada::NodeId> listed_nodes;
@@ -180,7 +180,7 @@ ImportData ImportConfiguration(NodeService& node_service, TableReader& reader) {
   return import_data;
 }
 
-void ExportConfiguration(NodeService& node_service, TableWriter& writer) {
+void ExportConfiguration(NodeService& node_service, CsvWriter& writer) {
   NodeRefs props;
   GetTypePids(node_service.GetNode(data_items::id::DiscreteItemType), props,
               true);

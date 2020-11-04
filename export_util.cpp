@@ -2,7 +2,7 @@
 
 #include "base/excel.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/table_writer.h"
+#include "base/csv_writer.h"
 #include "core/variant.h"
 #include "ui/base/models/grid_model.h"
 #include "ui/base/models/header_model.h"
@@ -76,7 +76,7 @@ void ExportToCsv(ExportModel::TableExportData& table,
                  const CsvExportParams& params,
                  const std::filesystem::path& path) {
   std::ofstream stream{path};
-  TableWriter writer{stream};
+  CsvWriter writer{stream};
   writer.unicode = params.unicode;
   writer.delimiter = params.delimiter;
   writer.quote = params.quote;
@@ -101,7 +101,7 @@ void ExportToCsv(ExportModel::GridExportData& grid,
                  const CsvExportParams& params,
                  const std::filesystem::path& path) {
   std::ofstream stream{path};
-  TableWriter writer{stream};
+  CsvWriter writer{stream};
   writer.unicode = params.unicode;
   writer.delimiter = params.delimiter;
   writer.quote = params.quote;
