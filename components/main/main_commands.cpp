@@ -14,7 +14,7 @@
 #include "components/prompt/prompt_dialog.h"
 #include "core/session_service.h"
 #include "services/dialog_service.h"
-#include "services/excel_configuration_commands.h"
+#include "components/configuration_export/excel_configuration_commands.h"
 #include "services/favourites.h"
 #include "services/local_events.h"
 #include "services/profile.h"

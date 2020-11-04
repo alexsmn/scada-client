@@ -1,4 +1,4 @@
-﻿#include "services/excel_configuration_commands.h"
+﻿#include "components/configuration_export/excel_configuration_commands.h"
 
 #include "base/base_paths.h"
 #include "base/files/file_path.h"
@@ -12,7 +12,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/dialog_service.h"
-#include "services/import_export.h"
+#include "components/configuration_export/import_export.h"
 #include "services/task_manager.h"
 
 #include <algorithm>
