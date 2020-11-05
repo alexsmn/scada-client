@@ -12,7 +12,7 @@ ExportData::Node MakeExportNode(
   auto type = node.type_definition();
 
   std::vector<ExportData::PropertyValue> property_values;
-  for (auto prop : props) {
+  for (const auto& prop : props) {
     if (prop.reference) {
       auto target = node.target(prop.node_id);
       property_values.push_back(
@@ -60,11 +60,11 @@ void CollectProperties(const NodeRef& type,
 
   for (auto p : type.targets(scada::id::HasProperty))
     properties.emplace_back(MakeExportProperty(p));
-  for (auto r : type.references())
+  for (auto r : type.references(scada::id::NonHierarchicalReferences))
     properties.emplace_back(MakeExportProperty(r.reference_type));
 }
 
-}
+}  // namespace
 
 ExportData CollectExportData(NodeService& node_service) {
   std::vector<ExportData::Property> props;
