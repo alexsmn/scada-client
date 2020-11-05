@@ -1,18 +1,20 @@
 ﻿#include "components/configuration_export/excel_configuration_commands.h"
 
 #include "base/base_paths.h"
+#include "base/csv_reader.h"
+#include "base/csv_writer.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/csv_reader.h"
-#include "base/csv_writer.h"
 #include "base/win/win_util2.h"
+#include "components/configuration_export/export_data_collector.h"
+#include "components/configuration_export/import_export.h"
+#include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/dialog_service.h"
-#include "components/configuration_export/import_export.h"
 #include "services/task_manager.h"
 
 #include <algorithm>
@@ -20,9 +22,11 @@
 #include <set>
 
 namespace {
+
 const base::char16 kImportTitle[] = L"Импорт";
 const base::char16 kExportTitle[] = L"Экспорт";
 const char kDefaultFileName[] = "configuration.csv";
+
 }  // namespace
 
 void PrintProps(NodeService& node_service,
@@ -148,8 +152,10 @@ void ExportConfigurationToExcel(NodeService& node_service,
     if (!stream)
       throw ResourceError{L"Не удалось открыть файл."};
 
+    auto data = CollectExportData(node_service);
+
     CsvWriter writer{stream};
-    ExportConfiguration(node_service, writer);
+    ExportConfiguration(data, writer);
 
   } catch (const ResourceError& e) {
     dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,

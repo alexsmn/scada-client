@@ -21,8 +21,6 @@ class ResourceError {
   const base::string16 message_;
 };
 
-void ExportConfiguration(NodeService& node_service, CsvWriter& writer);
-
 struct ImportData {
   struct Reference {
     scada::NodeId reference_type_id;
@@ -49,3 +47,34 @@ struct ImportData {
 };
 
 ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader);
+
+
+struct ExportData {
+  struct Property {
+    scada::NodeId node_id;
+    scada::LocalizedText display_name;
+    bool reference = false;
+  };
+
+  struct PropertyValue {
+    scada::NodeId node_id;
+    scada::Variant value;
+    scada::NodeId target_id;
+    scada::LocalizedText target_display_name;
+    bool reference = false;
+  };
+
+  struct Node {
+    scada::NodeId node_id;
+    scada::NodeId parent_id;
+    scada::LocalizedText type_display_name;
+    scada::NodeId type_id;
+    scada::LocalizedText display_name;
+    std::vector<PropertyValue> property_values;
+  };
+
+  std::vector<Property> props;
+  std::vector<Node> nodes;
+};
+
+void ExportConfiguration(const ExportData& data, CsvWriter& writer);

@@ -1,43 +1,22 @@
 ﻿#include "components/configuration_export/import_export.h"
 
+#include "base/csv_reader.h"
+#include "base/csv_writer.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/csv_reader.h"
-#include "base/csv_writer.h"
 #include "common/format.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
 
 #include <algorithm>
 #include <set>
 
 namespace {
-
-using NodeRefs = std::vector<NodeRef>;
-
-void GetNodesRecursive(NodeRef parent_node, NodeRefs& nodes) {
-  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    nodes.emplace_back(node);
-    GetNodesRecursive(node, nodes);
-  }
-}
-
-void GetTypePids(const NodeRef& type, NodeRefs& pids, bool recursive) {
-  if (recursive) {
-    if (auto supertype = type.supertype())
-      GetTypePids(supertype, pids, true);
-  }
-
-  for (auto p : type.targets(scada::id::HasProperty))
-    pids.emplace_back(p);
-  for (auto r : type.references())
-    pids.emplace_back(r.reference_type);
-}
 
 base::string16 FormatReferenceCell(const base::string16& title,
                                    const scada::NodeId& prop_type_id) {
@@ -180,48 +159,38 @@ ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
   return import_data;
 }
 
-void ExportConfiguration(NodeService& node_service, CsvWriter& writer) {
-  NodeRefs props;
-  GetTypePids(node_service.GetNode(data_items::id::DiscreteItemType), props,
-              true);
-  GetTypePids(node_service.GetNode(data_items::id::AnalogItemType), props,
-              false);
-
-  NodeRefs nodes;
-  GetNodesRecursive(node_service.GetNode(data_items::id::DataItems), nodes);
-
+void ExportConfiguration(const ExportData& data, CsvWriter& writer) {
   // Headers
   writer.StartRow();
   writer.WriteCell(kNodeIdTitle);
   writer.WriteCell(L"Родитель");
   writer.WriteCell(L"Тип");
   writer.WriteCell(L"Имя");
-  for (auto prop : props)
-    writer.WriteCell(FormatReferenceCell(prop.display_name(), prop.node_id()));
+  for (const auto& prop : data.props)
+    writer.WriteCell(FormatReferenceCell(prop.display_name, prop.node_id));
 
   // Rows
-  for (auto node : nodes) {
-    assert(node);
+  for (const auto& node : data.nodes) {
     writer.StartRow();
     writer.WriteCell(
-        base::SysNativeMBToWide(NodeIdToScadaString(node.node_id())));
+        base::SysNativeMBToWide(NodeIdToScadaString(node.node_id)));
     writer.WriteCell(
-        base::SysNativeMBToWide(NodeIdToScadaString(node.parent().node_id())));
-    auto type = node.type_definition();
+        base::SysNativeMBToWide(NodeIdToScadaString(node.parent_id)));
     writer.WriteCell(
-        type ? FormatReferenceCell(type.display_name(), type.node_id())
-             : base::string16{});
-    writer.WriteCell(node.display_name());
-    for (auto prop : props) {
-      if (prop.node_class() == scada::NodeClass::ReferenceType) {
-        auto referenced_node = node.target(prop.node_id());
-        writer.WriteCell(referenced_node ? FormatReferenceCell(
-                                               referenced_node.display_name(),
-                                               referenced_node.node_id())
-                                         : base::string16{});
+        !node.type_id.is_null()
+            ? FormatReferenceCell(node.type_display_name, node.type_id)
+            : base::string16{});
+    writer.WriteCell(node.display_name);
+    assert(node.property_values.size() == data.props.size());
+    for (const auto& prop_value : node.property_values) {
+      if (prop_value.reference) {
+        writer.WriteCell(
+            !prop_value.target_id.is_null()
+                ? FormatReferenceCell(prop_value.target_display_name,
+                                      prop_value.target_id)
+                : base::string16{});
       } else {
-        auto value = node[prop.node_id()].value();
-        auto str = value.get_or(std::string());
+        auto str = prop_value.value.get_or(std::string());
         writer.WriteCell(base::SysNativeMBToWide(str));
       }
     }
