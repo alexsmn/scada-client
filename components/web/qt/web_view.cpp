@@ -14,10 +14,6 @@
 #include <QAxWidget>
 #include <QUuid>
 
-const WindowInfo kWindowInfo = {ID_WEB_VIEW, "Web", L"Web"};
-
-REGISTER_CONTROLLER(WebView, kWindowInfo);
-
 WebView::WebView(const ControllerContext& context) : Controller{context} {}
 
 WebView::~WebView() {}

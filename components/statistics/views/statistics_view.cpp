@@ -11,11 +11,6 @@ static const base::char16* kStatisticTitles[] = {
 
 // StatisticsView
 
-const WindowInfo kWindowInfo = {ID_STATISTICS_VIEW, "Stat", L"Статус",
-                                WIN_SING,           300,    400};
-
-REGISTER_CONTROLLER(StatisticsView, kWindowInfo);
-
 StatisticsView::StatisticsView(const ControllerContext& context)
     : Controller{context} {
   ui::TableColumn columns[] = {

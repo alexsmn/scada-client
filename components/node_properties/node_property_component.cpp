@@ -1,0 +1,11 @@
+﻿#include "components/node_properties/node_property_controller.h"
+#include "controller_factory.h"
+
+const WindowInfo kWindowInfo = {ID_NEW_PROPERTY_VIEW,
+                                "NewProps",
+                                L"Параметры",
+                                WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
+                                200,
+                                400};
+
+REGISTER_CONTROLLER(NodePropertyController, kWindowInfo);

@@ -18,24 +18,6 @@
 #include "ui/views/widget/widget.h"
 #endif
 
-class NodesView : public ConfigurationTreeView {
- public:
-  explicit NodesView(const ControllerContext& context)
-      : ConfigurationTreeView{
-            context, *new ConfigurationTreeModel{
-                         context.node_service_,
-                         context.task_manager_,
-                         context.node_service_.GetNode(scada::id::RootFolder),
-                         {scada::id::HierarchicalReferences},
-                         {}}} {}
-};
-
-const WindowInfo kWindowInfo = {
-    ID_NODES_VIEW, "Nodes", L"Узлы", WIN_SING | WIN_REQUIRES_ADMIN,
-    200,           400,     0};
-
-REGISTER_CONTROLLER(NodesView, kWindowInfo);
-
 ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
                                              ConfigurationTreeModel& model)
     : Controller{context}, model_(&model) {

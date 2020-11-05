@@ -11,11 +11,6 @@
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {
-    ID_WATCH_VIEW, "Log", L"Наблюдение", WIN_DISALLOW_NEW, 0, 0, 0};
-
-REGISTER_CONTROLLER(WatchView, kWindowInfo);
-
 // WatchView
 
 WatchView::WatchView(const ControllerContext& context)

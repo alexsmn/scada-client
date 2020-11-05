@@ -40,67 +40,6 @@ scada::NodeId GetSortCommandPropertyId(unsigned command_id) {
 
 }  // namespace
 
-// NodeTableControllerImpl
-
-template <scada::NumericId kNodeId>
-class NodeTableControllerImpl : public NodeTableController {
- public:
-  explicit NodeTableControllerImpl(const ControllerContext& context)
-      : NodeTableController(context, GetParentNode(context.node_service_)) {}
-
- private:
-  static NodeRef GetParentNode(NodeService& node_service) {
-    return kNodeId != 0 ? node_service.GetNode(
-                              scada::NodeId{kNodeId, NamespaceIndexes::SCADA})
-                        : nullptr;
-  }
-};
-
-const WindowInfo kTableEditorWindowInfo = {
-    ID_TABLE_EDITOR,
-    "TableEditor",
-    L"Конфигурация",
-    WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
-    0,
-    0,
-    IDR_GRID_POPUP};
-
-const WindowInfo kTsFormatsWindowInfo = {
-    ID_TS_FORMATS_VIEW, "Params", L"Форматы", WIN_REQUIRES_ADMIN, 0, 0,
-    IDR_GRID_POPUP};
-
-const WindowInfo kUsersWindowInfo = {
-    ID_USERS_VIEW, "Users", L"Пользователи", WIN_REQUIRES_ADMIN, 0, 0,
-    IDR_GRID_POPUP};
-
-const WindowInfo kSimulationSignalsWindowInfo = {ID_SIMULATION_ITEMS_VIEW,
-                                                 "SimulationItems",
-                                                 L"Эмулируемые сигналы",
-                                                 WIN_REQUIRES_ADMIN,
-                                                 0,
-                                                 0,
-                                                 IDR_GRID_POPUP};
-
-const WindowInfo kHistoricalDatabasesWindowInfo = {ID_HISTORICAL_DB_VIEW,
-                                                   "HistoricalDB",
-                                                   L"Базы данных",
-                                                   WIN_REQUIRES_ADMIN,
-                                                   0,
-                                                   0,
-                                                   IDR_GRID_POPUP};
-
-REGISTER_CONTROLLER(NodeTableControllerImpl<0>, kTableEditorWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<data_items::numeric_id::TsFormats>,
-                    kTsFormatsWindowInfo);
-REGISTER_CONTROLLER(NodeTableControllerImpl<security::numeric_id::Users>,
-                    kUsersWindowInfo);
-REGISTER_CONTROLLER(
-    NodeTableControllerImpl<data_items::numeric_id::SimulationSignals>,
-    kSimulationSignalsWindowInfo);
-REGISTER_CONTROLLER(
-    NodeTableControllerImpl<history::numeric_id::HistoricalDatabases>,
-    kHistoricalDatabasesWindowInfo);
-
 // NodeTableController
 
 NodeTableController::NodeTableController(const ControllerContext& context,

@@ -12,11 +12,6 @@ namespace {
 const base::char16 kAddUrl[] = L"Добавить Web-страницу";
 }
 
-const WindowInfo kWindowInfo = {ID_FAVOURITES_VIEW, "Favorites", L"Избранное",
-                                WIN_SING,           200,         400};
-
-REGISTER_CONTROLLER(FavouritesView, kWindowInfo);
-
 FavouritesView::FavouritesView(const ControllerContext& context)
     : Controller{context},
       favourites_tree_model_(new FavouritesTreeModel(favourites_)) {}

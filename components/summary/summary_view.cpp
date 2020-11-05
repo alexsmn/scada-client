@@ -9,11 +9,6 @@
 #include "time_range.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {ID_SUMMARY_VIEW, "Summ", L"Сводка",
-                                WIN_INS | WIN_CAN_PRINT};
-
-REGISTER_CONTROLLER(SummaryView, kWindowInfo);
-
 SummaryView::SummaryView(const ControllerContext& context)
     : Controller{context},
       model_{std::make_unique<SummaryModel>(

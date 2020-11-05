@@ -24,11 +24,6 @@ static const size_t kMaxPanes = 10;
 
 // GraphView
 
-const WindowInfo kWindowInfo = {
-    ID_GRAPH_VIEW, "Graph", L"График", WIN_INS, 0, 0, IDR_GRAPH_POPUP};
-
-REGISTER_CONTROLLER(GraphView, kWindowInfo);
-
 GraphView::GraphView(const ControllerContext& context)
     : ::Controller{context} {}
 

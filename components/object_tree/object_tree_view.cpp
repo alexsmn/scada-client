@@ -17,11 +17,6 @@
 #include "ui/gfx/canvas.h"
 #endif
 
-const WindowInfo kWindowInfo = {
-    ID_OBJECT_VIEW, "Struct", L"Объекты", WIN_SING, 200, 400, 0};
-
-REGISTER_CONTROLLER(ObjectTreeView, kWindowInfo);
-
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{
           context, *new ObjectTreeModel{ObjectTreeModelContext{

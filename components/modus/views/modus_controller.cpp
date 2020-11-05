@@ -15,11 +15,6 @@
 #include "window_definition.h"
 #include "window_info.h"
 
-const WindowInfo kWindowInfo = {ID_MODUS_VIEW,  "Modus", L"Схема", 0, 0, 0,
-                                IDR_MODUS_POPUP};
-
-REGISTER_CONTROLLER(ModusController, kWindowInfo);
-
 ModusController::ModusController(const ControllerContext& context)
     : Controller{context}, wrapper_(nullptr) {}
 

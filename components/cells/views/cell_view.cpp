@@ -136,11 +136,6 @@ void CellModel::ClearCell(int row, int column) {
 
 // CellView
 
-const WindowInfo kWindowInfo = {
-    ID_CELLS_VIEW, "Cells", L"Ячейки", WIN_INS, 0, 0, 0};
-
-REGISTER_CONTROLLER(CellView, kWindowInfo);
-
 CellView::CellView(const ControllerContext& context)
     : Controller{context},
       grid_(new views::GridView),

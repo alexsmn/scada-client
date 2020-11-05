@@ -41,11 +41,6 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-const WindowInfo kWindowInfo = {
-    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
-
-REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);
-
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
     : ::Controller{context}, synchronize_timer_(false, true) {}
 

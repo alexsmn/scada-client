@@ -14,11 +14,6 @@
 #include "ui/views/widget/widget.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {ID_PROPERTY_VIEW, "RecEditor", L"Параметры",
-                                WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN};
-
-REGISTER_CONTROLLER(PropertyPageView, kWindowInfo);
-
 PropertyPageView::PropertyPageView(const ControllerContext& context)
     : Controller(context) {}
 

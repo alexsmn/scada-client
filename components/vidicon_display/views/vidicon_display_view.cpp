@@ -40,11 +40,6 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-const WindowInfo kWindowInfo = {
-    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
-
-REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);
-
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
     : ::Controller{context},
       control_{
@@ -80,7 +75,7 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
     CComObject<AmbientProps>* ambient = NULL;
     CComObject<AmbientProps>::CreateInstance(&ambient);
     assert(ambient);
-    ambient->display_name = kWindowInfo.title;
+    ambient->display_name = L"Схема";
     ambientEx->SetAmbientDispatch(ambient);
     ambientEx->put_MessageReflect(ATL_VARIANT_TRUE);
   }

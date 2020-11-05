@@ -9,15 +9,6 @@
 #include "controls/tree.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {ID_NEW_PROPERTY_VIEW,
-                                "NewProps",
-                                L"Параметры",
-                                WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
-                                200,
-                                400};
-
-REGISTER_CONTROLLER(NodePropertyController, kWindowInfo);
-
 // NodePropertyController
 
 NodePropertyController::NodePropertyController(const ControllerContext& context)

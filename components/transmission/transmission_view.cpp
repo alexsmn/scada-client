@@ -11,16 +11,6 @@
 #include "services/task_manager.h"
 #include "window_definition.h"
 
-const WindowInfo kWindowInfo = {ID_TRANSMISSION_VIEW,
-                                "Transmission",
-                                L"Ретрансляция",
-                                WIN_INS | WIN_DISALLOW_NEW,
-                                0,
-                                0,
-                                0};
-
-REGISTER_CONTROLLER(TransmissionView, kWindowInfo);
-
 TransmissionView::TransmissionView(const ControllerContext& context)
     : Controller{context},
       model_(new TransmissionModel(context.node_service_,

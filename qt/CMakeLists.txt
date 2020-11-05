@@ -16,10 +16,17 @@ file(GLOB MAIN_QT
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 
+set(COMPONENTS ${SOURCES} ${SOURCES_QT})
+list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
+list(REMOVE_ITEM SOURCES ${COMPONENTS})
+list(REMOVE_ITEM SOURCES_QT ${COMPONENTS})
+
 add_library(client_qt_lib
   ${SOURCES}
   ${SOURCES_QT}
 )
+
+target_sources(client_qt_lib INTERFACE ${COMPONENTS})
 
 target_compile_definitions(client_qt_lib PUBLIC
   "-DUI_QT"
