@@ -117,26 +117,30 @@ ExportData ReadExportData(NodeService& node_service, CsvReader& reader) {
         throw ResourceError(L"Отличающееся число ячеек в строке");
 
       if (!prop.reference) {
-        auto property_declaration = node_service.GetNode(prop.node_id);
-        scada::Variant new_value;
-        auto built_in_data_type_id =
-            GetBuiltInDataTypeId(property_declaration.data_type());
-        if (!StringToValue(cell, built_in_data_type_id, new_value)) {
-          auto data_type = node_service.GetNode(built_in_data_type_id);
-          auto data_type_name = data_type ? ToString16(data_type.display_name())
-                                          : L"(Неизвестный)";
-          throw ResourceError{
-              base::StringPrintf(L"Невозможно распознать '%ls' как '%ls'",
-                                 cell.c_str(), data_type_name.c_str())};
+        if (auto property_declaration = type_definition[prop.node_id]) {
+          scada::Variant new_value;
+          auto built_in_data_type_id =
+              GetBuiltInDataTypeId(property_declaration.data_type());
+          if (!StringToValue(cell, built_in_data_type_id, new_value)) {
+            auto data_type = node_service.GetNode(built_in_data_type_id);
+            auto data_type_name = data_type
+                                      ? ToString16(data_type.display_name())
+                                      : L"(Неизвестный)";
+            throw ResourceError{
+                base::StringPrintf(L"Невозможно распознать '%ls' как '%ls'",
+                                   cell.c_str(), data_type_name.c_str())};
+          }
+
+          prop_values.push_back({prop.node_id, std::move(new_value)});
         }
 
-        prop_values.push_back({prop.node_id, std::move(new_value)});
-
       } else {
-        auto target_id = ParseReferenceCell(cell);
-        // TODO: Read display name.
-        prop_values.push_back(
-            {prop.node_id, {}, std::move(target_id), {}, true});
+        if (type_definition.target(prop.node_id)) {
+          auto target_id = ParseReferenceCell(cell);
+          // TODO: Read display name.
+          prop_values.push_back(
+              {prop.node_id, {}, std::move(target_id), {}, true});
+        }
       }
     }
 
