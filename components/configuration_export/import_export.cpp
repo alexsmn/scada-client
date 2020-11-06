@@ -46,13 +46,20 @@ void ScanDeleteNodes(const NodeRef& parent_node,
   }
 }
 
+scada::NodeId GetBuiltInDataTypeId(const NodeRef& data_type) {
+  for (int i = scada::Variant::EMPTY + 1; i < scada::Variant::COUNT; ++i) {
+    auto built_in_data_type_id =
+        scada::ToNodeId(static_cast<scada::Variant::Type>(i));
+    assert(!built_in_data_type_id.is_null());
+    if (IsSubtypeOf(data_type, built_in_data_type_id))
+      return built_in_data_type_id;
+  }
+  return data_type.node_id();
+}
+
 }  // namespace
 
-ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
-  ImportData import_data;
-
-  std::set<scada::NodeId> listed_nodes;
-
+ExportData ReadExportData(NodeService& node_service, CsvReader& reader) {
   std::wstring cell;
 
   if (!reader.NextRow())
@@ -64,23 +71,23 @@ ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
       throw ResourceError{L"Неверный формат имени столбца"};
   }
 
-  std::vector<scada::NodeId> prop_type_ids;
+  std::vector<ExportData::Property> props;
   while (reader.NextCell(cell)) {
     auto prop_type_id = ParseReferenceCell(cell);
     if (prop_type_id.is_null())
       throw ResourceError{L"Неверный формат имени столбца"};
-    prop_type_ids.emplace_back(std::move(prop_type_id));
+    auto prop_decl = node_service.GetNode(prop_type_id);
+    bool reference = prop_decl.node_class() == scada::NodeClass::ReferenceType;
+    // TODO: Read display name.
+    props.push_back({std::move(prop_type_id), {}, reference});
   }
 
+  std::vector<ExportData::Node> nodes;
   while (reader.NextRow()) {
     // Id.
     if (!reader.NextCell(cell))
       throw ResourceError{L"Ошибка при чтении идентификатора"};
-    const auto node_id = NodeIdFromScadaString(base::SysWideToNativeMB(cell));
-
-    auto node = node_service.GetNode(node_id);
-    if (node)
-      listed_nodes.emplace(node.node_id());
+    auto node_id = NodeIdFromScadaString(base::SysWideToNativeMB(cell));
 
     // Parent.
     if (!reader.NextCell(cell))
@@ -96,59 +103,117 @@ ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
     auto type_definition = node_service.GetNode(ParseReferenceCell(cell));
     if (!type_definition)
       throw ResourceError{
-          base::StringPrintf(L"Тип с именем '%l' не найден", cell.c_str())};
+          base::StringPrintf(L"Тип с именем '%ls' не найден", cell.c_str())};
 
     scada::NodeAttributes attrs;
     if (!reader.NextCell(cell))
       throw ResourceError{L"Ошибка при чтении имени"};
-    auto display_name = std::move(cell);
-    if (!node || node.display_name() != display_name)
-      attrs.set_display_name(std::move(display_name));
+    scada::LocalizedText display_name = std::move(cell);
+
+    // Props & refs.
+    std::vector<ExportData::PropertyValue> prop_values;
+    for (const auto& prop : props) {
+      if (!reader.NextCell(cell))
+        throw ResourceError(L"Отличающееся число ячеек в строке");
+
+      if (!prop.reference) {
+        auto property_declaration = node_service.GetNode(prop.node_id);
+        scada::Variant new_value;
+        auto built_in_data_type_id =
+            GetBuiltInDataTypeId(property_declaration.data_type());
+        if (!StringToValue(cell, built_in_data_type_id, new_value)) {
+          auto data_type = node_service.GetNode(built_in_data_type_id);
+          auto data_type_name = data_type ? ToString16(data_type.display_name())
+                                          : L"(Неизвестный)";
+          throw ResourceError{
+              base::StringPrintf(L"Невозможно распознать '%ls' как '%ls'",
+                                 cell.c_str(), data_type_name.c_str())};
+        }
+
+        prop_values.push_back({prop.node_id, std::move(new_value)});
+
+      } else {
+        auto target_id = ParseReferenceCell(cell);
+        // TODO: Read display name.
+        prop_values.push_back(
+            {prop.node_id, {}, std::move(target_id), {}, true});
+      }
+    }
+
+    // TODO: Read display name.
+    nodes.push_back({
+        std::move(node_id),
+        std::move(parent_id),
+        {},
+        type_definition.node_id(),
+        std::move(display_name),
+        std::move(prop_values),
+    });
+  }
+
+  return {std::move(props), std::move(nodes)};
+}
+
+ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
+  auto export_data = ReadExportData(node_service, reader);
+
+  ImportData import_data;
+
+  std::set<scada::NodeId> listed_nodes;
+
+  for (const auto& export_node : export_data.nodes) {
+    auto node = node_service.GetNode(export_node.node_id);
+    if (node)
+      listed_nodes.emplace(node.node_id());
+
+    auto type_definition = node_service.GetNode(export_node.type_id);
+    if (!type_definition) {
+      throw ResourceError{base::StringPrintf(
+          L"Тип %ls не найден",
+          base::SysNativeMBToWide(NodeIdToScadaString(export_node.type_id))
+              .c_str())};
+    }
+
+    scada::NodeAttributes attrs;
+    if (!node || node.display_name() != export_node.display_name)
+      attrs.set_display_name(std::move(export_node.display_name));
 
     // Props & refs.
     scada::NodeProperties props;
     std::vector<ImportData::Reference> refs;
-    size_t pid_index = 0;
-    while (reader.NextCell(cell)) {
-      auto pid = prop_type_ids[pid_index++];
-      if (auto property_declaration = type_definition[pid]) {
-        scada::Variant new_value;
-        if (!StringToValue(cell, property_declaration.data_type().node_id(),
-                           new_value)) {
-          auto prop_type = property_declaration.data_type();
-          auto prop_type_name = prop_type ? ToString16(prop_type.display_name())
-                                          : L"(Неизвестный)";
-          throw ResourceError{base::StringPrintf(
-              L"Невозможно распознать значение ячейки '%ls' с типом '%ls'",
-              cell.c_str(), prop_type_name.c_str())};
-        }
 
+    for (size_t pid_index = 0; pid_index < props.size(); pid_index++) {
+      const auto& export_prop = export_data.props[pid_index++];
+      const auto& export_value = export_node.property_values[pid_index];
+      if (!export_prop.reference) {
         if (node) {
-          auto value = node[property_declaration.node_id()].value();
-          if (value == new_value)
+          auto value = node[export_prop.node_id].value();
+          if (value == export_value.value)
             continue;
         }
 
-        props.emplace_back(property_declaration.node_id(),
-                           std::move(new_value));
+        props.emplace_back(export_prop.node_id, export_value.value);
 
-      } else if (type_definition.target(pid)) {
-        auto referenced_id = ParseReferenceCell(cell);
-        auto old_target_id = node.target(pid).node_id();
-        if (old_target_id != referenced_id)
-          refs.push_back({pid, old_target_id, referenced_id});
+      } else {
+        auto old_target_id = node.target(export_prop.node_id).node_id();
+        if (old_target_id != export_value.target_id) {
+          refs.push_back(
+              {export_prop.node_id, old_target_id, export_value.target_id});
+        }
       }
     }
 
     if (node) {
       if (!attrs.empty() || !props.empty() || !refs.empty())
-        import_data.modify_nodes.push_back({node_id, type_definition.node_id(),
-                                            parent_id, std::move(attrs),
-                                            std::move(props), std::move(refs)});
+        import_data.modify_nodes.push_back(
+            {export_node.node_id, type_definition.node_id(),
+             export_node.parent_id, std::move(attrs), std::move(props),
+             std::move(refs)});
     } else {
-      import_data.create_nodes.push_back({node_id, type_definition.node_id(),
-                                          parent_id, std::move(attrs),
-                                          std::move(props), std::move(refs)});
+      import_data.create_nodes.push_back(
+          {export_node.node_id, type_definition.node_id(),
+           export_node.parent_id, std::move(attrs), std::move(props),
+           std::move(refs)});
     }
   }
 

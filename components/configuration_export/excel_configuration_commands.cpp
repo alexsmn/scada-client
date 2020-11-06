@@ -186,7 +186,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
                                   TaskManager& task_manager,
                                   DialogService& dialog_service,
                                   const std::filesystem::path& path) {
-  std::wifstream stream{path};
+  std::ifstream stream{path};
   if (!stream) {
     dialog_service.RunMessageBox(L"Не удалось открыть файл.", kImportTitle,
                                  MessageBoxMode::Error);

@@ -56,6 +56,7 @@ struct ExportData {
     bool reference = false;
   };
 
+  // TODO: Remove |node_id| and |reference|.
   struct PropertyValue {
     scada::NodeId node_id;
     scada::Variant value;
