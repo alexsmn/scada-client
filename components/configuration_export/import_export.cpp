@@ -116,7 +116,15 @@ ExportData ReadExportData(NodeService& node_service, CsvReader& reader) {
       if (!reader.NextCell(cell))
         throw ResourceError(L"Отличающееся число ячеек в строке");
 
-      if (!prop.reference) {
+      if (prop.reference) {
+        if (type_definition.target(prop.node_id)) {
+          auto target_id = ParseReferenceCell(cell);
+          // TODO: Read display name.
+          prop_values.push_back(
+              {prop.node_id, {}, std::move(target_id), {}, true});
+        }
+
+      } else {
         if (auto property_declaration = type_definition[prop.node_id]) {
           scada::Variant new_value;
           auto built_in_data_type_id =
@@ -132,14 +140,6 @@ ExportData ReadExportData(NodeService& node_service, CsvReader& reader) {
           }
 
           prop_values.push_back({prop.node_id, std::move(new_value)});
-        }
-
-      } else {
-        if (type_definition.target(prop.node_id)) {
-          auto target_id = ParseReferenceCell(cell);
-          // TODO: Read display name.
-          prop_values.push_back(
-              {prop.node_id, {}, std::move(target_id), {}, true});
         }
       }
     }
@@ -186,24 +186,21 @@ ImportData ImportConfiguration(NodeService& node_service, CsvReader& reader) {
     scada::NodeProperties props;
     std::vector<ImportData::Reference> refs;
 
-    for (size_t pid_index = 0; pid_index < props.size(); pid_index++) {
-      const auto& export_prop = export_data.props[pid_index++];
-      const auto& export_value = export_node.property_values[pid_index];
-      if (!export_prop.reference) {
+    for (const auto& export_value : export_node.property_values) {
+      if (export_value.reference) {
+        auto old_target_id = node.target(export_value.node_id).node_id();
+        if (old_target_id != export_value.target_id) {
+          refs.push_back(
+              {export_value.node_id, old_target_id, export_value.target_id});
+        }
+      } else {
         if (node) {
-          auto value = node[export_prop.node_id].value();
+          auto value = node[export_value.node_id].value();
           if (value == export_value.value)
             continue;
         }
 
-        props.emplace_back(export_prop.node_id, export_value.value);
-
-      } else {
-        auto old_target_id = node.target(export_prop.node_id).node_id();
-        if (old_target_id != export_value.target_id) {
-          refs.push_back(
-              {export_prop.node_id, old_target_id, export_value.target_id});
-        }
+        props.emplace_back(export_value.node_id, export_value.value);
       }
     }
 
