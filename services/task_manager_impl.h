@@ -61,7 +61,7 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
   struct Task {
     bool IsNull() const { return !task; }
 
-    base::string16 title;
+    std::wstring title;
     std::function<void()> task;
   };
 
@@ -75,7 +75,7 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
                               std::vector<scada::NodeId>&& dependencies);
 
   void ReportRequestCompletion(const scada::Status& status,
-                               const base::string16& result_text);
+                               const std::wstring& result_text);
 
   typedef std::queue<Task> TaskQueue;
   TaskQueue tasks_;

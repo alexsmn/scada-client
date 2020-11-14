@@ -18,11 +18,11 @@ class AboutDialog : public framework::Dialog {
   virtual void OnInitDialog() {
     __super::OnInitDialog();
 
-    base::string16 version_string = win_util::LoadResourceString(
+    std::wstring version_string = win_util::LoadResourceString(
         WTL::ModuleHelper::GetResourceInstance(), IDS_VERSION_STRING);
-    base::string16 application_title = win_util::LoadResourceString(
+    std::wstring application_title = win_util::LoadResourceString(
         WTL::ModuleHelper::GetResourceInstance(), IDR_MAINFRAME);
-    base::string16 text = base::StringPrintf(
+    std::wstring text = base::StringPrintf(
         version_string.c_str(), application_title.c_str(),
         base::SysNativeMBToWide(PROJECT_VERSION_DOTTED_STRING).c_str());
 

@@ -32,7 +32,7 @@ views::View& ViewManagerViews::GetView() {
 }
 
 void ViewManagerViews::SetViewTitle(OpenedView& view,
-                                    const base::string16& title) {
+                                    const std::wstring& title) {
   if (view.view())
     dock_container_->SetViewTitle(*view.view(), title);
 }
@@ -63,7 +63,7 @@ void ViewManagerViews::OpenLayoutBlock(const PageLayoutBlock& block,
     for (size_t i = 0; i < block.wins.size(); ++i) {
       OpenedView* view = FindViewByID(block.wins[i]);
       if (view && !IsViewAdded(*view)) {
-        base::string16 title = view->GetWindowTitle();
+        std::wstring title = view->GetWindowTitle();
         dock_container_->AddView(pane, views::DOCK_CENTER, *view->view(), title,
                                  gfx::Image() /*view->image()*/, 0);
         added_views_.emplace_back(view);

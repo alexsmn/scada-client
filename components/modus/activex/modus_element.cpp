@@ -39,14 +39,14 @@ bool HasParam(SDECore::IParams& params, const VARIANT& index) {
   return name != NULL;
 }
 
-base::string16 GetParamValue(SDECore::IParams& params, const VARIANT& index) {
+std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index) {
   SDEParam param = GetParam(params, index);
   if (!param)
-    return base::string16();
+    return std::wstring();
 
   base::win::ScopedBstr val;
   if (FAILED(param->get_Value(val.Receive())) || !val)
-    return base::string16();
+    return std::wstring();
 
   return static_cast<const base::char16*>(val);
 }
@@ -56,23 +56,23 @@ bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR val) {
   return param ? SUCCEEDED(param->put_Value(val)) : false;
 }
 
-base::string16 GetHyperlink(SDECore::ISDEObject50& object) {
+std::wstring GetHyperlink(SDECore::ISDEObject50& object) {
   SDEParams params;
   object.get_Params(params.GetAddressOf());
   if (!params)
-    return base::string16();
+    return std::wstring();
 
   SDEParam param = GetParam(*params.Get(), kParameterHyperlink);
   if (!param)
-    return base::string16();
+    return std::wstring();
 
   long size;
   if (FAILED(param->get_Dim(&size)) || !size)
-    return base::string16();
+    return std::wstring();
 
   base::win::ScopedBstr value;
   if (FAILED(param->get_IndexedValue(1, value.Receive())))
-    return base::string16();
+    return std::wstring();
 
   return static_cast<const base::char16*>(value);
 }
@@ -104,8 +104,8 @@ const base::char16* ToString(Limit limit) {
   return strs[index];
 }
 
-base::string16 GetLimitSetString(const Limits& limits) {
-  base::string16 result;
+std::wstring GetLimitSetString(const Limits& limits) {
+  std::wstring result;
   for (int i = 0; i < static_cast<int>(Limit::Count); ++i) {
     if (limits.limits[i] != kNoLimit) {
       if (!result.empty())
@@ -154,13 +154,13 @@ void ModusElement::UpdateData(bool init) {
     if (init || value != value_) {
       value_ = value;
 
-      base::string16 text;
+      std::wstring text;
       if (!state_strings_.empty()) {
         bool state = std::abs(value_) >= std::numeric_limits<double>::epsilon();
         size_t state_no = state ? 1 : 0;
         text = (state_no < state_strings_.size())
                    ? state_strings_[state_no ? 1 : 0]
-                   : base::string16{};
+                   : std::wstring{};
         if (text.empty())
           text = state ? kStateClose : kStateOpen;
 

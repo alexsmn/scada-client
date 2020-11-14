@@ -169,14 +169,14 @@ bool MainWindowViews::CanHandleAccelerators() const {
   return true;
 }
 
-base::string16 MainWindowViews::GetWindowTitle() const {
-  base::string16 server = FormatHostName(connection_info_provider_());
+std::wstring MainWindowViews::GetWindowTitle() const {
+  std::wstring server = FormatHostName(connection_info_provider_());
 
-  static base::string16 application_title = win_util::LoadResourceString(
+  static std::wstring application_title = win_util::LoadResourceString(
       WTL::ModuleHelper::GetResourceInstance(), IDR_MAINFRAME);
-  base::string16 page = view_manager_->current_page().GetTitle();
+  std::wstring page = view_manager_->current_page().GetTitle();
 
-  static base::string16 title_format_string = win_util::LoadResourceString(
+  static std::wstring title_format_string = win_util::LoadResourceString(
       WTL::ModuleHelper::GetResourceInstance(), IDS_MAIN_WINDOW_TITLE);
   return base::StringPrintf(title_format_string.c_str(),
                             application_title.c_str(), page.c_str(),

@@ -32,7 +32,7 @@ class ModusView3 : public QGraphicsView,
   TimedDataService& timed_data_service_;
 
   base::FilePath path_;
-  base::string16 title_;
+  std::wstring title_;
 
   Schematic::Document document_;
 

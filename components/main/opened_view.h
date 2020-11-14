@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "base/timer/timer.h"
 #include "controller_delegate.h"
 #include "controller_factory.h"
@@ -13,6 +12,7 @@
 #endif
 
 #include <memory>
+#include <string>
 
 class CommandHandler;
 class ContentsModel;
@@ -67,7 +67,7 @@ class OpenedView : private OpenedViewContext,
   ContentsModel* GetContentsModel();
   void SetUserTitle(const base::StringPiece16& title);
   void Save();
-  base::string16 GetWindowTitle() const;
+  std::wstring GetWindowTitle() const;
   void Close();
 
 #if defined(UI_VIEWS)
@@ -104,7 +104,7 @@ class OpenedView : private OpenedViewContext,
 
   bool modified_ = false;
 
-  base::string16 title_;
+  std::wstring title_;
 
   bool working_ = false;
   base::RepeatingTimer update_working_timer_;
@@ -117,7 +117,7 @@ class OpenedView : private OpenedViewContext,
 
   // TODO: Next members should be out of this class.
 
-  base::string16 user_title_;
+  std::wstring user_title_;
   // Window is locked for adding of new items.
   bool locked_ = false;
 };

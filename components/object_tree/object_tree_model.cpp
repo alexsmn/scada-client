@@ -17,7 +17,7 @@ int ObjectTreeModel::GetColumnCount() const {
   return 2;
 }
 
-base::string16 ObjectTreeModel::GetColumnText(int column_id) const {
+std::wstring ObjectTreeModel::GetColumnText(int column_id) const {
   return column_id == 0 ? L"Имя" : L"Значение";
 }
 
@@ -25,11 +25,11 @@ int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {
   return column_id == 0 ? 200 : 0;
 }
 
-base::string16 ObjectTreeModel::GetText(void* node, int column_id) {
+std::wstring ObjectTreeModel::GetText(void* node, int column_id) {
   if (column_id == 1) {
     auto* timed_data = GetTimedData(node);
     if (!timed_data)
-      return base::string16();
+      return std::wstring();
     return timed_data->GetCurrentString(FORMAT_DEFAULT);
   } else
     return ConfigurationTreeModel::GetText(node, column_id);

@@ -14,7 +14,7 @@ class TimedDataService;
 class SheetColumnModel : public ui::ColumnHeaderModel {
  public:
   // ui::HeaderModel
-  virtual base::string16 GetTitle(int index) const override;
+  virtual std::wstring GetTitle(int index) const override;
 };
 
 struct SheetModelContext {
@@ -63,7 +63,7 @@ class SheetModel : private SheetModelContext,
   virtual void GetCell(ui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
-                           const base::string16& text) override;
+                           const std::wstring& text) override;
   virtual bool IsEditable(int row, int column) override;
 
  private:

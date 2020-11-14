@@ -55,6 +55,6 @@ template int HumanCompareTextT<std::string>(
     base::BasicStringPiece<std::string> left,
     base::BasicStringPiece<std::string> right);
 
-template int HumanCompareTextT<base::string16>(
-    base::BasicStringPiece<base::string16> left,
-    base::BasicStringPiece<base::string16> right);
+template int HumanCompareTextT<std::wstring>(
+    base::BasicStringPiece<std::wstring> left,
+    base::BasicStringPiece<std::wstring> right);

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "base/win/scoped_variant.h"
 
+#include <string>
 #include <wrl/client.h>
 
 class ExcelSheetModel {
@@ -14,7 +14,7 @@ class ExcelSheetModel {
 
   void SetData(int row, int col, base::win::ScopedVariant&& val);
   void SetData(int row, int col, const VARIANT& val);
-  void SetData(int row, int col, const base::string16& val);
+  void SetData(int row, int col, const std::wstring& val);
 
   base::win::ScopedVariant data;
   int rows = 0;

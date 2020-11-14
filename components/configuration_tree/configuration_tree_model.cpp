@@ -108,7 +108,7 @@ void ConfigurationTreeNode::Load() {
   data_node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);
 }
 
-base::string16 ConfigurationTreeNode::GetText(int column_id) const {
+std::wstring ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(data_node_.display_name());
 
   bool fetched = data_node_.fetched() && data_node_.children_fetched();
@@ -134,7 +134,7 @@ ConfigurationTreeRootNode::ConfigurationTreeRootNode(
     NodeRef tree)
     : ConfigurationTreeNode(model, tree) {}
 
-base::string16 ConfigurationTreeRootNode::GetText(int column_id) const {
+std::wstring ConfigurationTreeRootNode::GetText(int column_id) const {
   return data_node().display_name();
 }
 

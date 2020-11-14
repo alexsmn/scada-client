@@ -24,7 +24,7 @@ std::wstring GetShortPath(SDECore::ISDEObject50& sde_object) {
   return static_cast<const wchar_t*>(result);
 }
 
-std::vector<base::string16> GetStateStrings(SDECore::IParams& params,
+std::vector<std::wstring> GetStateStrings(SDECore::IParams& params,
                                             base::StringPiece16 param_name) {
   SDEParam param = GetParam(
       params, base::win::ScopedVariant(param_name.data(), param_name.size()));
@@ -37,7 +37,7 @@ std::vector<base::string16> GetStateStrings(SDECore::IParams& params,
   if (!values)
     return {};
 
-  return base::SplitString(base::string16(values), L";", base::TRIM_WHITESPACE,
+  return base::SplitString(std::wstring(values), L";", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
@@ -94,7 +94,7 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
   LOG_INFO(logger_) << "Load completed";
 }
 
-base::string16 GetPropName(SDECore::IParams& params) {
+std::wstring GetPropName(SDECore::IParams& params) {
   if (HasParam(params, kParameterState))
     return static_cast<const VARIANT&>(kParameterState).bstrVal;
   else if (HasParam(params, kParameterValue))
@@ -108,19 +108,19 @@ base::string16 GetPropName(SDECore::IParams& params) {
 void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
                               SDECore::ISDEObject50& sde_object,
                               SDECore::IParams& initial_params,
-                              const base::string16& binding,
+                              const std::wstring& binding,
                               long object_tag,
                               long tech_index) {
   DCHECK(!binding.empty());
 
   // determine object type
-  base::string16 prop_name;
+  std::wstring prop_name;
   std::string formula;
 
   SDEParams params = &initial_params;
 
   size_t p = binding.find(L'=');
-  if (p == base::string16::npos) {
+  if (p == std::wstring::npos) {
     prop_name = GetPropName(*params.Get());
 
     // WORKAROUND: Elements like "Tablo" don't provide valid attributes through
@@ -229,7 +229,7 @@ void ModusLoader::LoadObject(SDECore::ISDEObject50& sde_object) {
     }
 
     // key
-    base::string16 bindings = GetParamValue(*params.Get(), kParameterBinding);
+    std::wstring bindings = GetParamValue(*params.Get(), kParameterBinding);
     if (bindings.empty())
       continue;
 

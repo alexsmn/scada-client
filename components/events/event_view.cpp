@@ -146,7 +146,7 @@ bool EventView::IsWorking() const {
   return model_->IsWorking();
 }
 
-base::string16 EventView::MakeTitle() const {
+std::wstring EventView::MakeTitle() const {
   return model_->MakeTitle();
 }
 
@@ -183,7 +183,7 @@ void EventView::ExportToExcel() {
 
     for (int row = 0; row < model_->GetRowCount(); ++row) {
       for (size_t col = 0; col < columns.size(); ++col) {
-        base::string16 text = model_->GetCellText(row, columns[col].id);
+        std::wstring text = model_->GetCellText(row, columns[col].id);
         sheet.SetData(2 + row, col + 1, text);
       }
     }
@@ -283,12 +283,12 @@ void EventView::SelectSeverity() {
                                                : model_->severity_min();
   const base::char16 prompt[] =
       L"Минимальный порог важности (0 - все события):";
-  base::string16 value = WideFormat(severity);
+  std::wstring value = WideFormat(severity);
   for (;;) {
     if (!RunPromptDialog(dialog_service_, prompt, L"Фильтр", value))
       return;
     if (!Parse(value, severity) || severity > scada::kSeverityMax) {
-      base::string16 message =
+      std::wstring message =
           base::StringPrintf(L"Введите число от %d до %d.", scada::kSeverityMin,
                              scada::kSeverityMax);
       MessageBox(GetActiveWindow(), message.c_str(), L"Фильтр", MB_ICONSTOP);

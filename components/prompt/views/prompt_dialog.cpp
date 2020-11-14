@@ -10,7 +10,7 @@ class PromptDialog : public framework::Dialog {
   PromptDialog() : Dialog(IDD_PROMPT) {}
 
   bool Execute(HWND parent,
-               base::string16& value,
+               std::wstring& value,
                const base::char16* prompt,
                const base::char16* title) {
     title_ = title;
@@ -35,15 +35,15 @@ class PromptDialog : public framework::Dialog {
   }
 
  private:
-  base::string16 title_;
-  base::string16 prompt_;
-  base::string16 value_;
+  std::wstring title_;
+  std::wstring prompt_;
+  std::wstring value_;
 };
 
 bool RunPromptDialog(DialogService& dialog_service,
-                     const base::string16& prompt,
-                     const base::string16& title,
-                     base::string16& value) {
+                     const std::wstring& prompt,
+                     const std::wstring& title,
+                     std::wstring& value) {
   PromptDialog dlg;
   return dlg.Execute(dialog_service.GetDialogOwningWindow(), value,
                      prompt.c_str(), title.c_str());

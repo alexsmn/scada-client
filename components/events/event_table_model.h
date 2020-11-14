@@ -76,7 +76,7 @@ class EventTableModel : public ui::TableModel,
 
   void CancelRequest();
 
-  base::string16 MakeTitle() const;
+  std::wstring MakeTitle() const;
 
   // ui::TableModel
   virtual int GetRowCount() override;

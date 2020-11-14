@@ -42,7 +42,7 @@ public:
   unsigned resource_id() const { return resource_id_; }
   HWND window_handle() const { return impl_->window_handle(); }
 
-  base::string16 GetWindowText() const {
+  std::wstring GetWindowText() const {
     return win_util::GetWindowText(window_handle());
   }
 
@@ -59,14 +59,14 @@ public:
   int GetItemInt(unsigned item_id) const {
     return ::GetDlgItemInt(window_handle(), item_id, NULL, TRUE);
   }
-  base::string16 GetItemText(unsigned item_id) const {
+  std::wstring GetItemText(unsigned item_id) const {
     return win_util::GetWindowText(GetItem(item_id));
   }
 
-  void SetWindowText(const base::string16& text) {
+  void SetWindowText(const std::wstring& text) {
     ::SetWindowText(window_handle(), text.c_str());
   }
-  void SetItemText(unsigned item_id, const base::string16& text) {
+  void SetItemText(unsigned item_id, const std::wstring& text) {
     ::SetDlgItemText(window_handle(), item_id, text.c_str());
   }
   void SetItemInt(unsigned item_id, int value) {

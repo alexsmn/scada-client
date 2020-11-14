@@ -33,10 +33,10 @@ class TableDocumentBuilder {
   explicit TableDocumentBuilder(int row_count, int column_count);
 
   void SetColumn(int column,
-                 const base::string16& title,
+                 const std::wstring& title,
                  ui::TableColumn::Alignment alignment);
 
-  void SetCell(int row, int column, const base::string16& text);
+  void SetCell(int row, int column, const std::wstring& text);
 
   QTextDocument& Build();
 
@@ -78,7 +78,7 @@ TableDocumentBuilder::TableDocumentBuilder(int row_count, int column_count)
 }
 
 void TableDocumentBuilder::SetColumn(int column,
-                                     const base::string16& title,
+                                     const std::wstring& title,
                                      ui::TableColumn::Alignment alignment) {
   column_formats_[column].setAlignment(MakeQtAlignment(alignment));
 
@@ -90,7 +90,7 @@ void TableDocumentBuilder::SetColumn(int column,
 
 void TableDocumentBuilder::SetCell(int row,
                                    int column,
-                                   const base::string16& text) {
+                                   const std::wstring& text) {
   auto cell = table_->cellAt(row + 1, column);
   cell.setFormat(row % 2 == 0 ? row_format_ : alternate_row_format_);
   auto cursor = cell.firstCursorPosition();

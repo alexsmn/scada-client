@@ -80,7 +80,7 @@ PortfolioManager::Portfolios::iterator PortfolioManager::Find(
 Portfolio& PortfolioManager::New() {
   static const base::char16 mask[] = L"Портфолио";
 
-  base::string16 name = mask;
+  std::wstring name = mask;
   int id = 2;
   while (Find(name.c_str()) != portfolios.end())
     name = base::StringPrintf(L"%ls %d", mask, id++);

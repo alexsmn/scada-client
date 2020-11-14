@@ -4,7 +4,7 @@ class ProgressDialogQt : public ProgressDialog  {
  public:
   // ProgressDialog
   virtual void SetProgress(int range, int position) {}
-  virtual void SetStatus(const base::string16& status) {}
+  virtual void SetStatus(const std::wstring& status) {}
   virtual bool IsCancelled() const { return false; }
   virtual void Close() {}
 };

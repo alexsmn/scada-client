@@ -45,7 +45,7 @@ namespace {
 const base::char16 kExportTitle[] = L"Экспорт";
 
 std::filesystem::path MakeFileName(base::StringPiece16 text) {
-  base::string16 result;
+  std::wstring result;
   base::ReplaceChars(text.as_string(), L":", L"-", &result);
   return result;
 }
@@ -319,7 +319,7 @@ void OpenedViewCommands::OnCreateRecordComplete(
     const scada::LocalizedText& display_name,
     const scada::Status& status,
     const scada::NodeId& node_id) {
-  base::string16 title =
+  std::wstring title =
       base::StringPrintf(L"Создание \"%ls\"", display_name.c_str());
   ReportRequestResult(title, status, local_events_, profile_);
 

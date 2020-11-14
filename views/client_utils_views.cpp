@@ -36,7 +36,7 @@ void BuildMenu(HMENU hmenu, ui::MenuModel& model, int start_position) {
       menu.InsertMenu(position++, MFT_SEPARATOR | MF_BYPOSITION);
 
     } else {
-      base::string16 label = model.GetLabelAt(i);
+      std::wstring label = model.GetLabelAt(i);
 
       if (type == ui::MenuModel::TYPE_SUBMENU) {
         ui::MenuModel* submenu_model = model.GetSubmenuModelAt(i);
@@ -72,13 +72,13 @@ HMENU CreatePopupMenu(unsigned resource_id, ui::MenuModel& context_menu_model) {
   return menu;
 }
 
-base::string16 Translate(const char* text) {
+std::wstring Translate(const char* text) {
   return base::SysNativeMBToWide(text);
 }
 
-base::string16 FormatHostName(const std::string& host_name) {
+std::wstring FormatHostName(const std::string& host_name) {
   if (host_name.empty()) {
-    static const base::string16 local_server_string =
+    static const std::wstring local_server_string =
         win_util::LoadResourceString(WTL::ModuleHelper::GetResourceInstance(),
                                      IDS_LOCAL_SERVER);
     return local_server_string;

@@ -301,7 +301,7 @@ void SelectionCommands::CallMethod(
   node.Call(method_id, arguments, {},
             [node, &local_events = local_events_,
              &profile = profile_](const scada::Status& status) {
-              base::string16 title = ToString16(node.display_name());
+              std::wstring title = ToString16(node.display_name());
               ReportRequestResult(title, status, local_events, profile);
             });
 }
@@ -314,7 +314,7 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
       file_cache_.GetList(ID_MODUS_VIEW).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
-    base::string16 msg =
+    std::wstring msg =
         base::StringPrintf(L"Схема для объекта \"%ls\" не найдена.",
                            ToString16(node.display_name()).c_str());
     dialog_service_->RunMessageBox(msg, L"Схема", MessageBoxMode::Info);
@@ -357,7 +357,7 @@ void SelectionCommands::DeleteSelection() {
     if (node_ids.empty())
       return;
 
-    base::string16 message = base::StringPrintf(
+    std::wstring message = base::StringPrintf(
         L"Вы действительно хотите %Iu объектов?", node_ids.size());
     auto choice = dialog_service_->RunMessageBox(message, L"Удаление",
                                                  MessageBoxMode::QuestionYesNo);
@@ -368,7 +368,7 @@ void SelectionCommands::DeleteSelection() {
       DeleteTreeRecordsRecursive(task_manager_, node_service_.GetNode(node_id));
 
   } else if (const auto& node = selection_->node()) {
-    base::string16 message = base::StringPrintf(
+    std::wstring message = base::StringPrintf(
         L"Вы действительно хотите удалить %ls?", node.display_name().c_str());
     auto choice = dialog_service_->RunMessageBox(message, L"Удаление",
                                                  MessageBoxMode::QuestionYesNo);

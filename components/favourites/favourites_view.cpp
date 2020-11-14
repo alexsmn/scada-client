@@ -79,7 +79,7 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 }
 
 void FavouritesView::AddUrl() {
-  base::string16 url;
+  std::wstring url;
   if (!RunPromptDialog(dialog_service_, L"URL-адрес:", kAddUrl, url))
     return;
 

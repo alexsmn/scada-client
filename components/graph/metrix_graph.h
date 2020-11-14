@@ -46,7 +46,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
    private:
     scada::DataValue GetCurrentValue(const MetrixDataSource& data_source) const;
-    base::string16 GetText(const MetrixDataSource& data_source,
+    std::wstring GetText(const MetrixDataSource& data_source,
                            int column_id) const;
     int GetColumnWidth(int column_id) const;
     int GetColumnCount() const;

@@ -17,7 +17,7 @@ void EditBox::OnCommand(UINT notification_code) {
   }
 }
 
-void EditBox::SetText(const base::string16& text) {
+void EditBox::SetText(const std::wstring& text) {
   suppress_notifications_ = true;
   SetWindowText(text.c_str());
   suppress_notifications_ = false;

@@ -53,7 +53,7 @@ struct ControllerContext {
 
 struct OpenContext {
   std::vector<scada::NodeId> node_ids;
-  base::string16 title;
+  std::wstring title;
   std::optional<TimeRange> time_range;
 };
 

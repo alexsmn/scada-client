@@ -49,7 +49,7 @@ class EventView : public Controller,
   virtual ExportData GetExportData() override;
 
  private:
-  base::string16 MakeTitle() const;
+  std::wstring MakeTitle() const;
 
   void ExportToExcel();
   void SelectSeverity();

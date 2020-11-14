@@ -13,7 +13,7 @@
 
 namespace {
 
-base::string16 FormatReference(NodeService& node_service,
+std::wstring FormatReference(NodeService& node_service,
                                const scada::NodeId& reference_type_id,
                                const scada::NodeId& source_id,
                                const scada::NodeId& target_id,
@@ -85,7 +85,7 @@ void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
           if (!ptr)
             return;
 
-          ptr->ReportRequestCompletion(status, base::string16());
+          ptr->ReportRequestCompletion(status, std::wstring());
 
           if (properties.empty() || !status) {
             if (callback)
@@ -106,7 +106,7 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
                                      scada::NodeAttributes attributes,
                                      scada::NodeProperties properties,
                                      UpdateCallback callback) {
-  base::string16 title = GetDisplayName(node_service_, node_id);
+  std::wstring title = GetDisplayName(node_service_, node_id);
   auto weak_ptr = weak_factory_.GetWeakPtr();
   PostTask(base::StringPrintf(L"Изменение %ls", title.c_str()), [=] {
     node_service_.GetNode(node_id).Fetch(
@@ -148,7 +148,7 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
                 }
 
                 if (auto* ptr = weak_ptr.get())
-                  ptr->ReportRequestCompletion(status, base::string16());
+                  ptr->ReportRequestCompletion(status, std::wstring());
 
                 // TODO: Handle |results|.
                 if (callback)
@@ -159,7 +159,7 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
 }
 
 void TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
-  base::string16 title = GetDisplayName(node_service_, node_id);
+  std::wstring title = GetDisplayName(node_service_, node_id);
   auto weak_ptr = weak_factory_.GetWeakPtr();
   PostTask(base::StringPrintf(L"Удаление %ls", title.c_str()),
            [=, &node_management_service = node_management_service_] {
@@ -189,7 +189,7 @@ void TaskManagerImpl::PostAddReference(const scada::NodeId& reference_type_id,
                    const std::vector<scada::StatusCode>& results) {
           auto result = status ? results.front() : status;
           if (auto ptr = weak_ptr.get())
-            ptr->ReportRequestCompletion(result, base::string16());
+            ptr->ReportRequestCompletion(result, std::wstring());
         });
   });
 }
@@ -210,7 +210,7 @@ void TaskManagerImpl::PostDeleteReference(
                    const std::vector<scada::StatusCode>& results) {
           auto result = status ? results.front() : status;
           if (auto ptr = weak_ptr.get())
-            ptr->ReportRequestCompletion(result, base::string16());
+            ptr->ReportRequestCompletion(result, std::wstring());
         });
   });
 }
@@ -229,7 +229,7 @@ void TaskManagerImpl::StartTask(Task&& task) {
 void TaskManagerImpl::OnDeleteRecordComplete(
     scada::Status&& status,
     std::vector<scada::NodeId>&& dependencies) {
-  base::string16 dependencies_text;
+  std::wstring dependencies_text;
   for (auto& node_id : dependencies) {
     if (!dependencies_text.empty())
       dependencies_text += L'\n';
@@ -241,14 +241,14 @@ void TaskManagerImpl::OnDeleteRecordComplete(
 
 void TaskManagerImpl::ReportRequestCompletion(
     const scada::Status& status,
-    const base::string16& result_text) {
+    const std::wstring& result_text) {
   auto task = std::move(running_task_);
   running_task_ = Task();
 
   if (status && !profile_.show_write_ok)
     return;
 
-  base::string16 message = base::StringPrintf(L"%ls: %ls.", task.title.c_str(),
+  std::wstring message = base::StringPrintf(L"%ls: %ls.", task.title.c_str(),
                                               ToString16(status).c_str());
   if (!result_text.empty())
     message += L'\n' + result_text;

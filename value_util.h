@@ -2,11 +2,11 @@
 
 #include "base/json/json_file_value_serializer.h"
 #include "base/json/json_reader.h"
-#include "base/strings/string16.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 
 #include <optional>
+#include <string>
 
 template <class T>
 std::optional<T> FromJson(const base::Value& value);
@@ -44,9 +44,9 @@ inline base::StringPiece GetString(const base::Value& value,
     return default;
 }
 
-inline base::string16 GetString16(const base::Value& value,
-                                  base::StringPiece key,
-                                  base::StringPiece16 default = {}) {
+inline std::wstring GetString16(const base::Value& value,
+                                base::StringPiece key,
+                                base::StringPiece16 default = {}) {
   if (!value.is_dict())
     return default.as_string();
   if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING))

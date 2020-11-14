@@ -28,7 +28,7 @@ class SummaryModel::Column {
   int width() const { return width_; }
   void set_width(int width) { width_ = width; }
 
-  base::string16 GetTitle() const;
+  std::wstring GetTitle() const;
   scada::NodeId GetNodeId() const { return timed_data_.GetNode().node_id(); }
 
   void UpdateTimes();
@@ -69,7 +69,7 @@ SummaryModel::Column::Column(SummaryModel& model,
   UpdateTimes();
 }
 
-base::string16 SummaryModel::Column::GetTitle() const {
+std::wstring SummaryModel::Column::GetTitle() const {
   if (model_.path_title_) {
     if (auto node = timed_data_.GetNode()) {
       auto title = GetFullDisplayName(node);
@@ -153,7 +153,7 @@ class SummaryModel::RowModel : public ui::HeaderModel {
   // ui::HeaderModel
   virtual int GetCount() const override { return model_.row_count_; }
   virtual int GetSize(int index) const override { return 18; }
-  virtual base::string16 GetTitle(int index) const override;
+  virtual std::wstring GetTitle(int index) const override;
 
  private:
   friend class SummaryModel;
@@ -165,7 +165,7 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
   SetFixedSize(true);
 }
 
-base::string16 SummaryModel::RowModel::GetTitle(int index) const {
+std::wstring SummaryModel::RowModel::GetTitle(int index) const {
   base::Time time = model_.GetRowTime(index);
   return base::SysNativeMBToWide(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
@@ -181,7 +181,7 @@ class SummaryModel::ColumnModel : public ui::HeaderModel {
   virtual int GetCount() const override;
   virtual int GetSize(int index) const override;
   virtual void SetSize(int index, int new_size) override;
-  virtual base::string16 GetTitle(int index) const override;
+  virtual std::wstring GetTitle(int index) const override;
   virtual ui::TableColumn::Alignment GetAlignment(int index) const override;
 
  private:
@@ -206,7 +206,7 @@ void SummaryModel::ColumnModel::SetSize(int index, int new_size) {
   }
 }
 
-base::string16 SummaryModel::ColumnModel::GetTitle(int index) const {
+std::wstring SummaryModel::ColumnModel::GetTitle(int index) const {
   return model_.columns_[index]->GetTitle();
 }
 

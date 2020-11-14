@@ -28,7 +28,7 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
 
   // TreeNode
   virtual int GetChildCount() const override;
-  virtual base::string16 GetText(int column_id) const override;
+  virtual std::wstring GetText(int column_id) const override;
   virtual int GetIcon() const override;
 
  protected:
@@ -61,7 +61,7 @@ class ConfigurationTreeRootNode : public ConfigurationTreeNode {
   ConfigurationTreeRootNode(ConfigurationTreeModel& model, NodeRef tree);
 
   // TreeNode
-  virtual base::string16 GetText(int column_id) const;
+  virtual std::wstring GetText(int column_id) const;
   virtual int GetIcon() const;
 };
 

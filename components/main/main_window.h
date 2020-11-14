@@ -44,7 +44,7 @@ class MainWindow : protected MainWindowContext,
   void CloseView(OpenedView& view);
   void SplitView(OpenedView& view, bool vertically);
 
-  void OnViewTitleUpdated(OpenedView& view, const base::string16& title);
+  void OnViewTitleUpdated(OpenedView& view, const std::wstring& title);
 
   void AddContentsObserver(ContentsObserver& observer);
   void RemoveContentsObserver(ContentsObserver& observer);
@@ -55,7 +55,7 @@ class MainWindow : protected MainWindowContext,
   const Page* GetCurrentPage() const { return &current_page(); }
   void OpenPage(const Page& page);
   void SavePage();
-  void SetPageTitle(const base::string16& title);
+  void SetPageTitle(const std::wstring& title);
   OpenedView* GetActiveView();
   OpenedView* GetActiveDataView();
   OpenedView* OpenView(const WindowDefinition& window_definition,

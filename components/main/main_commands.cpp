@@ -355,7 +355,7 @@ void MainCommands::ShowRenameWindowDialog() {
   if (view->window_info().is_pane())
     return;
 
-  base::string16 title = view->GetWindowTitle();
+  std::wstring title = view->GetWindowTitle();
   if (RunPromptDialog(dialog_service_, L"Имя:", L"Переименовать", title))
     view->SetUserTitle(title);
 }

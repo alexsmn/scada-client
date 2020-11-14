@@ -48,7 +48,7 @@ class ItemComboBox {
  private:
   void AddNodesRecursive(const scada::NodeId& parent_id,
                          const std::vector<scada::NodeId>& reference_type_ids,
-                         const base::string16& name_prefix);
+                         const std::wstring& name_prefix);
 
   NodeService* node_service_ = nullptr;
 
@@ -56,8 +56,8 @@ class ItemComboBox {
 
   scada::NodeId device_id_;
 
-  std::map<base::string16, scada::NodeId> items_;
-  std::map<scada::NodeId, base::string16> node_ids_;
+  std::map<std::wstring, scada::NodeId> items_;
+  std::map<scada::NodeId, std::wstring> node_ids_;
 
   base::WeakPtrFactory<ItemComboBox> weak_ptr_factory_{this};
 };

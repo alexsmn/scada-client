@@ -18,7 +18,7 @@
 
 namespace {
 
-QStringList MakeQStringList(const std::vector<base::string16>& source) {
+QStringList MakeQStringList(const std::vector<std::wstring>& source) {
   QStringList list;
   list.reserve(source.size());
   for (auto& str : source)

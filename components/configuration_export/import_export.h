@@ -12,13 +12,13 @@ class CsvWriter;
 
 class ResourceError {
  public:
-  explicit ResourceError(base::string16 message)
+  explicit ResourceError(std::wstring message)
       : message_{std::move(message)} {}
 
-  const base::string16& message() const { return message_; }
+  const std::wstring& message() const { return message_; }
 
  private:
-  const base::string16 message_;
+  const std::wstring message_;
 };
 
 struct ImportData {

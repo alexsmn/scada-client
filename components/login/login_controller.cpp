@@ -33,16 +33,16 @@ LoginController::LoginController(DataServicesContext&& services_context,
       dialog_service_{dialog_service} {
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
   user_name = reg.GetString(L"User");
-  base::string16 users = reg.GetString(L"UserList");
+  std::wstring users = reg.GetString(L"UserList");
   for (size_t p = 0; p < users.length();) {
     size_t n = users.find(',', p);
     auto user_name =
-        (n == base::string16::npos) ? users.substr(p) : users.substr(p, n - p);
+        (n == std::wstring::npos) ? users.substr(p) : users.substr(p, n - p);
     if (std::find(user_list.begin(), user_list.end(), user_name) ==
         user_list.end()) {
       user_list.emplace_back(std::move(user_name));
     }
-    if (n == base::string16::npos)
+    if (n == std::wstring::npos)
       break;
     p = n + 1;
   }
@@ -121,7 +121,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
     }
 
   } else {
-    base::string16 message =
+    std::wstring message =
         base::StringPrintf(kLoginFailedMessage, ToString16(status).c_str());
     dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error);
 
@@ -155,10 +155,10 @@ void LoginController::DeleteUserName(base::StringPiece16 user_name) {
   reg.SetString(L"UserList", GetUserListString().c_str());
 }
 
-base::string16 LoginController::GetUserListString() const {
+std::wstring LoginController::GetUserListString() const {
   constexpr size_t kMaxCount = 10;
   const size_t count = std::min(kMaxCount, user_list.size());
-  const std::vector<base::string16> truncated_user_list(
+  const std::vector<std::wstring> truncated_user_list(
       user_list.begin(), user_list.begin() + count);
   return base::JoinString(truncated_user_list, L",");
 }

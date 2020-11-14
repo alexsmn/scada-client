@@ -26,7 +26,7 @@ struct ModusDocumentContext {
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
 
-  const std::function<void(const base::string16& title)> title_callback_;
+  const std::function<void(const std::wstring& title)> title_callback_;
   const std::function<void(base::StringPiece16 hyperlink)> navigation_callback_;
   const std::function<void(const TimedDataSpec& selection)> selection_callback_;
   const ContextMenuHandler context_menu_callback_;
@@ -47,7 +47,7 @@ class ModusDocument
   ~ModusDocument();
 
   htsde2::IHTSDEForm2& sde_form() { return *sde_form_.Get(); }
-  const base::string16& title() const { return title_; }
+  const std::wstring& title() const { return title_; }
 
   // Find entity by TRID. Method has linear complexity.
   ModusObject* FindObject(const scada::NodeId& node_id);
@@ -91,7 +91,7 @@ class ModusDocument
   using ObjectId = long;
   std::map<ObjectId, modus::ModusObject*> object_map_;
 
-  base::string16 title_;
+  std::wstring title_;
 
   friend class modus::ModusLoader;
 };

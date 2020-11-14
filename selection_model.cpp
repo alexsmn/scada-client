@@ -69,7 +69,7 @@ void SelectionModel::SelectMultiple() {
   Changed();
 }
 
-base::string16 SelectionModel::GetTitle() const {
+std::wstring SelectionModel::GetTitle() const {
   return timed_data_.GetTitle();
 }
 

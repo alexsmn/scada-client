@@ -10,13 +10,13 @@ class LimitModel : private LimitDialogContext {
   explicit LimitModel(LimitDialogContext&& context);
 
   struct Limits {
-    base::string16 lo;
-    base::string16 hi;
-    base::string16 lolo;
-    base::string16 hihi;
+    std::wstring lo;
+    std::wstring hi;
+    std::wstring lolo;
+    std::wstring hihi;
   };
 
-  base::string16 GetSourceTitle() const;
+  std::wstring GetSourceTitle() const;
   Limits GetLimits() const;
 
   void WriteLimits(const Limits& limits);

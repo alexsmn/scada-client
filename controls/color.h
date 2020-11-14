@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "controls/types.h"
+
+#include <string>
 
 namespace aui {
 

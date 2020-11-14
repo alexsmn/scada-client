@@ -108,7 +108,7 @@ void ExcelSheetModel::SetData(int row, int col, const VARIANT& val) {
   SetData(row, col, base::win::ScopedVariant{val});
 }
 
-void ExcelSheetModel::SetData(int row, int col, const base::string16& val) {
+void ExcelSheetModel::SetData(int row, int col, const std::wstring& val) {
   SetData(row, col, base::win::ScopedVariant{val.c_str()});
 }
 

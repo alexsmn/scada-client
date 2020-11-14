@@ -15,7 +15,7 @@ class PropertyGroupTreeNode : public PropertyTreeNode {
   PropertyGroupTreeNode(PropertyGroup& property_group,
                         PropertyGroup::ItemType type,
                         int index,
-                        base::string16 title);
+                        std::wstring title);
 
   void Update();
 
@@ -23,7 +23,7 @@ class PropertyGroupTreeNode : public PropertyTreeNode {
   virtual PropertyGroupTreeNode* AsGroup() override { return this; }
 
   // ui::TreeNode
-  virtual base::string16 GetText(int column_id) const override;
+  virtual std::wstring GetText(int column_id) const override;
   virtual SkColor GetTextColor(int column_id) const override;
   virtual SkColor GetBackgroundColor(int column_id) const override;
   virtual bool IsSelectable(int column_id) const override { return false; }
@@ -31,7 +31,7 @@ class PropertyGroupTreeNode : public PropertyTreeNode {
   PropertyGroup& property_group;
   PropertyGroup::ItemType type;
   const int index;
-  const base::string16 title;
+  const std::wstring title;
 };
 
 class PropertyItemTreeNode : public PropertyTreeNode {
@@ -39,8 +39,8 @@ class PropertyItemTreeNode : public PropertyTreeNode {
   PropertyItemTreeNode(PropertyGroup& property_group, int index);
 
   // ui::TreeNode
-  virtual base::string16 GetText(int column_id) const override;
-  virtual void SetText(int column_id, const base::string16& text) override;
+  virtual std::wstring GetText(int column_id) const override;
+  virtual void SetText(int column_id, const std::wstring& text) override;
   virtual bool IsEditable(int column_id) const override;
   virtual bool IsSelectable(int column_id) const override;
   virtual ui::EditData GetEditData(int column_id) override;
@@ -58,7 +58,7 @@ class PropertyTreeModel : public ui::TreeNodeModel<PropertyTreeNode> {
 
   // ui::TreeModel
   virtual int GetColumnCount() const { return 2; }
-  virtual base::string16 GetColumnText(int column_id) const override;
+  virtual std::wstring GetColumnText(int column_id) const override;
 
  private:
   PropertyGroupTreeNode* FindGroupNode(PropertyGroup& group);

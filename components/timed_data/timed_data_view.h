@@ -38,7 +38,7 @@ class TimedDataView : public Controller,
   virtual ExportData GetExportData() override;
 
  private:
-  base::string16 MakeTitle() const;
+  std::wstring MakeTitle() const;
   void UpdateColumnTitles();
 
   TimedDataModel model_{TimedDataModelContext{timed_data_service_}};

@@ -287,7 +287,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   controller_delegate_.SetModified(true);
 }
 
-base::string16 GraphView::MakeTitle() const {
+std::wstring GraphView::MakeTitle() const {
   MetrixGraph::MetrixLine* line =
       !graph_->panes().empty()
           ? static_cast<MetrixGraph::MetrixLine*>(

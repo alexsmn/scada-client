@@ -50,23 +50,23 @@ WriteModel::WriteModel(WriteContext&& context)
   }
 }
 
-base::string16 WriteModel::GetWindowTitle() const {
+std::wstring WriteModel::GetWindowTitle() const {
   return manual_ ? L"Ручной ввод" : L"Управление";
 }
 
-base::string16 WriteModel::GetSourceTitle() const {
+std::wstring WriteModel::GetSourceTitle() const {
   return spec_.GetTitle();
 }
 
-base::string16 WriteModel::GetCurrentValue(bool formatted) const {
+std::wstring WriteModel::GetCurrentValue(bool formatted) const {
   return spec_.GetCurrentString(formatted ? FORMAT_QUALITY | FORMAT_UNITS : 0);
 }
 
-std::vector<base::string16> WriteModel::GetDiscreteStates() const {
+std::vector<std::wstring> WriteModel::GetDiscreteStates() const {
   assert(discrete_);
 
-  base::string16 close_label = kDefaultCloseLabel;
-  base::string16 open_label = kDefaultOpenLabel;
+  std::wstring close_label = kDefaultCloseLabel;
+  std::wstring open_label = kDefaultOpenLabel;
 
   const auto node = spec_.GetNode();
   if (auto format = node.target(data_items::id::HasTsFormat)) {
@@ -85,7 +85,7 @@ int WriteModel::GetCurrentDiscreteState() const {
   return spec_.current().value.get_or(true) ? 0 : 1;  // invert state
 }
 
-base::string16 WriteModel::GetAnalogUnits() const {
+std::wstring WriteModel::GetAnalogUnits() const {
   auto node = spec_.GetNode();
   auto units =
       node[data_items::id::AnalogItemType_EngineeringUnits].value().get_or(
@@ -124,7 +124,7 @@ void WriteModel::Write(double value, bool lock) {
   }
 }
 
-base::string16 WriteModel::GetStatusText() const {
+std::wstring WriteModel::GetStatusText() const {
   if (!writing_)
     return {};
 
@@ -143,7 +143,7 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   if (!status) {
     writing_ = true;
     auto title = GetWindowTitle();
-    base::string16 message = ToString16(status) + L'.';
+    std::wstring message = ToString16(status) + L'.';
     dialog_service_->RunMessageBox(message, title, MessageBoxMode::Error);
     completion_handler(true);
     return;
@@ -161,10 +161,10 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
 void WriteModel::StartWriting(bool second_stage) {
   // Request confirmation from user.
   if (profile_.control_confirmation) {
-    base::string16 title = spec_.GetTitle();
-    base::string16 value_str =
+    std::wstring title = spec_.GetTitle();
+    std::wstring value_str =
         spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
-    base::string16 message = base::StringPrintf(
+    std::wstring message = base::StringPrintf(
         discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
         title.c_str(), value_str.c_str());
     if (second_stage)

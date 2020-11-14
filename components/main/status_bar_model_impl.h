@@ -29,7 +29,7 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
 
   // StatusBarModel
   virtual int GetPaneCount() override;
-  virtual base::string16 GetPaneText(int index) override;
+  virtual std::wstring GetPaneText(int index) override;
   virtual int GetPaneSize(int index) override;
   virtual Progress GetProgress() const override;
   virtual void AddObserver(StatusBarModelObserver& observer) override;
@@ -67,7 +67,7 @@ inline int StatusBarModelImpl::GetPaneCount() {
   return 6;
 }
 
-inline base::string16 StatusBarModelImpl::GetPaneText(int index) {
+inline std::wstring StatusBarModelImpl::GetPaneText(int index) {
   switch (index) {
     case 1: {
       size_t unacked_event_count = event_fetcher_.unacked_events().size();

@@ -100,13 +100,13 @@ void TimedDataView::UpdateColumnTitles() {
   if (index == -1)
     return;
 
-  base::string16 units =
+  std::wstring units =
   base::SysNativeMBToWide(GetTimedDataUnits(model_.timed_data()));
-  base::string16 title = base::StringPrintf(L"%ls, %ls", kValueColumnTitle,
+  std::wstring title = base::StringPrintf(L"%ls, %ls", kValueColumnTitle,
   units.c_str()); view_->SetVisibleColumnTitle(index, title);*/
 }
 
-base::string16 TimedDataView::MakeTitle() const {
+std::wstring TimedDataView::MakeTitle() const {
   return model_.timed_data().GetTitle();
 }
 

@@ -114,14 +114,14 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 #if defined(UI_VIEWS)
 void SheetController::OnGridGetAutocompleteList(
     views::GridView& sender,
-    const base::string16& text,
+    const std::wstring& text,
     int& start,
-    std::vector<base::string16>& list) {
+    std::vector<std::wstring>& list) {
   if (text.empty() || text[0] != '=')
     return;
 
   // Remove '='.
-  base::string16 text2 = text.substr(1);
+  std::wstring text2 = text.substr(1);
   int start2 = start;
   CompletePath(text2, start2, list);
 
@@ -256,7 +256,7 @@ void SheetController::UpdateFormulaRow() {
   formula_row_->SetEnabled(!range.empty());
 #endif
 
-  base::string16 text;
+  std::wstring text;
   if (!range.empty()) {
     const SheetCell* cell = model_->cell(range.row(), range.column());
     if (cell)
@@ -398,7 +398,7 @@ int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
 }
 
 void SheetController::ContentsChanged(views::Textfield* sender,
-                                      const base::string16& new_contents) {
+                                      const std::wstring& new_contents) {
   DCHECK(sender == formula_row_.get());
   DCHECK(model_->is_editing());
   DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);

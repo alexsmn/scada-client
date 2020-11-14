@@ -19,7 +19,7 @@ class MainWindowViews final : public MainWindow,
 
   gfx::NativeView GetWindowHandle() const;
 
-  base::string16 GetWindowTitle() const;
+  std::wstring GetWindowTitle() const;
 
   // views::View
   virtual DialogService& GetDialogService() override { return dialog_service_; }

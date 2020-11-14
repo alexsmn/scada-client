@@ -252,7 +252,7 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
 }
 
 void MainWindow::OnViewTitleUpdated(OpenedView& view,
-                                    const base::string16& title) {
+                                    const std::wstring& title) {
   view_manager_->SetViewTitle(view, title);
 }
 
@@ -268,7 +268,7 @@ void MainWindow::CloseView(OpenedView& view) {
     view_manager_->CloseView(view);
 }
 
-void MainWindow::SetPageTitle(const base::string16& title) {
+void MainWindow::SetPageTitle(const std::wstring& title) {
   const_cast<Page&>(current_page()).title = title;
   UpdateTitle();
 }

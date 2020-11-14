@@ -246,7 +246,7 @@ QString MetrixDataSource::GetYAxisLabel(double value) const {
   return QString::fromStdWString(timed_data_.GetValueString(value, {}));
 }
 #elif defined(UI_VIEWS)
-base::string16 MetrixDataSource::GetYAxisLabel(double value) const {
+std::wstring MetrixDataSource::GetYAxisLabel(double value) const {
   return timed_data_.GetValueString(value, {});
 }
 #endif

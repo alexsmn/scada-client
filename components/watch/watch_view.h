@@ -30,7 +30,7 @@ class WatchView : public Controller,
   virtual ExportData GetExportData() override;
 
  private:
-  base::string16 MakeTitle() const;
+  std::wstring MakeTitle() const;
 
   void SaveLog();
 

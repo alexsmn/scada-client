@@ -22,7 +22,7 @@ std::string TableRow::GetFormula() const {
   return formula_.empty() ? std::string{} : '=' + formula_;
 }
 
-base::string16 TableRow::GetTitle() const {
+std::wstring TableRow::GetTitle() const {
   return timed_data_.GetTitle();
 }
 

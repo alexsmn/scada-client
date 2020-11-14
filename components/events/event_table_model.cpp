@@ -441,8 +441,8 @@ void EventTableModel::UnlockUpdate() {
     Update();
 }
 
-base::string16 EventTableModel::MakeTitle() const {
-  base::string16 title;
+std::wstring EventTableModel::MakeTitle() const {
+  std::wstring title;
   if (current_events_) {
     title = L"Текущие события";
   } else {

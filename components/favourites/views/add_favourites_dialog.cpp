@@ -16,8 +16,8 @@ class AddFavouritesDialog : public framework::Dialog {
   explicit AddFavouritesDialog(Favourites& favourites)
       : Dialog{IDD_ADD_FAVOURITES}, favourites_{favourites} {}
 
-  base::string16 title;
-  base::string16 folder;
+  std::wstring title;
+  std::wstring folder;
 
  protected:
   virtual void OnInitDialog() {

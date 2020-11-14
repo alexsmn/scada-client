@@ -18,16 +18,16 @@ class WriteModel : private WriteContext {
   bool has_condition() const { return has_condition_; }
   bool two_staged() const { return two_staged_; }
 
-  base::string16 GetWindowTitle() const;
-  base::string16 GetSourceTitle() const;
-  base::string16 GetCurrentValue(bool formatted) const;
-  base::string16 GetStatusText() const;
+  std::wstring GetWindowTitle() const;
+  std::wstring GetSourceTitle() const;
+  std::wstring GetCurrentValue(bool formatted) const;
+  std::wstring GetStatusText() const;
   bool IsConditionOk() const;
 
-  std::vector<base::string16> GetDiscreteStates() const;
+  std::vector<std::wstring> GetDiscreteStates() const;
   int GetCurrentDiscreteState() const;
 
-  base::string16 GetAnalogUnits() const;
+  std::wstring GetAnalogUnits() const;
 
   void Write(double value, bool lock);
 

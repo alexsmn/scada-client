@@ -136,7 +136,7 @@ bool ModusView2::OnMousePressed(const ui::MouseEvent& event) {
 }
 
 bool ModusView2::GetTooltipText(const gfx::Point& p,
-                                base::string16* tooltip) const {
+                                std::wstring* tooltip) const {
   auto point = PointToScheme(p);
   auto shape = GetShapeAt(point);
   auto binding = GetBinding(shape);

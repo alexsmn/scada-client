@@ -99,9 +99,9 @@ void PortfolioView::AddContainedItem(const scada::NodeId& node_id,
   tree_->SelectNode(item_node);
 }
 
-base::string16 PortfolioView::GetSelectionTitle() {
+std::wstring PortfolioView::GetSelectionTitle() {
   PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
-  return node ? node->GetText(0) : base::string16();
+  return node ? node->GetText(0) : std::wstring();
 }
 
 NodeIdSet PortfolioView::GetSelectedNodeIdList() {

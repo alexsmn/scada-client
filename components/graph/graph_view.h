@@ -45,7 +45,7 @@ class GraphView : public Controller,
   virtual bool IsTimeRequired() const override { return true; }
 
  private:
-  base::string16 MakeTitle() const;
+  std::wstring MakeTitle() const;
 
   void DeleteSelectedPane();
 

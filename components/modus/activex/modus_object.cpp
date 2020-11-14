@@ -25,7 +25,7 @@ void ModusObject::UpdateStyle(bool init) {
   if (init || current_states_ != states) {
     current_states_ = states;
 
-    base::string16 style;
+    std::wstring style;
     if (current_states_ & ModusElement::MODUS_INVAL) {
       if (!style.empty())
         style += L',';

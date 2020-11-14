@@ -29,7 +29,7 @@ class SelectionModel final : private SelectionModelContext,
   void SelectTimedData(const TimedDataSpec& spec);
   void SelectMultiple();
 
-  base::string16 GetTitle() const;
+  std::wstring GetTitle() const;
   NodeIdSet GetMultipleNodeIds() const;
   const NodeRef& node() const { return node_; }
   const TimedDataSpec& timed_data() const { return timed_data_; }

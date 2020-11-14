@@ -1,9 +1,10 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "base/strings/string16.h"
 #include "common/aliases.h"
 #include "services/file_cache.h"
+
+#include <string>
 
 class FileCache;
 class FileCacheUpdater;
@@ -35,7 +36,7 @@ class ModusLoader : private ModusLoaderContext {
  public:
   explicit ModusLoader(ModusLoaderContext&& context);
 
-  const base::string16& title() const { return title_; }
+  const std::wstring& title() const { return title_; }
 
   void Load(SDECore::ISDEDocument50& sde_document,
             const base::FilePath& path,
@@ -45,7 +46,7 @@ class ModusLoader : private ModusLoaderContext {
   void LoadElement(std::unique_ptr<ModusObject>& object,
                    SDECore::ISDEObject50& sde_object,
                    SDECore::IParams& params,
-                   const base::string16& binding,
+                   const std::wstring& binding,
                    long object_tag,
                    long tech_index);
 
@@ -57,7 +58,7 @@ class ModusLoader : private ModusLoaderContext {
 
   ModusDocument* document_ = nullptr;
 
-  base::string16 title_;
+  std::wstring title_;
 
   std::shared_ptr<FileCacheUpdater> cache_updater_;
 };

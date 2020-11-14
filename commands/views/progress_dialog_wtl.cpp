@@ -50,7 +50,7 @@ class ProgressDialogWtlImpl : public ProgressDialog {
 
   // ProgressDialog
   virtual void SetProgress(int range, int position) override;
-  virtual void SetStatus(const base::string16& status) override;
+  virtual void SetStatus(const std::wstring& status) override;
   virtual bool IsCancelled() const override;
 
  private:
@@ -102,7 +102,7 @@ void ProgressDialogWtlImpl::SetProgress(int range, int position) {
   dialog_->progress_bar_.UpdateWindow();
 }
 
-void ProgressDialogWtlImpl::SetStatus(const base::string16& status) {
+void ProgressDialogWtlImpl::SetStatus(const std::wstring& status) {
   dialog_->SetDlgItemText(IDC_STATUS, status.c_str());
 }
 

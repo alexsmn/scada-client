@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "window_definition.h"
+
+#include <string>
 
 class DialogService;
 class Favourites;

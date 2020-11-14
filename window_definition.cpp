@@ -33,7 +33,7 @@ base::StringPiece WindowItem::GetString(base::StringPiece attr,
   return ::GetString(attributes, attr, default);
 }
 
-base::string16 WindowItem::GetString16(base::StringPiece attr,
+std::wstring WindowItem::GetString16(base::StringPiece attr,
                                        base::StringPiece16 default) const {
   return ::GetString16(attributes, attr, default);
 }
@@ -85,11 +85,11 @@ WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
   return *this;
 }
 
-base::string16 WindowDefinition::GetTitle() const {
+std::wstring WindowDefinition::GetTitle() const {
   if (!title.empty())
     return title;
 
-  base::string16 title = window_info().title;
+  std::wstring title = window_info().title;
   if (!path.empty())
     title += L": " + path.value();
   return title;

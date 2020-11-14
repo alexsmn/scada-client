@@ -56,7 +56,7 @@ class CellModel : public ui::GridModel, private views::FixedRowModel::Delegate {
   virtual void GetCell(ui::GridCell& data) override;
   virtual bool SetCellText(int row,
                            int column,
-                           const base::string16& text) override;
+                           const std::wstring& text) override;
 
  private:
   int GetCellIndex(int row, int column) const {

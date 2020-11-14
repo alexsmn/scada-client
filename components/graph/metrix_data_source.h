@@ -28,7 +28,7 @@ class MetrixDataSource : public views::GraphDataSource {
   bool connected() const { return timed_data_.connected(); }
   const TimedDataSpec& timed_data() const { return timed_data_; }
   std::string GetPath() const { return timed_data_.formula(); }
-  const base::string16& title() const { return title_; }
+  const std::wstring& title() const { return title_; }
 
   bool XToData(double& x, scada::DataValue& val) const;
 
@@ -40,7 +40,7 @@ class MetrixDataSource : public views::GraphDataSource {
 #if defined(UI_QT)
   virtual QString GetYAxisLabel(double value) const;
 #elif defined(UI_VIEWS)
-  virtual base::string16 GetYAxisLabel(double value) const;
+  virtual std::wstring GetYAxisLabel(double value) const;
 #endif
 
  protected:
@@ -53,7 +53,7 @@ class MetrixDataSource : public views::GraphDataSource {
   void OnPropertyChanged(const PropertySet& properties);
 
   TimedDataSpec timed_data_;
-  base::string16 title_;
+  std::wstring title_;
 
   std::unique_ptr<MetrixPointEnum> point_enum_;
 };

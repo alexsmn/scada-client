@@ -177,7 +177,7 @@ bool NodeTableController::OnKeyPressed(views::GridView& sender,
     if (!range.empty()) {
       for (int row = range.row(); row <= range.last_row(); row++)
         for (int col = range.column(); col <= range.last_column(); col++)
-          model_->SetCellText(row, col, base::string16());
+          model_->SetCellText(row, col, std::wstring());
       return true;
     }
   }

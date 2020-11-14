@@ -168,14 +168,14 @@ void FileCache::Refresh() {
     if (list.Find(path) != -1)
       continue;
 
-    base::string16 title = path.RemoveExtension().value();
+    std::wstring title = path.RemoveExtension().value();
     list.emplace_back(FileEntry{std::move(path), std::move(title)});
   }
 }
 
 void FileCache::Update(int type_id,
                        const base::FilePath& path,
-                       const base::string16& title,
+                       const std::wstring& title,
                        ItemMap& items) {
   FileList& list = GetMutableList(type_id);
 

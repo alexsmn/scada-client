@@ -8,8 +8,8 @@ class ChangePasswordDialog : public framework::Dialog {
  public:
   ChangePasswordDialog() : Dialog{IDD_CHANGE_PASSWORD} {}
 
-  const base::string16& current_password() const { return current_password_; }
-  const base::string16& new_password() const { return new_password_; }
+  const std::wstring& current_password() const { return current_password_; }
+  const std::wstring& new_password() const { return new_password_; }
 
  protected:
   virtual void OnOK() override {
@@ -26,8 +26,8 @@ class ChangePasswordDialog : public framework::Dialog {
   }
 
  private:
-  base::string16 current_password_;
-  base::string16 new_password_;
+  std::wstring current_password_;
+  std::wstring new_password_;
 };
 
 void ShowChangePasswordDialog(DialogService& dialog_service,

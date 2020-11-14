@@ -295,13 +295,13 @@ void TableModel::Sort(unsigned command_id) {
   NotifyItemsChanged(0, row_count());
 }
 
-base::string16 TableModel::GetTooltip(int row, int column_id) {
+std::wstring TableModel::GetTooltip(int row, int column_id) {
   if (column_id != COLUMN_TITLE)
-    return base::string16();
+    return std::wstring();
 
   const TableRow* trow = GetRow(row);
   if (!trow)
-    return base::string16();
+    return std::wstring();
 
   return GetTimedDataTooltipText(trow->timed_data());
 }
@@ -319,7 +319,7 @@ const TableRow* TableModel::GetRow(int index) const {
 
 bool TableModel::SetCellText(int row,
                              int column_id,
-                             const base::string16& text) {
+                             const std::wstring& text) {
   assert(column_id == TableModel::COLUMN_TITLE);
 
   std::string text2 = base::SysWideToNativeMB(text);

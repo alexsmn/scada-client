@@ -1,9 +1,6 @@
 #pragma once
 
-#include <memory>
-
 #include "base/memory/weak_ptr.h"
-#include "base/strings/string16.h"
 #include "base/timer/timer.h"
 #include "command_handler.h"
 #include "controller_delegate.h"
@@ -12,6 +9,9 @@
 #include "core/configuration_types.h"
 #include "core/status.h"
 #include "window_definition.h"
+
+#include <memory>
+#include <string>
 
 namespace scada {
 class HistoryService;

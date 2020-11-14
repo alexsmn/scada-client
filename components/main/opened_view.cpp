@@ -50,7 +50,7 @@ void OpenedView::SetUserTitle(const base::StringPiece16& title) {
   }
 }
 
-base::string16 OpenedView::GetWindowTitle() const {
+std::wstring OpenedView::GetWindowTitle() const {
   // don't allow custom titles for predefined windows
   if (window_info().is_pane())
     return window_info().title;
@@ -65,7 +65,7 @@ base::string16 OpenedView::GetWindowTitle() const {
 }
 
 void OpenedView::UpdateTitle() {
-  base::string16 title = GetWindowTitle();
+  std::wstring title = GetWindowTitle();
   if (working_)
     title += L" [Выполнение]";
 

@@ -14,7 +14,7 @@ LocalEvents::~LocalEvents() {
 }
 
 void LocalEvents::ReportEvent(Severity severity,
-                              const base::string16& message) {
+                              const std::wstring& message) {
   unsigned ack_id = next_ack_id_++;
   while ((ack_id != 0) && (FindAckId(ack_id) != events_.end()))
     ack_id = next_ack_id_++;

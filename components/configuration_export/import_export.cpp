@@ -18,7 +18,7 @@
 
 namespace {
 
-base::string16 FormatReferenceCell(const base::string16& title,
+std::wstring FormatReferenceCell(const std::wstring& title,
                                    const scada::NodeId& prop_type_id) {
   return base::StringPrintf(
       L"%ls @%ls", title.c_str(),
@@ -271,7 +271,7 @@ void ExportConfiguration(const ExportData& data, CsvWriter& writer) {
     writer.WriteCell(
         !node.type_id.is_null()
             ? FormatReferenceCell(node.type_display_name, node.type_id)
-            : base::string16{});
+            : std::wstring{});
     writer.WriteCell(node.display_name);
     assert(node.property_values.size() == data.props.size());
     for (const auto& prop_value : node.property_values) {
@@ -280,7 +280,7 @@ void ExportConfiguration(const ExportData& data, CsvWriter& writer) {
             !prop_value.target_id.is_null()
                 ? FormatReferenceCell(prop_value.target_display_name,
                                       prop_value.target_id)
-                : base::string16{});
+                : std::wstring{});
       } else {
         auto str = prop_value.value.get_or(std::string());
         writer.WriteCell(base::SysNativeMBToWide(str));

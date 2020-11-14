@@ -84,7 +84,7 @@ void WriteDialog::OnOK() {
     value = state ? 1.0 : 0.0;
 
   } else {
-    base::string16 value_str = GetItemText(IDC_VALUE);
+    std::wstring value_str = GetItemText(IDC_VALUE);
     if (!Parse(value_str, value)) {
       dialog_service_.RunMessageBox(
           L"Введено неверное значение. Используйте точку в качестве "

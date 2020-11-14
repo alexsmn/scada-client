@@ -1,13 +1,13 @@
 #pragma once
 
-#include <windows.h>
-
-#include "base/strings/string16.h"
 #include "client_utils.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/point.h"
+
+#include <string>
+#include <windows.h>
 
 namespace ui {
 class MenuModel;

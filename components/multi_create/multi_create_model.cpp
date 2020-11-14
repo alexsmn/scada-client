@@ -13,7 +13,7 @@
 namespace {
 
 void FillDeviceItems(const NodeRef& parent,
-                     std::map<base::string16, scada::NodeId>& items) {
+                     std::map<std::wstring, scada::NodeId>& items) {
   for (auto& node : parent.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, devices::id::DeviceType)) {
       auto title = GetFullDisplayName(node);
@@ -30,7 +30,7 @@ MultiCreateModel::MultiCreateModel(MultiCreateContext&& context)
   FillDeviceItems(node_service_.GetNode(devices::id::Devices), devices_);
 }
 
-base::string16 MultiCreateModel::GetAutoName(bool ts) const {
+std::wstring MultiCreateModel::GetAutoName(bool ts) const {
   return ts ? L"ТС" : L"ТИТ";
 }
 

@@ -21,7 +21,7 @@ ModusController::ModusController(const ControllerContext& context)
 ModusController::~ModusController() {}
 
 views::View* ModusController::CreateModusView() {
-  auto title_callback = [this](const base::string16& title) {
+  auto title_callback = [this](const std::wstring& title) {
     controller_delegate_.SetTitle(title);
   };
 

@@ -113,7 +113,7 @@ int NodeTableModel::GetRowCount() {
   return static_cast<int>(nodes_.size());
 }
 
-base::string16 NodeTableModel::GetRowTitle(int row) {
+std::wstring NodeTableModel::GetRowTitle(int row) {
   return base::SysNativeMBToWide(NodeIdToScadaString(nodes_[row].node_id()));
 }
 
@@ -141,7 +141,7 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
 
 bool NodeTableModel::SetCellText(int row,
                                  int column,
-                                 const base::string16& text) {
+                                 const std::wstring& text) {
   assert(row >= 0 && row < nodes_.size());
   if (row < 0 || row >= nodes_.size())
     return false;
@@ -255,8 +255,8 @@ void NodeTableModel::Sort() {
 
   struct CompareNodes {
     bool operator()(const NodeRef& left, const NodeRef& right) const {
-      const auto& a = left[property_id].value().get_or(base::string16());
-      const auto& b = right[property_id].value().get_or(base::string16());
+      const auto& a = left[property_id].value().get_or(std::wstring());
+      const auto& b = right[property_id].value().get_or(std::wstring());
       return HumanCompareText(a, b) < 0;
     }
 

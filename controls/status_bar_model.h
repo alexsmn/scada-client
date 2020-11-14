@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/strings/string16.h"
+#include <string>
 
 class StatusBarModelObserver {
  public:
@@ -15,7 +15,7 @@ class StatusBarModel {
   ~StatusBarModel() {}
 
   virtual int GetPaneCount() = 0;
-  virtual base::string16 GetPaneText(int index) = 0;
+  virtual std::wstring GetPaneText(int index) = 0;
   virtual int GetPaneSize(int index) = 0;
 
   struct Progress {

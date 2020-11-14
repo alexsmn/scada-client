@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/strings/string16.h"
-#include "node_service/node_observer.h"
 #include "core/configuration_types.h"
+#include "node_service/node_observer.h"
 
 #include <list>
 #include <set>
+#include <string>
 
 class NodeService;
 class Portfolio;

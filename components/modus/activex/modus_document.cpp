@@ -106,7 +106,7 @@ ModusDocument::OnDocDblClick(ISDEDocument50* doc, SDECore::IUIEventInfo* info) {
   }
 
   if (sde_object && !acked) {
-    base::string16 hyperlink = modus::GetHyperlink(*sde_object.Get());
+    std::wstring hyperlink = modus::GetHyperlink(*sde_object.Get());
     if (!hyperlink.empty())
       navigation_callback_(hyperlink);
   }

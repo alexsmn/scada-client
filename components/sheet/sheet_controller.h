@@ -87,16 +87,16 @@ class SheetController : public Controller,
   // GridController
   virtual void OnGridGetAutocompleteList(
       views::GridView& sender,
-      const base::string16& text,
+      const std::wstring& text,
       int& start,
-      std::vector<base::string16>& list) override;
+      std::vector<std::wstring>& list) override;
   virtual bool OnKeyPressed(views::GridView& sender,
                             ui::KeyboardCode key_code) override;
   virtual bool OnDoubleClick() override;
 
   // views::TextfieldController
   virtual void ContentsChanged(views::Textfield* sender,
-                               const base::string16& new_contents) override;
+                               const std::wstring& new_contents) override;
 #endif
 
   std::unique_ptr<SheetModel> model_;

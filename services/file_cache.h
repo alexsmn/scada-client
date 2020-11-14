@@ -22,7 +22,7 @@ class FileCache {
 
   struct FileEntry {
     base::FilePath path;
-    base::string16 title;
+    std::wstring title;
     ItemMap items;
   };
 
@@ -42,7 +42,7 @@ class FileCache {
 
   void Update(int type_id,
               const base::FilePath& path,
-              const base::string16& title,
+              const std::wstring& title,
               ItemMap& items);
 
  private:

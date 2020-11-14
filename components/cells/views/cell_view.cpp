@@ -82,7 +82,7 @@ void CellModel::GetCell(ui::GridCell& cell) {
   cell.text = c->value_spec_.GetCurrentString();
 }
 
-bool CellModel::SetCellText(int row, int column, const base::string16& text) {
+bool CellModel::SetCellText(int row, int column, const std::wstring& text) {
   try {
     SetCellFormula(row, column, base::SysWideToNativeMB(text));
   } catch (const std::exception& e) {
@@ -163,7 +163,7 @@ bool CellView::OnGridDrawCell(views::GridView& sender,
 
   const auto& tvq = cell->value_spec_.current();
 
-  base::string16 lines[4];
+  std::wstring lines[4];
   lines[0] = cell->value_spec_.GetTitle();
   lines[1] = cell->value_spec_.GetCurrentString();
   lines[2] = base::SysNativeMBToWide(FormatTime(tvq.source_timestamp));
@@ -174,7 +174,7 @@ bool CellView::OnGridDrawCell(views::GridView& sender,
   line_rect.Inset(4, 2);
 
   for (int i = 0; i < _countof(lines); ++i) {
-    const base::string16& line = lines[i];
+    const std::wstring& line = lines[i];
 
     line_rect.set_height(15);
 

@@ -31,7 +31,7 @@ class PortfolioView : public Controller,
  private:
   const Portfolio* GetSelectedPortfolio() const;
 
-  base::string16 GetSelectionTitle();
+  std::wstring GetSelectionTitle();
   NodeIdSet GetSelectedNodeIdList();
 
   void DeleteSelection();

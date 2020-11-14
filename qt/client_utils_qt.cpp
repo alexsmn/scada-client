@@ -50,11 +50,11 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
   }
 }
 
-base::string16 Translate(const char* text) {
+std::wstring Translate(const char* text) {
   return QObject::tr(text).toStdWString();
 }
 
-base::string16 FormatHostName(const std::string& host_name) {
+std::wstring FormatHostName(const std::string& host_name) {
   if (host_name.empty()) {
     return QObject::tr("Local").toStdWString();
   } else {

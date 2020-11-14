@@ -59,7 +59,7 @@ void ItemComboBox::Init(NodeService& node_service, HWND combo_box_handle) {
 }
 
 scada::NodeId ItemComboBox::GetNodeId() const {
-  base::string16 text = win_util::GetWindowText(combo_box_);
+  std::wstring text = win_util::GetWindowText(combo_box_);
   auto i = items_.find(text);
   if (i != items_.end())
     return i->second;
@@ -98,7 +98,7 @@ void ItemComboBox::SetNodeId(const scada::NodeId& node_id) {
 void ItemComboBox::AddNodesRecursive(
     const scada::NodeId& parent_id,
     const std::vector<scada::NodeId>& reference_type_ids,
-    const base::string16& name_prefix) {
+    const std::wstring& name_prefix) {
   assert(node_service_);
 
   for (auto& reference_type_id : reference_type_ids) {

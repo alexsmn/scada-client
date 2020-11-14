@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/strings/string16.h"
+#include <string>
 
 enum CommandCategory {
   CATEGORY_NEW,
@@ -31,8 +31,8 @@ class Action {
 
   Action(unsigned command_id,
          CommandCategory category,
-         base::string16 title,
-         base::string16 short_title = base::string16(),
+         std::wstring title,
+         std::wstring short_title = std::wstring(),
          int image_id = 0,
          unsigned flags = 0);
   virtual ~Action() {}
@@ -45,14 +45,14 @@ class Action {
   void set_checked(bool checked) { SetFlag(CHECKED, checked); }
   void set_visible(bool visible) { SetFlag(VISIBLE, visible); }
 
-  virtual base::string16 GetTitle() const { return title_; }
+  virtual std::wstring GetTitle() const { return title_; }
 
   unsigned command_id() const { return command_id_; }
 
-  base::string16 GetShortTitle() const {
+  std::wstring GetShortTitle() const {
     return short_title_.empty() ? title_ : short_title_;
   }
-  void SetTitle(base::string16 title) { title_ = std::move(title); }
+  void SetTitle(std::wstring title) { title_ = std::move(title); }
 
   int image_id() const { return image_id_; }
   bool enabled() const { return GetFlag(ENABLED); }
@@ -73,16 +73,16 @@ class Action {
       flags_ &= ~flag;
   }
 
-  base::string16 title_;
-  base::string16 short_title_;
+  std::wstring title_;
+  std::wstring short_title_;
   unsigned flags_;
   int image_id_;
 };
 
 inline Action::Action(unsigned command,
                       CommandCategory category,
-                      base::string16 title,
-                      base::string16 short_title,
+                      std::wstring title,
+                      std::wstring short_title,
                       int image_id,
                       unsigned flags)
     : command_id_(command),

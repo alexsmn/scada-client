@@ -40,7 +40,7 @@ class NodeAction : private NodeRefObserver, public Action {
 
   ~NodeAction() { node_.Unsubscribe(*this); }
 
-  virtual base::string16 GetTitle() const override {
+  virtual std::wstring GetTitle() const override {
     return ToString16(node_.display_name());
   }
 
@@ -78,32 +78,32 @@ void AddGlobalActions(ActionManager& action_manager,
   //  "Новая таблица", NULL, kTableImageIndex));
 
   action_manager.AddAction(*new Action(ID_OPEN_GRAPH, CATEGORY_OPEN, L"График",
-                                       base::string16(), ID_GRAPH_VIEW,
+                                       std::wstring(), ID_GRAPH_VIEW,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(*new Action(ID_TIMED_DATA_VIEW, CATEGORY_OPEN,
-                                       L"Данные", base::string16(),
+                                       L"Данные", std::wstring(),
                                        IDB_TIMED_DATA, Action::ALWAYS_VISIBLE));
   action_manager.AddAction(*new Action(ID_OPEN_DISPLAY, CATEGORY_OPEN, L"Схема",
-                                       base::string16(), ID_MODUS_VIEW,
+                                       std::wstring(), ID_MODUS_VIEW,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(*new Action(ID_OPEN_TABLE, CATEGORY_OPEN, L"Таблица",
-                                       base::string16(), ID_TABLE_VIEW,
+                                       std::wstring(), ID_TABLE_VIEW,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(*new Action(ID_OPEN_SUMMARY, CATEGORY_OPEN,
-                                       L"Сводка", base::string16(), IDB_SUMMARY,
+                                       L"Сводка", std::wstring(), IDB_SUMMARY,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(
       *new Action(ID_HISTORICAL_EVENTS, CATEGORY_OPEN, L"События",
-                  base::string16(), IDB_OPEN_EVENTS, Action::ALWAYS_VISIBLE));
+                  std::wstring(), IDB_OPEN_EVENTS, Action::ALWAYS_VISIBLE));
 
   action_manager.AddAction(*new Action(ID_OPEN_GROUP_TABLE, CATEGORY_OPEN,
-                                       L"Таблица группы", base::string16(), 0,
+                                       L"Таблица группы", std::wstring(), 0,
                                        Action::VISIBLE));
 
   action_manager.AddAction(
       *new Action(ID_ACKNOWLEDGE_CURRENT, CATEGORY_ITEM, L"Квитировать"));
   action_manager.AddAction(*new Action(ID_UNLOCK_ITEM, CATEGORY_ITEM,
-                                       L"Снять блокировку", base::string16(),
+                                       L"Снять блокировку", std::wstring(),
                                        IDB_UNLOCK));
   action_manager.AddAction(*new Action(
       ID_WRITE, CATEGORY_ITEM, L"Управление...", L"Управление", IDB_WRITE));
@@ -120,7 +120,7 @@ void AddGlobalActions(ActionManager& action_manager,
 
   action_manager.AddAction(*new Action(ID_SETUP, CATEGORY_SETUP, L"Опции"));
   action_manager.AddAction(*new Action(ID_PRINT, CATEGORY_SETUP, L"Печать",
-                                       base::string16(), IDB_PRINTER));
+                                       std::wstring(), IDB_PRINTER));
   action_manager.AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, L"Правка"));
 
   action_manager.AddAction(
@@ -141,7 +141,7 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(*new Action(ID_PAUSE, CATEGORY_SPECIFIC, L"Пауза"));
 
   action_manager.AddAction(*new Action(ID_ACKNOWLEDGE_ALL, CATEGORY_VIEW,
-                                       L"Квитировать все", base::string16(),
+                                       L"Квитировать все", std::wstring(),
                                        IDB_ACKNOWLEDGE_ALL));
   action_manager.AddAction(*new Action(ID_SEVERITY_CUSTOM, CATEGORY_VIEW,
                                        L"Важность...", L"Важность"));
@@ -153,7 +153,7 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(
       *new Action(ID_MODUS_STATUSBAR, CATEGORY_VIEW, L"Строка состояния"));
   action_manager.AddAction(*new Action(ID_EVENT_VIEW, CATEGORY_VIEW,
-                                       L"Панель событий", base::string16(),
+                                       L"Панель событий", std::wstring(),
                                        ID_EVENT_VIEW));
   action_manager.AddAction(*new Action(ID_SAVE, CATEGORY_VIEW, L"Сохранить"));
   action_manager.AddAction(*new Action(ID_SAVE_AS, CATEGORY_VIEW,
@@ -228,7 +228,7 @@ void AddGlobalActions(ActionManager& action_manager,
       .set_checkable(true);
 
   action_manager.AddAction(*new Action(ID_ITEM_PARAMS, CATEGORY_EDIT,
-                                       L"Параметры", base::string16(),
+                                       L"Параметры", std::wstring(),
                                        IDB_RECORD_EDITOR));
   action_manager.AddAction(*new Action(ID_TABLE_CONFIG, CATEGORY_EDIT,
                                        L"Параметры элементов", L"Элементы"));
@@ -243,11 +243,11 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(
       *new Action(ID_RENAME, CATEGORY_EDIT, L"Переименовать"));
   action_manager.AddAction(*new Action(ID_COPY, CATEGORY_EDIT, L"Копировать",
-                                       base::string16(), IDB_COPY));
+                                       std::wstring(), IDB_COPY));
   action_manager.AddAction(*new Action(ID_PASTE, CATEGORY_EDIT, L"Вставить",
-                                       base::string16(), IDB_PASTE));
+                                       std::wstring(), IDB_PASTE));
   action_manager.AddAction(*new Action(ID_DELETE, CATEGORY_EDIT, L"Удалить",
-                                       base::string16(), IDB_DELETE));
+                                       std::wstring(), IDB_DELETE));
   action_manager.AddAction(
       *new Action(ID_CLEAR_ALL, CATEGORY_EDIT, L"Очистить"));
 

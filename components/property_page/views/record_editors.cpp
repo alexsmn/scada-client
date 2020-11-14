@@ -509,7 +509,7 @@ TitEditor::TitEditor(RecordEditorContext&& context)
     : ItemEditor(IDD_TIT, std::move(context)) {}
 
 double SaveFloat(CEdit edit) {
-  base::string16 str = win_util::GetWindowText(edit);
+  std::wstring str = win_util::GetWindowText(edit);
   return ParseWithDefault(str, 0.0);
 }
 
@@ -817,7 +817,7 @@ void Iec60870LinkEditor::ReadControlsData() {
 }
 
 void SetComboInt(CComboBox combo, int val) {
-  base::string16 str = WideFormat(val);
+  std::wstring str = WideFormat(val);
   combo.SelectString(-1, str.c_str());
 }
 
@@ -935,7 +935,7 @@ void Iec60870LinkEditor::GetModifiedProperties(
 
 static void AddComboValues(CComboBox combo, const int* items) {
   for (; *items; ++items) {
-    base::string16 str = WideFormat(*items);
+    std::wstring str = WideFormat(*items);
     combo.AddString(str.c_str());
   }
 }

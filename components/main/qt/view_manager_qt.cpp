@@ -342,7 +342,7 @@ OpenedView* ViewManagerQt::GetActiveView() {
 }
 
 void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
-                                 const base::string16& title) {
+                                 const std::wstring& title) {
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
     if (index != -1)

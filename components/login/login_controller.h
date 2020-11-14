@@ -22,13 +22,13 @@ class LoginController {
   std::function<void(DataServices& services)> completion_handler;
   std::function<void()> error_handler;
 
-  std::vector<base::string16> server_type_list;
+  std::vector<std::wstring> server_type_list;
   int server_type_index = 0;
 
-  base::string16 user_name;
-  base::string16 password;
+  std::wstring user_name;
+  std::wstring password;
   std::string server_host;
-  std::vector<base::string16> user_list;
+  std::vector<std::wstring> user_list;
   // Automatic startup login is performed.
   bool auto_login = false;
 
@@ -39,7 +39,7 @@ class LoginController {
   void OnLoginCompleted();
   void OnLoginFailed(const scada::Status& status);
 
-  base::string16 GetUserListString() const;
+  std::wstring GetUserListString() const;
 
   DataServicesContext services_context_;
   DialogService& dialog_service_;

@@ -16,14 +16,14 @@ class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
   const scada::NodeId& item_id() const { return item_id_; }
   bool is_portfolio() const { return item_id_ == scada::NodeId(); }
 
-  void set_title(const base::string16& title) { title_ = title; }
+  void set_title(const std::wstring& title) { title_ = title; }
   void set_icon(int icon) { icon_ = icon; }
   void set_item_id(const scada::NodeId& item_id) { item_id_ = item_id; }
 
   // TreeNode.
-  virtual base::string16 GetText(int column_id) const override { return title_; }
+  virtual std::wstring GetText(int column_id) const override { return title_; }
   virtual int GetIcon() const override { return icon_; }
-  virtual void SetText(int column_id, const base::string16& title) override;
+  virtual void SetText(int column_id, const std::wstring& title) override;
   virtual bool IsEditable(int column_id) const override { return is_portfolio(); }
 
  private:
@@ -31,7 +31,7 @@ class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
   const Portfolio& portfolio_;
   scada::NodeId item_id_;
 
-  base::string16 title_;
+  std::wstring title_;
   int icon_ = -1;
 };
 

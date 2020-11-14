@@ -38,27 +38,27 @@ const UINT kNodeTreeFormat =
 
 }  // namespace
 
-inline void AppendHint(base::string16& hint,
+inline void AppendHint(std::wstring& hint,
                        const base::char16* title,
-                       const base::string16& value) {
+                       const std::wstring& value) {
   if (value.empty())
     return;
   hint += base::StringPrintf(L"\n%ls: %ls", title, value.c_str());
 }
 
-base::string16 GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
-  base::string16 name = timed_data.GetTitle();
+std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
+  std::wstring name = timed_data.GetTitle();
 
-  base::string16 val = timed_data.GetCurrentString();
+  std::wstring val = timed_data.GetCurrentString();
 
-  base::string16 str_time = base::SysNativeMBToWide(
+  std::wstring str_time = base::SysNativeMBToWide(
       FormatTime(timed_data.change_time(),
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-  base::string16 str_utime = base::SysNativeMBToWide(
+  std::wstring str_utime = base::SysNativeMBToWide(
       FormatTime(timed_data.current().source_timestamp,
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
 
-  base::string16 str = name;
+  std::wstring str = name;
   AppendHint(str, L"Значение", val);
   AppendHint(str, L"Время", str_time);
   AppendHint(str, L"Обновлен", str_utime);
@@ -78,7 +78,7 @@ base::string16 GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
         break;
       }
       // add event
-      base::string16 stime = base::SysNativeMBToWide(FormatTime(
+      std::wstring stime = base::SysNativeMBToWide(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       str += base::StringPrintf(L"\n%ls %ls", stime.c_str(),
                                 event.message.c_str());
@@ -88,14 +88,14 @@ base::string16 GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   return str;
 }
 
-void ReportRequestResult(const base::string16& title,
+void ReportRequestResult(const std::wstring& title,
                          const scada::Status& status,
                          LocalEvents& local_events,
                          Profile& profile) {
   if (status && !profile.show_write_ok)
     return;
 
-  base::string16 message = base::StringPrintf(L"%ls - %ls.", title.c_str(),
+  std::wstring message = base::StringPrintf(L"%ls - %ls.", title.c_str(),
                                               ToString16(status).c_str());
   LocalEvents::Severity severity =
       status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
@@ -176,9 +176,9 @@ bool ExecuteDisableItem(TaskManager& task_manager,
   return true;
 }
 
-void CompletePath(const base::string16& text,
+void CompletePath(const std::wstring& text,
                   int& start,
-                  std::vector<base::string16>& list) {}
+                  std::vector<std::wstring>& list) {}
 
 void DeleteTreeRecordsRecursive(TaskManager& task_manager,
                                 const NodeRef& node) {
@@ -380,7 +380,7 @@ bool IsWebUrl(base::StringPiece16 str) {
   return str.starts_with(kHttpPrefix) || str.starts_with(kHttpsPrefix);
 }
 
-base::string16 MakeFileUrl(const base::FilePath& path) {
+std::wstring MakeFileUrl(const base::FilePath& path) {
   return kFilePrefix + path.AsUTF16Unsafe();
 }
 

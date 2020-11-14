@@ -48,7 +48,7 @@ void StatusBarController::Layout() {
   status_bar.SetParts(static_cast<int>(parts.size()), parts.data());
 }
 
-void StatusBarController::SetPaneText(int pane, const base::string16& text) {
+void StatusBarController::SetPaneText(int pane, const std::wstring& text) {
   WTL::CStatusBarCtrl status_bar(hwnd_);
   base::char16 buffer[256] = L"";
   status_bar.GetText(pane, buffer);

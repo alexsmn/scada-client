@@ -28,7 +28,7 @@ class WindowItem {
   int GetInt(base::StringPiece attr, int default = 0) const;
   base::StringPiece GetString(base::StringPiece attr,
                               base::StringPiece default = {}) const;
-  base::string16 GetString16(base::StringPiece attr,
+  std::wstring GetString16(base::StringPiece attr,
                              base::StringPiece16 default = {}) const;
 
   void SetBool(base::StringPiece attr, bool value);
@@ -59,7 +59,7 @@ class WindowDefinition {
     assert(window_info_);
     return *window_info_;
   }
-  base::string16 GetTitle() const;
+  std::wstring GetTitle() const;
 
   WindowItem& AddItem(std::string name);
   WindowItem* FindItem(const char* name);
@@ -72,7 +72,7 @@ class WindowDefinition {
   void Set(const char* name, const T& value);
 
   int id = 0;
-  base::string16 title;
+  std::wstring title;
   base::FilePath path;
   gfx::Size size;
   bool visible = true;

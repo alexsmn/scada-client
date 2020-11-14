@@ -73,7 +73,7 @@ class ModusView2 : private ModusView2Context,
   virtual bool IsFocusable() const override { return true; }
   virtual bool OnMousePressed(const ui::MouseEvent& event) override;
   virtual bool GetTooltipText(const gfx::Point& p,
-                              base::string16* tooltip) const override;
+                              std::wstring* tooltip) const override;
   virtual bool OnMouseWheel(const ui::MouseWheelEvent& event) override;
 
   using TitleChangedHandler =
@@ -100,7 +100,7 @@ class ModusView2 : private ModusView2Context,
   virtual void SchedulePaintShape(modus::Shape& shape) override;
 
   base::FilePath path_;
-  base::string16 title_;
+  std::wstring title_;
 
   views::ScrollView* scroll_view_ = nullptr;
 

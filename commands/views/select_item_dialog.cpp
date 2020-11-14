@@ -153,7 +153,7 @@ inline int GetImage(const NodeRef& node) {
 
 HTREEITEM SelectItemDialog::InsertTree(const NodeRef& node, HTREEITEM parent) {
   // insert new item
-  base::string16 name = node.display_name();
+  std::wstring name = node.display_name();
   int img = GetImage(node);
   UINT mask = TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
   HTREEITEM item =
@@ -183,7 +183,7 @@ void SelectItemDialog::LoadItems() {
   int p = 0;
   for (const auto& child : node.targets(scada::id::HasComponent)) {
     list_data.push_back(child.node_id());
-    base::string16 name = child.display_name();
+    std::wstring name = child.display_name();
     int img = GetImage(child);
     int n = list.AddItem(p, 0, name.c_str(), img);
     list.SetItemData(n, p);

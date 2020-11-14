@@ -1,10 +1,10 @@
 #pragma once
 
 #include "base/observer_list.h"
-#include "base/strings/string16.h"
 #include "core/event.h"
 
 #include <deque>
+#include <string>
 
 #undef ReportEvent
 
@@ -23,7 +23,7 @@ class LocalEvents {
   typedef std::vector<scada::Event*> Events;
   const Events& events() const { return events_; }
 
-  void ReportEvent(Severity severity, const base::string16& message);
+  void ReportEvent(Severity severity, const std::wstring& message);
 
   void AcknowledgeEvent(unsigned ack_id);
   void AcknowledgeAll();

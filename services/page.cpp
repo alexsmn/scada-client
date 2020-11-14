@@ -176,11 +176,11 @@ base::Value Page::Save(bool current) const {
   return result;
 }
 
-base::string16 Page::GetTitle() const {
+std::wstring Page::GetTitle() const {
   if (!title.empty())
     return title;
 
-  base::string16 title;
+  std::wstring title;
   for (int i = 0; i < GetWindowCount(); ++i) {
     WindowDefinition& win = GetWindow(i);
     if (!title.empty())

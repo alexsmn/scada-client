@@ -64,7 +64,7 @@ class ModusView2 : public QWidget,
   /*virtual void Layout() override;
   virtual bool IsFocusable() const override { return true; }
   virtual bool GetTooltipText(const gfx::Point& p,
-                              base::string16* tooltip) const override;
+                              std::wstring* tooltip) const override;
   virtual bool OnMouseWheel(const ui::MouseWheelEvent& event) override;*/
 
  private:
@@ -91,7 +91,7 @@ class ModusView2 : public QWidget,
   TimedDataService& timed_data_service_;
 
   base::FilePath path_;
-  base::string16 title_;
+  std::wstring title_;
 
   std::unique_ptr<modus::Scheme> scheme_;
   std::unique_ptr<modus::Renderer> renderer_;

@@ -108,7 +108,7 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   }
 }
 
-base::string16 MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
+std::wstring MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
                                             int column_id) const {
   switch (column_id) {
     case 0: {
@@ -229,7 +229,7 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw value.
-    base::string16 text =
+    std::wstring text =
         L"= " + line.data_source().timed_data().GetValueString(value.value,
                                                                value.qualifier);
     rc = gfx::Rect(title_width_, top, 80, ROW);

@@ -20,7 +20,7 @@ WebView::~WebView() {}
 
 UiView* WebView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
-  base::string16 url = IsWebUrl(definition.path.value())
+  std::wstring url = IsWebUrl(definition.path.value())
                            ? definition.path.value()
                            : MakeFileUrl(GetPublicFilePath(definition.path));
 

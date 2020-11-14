@@ -16,7 +16,7 @@ class TableRow {
   bool is_blinking() const { return is_blinking_; }
 
   std::string GetFormula() const;
-  base::string16 GetTitle() const;
+  std::wstring GetTitle() const;
 
   void SetFormula(std::string formula);
 

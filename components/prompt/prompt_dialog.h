@@ -1,10 +1,10 @@
 #pragma once
 
-#include "base/strings/string16.h"
+#include <string>
 
 class DialogService;
 
 bool RunPromptDialog(DialogService& dialog_service,
-                     const base::string16& prompt,
-                     const base::string16& title,
-                     base::string16& value);
+                     const std::wstring& prompt,
+                     const std::wstring& title,
+                     std::wstring& value);

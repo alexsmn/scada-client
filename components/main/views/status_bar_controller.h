@@ -1,10 +1,10 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "controls/status_bar_model.h"
 
-#include <windows.h>
 #include <memory>
+#include <string>
+#include <windows.h>
 
 class StatusBarController : private StatusBarModelObserver {
  public:
@@ -14,7 +14,7 @@ class StatusBarController : private StatusBarModelObserver {
   void Layout();
 
  private:
-  void SetPaneText(int pane, const base::string16& text);
+  void SetPaneText(int pane, const std::wstring& text);
 
   // StatusBarModelObserver
   virtual void OnPanesChanged(int index, int count) override;

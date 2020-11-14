@@ -1,9 +1,8 @@
 #pragma once
 
-#include "base/strings/string16.h"
-
 #include <list>
 #include <memory>
+#include <string>
 
 class OpenedView;
 class Page;
@@ -39,7 +38,7 @@ class ViewManager {
   virtual void ActivateView(OpenedView& view) = 0;
   virtual void CloseView(OpenedView& view) = 0;
 
-  virtual void SetViewTitle(OpenedView& view, const base::string16& title) = 0;
+  virtual void SetViewTitle(OpenedView& view, const std::wstring& title) = 0;
 
   virtual void SplitView(OpenedView& view, bool vertically) = 0;
 

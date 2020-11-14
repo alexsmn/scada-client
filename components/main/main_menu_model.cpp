@@ -138,8 +138,8 @@ void PageMenuModel::ActivatedAt(int index) {
   // check revert page
   bool revert = page.id == main_window_.current_page().id;
   if (revert) {
-    base::string16 title = main_window_.current_page().GetTitle();
-    base::string16 message = base::StringPrintf(
+    std::wstring title = main_window_.current_page().GetTitle();
+    std::wstring message = base::StringPrintf(
         L"Вернуться к сохраненному листу %ls?", title.c_str());
     if (dialog_service_.RunMessageBox(message, {},
                                       MessageBoxMode::QuestionYesNo) ==
@@ -202,7 +202,7 @@ void TrashMenuModel::MenuWillShow() {
   const auto& trash = profile_.trash;
   for (int i = 0; i < trash.GetWindowCount(); ++i) {
     auto& win = trash.GetWindow(i);
-    base::string16 label = L"Восстановить " + win.GetTitle();
+    std::wstring label = L"Восстановить " + win.GetTitle();
     AddItem(0, label);
   }
 

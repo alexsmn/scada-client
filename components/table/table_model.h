@@ -59,10 +59,10 @@ class TableModel : private TableModelContext,
   // ui::TableModel
   virtual int GetRowCount() override;
   virtual void GetCell(ui::TableCell& cell) override;
-  virtual base::string16 GetTooltip(int row, int column_id) override;
+  virtual std::wstring GetTooltip(int row, int column_id) override;
   virtual bool SetCellText(int row,
                            int column_id,
-                           const base::string16& text) override;
+                           const std::wstring& text) override;
   virtual bool TableModel::IsEditable(int row, int column) override;
 
   std::function<void(const scada::NodeId& item_id, bool added)> item_changed_;

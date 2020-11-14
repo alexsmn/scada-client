@@ -21,7 +21,7 @@ SheetCell::~SheetCell() {
   SetBlinking(false);
 }
 
-bool SheetCell::SetFormula(base::string16 formula) {
+bool SheetCell::SetFormula(std::wstring formula) {
   timed_data_.Reset();
   SetBlinking(false);
 

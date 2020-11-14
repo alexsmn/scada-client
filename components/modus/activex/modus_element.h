@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "components/modus/activex/modus.h"
 #include "timed_data/timed_data_spec.h"
 
+#include <string>
 #include <wrl/client.h>
 
 namespace modus {
@@ -25,8 +25,8 @@ struct Limits {
 struct ModusElementContext {
   ModusObject& object_;
   const SDEParams sde_params_;
-  const base::string16 prop_name_;
-  const std::vector<base::string16> state_strings_;
+  const std::wstring prop_name_;
+  const std::vector<std::wstring> state_strings_;
   const bool has_limits_ = false;
 };
 
@@ -57,8 +57,8 @@ class ModusElement : private ModusElementContext {
   TimedDataSpec data_spec_;
 
   // data
-  base::string16 text_;  // for LABEL
-  double value_ = 0;     // for VALUE
+  std::wstring text_;  // for LABEL
+  double value_ = 0;   // for VALUE
 
   unsigned style_ = 0;
 
@@ -67,9 +67,9 @@ class ModusElement : private ModusElementContext {
 
 SDEParam GetParam(SDECore::IParams& params, const VARIANT& index);
 bool HasParam(SDECore::IParams& params, const VARIANT& index);
-base::string16 GetParamValue(SDECore::IParams& params, const VARIANT& index);
+std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index);
 bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR val);
-base::string16 GetHyperlink(SDECore::ISDEObject50& object);
+std::wstring GetHyperlink(SDECore::ISDEObject50& object);
 
 extern const base::win::ScopedVariant kParameterBinding;
 extern const base::win::ScopedVariant kParameterText;

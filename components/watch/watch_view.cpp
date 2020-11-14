@@ -27,8 +27,8 @@ void WatchView::Save(WindowDefinition& definition) {
   item.SetString("path", NodeIdToScadaString(model_->device().node_id()));
 }
 
-base::string16 WatchView::MakeTitle() const {
-  base::string16 title = ToString16(model_->device().display_name());
+std::wstring WatchView::MakeTitle() const {
+  std::wstring title = ToString16(model_->device().display_name());
   if (model_->paused())
     title += L" [Пауза]";
   return title;
@@ -68,7 +68,7 @@ void WatchView::SaveLog() {
   SYSTEMTIME time;
   GetLocalTime(&time);
 
-  base::string16 name = base::StringPrintf(
+  std::wstring name = base::StringPrintf(
       L"%04d%02d%02d_%02d%02d%02d.log", time.wYear, time.wMonth, time.wDay,
       time.wHour, time.wMinute, time.wSecond);
 

@@ -1,10 +1,11 @@
 #pragma once
 
-#include "base/strings/string16.h"
-#include "node_service/node_ref.h"
 #include "controls/types.h"
 #include "core/node_id.h"
+#include "node_service/node_ref.h"
 #include "window_definition.h"
+
+#include <string>
 
 namespace base {
 class FilePath;
@@ -25,10 +26,10 @@ class OpenedView;
 class TaskManager;
 class TimedDataSpec;
 
-base::string16 GetTimedDataTooltipText(const TimedDataSpec& timed_data);
+std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data);
 
 // TODO: Move to different file.
-void ReportRequestResult(const base::string16& title,
+void ReportRequestResult(const std::wstring& title,
                          const scada::Status& status,
                          LocalEvents& local_events,
                          Profile& profile);
@@ -59,20 +60,20 @@ bool ExecuteDisableItem(TaskManager& task_manager,
 
 void ExpandGroupItemIds(const NodeRef& node, NodeIdSet& item_ids);
 
-void CompletePath(const base::string16& text,
+void CompletePath(const std::wstring& text,
                   int& start,
-                  std::vector<base::string16>& list);
+                  std::vector<std::wstring>& list);
 
 void DeleteTreeRecordsRecursive(TaskManager& task_manager, const NodeRef& node);
 
-using NamedNodes = std::vector<std::pair<base::string16, NodeRef>>;
+using NamedNodes = std::vector<std::pair<std::wstring, NodeRef>>;
 
 void SortNamedNodes(NamedNodes& list);
 
 NamedNodes GetNamedNodes(const NodeRef& root,
                          const scada::NodeId& type_definition_id);
 
-base::string16 FormatHostName(const std::string& host_name);
+std::wstring FormatHostName(const std::string& host_name);
 
 void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes);
 
@@ -84,7 +85,7 @@ NodeRef GetPasteParentNode(NodeService& node_service,
                            const NodeRef& root_node);
 
 bool IsWebUrl(base::StringPiece16 str);
-base::string16 MakeFileUrl(const base::FilePath& path);
+std::wstring MakeFileUrl(const base::FilePath& path);
 
 base::FilePath GetPublicFilePath(const base::FilePath& path);
 base::FilePath FullFilePathToPublic(const base::FilePath& path);

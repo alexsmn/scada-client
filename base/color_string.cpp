@@ -18,7 +18,7 @@ inline const char* strnchr(const char* str, int len, int ch)
   return NULL;
 }
 
-void DrawColoredStringHelper(HDC dc, int x, int y, const base::string16& t,
+void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
                              bool measure, int& width, int& height)
 {
   int len = t.length();
@@ -83,7 +83,7 @@ void DrawColoredStringHelper(HDC dc, int x, int y, const base::string16& t,
 
 void MeasureColoredString(gfx::Canvas* canvas, const gfx::Font& font,
                           SkColor color, RECT& rect,
-                          const base::string16& text, int format) {
+                          const std::wstring& text, int format) {
   if (text.empty()) {
     if (format & DT_RIGHT)
       rect.left = rect.right;
@@ -120,7 +120,7 @@ void MeasureColoredString(gfx::Canvas* canvas, const gfx::Font& font,
 
 void DrawColoredString(gfx::Canvas* canvas, const gfx::Font& font,
                        SkColor color, const RECT& rect,
-                       const base::string16& text, int format) {
+                       const std::wstring& text, int format) {
   if (text.empty())
     return;
 

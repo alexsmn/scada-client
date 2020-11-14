@@ -12,7 +12,7 @@ void ChangePassword(const ChangePasswordContext& context,
   context.node_management_service_.ChangeUserPassword(
       context.user_.node_id(), current_password, new_password,
       [context](const scada::Status& status) {
-        base::string16 title = base::StringPrintf(
+        std::wstring title = base::StringPrintf(
             L"Смена пароля пользователя %ls",
             ToString16(context.user_.display_name()).c_str());
         ReportRequestResult(title, status, context.local_events_,

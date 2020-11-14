@@ -7,7 +7,7 @@
 PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
                                              PropertyGroup::ItemType type,
                                              int index,
-                                             base::string16 title)
+                                             std::wstring title)
     : property_group{property_group},
       type{type},
       index{index},
@@ -29,8 +29,8 @@ void PropertyGroupTreeNode::Update() {
   }
 }
 
-base::string16 PropertyGroupTreeNode::GetText(int column_id) const {
-  return column_id == 0 ? title : base::string16{};
+std::wstring PropertyGroupTreeNode::GetText(int column_id) const {
+  return column_id == 0 ? title : std::wstring{};
 }
 
 SkColor PropertyGroupTreeNode::GetTextColor(int column_id) const {
@@ -51,12 +51,12 @@ PropertyItemTreeNode::PropertyItemTreeNode(PropertyGroup& property_group,
                                            int index)
     : property_group{property_group}, index{index} {}
 
-base::string16 PropertyItemTreeNode::GetText(int column_id) const {
+std::wstring PropertyItemTreeNode::GetText(int column_id) const {
   return column_id == 0 ? property_group.GetName(index)
                         : property_group.GetValue(index);
 }
 
-void PropertyItemTreeNode::SetText(int column_id, const base::string16& text) {
+void PropertyItemTreeNode::SetText(int column_id, const std::wstring& text) {
   if (column_id != 1)
     return;
 
@@ -99,7 +99,7 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
 
   set_root(std::make_unique<PropertyGroupTreeNode>(
       property_model_.GetRootGroup(), PropertyGroup::ItemType::Category, 0,
-      base::string16{}));
+      std::wstring{}));
 }
 
 PropertyTreeModel::~PropertyTreeModel() {
@@ -107,7 +107,7 @@ PropertyTreeModel::~PropertyTreeModel() {
   property_model_.properties_changed_handler = nullptr;
 }
 
-base::string16 PropertyTreeModel::GetColumnText(int column_id) const {
+std::wstring PropertyTreeModel::GetColumnText(int column_id) const {
   return column_id == 0 ? L"Параметр" : L"Значение";
 }
 

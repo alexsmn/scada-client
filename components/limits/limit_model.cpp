@@ -10,7 +10,7 @@
 LimitModel::LimitModel(LimitDialogContext&& context)
     : LimitDialogContext{std::move(context)} {}
 
-base::string16 LimitModel::GetSourceTitle() const {
+std::wstring LimitModel::GetSourceTitle() const {
   return node_.display_name();
 }
 
