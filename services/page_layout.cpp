@@ -1,5 +1,6 @@
 #include "services/page_layout.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "window_definition_util.h"
 
@@ -41,9 +42,10 @@ void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
   assert(!block.left && !block.right);
 
   auto type = GetString(value, "type");
-  if (base::EqualsCaseInsensitiveASCII(type, "split")) {
+  if (base::EqualsCaseInsensitiveASCII(ToStringPiece(type), "split")) {
     auto orientation = GetString(value, "orientation");
-    bool horz = base::EqualsCaseInsensitiveASCII(orientation, "horizontal");
+    bool horz = base::EqualsCaseInsensitiveASCII(ToStringPiece(orientation),
+                                                 "horizontal");
     block.split(horz);
     block.pos = GetInt(value, "pos", -1);
     if (auto* pane = GetDict(value, "first"))
@@ -51,7 +53,7 @@ void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
     if (auto* pane = GetDict(value, "second"))
       LoadLayoutBlock(*block.right, *pane);
 
-  } else if (base::EqualsCaseInsensitiveASCII(type, "pane")) {
+  } else if (base::EqualsCaseInsensitiveASCII(ToStringPiece(type), "pane")) {
     assert(block.type == PageLayoutBlock::PANE);
     if (auto* windows = GetList(value, "windows")) {
       for (auto& window : *windows) {

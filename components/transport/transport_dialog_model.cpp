@@ -1,5 +1,6 @@
 ﻿#include "transport_dialog_model.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -41,22 +42,14 @@ static const StringPair kFlowControlStrings[] = {
     StringPair(L"XON/XOFF", net::TransportString::kFlowControlSoftware),
     StringPair(L"Аппаратное", net::TransportString::kFlowControlHardware)};
 
-static const base::char16 kDefaultString[] = L"<Текущее>";
-
-inline constexpr base::StringPiece AsStringPiece(std::string_view str) {
-  return {str.data(), str.size()};
-}
-
-inline constexpr base::StringPiece16 AsStringPiece(std::wstring_view str) {
-  return {str.data(), str.size()};
-}
+static const wchar_t kDefaultString[] = L"<Текущее>";
 
 static int FindString(const std::string_view strs[],
                       int count,
                       std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::CompareCaseInsensitiveASCII(AsStringPiece(strs[i]),
-                                          AsStringPiece(value)) == 0)
+    if (base::EqualsCaseInsensitiveASCII(ToStringPiece(strs[i]),
+                                         ToStringPiece(value)))
       return i;
   }
   return -1;
@@ -66,8 +59,8 @@ static int FindStringPair(const StringPair pairs[],
                           int count,
                           std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::CompareCaseInsensitiveASCII(AsStringPiece(pairs[i].second),
-                                          AsStringPiece(value)) == 0)
+    if (base::EqualsCaseInsensitiveASCII(ToStringPiece(pairs[i].second),
+                                         ToStringPiece(value)))
       return i;
   }
   return -1;
@@ -124,7 +117,7 @@ TransportDialogModel::TransportDialogModel(
   stop_bits_items.emplace_back(kDefaultString);
   for (int i = 0; i < std::size(kStopBitsStrings); ++i) {
     stop_bits_items.emplace_back(
-        base::SysNativeMBToWide(AsStringPiece(kStopBitsStrings[i])));
+        base::SysNativeMBToWide(ToStringPiece(kStopBitsStrings[i])));
   }
 
   flow_control_items.emplace_back(kDefaultString);
@@ -132,7 +125,7 @@ TransportDialogModel::TransportDialogModel(
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
-    network_host = base::SysNativeMBToWide(AsStringPiece(
+    network_host = base::SysNativeMBToWide(ToStringPiece(
         transport_string_.GetParamStr(net::TransportString::kParamHost)));
     network_port =
         transport_string_.GetParamInt(net::TransportString::kParamPort);

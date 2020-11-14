@@ -296,7 +296,7 @@ void ItemEditor::LoadChannel(unsigned channel_no) {
 
   scada::NodeId node_id;
   scada::NodeId device_id;
-  base::StringPiece nested_name;
+  std::string_view nested_name;
   bool is_formula = !IsNodeIdFormula(*channel_, node_id) ||
                     !IsNestedNodeId(node_id, device_id, nested_name);
 
@@ -706,7 +706,7 @@ void TsFormatEditor::DrawItem(LPDRAWITEMSTRUCT dis) {
   dc.FillRect(&rect, brush);
 
   InflateRect(&rect, -3, -2);
-  base::StringPiece16 text;
+  std::wstring_view text;
 
   if (dis->itemID >= 0 && dis->itemID < aui::GetColorCount()) {
     int color_index = dis->itemID;

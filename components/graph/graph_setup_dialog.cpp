@@ -47,7 +47,7 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
   dc.FillRect(&rect, brush);
 
   InflateRect(&rect, -3, -2);
-  base::StringPiece16 text;
+  std::wstring_view text;
 
   if (dis->itemID >= 0 && dis->itemID < aui::GetColorCount()) {
     // draw color

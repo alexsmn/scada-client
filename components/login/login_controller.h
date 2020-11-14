@@ -17,7 +17,7 @@ class LoginController {
 
   void Login();
 
-  void DeleteUserName(base::StringPiece16 user_name);
+  void DeleteUserName(std::wstring_view user_name);
 
   std::function<void(DataServices& services)> completion_handler;
   std::function<void()> error_handler;

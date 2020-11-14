@@ -1,14 +1,15 @@
 ﻿#include "components/graph/graph_view.h"
 
-#include "controls/color.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller_factory.h"
+#include "controls/color.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "selection_model.h"
 #include "services/profile.h"
 #include "time_range.h"
@@ -84,7 +85,8 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       auto srange = item.GetString("span");
       auto stime = item.GetString("time");
       base::Time from, to;
-      graph_->m_time_fit = base::EqualsCaseInsensitiveASCII(stime, "Now");
+      graph_->m_time_fit =
+          base::EqualsCaseInsensitiveASCII(ToStringPiece(stime), "Now");
       if (graph_->m_time_fit || !Deserialize(stime, to)) {
         graph_->m_time_fit = true;
         to = base::Time::Now();

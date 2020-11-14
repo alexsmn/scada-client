@@ -22,7 +22,7 @@ void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
                              bool measure, int& width, int& height)
 {
   int len = t.length();
-  const base::char16* text = t.c_str();
+  const wchar_t* text = t.c_str();
 
   assert(len > 0);
 
@@ -32,7 +32,7 @@ void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
   SIZE size;
   int origin = x;
   while (len) {
-    const base::char16* p = wcschr(text, L'&');
+    const wchar_t* p = wcschr(text, L'&');
     if (!p)
       break;
 
@@ -49,7 +49,7 @@ void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
     }
 
     // Parse tag
-    const base::char16* tag = p + 1;
+    const wchar_t* tag = p + 1;
     p = wcschr(tag, L';');
     if (!p)
       throw std::exception("bad colored string", 1);

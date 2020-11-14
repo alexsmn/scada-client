@@ -41,8 +41,8 @@ auto* CreateFileSelector(Handler&& handler) {
 }  // namespace
 
 MessageBoxResult DialogServiceImplViews::RunMessageBox(
-    base::StringPiece16 message,
-    base::StringPiece16 title,
+    std::wstring_view message,
+    std::wstring_view title,
     MessageBoxMode mode) {
   const unsigned kFlags[] = {
       MB_ICONINFORMATION | MB_OK,
@@ -53,12 +53,12 @@ MessageBoxResult DialogServiceImplViews::RunMessageBox(
   static_assert(std::size(kFlags) ==
                 static_cast<std::size_t>(MessageBoxMode::Count));
 
-  auto title_string = title.as_string();
+  auto title_string = std::wstring{title};
   if (title_string.empty())
     title_string = win_util::GetWindowText(dialog_owning_window);
 
   int result = ::AtlMessageBox(
-      dialog_owning_window, message.as_string().c_str(), title_string.c_str(),
+      dialog_owning_window, std::wstring{message}.c_str(), title_string.c_str(),
       kFlags[static_cast<std::size_t>(mode)]);
 
   switch (result) {
@@ -80,7 +80,7 @@ gfx::NativeView DialogServiceImplViews::GetDialogOwningWindow() const {
 }
 
 std::filesystem::path DialogServiceImplViews::SelectOpenFile(
-    base::StringPiece16 title) {
+    std::wstring_view title) {
   std::filesystem::path result;
 
   base::RunLoop nested_loop;
@@ -90,7 +90,7 @@ std::filesystem::path DialogServiceImplViews::SelectOpenFile(
   });
 
   base::WrapRefCounted(ui::SelectFileDialog::Create(selector, nullptr))
-      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, title.as_string(),
+      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, std::wstring{title},
                    base::FilePath(), nullptr, -1, std::wstring(),
                    dialog_owning_window, nullptr);
 
@@ -112,7 +112,7 @@ std::filesystem::path DialogServiceImplViews::SelectSaveFile(
 
   base::WrapRefCounted(ui::SelectFileDialog::Create(selector, nullptr))
       ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
-                   params.title.as_string(),
+                   std::wstring{params.title},
                    base::FilePath{params.default_path.wstring()}, nullptr, -1,
                    std::wstring(), dialog_owning_window, nullptr);
 

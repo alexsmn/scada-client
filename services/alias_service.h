@@ -22,7 +22,7 @@ class AliasService final : private AliasServiceContext,
   explicit AliasService(AliasServiceContext&& context);
   ~AliasService();
 
-  void Resolve(base::StringPiece alias, const AliasResolveCallback& callback);
+  void Resolve(std::string_view alias, const AliasResolveCallback& callback);
 
  private:
   void OnFetchCompleted();

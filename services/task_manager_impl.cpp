@@ -1,11 +1,11 @@
 ﻿#include "services/task_manager_impl.h"
 
 #include "commands/views/progress_dialog.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "core/attribute_service.h"
 #include "core/node_management_service.h"
 #include "core/status.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/local_events.h"
 #include "services/profile.h"
 
@@ -14,10 +14,10 @@
 namespace {
 
 std::wstring FormatReference(NodeService& node_service,
-                               const scada::NodeId& reference_type_id,
-                               const scada::NodeId& source_id,
-                               const scada::NodeId& target_id,
-                               bool add) {
+                             const scada::NodeId& reference_type_id,
+                             const scada::NodeId& source_id,
+                             const scada::NodeId& target_id,
+                             bool add) {
   return base::StringPrintf(
       L"%ls типа %ls от %ls к %ls", add ? L"Создание связи" : L"Удаление связи",
       GetDisplayName(node_service, reference_type_id).c_str(),
@@ -239,9 +239,8 @@ void TaskManagerImpl::OnDeleteRecordComplete(
   ReportRequestCompletion(status, dependencies_text);
 }
 
-void TaskManagerImpl::ReportRequestCompletion(
-    const scada::Status& status,
-    const std::wstring& result_text) {
+void TaskManagerImpl::ReportRequestCompletion(const scada::Status& status,
+                                              const std::wstring& result_text) {
   auto task = std::move(running_task_);
   running_task_ = Task();
 
@@ -249,7 +248,7 @@ void TaskManagerImpl::ReportRequestCompletion(
     return;
 
   std::wstring message = base::StringPrintf(L"%ls: %ls.", task.title.c_str(),
-                                              ToString16(status).c_str());
+                                            ToString16(status).c_str());
   if (!result_text.empty())
     message += L'\n' + result_text;
 
@@ -303,8 +302,8 @@ void TaskManagerImpl::Run() {
   }
 }
 
-void TaskManagerImpl::PostTask(base::StringPiece16 title, TaskMethod task) {
-  tasks_.push({title.as_string(), std::move(task)});
+void TaskManagerImpl::PostTask(std::wstring_view title, TaskMethod task) {
+  tasks_.push({std::wstring{title}, std::move(task)});
 }
 
 void TaskManagerImpl::AddObserver(TaskManagerObserver& observer) {

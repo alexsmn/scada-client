@@ -46,7 +46,7 @@ WindowDefinition MakeWindowDefinition(const char* formula, unsigned type);
 WindowDefinition MakeWindowDefinition(
     const std::vector<scada::NodeId>& node_ids,
     unsigned type,
-    const base::char16* title = nullptr);
+    const wchar_t* title = nullptr);
 
 std::optional<WindowDefinition> MakeGroupWindowDefinition(const NodeRef& node,
                                                           unsigned type);
@@ -84,7 +84,7 @@ NodeRef GetPasteParentNode(NodeService& node_service,
                            const NodeRef& selected_node,
                            const NodeRef& root_node);
 
-bool IsWebUrl(base::StringPiece16 str);
+bool IsWebUrl(std::wstring_view str);
 std::wstring MakeFileUrl(const base::FilePath& path);
 
 base::FilePath GetPublicFilePath(const base::FilePath& path);

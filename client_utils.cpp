@@ -6,9 +6,7 @@
 #include "client_paths.h"
 #include "common/event_fetcher.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
 #include "common/node_state.h"
-#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "contents_model.h"
 #include "model/data_items_node_ids.h"
@@ -16,6 +14,8 @@
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_serialization.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "remote/protocol_utils.h"
 #include "remote/session_proxy.h"
 #include "services/file_cache.h"
@@ -27,9 +27,9 @@
 
 namespace {
 
-const base::char16 kHttpPrefix[] = L"http://";
-const base::char16 kHttpsPrefix[] = L"https://";
-const base::char16 kFilePrefix[] = L"file://";
+const wchar_t kHttpPrefix[] = L"http://";
+const wchar_t kHttpsPrefix[] = L"https://";
+const wchar_t kFilePrefix[] = L"file://";
 
 const UINT kNodeTreeHeaderFormat =
     ::RegisterClipboardFormat(L"CE4D311D-FB1C-4972-9EA8-3C2C1FB5091A");
@@ -39,7 +39,7 @@ const UINT kNodeTreeFormat =
 }  // namespace
 
 inline void AppendHint(std::wstring& hint,
-                       const base::char16* title,
+                       const wchar_t* title,
                        const std::wstring& value) {
   if (value.empty())
     return;
@@ -96,7 +96,7 @@ void ReportRequestResult(const std::wstring& title,
     return;
 
   std::wstring message = base::StringPrintf(L"%ls - %ls.", title.c_str(),
-                                              ToString16(status).c_str());
+                                            ToString16(status).c_str());
   LocalEvents::Severity severity =
       status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
   local_events.ReportEvent(severity, message);
@@ -191,7 +191,7 @@ void DeleteTreeRecordsRecursive(TaskManager& task_manager,
 WindowDefinition MakeWindowDefinition(
     const std::vector<scada::NodeId>& node_ids,
     unsigned type,
-    const base::char16* title) {
+    const wchar_t* title) {
   if (!type)
     type = ID_TABLE_VIEW;
 
@@ -317,9 +317,10 @@ void PasteNodesFromClipboardHelper(TaskManager& task_manager,
           return;
 
         for (auto& reference : references) {
-          if (reference.forward)
+          if (reference.forward) {
             task_manager.PostAddReference(reference.reference_type_id, node_id,
                                           reference.node_id);
+          }
         }
 
         for (auto& child : children) {
@@ -376,8 +377,11 @@ NodeRef GetPasteParentNode(NodeService& node_service,
   return nullptr;
 }
 
-bool IsWebUrl(base::StringPiece16 str) {
-  return str.starts_with(kHttpPrefix) || str.starts_with(kHttpsPrefix);
+bool IsWebUrl(std::wstring_view str) {
+  return base::StartsWith(ToStringPiece(str), kHttpPrefix,
+                          base::CompareCase::SENSITIVE) ||
+         base::StartsWith(ToStringPiece(str), kHttpsPrefix,
+                          base::CompareCase::SENSITIVE);
 }
 
 std::wstring MakeFileUrl(const base::FilePath& path) {

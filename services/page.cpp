@@ -17,8 +17,8 @@
 #define MAX_TITLE 30
 
 namespace {
-  
-const base::char16 kPageFileExtension[] = L"page";
+
+const wchar_t kPageFileExtension[] = L"page";
 
 void LoadWinItems(WindowItems& items, const base::Value& data) {
   if (!data.is_list())
@@ -26,7 +26,7 @@ void LoadWinItems(WindowItems& items, const base::Value& data) {
 
   for (auto& item_data : data.GetList()) {
     auto& item = items.emplace_back();
-    item.name = GetString(item_data, "name").as_string();
+    item.name = std::string{GetString(item_data, "name")};
     item.attributes = item_data.Clone();
     item.attributes.RemoveKey("name");
   }

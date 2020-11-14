@@ -58,5 +58,5 @@ typedef std::map<CommandCategory, ActionList> GroupedActions;
 GroupedActions GroupCommands(ActionManager& action_manager,
                              const std::vector<unsigned>& commands);
 
-const base::char16* GetCommandCategoryTitle(CommandCategory category);
+const wchar_t* GetCommandCategoryTitle(CommandCategory category);
 bool CanExpandCommandCategory(CommandCategory category);

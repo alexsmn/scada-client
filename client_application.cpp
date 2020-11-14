@@ -219,7 +219,7 @@ void ClientApplication::Start() {
       alias_logger,
       *node_service_,
   });
-  alias_resolver_ = [alias_service](base::StringPiece alias,
+  alias_resolver_ = [alias_service](std::string_view alias,
                                     const AliasResolveCallback& callback) {
     alias_service->Resolve(alias, callback);
   };

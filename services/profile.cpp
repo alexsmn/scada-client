@@ -2,15 +2,16 @@
 
 #include "base/files/file_util.h"
 #include "base/path_service.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
 #include "client_paths.h"
 #include "common/event_fetcher.h"
+#include "common_resources.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
-#include "common_resources.h"
 #include "services/favourites.h"
 #include "services/portfolio.h"
 #include "services/portfolio_manager.h"
@@ -32,25 +33,25 @@ std::wstring FormatTimeDelta(base::TimeDelta span) {
   return base::StringPrintf(L"%d:%02d:%02d", hours, minutes, seconds);
 }
 
-bool ParseTimeDelta(base::StringPiece str, base::TimeDelta& span) {
+bool ParseTimeDelta(std::string_view str, base::TimeDelta& span) {
   int h, m, s;
-  if (sscanf(str.as_string().c_str(), "%d:%d:%d", &h, &m, &s) != 3)
+  if (sscanf(std::string{str}.c_str(), "%d:%d:%d", &h, &m, &s) != 3)
     return false;
   span = base::TimeDelta::FromHours(h) + base::TimeDelta::FromMinutes(m) +
          base::TimeDelta::FromSeconds(s);
   return true;
 }
 
-UINT ParseToolbarPosition(base::StringPiece str) {
-  if (base::EqualsCaseInsensitiveASCII(str, "top"))
+UINT ParseToolbarPosition(std::string_view str) {
+  if (base::EqualsCaseInsensitiveASCII(ToStringPiece(str), "top"))
     return ID_TOOLBAR_TOP;
-  else if (base::EqualsCaseInsensitiveASCII(str, "hidden"))
+  else if (base::EqualsCaseInsensitiveASCII(ToStringPiece(str), "hidden"))
     return ID_TOOLBAR_HIDDEN;
   else
     return ID_TOOLBAR_LEFT;
 }
 
-base::StringPiece FormatToolbarPosition(UINT position) {
+std::string_view FormatToolbarPosition(UINT position) {
   switch (position) {
     case ID_TOOLBAR_HIDDEN:
       return "hidden";

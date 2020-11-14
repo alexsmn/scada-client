@@ -15,7 +15,7 @@
 
 namespace {
 
-const base::char16 kValueColumnTitle[] = L"Значение";
+const wchar_t kValueColumnTitle[] = L"Значение";
 
 const ui::TableColumn s_columns[] = {
     {TimedDataModel::CID_TIME, L"Время", 150, ui::TableColumn::LEFT,

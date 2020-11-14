@@ -281,7 +281,7 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
 void EventView::SelectSeverity() {
   unsigned severity = model_->current_events() ? event_fetcher_.severity_min()
                                                : model_->severity_min();
-  const base::char16 prompt[] =
+  const wchar_t prompt[] =
       L"Минимальный порог важности (0 - все события):";
   std::wstring value = WideFormat(severity);
   for (;;) {

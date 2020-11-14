@@ -27,7 +27,7 @@ struct ModusDocumentContext {
   FileCache& file_cache_;
 
   const std::function<void(const std::wstring& title)> title_callback_;
-  const std::function<void(base::StringPiece16 hyperlink)> navigation_callback_;
+  const std::function<void(std::wstring_view hyperlink)> navigation_callback_;
   const std::function<void(const TimedDataSpec& selection)> selection_callback_;
   const ContextMenuHandler context_menu_callback_;
 };

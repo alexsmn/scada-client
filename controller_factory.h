@@ -40,7 +40,7 @@ class ControllerRegistrar final : public ControllerRegistrarBase {
 };
 
 ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id);
-ControllerRegistrarBase* FindControllerRegistrar(base::StringPiece name);
+ControllerRegistrarBase* FindControllerRegistrar(std::string_view name);
 
 #define COMBINE1(X, Y) X##Y  // helper macro
 #define COMBINE(X, Y) COMBINE1(X, Y)

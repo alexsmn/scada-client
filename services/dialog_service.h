@@ -1,10 +1,10 @@
 #pragma once
 
 #include "base/containers/span.h"
-#include "base/strings/string_piece.h"
 #include "gfx/native_widget_types.h"
 
 #include <filesystem>
+#include <string_view>
 
 #if defined(UI_QT)
 class QWidget;
@@ -30,19 +30,19 @@ class DialogService {
   virtual QWidget* GetParentWidget() const = 0;
 #endif
 
-  virtual MessageBoxResult RunMessageBox(base::StringPiece16 message,
-                                         base::StringPiece16 title,
+  virtual MessageBoxResult RunMessageBox(std::wstring_view message,
+                                         std::wstring_view title,
                                          MessageBoxMode mode) = 0;
 
-  virtual std::filesystem::path SelectOpenFile(base::StringPiece16 title) = 0;
+  virtual std::filesystem::path SelectOpenFile(std::wstring_view title) = 0;
 
   struct Filter {
-    base::StringPiece16 title;
-    base::span<const base::StringPiece> extensions;
+    std::wstring_view title;
+    base::span<const std::string_view> extensions;
   };
 
   struct SaveParams {
-    base::StringPiece16 title;
+    std::wstring_view title;
     std::filesystem::path default_path;
     base::span<const Filter> filters;
   };

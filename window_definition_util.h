@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/base64.h"
-#include "base/strings/string_piece.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
 #include "time_range.h"
@@ -9,6 +9,7 @@
 #include "window_definition.h"
 
 #include <optional>
+#include <string_view>
 
 template <>
 inline std::optional<base::Time> FromJson(const base::Value& value) {
@@ -17,7 +18,7 @@ inline std::optional<base::Time> FromJson(const base::Value& value) {
     return std::nullopt;
 
   base::Time time;
-  if (!Deserialize(str, time))
+  if (!Deserialize(std::string_view{str.data(), str.size()}, time))
     return std::nullopt;
 
   return time;
@@ -92,15 +93,15 @@ inline base::Value ToJson(base::TimeDelta duration) {
   return result;
 }
 
-inline std::string SaveBlob(base::StringPiece blob) {
+inline std::string SaveBlob(std::string_view blob) {
   std::string text;
-  base::Base64Encode(blob, &text);
+  base::Base64Encode(ToStringPiece(blob), &text);
   return text;
 }
 
-inline std::string RestoreBlob(base::StringPiece text) {
-  auto trimmed_text =
-      base::TrimString(text, base::kWhitespaceASCII, base::TRIM_ALL);
+inline std::string RestoreBlob(std::string_view text) {
+  auto trimmed_text = base::TrimString(ToStringPiece(text),
+                                       base::kWhitespaceASCII, base::TRIM_ALL);
   std::string blob;
   base::Base64Decode(trimmed_text, &blob);
   return blob;

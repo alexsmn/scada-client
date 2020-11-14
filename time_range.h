@@ -28,4 +28,4 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
 std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);
 
-TimeRange::Type ParseTimeRangeType(base::StringPiece str);
+TimeRange::Type ParseTimeRangeType(std::string_view str);

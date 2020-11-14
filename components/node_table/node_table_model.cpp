@@ -305,7 +305,7 @@ void NodeTableModel::InitColumns() {
     columns_.push_back({scada::AttributeId::DisplayName});
     columns.emplace_back(ui::TableColumn{
         static_cast<int>(columns.size()),
-        kDisplayNameAttributeString.as_string(), 75, ui::TableColumn::LEFT});
+        std::wstring{kDisplayNameAttributeString}, 75, ui::TableColumn::LEFT});
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,

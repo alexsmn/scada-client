@@ -24,7 +24,7 @@ class FileCacheUpdater : private FileCacheUpdaterContext,
   static std::shared_ptr<FileCacheUpdater> Create(
       FileCacheUpdaterContext&& context);
 
-  void Add(base::StringPiece formula, int object_tag);
+  void Add(std::string_view formula, int object_tag);
 
  private:
   explicit FileCacheUpdater(FileCacheUpdaterContext&& context)
@@ -46,7 +46,7 @@ inline FileCacheUpdater::~FileCacheUpdater() {
   cache_.Update(type_id_, path_, title_, items_);
 }
 
-inline void FileCacheUpdater::Add(base::StringPiece formula, int object_tag) {
+inline void FileCacheUpdater::Add(std::string_view formula, int object_tag) {
   auto self = shared_from_this();
   alias_resolver_(
       formula, [this, self, object_tag](const scada::Status& status,

@@ -68,7 +68,7 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
   void Run();
   void CancelProgressDialog();
 
-  void PostTask(base::StringPiece16 title, TaskMethod task);
+  void PostTask(std::wstring_view title, TaskMethod task);
   void StartTask(Task&& task);
 
   void OnDeleteRecordComplete(scada::Status&& status,

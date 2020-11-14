@@ -389,7 +389,7 @@ void MetrixGraph::UpdateData() {
   }
 }
 
-MetrixGraph::MetrixLine& MetrixGraph::NewLine(base::StringPiece path,
+MetrixGraph::MetrixLine& MetrixGraph::NewLine(std::string_view path,
                                               MetrixPane& pane) {
   MetrixLine* line = new MetrixLine();
   pane.plot().AddLine(*line);

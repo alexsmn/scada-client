@@ -25,8 +25,8 @@ class Favourites {
 
   const Folders& folders() const { return folders_; }
 
-  const Page* GetFolder(const base::char16* folder = NULL) const;
-  const Page& GetOrAddFolder(const base::char16* name = NULL);
+  const Page* GetFolder(const wchar_t* folder = NULL) const;
+  const Page& GetOrAddFolder(const wchar_t* name = NULL);
 
   void Add(const WindowDefinition& win, const Page& folder);
   void Delete(const WindowDefinition& win, const Page& folder);

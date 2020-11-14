@@ -101,7 +101,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
   //		cell.clrb = RGB(255, 255, 0);
 }
 
-void TimedDataModel::SetFormula(base::StringPiece formula) {
+void TimedDataModel::SetFormula(std::string_view formula) {
   TimedDataSpec timed_data;
   try {
     timed_data.SetFrom(base::Time::Now() - base::TimeDelta::FromHours(1));

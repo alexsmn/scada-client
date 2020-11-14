@@ -2,6 +2,7 @@
 
 #include "base/json/json_file_value_serializer.h"
 #include "base/json/json_reader.h"
+#include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 
@@ -12,112 +13,116 @@ template <class T>
 std::optional<T> FromJson(const base::Value& value);
 
 inline bool GetBool(const base::Value& value,
-                    base::StringPiece key,
+                    std::string_view key,
                     bool default = false) {
   if (!value.is_dict())
     return nullptr;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::BOOLEAN))
+  if (auto* k =
+          value.FindKeyOfType(ToStringPiece(key), base::Value::Type::BOOLEAN))
     return k->GetBool();
   else
     return default;
 }
 
 inline int GetInt(const base::Value& value,
-                  base::StringPiece key,
+                  std::string_view key,
                   int default = 0) {
   if (!value.is_dict())
     return default;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::INTEGER))
+  if (auto* k =
+          value.FindKeyOfType(ToStringPiece(key), base::Value::Type::INTEGER))
     return k->GetInt();
   else
     return default;
 }
 
-inline base::StringPiece GetString(const base::Value& value,
-                                   base::StringPiece key,
-                                   base::StringPiece default = {}) {
+inline std::string_view GetString(const base::Value& value,
+                                  std::string_view key,
+                                  std::string_view default = {}) {
   if (!value.is_dict())
     return default;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING))
+  if (auto* k =
+          value.FindKeyOfType(ToStringPiece(key), base::Value::Type::STRING))
     return k->GetString();
   else
     return default;
 }
 
 inline std::wstring GetString16(const base::Value& value,
-                                base::StringPiece key,
-                                base::StringPiece16 default = {}) {
+                                std::string_view key,
+                                std::wstring_view default = {}) {
   if (!value.is_dict())
-    return default.as_string();
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::STRING))
+    return std::wstring{default};
+  if (auto* k =
+          value.FindKeyOfType(ToStringPiece(key), base::Value::Type::STRING))
     return base::UTF8ToUTF16(k->GetString());
   else
-    return default.as_string();
+    return std::wstring{default};
 }
 
 inline const base::Value* GetDict(const base::Value& value,
-                                  base::StringPiece key) {
+                                  std::string_view key) {
   if (!value.is_dict())
     return nullptr;
-  return value.FindKeyOfType(key, base::Value::Type::DICTIONARY);
+  return value.FindKeyOfType(ToStringPiece(key), base::Value::Type::DICTIONARY);
 }
 
 inline const base::Value::ListStorage* GetList(const base::Value& value,
-                                               base::StringPiece key) {
+                                               std::string_view key) {
   if (!value.is_dict())
     return nullptr;
-  if (auto* k = value.FindKeyOfType(key, base::Value::Type::LIST))
+  if (auto* k =
+          value.FindKeyOfType(ToStringPiece(key), base::Value::Type::LIST))
     return &k->GetList();
   else
     return nullptr;
 }
 
 template <class T>
-inline std::optional<T> GetKey(const base::Value& dict, base::StringPiece key);
+inline std::optional<T> GetKey(const base::Value& dict, std::string_view key);
 
 template <>
 inline std::optional<int> GetKey(const base::Value& dict,
-                                 base::StringPiece key) {
-  const auto* k = dict.FindKeyOfType(key, base::Value::Type::INTEGER);
+                                 std::string_view key) {
+  const auto* k =
+      dict.FindKeyOfType(ToStringPiece(key), base::Value::Type::INTEGER);
   return k ? std::make_optional(k->GetInt()) : std::nullopt;
 }
 
-inline void SetKey(base::Value& dict, base::StringPiece key, bool value) {
-  dict.SetKey(key, base::Value{value});
+inline void SetKey(base::Value& dict, std::string_view key, bool value) {
+  dict.SetKey(ToStringPiece(key), base::Value{value});
 }
 
-inline void SetKey(base::Value& dict, base::StringPiece key, int value) {
-  dict.SetKey(key, base::Value{value});
+inline void SetKey(base::Value& dict, std::string_view key, int value) {
+  dict.SetKey(ToStringPiece(key), base::Value{value});
 }
 
-inline void SetKey(base::Value& dict,
-                   base::StringPiece key,
-                   const char* value) {
-  dict.SetKey(key, base::Value{value});
-}
-
-inline void SetKey(base::Value& dict,
-                   base::StringPiece key,
-                   const base::char16* value) {
-  dict.SetKey(key, base::Value{value});
+inline void SetKey(base::Value& dict, std::string_view key, const char* value) {
+  dict.SetKey(ToStringPiece(key), base::Value{value});
 }
 
 inline void SetKey(base::Value& dict,
-                   base::StringPiece key,
-                   base::StringPiece value) {
-  dict.SetKey(key, base::Value{value});
+                   std::string_view key,
+                   const wchar_t* value) {
+  dict.SetKey(ToStringPiece(key), base::Value{value});
 }
 
 inline void SetKey(base::Value& dict,
-                   base::StringPiece key,
-                   base::StringPiece16 value) {
-  dict.SetKey(key, base::Value{value});
+                   std::string_view key,
+                   std::string_view value) {
+  dict.SetKey(ToStringPiece(key), base::Value{ToStringPiece(value)});
 }
 
 inline void SetKey(base::Value& dict,
-                   base::StringPiece key,
+                   std::string_view key,
+                   std::wstring_view value) {
+  dict.SetKey(ToStringPiece(key), base::Value{ToStringPiece(value)});
+}
+
+inline void SetKey(base::Value& dict,
+                   std::string_view key,
                    base::Value::ListStorage&& value) {
-  dict.SetKey(key, base::Value{std::move(value)});
+  dict.SetKey(ToStringPiece(key), base::Value{std::move(value)});
 }
 
 inline bool SaveJson(const base::Value& data, const base::FilePath& path) {

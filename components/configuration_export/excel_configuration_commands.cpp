@@ -22,8 +22,8 @@
 
 namespace {
 
-const base::char16 kImportTitle[] = L"Импорт";
-const base::char16 kExportTitle[] = L"Экспорт";
+const wchar_t kImportTitle[] = L"Импорт";
+const wchar_t kExportTitle[] = L"Экспорт";
 const char kDefaultFileName[] = "configuration.csv";
 
 }  // namespace

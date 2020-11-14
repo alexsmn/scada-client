@@ -77,7 +77,7 @@ class ModusView2 : private ModusView2Context,
   virtual bool OnMouseWheel(const ui::MouseWheelEvent& event) override;
 
   using TitleChangedHandler =
-      std::function<void(base::StringPiece16 new_title)>;
+      std::function<void(std::wstring_view new_title)>;
   TitleChangedHandler title_changed_handler;
 
  private:

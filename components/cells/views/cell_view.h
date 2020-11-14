@@ -45,7 +45,7 @@ class CellModel : public ui::GridModel, private views::FixedRowModel::Delegate {
   }
 
   void SetSizes(int row_count, int column_count);
-  void SetCellFormula(int row, int column, base::StringPiece formula);
+  void SetCellFormula(int row, int column, std::string_view formula);
 
   bool FindEmptyCell(int& row, int& column);
 

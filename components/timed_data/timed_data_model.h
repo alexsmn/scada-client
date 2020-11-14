@@ -27,7 +27,7 @@ class TimedDataModel : private TimedDataModelContext,
   const TimedDataSpec& timed_data() const { return timed_data_; }
   void SetTimedData(TimedDataSpec timed_data);
 
-  void SetFormula(base::StringPiece formula);
+  void SetFormula(std::string_view formula);
 
   void Update();
 

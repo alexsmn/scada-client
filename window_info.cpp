@@ -19,7 +19,7 @@ const WindowInfo& GetWindowInfo(unsigned command_id) {
   return *info;
 }
 
-unsigned ParseWindowType(base::StringPiece str) {
+unsigned ParseWindowType(std::string_view str) {
   auto* registrar = FindControllerRegistrar(str);
   return registrar ? registrar->window_info().command_id : 0;
 }

@@ -2,7 +2,7 @@
 
 #include "base/utils.h"
 
-const Page* Favourites::GetFolder(const base::char16* folder) const {
+const Page* Favourites::GetFolder(const wchar_t* folder) const {
   if (!folder)
     folder = L"";
 
@@ -12,7 +12,7 @@ const Page* Favourites::GetFolder(const base::char16* folder) const {
   return NULL;
 }
 
-const Page& Favourites::GetOrAddFolder(const base::char16* name) {
+const Page& Favourites::GetOrAddFolder(const wchar_t* name) {
   const Page* folder = GetFolder(name);
   if (!folder) {
     Page new_folder;

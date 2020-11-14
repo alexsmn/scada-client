@@ -70,7 +70,7 @@ PortfolioManager::Portfolios::iterator PortfolioManager::Find(
 }
 
 PortfolioManager::Portfolios::iterator PortfolioManager::Find(
-    const base::char16* name) {
+    const wchar_t* name) {
   for (Portfolios::iterator i = portfolios.begin(); i != portfolios.end(); ++i)
     if (i->name.compare(name) == 0)
       return i;
@@ -78,7 +78,7 @@ PortfolioManager::Portfolios::iterator PortfolioManager::Find(
 }
 
 Portfolio& PortfolioManager::New() {
-  static const base::char16 mask[] = L"Портфолио";
+  static const wchar_t mask[] = L"Портфолио";
 
   std::wstring name = mask;
   int id = 2;
@@ -96,7 +96,7 @@ Portfolio& PortfolioManager::New() {
 }
 
 void PortfolioManager::Rename(const Portfolio& portfolio,
-                              const base::char16* name) {
+                              const wchar_t* name) {
   assert(Find(portfolio) != portfolios.end());
 
   Portfolio& p = const_cast<Portfolio&>(portfolio);

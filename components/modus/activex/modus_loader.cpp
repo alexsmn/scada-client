@@ -25,7 +25,7 @@ std::wstring GetShortPath(SDECore::ISDEObject50& sde_object) {
 }
 
 std::vector<std::wstring> GetStateStrings(SDECore::IParams& params,
-                                            base::StringPiece16 param_name) {
+                                            std::wstring_view param_name) {
   SDEParam param = GetParam(
       params, base::win::ScopedVariant(param_name.data(), param_name.size()));
   if (!param)

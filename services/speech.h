@@ -1,7 +1,6 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
-
+#include <string_view>
 #include <wrl/client.h>
 
 namespace SpeechLib {
@@ -15,7 +14,7 @@ class Speech {
 
   bool is_ok() const { return !!voice_; }
 
-  void Speak(const base::StringPiece16& text);
+  void Speak(const std::wstring_view& text);
 
  private:
   Microsoft::WRL::ComPtr<SpeechLib::ISpVoice> voice_;

@@ -9,7 +9,7 @@
 namespace aui {
 
 struct ColorEntry {
-  base::StringPiece16 name;
+  std::wstring_view name;
   Rgba color;
 };
 
@@ -48,25 +48,25 @@ int FindColor(Color color) {
   return -1;
 }
 
-base::StringPiece16 GetColorName(int index) {
+std::wstring_view GetColorName(int index) {
   const ColorEntry* entry = GetColorEntry(index);
-  return entry ? entry->name : base::StringPiece16{};
+  return entry ? entry->name : std::wstring_view{};
 }
 
-int FindColorName(base::StringPiece16 str) {
+int FindColorName(std::wstring_view str) {
   for (size_t i = 0; i < std::size(kColorEntries); i++) {
-    if (_wcsicmp(str.as_string().c_str(),
-                 kColorEntries[i].name.as_string().c_str()) == 0) {
+    if (_wcsicmp(std::wstring{str}.c_str(),
+                 std::wstring{kColorEntries[i].name}.c_str()) == 0) {
       return i;
     }
   }
   return -1;
 }
 
-Color StringToColor(base::StringPiece str) {
+Color StringToColor(std::string_view str) {
   if (!str.empty() && str[0] == '#') {
     unsigned color = 0;
-    if (sscanf(str.as_string().c_str(), "#%08X", &color) != 1)
+    if (sscanf(std::string{str}.c_str(), "#%08X", &color) != 1)
       return ColorCode::Black;
     return aui::Color::FromSkColor(color);
   }

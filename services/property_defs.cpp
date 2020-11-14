@@ -1,14 +1,10 @@
 ﻿#include "property_defs.h"
 
-#include <iterator>
-#include <map>
-
+#include "base/string_piece_util.h"
 #include "base/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common/format.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "components/transport/transport_dialog.h"
 #include "controls/color.h"
 #include "core/node_management_service.h"
@@ -19,15 +15,20 @@
 #include "model/scada_node_ids.h"
 #include "model/security_node_ids.h"
 #include "net/transport_string.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
+
+#include <iterator>
+#include <map>
 
 namespace {
 
-static const base::char16 kDefaultColorString[] = L"<Стандартный>";
-static const base::char16 kChoiceNone[] = L"<Нет>";
+static const wchar_t kDefaultColorString[] = L"<Стандартный>";
+static const wchar_t kChoiceNone[] = L"<Нет>";
 
 NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
-                              const base::StringPiece16& name,
+                              const std::wstring_view& name,
                               const scada::NodeId& node_type_id) {
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, node_type_id)) {
@@ -60,11 +61,11 @@ NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
   return nullptr;
 }
 
-std::pair<scada::NodeId /*parent_id*/, base::StringPiece /*component_name*/>
-ParseChannelPath(base::StringPiece channel_path) {
+std::pair<scada::NodeId /*parent_id*/, std::string_view /*component_name*/>
+ParseChannelPath(std::string_view channel_path) {
   scada::NodeId node_id;
   scada::NodeId parent_id;
-  base::StringPiece component_name;
+  std::string_view component_name;
   if (!IsNodeIdFormula(channel_path, node_id) ||
       !IsNestedNodeId(node_id, parent_id, component_name)) {
     parent_id = scada::NodeId();
@@ -480,12 +481,12 @@ std::wstring ChannelPropertyDefinition::GetText(
 
   scada::NodeId parent_id;
   scada::NodeId node_id;
-  base::StringPiece component_name;
+  std::string_view component_name;
   if (IsNodeIdFormula(channel_path, node_id) &&
       IsNestedNodeId(node_id, parent_id, component_name)) {
     return device_
                ? GetFullDisplayName(context.node_service_.GetNode(parent_id))
-               : base::SysNativeMBToWide(component_name);
+               : base::SysNativeMBToWide(ToStringPiece(component_name));
   } else {
     if (device_)
       return std::wstring();
@@ -512,7 +513,7 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
   auto [parent_id, component_name] = ParseChannelPath(channel_path);
 
-  auto item_path = component_name.as_string();
+  auto item_path = std::string{component_name};
   if (device_)
     parent_id = new_device_id;
   else
@@ -564,7 +565,7 @@ ui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const scada::NodeId& prop_decl_id) const {
   ui::EditData data{ui::EditData::EditorType::BUTTON};
 
-  data.action_handler = [& dialog_service =
+  data.action_handler = [&dialog_service =
                              context.dialog_service_](std::wstring& text) {
     net::TransportString transport_string{base::SysWideToNativeMB(text)};
     if (!ShowTransportDialog(dialog_service, transport_string))
@@ -583,7 +584,7 @@ std::wstring ColorPropertyDefinition::GetText(
   auto value = node[prop_decl_id].value();
   auto color_index = value.get_or(-1);
   if (color_index >= 0 && color_index < aui::GetColorCount())
-    return aui::GetColorName(color_index).as_string();
+    return std::wstring{aui::GetColorName(color_index)};
   else
     return kDefaultColorString;
 }

@@ -19,18 +19,18 @@
 namespace {
 
 std::wstring FormatReferenceCell(const std::wstring& title,
-                                   const scada::NodeId& prop_type_id) {
+                                 const scada::NodeId& prop_type_id) {
   return base::StringPrintf(
       L"%ls @%ls", title.c_str(),
       base::SysNativeMBToWide(NodeIdToScadaString(prop_type_id)).c_str());
 }
 
-scada::NodeId ParseReferenceCell(base::StringPiece16 s) {
+scada::NodeId ParseReferenceCell(std::wstring_view s) {
   auto p = s.rfind(L'@');
-  if (p == base::StringPiece::npos)
+  if (p == std::string_view::npos)
     return scada::NodeId();
   auto n = s.substr(p + 1);
-  return NodeIdFromScadaString(base::SysWideToNativeMB(n.as_string()));
+  return NodeIdFromScadaString(base::SysWideToNativeMB(std::wstring{n}));
 }
 
 void ScanDeleteNodes(const NodeRef& parent_node,
@@ -84,7 +84,7 @@ class ExportDataReader {
   }
 
  private:
-  ExportData::Property ReadProperty(base::StringPiece16 cell) {
+  ExportData::Property ReadProperty(std::wstring_view cell) {
     auto prop_type_id = ParseReferenceCell(cell);
     if (prop_type_id.is_null())
       throw ResourceError{L"Неверный формат имени столбца"};

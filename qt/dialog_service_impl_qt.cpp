@@ -7,12 +7,12 @@
 
 namespace {
 
-std::string JoinStrings(base::span<const base::StringPiece> strings,
+std::string JoinStrings(base::span<const std::string_view> strings,
                         char separator) {
   if (strings.empty())
     return {};
 
-  std::string result = strings[0].as_string();
+  std::string result = std::string{strings[0]};
   for (size_t i = 1; i < strings.size(); ++i) {
     result += separator;
     result.append(strings[i].data(), strings[i].size());
@@ -47,8 +47,8 @@ QString MakeFilter(base::span<const DialogService::Filter> filters) {
 
 }  // namespace
 
-MessageBoxResult DialogServiceImplQt::RunMessageBox(base::StringPiece16 message,
-                                                    base::StringPiece16 title,
+MessageBoxResult DialogServiceImplQt::RunMessageBox(std::wstring_view message,
+                                                    std::wstring_view title,
                                                     MessageBoxMode mode) {
   auto* message_box = new QMessageBox{parent_widget};
   message_box->setText(QString::fromWCharArray(message.data(), message.size()));
@@ -99,7 +99,7 @@ QWidget* DialogServiceImplQt::GetParentWidget() const {
 }
 
 std::filesystem::path DialogServiceImplQt::SelectOpenFile(
-    base::StringPiece16 title) {
+    std::wstring_view title) {
   return QFileDialog::getOpenFileName(
              parent_widget, QString::fromWCharArray(title.data(), title.size()))
       .toStdWString();

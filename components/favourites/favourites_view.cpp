@@ -9,7 +9,7 @@
 #include "services/dialog_service.h"
 
 namespace {
-const base::char16 kAddUrl[] = L"Добавить Web-страницу";
+const wchar_t kAddUrl[] = L"Добавить Web-страницу";
 }
 
 FavouritesView::FavouritesView(const ControllerContext& context)

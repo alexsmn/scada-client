@@ -65,7 +65,7 @@ class OpenedView : private OpenedViewContext,
   void Activate();
   void SetSelection(const scada::NodeId& item_id);
   ContentsModel* GetContentsModel();
-  void SetUserTitle(const base::StringPiece16& title);
+  void SetUserTitle(const std::wstring_view& title);
   void Save();
   std::wstring GetWindowTitle() const;
   void Close();
@@ -90,7 +90,7 @@ class OpenedView : private OpenedViewContext,
   void UpdateTitle();
 
   // ControllerDelegate
-  virtual void SetTitle(const base::StringPiece16& title) override;
+  virtual void SetTitle(const std::wstring_view& title) override;
   virtual void ShowPopupMenu(unsigned resource_id,
                              const UiPoint& point,
                              bool right_click) override;

@@ -1,15 +1,16 @@
 ﻿#include "node_combo_box.h"
 
+#include "base/string_piece_util.h"
 #include "base/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
+#include "core/standard_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "core/standard_node_ids.h"
 
 namespace {
-const base::char16 kNoneChoice[] = L"<Нет>";
+const wchar_t kNoneChoice[] = L"<Нет>";
 }  // namespace
 
 // NodeComboBox
@@ -87,12 +88,13 @@ void ItemComboBox::SetNodeId(const scada::NodeId& node_id) {
   }
 
   scada::NodeId device_id;
-  base::StringPiece nested_name;
+  std::string_view nested_name;
   IsNestedNodeId(node_id, device_id, nested_name);
 
   assert(device_id == device_id_);
 
-  combo_box_.SetWindowTextW(base::SysNativeMBToWide(nested_name).c_str());
+  combo_box_.SetWindowTextW(
+      base::SysNativeMBToWide(ToStringPiece(nested_name)).c_str());
 }
 
 void ItemComboBox::AddNodesRecursive(

@@ -39,10 +39,10 @@ size_t GetColorCount();
 Color GetColor(int index);
 int FindColor(Color color);
 
-base::StringPiece16 GetColorName(int index);
-int FindColorName(base::StringPiece16);
+std::wstring_view GetColorName(int index);
+int FindColorName(std::wstring_view);
 
-Color StringToColor(base::StringPiece str);
+Color StringToColor(std::string_view str);
 std::string ColorToString(Color color);
 
 struct ColorCode {

@@ -61,7 +61,7 @@ void ContextMenuModel::Rebuild() {
       submenus_.emplace_back(submenu);
       AddMenuActions(*submenu, commands, main_window_.active_view());
 
-      const base::char16* category_title = GetCommandCategoryTitle(category);
+      const wchar_t* category_title = GetCommandCategoryTitle(category);
       AddSubMenu(0, category_title, submenu);
       separated = false;
     }

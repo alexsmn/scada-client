@@ -50,14 +50,14 @@ void StatusBarController::Layout() {
 
 void StatusBarController::SetPaneText(int pane, const std::wstring& text) {
   WTL::CStatusBarCtrl status_bar(hwnd_);
-  base::char16 buffer[256] = L"";
+  wchar_t buffer[256] = L"";
   status_bar.GetText(pane, buffer);
   if (text != buffer)
     status_bar.SetText(pane, text.c_str());
 }
 
 void StatusBarController::OnPanesChanged(int index, int count) {
-  base::char16 buffer[256] = L"";
+  wchar_t buffer[256] = L"";
   for (int i = 0; i < count; ++i)
     SetPaneText(index + i, model_->GetPaneText(index + i));
 }

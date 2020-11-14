@@ -17,7 +17,7 @@
 
 namespace {
 
-const base::char16 kLocalEventSource[] = L"Локальное событие";
+const wchar_t kLocalEventSource[] = L"Локальное событие";
 
 void GetEventColors(const scada::Event& event,
                     SkColor& text_color,

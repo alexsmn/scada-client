@@ -1,6 +1,7 @@
 ﻿#include "components/modus/views/modus_controller.h"
 
 #include "base/bind.h"
+#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
@@ -25,11 +26,11 @@ views::View* ModusController::CreateModusView() {
     controller_delegate_.SetTitle(title);
   };
 
-  auto navigation_callback = [this](base::StringPiece16 hyperlink) {
+  auto navigation_callback = [this](std::wstring_view hyperlink) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,
         base::Bind(&ModusController::OpenHyperlink, weak_factory_.GetWeakPtr(),
-                   hyperlink.as_string()));
+                   std::wstring{hyperlink}));
   };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
@@ -67,7 +68,7 @@ views::View* ModusController::CreateModusView2() {
   view2_->set_double_click_signal(
       [this] { selection().timed_data().Acknowledge(); });
 
-  view2_->title_changed_handler = [this](base::StringPiece16 new_title) {
+  view2_->title_changed_handler = [this](std::wstring_view new_title) {
     controller_delegate_.SetTitle(new_title);
   };
 
@@ -141,19 +142,20 @@ void ModusController::ExecuteCommand(unsigned command) {
   __super::ExecuteCommand(command);
 }
 
-void ModusController::OpenHyperlink(base::StringPiece16 hyperlink) {
+void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
   if (IsWebUrl(hyperlink)) {
     WindowDefinition win(GetWindowInfo(ID_WEB_VIEW));
-    win.path = base::FilePath{hyperlink};
+    win.path = base::FilePath{ToStringPiece(hyperlink)};
     controller_delegate_.OpenView(win);
     return;
   }
 
-  auto path = MakeModusFilePath(base::FilePath{hyperlink}, wrapper_->GetPath());
+  auto path = MakeModusFilePath(base::FilePath{ToStringPiece(hyperlink)},
+                                wrapper_->GetPath());
   if (!path.has_value()) {
     dialog_service_.RunMessageBox(
-        base::StrCat(
-            {L"Файл ", hyperlink, L" не найден или находится вне папки схем."}),
+        base::StrCat({L"Файл ", ToStringPiece(hyperlink),
+                      L" не найден или находится вне папки схем."}),
         {}, MessageBoxMode::Error);
     return;
   }

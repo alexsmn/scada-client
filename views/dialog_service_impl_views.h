@@ -6,11 +6,11 @@ class DialogServiceImplViews final : public DialogService {
  public:
   // DialogService
   virtual gfx::NativeView GetDialogOwningWindow() const override;
-  virtual MessageBoxResult RunMessageBox(base::StringPiece16 message,
-                                         base::StringPiece16 title,
+  virtual MessageBoxResult RunMessageBox(std::wstring_view message,
+                                         std::wstring_view title,
                                          MessageBoxMode mode) override;
   virtual std::filesystem::path SelectOpenFile(
-      base::StringPiece16 title) override;
+      std::wstring_view title) override;
   virtual std::filesystem::path SelectSaveFile(
       const SaveParams& params) override;
 

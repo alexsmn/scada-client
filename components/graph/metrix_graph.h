@@ -113,7 +113,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     return pane ? pane->primary_line() : NULL;
   }
 
-  MetrixLine& NewLine(base::StringPiece path, MetrixPane& pane);
+  MetrixLine& NewLine(std::string_view path, MetrixPane& pane);
   MetrixPane& NewPane();
 
   void Fit();

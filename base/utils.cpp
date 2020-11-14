@@ -1,5 +1,7 @@
 #include "base/utils.h"
+
 #include "base/format.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 
 #ifdef OS_WIN
@@ -14,8 +16,8 @@ HFONT CreateFont(LPCTSTR name, int height) {
 }
 #endif
 
-template <class STRING_TYPE>
-int ScanEndingNumber(base::BasicStringPiece<STRING_TYPE> str, size_t& len) {
+template <class T>
+int ScanEndingNumber(std::basic_string_view<T> str, size_t& len) {
   int count = 0;
   while (len && isdigit(str[len - 1])) {
     --len;
@@ -24,9 +26,9 @@ int ScanEndingNumber(base::BasicStringPiece<STRING_TYPE> str, size_t& len) {
   return ParseWithDefault(str.substr(len, count), -1);
 }
 
-template <class STRING_TYPE>
-int HumanCompareTextT(base::BasicStringPiece<STRING_TYPE> left,
-                      base::BasicStringPiece<STRING_TYPE> right) {
+template <class T>
+int HumanCompareTextT(std::basic_string_view<T> left,
+                      std::basic_string_view<T> right) {
   size_t left_len = left.size();
   size_t right_len = right.size();
 
@@ -40,21 +42,22 @@ int HumanCompareTextT(base::BasicStringPiece<STRING_TYPE> left,
   int left_value = ScanEndingNumber(left, left_len);
   int right_value = ScanEndingNumber(right, right_len);
 
-  if (left_len != right_len)
-    return base::CompareCaseInsensitiveASCII(left, right);
+  if (left_len != right_len) {
+    return base::CompareCaseInsensitiveASCII(ToStringPiece(left),
+                                             ToStringPiece(right));
+  }
 
-  int res = base::CompareCaseInsensitiveASCII(left.substr(0, left_len),
-                                              right.substr(0, right_len));
+  int res = base::CompareCaseInsensitiveASCII(
+      ToStringPiece(left.substr(0, left_len)),
+      ToStringPiece(right.substr(0, right_len)));
   if (res != 0)
     return res;
 
   return left_value - right_value;
 }
 
-template int HumanCompareTextT<std::string>(
-    base::BasicStringPiece<std::string> left,
-    base::BasicStringPiece<std::string> right);
+template int HumanCompareTextT(std::basic_string_view<char> left,
+                               std::basic_string_view<char> right);
 
-template int HumanCompareTextT<std::wstring>(
-    base::BasicStringPiece<std::wstring> left,
-    base::BasicStringPiece<std::wstring> right);
+template int HumanCompareTextT(std::basic_string_view<wchar_t> left,
+                               std::basic_string_view<wchar_t> right);

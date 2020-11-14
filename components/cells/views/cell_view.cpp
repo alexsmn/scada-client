@@ -2,9 +2,9 @@
 
 #include "base/format_time.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
 #include "controller_factory.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "timed_data/timed_data_service.h"
@@ -95,7 +95,7 @@ bool CellModel::SetCellText(int row, int column, const std::wstring& text) {
   return true;
 }
 
-void CellModel::SetCellFormula(int row, int column, base::StringPiece formula) {
+void CellModel::SetCellFormula(int row, int column, std::string_view formula) {
   Cell*& cell = this->cell(row, column);
   if (!cell)
     cell = new Cell(*this, row, column);
@@ -265,7 +265,7 @@ views::View* CellView::Init(const WindowDefinition& definition) {
       int column = item.GetInt("column", -1);
       auto path = item.GetString("path");
       if (row == -1 || column == -1)
-        free_items.emplace_back(path.as_string());
+        free_items.emplace_back(std::string{path});
       else
         model_.SetCellFormula(row, column, path);
     }

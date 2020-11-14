@@ -55,8 +55,8 @@ class FileCache {
   // Map of type id on TypeEntry.
   typedef std::map<int, TypeEntry> TypeMap;
 
-  TypeEntry* FindTypeByName(base::StringPiece name);
-  TypeEntry* FindTypeByExtension(base::StringPiece ext);
+  TypeEntry* FindTypeByName(std::string_view name);
+  TypeEntry* FindTypeByExtension(std::string_view ext);
 
   FileList& GetMutableList(int type_id);
 

@@ -29,7 +29,7 @@ ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id) {
   return i == map.end() ? nullptr : i->second;
 }
 
-ControllerRegistrarBase* FindControllerRegistrar(base::StringPiece name) {
+ControllerRegistrarBase* FindControllerRegistrar(std::string_view name) {
   for (const auto& p : g_controller_registrar_map.Get()) {
     auto& registrar = *p.second;
     if (registrar.window_info().name == name)

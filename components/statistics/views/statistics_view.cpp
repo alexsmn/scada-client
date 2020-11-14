@@ -3,7 +3,7 @@
 #include "controller_factory.h"
 #include "ui/views/controls/table/table_view.h"
 
-static const base::char16* kStatisticTitles[] = {
+static const wchar_t* kStatisticTitles[] = {
     L"Состояние связи",        L"Принято байт",         L"Отправлено байт",
     L"Принято сообщений",      L"Отправлено сообщений", L"Сообщений в очереди",
     L"Байт в буфере приема",   L"Обновляется таблиц",   L"Выполнено транзакций",

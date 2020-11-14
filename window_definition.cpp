@@ -1,5 +1,6 @@
 #include "window_definition.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
 #include "value_util.h"
@@ -16,42 +17,42 @@ WindowItem& WindowItem::operator=(const WindowItem& source) {
   return *this;
 }
 
-bool WindowItem::name_is(base::StringPiece n) const {
-  return base::EqualsCaseInsensitiveASCII(name, n);
+bool WindowItem::name_is(std::string_view n) const {
+  return base::EqualsCaseInsensitiveASCII(name, ToStringPiece(n));
 }
 
-bool WindowItem::GetBool(base::StringPiece attr, bool default) const {
+bool WindowItem::GetBool(std::string_view attr, bool default) const {
   return ::GetBool(attributes, attr, default);
 }
 
-int WindowItem::GetInt(base::StringPiece attr, int default) const {
+int WindowItem::GetInt(std::string_view attr, int default) const {
   return ::GetInt(attributes, attr, default);
 }
 
-base::StringPiece WindowItem::GetString(base::StringPiece attr,
-                                        base::StringPiece default) const {
+std::string_view WindowItem::GetString(std::string_view attr,
+                                       std::string_view default) const {
   return ::GetString(attributes, attr, default);
 }
 
-std::wstring WindowItem::GetString16(base::StringPiece attr,
-                                       base::StringPiece16 default) const {
+std::wstring WindowItem::GetString16(std::string_view attr,
+                                     std::wstring_view default) const {
   return ::GetString16(attributes, attr, default);
 }
 
-void WindowItem::SetBool(base::StringPiece attr, bool value) {
+void WindowItem::SetBool(std::string_view attr, bool value) {
   SetKey(attributes, attr, value);
 }
 
-void WindowItem::SetInt(base::StringPiece attr, int value) {
+void WindowItem::SetInt(std::string_view attr, int value) {
   SetKey(attributes, attr, value);
 }
 
-void WindowItem::SetString(base::StringPiece attr, base::StringPiece value) {
+void WindowItem::SetString(std::string_view attr, std::string_view value) {
   SetKey(attributes, attr, value);
 }
 
-void WindowItem::SetString(base::StringPiece attr, base::StringPiece16 value) {
-  SetKey(attributes, attr, base::UTF16ToUTF8(value));
+void WindowItem::SetString(std::string_view attr, std::wstring_view value) {
+  SetKey(attributes, attr, base::UTF16ToUTF8(ToStringPiece(value)));
 }
 
 // WindowDefinition

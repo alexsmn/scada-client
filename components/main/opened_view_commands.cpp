@@ -5,8 +5,6 @@
 #include "base/strings/string_util.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "common/static_types.h"
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_dialog.h"
@@ -28,6 +26,8 @@
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "net/transport_string.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"
 #include "services/profile.h"
@@ -42,11 +42,11 @@
 
 namespace {
 
-const base::char16 kExportTitle[] = L"Экспорт";
+const wchar_t kExportTitle[] = L"Экспорт";
 
-std::filesystem::path MakeFileName(base::StringPiece16 text) {
+std::filesystem::path MakeFileName(std::wstring_view text) {
   std::wstring result;
-  base::ReplaceChars(text.as_string(), L":", L"-", &result);
+  base::ReplaceChars(std::wstring{text}, L":", L"-", &result);
   return result;
 }
 
@@ -357,7 +357,7 @@ void OpenedViewCommands::ExportToCsv() {
   if (!export_model)
     return;
 
-  const base::StringPiece kCsvExt[] = {"*.csv"};
+  const std::string_view kCsvExt[] = {"*.csv"};
   const DialogService::Filter kFilters[] = {
       {L"Файлы CSV", kCsvExt},
   };

@@ -12,11 +12,11 @@
 #include "services/profile.h"
 
 namespace {
-const base::char16 kDiscreteConfirmationQuestion[] =
+const wchar_t kDiscreteConfirmationQuestion[] =
     L"Перевести %ls в состояние %ls?";
-const base::char16 kAnalogConfirmationQuestion[] =
+const wchar_t kAnalogConfirmationQuestion[] =
     L"Записать в %ls значение %ls?";
-const base::char16 kSecondStagePrefix[] =
+const wchar_t kSecondStagePrefix[] =
     L"Удаленное устройство готово к исполнению команды.\n\n";
 }  // namespace
 

@@ -5,6 +5,7 @@
 #include "base/format.h"
 #include "base/logger.h"
 #include "base/path_service.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -45,7 +46,7 @@ FileCache::FileEntry LoadFileEntry(const base::Value& data) {
 }
 
 base::Value SaveFileEntry(const FileCache::FileEntry& entry,
-                          base::StringPiece type_name) {
+                          std::string_view type_name) {
   base::Value file_data{base::Value::Type::DICTIONARY};
 
   SetKey(file_data, "type", type_name);
@@ -216,18 +217,18 @@ FileCache::FileList& FileCache::GetMutableList(int type_id) {
   return i->second.list;
 }
 
-FileCache::TypeEntry* FileCache::FindTypeByName(base::StringPiece name) {
+FileCache::TypeEntry* FileCache::FindTypeByName(std::string_view name) {
   for (auto& [id, entry] : type_map_) {
-    if (base::EqualsCaseInsensitiveASCII(entry.name, name))
+    if (base::EqualsCaseInsensitiveASCII(entry.name, ToStringPiece(name)))
       return &entry;
   }
   return nullptr;
 }
 
-FileCache::TypeEntry* FileCache::FindTypeByExtension(base::StringPiece ext) {
+FileCache::TypeEntry* FileCache::FindTypeByExtension(std::string_view ext) {
   for (auto& [id, entry] : type_map_) {
     for (auto& e : entry.extensions) {
-      if (base::EqualsCaseInsensitiveASCII(e, ext))
+      if (base::EqualsCaseInsensitiveASCII(e, ToStringPiece(ext)))
         return &entry;
     }
   }

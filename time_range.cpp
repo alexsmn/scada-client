@@ -1,10 +1,10 @@
 #include "time_range.h"
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 
 namespace {
 
-const base::StringPiece kTimeRangeStrings[] = {
+const std::string_view kTimeRangeStrings[] = {
     "Custom",
     "Day",
     "Week",
@@ -95,7 +95,7 @@ std::pair<base::Time, base::Time> GetTimeRangeBounds(
 std::string ToString(TimeRange::Type type) {
   auto index = static_cast<size_t>(type);
   return index < static_cast<size_t>(TimeRange::Type::Count)
-             ? kTimeRangeStrings[index].as_string()
+             ? std::string{kTimeRangeStrings[index]}
              : "Unknown";
 }
 
@@ -103,7 +103,7 @@ std::string ToString(const TimeRange& time_range) {
   return ToString(time_range.type);
 }
 
-TimeRange::Type ParseTimeRangeType(base::StringPiece str) {
+TimeRange::Type ParseTimeRangeType(std::string_view str) {
   auto i = std::find(std::begin(kTimeRangeStrings), std::end(kTimeRangeStrings),
                      str);
   return i != std::end(kTimeRangeStrings)

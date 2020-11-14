@@ -10,7 +10,7 @@
 
 std::wstring SheetColumnModel::GetTitle(int index) const {
   assert(index >= 0);
-  base::char16 ch = L'A' + static_cast<char>(index);
+  wchar_t ch = L'A' + static_cast<char>(index);
   return std::wstring(1, ch);
 }
 

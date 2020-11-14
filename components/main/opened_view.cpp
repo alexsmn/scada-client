@@ -41,11 +41,11 @@ void OpenedView::Activate() {
     main_window_->ActivateView(*this);
 }
 
-void OpenedView::SetUserTitle(const base::StringPiece16& title) {
+void OpenedView::SetUserTitle(const std::wstring_view& title) {
   assert(!window_info().is_pane());
 
   if (user_title_ != title) {
-    user_title_ = title.as_string();
+    user_title_ = std::wstring{title};
     UpdateTitle();
   }
 }
@@ -98,10 +98,10 @@ void OpenedView::UpdateWorking() {
   }
 }
 
-void OpenedView::SetTitle(const base::StringPiece16& title) {
+void OpenedView::SetTitle(const std::wstring_view& title) {
   assert(!window_info().is_pane());
   if (title_ != title) {
-    title_ = title.as_string();
+    title_ = std::wstring{title};
     UpdateTitle();
   }
 }

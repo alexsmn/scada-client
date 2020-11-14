@@ -123,18 +123,18 @@ void NodePropertyModel::Update() {
 #ifndef NDEBUG
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
-        kNodeIdAttributeString.as_string(),
+        std::wstring{kNodeIdAttributeString},
         scada::AttributeId::NodeId,
     });
 #endif
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
-        kBrowseNameAttributeString.as_string(),
+        std::wstring{kBrowseNameAttributeString},
         scada::AttributeId::BrowseName,
     });
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
-        kDisplayNameAttributeString.as_string(),
+        std::wstring{kDisplayNameAttributeString},
         scada::AttributeId::DisplayName,
     });
   }

@@ -8,7 +8,7 @@ inline base::Value ToJson(int value) {
   return base::Value{value};
 }
 
-inline base::Value ToJson(base::StringPiece value) {
+inline base::Value ToJson(std::string_view value) {
   return base::Value{value};
 }
 
@@ -30,7 +30,7 @@ inline void FromJson(const base::Value& json, int& value) {
 
 template <class T>
 inline void FromJson(const base::Value& dict, T& s) {
-  EnumJson(s, [&](base::StringPiece key, auto& value) {
+  EnumJson(s, [&](std::string_view key, auto& value) {
     if (const auto* key_json = dict.FindKey(key))
       FromJson(*key_json, value);
   });
@@ -39,7 +39,7 @@ inline void FromJson(const base::Value& dict, T& s) {
 template <class T>
 inline base::Value ToJson(const T& s) {
   base::Value json;
-  EnumJson(s, [&](base::StringPiece key, const auto& value) {
+  EnumJson(s, [&](std::string_view key, const auto& value) {
     json.SetKey(key, ToJson(value));
   });
   return json;

@@ -1,10 +1,10 @@
 #include "speech.h"
 
-#include <atlbase.h>
-
 #include "core/monitored_item_service.h"
 #include "sapi.h"
 #include "services/profile.h"
+
+#include <atlbase.h>
 
 //#import "libid:C866CA3A-32F7-11D2-9602-00C04F8EE628" raw_interfaces_only
 
@@ -36,10 +36,10 @@ Speech::Speech() {
 
 Speech::~Speech() {}
 
-void Speech::Speak(const base::StringPiece16& text) {
+void Speech::Speak(const std::wstring_view& text) {
   if (!voice_)
     return;
 
-  voice_->Speak(const_cast<LPWSTR>(text.as_string().c_str()),
+  voice_->Speak(const_cast<LPWSTR>(std::wstring{text}.c_str()),
                 SPF_ASYNC | SPF_PURGEBEFORESPEAK, nullptr);
 }

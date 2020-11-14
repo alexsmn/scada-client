@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 
 namespace {
 
-const base::StringPiece16 kNodeIdAttributeString{L"Индекс"};
-const base::StringPiece16 kBrowseNameAttributeString{L"Обозначение"};
-const base::StringPiece16 kDisplayNameAttributeString{L"Имя"};
+const std::wstring_view kNodeIdAttributeString{L"Индекс"};
+const std::wstring_view kBrowseNameAttributeString{L"Обозначение"};
+const std::wstring_view kDisplayNameAttributeString{L"Имя"};
 
 }  // namespace

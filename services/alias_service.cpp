@@ -1,10 +1,10 @@
 #include "alias_service.h"
 
 #include "base/logger.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 
 AliasService::AliasService(AliasServiceContext&& context)
     : AliasServiceContext{std::move(context)} {
@@ -26,9 +26,9 @@ AliasService::~AliasService() {
   node_service_.Unsubscribe(*this);
 }
 
-void AliasService::Resolve(base::StringPiece alias,
-                            const AliasResolveCallback& callback) {
-  auto alias_string = alias.as_string();
+void AliasService::Resolve(std::string_view alias,
+                           const AliasResolveCallback& callback) {
+  auto alias_string = std::string{alias};
 
   if (!fetched_) {
     logger_->WriteF(LogSeverity::Normal, "Pending resolution: %s",

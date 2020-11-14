@@ -144,7 +144,7 @@ void LoginController::Connect(bool allow_remote_logoff) {
       [this](const scada::Status& status) { OnLoginResult(status); });
 }
 
-void LoginController::DeleteUserName(base::StringPiece16 user_name) {
+void LoginController::DeleteUserName(std::wstring_view user_name) {
   auto i = std::find(user_list.begin(), user_list.end(), user_name);
   if (i == user_list.end())
     return;

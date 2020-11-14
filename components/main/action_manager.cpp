@@ -14,8 +14,8 @@ GroupedActions GroupCommands(ActionManager& action_manager,
   return grouped_commands;
 }
 
-const base::char16* GetCommandCategoryTitle(CommandCategory category) {
-  const base::char16* titles[] = {
+const wchar_t* GetCommandCategoryTitle(CommandCategory category) {
+  const wchar_t* titles[] = {
       L"Новый",       // CATEGORY_NEW
       L"Открыть",     // CATEGORY_OPEN
       L"Объект",      // CATEGORY_ITEM

@@ -18,8 +18,8 @@ const base::win::ScopedVariant kParameterStyle(OLESTR("композитный_с
 const base::win::ScopedVariant kParameterHyperlink(OLESTR("гиперссылка"));
 const base::win::ScopedVariant kParameterLimits(OLESTR("уставки"));
 
-const base::char16 kStateClose[] = L"включен";
-const base::char16 kStateOpen[] = L"отключен";
+const wchar_t kStateClose[] = L"включен";
+const wchar_t kStateOpen[] = L"отключен";
 
 const double kNoLimit = std::numeric_limits<double>::max();
 
@@ -48,7 +48,7 @@ std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index) {
   if (FAILED(param->get_Value(val.Receive())) || !val)
     return std::wstring();
 
-  return static_cast<const base::char16*>(val);
+  return static_cast<const wchar_t*>(val);
 }
 
 bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR val) {
@@ -74,7 +74,7 @@ std::wstring GetHyperlink(SDECore::ISDEObject50& object) {
   if (FAILED(param->get_IndexedValue(1, value.Receive())))
     return std::wstring();
 
-  return static_cast<const base::char16*>(value);
+  return static_cast<const wchar_t*>(value);
 }
 
 inline std::string StrTok(std::string& str, const char* delimiters) {
@@ -94,8 +94,8 @@ Limits GetLimits(const NodeRef& node) {
   };
 }
 
-const base::char16* ToString(Limit limit) {
-  const base::char16* strs[] = {L"мин_аларм", L"мин_уставка", L"макс_уставка",
+const wchar_t* ToString(Limit limit) {
+  const wchar_t* strs[] = {L"мин_аларм", L"мин_уставка", L"макс_уставка",
                                 L"макс_аларм"};
   static_assert(_countof(strs) == static_cast<int>(Limit::Count),
                 "Wrong limits");

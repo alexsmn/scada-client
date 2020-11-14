@@ -11,8 +11,8 @@ class PromptDialog : public framework::Dialog {
 
   bool Execute(HWND parent,
                std::wstring& value,
-               const base::char16* prompt,
-               const base::char16* title) {
+               const wchar_t* prompt,
+               const wchar_t* title) {
     title_ = title;
     prompt_ = prompt;
     value_ = value;

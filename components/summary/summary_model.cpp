@@ -279,7 +279,7 @@ void SummaryModel::Load(const WindowDefinition& definition) {
     if (item.name_is("Item")) {
       auto path = item.GetString("path");
       int width = item.GetInt("width", 100);
-      int index = AddColumn(path.as_string());
+      int index = AddColumn(std::string{path});
       columns_[index]->set_width(width);
     }
   }

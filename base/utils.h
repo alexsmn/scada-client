@@ -1,15 +1,15 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 
-template <class STRING_TYPE>
-int HumanCompareTextT(base::BasicStringPiece<STRING_TYPE> left,
-                      base::BasicStringPiece<STRING_TYPE> right);
+template <class T>
+int HumanCompareTextT(std::basic_string_view<T> left,
+                      std::basic_string_view<T> right);
 
-inline int HumanCompareText(base::StringPiece left, base::StringPiece right) {
+inline int HumanCompareText(std::string_view left, std::string_view right) {
   return HumanCompareTextT(left, right);
 }
 
-inline int HumanCompareText(base::StringPiece16 left, base::StringPiece16 right) {
+inline int HumanCompareText(std::wstring_view left, std::wstring_view right) {
   return HumanCompareTextT(left, right);
 }

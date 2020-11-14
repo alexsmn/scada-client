@@ -22,19 +22,19 @@ class WindowItem {
   WindowItem(WindowItem&& source) = default;
   WindowItem& operator=(WindowItem&& source) = default;
 
-  bool name_is(base::StringPiece n) const;
+  bool name_is(std::string_view n) const;
 
-  bool GetBool(base::StringPiece attr, bool default = false) const;
-  int GetInt(base::StringPiece attr, int default = 0) const;
-  base::StringPiece GetString(base::StringPiece attr,
-                              base::StringPiece default = {}) const;
-  std::wstring GetString16(base::StringPiece attr,
-                             base::StringPiece16 default = {}) const;
+  bool GetBool(std::string_view attr, bool default = false) const;
+  int GetInt(std::string_view attr, int default = 0) const;
+  std::string_view GetString(std::string_view attr,
+                              std::string_view default = {}) const;
+  std::wstring GetString16(std::string_view attr,
+                             std::wstring_view default = {}) const;
 
-  void SetBool(base::StringPiece attr, bool value);
-  void SetInt(base::StringPiece attr, int value);
-  void SetString(base::StringPiece attr, base::StringPiece value);
-  void SetString(base::StringPiece attr, base::StringPiece16 value);
+  void SetBool(std::string_view attr, bool value);
+  void SetInt(std::string_view attr, int value);
+  void SetString(std::string_view attr, std::string_view value);
+  void SetString(std::string_view attr, std::wstring_view value);
 
   template <class T>
   std::optional<T> Get() const;
