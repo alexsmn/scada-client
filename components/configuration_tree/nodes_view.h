@@ -8,10 +8,11 @@ class NodesView : public ConfigurationTreeView {
  public:
   explicit NodesView(const ControllerContext& context)
       : ConfigurationTreeView{
-            context, *new ConfigurationTreeModel{
+            context, *new ConfigurationTreeModel{ConfigurationTreeModelContext{
                          context.node_service_,
                          context.task_manager_,
                          context.node_service_.GetNode(scada::id::RootFolder),
-                         {scada::id::HierarchicalReferences},
-                         {}}} {}
+                         {{scada::id::HierarchicalReferences, true}},
+                         {},
+                     }}} {}
 };

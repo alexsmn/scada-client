@@ -1,12 +1,13 @@
 ﻿#include "components/configuration_tree/configuration_tree_model.h"
 
+#include "base/bind_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "common/formula_util.h"
 #include "core/event.h"
 #include "core/node_management_service.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
@@ -71,14 +72,23 @@ DropAction MakeAssignChannelAction(TaskManager& task_manager,
 // ConfigurationTreeNode
 
 ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
-                                             const NodeRef& data_node)
-    : model_{model}, data_node_{data_node} {
-  assert(&data_node_);
-  model_.node_map_[data_node_.node_id()] = this;
+                                             scada::NodeId reference_type_id,
+                                             bool forward_reference,
+                                             NodeRef node)
+    : model_{model},
+      reference_type_id_{std::move(reference_type_id)},
+      forward_reference_{forward_reference},
+      node_{std::move(node)} {
+  assert(&node_);
+  model_.tree_node_map_.emplace(node_.node_id(), this);
 }
 
 ConfigurationTreeNode::~ConfigurationTreeNode() {
-  model_.node_map_.erase(data_node_.node_id());
+  auto [first, last] = model_.tree_node_map_.equal_range(node_.node_id());
+  auto i =
+      std::find_if(first, last, [this](auto& p) { return p.second == this; });
+  assert(i != last);
+  model_.tree_node_map_.erase(i);
 }
 
 int ConfigurationTreeNode::GetChildCount() const {
@@ -87,7 +97,7 @@ int ConfigurationTreeNode::GetChildCount() const {
 }
 
 void ConfigurationTreeNode::Load() {
-  assert(data_node_);
+  assert(node_);
 
   if (loaded_)
     return;
@@ -95,23 +105,24 @@ void ConfigurationTreeNode::Load() {
   loaded_ = true;
 
   int n = 0;
-  for (const auto& reference_type_id : model_.reference_type_ids_) {
-    const auto& children = data_node_.targets(reference_type_id);
-    for (const auto& data_child : children) {
-      if (auto child = model_.CreateNodeIfMatches(data_child)) {
-        auto* child_ptr = child.get();
-        Add(n, std::move(child));
-      }
+  for (const auto& [reference_type_id, forward] : model_.reference_filter_) {
+    const auto& targets = forward ? node_.targets(reference_type_id)
+                                  : node_.inverse_targets(reference_type_id);
+    for (const auto& node : targets) {
+      auto tree_node =
+          model_.CreateTreeNodeIfMatches(reference_type_id, forward, node);
+      if (tree_node)
+        Add(n++, std::move(tree_node));
     }
   }
 
-  data_node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);
+  node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);
 }
 
 std::wstring ConfigurationTreeNode::GetText(int column_id) const {
-  auto text = ToString16(data_node_.display_name());
+  auto text = ToString16(node_.display_name());
 
-  bool fetched = data_node_.fetched() && data_node_.children_fetched();
+  bool fetched = node_.fetched() && node_.children_fetched();
   if (!fetched)
     text += L" [Загрузка]";
 
@@ -119,8 +130,8 @@ std::wstring ConfigurationTreeNode::GetText(int column_id) const {
 }
 
 int ConfigurationTreeNode::GetIcon() const {
-  return data_node_.node_class() == scada::NodeClass::Variable ? IMAGE_ITEM
-                                                               : IMAGE_FOLDER;
+  return node_.node_class() == scada::NodeClass::Variable ? IMAGE_ITEM
+                                                          : IMAGE_FOLDER;
 }
 
 void ConfigurationTreeNode::Changed() {
@@ -132,10 +143,10 @@ void ConfigurationTreeNode::Changed() {
 ConfigurationTreeRootNode::ConfigurationTreeRootNode(
     ConfigurationTreeModel& model,
     NodeRef tree)
-    : ConfigurationTreeNode(model, tree) {}
+    : ConfigurationTreeNode{model, {}, true, tree} {}
 
 std::wstring ConfigurationTreeRootNode::GetText(int column_id) const {
-  return data_node().display_name();
+  return node().display_name();
 }
 
 int ConfigurationTreeRootNode::GetIcon() const {
@@ -145,17 +156,9 @@ int ConfigurationTreeRootNode::GetIcon() const {
 // ConfigurationTreeModel
 
 ConfigurationTreeModel::ConfigurationTreeModel(
-    NodeService& node_service,
-    TaskManager& task_manager,
-    NodeRef root_node,
-    std::vector<scada::NodeId> reference_type_ids,
-    std::vector<scada::NodeId> type_definition_ids)
-    : node_service_{node_service},
-      task_manager_{task_manager},
-      reference_type_ids_{std::move(reference_type_ids)},
-      type_definition_ids_{std::move(type_definition_ids)} {
-  set_root(
-      std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
+    ConfigurationTreeModelContext&& context)
+    : ConfigurationTreeModelContext{std::move(context)} {
+  set_root(std::make_unique<ConfigurationTreeRootNode>(*this, root_node_));
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
@@ -170,94 +173,134 @@ void ConfigurationTreeModel::Init() {
   root()->Load();
 }
 
-void ConfigurationTreeModel::UpdateNode(const scada::ModelChangeEvent& event) {
-  auto node = node_service_.GetNode(event.node_id);
+void ConfigurationTreeModel::DeleteMissingTreeNodes(
+    const scada::NodeId& node_id) {
+  // Remove tree nodes with missing references.
+  auto [first, last] = tree_node_map_.equal_range(node_id);
+  for (auto i = first; i != last;) {
+    auto& tree_node = *i->second;
+    ++i;
 
-  NodeRef::Reference parent_ref =
-      node.inverse_reference(scada::id::HierarchicalReferences);
-  if (!parent_ref.target)
-    return;
-
-  bool matches = false;
-  for (auto& reference_type_id : reference_type_ids_) {
-    if (IsSubtypeOf(parent_ref.reference_type, reference_type_id)) {
-      matches = true;
-      break;
+    if (auto* parent_tree_node = tree_node.parent()) {
+      bool exists = parent_tree_node->node().has_target(
+          tree_node.reference_type_id(), tree_node.forward_reference(),
+          node_id);
+      if (!exists)
+        Remove(*parent_tree_node, parent_tree_node->IndexOfChild(tree_node));
     }
   }
-  if (!matches)
-    return;
+}
 
-  ConfigurationTreeNode* old_tree_node = FindNode(event.node_id);
-  if (old_tree_node && old_tree_node == root()) {
-    old_tree_node->OnModelChanged(event);
-    TreeNodeChanged(old_tree_node);
-    return;
+void ConfigurationTreeModel::UpdateChildTreeNodes(
+    const scada::NodeId& parent_id) {
+  for (auto* parent_tree_node : FindTreeNodes(parent_id)) {
+    // Delete missing targets.
+    for (int i = 0; i < parent_tree_node->GetChildCount();) {
+      auto& tree_node = parent_tree_node->GetChild(i);
+      bool exists = parent_tree_node->node().has_target(
+          tree_node.reference_type_id(), tree_node.forward_reference(),
+          tree_node.node().node_id());
+      if (!exists)
+        Remove(*parent_tree_node, i);
+      else
+        ++i;
+    }
+
+    // Create missing targets.
+    for (const auto& [reference_type_id, forward] : reference_filter_) {
+      const auto& targets =
+          forward ? parent_tree_node->node().targets(reference_type_id)
+                  : parent_tree_node->node().inverse_targets(reference_type_id);
+      for (const auto& node : targets) {
+        auto tree_node =
+            CreateTreeNodeIfMatches(reference_type_id, forward, node);
+        if (tree_node) {
+          Add(*parent_tree_node, parent_tree_node->GetChildCount(),
+              std::move(tree_node));
+        }
+      }
+    }
   }
+}
 
-  ConfigurationTreeNode* new_parent_node =
-      FindNode(parent_ref.target.node_id());
-  if (!new_parent_node || !new_parent_node->loaded())
-    return;
+void ConfigurationTreeModel::DeleteTreeNodes(const scada::NodeId& node_id) {
+  // Remove tree nodes with missing references.
+  for (auto* tree_node : FindTreeNodes(node_id))
+    Remove(*tree_node->parent(), tree_node->parent()->IndexOfChild(*tree_node));
+}
 
-  if (old_tree_node)
-    old_tree_node->OnModelChanged(event);
-
-  if (old_tree_node && old_tree_node->parent() == new_parent_node) {
-    TreeNodeChanged(old_tree_node);
-    return;
+ConfigurationTreeNode* ConfigurationTreeModel::FindTreeNode(
+    const scada::NodeId& node_id,
+    const scada::NodeId& reference_type_id,
+    bool forward_reference) {
+  auto [first, last] = tree_node_map_.equal_range(node_id);
+  for (auto i = first; i != last; ++i) {
+    auto& node = *i->second;
+    if (node.reference_type_id() == reference_type_id &&
+        node.forward_reference() == forward_reference)
+      return &node;
   }
+  return nullptr;
+}
 
-  std::unique_ptr<ConfigurationTreeNode> tree_node;
-  // Remove node from the old parent.
-  if (old_tree_node)
-    tree_node = Remove(*old_tree_node->parent(),
-                       old_tree_node->parent()->IndexOfChild(*old_tree_node));
-
-  if (!tree_node)
-    tree_node = CreateNodeIfMatches(node);
-  if (tree_node) {
-    Add(*new_parent_node, new_parent_node->GetChildCount(),
-        std::move(tree_node));
-  }
+std::vector<ConfigurationTreeNode*> ConfigurationTreeModel::FindTreeNodes(
+    const scada::NodeId& node_id) {
+  auto [first, last] = tree_node_map_.equal_range(node_id);
+  std::vector<ConfigurationTreeNode*> tree_nodes;
+  for (auto i = first; i != last; ++i)
+    tree_nodes.emplace_back(i->second);
+  return tree_nodes;
 }
 
 void ConfigurationTreeModel::OnModelChanged(
     const scada::ModelChangeEvent& event) {
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
-    if (ConfigurationTreeNode* tree_node = FindNode(event.node_id)) {
-      tree_node->OnModelChanged(event);
-      Remove(*tree_node->parent(),
-             tree_node->parent()->IndexOfChild(*tree_node));
-    }
+    DeleteTreeNodes(event.node_id);
 
   } else {
-    UpdateNode(event);
+    if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
+                      scada::ModelChangeEvent::ReferenceDeleted))
+      UpdateChildTreeNodes(event.node_id);
   }
+
+  auto [first, last] = tree_node_map_.equal_range(event.node_id);
+  for (auto i = first; i != last; ++i)
+    i->second->OnModelChanged(event);
 }
 
 void ConfigurationTreeModel::OnNodeSemanticChanged(
     const scada::NodeId& node_id) {
-  if (ConfigurationTreeNode* tree_node = FindNode(node_id))
-    TreeNodeChanged(tree_node);
+  auto task_runner = base::SequencedTaskRunnerHandle::Get();
+  task_runner->PostTask(FROM_HERE, BindLambda([this, node_id] {
+                          auto [first, last] =
+                              tree_node_map_.equal_range(node_id);
+                          for (auto i = first; i != last; ++i)
+                            TreeNodeChanged(i->second);
+                        }));
 }
 
-std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateNode(
-    const NodeRef& data_node) {
-  assert(data_node);
-  return std::make_unique<ConfigurationTreeNode>(*this, data_node);
+std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateTreeNode(
+    const scada::NodeId& reference_type_id,
+    bool forward_reference,
+    const NodeRef& node) {
+  assert(node);
+  return std::make_unique<ConfigurationTreeNode>(*this, reference_type_id,
+                                                 forward_reference, node);
 }
 
 std::unique_ptr<ConfigurationTreeNode>
-ConfigurationTreeModel::CreateNodeIfMatches(const NodeRef& data_node) {
-  assert(data_node);
+ConfigurationTreeModel::CreateTreeNodeIfMatches(
+    const scada::NodeId& reference_type_id,
+    bool forward_reference,
+    const NodeRef& node) {
+  assert(node);
 
-  if (FindNode(data_node.node_id()))
+  if (FindTreeNode(node.node_id(), reference_type_id, forward_reference))
     return nullptr;
 
   if (!type_definition_ids_.empty()) {
     bool matches = false;
-    const auto& type_definition = data_node.type_definition();
+    const auto& type_definition = node.type_definition();
     for (auto& filter_type_definition_id : type_definition_ids_) {
       if (IsSubtypeOf(type_definition, filter_type_definition_id)) {
         matches = true;
@@ -268,7 +311,7 @@ ConfigurationTreeModel::CreateNodeIfMatches(const NodeRef& data_node) {
       return nullptr;
   }
 
-  return CreateNode(data_node);
+  return CreateTreeNode(reference_type_id, forward_reference, node);
 }
 
 int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
@@ -286,27 +329,26 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   bool is_iec61850_channel =
       IsInstanceOf(dragging_node, devices::id::Iec61850DataVariableType) ||
       IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType);
-  if (is_iec61850_channel &&
-      IsSubtypeOf(target_node->data_node().type_definition(),
-                  data_items::id::DataGroupType)) {
+  if (is_iec61850_channel && IsSubtypeOf(target_node->node().type_definition(),
+                                         data_items::id::DataGroupType)) {
     scada::NodeAttributes attributes;
     attributes.browse_name = dragging_node.browse_name();
     attributes.display_name = dragging_node.display_name();
     attributes.data_type = dragging_node.data_type().node_id();
     auto formula = MakeNodeIdFormula(dragging_node.node_id());
     action = MakeCreateDataItemAction(
-        task_manager_, target_node->data_node().node_id(),
-        std::move(attributes), std::move(formula),
+        task_manager_, target_node->node().node_id(), std::move(attributes),
+        std::move(formula),
         IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
     return ui::DragDropTypes::DRAG_COPY;
   }
 
   // Dropping of IEC-61850 channel on id::DataItem assigns its' channel.
   if (is_iec61850_channel &&
-      IsInstanceOf(target_node->data_node(), data_items::id::DataItemType)) {
+      IsInstanceOf(target_node->node(), data_items::id::DataItemType)) {
     auto formula = MakeNodeIdFormula(dragging_node.node_id());
     action = MakeAssignChannelAction(
-        task_manager_, target_node->data_node().node_id(), std::move(formula),
+        task_manager_, target_node->node().node_id(), std::move(formula),
         IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
     return ui::DragDropTypes::DRAG_LINK;
   }
@@ -314,15 +356,15 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   // Dropping a node to a node that can contain the node type causes move.
   {
     for (; target_node; target_node = target_node->parent()) {
-      auto type_definition = target_node->data_node().type_definition();
+      auto type_definition = target_node->node().type_definition();
       if (type_definition && CanCreate(dragging_node, type_definition))
         break;
     }
 
-    if (target_node && target_node->data_node() != dragging_node &&
-        target_node->data_node() != dragging_node.parent()) {
+    if (target_node && target_node->node() != dragging_node &&
+        target_node->node() != dragging_node.parent()) {
       auto old_parent_id = dragging_node.parent().node_id();
-      auto new_parent_id = target_node->data_node().node_id();
+      auto new_parent_id = target_node->node().node_id();
       action = MakeMoveDropAction(task_manager_, dragging_id, old_parent_id,
                                   new_parent_id);
       return ui::DragDropTypes::DRAG_MOVE;
@@ -330,12 +372,4 @@ int ConfigurationTreeModel::GetDropAction(const scada::NodeId& dragging_id,
   }
 
   return ui::DragDropTypes::DRAG_NONE;
-}
-
-ConfigurationTreeNode* ConfigurationTreeModel::FindNode(
-    const scada::NodeId& node_id) {
-  if (node_id.is_null())
-    return nullptr;
-  auto i = node_map_.find(node_id);
-  return i != node_map_.end() ? i->second : nullptr;
 }

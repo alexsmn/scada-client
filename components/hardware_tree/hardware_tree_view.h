@@ -8,8 +8,10 @@
 class HardwareTreeView : public ConfigurationTreeView {
  public:
   explicit HardwareTreeView(const ControllerContext& context)
-      : ConfigurationTreeView{
-            context,
-            *new HardwareTreeModel{context.node_service_, context.task_manager_,
-                                   context.timed_data_service_}} {}
+      : ConfigurationTreeView{context,
+                              *new HardwareTreeModel(HardwareTreeModelContext{
+                                  context.node_service_,
+                                  context.task_manager_,
+                                  context.timed_data_service_,
+                              })} {}
 };

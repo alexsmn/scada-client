@@ -2,15 +2,15 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
+#include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/dialog_service.h"
 #include "views/item_drag_data.h"
 
@@ -35,7 +35,7 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
     else if (selection_size == 1) {
       auto* node =
           static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
-      selection().SelectNode(node ? node->data_node() : nullptr);
+      selection().SelectNode(node ? node->node() : nullptr);
     } else
       selection().SelectMultiple();
   });
@@ -47,8 +47,8 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   });
 
   tree_view_->SetCompareHandler([](void* left, void* right) {
-    const auto& a = static_cast<ConfigurationTreeNode*>(left)->data_node();
-    const auto& b = static_cast<ConfigurationTreeNode*>(right)->data_node();
+    const auto& a = static_cast<ConfigurationTreeNode*>(left)->node();
+    const auto& b = static_cast<ConfigurationTreeNode*>(right)->node();
     if (!!a != !!b)
       return !!a < !!b ? 1 : -1;
     if (a.fetched() != b.fetched())
@@ -87,8 +87,10 @@ void ConfigurationTreeView::Save(WindowDefinition& definition) {
 }
 
 void ConfigurationTreeView::OnViewNodeCreated(const NodeRef& node) {
-  if (auto* tree_node = model_->FindNode(node.node_id()))
-    tree_view().SelectNode(tree_node);
+  // Select a first tree node.
+  auto i = model_->tree_node_map().find(node.node_id());
+  if (i != model_->tree_node_map().end())
+    tree_view().SelectNode(i->second);
 }
 
 // Must keep |nodes| order.
@@ -97,8 +99,8 @@ std::vector<scada::NodeId> ConfigurationTreeView::GetVariableNodeIds(
   std::vector<scada::NodeId> node_ids;
   for (auto* node : nodes) {
     auto& n = *static_cast<ConfigurationTreeNode*>(node);
-    if (n.data_node().node_class() == scada::NodeClass::Variable)
-      node_ids.emplace_back(n.data_node().node_id());
+    if (n.node().node_class() == scada::NodeClass::Variable)
+      node_ids.emplace_back(n.node().node_id());
   }
   return node_ids;
 }
@@ -112,7 +114,7 @@ std::optional<OpenContext> ConfigurationTreeView::GetOpenContext() const {
     return std::nullopt;
 
   OpenContext context;
-  context.title = GetFullDisplayName(tree_node->data_node());
+  context.title = GetFullDisplayName(tree_node->node());
   context.node_ids =
       GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
   return std::move(context);
@@ -121,10 +123,10 @@ std::optional<OpenContext> ConfigurationTreeView::GetOpenContext() const {
 #if defined(UI_VIEWS)
 void ConfigurationTreeView::StartDrag(void* node) {
   ConfigurationTreeNode* cfg_node = static_cast<ConfigurationTreeNode*>(node);
-  if (!cfg_node->data_node())
+  if (!cfg_node->node())
     return;
 
-  scada::NodeId item_id = cfg_node->data_node().node_id();
+  scada::NodeId item_id = cfg_node->node().node_id();
   if (item_id.is_null())
     return;
 

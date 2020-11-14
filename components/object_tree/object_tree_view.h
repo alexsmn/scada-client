@@ -22,6 +22,7 @@ class ObjectTreeView : public ConfigurationTreeView,
   // TreeModelObserver
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
+  virtual void OnTreeModelResetting() override;
 
  private:
   ObjectTreeModel& model();

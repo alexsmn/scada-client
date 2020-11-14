@@ -5,11 +5,13 @@
 
 ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
-      ConfigurationTreeModel{ObjectTreeModelContext::node_service_,
-                             ObjectTreeModelContext::task_manager_,
-                             ObjectTreeModelContext::root_,
-                             {scada::id::Organizes},
-                             {}} {
+      ConfigurationTreeModel{::ConfigurationTreeModelContext{
+          ObjectTreeModelContext::node_service_,
+          ObjectTreeModelContext::task_manager_,
+          ObjectTreeModelContext::root_,
+          {{scada::id::Organizes, true}},
+          {},
+      }} {
   Blinker::Start();
 }
 
@@ -25,32 +27,32 @@ int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {
   return column_id == 0 ? 200 : 0;
 }
 
-std::wstring ObjectTreeModel::GetText(void* node, int column_id) {
+std::wstring ObjectTreeModel::GetText(void* tree_node, int column_id) {
   if (column_id == 1) {
-    auto* timed_data = GetTimedData(node);
+    auto* timed_data = GetTimedData(tree_node);
     if (!timed_data)
       return std::wstring();
     return timed_data->GetCurrentString(FORMAT_DEFAULT);
   } else
-    return ConfigurationTreeModel::GetText(node, column_id);
+    return ConfigurationTreeModel::GetText(tree_node, column_id);
 }
 
-SkColor ObjectTreeModel::GetTextColor(void* node, int column_id) {
+SkColor ObjectTreeModel::GetTextColor(void* tree_node, int column_id) {
   if (column_id == 1) {
-    auto* timed_data = GetTimedData(node);
+    auto* timed_data = GetTimedData(tree_node);
     if (!timed_data || timed_data->current().qualifier.general_bad())
       return profile_.bad_value_color;
   }
-  return ConfigurationTreeModel::GetTextColor(node, column_id);
+  return ConfigurationTreeModel::GetTextColor(tree_node, column_id);
 }
 
-SkColor ObjectTreeModel::GetBackgroundColor(void* node, int column_id) {
+SkColor ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
   if (column_id == 1 && Blinker::GetState()) {
-    auto* timed_data = GetTimedData(node);
+    auto* timed_data = GetTimedData(tree_node);
     if (timed_data && timed_data->alerting())
       return SK_ColorYELLOW;
   }
-  return ConfigurationTreeModel::GetBackgroundColor(node, column_id);
+  return ConfigurationTreeModel::GetBackgroundColor(tree_node, column_id);
 }
 
 void ObjectTreeModel::OnBlink(bool state) {
@@ -60,44 +62,48 @@ void ObjectTreeModel::OnBlink(bool state) {
   }
 }
 
-const TimedDataSpec* ObjectTreeModel::GetTimedData(void* node) const {
-  if (!node)
+const TimedDataSpec* ObjectTreeModel::GetTimedData(void* tree_node) const {
+  if (!tree_node)
     return nullptr;
-  auto i = visible_nodes_data_.find(static_cast<ConfigurationTreeNode*>(node));
+  auto i =
+      visible_nodes_data_.find(static_cast<ConfigurationTreeNode*>(tree_node));
   if (i == visible_nodes_data_.end())
     return nullptr;
   return &i->second;
 }
 
-void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& node,
+void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& tree_node,
                                      bool visible) {
   if (visible) {
-    const auto& data_node = node.data_node();
-    if (data_node.fetched() &&
-        data_node.node_class() != scada::NodeClass::Variable)
+    const auto& node = tree_node.node();
+    if (node.fetched() && node.node_class() != scada::NodeClass::Variable)
       return;
 
-    TimedDataSpec& spec = visible_nodes_data_[&node];
+    auto& spec = visible_nodes_data_[&tree_node];
 
     spec.property_change_handler = [this,
-                                    &node](const PropertySet& properties) {
-      const auto& data_node = node.data_node();
-      if (data_node.fetched() &&
-          data_node.node_class() != scada::NodeClass::Variable) {
-        visible_nodes_data_.erase(&node);
-        TreeNodeChanged(&node);
+                                    &tree_node](const PropertySet& properties) {
+      const auto& node = tree_node.node();
+      if (node.fetched() && node.node_class() != scada::NodeClass::Variable) {
+        auto& copied_this = *this;
+        auto& copied_tree_node = tree_node;
+        // WARNING: This line removes the current lambda.
+        visible_nodes_data_.erase(&tree_node);
+        copied_this.TreeNodeChanged(&tree_node);
         return;
       }
 
       if (properties.is_current_changed())
-        TreeNodeChanged(&node);
+        TreeNodeChanged(&tree_node);
     };
 
-    spec.event_change_handler = [this, &node] { TreeNodeChanged(&node); };
-    spec.Connect(timed_data_service_, node.data_node());
-    TreeNodeChanged(&node);
+    spec.event_change_handler = [this, &tree_node] {
+      TreeNodeChanged(&tree_node);
+    };
+    spec.Connect(timed_data_service_, tree_node.node());
+    TreeNodeChanged(&tree_node);
 
   } else {
-    visible_nodes_data_.erase(&node);
+    visible_nodes_data_.erase(&tree_node);
   }
 }

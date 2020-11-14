@@ -10,7 +10,10 @@
 
 class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
  public:
-  DeviceTreeNode(HardwareTreeModel& model, const NodeRef& data_node);
+  DeviceTreeNode(HardwareTreeModel& model,
+                 scada::NodeId reference_type_id,
+                 bool forward_reference,
+                 const NodeRef& node);
 
   // ConfigurationTreeNode
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
@@ -24,14 +27,18 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
   std::unique_ptr<DeviceStateNotifier> device_state_notifier_;
 };
 
-HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(HardwareTreeModel& model,
-                                                  const NodeRef& data_node)
-    : ConfigurationTreeNode{model, data_node} {
+HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(
+    HardwareTreeModel& model,
+    scada::NodeId reference_type_id,
+    bool forward_reference,
+    const NodeRef& node)
+    : ConfigurationTreeNode{model, std::move(reference_type_id),
+                            forward_reference, node} {
   UpdateNotifier();
 }
 
 int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
-  if (IsInstanceOf(data_node(), devices::id::DeviceType)) {
+  if (IsInstanceOf(node(), devices::id::DeviceType)) {
     auto device_state = device_state_notifier_
                             ? device_state_notifier_->device_state()
                             : DEVICE_STATE_UNKNOWN;
@@ -58,33 +65,43 @@ void HardwareTreeModel::DeviceTreeNode::OnModelChanged(
 }
 
 void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
-  if (!device_state_notifier_ && data_node().fetched() &&
-      IsInstanceOf(data_node(), devices::id::DeviceType)) {
+  if (!device_state_notifier_ && node().fetched() &&
+      IsInstanceOf(node(), devices::id::DeviceType)) {
     auto& model = static_cast<HardwareTreeModel&>(this->model());
     device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
-        model.timed_data_service(), this->data_node(), [this] { Changed(); });
+        model.timed_data_service(), this->node(), [this] { Changed(); });
   }
 }
 
 // HardwareTreeModel
 
-HardwareTreeModel::HardwareTreeModel(NodeService& node_service,
-                                     TaskManager& task_manager,
-                                     TimedDataService& timed_data_service)
-    : ConfigurationTreeModel{node_service,
-                             task_manager,
-                             node_service.GetNode(devices::id::Devices),
-                             {scada::id::Organizes, scada::id::HasComponent},
-                             {devices::id::DeviceType,
-                              devices::id::Iec61850LogicalNodeType,
-                              devices::id::Iec61850ConfigurableObjectType,
-                              devices::id::Iec61850DataVariableType,
-                              devices::id::Iec61850ControlObjectType}},
-      timed_data_service_{timed_data_service} {}
+HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
+    : ConfigurationTreeModel{::ConfigurationTreeModelContext{
+          context.node_service_,
+          context.task_manager_,
+          context.node_service_.GetNode(devices::id::Devices),
+          {
+              {scada::id::Organizes, true},
+              {scada::id::HasComponent, true},
+              {devices::id::HasTransmissionTarget, false},
+          },
+          {
+              devices::id::DeviceType,
+              devices::id::Iec61850LogicalNodeType,
+              devices::id::Iec61850ConfigurableObjectType,
+              devices::id::Iec61850DataVariableType,
+              devices::id::Iec61850ControlObjectType,
+              devices::id::TransmissionItemType,
+          },
+      }},
+      timed_data_service_{context.timed_data_service_} {}
 
 HardwareTreeModel::~HardwareTreeModel() {}
 
-std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateNode(
-    const NodeRef& data_node) {
-  return std::make_unique<DeviceTreeNode>(*this, data_node);
+std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateTreeNode(
+    const scada::NodeId& reference_type_id,
+    bool forward_reference,
+    const NodeRef& node) {
+  return std::make_unique<DeviceTreeNode>(*this, reference_type_id,
+                                          forward_reference, node);
 }
