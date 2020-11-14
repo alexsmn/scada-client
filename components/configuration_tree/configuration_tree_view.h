@@ -2,12 +2,12 @@
 
 #include "controller.h"
 
-#include <memory>
-
 #if defined(UI_VIEWS)
 #include "ui/views/controls/tree/tree_controller.h"
 #include "ui/views/drop_controller.h"
 #endif
+
+#include <memory>
 
 namespace ui {
 class SortedTreeModel;

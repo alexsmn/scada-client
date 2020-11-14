@@ -1,8 +1,6 @@
 ﻿#include "components/main/actions.h"
 
 #include "base/strings/utf_string_conversions.h"
-#include "node_service/node_observer.h"
-#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/main/action.h"
 #include "components/main/action_manager.h"
@@ -10,8 +8,9 @@
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
 #include "model/history_node_ids.h"
-#include "model/scada_node_ids.h"
 #include "model/security_node_ids.h"
+#include "node_service/node_observer.h"
+#include "node_service/node_service.h"
 
 namespace {
 
@@ -31,7 +30,7 @@ class NodeAction : private NodeRefObserver, public Action {
   NodeAction(ActionManager& action_manager,
              unsigned command_id,
              CommandCategory category,
-             const NodeRef& node)
+             NodeRef node)
       : Action(command_id, category, {}),
         action_manager_(action_manager),
         node_(std::move(node)) {

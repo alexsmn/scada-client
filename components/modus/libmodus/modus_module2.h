@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include "base/macros.h"
-
 namespace modus {
 class MasterLibrary;
 }
@@ -26,6 +24,4 @@ class ModusModule2 {
   std::unique_ptr<ModusStyleLibrary2> style_library_;
 
   static ModusModule2* s_instance;
-
-  DISALLOW_COPY_AND_ASSIGN(ModusModule2);
 };

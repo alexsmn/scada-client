@@ -1,7 +1,7 @@
 #pragma once
 
-#include "node_service/node_ref.h"
 #include "core/event.h"
+#include "node_service/node_ref.h"
 #include "ui/base/models/table_model.h"
 
 #include <deque>
@@ -37,7 +37,8 @@ class WatchModel : private WatchModelContext, public ui::TableModel {
   virtual void GetCell(ui::TableCell& cell) override;
 
  private:
-  void OnEvent(const scada::Status& status, const scada::Event& event);
+  void OnEvent(const scada::Event& event);
+  void OnError(const scada::Status& status);
   void AddLine(const scada::Event& event);
 
   typedef std::deque<scada::Event> Events;

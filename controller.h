@@ -1,14 +1,14 @@
 #pragma once
 
-#include <cassert>
-#include <optional>
-
 #include "common/aliases.h"
 #include "controller_delegate.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "selection_model.h"
 #include "time_range.h"
+
+#include <cassert>
+#include <optional>
 
 namespace scada {
 class MonitoredItemService;

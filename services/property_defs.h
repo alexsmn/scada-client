@@ -154,8 +154,8 @@ class ChannelPropertyDefinition : public PropertyDefinition {
       const scada::NodeId& prop_decl_id) const override;
 
  private:
-  std::wstring title_;
-  bool device_;
+  const std::wstring title_;
+  const bool device_;
 };
 
 class TransportPropertyDefinition : public PropertyDefinition {

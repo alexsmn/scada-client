@@ -17,10 +17,11 @@ NodeGroupModel::~NodeGroupModel() {}
 
 NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
     : PropertyContext{std::move(context)}, node_{std::move(node)} {
-  node_.Fetch(NodeFetchStatus::NodeOnly());
-  node_.Subscribe(*this);
-
-  Update();
+  if (node_) {
+    node_.Fetch(NodeFetchStatus::NodeOnly());
+    node_.Subscribe(*this);
+    Update();
+  }
 }
 
 NodePropertyModel::~NodePropertyModel() {
@@ -175,14 +176,14 @@ void NodePropertyModel::Update() {
 
       group->properties.emplace_back(std::move(prop));
     }
+  }
 
-    for (auto& category : ordered_groups) {
-      auto title = category ? ToString16(category.display_name()) : L"Общие";
-      root_.properties.push_back({PropertyGroup::ItemType::Category,
-                                  std::move(title), scada::AttributeId::NodeId,
-                                  nullptr, scada::NodeId{},
-                                  std::move(groups[category])});
-    }
+  for (auto& category : ordered_groups) {
+    auto title = category ? ToString16(category.display_name()) : L"Общие";
+    root_.properties.push_back({PropertyGroup::ItemType::Category,
+                                std::move(title), scada::AttributeId::NodeId,
+                                nullptr, scada::NodeId{},
+                                std::move(groups[category])});
   }
 }
 

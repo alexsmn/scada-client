@@ -6,7 +6,6 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"
-#include "controller_factory.h"
 #include "controls/color.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"

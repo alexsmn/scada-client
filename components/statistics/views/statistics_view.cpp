@@ -1,6 +1,5 @@
 ﻿#include "components/statistics/views/statistics_view.h"
 
-#include "controller_factory.h"
 #include "ui/views/controls/table/table_view.h"
 
 static const wchar_t* kStatisticTitles[] = {

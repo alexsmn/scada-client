@@ -12,7 +12,6 @@
 #include "model/devices_node_ids.h"
 #include "model/history_node_ids.h"
 #include "model/node_id_util.h"
-#include "model/scada_node_ids.h"
 #include "model/security_node_ids.h"
 #include "net/transport_string.h"
 #include "node_service/node_service.h"
@@ -489,7 +488,7 @@ std::wstring ChannelPropertyDefinition::GetText(
                : base::SysNativeMBToWide(ToStringPiece(component_name));
   } else {
     if (device_)
-      return std::wstring();
+      return std::wstring{};
     else
       return base::SysNativeMBToWide(channel_path);
   }

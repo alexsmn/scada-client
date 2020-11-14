@@ -3,7 +3,6 @@
 #include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
-#include "controller_factory.h"
 #include "controls/grid.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"

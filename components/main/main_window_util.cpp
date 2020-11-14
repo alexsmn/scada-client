@@ -1,8 +1,6 @@
 #include "components/main/main_window_util.h"
 
 #include "client_utils.h"
-#include "node_service/node_ref.h"
-#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
@@ -10,6 +8,8 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_ref.h"
+#include "node_service/node_util.h"
 #include "window_info.h"
 
 #include <cassert>

@@ -3,7 +3,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
-#include "model/scada_node_ids.h"
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_types.h"
@@ -15,7 +14,8 @@
 
 class MetrixPointEnum : public views::PointEnumerator {
  public:
-  MetrixPointEnum(TimedDataSpec& timed_data) : timed_data_(timed_data) {}
+  explicit MetrixPointEnum(TimedDataSpec& timed_data)
+      : timed_data_(timed_data) {}
 
   // Returns false if there is no data and iterator is invalid.
   bool Reset(double from,

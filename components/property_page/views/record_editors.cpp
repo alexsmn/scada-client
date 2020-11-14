@@ -12,7 +12,6 @@
 #include "model/devices_node_ids.h"
 #include "model/history_node_ids.h"
 #include "model/node_id_util.h"
-#include "model/scada_node_ids.h"
 #include "net/transport_string.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
@@ -582,7 +581,8 @@ void TitEditor::GetModifiedProperties(
   properties.emplace_back(data_items::id::AnalogItemType_EuHi, eu_hi);
   properties.emplace_back(data_items::id::AnalogItemType_IrLo, ir_lo);
   properties.emplace_back(data_items::id::AnalogItemType_IrHi, ir_hi);
-  properties.emplace_back(data_items::id::AnalogItemType_Conversion, conv);
+  properties.emplace_back(data_items::id::AnalogItemType_Conversion,
+                          conv ? 1 : 0);
   properties.emplace_back(data_items::id::AnalogItemType_Clamping, clamp);
   properties.emplace_back(data_items::id::AnalogItemType_DisplayFormat, fmt);
   properties.emplace_back(data_items::id::AnalogItemType_EngineeringUnits,

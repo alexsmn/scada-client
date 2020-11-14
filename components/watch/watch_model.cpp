@@ -2,9 +2,9 @@
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
-#include "node_service/node_util.h"
 #include "core/event_service.h"
 #include "core/monitored_item_service.h"
+#include "node_service/node_util.h"
 
 #include <fstream>
 
@@ -15,16 +15,15 @@ static const int kMaxLines = 10000;
 WatchModel::WatchModel(WatchModelContext&& context)
     : WatchModelContext{std::move(context)} {}
 
-void WatchModel::OnEvent(const scada::Status& status,
-                         const scada::Event& event) {
-  if (!status) {
-    scada::Event event;
-    event.message = L"Подписка прервана. Возможно, устройство было удалено.";
+void WatchModel::OnEvent(const scada::Event& event) {
+  if (!paused_)
     AddLine(event);
+}
 
-  } else if (!paused_) {
-    AddLine(event);
-  }
+void WatchModel::OnError(const scada::Status& status) {
+  scada::Event event;
+  event.message = L"Подписка прервана. Возможно, устройство было удалено.";
+  AddLine(event);
 }
 
 void WatchModel::AddLine(const scada::Event& event) {
@@ -48,18 +47,21 @@ void WatchModel::SetDevice(NodeRef device) {
   monitored_item_.reset();
 
   device_ = std::move(device);
-  if (device_) {
-    monitored_item_ =
-        device_.CreateMonitoredItem(scada::AttributeId::EventNotifier, {});
-    monitored_item_->set_event_handler(
-        [this](const scada::Status& status, const std::any& event) {
-          auto* system_event = std::any_cast<scada::Event>(&event);
-          assert(system_event);
-          if (system_event)
-            OnEvent(status, *system_event);
-        });
-    monitored_item_->Subscribe();
-  }
+  if (!device_)
+    return;
+
+  monitored_item_ =
+      device_.CreateMonitoredItem(scada::AttributeId::EventNotifier, {});
+  monitored_item_->set_event_handler(
+      [this](const scada::Status& status, const std::any& event) {
+        if (!status)
+          return OnError(status);
+        auto* system_event = std::any_cast<scada::Event>(&event);
+        assert(system_event);
+        if (system_event)
+          OnEvent(*system_event);
+      });
+  monitored_item_->Subscribe();
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {

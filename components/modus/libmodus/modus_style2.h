@@ -1,16 +1,16 @@
 #pragma once
 
-#include <memory>
-
-#include "base/observer_list.h"
 #include "base/blinker.h"
+#include "base/observer_list.h"
+
+#include <memory>
 
 namespace Gdiplus {
 class Brush;
 class Graphics;
 class Pen;
 class RectF;
-}
+}  // namespace Gdiplus
 
 class ModusStyle2 : private Blinker {
  public:
@@ -23,7 +23,8 @@ class ModusStyle2 : private Blinker {
   void set_pen(std::unique_ptr<Gdiplus::Pen> pen);
   void set_animation_pen(std::unique_ptr<Gdiplus::Pen> pen);
 
-  void Paint(Gdiplus::Graphics& graphics, const Gdiplus::RectF& rect,
+  void Paint(Gdiplus::Graphics& graphics,
+             const Gdiplus::RectF& rect,
              bool background);
 
   class AnimationObserver {

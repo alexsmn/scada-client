@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "address_space/node_observer.h"
+#include "base/boost_log.h"
 #include "core/configuration_types.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -12,7 +13,8 @@ enum DeviceState {
   DEVICE_STATE_UNKNOWN,
   DEVICE_STATE_DISABLED,
   DEVICE_STATE_OFFLINE,
-  DEVICE_STATE_ONLINE
+  DEVICE_STATE_ONLINE,
+  DEVICE_STATE_COUNT,
 };
 
 // Notifies observers about changes of ONLINE and ENABLED device fields.
@@ -32,6 +34,8 @@ class DeviceStateNotifier {
   DeviceState CalculateDeviceState() const;
   void UpdateDeviceState();
 
+  BoostLogger logger_{LOG_NAME("DeviceStateNotifier")};
+
   const Callback callback_;
 
   TimedDataSpec specs_[FIELD_COUNT];
@@ -40,3 +44,5 @@ class DeviceStateNotifier {
 
   DISALLOW_COPY_AND_ASSIGN(DeviceStateNotifier);
 };
+
+std::string ToString(DeviceState device_state);

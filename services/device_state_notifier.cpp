@@ -2,8 +2,15 @@
 
 #include "common/formula_util.h"
 #include "model/devices_node_ids.h"
-#include "model/scada_node_ids.h"
 #include "timed_data/timed_data_service.h"
+
+std::string ToString(DeviceState device_state) {
+  static const char* kStrings[] = {"Unknown", "Disabled", "Offline", "Online"};
+  static_assert(std::size(kStrings) == static_cast<size_t>(DEVICE_STATE_COUNT));
+  return kStrings[static_cast<size_t>(device_state)];
+}
+
+// DeviceStateNotifier
 
 DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
                                          const NodeRef& device,
@@ -11,6 +18,8 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
     : callback_{std::move(callback)} {
   assert(device);
   assert(device.fetched());
+
+  LOG_BIND_TAG(logger_, "DeviceId", ToString(device.node_id()));
 
   const scada::NodeId kComponentIds[] = {devices::id::DeviceType_Disabled,
                                          devices::id::DeviceType_Online};
@@ -24,12 +33,16 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
       continue;
 
     TimedDataSpec& spec = specs_[i];
-    spec.property_change_handler = [this, component,
-                                    &spec](const PropertySet& properties) {
-      LOG(INFO) << "Component " << component.node_id().ToString() << " = "
-                << spec.current().value.get_or(std::string{});
-      UpdateDeviceState();
-    };
+    spec.property_change_handler =
+        [this, component, &spec](const PropertySet& properties) {
+          LOG_INFO(logger_)
+              << "Component data changed"
+              << LOG_TAG("ComponentId", ToString(component.node_id()))
+              << LOG_TAG("ComponentStatus", ToString(component.status()))
+              << LOG_TAG("ComponentDisplayName", component.display_name())
+              << LOG_TAG("ComponentValue", ToString(spec.current().value));
+          UpdateDeviceState();
+        };
 
     assert(!component.node_id().is_null());
     spec.Connect(timed_data_service, component);
@@ -59,6 +72,10 @@ void DeviceStateNotifier::UpdateDeviceState() {
   DeviceState device_state = CalculateDeviceState();
   if (device_state == device_state_)
     return;
+
+  LOG_INFO(logger_) << "Device state changed"
+                    << LOG_TAG("OldDeviceState", ToString(device_state_))
+                    << LOG_TAG("NewDeviceState", ToString(device_state));
 
   device_state_ = device_state;
   callback_();

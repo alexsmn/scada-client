@@ -17,7 +17,7 @@ struct AliasServiceContext {
 };
 
 class AliasService final : private AliasServiceContext,
-                            private NodeRefObserver {
+                           private NodeRefObserver {
  public:
   explicit AliasService(AliasServiceContext&& context);
   ~AliasService();

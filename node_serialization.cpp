@@ -1,9 +1,9 @@
 #include "node_serialization.h"
 
 #include "common/node_state.h"
-#include "node_service/node_util.h"
 #include "core/standard_node_ids.h"
 #include "node_serialization.h"
+#include "node_service/node_util.h"
 #include "remote/protocol_utils.h"
 
 void NodeToData(const NodeRef& source,
@@ -88,9 +88,13 @@ void Convert(const scada::NodeProperty& source,
 void Convert(const scada::NodeState& source, protocol::Node& target) {
   if (!source.parent_id.is_null())
     Convert(source.parent_id, *target.mutable_parent_id());
+  else
+    target.clear_parent_id();
 
   if (!source.reference_type_id.is_null())
     Convert(source.reference_type_id, *target.mutable_reference_type_id());
+  else
+    target.clear_reference_type_id();
 
   Convert(source.node_id, *target.mutable_node_id());
   target.set_node_class(ConvertTo<protocol::NodeClass>(source.node_class));
@@ -98,7 +102,8 @@ void Convert(const scada::NodeState& source, protocol::Node& target) {
   if (!source.type_definition_id.is_null()) {
     assert(!scada::IsTypeDefinition(source.node_class));
     Convert(source.type_definition_id, *target.mutable_type_definition_id());
-  }
+  } else
+    target.clear_type_definition_id();
 
   Convert(source.attributes, *target.mutable_attributes());
   Convert(source.properties, *target.mutable_property());

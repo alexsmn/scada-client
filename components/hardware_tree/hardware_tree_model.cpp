@@ -4,7 +4,6 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "model/devices_node_ids.h"
-#include "model/scada_node_ids.h"
 #include "services/device_state_notifier.h"
 
 // HardwareTreeModel::DeviceTreeNode
