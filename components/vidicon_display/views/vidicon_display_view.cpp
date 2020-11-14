@@ -5,7 +5,6 @@
 #include "components/vidicon_display/teleclient.h"
 #include "components/vidicon_display/telecontrolview.h"
 #include "components/vidicon_display/vidicon_client.h"
-#include "controller_factory.h"
 #include "views/activex_host.h"
 #include "views/ambient_props.h"
 #include "window_definition.h"

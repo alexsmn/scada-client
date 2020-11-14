@@ -59,7 +59,11 @@ scada::NodeId GetBuiltInDataTypeId(const NodeRef& data_type) {
 
 }  // namespace
 
-struct ExportDataReader {
+class ExportDataReader {
+ public:
+  ExportDataReader(NodeService& node_service, CsvReader& reader)
+      : node_service_{node_service}, reader_{reader} {}
+
   ExportData Read() {
     if (!reader_.NextRow())
       throw ResourceError{L"Нет строки заголовка"};
@@ -79,6 +83,7 @@ struct ExportDataReader {
     return {std::move(props), std::move(nodes)};
   }
 
+ private:
   ExportData::Property ReadProperty(base::StringPiece16 cell) {
     auto prop_type_id = ParseReferenceCell(cell);
     if (prop_type_id.is_null())
