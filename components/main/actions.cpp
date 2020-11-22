@@ -72,10 +72,6 @@ scada::NodeId GetNewCommandTypeId(unsigned command_id) {
 
 void AddGlobalActions(ActionManager& action_manager,
                       NodeService& node_service) {
-  //  AddAction(*new Action(ID_GRAPH_VIEW, CATEGORY_NEW, "Новый график", NULL,
-  //  kGraphImageIndex)); AddAction(*new Action(ID_TABLE_VIEW, CATEGORY_NEW,
-  //  "Новая таблица", NULL, kTableImageIndex));
-
   action_manager.AddAction(*new Action(ID_OPEN_GRAPH, CATEGORY_OPEN, L"График",
                                        std::wstring(), ID_GRAPH_VIEW,
                                        Action::ALWAYS_VISIBLE));
@@ -240,13 +236,21 @@ void AddGlobalActions(ActionManager& action_manager,
                                        L"Добавить объекты...",
                                        L"Добавить объекты"));
   action_manager.AddAction(
-      *new Action(ID_RENAME, CATEGORY_EDIT, L"Переименовать"));
-  action_manager.AddAction(*new Action(ID_COPY, CATEGORY_EDIT, L"Копировать",
-                                       std::wstring(), IDB_COPY));
-  action_manager.AddAction(*new Action(ID_PASTE, CATEGORY_EDIT, L"Вставить",
-                                       std::wstring(), IDB_PASTE));
-  action_manager.AddAction(*new Action(ID_DELETE, CATEGORY_EDIT, L"Удалить",
-                                       std::wstring(), IDB_DELETE));
+      *ActionBuilder(ID_RENAME, CATEGORY_EDIT, L"Переименовать")
+           .shortcut(KeyCode::F2)
+           .Build());
+  action_manager.AddAction(*ActionBuilder(ID_COPY, CATEGORY_EDIT, L"Копировать")
+                                .image_id(IDB_COPY)
+                                .shortcut({KeyModifier::Control, KeyCode::C})
+                                .Build());
+  action_manager.AddAction(*ActionBuilder(ID_PASTE, CATEGORY_EDIT, L"Вставить")
+                                .image_id(IDB_PASTE)
+                                .shortcut({KeyModifier::Control, KeyCode::V})
+                                .Build());
+  action_manager.AddAction(*ActionBuilder(ID_DELETE, CATEGORY_EDIT, L"Удалить")
+                                .image_id(IDB_DELETE)
+                                .shortcut(KeyCode::Delete)
+                                .Build());
   action_manager.AddAction(
       *new Action(ID_CLEAR_ALL, CATEGORY_EDIT, L"Очистить"));
 

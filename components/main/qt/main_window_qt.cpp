@@ -31,6 +31,15 @@
 #include <QToolBar>
 #include <QToolButton>
 
+namespace {
+
+inline QKeySequence ToQKeySequence(const Shortcut& shortcut) {
+  return QKeySequence{static_cast<int>(shortcut.key_code()) +
+                      static_cast<int>(shortcut.modifiers())};
+}
+
+}  // namespace
+
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
   auto& prefs = GetPrefs();
@@ -114,6 +123,8 @@ void MainWindowQt::CreateToolbar() {
     if (action_info->image_id() != 0)
       action->setIcon(QIcon(LoadPixmap(action_info->image_id())));
     action->setCheckable(action_info->checkable());
+    if (action_info->shortcut_.has_value())
+      action->setShortcut(ToQKeySequence(*action_info->shortcut_));
     auto command_id = action_info->command_id();
     QObject::connect(action, &QAction::triggered,
                      [this, command_id](bool checked) {

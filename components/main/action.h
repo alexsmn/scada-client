@@ -1,5 +1,8 @@
 #pragma once
 
+#include "controls/key_codes.h"
+
+#include <optional>
 #include <string>
 
 enum CommandCategory {
@@ -17,6 +20,20 @@ enum CommandCategory {
   CATEGORY_AGGREGATION,
   CATEGORY_INTERVAL,
   CATEGORY_COUNT,
+};
+
+class Shortcut {
+ public:
+  Shortcut(KeyCode key_code) : key_code_{key_code} {}
+  Shortcut(KeyModifier modifier, KeyCode key_code)
+      : modifiers_{static_cast<unsigned>(modifier)}, key_code_{key_code} {}
+
+  KeyCode key_code() const { return key_code_; }
+  unsigned modifiers() const { return modifiers_; }
+
+ private:
+  KeyCode key_code_ = KeyCode::Unknown;
+  unsigned modifiers_ = 0;
 };
 
 class Action {
@@ -63,6 +80,7 @@ class Action {
 
   unsigned command_id_;
   CommandCategory category_;
+  std::optional<Shortcut> shortcut_;
 
  private:
   bool GetFlag(Flag flag) const { return (flags_ & flag) != 0; }
@@ -91,3 +109,37 @@ inline Action::Action(unsigned command,
       short_title_(std::move(short_title)),
       image_id_(image_id),
       flags_(flags) {}
+
+class ActionBuilder {
+ public:
+  ActionBuilder(unsigned command_id,
+                CommandCategory category,
+                std::wstring title)
+      : command_id_{command_id},
+        category_{category},
+        title_{std::move(title)} {}
+
+  ActionBuilder& image_id(int image_id) {
+    image_id_ = image_id;
+    return *this;
+  }
+
+  ActionBuilder& shortcut(Shortcut shortcut) {
+    shortcut_ = std::move(shortcut);
+    return *this;
+  }
+
+  Action* Build() {
+    auto* action =
+        new Action(command_id_, category_, std::move(title_), {}, image_id_);
+    action->shortcut_ = std::move(shortcut_);
+    return action;
+  }
+
+ private:
+  unsigned command_id_;
+  CommandCategory category_;
+  std::wstring title_;
+  std::optional<Shortcut> shortcut_;
+  int image_id_ = 0;
+};

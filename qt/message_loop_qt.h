@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QtCore/qtimer.h>
-#include <mutex>
-
 #include "base/pending_task.h"
 #include "base/single_thread_task_runner.h"
+
+#include <QTimer>
+#include <mutex>
 
 class MessageLoopQt final : public base::SingleThreadTaskRunner {
  public:
