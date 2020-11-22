@@ -60,7 +60,7 @@ NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
   return nullptr;
 }
 
-std::pair<scada::NodeId /*parent_id*/, std::string_view /*component_name*/>
+std::pair<scada::NodeId /*parent_id*/, std::string /*component_name*/>
 ParseChannelPath(std::string_view channel_path) {
   scada::NodeId node_id;
   scada::NodeId parent_id;
@@ -70,7 +70,8 @@ ParseChannelPath(std::string_view channel_path) {
     parent_id = scada::NodeId();
     component_name = channel_path;
   }
-  return {parent_id, component_name};
+  // Note: can't return string_view since |node_id| goes out of scope.
+  return {parent_id, std::string{component_name}};
 }
 
 const PropertyDefinition kNamePropDef(ui::TableColumn::LEFT, 150);
