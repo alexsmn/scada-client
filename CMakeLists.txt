@@ -9,9 +9,7 @@ set(WTL_INCLUDE_DIR "${deps}/wtl/include")
 add_subdirectory("${deps}/chromeui" chromeui)
 add_subdirectory("${deps}/modus" modus)
 
-add_definitions(
-  -DMODUS_GDIP)
-
+add_definitions(-DMODUS_GDIP)
 
 file(GLOB_RECURSE PATHS
   "*.cpp"
@@ -19,6 +17,8 @@ file(GLOB_RECURSE PATHS
   "*.rc"
   "*.ui"
 )
+
+list(FILTER PATHS EXCLUDE REGEX "components/vidicon_display/tester")
 
 foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest")
@@ -40,20 +40,6 @@ foreach(PATH ${PATHS})
   ENDIF()
 endforeach()
 
-file(GLOB CLIENT_UT_SOURCES
-  "components/configuration_tree/*_unittest.cpp"
-  "components/events/*_unittest.cpp"
-  "components/graph/*_unittest.cpp"
-  "components/hardware_tree/*_unittest.cpp"
-  "components/node_table/*_unittest.h"
-  "components/object_tree/*_unittest.cpp"
-  "components/table/*_unittest.cpp"
-  "models/*_unittest.cpp"
-  "services/*_unittest.cpp"
-)
-
 add_subdirectory(views)
 add_subdirectory(qt)
-
-# Experimental
-# add_subdirectory(components)
+add_subdirectory(components)

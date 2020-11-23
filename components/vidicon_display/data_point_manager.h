@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <memory>
@@ -7,7 +8,16 @@ class DataPoint;
 
 class DataPointManager {
  public:
-  std::shared_ptr<DataPoint> GetDataPoint(std::wstring_view address) {
-    return std::make_shared<DataPoint>();
+  virtual ~DataPointManager() = default;
+
+  virtual std::shared_ptr<DataPoint> GetDataPoint(
+      std::wstring_view formula) = 0;
+};
+
+class DataPointManagerImpl : public DataPointManager {
+ public:
+  virtual std::shared_ptr<DataPoint> GetDataPoint(
+      std::wstring_view formula) override {
+    return std::make_shared<DataPointImpl>(std::wstring{formula});
   }
 };

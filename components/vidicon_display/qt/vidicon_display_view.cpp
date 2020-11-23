@@ -96,7 +96,7 @@ void VidiconDisplayView::Save(WindowDefinition& definition) {
 
 void VidiconDisplayView::SynchronizeView() {
   // TODO.
-  HWND form_window = ::GetWindow((HWND)(ax_widget_->winId()), GW_CHILD);
-  if (::IsWindow(form_window))
-    ::PostMessage(form_window, WM_ENTERIDLE, 0, 0);
+  //HWND form_window = ::GetWindow((HWND)(ax_widget_->winId()), GW_CHILD);
+  //if (::IsWindow(form_window))
+  //  ::PostMessage(form_window, WM_ENTERIDLE, 0, 0);
 }

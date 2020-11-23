@@ -19,7 +19,7 @@ DummyAtlModule _Module;
 VidiconClient* VidiconClient::s_instance = NULL;
 
 VidiconClient::VidiconClient()
-    : data_point_manager_{std::make_unique<DataPointManager>()},
+    : data_point_manager_{std::make_unique<DataPointManagerImpl>()},
       com_data_point_manager_{CreateComDataPointManager()} {
   auto* com_teleclient = new CComObjectNoLock<ComTeleclientImpl>();
   com_teleclient->Init(*com_data_point_manager_);
