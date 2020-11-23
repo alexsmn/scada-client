@@ -205,12 +205,12 @@
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="58"/>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="59"/>
         <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
         <translation>Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
     </message>
     <message>
-        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="70"/>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="71"/>
         <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
         <translation>Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
     </message>
@@ -307,12 +307,12 @@
         <translation type="vanished">Локальный</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="73"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="82"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="129"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="140"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>

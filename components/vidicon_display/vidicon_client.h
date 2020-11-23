@@ -2,7 +2,11 @@
 
 #include "components/vidicon_display/teleclient.h"
 
+#include <memory>
 #include <wrl/client.h>
+
+class ComDataPointManager;
+class DataPointManager;
 
 class VidiconClient {
  public:
@@ -16,6 +20,11 @@ class VidiconClient {
  private:
   VidiconClient();
   ~VidiconClient();
+
+  std::unique_ptr<ComDataPointManager> CreateComDataPointManager();
+
+  std::unique_ptr<DataPointManager> data_point_manager_;
+  std::unique_ptr<ComDataPointManager> com_data_point_manager_;
 
   Microsoft::WRL::ComPtr<TeleClient> teleclient_;
 

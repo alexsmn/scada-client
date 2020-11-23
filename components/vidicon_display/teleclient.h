@@ -1,9 +1,9 @@
-﻿// Created by Microsoft (R) C/C++ Compiler Version 10.00.40219.01 (5b6dce9c).
+﻿// Created by Microsoft (R) C/C++ Compiler Version 14.28.29334.0 (e39c1413).
 //
-// c:\work\workplace\trunk\build-vs10\debug\objs\client\teleclient.tlh
+// C:\TC\scada\release\2.0\build-windows\client\qt\client_qt_lib.dir\Debug\teleclient.tlh
 //
-// C++ source equivalent of Win32 type library c:\Program Files\Telecontrol\Vidicon\Bin\\TeleClient.dll
-// compiler-generated file created 03/06/13 at 15:59:14 - DO NOT EDIT!
+// C++ source equivalent of Win32 type library c:\TC\vidicon\vidicon2\build-vcpkg\src\TeleClient\teleclient.dir\RelWithDebInfo\TeleClient.tlb
+// compiler-generated file created 11/22/20 at 10:52:22 - DO NOT EDIT!
 
 #pragma once
 #pragma pack(push, 8)
@@ -29,7 +29,11 @@ struct __declspec(uuid("5ba438ee-1ff8-4532-afcd-2d9605191bd4"))
 /* dispinterface */ _IDataPointEvents;
 struct __declspec(uuid("04f3b184-510c-416e-915d-bba6461cc349"))
 /* dispinterface */ _IDataPointEventsEx;
+struct __declspec(uuid("2e6a69be-7360-4565-be8c-ed6c38cdfbb2"))
+/* dispinterface */ _IDataPointEvents3;
 struct /* coclass */ DataPoint;
+struct __declspec(uuid("f89d7df2-568a-4f7e-8245-c693b8841877"))
+/* dual interface */ IDataPoint3;
 struct __declspec(uuid("1927d656-95ba-4c9a-aa5d-c0d919cbf6ac"))
 /* dual interface */ IDataPointServer;
 
@@ -42,6 +46,8 @@ _COM_SMARTPTR_TYPEDEF(IDataPoint, __uuidof(IDataPoint));
 _COM_SMARTPTR_TYPEDEF(IClient, __uuidof(IClient));
 _COM_SMARTPTR_TYPEDEF(_IDataPointEvents, __uuidof(_IDataPointEvents));
 _COM_SMARTPTR_TYPEDEF(_IDataPointEventsEx, __uuidof(_IDataPointEventsEx));
+_COM_SMARTPTR_TYPEDEF(_IDataPointEvents3, __uuidof(_IDataPointEvents3));
+_COM_SMARTPTR_TYPEDEF(IDataPoint3, __uuidof(IDataPoint3));
 _COM_SMARTPTR_TYPEDEF(IDataPointServer, __uuidof(IDataPointServer));
 
 //
@@ -143,12 +149,32 @@ struct __declspec(uuid("04f3b184-510c-416e-915d-bba6461cc349"))
 _IDataPointEventsEx : IDispatch
 {};
 
+struct __declspec(uuid("2e6a69be-7360-4565-be8c-ed6c38cdfbb2"))
+_IDataPointEvents3 : IDispatch
+{};
+
 struct __declspec(uuid("be21d8f7-fae1-4024-ac00-a42ec4d02f00"))
 DataPoint;
     // [ default ] interface IDataPoint
+    // interface IDataPoint3
     // interface IDataPointServer
     // [ default, source ] dispinterface _IDataPointEvents
     // [ source ] dispinterface _IDataPointEventsEx
+    // [ source ] dispinterface _IDataPointEvents3
+
+struct __declspec(uuid("f89d7df2-568a-4f7e-8245-c693b8841877"))
+IDataPoint3 : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall Call (
+        /*[in]*/ BSTR MethodName,
+        /*[in]*/ unsigned long ArgumentCount,
+        /*[in]*/ VARIANT * Arguments,
+        /*[out,retval]*/ VARIANT * Result ) = 0;
+};
 
 struct __declspec(uuid("1927d656-95ba-4c9a-aa5d-c0d919cbf6ac"))
 IDataPointServer : IDispatch
