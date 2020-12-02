@@ -1,18 +1,18 @@
 ﻿#include "components/node_properties/node_property_controller.h"
 
-#include "model/node_id_util.h"
-#include "node_service/node_service.h"
-#include "model/scada_node_ids.h"
 #include "components/node_properties/node_property_model.h"
 #include "controller_factory.h"
 #include "controls/property_tree_model.h"
 #include "controls/tree.h"
+#include "model/node_id_util.h"
+#include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "window_definition.h"
 
 // NodePropertyController
 
 NodePropertyController::NodePropertyController(const ControllerContext& context)
-    : Controller{context} {}
+    : ControllerContext{context} {}
 
 NodePropertyController::~NodePropertyController() {}
 
@@ -25,7 +25,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
     node = node_service_.GetNode(node_id);
   }
 
-  selection().SelectNode(node);
+  selection_.SelectNode(node);
 
   property_model_ = std::make_unique<NodePropertyModel>(
       PropertyContext{node_service_, task_manager_, dialog_service_},

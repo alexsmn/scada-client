@@ -1,12 +1,13 @@
 #pragma once
 
-#include <memory>
-
-#include "node_service/node_observer.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "core/configuration_types.h"
+#include "node_service/node_observer.h"
 #include "ui/views/controls/native_control.h"
 #include "ui/views/controls/scroll_view.h"
+
+#include <memory>
 
 class RecordEditor;
 
@@ -23,7 +24,9 @@ class PropertyPageViewContents : public views::NativeControl {
   std::unique_ptr<RecordEditor> editor_;
 };
 
-class PropertyPageView : public Controller, private NodeRefObserver {
+class PropertyPageView : protected ControllerContext,
+                         public Controller,
+                         private NodeRefObserver {
  public:
   explicit PropertyPageView(const ControllerContext& context);
   ~PropertyPageView();

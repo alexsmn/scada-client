@@ -1,16 +1,17 @@
 #pragma once
 
-#include <memory>
-
 #include "command_handler_impl.h"
 #include "common_resources.h"
 #include "controller.h"
+#include "controller_context.h"
+
+#include <memory>
 
 class Tree;
 class FavouritesTreeModel;
 class WindowDefinition;
 
-class FavouritesView : public Controller {
+class FavouritesView : protected ControllerContext, public Controller {
  public:
   explicit FavouritesView(const ControllerContext& context);
   ~FavouritesView();

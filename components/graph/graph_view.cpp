@@ -6,6 +6,7 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"
+#include "controller_delegate.h"
 #include "controls/color.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
@@ -25,7 +26,7 @@ static const size_t kMaxPanes = 10;
 // GraphView
 
 GraphView::GraphView(const ControllerContext& context)
-    : ::Controller{context} {}
+    : ControllerContext{context} {}
 
 UiView* GraphView::Init(const WindowDefinition& definition) {
   BOOL time_set = FALSE;
@@ -324,9 +325,9 @@ void GraphView::OnGraphSelectPane() {
                 ->primary_line()
           : NULL;
   if (line)
-    selection().SelectTimedData(line->data_source().timed_data());
+    selection_.SelectTimedData(line->data_source().timed_data());
   else
-    selection().Clear();
+    selection_.Clear();
 }
 
 TimeRange GraphView::GetTimeRange() const {

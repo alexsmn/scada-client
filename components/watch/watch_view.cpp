@@ -1,12 +1,13 @@
 ﻿#include "components/watch/watch_view.h"
 
+#include "common_resources.h"
+#include "components/watch/watch_model.h"
+#include "controller_delegate.h"
+#include "controller_factory.h"
+#include "controls/table.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "common_resources.h"
-#include "components/watch/watch_model.h"
-#include "controller_factory.h"
-#include "controls/table.h"
 #include "remote/session_proxy.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
@@ -14,7 +15,7 @@
 // WatchView
 
 WatchView::WatchView(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       model_{std::make_unique<WatchModel>(
           WatchModelContext{context.node_service_})} {}
 

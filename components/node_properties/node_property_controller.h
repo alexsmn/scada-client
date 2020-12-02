@@ -1,8 +1,10 @@
 #pragma once
 
-#include <memory>
-
 #include "controller.h"
+#include "controller_context.h"
+#include "selection_model.h"
+
+#include <memory>
 
 namespace ui {
 class TreeModel;
@@ -11,7 +13,7 @@ class TreeModel;
 class NodePropertyModel;
 class Tree;
 
-class NodePropertyController : public Controller {
+class NodePropertyController : protected ControllerContext, public Controller {
  public:
   explicit NodePropertyController(const ControllerContext& context);
   ~NodePropertyController();
@@ -19,8 +21,11 @@ class NodePropertyController : public Controller {
   // Controller
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  private:
+  SelectionModel selection_{{timed_data_service_}};
+
   std::unique_ptr<NodePropertyModel> property_model_;
   std::unique_ptr<ui::TreeModel> tree_model_;
 

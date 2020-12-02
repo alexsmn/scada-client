@@ -3,15 +3,16 @@
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/color.h"
 #include "controls/grid.h"
 #include "core/session_service.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "selection_model.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "views/item_drag_data.h"
@@ -53,10 +54,10 @@ class SheetController::ContentsView : public views::View {
 // SheetController
 
 SheetController::SheetController(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       model_{std::make_unique<SheetModel>(
           SheetModelContext{timed_data_service_})} {
-  selection().multiple_handler = [this] { return GetSelectedNodeIdList(); };
+  selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
 UiView* SheetController::Init(const WindowDefinition& definition) {
@@ -290,15 +291,15 @@ void SheetController::OnSelectionChanged() {
 
   ui::GridRange range = grid_->GetSelectionRange();
   if (range.empty()) {
-    selection().Clear();
+    selection_.Clear();
   } else if (range.is_cell()) {
     const SheetCell* cell = model_->cell(range.row(), range.column());
     if (cell)
-      selection().SelectTimedData(cell->timed_data_);
+      selection_.SelectTimedData(cell->timed_data_);
     else
-      selection().Clear();
+      selection_.Clear();
   } else {
-    selection().SelectMultiple();
+    selection_.SelectMultiple();
   }
 }
 

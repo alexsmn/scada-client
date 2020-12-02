@@ -3,7 +3,9 @@
 #include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "export_model.h"
+#include "selection_model.h"
 #include "time_model.h"
 
 #include <memory>
@@ -11,7 +13,8 @@
 class Table;
 class EventTableModel;
 
-class EventView : public Controller,
+class EventView : protected ControllerContext,
+                  public Controller,
                   public CommandHandler,
                   public ContentsModel,
                   public TimeModel,
@@ -31,6 +34,7 @@ class EventView : public Controller,
   virtual bool IsCommandChecked(unsigned command) const override;
   virtual bool IsCommandEnabled(unsigned command) const override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
   virtual ExportModel* GetExportModel() override { return this; }
@@ -60,7 +64,9 @@ class EventView : public Controller,
 
   bool OnKeyPressed(KeyCode key_code);
 
-  bool is_panel_;
+  const bool is_panel_;
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<EventTableModel> model_;
   std::unique_ptr<Table> table_;

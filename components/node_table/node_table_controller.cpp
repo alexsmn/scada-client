@@ -3,6 +3,7 @@
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/node_table/node_table_model.h"
+#include "controller_delegate.h"
 #include "controls/grid.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
@@ -40,7 +41,7 @@ scada::NodeId GetSortCommandPropertyId(unsigned command_id) {
 
 NodeTableController::NodeTableController(const ControllerContext& context,
                                          const NodeRef& parent_node)
-    : Controller{context},
+    : ControllerContext{context},
       model_{std::make_unique<NodeTableModel>(
           PropertyContext{context.node_service_, context.task_manager_,
                           context.dialog_service_})} {
@@ -75,26 +76,26 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   grid_->SetSelectionChangeHandler([this] {
     auto rows = grid_->GetSelectedRows();
     if (rows.empty()) {
-      selection().Clear();
+      selection_.Clear();
       return;
     }
 
     if (rows.size() >= 2) {
-      selection().SelectMultiple();
+      selection_.SelectMultiple();
       return;
     }
 
     auto node = model_->nodes()[rows.front()];
     assert(node);
 
-    selection().SelectNode(node);
+    selection_.SelectNode(node);
   });
 
   grid_->SetContextMenuHandler([this](const UiPoint& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
-  selection().multiple_handler = [this] {
+  selection_.multiple_handler = [this] {
     NodeIdSet node_ids;
     for (auto row : grid_->GetSelectedRows())
       node_ids.emplace(model_->nodes()[row].node_id());

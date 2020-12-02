@@ -4,11 +4,13 @@
 #include "base/timer/timer.h"
 #include "components/vidicon_display/displayviewerx.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "ui/views/controls/activex_control.h"
 
 #include <wrl/client.h>
 
-class VidiconDisplayView : public Controller,
+class VidiconDisplayView : protected ControllerContext,
+                           public Controller,
                            private views::ActiveXControl::Controller {
  public:
   explicit VidiconDisplayView(const ControllerContext& context);

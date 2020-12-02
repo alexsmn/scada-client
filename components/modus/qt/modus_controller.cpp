@@ -9,6 +9,7 @@
 #include "components/modus/qt/modus_view.h"
 #include "components/modus/qt/modus_view2.h"
 #include "components/modus/qt/modus_view3.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
@@ -20,7 +21,7 @@
 #include <qscrollarea.h>
 
 ModusController::ModusController(const ControllerContext& context)
-    : Controller{context}, wrapper_(nullptr) {}
+    : ControllerContext{context}, wrapper_(nullptr) {}
 
 ModusController::~ModusController() {}
 
@@ -37,7 +38,7 @@ QWidget* ModusController::CreateModusView() {
   };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
-    selection().SelectTimedData(spec);
+    selection_.SelectTimedData(spec);
   };
 
   // TODO: Change on ContextMenu.
@@ -58,7 +59,7 @@ QWidget* ModusController::CreateModusView2() {
   view2_ = std::make_unique<ModusView2>(timed_data_service_);
 
   view2_->set_selection_signal(
-      [this](const TimedDataSpec& spec) { selection().SelectTimedData(spec); });
+      [this](const TimedDataSpec& spec) { selection_.SelectTimedData(spec); });
 
   view2_->set_navigation_signal([this](const base::FilePath& path) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -67,7 +68,7 @@ QWidget* ModusController::CreateModusView2() {
   });
 
   view2_->set_double_click_signal(
-      [this] { selection().timed_data().Acknowledge(); });
+      [this] { selection_.timed_data().Acknowledge(); });
 
   wrapper_ = view2_.get();
 

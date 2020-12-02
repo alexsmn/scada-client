@@ -6,6 +6,7 @@
 #include "components/table/table_model.h"
 #include "components/table/table_row.h"
 #include "contents_observer.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/table.h"
 #include "model/data_items_node_ids.h"
@@ -18,7 +19,8 @@
 
 // TableView
 
-TableView::TableView(const ControllerContext& context) : Controller{context} {
+TableView::TableView(const ControllerContext& context)
+    : ControllerContext{context} {
   model_ = std::make_unique<TableModel>(TableModelContext{
       timed_data_service_, event_fetcher_, profile_, dialog_service_});
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
@@ -48,7 +50,7 @@ TableView::TableView(const ControllerContext& context) : Controller{context} {
   view_->SetKeyPressHandler(
       [this](KeyCode key_code) { return OnKeyPressed(key_code); });
 
-  selection().multiple_handler = [this] { return GetMultipleSelection(); };
+  selection_.multiple_handler = [this] { return GetMultipleSelection(); };
 
   delete_command_.execute_handler = [this] {
     view_->CloseEditor();
@@ -339,14 +341,14 @@ void TableView::MoveRow(bool up) {
 void TableView::OnSelectionChanged() {
   auto rows = view_->GetSelectedRows();
   if (rows.empty()) {
-    selection().Clear();
+    selection_.Clear();
   } else if (rows.size() == 1) {
     if (auto* row = model_->GetRow(rows.front()))
-      selection().SelectTimedData(row->timed_data());
+      selection_.SelectTimedData(row->timed_data());
     else
-      selection().Clear();
+      selection_.Clear();
   } else {
-    selection().SelectMultiple();
+    selection_.SelectMultiple();
   }
 }
 

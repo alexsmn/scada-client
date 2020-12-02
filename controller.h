@@ -1,55 +1,18 @@
 #pragma once
 
-#include "common/aliases.h"
-#include "controller_delegate.h"
 #include "controls/types.h"
-#include "core/configuration_types.h"
-#include "selection_model.h"
+#include "node_service/node_ref.h"
 #include "time_range.h"
 
 #include <cassert>
 #include <optional>
 
-namespace scada {
-class MonitoredItemService;
-class HistoryService;
-class SessionService;
-}  // namespace scada
-
 class CommandHandler;
 class ContentsModel;
-class ControllerDelegate;
-class DialogService;
-class EventFetcher;
 class ExportModel;
-class Favourites;
-class FileCache;
-class LocalEvents;
-class NodeService;
-class PortfolioManager;
-class Profile;
-class TaskManager;
-class TimedDataService;
+class SelectionModel;
 class TimeModel;
 class WindowDefinition;
-
-struct ControllerContext {
-  ControllerDelegate& controller_delegate_;
-  const AliasResolver alias_resolver_;
-  TaskManager& task_manager_;
-  scada::SessionService& session_service_;
-  EventFetcher& event_fetcher_;
-  scada::HistoryService& history_service_;
-  scada::MonitoredItemService& monitored_item_service_;
-  TimedDataService& timed_data_service_;
-  NodeService& node_service_;
-  PortfolioManager& portfolio_manager_;
-  LocalEvents& local_events_;
-  Favourites& favourites_;
-  FileCache& file_cache_;
-  Profile& profile_;
-  DialogService& dialog_service_;
-};
 
 struct OpenContext {
   std::vector<scada::NodeId> node_ids;
@@ -57,14 +20,11 @@ struct OpenContext {
   std::optional<TimeRange> time_range;
 };
 
-class Controller : protected ControllerContext {
+class Controller {
  public:
-  explicit Controller(const ControllerContext& context)
-      : ControllerContext{context},
-        selection_{SelectionModelContext{timed_data_service_}} {}
-  virtual ~Controller() {}
+  virtual ~Controller() = default;
 
-  SelectionModel& selection() { return selection_; }
+  virtual SelectionModel* GetSelectionModel() { return nullptr; }
 
   virtual UiView* Init(const WindowDefinition& definition) = 0;
 
@@ -96,7 +56,4 @@ class Controller : protected ControllerContext {
   virtual std::optional<OpenContext> GetOpenContext() const {
     return std::nullopt;
   }
-
- private:
-  SelectionModel selection_;
 };

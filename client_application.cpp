@@ -32,6 +32,7 @@
 #include "components/main/status_bar_model_impl.h"
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/vidicon_display/vidicon_client.h"
+#include "controller_context.h"
 #include "net/transport_factory_impl.h"
 #include "node_service/address_space/address_space_fetcher.h"
 #include "node_service/address_space/address_space_node_service.h"

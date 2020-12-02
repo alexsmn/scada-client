@@ -1,14 +1,16 @@
 #pragma once
 
-#include <memory>
-
 #include "contents_model.h"
 #include "controller.h"
+#include "controller_context.h"
+#include "selection_model.h"
 #include "timed_data/timed_data_spec.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/grid/grid_controller.h"
+
+#include <memory>
 
 class CellModel : public ui::GridModel, private views::FixedRowModel::Delegate {
  public:
@@ -76,7 +78,8 @@ class CellModel : public ui::GridModel, private views::FixedRowModel::Delegate {
   ui::ColumnHeaderModel column_model_;
 };
 
-class CellView : public Controller,
+class CellView : protected ControllerContext,
+                 public Controller,
                  public ContentsModel,
                  private views::GridController,
                  private views::ContextMenuController {
@@ -87,6 +90,7 @@ class CellView : public Controller,
   // Controller
   virtual views::View* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() { return this; }
 
   // ContentsModel
@@ -109,6 +113,8 @@ class CellView : public Controller,
   // views::ContextMenuController
   virtual void ShowContextMenuForView(views::View* source,
                                       const gfx::Point& point) override;
+
+  SelectionModel selection_{{timed_data_service_}};
 
   CellModel model_;
 

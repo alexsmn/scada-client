@@ -2,6 +2,7 @@
 
 #include "command_handler.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "export_model.h"
 #include "ui/base/models/table_model_observer.h"
 
@@ -10,7 +11,8 @@
 class Table;
 class WatchModel;
 
-class WatchView : public Controller,
+class WatchView : protected ControllerContext,
+                  public Controller,
                   public CommandHandler,
                   private ui::TableModelObserver,
                   public ExportModel {

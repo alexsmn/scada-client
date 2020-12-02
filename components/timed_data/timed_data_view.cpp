@@ -2,12 +2,13 @@
 
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
 #include "common_resources.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/table.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 #include "window_definition.h"
@@ -31,7 +32,7 @@ const ui::TableColumn s_columns[] = {
 // TimedDataView
 
 TimedDataView::TimedDataView(const ControllerContext& context)
-    : Controller{context} {}
+    : ControllerContext{context} {}
 
 UiView* TimedDataView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item"))
@@ -75,7 +76,7 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
                    });
 #endif
 
-  selection().SelectTimedData(model_.timed_data());
+  selection_.SelectTimedData(model_.timed_data());
 
   return view_->CreateParentIfNecessary();
 }

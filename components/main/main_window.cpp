@@ -8,6 +8,7 @@
 #include "contents_model.h"
 #include "contents_observer.h"
 #include "controller.h"
+#include "selection_model.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
 #include "ui/base/models/menu_model.h"
@@ -80,15 +81,18 @@ void MainWindow::SetActiveView(OpenedView* view) {
   if (active_view_ == view)
     return;
 
-  if (active_view_)
-    active_view_->controller().selection().change_handler = nullptr;
+  if (active_view_) {
+    if (auto* selection_model = active_view_->controller().GetSelectionModel())
+      selection_model->change_handler = nullptr;
+  }
 
   active_view_ = view;
 
   if (active_view_) {
-    active_view_->controller().selection().change_handler = [this] {
-      OnSelectionChanged();
-    };
+    if (auto* selection_model =
+            active_view_->controller().GetSelectionModel()) {
+      selection_model->change_handler = [this] { OnSelectionChanged(); };
+    }
   }
 
   const WindowInfo* window_info = nullptr;

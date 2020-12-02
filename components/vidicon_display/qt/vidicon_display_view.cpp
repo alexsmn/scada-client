@@ -8,9 +8,9 @@
 #include "views/ambient_props.h"
 #include "window_definition.h"
 
-#include <wrl/client.h>
 #include <QAxWidget>
 #include <QUuid>
+#include <wrl/client.h>
 
 //#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"
 // raw_interfaces_only #import "c:\Program
@@ -41,7 +41,7 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 }  // namespace
 
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
-    : ::Controller{context}, synchronize_timer_(false, true) {}
+    : ControllerContext{context}, synchronize_timer_(false, true) {}
 
 VidiconDisplayView::~VidiconDisplayView() {}
 
@@ -96,7 +96,7 @@ void VidiconDisplayView::Save(WindowDefinition& definition) {
 
 void VidiconDisplayView::SynchronizeView() {
   // TODO.
-  //HWND form_window = ::GetWindow((HWND)(ax_widget_->winId()), GW_CHILD);
-  //if (::IsWindow(form_window))
+  // HWND form_window = ::GetWindow((HWND)(ax_widget_->winId()), GW_CHILD);
+  // if (::IsWindow(form_window))
   //  ::PostMessage(form_window, WM_ENTERIDLE, 0, 0);
 }

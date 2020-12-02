@@ -40,7 +40,7 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 }  // namespace
 
 VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
-    : ::Controller{context},
+    : ControllerContext{context},
       control_{
           std::make_unique<views::ActiveXControl>(ActiveXHost::instance())},
       synchronize_timer_(false, true) {

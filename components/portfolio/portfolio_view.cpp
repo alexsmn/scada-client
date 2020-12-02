@@ -1,20 +1,21 @@
 ﻿#include "components/portfolio/portfolio_view.h"
 
 #include "commands/select_item_dialog.h"
-#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/portfolio/portfolio_tree_model.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
+#include "node_service/node_service.h"
 #include "selection_model.h"
 
 // PortfolioView
 
 PortfolioView::PortfolioView(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       model_{std::make_unique<PortfolioTreeModel>(context.node_service_,
                                                   context.portfolio_manager_)} {
-  selection().multiple_handler = [this] { return GetSelectedNodeIdList(); };
+  selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
 PortfolioView::~PortfolioView() {}
@@ -37,11 +38,11 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
     // |node| may be either portfolio or item. For portfolio |item_id()| has
     // value of |TRID_INVAL|.
     if (!node)
-      selection().Clear();
+      selection_.Clear();
     else if (node->is_portfolio())
-      selection().SelectMultiple();
+      selection_.SelectMultiple();
     else
-      selection().SelectNode(node_service_.GetNode(node->item_id()));
+      selection_.SelectNode(node_service_.GetNode(node->item_id()));
   });
 
   tree_->SetContextMenuHandler([this](const UiPoint& point) {

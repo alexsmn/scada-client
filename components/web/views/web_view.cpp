@@ -14,7 +14,7 @@
 #include <wrl/client.h>
 
 WebView::WebView(const ControllerContext& context)
-    : Controller{context}, ActiveXControl{ActiveXHost::instance()} {}
+    : ControllerContext{context}, ActiveXControl{ActiveXHost::instance()} {}
 
 views::View* WebView::Init(const WindowDefinition& definition) {
   url_ = definition.path.value();

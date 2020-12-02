@@ -4,6 +4,7 @@
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_model.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
 #include "core/node_management_service.h"
@@ -20,7 +21,7 @@
 
 ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
                                              ConfigurationTreeModel& model)
-    : Controller{context}, model_(&model) {
+    : ControllerContext{context}, model_(&model) {
   model_->Init();
 
   tree_view_.reset(new Tree(*model_));
@@ -31,17 +32,17 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   tree_view_->SetSelectionChangedHandler([this] {
     auto selection_size = tree_view_->GetSelectionSize();
     if (selection_size == 0)
-      selection().SelectNode(model_->root_node());
+      selection_.SelectNode(model_->root_node());
     else if (selection_size == 1) {
       auto* node =
           static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
-      selection().SelectNode(node ? node->node() : nullptr);
+      selection_.SelectNode(node ? node->node() : nullptr);
     } else
-      selection().SelectMultiple();
+      selection_.SelectMultiple();
   });
 
   tree_view_->SetDoubleClickHandler([this] {
-    const auto& node = selection().node();
+    const auto& node = selection_.node();
     if (node)
       controller_delegate_.ExecuteDefaultNodeCommand(node);
   });

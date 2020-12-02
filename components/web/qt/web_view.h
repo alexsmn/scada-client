@@ -2,10 +2,11 @@
 
 #include "base/files/file_path.h"
 #include "controller.h"
+#include "controller_context.h"
 
 class QAxWidget;
 
-class WebView : public Controller {
+class WebView : protected ControllerContext, public Controller {
  public:
   explicit WebView(const ControllerContext& context);
   ~WebView();

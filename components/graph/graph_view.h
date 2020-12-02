@@ -1,11 +1,13 @@
 #pragma once
 
-#include "controls/color.h"
 #include "command_handler.h"
 #include "components/graph/metrix_graph.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "controller_context.h"
+#include "controls/color.h"
 #include "controls/types.h"
+#include "selection_model.h"
 #include "time_model.h"
 
 #if defined(UI_VIEWS)
@@ -14,7 +16,8 @@
 
 struct TimeRange;
 
-class GraphView : public Controller,
+class GraphView : protected ControllerContext,
+                  public Controller,
                   public CommandHandler,
                   public ContentsModel,
                   public TimeModel,
@@ -30,6 +33,7 @@ class GraphView : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override { return this; }
 
@@ -64,6 +68,8 @@ class GraphView : public Controller,
   virtual void OnGraphSelectPane() override;
   virtual void OnGraphPannedHorizontally() override;
   virtual void OnLineItemChanged(views::GraphLine& line) override;
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<MetrixGraph> graph_;
 

@@ -4,12 +4,17 @@
 #include "common_resources.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "export_model.h"
+#include "selection_model.h"
 
 class Table;
 class TableModel;
 
-class TableView : public Controller, public ContentsModel, public ExportModel {
+class TableView : protected ControllerContext,
+                  public Controller,
+                  public ContentsModel,
+                  public ExportModel {
  public:
   explicit TableView(const ControllerContext& context);
   virtual ~TableView();
@@ -19,6 +24,7 @@ class TableView : public Controller, public ContentsModel, public ExportModel {
   // Controller
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual ExportModel* GetExportModel() override { return this; }
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
@@ -40,6 +46,8 @@ class TableView : public Controller, public ContentsModel, public ExportModel {
   void OnSelectionChanged();
   void OnDoubleClick();
   bool OnKeyPressed(KeyCode key_code);
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<TableModel> model_;
   std::unique_ptr<Table> view_;

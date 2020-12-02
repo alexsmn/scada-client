@@ -1,12 +1,13 @@
 #pragma once
 
-#include <memory>
-
 #include "controller.h"
+#include "controller_context.h"
+
+#include <memory>
 
 class ExcelView;
 
-class ExcelReportView : public Controller {
+class ExcelReportView : protected ControllerContext, public Controller {
  public:
   explicit ExcelReportView(const ControllerContext& context);
   virtual ~ExcelReportView();

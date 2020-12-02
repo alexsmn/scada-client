@@ -1,6 +1,8 @@
 #pragma once
 
 #include "controller.h"
+#include "controller_context.h"
+#include "selection_model.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/tree/tree_controller.h"
@@ -18,7 +20,8 @@ class Tree;
 
 using DropAction = std::function<int()>;
 
-class ConfigurationTreeView : public Controller
+class ConfigurationTreeView : protected ControllerContext,
+                              public Controller
 #if defined(UI_VIEWS)
     ,
                               protected views::DropController
@@ -34,6 +37,7 @@ class ConfigurationTreeView : public Controller
   virtual void Save(WindowDefinition& definition) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;
   virtual std::optional<OpenContext> GetOpenContext() const override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 #if defined(UI_VIEWS)
   virtual views::DropController* GetDropController() override { return this; }
 #endif
@@ -60,6 +64,8 @@ class ConfigurationTreeView : public Controller
 #endif
 
  private:
+  SelectionModel selection_{{timed_data_service_}};
+
   std::unique_ptr<ConfigurationTreeModel> model_;
 
   scada::NodeId dragging_item_id_;

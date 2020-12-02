@@ -4,12 +4,13 @@
 #include "base/timer/timer.h"
 #include "components/vidicon_display/displayviewerx.h"
 #include "controller.h"
+#include "controller_context.h"
 
 #include <wrl/client.h>
 
 class QAxWidget;
 
-class VidiconDisplayView : public Controller {
+class VidiconDisplayView : protected ControllerContext, public Controller {
  public:
   explicit VidiconDisplayView(const ControllerContext& context);
   virtual ~VidiconDisplayView();

@@ -11,7 +11,7 @@
 #include "window_definition.h"
 
 TransmissionView::TransmissionView(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       model_(new TransmissionModel(context.node_service_,
                                    context.task_manager_)) {}
 

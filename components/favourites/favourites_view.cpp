@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
 #include "components/prompt/prompt_dialog.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
 #include "services/dialog_service.h"
@@ -13,7 +14,7 @@ const wchar_t kAddUrl[] = L"Добавить Web-страницу";
 }
 
 FavouritesView::FavouritesView(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       favourites_tree_model_(new FavouritesTreeModel(favourites_)) {}
 
 FavouritesView::~FavouritesView() {}

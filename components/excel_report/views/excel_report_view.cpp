@@ -24,7 +24,8 @@ void ExcelView::NativeControlCreated(HWND window_handle) {
 // ExcelReportView
 
 ExcelReportView::ExcelReportView(const ControllerContext& context)
-    : Controller{context}, excel_(new ExcelView{ActiveXHost::instance()}) {}
+    : ControllerContext{context},
+      excel_(new ExcelView{ActiveXHost::instance()}) {}
 
 ExcelReportView::~ExcelReportView() {}
 

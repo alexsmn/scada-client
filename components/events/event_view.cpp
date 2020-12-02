@@ -4,15 +4,16 @@
 #include "base/strings/string_util.h"
 #include "client_utils.h"
 #include "common/event_fetcher.h"
-#include "model/node_id_util.h"
-#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/events/event_table_model.h"
 #include "components/prompt/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/table.h"
+#include "model/node_id_util.h"
+#include "node_service/node_service.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
@@ -21,7 +22,7 @@
 // EventView
 
 EventView::EventView(const ControllerContext& context, bool is_panel)
-    : Controller{context},
+    : ControllerContext{context},
       is_panel_{is_panel},
       model_{std::make_unique<EventTableModel>(EventTableModelContext{
           context.node_service_, context.event_fetcher_, context.local_events_,
@@ -63,7 +64,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->SetKeyPressHandler(
       [this](KeyCode key_code) { return OnKeyPressed(key_code); });
 
-  selection().multiple_handler = [this] { return GetSelectedNodeIds(); };
+  selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
 }
 
 EventView::~EventView() {}
@@ -81,12 +82,12 @@ void EventView::AcknowledgeSelection() {
 void EventView::OnSelectionChanged() {
   auto rows = table_->GetSelectedRows();
   if (rows.empty())
-    selection().Clear();
+    selection_.Clear();
   else if (rows.size() >= 2)
-    selection().SelectMultiple();
+    selection_.SelectMultiple();
   else {
     const scada::Event& event = model_->event_at(rows.front());
-    selection().SelectNode(node_service_.GetNode(event.node_id));
+    selection_.SelectNode(node_service_.GetNode(event.node_id));
   }
 }
 
@@ -281,8 +282,7 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
 void EventView::SelectSeverity() {
   unsigned severity = model_->current_events() ? event_fetcher_.severity_min()
                                                : model_->severity_min();
-  const wchar_t prompt[] =
-      L"Минимальный порог важности (0 - все события):";
+  const wchar_t prompt[] = L"Минимальный порог важности (0 - все события):";
   std::wstring value = WideFormat(severity);
   for (;;) {
     if (!RunPromptDialog(dialog_service_, prompt, L"Фильтр", value))

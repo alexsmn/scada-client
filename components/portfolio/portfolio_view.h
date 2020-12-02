@@ -1,16 +1,19 @@
 #pragma once
 
-#include <memory>
-
 #include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "controller_context.h"
+#include "selection_model.h"
 #include "services/portfolio.h"
+
+#include <memory>
 
 class PortfolioTreeModel;
 class Tree;
 
-class PortfolioView : public Controller,
+class PortfolioView : protected ControllerContext,
+                      public Controller,
                       public CommandHandler,
                       public ContentsModel {
  public:
@@ -22,6 +25,7 @@ class PortfolioView : public Controller,
   virtual bool IsCommandEnabled(unsigned command_id) const override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command_id) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
 
   // ContentsModel
@@ -37,6 +41,8 @@ class PortfolioView : public Controller,
   void DeleteSelection();
   void NewPortfolio();
   void AddItemsToPortfolio();
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<PortfolioTreeModel> model_;
   std::unique_ptr<Tree> tree_;

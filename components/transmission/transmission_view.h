@@ -2,6 +2,7 @@
 
 #include "command_handler.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "ui/base/models/header_model.h"
 
 #include <memory>
@@ -9,7 +10,9 @@
 class Grid;
 class TransmissionModel;
 
-class TransmissionView : public Controller, public CommandHandler {
+class TransmissionView : protected ControllerContext,
+                         public Controller,
+                         public CommandHandler {
  public:
   explicit TransmissionView(const ControllerContext& context);
   virtual ~TransmissionView();

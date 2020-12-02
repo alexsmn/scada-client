@@ -9,4 +9,15 @@
 const WindowInfo kWindowInfo = {
     ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
 
-REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);
+class VidiconDisplayViewFactory : public ControllerRegistrarBase {
+ public:
+  VidiconDisplayViewFactory() : ControllerRegistrarBase{kWindowInfo} {}
+
+  virtual std::unique_ptr<Controller> CreateController(
+      const ControllerContext& context) override {
+    return std::make_unique<VidiconDisplayView>(context);
+  }
+};
+
+REGISTER_CONTROLLER_FACTORY(VidiconDisplayViewFactory);
+// REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);

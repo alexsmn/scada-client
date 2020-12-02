@@ -2,14 +2,18 @@
 
 #include "command_handler.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "export_model.h"
+#include "selection_model.h"
 
 #include <memory>
 
 class Grid;
 class SummaryModel;
 
-class SummaryView : public Controller, public CommandHandler {
+class SummaryView : protected ControllerContext,
+                    public Controller,
+                    public CommandHandler {
  public:
   explicit SummaryView(const ControllerContext& context);
 
@@ -19,12 +23,15 @@ class SummaryView : public Controller, public CommandHandler {
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
   virtual ExportModel* GetExportModel() override;
   virtual std::optional<OpenContext> GetOpenContext() const override;
 
  private:
+  SelectionModel selection_{{timed_data_service_}};
+
   std::unique_ptr<SummaryModel> model_;
   std::unique_ptr<Grid> grid_;
 };

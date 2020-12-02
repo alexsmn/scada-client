@@ -4,6 +4,8 @@
 #include "base/memory/weak_ptr.h"
 #include "command_handler.h"
 #include "controller.h"
+#include "controller_context.h"
+#include "selection_model.h"
 
 #include <memory>
 
@@ -12,7 +14,9 @@ class ModusView2;
 class ModusView3;
 class ModusViewWrapper;
 
-class ModusController : public Controller, public CommandHandler {
+class ModusController : protected ControllerContext,
+                        public Controller,
+                        public CommandHandler {
  public:
   explicit ModusController(const ControllerContext& context);
   virtual ~ModusController();
@@ -23,6 +27,7 @@ class ModusController : public Controller, public CommandHandler {
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  private:
   QWidget* CreateModusView();
@@ -31,6 +36,8 @@ class ModusController : public Controller, public CommandHandler {
 
   void OpenPath(const base::FilePath& path);
   void OpenHyperlink(std::wstring_view hyperlink);
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<ModusView> view_;
   std::unique_ptr<ModusView2> view2_;

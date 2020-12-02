@@ -1,11 +1,12 @@
 #pragma once
 
-#include <memory>
-
 #include "common_resources.h"
 #include "controller.h"
 #include "window_info.h"
 
+#include <memory>
+
+struct ControllerContext;
 class ControllerDelegate;
 class DialogService;
 
@@ -48,3 +49,6 @@ ControllerRegistrarBase* FindControllerRegistrar(std::string_view name);
 #define REGISTER_CONTROLLER(ControllerClass, window_info) \
   static ControllerRegistrar<ControllerClass> COMBINE(    \
       g_factory_, __COUNTER__)(window_info)
+
+#define REGISTER_CONTROLLER_FACTORY(ControllerFactoryClass) \
+  static ControllerFactoryClass COMBINE(g_factory_, __COUNTER__)

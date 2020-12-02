@@ -49,8 +49,9 @@ static int FindString(const std::string_view strs[],
                       std::string_view value) {
   for (int i = 0; i < count; ++i) {
     if (base::EqualsCaseInsensitiveASCII(ToStringPiece(strs[i]),
-                                         ToStringPiece(value)))
+                                         ToStringPiece(value))) {
       return i;
+    }
   }
   return -1;
 }
@@ -60,8 +61,9 @@ static int FindStringPair(const StringPair pairs[],
                           std::string_view value) {
   for (int i = 0; i < count; ++i) {
     if (base::EqualsCaseInsensitiveASCII(ToStringPiece(pairs[i].second),
-                                         ToStringPiece(value)))
+                                         ToStringPiece(value))) {
       return i;
+    }
   }
   return -1;
 }

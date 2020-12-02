@@ -10,19 +10,20 @@
 #include <atlcomcli.h>
 
 #include <Exdisp.h>
-#include <wrl/client.h>
 #include <QAxWidget>
 #include <QUuid>
+#include <wrl/client.h>
 
-WebView::WebView(const ControllerContext& context) : Controller{context} {}
+WebView::WebView(const ControllerContext& context)
+    : ControllerContext{context} {}
 
 WebView::~WebView() {}
 
 UiView* WebView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
   std::wstring url = IsWebUrl(definition.path.value())
-                           ? definition.path.value()
-                           : MakeFileUrl(GetPublicFilePath(definition.path));
+                         ? definition.path.value()
+                         : MakeFileUrl(GetPublicFilePath(definition.path));
 
   ax_widget_ = std::make_unique<QAxWidget>();
   ax_widget_->setFocusPolicy(Qt::StrongFocus);

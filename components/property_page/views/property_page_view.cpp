@@ -1,19 +1,21 @@
 ﻿#include "components/property_page/views/property_page_view.h"
 
 #include "client_utils.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "components/property_page/views/record_editors.h"
+#include "controller_delegate.h"
+#include "core/event.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/history_node_ids.h"
 #include "model/node_id_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "ui/views/layout/fill_layout.h"
 #include "ui/views/widget/widget.h"
 #include "window_definition.h"
 
 PropertyPageView::PropertyPageView(const ControllerContext& context)
-    : Controller(context) {}
+    : ControllerContext(context) {}
 
 PropertyPageView::~PropertyPageView() {
   if (node_)

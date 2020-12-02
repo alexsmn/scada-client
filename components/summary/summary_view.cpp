@@ -3,6 +3,7 @@
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
+#include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/grid.h"
 #include "services/dialog_service.h"
@@ -10,7 +11,7 @@
 #include "window_definition.h"
 
 SummaryView::SummaryView(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       model_{std::make_unique<SummaryModel>(
           SummaryModelContext{node_service_, timed_data_service_})} {}
 
@@ -22,14 +23,14 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   grid_->SetSelectionChangeHandler([this] {
     auto columns = grid_->GetSelectedColumns();
     if (columns.empty())
-      selection().Clear();
+      selection_.Clear();
     else if (columns.size() == 1)
-      selection().SelectTimedData(model_->timed_data(columns[0]));
+      selection_.SelectTimedData(model_->timed_data(columns[0]));
     else
-      selection().SelectMultiple();
+      selection_.SelectMultiple();
   });
 
-  selection().multiple_handler = [this] {
+  selection_.multiple_handler = [this] {
     NodeIdSet node_ids;
     for (int column : grid_->GetSelectedColumns()) {
       if (auto node = model_->timed_data(column).GetNode())

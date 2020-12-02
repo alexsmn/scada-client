@@ -11,7 +11,7 @@ static const wchar_t* kStatisticTitles[] = {
 // StatisticsView
 
 StatisticsView::StatisticsView(const ControllerContext& context)
-    : Controller{context} {
+    : ControllerContext{context} {
   ui::TableColumn columns[] = {
       {0, L"Параметр", 150, ui::TableColumn::LEFT},
       {1, L"Значение", 100, ui::TableColumn::RIGHT},

@@ -1,9 +1,11 @@
 #pragma once
 
 #include "controller.h"
+#include "controller_context.h"
 #include "ui/views/controls/activex_control.h"
 
-class WebView : public views::ActiveXControl,
+class WebView : protected ControllerContext,
+                public views::ActiveXControl,
                 public Controller {
  public:
   explicit WebView(const ControllerContext& context);
@@ -19,5 +21,5 @@ class WebView : public views::ActiveXControl,
   virtual void NativeControlCreated(HWND window_handle) override;
 
  private:
-  std::wstring url_; 
+  std::wstring url_;
 };

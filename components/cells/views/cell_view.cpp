@@ -137,7 +137,7 @@ void CellModel::ClearCell(int row, int column) {
 // CellView
 
 CellView::CellView(const ControllerContext& context)
-    : Controller{context},
+    : ControllerContext{context},
       grid_(new views::GridView),
       model_{timed_data_service_, dialog_service_} {
   grid_->SetModel(&model_);
@@ -223,7 +223,7 @@ void CellView::ClearSelection() {
     for (int column = range.column(); column <= range.last_column(); ++column)
       model_.ClearCell(row, column);
 
-  selection().Clear();
+  selection_.Clear();
 }
 
 void CellView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
@@ -240,15 +240,15 @@ void CellView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 void CellView::OnGridSelectionChanged(views::GridView& sender) {
   ui::GridRange range = grid_->GetSelectionRange();
   if (range.empty())
-    selection().Clear();
+    selection_.Clear();
   else if (range.row_count() >= 2)
-    selection().SelectMultiple();
+    selection_.SelectMultiple();
   else {
     CellModel::Cell* cell = model_.cell(range.row(), range.column());
     if (cell)
-      selection().SelectTimedData(cell->value_spec_);
+      selection_.SelectTimedData(cell->value_spec_);
     else
-      selection().Clear();
+      selection_.Clear();
   }
 }
 

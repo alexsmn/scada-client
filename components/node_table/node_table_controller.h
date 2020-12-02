@@ -4,6 +4,8 @@
 #include "base/win/dragdrop.h"
 #include "command_handler.h"
 #include "controller.h"
+#include "controller_context.h"
+#include "selection_model.h"
 
 #if defined(UI_QT)
 #elif defined(UI_VIEWS)
@@ -13,7 +15,8 @@
 class Grid;
 class NodeTableModel;
 
-class NodeTableController : public Controller,
+class NodeTableController : protected ControllerContext,
+                            public Controller,
                             public CommandHandler,
 #if defined(UI_VIEWS)
                             private views::GridController,
@@ -32,6 +35,7 @@ class NodeTableController : public Controller,
   virtual void ExecuteCommand(unsigned command_id) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual NodeRef GetRootNode() const override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  protected:
 #if defined(UI_VIEWS)
@@ -44,6 +48,8 @@ class NodeTableController : public Controller,
 
  private:
   void SetSorting(const scada::NodeId& property_id);
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<NodeTableModel> model_;
   std::unique_ptr<Grid> grid_;

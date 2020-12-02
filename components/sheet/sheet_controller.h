@@ -3,7 +3,9 @@
 #include "command_handler.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "controller_context.h"
 #include "controls/color.h"
+#include "selection_model.h"
 
 #if defined(UI_VIEWS)
 #include "ui/views/context_menu_controller.h"
@@ -30,7 +32,8 @@ class Textfield;
 class SheetModel;
 class Grid;
 
-class SheetController : public Controller,
+class SheetController : protected ControllerContext,
+                        public Controller,
                         public ContentsModel,
                         public CommandHandler
 #if defined(UI_VIEWS)
@@ -50,6 +53,7 @@ class SheetController : public Controller,
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command) override;
+  virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
 #if defined(UI_VIEWS)
   virtual views::DropController* GetDropController() override { return this; }
@@ -98,6 +102,8 @@ class SheetController : public Controller,
   virtual void ContentsChanged(views::Textfield* sender,
                                const std::wstring& new_contents) override;
 #endif
+
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<SheetModel> model_;
 

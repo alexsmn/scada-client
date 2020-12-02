@@ -27,6 +27,7 @@
 #include "net/transport_string.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"
 #include "services/profile.h"
@@ -101,7 +102,7 @@ void OpenedViewCommands::SetContext(OpenedView* opened_view,
   controller_ = opened_view ? &opened_view->controller() : nullptr;
 
   auto* selection =
-      opened_view_ ? &opened_view_->controller().selection() : nullptr;
+      opened_view_ ? opened_view_->controller().GetSelectionModel() : nullptr;
   selection_commands_->SetContext(main_window_, dialog_service_, controller_,
                                   selection);
 }
@@ -186,14 +187,18 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_NEW_SERVICE_ITEMS:
-      ShowCreateServiceItemDialog(*dialog_service_,
-                                  {node_service_, task_manager_,
-                                   controller_->selection().node().node_id()});
+      if (auto* selection_model = controller_->GetSelectionModel()) {
+        ShowCreateServiceItemDialog(
+            *dialog_service_,
+            {node_service_, task_manager_, selection_model->node().node_id()});
+      }
       return;
     case ID_ADD_MULTIPLE_ITEMS:
-      ShowMultiCreateDialog(*dialog_service_,
-                            {node_service_, task_manager_,
-                             controller_->selection().node().node_id()});
+      if (auto* selection_model = controller_->GetSelectionModel()) {
+        ShowMultiCreateDialog(
+            *dialog_service_,
+            {node_service_, task_manager_, selection_model->node().node_id()});
+      }
       return;
   }
 
@@ -236,10 +241,13 @@ bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
 
 bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {
   switch (command_id) {
-    case ID_PASTE:
-      return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-             GetPasteParentNode(node_service_, controller_->selection().node(),
+    case ID_PASTE: {
+      auto* selection_model = controller_->GetSelectionModel();
+      return selection_model &&
+             session_service_.HasPrivilege(scada::Privilege::Configure) &&
+             GetPasteParentNode(node_service_, selection_model->node(),
                                 controller_->GetRootNode());
+    }
     default:
       return true;
   }
@@ -250,7 +258,11 @@ bool OpenedViewCommands::CanCreateRecord(
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return false;
 
-  return GetCreateParentNode(controller_->selection().node(),
+  auto* selection_model = controller_->GetSelectionModel();
+  if (!selection_model)
+    return false;
+
+  return GetCreateParentNode(selection_model->node(),
                              controller_->GetRootNode(),
                              node_service_.GetNode(type_node_id)) != nullptr;
 }
@@ -264,7 +276,11 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   if (!node_type)
     return;
 
-  auto parent_node = GetCreateParentNode(controller_->selection().node(),
+  auto* selection_model = controller_->GetSelectionModel();
+  if (!selection_model)
+    return;
+
+  auto parent_node = GetCreateParentNode(selection_model->node(),
                                          controller_->GetRootNode(), node_type);
   if (!parent_node)
     return;
@@ -341,9 +357,12 @@ void OpenedViewCommands::PasteFromClipboard() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return;
 
-  const auto& parent_node =
-      GetPasteParentNode(node_service_, controller_->selection().node(),
-                         controller_->GetRootNode());
+  auto* selection_model = controller_->GetSelectionModel();
+  if (!selection_model)
+    return;
+
+  const auto& parent_node = GetPasteParentNode(
+      node_service_, selection_model->node(), controller_->GetRootNode());
   if (!parent_node)
     return;
 
