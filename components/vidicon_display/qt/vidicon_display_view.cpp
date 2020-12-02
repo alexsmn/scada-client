@@ -40,8 +40,8 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-VidiconDisplayView::VidiconDisplayView(const ControllerContext& context)
-    : ControllerContext{context}, synchronize_timer_(false, true) {}
+VidiconDisplayView::VidiconDisplayView()
+    : synchronize_timer_(false, true) {}
 
 VidiconDisplayView::~VidiconDisplayView() {}
 
