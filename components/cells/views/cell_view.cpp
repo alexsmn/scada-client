@@ -2,7 +2,7 @@
 
 #include "base/format_time.h"
 #include "common/formula_util.h"
-#include "controller_factory.h"
+#include "controller_delegate.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "selection_model.h"
