@@ -82,9 +82,9 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
     base::FilePath full_path = GetPublicFilePath(path_);
     form_->put_FileName(base::win::ScopedBstr(full_path.value().c_str()));
 
-    synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
+    /*synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
                              base::Bind(&VidiconDisplayView::SynchronizeView,
-                                        base::Unretained(this)));
+                                        base::Unretained(this)));*/
   }
 
   return ax_widget_.get();
