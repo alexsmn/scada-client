@@ -37,6 +37,7 @@ Grid::Grid(ui::GridModel& model,
   setModel(&model_adapter_);
   resizeColumnsToContents();
   setItemDelegate(&item_delegate_);
+  setWordWrap(false);
 }
 
 Grid::~Grid() {

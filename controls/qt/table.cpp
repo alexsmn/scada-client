@@ -53,6 +53,7 @@ Table::Table(ui::TableModel& model,
   for (int i = 0; i < static_cast<int>(model_adapter_.columns().size()); ++i)
     setColumnWidth(i, model_adapter_.columns()[i].width);
 
+  setWordWrap(false);
   setShowGrid(false);
   setSelectionBehavior(SelectRows);
   connect(horizontalHeader(), &QHeaderView::sectionResized,
