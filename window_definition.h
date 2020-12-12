@@ -24,12 +24,12 @@ class WindowItem {
 
   bool name_is(std::string_view n) const;
 
-  bool GetBool(std::string_view attr, bool default = false) const;
-  int GetInt(std::string_view attr, int default = 0) const;
+  bool GetBool(std::string_view attr, bool default_value = false) const;
+  int GetInt(std::string_view attr, int default_value = 0) const;
   std::string_view GetString(std::string_view attr,
-                              std::string_view default = {}) const;
+                             std::string_view default_value = {}) const;
   std::wstring GetString16(std::string_view attr,
-                             std::wstring_view default = {}) const;
+                           std::wstring_view default_value = {}) const;
 
   void SetBool(std::string_view attr, bool value);
   void SetInt(std::string_view attr, int value);

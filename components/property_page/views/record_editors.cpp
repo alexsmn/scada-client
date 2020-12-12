@@ -4,7 +4,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
 #include "components/transport/transport_dialog.h"
 #include "controls/color.h"
 #include "core/node_management_service.h"
@@ -13,6 +12,7 @@
 #include "model/history_node_ids.h"
 #include "model/node_id_util.h"
 #include "net/transport_string.h"
+#include "node_service/node_service.h"
 #include "services/task_manager.h"
 #include "skia/ext/skia_utils_win.h"
 #include "views/client_utils_views.h"
@@ -421,7 +421,7 @@ LRESULT ItemEditor::OnStaleCheckClicked(WORD /*wNotifyCode*/,
                                         HWND /*hWndCtl*/,
                                         BOOL& bHandled) {
   bool checked = CButton(GetDlgItem(IDC_STALE_CHECK)).GetCheck() == BST_CHECKED;
-  WTL::CEdit period_window = GetDlgItem(IDC_STALE_PERIOD);
+  WTL::CEdit period_window = static_cast<HWND>(GetDlgItem(IDC_STALE_PERIOD));
   period_window.EnableWindow(checked);
   if (checked) {
     period_window.SetFocus();
@@ -1119,8 +1119,8 @@ ModbusLinkEditor::ModbusLinkEditor(RecordEditorContext&& context)
 void ModbusLinkEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  WTL::CButton ascii_radio = GetDlgItem(IDC_MODBUS_ASCII);
-  WTL::CButton tcp_radio = GetDlgItem(IDC_MODBUS_TCP);
+  WTL::CButton ascii_radio = static_cast<HWND>(GetDlgItem(IDC_MODBUS_ASCII));
+  WTL::CButton tcp_radio = static_cast<HWND>(GetDlgItem(IDC_MODBUS_TCP));
 
   if (ascii_radio.GetCheck() == BST_CHECKED)
     mode_ = cfg::ModbusEncoding::ASCII;
@@ -1133,11 +1133,13 @@ void ModbusLinkEditor::ReadControlsData() {
 void ModbusLinkEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  WTL::CButton rtu_radio = GetDlgItem(IDC_MODBUS_RTU);
-  WTL::CButton ascii_radio = GetDlgItem(IDC_MODBUS_ASCII);
-  WTL::CButton tcp_radio = GetDlgItem(IDC_MODBUS_TCP);
+  WTL::CButton rtu_radio = static_cast<HWND>(GetDlgItem(IDC_MODBUS_RTU));
+  WTL::CButton ascii_radio = static_cast<HWND>(GetDlgItem(IDC_MODBUS_ASCII));
+  WTL::CButton tcp_radio = static_cast<HWND>(GetDlgItem(IDC_MODBUS_TCP));
 
-  switch (node[devices::id::ModbusLinkType_Protocol].value().get_or(0)) {
+  auto encoding = static_cast<cfg::ModbusEncoding>(
+      node[devices::id::ModbusLinkType_Protocol].value().get_or(0));
+  switch (encoding) {
     case cfg::ModbusEncoding::ASCII:
       ascii_radio.SetCheck(BST_CHECKED);
       break;
@@ -1197,8 +1199,9 @@ void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
   SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
 
   UINT type_id;
-  switch (
-      node[data_items::id::SimulationSignalType_Function].value().get_or(0)) {
+  auto simulation_signal_type = static_cast<cfg::SimulationSignalType>(
+      node[data_items::id::SimulationSignalType_Function].value().get_or(0));
+  switch (simulation_signal_type) {
     case cfg::SimulationSignalType::RAMP:
       type_id = IDC_RAMP;
       break;

@@ -35,7 +35,7 @@ FileCache::FileEntry LoadFileEntry(const base::Value& data) {
     entry.title = path.RemoveExtension().value();
 
   if (auto* items_data = GetDict(data, "items")) {
-    for (auto& [key, value] : items_data->DictItems()) {
+    for (auto&& [key, value] : items_data->DictItems()) {
       auto node_id = NodeIdFromScadaString(key);
       int key = value.is_int() ? value.GetInt() : -1;
       entry.items.emplace(std::move(node_id), key);

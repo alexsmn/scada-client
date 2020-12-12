@@ -14,50 +14,50 @@ std::optional<T> FromJson(const base::Value& value);
 
 inline bool GetBool(const base::Value& value,
                     std::string_view key,
-                    bool default = false) {
+                    bool default_value = false) {
   if (!value.is_dict())
-    return nullptr;
+    return default_value;
   if (auto* k =
           value.FindKeyOfType(ToStringPiece(key), base::Value::Type::BOOLEAN))
     return k->GetBool();
   else
-    return default;
+    return default_value;
 }
 
 inline int GetInt(const base::Value& value,
                   std::string_view key,
-                  int default = 0) {
+                  int default_value = 0) {
   if (!value.is_dict())
-    return default;
+    return default_value;
   if (auto* k =
           value.FindKeyOfType(ToStringPiece(key), base::Value::Type::INTEGER))
     return k->GetInt();
   else
-    return default;
+    return default_value;
 }
 
 inline std::string_view GetString(const base::Value& value,
                                   std::string_view key,
-                                  std::string_view default = {}) {
+                                  std::string_view default_value = {}) {
   if (!value.is_dict())
-    return default;
+    return default_value;
   if (auto* k =
           value.FindKeyOfType(ToStringPiece(key), base::Value::Type::STRING))
     return k->GetString();
   else
-    return default;
+    return default_value;
 }
 
 inline std::wstring GetString16(const base::Value& value,
                                 std::string_view key,
-                                std::wstring_view default = {}) {
+                                std::wstring_view default_value = {}) {
   if (!value.is_dict())
-    return std::wstring{default};
+    return std::wstring{default_value};
   if (auto* k =
           value.FindKeyOfType(ToStringPiece(key), base::Value::Type::STRING))
     return base::UTF8ToUTF16(k->GetString());
   else
-    return std::wstring{default};
+    return std::wstring{default_value};
 }
 
 inline const base::Value* GetDict(const base::Value& value,

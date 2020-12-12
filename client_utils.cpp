@@ -356,16 +356,16 @@ NodeRef GetPasteParentNode(NodeService& node_service,
                            const NodeRef& root_node) {
   const auto buffer = ReadClipboard(kNodeTreeHeaderFormat);
   if (buffer.empty())
-    return false;
+    return nullptr;
 
   protocol::NodeId message;
   if (!message.ParseFromString(buffer))
-    return false;
+    return nullptr;
 
   const auto& type_definition_id = ConvertTo<scada::NodeId>(message);
   const auto& type_definition = node_service.GetNode(type_definition_id);
   if (!type_definition)
-    return false;
+    return nullptr;
 
   for (const auto& node : {selected_node, root_node}) {
     for (auto n = node; n; n = n.parent()) {

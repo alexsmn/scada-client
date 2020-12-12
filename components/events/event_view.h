@@ -58,7 +58,7 @@ class EventView : protected ControllerContext,
   void ExportToExcel();
   void SelectSeverity();
 
-  NodeIdSet EventView::GetSelectedNodeIds() const;
+  NodeIdSet GetSelectedNodeIds() const;
 
   void OnSelectionChanged();
 

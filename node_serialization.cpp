@@ -59,6 +59,7 @@ void NodeToData(const NodeRef& source,
   }
 }
 
+template <>
 void Convert(const protocol::NodeReference& source,
              scada::ReferenceDescription& target) {
   Convert(source.reference_type_id(), target.reference_type_id);
@@ -66,6 +67,7 @@ void Convert(const protocol::NodeReference& source,
   Convert(source.node_id(), target.node_id);
 }
 
+template <>
 void Convert(const scada::ReferenceDescription& source,
              protocol::NodeReference& target) {
   Convert(source.reference_type_id, *target.mutable_reference_type_id());
@@ -73,12 +75,14 @@ void Convert(const scada::ReferenceDescription& source,
   Convert(source.node_id, *target.mutable_node_id());
 }
 
+template <>
 void Convert(const protocol::NodeProperty& source,
              scada::NodeProperty& target) {
   Convert(source.declaration_id(), target.first);
   Convert(source.value(), target.second);
 }
 
+template <>
 void Convert(const scada::NodeProperty& source,
              protocol::NodeProperty& target) {
   Convert(source.first, *target.mutable_declaration_id());

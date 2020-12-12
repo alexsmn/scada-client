@@ -7,8 +7,8 @@
 #include "components/transport/transport_dialog_model.h"
 #include "services/dialog_service.h"
 
-#include <atlstr.h>
 #include <algorithm>
+#include <atlstr.h>
 
 static const RECT kConnectionFrameRect = {15, 33, 15 + 454, 33 + 102};
 
@@ -35,17 +35,18 @@ void TransportDialog::LoadControlsData() {
     connection_frame_.SetDlgItemInt(IDC_PORT_EDIT, model_.network_port);
 
   } else {
-    WTL::CComboBox port_combo = connection_frame_.GetDlgItem(IDC_PORT_COMBO);
+    WTL::CComboBox port_combo =
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PORT_COMBO));
     WTL::CComboBox baudate_combo =
-        connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO));
     WTL::CComboBox bitcount_combo =
-        connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO));
     WTL::CComboBox parity_combo =
-        connection_frame_.GetDlgItem(IDC_PARITY_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PARITY_COMBO));
     WTL::CComboBox stopbits_combo =
-        connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO));
     WTL::CComboBox flowcontrol_combo =
-        connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO));
 
     port_combo.SetCurSel(model_.serial_port_index);
     baudate_combo.SetCurSel(model_.baud_rate_index);
@@ -66,17 +67,18 @@ void TransportDialog::OnOK() {
         win_util::GetWindowInt(connection_frame_.GetDlgItem(IDC_PORT_EDIT));
 
   } else {
-    WTL::CComboBox port_combo = connection_frame_.GetDlgItem(IDC_PORT_COMBO);
+    WTL::CComboBox port_combo =
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PORT_COMBO));
     WTL::CComboBox baudate_combo =
-        connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO));
     WTL::CComboBox bitcount_combo =
-        connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO));
     WTL::CComboBox parity_combo =
-        connection_frame_.GetDlgItem(IDC_PARITY_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PARITY_COMBO));
     WTL::CComboBox stopbits_combo =
-        connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO));
     WTL::CComboBox flowcontrol_combo =
-        connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO));
 
     model_.serial_port_index = port_combo.GetCurSel();
     model_.baud_rate_index = baudate_combo.GetCurSel();
@@ -116,32 +118,33 @@ void TransportDialog::SwitchConnectionType(int type_index) {
       kConnectionFrameRect.bottom - kConnectionFrameRect.top, SWP_SHOWWINDOW);
 
   if (frame_id == IDD_CONNECTION_SERIAL) {
-    WTL::CComboBox port_combo = connection_frame_.GetDlgItem(IDC_PORT_COMBO);
+    WTL::CComboBox port_combo =
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PORT_COMBO));
     for (auto& item : model_.serial_port_items)
       port_combo.AddString(item.c_str());
 
     WTL::CComboBox baudrate_combo =
-        connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO));
     for (auto& item : model_.baud_rate_items)
       baudrate_combo.AddString(item.c_str());
 
     WTL::CComboBox bitcount_combo =
-        connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO));
     for (auto& item : model_.bit_count_items)
       baudrate_combo.AddString(item.c_str());
 
     WTL::CComboBox parity_combo =
-        connection_frame_.GetDlgItem(IDC_PARITY_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PARITY_COMBO));
     for (auto& item : model_.parity_items)
       parity_combo.AddString(item.c_str());
 
     WTL::CComboBox stopbits_combo =
-        connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO));
     for (auto& item : model_.stop_bits_items)
       stopbits_combo.AddString(item.c_str());
 
     WTL::CComboBox flowcontrol_combo =
-        connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO);
+        static_cast<HWND>(connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO));
     for (auto& item : model_.flow_control_items)
       stopbits_combo.AddString(item.c_str());
   }

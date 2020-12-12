@@ -21,22 +21,22 @@ bool WindowItem::name_is(std::string_view n) const {
   return base::EqualsCaseInsensitiveASCII(name, ToStringPiece(n));
 }
 
-bool WindowItem::GetBool(std::string_view attr, bool default) const {
-  return ::GetBool(attributes, attr, default);
+bool WindowItem::GetBool(std::string_view attr, bool default_value) const {
+  return ::GetBool(attributes, attr, default_value);
 }
 
-int WindowItem::GetInt(std::string_view attr, int default) const {
-  return ::GetInt(attributes, attr, default);
+int WindowItem::GetInt(std::string_view attr, int default_value) const {
+  return ::GetInt(attributes, attr, default_value);
 }
 
 std::string_view WindowItem::GetString(std::string_view attr,
-                                       std::string_view default) const {
-  return ::GetString(attributes, attr, default);
+                                       std::string_view default_value) const {
+  return ::GetString(attributes, attr, default_value);
 }
 
 std::wstring WindowItem::GetString16(std::string_view attr,
-                                     std::wstring_view default) const {
-  return ::GetString16(attributes, attr, default);
+                                     std::wstring_view default_value) const {
+  return ::GetString16(attributes, attr, default_value);
 }
 
 void WindowItem::SetBool(std::string_view attr, bool value) {

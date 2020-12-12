@@ -25,7 +25,7 @@ std::wstring GetShortPath(SDECore::ISDEObject50& sde_object) {
 }
 
 std::vector<std::wstring> GetStateStrings(SDECore::IParams& params,
-                                            std::wstring_view param_name) {
+                                          std::wstring_view param_name) {
   SDEParam param = GetParam(
       params, base::win::ScopedVariant(param_name.data(), param_name.size()));
   if (!param)
@@ -56,7 +56,10 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
   {
     base::win::ScopedBstr bstr;
     sde_document.get_Title(bstr.Receive());
-    if (bstr && bstr != L"без имени")
+    std::wstring title;
+    if (bstr)
+      title = static_cast<BSTR>(bstr);
+    if (!title.empty() && title != L"без имени")
       title_ = bstr;
   }
 
@@ -217,7 +220,7 @@ void ModusLoader::LoadObject(SDECore::ISDEObject50& sde_object) {
 
   std::unique_ptr<ModusObject> object;
 
-  for (long i = 0; i < count; ++i) {
+  for (int i = 0; i < count; ++i) {
     Microsoft::WRL::ComPtr<SDECore::INamedPB> named_pb;
     techs->get_Item(base::win::ScopedVariant(i), named_pb.GetAddressOf());
 
@@ -260,7 +263,7 @@ void ModusLoader::LoadObject(SDECore::ISDEObject50& sde_object) {
 void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
   long count = 0;
   objects.get_Count(&count);
-  for (long i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++) {
     Microsoft::WRL::ComPtr<SDECore::ISDEObject50> object;
     objects.get_Item(base::win::ScopedVariant(i), object.GetAddressOf());
     if (!object)

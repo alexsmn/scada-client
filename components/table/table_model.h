@@ -63,7 +63,7 @@ class TableModel : private TableModelContext,
   virtual bool SetCellText(int row,
                            int column_id,
                            const std::wstring& text) override;
-  virtual bool TableModel::IsEditable(int row, int column) override;
+  virtual bool IsEditable(int row, int column) override;
 
   std::function<void(const scada::NodeId& item_id, bool added)> item_changed_;
 

@@ -14,7 +14,7 @@ namespace {
 HRESULT AutoWrap(int autoType,
                  VARIANT* pvResult,
                  IDispatch* pDisp,
-                 LPOLESTR ptName,
+                 LPCOLESTR ptName,
                  std::vector<VARIANT> args = {}) {
   if (!pDisp)
     return E_POINTER;
@@ -30,7 +30,9 @@ HRESULT AutoWrap(int autoType,
   WideCharToMultiByte(CP_ACP, 0, ptName, -1, szName, 256, NULL, NULL);
 
   // Get DISPID for name passed...
-  hr = pDisp->GetIDsOfNames(IID_NULL, &ptName, 1, LOCALE_USER_DEFAULT, &dispID);
+  LPOLESTR names[] = {const_cast<LPOLESTR>(ptName)};
+  hr = pDisp->GetIDsOfNames(IID_NULL, names, std::size(names),
+                            LOCALE_USER_DEFAULT, &dispID);
   if (FAILED(hr)) {
     // sprintf(buf, "IDispatch::GetIDsOfNames(\"%s\") failed w/err 0x%08lx",
     // szName, hr); MessageBox(NULL, buf, "AutoWrap()", 0x10010); _exit(0);
