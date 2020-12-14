@@ -89,7 +89,7 @@ void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& tree_node,
         auto& copied_tree_node = tree_node;
         // WARNING: This line removes the current lambda.
         visible_nodes_data_.erase(&tree_node);
-        copied_this.TreeNodeChanged(&tree_node);
+        copied_this.TreeNodeChanged(&copied_tree_node);
         return;
       }
 
