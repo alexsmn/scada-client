@@ -9,13 +9,18 @@
 
 using namespace testing;
 
-TEST(VisibleNodeModel, Test) {
-  auto executor = std::make_shared<TestExecutor>();
-  MockTimedDataService timed_data_service;
-  Profile profile;
-  VisibleNodeModel::NodeChangeHandler node_change_handler =
+class VisibleNodeModelTest : public Test {
+ public:
+ protected:
+  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  MockTimedDataService timed_data_service_;
+  Profile profile_;
+  VisibleNodeModel::NodeChangeHandler node_change_handler_ =
       [](void* tree_node) {};
-  BlinkerManager blinker_manager{executor};
-  VisibleNodeModel model{timed_data_service, profile, blinker_manager,
-                         node_change_handler};
+  BlinkerManager blinker_manager_{executor_};
+  VisibleNodeModel model_{timed_data_service_, profile_, blinker_manager_,
+                          node_change_handler_};
+};
+
+TEST_F(VisibleNodeModelTest, Test) {
 }

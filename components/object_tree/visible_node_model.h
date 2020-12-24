@@ -24,9 +24,37 @@ class VisibleNodeModel : private Blinker {
   SkColor GetBackgroundColor(void* tree_node);
 
  private:
-  TimedDataSpec MakeTimedDataSpec(ConfigurationTreeNode& tree_node);
+  class NodeData {
+   public:
+    using ChangeHandler = std::function<void()>;
 
-  const TimedDataSpec* GetTimedData(void* tree_node) const;
+    virtual ~NodeData() = default;
+
+    virtual std::wstring GetText() const = 0;
+    virtual bool IsBad() const { return false; }
+    virtual bool IsAlerting() const { return false; }
+  };
+
+  class NodeDataImpl final : public NodeData {
+   public:
+    using ChangeHandler = std::function<void()>;
+
+    NodeDataImpl(TimedDataService& timed_data_service,
+                 const NodeRef& node,
+                 ChangeHandler change_handler);
+
+    // NodeData
+    virtual std::wstring GetText() const override;
+    virtual bool IsBad() const override;
+    virtual bool IsAlerting() const override;
+
+   private:
+    TimedDataSpec spec_;
+  };
+
+  std::unique_ptr<NodeData> CreateNodeData(ConfigurationTreeNode& tree_node);
+
+  const NodeData* GetNodeData(void* tree_node) const;
 
   // Blinker
   virtual void OnBlink(bool state) override;
@@ -35,6 +63,7 @@ class VisibleNodeModel : private Blinker {
   Profile& profile_;
   const NodeChangeHandler node_change_handler_;
 
-  typedef std::map<ConfigurationTreeNode*, TimedDataSpec> NodeDataMap;
+  using NodeDataMap =
+      std::map<ConfigurationTreeNode*, std::unique_ptr<NodeData>>;
   NodeDataMap visible_nodes_data_;
 };
