@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+class BlinkerManager;
 class ModusStyle2;
 
 enum class StyleId {
@@ -15,7 +16,7 @@ enum class StyleId {
 
 class ModusStyleLibrary2 {
  public:
-  ModusStyleLibrary2();
+  explicit ModusStyleLibrary2(BlinkerManager& blinker_manager);
   ~ModusStyleLibrary2();
 
   ModusStyle2* GetStyle(StyleId id);

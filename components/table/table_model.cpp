@@ -5,12 +5,11 @@
 #include "base/utils.h"
 #include "client_utils.h"
 #include "common/event_fetcher.h"
-#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
 #include "controls/color.h"
 #include "model/data_items_node_ids.h"
-#include "model/scada_node_ids.h"
+#include "node_service/node_util.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
@@ -57,7 +56,8 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
 }
 
 TableModel::TableModel(TableModelContext&& context)
-    : TableModelContext{std::move(context)} {
+    : TableModelContext{std::move(context)},
+      Blinker{TableModelContext::blinker_manager_} {
   Blinker::Start();
 }
 

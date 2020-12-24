@@ -7,6 +7,7 @@
 #include "core/configuration_types.h"
 #include "ui/base/models/table_model.h"
 
+class BlinkerManager;
 class DialogService;
 class EventFetcher;
 class Profile;
@@ -18,6 +19,7 @@ struct TableModelContext {
   EventFetcher& event_fetcher_;
   Profile& profile_;
   DialogService& dialog_service_;
+  BlinkerManager& blinker_manager_;
 };
 
 class TableModel : private TableModelContext,

@@ -14,6 +14,7 @@ class VisibleNodeModel : private Blinker {
 
   VisibleNodeModel(TimedDataService& timed_data_service,
                    Profile& profile,
+                   BlinkerManager& blinker_manager,
                    NodeChangeHandler node_change_handler);
 
   void SetNodeVisible(ConfigurationTreeNode& tree_node, bool visible);

@@ -1,4 +1,4 @@
-﻿#include "components/sheet/sheet_controller.h"
+﻿#include "components/sheet/sheet_view.h"
 
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
@@ -56,7 +56,7 @@ class SheetController::ContentsView : public views::View {
 SheetController::SheetController(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_unique<SheetModel>(
-          SheetModelContext{timed_data_service_})} {
+          SheetModelContext{timed_data_service_, blinker_manager_})} {
   selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 

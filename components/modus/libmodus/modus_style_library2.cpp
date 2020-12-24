@@ -4,9 +4,9 @@
 #include "components/modus/libmodus/modus_style2.h"
 #include "libmodus/gfx/gdip.h"
 
-ModusStyleLibrary2::ModusStyleLibrary2() {
+ModusStyleLibrary2::ModusStyleLibrary2(BlinkerManager& blinker_manager) {
   {
-    std::unique_ptr<ModusStyle2> style(new ModusStyle2);
+    auto style = std::make_unique<ModusStyle2>(blinker_manager);
     style->set_pen(
         std::unique_ptr<Gdiplus::Pen>(new Gdiplus::Pen(Gdiplus::Color::Red)));
     style->set_brush(std::unique_ptr<Gdiplus::Brush>(new Gdiplus::HatchBrush(
@@ -16,7 +16,7 @@ ModusStyleLibrary2::ModusStyleLibrary2() {
   }
 
   {
-    std::unique_ptr<ModusStyle2> style(new ModusStyle2);
+    auto style = std::make_unique<ModusStyle2>(blinker_manager);
     style->set_pen(std::unique_ptr<Gdiplus::Pen>(
         new Gdiplus::Pen(Gdiplus::Color::Orange)));
     style->set_brush(std::unique_ptr<Gdiplus::Brush>(new Gdiplus::HatchBrush(
@@ -26,14 +26,14 @@ ModusStyleLibrary2::ModusStyleLibrary2() {
   }
 
   {
-    std::unique_ptr<ModusStyle2> style(new ModusStyle2);
+    auto style = std::make_unique<ModusStyle2>(blinker_manager);
     style->set_brush(std::unique_ptr<Gdiplus::Brush>(
         new Gdiplus::SolidBrush(Gdiplus::Color::Orange)));
     set_style(StyleId::BADQ, std::move(style));
   }
 
   {
-    std::unique_ptr<ModusStyle2> style(new ModusStyle2);
+    auto style = std::make_unique<ModusStyle2>(blinker_manager);
     style->set_pen(std::unique_ptr<Gdiplus::Pen>(
         new Gdiplus::Pen(Gdiplus::Color::Orange, 2.0F)));
     style->set_animation_pen(std::unique_ptr<Gdiplus::Pen>(

@@ -24,6 +24,7 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
                        context.node_service_.GetNode(data_items::id::DataItems),
                        context.timed_data_service_,
                        context.profile_,
+                       context.blinker_manager_,
                    })} {
   tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);

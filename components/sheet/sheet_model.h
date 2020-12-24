@@ -8,6 +8,7 @@
 
 #include <set>
 
+class BlinkerManager;
 class SheetCell;
 class TimedDataService;
 
@@ -19,6 +20,7 @@ class SheetColumnModel : public ui::ColumnHeaderModel {
 
 struct SheetModelContext {
   TimedDataService& timed_data_service_;
+  BlinkerManager& blinker_manager_;
 };
 
 class SheetModel : private SheetModelContext,

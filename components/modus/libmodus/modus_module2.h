@@ -6,11 +6,12 @@ namespace modus {
 class MasterLibrary;
 }
 
+class BlinkerManager;
 class ModusStyleLibrary2;
 
 class ModusModule2 {
  public:
-  ModusModule2();
+  explicit ModusModule2(BlinkerManager& blinker_manager);
   ~ModusModule2();
 
   modus::MasterLibrary& master_library() { return *master_library_; }

@@ -14,6 +14,7 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
       visible_node_model_{
           timed_data_service_,
           profile_,
+          blinker_manager_,
           [this](void* tree_node) { TreeNodeChanged(tree_node); },
       } {}
 

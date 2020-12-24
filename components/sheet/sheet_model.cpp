@@ -17,7 +17,8 @@ std::wstring SheetColumnModel::GetTitle(int index) const {
 // SheetModel -----------------------------------------------------------------
 
 SheetModel::SheetModel(SheetModelContext&& context)
-    : SheetModelContext{std::move(context)} {
+    : SheetModelContext{std::move(context)},
+      Blinker{SheetModelContext::blinker_manager_} {
   Blinker::Start();
 }
 

@@ -8,6 +8,7 @@ class HistoryService;
 class SessionService;
 }  // namespace scada
 
+class BlinkerManager;
 class CommandHandler;
 class ContentsModel;
 class ControllerDelegate;
@@ -42,4 +43,5 @@ struct ControllerContext {
   FileCache& file_cache_;
   Profile& profile_;
   DialogService& dialog_service_;
+  BlinkerManager& blinker_manager_;
 };

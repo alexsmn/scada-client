@@ -2,7 +2,8 @@
 
 #include "libmodus/gfx/gdip.h"
 
-ModusStyle2::ModusStyle2() {}
+ModusStyle2::ModusStyle2(BlinkerManager& blinker_manager)
+    : Blinker{blinker_manager} {}
 
 ModusStyle2::~ModusStyle2() {}
 

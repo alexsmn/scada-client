@@ -12,9 +12,11 @@ class Pen;
 class RectF;
 }  // namespace Gdiplus
 
+class BlinkerManager;
+
 class ModusStyle2 : private Blinker {
  public:
-  ModusStyle2();
+  explicit ModusStyle2(BlinkerManager& blinker_manager);
   ~ModusStyle2();
 
   void set_brush(std::unique_ptr<Gdiplus::Brush> brush);
@@ -39,7 +41,7 @@ class ModusStyle2 : private Blinker {
   bool IsAnimated() const;
 
   // Blinker
-	virtual void OnBlink(bool state) override;
+  virtual void OnBlink(bool state) override;
 
   std::unique_ptr<Gdiplus::Brush> brush_;
   std::unique_ptr<Gdiplus::Brush> animation_brush_;

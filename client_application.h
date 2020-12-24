@@ -22,6 +22,7 @@ class TransportFactory;
 }
 
 class ActionManager;
+class BlinkerManager;
 class ConnectionStateReporter;
 class EventFetcher;
 class EventNotifier;
@@ -100,6 +101,7 @@ class ClientApplication : private ClientApplicationContext,
   std::unique_ptr<PortfolioManager> portfolio_manager_;
   std::unique_ptr<Favourites> favourites_;
   std::unique_ptr<Speech> speech_;
+  std::unique_ptr<BlinkerManager> blinker_manager_;
 
   std::unique_ptr<FileCache> file_cache_;
 

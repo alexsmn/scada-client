@@ -5,8 +5,10 @@
 
 VisibleNodeModel::VisibleNodeModel(TimedDataService& timed_data_service,
                                    Profile& profile,
+                                   BlinkerManager& blinker_manager,
                                    NodeChangeHandler node_change_handler)
-    : timed_data_service_{timed_data_service},
+    : Blinker{blinker_manager},
+      timed_data_service_{timed_data_service},
       profile_{profile},
       node_change_handler_{std::move(node_change_handler)} {
   Blinker::Start();

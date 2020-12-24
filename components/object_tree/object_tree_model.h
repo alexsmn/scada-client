@@ -9,6 +9,7 @@ struct ObjectTreeModelContext {
   const NodeRef root_;
   TimedDataService& timed_data_service_;
   Profile& profile_;
+  BlinkerManager& blinker_manager_;
 };
 
 class ObjectTreeModel : private ObjectTreeModelContext,

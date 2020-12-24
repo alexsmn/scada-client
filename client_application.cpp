@@ -3,6 +3,7 @@
 #include "address_space/address_space_impl.h"
 #include "address_space/generic_node_factory.h"
 #include "base/bind.h"
+#include "base/blinker.h"
 #include "base/boost_log.h"
 #include "base/boost_log_adapter.h"
 #include "base/command_line.h"
@@ -165,6 +166,7 @@ ClientApplication::~ClientApplication() {
   file_cache_.reset();
   connection_state_reporter_.reset();
 
+  blinker_manager_.reset();
   speech_.reset();
   event_notifier_.reset();
   action_manager_.reset();
@@ -259,6 +261,7 @@ void ClientApplication::Start() {
       *profile_,
   });
   speech_.reset(new Speech);
+  blinker_manager_ = std::make_unique<BlinkerManager>(executor_);
 
   connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(
       ConnectionStateReporterContext{*master_data_services_, *local_events_});
@@ -269,7 +272,7 @@ void ClientApplication::Start() {
   RegisterFileCacheType(*file_cache_, ID_EXCEL_REPORT_VIEW, ".tsr");
   file_cache_->Init();
 
-  modus_module_.reset(new ModusModule2);
+  modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());
 
   action_manager_ = std::make_unique<ActionManager>();
@@ -383,7 +386,8 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
         delegate, alias_resolver_, *task_manager_, *master_data_services_,
         *event_fetcher_, *master_data_services_, *master_data_services_,
         *timed_data_service_, *node_service_, *portfolio_manager_,
-        *local_events_, *favourites_, *file_cache_, *profile_, dialog_service});
+        *local_events_, *favourites_, *file_cache_, *profile_, dialog_service,
+        *blinker_manager_});
   };
 
   auto login_handler = [this](bool login) {
