@@ -143,6 +143,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     {data_items::id::DataItemType_StalePeriod, &kIntPropDef},
     {history::id::HasHistoricalDatabase, &kRefPropDef},
     {data_items::id::AnalogItemType_Clamping, &kEnumPropDef},
+    {data_items::id::HasDevice, &kRefPropDef},
     // Link
     {devices::id::LinkType_Transport, &kLinkTransportPropDef},
     {devices::id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
