@@ -71,40 +71,40 @@ ObjectTreeModel& ObjectTreeView::model() {
 void ObjectTreeView::UpdateNodesVisibility(ConfigurationTreeNode& parent_node,
                                            bool expanded) {
   for (int i = 0; i < parent_node.GetChildCount(); ++i) {
-    ConfigurationTreeNode& child = parent_node.GetChild(i);
-    model().SetNodeVisible(child, expanded);
+    auto& child = parent_node.GetChild(i);
+    model().SetNodeVisible(&child, expanded);
     if (tree_view().IsExpanded(&child, false))
       UpdateNodesVisibility(child, expanded);
   }
 }
 
 void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {
-  ConfigurationTreeNode& parent_node = *model().AsNode(parent);
+  auto& parent_node = *model().AsNode(parent);
   if (tree_view().IsExpanded(&parent_node, true)) {
     for (int i = 0; i < count; ++i) {
-      ConfigurationTreeNode& child = parent_node.GetChild(start + i);
-      model().SetNodeVisible(child, true);
+      auto& child = parent_node.GetChild(start + i);
+      model().SetNodeVisible(&child, true);
     }
   }
 }
 
 void ObjectTreeView::OnTreeNodesDeleting(void* parent, int start, int count) {
-  ConfigurationTreeNode& parent_node = *model().AsNode(parent);
+  auto& parent_node = *model().AsNode(parent);
   if (tree_view().IsExpanded(&parent_node, true)) {
     for (int i = 0; i < count; ++i) {
-      ConfigurationTreeNode& child = parent_node.GetChild(start + i);
-      model().SetNodeVisible(child, false);
+      auto& child = parent_node.GetChild(start + i);
+      model().SetNodeVisible(&child, false);
     }
   }
 
   for (int i = 0; i < count; ++i) {
-    ConfigurationTreeNode& child = parent_node.GetChild(start + i);
+    auto& child = parent_node.GetChild(start + i);
     tree_view().SetChecked(&child, false);
   }
 }
 
 void ObjectTreeView::OnTreeModelResetting() {
-  ConfigurationTreeNode* root_node = model().root();
+  auto* root_node = model().root();
   if (root_node)
     UpdateNodesVisibility(*root_node, false);
 }

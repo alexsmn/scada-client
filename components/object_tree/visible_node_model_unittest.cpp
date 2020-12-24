@@ -22,5 +22,15 @@ class VisibleNodeModelTest : public Test {
                           node_change_handler_};
 };
 
+class TestVisibleNode : public VisibleNode {
+ public:
+  MOCK_METHOD(std::wstring, GetText, (), (const));
+  MOCK_METHOD(bool, IsBad, (), (const));
+  MOCK_METHOD(bool, IsAlerting, (), (const));
+};
+
 TEST_F(VisibleNodeModelTest, Test) {
+  int value = 0;
+  void* tree_node = &value;
+  model_.SetNode(tree_node, std::make_unique<TestVisibleNode>());
 }

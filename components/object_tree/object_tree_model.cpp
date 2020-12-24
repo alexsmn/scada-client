@@ -51,7 +51,14 @@ SkColor ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
     return ConfigurationTreeModel::GetBackgroundColor(tree_node, column_id);
 }
 
-void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& tree_node,
-                                     bool visible) {
-  visible_node_model_.SetNodeVisible(tree_node, visible);
+void ObjectTreeModel::SetNodeVisible(void* tree_node, bool visible) {
+  auto& configuration_tree_node =
+      *static_cast<ConfigurationTreeNode*>(tree_node);
+  if (visible) {
+    auto visible_node = std::make_unique<ObjectVisibleNode>(
+        timed_data_service_, configuration_tree_node.node());
+    visible_node_model_.SetNode(tree_node, std::move(visible_node));
+  } else {
+    visible_node_model_.SetNode(tree_node, nullptr);
+  }
 }

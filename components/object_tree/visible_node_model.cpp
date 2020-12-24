@@ -16,40 +16,38 @@ VisibleNodeModel::VisibleNodeModel(TimedDataService& timed_data_service,
 
 void VisibleNodeModel::OnBlink(bool state) {
   // TODO: Track list of alerting nodes.
-  for (auto& p : visible_nodes_data_) {
+  for (auto& p : nodes_) {
     if (p.second->IsAlerting())
       node_change_handler_(p.first);
   }
 }
 
-void VisibleNodeModel::SetNodeVisible(ConfigurationTreeNode& tree_node,
-                                      bool visible) {
-  if (visible) {
-    const auto& node = tree_node.node();
-    if (node.fetched() && node.node_class() != scada::NodeClass::Variable)
-      return;
+void VisibleNodeModel::SetNode(void* tree_node,
+                               std::unique_ptr<VisibleNode> node) {
+  if (node) {
+    node->change_handler_ = [this, tree_node] {
+      node_change_handler_(tree_node);
+    };
 
-    auto& node_data = visible_nodes_data_[&tree_node];
-    assert(!node_data);
+    nodes_[tree_node] = std::move(node);
 
-    node_data = CreateNodeData(tree_node);
-    node_change_handler_(&tree_node);
+    node_change_handler_(tree_node);
 
   } else {
-    visible_nodes_data_.erase(&tree_node);
+    nodes_.erase(tree_node);
   }
 }
 
 std::wstring VisibleNodeModel::GetText(void* tree_node) {
-  auto* node_data = GetNodeData(tree_node);
-  if (!node_data)
+  auto* node = GetNode(tree_node);
+  if (!node)
     return std::wstring();
-  return node_data->GetText();
+  return node->GetText();
 }
 
 SkColor VisibleNodeModel::GetTextColor(void* tree_node) {
-  auto* node_data = GetNodeData(tree_node);
-  if (!node_data || node_data->IsBad())
+  auto* node = GetNode(tree_node);
+  if (!node || node->IsBad())
     return profile_.bad_value_color;
 
   return SK_ColorBLACK;
@@ -57,59 +55,54 @@ SkColor VisibleNodeModel::GetTextColor(void* tree_node) {
 
 SkColor VisibleNodeModel::GetBackgroundColor(void* tree_node) {
   if (Blinker::GetState()) {
-    auto* node_data = GetNodeData(tree_node);
-    if (node_data && node_data->IsAlerting())
+    auto* node = GetNode(tree_node);
+    if (node && node->IsAlerting())
       return profile_.alarm_color;
   }
 
   return SK_ColorTRANSPARENT;
 }
 
-const VisibleNodeModel::NodeData* VisibleNodeModel::GetNodeData(
-    void* tree_node) const {
+const VisibleNode* VisibleNodeModel::GetNode(void* tree_node) const {
   if (!tree_node)
     return nullptr;
 
-  auto i =
-      visible_nodes_data_.find(static_cast<ConfigurationTreeNode*>(tree_node));
-  if (i == visible_nodes_data_.end())
+  auto i = nodes_.find(static_cast<ConfigurationTreeNode*>(tree_node));
+  if (i == nodes_.end())
     return nullptr;
 
   return i->second.get();
 }
 
-std::unique_ptr<VisibleNodeModel::NodeData> VisibleNodeModel::CreateNodeData(
-    ConfigurationTreeNode& tree_node) {
-  return std::make_unique<NodeDataImpl>(
-      timed_data_service_, tree_node.node(),
-      [this, &tree_node] { node_change_handler_(&tree_node); });
+// VisibleNode
+
+void VisibleNode::NotifyChanged() {
+  if (change_handler_)
+    change_handler_();
 }
 
-// VisibleNodeModel::NodeDataImpl
+// ObjectVisibleNode
 
-VisibleNodeModel::NodeDataImpl::NodeDataImpl(
-    TimedDataService& timed_data_service,
-    const NodeRef& node,
-    ChangeHandler change_handler) {
-  spec_.property_change_handler =
-      [change_handler](const PropertySet& properties) {
-        if (properties.is_current_changed())
-          change_handler();
-      };
+ObjectVisibleNode::ObjectVisibleNode(TimedDataService& timed_data_service,
+                                     const NodeRef& node) {
+  spec_.property_change_handler = [this](const PropertySet& properties) {
+    if (properties.is_current_changed())
+      NotifyChanged();
+  };
 
-  spec_.event_change_handler = change_handler;
+  spec_.event_change_handler = [this] { NotifyChanged(); };
 
   spec_.Connect(timed_data_service, node);
 }
 
-std::wstring VisibleNodeModel::NodeDataImpl::GetText() const {
+std::wstring ObjectVisibleNode::GetText() const {
   return spec_.GetCurrentString(FORMAT_DEFAULT);
 }
 
-bool VisibleNodeModel::NodeDataImpl::IsBad() const {
+bool ObjectVisibleNode::IsBad() const {
   return spec_.current().qualifier.general_bad();
 }
 
-bool VisibleNodeModel::NodeDataImpl::IsAlerting() const {
+bool ObjectVisibleNode::IsAlerting() const {
   return spec_.alerting();
 }

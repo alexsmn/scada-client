@@ -17,7 +17,7 @@ class ObjectTreeModel : private ObjectTreeModelContext,
  public:
   explicit ObjectTreeModel(ObjectTreeModelContext&& context);
 
-  void SetNodeVisible(ConfigurationTreeNode& tree_node, bool visible);
+  void SetNodeVisible(void* tree_node, bool visible);
 
   // TreeModel
   virtual int GetColumnCount() const override;

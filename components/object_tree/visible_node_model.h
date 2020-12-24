@@ -7,6 +7,38 @@
 class ConfigurationTreeNode;
 class Profile;
 class TimedDataService;
+class VisibleNodeModel;
+
+class VisibleNode {
+ public:
+  virtual ~VisibleNode() = default;
+
+  virtual std::wstring GetText() const = 0;
+  virtual bool IsBad() const { return false; }
+  virtual bool IsAlerting() const { return false; }
+
+ protected:
+  void NotifyChanged();
+
+ private:
+  using ChangeHandler = std::function<void()>;
+  ChangeHandler change_handler_;
+
+  friend class VisibleNodeModel;
+};
+
+class ObjectVisibleNode final : public VisibleNode {
+ public:
+  ObjectVisibleNode(TimedDataService& timed_data_service, const NodeRef& node);
+
+  // VisibleNode
+  virtual std::wstring GetText() const override;
+  virtual bool IsBad() const override;
+  virtual bool IsAlerting() const override;
+
+ private:
+  TimedDataSpec spec_;
+};
 
 class VisibleNodeModel : private Blinker {
  public:
@@ -17,44 +49,14 @@ class VisibleNodeModel : private Blinker {
                    BlinkerManager& blinker_manager,
                    NodeChangeHandler node_change_handler);
 
-  void SetNodeVisible(ConfigurationTreeNode& tree_node, bool visible);
+  void SetNode(void* tree_node, std::unique_ptr<VisibleNode> node);
 
   std::wstring GetText(void* tree_node);
   SkColor GetTextColor(void* tree_node);
   SkColor GetBackgroundColor(void* tree_node);
 
  private:
-  class NodeData {
-   public:
-    using ChangeHandler = std::function<void()>;
-
-    virtual ~NodeData() = default;
-
-    virtual std::wstring GetText() const = 0;
-    virtual bool IsBad() const { return false; }
-    virtual bool IsAlerting() const { return false; }
-  };
-
-  class NodeDataImpl final : public NodeData {
-   public:
-    using ChangeHandler = std::function<void()>;
-
-    NodeDataImpl(TimedDataService& timed_data_service,
-                 const NodeRef& node,
-                 ChangeHandler change_handler);
-
-    // NodeData
-    virtual std::wstring GetText() const override;
-    virtual bool IsBad() const override;
-    virtual bool IsAlerting() const override;
-
-   private:
-    TimedDataSpec spec_;
-  };
-
-  std::unique_ptr<NodeData> CreateNodeData(ConfigurationTreeNode& tree_node);
-
-  const NodeData* GetNodeData(void* tree_node) const;
+  const VisibleNode* GetNode(void* tree_node) const;
 
   // Blinker
   virtual void OnBlink(bool state) override;
@@ -63,7 +65,5 @@ class VisibleNodeModel : private Blinker {
   Profile& profile_;
   const NodeChangeHandler node_change_handler_;
 
-  using NodeDataMap =
-      std::map<ConfigurationTreeNode*, std::unique_ptr<NodeData>>;
-  NodeDataMap visible_nodes_data_;
+  std::map<void*, std::unique_ptr<VisibleNode>> nodes_;
 };
