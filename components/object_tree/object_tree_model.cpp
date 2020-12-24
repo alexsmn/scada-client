@@ -11,7 +11,7 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
           {{scada::id::Organizes, true}},
           {},
       }},
-      visible_nodes_{
+      visible_node_model_{
           timed_data_service_,
           profile_,
           [this](void* tree_node) { TreeNodeChanged(tree_node); },
@@ -31,26 +31,26 @@ int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {
 
 std::wstring ObjectTreeModel::GetText(void* tree_node, int column_id) {
   if (column_id == 1)
-    return visible_nodes_.GetText(tree_node);
+    return visible_node_model_.GetText(tree_node);
   else
     return ConfigurationTreeModel::GetText(tree_node, column_id);
 }
 
 SkColor ObjectTreeModel::GetTextColor(void* tree_node, int column_id) {
   if (column_id == 1)
-    return visible_nodes_.GetTextColor(tree_node);
+    return visible_node_model_.GetTextColor(tree_node);
   else
     return ConfigurationTreeModel::GetTextColor(tree_node, column_id);
 }
 
 SkColor ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
   if (column_id == 1)
-    return visible_nodes_.GetBackgroundColor(tree_node);
+    return visible_node_model_.GetBackgroundColor(tree_node);
   else
     return ConfigurationTreeModel::GetBackgroundColor(tree_node, column_id);
 }
 
 void ObjectTreeModel::SetNodeVisible(ConfigurationTreeNode& tree_node,
                                      bool visible) {
-  visible_nodes_.SetNodeVisible(tree_node, visible);
+  visible_node_model_.SetNodeVisible(tree_node, visible);
 }

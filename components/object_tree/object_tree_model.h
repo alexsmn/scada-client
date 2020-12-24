@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/configuration_tree/configuration_tree_model.h"
-#include "components/object_tree/visible_nodes.h"
+#include "components/object_tree/visible_node_model.h"
 
 struct ObjectTreeModelContext {
   NodeService& node_service_;
@@ -27,5 +27,5 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   virtual SkColor GetBackgroundColor(void* node, int column_id) override;
 
  private:
-  VisibleNodes visible_nodes_;
+  VisibleNodeModel visible_node_model_;
 };

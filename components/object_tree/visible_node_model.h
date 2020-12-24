@@ -8,13 +8,13 @@ class ConfigurationTreeNode;
 class Profile;
 class TimedDataService;
 
-class VisibleNodes : private Blinker {
+class VisibleNodeModel : private Blinker {
  public:
   using NodeChangeHandler = std::function<void(void* tree_node)>;
 
-  VisibleNodes(TimedDataService& timed_data_service,
-               Profile& profile,
-               NodeChangeHandler node_change_handler);
+  VisibleNodeModel(TimedDataService& timed_data_service,
+                   Profile& profile,
+                   NodeChangeHandler node_change_handler);
 
   void SetNodeVisible(ConfigurationTreeNode& tree_node, bool visible);
 
