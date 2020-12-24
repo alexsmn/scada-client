@@ -1,11 +1,7 @@
 #pragma once
 
-#include "base/blinker.h"
 #include "components/configuration_tree/configuration_tree_model.h"
-#include "timed_data/timed_data_spec.h"
-
-class Profile;
-class TimedDataService;
+#include "components/object_tree/visible_nodes.h"
 
 struct ObjectTreeModelContext {
   NodeService& node_service_;
@@ -16,14 +12,11 @@ struct ObjectTreeModelContext {
 };
 
 class ObjectTreeModel : private ObjectTreeModelContext,
-                        public ConfigurationTreeModel,
-                        private Blinker {
+                        public ConfigurationTreeModel {
  public:
   explicit ObjectTreeModel(ObjectTreeModelContext&& context);
 
-  void SetNodeVisible(ConfigurationTreeNode& node, bool visible);
-
-  const TimedDataSpec* GetTimedData(void* node) const;
+  void SetNodeVisible(ConfigurationTreeNode& tree_node, bool visible);
 
   // TreeModel
   virtual int GetColumnCount() const override;
@@ -33,9 +26,6 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   virtual SkColor GetTextColor(void* node, int column_id) override;
   virtual SkColor GetBackgroundColor(void* node, int column_id) override;
 
-  // Blinker
-  virtual void OnBlink(bool state) override;
-
-  typedef std::map<ConfigurationTreeNode*, TimedDataSpec> NodeDataMap;
-  NodeDataMap visible_nodes_data_;
+ private:
+  VisibleNodes visible_nodes_;
 };

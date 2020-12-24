@@ -45,6 +45,7 @@ class Profile {
   Page out_wins;  // windows out-of-page
 
   SkColor bad_value_color = SkColorSetRGB(192, 192, 192);
+  SkColor alarm_color = SK_ColorYELLOW;
 
   struct EventJournal {
     base::Value default_state;
