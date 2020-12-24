@@ -2,7 +2,6 @@
 
 #include "address_space/address_space_impl.h"
 #include "address_space/generic_node_factory.h"
-#include "address_space/scada_address_space.h"
 #include "base/bind.h"
 #include "base/boost_log.h"
 #include "base/boost_log_adapter.h"
