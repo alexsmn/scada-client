@@ -42,9 +42,9 @@ class TimedDataService;
 class Speech;
 
 struct ClientApplicationContext {
-  std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>
+  const std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>
       main_window_factory_;
-  std::function<void()> quit_handler_;
+  const std::function<void()> quit_handler_;
 };
 
 class ClientApplication : private ClientApplicationContext,

@@ -7,6 +7,7 @@
 #include "time_range.h"
 #include "value_util.h"
 #include "window_definition.h"
+#include "window_info.h"
 
 #include <optional>
 #include <string_view>
@@ -119,4 +120,80 @@ inline std::optional<TimeRange> RestoreTimeRange(
     return std::nullopt;
 
   return FromJson<TimeRange>(item->attributes);
+}
+
+namespace {
+
+void LoadWinItems(WindowItems& items, const base::Value& data) {
+  if (!data.is_list())
+    return;
+
+  for (auto& item_data : data.GetList()) {
+    auto& item = items.emplace_back();
+    item.name = std::string{GetString(item_data, "name")};
+    item.attributes = item_data.Clone();
+    item.attributes.RemoveKey("name");
+  }
+}
+
+base::Value SaveWinItems(const WindowItems& items) {
+  base::Value::ListStorage list;
+  list.reserve(items.size());
+  for (const auto& item : items) {
+    assert(item.attributes.is_dict());
+    assert(!item.attributes.FindKey("name"));
+    auto item_data = item.attributes.Clone();
+    SetKey(item_data, "name", item.name);
+    list.emplace_back(std::move(item_data));
+  }
+  return base::Value{std::move(list)};
+}
+
+}  // namespace
+
+inline base::Value ToJson(const WindowDefinition& def) {
+  const WindowInfo& window_info = def.window_info();
+
+  base::Value win{base::Value::Type::DICTIONARY};
+  SetKey(win, "type", window_info.name);
+  SetKey(win, "id", def.id);
+  if (!def.visible) {
+    assert(window_info.flags & WIN_SING);
+    SetKey(win, "visible", def.visible);
+  }
+  if (!def.title.empty())
+    SetKey(win, "title", def.title);
+  if (!def.path.empty())
+    SetKey(win, "path", def.path.value());
+  SetKey(win, "width", def.size.width());
+  SetKey(win, "height", def.size.height());
+  SetKey(win, "locked", def.locked);
+
+  win.SetKey("items", SaveWinItems(def.items));
+  win.SetKey("data", def.storage.Clone());
+
+  return win;
+}
+
+template <>
+inline std::optional<WindowDefinition> FromJson(const base::Value& win) {
+  UINT type = ParseWindowType(GetString(win, "type"));
+  const WindowInfo* info = FindWindowInfo(type);
+  if (!info)
+    return std::nullopt;
+
+  WindowDefinition w{*info};
+  w.id = GetInt(win, "id", 0);
+  if (info->flags & WIN_SING)
+    w.visible = GetBool(win, "visible", true);
+  w.title = GetString16(win, "title");
+  w.path = base::FilePath(GetString16(win, "path"));
+  w.size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
+  if (auto* items = win.FindKey("items"))
+    LoadWinItems(w.items, *items);
+
+  if (auto* data = GetDict(win, "data"))
+    w.storage = data->Clone();
+
+  return w;
 }

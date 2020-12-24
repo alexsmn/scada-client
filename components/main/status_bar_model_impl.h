@@ -2,8 +2,8 @@
 
 #include "base/observer_list.h"
 #include "base/timer/timer.h"
-#include "node_service/node_util.h"
 #include "controls/status_bar_model.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
 
 namespace scada {

@@ -59,6 +59,7 @@ class WindowDefinition {
     assert(window_info_);
     return *window_info_;
   }
+
   std::wstring GetTitle() const;
 
   WindowItem& AddItem(std::string name);
@@ -84,8 +85,6 @@ class WindowDefinition {
 
  private:
   const WindowInfo* window_info_ = nullptr;
-
-  std::unique_ptr<base::Value> storage_;
 };
 
 #include "window_definition_util.h"

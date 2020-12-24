@@ -16,37 +16,6 @@
 
 #define MAX_TITLE 30
 
-namespace {
-
-const wchar_t kPageFileExtension[] = L"page";
-
-void LoadWinItems(WindowItems& items, const base::Value& data) {
-  if (!data.is_list())
-    return;
-
-  for (auto& item_data : data.GetList()) {
-    auto& item = items.emplace_back();
-    item.name = std::string{GetString(item_data, "name")};
-    item.attributes = item_data.Clone();
-    item.attributes.RemoveKey("name");
-  }
-}
-
-base::Value SaveWinItems(const WindowItems& items) {
-  base::Value::ListStorage list;
-  list.reserve(items.size());
-  for (const auto& item : items) {
-    assert(item.attributes.is_dict());
-    assert(!item.attributes.FindKey("name"));
-    auto item_data = item.attributes.Clone();
-    SetKey(item_data, "name", item.name);
-    list.emplace_back(std::move(item_data));
-  }
-  return base::Value{std::move(list)};
-}
-
-}  // namespace
-
 // Page
 
 Page::Page(const Page& source)

@@ -69,7 +69,7 @@ WindowDefinition::WindowDefinition(const WindowDefinition& other)
       visible(other.visible),
       locked(other.locked),
       items(other.items),
-      storage_(other.storage_ ? other.storage_->DeepCopy() : NULL) {}
+      storage(other.storage.Clone()) {}
 
 WindowDefinition::~WindowDefinition() {}
 
@@ -82,7 +82,7 @@ WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
   visible = other.visible;
   locked = other.locked;
   items = other.items;
-  storage_.reset(other.storage_ ? other.storage_->DeepCopy() : NULL);
+  storage = other.storage.Clone();
   return *this;
 }
 
@@ -123,7 +123,3 @@ const WindowItem* WindowDefinition::FindItem(const char* name) const {
 void WindowDefinition::Clear() {
   items.clear();
 }
-
-/*void WindowDefinition::SetStorage(base::Value* storage) {
-  storage_.reset(storage);
-}*/

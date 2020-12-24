@@ -11,7 +11,7 @@ add_subdirectory("${deps}/modus" modus)
 
 add_definitions(-DMODUS_GDIP)
 
-file(GLOB_RECURSE PATHS
+file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.cpp"
   "*.h"
   "*.rc"

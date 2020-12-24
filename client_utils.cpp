@@ -12,7 +12,6 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
-#include "model/scada_node_ids.h"
 #include "node_serialization.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -64,11 +63,10 @@ std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   AppendHint(str, L"Обновлен", str_utime);
 
   // events
-  const EventSet* events = timed_data.GetEvents();
+  const auto* events = timed_data.GetEvents();
   if (events && !events->empty()) {
     size_t count = 0;
-    for (EventSet::const_reverse_iterator i = events->rbegin();
-         i != events->rend(); ++i, ++count) {
+    for (auto i = events->rbegin(); i != events->rend(); ++i, ++count) {
       const scada::Event& event = **i;
       if (!count)
         str += L'\n';

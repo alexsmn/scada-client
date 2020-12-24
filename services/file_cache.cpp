@@ -99,7 +99,7 @@ void FileCache::Load() {
   LOG(INFO) << "Loading file cache from " << cache_path.value();
 
   std::string error_message;
-  auto data = LoadJson(cache_path, &error_message);
+  auto data = LoadJsonFromFile(cache_path, &error_message);
   if (!data) {
     LOG(ERROR) << "Error on load file cache - " << error_message;
     return;
@@ -131,7 +131,7 @@ void FileCache::Save() {
       list_data.emplace_back(SaveFileEntry(entry, type.name));
   }
 
-  SaveJson(base::Value{std::move(list_data)}, cache_path);
+  SaveJsonToFile(base::Value{std::move(list_data)}, cache_path);
 }
 
 std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(

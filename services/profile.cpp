@@ -175,7 +175,7 @@ void Profile::Load(EventFetcher& event_manager,
   LOG(INFO) << "Load profile";
 
   std::string error_message;
-  if (auto data = LoadJson(GetFilePath(), &error_message))
+  if (auto data = LoadJsonFromFile(GetFilePath(), &error_message))
     Load(*data, event_manager, portfolio_manager, favourites);
   else
     LOG(ERROR) << "Profile load error " << error_message;
@@ -295,7 +295,7 @@ void Profile::Save(const EventFetcher& event_manager,
 
   auto data = SaveToValue(event_manager, portfolio_manager, favourites);
 
-  if (SaveJson(data, GetFilePath()))
+  if (SaveJsonToFile(data, GetFilePath()))
     LOG(INFO) << "Profile saved";
   else
     LOG(ERROR) << "Profile save error";

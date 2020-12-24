@@ -1,10 +1,10 @@
 #include "components/main/opened_view.h"
 
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/views/main_window_views.h"
 #include "contents_model.h"
 #include "controller.h"
+#include "model/scada_node_ids.h"
 #include "views/client_utils_views.h"
 #include "views/item_drag_data.h"
 #include "window_info.h"

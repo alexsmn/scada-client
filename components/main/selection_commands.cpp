@@ -3,8 +3,6 @@
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "common/event_fetcher.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"
 #include "components/limits/limit_dialog.h"
@@ -20,6 +18,8 @@
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "model/security_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
@@ -40,6 +40,18 @@ bool CanCreateSomething(const NodeRef& node) {
 
   return false;
 }
+
+#if defined(UI_QT)
+std::string EncodeUri(std::string_view str) {
+  return QByteArray{str.data(), static_cast<int>(str.size())}
+      .toPercentEncoding()
+      .toStdString();
+}
+#else
+std::string EncodeUri(std::string_view str) {
+  return std::string{str};
+}
+#endif
 
 }  // namespace
 
