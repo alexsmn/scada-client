@@ -28,5 +28,8 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   virtual SkColor GetBackgroundColor(void* node, int column_id) override;
 
  private:
+  std::shared_ptr<VisibleNode> CreateVisibleNode(void* tree_node);
+  std::shared_ptr<VisibleNode> CreateFetchedVisibleNode(const NodeRef& node);
+
   VisibleNodeModel visible_node_model_;
 };

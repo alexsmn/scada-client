@@ -14,7 +14,6 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
       visible_node_model_{
           timed_data_service_,
           profile_,
-          blinker_manager_,
           [this](void* tree_node) { TreeNodeChanged(tree_node); },
       } {}
 
@@ -52,13 +51,31 @@ SkColor ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
 }
 
 void ObjectTreeModel::SetNodeVisible(void* tree_node, bool visible) {
+  auto visible_node = visible ? CreateVisibleNode(tree_node) : nullptr;
+  visible_node_model_.SetNode(tree_node, std::move(visible_node));
+}
+
+std::shared_ptr<VisibleNode> ObjectTreeModel::CreateVisibleNode(
+    void* tree_node) {
   auto& configuration_tree_node =
       *static_cast<ConfigurationTreeNode*>(tree_node);
-  if (visible) {
-    auto visible_node = std::make_unique<ObjectVisibleNode>(
-        timed_data_service_, configuration_tree_node.node());
-    visible_node_model_.SetNode(tree_node, std::move(visible_node));
-  } else {
-    visible_node_model_.SetNode(tree_node, nullptr);
-  }
+  auto node = configuration_tree_node.node();
+
+  if (node.fetched())
+    return CreateFetchedVisibleNode(node);
+
+  auto proxy_visible_node = std::make_shared<ProxyVisibleNode>();
+  // TODO: shared_ptr.
+  node.Fetch(NodeFetchStatus::NodeOnly(),
+             [this, proxy_visible_node](const NodeRef& node) {
+               auto visible_node = CreateFetchedVisibleNode(node);
+               proxy_visible_node->SetUnderlyingNode(std::move(visible_node));
+             });
+  visible_node_model_.SetNode(tree_node, std::move(proxy_visible_node));
+}
+
+std::shared_ptr<VisibleNode> ObjectTreeModel::CreateFetchedVisibleNode(
+    const NodeRef& node) {
+  return std::make_shared<ObjectVisibleNode>(timed_data_service_,
+                                             blinker_manager_, node);
 }
