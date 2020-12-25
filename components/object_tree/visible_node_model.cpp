@@ -1,6 +1,8 @@
 #include "components/object_tree/visible_node_model.h"
 
 #include "components/configuration_tree/configuration_tree_model.h"
+#include "model/data_items_node_ids.h"
+#include "services/device_state_notifier.h"
 #include "services/profile.h"
 
 VisibleNodeModel::VisibleNodeModel(TimedDataService& timed_data_service,
@@ -123,11 +125,11 @@ bool ProxyVisibleNode::IsAlerting() const {
   return underlying_node_ && underlying_node_->IsAlerting();
 }
 
-// ObjectVisibleNode
+// DataItemVisibleNode
 
-ObjectVisibleNode::ObjectVisibleNode(TimedDataService& timed_data_service,
-                                     BlinkerManager& blinker_manager,
-                                     NodeRef node)
+DataItemVisibleNode::DataItemVisibleNode(TimedDataService& timed_data_service,
+                                         BlinkerManager& blinker_manager,
+                                         NodeRef node)
     : Blinker{blinker_manager} {
   spec_.property_change_handler = [this](const PropertySet& properties) {
     if (properties.is_current_changed())
@@ -143,24 +145,24 @@ ObjectVisibleNode::ObjectVisibleNode(TimedDataService& timed_data_service,
   NotifyChanged();
 }
 
-void ObjectVisibleNode::OnBlink(bool state) {
+void DataItemVisibleNode::OnBlink(bool state) {
   assert(alerting_);
   NotifyChanged();
 }
 
-std::wstring ObjectVisibleNode::GetText() const {
+std::wstring DataItemVisibleNode::GetText() const {
   return spec_.GetCurrentString(FORMAT_DEFAULT);
 }
 
-bool ObjectVisibleNode::IsBad() const {
+bool DataItemVisibleNode::IsBad() const {
   return spec_.current().qualifier.general_bad();
 }
 
-bool ObjectVisibleNode::IsAlerting() const {
+bool DataItemVisibleNode::IsAlerting() const {
   return alerting_ && Blinker::GetState();
 }
 
-void ObjectVisibleNode::SetAlerting(bool alerting) {
+void DataItemVisibleNode::SetAlerting(bool alerting) {
   if (alerting == alerting_)
     return;
 
@@ -172,4 +174,55 @@ void ObjectVisibleNode::SetAlerting(bool alerting) {
     Blinker::Stop();
 
   NotifyChanged();
+}
+
+// DataGroupVisibleNode
+
+DataGroupVisibleNode::DataGroupVisibleNode(TimedDataService& timed_data_service,
+                                           NodeRef node)
+    : timed_data_service_{timed_data_service}, node_{node} {
+  node_.Subscribe(*this);
+
+  UpdateDevice();
+}
+
+DataGroupVisibleNode::~DataGroupVisibleNode() {
+  node_.Unsubscribe(*this);
+}
+
+std::wstring DataGroupVisibleNode::GetText() const {
+  return device_state_notifier_ ? std::wstring{ToLocalizedString(
+                                      device_state_notifier_->device_state())}
+                                : std::wstring{};
+}
+
+bool DataGroupVisibleNode::IsBad() const {
+  return device_state_notifier_ &&
+         device_state_notifier_->device_state() != DEVICE_STATE_ONLINE;
+}
+
+void DataGroupVisibleNode::UpdateDevice() {
+  auto device = node_.target(data_items::id::HasDevice);
+
+  if (device_ == device)
+    return;
+
+  device_state_notifier_.reset();
+
+  device_ = std::move(device);
+
+  if (device_) {
+    device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
+        timed_data_service_, device_, [this] { NotifyChanged(); });
+  }
+
+  NotifyChanged();
+}
+
+void DataGroupVisibleNode::OnModelChanged(
+    const scada::ModelChangeEvent& event) {
+  if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
+                    scada::ModelChangeEvent::ReferenceDeleted)) {
+    UpdateDevice();
+  }
 }

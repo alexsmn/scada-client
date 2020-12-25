@@ -1,6 +1,8 @@
 ﻿#include "components/object_tree/object_tree_model.h"
 
 #include "core/standard_node_ids.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/node_util.h"
 
 ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
@@ -71,11 +73,22 @@ std::shared_ptr<VisibleNode> ObjectTreeModel::CreateVisibleNode(
                auto visible_node = CreateFetchedVisibleNode(node);
                proxy_visible_node->SetUnderlyingNode(std::move(visible_node));
              });
-  visible_node_model_.SetNode(tree_node, std::move(proxy_visible_node));
+
+  return proxy_visible_node;
 }
 
 std::shared_ptr<VisibleNode> ObjectTreeModel::CreateFetchedVisibleNode(
     const NodeRef& node) {
-  return std::make_shared<ObjectVisibleNode>(timed_data_service_,
-                                             blinker_manager_, node);
+  assert(node.fetched());
+
+  if (IsInstanceOf(node, data_items::id::DataItemType)) {
+    return std::make_shared<DataItemVisibleNode>(timed_data_service_,
+                                                 blinker_manager_, node);
+
+  } else if (IsInstanceOf(node, data_items::id::DataGroupType)) {
+    return std::make_shared<DataGroupVisibleNode>(timed_data_service_, node);
+
+  } else {
+    return nullptr;
+  }
 }

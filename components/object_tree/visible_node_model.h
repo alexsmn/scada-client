@@ -2,10 +2,12 @@
 
 #include "base/blinker.h"
 #include "controls/color.h"
+#include "node_service/node_observer.h"
 #include "timed_data/timed_data_spec.h"
 
 class BlinkerManager;
 class ConfigurationTreeNode;
+class DeviceStateNotifier;
 class Profile;
 class TimedDataService;
 class VisibleNodeModel;
@@ -47,11 +49,11 @@ class ProxyVisibleNode final
   std::shared_ptr<VisibleNode> underlying_node_;
 };
 
-class ObjectVisibleNode final : private Blinker, public VisibleNode {
+class DataItemVisibleNode final : private Blinker, public VisibleNode {
  public:
-  ObjectVisibleNode(TimedDataService& timed_data_service,
-                    BlinkerManager& blinker_manager,
-                    NodeRef node);
+  DataItemVisibleNode(TimedDataService& timed_data_service,
+                      BlinkerManager& blinker_manager,
+                      NodeRef node);
 
   // VisibleNode
   virtual std::wstring GetText() const override;
@@ -67,6 +69,28 @@ class ObjectVisibleNode final : private Blinker, public VisibleNode {
   TimedDataSpec spec_;
 
   bool alerting_ = false;
+};
+
+class DataGroupVisibleNode final : public VisibleNode, private NodeRefObserver {
+ public:
+  DataGroupVisibleNode(TimedDataService& timed_data_service, NodeRef node);
+  ~DataGroupVisibleNode();
+
+  // VisibleNode
+  virtual std::wstring GetText() const override;
+  virtual bool IsBad() const override;
+
+ private:
+  void UpdateDevice();
+
+  // NodeRefObserver
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+
+  TimedDataService& timed_data_service_;
+  const NodeRef node_;
+
+  NodeRef device_;
+  std::unique_ptr<DeviceStateNotifier> device_state_notifier_;
 };
 
 class VisibleNodeModel {

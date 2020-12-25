@@ -10,6 +10,13 @@ std::string ToString(DeviceState device_state) {
   return kStrings[static_cast<size_t>(device_state)];
 }
 
+std::wstring_view ToLocalizedString(DeviceState device_state) {
+  static const std::wstring_view kStrings[] = {L"", L"Отключено", L"Нет связи",
+                                               L"Есть связь"};
+  static_assert(std::size(kStrings) == static_cast<size_t>(DEVICE_STATE_COUNT));
+  return kStrings[static_cast<size_t>(device_state)];
+}
+
 // DeviceStateNotifier
 
 DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
