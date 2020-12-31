@@ -5,9 +5,9 @@
 #include "core/configuration_types.h"
 #include "gfx/point.h"
 
-#include <SkColor.h>
 #include <functional>
 #include <set>
+#include <SkColor.h>
 
 #if defined(UI_QT)
 #include <QWidget>

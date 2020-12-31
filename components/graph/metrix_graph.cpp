@@ -64,7 +64,7 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
   if (std::abs(total) < std::numeric_limits<decltype(total)>::epsilon())
     return 1000;
 
-  return ready / total * 100;
+  return static_cast<int>(ready / total * 100);
 }
 
 }  // namespace
@@ -177,13 +177,11 @@ void MetrixGraph::Legend::Update() {
 void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
   QPainter painter(this);
 
-  MetrixGraph& graph = pane().graph();
-
   //	dc.Rectangle(rect.left, rect.top, rect.right + 1, rect.bottom + 1);
 
   int top = MARGY;
-  for (auto i = plot().lines().begin(); i != plot().lines().end(); i++) {
-    MetrixLine& line = static_cast<MetrixLine&>(**i);
+  for (auto* graph_line : plot().lines()) {
+    MetrixLine& line = static_cast<MetrixLine&>(*graph_line);
     auto& data_source = static_cast<MetrixDataSource&>(line.data_source());
 
     int left = MARGX;
@@ -381,13 +379,9 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
 }
 
 void MetrixGraph::UpdateData() {
-  for (Panes::const_iterator i = panes().begin(); i != panes().end(); ++i) {
-    views::GraphPane& pane = **i;
-    const views::GraphPlot::Lines& lines = pane.plot().lines();
-    for (views::GraphPlot::Lines::const_iterator i = lines.begin();
-         i != lines.end(); ++i) {
-      static_cast<MetrixLine*>(*i)->UpdateTimeRange();
-    }
+  for (auto* pane : panes()) {
+    for (auto* line : pane->plot().lines())
+      static_cast<MetrixLine*>(line)->UpdateTimeRange();
   }
 }
 

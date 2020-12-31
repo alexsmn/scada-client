@@ -11,7 +11,7 @@ LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
   wnd_color = GetDlgItem(IDC_COLOR);
   for (size_t i = 1; i <= aui::GetColorCount(); i++)
     wnd_color.AddString((LPCTSTR)i);
-  BYTE col = aui::FindColor(color);
+  int col = aui::FindColor(color);
   wnd_color.SetCurSel(col != 0 ? col - 1 : 0);
 
   WTL::CUpDownCtrl(GetDlgItem(IDC_LINE_WEIGHT_UPDOWN)).SetRange(1, 10);

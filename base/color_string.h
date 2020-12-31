@@ -1,6 +1,9 @@
 #pragma once
 
+#include "controls/color.h"
+
 namespace gfx {
+class Canvas;
 class Font;
 }
 

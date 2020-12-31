@@ -28,21 +28,17 @@ ToolbarController::ToolbarController(ActionManager& action_manager,
 void ToolbarController::UpdateCommands() {
   std::vector<views::Toolbar::Item> items;
 
-  std::vector<unsigned> commands;
+  std::vector<unsigned> all_commands;
 
-  const ActionList& actions = action_manager_.actions();
-  for (ActionList::const_iterator i = actions.begin(); i != actions.end();
-       ++i) {
-    const Action& action = **i;
-    if (action.always_visible() ||
-        command_handler_.GetCommandHandler(action.command_id()))
-      commands.push_back(action.command_id());
+  for (auto* action : action_manager_.actions()) {
+    if (action->always_visible() ||
+        command_handler_.GetCommandHandler(action->command_id()))
+      all_commands.push_back(action->command_id());
   }
 
-  auto grouped_commands = GroupCommands(action_manager_, commands);
+  auto grouped_commands = GroupCommands(action_manager_, all_commands);
 
-  for (GroupedActions::iterator i = grouped_commands.begin();
-       i != grouped_commands.end(); ++i) {
+  for (auto i = grouped_commands.begin(); i != grouped_commands.end(); ++i) {
     CommandCategory category = i->first;
     ActionList& commands = i->second;
     if (commands.empty())
@@ -55,9 +51,7 @@ void ToolbarController::UpdateCommands() {
 
     bool expand_category = CanExpandCommandCategory(category);
 
-    for (ActionList::iterator i = commands.begin(); i != commands.end(); ++i) {
-      Action* action = *i;
-
+    for (auto* action : commands) {
       CommandHandler* command_handler =
           command_handler_.GetCommandHandler(action->command_id());
       if (!command_handler)
@@ -98,7 +92,7 @@ void ToolbarController::UpdateCommandStates() {
         item.type == views::Toolbar::POPUP)
       continue;
 
-    unsigned add = 0, remove = 0;
+    WORD add = 0, remove = 0;
 
     CommandHandler* handler =
         command_handler_.GetCommandHandler(item.command_id);

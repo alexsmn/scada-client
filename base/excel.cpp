@@ -11,7 +11,7 @@
 
 namespace {
 
-HRESULT AutoWrap(int autoType,
+HRESULT AutoWrap(WORD autoType,
                  VARIANT* pvResult,
                  IDispatch* pDisp,
                  LPCOLESTR ptName,
@@ -24,7 +24,7 @@ HRESULT AutoWrap(int autoType,
   DISPID dispidNamed = DISPID_PROPERTYPUT;
   DISPID dispID;
   HRESULT hr;
-  char szName[200];
+  char szName[256];
 
   // Convert down to ANSI
   WideCharToMultiByte(CP_ACP, 0, ptName, -1, szName, 256, NULL, NULL);

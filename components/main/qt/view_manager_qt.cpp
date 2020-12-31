@@ -410,9 +410,9 @@ void ViewManagerQt::AddDockView(OpenedView& view) {
   QDockWidget* tabify_to = nullptr;
   // Open HardwareView to the bottom of opened view.
   if (view.window_info().command_id != ID_HARDWARE_VIEW) {
-    for (auto* dock : main_window_.findChildren<CustomDockWidget*>()) {
-      if (main_window_.dockWidgetArea(dock) == area) {
-        tabify_to = dock;
+    for (auto* opened_dock : main_window_.findChildren<CustomDockWidget*>()) {
+      if (main_window_.dockWidgetArea(opened_dock) == area) {
+        tabify_to = opened_dock;
         break;
       }
     }

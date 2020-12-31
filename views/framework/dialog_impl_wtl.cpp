@@ -91,7 +91,7 @@ LRESULT DialogImplWtl::OnCommand(UINT /*uMsg*/, WPARAM wParam,
                                  LPARAM lParam, BOOL& /*bHandled*/) {
   unsigned id = LOWORD(wParam);
   UINT notification_code = HIWORD(wParam);
-  HWND window = (HWND)lParam;
+  // HWND window = (HWND)lParam;
   
   Widget* widget = dialog().GetView(id);
   if (widget)

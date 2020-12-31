@@ -275,7 +275,6 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_CHANGE_PASSWORD: {
-      auto node = selection_->node();
       if (IsInstanceOf(node, security::id::UserType)) {
         ShowChangePasswordDialog(
             *dialog_service_,

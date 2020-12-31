@@ -237,9 +237,10 @@ modus::Point ModusView2::PointToScheme(const gfx::Point& point) const {
 }
 
 gfx::Rect ModusView2::BoundsToView(const modus::Rect& bounds) const {
-  return gfx::Rect(floor(bounds.x() * scale_), floor(bounds.y() * scale_),
-                   ceil(bounds.width() * scale_),
-                   ceil(bounds.height() * scale_));
+  return gfx::Rect(static_cast<int>(floor(bounds.x() * scale_)),
+                   static_cast<int>(floor(bounds.y() * scale_)),
+                   static_cast<int>(ceil(bounds.width() * scale_)),
+                   static_cast<int>(ceil(bounds.height() * scale_)));
 }
 
 void ModusView2::ZoomAtPoint(const gfx::Point& point, float factor) {
@@ -251,8 +252,10 @@ void ModusView2::ZoomAtPoint(const gfx::Point& point, float factor) {
   PreferredSizeChanged();
 
   gfx::Rect new_visible_bounds(
-      visible_bounds.x() * factor, visible_bounds.y() * factor,
-      visible_bounds.width() * factor, visible_bounds.height() * factor);
+      static_cast<int>(floor(visible_bounds.x() * factor)),
+      static_cast<int>(floor(visible_bounds.y() * factor)),
+      static_cast<int>(ceil(visible_bounds.width() * factor)),
+      static_cast<int>(ceil(visible_bounds.height() * factor)));
   ScrollRectToVisible(new_visible_bounds);
 }
 

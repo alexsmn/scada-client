@@ -157,8 +157,8 @@ void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& node_id,
 
       if (added) {
         bool all_children_checked = true;
-        for (int i = 0; i < model().GetChildCount(parent); ++i) {
-          auto* child = model().GetChild(parent, i);
+        for (int j = 0; j < model().GetChildCount(parent); ++j) {
+          auto* child = model().GetChild(parent, j);
           if (!tree_view().IsChecked(child)) {
             all_children_checked = false;
             break;

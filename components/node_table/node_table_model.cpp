@@ -142,8 +142,8 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
 bool NodeTableModel::SetCellText(int row,
                                  int column,
                                  const std::wstring& text) {
-  assert(row >= 0 && row < nodes_.size());
-  if (row < 0 || row >= nodes_.size())
+  assert(row >= 0 && row < static_cast<int>(nodes_.size()));
+  if (row < 0 || row >= static_cast<int>(nodes_.size()))
     return false;
 
   const auto& node = nodes_[row];

@@ -255,7 +255,7 @@ void SummaryModel::DeleteColumn(int index) {
 
 int SummaryModel::FindColumn(const scada::NodeId& node_id,
                              int starting_index) const {
-  for (int i = starting_index; i < columns_.size(); ++i) {
+  for (int i = starting_index; i < static_cast<int>(columns_.size()); ++i) {
     if (columns_[i]->GetNodeId() == node_id)
       return i;
   }
@@ -355,11 +355,11 @@ void SummaryModel::OnColumnTitleChanged(int column) {
 
 void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
                                     unsigned flags) {
-  NodeIdSet node_ids;
-  ExpandGroupItemIds(node_service_.GetNode(node_id), node_ids);
+  NodeIdSet child_ids;
+  ExpandGroupItemIds(node_service_.GetNode(node_id), child_ids);
 
-  for (const auto& node_id : node_ids)
-    AddColumn(MakeNodeIdFormula(node_id));
+  for (const auto& child_id : child_ids)
+    AddColumn(MakeNodeIdFormula(child_id));
 }
 
 void SummaryModel::RemoveContainedItem(const scada::NodeId& node_id) {
@@ -426,7 +426,7 @@ void SummaryModel::SetParams(const TimeRange& time_range,
   time_range_ = time_range;
   start_time_ = start_time;
   end_time_ = start_time_ + aggregate_filter.interval * row_count;
-  row_count_ = row_count;
+  row_count_ = static_cast<int>(row_count);
   aggregate_filter_ = std::move(aggregate_filter);
 
   assert(!start_time_.is_null());

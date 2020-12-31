@@ -105,7 +105,7 @@ TransportDialogModel::TransportDialogModel(
     serial_port_items.emplace_back(base::StringPrintf(L"COM%d:", i));
 
   baud_rate_items.emplace_back(kDefaultString);
-  for (int i = 0; i < std::size(kBaudRates); ++i)
+  for (unsigned i = 0; i < std::size(kBaudRates); ++i)
     baud_rate_items.emplace_back(base::NumberToString16(kBaudRates[i]));
 
   bit_count_items.emplace_back(kDefaultString);
@@ -113,17 +113,17 @@ TransportDialogModel::TransportDialogModel(
     bit_count_items.emplace_back(base::NumberToString16(i));
 
   parity_items.emplace_back(kDefaultString);
-  for (int i = 0; i < std::size(kParityStrings); ++i)
+  for (unsigned i = 0; i < std::size(kParityStrings); ++i)
     parity_items.emplace_back(kParityStrings[i].first);
 
   stop_bits_items.emplace_back(kDefaultString);
-  for (int i = 0; i < std::size(kStopBitsStrings); ++i) {
+  for (unsigned i = 0; i < std::size(kStopBitsStrings); ++i) {
     stop_bits_items.emplace_back(
         base::SysNativeMBToWide(ToStringPiece(kStopBitsStrings[i])));
   }
 
   flow_control_items.emplace_back(kDefaultString);
-  for (int i = 0; i < std::size(kFlowControlStrings); ++i)
+  for (unsigned i = 0; i < std::size(kFlowControlStrings); ++i)
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
@@ -139,12 +139,12 @@ TransportDialogModel::TransportDialogModel(
     serial_port_index = std::max(0, port_no - 1);
 
     {
-      int baudrate =
-          transport_string_.GetParamInt(net::TransportString::kParamBaudRate);
+      auto baud_rate = static_cast<unsigned>(
+          transport_string_.GetParamInt(net::TransportString::kParamBaudRate));
       int index = -1;
-      for (int i = 0; i < std::size(kBaudRates); ++i)
-        if (kBaudRates[i] == baudrate) {
-          index = i;
+      for (size_t i = 0; i < std::size(kBaudRates); ++i)
+        if (kBaudRates[i] == baud_rate) {
+          index = static_cast<int>(i);
           break;
         }
       baud_rate_index = index + 1;
@@ -229,7 +229,7 @@ void TransportDialogModel::Save() {
 
     {
       int i = baud_rate_index;
-      if (i >= 1 && i <= std::size(kBaudRates)) {
+      if (i >= 1 && i <= static_cast<int>(std::size(kBaudRates))) {
         transport_string_.SetParam(net::TransportString::kParamBaudRate,
                                    kBaudRates[i - 1]);
       } else

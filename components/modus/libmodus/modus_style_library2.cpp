@@ -7,37 +7,39 @@
 ModusStyleLibrary2::ModusStyleLibrary2(BlinkerManager& blinker_manager) {
   {
     auto style = std::make_unique<ModusStyle2>(blinker_manager);
-    style->set_pen(
-        std::unique_ptr<Gdiplus::Pen>(new Gdiplus::Pen(Gdiplus::Color::Red)));
-    style->set_brush(std::unique_ptr<Gdiplus::Brush>(new Gdiplus::HatchBrush(
-        Gdiplus::HatchStyleForwardDiagonal, Gdiplus::Color::Red,
-        Gdiplus::Color(0, 0, 0, 0))));
+    style->set_pen(std::unique_ptr<Gdiplus::Pen>(
+        new Gdiplus::Pen(static_cast<Gdiplus::ARGB>(Gdiplus::Color::Red))));
+    style->set_brush(std::unique_ptr<Gdiplus::Brush>(
+        new Gdiplus::HatchBrush(Gdiplus::HatchStyleForwardDiagonal,
+                                static_cast<Gdiplus::ARGB>(Gdiplus::Color::Red),
+                                Gdiplus::Color(0, 0, 0, 0))));
     set_style(StyleId::INVAL, std::move(style));
   }
 
   {
     auto style = std::make_unique<ModusStyle2>(blinker_manager);
     style->set_pen(std::unique_ptr<Gdiplus::Pen>(
-        new Gdiplus::Pen(Gdiplus::Color::Orange)));
+        new Gdiplus::Pen(static_cast<Gdiplus::ARGB>(Gdiplus::Color::Orange))));
     style->set_brush(std::unique_ptr<Gdiplus::Brush>(new Gdiplus::HatchBrush(
-        Gdiplus::HatchStyleForwardDiagonal, Gdiplus::Color::Orange,
+        Gdiplus::HatchStyleForwardDiagonal,
+        static_cast<Gdiplus::ARGB>(Gdiplus::Color::Orange),
         Gdiplus::Color(0, 0, 0, 0))));
     set_style(StyleId::INACT, std::move(style));
   }
 
   {
     auto style = std::make_unique<ModusStyle2>(blinker_manager);
-    style->set_brush(std::unique_ptr<Gdiplus::Brush>(
-        new Gdiplus::SolidBrush(Gdiplus::Color::Orange)));
+    style->set_brush(std::unique_ptr<Gdiplus::Brush>(new Gdiplus::SolidBrush(
+        static_cast<Gdiplus::ARGB>(Gdiplus::Color::Orange))));
     set_style(StyleId::BADQ, std::move(style));
   }
 
   {
     auto style = std::make_unique<ModusStyle2>(blinker_manager);
-    style->set_pen(std::unique_ptr<Gdiplus::Pen>(
-        new Gdiplus::Pen(Gdiplus::Color::Orange, 2.0F)));
-    style->set_animation_pen(std::unique_ptr<Gdiplus::Pen>(
-        new Gdiplus::Pen(Gdiplus::Color::Lime, 2.0F)));
+    style->set_pen(std::unique_ptr<Gdiplus::Pen>(new Gdiplus::Pen(
+        static_cast<Gdiplus::ARGB>(Gdiplus::Color::Orange), 2.0F)));
+    style->set_animation_pen(std::unique_ptr<Gdiplus::Pen>(new Gdiplus::Pen(
+        static_cast<Gdiplus::ARGB>(Gdiplus::Color::Lime), 2.0F)));
     set_style(StyleId::ALERT, std::move(style));
   }
 }

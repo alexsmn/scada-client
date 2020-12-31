@@ -76,8 +76,8 @@ void Page::Load(const base::Value& data) {
       if (auto* items = win.FindKey("items"))
         LoadWinItems(w->items, *items);
 
-      if (auto* data = GetDict(win, "data"))
-        w->storage = data->Clone();
+      if (auto* win_data = GetDict(win, "data"))
+        w->storage = win_data->Clone();
 
       windows_.emplace_back(std::move(w));
     }

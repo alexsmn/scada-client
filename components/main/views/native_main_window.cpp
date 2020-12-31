@@ -173,8 +173,8 @@ LRESULT NativeMainWindow::OnInitMenuPopup(UINT /*uMsg*/,
                                           LPARAM lParam,
                                           BOOL& bHandled) {
   HMENU hmenu = reinterpret_cast<HMENU>(wParam);
-  bool is_window_menu = HIWORD(lParam) != 0;
-  int index = LOWORD(lParam);
+  // bool is_window_menu = HIWORD(lParam) != 0;
+  // int index = LOWORD(lParam);
 
   if (!::IsMenu(hmenu))
     return 0;

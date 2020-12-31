@@ -1,10 +1,10 @@
 #pragma once
 
-#include "components/modus/activex/sdecore.h"
+#include "components/modus/activex/modus.h"
 
 #include <memory>
-#include <wrl/client.h>
 #include <vector>
+#include <wrl/client.h>
 
 namespace SDECore {
 struct ISDEObject50;

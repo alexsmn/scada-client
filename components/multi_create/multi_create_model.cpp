@@ -2,11 +2,11 @@
 
 #include "base/strings/stringprintf.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
 
 namespace {
@@ -34,8 +34,8 @@ std::wstring MultiCreateModel::GetAutoName(bool ts) const {
 }
 
 void MultiCreateModel::Run(const RunParams& params) {
-  auto i = devices_.find(params.device);
-  auto device_id = i == devices_.end() ? scada::NodeId() : i->second;
+  auto p = devices_.find(params.device);
+  auto device_id = p == devices_.end() ? scada::NodeId() : p->second;
 
   scada::NodeId type_definition_id = params.ts
                                          ? data_items::id::DiscreteItemType

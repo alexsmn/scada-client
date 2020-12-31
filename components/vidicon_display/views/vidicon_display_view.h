@@ -2,7 +2,7 @@
 
 #include "base/files/file_path.h"
 #include "base/timer/timer.h"
-#include "components/vidicon_display/displayviewerx.h"
+#include "components/vidicon_display/display_viewer_api.h"
 #include "controller.h"
 #include "ui/views/controls/activex_control.h"
 

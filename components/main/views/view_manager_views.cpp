@@ -118,20 +118,19 @@ OpenedView* ViewManagerViews::FindViewByViewsView(views::View* view) {
     if (i != views_.end())
       return *i;
   }
-  return NULL;
+  return nullptr;
 }
 
 OpenedView* ViewManagerViews::FindFirstDataView(
     views::MultiSplitPane& from_pane) {
   if (from_pane.is_split()) {
-    views::MultiSplitPane* c1 = from_pane.split_pane(0);
-    views::MultiSplitPane* c2 = from_pane.split_pane(1);
-    OpenedView* v;
-    if (c1 && (v = FindFirstDataView(*c1)))
-      return v;
-    if (c2 && (v = FindFirstDataView(*c2)))
-      return v;
-    return NULL;
+    for (int i = 0; i < 2; ++i) {
+      if (views::MultiSplitPane* sub_pane = from_pane.split_pane(i)) {
+        if (auto* view = FindFirstDataView(*sub_pane))
+          return view;
+      }
+    }
+    return nullptr;
 
   } else {
     views::TabView& tab_view = from_pane.tab_view();
@@ -140,7 +139,7 @@ OpenedView* ViewManagerViews::FindFirstDataView(
       if (v && !v->window_info().is_pane())
         return v;
     }
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -159,7 +158,7 @@ void ViewManagerViews::AddView(OpenedView& view) {
   assert(view.view());
   assert(!IsViewAdded(view));
 
-  views::MultiSplitPane* pane = NULL;
+  views::MultiSplitPane* pane = nullptr;
   views::ViewSide side = views::DOCK_CENTER;
   int percent_size = 50;
 

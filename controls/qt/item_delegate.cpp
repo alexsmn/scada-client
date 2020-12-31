@@ -66,8 +66,8 @@ void ItemDelegate::setEditorData(QWidget* editor,
   if (auto* line_edit = qobject_cast<QLineEdit*>(editor))
     line_edit->setText(text);
   else if (auto* combo_box = qobject_cast<QComboBox*>(editor)) {
-    if (int index = combo_box->findText(text); index != -1)
-      combo_box->setCurrentIndex(index);
+    if (int list_index = combo_box->findText(text); list_index != -1)
+      combo_box->setCurrentIndex(list_index);
     else
       combo_box->setCurrentText(text);
     combo_box->showPopup();

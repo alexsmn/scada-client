@@ -32,16 +32,16 @@ void ContextMenuModel::Rebuild() {
   Clear();
   submenus_.clear();
 
-  std::vector<unsigned> commands;
+  std::vector<unsigned> all_commands;
   for (auto* action : action_manager_.actions()) {
     if (main_window_.active_view() &&
         main_window_.active_view()->commands->GetCommandHandler(
             action->command_id())) {
-      commands.push_back(action->command_id());
+      all_commands.push_back(action->command_id());
     }
   }
 
-  auto grouped_commands = GroupCommands(action_manager_, commands);
+  auto grouped_commands = GroupCommands(action_manager_, all_commands);
 
   bool separated = true;
   for (auto& [category, commands] : grouped_commands) {

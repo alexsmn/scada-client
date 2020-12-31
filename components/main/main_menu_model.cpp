@@ -84,8 +84,8 @@ void FavouritesMenuModel::MenuWillShow() {
       const WindowDefinition& win = favourites_folder->GetWindow(i);
 
       bool found = false;
-      for (int i = 0; view_types_[i]; ++i) {
-        if (win.window_info().command_id == view_types_[i]) {
+      for (int j = 0; view_types_[j]; ++j) {
+        if (win.window_info().command_id == view_types_[j]) {
           found = true;
           break;
         }
@@ -266,8 +266,6 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
 }
 
 void MainMenuModel::Rebuild() {
-  const MainMenuContext& context = *this;
-
   AddSubMenu(0, L"Схема", &display_menu_model_);
 
   table_submenu_.AddItem(ID_TABLE_VIEW, L"Новая таблица");

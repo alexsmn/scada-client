@@ -74,7 +74,7 @@ void TableModel::GetCellEx(CellEx& cell) {
   if (cell.column_id == COLUMN_TITLE)
     cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
 
-  if (cell.row == rows_.size()) {
+  if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
       cell.text = L"Введите выражение";
       cell.text_color = SkColorSetRGB(192, 192, 192);
@@ -111,7 +111,8 @@ void TableModel::GetCellEx(CellEx& cell) {
                                   : data_items::id::TsFormatType_OpenColor;
             color_index = params[pid].value().get_or(-1);
           }
-          if (color_index >= 0 && color_index < aui::GetColorCount())
+          if (color_index >= 0 &&
+              color_index < static_cast<int>(aui::GetColorCount()))
             cell.text_color = aui::GetColor(color_index).sk_color();
           else
             cell.text_color = bool_value ? SK_ColorRED : SK_ColorBLACK;
@@ -308,7 +309,7 @@ std::wstring TableModel::GetTooltip(int row, int column_id) {
 
 TableRow* TableModel::GetRow(int index) {
   assert(index >= 0 && index <= (int)rows_.size());
-  if (index == rows_.size())
+  if (index == static_cast<int>(rows_.size()))
     return NULL;
   return rows_[index];
 }
@@ -317,9 +318,7 @@ const TableRow* TableModel::GetRow(int index) const {
   return const_cast<TableModel*>(this)->GetRow(index);
 }
 
-bool TableModel::SetCellText(int row,
-                             int column_id,
-                             const std::wstring& text) {
+bool TableModel::SetCellText(int row, int column_id, const std::wstring& text) {
   assert(column_id == TableModel::COLUMN_TITLE);
 
   std::string text2 = base::SysWideToNativeMB(text);

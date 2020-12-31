@@ -51,13 +51,12 @@ class ConditionalFormatBase {
   }
 };
 
-class ConditionalFormat : public ConditionalFormatBase,
-                          public PoolItem<ConditionalFormatBase,
-                                          ConditionalFormat> {
+class ConditionalFormat
+    : public ConditionalFormatBase,
+      public PoolItem<ConditionalFormatBase, ConditionalFormat> {
  public:
   ConditionalFormat(const ConditionalFormatBase& key)
-      : ConditionalFormatBase(key) {
-  }
+      : ConditionalFormatBase(key) {}
 };
 
 typedef Pool<ConditionalFormatBase, ConditionalFormat> ConditionalFormatPool;

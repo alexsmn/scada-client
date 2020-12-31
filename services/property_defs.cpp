@@ -415,7 +415,8 @@ std::wstring EnumPropertyDefinition::GetText(
   auto enum_strings_value = property.data_type()["EnumStrings"].value();
   auto* enum_strings =
       enum_strings_value.get_if<std::vector<scada::LocalizedText>>();
-  if (!enum_strings || int_value < 0 || int_value >= enum_strings->size())
+  if (!enum_strings || int_value < 0 ||
+      int_value >= static_cast<int>(enum_strings->size()))
     return std::wstring();
 
   return (*enum_strings)[int_value];
@@ -584,7 +585,7 @@ std::wstring ColorPropertyDefinition::GetText(
     const scada::NodeId& prop_decl_id) const {
   auto value = node[prop_decl_id].value();
   auto color_index = value.get_or(-1);
-  if (color_index >= 0 && color_index < aui::GetColorCount())
+  if (color_index >= 0 && color_index < static_cast<int>(aui::GetColorCount()))
     return std::wstring{aui::GetColorName(color_index)};
   else
     return kDefaultColorString;

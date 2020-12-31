@@ -240,9 +240,9 @@ LRESULT ItemEditor::OnChanChange(WORD /*wNotifyCode*/,
   int nchan = wnd_chan.GetCurSel();
   if (nchan == -1)
     nchan = 0;
-  if (nchan != channel_no_) {
+  if (static_cast<unsigned>(nchan) != channel_no_) {
     SaveChannel();
-    LoadChannel(nchan);
+    LoadChannel(static_cast<unsigned>(nchan));
   }
   // bHandled shall be TRUE, so we don't go to RecordEditor::OnChange and set it
   // modified

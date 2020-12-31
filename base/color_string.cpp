@@ -1,15 +1,16 @@
+#include "base/color_string.h"
+
 #include "base/format.h"
 #include "base/win/scoped_select_object.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/font.h"
-#include "skia/ext/skia_utils_win.h"
 
 #include <cassert>
 #include <exception>
 #include <windows.h>
 
-inline const char* strnchr(const char* str, int len, int ch)
-{
+inline const char* strnchr(const char* str, int len, int ch) {
   while (len--) {
     if (*str == ch)
       return str;
@@ -18,9 +19,13 @@ inline const char* strnchr(const char* str, int len, int ch)
   return NULL;
 }
 
-void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
-                             bool measure, int& width, int& height)
-{
+void DrawColoredStringHelper(HDC dc,
+                             int x,
+                             int y,
+                             const std::wstring& t,
+                             bool measure,
+                             int& width,
+                             int& height) {
   int len = t.length();
   const wchar_t* text = t.c_str();
 
@@ -44,7 +49,8 @@ void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
       if (height < size.cy)
         height = size.cy;
     } else {
-      int cx = LOWORD(TabbedTextOut(dc, x, y, text, block_len, 0, NULL, origin));
+      int cx =
+          LOWORD(TabbedTextOut(dc, x, y, text, block_len, 0, NULL, origin));
       x += cx;
     }
 
@@ -81,9 +87,12 @@ void DrawColoredStringHelper(HDC dc, int x, int y, const std::wstring& t,
   }
 }
 
-void MeasureColoredString(gfx::Canvas* canvas, const gfx::Font& font,
-                          SkColor color, RECT& rect,
-                          const std::wstring& text, int format) {
+void MeasureColoredString(gfx::Canvas* canvas,
+                          const gfx::Font& font,
+                          SkColor color,
+                          RECT& rect,
+                          const std::wstring& text,
+                          int format) {
   if (text.empty()) {
     if (format & DT_RIGHT)
       rect.left = rect.right;
@@ -100,15 +109,15 @@ void MeasureColoredString(gfx::Canvas* canvas, const gfx::Font& font,
   int y = rect.top;
   int width = 0, height = 0;
 
-  DrawColoredStringHelper(canvas->native_canvas(), x, y, text, true,
-      width, height);
+  DrawColoredStringHelper(canvas->native_canvas(), x, y, text, true, width,
+                          height);
 
   if (format & DT_CENTER)
-    x = (rect.left + rect.right - width)/2;
+    x = (rect.left + rect.right - width) / 2;
   else if (format & DT_RIGHT)
     x = rect.right - width;
   if (format & DT_VCENTER)
-    y = (rect.top + rect.bottom - height)/2;
+    y = (rect.top + rect.bottom - height) / 2;
   else if (format & DT_BOTTOM)
     y = rect.bottom - height;
 
@@ -118,24 +127,27 @@ void MeasureColoredString(gfx::Canvas* canvas, const gfx::Font& font,
   rect.bottom = y + height;
 }
 
-void DrawColoredString(gfx::Canvas* canvas, const gfx::Font& font,
-                       SkColor color, const RECT& rect,
-                       const std::wstring& text, int format) {
+void DrawColoredString(gfx::Canvas* canvas,
+                       const gfx::Font& font,
+                       SkColor color,
+                       const RECT& rect,
+                       const std::wstring& text,
+                       int format) {
   if (text.empty())
     return;
 
   base::win::ScopedSelectObject select_font(canvas->native_canvas(),
-                                      font.GetNativeFont());
-  COLORREF old_color = SetTextColor(canvas->native_canvas(),
-                                    skia::SkColorToCOLORREF(color));
+                                            font.GetNativeFont());
+  COLORREF old_color =
+      SetTextColor(canvas->native_canvas(), skia::SkColorToCOLORREF(color));
   int old_bk_mode = SetBkMode(canvas->native_canvas(), TRANSPARENT);
 
   int x = rect.left;
   int y = rect.top;
   int width = 0, height = 0;
   if (format & (DT_CENTER | DT_RIGHT | DT_VCENTER)) {
-    DrawColoredStringHelper(canvas->native_canvas(), x, y, text, true,
-        width, height);
+    DrawColoredStringHelper(canvas->native_canvas(), x, y, text, true, width,
+                            height);
     if (format & DT_CENTER)
       x = (rect.left + rect.right - width) / 2;
     else if (format & DT_RIGHT)
@@ -146,8 +158,8 @@ void DrawColoredString(gfx::Canvas* canvas, const gfx::Font& font,
       y = rect.bottom - height;
   }
 
-  DrawColoredStringHelper(canvas->native_canvas(), x, y, text, false,
-      width, height);
+  DrawColoredStringHelper(canvas->native_canvas(), x, y, text, false, width,
+                          height);
 
   SetBkMode(canvas->native_canvas(), old_bk_mode);
   SetTextColor(canvas->native_canvas(), old_color);
@@ -156,16 +168,16 @@ void DrawColoredString(gfx::Canvas* canvas, const gfx::Font& font,
 class ColoredStringPainter {
  public:
   struct format_t {
-    bool		bold;
-    bool		italic;
-    COLORREF	color;
+    bool bold;
+    bool italic;
+    COLORREF color;
   };
 
-  const char*	str_;
-  size_t		len_;
-  format_t	format_;
-  const char*	text_;
-  size_t		text_len_;
+  const char* str_;
+  size_t len_;
+  format_t format_;
+  const char* text_;
+  size_t text_len_;
 
   enum token_t { TEXT, LB, RB, TAG, EOL };
 
@@ -173,7 +185,8 @@ class ColoredStringPainter {
     if (!len_)
       return EOL;
 
-    else if ((*str_ == '{' || *str_ == '}' || *str_ == '\\') && (len_ == 1 || str_[0] != str_[1])) {
+    else if ((*str_ == '{' || *str_ == '}' || *str_ == '\\') &&
+             (len_ == 1 || str_[0] != str_[1])) {
       const char ch = *str_;
       ++str_, --len_;
       if (ch == '{')
@@ -207,13 +220,12 @@ class ColoredStringPainter {
         case TAG:
           process_tag(start, str_ - start);
           break;
-        case LB:
-          {
-            format_t save_format = format_;
-            process();
-            format_ = save_format;
-            break;
-          }
+        case LB: {
+          format_t save_format = format_;
+          process();
+          format_ = save_format;
+          break;
+        }
         default:
           break;
       }

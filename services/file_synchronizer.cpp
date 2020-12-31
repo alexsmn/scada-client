@@ -107,8 +107,6 @@ bool FileSynchronizer::ProcessFileNode(const NodeRef& node,
   auto last_update_time =
       ToFileTime(node[filesystem::id::FileType_LastUpdateTime].value().get_or(
           scada::DateTime{}));
-  auto size = node[filesystem::id::FileType_Size].value().get_or(
-      static_cast<scada::UInt64>(0));
 
   std::error_code ec;
   auto actual_last_update_time = std::filesystem::last_write_time(path, ec);

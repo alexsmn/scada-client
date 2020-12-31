@@ -1,8 +1,12 @@
 #include "speech.h"
 
 #include "core/monitored_item_service.h"
-#include "sapi.h"
 #include "services/profile.h"
+
+#pragma warning(push)
+#pragma warning(disable : 4471)
+#include "sapi.h"
+#pragma warning(pop)
 
 #include <atlbase.h>
 

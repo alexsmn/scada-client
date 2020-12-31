@@ -89,7 +89,7 @@ void ModusView2::paintEvent(QPaintEvent* e) {
     base::win::ScopedRegion clip_region(QtWin::toHRGN(painter.clipRegion()));
     graphics.SetClip(clip_region.get());
 
-    graphics.Clear(Gdiplus::Color::White);
+    graphics.Clear(static_cast<Gdiplus::ARGB>(Gdiplus::Color::White));
 
     graphics.ScaleTransform(scale_, scale_);
 

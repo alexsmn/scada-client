@@ -25,7 +25,6 @@ SheetModel::SheetModel(SheetModelContext&& context)
 SheetModel::~SheetModel() {}
 
 void SheetModel::Load(const WindowDefinition& definition) {
-  int n = 0;
   for (const auto& item : definition.items) {
     if (item.name_is("SheetCell")) {
       long row = item.GetInt("row", 0) - 1;
@@ -183,11 +182,13 @@ void SheetModel::OnBlink(bool state) {
   if (blinking_cells_.empty())
     return;
 
-  SheetCell& cell = **blinking_cells_.begin();
+  SheetCell& first_cell = **blinking_cells_.begin();
 
-  ui::GridRange range = ui::GridRange::Cell(cell.row(), cell.column());
-  for (CellSet::iterator i = ++blinking_cells_.begin();
-       i != blinking_cells_.end(); ++i) {
+  ui::GridRange range =
+      ui::GridRange::Cell(first_cell.row(), first_cell.column());
+
+  for (auto i = std::next(blinking_cells_.begin()); i != blinking_cells_.end();
+       ++i) {
     SheetCell& cell = **i;
     range.Expand(cell.row(), cell.column());
   }

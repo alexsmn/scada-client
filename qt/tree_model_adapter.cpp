@@ -126,7 +126,7 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
       return ToQColor(model_.GetBackgroundColor(node, index.column()));
     case Qt::DecorationRole: {
       auto icon_index = index.column() == 0 ? model_.GetIcon(node) : -1;
-      return (icon_index >= 0 && icon_index < icons_.size())
+      return (icon_index >= 0 && icon_index < static_cast<int>(icons_.size()))
                  ? icons_[icon_index]
                  : QVariant();
     }

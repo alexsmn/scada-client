@@ -189,18 +189,18 @@ void NodePropertyModel::Update() {
 
 int NodePropertyModel::FindProperty(const scada::NodeId& prop_decl_id) const {
   auto& properties = root_.properties;
-  for (int i = 0; i < properties.size(); ++i) {
+  for (size_t i = 0; i < properties.size(); ++i) {
     if (properties[i].prop_decl_id == prop_decl_id)
-      return i;
+      return static_cast<int>(i);
   }
   return -1;
 }
 
 int NodePropertyModel::FindProperty(scada::AttributeId attribute_id) const {
   auto& properties = root_.properties;
-  for (int i = 0; i < properties.size(); ++i) {
+  for (size_t i = 0; i < properties.size(); ++i) {
     if (properties[i].attribute_id == attribute_id)
-      return i;
+      return static_cast<int>(i);
   }
   return -1;
 }
