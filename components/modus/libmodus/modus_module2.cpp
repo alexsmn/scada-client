@@ -13,7 +13,8 @@ ModusModule2::ModusModule2(BlinkerManager& blinker_manager)
   base::FilePath path;
   base::PathService::Get(client::DIR_DATA, &path);
   path = path.Append(FILE_PATH_LITERAL("Library.txt"));
-  master_library_ = modus::LoadMasterLibrary(path.AsUTF8Unsafe());
+  master_library_ = std::make_unique<modus::MasterLibrary>();
+  modus::LoadMasterLibrary(*master_library_, path.AsUTF8Unsafe());
 }
 
 ModusModule2::~ModusModule2() {}

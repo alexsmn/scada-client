@@ -62,7 +62,7 @@ void ModusView3::CreateBindings(Schematic::Element& element) {
   auto& binding = bindings_.emplace_back(element);
 
   for (const auto& binding_string :
-       binding_strings.split('=', QString::SkipEmptyParts)) {
+       binding_strings.split('=', Qt::SkipEmptyParts)) {
     const auto& parts = binding_string.split('=');
     if (parts.size() == 1)
       binding.Bind(GetDefaultPropertyName(element), timed_data_service_,

@@ -1,7 +1,5 @@
 #include "components/graph/metrix_graph.h"
 
-#include <algorithm>
-
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/strings/stringprintf.h"
@@ -10,7 +8,6 @@
 #include "components/graph/metrix_data_source.h"
 
 #if defined(UI_QT)
-#include <qpainter.h>
 #include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_cursor.h"
 #elif defined(UI_VIEWS)
@@ -19,6 +16,12 @@
 #include "ui/gfx/font.h"
 #include "ui/views/controls/graph/graph_axis.h"
 #include "ui/views/controls/graph/graph_cursor.h"
+#endif
+
+#include <algorithm>
+
+#if defined(UI_QT)
+#include <QPainter>
 #endif
 
 namespace {
@@ -109,7 +112,7 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
 }
 
 std::wstring MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
-                                            int column_id) const {
+                                          int column_id) const {
   switch (column_id) {
     case 0: {
       return data_source.title();
@@ -161,7 +164,7 @@ void MetrixGraph::Legend::Update() {
   for (auto i = plot().lines().begin(); i != plot().lines().end(); ++i) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
     auto title = QString::fromStdWString(line.data_source().title());
-    auto width = QFontMetrics(font()).width(title);
+    auto width = QFontMetrics(font()).horizontalAdvance(title);
     title_width_ = std::max(title_width_, width);
   }
 
@@ -229,9 +232,8 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw value.
-    std::wstring text =
-        L"= " + line.data_source().timed_data().GetValueString(value.value,
-                                                               value.qualifier);
+    std::wstring text = L"= " + line.data_source().timed_data().GetValueString(
+                                    value.value, value.qualifier);
     rc = gfx::Rect(title_width_, top, 80, ROW);
     canvas->DrawString(text, graph.font_, SK_ColorBLACK, rc,
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);

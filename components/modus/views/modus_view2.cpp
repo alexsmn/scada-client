@@ -47,7 +47,11 @@ void ModusView2::Open(const base::FilePath& path) {
   path_ = path;
 
   auto& master_library = ModusModule2::GetInstance()->master_library();
-  scheme_ = modus::LoadScheme(path.value(), master_library);
+
+  scheme_ = std::make_unique<modus::Scheme>();
+  scheme_->set_master_library(&master_library);
+  // TODO: Check load result.
+  modus::LoadScheme(*scheme_, path.value());
 
   if (scheme_) {
     title_ = scheme_->GetValue(modus::kAttrSchemeTitle).as_string();
@@ -187,8 +191,7 @@ void ModusView2::SetSelection(modus::Shape* shape) {
 
   if (selection_signal_) {
     auto binding = GetBinding(selection_);
-    TimedDataSpec spec =
-        binding ? binding->data_point() : TimedDataSpec();
+    TimedDataSpec spec = binding ? binding->data_point() : TimedDataSpec();
     selection_signal_(spec);
   }
 }

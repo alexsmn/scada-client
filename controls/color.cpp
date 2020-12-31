@@ -1,6 +1,8 @@
 ﻿#include "controls/color.h"
 
 #include "base/containers/span.h"
+#include "base/string_piece_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 
 #include <cassert>
@@ -65,8 +67,9 @@ int FindColorName(std::wstring_view str) {
 
 Color StringToColor(std::string_view str) {
   if (!str.empty() && str[0] == '#') {
+    auto hex_string = str.substr(1);
     unsigned color = 0;
-    if (sscanf(std::string{str}.c_str(), "#%08X", &color) != 1)
+    if (!base::HexStringToUInt(ToStringPiece(hex_string), &color))
       return ColorCode::Black;
     return aui::Color::FromSkColor(color);
   }

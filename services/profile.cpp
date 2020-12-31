@@ -6,6 +6,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/time_utils.h"
 #include "base/utils.h"
 #include "client_paths.h"
 #include "common/event_fetcher.h"
@@ -21,26 +22,6 @@
 #include <ATLComTime.h>
 
 namespace {
-
-std::wstring FormatTimeDelta(base::TimeDelta span) {
-  __int64 reminder = span.InSeconds();
-  int seconds = reminder % 60;
-  reminder /= 60;
-  int minutes = reminder % 60;
-  reminder /= 60;
-  int hours = static_cast<int>(reminder);
-
-  return base::StringPrintf(L"%d:%02d:%02d", hours, minutes, seconds);
-}
-
-bool ParseTimeDelta(std::string_view str, base::TimeDelta& span) {
-  int h, m, s;
-  if (sscanf(std::string{str}.c_str(), "%d:%d:%d", &h, &m, &s) != 3)
-    return false;
-  span = base::TimeDelta::FromHours(h) + base::TimeDelta::FromMinutes(m) +
-         base::TimeDelta::FromSeconds(s);
-  return true;
-}
 
 UINT ParseToolbarPosition(std::string_view str) {
   if (base::EqualsCaseInsensitiveASCII(ToStringPiece(str), "top"))
@@ -263,7 +244,7 @@ void Profile::Load(const base::Value& data,
   }
 
   if (auto* graphe = GetDict(data, "graph")) {
-    ParseTimeDelta(GetString(*graphe, "def_span"), graph_view.default_span);
+    Deserialize(GetString(*graphe, "def_span"), graph_view.default_span);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
   }
 
@@ -375,7 +356,7 @@ base::Value Profile::SaveToValue(const EventFetcher& event_manager,
   // GraphView
   {
     base::Value graphe{base::Value::Type::DICTIONARY};
-    SetKey(graphe, "def_span", FormatTimeDelta(graph_view.default_span));
+    SetKey(graphe, "def_span", SerializeToString(graph_view.default_span));
     SetKey(graphe, "def_weight", graph_view.default_width);
     data.SetKey("graph", std::move(graphe));
   }

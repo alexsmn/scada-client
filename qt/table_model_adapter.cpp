@@ -57,9 +57,9 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::DisplayRole:
     case Qt::EditRole:
       return QString::fromStdWString(cell.text);
-    case Qt::TextColorRole:
+    case Qt::ForegroundRole:
       return ToQColor(cell.text_color);
-    case Qt::BackgroundColorRole:
+    case Qt::BackgroundRole:
       return ToQColor(cell.cell_color);
     default:
       return QVariant();

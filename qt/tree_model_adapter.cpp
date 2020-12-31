@@ -1,7 +1,7 @@
 #include "qt/tree_model_adapter.h"
 
-#include "controls/color.h"
 #include "base/win/scoped_gdi_object.h"
+#include "controls/color.h"
 #include "ui/base/models/tree_model.h"
 
 #include <cassert>
@@ -120,9 +120,9 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::DisplayRole:
     case Qt::EditRole:
       return QString::fromStdWString(model_.GetText(node, index.column()));
-    case Qt::TextColorRole:
+    case Qt::ForegroundRole:
       return ToQColor(model_.GetTextColor(node, index.column()));
-    case Qt::BackgroundColorRole:
+    case Qt::BackgroundRole:
       return ToQColor(model_.GetBackgroundColor(node, index.column()));
     case Qt::DecorationRole: {
       auto icon_index = index.column() == 0 ? model_.GetIcon(node) : -1;

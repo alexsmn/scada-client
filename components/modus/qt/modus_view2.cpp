@@ -1,10 +1,5 @@
 #include "components/modus/qt/modus_view2.h"
 
-#include <QtWinExtras/qwinfunctions.h>
-#include <qevent.h>
-#include <qpaintengine.h>
-#include <qpainter.h>
-
 #include "base/win/scoped_gdi_object.h"
 #include "base/win/scoped_hdc.h"
 #include "client_utils.h"
@@ -18,6 +13,11 @@
 #include "libmodus/scheme/scheme.h"
 #include "libmodus/scheme/serialization.h"
 #include "libmodus/scheme/value.h"
+
+#include <QMouseEvent>
+#include <QPaintEngine>
+#include <QPainter>
+#include <QtWinExtras/qwinfunctions.h>
 
 namespace {
 const int kSelectionInset = 3;
@@ -40,7 +40,10 @@ void ModusView2::Open(const base::FilePath& path) {
   path_ = path;
 
   auto& master_library = ModusModule2::GetInstance()->master_library();
-  scheme_ = modus::LoadScheme(path.value(), master_library);
+  scheme_ = std::make_unique<modus::Scheme>();
+  scheme_->set_master_library(&master_library);
+  // TODO: Check result.
+  modus::LoadScheme(*scheme_, path.value());
 
   if (scheme_) {
     title_ = scheme_->GetValue(modus::kAttrSchemeTitle).as_string();
