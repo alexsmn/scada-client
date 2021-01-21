@@ -9,7 +9,12 @@
 
 class TestAddressSpace : public scada::AddressSpace {
  public:
-  scada::Node* GetNode(const scada::NodeId& node_id) override {
+  virtual scada::Node* GetMutableNode(const scada::NodeId& node_id) override {
+    return nullptr;
+  }
+
+  virtual const scada::Node* GetNode(
+      const scada::NodeId& node_id) const override {
     return nullptr;
   }
 
