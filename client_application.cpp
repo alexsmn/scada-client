@@ -346,10 +346,14 @@ ClientApplication::CreateAddressSpaceNodeService() {
         boost::asio::io_context& io_context,
         const std::shared_ptr<Executor> executor,
         MasterDataServices& services) {
+      auto view_events_provider = [&services](scada::ViewEvents& events) {
+        return std::make_unique<ViewEventsSubscription>(services, events);
+      };
+
       return {
-          io_context, executor,      services,
-          services,   address_space, address_space.node_factory,
-          services,   services,
+          io_context, executor,      view_events_provider,       services,
+          services,   address_space, address_space.node_factory, services,
+          services,
       };
     }
 
