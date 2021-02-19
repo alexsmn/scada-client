@@ -443,9 +443,14 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     return commands;
   };
 
-  auto status_bar_model = std::make_shared<StatusBarModelImpl>(
-      StatusBarModelImplContext{*master_data_services_, *event_fetcher_,
-                                *node_service_, *task_manager_});
+  PendingTaskProvider pending_task_provider = [node_service = node_service_] {
+    return static_cast<int>(node_service->GetPendingTaskCount());
+  };
+
+  auto status_bar_model =
+      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
+          *master_data_services_, *event_fetcher_, *node_service_,
+          *task_manager_, std::move(pending_task_provider)});
 
   auto connection_info_provider = [this] {
     return master_data_services_->GetHostName();
