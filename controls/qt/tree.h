@@ -1,11 +1,11 @@
 #pragma once
 
-#include <QSortFilterProxyModel>
-#include <QTreeView>
-
+#include "controls/qt/tree_model_adapter.h"
 #include "controls/types.h"
 #include "item_delegate.h"
-#include "qt/tree_model_adapter.h"
+
+#include <QSortFilterProxyModel>
+#include <QTreeView>
 
 namespace ui {
 class TreeModel;

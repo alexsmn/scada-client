@@ -1,4 +1,4 @@
-#include "qt/table_model_adapter.h"
+#include "controls/qt/table_model_adapter.h"
 
 #include "controls/color.h"
 #include "ui/base/models/table_model.h"

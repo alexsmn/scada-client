@@ -1,9 +1,9 @@
-#include "qt/grid_model_adapter.h"
-
-#include <QtCore/qsize.h>
+#include "controls/qt/grid_model_adapter.h"
 
 #include "controls/color.h"
 #include "ui/base/models/grid_range.h"
+
+#include <QSize>
 
 namespace {
 

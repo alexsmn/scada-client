@@ -1,7 +1,7 @@
 #pragma once
 
+#include "controls/qt/table_model_adapter.h"
 #include "controls/types.h"
-#include "qt/table_model_adapter.h"
 #include "ui/base/models/table_model.h"
 
 #include <QHeaderView>

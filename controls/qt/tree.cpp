@@ -1,7 +1,7 @@
 #include "controls/qt/tree.h"
 
 #include "controls/color.h"
-#include "qt/tree_model_adapter.h"
+#include "controls/qt/tree_model_adapter.h"
 #include "value_util.h"
 
 #include <QHeaderView>

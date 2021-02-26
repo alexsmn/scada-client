@@ -1,17 +1,17 @@
-#include "qt/tree_model_adapter.h"
+#include "controls/qt/tree_model_adapter.h"
 
 #include "base/win/scoped_gdi_object.h"
 #include "controls/color.h"
 #include "ui/base/models/tree_model.h"
 
+#include <QBitmap>
+#include <QPixmap>
+#include <QSize>
 #include <cassert>
-#include <qbitmap.h>
-#include <qpixmap.h>
-#include <qsize.h>
 #include <windows.h>
 
 #ifdef OS_WIN
-#include <qwinfunctions.h>
+#include <QtWin>
 #endif
 
 TreeModelAdapter::TreeModelAdapter(ui::TreeModel& model)
