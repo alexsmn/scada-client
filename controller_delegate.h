@@ -34,4 +34,6 @@ class ControllerDelegate {
   virtual ContentsModel* GetActiveContentsModel() = 0;
   virtual void AddContentsObserver(ContentsObserver& observer) = 0;
   virtual void RemoveContentsObserver(ContentsObserver& observer) = 0;
+
+  virtual void Focus() = 0;
 };

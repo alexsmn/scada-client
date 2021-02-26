@@ -5,7 +5,6 @@
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
 #include "controls/tree.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
@@ -28,6 +27,8 @@ ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
   tree_view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetRootVisible(true);
   tree_view_->SetSorted(true);
+
+  tree_view_->SetFocusHandler([this] { controller_delegate_.Focus(); });
 
   tree_view_->SetSelectionChangedHandler([this] {
     auto selection_size = tree_view_->GetSelectionSize();

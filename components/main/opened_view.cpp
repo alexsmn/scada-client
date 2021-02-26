@@ -151,3 +151,7 @@ void OpenedView::Print(PrintService& print_service) {
   std::visit([&print_service](auto& data) { ::Print(print_service, data); },
              export_data);
 }
+
+void OpenedView::Focus() {
+  main_window_->SetActiveView(this);
+}

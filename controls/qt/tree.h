@@ -1,8 +1,8 @@
 #pragma once
 
+#include "controls/qt/item_delegate.h"
 #include "controls/qt/tree_model_adapter.h"
 #include "controls/types.h"
-#include "item_delegate.h"
 
 #include <QSortFilterProxyModel>
 #include <QTreeView>
@@ -65,6 +65,7 @@ class Tree : public QTreeView {
   void SetCompareHandler(TreeCompareHandler handler);
 
   void SetContextMenuHandler(ContextMenuHandler handler);
+  void SetFocusHandler(FocusHandler handler) {}
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);

@@ -15,7 +15,7 @@
 #endif
 
 TreeModelAdapter::TreeModelAdapter(ui::TreeModel& model)
-    : model_(model), checkable_(false) {
+    : model_(model) {
   model_.AddObserver(*this);
 }
 

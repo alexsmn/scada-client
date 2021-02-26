@@ -37,6 +37,7 @@ class Tree : public views::TreeView,
   void SetDragHandler(TreeDragHandler handler);
   void SetCompareHandler(TreeCompareHandler handler);
   void SetContextMenuHandler(ContextMenuHandler handler);
+  void SetFocusHandler(FocusHandler handler) {}
 
   base::Value SaveState() const { return {}; }
   void RestoreState(const base::Value& data) {}

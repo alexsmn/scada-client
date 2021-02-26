@@ -1,10 +1,10 @@
 #pragma once
 
-#include <qabstractitemmodel.h>
-#include <qicon.h>
-#include <memory>
-
 #include "ui/base/models/tree_node_model.h"
+
+#include <QAbstractitemmodel>
+#include <QIcon>
+#include <memory>
 
 namespace ui {
 class TreeModel;

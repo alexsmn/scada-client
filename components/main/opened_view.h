@@ -99,6 +99,7 @@ class OpenedView : private OpenedViewContext,
   virtual ContentsModel* GetActiveContentsModel() override;
   virtual void AddContentsObserver(ContentsObserver& observer) override;
   virtual void RemoveContentsObserver(ContentsObserver& observer) override;
+  virtual void Focus() override;
 
   std::unique_ptr<Controller> controller_;
 
