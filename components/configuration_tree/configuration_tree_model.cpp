@@ -26,15 +26,7 @@ inline bool DoesChildExist(base::span<const NodeServiceTree::ChildRef> children,
 
 ConfigurationTreeModel::ConfigurationTreeModel(
     ConfigurationTreeModelContext&& context)
-    : ConfigurationTreeModelContext{std::move(context)} {}
-
-ConfigurationTreeModel::~ConfigurationTreeModel() {
-  node_service_.Unsubscribe(*this);
-
-  set_root(NULL);
-}
-
-void ConfigurationTreeModel::Init() {
+    : ConfigurationTreeModelContext{std::move(context)} {
   node_service_.Subscribe(*this);
 
   auto root_node = node_service_tree_->GetRoot();
@@ -42,6 +34,12 @@ void ConfigurationTreeModel::Init() {
       std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
 
   root()->LoadChildren();
+}
+
+ConfigurationTreeModel::~ConfigurationTreeModel() {
+  node_service_.Unsubscribe(*this);
+
+  set_root(NULL);
 }
 
 void ConfigurationTreeModel::UpdateChildTreeNodes(

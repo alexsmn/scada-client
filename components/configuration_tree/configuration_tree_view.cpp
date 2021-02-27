@@ -37,8 +37,6 @@ ConfigurationTreeView::ConfigurationTreeView(
     ConfigurationTreeModel& model,
     ConfigurationTreeDropHandler& drop_handler)
     : ControllerContext{context}, model_{&model}, drop_handler_{&drop_handler} {
-  model_->Init();
-
   tree_view_.reset(new Tree(*model_));
   tree_view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetRootVisible(true);

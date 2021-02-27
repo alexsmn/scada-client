@@ -28,8 +28,6 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
 
   const NodeRef& root_node() const { return root()->node(); }
 
-  void Init();
-
   ConfigurationTreeNode* FindTreeNode(const scada::NodeId& node_id,
                                       const scada::NodeId& reference_type_id,
                                       bool forward_reference);
