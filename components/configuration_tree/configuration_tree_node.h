@@ -44,9 +44,9 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
     IMAGE_DEVICE_DISABLED,
   };
 
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) {}
-
   void Changed();
+
+  virtual void OnModelChanged() {}
 
  private:
   ConfigurationTreeModel& model_;

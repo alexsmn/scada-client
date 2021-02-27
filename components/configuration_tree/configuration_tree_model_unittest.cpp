@@ -1,49 +1,34 @@
 #include "components/configuration_tree/configuration_tree_model.h"
 
-#include "address_space/address_space.h"
-#include "base/logger.h"
+#include "components/configuration_tree/node_service_tree_mock.h"
 #include "core/standard_node_ids.h"
-#include "node_service/address_space/address_space_node_service.h"
+#include "node_service/node_model_mock.h"
 
 #include <gmock/gmock.h>
 
-class TestAddressSpace : public scada::AddressSpace {
+using namespace testing;
+
+class ConfigurationTreeModelTest : public Test {
  public:
-  virtual scada::Node* GetMutableNode(const scada::NodeId& node_id) override {
-    return nullptr;
-  }
+  virtual void SetUp() override;
 
-  virtual const scada::Node* GetNode(
-      const scada::NodeId& node_id) const override {
-    return nullptr;
-  }
-
-  virtual void Subscribe(scada::NodeObserver& events) const override {}
-  virtual void Unsubscribe(scada::NodeObserver& events) const override {}
-
-  virtual void SubscribeNode(const scada::NodeId& node_id,
-                             scada::NodeObserver& events) const override {}
-  virtual void UnsubscribeNode(const scada::NodeId& node_id,
-                               scada::NodeObserver& events) const override {}
+  MockNodeServiceTree* node_service_tree_ = nullptr;
+  std::shared_ptr<MockNodeModel> root_node_model_;
+  std::unique_ptr<ConfigurationTreeModel> model_;
 };
 
-void CompareSubTree(const NodeRef& node, void* tree_node) {}
+void ConfigurationTreeModelTest::SetUp() {
+  auto node_service_tree = std::make_unique<MockNodeServiceTree>();
+  node_service_tree_ = node_service_tree.get();
 
-TEST(ConfigurationTreeModel, CompareTree) {
-  /*const auto logger = std::make_shared<NullLogger>();
-  TestAddressSpace address_space;
-  NodeFetchStatusChecker node_fetch_status_checker =
-      [](const scada::NodeId& node_id) { return NodeFetchStatus{}; };
-  NodeFetchHandler node_fetch_handler =
-      [](const scada::NodeId& node_id,
-         const NodeFetchStatus& requested_status) {};
-  AddressSpaceNodeService node_service{
-      {logger, node_fetch_status_checker, node_fetch_handler, address_space}};
-  auto root_node = node_service.GetNode(scada::id::RootFolder);
+  root_node_model_ = std::make_shared<MockNodeModel>();
 
-  ConfigurationTreeModel model{
-      node_service, task_manager, root_node, {scada::id::Organizes}, {}};
-
-  ASSERT_NE(nullptr, model.GetRoot());
-  CompareSubTree(root_node, model.GetRoot());*/
+  EXPECT_CALL(*node_service_tree_, SetObserver(_));
+  EXPECT_CALL(*node_service_tree_, GetRoot())
+      .WillOnce(Return(NodeRef{root_node_model_}));
+  model_ = std::make_unique<ConfigurationTreeModel>(
+      ConfigurationTreeModelContext{std::move(node_service_tree)});
+  EXPECT_TRUE(model_->root_node() == NodeRef{root_node_model_});
 }
+
+TEST_F(ConfigurationTreeModelTest, Test) {}

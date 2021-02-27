@@ -3,6 +3,8 @@
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "components/object_tree/visible_node_model.h"
 
+class NodeService;
+
 struct ObjectTreeModelContext {
   NodeService& node_service_;
   const NodeRef root_;

@@ -15,4 +15,16 @@ class NodeServiceTree {
   };
 
   virtual std::vector<ChildRef> GetChildren(const NodeRef& node) const = 0;
+
+  class Observer {
+   public:
+    virtual ~Observer() = default;
+
+    virtual void OnNodeDeleted(const scada::NodeId& node_id) = 0;
+    virtual void OnNodeChildrenChanged(const scada::NodeId& node_id) = 0;
+    virtual void OnNodeModelChanged(const scada::NodeId& node_id) = 0;
+    virtual void OnNodeSemanticsChanged(const scada::NodeId& node_id) = 0;
+  };
+
+  virtual void SetObserver(Observer* observer) = 0;
 };

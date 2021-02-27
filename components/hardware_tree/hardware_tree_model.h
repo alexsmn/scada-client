@@ -2,6 +2,7 @@
 
 #include "components/configuration_tree/configuration_tree_model.h"
 
+class NodeService;
 class TimedDataService;
 
 struct HardwareTreeModelContext {

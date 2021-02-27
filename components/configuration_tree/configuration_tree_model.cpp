@@ -1,8 +1,5 @@
 ﻿#include "components/configuration_tree/configuration_tree_model.h"
 
-#include "base/bind_util.h"
-#include "base/threading/sequenced_task_runner_handle.h"
-#include "core/event.h"
 #include "node_service/node_service.h"
 
 namespace {
@@ -27,7 +24,7 @@ inline bool DoesChildExist(base::span<const NodeServiceTree::ChildRef> children,
 ConfigurationTreeModel::ConfigurationTreeModel(
     ConfigurationTreeModelContext&& context)
     : ConfigurationTreeModelContext{std::move(context)} {
-  node_service_.Subscribe(*this);
+  node_service_tree_->SetObserver(this);
 
   auto root_node = node_service_tree_->GetRoot();
   set_root(
@@ -37,8 +34,6 @@ ConfigurationTreeModel::ConfigurationTreeModel(
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
-  node_service_.Unsubscribe(*this);
-
   set_root(NULL);
 }
 
@@ -110,33 +105,6 @@ std::vector<ConfigurationTreeNode*> ConfigurationTreeModel::FindTreeNodes(
   return tree_nodes;
 }
 
-void ConfigurationTreeModel::OnModelChanged(
-    const scada::ModelChangeEvent& event) {
-  if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
-    DeleteTreeNodes(event.node_id);
-
-  } else {
-    if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
-                      scada::ModelChangeEvent::ReferenceDeleted))
-      UpdateChildTreeNodes(event.node_id);
-  }
-
-  auto [first, last] = tree_node_map_.equal_range(event.node_id);
-  for (auto i = first; i != last; ++i)
-    i->second->OnModelChanged(event);
-}
-
-void ConfigurationTreeModel::OnNodeSemanticChanged(
-    const scada::NodeId& node_id) {
-  auto task_runner = base::SequencedTaskRunnerHandle::Get();
-  task_runner->PostTask(FROM_HERE, BindLambda([this, node_id] {
-                          auto [first, last] =
-                              tree_node_map_.equal_range(node_id);
-                          for (auto i = first; i != last; ++i)
-                            TreeNodeChanged(i->second);
-                        }));
-}
-
 std::unique_ptr<ConfigurationTreeNode> ConfigurationTreeModel::CreateTreeNode(
     const scada::NodeId& reference_type_id,
     bool forward_reference,
@@ -157,4 +125,26 @@ ConfigurationTreeModel::CreateTreeNodeIfMatches(
     return nullptr;
 
   return CreateTreeNode(reference_type_id, forward_reference, node);
+}
+
+void ConfigurationTreeModel::OnNodeDeleted(const scada::NodeId& node_id) {
+  DeleteTreeNodes(node_id);
+}
+
+void ConfigurationTreeModel::OnNodeChildrenChanged(
+    const scada::NodeId& node_id) {
+  UpdateChildTreeNodes(node_id);
+}
+
+void ConfigurationTreeModel::OnNodeModelChanged(const scada::NodeId& node_id) {
+  auto [first, last] = tree_node_map_.equal_range(node_id);
+  for (auto i = first; i != last; ++i)
+    i->second->OnModelChanged();
+}
+
+void ConfigurationTreeModel::OnNodeSemanticsChanged(
+    const scada::NodeId& node_id) {
+  auto [first, last] = tree_node_map_.equal_range(node_id);
+  for (auto i = first; i != last; ++i)
+    TreeNodeChanged(i->second);
 }

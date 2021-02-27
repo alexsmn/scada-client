@@ -1,6 +1,7 @@
 #pragma once
 
 #include "components/configuration_tree/node_service_tree.h"
+#include "node_service/node_observer.h"
 
 class NodeService;
 
@@ -15,14 +16,23 @@ struct NodeServiceTreeImplContext {
 };
 
 class NodeServiceTreeImpl : public NodeServiceTree,
-                            private NodeServiceTreeImplContext {
+                            private NodeServiceTreeImplContext,
+                            private NodeRefObserver {
  public:
   explicit NodeServiceTreeImpl(NodeServiceTreeImplContext&& context);
+  ~NodeServiceTreeImpl();
 
   // NodeServiceTree
   virtual NodeRef GetRoot() const override;
   virtual std::vector<ChildRef> GetChildren(const NodeRef& node) const override;
+  virtual void SetObserver(Observer* observer) override;
 
  private:
   bool IsMatchingNode(const NodeRef& node) const;
+
+  // NodeRefObserver
+  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+
+  Observer* observer_ = nullptr;
 };

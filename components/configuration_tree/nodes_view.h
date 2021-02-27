@@ -12,7 +12,6 @@ class NodesView : public ConfigurationTreeView {
       : ConfigurationTreeView{
             context,
             *new ConfigurationTreeModel{ConfigurationTreeModelContext{
-                context.node_service_,
                 std::make_unique<NodeServiceTreeImpl>(
                     NodeServiceTreeImplContext{
                         context.node_service_,

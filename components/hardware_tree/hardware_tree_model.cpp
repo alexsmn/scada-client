@@ -17,7 +17,7 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
                  const NodeRef& node);
 
   // ConfigurationTreeNode
-  virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
+  virtual void OnModelChanged() override;
 
   // TreeNode
   virtual int GetIcon() const override;
@@ -59,9 +59,8 @@ int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
   return ConfigurationTreeNode::GetIcon();
 }
 
-void HardwareTreeModel::DeviceTreeNode::OnModelChanged(
-    const scada::ModelChangeEvent& event) {
-  ConfigurationTreeNode::OnModelChanged(event);
+void HardwareTreeModel::DeviceTreeNode::OnModelChanged() {
+  ConfigurationTreeNode::OnModelChanged();
   UpdateNotifier();
 }
 
@@ -78,7 +77,6 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 
 HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
     : ConfigurationTreeModel{::ConfigurationTreeModelContext{
-          context.node_service_,
           std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
               context.node_service_,
               context.node_service_.GetNode(devices::id::Devices),
