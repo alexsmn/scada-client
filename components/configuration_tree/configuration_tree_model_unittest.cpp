@@ -26,9 +26,17 @@ void ConfigurationTreeModelTest::SetUp() {
   EXPECT_CALL(*node_service_tree_, SetObserver(_));
   EXPECT_CALL(*node_service_tree_, GetRoot())
       .WillOnce(Return(NodeRef{root_node_model_}));
+  EXPECT_CALL(*root_node_model_, GetAttribute(scada::AttributeId::NodeId))
+      .WillRepeatedly(Return(scada::id::RootFolder));
+  EXPECT_CALL(*node_service_tree_, GetChildren(_)).Times(0);
+
   model_ = std::make_unique<ConfigurationTreeModel>(
       ConfigurationTreeModelContext{std::move(node_service_tree)});
+
   EXPECT_TRUE(model_->root_node() == NodeRef{root_node_model_});
 }
 
-TEST_F(ConfigurationTreeModelTest, Test) {}
+TEST_F(ConfigurationTreeModelTest, Test) {
+  /*auto* root = model_->GetRoot();
+  EXPECT_EQ(3, model_->GetChildCount(root));*/
+}

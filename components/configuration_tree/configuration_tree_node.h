@@ -25,8 +25,6 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
   const scada::NodeId& reference_type_id() const { return reference_type_id_; }
   bool forward_reference() const { return forward_reference_; }
 
-  void LoadChildren();
-
   // TreeNode
   virtual int GetChildCount() const override;
   virtual std::wstring GetText(int column_id) const override;
@@ -49,6 +47,8 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
   virtual void OnModelChanged() {}
 
  private:
+  void LoadChildren();
+
   ConfigurationTreeModel& model_;
   const scada::NodeId reference_type_id_;
   const bool forward_reference_;

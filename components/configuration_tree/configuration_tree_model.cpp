@@ -29,8 +29,6 @@ ConfigurationTreeModel::ConfigurationTreeModel(
   auto root_node = node_service_tree_->GetRoot();
   set_root(
       std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
-
-  root()->LoadChildren();
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
