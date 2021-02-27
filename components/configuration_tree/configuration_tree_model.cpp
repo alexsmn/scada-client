@@ -4,15 +4,29 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "core/event.h"
 #include "node_service/node_service.h"
-#include "node_service/node_util.h"
+
+namespace {
+
+inline bool DoesChildExist(base::span<const NodeServiceTree::ChildRef> children,
+                           const scada::NodeId& reference_type_id,
+                           bool forward,
+                           const NodeRef& child_node) {
+  return std::any_of(children.begin(), children.end(),
+                     [&](const NodeServiceTree::ChildRef& child_ref) {
+                       return child_ref.reference_type_id ==
+                                  reference_type_id &&
+                              child_ref.forward == forward &&
+                              child_ref.child_node == child_node;
+                     });
+}
+
+}  // namespace
 
 // ConfigurationTreeModel
 
 ConfigurationTreeModel::ConfigurationTreeModel(
     ConfigurationTreeModelContext&& context)
-    : ConfigurationTreeModelContext{std::move(context)} {
-  set_root(std::make_unique<ConfigurationTreeRootNode>(*this, root_node_));
-}
+    : ConfigurationTreeModelContext{std::move(context)} {}
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
   node_service_.Unsubscribe(*this);
@@ -23,36 +37,24 @@ ConfigurationTreeModel::~ConfigurationTreeModel() {
 void ConfigurationTreeModel::Init() {
   node_service_.Subscribe(*this);
 
+  auto root_node = node_service_tree_->GetRoot();
+  set_root(
+      std::make_unique<ConfigurationTreeRootNode>(*this, std::move(root_node)));
+
   root()->LoadChildren();
-}
-
-void ConfigurationTreeModel::DeleteMissingTreeNodes(
-    const scada::NodeId& node_id) {
-  // Remove tree nodes with missing references.
-  auto [first, last] = tree_node_map_.equal_range(node_id);
-  for (auto i = first; i != last;) {
-    auto& tree_node = *i->second;
-    ++i;
-
-    if (auto* parent_tree_node = tree_node.parent()) {
-      bool exists = parent_tree_node->node().has_target(
-          tree_node.reference_type_id(), tree_node.forward_reference(),
-          node_id);
-      if (!exists)
-        Remove(*parent_tree_node, parent_tree_node->IndexOfChild(tree_node));
-    }
-  }
 }
 
 void ConfigurationTreeModel::UpdateChildTreeNodes(
     const scada::NodeId& parent_id) {
   for (auto* parent_tree_node : FindTreeNodes(parent_id)) {
+    auto children = node_service_tree_->GetChildren(parent_tree_node->node());
+
     // Delete missing targets.
     for (int i = 0; i < parent_tree_node->GetChildCount();) {
       auto& tree_node = parent_tree_node->GetChild(i);
-      bool exists = parent_tree_node->node().has_target(
-          tree_node.reference_type_id(), tree_node.forward_reference(),
-          tree_node.node().node_id());
+      bool exists =
+          DoesChildExist(children, tree_node.reference_type_id(),
+                         tree_node.forward_reference(), tree_node.node());
       if (!exists)
         Remove(*parent_tree_node, i);
       else
@@ -60,17 +62,12 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
     }
 
     // Create missing targets.
-    for (const auto& [reference_type_id, forward] : reference_filter_) {
-      const auto& targets =
-          forward ? parent_tree_node->node().targets(reference_type_id)
-                  : parent_tree_node->node().inverse_targets(reference_type_id);
-      for (const auto& node : targets) {
-        auto tree_node =
-            CreateTreeNodeIfMatches(reference_type_id, forward, node);
-        if (tree_node) {
-          Add(*parent_tree_node, parent_tree_node->GetChildCount(),
-              std::move(tree_node));
-        }
+    for (const auto& [reference_type_id, forward, node] : children) {
+      auto tree_node =
+          CreateTreeNodeIfMatches(reference_type_id, forward, node);
+      if (tree_node) {
+        Add(*parent_tree_node, parent_tree_node->GetChildCount(),
+            std::move(tree_node));
       }
     }
   }
@@ -150,19 +147,6 @@ ConfigurationTreeModel::CreateTreeNodeIfMatches(
 
   if (FindTreeNode(node.node_id(), reference_type_id, forward_reference))
     return nullptr;
-
-  if (!type_definition_ids_.empty()) {
-    bool matches = false;
-    const auto& type_definition = node.type_definition();
-    for (auto& filter_type_definition_id : type_definition_ids_) {
-      if (IsSubtypeOf(type_definition, filter_type_definition_id)) {
-        matches = true;
-        break;
-      }
-    }
-    if (!matches)
-      return nullptr;
-  }
 
   return CreateTreeNode(reference_type_id, forward_reference, node);
 }

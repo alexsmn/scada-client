@@ -1,5 +1,6 @@
 ﻿#include "components/object_tree/object_tree_model.h"
 
+#include "components/configuration_tree/node_service_tree_impl.h"
 #include "core/standard_node_ids.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
@@ -8,9 +9,12 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
           ObjectTreeModelContext::node_service_,
-          ObjectTreeModelContext::root_,
-          {{scada::id::Organizes, true}},
-          {},
+          std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+              ObjectTreeModelContext::node_service_,
+              ObjectTreeModelContext::root_,
+              {{scada::id::Organizes, true}},
+              {},
+          }),
       }},
       visible_node_model_{
           timed_data_service_,

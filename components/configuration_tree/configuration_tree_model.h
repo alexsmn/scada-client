@@ -1,6 +1,7 @@
 #pragma once
 
 #include "components/configuration_tree/configuration_tree_node.h"
+#include "components/configuration_tree/node_service_tree.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "ui/base/models/tree_node_model.h"
@@ -15,9 +16,7 @@ struct ConfigurationTreeModelContext {
       std::pair<scada::NodeId /*reference_type_id*/, bool /*forward*/>>;
 
   NodeService& node_service_;
-  const NodeRef root_node_;
-  const ReferenceFilter reference_filter_;
-  const std::vector<scada::NodeId> type_definition_ids_;
+  std::unique_ptr<NodeServiceTree> node_service_tree_;
 };
 
 class ConfigurationTreeModel : private ConfigurationTreeModelContext,
@@ -59,7 +58,6 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
 
  private:
   void UpdateChildTreeNodes(const scada::NodeId& parent_id);
-  void DeleteMissingTreeNodes(const scada::NodeId& node_id);
   void DeleteTreeNodes(const scada::NodeId& node_id);
 
   TreeNodeMap tree_node_map_;

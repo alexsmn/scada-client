@@ -37,16 +37,14 @@ void ConfigurationTreeNode::LoadChildren() {
 
   children_loaded_ = true;
 
+  auto children = model_.node_service_tree_->GetChildren(node_);
+
   int n = 0;
-  for (const auto& [reference_type_id, forward] : model_.reference_filter_) {
-    const auto& targets = forward ? node_.targets(reference_type_id)
-                                  : node_.inverse_targets(reference_type_id);
-    for (const auto& node : targets) {
-      auto tree_node =
-          model_.CreateTreeNodeIfMatches(reference_type_id, forward, node);
-      if (tree_node)
-        Add(n++, std::move(tree_node));
-    }
+  for (const auto& [reference_type_id, forward, node] : children) {
+    auto tree_node =
+        model_.CreateTreeNodeIfMatches(reference_type_id, forward, node);
+    if (tree_node)
+      Add(n++, std::move(tree_node));
   }
 
   node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);
