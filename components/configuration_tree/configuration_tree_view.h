@@ -4,20 +4,15 @@
 #include "controller_context.h"
 #include "selection_model.h"
 
-#if defined(UI_VIEWS)
-#include "ui/views/controls/tree/tree_controller.h"
-#endif
-
 #include <memory>
-
-namespace ui {
-class SortedTreeModel;
-}
 
 class ConfigurationTreeModel;
 class ConfigurationTreeDropHandler;
-class ConfigurationTreeDragDropControllerViews;
 class Tree;
+
+#if defined(UI_VIEWS)
+class ConfigurationTreeDragDropControllerViews;
+#endif
 
 class ConfigurationTreeView : protected ControllerContext, public Controller {
  public:
@@ -45,6 +40,8 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
       const std::vector<void*>& nodes) const;
 
  private:
+  void UpdateSelection();
+
   SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<ConfigurationTreeModel> model_;

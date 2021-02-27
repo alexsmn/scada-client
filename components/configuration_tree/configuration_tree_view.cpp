@@ -12,6 +12,26 @@
 #include "components/configuration_tree/views/configuration_tree_drag_drop_controller_views.h"
 #endif
 
+namespace {
+
+int CompareNodes(const NodeRef& a, const NodeRef& b) {
+  if (!!a != !!b)
+    return !!a < !!b ? 1 : -1;
+  if (a.fetched() != b.fetched())
+    return a.fetched() < b.fetched() ? 1 : -1;
+  const auto& ta = a.type_definition().node_id();
+  const auto& tb = b.type_definition().node_id();
+  bool fa = a.node_class() != scada::NodeClass::Variable;
+  bool fb = b.node_class() != scada::NodeClass::Variable;
+  if (fa != fb)
+    return fa < fb ? 1 : -1;
+  if (ta != tb)
+    return ta < tb ? -1 : 1;
+  return ToString16(a.display_name()).compare(ToString16(b.display_name()));
+}
+
+}  // namespace
+
 ConfigurationTreeView::ConfigurationTreeView(
     const ControllerContext& context,
     ConfigurationTreeModel& model,
@@ -26,17 +46,7 @@ ConfigurationTreeView::ConfigurationTreeView(
 
   tree_view_->SetFocusHandler([this] { controller_delegate_.Focus(); });
 
-  tree_view_->SetSelectionChangedHandler([this] {
-    auto selection_size = tree_view_->GetSelectionSize();
-    if (selection_size == 0)
-      selection_.SelectNode(model_->root_node());
-    else if (selection_size == 1) {
-      auto* node =
-          static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
-      selection_.SelectNode(node ? node->node() : nullptr);
-    } else
-      selection_.SelectMultiple();
-  });
+  tree_view_->SetSelectionChangedHandler([this] { UpdateSelection(); });
 
   tree_view_->SetDoubleClickHandler([this] {
     const auto& node = selection_.node();
@@ -45,21 +55,8 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 
   tree_view_->SetCompareHandler([](void* left, void* right) {
-    const auto& a = static_cast<ConfigurationTreeNode*>(left)->node();
-    const auto& b = static_cast<ConfigurationTreeNode*>(right)->node();
-    if (!!a != !!b)
-      return !!a < !!b ? 1 : -1;
-    if (a.fetched() != b.fetched())
-      return a.fetched() < b.fetched() ? 1 : -1;
-    const auto& ta = a.type_definition().node_id();
-    const auto& tb = b.type_definition().node_id();
-    bool fa = a.node_class() != scada::NodeClass::Variable;
-    bool fb = b.node_class() != scada::NodeClass::Variable;
-    if (fa != fb)
-      return fa < fb ? 1 : -1;
-    if (ta != tb)
-      return ta < tb ? -1 : 1;
-    return ToString16(a.display_name()).compare(ToString16(b.display_name()));
+    return CompareNodes(static_cast<ConfigurationTreeNode*>(left)->node(),
+                        static_cast<ConfigurationTreeNode*>(right)->node());
   });
 
 #if defined(UI_VIEWS)
@@ -78,7 +75,7 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 }
 
-ConfigurationTreeView::~ConfigurationTreeView() {}
+ConfigurationTreeView::~ConfigurationTreeView() = default;
 
 UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
@@ -129,4 +126,16 @@ std::optional<OpenContext> ConfigurationTreeView::GetOpenContext() const {
   context.node_ids =
       GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
   return std::move(context);
+}
+
+void ConfigurationTreeView::UpdateSelection() {
+  auto selection_size = tree_view_->GetSelectionSize();
+  if (selection_size == 0)
+    selection_.SelectNode(model_->root_node());
+  else if (selection_size == 1) {
+    auto* node =
+        static_cast<ConfigurationTreeNode*>(tree_view_->GetSelectedNode());
+    selection_.SelectNode(node ? node->node() : nullptr);
+  } else
+    selection_.SelectMultiple();
 }
