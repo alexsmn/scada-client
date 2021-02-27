@@ -30,22 +30,17 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
 
   void Init();
 
-  typedef std::multimap<scada::NodeId, ConfigurationTreeNode*> TreeNodeMap;
-  const TreeNodeMap& tree_node_map() const { return tree_node_map_; }
-
   ConfigurationTreeNode* FindTreeNode(const scada::NodeId& node_id,
                                       const scada::NodeId& reference_type_id,
                                       bool forward_reference);
+
+  ConfigurationTreeNode* FindFirstTreeNode(const scada::NodeId& node_id);
+
   // TODO: Optimize.
   std::vector<ConfigurationTreeNode*> FindTreeNodes(
       const scada::NodeId& node_id);
 
  protected:
-  std::unique_ptr<ConfigurationTreeNode> CreateTreeNodeIfMatches(
-      const scada::NodeId& reference_type_id,
-      bool forward_reference,
-      const NodeRef& node);
-
   // Returns nullptr if node must be skipped.
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(
       const scada::NodeId& reference_type_id,
@@ -57,10 +52,17 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
  private:
+  std::unique_ptr<ConfigurationTreeNode> CreateTreeNodeIfMatches(
+      const scada::NodeId& reference_type_id,
+      bool forward_reference,
+      const NodeRef& node);
+
   void UpdateChildTreeNodes(const scada::NodeId& parent_id);
+  void UpdateChildTreeNodes(ConfigurationTreeNode& parent_tree_node);
+
   void DeleteTreeNodes(const scada::NodeId& node_id);
 
-  TreeNodeMap tree_node_map_;
+  std::multimap<scada::NodeId, ConfigurationTreeNode*> tree_node_map_;
 
   friend class ConfigurationTreeNode;
 };

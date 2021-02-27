@@ -40,11 +40,11 @@ void ConfigurationTreeNode::LoadChildren() {
   auto children = model_.node_service_tree_->GetChildren(node_);
 
   int n = 0;
-  for (const auto& [reference_type_id, forward, node] : children) {
-    auto tree_node =
-        model_.CreateTreeNodeIfMatches(reference_type_id, forward, node);
-    if (tree_node)
-      Add(n++, std::move(tree_node));
+  for (const auto& [reference_type_id, forward, child_node] : children) {
+    auto new_child_tree_node =
+        model_.CreateTreeNodeIfMatches(reference_type_id, forward, child_node);
+    if (new_child_tree_node)
+      Add(n++, std::move(new_child_tree_node));
   }
 
   node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);

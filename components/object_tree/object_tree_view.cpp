@@ -120,10 +120,9 @@ void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
 
   std::vector<void*> pending_nodes;
   pending_nodes.reserve(node_ids.size());
-  for (auto& node_id : node_ids) {
-    auto [first, last] = model().tree_node_map().equal_range(node_id);
-    for (auto i = first; i != last; ++i)
-      pending_nodes.emplace_back(i->second);
+  for (const auto& node_id : node_ids) {
+    auto nodes = model().FindTreeNodes(node_id);
+    pending_nodes.insert(pending_nodes.end(), nodes.begin(), nodes.end());
   }
 
   std::unordered_map<void* /*parent*/, int /*checked_child_count*/>
@@ -151,9 +150,8 @@ void ObjectTreeView::OnContentsChanged(const NodeIdSet& node_ids) {
 
 void ObjectTreeView::OnContainedItemChanged(const scada::NodeId& node_id,
                                             bool added) {
-  auto [first, last] = model().tree_node_map().equal_range(node_id);
-  for (auto i = first; i != last; ++i) {
-    auto* node = static_cast<void*>(i->second);
+  auto nodes = model().FindTreeNodes(node_id);
+  for (void* node : nodes) {
     while (node && tree_view().IsChecked(node) != added) {
       tree_view().SetChecked(node, added);
 

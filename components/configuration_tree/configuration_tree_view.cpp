@@ -93,9 +93,9 @@ void ConfigurationTreeView::Save(WindowDefinition& definition) {
 
 void ConfigurationTreeView::OnViewNodeCreated(const NodeRef& node) {
   // Select a first tree node.
-  auto i = model_->tree_node_map().find(node.node_id());
-  if (i != model_->tree_node_map().end())
-    tree_view().SelectNode(i->second);
+  auto* tree_node = model_->FindFirstTreeNode(node.node_id());
+  if (tree_node)
+    tree_view().SelectNode(tree_node);
 }
 
 // Must keep |nodes| order.

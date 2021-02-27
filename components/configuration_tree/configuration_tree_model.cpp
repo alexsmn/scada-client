@@ -46,29 +46,33 @@ void ConfigurationTreeModel::Init() {
 
 void ConfigurationTreeModel::UpdateChildTreeNodes(
     const scada::NodeId& parent_id) {
-  for (auto* parent_tree_node : FindTreeNodes(parent_id)) {
-    auto children = node_service_tree_->GetChildren(parent_tree_node->node());
+  auto parent_tree_nodes = FindTreeNodes(parent_id);
+  for (auto* parent_tree_node : parent_tree_nodes)
+    UpdateChildTreeNodes(*parent_tree_node);
+}
 
-    // Delete missing targets.
-    for (int i = 0; i < parent_tree_node->GetChildCount();) {
-      auto& tree_node = parent_tree_node->GetChild(i);
-      bool exists =
-          DoesChildExist(children, tree_node.reference_type_id(),
-                         tree_node.forward_reference(), tree_node.node());
-      if (!exists)
-        Remove(*parent_tree_node, i);
-      else
-        ++i;
-    }
+void ConfigurationTreeModel::UpdateChildTreeNodes(
+    ConfigurationTreeNode& parent_tree_node) {
+  auto children = node_service_tree_->GetChildren(parent_tree_node.node());
 
-    // Create missing targets.
-    for (const auto& [reference_type_id, forward, node] : children) {
-      auto tree_node =
-          CreateTreeNodeIfMatches(reference_type_id, forward, node);
-      if (tree_node) {
-        Add(*parent_tree_node, parent_tree_node->GetChildCount(),
-            std::move(tree_node));
-      }
+  // Delete missing targets.
+  for (int i = 0; i < parent_tree_node.GetChildCount();) {
+    const auto& tree_node = parent_tree_node.GetChild(i);
+    bool exists =
+        DoesChildExist(children, tree_node.reference_type_id(),
+                       tree_node.forward_reference(), tree_node.node());
+    if (!exists)
+      Remove(parent_tree_node, i);
+    else
+      ++i;
+  }
+
+  // Create missing targets.
+  for (const auto& [reference_type_id, forward, node] : children) {
+    auto tree_node = CreateTreeNodeIfMatches(reference_type_id, forward, node);
+    if (tree_node) {
+      Add(parent_tree_node, parent_tree_node.GetChildCount(),
+          std::move(tree_node));
     }
   }
 }
@@ -91,6 +95,12 @@ ConfigurationTreeNode* ConfigurationTreeModel::FindTreeNode(
       return &node;
   }
   return nullptr;
+}
+
+ConfigurationTreeNode* ConfigurationTreeModel::FindFirstTreeNode(
+    const scada::NodeId& node_id) {
+  auto i = tree_node_map_.lower_bound(node_id);
+  return i != tree_node_map_.end() ? i->second : nullptr;
 }
 
 std::vector<ConfigurationTreeNode*> ConfigurationTreeModel::FindTreeNodes(

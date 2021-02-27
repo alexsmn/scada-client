@@ -45,6 +45,8 @@ typedef std::function<void()> StateChangeHandler;
 
 typedef std::function<void()> FocusHandler;
 
+using DropAction = std::function<int()>;
+
 #define UiColorRGB(r, g, b) SkColorSetRGB(r, g, b)
 
 inline UiPoint ToUiPoint(POINT pt) {
