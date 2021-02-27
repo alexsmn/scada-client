@@ -8,7 +8,6 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
           ObjectTreeModelContext::node_service_,
-          ObjectTreeModelContext::task_manager_,
           ObjectTreeModelContext::root_,
           {{scada::id::Organizes, true}},
           {},

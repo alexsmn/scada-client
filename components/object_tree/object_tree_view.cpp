@@ -1,6 +1,7 @@
 ﻿#include "components/object_tree/object_tree_view.h"
 
 #include "client_utils.h"
+#include "components/configuration_tree/configuration_tree_drop_handler.h"
 #include "components/object_tree/object_tree_model.h"
 #include "contents_model.h"
 #include "controller_delegate.h"
@@ -18,14 +19,19 @@
 
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{
-          context, *new ObjectTreeModel(ObjectTreeModelContext{
-                       context.node_service_,
-                       context.task_manager_,
-                       context.node_service_.GetNode(data_items::id::DataItems),
-                       context.timed_data_service_,
-                       context.profile_,
-                       context.blinker_manager_,
-                   })} {
+          context,
+          *new ObjectTreeModel(ObjectTreeModelContext{
+              context.node_service_,
+              context.node_service_.GetNode(data_items::id::DataItems),
+              context.timed_data_service_,
+              context.profile_,
+              context.blinker_manager_,
+          }),
+          *new ConfigurationTreeDropHandler{ConfigurationTreeDropHandlerContext{
+              context.node_service_,
+              context.task_manager_,
+          }},
+      } {
   tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);
 

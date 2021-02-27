@@ -5,7 +5,6 @@
 
 struct ObjectTreeModelContext {
   NodeService& node_service_;
-  TaskManager& task_manager_;
   const NodeRef root_;
   TimedDataService& timed_data_service_;
   Profile& profile_;

@@ -6,7 +6,6 @@ class TimedDataService;
 
 struct HardwareTreeModelContext {
   NodeService& node_service_;
-  TaskManager& task_manager_;
   TimedDataService& timed_data_service_;
 };
 

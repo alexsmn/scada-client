@@ -3,6 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common_resources.h"
+#include "components/configuration_tree/configuration_tree_drop_handler.h"
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_delegate.h"
 #include "controls/tree.h"
@@ -18,9 +19,11 @@
 #include "ui/views/widget/widget.h"
 #endif
 
-ConfigurationTreeView::ConfigurationTreeView(const ControllerContext& context,
-                                             ConfigurationTreeModel& model)
-    : ControllerContext{context}, model_(&model) {
+ConfigurationTreeView::ConfigurationTreeView(
+    const ControllerContext& context,
+    ConfigurationTreeModel& model,
+    ConfigurationTreeDropHandler& drop_handler)
+    : ControllerContext{context}, model_{&model}, drop_handler_{&drop_handler} {
   model_->Init();
 
   tree_view_.reset(new Tree(*model_));
@@ -158,8 +161,8 @@ void ConfigurationTreeView::OnDragEntered(const ui::DropTargetEvent& event) {
 int ConfigurationTreeView::OnDragUpdated(const ui::DropTargetEvent& event) {
   ConfigurationTreeNode* target_node = reinterpret_cast<ConfigurationTreeNode*>(
       tree_view_->GetNodeAt(event.location()));
-  int result =
-      model_->GetDropAction(dragging_item_id_, target_node, drop_action_);
+  int result = drop_handler_->GetDropAction(dragging_item_id_, target_node,
+                                            drop_action_);
   if (result == ui::DragDropTypes::DRAG_NONE) {
     target_node = nullptr;
     drop_action_ = nullptr;

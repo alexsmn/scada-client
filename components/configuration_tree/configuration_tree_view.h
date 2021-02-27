@@ -16,9 +16,8 @@ class SortedTreeModel;
 }
 
 class ConfigurationTreeModel;
+class ConfigurationTreeDropHandler;
 class Tree;
-
-using DropAction = std::function<int()>;
 
 class ConfigurationTreeView : protected ControllerContext,
                               public Controller
@@ -29,7 +28,8 @@ class ConfigurationTreeView : protected ControllerContext,
 {
  public:
   ConfigurationTreeView(const ControllerContext& context,
-                        ConfigurationTreeModel& model);
+                        ConfigurationTreeModel& model,
+                        ConfigurationTreeDropHandler& drop_handler);
   virtual ~ConfigurationTreeView();
 
   // View
@@ -67,6 +67,7 @@ class ConfigurationTreeView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<ConfigurationTreeModel> model_;
+  std::unique_ptr<ConfigurationTreeDropHandler> drop_handler_;
 
   scada::NodeId dragging_item_id_;
   DropAction drop_action_;

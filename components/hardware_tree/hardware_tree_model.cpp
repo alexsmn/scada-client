@@ -1,9 +1,9 @@
 #include "hardware_tree_model.h"
 
+#include "model/devices_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "model/devices_node_ids.h"
 #include "services/device_state_notifier.h"
 
 // HardwareTreeModel::DeviceTreeNode
@@ -78,7 +78,6 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
     : ConfigurationTreeModel{::ConfigurationTreeModelContext{
           context.node_service_,
-          context.task_manager_,
           context.node_service_.GetNode(devices::id::Devices),
           {
               {scada::id::Organizes, true},
