@@ -6,7 +6,6 @@
 
 #if defined(UI_VIEWS)
 #include "ui/views/controls/tree/tree_controller.h"
-#include "ui/views/drop_controller.h"
 #endif
 
 #include <memory>
@@ -17,15 +16,10 @@ class SortedTreeModel;
 
 class ConfigurationTreeModel;
 class ConfigurationTreeDropHandler;
+class ConfigurationTreeDragDropControllerViews;
 class Tree;
 
-class ConfigurationTreeView : protected ControllerContext,
-                              public Controller
-#if defined(UI_VIEWS)
-    ,
-                              protected views::DropController
-#endif
-{
+class ConfigurationTreeView : protected ControllerContext, public Controller {
  public:
   ConfigurationTreeView(const ControllerContext& context,
                         ConfigurationTreeModel& model,
@@ -39,7 +33,7 @@ class ConfigurationTreeView : protected ControllerContext,
   virtual std::optional<OpenContext> GetOpenContext() const override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 #if defined(UI_VIEWS)
-  virtual views::DropController* GetDropController() override { return this; }
+  virtual views::DropController* GetDropController() override;
 #endif
 
  protected:
@@ -50,27 +44,16 @@ class ConfigurationTreeView : protected ControllerContext,
   std::vector<scada::NodeId> GetVariableNodeIds(
       const std::vector<void*>& nodes) const;
 
-#if defined(UI_QT)
-#elif defined(UI_VIEWS)
-  void StartDrag(void* node);
-
-  // DragTarget events
-  // TODO: Repair.
-  virtual bool CanDrop(const ui::OSExchangeData& data) override;
-  virtual void OnDragEntered(const ui::DropTargetEvent& event) override;
-  virtual int OnDragUpdated(const ui::DropTargetEvent& event) override;
-  virtual void OnDragDone() override;
-  virtual int OnPerformDrop(const ui::DropTargetEvent& event) override;
-#endif
-
  private:
   SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<ConfigurationTreeModel> model_;
+
   std::unique_ptr<ConfigurationTreeDropHandler> drop_handler_;
 
-  scada::NodeId dragging_item_id_;
-  DropAction drop_action_;
+#if defined(UI_VIEWS)
+  std::unique_ptr<ConfigurationTreeDragDropControllerViews> drag_drop_controller_;
+#endif
 
   std::unique_ptr<Tree> tree_view_;
 };

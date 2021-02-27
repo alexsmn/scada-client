@@ -1,22 +1,15 @@
 ﻿#include "components/configuration_tree/configuration_tree_view.h"
 
-#include "base/strings/sys_string_conversions.h"
-#include "client_utils.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_drop_handler.h"
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_delegate.h"
 #include "controls/tree.h"
-#include "core/node_management_service.h"
-#include "core/session_service.h"
-#include "model/scada_node_ids.h"
-#include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "services/dialog_service.h"
-#include "views/item_drag_data.h"
+#include "window_definition.h"
 
 #if defined(UI_VIEWS)
-#include "ui/views/widget/widget.h"
+#include "components/configuration_tree/views/configuration_tree_drag_drop_controller_views.h"
 #endif
 
 ConfigurationTreeView::ConfigurationTreeView(
@@ -70,7 +63,14 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 
 #if defined(UI_VIEWS)
-  tree_view_->SetDragHandler([this](void* node) { StartDrag(node); });
+  drag_drop_controller_ =
+      std::make_unique<ConfigurationTreeDragDropControllerViews>(
+          *tree_view_, *drop_handler_, session_service_);
+
+  tree_view_->SetDragHandler(
+      [drop_controller = drag_drop_controller_.get()](void* node) {
+        drop_controller->StartDrag(node);
+      });
 #endif
 
   tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
@@ -86,6 +86,12 @@ UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
 
   return tree_view_.get();
 }
+
+#if defined(UI_VIEWS)
+views::DropController* ConfigurationTreeView::GetDropController() {
+  return drag_drop_controller_.get();
+}
+#endif
 
 void ConfigurationTreeView::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = tree_view_->SaveState();
@@ -124,68 +130,3 @@ std::optional<OpenContext> ConfigurationTreeView::GetOpenContext() const {
       GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
   return std::move(context);
 }
-
-#if defined(UI_VIEWS)
-void ConfigurationTreeView::StartDrag(void* node) {
-  ConfigurationTreeNode* cfg_node = static_cast<ConfigurationTreeNode*>(node);
-  if (!cfg_node->node())
-    return;
-
-  scada::NodeId item_id = cfg_node->node().node_id();
-  if (item_id.is_null())
-    return;
-
-  ui::OSExchangeData data;
-  ItemDragData item_data(item_id);
-  item_data.Save(data);
-
-  if (auto* widget = tree_view_->GetWidget()) {
-    widget->RunShellDrag(data,
-                         DROPEFFECT_MOVE | DROPEFFECT_COPY | DROPEFFECT_LINK);
-  }
-}
-
-bool ConfigurationTreeView::CanDrop(const ui::OSExchangeData& data) {
-  return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-         data.HasCustomFormat(ItemDragData::GetCustomFormat());
-}
-
-void ConfigurationTreeView::OnDragEntered(const ui::DropTargetEvent& event) {
-  assert(dragging_item_id_.is_null());
-
-  ItemDragData item_data;
-  if (item_data.Load(event.data()))
-    dragging_item_id_ = item_data.item_id();
-}
-
-int ConfigurationTreeView::OnDragUpdated(const ui::DropTargetEvent& event) {
-  ConfigurationTreeNode* target_node = reinterpret_cast<ConfigurationTreeNode*>(
-      tree_view_->GetNodeAt(event.location()));
-  int result = drop_handler_->GetDropAction(dragging_item_id_, target_node,
-                                            drop_action_);
-  if (result == ui::DragDropTypes::DRAG_NONE) {
-    target_node = nullptr;
-    drop_action_ = nullptr;
-  }
-  tree_view_->SetDropTargetNode(target_node);
-  return result;
-}
-
-void ConfigurationTreeView::OnDragDone() {
-  dragging_item_id_ = scada::NodeId();
-  drop_action_ = nullptr;
-  tree_view_->SetDropTargetNode(NULL);
-}
-
-int ConfigurationTreeView::OnPerformDrop(const ui::DropTargetEvent& event) {
-  assert(!dragging_item_id_.is_null());
-
-  auto drop_action = std::move(drop_action_);
-
-  drop_action_ = nullptr;
-  dragging_item_id_ = scada::NodeId();
-  tree_view_->SetDropTargetNode(NULL);
-
-  return drop_action();
-}
-#endif
