@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "components/configuration_tree/configuration_tree_node.h"
 #include "components/configuration_tree/node_service_tree.h"
 #include "node_service/node_observer.h"
@@ -34,6 +35,8 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
       const scada::NodeId& node_id);
 
  protected:
+  BoostLogger logger_{LOG_NAME("ConfigurationTreeModel")};
+
   // Returns nullptr if node must be skipped.
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(
       const scada::NodeId& reference_type_id,

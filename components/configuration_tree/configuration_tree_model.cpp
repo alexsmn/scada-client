@@ -1,5 +1,6 @@
 ﻿#include "components/configuration_tree/configuration_tree_model.h"
 
+#include "model/node_id_util.h"
 #include "node_service/node_service.h"
 
 namespace {
@@ -44,6 +45,11 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
 
 void ConfigurationTreeModel::UpdateChildTreeNodes(
     ConfigurationTreeNode& parent_tree_node) {
+  LOG_INFO(logger_) << "Update child tree nodes"
+                    << LOG_TAG("NodeId",
+                               NodeIdToScadaString(
+                                   parent_tree_node.node().node_id()));
+
   auto children = node_service_tree_->GetChildren(parent_tree_node.node());
 
   // Delete missing targets.
@@ -69,6 +75,9 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
 }
 
 void ConfigurationTreeModel::DeleteTreeNodes(const scada::NodeId& node_id) {
+  LOG_INFO(logger_) << "Delete tree nodes"
+                    << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
+
   // Remove tree nodes with missing references.
   for (auto* tree_node : FindTreeNodes(node_id))
     Remove(*tree_node->parent(), tree_node->parent()->IndexOfChild(*tree_node));

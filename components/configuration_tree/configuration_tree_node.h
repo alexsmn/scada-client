@@ -26,9 +26,10 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
   bool forward_reference() const { return forward_reference_; }
 
   // TreeNode
-  virtual int GetChildCount() const override;
   virtual std::wstring GetText(int column_id) const override;
   virtual int GetIcon() const override;
+  virtual bool CanFetchMore() const override;
+  virtual void FetchMore() override;
 
  protected:
   enum {

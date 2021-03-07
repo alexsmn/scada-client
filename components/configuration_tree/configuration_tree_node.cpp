@@ -1,6 +1,7 @@
 #include "components/configuration_tree/configuration_tree_node.h"
 
 #include "components/configuration_tree/configuration_tree_model.h"
+#include "model/node_id_util.h"
 
 // ConfigurationTreeNode
 
@@ -14,6 +15,8 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
       node_{std::move(node)} {
   assert(&node_);
   model_.tree_node_map_.emplace(node_.node_id(), this);
+
+  node_.Fetch(NodeFetchStatus::NodeOnly(), nullptr);
 }
 
 ConfigurationTreeNode::~ConfigurationTreeNode() {
@@ -24,16 +27,15 @@ ConfigurationTreeNode::~ConfigurationTreeNode() {
   model_.tree_node_map_.erase(i);
 }
 
-int ConfigurationTreeNode::GetChildCount() const {
-  const_cast<ConfigurationTreeNode*>(this)->LoadChildren();
-  return ui::TreeNode<ConfigurationTreeNode>::GetChildCount();
-}
-
 void ConfigurationTreeNode::LoadChildren() {
   assert(node_);
 
   if (children_loaded_)
     return;
+
+  LOG_INFO(model_.logger_) << "Load children"
+                           << LOG_TAG("NodeId",
+                                      NodeIdToScadaString(node_.node_id()));
 
   children_loaded_ = true;
 
@@ -67,6 +69,14 @@ int ConfigurationTreeNode::GetIcon() const {
 
 void ConfigurationTreeNode::Changed() {
   model().TreeNodeChanged(this);
+}
+
+bool ConfigurationTreeNode::CanFetchMore() const {
+  return !children_loaded_;
+}
+
+void ConfigurationTreeNode::FetchMore() {
+  LoadChildren();
 }
 
 // ConfigurationTreeRootNode
