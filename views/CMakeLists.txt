@@ -11,9 +11,9 @@ target_include_directories(client_views PUBLIC
 )
 
 target_link_libraries(client_views PUBLIC
-  address_space_node_service
   base_i18n
   modus
+  node_service_v1
   node_service_v2
   scada_core_opcua
   scada_core_remote

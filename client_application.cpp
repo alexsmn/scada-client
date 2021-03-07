@@ -34,8 +34,8 @@
 #include "components/vidicon_display/vidicon_client.h"
 #include "controller_context.h"
 #include "net/transport_factory_impl.h"
-#include "node_service/address_space/address_space_fetcher.h"
-#include "node_service/address_space/address_space_node_service.h"
+#include "node_service/v1/address_space_fetcher.h"
+#include "node_service/v1/node_service_impl.h"
 #include "node_service/v2/node_service_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
@@ -207,9 +207,9 @@ void ClientApplication::Start() {
     event_fetcher_->OnChannelOpened(master_data_services_->GetUserId());
 
   node_service_ =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("new-node-service")
-          ? CreateRemoteNodeService()
-          : CreateAddressSpaceNodeService();
+      base::CommandLine::ForCurrentProcess()->HasSwitch("node-service-v2")
+          ? CreateNodeServiceV2()
+          : CreateNodeServiceV1();
 
   auto alias_logger =
       base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
@@ -302,27 +302,7 @@ void ClientApplication::Start() {
   main_window_manager_->Init();
 }
 
-std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
-  struct Context {
-    Context(const std::shared_ptr<Logger>& logger,
-            boost::asio::io_context& io_context,
-            const std::shared_ptr<Executor> executor,
-            MasterDataServices& services)
-        : node_service{v2::NodeServiceImplContext{
-              io_context, executor, services, services, services}},
-          node_service_notifier{node_service, services} {}
-
-    v2::NodeServiceImpl node_service;
-    SessionProxyNotifier<v2::NodeServiceImpl> node_service_notifier;
-  };
-
-  auto context = std::make_shared<Context>(logger_, *io_context_, executor_,
-                                           *master_data_services_);
-  return std::shared_ptr<NodeService>{context, &context->node_service};
-}
-
-std::shared_ptr<NodeService>
-ClientApplication::CreateAddressSpaceNodeService() {
+std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
   class ClientAddressSpace : public AddressSpaceImpl {
    public:
     explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
@@ -337,12 +317,11 @@ ClientApplication::CreateAddressSpaceNodeService() {
             const std::shared_ptr<Executor> executor,
             MasterDataServices& services)
         : address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
-          node_service{MakeAddressSpaceNodeServiceContext(io_context,
-                                                          executor,
-                                                          services)},
+          node_service{
+              MakeNodeServiceImplContext(io_context, executor, services)},
           node_service_notifier{node_service, services} {}
 
-    AddressSpaceNodeServiceContext MakeAddressSpaceNodeServiceContext(
+    v1::NodeServiceImplContext MakeNodeServiceImplContext(
         boost::asio::io_context& io_context,
         const std::shared_ptr<Executor> executor,
         MasterDataServices& services) {
@@ -358,8 +337,8 @@ ClientApplication::CreateAddressSpaceNodeService() {
     }
 
     ClientAddressSpace address_space;
-    AddressSpaceNodeService node_service;
-    SessionProxyNotifier<AddressSpaceNodeService> node_service_notifier;
+    v1::NodeServiceImpl node_service;
+    SessionProxyNotifier<v1::NodeServiceImpl> node_service_notifier;
   };
 
   auto logger =
@@ -369,6 +348,25 @@ ClientApplication::CreateAddressSpaceNodeService() {
                 std::make_shared<NullLogger>());
 
   auto context = std::make_shared<Context>(logger, *io_context_, executor_,
+                                           *master_data_services_);
+  return std::shared_ptr<NodeService>{context, &context->node_service};
+}
+
+std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV2() {
+  struct Context {
+    Context(const std::shared_ptr<Logger>& logger,
+            boost::asio::io_context& io_context,
+            const std::shared_ptr<Executor> executor,
+            MasterDataServices& services)
+        : node_service{v2::NodeServiceImplContext{
+              io_context, executor, services, services, services}},
+          node_service_notifier{node_service, services} {}
+
+    v2::NodeServiceImpl node_service;
+    SessionProxyNotifier<v2::NodeServiceImpl> node_service_notifier;
+  };
+
+  auto context = std::make_shared<Context>(logger_, *io_context_, executor_,
                                            *master_data_services_);
   return std::shared_ptr<NodeService>{context, &context->node_service};
 }

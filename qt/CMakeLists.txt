@@ -36,13 +36,13 @@ set_property(TARGET client_qt_lib PROPERTY FOLDER ${client_folder})
 
 find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt_lib PUBLIC
-  address_space_node_service
   base_i18n
   gdiplus
   graph_qt
   modus
   Qt5::Widgets
   Qt5::PrintSupport
+  node_service_v1
   node_service_v2
   scada_core_opcua
   scada_core_remote

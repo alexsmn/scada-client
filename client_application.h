@@ -63,8 +63,8 @@ class ClientApplication : private ClientApplicationContext,
   void Start();
 
  private:
-  std::shared_ptr<NodeService> CreateRemoteNodeService();
-  std::shared_ptr<NodeService> CreateAddressSpaceNodeService();
+  std::shared_ptr<NodeService> CreateNodeServiceV1();
+  std::shared_ptr<NodeService> CreateNodeServiceV2();
 
   MainWindowContext MakeMainWindowContext(int window_id);
 
