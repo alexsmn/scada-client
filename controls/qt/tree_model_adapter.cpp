@@ -14,8 +14,7 @@
 #include <QtWin>
 #endif
 
-TreeModelAdapter::TreeModelAdapter(ui::TreeModel& model)
-    : model_(model) {
+TreeModelAdapter::TreeModelAdapter(ui::TreeModel& model) : model_(model) {
   model_.AddObserver(*this);
 }
 
@@ -263,4 +262,14 @@ void TreeModelAdapter::OnTreeModelResetting() {
 
 void TreeModelAdapter::OnTreeModelReset() {
   endResetModel();
+}
+
+bool TreeModelAdapter::canFetchMore(const QModelIndex& parent) const {
+  void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
+  return model_.CanFetchMore(node);
+}
+
+void TreeModelAdapter::fetchMore(const QModelIndex& parent) {
+  void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
+  model_.FetchMore(node);
 }
