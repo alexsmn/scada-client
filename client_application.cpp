@@ -36,7 +36,7 @@
 #include "net/transport_factory_impl.h"
 #include "node_service/address_space/address_space_fetcher.h"
 #include "node_service/address_space/address_space_node_service.h"
-#include "node_service/remote/remote_node_service.h"
+#include "node_service/v2/node_service_impl.h"
 #include "project.h"
 #include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
@@ -308,12 +308,12 @@ std::shared_ptr<NodeService> ClientApplication::CreateRemoteNodeService() {
             boost::asio::io_context& io_context,
             const std::shared_ptr<Executor> executor,
             MasterDataServices& services)
-        : node_service{RemoteNodeServiceContext{io_context, executor, services,
-                                                services, services}},
+        : node_service{v2::NodeServiceImplContext{
+              io_context, executor, services, services, services}},
           node_service_notifier{node_service, services} {}
 
-    RemoteNodeService node_service;
-    SessionProxyNotifier<RemoteNodeService> node_service_notifier;
+    v2::NodeServiceImpl node_service;
+    SessionProxyNotifier<v2::NodeServiceImpl> node_service_notifier;
   };
 
   auto context = std::make_shared<Context>(logger_, *io_context_, executor_,

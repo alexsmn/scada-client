@@ -43,7 +43,7 @@ target_link_libraries(client_qt_lib PUBLIC
   modus
   Qt5::Widgets
   Qt5::PrintSupport
-  remote_node_service
+  node_service_v2
   scada_core_opcua
   scada_core_remote
   scada_core_vidicon
