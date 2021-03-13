@@ -28,6 +28,7 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
   // TreeNode
   virtual std::wstring GetText(int column_id) const override;
   virtual int GetIcon() const override;
+  virtual bool HasChildren() const override;
   virtual bool CanFetchMore() const override;
   virtual void FetchMore() override;
 
@@ -48,13 +49,14 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
   virtual void OnModelChanged() {}
 
  private:
-  void LoadChildren();
+  void AddChildren();
 
   ConfigurationTreeModel& model_;
   const scada::NodeId reference_type_id_;
   const bool forward_reference_;
   const NodeRef node_;
 
+  bool children_requested_ = false;
   bool children_loaded_ = false;
 
   friend class ConfigurationTreeModel;

@@ -243,6 +243,7 @@ PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
   std::reverse(type_definitions.begin(), type_definitions.end());
 
   for (const auto supertype : type_definitions) {
+    assert(supertype.fetched());
     for (const auto& p : supertype.targets(scada::id::HasProperty)) {
       if (auto* def = GetPropertyDef(p.node_id()))
         properties.emplace_back(p, def);

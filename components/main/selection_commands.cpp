@@ -53,6 +53,47 @@ std::string EncodeUri(std::string_view str) {
 }
 #endif
 
+void PrintReferences(std::ostream& stream,
+                     base::span<const NodeRef::Reference> references) {
+  for (const auto& r : references) {
+    stream << "{";
+    stream << "forward: " << r.forward;
+    stream << ", ";
+    stream << "type: " << r.reference_type.browse_name();
+    stream << ", ";
+    stream << "target: " << NodeIdToScadaString(r.target.node_id());
+    stream << "}";
+    stream << std::endl;
+  }
+}
+
+std::string GetNodeDebugInfo(const NodeRef& node) {
+  std::ostringstream stream;
+  stream << NodeIdToScadaString(node.node_id()) << std::endl;
+
+  stream << "Fetched: " << node.fetched() << std::endl;
+  stream << "Children fetched: " << node.children_fetched() << std::endl;
+  stream << std::endl;
+
+  stream << "Attributes:" << std::endl;
+  stream << "BrowseName: " << node.browse_name() << std::endl;
+  stream << "DisplayName: " << node.display_name() << std::endl;
+  stream << "TypeDefinition: " << node.type_definition().browse_name()
+         << std::endl;
+  stream << "Supertype: " << node.supertype().browse_name() << std::endl;
+  stream << std::endl;
+
+  stream << "References:" << std::endl;
+  PrintReferences(stream, node.references());
+  stream << std::endl;
+
+  stream << "Inverse references:" << std::endl;
+  PrintReferences(stream, node.inverse_references());
+  stream << std::endl;
+
+  return stream.str();
+}
+
 }  // namespace
 
 // SelectionCommands
@@ -437,12 +478,19 @@ WindowDefinition SelectionCommands::GetOpenWindowDefinition(
 }
 
 void SelectionCommands::DumpDebugInfo() {
-  auto debug_info = selection_->timed_data().DumpDebugInfo();
+  std::vector<std::string> debug_info;
+
+  if (auto node = selection_->node())
+    debug_info.push_back(GetNodeDebugInfo(node));
+
+  debug_info.push_back(selection_->timed_data().DumpDebugInfo());
+
+  auto debug_text = base::JoinString(debug_info, "\n\n");
 
   Clipboard clipboard;
-  if (!clipboard.SetText(debug_info))
+  if (!clipboard.SetText(debug_text))
     LOG(WARNING) << "Can't set clipboard data";
-  if (!clipboard.SetText(base::ASCIIToUTF16(debug_info)))
+  if (!clipboard.SetText(base::SysNativeMBToWide(debug_text)))
     LOG(WARNING) << "Can't set clipboard data";
 
   dialog_service_->RunMessageBox(

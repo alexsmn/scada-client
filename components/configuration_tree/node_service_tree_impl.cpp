@@ -19,6 +19,10 @@ NodeRef NodeServiceTreeImpl::GetRoot() const {
   return root_node_;
 }
 
+bool NodeServiceTreeImpl::HasChildren(const NodeRef& node) const {
+  return true;
+}
+
 std::vector<NodeServiceTreeImpl::ChildRef> NodeServiceTreeImpl::GetChildren(
     const NodeRef& node) const {
   std::vector<ChildRef> children;

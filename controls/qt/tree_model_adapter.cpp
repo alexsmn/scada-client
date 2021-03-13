@@ -264,6 +264,11 @@ void TreeModelAdapter::OnTreeModelReset() {
   endResetModel();
 }
 
+bool TreeModelAdapter::hasChildren(const QModelIndex& parent) const {
+  void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
+  return model_.HasChildren(node);
+}
+
 bool TreeModelAdapter::canFetchMore(const QModelIndex& parent) const {
   void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
   return model_.CanFetchMore(node);

@@ -14,6 +14,8 @@ class NodeServiceTree {
     NodeRef child_node;
   };
 
+  virtual bool HasChildren(const NodeRef& node) const = 0;
+
   virtual std::vector<ChildRef> GetChildren(const NodeRef& node) const = 0;
 
   class Observer {

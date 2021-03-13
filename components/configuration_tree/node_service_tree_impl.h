@@ -24,6 +24,7 @@ class NodeServiceTreeImpl : public NodeServiceTree,
 
   // NodeServiceTree
   virtual NodeRef GetRoot() const override;
+  virtual bool HasChildren(const NodeRef& node) const override;
   virtual std::vector<ChildRef> GetChildren(const NodeRef& node) const override;
   virtual void SetObserver(Observer* observer) override;
 

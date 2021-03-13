@@ -51,6 +51,7 @@ class TreeModelAdapter : public QAbstractItemModel,
                        const QVariant& value,
                        int role = Qt::EditRole) override;
   virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
+  virtual bool hasChildren(const QModelIndex& parent) const override;
   virtual bool canFetchMore(const QModelIndex& parent) const override;
   virtual void fetchMore(const QModelIndex& parent) override;
 

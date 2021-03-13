@@ -16,6 +16,8 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
   assert(&node_);
   model_.tree_node_map_.emplace(node_.node_id(), this);
 
+  // AddChildren();
+
   node_.Fetch(NodeFetchStatus::NodeOnly(), nullptr);
 }
 
@@ -27,18 +29,7 @@ ConfigurationTreeNode::~ConfigurationTreeNode() {
   model_.tree_node_map_.erase(i);
 }
 
-void ConfigurationTreeNode::LoadChildren() {
-  assert(node_);
-
-  if (children_loaded_)
-    return;
-
-  LOG_INFO(model_.logger_) << "Load children"
-                           << LOG_TAG("NodeId",
-                                      NodeIdToScadaString(node_.node_id()));
-
-  children_loaded_ = true;
-
+void ConfigurationTreeNode::AddChildren() {
   auto children = model_.node_service_tree_->GetChildren(node_);
 
   int n = 0;
@@ -48,15 +39,12 @@ void ConfigurationTreeNode::LoadChildren() {
     if (new_child_tree_node)
       Add(n++, std::move(new_child_tree_node));
   }
-
-  node_.Fetch(NodeFetchStatus::NodeAndChildren(), nullptr);
 }
 
 std::wstring ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(node_.display_name());
 
-  bool fetched = node_.fetched() && node_.children_fetched();
-  if (!fetched)
+  if (children_requested_ && !children_loaded_)
     text += L" [Загрузка]";
 
   return text;
@@ -71,12 +59,38 @@ void ConfigurationTreeNode::Changed() {
   model().TreeNodeChanged(this);
 }
 
+bool ConfigurationTreeNode::HasChildren() const {
+  return model_.node_service_tree_->HasChildren(node_);
+}
+
 bool ConfigurationTreeNode::CanFetchMore() const {
-  return !children_loaded_;
+  return !children_requested_;
 }
 
 void ConfigurationTreeNode::FetchMore() {
-  LoadChildren();
+  assert(node_);
+  assert(!children_requested_);
+
+  LOG_INFO(model_.logger_) << "Load children"
+                           << LOG_TAG("NodeId",
+                                      NodeIdToScadaString(node_.node_id()));
+
+  children_requested_ = true;
+
+  if (node_.children_fetched()) {
+    children_loaded_ = true;
+    AddChildren();
+    return;
+  }
+
+  node_.Fetch(NodeFetchStatus::NodeAndChildren(), [this](const NodeRef& node) {
+    LOG_INFO(model_.logger_)
+        << "Children"
+        << LOG_TAG("NodeId", NodeIdToScadaString(node_.node_id()));
+
+    children_loaded_ = true;
+    Changed();
+  });
 }
 
 // ConfigurationTreeRootNode
