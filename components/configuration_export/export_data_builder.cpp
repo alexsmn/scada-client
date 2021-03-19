@@ -1,5 +1,6 @@
-#include "components/configuration_export/export_data_collector.h"
+#include "components/configuration_export/export_data_builder.h"
 
+#include "components/configuration_export/export_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -66,7 +67,7 @@ void CollectProperties(const NodeRef& type,
 
 }  // namespace
 
-ExportData CollectExportData(NodeService& node_service) {
+ExportData BuildExportData(NodeService& node_service) {
   std::vector<ExportData::Property> props;
   CollectProperties(node_service.GetNode(data_items::id::DiscreteItemType),
                     props, true);

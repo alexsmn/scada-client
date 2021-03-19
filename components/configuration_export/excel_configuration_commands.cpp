@@ -6,19 +6,18 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
-#include "components/configuration_export/export_data_collector.h"
-#include "components/configuration_export/import_export.h"
-#include "model/node_id_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
+#include "components/configuration_export/export_data_builder.h"
+#include "components/configuration_export/export_data_reader.h"
+#include "components/configuration_export/export_data_writer.h"
+#include "components/configuration_export/import_data_builder.h"
+#include "components/configuration_export/import_data_report.h"
+#include "components/configuration_export/importer.h"
+#include "components/configuration_export/resource_error.h"
 #include "services/dialog_service.h"
-#include "services/task_manager.h"
 
 #include <algorithm>
 #include <fstream>
-#include <set>
 
 namespace {
 
@@ -28,75 +27,10 @@ const char kDefaultFileName[] = "configuration.csv";
 
 }  // namespace
 
-void PrintProps(NodeService& node_service,
-                const scada::NodeProperties& props,
-                std::wostream& report) {
-  for (auto& v : props) {
-    const auto& prop = node_service.GetNode(v.first);
-    report << L"  " << ToString16(prop.display_name()) << L" = "
-           << v.second.get_or(std::wstring{L"(Ошибка)"}) << std::endl;
-  }
-}
-
-void PrintRefs(NodeService& node_service,
-               const std::vector<ImportData::Reference>& refs,
-               std::wostream& report) {
-  for (auto& r : refs) {
-    auto target_name = r.add_target_id.is_null()
-                           ? L"(Нет)"
-                           : GetDisplayName(node_service, r.add_target_id);
-    report << ToString16(GetDisplayName(node_service, r.reference_type_id))
-           << L" = " << ToString16(target_name) << std::endl;
-  }
-}
-
 void ShowImportReport(const ImportData& import_data,
                       NodeService& node_service) {
   std::wofstream report("report.txt");
-
-  report
-      << L"Пожалуйста, убедитесь в правильности производимых изменений. Если "
-         L"перечисленные"
-      << std::endl
-      << L"изменения не соответствуют ожидаемым, ответьте Нет на вопрос, "
-         L"который появится"
-      << std::endl
-      << L"после закрытия данного окна." << std::endl
-      << std::endl
-      << L"ВНИМАНИЕ: При некорректном использовании данная операция может "
-         L"привести к"
-      << std::endl
-      << L"потере конфигурации." << std::endl
-      << std::endl;
-
-  for (auto& p : import_data.create_nodes) {
-    auto type_definition = node_service.GetNode(p.type_id);
-    report << L"Создать: " << ToString16(type_definition.display_name())
-           << std::endl;
-    if (!p.id.is_null())
-      report << L"  Ид = " << base::SysNativeMBToWide(NodeIdToScadaString(p.id))
-             << std::endl;
-    report << L"  Родитель = "
-           << base::SysNativeMBToWide(NodeIdToScadaString(p.parent_id))
-           << std::endl;
-    report << L"  Имя = " << ToString16(p.attrs.display_name) << std::endl;
-    PrintProps(node_service, p.props, report);
-    PrintRefs(node_service, p.refs, report);
-  }
-
-  for (auto& p : import_data.modify_nodes) {
-    auto node = node_service.GetNode(p.id);
-    report << L"Изменить: " << ToString16(node.display_name()) << std::endl;
-    if (!p.attrs.browse_name.empty())
-      report << L"  Имя = " << ToString16(p.attrs.browse_name) << std::endl;
-    PrintProps(node_service, p.props, report);
-    PrintRefs(node_service, p.refs, report);
-  }
-
-  for (auto& p : import_data.delete_nodes) {
-    auto node = node_service.GetNode(p);
-    report << L"Удалить: " << ToString16(node.display_name()) << std::endl;
-  }
+  PrintImportReport(report, import_data, node_service);
 
   base::FilePath system_path;
   base::PathService::Get(base::DIR_WINDOWS, &system_path);
@@ -115,34 +49,6 @@ void ShowImportReport(const ImportData& import_data,
   CloseHandle(process_info.hThread);
 }
 
-void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
-  for (auto& p : import_data.create_nodes) {
-    task_manager.PostInsertTask(p.id, p.parent_id, p.type_id, p.attrs, p.props);
-    for (auto& ref : p.refs) {
-      assert(ref.delete_target_id.is_null());
-      assert(!ref.add_target_id.is_null());
-      task_manager.PostAddReference(ref.reference_type_id, p.id,
-                                    ref.add_target_id);
-    }
-  }
-
-  for (auto& p : import_data.modify_nodes) {
-    if (!p.attrs.empty() || !p.props.empty())
-      task_manager.PostUpdateTask(p.id, p.attrs, p.props);
-    for (auto& ref : p.refs) {
-      if (!ref.delete_target_id.is_null())
-        task_manager.PostDeleteReference(ref.reference_type_id, p.id,
-                                         ref.add_target_id);
-      if (!ref.add_target_id.is_null())
-        task_manager.PostAddReference(ref.reference_type_id, p.id,
-                                      ref.add_target_id);
-    }
-  }
-
-  for (auto& p : import_data.delete_nodes)
-    task_manager.PostDeleteTask(p);
-}
-
 void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service,
                                 const std::filesystem::path& path) {
@@ -151,10 +57,10 @@ void ExportConfigurationToExcel(NodeService& node_service,
     if (!stream)
       throw ResourceError{L"Не удалось открыть файл."};
 
-    auto data = CollectExportData(node_service);
+    auto data = BuildExportData(node_service);
 
     CsvWriter writer{stream};
-    ExportConfiguration(data, writer);
+    WriteExportData(data, writer);
 
   } catch (const ResourceError& e) {
     dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,
@@ -196,7 +102,9 @@ void ImportConfigurationFromExcel(NodeService& node_service,
   CsvReader reader{stream, kNodeIdTitle};
   ImportData import_data;
   try {
-    import_data = ImportConfiguration(node_service, reader);
+    auto export_data = ExportDataReader{node_service, reader}.Read();
+
+    import_data = BuildImportData(node_service, export_data);
 
   } catch (const ResourceError& e) {
     auto message = base::StringPrintf(
