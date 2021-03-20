@@ -42,15 +42,15 @@ int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
   if (IsInstanceOf(node(), devices::id::DeviceType)) {
     auto device_state = device_state_notifier_
                             ? device_state_notifier_->device_state()
-                            : DEVICE_STATE_UNKNOWN;
+                            : DeviceState::Unknown;
     switch (device_state) {
-      case DEVICE_STATE_DISABLED:
+      case DeviceState::Disabled:
         return IMAGE_DEVICE_DISABLED;
-      case DEVICE_STATE_OFFLINE:
+      case DeviceState::Offline:
         return IMAGE_DEVICE_STOPPED;
-      case DEVICE_STATE_ONLINE:
+      case DeviceState::Online:
         return IMAGE_DEVICE_RUNNING;
-      case DEVICE_STATE_UNKNOWN:
+      case DeviceState::Unknown:
       default:
         return IMAGE_DEVICE;
     }

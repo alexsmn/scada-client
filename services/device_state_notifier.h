@@ -9,13 +9,7 @@
 
 class TimedDataService;
 
-enum DeviceState {
-  DEVICE_STATE_UNKNOWN,
-  DEVICE_STATE_DISABLED,
-  DEVICE_STATE_OFFLINE,
-  DEVICE_STATE_ONLINE,
-  DEVICE_STATE_COUNT,
-};
+enum class DeviceState { Unknown, Disabled, Offline, Online, Count };
 
 // Notifies observers about changes of ONLINE and ENABLED device fields.
 class DeviceStateNotifier {
@@ -26,13 +20,16 @@ class DeviceStateNotifier {
                       const NodeRef& device,
                       Callback callback);
 
+  DeviceStateNotifier(const DeviceStateNotifier&) = delete;
+  DeviceStateNotifier& operator=(const DeviceStateNotifier&) = delete;
+
   DeviceState device_state() const { return device_state_; }
 
  private:
   enum { FIELD_DISABLED, FIELD_ONLINE, FIELD_COUNT };
 
   DeviceState CalculateDeviceState() const;
-  void UpdateDeviceState();
+  void UpdateDeviceState(bool notify);
 
   BoostLogger logger_{LOG_NAME("DeviceStateNotifier")};
 
@@ -40,9 +37,7 @@ class DeviceStateNotifier {
 
   TimedDataSpec specs_[FIELD_COUNT];
 
-  DeviceState device_state_ = DEVICE_STATE_UNKNOWN;
-
-  DISALLOW_COPY_AND_ASSIGN(DeviceStateNotifier);
+  DeviceState device_state_ = DeviceState::Unknown;
 };
 
 std::string ToString(DeviceState device_state);

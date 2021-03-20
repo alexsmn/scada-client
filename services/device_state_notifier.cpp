@@ -6,14 +6,14 @@
 
 std::string ToString(DeviceState device_state) {
   static const char* kStrings[] = {"Unknown", "Disabled", "Offline", "Online"};
-  static_assert(std::size(kStrings) == static_cast<size_t>(DEVICE_STATE_COUNT));
+  static_assert(std::size(kStrings) == static_cast<size_t>(DeviceState::Count));
   return kStrings[static_cast<size_t>(device_state)];
 }
 
 std::wstring_view ToLocalizedString(DeviceState device_state) {
   static const std::wstring_view kStrings[] = {L"", L"Отключено", L"Нет связи",
                                                L"Есть связь"};
-  static_assert(std::size(kStrings) == static_cast<size_t>(DEVICE_STATE_COUNT));
+  static_assert(std::size(kStrings) == static_cast<size_t>(DeviceState::Count));
   return kStrings[static_cast<size_t>(device_state)];
 }
 
@@ -35,7 +35,7 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
 
   for (size_t i = 0; i < FIELD_COUNT; ++i) {
     auto component = device[kComponentIds[i]];
-    // assert(component);
+    assert(component);
     if (!component)
       continue;
 
@@ -48,34 +48,34 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
               << LOG_TAG("ComponentStatus", ToString(component.status()))
               << LOG_TAG("ComponentDisplayName", component.display_name())
               << LOG_TAG("ComponentValue", ToString(spec.current().value));
-          UpdateDeviceState();
+          UpdateDeviceState(true);
         };
 
     assert(!component.node_id().is_null());
     spec.Connect(timed_data_service, component);
   }
 
-  device_state_ = CalculateDeviceState();
+  UpdateDeviceState(false);
 }
 
 DeviceState DeviceStateNotifier::CalculateDeviceState() const {
   const auto& disabled_tvq = specs_[FIELD_DISABLED].current();
   if (disabled_tvq.qualifier.failed())
-    return DEVICE_STATE_UNKNOWN;
+    return DeviceState::Unknown;
 
   bool disabled = disabled_tvq.value.get_or(false);
   if (disabled)
-    return DEVICE_STATE_DISABLED;
+    return DeviceState::Disabled;
 
   const auto& online_tvq = specs_[FIELD_ONLINE].current();
   if (online_tvq.qualifier.failed())
-    return DEVICE_STATE_UNKNOWN;
+    return DeviceState::Unknown;
 
   bool online = specs_[FIELD_ONLINE].current().value.get_or(false);
-  return online ? DEVICE_STATE_ONLINE : DEVICE_STATE_OFFLINE;
+  return online ? DeviceState::Online : DeviceState::Offline;
 }
 
-void DeviceStateNotifier::UpdateDeviceState() {
+void DeviceStateNotifier::UpdateDeviceState(bool notify) {
   DeviceState device_state = CalculateDeviceState();
   if (device_state == device_state_)
     return;
@@ -85,5 +85,7 @@ void DeviceStateNotifier::UpdateDeviceState() {
                     << LOG_TAG("NewDeviceState", ToString(device_state));
 
   device_state_ = device_state;
-  callback_();
+
+  if (notify)
+    callback_();
 }

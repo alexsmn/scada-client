@@ -198,7 +198,7 @@ std::wstring DataGroupVisibleNode::GetText() const {
 
 bool DataGroupVisibleNode::IsBad() const {
   return device_state_notifier_ &&
-         device_state_notifier_->device_state() != DEVICE_STATE_ONLINE;
+         device_state_notifier_->device_state() != DeviceState::Online;
 }
 
 void DataGroupVisibleNode::UpdateDevice() {

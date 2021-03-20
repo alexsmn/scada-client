@@ -49,34 +49,41 @@ void ShowImportReport(const ImportData& import_data,
   CloseHandle(process_info.hThread);
 }
 
+template <class Func>
+void CatchExportException(DialogService& dialog_service, Func&& func) {
+  try {
+    func();
+  } catch (const ResourceError& e) {
+    dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,
+                                 MessageBoxMode::Error);
+  } catch (const std::runtime_error&) {
+    dialog_service.RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
+                                 MessageBoxMode::Error);
+  }
+}
+
 void ExportConfigurationToExcel(NodeService& node_service,
                                 DialogService& dialog_service,
                                 const std::filesystem::path& path) {
-  try {
+  CatchExportException(dialog_service, [&] {
     std::ofstream stream{path};
     if (!stream)
       throw ResourceError{L"Не удалось открыть файл."};
 
-    auto data = BuildExportData(node_service);
+    ExportDataBuilder{node_service}.Build().then(
+        [stream = std::make_shared<std::ofstream>(std::move(stream)),
+         &dialog_service, path](const ExportData& export_data) {
+          CatchExportException(dialog_service, [&] {
+            CsvWriter writer{*stream};
+            WriteExportData(export_data, writer);
 
-    CsvWriter writer{stream};
-    WriteExportData(data, writer);
-
-  } catch (const ResourceError& e) {
-    dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,
-                                 MessageBoxMode::Error);
-    return;
-
-  } catch (const std::runtime_error&) {
-    dialog_service.RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
-                                 MessageBoxMode::Error);
-    return;
-  }
-
-  if (dialog_service.RunMessageBox(
-          L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
-          MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
-    win_util::OpenWithAssociatedProgram(path);
+            if (dialog_service.RunMessageBox(
+                    L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+                    MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
+              win_util::OpenWithAssociatedProgram(path);
+          });
+        });
+  });
 }
 
 void ExportConfigurationToExcel(NodeService& node_service,

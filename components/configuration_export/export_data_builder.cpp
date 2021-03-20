@@ -5,7 +5,17 @@
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 
+#include <boost/range/combine.hpp>
+
 namespace {
+
+std::vector<ExportData::Node> Join(
+    const std::vector<std::vector<ExportData::Node>>& node_list_list) {
+  std::vector<ExportData::Node> results;
+  for (auto& node_list : node_list_list)
+    results.insert(results.end(), node_list.begin(), node_list.end());
+  return results;
+}
 
 ExportData::Node MakeExportNode(
     const NodeRef& node,
@@ -24,7 +34,8 @@ ExportData::Node MakeExportNode(
           {prop.node_id, std::move(value), {}, {}, false});
     }
   }
-  return {
+
+  return ExportData::Node{
       node.node_id(),
       node.parent().node_id(),
       type ? type.display_name() : scada::LocalizedText{},
@@ -34,13 +45,30 @@ ExportData::Node MakeExportNode(
   };
 }
 
-void CollectNodes(const NodeRef& parent_node,
-                  const std::vector<ExportData::Property>& props,
-                  std::vector<ExportData::Node>& nodes) {
+promise<void> FetchNode(const NodeRef& node) {
+  auto promise = make_promise<void>();
+  node.Fetch(NodeFetchStatus::NodeOnly(),
+             [promise](const NodeRef& node) mutable { promise.resolve(); });
+  return promise;
+}
+
+promise<std::vector<ExportData::Node>> CollectNodeHierarchy(
+    const NodeRef& parent_node,
+    const std::vector<ExportData::Property>& props) {
+  std::vector<promise<ExportData::Node>> node_promises;
+  std::vector<promise<std::vector<ExportData::Node>>> node_list_promises;
+
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    nodes.emplace_back(MakeExportNode(node, props));
-    CollectNodes(node, props, nodes);
+    node_promises.emplace_back(FetchNode(node).then(
+        [node, &props] { return MakeExportNode(node, props); }));
+    node_list_promises.emplace_back(CollectNodeHierarchy(node, props));
   }
+
+  return make_all_promise(std::move(node_list_promises))
+      .then(
+          [](const std::vector<std::vector<ExportData::Node>>& node_list_list) {
+            return Join(node_list_list);
+          });
 }
 
 ExportData::Property MakeExportProperty(const NodeRef& node) {
@@ -67,15 +95,18 @@ void CollectProperties(const NodeRef& type,
 
 }  // namespace
 
-ExportData BuildExportData(NodeService& node_service) {
+promise<ExportData> ExportDataBuilder::Build() {
   std::vector<ExportData::Property> props;
-  CollectProperties(node_service.GetNode(data_items::id::DiscreteItemType),
+  CollectProperties(node_service_.GetNode(data_items::id::DiscreteItemType),
                     props, true);
-  CollectProperties(node_service.GetNode(data_items::id::AnalogItemType), props,
-                    false);
+  CollectProperties(node_service_.GetNode(data_items::id::AnalogItemType),
+                    props, false);
 
-  std::vector<ExportData::Node> nodes;
-  CollectNodes(node_service.GetNode(data_items::id::DataItems), props, nodes);
-
-  return {std::move(props), std::move(nodes)};
+  auto data_items = node_service_.GetNode(data_items::id::DataItems);
+  return FetchNode(data_items).then([data_items, props] {
+    return CollectNodeHierarchy(data_items, props)
+        .then([props](const std::vector<ExportData::Node>& nodes) {
+          return ExportData{std::move(props), std::move(nodes)};
+        });
+  });
 }
