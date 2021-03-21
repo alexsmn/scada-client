@@ -2,6 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/path_service.h"
+#include "base/range_util.h"
 #include "base/win/clipboard.h"
 #include "client_paths.h"
 #include "common/event_fetcher.h"
@@ -100,23 +101,70 @@ void ReportRequestResult(const std::wstring& title,
   local_events.ReportEvent(severity, message);
 }
 
-void ExpandGroupItemIds(const NodeRef& node, NodeIdSet& item_ids) {
-  if (item_ids.size() >= kTableLimitation)
-    return;
+promise<void> FetchChildren(const NodeRef& node) {
+  if (node.children_fetched())
+    return make_resolved_promise();
 
-  if (node.node_class() == scada::NodeClass::Variable)
-    item_ids.insert(node.node_id());
-
-  for (const auto& child : node.targets(scada::id::Organizes))
-    ExpandGroupItemIds(child, item_ids);
-
-  for (const auto& child : node.targets(scada::id::HasComponent))
-    ExpandGroupItemIds(child, item_ids);
+  promise<void> promise;
+  node.Fetch(NodeFetchStatus::NodeAndChildren(),
+             [promise](const NodeRef& node) mutable { promise.resolve(); });
+  return promise;
 }
 
-WindowDefinition MakeWindowDefinition(const NodeRef& node,
-                                      unsigned type,
-                                      bool expand_groups) {
+/*promise<void> ExpandGroupItemIdsHelper(
+    const NodeRef& node,
+    size_t max_count,
+    const std::shared_ptr<NodeIdSet>& node_ids) {
+  return FetchChildren(node).then([node, max_count, node_ids] {
+    std::vector<promise<void>> promises;
+
+    if (node.node_class() == scada::NodeClass::Variable)
+      node_ids->emplace(node.node_id());
+
+    for (const auto& child : node.targets(scada::id::Organizes)) {
+      promises.emplace_back(
+          ExpandGroupItemIdsHelper(child, max_count, node_ids));
+    }
+
+    for (const auto& child : node.targets(scada::id::HasComponent)) {
+      promises.emplace_back(
+          ExpandGroupItemIdsHelper(child, max_count, node_ids));
+    }
+
+    return make_all_promise_void(std::move(promises));
+  });
+}
+
+promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
+  auto node_ids = std::make_shared<NodeIdSet>();
+  return ExpandGroupItemIdsHelper(node, max_count, node_ids).then([node_ids] {
+    return std::move(*node_ids);
+  });
+}*/
+
+promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
+  return FetchChildren(node).then([node, max_count] {
+    std::vector<promise<NodeIdSet>> promises;
+
+    if (node.node_class() == scada::NodeClass::Variable) {
+      promises.emplace_back(
+          make_resolved_promise(MakeNodeIdSet(node.node_id())));
+    }
+
+    for (const auto& child : node.targets(scada::id::Organizes))
+      promises.emplace_back(ExpandGroupItemIds(child, max_count));
+
+    for (const auto& child : node.targets(scada::id::HasComponent))
+      promises.emplace_back(ExpandGroupItemIds(child, max_count));
+
+    return make_all_promise(std::move(promises))
+        .then([](const std::vector<NodeIdSet>& subsets) {
+          return Union(subsets);
+        });
+  });
+}
+
+WindowDefinition MakeEmptyWindowDefinition(const NodeRef& node, unsigned type) {
   if (!type)
     type = ID_GRAPH_VIEW;
 
@@ -125,23 +173,46 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
     type = ID_NEW_PROPERTY_VIEW;
 #endif
 
-  NodeIdSet item_ids;
-  if (expand_groups && node && node.node_class() == scada::NodeClass::Object)
-    ExpandGroupItemIds(node, item_ids);
-  else
-    item_ids.insert(node.node_id());
-
   const WindowInfo& window_info = GetWindowInfo(type);
-  WindowDefinition win(window_info);
-  win.title = base::StringPrintf(L"%ls: %ls", window_info.title,
-                                 ToString16(node.display_name()).c_str());
 
-  for (auto& id : item_ids) {
-    WindowItem& item_id = win.AddItem("Item");
-    item_id.SetString("path", MakeNodeIdFormula(id));
+  WindowDefinition window_def{window_info};
+  window_def.title = base::StringPrintf(
+      L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
+  return window_def;
+}
+
+WindowDefinition MakeSingleWindowDefinition(const NodeRef& node,
+                                            unsigned type) {
+  auto window_def = MakeEmptyWindowDefinition(node, type);
+
+  auto& item_id = window_def.AddItem("Item");
+  item_id.SetString("path", MakeNodeIdFormula(node.node_id()));
+
+  return window_def;
+}
+
+void AddNodeIds(WindowDefinition& window_def, const NodeIdSet& node_ids) {
+  for (const auto& node_id : node_ids) {
+    WindowItem& item_id = window_def.AddItem("Item");
+    item_id.SetString("path", MakeNodeIdFormula(node_id));
   }
+}
 
-  return win;
+// TODO: Combine with |MakeSingleWindowDefinition()|.
+promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
+                                               unsigned type,
+                                               bool expand_groups) {
+  promise<NodeIdSet> node_ids_promise;
+  if (expand_groups && node && node.node_class() == scada::NodeClass::Object)
+    node_ids_promise = ExpandGroupItemIds(node);
+  else
+    node_ids_promise = make_resolved_promise(MakeNodeIdSet(node.node_id()));
+
+  return node_ids_promise.then([node, type](const NodeIdSet& node_ids) {
+    auto window_def = MakeEmptyWindowDefinition(node, type);
+    AddNodeIds(window_def, node_ids);
+    return window_def;
+  });
 }
 
 WindowDefinition MakeWindowDefinition(const NodeRef& node,
@@ -151,16 +222,16 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
     type = ID_GRAPH_VIEW;
 
   const WindowInfo& window_info = GetWindowInfo(type);
-  WindowDefinition win(GetWindowInfo(type));
-  win.title = base::StringPrintf(L"%ls: %ls", window_info.title,
-                                 ToString16(node.display_name()).c_str());
+  WindowDefinition window_def(GetWindowInfo(type));
+  window_def.title = base::StringPrintf(
+      L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
 
   for (auto& id : item_ids) {
-    WindowItem& item_id = win.AddItem("Item");
+    WindowItem& item_id = window_def.AddItem("Item");
     item_id.SetString("path", MakeNodeIdFormula(id));
   }
 
-  return win;
+  return window_def;
 }
 
 bool ExecuteDisableItem(TaskManager& task_manager,
@@ -193,41 +264,43 @@ WindowDefinition MakeWindowDefinition(
   if (!type)
     type = ID_TABLE_VIEW;
 
-  WindowDefinition win(GetWindowInfo(type));
+  WindowDefinition window_def(GetWindowInfo(type));
   if (title)
-    win.title = title;
+    window_def.title = title;
 
   for (auto& node_id : node_ids) {
-    WindowItem& item = win.AddItem("Item");
+    WindowItem& item = window_def.AddItem("Item");
     item.SetString("path", NodeIdToScadaString(node_id));
   }
 
-  return win;
+  return window_def;
 }
 
 WindowDefinition MakeWindowDefinition(const char* formula, unsigned type) {
   if (!type)
     type = ID_GRAPH_VIEW;
 
-  WindowDefinition win(GetWindowInfo(type));
-  win.title = base::SysNativeMBToWide(formula);
+  WindowDefinition window_def(GetWindowInfo(type));
+  window_def.title = base::SysNativeMBToWide(formula);
 
-  WindowItem& item = win.AddItem("Item");
+  WindowItem& item = window_def.AddItem("Item");
   item.SetString("path", formula);
 
-  return win;
+  return window_def;
 }
 
-std::optional<WindowDefinition> MakeGroupWindowDefinition(const NodeRef& node,
-                                                          unsigned type) {
+promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
+    const NodeRef& node,
+    unsigned type) {
   auto parent = node.parent();
   if (!IsInstanceOf(parent, data_items::id::DataGroupType))
-    return std::nullopt;
+    return make_resolved_promise(std::optional<WindowDefinition>());
 
-  NodeIdSet item_ids;
-  ExpandGroupItemIds(parent, item_ids);
-
-  return MakeWindowDefinition(node, type, item_ids);
+  return ExpandGroupItemIds(parent).then(
+      [node, type](const NodeIdSet& node_ids) {
+        return std::optional<WindowDefinition>{
+            MakeWindowDefinition(node, type, node_ids)};
+      });
 }
 
 void SortNamedNodes(NamedNodes& list) {

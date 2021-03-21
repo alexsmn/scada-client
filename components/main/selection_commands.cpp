@@ -94,6 +94,17 @@ std::string GetNodeDebugInfo(const NodeRef& node) {
   return stream.str();
 }
 
+WindowDefinition UpdateWindowDefinition(const WindowDefinition& window_def,
+                                        unsigned command_id) {
+  if (command_id == ID_OPEN_EVENTS) {
+    auto new_window_def = window_def;
+    new_window_def.AddItem("Window").SetString("mode", "Current");
+    return new_window_def;
+  }
+
+  return window_def;
+}
+
 }  // namespace
 
 // SelectionCommands
@@ -103,8 +114,11 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
 
 void SelectionCommands::OpenWindow(unsigned type) {
   if (selection_ && !selection_->empty()) {
-    ::OpenView(main_window_,
-               MakeWindowDefinition(selection_->node(), type, true), true);
+    // TODO: Capture |main_window_| by weak pointer.
+    MakeWindowDefinition(selection_->node(), type, true)
+        .then([main_window = main_window_](const WindowDefinition& def) {
+          ::OpenView(main_window, def, true);
+        });
   }
 }
 
@@ -255,10 +269,12 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     case ID_OPEN_EVENTS:
     case ID_HISTORICAL_EVENTS: {
-      WindowDefinition win = GetOpenWindowDefinition(ID_EVENT_JOURNAL_VIEW);
-      if (command_id == ID_OPEN_EVENTS)
-        win.AddItem("Window").SetString("mode", "Current");
-      ::OpenView(main_window_, win, true);
+      ::OpenView(main_window_,
+                 GetOpenWindowDefinition(ID_EVENT_JOURNAL_VIEW)
+                     .then([command_id](const WindowDefinition& window_def) {
+                       return UpdateWindowDefinition(window_def, command_id);
+                     }),
+                 true);
       return;
     }
     case ID_OPEN_DISPLAY:
@@ -268,8 +284,13 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       ::OpenView(main_window_, GetOpenWindowDefinition(ID_TIMED_DATA_VIEW));
       return;
     case ID_OPEN_GROUP_TABLE:
-      if (auto win = MakeGroupWindowDefinition(node, ID_TABLE_VIEW))
-        ::OpenView(main_window_, win.value());
+      // TODO: Capture |main_window_| by weak pointer.
+      MakeGroupWindowDefinition(node, ID_TABLE_VIEW)
+          .then([main_window = main_window_](
+                    const std::optional<WindowDefinition>& window_def) {
+            if (window_def.has_value())
+              ::OpenView(main_window, *window_def);
+          });
       return;
     case ID_WRITE:
       ExecuteWriteDialog(*dialog_service_, {timed_data_service_, node.node_id(),
@@ -292,19 +313,18 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     case ID_ITEM_PARAMS:
       ::OpenView(main_window_,
-                 MakeWindowDefinition(node, ID_PROPERTY_VIEW, false));
+                 MakeSingleWindowDefinition(node, ID_PROPERTY_VIEW));
       return;
     case ID_TABLE_CONFIG:
       ::OpenView(main_window_,
-                 MakeWindowDefinition(node, ID_TABLE_EDITOR, false));
+                 MakeSingleWindowDefinition(node, ID_TABLE_EDITOR));
       return;
     case ID_TRANSMISSION_VIEW:
       ::OpenView(main_window_,
-                 MakeWindowDefinition(node, ID_TRANSMISSION_VIEW, false));
+                 MakeSingleWindowDefinition(node, ID_TRANSMISSION_VIEW));
       return;
     case ID_OPEN_WATCH:
-      ::OpenView(main_window_,
-                 MakeWindowDefinition(node, ID_WATCH_VIEW, false));
+      ::OpenView(main_window_, MakeSingleWindowDefinition(node, ID_WATCH_VIEW));
       return;
     case ID_OPEN_DEVICE_METRICS:
       if (auto win = MakeDeviceMetricsWindowDefinition(node))
@@ -449,29 +469,32 @@ void SelectionCommands::CopyToClipboard() {
     CopyNodesToClipboard(nodes);
 }
 
-WindowDefinition SelectionCommands::GetOpenWindowDefinition(
+promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
     unsigned type) const {
   assert(type != 0);
 
   if (auto open_context = controller_->GetOpenContext()) {
-    auto definition = MakeWindowDefinition(open_context->node_ids, type,
-                                           open_context->title.c_str());
-    if (open_context->time_range.has_value())
-      SaveTimeRange(definition, *open_context->time_range);
-    return definition;
+    return MakeWindowDefinition(open_context->node, type, true)
+        .then(
+            [open_context = *open_context](const WindowDefinition& window_def) {
+              auto new_window_def = window_def;
+              if (open_context.time_range.has_value())
+                SaveTimeRange(new_window_def, *open_context.time_range);
+              return new_window_def;
+            });
   }
 
   if (selection_->multiple()) {
     auto title = selection_->GetTitle();
     auto node_ids = selection_->GetMultipleNodeIds();
-    return MakeWindowDefinition({node_ids.begin(), node_ids.end()}, type,
-                                title.c_str());
+    return make_resolved_promise(MakeWindowDefinition(
+        {node_ids.begin(), node_ids.end()}, type, title.c_str()));
   }
 
   const auto& node_id = selection_->node().node_id();
   if (node_id.is_null() && selection_->timed_data().connected()) {
     const std::string& formula = selection_->timed_data().formula();
-    return MakeWindowDefinition(formula.c_str(), type);
+    return make_resolved_promise(MakeWindowDefinition(formula.c_str(), type));
   }
 
   return MakeWindowDefinition(selection_->node(), type, true);

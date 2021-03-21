@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "controls/types.h"
 #include "node_service/node_ref.h"
 #include "time_range.h"
@@ -15,8 +16,8 @@ class TimeModel;
 class WindowDefinition;
 
 struct OpenContext {
+  NodeRef node;
   std::vector<scada::NodeId> node_ids;
-  std::wstring title;
   std::optional<TimeRange> time_range;
 };
 

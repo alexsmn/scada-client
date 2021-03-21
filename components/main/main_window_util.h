@@ -1,11 +1,17 @@
 #pragma once
 
+#include "base/promise.h"
+#include "window_definition.h"
+
 class MainWindow;
 class NodeRef;
-class WindowDefinition;
 
 void OpenView(MainWindow* main_window,
-              const WindowDefinition& def,
+              promise<WindowDefinition> window_def_promise,
+              bool activate = true);
+
+void OpenView(MainWindow* main_window,
+              const WindowDefinition& window_def,
               bool activate = true);
 
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,

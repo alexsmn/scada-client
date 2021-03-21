@@ -168,5 +168,5 @@ std::optional<OpenContext> SummaryView::GetOpenContext() const {
     context.time_range = TimeRange{start_time, end_time};
   }
 
-  return std::move(context);
+  return context;
 }

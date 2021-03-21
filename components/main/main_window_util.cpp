@@ -15,10 +15,19 @@
 #include <cassert>
 
 void OpenView(MainWindow* main_window,
-              const WindowDefinition& def,
+              promise<WindowDefinition> window_def_promise,
+              bool activate) {
+  // TODO: Pass |main_window| by weak pointer.
+  window_def_promise.then([main_window, activate](const WindowDefinition& def) {
+    OpenView(main_window, def, activate);
+  });
+}
+
+void OpenView(MainWindow* main_window,
+              const WindowDefinition& window_def,
               bool activate) {
   assert(main_window);
-  main_window->OpenView(def, activate);
+  main_window->OpenView(window_def, activate);
 }
 
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,
@@ -41,19 +50,22 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
   if (view && contents && view->window_info().can_insert_item()) {
     if ((view->window_info().command_id == type) || (shift & MK_CONTROL)) {
       // insert items into active frame
-      NodeIdSet trids;
-      if (IsInstanceOf(node, data_items::id::DataGroupType))
-        ExpandGroupItemIds(node, trids);
-      else
-        trids.insert(node.node_id());
-      unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
-      for (NodeIdSet::iterator i = trids.begin(); i != trids.end(); ++i) {
-        contents->AddContainedItem(*i, flags);
-        flags |= ContentsModel::APPEND;
-      }
+      promise<NodeIdSet> node_ids_promise =
+          IsInstanceOf(node, data_items::id::DataGroupType)
+              ? ExpandGroupItemIds(node)
+              : make_resolved_promise(MakeNodeIdSet(node.node_id()));
+      node_ids_promise.then([contents, shift](const NodeIdSet& node_ids) {
+        unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
+        for (const auto& node_id : node_ids) {
+          contents->AddContainedItem(node_id, flags);
+          flags |= ContentsModel::APPEND;
+        }
+      });
       return true;
     }
   }
+
+  // TODO: Capture |main_window| by weak pointer.
 
   OpenView(main_window, MakeWindowDefinition(node, type, true));
   return true;

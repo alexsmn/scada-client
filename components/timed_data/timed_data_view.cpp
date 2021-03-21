@@ -138,14 +138,11 @@ ExportModel::ExportData TimedDataView::GetExportData() {
 
 std::optional<OpenContext> TimedDataView::GetOpenContext() const {
   const auto& node = model_.timed_data().GetNode();
-  const auto& node_id = node.node_id();
-  if (node_id.is_null())
+  if (!node)
     return std::nullopt;
 
   OpenContext context;
-
-  context.title = model_.timed_data().GetTitle();
-  context.node_ids.emplace_back(node_id);
+  context.node = node;
 
   const auto& selected_rows = view_->GetSelectedRows();
   if (selected_rows.size() >= 2) {
@@ -159,5 +156,5 @@ std::optional<OpenContext> TimedDataView::GetOpenContext() const {
                                        scada::Duration::FromMilliseconds(1)};
   }
 
-  return std::move(context);
+  return context;
 }

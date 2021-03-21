@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "command_handler.h"
 #include "window_definition.h"
 
@@ -66,7 +67,7 @@ class SelectionCommands : private SelectionCommandsContext,
                   const std::vector<scada::Variant>& arguments);
   void OpenModusView(const NodeRef& node);
 
-  WindowDefinition GetOpenWindowDefinition(unsigned type) const;
+  promise<WindowDefinition> GetOpenWindowDefinition(unsigned type) const;
 
   void DumpDebugInfo();
 

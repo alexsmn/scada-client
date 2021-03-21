@@ -355,11 +355,12 @@ void SummaryModel::OnColumnTitleChanged(int column) {
 
 void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
                                     unsigned flags) {
-  NodeIdSet child_ids;
-  ExpandGroupItemIds(node_service_.GetNode(node_id), child_ids);
-
-  for (const auto& child_id : child_ids)
-    AddColumn(MakeNodeIdFormula(child_id));
+  // TOOD: Capture by weak pointer.
+  ExpandGroupItemIds(node_service_.GetNode(node_id))
+      .then([this](const NodeIdSet& child_ids) {
+        for (const auto& child_id : child_ids)
+          AddColumn(MakeNodeIdFormula(child_id));
+      });
 }
 
 void SummaryModel::RemoveContainedItem(const scada::NodeId& node_id) {

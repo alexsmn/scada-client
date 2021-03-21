@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "controls/types.h"
 #include "core/node_id.h"
 #include "node_service/node_ref.h"
@@ -36,9 +37,10 @@ void ReportRequestResult(const std::wstring& title,
 
 const size_t kTableLimitation = 1000;
 
-WindowDefinition MakeWindowDefinition(const NodeRef& node,
-                                      unsigned type,
-                                      bool expand_groups);
+promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
+                                               unsigned type,
+                                               bool expand_groups);
+WindowDefinition MakeSingleWindowDefinition(const NodeRef& node, unsigned type);
 WindowDefinition MakeWindowDefinition(const NodeRef& node,
                                       unsigned type,
                                       const NodeIdSet& item_ids);
@@ -48,8 +50,9 @@ WindowDefinition MakeWindowDefinition(
     unsigned type,
     const wchar_t* title = nullptr);
 
-std::optional<WindowDefinition> MakeGroupWindowDefinition(const NodeRef& node,
-                                                          unsigned type);
+promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
+    const NodeRef& node,
+    unsigned type);
 
 std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
     const NodeRef& device);
@@ -58,7 +61,8 @@ bool ExecuteDisableItem(TaskManager& task_manager,
                         const NodeRef& node,
                         bool disable);
 
-void ExpandGroupItemIds(const NodeRef& node, NodeIdSet& item_ids);
+promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node,
+                                      size_t max_count = kTableLimitation);
 
 void CompletePath(const std::wstring& text,
                   int& start,

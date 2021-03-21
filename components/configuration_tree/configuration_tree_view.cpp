@@ -120,10 +120,8 @@ std::optional<OpenContext> ConfigurationTreeView::GetOpenContext() const {
     return std::nullopt;
 
   OpenContext context;
-  context.title = GetFullDisplayName(tree_node->node());
-  context.node_ids =
-      GetVariableNodeIds(tree_view().GetOrderedNodes(tree_node, false));
-  return std::move(context);
+  context.node = tree_node->node();
+  return context;
 }
 
 void ConfigurationTreeView::UpdateSelection() {

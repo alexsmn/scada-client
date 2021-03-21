@@ -1,5 +1,6 @@
 #include "components/configuration_export/export_data_builder.h"
 
+#include "base/range_util.h"
 #include "components/configuration_export/export_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
@@ -8,14 +9,6 @@
 #include <boost/range/combine.hpp>
 
 namespace {
-
-std::vector<ExportData::Node> Join(
-    const std::vector<std::vector<ExportData::Node>>& node_list_list) {
-  std::vector<ExportData::Node> results;
-  for (auto& node_list : node_list_list)
-    results.insert(results.end(), node_list.begin(), node_list.end());
-  return results;
-}
 
 ExportData::Node MakeExportNode(
     const NodeRef& node,
@@ -46,6 +39,9 @@ ExportData::Node MakeExportNode(
 }
 
 promise<void> FetchNode(const NodeRef& node) {
+  if (node.fetched())
+    return make_resolved_promise();
+
   auto promise = make_promise<void>();
   node.Fetch(NodeFetchStatus::NodeOnly(),
              [promise](const NodeRef& node) mutable { promise.resolve(); });

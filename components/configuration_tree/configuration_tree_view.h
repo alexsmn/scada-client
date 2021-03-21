@@ -49,7 +49,8 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
   std::unique_ptr<ConfigurationTreeDropHandler> drop_handler_;
 
 #if defined(UI_VIEWS)
-  std::unique_ptr<ConfigurationTreeDragDropControllerViews> drag_drop_controller_;
+  std::unique_ptr<ConfigurationTreeDragDropControllerViews>
+      drag_drop_controller_;
 #endif
 
   std::unique_ptr<Tree> tree_view_;
