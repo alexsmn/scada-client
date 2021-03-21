@@ -1,7 +1,6 @@
 #pragma once
 
-#include "controls/types.h"
-#include "core/configuration_types.h"
+#include "node_id_set.h"
 
 class ContentsObserver {
  public:

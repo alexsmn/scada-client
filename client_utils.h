@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/promise.h"
-#include "controls/types.h"
 #include "core/node_id.h"
+#include "node_id_set.h"
 #include "node_service/node_ref.h"
 #include "window_definition.h"
 
@@ -35,31 +35,11 @@ void ReportRequestResult(const std::wstring& title,
                          LocalEvents& local_events,
                          Profile& profile);
 
-const size_t kTableLimitation = 1000;
-
-promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
-                                               unsigned type,
-                                               bool expand_groups);
-WindowDefinition MakeSingleWindowDefinition(const NodeRef& node, unsigned type);
-WindowDefinition MakeWindowDefinition(const NodeRef& node,
-                                      unsigned type,
-                                      const NodeIdSet& item_ids);
-WindowDefinition MakeWindowDefinition(const char* formula, unsigned type);
-WindowDefinition MakeWindowDefinition(
-    const std::vector<scada::NodeId>& node_ids,
-    unsigned type,
-    const wchar_t* title = nullptr);
-
-promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
-    const NodeRef& node,
-    unsigned type);
-
-std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
-    const NodeRef& device);
-
 bool ExecuteDisableItem(TaskManager& task_manager,
                         const NodeRef& node,
                         bool disable);
+
+const size_t kTableLimitation = 1000;
 
 promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node,
                                       size_t max_count = kTableLimitation);

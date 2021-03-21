@@ -4,6 +4,7 @@
 #include "components/configuration_export/export_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 
 #include <boost/range/combine.hpp>
@@ -36,16 +37,6 @@ ExportData::Node MakeExportNode(
       node.display_name(),
       std::move(property_values),
   };
-}
-
-promise<void> FetchNode(const NodeRef& node) {
-  if (node.fetched())
-    return make_resolved_promise();
-
-  auto promise = make_promise<void>();
-  node.Fetch(NodeFetchStatus::NodeOnly(),
-             [promise](const NodeRef& node) mutable { promise.resolve(); });
-  return promise;
 }
 
 promise<std::vector<ExportData::Node>> CollectNodeHierarchy(

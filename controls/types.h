@@ -2,12 +2,10 @@
 
 #include "base/values.h"
 #include "controls/key_codes.h"
-#include "core/configuration_types.h"
 #include "gfx/point.h"
 
 #include <SkColor.h>
 #include <functional>
-#include <set>
 
 #if defined(UI_QT)
 #include <QWidget>
@@ -24,15 +22,6 @@ typedef gfx::Point UiPoint;
 #endif
 
 typedef SkColor UiColor;
-
-// TODO: Move away.
-typedef std::set<scada::NodeId> NodeIdSet;
-
-inline NodeIdSet MakeNodeIdSet(const scada::NodeId& node_id) {
-  NodeIdSet result;
-  result.insert(node_id);
-  return result;
-}
 
 typedef std::function<void()> DoubleClickHandler;
 typedef std::function<void()> SelectionChangedHandler;

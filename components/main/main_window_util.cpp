@@ -10,6 +10,7 @@
 #include "model/scada_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
+#include "window_definition_builder.h"
 #include "window_info.h"
 
 #include <cassert>
@@ -54,6 +55,7 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
           IsInstanceOf(node, data_items::id::DataGroupType)
               ? ExpandGroupItemIds(node)
               : make_resolved_promise(MakeNodeIdSet(node.node_id()));
+      // TODO: Capture weak pointer.
       node_ids_promise.then([contents, shift](const NodeIdSet& node_ids) {
         unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
         for (const auto& node_id : node_ids) {

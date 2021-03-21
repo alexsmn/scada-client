@@ -33,6 +33,7 @@
 #include "services/profile.h"
 #include "services/task_manager.h"
 #include "time_model.h"
+#include "window_definition_builder.h"
 
 #if defined(UI_QT)
 #include "components/main/qt/main_window_qt.h"
