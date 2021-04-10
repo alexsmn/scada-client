@@ -26,7 +26,7 @@ StatusBarModelImpl::StatusBarModelImpl(StatusBarModelImplContext&& context)
   task_manager_.AddObserver(*this);
 
   update_timer_.Start(
-      FROM_HERE, base::TimeDelta::FromMilliseconds(500),
+      FROM_HERE, base::TimeDelta::FromMilliseconds(300),
       base::Bind(&StatusBarModelImpl::OnTimer, base::Unretained(this)));
 }
 
