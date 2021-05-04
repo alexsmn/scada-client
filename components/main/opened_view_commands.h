@@ -25,6 +25,7 @@ class ContentsModel;
 class Controller;
 class DialogService;
 class EventFetcher;
+class Executor;
 class Favourites;
 class FileCache;
 class LocalEvents;
@@ -39,6 +40,7 @@ class TaskManager;
 class TimedDataService;
 
 struct OpenedViewCommandsContext {
+  const std::shared_ptr<Executor> executor_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;

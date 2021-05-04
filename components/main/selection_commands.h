@@ -16,6 +16,7 @@ class Variant;
 class Controller;
 class DialogService;
 class EventFetcher;
+class Executor;
 class FileCache;
 class LocalEvents;
 class MainWindow;
@@ -28,6 +29,7 @@ class TaskManager;
 class TimedDataService;
 
 struct SelectionCommandsContext {
+  const std::shared_ptr<Executor> executor_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;

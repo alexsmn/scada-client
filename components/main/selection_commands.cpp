@@ -294,12 +294,12 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
           });
       return;
     case ID_WRITE:
-      ExecuteWriteDialog(*dialog_service_, {timed_data_service_, node.node_id(),
-                                            profile_, false});
+      ExecuteWriteDialog(*dialog_service_, {executor_, timed_data_service_,
+                                            node.node_id(), profile_, false});
       return;
     case ID_WRITE_MANUAL:
-      ExecuteWriteDialog(*dialog_service_,
-                         {timed_data_service_, node.node_id(), profile_, true});
+      ExecuteWriteDialog(*dialog_service_, {executor_, timed_data_service_,
+                                            node.node_id(), profile_, true});
       return;
     case ID_UNLOCK_ITEM:
       task_manager_.PostUpdateTask(

@@ -40,6 +40,9 @@ class WriteModel : private WriteContext {
   void OnWriteComplete(const scada::Status& status);
 
   void StartWriting(bool second_stage);
+  void StartWritingHelper();
+
+  std::wstring GetConfirmationMessage(bool second_stage) const;
 
   DialogService* dialog_service_ = nullptr;
 

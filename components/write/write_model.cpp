@@ -1,34 +1,29 @@
 ﻿#include "components/write/write_model.h"
 
-#include "base/bind.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/executor.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "core/status.h"
 #include "model/data_items_node_ids.h"
-#include "model/scada_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
 namespace {
 const wchar_t kDiscreteConfirmationQuestion[] =
     L"Перевести %ls в состояние %ls?";
-const wchar_t kAnalogConfirmationQuestion[] =
-    L"Записать в %ls значение %ls?";
+const wchar_t kAnalogConfirmationQuestion[] = L"Записать в %ls значение %ls?";
 const wchar_t kSecondStagePrefix[] =
     L"Удаленное устройство готово к исполнению команды.\n\n";
 }  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
     : WriteContext{std::move(context)} {
-  spec_.Connect(timed_data_service_, MakeNodeIdFormula(node_id_));
-  discrete_ = spec_.logical();
-
   spec_.property_change_handler = [this](const PropertySet& properties) {
     if (current_change_handler)
       current_change_handler();
   };
+
+  spec_.Connect(timed_data_service_, MakeNodeIdFormula(node_id_));
+  discrete_ = spec_.logical();
 
   condition_.property_change_handler = [this](const PropertySet& properties) {
     if (current_change_handler)
@@ -103,21 +98,21 @@ void WriteModel::Write(double value, bool lock) {
   scada::WriteFlags flags;
   if (manual_) {
     spec_.Call(data_items::id::DataItemType_WriteManual, {write_value_, lock},
-               {}, [weak_ptr](const scada::Status& status) {
-                 base::ThreadTaskRunnerHandle::Get()->PostTask(
-                     FROM_HERE, base::Bind(&WriteModel::OnWriteComplete,
-                                           weak_ptr, status));
-               });
+               {},
+               BindExecutor(executor_, [weak_ptr](const scada::Status& status) {
+                 if (auto* ptr = weak_ptr.get())
+                   ptr->OnWriteComplete(status);
+               }));
 
   } else if (two_staged_) {
     write_selecting_ = true;
     flags.set_select();
     spec_.Write(
-        write_value_, {}, flags, [weak_ptr](const scada::Status& status) {
-          base::ThreadTaskRunnerHandle::Get()->PostTask(
-              FROM_HERE,
-              base::Bind(&WriteModel::OnWriteComplete, weak_ptr, status));
-        });
+        write_value_, {}, flags,
+        BindExecutor(executor_, [weak_ptr](const scada::Status& status) {
+          if (auto* ptr = weak_ptr.get())
+            ptr->OnWriteComplete(status);
+        }));
 
   } else {
     StartWriting(false);
@@ -158,17 +153,21 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   completion_handler(true);
 }
 
+std::wstring WriteModel::GetConfirmationMessage(bool second_stage) const {
+  std::wstring value_str = spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
+  std::wstring message = base::StringPrintf(
+      discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
+      spec_.GetTitle().c_str(), value_str.c_str());
+  if (second_stage)
+    message.insert(0, kSecondStagePrefix);
+  return message;
+}
+
 void WriteModel::StartWriting(bool second_stage) {
   // Request confirmation from user.
   if (profile_.control_confirmation) {
     std::wstring title = spec_.GetTitle();
-    std::wstring value_str =
-        spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
-    std::wstring message = base::StringPrintf(
-        discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
-        title.c_str(), value_str.c_str());
-    if (second_stage)
-      message.insert(0, kSecondStagePrefix);
+    auto message = GetConfirmationMessage(second_stage);
     if (dialog_service_->RunMessageBox(
             message, title, MessageBoxMode::QuestionYesNoDefaultNo) !=
         MessageBoxResult::Yes) {
@@ -178,6 +177,10 @@ void WriteModel::StartWriting(bool second_stage) {
     }
   }
 
+  StartWritingHelper();
+}
+
+void WriteModel::StartWritingHelper() {
   write_selecting_ = false;
   status_change_handler();
 
