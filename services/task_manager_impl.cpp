@@ -119,18 +119,18 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
           if (!node.status())
             return;
 
-          auto inputs = std::vector<scada::WriteValueId>();
+          auto inputs = std::vector<scada::WriteValue>();
           inputs.reserve(1 + properties.size());
           if (!attributes.display_name.empty()) {
             inputs.emplace_back(
-                scada::WriteValueId{node_id, scada::AttributeId::DisplayName,
+                scada::WriteValue{node_id, scada::AttributeId::DisplayName,
                                     std::move(attributes.display_name)});
           }
 
           for (auto& [prop_decl_id, value] : properties) {
             auto prop_id = node[prop_decl_id].node_id();
             assert(!prop_id.is_null());
-            inputs.emplace_back(scada::WriteValueId{std::move(prop_id),
+            inputs.emplace_back(scada::WriteValue{std::move(prop_id),
                                                     scada::AttributeId::Value,
                                                     std::move(value)});
           }
