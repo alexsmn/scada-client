@@ -113,6 +113,9 @@ void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id,
 void NodePropertyModel::Update() {
   root_.properties.clear();
 
+  if (!node_.fetched())
+    return;
+
   std::map<NodeRef /*category*/, std::unique_ptr<NodeGroupModel>> groups;
   std::vector<NodeRef> ordered_groups;
 
@@ -141,6 +144,8 @@ void NodePropertyModel::Update() {
   }
 
   if (const auto& type_definition = node_.type_definition()) {
+    assert(type_definition.fetched());
+
     for (auto& p : GetTypeProperties(type_definition)) {
       const auto& prop_decl = p.first;
       if (!prop_decl)
