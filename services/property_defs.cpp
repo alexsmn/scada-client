@@ -62,10 +62,10 @@ NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
 
 std::pair<scada::NodeId /*parent_id*/, std::string /*component_name*/>
 ParseChannelPath(std::string_view channel_path) {
-  scada::NodeId node_id;
   scada::NodeId parent_id;
   std::string_view component_name;
-  if (!IsNodeIdFormula(channel_path, node_id) ||
+  auto node_id = GetFormulaSingleNodeId(channel_path);
+  if (node_id.is_null() ||
       !IsNestedNodeId(node_id, parent_id, component_name)) {
     parent_id = scada::NodeId();
     component_name = channel_path;
@@ -487,9 +487,9 @@ std::wstring ChannelPropertyDefinition::GetText(
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
 
   scada::NodeId parent_id;
-  scada::NodeId node_id;
   std::string_view component_name;
-  if (IsNodeIdFormula(channel_path, node_id) &&
+  auto node_id = GetFormulaSingleNodeId(channel_path);
+  if (!node_id.is_null() &&
       IsNestedNodeId(node_id, parent_id, component_name)) {
     return device_
                ? GetFullDisplayName(context.node_service_.GetNode(parent_id))

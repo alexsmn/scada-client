@@ -293,11 +293,11 @@ void ItemEditor::LoadChannel(unsigned channel_no) {
                                              : &control_channel_;
   allow_direct_item_input_ = true;
 
-  scada::NodeId node_id;
   scada::NodeId device_id;
   std::string_view nested_name;
-  bool is_formula = !IsNodeIdFormula(*channel_, node_id) ||
-                    !IsNestedNodeId(node_id, device_id, nested_name);
+  auto node_id = GetFormulaSingleNodeId(*channel_);
+  bool is_formula =
+      node_id.is_null() || !IsNestedNodeId(node_id, device_id, nested_name);
 
   formula_checkbox_.SetCheck(is_formula ? BST_CHECKED : BST_UNCHECKED);
   OnFormulaStateChanged(is_formula);
