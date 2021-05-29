@@ -48,6 +48,7 @@ target_link_libraries(client_qt_lib PUBLIC
   scada_core_remote
   scada_core_vidicon
   schematic
+  timed_data
   ui_base
 )
 

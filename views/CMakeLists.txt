@@ -18,6 +18,7 @@ target_link_libraries(client_views PUBLIC
   scada_core_opcua
   scada_core_remote
   scada_core_vidicon
+  timed_data
   ui_base
   views
 )

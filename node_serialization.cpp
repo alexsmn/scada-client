@@ -41,11 +41,10 @@ void NodeToData(const NodeRef& source,
     }
   }
 
-  for (auto& ref : source.references()) {
+  // Skip type definitions, HasComponent.
+  for (auto& ref : source.references(scada::id::NonHierarchicalReferences)) {
     assert(ref.forward);
-    // Skip type definitions.
-    if (!IsSubtypeOf(ref.reference_type, scada::id::HasTypeDefinition) &&
-        !IsSubtypeOf(ref.reference_type, scada::id::HasProperty)) {
+    if (!IsSubtypeOf(ref.reference_type, scada::id::HasTypeDefinition)) {
       target.references.push_back(
           {ref.reference_type.node_id(), ref.forward, ref.target.node_id()});
     }
