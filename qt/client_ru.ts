@@ -307,12 +307,12 @@
         <translation type="vanished">Локальный</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="82"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="84"/>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
     <message>
-        <location filename="../components/main/qt/main_window_qt.cpp" line="140"/>
+        <location filename="../components/main/qt/main_window_qt.cpp" line="142"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>

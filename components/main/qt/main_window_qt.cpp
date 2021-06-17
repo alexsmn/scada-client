@@ -59,14 +59,16 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
   CreateToolbar();
 
-  Init(*view_manager_);
-
-  action_manager_.Subscribe(*this);
-
+  // Must show window before loading layout to let |restoreState()| work
+  // correctly.
   if (prefs.maximized)
     showMaximized();
   else
     show();
+
+  Init(*view_manager_);
+
+  action_manager_.Subscribe(*this);
 }
 
 MainWindowQt::~MainWindowQt() {
