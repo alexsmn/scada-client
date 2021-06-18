@@ -5,10 +5,13 @@
 #include "window_definition.h"
 
 class NodeRef;
+struct OpenContext;
 
 promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
                                                unsigned type,
                                                bool expand_groups);
+promise<WindowDefinition> MakeWindowDefinition(const OpenContext& open_context,
+                                               unsigned type);
 WindowDefinition MakeSingleWindowDefinition(const NodeRef& node, unsigned type);
 WindowDefinition MakeWindowDefinition(const NodeRef& node,
                                       unsigned type,

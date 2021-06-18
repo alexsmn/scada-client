@@ -14,6 +14,9 @@ class SelectionModel;
 class TimeModel;
 class WindowDefinition;
 
+// Declares the context that can be used to build a |WindowDefinition|. A
+// |WindowDefinition| is view type specific, while context only defines the
+// contents.
 struct OpenContext {
   NodeRef node;
   std::vector<scada::NodeId> node_ids;

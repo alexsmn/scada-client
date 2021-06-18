@@ -474,16 +474,8 @@ promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
     unsigned type) const {
   assert(type != 0);
 
-  if (auto open_context = controller_->GetOpenContext()) {
-    return MakeWindowDefinition(open_context->node, type, true)
-        .then(
-            [open_context = *open_context](const WindowDefinition& window_def) {
-              auto new_window_def = window_def;
-              if (open_context.time_range.has_value())
-                SaveTimeRange(new_window_def, *open_context.time_range);
-              return new_window_def;
-            });
-  }
+  if (auto open_context = controller_->GetOpenContext())
+    return MakeWindowDefinition(*open_context, type);
 
   if (selection_->multiple()) {
     auto title = selection_->GetTitle();

@@ -3,6 +3,7 @@
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
+#include "controller.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
@@ -57,6 +58,17 @@ promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
     AddNodeIds(window_def, node_ids);
     return window_def;
   });
+}
+
+promise<WindowDefinition> MakeWindowDefinition(const OpenContext& open_context,
+                                               unsigned type) {
+  return MakeWindowDefinition(open_context.node, type, true)
+      .then([open_context](const WindowDefinition& window_def) {
+        auto new_window_def = window_def;
+        if (open_context.time_range.has_value())
+          SaveTimeRange(new_window_def, *open_context.time_range);
+        return new_window_def;
+      });
 }
 
 WindowDefinition MakeWindowDefinition(const NodeRef& node,
