@@ -8,11 +8,11 @@
 #include "components/modus/activex/modus_document.h"
 #include "components/modus/activex/modus_element.h"
 #include "components/modus/activex/modus_object.h"
-#include "core/debug_util.h"
+#include "base/debug_util.h"
 #include "services/file_cache_updater.h"
 #include "window_info.h"
 
-#include "core/debug_util-inl.h"
+#include "base/debug_util-inl.h"
 
 namespace modus {
 
