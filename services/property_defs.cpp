@@ -194,6 +194,7 @@ std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
     // Modbus Link
     {devices::id::ModbusLinkType_Protocol, &kEnumPropDef},
     {devices::id::ModbusLinkType_RequestDelay, &kIntPropDef},
+    {devices::id::ModbusLinkType_Mode, &kEnumPropDef},
     // Modbus Dev
     {devices::id::ModbusDeviceType_Address, &kIntPropDef},
     {devices::id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
