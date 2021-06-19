@@ -2,9 +2,39 @@
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
+#include "base/struct_writer.h"
 #include "base/values.h"
 #include "value_util.h"
 #include "window_info.h"
+
+#include "base/debug_util-inl.h"
+
+std::ostream& operator<<(std::ostream& stream, const WindowItem& window_item) {
+  StructWriter{stream}
+      .AddField("name", window_item.name)
+      .AddField("attributes", window_item.attributes);
+  return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream,
+                         const WindowDefinition& window_definition) {
+  StructWriter{stream}
+      .AddField("window_info.name", window_definition.window_info().name)
+      .AddField("id", window_definition.id)
+      .AddField("title", window_definition.title)
+      .AddField("path", window_definition.path)
+      // TODO: Proper fix.
+      // .AddField("size", window_definition.size)
+      .AddField("visible", window_definition.visible)
+      .AddField("locked", window_definition.locked)
+      .AddField("items", window_definition.items)
+      .AddField("storage", window_definition.storage);
+  return stream;
+}
+
+// WindowItem
+
+WindowItem::WindowItem(std::string&& name) : name{std::move(name)} {}
 
 WindowItem::WindowItem(const WindowItem& source)
     : name{source.name}, attributes{source.attributes.Clone()} {}
@@ -39,20 +69,30 @@ std::wstring WindowItem::GetString16(std::string_view attr,
   return ::GetString16(attributes, attr, default_value);
 }
 
-void WindowItem::SetBool(std::string_view attr, bool value) {
+WindowItem& WindowItem::SetBool(std::string_view attr, bool value) {
   SetKey(attributes, attr, value);
+  return *this;
 }
 
-void WindowItem::SetInt(std::string_view attr, int value) {
+WindowItem& WindowItem::SetInt(std::string_view attr, int value) {
   SetKey(attributes, attr, value);
+  return *this;
 }
 
-void WindowItem::SetString(std::string_view attr, std::string_view value) {
+WindowItem& WindowItem::SetString(std::string_view attr,
+                                  std::string_view value) {
   SetKey(attributes, attr, value);
+  return *this;
 }
 
-void WindowItem::SetString(std::string_view attr, std::wstring_view value) {
+WindowItem& WindowItem::SetString(std::string_view attr,
+                                  std::wstring_view value) {
   SetKey(attributes, attr, base::UTF16ToUTF8(ToStringPiece(value)));
+  return *this;
+}
+
+bool WindowItem::operator==(const WindowItem& other) const {
+  return name == other.name && attributes == other.attributes;
 }
 
 // WindowDefinition
@@ -96,6 +136,11 @@ std::wstring WindowDefinition::GetTitle() const {
   return title;
 }
 
+WindowDefinition& WindowDefinition::AddItem(WindowItem&& window_item) {
+  items.emplace_back(std::move(window_item));
+  return *this;
+}
+
 WindowItem& WindowDefinition::AddItem(std::string name) {
   WindowItem& item = items.emplace_back();
   item.name = std::move(name);
@@ -122,4 +167,11 @@ const WindowItem* WindowDefinition::FindItem(const char* name) const {
 
 void WindowDefinition::Clear() {
   items.clear();
+}
+
+bool WindowDefinition::operator==(const WindowDefinition& other) const {
+  return window_info_ == other.window_info_ && id == other.id &&
+         title == other.title && path == other.path && size == other.size &&
+         visible == other.visible && locked == other.locked &&
+         items == other.items && storage == other.storage;
 }

@@ -62,13 +62,17 @@ promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
 
 promise<WindowDefinition> MakeWindowDefinition(const OpenContext& open_context,
                                                unsigned type) {
-  return MakeWindowDefinition(open_context.node, type, true)
-      .then([open_context](const WindowDefinition& window_def) {
-        auto new_window_def = window_def;
-        if (open_context.time_range.has_value())
-          SaveTimeRange(new_window_def, *open_context.time_range);
-        return new_window_def;
-      });
+  auto promise = open_context.node
+                     ? MakeWindowDefinition(open_context.node, type, true)
+                     : make_resolved_promise(
+                           MakeWindowDefinition(open_context.node_ids, type));
+
+  return promise.then([open_context](const WindowDefinition& window_def) {
+    auto new_window_def = window_def;
+    if (open_context.time_range.has_value())
+      SaveTimeRange(new_window_def, *open_context.time_range);
+    return new_window_def;
+  });
 }
 
 WindowDefinition MakeWindowDefinition(const NodeRef& node,
@@ -103,7 +107,7 @@ WindowDefinition MakeWindowDefinition(
 
   for (auto& node_id : node_ids) {
     WindowItem& item = window_def.AddItem("Item");
-    item.SetString("path", NodeIdToScadaString(node_id));
+    item.SetString("path", MakeNodeIdFormula(node_id));
   }
 
   return window_def;

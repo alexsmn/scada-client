@@ -15,6 +15,7 @@ struct WindowInfo;
 class WindowItem {
  public:
   WindowItem() {}
+  explicit WindowItem(std::string&& name);
 
   WindowItem(const WindowItem& source);
   WindowItem& operator=(const WindowItem& source);
@@ -31,15 +32,17 @@ class WindowItem {
   std::wstring GetString16(std::string_view attr,
                            std::wstring_view default_value = {}) const;
 
-  void SetBool(std::string_view attr, bool value);
-  void SetInt(std::string_view attr, int value);
-  void SetString(std::string_view attr, std::string_view value);
-  void SetString(std::string_view attr, std::wstring_view value);
+  WindowItem& SetBool(std::string_view attr, bool value);
+  WindowItem& SetInt(std::string_view attr, int value);
+  WindowItem& SetString(std::string_view attr, std::string_view value);
+  WindowItem& SetString(std::string_view attr, std::wstring_view value);
 
   template <class T>
   std::optional<T> Get() const;
   template <class T>
-  void Set(const T& value);
+  WindowItem& Set(const T& value);
+
+  bool operator==(const WindowItem& other) const;
 
   std::string name;
   base::Value attributes{base::Value::Type::DICTIONARY};
@@ -62,6 +65,7 @@ class WindowDefinition {
 
   std::wstring GetTitle() const;
 
+  WindowDefinition& AddItem(WindowItem&& window_item);
   WindowItem& AddItem(std::string name);
   WindowItem* FindItem(const char* name);
   const WindowItem* FindItem(const char* name) const;
@@ -83,9 +87,21 @@ class WindowDefinition {
 
   base::Value storage;
 
+  WindowDefinition& set_title(std::wstring_view title) {
+    this->title = std::wstring{title};
+    return *this;
+  }
+
+  bool operator==(const WindowDefinition& other) const;
+
  private:
   const WindowInfo* window_info_ = nullptr;
 };
+
+std::ostream& operator<<(std::ostream& stream, const WindowItem& window_item);
+
+std::ostream& operator<<(std::ostream& stream,
+                         const WindowDefinition& window_definition);
 
 #include "window_definition_util.h"
 
@@ -95,8 +111,9 @@ inline std::optional<T> WindowItem::Get() const {
 }
 
 template <class T>
-inline void WindowItem::Set(const T& value) {
+inline WindowItem& WindowItem::Set(const T& value) {
   attributes = ToJson(value);
+  return *this;
 }
 
 template <class T>
