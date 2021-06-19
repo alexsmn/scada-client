@@ -4,6 +4,8 @@
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
+#include "core/node_id.h"
+#include "model/node_id_util.h"
 #include "time_range.h"
 #include "value_util.h"
 #include "window_definition.h"
@@ -196,4 +198,18 @@ inline std::optional<WindowDefinition> FromJson(const base::Value& win) {
     w.storage = data->Clone();
 
   return w;
+}
+
+inline base::Value ToJson(const scada::NodeId& node_id) {
+  return node_id.is_null() ? base::Value{}
+                           : base::Value{NodeIdToScadaString(node_id)};
+}
+
+template <>
+inline std::optional<scada::NodeId> FromJson(const base::Value& json) {
+  if (!json.is_string())
+    return std::nullopt;
+  auto node_id = NodeIdFromScadaString(json.GetString());
+  return node_id.is_null() ? std::optional<scada::NodeId>{}
+                           : std::optional<scada::NodeId>{std::move(node_id)};
 }
