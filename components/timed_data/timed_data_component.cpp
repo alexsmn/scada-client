@@ -1,4 +1,4 @@
-#include "components/timed_data/timed_data_view.h"
+﻿#include "components/timed_data/timed_data_view.h"
 #include "controller_factory.h"
 
 const WindowInfo kWindowInfo = {ID_TIMED_DATA_VIEW,
