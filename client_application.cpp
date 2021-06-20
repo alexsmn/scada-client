@@ -149,6 +149,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 }
 
 ClientApplication::~ClientApplication() {
+  event_notifier_.reset();
   main_window_manager_.reset();
 
   if (profile_ && profile_loaded_)
@@ -168,7 +169,6 @@ ClientApplication::~ClientApplication() {
 
   blinker_manager_.reset();
   speech_.reset();
-  event_notifier_.reset();
   action_manager_.reset();
   favourites_.reset();
   portfolio_manager_.reset();
@@ -278,10 +278,6 @@ void ClientApplication::Start() {
   action_manager_ = std::make_unique<ActionManager>();
   AddGlobalActions(*action_manager_, *node_service_);
 
-  event_notifier_ = std::make_unique<EventNotifier>(EventNotifierContext{
-      *event_fetcher_, *local_events_, *profile_,
-      [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
-
   favourites_ = std::make_unique<Favourites>();
 
   portfolio_manager_ = std::make_unique<PortfolioManager>(
@@ -300,6 +296,10 @@ void ClientApplication::Start() {
 
   // |main_window_manager_| must be assigned.
   main_window_manager_->Init();
+
+  event_notifier_ = std::make_unique<EventNotifier>(EventNotifierContext{
+      *event_fetcher_, *local_events_, *profile_,
+      [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 }
 
 std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
