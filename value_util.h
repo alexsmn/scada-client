@@ -131,6 +131,14 @@ inline bool SaveJsonToFile(const base::Value& data,
   return serializer.Serialize(data);
 }
 
+inline std::string SaveJsonToString(const base::Value& data) {
+  std::string json_string;
+  JSONStringValueSerializer serializer{&json_string};
+  if (!serializer.Serialize(data))
+    throw new std::runtime_error("Cannot serialize the value to JSON");
+  return json_string;
+}
+
 inline std::unique_ptr<base::Value> LoadJsonFromFile(
     const base::FilePath& path,
     std::string* error_message = nullptr) {

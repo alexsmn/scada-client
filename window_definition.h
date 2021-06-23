@@ -16,6 +16,7 @@ class WindowItem {
  public:
   WindowItem() {}
   explicit WindowItem(std::string&& name);
+  WindowItem(std::string&& name, base::Value&& attributes);
 
   WindowItem(const WindowItem& source);
   WindowItem& operator=(const WindowItem& source);

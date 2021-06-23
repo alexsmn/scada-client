@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/base64.h"
+#include "base/range_util.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
@@ -126,32 +127,46 @@ inline std::optional<TimeRange> RestoreTimeRange(
 
 namespace {
 
-void LoadWinItems(WindowItems& items, const base::Value& data) {
-  if (!data.is_list())
-    return;
-
-  for (auto& item_data : data.GetList()) {
-    auto& item = items.emplace_back();
-    item.name = std::string{GetString(item_data, "name")};
+inline WindowItem LoadWindowItem(const base::Value& item_data) {
+  WindowItem item;
+  item.name = std::string{GetString(item_data, "name")};
+  if (auto* value = item_data.FindKey("@value")) {
+    item.attributes = value->Clone();
+  } else {
     item.attributes = item_data.Clone();
     item.attributes.RemoveKey("name");
   }
+  return item;
 }
 
-base::Value SaveWinItems(const WindowItems& items) {
-  base::Value::ListStorage list;
-  list.reserve(items.size());
-  for (const auto& item : items) {
-    assert(item.attributes.is_dict());
+inline base::Value SaveWindowItem(const WindowItem& item) {
+  if (item.attributes.is_dict()) {
     assert(!item.attributes.FindKey("name"));
+    assert(!item.attributes.FindKey("@value"));
     auto item_data = item.attributes.Clone();
     SetKey(item_data, "name", item.name);
-    list.emplace_back(std::move(item_data));
+    return item_data;
+  } else {
+    base::Value item_data{base::Value::Type::DICTIONARY};
+    item_data.SetKey("name", base::Value{item.name});
+    item_data.SetKey("@value", item.attributes.Clone());
+    return item_data;
   }
-  return base::Value{std::move(list)};
 }
 
 }  // namespace
+
+template <>
+inline std::optional<WindowItems> FromJson(const base::Value& data) {
+  if (!data.is_list())
+    return std::nullopt;
+
+  return MapTo<WindowItems>(data.GetList(), &LoadWindowItem);
+}
+
+inline base::Value ToJson(const WindowItems& items) {
+  return base::Value{MapTo<base::Value::ListStorage>(items, &SaveWindowItem)};
+}
 
 inline base::Value ToJson(const WindowDefinition& def) {
   const WindowInfo& window_info = def.window_info();
@@ -171,7 +186,7 @@ inline base::Value ToJson(const WindowDefinition& def) {
   SetKey(win, "height", def.size.height());
   SetKey(win, "locked", def.locked);
 
-  win.SetKey("items", SaveWinItems(def.items));
+  win.SetKey("items", ToJson(def.items));
   win.SetKey("data", def.storage.Clone());
 
   return win;
@@ -192,7 +207,7 @@ inline std::optional<WindowDefinition> FromJson(const base::Value& win) {
   w.path = base::FilePath(GetString16(win, "path"));
   w.size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
   if (auto* items = win.FindKey("items"))
-    LoadWinItems(w.items, *items);
+    w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});
 
   if (auto* data = GetDict(win, "data"))
     w.storage = data->Clone();

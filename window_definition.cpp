@@ -36,6 +36,9 @@ std::ostream& operator<<(std::ostream& stream,
 
 WindowItem::WindowItem(std::string&& name) : name{std::move(name)} {}
 
+WindowItem::WindowItem(std::string&& name, base::Value&& attributes)
+    : name{std::move(name)}, attributes{std::move(attributes)} {}
+
 WindowItem::WindowItem(const WindowItem& source)
     : name{source.name}, attributes{source.attributes.Clone()} {}
 

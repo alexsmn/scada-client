@@ -74,7 +74,7 @@ void Page::Load(const base::Value& data) {
       w->path = base::FilePath(GetString16(win, "path"));
       w->size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
       if (auto* items = win.FindKey("items"))
-        LoadWinItems(w->items, *items);
+        w->items = FromJson<WindowItems>(*items).value_or(WindowItems{});
 
       if (auto* win_data = GetDict(win, "data"))
         w->storage = win_data->Clone();
@@ -132,7 +132,7 @@ base::Value Page::Save(bool current) const {
     SetKey(win, "height", def.size.height());
     SetKey(win, "locked", def.locked);
 
-    win.SetKey("items", SaveWinItems(def.items));
+    win.SetKey("items", ToJson(def.items));
     win.SetKey("data", def.storage.Clone());
 
     windows.emplace_back(std::move(win));
