@@ -330,9 +330,8 @@ std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
       };
 
       return {
-          io_context, executor,      view_events_provider,       services,
-          services,   address_space, address_space.node_factory, services,
-          services,
+          executor,      view_events_provider,       services, services,
+          address_space, address_space.node_factory, services, services,
       };
     }
 
@@ -355,19 +354,18 @@ std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
 std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV2() {
   struct Context {
     Context(const std::shared_ptr<Logger>& logger,
-            boost::asio::io_context& io_context,
             const std::shared_ptr<Executor> executor,
             MasterDataServices& services)
-        : node_service{v2::NodeServiceImplContext{
-              io_context, executor, services, services, services}},
+        : node_service{v2::NodeServiceImplContext{executor, services, services,
+                                                  services}},
           node_service_notifier{node_service, services} {}
 
     v2::NodeServiceImpl node_service;
     SessionProxyNotifier<v2::NodeServiceImpl> node_service_notifier;
   };
 
-  auto context = std::make_shared<Context>(logger_, *io_context_, executor_,
-                                           *master_data_services_);
+  auto context =
+      std::make_shared<Context>(logger_, executor_, *master_data_services_);
   return std::shared_ptr<NodeService>{context, &context->node_service};
 }
 
