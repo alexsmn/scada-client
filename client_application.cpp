@@ -303,26 +303,15 @@ void ClientApplication::Start() {
 }
 
 std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
-  class ClientAddressSpace : public AddressSpaceImpl {
-   public:
-    explicit ClientAddressSpace(const std::shared_ptr<Logger>& logger)
-        : AddressSpaceImpl{logger}, node_factory{*this} {}
-
-    GenericNodeFactory node_factory;
-  };
-
   struct Context {
     Context(const std::shared_ptr<Logger>& logger,
-            boost::asio::io_context& io_context,
-            const std::shared_ptr<Executor> executor,
+            const std::shared_ptr<Executor>& executor,
             MasterDataServices& services)
         : address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
-          node_service{
-              MakeNodeServiceImplContext(io_context, executor, services)},
+          node_service{MakeNodeServiceImplContext(executor, services)},
           node_service_notifier{node_service, services} {}
 
     v1::NodeServiceImplContext MakeNodeServiceImplContext(
-        boost::asio::io_context& io_context,
         const std::shared_ptr<Executor> executor,
         MasterDataServices& services) {
       auto view_events_provider = [&services](scada::ViewEvents& events) {
@@ -330,12 +319,13 @@ std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
       };
 
       return {
-          executor,      view_events_provider,       services, services,
-          address_space, address_space.node_factory, services, services,
+          executor,      view_events_provider, services, services,
+          address_space, node_factory,         services, services,
       };
     }
 
-    ClientAddressSpace address_space;
+    AddressSpaceImpl address_space;
+    GenericNodeFactory node_factory{address_space};
     v1::NodeServiceImpl node_service;
     SessionProxyNotifier<v1::NodeServiceImpl> node_service_notifier;
   };
@@ -346,19 +336,29 @@ std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
           : static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NullLogger>());
 
-  auto context = std::make_shared<Context>(logger, *io_context_, executor_,
-                                           *master_data_services_);
+  auto context =
+      std::make_shared<Context>(logger, executor_, *master_data_services_);
   return std::shared_ptr<NodeService>{context, &context->node_service};
 }
 
 std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV2() {
   struct Context {
     Context(const std::shared_ptr<Logger>& logger,
-            const std::shared_ptr<Executor> executor,
+            const std::shared_ptr<Executor>& executor,
             MasterDataServices& services)
-        : node_service{v2::NodeServiceImplContext{executor, services, services,
-                                                  services}},
+        : node_service{MakeNodeServiceImplContext(executor, services)},
           node_service_notifier{node_service, services} {}
+
+    v2::NodeServiceImplContext MakeNodeServiceImplContext(
+        const std::shared_ptr<Executor>& executor,
+        MasterDataServices& services) {
+      auto view_events_provider = [&services](scada::ViewEvents& events) {
+        return std::make_unique<ViewEventsSubscription>(services, events);
+      };
+
+      return v2::NodeServiceImplContext{executor, services, services, services,
+                                        view_events_provider};
+    }
 
     v2::NodeServiceImpl node_service;
     SessionProxyNotifier<v2::NodeServiceImpl> node_service_notifier;
