@@ -144,7 +144,10 @@ class PageLayout {
   }
 
   bool operator==(const PageLayout& other) const noexcept {
-    return main == other.main && dock == other.dock && blob == other.blob;
+    return main == other.main &&
+           std::equal(std::begin(dock), std::end(dock),
+                      std::begin(other.dock)) &&
+           blob == other.blob;
   }
 };
 
