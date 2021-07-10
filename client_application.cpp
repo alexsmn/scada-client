@@ -307,8 +307,7 @@ std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
     Context(const std::shared_ptr<Logger>& logger,
             const std::shared_ptr<Executor>& executor,
             MasterDataServices& services)
-        : address_space{std::make_shared<NestedLogger>(logger, "AddressSpace")},
-          node_service{MakeNodeServiceImplContext(executor, services)},
+        : node_service{MakeNodeServiceImplContext(executor, services)},
           node_service_notifier{node_service, services} {}
 
     v1::NodeServiceImplContext MakeNodeServiceImplContext(
