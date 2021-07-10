@@ -122,10 +122,10 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
             return;
           }
 
-          auto inputs = std::vector<scada::WriteValue>();
-          inputs.reserve(1 + properties.size());
+          auto inputs = std::make_shared<std::vector<scada::WriteValue>>();
+          inputs->reserve(1 + properties.size());
           if (!attributes.display_name.empty()) {
-            inputs.emplace_back(
+            inputs->emplace_back(
                 scada::WriteValue{node_id, scada::AttributeId::DisplayName,
                                   std::move(attributes.display_name)});
           }
@@ -133,13 +133,13 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
           for (auto& [prop_decl_id, value] : properties) {
             auto prop_id = node[prop_decl_id].node_id();
             assert(!prop_id.is_null());
-            inputs.emplace_back(scada::WriteValue{std::move(prop_id),
-                                                  scada::AttributeId::Value,
-                                                  std::move(value)});
+            inputs->emplace_back(scada::WriteValue{std::move(prop_id),
+                                                   scada::AttributeId::Value,
+                                                   std::move(value)});
           }
 
           attribute_service.Write(
-              inputs, {},
+              scada::ServiceContext::default_instance(), inputs,
               [weak_ptr, node_id, callback](
                   scada::Status&& status,
                   std::vector<scada::StatusCode>&& results) {
