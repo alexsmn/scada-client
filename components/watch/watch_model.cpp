@@ -52,7 +52,8 @@ void WatchModel::SetDevice(NodeRef device) {
 
   monitored_item_ =
       device_.CreateMonitoredItem(scada::AttributeId::EventNotifier, {});
-  monitored_item_->set_event_handler(
+  // FIXME: Captures |this|. No sync.
+  monitored_item_->Subscribe(
       [this](const scada::Status& status, const std::any& event) {
         if (!status)
           return OnError(status);
@@ -61,7 +62,6 @@ void WatchModel::SetDevice(NodeRef device) {
         if (system_event)
           OnEvent(*system_event);
       });
-  monitored_item_->Subscribe();
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {
