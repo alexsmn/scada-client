@@ -234,8 +234,8 @@ ui::HeaderModel& SummaryModel::column_model() {
 
 int SummaryModel::AddColumn(std::string formula) {
   int index = static_cast<int>(columns_.size());
-  auto& column =
-      columns_.emplace_back(new Column(*this, index, std::move(formula)));
+  auto& column = columns_.emplace_back(
+      std::make_unique<Column>(*this, index, std::move(formula)));
   column_model_->NotifyModelChanged();
 
   auto node_id = column->GetNodeId();
@@ -273,7 +273,6 @@ void SummaryModel::Load(const WindowDefinition& definition) {
       definition.Get<scada::NodeId>("AggregateType")
           .value_or(scada::id::AggregateFunction_End);
 
-  // TODO: Load time range and interval.
   SetParams(time_range,
             scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
                                    interval, aggregate_type});

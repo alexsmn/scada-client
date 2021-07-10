@@ -67,7 +67,10 @@ class WindowDefinition {
   std::wstring GetTitle() const;
 
   WindowDefinition& AddItem(WindowItem&& window_item);
+  template <class T>
+  WindowDefinition& AddItem(std::string&& name, T&& value);
   WindowItem& AddItem(std::string name);
+
   WindowItem* FindItem(const char* name);
   const WindowItem* FindItem(const char* name) const;
   void Clear();
@@ -107,6 +110,14 @@ std::ostream& operator<<(std::ostream& stream,
 #include "window_definition_util.h"
 
 template <class T>
+inline WindowDefinition& WindowDefinition::AddItem(std::string&& name,
+                                                   T&& value) {
+  auto window_item = WindowItem{std::move(name)}.Set(std::forward<T>(value));
+  AddItem(std::move(window_item));
+  return *this;
+}
+
+template <class T>
 inline std::optional<T> WindowItem::Get() const {
   return FromJson<T>(attributes);
 }
@@ -114,6 +125,12 @@ inline std::optional<T> WindowItem::Get() const {
 template <class T>
 inline WindowItem& WindowItem::Set(const T& value) {
   attributes = ToJson(value);
+  return *this;
+}
+
+template <>
+inline WindowItem& WindowItem::Set(const base::Value& value) {
+  attributes = value.Clone();
   return *this;
 }
 
