@@ -10,6 +10,7 @@
 #include "services/task_manager.h"
 
 #include <Windows.h>
+#include <boost/range/adaptor/transformed.hpp>
 
 namespace {
 
@@ -66,9 +67,11 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
 void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
   assert(!nodes.empty());
 
-  make_all_promise_void(Map(nodes, [](const NodeRef& node) {
-    return FetchNode(node);
-  })).then([nodes] { CopyNodesToClipboardSync(nodes); });
+  auto fetch_promises = nodes | boost::adaptors::transformed(&FetchNode);
+
+  make_all_promise_void(std::move(fetch_promises)).then([nodes] {
+    CopyNodesToClipboardSync(nodes);
+  });
 }
 
 void PasteNodesFromClipboardHelper(TaskManager& task_manager,

@@ -12,6 +12,7 @@
 #include "window_definition.h"
 #include "window_info.h"
 
+#include <boost/range/adaptor/transformed.hpp>
 #include <optional>
 #include <string_view>
 
@@ -161,11 +162,13 @@ inline std::optional<WindowItems> FromJson(const base::Value& data) {
   if (!data.is_list())
     return std::nullopt;
 
-  return MapTo<WindowItems>(data.GetList(), &LoadWindowItem);
+  return data.GetList() | boost::adaptors::transformed(&LoadWindowItem) |
+         to_vector;
 }
 
 inline base::Value ToJson(const WindowItems& items) {
-  return base::Value{MapTo<base::Value::ListStorage>(items, &SaveWindowItem)};
+  return base::Value{items | boost::adaptors::transformed(&SaveWindowItem) |
+                     to_vector};
 }
 
 inline base::Value ToJson(const WindowDefinition& def) {
