@@ -41,8 +41,8 @@ class SummaryModelTest : public Test {
       SummaryModelContext{node_service_, timed_data_service_}};
 
   inline static const auto kTimeRange =
-      TimeRange{TestTimeFromString("15 Nov 1994 12:45:26 UTC"),
-                TestTimeFromString("16 Nov 1994 12:45:26 UTC")};
+      TimeRange{TestTimeFromString("15 Nov 2004 12:45:26 UTC"),
+                TestTimeFromString("16 Nov 2004 12:45:26 UTC")};
   inline static const auto kInterval = scada::Duration::FromMinutes(30);
   inline static const auto kAggregateType =
       scada::id::AggregateFunction_Maximum;
@@ -74,12 +74,12 @@ TEST_F(SummaryModelTest, AddColumn) {
                                            kInterval, kAggregateType}))
       .WillOnce(Return(timed_data));
 
-  // Start time is exclusive, end time is inclusive.
+  // Start time is rounded down, end time is rounded up.
   EXPECT_CALL(
       *timed_data,
       AddObserver(_, scada::DateTimeRange{
-                         TestTimeFromString("15 Nov 1994 13:00:00 UTC"),
-                         TestTimeFromString("16 Nov 1994 13:00:00 UTC")}));
+                         TestTimeFromString("15 Nov 2004 12:30:00 UTC"),
+                         TestTimeFromString("16 Nov 2004 13:00:00 UTC")}));
 
   EXPECT_CALL(*timed_data, GetNode());
 
@@ -94,11 +94,14 @@ TEST_F(SummaryModelTest, Load) {
   EXPECT_EQ(kAggregateType, summary_model_.aggregate_type());
   EXPECT_EQ(kInterval, summary_model_.interval());
   EXPECT_EQ(kTimeRange, summary_model_.time_range());
-  ASSERT_EQ(summary_model_.row_model().GetCount(), 48);  // 30-min interval
+
+  ASSERT_EQ(summary_model_.row_model().GetCount(), 49);  // 30-min interval
   EXPECT_EQ(summary_model_.GetRowTime(0),
-            TestTimeFromString("15 Nov 1994 13:00:00 UTC"));
-  EXPECT_EQ(summary_model_.GetRowTime(47),
-            TestTimeFromString("16 Nov 1994 12:30:00 UTC"));
+            TestTimeFromString("15 Nov 2004 12:30:00 UTC"));
+  EXPECT_EQ(summary_model_.GetRowTime(48),
+            TestTimeFromString("16 Nov 2004 12:30:00 UTC"));
+  EXPECT_EQ(48, summary_model_.GetRowForTime(
+                    TestTimeFromString("16 Nov 2004 12:56:43 UTC")));
 }
 
 TEST_F(SummaryModelTest, Save) {

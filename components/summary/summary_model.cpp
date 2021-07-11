@@ -5,6 +5,7 @@
 #include "client_utils.h"
 #include "common/aggregation.h"
 #include "common/formula_util.h"
+#include "components/summary/summary_model_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_spec.h"
@@ -12,12 +13,7 @@
 #include "window_definition.h"
 #include "window_definition_util.h"
 
-namespace {
-
-const size_t kMaxColumnCount = 1000;
-const size_t kMaxRowCount = 10000;
-
-}  // namespace
+#include "base/debug_util-inl.h"
 
 // SummaryModel::Column -------------------------------------------------------
 
@@ -335,6 +331,7 @@ int SummaryModel::GetRowForTime(base::Time time) const {
   assert(start_time_ <= end_time_);
   assert(!aggregate_filter_.interval.is_zero());
 
+  // |end_time_| defines start of the last interval.
   if (time < start_time_ || time >= end_time_)
     return -1;
   if (row_count_ == 0)
@@ -408,37 +405,22 @@ void SummaryModel::SetInterval(base::TimeDelta interval) {
 void SummaryModel::SetParams(const TimeRange& time_range,
                              scada::AggregateFilter aggregate_filter) {
   assert(!aggregate_filter.is_null());
-  assert(!aggregate_filter.interval.is_zero());
 
-  auto [start_time, end_time] = GetTimeRangeBounds(time_range);
-
-  // Align bounds to the aggregation interval.
-  auto origin_time = scada::GetLocalAggregateStartTime();
-  start_time = scada::GetAggregateInterval(start_time, origin_time,
-                                           aggregate_filter.interval)
-                   .first;
-  end_time = scada::GetAggregateInterval(end_time, origin_time,
-                                         aggregate_filter.interval)
-                 .first;
-
-  // Can update |interval_|.
-  auto delta = end_time - start_time;
-  int64_t row_count = std::max(base::TimeDelta(),
-                               delta - base::TimeDelta::FromMicroseconds(1)) /
-                          aggregate_filter.interval +
-                      1;
-  row_count = std::min(row_count, static_cast<int64_t>(kMaxRowCount));
+  auto params =
+      CalculateSummaryModelParams(time_range, aggregate_filter.interval);
 
   time_range_ = time_range;
-  start_time_ = start_time;
-  end_time_ = start_time_ + aggregate_filter.interval * row_count;
-  row_count_ = static_cast<int>(row_count);
   aggregate_filter_ = std::move(aggregate_filter);
+  start_time_ = params.start_time;
+  end_time_ = params.end_time;
+  row_count_ = params.row_count;
 
-  assert(!start_time_.is_null());
-  assert(!end_time_.is_null());
-  assert(start_time_ <= end_time_);
-  assert(row_count_ <= kMaxRowCount);
+  LOG_INFO(logger_) << "Calculated params"
+                    << LOG_TAG("StartTime", ToString(start_time_))
+                    << LOG_TAG("EndTime", ToString(end_time_))
+                    << LOG_TAG("RowCount", row_count_)
+                    << LOG_TAG("TimeRange", ToString(time_range_))
+                    << LOG_TAG("AggregateFilter", ToString(aggregate_filter_));
 
   for (size_t i = 0; i < columns_.size(); ++i)
     columns_[i]->UpdateTimes();

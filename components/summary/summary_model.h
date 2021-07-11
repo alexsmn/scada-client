@@ -1,7 +1,6 @@
 #pragma once
 
-#include <memory>
-
+#include "base/boost_log.h"
 #include "base/time/time.h"
 #include "contents_model.h"
 #include "core/aggregate_filter.h"
@@ -10,6 +9,8 @@
 #include "node_service/node_ref.h"
 #include "time_model.h"
 #include "ui/base/models/grid_model.h"
+
+#include <memory>
 
 namespace scada {
 class DataValue;
@@ -92,11 +93,14 @@ class SummaryModel : private SummaryModelContext,
   void OnColumnChanged(int column);
   void OnColumnTitleChanged(int column);
 
+  BoostLogger logger_{LOG_NAME("SummaryModel")};
+
   bool path_title_ = true;
 
   std::vector<std::unique_ptr<Column>> columns_;
 
   base::Time start_time_;
+  // |end_time_| defines start of the last interval.
   base::Time end_time_;
   TimeRange time_range_;
   scada::AggregateFilter aggregate_filter_;
