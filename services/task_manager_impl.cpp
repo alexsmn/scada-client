@@ -241,8 +241,7 @@ void TaskManagerImpl::ReportRequestCompletion(const scada::Status& status,
   if (!result_text.empty())
     message += L'\n' + result_text;
 
-  LocalEvents::Severity severity =
-      status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
+  auto severity = status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
   local_events_.ReportEvent(severity, message);
 }
 

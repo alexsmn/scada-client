@@ -12,7 +12,7 @@ std::string JoinStrings(base::span<const std::string_view> strings,
   if (strings.empty())
     return {};
 
-  std::string result = std::string{strings[0]};
+  auto result = std::string{strings[0]};
   for (size_t i = 1; i < strings.size(); ++i) {
     result += separator;
     result.append(strings[i].data(), strings[i].size());
@@ -45,6 +45,20 @@ QString MakeFilter(base::span<const DialogService::Filter> filters) {
   return result;
 }
 
+MessageBoxResult MapQtMesageBoxResult(int result) {
+  switch (result) {
+    case QMessageBox::Yes:
+      return MessageBoxResult::Yes;
+    case QMessageBox::No:
+      return MessageBoxResult::No;
+    case QMessageBox::Ok:
+      return MessageBoxResult::Ok;
+    case QMessageBox::Cancel:
+      return MessageBoxResult::Cancel;
+    default:
+      return MessageBoxResult::Ok;
+  }
+}
 }  // namespace
 
 MessageBoxResult DialogServiceImplQt::RunMessageBox(std::wstring_view message,
@@ -74,20 +88,8 @@ MessageBoxResult DialogServiceImplQt::RunMessageBox(std::wstring_view message,
   if (mode == MessageBoxMode::QuestionYesNoDefaultNo)
     message_box->setDefaultButton(QMessageBox::No);
 
-  auto button = message_box->exec();
-
-  switch (button) {
-    case QMessageBox::Yes:
-      return MessageBoxResult::Yes;
-    case QMessageBox::No:
-      return MessageBoxResult::No;
-    case QMessageBox::Ok:
-      return MessageBoxResult::Ok;
-    case QMessageBox::Cancel:
-      return MessageBoxResult::Cancel;
-    default:
-      return MessageBoxResult::Ok;
-  }
+  auto result = message_box->exec();
+  return MapQtMesageBoxResult(result);
 }
 
 gfx::NativeView DialogServiceImplQt::GetDialogOwningWindow() const {

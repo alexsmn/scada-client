@@ -9,7 +9,6 @@
 
 #include <functional>
 #include <queue>
-#include <set>
 
 namespace scada {
 class AttributeService;
