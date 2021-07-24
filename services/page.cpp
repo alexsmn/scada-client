@@ -46,16 +46,15 @@ void Page::Load(const base::Value& data) {
 
   if (const auto* winse = GetList(data, "windows")) {
     for (auto& win : *winse) {
-      UINT type = ParseWindowType(GetString(win, "type"));
-      const WindowInfo* info = FindWindowInfo(type);
-      if (!info)
+      auto w = FromJson<WindowDefinition>(win);
+      if (!w.has_value())
         continue;
 
       // check single window
       bool found = false;
-      if (info->is_pane()) {
+      if (w->window_info().is_pane()) {
         for (int i = 0; i < GetWindowCount(); ++i)
-          if (&GetWindow(i).window_info() == info) {
+          if (&GetWindow(i).window_info() == &w->window_info()) {
             found = true;
             break;
           }
@@ -66,20 +65,7 @@ void Page::Load(const base::Value& data) {
         continue;
       }
 
-      auto w = std::make_unique<WindowDefinition>(*info);
-      w->id = GetInt(win, "id", 0);
-      if (info->flags & WIN_SING)
-        w->visible = GetBool(win, "visible", true);
-      w->title = GetString16(win, "title");
-      w->path = base::FilePath(GetString16(win, "path"));
-      w->size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
-      if (auto* items = win.FindKey("items"))
-        w->items = FromJson<WindowItems>(*items).value_or(WindowItems{});
-
-      if (auto* win_data = GetDict(win, "data"))
-        w->storage = win_data->Clone();
-
-      windows_.emplace_back(std::move(w));
+      windows_.emplace_back(std::make_unique<WindowDefinition>(std::move(*w)));
     }
   }
 
@@ -113,30 +99,8 @@ base::Value Page::Save(bool current) const {
 
   base::Value::ListStorage windows;
   windows.reserve(GetWindowCount());
-  for (int i = 0; i < GetWindowCount(); ++i) {
-    WindowDefinition& def = GetWindow(i);
-    const WindowInfo& window_info = def.window_info();
-
-    base::Value win{base::Value::Type::DICTIONARY};
-    SetKey(win, "type", window_info.name);
-    SetKey(win, "id", def.id);
-    if (!def.visible) {
-      assert(window_info.flags & WIN_SING);
-      SetKey(win, "visible", def.visible);
-    }
-    if (!def.title.empty())
-      SetKey(win, "title", def.title);
-    if (!def.path.empty())
-      SetKey(win, "path", def.path.value());
-    SetKey(win, "width", def.size.width());
-    SetKey(win, "height", def.size.height());
-    SetKey(win, "locked", def.locked);
-
-    win.SetKey("items", ToJson(def.items));
-    win.SetKey("data", def.storage.Clone());
-
-    windows.emplace_back(std::move(win));
-  }
+  for (int i = 0; i < GetWindowCount(); ++i)
+    windows.emplace_back(ToJson(GetWindow(i)));
   result.SetKey("windows", base::Value{std::move(windows)});
 
   // layout

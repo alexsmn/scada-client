@@ -8,5 +8,5 @@ TEST(PageLayout, Serialization) {
   const auto json = ToJson(layout);
   auto restored_layout = FromJson<PageLayout>(json);
   EXPECT_TRUE(restored_layout.has_value());
-  EXPECT_EQ(json, ToJson(*restored_layout));
+  EXPECT_EQ(layout, *restored_layout);
 }
