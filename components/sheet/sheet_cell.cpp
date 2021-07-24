@@ -10,11 +10,10 @@ SheetCell::SheetCell(SheetModel& model, int row, int column)
   timed_data_.event_change_handler = [this] {
     SetBlinking(timed_data_.alerting());
   };
-  timed_data_.property_change_handler =
-      [this](const PropertySet& properties) {
-        if (properties.is_current_changed())
-          UpdateTextFromFormula();
-      };
+  timed_data_.property_change_handler = [this](const PropertySet& properties) {
+    if (properties.is_current_changed())
+      UpdateTextFromFormula();
+  };
 }
 
 SheetCell::~SheetCell() {

@@ -4,13 +4,13 @@
 #include "components/sheet/sheet_format.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"
-#include "window_definition.h"
 
 #include <set>
 
 class BlinkerManager;
 class SheetCell;
 class TimedDataService;
+class WindowDefinition;
 
 class SheetColumnModel : public ui::ColumnHeaderModel {
  public:

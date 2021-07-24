@@ -64,7 +64,6 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   model_->SetSizes(100, 100);
   model_->column_model().SetColumnCount(model_->column_count(), 65);
 
-  // load
   model_->Load(definition);
 
 #if defined(UI_QT)

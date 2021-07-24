@@ -33,7 +33,7 @@ void TableRow::SetFormula(std::string formula) {
 
   timed_data_.Connect(model_.timed_data_service(), formula_);
 
-  const EventSet* events = timed_data_.GetEvents();
+  const auto* events = timed_data_.GetEvents();
   SetBlinking(events && !events->empty());
 
   NotifyUpdate();
