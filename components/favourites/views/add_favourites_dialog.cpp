@@ -1,8 +1,8 @@
 #include "components/favourites/add_favourites_dialog.h"
 
 #include "common_resources.h"
+#include "components/favourites/favourites.h"
 #include "services/dialog_service.h"
-#include "services/favourites.h"
 #include "views/framework/dialog.h"
 
 #include <atlbase.h>

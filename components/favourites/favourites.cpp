@@ -1,4 +1,4 @@
-#include "services/favourites.h"
+#include "components/favourites/favourites.h"
 
 #include "base/utils.h"
 

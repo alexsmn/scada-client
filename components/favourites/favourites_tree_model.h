@@ -1,6 +1,6 @@
 #pragma once
 
-#include "services/favourites.h"
+#include "components/favourites/favourites.h"
 #include "ui/base/models/tree_node_model.h"
 
 class FavouritesFolderNode;
