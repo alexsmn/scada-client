@@ -1,7 +1,7 @@
 #pragma once
 
+#include "components/portfolio/portfolio_manager.h"
 #include "core/configuration_types.h"
-#include "services/portfolio_manager.h"
 #include "ui/base/models/tree_node_model.h"
 
 class PortfolioManager;
@@ -24,7 +24,9 @@ class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
   virtual std::wstring GetText(int column_id) const override { return title_; }
   virtual int GetIcon() const override { return icon_; }
   virtual void SetText(int column_id, const std::wstring& title) override;
-  virtual bool IsEditable(int column_id) const override { return is_portfolio(); }
+  virtual bool IsEditable(int column_id) const override {
+    return is_portfolio();
+  }
 
  private:
   PortfolioManager& portfolio_manager_;

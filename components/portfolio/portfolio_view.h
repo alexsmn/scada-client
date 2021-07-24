@@ -1,11 +1,11 @@
 #pragma once
 
 #include "command_handler.h"
+#include "components/portfolio/portfolio.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "selection_model.h"
-#include "services/portfolio.h"
 
 #include <memory>
 

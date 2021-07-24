@@ -1,12 +1,12 @@
-﻿#include "services/portfolio_manager.h"
+﻿#include "components/portfolio/portfolio_manager.h"
 
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
+#include "components/portfolio/portfolio.h"
 #include "core/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
-#include "services/portfolio.h"
 
 PortfolioManager::PortfolioManager(PortfolioManagerContext&& context)
     : PortfolioManagerContext{std::move(context)} {

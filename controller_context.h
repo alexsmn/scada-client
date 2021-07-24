@@ -9,8 +9,6 @@ class SessionService;
 }  // namespace scada
 
 class BlinkerManager;
-class CommandHandler;
-class ContentsModel;
 class ControllerDelegate;
 class DialogService;
 class EventFetcher;
@@ -21,11 +19,8 @@ class LocalEvents;
 class NodeService;
 class PortfolioManager;
 class Profile;
-class SelectionModel;
 class TaskManager;
 class TimedDataService;
-class TimeModel;
-class WindowDefinition;
 
 struct ControllerContext {
   ControllerDelegate& controller_delegate_;
