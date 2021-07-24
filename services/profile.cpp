@@ -331,19 +331,19 @@ base::Value Profile::SaveToValue(const EventFetcher& event_manager,
 
   // portfolios
   {
-    base::Value::ListStorage portfolios;
+    base::Value::ListStorage portfolio_storage;
     for (auto& portfolio : portfolio_manager.portfolios) {
       base::Value pfolioe{base::Value::Type::DICTIONARY};
       SetKey(pfolioe, "name", portfolio.name);
       {
-        base::Value::ListStorage list;
+        base::Value::ListStorage item_storage;
         for (const auto& node_id : portfolio.items)
-          list.emplace_back(NodeIdToScadaString(node_id));
-        pfolioe.SetKey("items", base::Value{std::move(list)});
+          item_storage.emplace_back(NodeIdToScadaString(node_id));
+        pfolioe.SetKey("items", base::Value{std::move(item_storage)});
       }
-      portfolios.emplace_back(std::move(pfolioe));
+      portfolio_storage.emplace_back(std::move(pfolioe));
     }
-    data.SetKey("portfolios", base::Value{std::move(portfolios)});
+    data.SetKey("portfolios", base::Value{std::move(portfolio_storage)});
   }
 
   // Event Journal

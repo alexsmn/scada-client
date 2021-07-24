@@ -16,6 +16,9 @@ class FileCache {
   FileCache();
   ~FileCache();
 
+  FileCache(const FileCache&) = delete;
+  FileCache& operator=(const FileCache&) = delete;
+
   void RegisterType(int id, std::string name, std::string extensions);
 
   void Init();
@@ -64,6 +67,4 @@ class FileCache {
   void Save();
 
   TypeMap type_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(FileCache);
 };

@@ -1,5 +1,7 @@
 #include "window_definition_util.h"
 
+#include "common_resources.h"
+
 #include <gmock/gmock.h>
 
 #include "base/debug_util-inl.h"
@@ -50,6 +52,80 @@ static const std::string_view kTestWindowItemsJson = R"(
         { "name": "dict", "a": 1, "b": 2, "c": 3 }
     ])";
 
+template <class T>
+base::Value ValueOf(T&& value) {
+  return base::Value{std::forward<T>(value)};
+}
+
+template <>
+base::Value ValueOf(base::Value&& value) {
+  return std::move(value);
+}
+
+void ListOfHelper(base::Value::ListStorage& storage) {}
+
+template <class T, class... Args>
+void ListOfHelper(base::Value::ListStorage& storage, T&& item, Args&&... args) {
+  storage.emplace_back(std::forward<T>(item));
+  ListOfHelper(storage, std::forward<Args>(args)...);
+}
+
+template <class... Args>
+base::Value ListOf(Args&&... args) {
+  base::Value::ListStorage storage;
+  ListOfHelper(storage, std::forward<Args>(args)...);
+  return base::Value{std::move(storage)};
+}
+
+void DictOfHelper(base::Value::DictStorage& storage) {}
+
+template <class Key, class Value, class... Args>
+void DictOfHelper(base::Value::DictStorage& storage,
+                  Key&& key,
+                  Value&& value,
+                  Args&&... args) {
+  storage.emplace(std::forward<Key>(key),
+                  std::make_unique<base::Value>(std::forward<Value>(value)));
+  DictOfHelper(storage, std::forward<Args>(args)...);
+}
+
+template <class... Args>
+base::Value DictOf(Args&&... args) {
+  base::Value::DictStorage storage;
+  DictOfHelper(storage, std::forward<Args>(args)...);
+  return base::Value{std::move(storage)};
+}
+
+WindowDefinition MakeTestWindowDefinition() {
+  WindowDefinition window_definition{GetWindowInfo(ID_OBJECT_VIEW)};
+  window_definition.id = 1;
+  window_definition.size = {200, 450};
+  window_definition.AddItem("State").Set(DictOf(
+      "columns",
+      ListOf(DictOf("ix", 0, "size", 200), DictOf("ix", 1, "size", 213))));
+  return window_definition;
+}
+
+static const std::string_view kTestWindowDefinitionJson = R"(
+    {
+        "data": null,
+        "height": 450,
+        "id": 1,
+        "items": [ {
+          "columns": [ {
+              "ix": 0,
+              "size": 200
+          }, {
+              "ix": 1,
+              "size": 213
+          } ],
+          "name": "State"
+        } ],
+        "locked": false,
+        "type": "Struct",
+        "width": 200
+    })";
+
 }  // namespace
 
 TEST(FromJson, NodeId) {
@@ -79,6 +155,26 @@ TEST(ToJson, WindowItems) {
 
   std::unique_ptr<base::Value> expected_json =
       LoadJsonFromString(kTestWindowItemsJson);
+  ASSERT_TRUE(expected_json);
+
+  EXPECT_EQ(*expected_json, json);
+}
+
+TEST(FromJson, WindowDefinition) {
+  std::unique_ptr<base::Value> json =
+      LoadJsonFromString(kTestWindowDefinitionJson);
+  ASSERT_TRUE(json);
+
+  auto window_definition = FromJson<WindowDefinition>(*json);
+
+  EXPECT_EQ(MakeTestWindowDefinition(), window_definition);
+}
+
+TEST(ToJson, WindowDefinition) {
+  auto json = ToJson(MakeTestWindowDefinition());
+
+  std::unique_ptr<base::Value> expected_json =
+      LoadJsonFromString(kTestWindowDefinitionJson);
   ASSERT_TRUE(expected_json);
 
   EXPECT_EQ(*expected_json, json);

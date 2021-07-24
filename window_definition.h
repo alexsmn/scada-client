@@ -42,6 +42,7 @@ class WindowItem {
   std::optional<T> Get() const;
   template <class T>
   WindowItem& Set(const T& value);
+  WindowItem& Set(base::Value&& value);
 
   bool operator==(const WindowItem& other) const;
 
@@ -131,6 +132,11 @@ inline WindowItem& WindowItem::Set(const T& value) {
 template <>
 inline WindowItem& WindowItem::Set(const base::Value& value) {
   attributes = value.Clone();
+  return *this;
+}
+
+inline WindowItem& WindowItem::Set(base::Value&& value) {
+  attributes = std::move(value);
   return *this;
 }
 
