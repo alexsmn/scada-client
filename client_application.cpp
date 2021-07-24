@@ -43,7 +43,7 @@
 #include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
-#include "services/event_notifier.h"
+#include "services/event_dispatcher.h"
 #include "services/file_cache.h"
 #include "services/file_synchronizer.h"
 #include "services/local_events.h"
@@ -149,7 +149,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 }
 
 ClientApplication::~ClientApplication() {
-  event_notifier_.reset();
+  event_dispatcher_.reset();
   main_window_manager_.reset();
 
   if (profile_ && profile_loaded_)
@@ -297,8 +297,8 @@ void ClientApplication::Start() {
   // |main_window_manager_| must be assigned.
   main_window_manager_->Init();
 
-  event_notifier_ = std::make_unique<EventNotifier>(EventNotifierContext{
-      *event_fetcher_, *local_events_, *profile_,
+  event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
+      executor_, *event_fetcher_, *local_events_, *profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 }
 

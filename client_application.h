@@ -24,8 +24,8 @@ class TransportFactory;
 class ActionManager;
 class BlinkerManager;
 class ConnectionStateReporter;
+class EventDispatcher;
 class EventFetcher;
-class EventNotifier;
 class Executor;
 class Favourites;
 class FileCache;
@@ -110,7 +110,7 @@ class ClientApplication : private ClientApplicationContext,
 
   std::unique_ptr<MainWindowManager> main_window_manager_;
 
-  std::unique_ptr<EventNotifier> event_notifier_;
+  std::unique_ptr<EventDispatcher> event_dispatcher_;
 
   bool profile_loaded_ = false;
 };

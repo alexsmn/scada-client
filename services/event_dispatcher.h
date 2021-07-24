@@ -8,22 +8,24 @@
 
 class ActionManager;
 class EventFetcher;
+class Executor;
 class Profile;
 
-struct EventNotifierContext {
+struct EventDispatcherContext {
+  const std::shared_ptr<Executor> executor_;
   EventFetcher& event_fetcher_;
   LocalEvents& local_events_;
   Profile& profile_;
-  std::function<void(bool has_events)> events_handler_;
+  const std::function<void(bool has_events)> events_handler_;
   ActionManager& action_manager_;
 };
 
-class EventNotifier final : private EventNotifierContext,
-                            private EventObserver,
-                            private LocalEvents::Observer {
+class EventDispatcher final : private EventDispatcherContext,
+                              private EventObserver,
+                              private LocalEvents::Observer {
  public:
-  explicit EventNotifier(EventNotifierContext&& context);
-  ~EventNotifier();
+  explicit EventDispatcher(EventDispatcherContext&& context);
+  ~EventDispatcher();
 
  private:
   void ShowEventsDelayed(bool added);
@@ -43,5 +45,5 @@ class EventNotifier final : private EventNotifierContext,
   bool showing_events_ = false;
   bool showing_events_added_ = false;
 
-  base::WeakPtrFactory<EventNotifier> weak_factory_{this};
+  base::WeakPtrFactory<EventDispatcher> weak_factory_{this};
 };

@@ -1,7 +1,6 @@
-#include "services/event_notifier.h"
+#include "services/event_dispatcher.h"
 
-#include "base/bind.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/executor.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/main/action_manager.h"
@@ -9,48 +8,49 @@
 
 #include <MMSystem.h>
 
+using namespace std::chrono_literals;
 namespace {
-const auto kDelay = base::TimeDelta::FromMilliseconds(300);
+const auto kDelay = 300ms;
 }
 
-EventNotifier::EventNotifier(EventNotifierContext&& context)
-    : EventNotifierContext{std::move(context)} {
+EventDispatcher::EventDispatcher(EventDispatcherContext&& context)
+    : EventDispatcherContext{std::move(context)} {
   event_fetcher_.AddObserver(*this);
   local_events_.observers().AddObserver(this);
 
   ShowEventsDelayed(true);
 }
 
-EventNotifier::~EventNotifier() {
+EventDispatcher::~EventDispatcher() {
   local_events_.observers().RemoveObserver(this);
   event_fetcher_.RemoveObserver(*this);
 }
 
-void EventNotifier::OnEventReported(const scada::Event& event) {
+void EventDispatcher::OnEventReported(const scada::Event& event) {
   ShowEventsDelayed(true);
 }
 
-void EventNotifier::OnEventAcknowledged(const scada::Event& event) {
+void EventDispatcher::OnEventAcknowledged(const scada::Event& event) {
   ShowEventsDelayed(false);
 }
 
-void EventNotifier::OnAllEventsAcknowledged() {
+void EventDispatcher::OnAllEventsAcknowledged() {
   ShowEventsDelayed(false);
 }
 
-void EventNotifier::ShowEventsDelayed(bool added) {
+void EventDispatcher::ShowEventsDelayed(bool added) {
   if (!showing_events_) {
     showing_events_ = true;
-    base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
-        FROM_HERE,
-        base::Bind(&EventNotifier::ShowEvents, weak_factory_.GetWeakPtr(),
-                   base::ConstRef(showing_events_added_)),
-        kDelay);
+    executor_->PostDelayedTask(kDelay,
+                               [this, weak_ptr = weak_factory_.GetWeakPtr()] {
+                                 if (weak_ptr.get())
+                                   ShowEvents(showing_events_added_);
+                               });
   }
   showing_events_added_ = added;
 }
 
-void EventNotifier::ShowEvents(bool added) {
+void EventDispatcher::ShowEvents(bool added) {
   showing_events_ = false;
 
   bool has_events = !event_fetcher_.unacked_events().empty() ||
@@ -79,6 +79,6 @@ void EventNotifier::ShowEvents(bool added) {
   }
 }
 
-void EventNotifier::OnLocalEvent(const scada::Event& event) {
+void EventDispatcher::OnLocalEvent(const scada::Event& event) {
   ShowEventsDelayed(!event.acked);
 }
