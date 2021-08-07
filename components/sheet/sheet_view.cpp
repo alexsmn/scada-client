@@ -7,7 +7,6 @@
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
 #include "controller_delegate.h"
-#include "controller_registry.h"
 #include "controls/color.h"
 #include "controls/grid.h"
 #include "core/session_service.h"

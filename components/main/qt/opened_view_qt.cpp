@@ -1,5 +1,6 @@
 #include "components/main/opened_view.h"
 
+#include "common_resources.h"
 #include "components/main/action_manager.h"
 #include "components/main/main_window.h"
 #include "controller.h"
@@ -13,9 +14,9 @@
 
 #include <atlapp.h>
 
-#include <atluser.h>
 #include <QMenu>
 #include <QWidget>
+#include <atluser.h>
 
 namespace {
 

@@ -6,7 +6,6 @@
 #include "components/prompt/prompt_dialog.h"
 #include "components/web/web_component.h"
 #include "controller_delegate.h"
-#include "controller_registry.h"
 #include "controls/tree.h"
 #include "services/dialog_service.h"
 
