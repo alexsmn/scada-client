@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "components/timed_data/timed_data_model.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -50,5 +50,5 @@ class TimedDataView : protected ControllerContext,
 
   std::unique_ptr<Table> view_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

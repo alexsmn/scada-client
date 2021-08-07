@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "common_resources.h"
 #include "controller.h"
 #include "controller_context.h"
@@ -30,10 +30,10 @@ class FavouritesView : protected ControllerContext, public Controller {
   std::unique_ptr<FavouritesTreeModel> favourites_tree_model_;
   std::unique_ptr<Tree> tree_view_;
 
-  CommandHandlerImpl command_handler_;
-  Command& open_command_ = command_handler_.AddCommand(ID_OPEN);
-  Command& rename_command_ = command_handler_.AddCommand(ID_RENAME);
-  Command& delete_command_ = command_handler_.AddCommand(ID_DELETE);
+  CommandRegistry command_registry_;
+  Command& open_command_ = command_registry_.AddCommand(ID_OPEN);
+  Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
+  Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
   Command& add_url_command_ =
-      command_handler_.AddCommand(ID_FAVOURITES_ADD_URL);
+      command_registry_.AddCommand(ID_FAVOURITES_ADD_URL);
 };

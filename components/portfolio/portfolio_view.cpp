@@ -49,7 +49,7 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
   });
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_RENAME}
           .set_execute_handler([this] {
             PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
@@ -61,15 +61,15 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
             return node && node->is_portfolio();
           }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_DELETE}
           .set_execute_handler([this] { DeleteSelection(); })
           .set_enabled_handler([this] { return !!tree_->GetSelectedNode(); }));
 
-  command_handler_.AddCommand(Command{ID_NEW_PORTFOLIO}.set_execute_handler(
+  command_registry_.AddCommand(Command{ID_NEW_PORTFOLIO}.set_execute_handler(
       [this] { NewPortfolio(); }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_ADD_ITEMS}
           .set_execute_handler([this] { AddItemsToPortfolio(); })
           .set_enabled_handler([this] { return !!GetSelectedPortfolio(); }));
@@ -156,5 +156,5 @@ void PortfolioView::NewPortfolio() {
 }
 
 CommandHandler* PortfolioView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }

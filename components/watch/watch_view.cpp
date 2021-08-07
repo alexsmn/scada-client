@@ -62,7 +62,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   // Must be after |table_| is bound.
   model_->observers().AddObserver(this);
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_PAUSE}
           .set_execute_handler([this] {
             model_->set_paused(!model_->paused());
@@ -70,10 +70,10 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
           })
           .set_checked_handler([this] { return model_->paused(); }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_SAVE_AS}.set_execute_handler([this] { SaveLog(); }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_CLEAR_ALL}.set_execute_handler([this] { model_->Clear(); }));
 
   return table_->CreateParentIfNecessary();
@@ -93,7 +93,7 @@ void WatchView::SaveLog() {
 }
 
 CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void WatchView::OnItemsAdded(int first, int count) {

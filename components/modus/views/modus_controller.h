@@ -2,7 +2,7 @@
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "selection_model.h"
@@ -40,7 +40,7 @@ class ModusController : protected ControllerContext, public Controller {
   std::unique_ptr<ModusView2> view2_;
   ModusViewWrapper* wrapper_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 
   base::WeakPtrFactory<ModusController> weak_factory_{this};
 };

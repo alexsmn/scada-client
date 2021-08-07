@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
@@ -67,5 +67,5 @@ class EventView : protected ControllerContext,
   std::unique_ptr<EventTableModel> model_;
   std::unique_ptr<Table> table_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

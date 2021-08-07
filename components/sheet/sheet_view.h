@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
@@ -113,5 +113,5 @@ class SheetController : protected ControllerContext,
 
   std::unique_ptr<Grid> grid_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "common_resources.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -52,11 +52,11 @@ class TableView : protected ControllerContext,
   std::unique_ptr<TableModel> model_;
   std::unique_ptr<Table> view_;
 
-  CommandHandlerImpl command_handler_;
-  Command& delete_command_ = command_handler_.AddCommand(ID_DELETE);
-  Command& rename_command_ = command_handler_.AddCommand(ID_RENAME);
-  Command& move_up_command_ = command_handler_.AddCommand(ID_MOVE_UP);
-  Command& move_down_command_ = command_handler_.AddCommand(ID_MOVE_DOWN);
-  Command& sort_name_command_ = command_handler_.AddCommand(ID_SORT_NAME);
-  Command& sort_channel_command_ = command_handler_.AddCommand(ID_SORT_CHANNEL);
+  CommandRegistry command_registry_;
+  Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
+  Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
+  Command& move_up_command_ = command_registry_.AddCommand(ID_MOVE_UP);
+  Command& move_down_command_ = command_registry_.AddCommand(ID_MOVE_DOWN);
+  Command& sort_name_command_ = command_registry_.AddCommand(ID_SORT_NAME);
+  Command& sort_channel_command_ = command_registry_.AddCommand(ID_SORT_CHANNEL);
 };

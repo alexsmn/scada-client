@@ -139,12 +139,12 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_NOW}
           .set_execute_handler([this] { ScrollToNow(); })
           .set_checked_handler([this] { return graph_->m_time_fit; }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_ADD_PANE}.set_execute_handler([this] {
         controller_delegate_.SetModified(true);
         graph_->NewPane();
@@ -157,12 +157,12 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
     return !!graph_->selected_pane();
   };
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_DELETE_PANE}
           .set_execute_handler([this] { DeleteSelectedPane(); })
           .set_enabled_handler(selected_pane_enabled_handler));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_VIEW_LEGEND}
           .set_execute_handler([this] { ToggleLegend(); })
           .set_enabled_handler(selected_pane_enabled_handler)
@@ -171,7 +171,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
                    graph_->selected_pane()->show_legend();
           }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_ZOOM}
           .set_execute_handler([this] { ToggleZoom(); })
           .set_enabled_handler(selected_pane_enabled_handler)
@@ -184,12 +184,12 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
     return !!graph_->selected_pane();
   };
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_COLOR}
           .set_execute_handler([this] { ChooseLineColor(); })
           .set_enabled_handler(line_enabled_handler));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_DOTS}
           .set_execute_handler([this] { ToggleLineProperty(ID_GRAPH_DOTS); })
           .set_enabled_handler(line_enabled_handler)
@@ -198,7 +198,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
                    graph_->primary_line()->dots_shown();
           }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_STEPS}
           .set_execute_handler([this] { ToggleLineProperty(ID_GRAPH_STEPS); })
           .set_enabled_handler(line_enabled_handler)
@@ -433,7 +433,7 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
 }
 
 CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void GraphView::ScrollToNow() {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "components/portfolio/portfolio.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -44,5 +44,5 @@ class PortfolioView : protected ControllerContext,
   std::unique_ptr<PortfolioTreeModel> model_;
   std::unique_ptr<Tree> tree_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

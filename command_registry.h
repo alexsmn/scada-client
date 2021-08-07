@@ -35,7 +35,7 @@ class Command {
   CheckedHandler checked_handler;
 };
 
-class CommandHandlerImpl : private CommandHandler {
+class CommandRegistry : private CommandHandler {
  public:
   Command& AddCommand(Command command);
 
@@ -54,39 +54,39 @@ class CommandHandlerImpl : private CommandHandler {
   std::unordered_map<unsigned /*command_id*/, Command> command_map_;
 };
 
-inline Command& CommandHandlerImpl::AddCommand(Command command) {
+inline Command& CommandRegistry::AddCommand(Command command) {
   auto command_id = command.command_id;
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 
-inline const Command* CommandHandlerImpl::FindCommand(
+inline const Command* CommandRegistry::FindCommand(
     unsigned command_id) const {
   auto i = command_map_.find(command_id);
   return i != command_map_.end() ? &i->second : nullptr;
 }
 
-inline CommandHandler* CommandHandlerImpl::GetCommandHandler(
+inline CommandHandler* CommandRegistry::GetCommandHandler(
     unsigned command_id) {
   return FindCommand(command_id) ? this : nullptr;
 }
 
-inline bool CommandHandlerImpl::IsCommandEnabled(unsigned command_id) const {
+inline bool CommandRegistry::IsCommandEnabled(unsigned command_id) const {
   auto* command = FindCommand(command_id);
   return command && (!command->enabled_handler || command->enabled_handler());
 }
 
-inline bool CommandHandlerImpl::IsCommandChecked(unsigned command_id) const {
+inline bool CommandRegistry::IsCommandChecked(unsigned command_id) const {
   auto* command = FindCommand(command_id);
   return command && command->checked_handler && command->checked_handler();
 }
 
-inline void CommandHandlerImpl::ExecuteCommand(unsigned command_id) {
+inline void CommandRegistry::ExecuteCommand(unsigned command_id) {
   auto* command = FindCommand(command_id);
   if (command)
     command->execute_handler();
 }
 
-inline Command* CommandHandlerImpl::FindCommand(unsigned command_id) {
+inline Command* CommandRegistry::FindCommand(unsigned command_id) {
   auto i = command_map_.find(command_id);
   return i != command_map_.end() ? &i->second : nullptr;
 }

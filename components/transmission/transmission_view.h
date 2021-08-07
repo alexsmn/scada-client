@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "ui/base/models/header_model.h"
@@ -28,5 +28,5 @@ class TransmissionView : protected ControllerContext, public Controller {
 
   std::unique_ptr<Grid> grid_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

@@ -38,7 +38,7 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   grid_->set_allow_row_select(true);
 #endif
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 
   return grid_->CreateParentIfNecessary();
@@ -53,7 +53,7 @@ void TransmissionView::DeleteSelection() {
 }
 
 CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 ContentsModel* TransmissionView::GetContentsModel() {

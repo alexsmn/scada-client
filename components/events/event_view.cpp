@@ -66,12 +66,12 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
 
   selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_CURRENT}
           .set_execute_handler([this] { AcknowledgeSelection(); })
           .set_enabled_handler([this] { return CanAcknowledgeSelection(); }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_SEVERITY_ALL}
           .set_execute_handler([this] {
             model_->SetSeverityMin(0);
@@ -79,7 +79,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
           })
           .set_checked_handler([this] { return model_->severity_min() == 0; }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_SEVERITY_CUSTOM}
           .set_execute_handler([this] { SelectSeverity(); })
           .set_checked_handler([this] { return model_->severity_min() != 0; }));
@@ -239,7 +239,7 @@ TimeRange EventView::GetTimeRange() const {
 }
 
 CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void EventView::SetTimeRange(const TimeRange& time_range) {

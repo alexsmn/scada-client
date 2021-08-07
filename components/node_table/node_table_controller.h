@@ -2,7 +2,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/win/dragdrop.h"
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "selection_model.h"
@@ -50,7 +50,7 @@ class NodeTableController : protected ControllerContext,
   std::unique_ptr<NodeTableModel> model_;
   std::unique_ptr<Grid> grid_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 
   base::WeakPtrFactory<NodeTableController> weak_ptr_factory_{this};
 };

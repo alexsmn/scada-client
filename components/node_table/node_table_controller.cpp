@@ -102,13 +102,13 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
     grid_->RestoreState(state->attributes);
 
-  command_handler_.AddCommand(Command{ID_RENAME}.set_execute_handler([this] {
+  command_registry_.AddCommand(Command{ID_RENAME}.set_execute_handler([this] {
     if (auto index = grid_->GetCurrentIndex(); index.is_valid())
       grid_->OpenEditor(index);
   }));
 
   for (const auto& [command_id, prop_decl_id] : GetSortCommands()) {
-    command_handler_.AddCommand(Command{command_id}
+    command_registry_.AddCommand(Command{command_id}
                                     .set_execute_handler([this, prop_decl_id] {
                                       SetSorting(prop_decl_id);
                                     })
@@ -131,7 +131,7 @@ void NodeTableController::Save(WindowDefinition& definition) {
 }
 
 CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 NodeRef NodeTableController::GetRootNode() const {

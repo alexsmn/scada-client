@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "export_model.h"
@@ -31,5 +31,5 @@ class SummaryView : protected ControllerContext, public Controller {
   std::unique_ptr<SummaryModel> model_;
   std::unique_ptr<Grid> grid_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

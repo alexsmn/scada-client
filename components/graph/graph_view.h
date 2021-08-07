@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler_impl.h"
+#include "command_registry.h"
 #include "components/graph/metrix_graph.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -78,5 +78,5 @@ class GraphView : protected ControllerContext,
 
   views::GraphRange prezoom_horizontal_range_;
 
-  CommandHandlerImpl command_handler_;
+  CommandRegistry command_registry_;
 };

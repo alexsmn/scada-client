@@ -106,7 +106,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
         model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
   });
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_EDIT}
           .set_execute_handler([this] {
 #if defined(UI_VIEWS)
@@ -121,7 +121,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
           })
           .set_checked_handler([this] { return model_->is_editing(); }));
 
-  command_handler_.AddCommand(
+  command_registry_.AddCommand(
       Command{ID_GRAPH_COLOR}
           .set_execute_handler([this] { ChooseSelectionColor(); })
           .set_enabled_handler([this] { return model_->is_editing(); }));
@@ -187,7 +187,7 @@ void SheetController::UpdateEditing() {
 }
 
 CommandHandler* SheetController::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void SheetController::ChooseSelectionColor() {

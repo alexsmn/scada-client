@@ -326,7 +326,7 @@ NodeIdSet TableView::GetContainedItems() const {
 }
 
 CommandHandler* TableView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void TableView::MoveRow(bool up) {

@@ -74,7 +74,7 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
     grid_->RestoreState(state->attributes);
 
   for (const auto& [command_id, interval] : kIntervalCommands) {
-    command_handler_.AddCommand(Command{command_id}
+    command_registry_.AddCommand(Command{command_id}
                                     .set_execute_handler([this, interval] {
                                       model_->SetInterval(interval);
                                     })
@@ -84,7 +84,7 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   }
 
   for (const auto& [command_id, aggregate_type] : kAggregateCommands) {
-    command_handler_.AddCommand(
+    command_registry_.AddCommand(
         Command{command_id}
             .set_execute_handler([this, aggregate_type] {
               model_->SetAggregateType(aggregate_type);
@@ -104,7 +104,7 @@ void SummaryView::Save(WindowDefinition& definition) {
 }
 
 CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
-  return command_handler_.GetCommandHandler(command_id);
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 ContentsModel* SummaryView::GetContentsModel() {
