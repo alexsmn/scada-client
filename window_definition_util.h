@@ -197,8 +197,7 @@ inline base::Value ToJson(const WindowDefinition& def) {
 
 template <>
 inline std::optional<WindowDefinition> FromJson(const base::Value& win) {
-  UINT type = ParseWindowType(GetString(win, "type"));
-  const WindowInfo* info = FindWindowInfo(type);
+  const WindowInfo* info = FindWindowInfoByName(GetString(win, "type"));
   if (!info)
     return std::nullopt;
 

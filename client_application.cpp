@@ -89,8 +89,12 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
 void RegisterFileCacheType(FileCache& cache,
                            unsigned command_id,
                            std::string ext) {
-  std::string name = ViewTypeToString(command_id);
-  cache.RegisterType(command_id, std::move(name), std::move(ext));
+  auto* window_info = FindWindowInfo(command_id);
+  assert(window_info);
+  if (!window_info)
+    return;
+
+  cache.RegisterType(command_id, window_info->name, std::move(ext));
 }
 
 void PollIoContext(boost::asio::io_context* context) {

@@ -33,7 +33,6 @@ struct WindowInfo {
 const WindowInfo* FindWindowInfo(unsigned command_id);
 const WindowInfo& GetWindowInfo(unsigned command_id);
 
-unsigned ParseWindowType(std::string_view str);
-const char* ViewTypeToString(unsigned command_id);
+const WindowInfo* FindWindowInfoByName(std::string_view name);
 
 extern const WindowInfo g_window_infos[];
