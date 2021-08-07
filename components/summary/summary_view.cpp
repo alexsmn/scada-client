@@ -10,6 +10,30 @@
 #include "time_range.h"
 #include "window_definition.h"
 
+namespace {
+
+constexpr std::pair<unsigned, scada::NumericId> kAggregateCommands[] = {
+    {ID_AGGREGATION_COUNT, scada::id::AggregateFunction_Count},
+    {ID_AGGREGATION_START, scada::id::AggregateFunction_Start},
+    {ID_AGGREGATION_END, scada::id::AggregateFunction_End},
+    {ID_AGGREGATION_MIN, scada::id::AggregateFunction_Minimum},
+    {ID_AGGREGATION_MAX, scada::id::AggregateFunction_Maximum},
+    {ID_AGGREGATION_SUM, scada::id::AggregateFunction_Total},
+    {ID_AGGREGATION_AVG, scada::id::AggregateFunction_Average},
+};
+
+constexpr std::pair<unsigned, base::TimeDelta> kIntervalCommands[] = {
+    {ID_INTERVAL_1M, base::TimeDelta::FromMinutes(1)},
+    {ID_INTERVAL_5M, base::TimeDelta::FromMinutes(5)},
+    {ID_INTERVAL_15M, base::TimeDelta::FromMinutes(15)},
+    {ID_INTERVAL_30M, base::TimeDelta::FromMinutes(30)},
+    {ID_INTERVAL_1H, base::TimeDelta::FromHours(1)},
+    {ID_INTERVAL_12H, base::TimeDelta::FromHours(12)},
+    {ID_INTERVAL_1D, base::TimeDelta::FromDays(1)},
+};
+
+}  // namespace
+
 SummaryView::SummaryView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_unique<SummaryModel>(
@@ -49,6 +73,27 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
     grid_->RestoreState(state->attributes);
 
+  for (const auto& [command_id, interval] : kIntervalCommands) {
+    command_handler_.AddCommand(Command{command_id}
+                                    .set_execute_handler([this, interval] {
+                                      model_->SetInterval(interval);
+                                    })
+                                    .set_checked_handler([this, interval] {
+                                      return model_->interval() == interval;
+                                    }));
+  }
+
+  for (const auto& [command_id, aggregate_type] : kAggregateCommands) {
+    command_handler_.AddCommand(
+        Command{command_id}
+            .set_execute_handler([this, aggregate_type] {
+              model_->SetAggregateType(aggregate_type);
+            })
+            .set_checked_handler([this, aggregate_type] {
+              return model_->aggregate_type() == aggregate_type;
+            }));
+  }
+
   return grid_->CreateParentIfNecessary();
 }
 
@@ -58,82 +103,8 @@ void SummaryView::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = grid_->SaveState();
 }
 
-scada::NodeId GetAggregateType(unsigned command_id) {
-  switch (command_id) {
-    case ID_AGGREGATION_COUNT:
-      return scada::id::AggregateFunction_Count;
-    case ID_AGGREGATION_START:
-      return scada::id::AggregateFunction_Start;
-    case ID_AGGREGATION_END:
-      return scada::id::AggregateFunction_End;
-    case ID_AGGREGATION_MIN:
-      return scada::id::AggregateFunction_Minimum;
-    case ID_AGGREGATION_MAX:
-      return scada::id::AggregateFunction_Maximum;
-    case ID_AGGREGATION_SUM:
-      return scada::id::AggregateFunction_Total;
-    case ID_AGGREGATION_AVG:
-      return scada::id::AggregateFunction_Average;
-    default:
-      return {};
-  }
-}
-
-std::optional<base::TimeDelta> GetInterval(unsigned command_id) {
-  switch (command_id) {
-    case ID_INTERVAL_1M:
-      return base::TimeDelta::FromMinutes(1);
-    case ID_INTERVAL_5M:
-      return base::TimeDelta::FromMinutes(5);
-    case ID_INTERVAL_15M:
-      return base::TimeDelta::FromMinutes(15);
-    case ID_INTERVAL_30M:
-      return base::TimeDelta::FromMinutes(30);
-    case ID_INTERVAL_1H:
-      return base::TimeDelta::FromHours(1);
-    case ID_INTERVAL_12H:
-      return base::TimeDelta::FromHours(12);
-    case ID_INTERVAL_1D:
-      return base::TimeDelta::FromDays(1);
-    default:
-      return std::nullopt;
-  }
-}
-
 CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
-  if (GetInterval(command_id))
-    return this;
-
-  if (!GetAggregateType(command_id).is_null())
-    return this;
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-bool SummaryView::IsCommandChecked(unsigned command_id) const {
-  if (auto interval = GetInterval(command_id))
-    return model_->interval() == *interval;
-
-  auto aggregate_type = GetAggregateType(command_id);
-  if (!aggregate_type.is_null())
-    return model_->aggregate_type() == aggregate_type;
-
-  return CommandHandler::IsCommandChecked(command_id);
-}
-
-void SummaryView::ExecuteCommand(unsigned command_id) {
-  if (auto interval = GetInterval(command_id)) {
-    model_->SetInterval(*interval);
-    return;
-  }
-
-  auto aggregate_type = GetAggregateType(command_id);
-  if (!aggregate_type.is_null()) {
-    model_->SetAggregateType(std::move(aggregate_type));
-    return;
-  }
-
-  __super::ExecuteCommand(command_id);
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 ContentsModel* SummaryView::GetContentsModel() {

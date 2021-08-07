@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "export_model.h"
@@ -11,9 +11,7 @@
 class Grid;
 class SummaryModel;
 
-class SummaryView : protected ControllerContext,
-                    public Controller,
-                    public CommandHandler {
+class SummaryView : protected ControllerContext, public Controller {
  public:
   explicit SummaryView(const ControllerContext& context);
 
@@ -21,8 +19,6 @@ class SummaryView : protected ControllerContext,
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual bool IsCommandChecked(unsigned command_id) const override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
@@ -34,4 +30,6 @@ class SummaryView : protected ControllerContext,
 
   std::unique_ptr<SummaryModel> model_;
   std::unique_ptr<Grid> grid_;
+
+  CommandHandlerImpl command_handler_;
 };
