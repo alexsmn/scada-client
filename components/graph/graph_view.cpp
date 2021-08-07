@@ -139,6 +139,73 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
+  command_handler_.AddCommand(
+      Command{ID_NOW}
+          .set_execute_handler([this] { ScrollToNow(); })
+          .set_checked_handler([this] { return graph_->m_time_fit; }));
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_ADD_PANE}.set_execute_handler([this] {
+        controller_delegate_.SetModified(true);
+        graph_->NewPane();
+        // TODO: Recover prompt.
+        //      PromptBegin(views::View::GetWindowHandle(),
+        //          pane.rect_.left + 10, pane.rect_.top + 10);
+      }));
+
+  const Command::EnabledHandler selected_pane_enabled_handler = [this] {
+    return !!graph_->selected_pane();
+  };
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_DELETE_PANE}
+          .set_execute_handler([this] { DeleteSelectedPane(); })
+          .set_enabled_handler(selected_pane_enabled_handler));
+
+  command_handler_.AddCommand(
+      Command{ID_VIEW_LEGEND}
+          .set_execute_handler([this] { ToggleLegend(); })
+          .set_enabled_handler(selected_pane_enabled_handler)
+          .set_checked_handler([this] {
+            return graph_->selected_pane() &&
+                   graph_->selected_pane()->show_legend();
+          }));
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_ZOOM}
+          .set_execute_handler([this] { ToggleZoom(); })
+          .set_enabled_handler(selected_pane_enabled_handler)
+          .set_checked_handler([this] {
+            return graph_->selected_pane() &&
+                   graph_->selected_pane()->plot().zooming();
+          }));
+
+  const Command::EnabledHandler line_enabled_handler = [this] {
+    return !!graph_->selected_pane();
+  };
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_COLOR}
+          .set_execute_handler([this] { ChooseLineColor(); })
+          .set_enabled_handler(line_enabled_handler));
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_DOTS}
+          .set_execute_handler([this] { ToggleLineProperty(ID_GRAPH_DOTS); })
+          .set_enabled_handler(line_enabled_handler)
+          .set_checked_handler([this] {
+            return graph_->primary_line() &&
+                   graph_->primary_line()->dots_shown();
+          }));
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_STEPS}
+          .set_execute_handler([this] { ToggleLineProperty(ID_GRAPH_STEPS); })
+          .set_enabled_handler(line_enabled_handler)
+          .set_checked_handler([this] {
+            return graph_->primary_line() && graph_->primary_line()->stepped();
+          }));
+
   return graph_.get();
 }
 
@@ -366,135 +433,75 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
 }
 
 CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_VIEW_LEGEND:
-      return graph_->selected_pane() ? this : NULL;
-
-    case ID_GRAPH_DOTS:
-    case ID_GRAPH_STEPS:
-    case ID_GRAPH_COLOR:
-      return graph_->primary_line() ? this : NULL;
-
-    case ID_NOW:
-    case ID_GRAPH_ADD_PANE:
-    case ID_GRAPH_DELETE_PANE:
-    case ID_GRAPH_ZOOM:
-      return this;
-  }
-
-  if (command_id >= ID_COLOR_0 &&
-      command_id < ID_COLOR_0 + aui::GetColorCount())
-    return this;
-
-  return ::Controller::GetCommandHandler(command_id);
+  return command_handler_.GetCommandHandler(command_id);
 }
 
-bool GraphView::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_GRAPH_ZOOM:
-      return graph_->selected_pane() &&
-             graph_->selected_pane()->plot().zooming();
+void GraphView::ScrollToNow() {
+  if (graph_->m_time_fit)
+    return;
 
-    case ID_VIEW_LEGEND:
-      return graph_->selected_pane() && graph_->selected_pane()->show_legend();
+  graph_->m_time_fit = true;
+  graph_->Fit();
 
-    case ID_GRAPH_DOTS:
-      return graph_->primary_line() && graph_->primary_line()->dots_shown();
-    case ID_GRAPH_STEPS:
-      return graph_->primary_line() && graph_->primary_line()->stepped();
-
-    case ID_NOW:
-      return graph_->m_time_fit;
-
-    default:
-      return __super::IsCommandChecked(command_id);
-  }
-}
-
-void GraphView::ExecuteCommand(unsigned command_id) {
-  switch (command_id) {
-    case ID_NOW:
-      if (!graph_->m_time_fit) {
-        graph_->m_time_fit = true;
-        graph_->Fit();
 #if defined(UI_QT)
-        graph_->update();
+  graph_->update();
 #elif defined(UI_VIEWS)
-        graph_->SchedulePaint();
+  graph_->SchedulePaint();
 #endif
-        controller_delegate_.SetModified(true);
-      }
-      break;
 
-    case ID_GRAPH_ADD_PANE: {
-      controller_delegate_.SetModified(true);
-      graph_->NewPane();
-      // TODO: Recover prompt.
-      //      PromptBegin(views::View::GetWindowHandle(),
-      //          pane.rect_.left + 10, pane.rect_.top + 10);
-      break;
-    }
+  controller_delegate_.SetModified(true);
+}
 
-    case ID_GRAPH_DELETE_PANE:
-      DeleteSelectedPane();
-      break;
+void GraphView::ToggleLegend() {
+  MetrixGraph::MetrixPane* pane = graph_->selected_pane();
+  if (!pane)
+    return;
 
-    case ID_VIEW_LEGEND:
-      if (MetrixGraph::MetrixPane* pane = graph_->selected_pane()) {
-        pane->ShowLegend(!pane->show_legend());
+  pane->ShowLegend(!pane->show_legend());
+
 #if defined(UI_VIEWS)
-        graph_->SchedulePaint();
+  graph_->SchedulePaint();
 #endif
-        controller_delegate_.SetModified(true);
-      }
-      break;
 
+  controller_delegate_.SetModified(true);
+}
+
+void GraphView::ToggleLineProperty(unsigned command_id) {
+  MetrixGraph::MetrixLine* line = graph_->primary_line();
+  if (!line)
+    return;
+
+  switch (command_id) {
     case ID_GRAPH_DOTS:
+      line->set_dots_shown(!line->dots_shown());
+      break;
     case ID_GRAPH_STEPS:
-      if (MetrixGraph::MetrixLine* line = graph_->primary_line()) {
-        switch (command_id) {
-          case ID_GRAPH_DOTS:
-            line->set_dots_shown(!line->dots_shown());
-            break;
-          case ID_GRAPH_STEPS:
-            line->set_stepped(!line->stepped());
-            break;
-        }
-#if defined(UI_VIEWS)
-        graph_->SchedulePaint();
-#endif
-        controller_delegate_.SetModified(true);
-      }
+      line->set_stepped(!line->stepped());
       break;
-
-    case ID_GRAPH_COLOR:
-      ChooseLineColor();
-      break;
-
-    case ID_GRAPH_ZOOM:
-      if (graph_->selected_pane()) {
-        graph_->selected_pane()->plot().set_zooming(
-            !graph_->selected_pane()->plot().zooming());
-        if (graph_->selected_pane()->plot().zooming()) {
-          graph_->m_time_fit = false;
-          prezoom_horizontal_range_ = graph_->horizontal_axis().range();
-        } else
-          UndoZoom();
-      }
-      break;
-
     default:
-      if (command_id >= ID_COLOR_0 &&
-          command_id < ID_COLOR_0 + aui::GetColorCount()) {
-        if (MetrixGraph::MetrixPane* pane = graph_->selected_pane()) {
-          views::GraphLine* line = pane->plot().lines().front();
-          const auto color = aui::GetColor(command_id - ID_COLOR_0);
-          line->SetColor(color.native_color());
-        }
-      } else {
-        __super::ExecuteCommand(command_id);
-      }
-      break;
+      assert(false);
+      return;
+  }
+
+#if defined(UI_VIEWS)
+  graph_->SchedulePaint();
+#endif
+
+  controller_delegate_.SetModified(true);
+}
+
+void GraphView::ToggleZoom() {
+  if (!graph_->selected_pane())
+    return;
+
+  graph_->selected_pane()->plot().set_zooming(
+      !graph_->selected_pane()->plot().zooming());
+
+  if (graph_->selected_pane()->plot().zooming()) {
+    graph_->m_time_fit = false;
+    prezoom_horizontal_range_ = graph_->horizontal_axis().range();
+  } else {
+    UndoZoom();
   }
 }
 
