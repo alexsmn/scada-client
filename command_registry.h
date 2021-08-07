@@ -10,6 +10,7 @@ class Command {
   using ExecuteHandler = std::function<void()>;
   using EnabledHandler = std::function<bool()>;
   using CheckedHandler = std::function<bool()>;
+  using AvailableHandler = std::function<bool()>;
 
   Command(unsigned command_id) : command_id{command_id} {}
 
@@ -28,11 +29,17 @@ class Command {
     return *this;
   }
 
+  Command& set_available_handler(AvailableHandler handler) {
+    available_handler = std::move(handler);
+    return *this;
+  }
+
   const unsigned command_id;
 
   ExecuteHandler execute_handler;
   EnabledHandler enabled_handler;
   CheckedHandler checked_handler;
+  AvailableHandler available_handler;
 };
 
 class CommandRegistry : private CommandHandler {
@@ -59,25 +66,32 @@ inline Command& CommandRegistry::AddCommand(Command command) {
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 
-inline const Command* CommandRegistry::FindCommand(
-    unsigned command_id) const {
+inline const Command* CommandRegistry::FindCommand(unsigned command_id) const {
   auto i = command_map_.find(command_id);
   return i != command_map_.end() ? &i->second : nullptr;
 }
 
-inline CommandHandler* CommandRegistry::GetCommandHandler(
-    unsigned command_id) {
-  return FindCommand(command_id) ? this : nullptr;
+inline CommandHandler* CommandRegistry::GetCommandHandler(unsigned command_id) {
+  auto* command = FindCommand(command_id);
+  if (!command)
+    return nullptr;
+  bool available =
+      command->available_handler ? command->available_handler() : true;
+  return available ? this : nullptr;
 }
 
 inline bool CommandRegistry::IsCommandEnabled(unsigned command_id) const {
   auto* command = FindCommand(command_id);
-  return command && (!command->enabled_handler || command->enabled_handler());
+  if (!command)
+    return false;
+  return command->enabled_handler ? command->enabled_handler() : true;
 }
 
 inline bool CommandRegistry::IsCommandChecked(unsigned command_id) const {
   auto* command = FindCommand(command_id);
-  return command && command->checked_handler && command->checked_handler();
+  if (!command)
+    return false;
+  return command->checked_handler && command->checked_handler();
 }
 
 inline void CommandRegistry::ExecuteCommand(unsigned command_id) {

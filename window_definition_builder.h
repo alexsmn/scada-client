@@ -27,6 +27,3 @@ WindowDefinition MakeWindowDefinition(
 promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
     const WindowInfo* window_info,
     const NodeRef& node);
-
-std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
-    const NodeRef& device);

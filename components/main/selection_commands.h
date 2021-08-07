@@ -1,7 +1,9 @@
 #pragma once
 
+#include "base/memory/weak_ptr.h"
 #include "base/promise.h"
 #include "command_handler.h"
+#include "command_registry.h"
 #include "window_definition.h"
 
 #include <vector>
@@ -52,7 +54,12 @@ class SelectionCommands : private SelectionCommandsContext,
                   Controller* controller,
                   SelectionModel* selection);
 
+  // Selection API
+
+  NodeRef GetSelectedNode();
+
   void OpenWindow(const WindowInfo* window_info);
+  void OpenWindow(const WindowDefinition& window_definition);
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
@@ -78,4 +85,8 @@ class SelectionCommands : private SelectionCommandsContext,
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
+
+  CommandRegistry command_registry_;
+
+  base::WeakPtrFactory<SelectionCommands> weak_ptr_factory_{this};
 };
