@@ -4,7 +4,7 @@
 #include "base/timer/timer.h"
 #include "command_handler.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/types.h"
 #include "core/configuration_types.h"
 #include "core/status.h"

@@ -18,7 +18,7 @@
 #include "components/print_preview/print_preview.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
 #include "export_model.h"

@@ -1,7 +1,7 @@
 ﻿#include "components/node_properties/node_property_controller.h"
 
 #include "components/node_properties/node_property_model.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/property_tree_model.h"
 #include "controls/tree.h"
 #include "model/node_id_util.h"

@@ -1,6 +1,6 @@
 ﻿#include "components/excel_report/views/excel_report_view.h"
 
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "ui/views/controls/activex_control.h"
 #include "views/activex_host.h"
 

@@ -1,7 +1,7 @@
 ﻿#include "components/sheet/sheet_component.h"
 
 #include "components/sheet/sheet_view.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 
 // NOTE: Context menu depends on edit mode.
 const WindowInfo kSheetWindowInfo = {

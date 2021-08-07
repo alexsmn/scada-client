@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/files/file_path.h"
 #include "base/observer_list.h"
 #include "common/aliases.h"
 #include "components/main/action_manager.h"
@@ -20,6 +21,7 @@ class Page;
 class ViewManager;
 class WindowDefinition;
 struct MainWindowDef;
+struct WindowInfo;
 
 class MainWindow : protected MainWindowContext,
                    protected ViewManagerDelegate,

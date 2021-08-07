@@ -1,7 +1,7 @@
 ﻿#include "components/node_properties/node_property_component.h"
 
 #include "components/node_properties/node_property_controller.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 
 const WindowInfo kNodePropertyWindowInfo = {
     ID_NEW_PROPERTY_VIEW,

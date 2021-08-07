@@ -6,7 +6,7 @@
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "client_paths.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "views/activex_host.h"
 #include "window_definition.h"
 

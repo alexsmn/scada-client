@@ -12,7 +12,7 @@
 #include "components/modus/qt/modus_view3.h"
 #include "components/web/web_component.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"

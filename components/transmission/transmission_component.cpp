@@ -1,7 +1,7 @@
 ﻿#include "components/transmission/transmission_component.h"
 
 #include "components/transmission/transmission_view.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 
 const WindowInfo kTransmissionWindowInfo = {ID_TRANSMISSION_VIEW,
                                             "Transmission",

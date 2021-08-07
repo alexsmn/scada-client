@@ -1,4 +1,4 @@
-#include "controller_factory.h"
+#include "controller_registry.h"
 
 #include <cassert>
 #include <map>

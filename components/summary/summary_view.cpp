@@ -4,7 +4,7 @@
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/grid.h"
 #include "services/dialog_service.h"
 #include "time_range.h"

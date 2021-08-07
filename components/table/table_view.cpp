@@ -7,7 +7,7 @@
 #include "components/table/table_row.h"
 #include "contents_observer.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/table.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"

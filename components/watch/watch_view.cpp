@@ -3,7 +3,7 @@
 #include "common_resources.h"
 #include "components/watch/watch_model.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/table.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"

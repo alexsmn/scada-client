@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller_factory.h"
+#include "components/main/controller_factory.h"
 
 #include <memory>
 #include <string>

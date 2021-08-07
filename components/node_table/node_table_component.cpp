@@ -1,7 +1,7 @@
 ﻿#include "components/node_table/node_table_component.h"
 
 #include "components/node_table/node_table_controller.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "model/data_items_node_ids.h"
 #include "model/history_node_ids.h"
 #include "model/scada_node_ids.h"

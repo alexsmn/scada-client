@@ -1,6 +1,6 @@
 ﻿#include "window_info.h"
 
-#include "controller_factory.h"
+#include "controller_registry.h"
 
 #include <cassert>
 

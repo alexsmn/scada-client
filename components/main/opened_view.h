@@ -1,8 +1,9 @@
 #pragma once
 
 #include "base/timer/timer.h"
+#include "components/main/controller_factory.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/types.h"
 #include "window_definition.h"
 

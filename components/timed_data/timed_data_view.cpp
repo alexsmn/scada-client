@@ -4,7 +4,7 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "controller_delegate.h"
-#include "controller_factory.h"
+#include "controller_registry.h"
 #include "controls/table.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
