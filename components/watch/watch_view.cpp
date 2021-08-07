@@ -62,6 +62,20 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   // Must be after |table_| is bound.
   model_->observers().AddObserver(this);
 
+  command_handler_.AddCommand(
+      Command{ID_PAUSE}
+          .set_execute_handler([this] {
+            model_->set_paused(!model_->paused());
+            controller_delegate_.SetTitle(MakeTitle());
+          })
+          .set_checked_handler([this] { return model_->paused(); }));
+
+  command_handler_.AddCommand(
+      Command{ID_SAVE_AS}.set_execute_handler([this] { SaveLog(); }));
+
+  command_handler_.AddCommand(
+      Command{ID_CLEAR_ALL}.set_execute_handler([this] { model_->Clear(); }));
+
   return table_->CreateParentIfNecessary();
 }
 
@@ -79,42 +93,7 @@ void WatchView::SaveLog() {
 }
 
 CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_PAUSE:
-    case ID_SAVE_AS:
-    case ID_CLEAR_ALL:
-      return this;
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-bool WatchView::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_PAUSE:
-      return model_->paused();
-    default:
-      return __super::IsCommandChecked(command_id);
-  }
-}
-
-void WatchView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_PAUSE:
-      model_->set_paused(!model_->paused());
-      controller_delegate_.SetTitle(MakeTitle());
-      break;
-    case ID_SAVE_AS:
-      SaveLog();
-      break;
-    case ID_CLEAR_ALL: {
-      model_->Clear();
-      break;
-    }
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 void WatchView::OnItemsAdded(int first, int count) {

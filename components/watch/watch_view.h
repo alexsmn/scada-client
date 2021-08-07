@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "export_model.h"
@@ -13,7 +13,6 @@ class WatchModel;
 
 class WatchView : protected ControllerContext,
                   public Controller,
-                  public CommandHandler,
                   private ui::TableModelObserver,
                   public ExportModel {
  public:
@@ -24,8 +23,6 @@ class WatchView : protected ControllerContext,
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual bool IsCommandChecked(unsigned command) const override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual ExportModel* GetExportModel() override { return this; }
 
   // ExportModel
@@ -44,4 +41,6 @@ class WatchView : protected ControllerContext,
   bool auto_scroll_ = false;
 
   std::unique_ptr<Table> table_;
+
+  CommandHandlerImpl command_handler_;
 };
