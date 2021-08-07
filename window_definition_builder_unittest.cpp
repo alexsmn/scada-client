@@ -2,6 +2,7 @@
 
 #include "common/formula_util.h"
 #include "common_resources.h"
+#include "components/events/events_component.h"
 #include "controller.h"
 #include "node_service/node_model_mock.h"
 #include "window_info.h"
@@ -20,11 +21,11 @@ TEST(MakeWindowDefinition, OpenContext_Node) {
   EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
       .WillOnce(Return(L"Имя в русской локали"));
   OpenContext open_context{node_model};
-  const unsigned kWindowType = ID_EVENT_JOURNAL_VIEW;
+  const auto& window_info = kEventJournalWindowInfo;
   auto window_definition =
-      MakeWindowDefinition(open_context, kWindowType).get();
+      MakeWindowDefinition(&window_info, open_context).get();
   const auto kExpectedWindowDefinition =
-      WindowDefinition{GetWindowInfo(kWindowType)}
+      WindowDefinition{window_info}
           .set_title(L"Журнал событий: Имя в русской локали")
           .AddItem(
               std::move(WindowItem{"Item"}.SetString("path", "{TS.NodeId}")));
@@ -37,11 +38,11 @@ TEST(MakeWindowDefinition, OpenContext_NodeIds_TimeRange) {
                                             scada::NodeId{"NodeId3", 3}};
   const TimeRange kTimeRange{};
   OpenContext open_context{{}, kNodeIds, kTimeRange};
-  const unsigned kWindowType = ID_EVENT_JOURNAL_VIEW;
+  const auto& window_info = kEventJournalWindowInfo;
   auto window_definition =
-      MakeWindowDefinition(open_context, kWindowType).get();
+      MakeWindowDefinition(&window_info, open_context).get();
   const auto kExpectedWindowDefinition =
-      WindowDefinition{GetWindowInfo(kWindowType)}
+      WindowDefinition{window_info}
           .AddItem(
               std::move(WindowItem{"Item"}.SetString("path", "{TS.NodeId1}")))
           .AddItem(

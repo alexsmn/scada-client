@@ -1,4 +1,6 @@
-﻿#include "components/events/event_view.h"
+﻿#include "components/events/events_component.h"
+
+#include "components/events/event_view.h"
 #include "controller_factory.h"
 
 class EventPanel : public EventView {

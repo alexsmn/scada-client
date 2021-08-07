@@ -14,6 +14,7 @@
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
 #include "components/prompt/prompt_dialog.h"
+#include "components/web/web_component.h"
 #include "core/session_service.h"
 #include "services/dialog_service.h"
 #include "services/local_events.h"
@@ -188,9 +189,9 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
       return main_window_.GetPrefs().toolbar_position == command_id;
   }
 
-  if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
-    return (win_info->flags & WIN_SING) &&
-           main_window_.FindOpenedViewByType(command_id);
+  if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
+    return (window_info->flags & WIN_SING) &&
+           main_window_.FindOpenedViewByType(*window_info);
   }
 
   if (bool Profile::*option = GetOption(command_id))
@@ -202,7 +203,7 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
 void MainCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_HELP_MANUAL: {
-      WindowDefinition def(GetWindowInfo(ID_WEB_VIEW));
+      WindowDefinition def(kWebWindowInfo);
       def.title = L"Документация";
       def.path = base::FilePath(
           FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));

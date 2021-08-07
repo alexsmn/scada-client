@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
 #include "components/prompt/prompt_dialog.h"
+#include "components/web/web_component.h"
 #include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
@@ -101,7 +102,7 @@ void FavouritesView::AddUrl() {
                            ? node->AsFolderNode()->folder()
                            : favourites_.GetOrAddFolder();
 
-  WindowDefinition win{GetWindowInfo(ID_WEB_VIEW)};
+  WindowDefinition win{kWebWindowInfo};
   win.path = base::FilePath{url};
   favourites_.Add(win, folder);
 }

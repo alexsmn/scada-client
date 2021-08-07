@@ -52,7 +52,7 @@ class SelectionCommands : private SelectionCommandsContext,
                   Controller* controller,
                   SelectionModel* selection);
 
-  void OpenWindow(unsigned type);
+  void OpenWindow(const WindowInfo* window_info);
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
@@ -69,7 +69,8 @@ class SelectionCommands : private SelectionCommandsContext,
                   const std::vector<scada::Variant>& arguments);
   void OpenModusView(const NodeRef& node);
 
-  promise<WindowDefinition> GetOpenWindowDefinition(unsigned type) const;
+  promise<WindowDefinition> GetOpenWindowDefinition(
+      const WindowInfo* window_info) const;
 
   void DumpDebugInfo();
 

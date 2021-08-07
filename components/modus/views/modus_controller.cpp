@@ -6,9 +6,11 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
 #include "common_resources.h"
+#include "components/modus/modus_component.h"
 #include "components/modus/modus_util.h"
 #include "components/modus/views/modus_view.h"
 #include "components/modus/views/modus_view2.h"
+#include "components/web/web_component.h"
 #include "controller_delegate.h"
 #include "controller_factory.h"
 #include "selection_model.h"
@@ -145,7 +147,7 @@ void ModusController::ExecuteCommand(unsigned command) {
 
 void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
   if (IsWebUrl(hyperlink)) {
-    WindowDefinition win(GetWindowInfo(ID_WEB_VIEW));
+    WindowDefinition win(kWebWindowInfo);
     win.path = base::FilePath{ToStringPiece(hyperlink)};
     controller_delegate_.OpenView(win);
     return;
@@ -162,7 +164,7 @@ void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
   }
 
   if (!IsModusFilePath(*path)) {
-    WindowDefinition win(GetWindowInfo(ID_WEB_VIEW));
+    WindowDefinition win(kWebWindowInfo);
     win.path = std::move(*path);
     controller_delegate_.OpenView(win);
     return;
@@ -172,7 +174,7 @@ void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
 }
 
 void ModusController::OpenPath(const base::FilePath& path) {
-  WindowDefinition win(GetWindowInfo(ID_MODUS_VIEW));
+  WindowDefinition win(kModusWindowInfo);
   win.path = path;
   controller_delegate_.OpenView(win);
 }

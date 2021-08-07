@@ -14,6 +14,7 @@
 #include "components/main/opened_view.h"
 #include "components/main/selection_commands.h"
 #include "components/multi_create/multi_create_dialog.h"
+#include "components/node_properties/node_property_component.h"
 #include "components/print_preview/print_preview.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller.h"
@@ -344,14 +345,14 @@ void OpenedViewCommands::OnCreateRecordComplete(
 
   auto weak_ptr = weak_factory_.GetWeakPtr();
   auto node = node_service_.GetNode(node_id);
-  node.Fetch(NodeFetchStatus::NodeOnly(),
-             [weak_ptr, node](const NodeRef& node) {
-               if (auto* ptr = weak_ptr.get()) {
-                 ptr->controller_->OnViewNodeCreated(node);
-                 auto def = MakeWindowDefinition(node, ID_PROPERTY_VIEW, false);
-                 ::OpenView(ptr->main_window_, def, true);
-               }
-             });
+  node.Fetch(NodeFetchStatus::NodeOnly(), [weak_ptr,
+                                           node](const NodeRef& node) {
+    if (auto* ptr = weak_ptr.get()) {
+      ptr->controller_->OnViewNodeCreated(node);
+      auto def = MakeWindowDefinition(&kNodePropertyWindowInfo, node, false);
+      ::OpenView(ptr->main_window_, def, true);
+    }
+  });
 }
 
 void OpenedViewCommands::PasteFromClipboard() {

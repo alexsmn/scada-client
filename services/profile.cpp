@@ -11,9 +11,15 @@
 #include "client_paths.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
+#include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
+#include "components/graph/graph_component.h"
+#include "components/hardware_tree/hardware_tree_component.h"
+#include "components/object_tree/object_tree_component.h"
 #include "components/portfolio/portfolio.h"
+#include "components/portfolio/portfolio_component.h"
 #include "components/portfolio/portfolio_manager.h"
+#include "components/table/table_component.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "value_util.h"
@@ -56,28 +62,28 @@ Page CreateInitialPage() {
 
   // objects
   WindowDefinition& objects_def =
-      page.AddWindow(WindowDefinition(GetWindowInfo(ID_OBJECT_VIEW)));
+      page.AddWindow(WindowDefinition(kObjectTreeWindowInfo));
   objects_def.size = gfx::Size(200, 450);
 
   // portfolio
   WindowDefinition& portfolio =
-      page.AddWindow(WindowDefinition(GetWindowInfo(ID_PORTFOLIO_VIEW)));
+      page.AddWindow(WindowDefinition(kPortfolioWindowInfo));
   portfolio.size = gfx::Size(200, 450);
 
   // subsystems
   WindowDefinition& subs_def =
-      page.AddWindow(WindowDefinition(GetWindowInfo(ID_HARDWARE_VIEW)));
+      page.AddWindow(WindowDefinition(kHardwareTreeWindowInfo));
   subs_def.size = gfx::Size(200, 450);
 
   // events
   WindowDefinition& events_def =
-      page.AddWindow(WindowDefinition(GetWindowInfo(ID_EVENT_VIEW)));
+      page.AddWindow(WindowDefinition(kEventWindowInfo));
   events_def.size = gfx::Size(800, 600);
   events_def.visible = false;
 
   // Graph with server CPU usage.
   WindowDefinition& graph_def =
-      page.AddWindow(WindowDefinition(GetWindowInfo(ID_GRAPH_VIEW)));
+      page.AddWindow(WindowDefinition(kGraphWindowInfo));
   graph_def.size = gfx::Size(800, 300);
   graph_def.AddItem("TimeScale").SetString("span", "0:05:00");
   // TODO: Implement.
@@ -90,7 +96,7 @@ Page CreateInitialPage() {
 
   // Table with top 10 tss.
   WindowDefinition& table_def =
-      page.AddWindow(WindowDefinition(GetWindowInfo(ID_TABLE_VIEW)));
+      page.AddWindow(WindowDefinition(kTableWindowInfo));
   table_def.size = gfx::Size(800, 450);
   // TODO: Implement.
   /*for (int i = 1; i <= 10; i++) {

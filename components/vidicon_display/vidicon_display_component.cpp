@@ -1,17 +1,15 @@
-﻿#include "controller_factory.h"
+﻿#include "components/vidicon_display/vidicon_display_component.h"
 
-#if defined(UI_QT)
-#include "components/vidicon_display/qt/vidicon_display_view.h"
-#elif defined(UI_VIEWS)
-#include "components/vidicon_display/views/vidicon_display_view.h"
-#endif
+#include "components/vidicon_display/vidicon_display_view.h"
+#include "controller_factory.h"
 
-const WindowInfo kWindowInfo = {
+const WindowInfo kVidiconDisplayWindowInfo = {
     ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
 
 class VidiconDisplayViewFactory : public ControllerRegistrarBase {
  public:
-  VidiconDisplayViewFactory() : ControllerRegistrarBase{kWindowInfo} {}
+  VidiconDisplayViewFactory()
+      : ControllerRegistrarBase{kVidiconDisplayWindowInfo} {}
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) override {
@@ -20,4 +18,3 @@ class VidiconDisplayViewFactory : public ControllerRegistrarBase {
 };
 
 REGISTER_CONTROLLER_FACTORY(VidiconDisplayViewFactory);
-// REGISTER_CONTROLLER(VidiconDisplayView, kWindowInfo);

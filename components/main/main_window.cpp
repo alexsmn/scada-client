@@ -105,18 +105,18 @@ void MainWindow::SetActiveView(OpenedView* view) {
   OnSelectionChanged();
 }
 
-void MainWindow::OpenPane(unsigned pane_id, bool make_active) {
-  OpenView(WindowDefinition(GetWindowInfo(pane_id)), make_active);
+void MainWindow::OpenPane(const WindowInfo& window_info, bool make_active) {
+  OpenView(WindowDefinition(window_info), make_active);
 }
 
-void MainWindow::ClosePane(unsigned pane_id) {
-  OpenedView* view = view_manager_->FindViewByType(pane_id);
-  if (view)
-    CloseView(*view);
+void MainWindow::ClosePane(const WindowInfo& window_info) {
+  auto* opened_view = view_manager_->FindViewByType(window_info);
+  if (opened_view)
+    CloseView(*opened_view);
 }
 
-void MainWindow::OnActiveViewChanged(OpenedView* view) {
-  SetActiveView(view);
+void MainWindow::OnActiveViewChanged(OpenedView* opened_view) {
+  SetActiveView(opened_view);
 }
 
 void MainWindow::SetActiveDataView(OpenedView* view) {
@@ -225,8 +225,8 @@ OpenedView* MainWindow::FindOpenedViewByFilePath(const base::FilePath& path) {
   return nullptr;
 }
 
-OpenedView* MainWindow::FindOpenedViewByType(unsigned view_id) {
-  return view_manager_->FindViewByType(view_id);
+OpenedView* MainWindow::FindOpenedViewByType(const WindowInfo& window_info) {
+  return view_manager_->FindViewByType(window_info);
 }
 
 void MainWindow::SavePage() {

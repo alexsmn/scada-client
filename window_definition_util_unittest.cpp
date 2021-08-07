@@ -1,6 +1,7 @@
 #include "window_definition_util.h"
 
 #include "common_resources.h"
+#include "components/object_tree/object_tree_component.h"
 #include "value_util.h"
 #include "window_info.h"
 
@@ -99,7 +100,7 @@ base::Value DictOf(Args&&... args) {
 }
 
 WindowDefinition MakeTestWindowDefinition() {
-  WindowDefinition window_definition{GetWindowInfo(ID_OBJECT_VIEW)};
+  WindowDefinition window_definition{kObjectTreeWindowInfo};
   window_definition.id = 1;
   window_definition.size = {200, 450};
   window_definition.AddItem("State").Set(DictOf(

@@ -1,11 +1,12 @@
 #include "client_utils.h"
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "common_resources.h"
+#include "components/sheet/sheet_component.h"
 #include "controls/color.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "window_info.h"
 
 namespace {
@@ -36,7 +37,7 @@ std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
   std::vector<DeviceMetricsItem> items;
   DeviceMetricsItems(device, items);
 
-  WindowDefinition win(GetWindowInfo(ID_SHEET_VIEW));
+  WindowDefinition win(kSheetWindowInfo);
   win.title = ToString16(device.display_name());
 
   // Header column.

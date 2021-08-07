@@ -1,12 +1,13 @@
-#include <QApplication>
-
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_paths.h"
 #include "common_resources.h"
-#include "components/vidicon_display/qt/vidicon_display_view.h"
+#include "components/vidicon_display/vidicon_display_component.h"
+#include "components/vidicon_display/vidicon_display_view.h"
 #include "qt/message_loop_qt.h"
 #include "window_definition.h"
 #include "window_info.h"
+
+#include <QApplication>
 
 int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
@@ -17,7 +18,7 @@ int main(int argc, char* argv[]) {
 
   VidiconDisplayView vidicon_display_view;
 
-  WindowDefinition definition{GetWindowInfo(ID_VIDICON_DISPLAY_VIEW)};
+  WindowDefinition definition{kVidiconDisplayWindowInfo};
   definition.path = base::FilePath{FILE_PATH_LITERAL("pribilov.vds")};
   auto* widget = vidicon_display_view.Init(definition);
   widget->resize(1000, 500);

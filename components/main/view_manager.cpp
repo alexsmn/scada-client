@@ -29,10 +29,10 @@ bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
   return i != added_views_.end();
 }
 
-OpenedView* ViewManager::FindViewByType(unsigned type) const {
+OpenedView* ViewManager::FindViewByType(const WindowInfo& window_info) const {
   auto i = std::find_if(views_.begin(), views_.end(),
-                        [type](OpenedView* opened_view) {
-                          return opened_view->window_info().command_id == type;
+                        [&window_info](OpenedView* opened_view) {
+                          return &opened_view->window_info() == &window_info;
                         });
   return i == views_.end() ? nullptr : *i;
 }
@@ -133,9 +133,9 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
                                   OpenedView* after_view) {
   WindowDefinition* window_def = nullptr;
 
-  const WindowInfo& info = def.window_info();
-  if (info.is_pane()) {
-    if (auto* opened_view = FindViewByType(info.command_id)) {
+  const WindowInfo& window_info = def.window_info();
+  if (window_info.is_pane()) {
+    if (auto* opened_view = FindViewByType(window_info)) {
       if (make_active)
         ActivateView(*opened_view);
       return opened_view;
@@ -146,7 +146,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     Page& page = current_page();
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
-      if (&win.window_info() == &info) {
+      if (&win.window_info() == &window_info) {
         assert(!win.visible);
         win.visible = true;
         window_def = &win;
@@ -155,21 +155,21 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     }
   }
 
-  LOG(INFO) << "Open window " << std::wstring{info.title};
+  LOG(INFO) << "Open window " << std::wstring{window_info.title};
 
   if (!window_def)
     window_def = &current_page().AddWindow(def);
 
   // add win
 
-  OpenedView* view = CreateView(*window_def, after_view);
-  if (!view)
+  auto* opened_view = CreateView(*window_def, after_view);
+  if (!opened_view)
     return nullptr;
 
-  view->SetModified(true);
+  opened_view->SetModified(true);
 
   if (make_active)
-    ActivateView(*view);
+    ActivateView(*opened_view);
 
-  return view;
+  return opened_view;
 }

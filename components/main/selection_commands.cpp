@@ -6,10 +6,20 @@
 #include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"
+#include "components/events/events_component.h"
+#include "components/graph/graph_component.h"
 #include "components/limits/limit_dialog.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
+#include "components/modus/modus_component.h"
+#include "components/node_properties/node_property_component.h"
+#include "components/node_table/node_table_component.h"
+#include "components/summary/summary_component.h"
+#include "components/table/table_component.h"
+#include "components/timed_data/timed_data_component.h"
+#include "components/transmission/transmission_component.h"
+#include "components/watch/watch_component.h"
 #include "components/write/write_dialog.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
@@ -114,10 +124,10 @@ WindowDefinition UpdateWindowDefinition(const WindowDefinition& window_def,
 SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
     : SelectionCommandsContext{std::move(context)} {}
 
-void SelectionCommands::OpenWindow(unsigned type) {
+void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
   if (selection_ && !selection_->empty()) {
     // TODO: Capture |main_window_| by weak pointer.
-    MakeWindowDefinition(selection_->node(), type, true)
+    MakeWindowDefinition(window_info, selection_->node(), true)
         .then([main_window = main_window_](const WindowDefinition& def) {
           ::OpenView(main_window, def, true);
         });
@@ -260,20 +270,20 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
     case ID_OPEN_GRAPH:
       // TODO: formula
-      ::OpenView(main_window_, GetOpenWindowDefinition(ID_GRAPH_VIEW));
+      ::OpenView(main_window_, GetOpenWindowDefinition(&kGraphWindowInfo));
       return;
     case ID_OPEN_TABLE:
       // TODO: formula
-      ::OpenView(main_window_, GetOpenWindowDefinition(ID_TABLE_VIEW));
+      ::OpenView(main_window_, GetOpenWindowDefinition(&kTableWindowInfo));
       return;
     case ID_OPEN_SUMMARY:
       // TODO: formula
-      ::OpenView(main_window_, GetOpenWindowDefinition(ID_SUMMARY_VIEW));
+      ::OpenView(main_window_, GetOpenWindowDefinition(&kSummaryWindowInfo));
       return;
     case ID_OPEN_EVENTS:
     case ID_HISTORICAL_EVENTS: {
       ::OpenView(main_window_,
-                 GetOpenWindowDefinition(ID_EVENT_JOURNAL_VIEW)
+                 GetOpenWindowDefinition(&kEventJournalWindowInfo)
                      .then([command_id](const WindowDefinition& window_def) {
                        return UpdateWindowDefinition(window_def, command_id);
                      }),
@@ -284,11 +294,11 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       OpenModusView(node);
       return;
     case ID_TIMED_DATA_VIEW:
-      ::OpenView(main_window_, GetOpenWindowDefinition(ID_TIMED_DATA_VIEW));
+      ::OpenView(main_window_, GetOpenWindowDefinition(&kTimedDataWindowInfo));
       return;
     case ID_OPEN_GROUP_TABLE:
       // TODO: Capture |main_window_| by weak pointer.
-      MakeGroupWindowDefinition(node, ID_TABLE_VIEW)
+      MakeGroupWindowDefinition(&kTableWindowInfo, node)
           .then([main_window = main_window_](
                     const std::optional<WindowDefinition>& window_def) {
             if (window_def.has_value())
@@ -296,12 +306,14 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
           });
       return;
     case ID_WRITE:
-      ExecuteWriteDialog(*dialog_service_, {executor_, timed_data_service_,
-                                            node.node_id(), profile_, false});
+      ExecuteWriteDialog(*dialog_service_,
+                         WriteContext{executor_, timed_data_service_,
+                                      node.node_id(), profile_, false});
       return;
     case ID_WRITE_MANUAL:
-      ExecuteWriteDialog(*dialog_service_, {executor_, timed_data_service_,
-                                            node.node_id(), profile_, true});
+      ExecuteWriteDialog(*dialog_service_,
+                         WriteContext{executor_, timed_data_service_,
+                                      node.node_id(), profile_, true});
       return;
     case ID_UNLOCK_ITEM:
       task_manager_.PostUpdateTask(
@@ -316,18 +328,19 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       return;
     case ID_ITEM_PARAMS:
       ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(node, ID_PROPERTY_VIEW));
+                 MakeSingleWindowDefinition(&kNodePropertyWindowInfo, node));
       return;
     case ID_TABLE_CONFIG:
       ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(node, ID_TABLE_EDITOR));
+                 MakeSingleWindowDefinition(&kTableEditorWindowInfo, node));
       return;
     case ID_TRANSMISSION_VIEW:
       ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(node, ID_TRANSMISSION_VIEW));
+                 MakeSingleWindowDefinition(&kTransmissionWindowInfo, node));
       return;
     case ID_OPEN_WATCH:
-      ::OpenView(main_window_, MakeSingleWindowDefinition(node, ID_WATCH_VIEW));
+      ::OpenView(main_window_,
+                 MakeSingleWindowDefinition(&kWatchWindowInfo, node));
       return;
     case ID_OPEN_DEVICE_METRICS:
       if (auto win = MakeDeviceMetricsWindowDefinition(node))
@@ -404,7 +417,7 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   if (view) {
     view->Activate();
   } else {
-    WindowDefinition win(GetWindowInfo(ID_MODUS_VIEW));
+    WindowDefinition win(kModusWindowInfo);
     win.path = path;
     view = main_window_->OpenView(win, true);
   }
@@ -473,26 +486,24 @@ void SelectionCommands::CopyToClipboard() {
 }
 
 promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
-    unsigned type) const {
-  assert(type != 0);
-
+    const WindowInfo* window_info) const {
   if (auto open_context = controller_->GetOpenContext())
-    return MakeWindowDefinition(*open_context, type);
+    return MakeWindowDefinition(window_info, *open_context);
 
   if (selection_->multiple()) {
     auto title = selection_->GetTitle();
     auto node_ids = selection_->GetMultipleNodeIds();
     return make_resolved_promise(MakeWindowDefinition(
-        {node_ids.begin(), node_ids.end()}, type, title.c_str()));
+        window_info, {node_ids.begin(), node_ids.end()}, title.c_str()));
   }
 
   const auto& node_id = selection_->node().node_id();
   if (node_id.is_null() && selection_->timed_data().connected()) {
     const std::string& formula = selection_->timed_data().formula();
-    return make_resolved_promise(MakeWindowDefinition(formula.c_str(), type));
+    return make_resolved_promise(MakeWindowDefinition(window_info, formula));
   }
 
-  return MakeWindowDefinition(selection_->node(), type, true);
+  return MakeWindowDefinition(window_info, selection_->node(), true);
 }
 
 void SelectionCommands::DumpDebugInfo() {

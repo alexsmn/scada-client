@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/containers/span.h"
 #include "base/files/file_path.h"
 #include "services/file_cache.h"
 #include "ui/base/models/simple_menu_model.h"
@@ -13,6 +14,7 @@ class MainWindowManager;
 class Profile;
 class ViewManager;
 class WindowDefinition;
+struct WindowInfo;
 
 struct MainMenuContext {
   MainWindowManager& main_window_manager_;
@@ -38,10 +40,10 @@ class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  void AddItems(unsigned command_id);
+  void AddItems(const WindowInfo& window_info);
 
   struct Item {
-    unsigned command_id;
+    const WindowInfo* window_info = nullptr;
     base::FilePath path;
   };
 
@@ -51,7 +53,7 @@ class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
 class FavouritesMenuModel : private MainMenuContext,
                             public ui::SimpleMenuModel {
  public:
-  FavouritesMenuModel(const unsigned view_types[],
+  FavouritesMenuModel(base::span<const WindowInfo* const> window_infos,
                       const MainMenuContext& context);
 
   // views::MenuModel
@@ -60,7 +62,9 @@ class FavouritesMenuModel : private MainMenuContext,
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  const unsigned* view_types_;
+  bool IsMatchingWindow(const WindowDefinition& window) const;
+
+  const base::span<const WindowInfo* const> window_infos_;
 
   std::vector<const WindowDefinition*> windows_;
 };
@@ -116,7 +120,7 @@ class StyleMenuModel : public ui::SimpleMenuModel {
   virtual bool IsItemCheckedAt(int index) const override;
 };
 
-#endif // defined(UI_QT)
+#endif  // defined(UI_QT)
 
 class MainMenuModel final : private MainMenuContext,
                             private ui::SimpleMenuModel::Delegate,

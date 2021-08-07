@@ -7,24 +7,26 @@
 class NodeRef;
 struct OpenContext;
 
-promise<WindowDefinition> MakeWindowDefinition(const NodeRef& node,
-                                               unsigned type,
+promise<WindowDefinition> MakeWindowDefinition(const WindowInfo* window_info,
+                                               const NodeRef& node,
                                                bool expand_groups);
-promise<WindowDefinition> MakeWindowDefinition(const OpenContext& open_context,
-                                               unsigned type);
-WindowDefinition MakeSingleWindowDefinition(const NodeRef& node, unsigned type);
-WindowDefinition MakeWindowDefinition(const NodeRef& node,
-                                      unsigned type,
+promise<WindowDefinition> MakeWindowDefinition(const WindowInfo* window_info,
+                                               const OpenContext& open_context);
+WindowDefinition MakeSingleWindowDefinition(const WindowInfo* window_info,
+                                            const NodeRef& node);
+WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
+                                      const NodeRef& node,
                                       const NodeIdSet& item_ids);
-WindowDefinition MakeWindowDefinition(const char* formula, unsigned type);
+WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
+                                      std::string formula);
 WindowDefinition MakeWindowDefinition(
+    const WindowInfo* window_info,
     const std::vector<scada::NodeId>& node_ids,
-    unsigned type,
-    const wchar_t* title = nullptr);
+    std::wstring title = std::wstring{});
 
 promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
-    const NodeRef& node,
-    unsigned type);
+    const WindowInfo* window_info,
+    const NodeRef& node);
 
 std::optional<WindowDefinition> MakeDeviceMetricsWindowDefinition(
     const NodeRef& device);

@@ -2,8 +2,13 @@
 
 #include "client_utils.h"
 #include "common_resources.h"
+#include "components/graph/graph_component.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
+#include "components/node_properties/node_property_component.h"
+#include "components/node_table/node_table_component.h"
+#include "components/table/table_component.h"
+#include "components/watch/watch_component.h"
 #include "contents_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -31,25 +36,30 @@ void OpenView(MainWindow* main_window,
   main_window->OpenView(window_def, activate);
 }
 
+const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
+                                           unsigned shift) {
+  if (IsInstanceOf(node, data_items::id::DataGroupType))
+    return kTableWindowInfo;
+  else if (IsInstanceOf(node, data_items::id::DataItemType))
+    return kGraphWindowInfo;
+  else if (IsInstanceOf(node, devices::id::DeviceType))
+    return kWatchWindowInfo;
+  else
+    return (shift & MK_CONTROL) ? kTableEditorWindowInfo
+                                : kNodePropertyWindowInfo;
+}
+
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const NodeRef& node,
                                unsigned shift) {
   assert(main_window);
 
-  UINT type;
-  if (IsInstanceOf(node, data_items::id::DataGroupType))
-    type = ID_TABLE_VIEW;
-  else if (IsInstanceOf(node, data_items::id::DataItemType))
-    type = ID_GRAPH_VIEW;
-  else if (IsInstanceOf(node, devices::id::DeviceType))
-    type = ID_WATCH_VIEW;
-  else
-    type = (shift & MK_CONTROL) ? ID_TABLE_EDITOR : ID_PROPERTY_VIEW;
+  const auto& window_info = GetDefaultNodeWindowInfo(node, shift);
 
   auto* view = main_window->GetActiveDataView();
   auto* contents = view ? view->GetContentsModel() : nullptr;
   if (view && contents && view->window_info().can_insert_item()) {
-    if ((view->window_info().command_id == type) || (shift & MK_CONTROL)) {
+    if ((&view->window_info() == &window_info) || (shift & MK_CONTROL)) {
       // insert items into active frame
       promise<NodeIdSet> node_ids_promise =
           IsInstanceOf(node, data_items::id::DataGroupType)
@@ -67,8 +77,10 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
     }
   }
 
+  auto window_definition = MakeWindowDefinition(&window_info, node, true);
+
   // TODO: Capture |main_window| by weak pointer.
 
-  OpenView(main_window, MakeWindowDefinition(node, type, true));
+  OpenView(main_window, window_definition);
   return true;
 }

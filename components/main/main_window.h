@@ -61,9 +61,9 @@ class MainWindow : protected MainWindowContext,
   OpenedView* OpenView(const WindowDefinition& window_definition,
                        bool make_active);
   OpenedView* FindOpenedViewByFilePath(const base::FilePath& path);
-  OpenedView* FindOpenedViewByType(unsigned type_id);
-  void OpenPane(unsigned type_id, bool activate);
-  void ClosePane(unsigned type_id);
+  OpenedView* FindOpenedViewByType(const WindowInfo& window_info);
+  void OpenPane(const WindowInfo& window_info, bool activate);
+  void ClosePane(const WindowInfo& window_info);
 
   virtual DialogService& GetDialogService() = 0;
 

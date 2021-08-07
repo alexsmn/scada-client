@@ -4,11 +4,17 @@
 #include "command_handler.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
+#include "components/graph/graph_component.h"
 #include "components/main/context_menu_model.h"
 #include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
+#include "components/modus/modus_component.h"
+#include "components/sheet/sheet_component.h"
+#include "components/table/table_component.h"
+#include "components/timed_data/timed_data_component.h"
+#include "components/vidicon_display/vidicon_display_component.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
@@ -23,9 +29,9 @@
 #include <QStyleFactory>
 #endif
 
-const unsigned kTableTypes[] = {ID_TABLE_VIEW, ID_SHEET_VIEW,
-                                ID_TIMED_DATA_VIEW, 0};
-const unsigned kGraphTypes[] = {ID_GRAPH_VIEW, 0};
+const WindowInfo* const kTableWindowInfos[] = {
+    &kTableWindowInfo, &kSheetWindowInfo, &kTimedDataWindowInfo};
+const WindowInfo* const kGraphWindowInfos[] = {&kGraphWindowInfo};
 
 // DisplayMenuModel
 
@@ -36,18 +42,19 @@ void DisplayMenuModel::MenuWillShow() {
   Clear();
   items_.clear();
 
-  AddItems(ID_MODUS_VIEW);
-  AddItems(ID_VIDICON_DISPLAY_VIEW);
+  AddItems(kModusWindowInfo);
+  AddItems(kVidiconDisplayWindowInfo);
 }
 
 void DisplayMenuModel::ActivatedAt(int index) {
-  auto& item = items_[index];
+  const auto& item = items_[index];
   // find existing display
   if (auto* view = main_window_manager_.FindOpenedViewByFilePath(item.path)) {
     view->Activate();
   } else {
     // add new window
-    WindowDefinition def(GetWindowInfo(item.command_id));
+    assert(item.window_info);
+    WindowDefinition def(*item.window_info);
     def.path = item.path;
     main_window_.OpenView(def, true);
   }
@@ -57,10 +64,10 @@ bool DisplayMenuModel::IsEnabledAt(int index) const {
   return !items_.empty();
 }
 
-void DisplayMenuModel::AddItems(unsigned command_id) {
-  for (auto& entry : file_cache_.GetList(command_id)) {
+void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
+  for (auto& entry : file_cache_.GetList(window_info.command_id)) {
     AddItem(0, entry.title);
-    items_.push_back(Item{command_id, entry.path});
+    items_.push_back(Item{&window_info, entry.path});
   }
 
   if (items_.empty())
@@ -69,11 +76,12 @@ void DisplayMenuModel::AddItems(unsigned command_id) {
 
 // FavouritesMenuModel
 
-FavouritesMenuModel::FavouritesMenuModel(const unsigned view_types[],
-                                         const MainMenuContext& context)
+FavouritesMenuModel::FavouritesMenuModel(
+    base::span<const WindowInfo* const> window_infos,
+    const MainMenuContext& context)
     : MainMenuContext{std::move(context)},
       ui::SimpleMenuModel{nullptr},
-      view_types_{view_types} {}
+      window_infos_{window_infos} {}
 
 void FavouritesMenuModel::MenuWillShow() {
   Clear();
@@ -81,17 +89,8 @@ void FavouritesMenuModel::MenuWillShow() {
 
   if (const Page* favourites_folder = favourites_.GetFolder()) {
     for (int i = 0; i != favourites_folder->GetWindowCount(); ++i) {
-      const WindowDefinition& win = favourites_folder->GetWindow(i);
-
-      bool found = false;
-      for (int j = 0; view_types_[j]; ++j) {
-        if (win.window_info().command_id == view_types_[j]) {
-          found = true;
-          break;
-        }
-      }
-
-      if (found) {
+      const auto& win = favourites_folder->GetWindow(i);
+      if (IsMatchingWindow(win)) {
         AddItem(0, win.GetTitle());
         windows_.push_back(&win);
       }
@@ -108,6 +107,14 @@ void FavouritesMenuModel::ActivatedAt(int index) {
 
 bool FavouritesMenuModel::IsEnabledAt(int index) const {
   return !windows_.empty();
+}
+
+bool FavouritesMenuModel::IsMatchingWindow(
+    const WindowDefinition& window) const {
+  return std::any_of(window_infos_.begin(), window_infos_.end(),
+                     [&window](const WindowInfo* window_info) {
+                       return &window.window_info() == window_info;
+                     });
 }
 
 // PageMenuModel
@@ -250,9 +257,9 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
     : MainMenuContext{std::move(context)},
       ui::SimpleMenuModel{this},
       display_menu_model_{context},
-      table_favourites_{kTableTypes, context},
+      table_favourites_{base::make_span(kTableWindowInfos), context},
       table_submenu_{this},
-      graph_favourites_{kGraphTypes, context},
+      graph_favourites_{base::make_span(kGraphWindowInfos), context},
       graph_submenu_{this},
       more_submenu_{this},
       page_list_menu_{context},

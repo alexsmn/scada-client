@@ -3,6 +3,7 @@
 #include "base/test/test_time.h"
 #include "common/aggregation.h"
 #include "common_resources.h"
+#include "components/summary/summary_component.h"
 #include "node_service/node_service_mock.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_service_mock.h"
@@ -28,7 +29,7 @@ class SummaryModelTest : public Test {
  protected:
   // The item order must correspond to |SummaryModel::Save()| order.
   const WindowDefinition kWindowDefinition =
-      WindowDefinition{GetWindowInfo(ID_SUMMARY_VIEW)}
+      WindowDefinition{kSummaryWindowInfo}
           .AddItem(MakeItem("item1-formula"))
           .AddItem(MakeItem("item2-formula"))
           .AddItem("TimeRange", kTimeRange)
@@ -106,7 +107,7 @@ TEST_F(SummaryModelTest, Load) {
 }
 
 TEST_F(SummaryModelTest, Save) {
-  WindowDefinition window_definition{GetWindowInfo(ID_SUMMARY_VIEW)};
+  WindowDefinition window_definition{kSummaryWindowInfo};
   summary_model_.Save(window_definition);
   EXPECT_EQ(kWindowDefinition, window_definition);
 }

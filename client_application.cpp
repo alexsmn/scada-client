@@ -20,6 +20,7 @@
 #include "common/common_paths.h"
 #include "common/event_fetcher.h"
 #include "common/master_data_services.h"
+#include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
 #include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
@@ -274,7 +275,6 @@ void ClientApplication::Start() {
   file_cache_ = std::make_unique<FileCache>();
   RegisterFileCacheType(*file_cache_, ID_MODUS_VIEW, ".sde;.xsde");
   RegisterFileCacheType(*file_cache_, ID_VIDICON_DISPLAY_VIEW, ".vds");
-  RegisterFileCacheType(*file_cache_, ID_EXCEL_REPORT_VIEW, ".tsr");
   file_cache_->Init();
 
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
@@ -484,12 +484,12 @@ void ClientApplication::OnEvents(bool has_events) {
   for (auto& p : main_window_manager_->main_windows()) {
     auto& main_window = *p.second;
     bool events_shown =
-        main_window.FindOpenedViewByType(ID_EVENT_VIEW) != nullptr;
+        main_window.FindOpenedViewByType(kEventWindowInfo) != nullptr;
     if (has_events != events_shown) {
       if (has_events && profile_->event_auto_show)
-        main_window.OpenPane(ID_EVENT_VIEW, false);
+        main_window.OpenPane(kEventWindowInfo, false);
       else if (!has_events && profile_->event_auto_hide)
-        main_window.ClosePane(ID_EVENT_VIEW);
+        main_window.ClosePane(kEventWindowInfo);
     }
 
     main_window.SetWindowFlashing(has_events && profile_->event_flash_window);

@@ -10,6 +10,7 @@ class PageLayout;
 class PageLayoutBlock;
 class ViewManagerDelegate;
 class WindowDefinition;
+struct WindowInfo;
 
 class ViewManager {
  public:
@@ -21,7 +22,7 @@ class ViewManager {
   // WARNING: List is required for deletion during iterator.
   typedef std::list<OpenedView*> Views;
   const Views& views() const { return views_; }
-  OpenedView* FindViewByType(unsigned type) const;
+  OpenedView* FindViewByType(const WindowInfo& window_info) const;
 
   OpenedView* CreateView(WindowDefinition& def, OpenedView* after_view);
   OpenedView* OpenView(const WindowDefinition& def,
