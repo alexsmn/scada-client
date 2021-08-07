@@ -65,6 +65,24 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
       [this](KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
+
+  command_handler_.AddCommand(
+      Command{ID_ACKNOWLEDGE_CURRENT}
+          .set_execute_handler([this] { AcknowledgeSelection(); })
+          .set_enabled_handler([this] { return CanAcknowledgeSelection(); }));
+
+  command_handler_.AddCommand(
+      Command{ID_SEVERITY_ALL}
+          .set_execute_handler([this] {
+            model_->SetSeverityMin(0);
+            controller_delegate_.SetTitle(MakeTitle());
+          })
+          .set_checked_handler([this] { return model_->severity_min() == 0; }));
+
+  command_handler_.AddCommand(
+      Command{ID_SEVERITY_CUSTOM}
+          .set_execute_handler([this] { SelectSeverity(); })
+          .set_checked_handler([this] { return model_->severity_min() != 0; }));
 }
 
 EventView::~EventView() {}
@@ -221,57 +239,7 @@ TimeRange EventView::GetTimeRange() const {
 }
 
 CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_ACKNOWLEDGE_CURRENT:
-    case ID_SEVERITY_CUSTOM:
-    case ID_SEVERITY_ALL:
-      return this;
-
-    default:
-      return Controller::GetCommandHandler(command_id);
-  }
-}
-
-bool EventView::IsCommandEnabled(unsigned command_id) const {
-  switch (command_id) {
-    case ID_ACKNOWLEDGE_CURRENT:
-      return CanAcknowledgeSelection();
-
-    default:
-      return __super::IsCommandEnabled(command_id);
-  }
-}
-
-bool EventView::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_SEVERITY_CUSTOM:
-      return model_->severity_min() != 0;
-    case ID_SEVERITY_ALL:
-      return model_->severity_min() == 0;
-    default:
-      return __super::IsCommandChecked(command_id);
-  }
-}
-
-void EventView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_ACKNOWLEDGE_CURRENT:
-      AcknowledgeSelection();
-      break;
-
-    case ID_SEVERITY_ALL:
-      model_->SetSeverityMin(0);
-      controller_delegate_.SetTitle(MakeTitle());
-      break;
-
-    case ID_SEVERITY_CUSTOM:
-      SelectSeverity();
-      break;
-
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 void EventView::SetTimeRange(const TimeRange& time_range) {

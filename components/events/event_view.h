@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
@@ -15,7 +15,6 @@ class EventTableModel;
 
 class EventView : protected ControllerContext,
                   public Controller,
-                  public CommandHandler,
                   public ContentsModel,
                   public TimeModel,
                   public ExportModel {
@@ -31,9 +30,6 @@ class EventView : protected ControllerContext,
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual bool IsCommandChecked(unsigned command) const override;
-  virtual bool IsCommandEnabled(unsigned command) const override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
@@ -70,4 +66,6 @@ class EventView : protected ControllerContext,
 
   std::unique_ptr<EventTableModel> model_;
   std::unique_ptr<Table> table_;
+
+  CommandHandlerImpl command_handler_;
 };
