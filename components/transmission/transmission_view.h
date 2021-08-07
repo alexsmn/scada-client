@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "ui/base/models/header_model.h"
@@ -10,9 +10,7 @@
 class Grid;
 class TransmissionModel;
 
-class TransmissionView : protected ControllerContext,
-                         public Controller,
-                         public CommandHandler {
+class TransmissionView : protected ControllerContext, public Controller {
  public:
   explicit TransmissionView(const ControllerContext& context);
   virtual ~TransmissionView();
@@ -20,7 +18,6 @@ class TransmissionView : protected ControllerContext,
   // Controller events
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual ContentsModel* GetContentsModel() override;
 
  private:
@@ -30,4 +27,6 @@ class TransmissionView : protected ControllerContext,
   ui::ColumnHeaderModel column_model_;
 
   std::unique_ptr<Grid> grid_;
+
+  CommandHandlerImpl command_handler_;
 };

@@ -1,11 +1,10 @@
 ﻿#include "components/transmission/transmission_view.h"
 
-#include "node_service/node_service.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "controls/grid.h"
 #include "model/node_id_util.h"
-#include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 #include "remote/session_proxy.h"
 #include "services/task_manager.h"
 #include "window_definition.h"
@@ -39,6 +38,9 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   grid_->set_allow_row_select(true);
 #endif
 
+  command_handler_.AddCommand(
+      Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
+
   return grid_->CreateParentIfNecessary();
 }
 
@@ -51,23 +53,7 @@ void TransmissionView::DeleteSelection() {
 }
 
 CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_DELETE:
-      return this;
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-void TransmissionView::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_DELETE:
-      DeleteSelection();
-      break;
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 ContentsModel* TransmissionView::GetContentsModel() {
