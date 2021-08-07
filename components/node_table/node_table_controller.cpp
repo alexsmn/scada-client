@@ -21,18 +21,15 @@
 
 namespace {
 
-scada::NodeId GetSortCommandPropertyId(unsigned command_id) {
-  switch (command_id) {
-    case ID_SORT_NONE:
-      return {};
-    case ID_SORT_ALIAS:
-      return data_items::id::DataItemType_Alias;
-    case ID_SORT_CHANNEL:
-      return data_items::id::DataItemType_Input1;
-    default:
-      assert(false);
-      return {};
-  }
+base::span<
+    const std::pair<unsigned /*command_id*/, scada::NodeId /*prop_decl_id*/>>
+GetSortCommands() {
+  static std::pair<unsigned, scada::NodeId> kSortCommands[] = {
+      {ID_SORT_NONE, scada::NodeId{}},
+      {ID_SORT_ALIAS, data_items::id::DataItemType_Alias},
+      {ID_SORT_CHANNEL, data_items::id::DataItemType_Input1},
+  };
+  return kSortCommands;
 }
 
 }  // namespace
@@ -105,6 +102,22 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
     grid_->RestoreState(state->attributes);
 
+  command_handler_.AddCommand(Command{ID_RENAME}.set_execute_handler([this] {
+    if (auto index = grid_->GetCurrentIndex(); index.is_valid())
+      grid_->OpenEditor(index);
+  }));
+
+  for (const auto& [command_id, prop_decl_id] : GetSortCommands()) {
+    command_handler_.AddCommand(Command{command_id}
+                                    .set_execute_handler([this, prop_decl_id] {
+                                      SetSorting(prop_decl_id);
+                                    })
+                                    .set_checked_handler([this, prop_decl_id] {
+                                      return model_->sort_property_id() ==
+                                             prop_decl_id;
+                                    }));
+  }
+
   return grid_->CreateParentIfNecessary();
 }
 
@@ -118,47 +131,7 @@ void NodeTableController::Save(WindowDefinition& definition) {
 }
 
 CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_RENAME:
-    case ID_SORT_NONE:
-    case ID_SORT_ALIAS:
-    case ID_SORT_CHANNEL:
-      return this;
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-bool NodeTableController::IsCommandEnabled(unsigned command_id) const {
-  return __super::IsCommandEnabled(command_id);
-}
-
-bool NodeTableController::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_SORT_NONE:
-    case ID_SORT_ALIAS:
-    case ID_SORT_CHANNEL:
-      return model_->sort_property_id() == GetSortCommandPropertyId(command_id);
-    default:
-      return false;
-  }
-}
-
-void NodeTableController::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_RENAME:
-      if (auto index = grid_->GetCurrentIndex(); index.is_valid())
-        grid_->OpenEditor(index);
-      break;
-    case ID_SORT_NONE:
-    case ID_SORT_ALIAS:
-    case ID_SORT_CHANNEL:
-      SetSorting(GetSortCommandPropertyId(command));
-      break;
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 NodeRef NodeTableController::GetRootNode() const {

@@ -2,7 +2,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/win/dragdrop.h"
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "selection_model.h"
@@ -17,7 +17,6 @@ class NodeTableModel;
 
 class NodeTableController : protected ControllerContext,
                             public Controller,
-                            public CommandHandler,
 #if defined(UI_VIEWS)
                             private views::GridController,
 #endif
@@ -30,9 +29,6 @@ class NodeTableController : protected ControllerContext,
   // Controller events
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual bool IsCommandEnabled(unsigned command_id) const override;
-  virtual bool IsCommandChecked(unsigned command_id) const override;
-  virtual void ExecuteCommand(unsigned command_id) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual NodeRef GetRootNode() const override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
@@ -53,6 +49,8 @@ class NodeTableController : protected ControllerContext,
 
   std::unique_ptr<NodeTableModel> model_;
   std::unique_ptr<Grid> grid_;
+
+  CommandHandlerImpl command_handler_;
 
   base::WeakPtrFactory<NodeTableController> weak_ptr_factory_{this};
 };
