@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
@@ -34,8 +34,7 @@ class Grid;
 
 class SheetController : protected ControllerContext,
                         public Controller,
-                        public ContentsModel,
-                        public CommandHandler
+                        public ContentsModel
 #if defined(UI_VIEWS)
     ,
                         private views::GridController,
@@ -51,8 +50,6 @@ class SheetController : protected ControllerContext,
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual bool IsCommandChecked(unsigned command_id) const override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
 #if defined(UI_VIEWS)
@@ -80,7 +77,6 @@ class SheetController : protected ControllerContext,
   void ClearSelection();
 
   void ChooseSelectionColor();
-  void SetSelectionColor(aui::Color color);
 
   NodeIdSet GetSelectedNodeIdList();
 
@@ -116,4 +112,6 @@ class SheetController : protected ControllerContext,
 #endif
 
   std::unique_ptr<Grid> grid_;
+
+  CommandHandlerImpl command_handler_;
 };

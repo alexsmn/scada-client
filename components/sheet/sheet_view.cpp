@@ -106,6 +106,26 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
         model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
   });
 
+  command_handler_.AddCommand(
+      Command{ID_EDIT}
+          .set_execute_handler([this] {
+#if defined(UI_VIEWS)
+            if (model_->is_editing() && !grid_->CloseEditor(true))
+              return;
+#endif
+            model_->SetEditing(!model_->is_editing());
+            UpdateEditing();
+          })
+          .set_enabled_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Configure);
+          })
+          .set_checked_handler([this] { return model_->is_editing(); }));
+
+  command_handler_.AddCommand(
+      Command{ID_GRAPH_COLOR}
+          .set_execute_handler([this] { ChooseSelectionColor(); })
+          .set_enabled_handler([this] { return model_->is_editing(); }));
+
   UpdateEditing();
 
   return contents_view_.get();
@@ -167,57 +187,7 @@ void SheetController::UpdateEditing() {
 }
 
 CommandHandler* SheetController::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_EDIT:
-      return session_service_.HasPrivilege(scada::Privilege::Configure)
-                 ? this
-                 : nullptr;
-
-    case ID_GRAPH_COLOR:
-      return model_->is_editing() ? this : NULL;
-  }
-
-  if (command_id >= ID_COLOR_0 &&
-      command_id < ID_COLOR_0 + aui::GetColorCount())
-    return model_->is_editing() ? this : NULL;
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-bool SheetController::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_EDIT:
-      return model_->is_editing();
-    default:
-      return __super::IsCommandChecked(command_id);
-  }
-}
-
-void SheetController::ExecuteCommand(unsigned command_id) {
-  switch (command_id) {
-    case ID_EDIT:
-#if defined(UI_VIEWS)
-      if (model_->is_editing() && !grid_->CloseEditor(true))
-        break;
-#endif
-      model_->SetEditing(!model_->is_editing());
-      UpdateEditing();
-      break;
-
-    case ID_GRAPH_COLOR:
-      ChooseSelectionColor();
-      break;
-
-    default:
-      if (command_id >= ID_COLOR_0 &&
-          command_id < ID_COLOR_0 + aui::GetColorCount()) {
-        auto color = aui::GetColor(command_id - ID_COLOR_0);
-        SetSelectionColor(color);
-      } else {
-        __super::ExecuteCommand(command_id);
-      }
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 void SheetController::ChooseSelectionColor() {
@@ -300,12 +270,6 @@ void SheetController::OnSelectionChanged() {
   } else {
     selection_.SelectMultiple();
   }
-}
-
-void SheetController::SetSelectionColor(aui::Color color) {
-  const auto& range = grid_->GetSelectionRange();
-  if (!range.empty())
-    model_->SetRangeColor(range, color);
 }
 
 #if defined(UI_VIEWS)

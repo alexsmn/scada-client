@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "components/timed_data/timed_data_model.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -16,7 +16,6 @@ class TimedDataModel;
 
 class TimedDataView : protected ControllerContext,
                       public Controller,
-                      public CommandHandler,
                       public ContentsModel,
                       public ExportModel {
  public:
@@ -27,7 +26,6 @@ class TimedDataView : protected ControllerContext,
   virtual void Save(WindowDefinition& definition) override;
   virtual bool IsWorking() const override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
@@ -51,4 +49,6 @@ class TimedDataView : protected ControllerContext,
   ui::MirrorTableModel mirror_model_{model_};
 
   std::unique_ptr<Table> view_;
+
+  CommandHandlerImpl command_handler_;
 };
