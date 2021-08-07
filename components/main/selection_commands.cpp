@@ -178,17 +178,18 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
                                                                 : nullptr;
 
     case ID_ITEM_ENABLE:
-    case ID_ITEM_DISABLE: {
+    case ID_ITEM_DISABLE:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
       return node[devices::id::DeviceType_Disabled] ? this : nullptr;
-    }
 
     case ID_TRANSMISSION_VIEW:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
         return nullptr;
-      return IsInstanceOf(node, devices::id::Iec60870DeviceType) ? this
-                                                                 : nullptr;
+      return IsInstanceOf(node, devices::id::DeviceType) &&
+                     !IsInstanceOf(node, devices::id::LinkType)
+                 ? this
+                 : nullptr;
 
     case ID_CHANGE_PASSWORD:
       if (!session_service_.HasPrivilege(scada::Privilege::Configure))
