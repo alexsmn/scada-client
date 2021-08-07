@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "components/portfolio/portfolio.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -14,7 +14,6 @@ class Tree;
 
 class PortfolioView : protected ControllerContext,
                       public Controller,
-                      public CommandHandler,
                       public ContentsModel {
  public:
   explicit PortfolioView(const ControllerContext& context);
@@ -22,9 +21,7 @@ class PortfolioView : protected ControllerContext,
 
   // Controller
   virtual UiView* Init(const WindowDefinition& definition) override;
-  virtual bool IsCommandEnabled(unsigned command_id) const override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
 
@@ -46,4 +43,6 @@ class PortfolioView : protected ControllerContext,
 
   std::unique_ptr<PortfolioTreeModel> model_;
   std::unique_ptr<Tree> tree_;
+
+  CommandHandlerImpl command_handler_;
 };
