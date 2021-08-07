@@ -1,11 +1,11 @@
-#include "commands/select_item_dialog.h"
+#include "components/select_item/select_item_dialog.h"
 
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "common_resources.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/dialog_service.h"
 #include "views/client_utils_views.h"
 
@@ -28,11 +28,11 @@ class SelectItemDialog : public ATL::CDialogImpl<SelectItemDialog> {
   void LoadItems();
 
   BEGIN_MSG_MAP(SelectItemDialog)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  COMMAND_ID_HANDLER(IDOK, OnOK)
-  COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
-  NOTIFY_HANDLER(IDC_TREE, TVN_SELCHANGED, OnTreeSelect);
-  NOTIFY_HANDLER(IDC_LIST, LVN_ITEMCHANGED, OnListSelect);
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    COMMAND_ID_HANDLER(IDOK, OnOK)
+    COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
+    NOTIFY_HANDLER(IDC_TREE, TVN_SELCHANGED, OnTreeSelect);
+    NOTIFY_HANDLER(IDC_LIST, LVN_ITEMCHANGED, OnListSelect);
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT /*uMsg*/,

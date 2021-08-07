@@ -1,8 +1,8 @@
 ﻿#include "components/portfolio/portfolio_view.h"
 
-#include "commands/select_item_dialog.h"
 #include "common_resources.h"
 #include "components/portfolio/portfolio_tree_model.h"
+#include "components/select_item/select_item_dialog.h"
 #include "controller_delegate.h"
 #include "controller_factory.h"
 #include "controls/tree.h"
