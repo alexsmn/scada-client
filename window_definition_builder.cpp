@@ -1,5 +1,7 @@
 #include "window_definition_builder.h"
 
+#include "base/string_piece_util.h"
+#include "base/strings/strcat.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -8,6 +10,16 @@
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
+#include "window_info.h"
+
+namespace {
+
+std::wstring MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
+  return base::StrCat({ToStringPiece(window_info.title), L": ",
+                       ToString16(node.display_name())});
+}
+
+}  // namespace
 
 WindowDefinition MakeEmptyWindowDefinition(const NodeRef& node, unsigned type) {
   if (!type)
@@ -21,8 +33,7 @@ WindowDefinition MakeEmptyWindowDefinition(const NodeRef& node, unsigned type) {
   const WindowInfo& window_info = GetWindowInfo(type);
 
   WindowDefinition window_def{window_info};
-  window_def.title = base::StringPrintf(
-      L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
+  window_def.title = MakeTitle(window_info, node);
   return window_def;
 }
 
@@ -82,9 +93,8 @@ WindowDefinition MakeWindowDefinition(const NodeRef& node,
     type = ID_GRAPH_VIEW;
 
   const WindowInfo& window_info = GetWindowInfo(type);
-  WindowDefinition window_def(GetWindowInfo(type));
-  window_def.title = base::StringPrintf(
-      L"%ls: %ls", window_info.title, ToString16(node.display_name()).c_str());
+  WindowDefinition window_def(window_info);
+  window_def.title = MakeTitle(window_info, node);
 
   for (auto& id : item_ids) {
     WindowItem& item_id = window_def.AddItem("Item");

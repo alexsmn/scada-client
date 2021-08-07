@@ -94,7 +94,8 @@ void RegisterFileCacheType(FileCache& cache,
   if (!window_info)
     return;
 
-  cache.RegisterType(command_id, window_info->name, std::move(ext));
+  cache.RegisterType(command_id, std::string{window_info->name},
+                     std::move(ext));
 }
 
 void PollIoContext(boost::asio::io_context* context) {

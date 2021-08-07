@@ -1,5 +1,6 @@
 ﻿#include "components/main/selection_commands.h"
 
+#include "base/strings/string_util.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "common/event_fetcher.h"

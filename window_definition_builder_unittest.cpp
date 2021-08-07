@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "controller.h"
 #include "node_service/node_model_mock.h"
+#include "window_info.h"
 
 #include <gmock/gmock.h>
 

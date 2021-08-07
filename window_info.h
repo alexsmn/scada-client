@@ -13,8 +13,8 @@ enum WindowFlags {
 
 struct WindowInfo {
   unsigned command_id;
-  const char* name;
-  const wchar_t* title;
+  std::string_view name;
+  std::wstring_view title;
   unsigned flags;
   unsigned cx;
   unsigned cy;

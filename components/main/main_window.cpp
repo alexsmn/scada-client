@@ -168,7 +168,8 @@ void MainWindow::OnViewClosed(OpenedView& view) {
   if (&view == active_data_view_)
     SetActiveDataView(nullptr);
 
-  LOG(INFO) << "Window " << view.window_info().title << " closed.";
+  LOG(INFO) << "Window " << std::wstring{view.window_info().title}
+            << " closed.";
 
   if (view_manager_->is_closing_page())
     return;

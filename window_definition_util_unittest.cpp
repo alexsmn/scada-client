@@ -1,6 +1,8 @@
 #include "window_definition_util.h"
 
 #include "common_resources.h"
+#include "value_util.h"
+#include "window_info.h"
 
 #include <gmock/gmock.h>
 

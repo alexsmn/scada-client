@@ -1,16 +1,10 @@
 #pragma once
 
-#include "base/json/json_file_value_serializer.h"
-#include "base/json/json_reader.h"
-#include "base/json/json_string_value_serializer.h"
+#include "base/files/file_path.h"
 #include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-
-#include <optional>
-
-template <class T>
-std::optional<T> FromJson(const base::Value& value);
+#include "json.h"
 
 inline bool GetBool(const base::Value& value,
                     std::string_view key,
@@ -125,32 +119,14 @@ inline void SetKey(base::Value& dict,
   dict.SetKey(ToStringPiece(key), base::Value{std::move(value)});
 }
 
-inline bool SaveJsonToFile(const base::Value& data,
-                           const base::FilePath& path) {
-  JSONFileValueSerializer serializer{path};
-  return serializer.Serialize(data);
-}
+bool SaveJsonToFile(const base::Value& data, const base::FilePath& path);
 
-inline std::string SaveJsonToString(const base::Value& data) {
-  std::string json_string;
-  JSONStringValueSerializer serializer{&json_string};
-  if (!serializer.Serialize(data))
-    throw new std::runtime_error("Cannot serialize the value to JSON");
-  return json_string;
-}
+std::string SaveJsonToString(const base::Value& data);
 
-inline std::unique_ptr<base::Value> LoadJsonFromFile(
+std::unique_ptr<base::Value> LoadJsonFromFile(
     const base::FilePath& path,
-    std::string* error_message = nullptr) {
-  JSONFileValueDeserializer deserializer{path,
-                                         base::JSON_ALLOW_TRAILING_COMMAS};
-  return deserializer.Deserialize(nullptr, error_message);
-}
+    std::string* error_message = nullptr);
 
-inline std::unique_ptr<base::Value> LoadJsonFromString(
+std::unique_ptr<base::Value> LoadJsonFromString(
     std::string_view contents,
-    std::string* error_message = nullptr) {
-  JSONStringValueDeserializer deserializer{ToStringPiece(contents),
-                                           base::JSON_ALLOW_TRAILING_COMMAS};
-  return deserializer.Deserialize(nullptr, error_message);
-}
+    std::string* error_message = nullptr);

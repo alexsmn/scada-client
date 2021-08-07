@@ -3,6 +3,7 @@
 #include "base/format_time.h"
 #include "base/path_service.h"
 #include "base/range_util.h"
+#include "base/strings/string_util.h"
 #include "base/win/clipboard.h"
 #include "client_paths.h"
 #include "common/event_fetcher.h"

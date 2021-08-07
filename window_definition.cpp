@@ -133,7 +133,7 @@ std::wstring WindowDefinition::GetTitle() const {
   if (!title.empty())
     return title;
 
-  std::wstring title = window_info().title;
+  std::wstring title{window_info().title};
   if (!path.empty())
     title += L": " + path.value();
   return title;
