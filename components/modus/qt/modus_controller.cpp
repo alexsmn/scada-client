@@ -54,6 +54,8 @@ QWidget* ModusController::CreateModusView() {
 
   wrapper_ = view_.get();
 
+  command_handler_.AddCommand(Command{ID_SETUP}.set_execute_handler([]{}));
+
   return view_.get();
 }
 
@@ -110,37 +112,7 @@ bool ModusController::ShowContainedItem(const scada::NodeId& item_id) {
 }
 
 CommandHandler* ModusController::GetCommandHandler(unsigned command_id) {
-  switch (command_id) {
-    case ID_SETUP:
-    case ID_PRINT:
-    case ID_MODUS_TOOLBAR:
-    case ID_MODUS_STATUSBAR:
-      return nullptr;
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-void ModusController::ExecuteCommand(unsigned command) {
-  switch (command) {
-    case ID_SETUP:
-      break;
-
-    case ID_PRINT:
-      break;
-
-    case ID_MODUS_TOOLBAR: {
-      break;
-    }
-
-    case ID_MODUS_STATUSBAR: {
-      break;
-    }
-
-    default:
-      __super::ExecuteCommand(command);
-      break;
-  }
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 void ModusController::OpenHyperlink(std::wstring_view hyperlink) {

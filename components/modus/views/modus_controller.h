@@ -2,7 +2,7 @@
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
-#include "command_handler.h"
+#include "command_handler_impl.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "selection_model.h"
@@ -13,9 +13,7 @@ class ModusView;
 class ModusView2;
 class ModusViewWrapper;
 
-class ModusController : protected ControllerContext,
-                        public Controller,
-                        public CommandHandler {
+class ModusController : protected ControllerContext, public Controller {
  public:
   explicit ModusController(const ControllerContext& context);
   virtual ~ModusController();
@@ -25,7 +23,6 @@ class ModusController : protected ControllerContext,
   virtual void Save(WindowDefinition& definition) override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  private:
@@ -42,6 +39,8 @@ class ModusController : protected ControllerContext,
   std::unique_ptr<ModusView> view_;
   std::unique_ptr<ModusView2> view2_;
   ModusViewWrapper* wrapper_;
+
+  CommandHandlerImpl command_handler_;
 
   base::WeakPtrFactory<ModusController> weak_factory_{this};
 };

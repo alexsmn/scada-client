@@ -53,6 +53,34 @@ views::View* ModusController::CreateModusView() {
 
   wrapper_ = view_.get();
 
+  command_handler_.AddCommand(Command{ID_SETUP}.set_execute_handler([this] {
+    if (auto* sde_form = wrapper_->GetSdeForm())
+      sde_form->ShowOptions();
+  }));
+
+  command_handler_.AddCommand(Command{ID_PRINT}.set_execute_handler([this] {
+    if (auto* sde_form = wrapper_->GetSdeForm())
+      sde_form->Print();
+  }));
+
+  command_handler_.AddCommand(
+      Command{ID_MODUS_TOOLBAR}.set_execute_handler([this] {
+        if (auto* sde_form = wrapper_->GetSdeForm()) {
+          VARIANT_BOOL visible = VARIANT_FALSE;
+          sde_form->get_ToolbarVisible(&visible);
+          sde_form->put_ToolbarVisible(!visible);
+        }
+      }));
+
+  command_handler_.AddCommand(
+      Command{ID_MODUS_STATUSBAR}.set_execute_handler([this] {
+        if (auto* sde_form = wrapper_->GetSdeForm()) {
+          VARIANT_BOOL visible = VARIANT_FALSE;
+          sde_form->get_StatusVisible(&visible);
+          sde_form->put_StatusVisible(!visible);
+        }
+      }));
+
   return view_.get();
 }
 
@@ -102,47 +130,7 @@ bool ModusController::ShowContainedItem(const scada::NodeId& item_id) {
 }
 
 CommandHandler* ModusController::GetCommandHandler(unsigned command_id) {
-  if (view_) {
-    switch (command_id) {
-      case ID_SETUP:
-      case ID_PRINT:
-      case ID_MODUS_TOOLBAR:
-      case ID_MODUS_STATUSBAR:
-        return this;
-    }
-  }
-
-  return Controller::GetCommandHandler(command_id);
-}
-
-void ModusController::ExecuteCommand(unsigned command) {
-  if (auto* sde_form = wrapper_->GetSdeForm()) {
-    switch (command) {
-      case ID_SETUP:
-        sde_form->ShowOptions();
-        return;
-
-      case ID_PRINT:
-        sde_form->Print();
-        return;
-
-      case ID_MODUS_TOOLBAR: {
-        VARIANT_BOOL visible = VARIANT_FALSE;
-        sde_form->get_ToolbarVisible(&visible);
-        sde_form->put_ToolbarVisible(!visible);
-        return;
-      }
-
-      case ID_MODUS_STATUSBAR: {
-        VARIANT_BOOL visible = VARIANT_FALSE;
-        sde_form->get_StatusVisible(&visible);
-        sde_form->put_StatusVisible(!visible);
-        return;
-      }
-    }
-  }
-
-  __super::ExecuteCommand(command);
+  return command_handler_.GetCommandHandler(command_id);
 }
 
 void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
