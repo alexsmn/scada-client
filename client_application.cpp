@@ -37,7 +37,7 @@
 #include "components/vidicon_display/vidicon_client.h"
 #include "controller_context.h"
 #include "net/transport_factory_impl.h"
-#include "node_service/v1/address_space_fetcher.h"
+#include "node_service/v1/address_space_fetcher_impl.h"
 #include "node_service/v1/node_service_impl.h"
 #include "node_service/v2/node_service_impl.h"
 #include "project.h"
@@ -318,13 +318,38 @@ std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
     v1::NodeServiceImplContext MakeNodeServiceImplContext(
         const std::shared_ptr<Executor> executor,
         MasterDataServices& services) {
-      auto view_events_provider = [&services](scada::ViewEvents& events) {
-        return std::make_unique<ViewEventsSubscription>(services, events);
-      };
+      auto address_space_fetcher_factory =
+          MakeAddressSpaceFetcherFactory(executor, services);
 
-      return {
-          executor,      view_events_provider, services, services,
-          address_space, node_factory,         services, services,
+      return v1::NodeServiceImplContext{
+          executor, std::move(address_space_fetcher_factory),
+          services, address_space,
+          services, services,
+      };
+    }
+
+    v1::AddressSpaceFetcherFactory MakeAddressSpaceFetcherFactory(
+        const std::shared_ptr<Executor> executor,
+        MasterDataServices& services) {
+      return [this, executor,
+              &services](v1::AddressSpaceFetcherFactoryContext&& context) {
+        ViewEventsProvider view_events_provider =
+            [&services](scada::ViewEvents& events) {
+              return std::make_unique<ViewEventsSubscription>(services, events);
+            };
+
+        return v1::AddressSpaceFetcherImpl::Create(
+            v1::AddressSpaceFetcherImplContext{
+                executor,
+                services,
+                services,
+                address_space,
+                node_factory,
+                std::move(view_events_provider),
+                std::move(context.node_fetch_status_changed_handler_),
+                std::move(context.model_changed_handler_),
+                std::move(context.semantic_changed_handler_),
+            });
       };
     }
 
