@@ -5,19 +5,10 @@
 #include "common/type_system_mock.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_model_mock.h"
-#include "node_service/test/test_node_model.h"
 
 #include <gmock/gmock.h>
 
 using namespace testing;
-
-namespace {
-
-NodeRef GetNodeRef(const scada::NodeId& node_id) {
-  return NodeRef{std::make_shared<TestNodeModel>(scada::NodeState{node_id})};
-}
-
-}  // namespace
 
 TEST(NodeSerialization, DISABLED_NodeToData) {
   NiceMock<MockTypeSystem> type_system;

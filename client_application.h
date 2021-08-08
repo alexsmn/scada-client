@@ -63,9 +63,6 @@ class ClientApplication : private ClientApplicationContext,
   void Start();
 
  private:
-  std::shared_ptr<NodeService> CreateNodeServiceV1();
-  std::shared_ptr<NodeService> CreateNodeServiceV2();
-
   MainWindowContext MakeMainWindowContext(int window_id);
 
   void OnEvents(bool has_events);

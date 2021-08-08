@@ -1,7 +1,5 @@
 ﻿#include "client_application.h"
 
-#include "address_space/address_space_impl.h"
-#include "address_space/generic_node_factory.h"
 #include "base/bind.h"
 #include "base/blinker.h"
 #include "base/boost_log.h"
@@ -37,11 +35,9 @@
 #include "components/vidicon_display/vidicon_client.h"
 #include "controller_context.h"
 #include "net/transport_factory_impl.h"
-#include "node_service/v1/address_space_fetcher_impl.h"
-#include "node_service/v1/node_service_impl.h"
-#include "node_service/v2/node_service_impl.h"
+#include "node_service/node_service.h"
+#include "node_service/node_service_factory.h"
 #include "project.h"
-#include "remote/session_proxy_notifier.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
 #include "services/event_dispatcher.h"
@@ -212,10 +208,14 @@ void ClientApplication::Start() {
   if (master_data_services_->IsConnected())
     event_fetcher_->OnChannelOpened(master_data_services_->GetUserId());
 
-  node_service_ =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("node-service-v2")
-          ? CreateNodeServiceV2()
-          : CreateNodeServiceV1();
+  node_service_ = CreateNodeService(NodeServiceContext{
+      executor_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+  });
 
   auto alias_logger =
       base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
@@ -305,97 +305,6 @@ void ClientApplication::Start() {
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
       executor_, *event_fetcher_, *local_events_, *profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
-}
-
-std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV1() {
-  struct Context {
-    Context(const std::shared_ptr<Logger>& logger,
-            const std::shared_ptr<Executor>& executor,
-            MasterDataServices& services)
-        : node_service{MakeNodeServiceImplContext(executor, services)},
-          node_service_notifier{node_service, services} {}
-
-    v1::NodeServiceImplContext MakeNodeServiceImplContext(
-        const std::shared_ptr<Executor> executor,
-        MasterDataServices& services) {
-      auto address_space_fetcher_factory =
-          MakeAddressSpaceFetcherFactory(executor, services);
-
-      return v1::NodeServiceImplContext{
-          executor, std::move(address_space_fetcher_factory),
-          services, address_space,
-          services, services,
-      };
-    }
-
-    v1::AddressSpaceFetcherFactory MakeAddressSpaceFetcherFactory(
-        const std::shared_ptr<Executor> executor,
-        MasterDataServices& services) {
-      return [this, executor,
-              &services](v1::AddressSpaceFetcherFactoryContext&& context) {
-        ViewEventsProvider view_events_provider =
-            [&services](scada::ViewEvents& events) {
-              return std::make_unique<ViewEventsSubscription>(services, events);
-            };
-
-        return v1::AddressSpaceFetcherImpl::Create(
-            v1::AddressSpaceFetcherImplContext{
-                executor,
-                services,
-                services,
-                address_space,
-                node_factory,
-                std::move(view_events_provider),
-                std::move(context.node_fetch_status_changed_handler_),
-                std::move(context.model_changed_handler_),
-                std::move(context.semantic_changed_handler_),
-            });
-      };
-    }
-
-    AddressSpaceImpl address_space;
-    GenericNodeFactory node_factory{address_space};
-    v1::NodeServiceImpl node_service;
-    SessionProxyNotifier<v1::NodeServiceImpl> node_service_notifier;
-  };
-
-  auto logger =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("log-node-service")
-          ? logger_
-          : static_cast<std::shared_ptr<Logger>>(
-                std::make_shared<NullLogger>());
-
-  auto context =
-      std::make_shared<Context>(logger, executor_, *master_data_services_);
-  return std::shared_ptr<NodeService>{context, &context->node_service};
-}
-
-std::shared_ptr<NodeService> ClientApplication::CreateNodeServiceV2() {
-  struct Context {
-    Context(const std::shared_ptr<Logger>& logger,
-            const std::shared_ptr<Executor>& executor,
-            MasterDataServices& services)
-        : node_service{MakeNodeServiceImplContext(executor, services)},
-          node_service_notifier{node_service, services} {}
-
-    v2::NodeServiceImplContext MakeNodeServiceImplContext(
-        const std::shared_ptr<Executor>& executor,
-        MasterDataServices& services) {
-      auto view_events_provider = [&services](scada::ViewEvents& events) {
-        return std::make_unique<ViewEventsSubscription>(services, events);
-      };
-
-      return v2::NodeServiceImplContext{executor, services, services, services,
-                                        view_events_provider};
-    }
-
-    v2::NodeServiceImpl node_service;
-    SessionProxyNotifier<v2::NodeServiceImpl> node_service_notifier;
-  };
-
-  auto context =
-      std::make_shared<Context>(logger_, executor_, *master_data_services_);
-  return std::shared_ptr<NodeService>{context, &context->node_service};
 }
 
 MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
