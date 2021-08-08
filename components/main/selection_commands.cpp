@@ -6,6 +6,7 @@
 #include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"
+#include "components/device_metrics/device_metrics_command.h"
 #include "components/events/events_component.h"
 #include "components/graph/graph_component.h"
 #include "components/limits/limit_dialog.h"
@@ -122,16 +123,37 @@ WindowDefinition UpdateWindowDefinition(const WindowDefinition& window_def,
 // SelectionCommands
 
 SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
-    : SelectionCommandsContext{std::move(context)} {}
+    : SelectionCommandsContext{std::move(context)} {
+  command_registry_.AddCommand(
+      Command{ID_OPEN_DEVICE_METRICS}
+          .set_execute_handler([this] {
+            auto node = GetSelectedNode();
+            MakeDeviceMetricsWindowDefinition(node).then(
+                [weak_ptr = weak_ptr_factory_.GetWeakPtr()](
+                    const WindowDefinition& window_definition) {
+                  if (auto* ptr = weak_ptr.get())
+                    ptr->OpenWindow(window_definition);
+                });
+          })
+          .set_available_handler([this] {
+            return IsInstanceOf(GetSelectedNode(), devices::id::DeviceType);
+          }));
+}
 
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
   if (selection_ && !selection_->empty()) {
     // TODO: Capture |main_window_| by weak pointer.
     MakeWindowDefinition(window_info, selection_->node(), true)
-        .then([main_window = main_window_](const WindowDefinition& def) {
-          ::OpenView(main_window, def, true);
+        .then([weak_ptr = weak_ptr_factory_.GetWeakPtr()](
+                  const WindowDefinition& window_definition) {
+          if (auto ptr = weak_ptr.get())
+            ptr->OpenWindow(window_definition);
         });
   }
+}
+
+void SelectionCommands::OpenWindow(const WindowDefinition& window_definition) {
+  ::OpenView(main_window_, window_definition, true);
 }
 
 CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
@@ -208,11 +230,10 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
       return IsInstanceOf(node, security::id::UserType) ? this : nullptr;
 
     case ID_OPEN_WATCH:
-    case ID_OPEN_DEVICE_METRICS:
       return IsInstanceOf(node, devices::id::DeviceType) ? this : nullptr;
   }
 
-  return nullptr;
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
@@ -341,10 +362,6 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
     case ID_OPEN_WATCH:
       ::OpenView(main_window_,
                  MakeSingleWindowDefinition(&kWatchWindowInfo, node));
-      return;
-    case ID_OPEN_DEVICE_METRICS:
-      if (auto win = MakeDeviceMetricsWindowDefinition(node))
-        ::OpenView(main_window_, win.value());
       return;
     case ID_ITEM_ENABLE:
     case ID_ITEM_DISABLE:
@@ -525,4 +542,8 @@ void SelectionCommands::DumpDebugInfo() {
   dialog_service_->RunMessageBox(
       L"Отладочная информация скопирована в буфер обмена.", {},
       MessageBoxMode::Info);
+}
+
+NodeRef SelectionCommands::GetSelectedNode() {
+  return selection_ ? selection_->node() : NodeRef{};
 }
