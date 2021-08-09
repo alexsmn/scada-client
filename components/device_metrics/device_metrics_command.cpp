@@ -99,6 +99,8 @@ std::set<NodeRef> CollectVariables(base::span<const NodeRef> devices) {
          to_set;
 }
 
+}  // namespace
+
 WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     std::wstring title,
     base::span<const NodeRef> devices) {
@@ -152,8 +154,6 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
 
   return win;
 }
-
-}  // namespace
 
 promise<WindowDefinition> MakeDeviceMetricsWindowDefinition(
     const NodeRef& device) {
