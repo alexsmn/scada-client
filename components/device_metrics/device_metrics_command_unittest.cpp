@@ -21,6 +21,7 @@
 
 #include "base/debug_util-inl.h"
 
+using namespace boost::adaptors;
 using namespace testing;
 
 class DeviceMetricsCommandTest : public Test {
@@ -117,13 +118,13 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
   EXPECT_EQ(window_definition.title, title);
 
   auto rows = window_definition.items |
-              boost::adaptors::filtered([](const WindowItem& window_item) {
+              filtered([](const WindowItem& window_item) {
                 return window_item.name == "SheetCell";
               }) |
               grouped([](const WindowItem& window_item) {
                 return window_item.GetInt("row", -1);
               }) |
-              boost::adaptors::map_values | to_vector;
+              map_values | to_vector;
 
   EXPECT_THAT(rows,
               ElementsAre(ElementsAre(CellIs(L"Device 1"), CellIs(L"Device 2"),
