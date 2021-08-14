@@ -2,6 +2,7 @@
 
 #include "address_space/address_space_impl.h"
 #include "address_space/generic_node_factory.h"
+#include "address_space/node_factory_util.h"
 #include "address_space/scada_address_space.h"
 #include "address_space/standard_address_space.h"
 #include "base/range_util.h"
@@ -32,6 +33,8 @@ class DeviceMetricsCommandTest : public Test {
  protected:
   scada::Node* CreateDevice(scada::NodeId node_id,
                             scada::LocalizedText display_name);
+
+  scada::NodeState MakeDataVariableNode() const;
 
   const std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
 
@@ -92,6 +95,9 @@ scada::Node* DeviceMetricsCommandTest::CreateDevice(
 
   assert(status);
   assert(node);
+  assert(node->type_definition());
+
+  CreateDataVariables(node_factory, node->id(), *node->type_definition());
 
   return node;
 }
@@ -126,9 +132,15 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
               }) |
               map_values | to_vector;
 
-  EXPECT_THAT(rows,
-              ElementsAre(ElementsAre(CellIs(L"Device 1"), CellIs(L"Device 2"),
-                                      CellIs(L"Device 3")),
-                          ElementsAre(CellIs(L"Связь")),
-                          ElementsAre(CellIs(L"Включено"))));
+  EXPECT_THAT(
+      rows,
+      ElementsAre(
+          ElementsAre(CellIs(L"Device 1"), CellIs(L"Device 2"),
+                      CellIs(L"Device 3")),
+          ElementsAre(CellIs(L"Связь"), CellIs(L"={IEC_DEV.1!Online}"),
+                      CellIs(L"={IEC_DEV.2!Online}"),
+                      CellIs(L"={IEC_DEV.3!Online}")),
+          ElementsAre(CellIs(L"Включено"), CellIs(L"={IEC_DEV.1!Enabled}"),
+                      CellIs(L"={IEC_DEV.2!Enabled}"),
+                      CellIs(L"={IEC_DEV.3!Enabled}"))));
 }
