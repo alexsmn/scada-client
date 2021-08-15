@@ -25,12 +25,12 @@ int NodeGroupModel::GetCount() const {
 }
 
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
+  assert(node_.node_id() == event.node_id);
+
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
-    if (node_.node_id() == event.node_id) {
-      node_.Unsubscribe(*this);
-      node_ = nullptr;
-    }
-    // TODO: Model changed?
+    node_.Unsubscribe(*this);
+    node_ = nullptr;
+    node_deleted();
 
   } else if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
                            scada::ModelChangeEvent::ReferenceDeleted)) {

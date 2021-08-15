@@ -4,6 +4,7 @@
 #include "controller_context.h"
 #include "selection_model.h"
 
+#include <boost/signals2/connection.hpp>
 #include <memory>
 
 namespace ui {
@@ -30,4 +31,6 @@ class NodePropertyController : protected ControllerContext, public Controller {
   std::unique_ptr<ui::TreeModel> tree_model_;
 
   std::unique_ptr<Tree> tree_view_;
+
+  boost::signals2::scoped_connection node_deleted_connection_;
 };

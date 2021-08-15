@@ -7,6 +7,8 @@
 #include "node_service/node_ref.h"
 #include "services/property_defs.h"
 
+#include <boost/signals2/signal.hpp>
+
 struct PropertyContext;
 
 class NodePropertyModel : protected PropertyContext,
@@ -17,6 +19,8 @@ class NodePropertyModel : protected PropertyContext,
   virtual ~NodePropertyModel();
 
   const NodeRef& node() const { return node_; }
+
+  boost::signals2::signal<void()> node_deleted;
 
  private:
   void Update();

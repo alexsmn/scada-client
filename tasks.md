@@ -1,7 +1,5 @@
 # Client Bugs
 
-## PropertyView: Close on delete.
-
 ## PropertyView: Expand on the first open. Especially for just created nodes
 
 ## DataItem: Address Builder

@@ -1,6 +1,7 @@
 ﻿#include "components/node_properties/node_property_controller.h"
 
 #include "components/node_properties/node_property_model.h"
+#include "controller_delegate.h"
 #include "controller_registry.h"
 #include "controls/property_tree_model.h"
 #include "controls/tree.h"
@@ -63,6 +64,9 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
 
   if (auto* state = definition.FindItem("State"))
     tree_view_->RestoreState(state->attributes);
+
+  node_deleted_connection_ = property_model_->node_deleted.connect(
+      [this] { controller_delegate_.Close(); });
 
   return tree_view_.get();
 }
