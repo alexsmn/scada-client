@@ -34,10 +34,10 @@ struct Color {
   QColor qcolor() const noexcept { return native_color_; }
 
   bool operator==(const Color& other) const noexcept {
-    return native_color_ != other.native_color_;
+    return native_color_ == other.native_color_;
   }
   bool operator!=(const Color& other) const noexcept {
-    return !operator==(other);
+    return native_color_ != other.native_color_;
   }
   bool operator<(const Color& other) const noexcept {
     return sk_color() < other.sk_color();

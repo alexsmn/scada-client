@@ -1,7 +1,5 @@
 # Client Bugs
 
-## SheetView: No cell colors
-
 ## PropertyView: Close on delete.
 
 ## PropertyView: Expand on the first open. Especially for just created nodes
@@ -32,10 +30,16 @@ Debatable.
 
 ## LimitDialog: Show error when set limits fails and don't close the dialog
 
-### Login: Make server list to depend on type
+## Login: Make server list to depend on type
 
 Needed for OPC UA connection.
+
+## HardwareTree: Metrics from root
 
 # Client Features
 
 ## Save expanded tree nodes
+
+## Locate current object in the ObjectTree
+
+## ObjectTree: Search/Filter
