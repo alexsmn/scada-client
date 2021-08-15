@@ -1,47 +1,13 @@
 #pragma once
 
-#include <vector>
-
 #include "base/memory/weak_ptr.h"
+#include "components/node_properties/node_group_model.h"
+#include "controls/property_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "controls/property_model.h"
 #include "services/property_defs.h"
 
-class NodePropertyModel;
-class PropertyDefinition;
-class TaskManager;
 struct PropertyContext;
-
-class NodeGroupModel : public PropertyGroup {
- public:
-  explicit NodeGroupModel(NodePropertyModel& property_model);
-  ~NodeGroupModel();
-
-  virtual int GetCount() const override;
-  virtual PropertyGroup* GetSubgroup(int index) const override;
-  virtual std::wstring GetName(int index) const override;
-  virtual std::wstring GetValue(int index) const override;
-  virtual ItemType GetType(int index) const override;
-  virtual bool IsInherited(int index) const override;
-  virtual void SetValue(int index, const std::wstring& value) override;
-  virtual ui::EditData GetEditData(int index) const override;
-
-  struct Property {
-    ItemType type;
-    std::wstring name;
-    scada::AttributeId attribute_id;
-    const PropertyDefinition* def;
-    scada::NodeId prop_decl_id;
-    std::unique_ptr<NodeGroupModel> submodel;
-  };
-
-  std::wstring group_title;
-  std::vector<Property> properties;
-
- private:
-  NodePropertyModel& property_model_;
-};
 
 class NodePropertyModel : protected PropertyContext,
                           private NodeRefObserver,
@@ -66,7 +32,8 @@ class NodePropertyModel : protected PropertyContext,
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnNodeFetched(const scada::NodeId& node_id, bool children) override;
+  virtual void OnNodeFetched(const scada::NodeId& node_id,
+                             bool children) override;
 
   NodeGroupModel root_{*this};
 
