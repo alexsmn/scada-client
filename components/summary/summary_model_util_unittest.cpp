@@ -4,6 +4,8 @@
 
 #include <gmock/gmock.h>
 
+#include "base/debug_util-inl.h"
+
 TEST(SummaryModelUtil, CalculateSummaryModelParams) {
   const auto kInterval = scada::Duration::FromMinutes(30);
   EXPECT_EQ(CalculateSummaryModelParams(
