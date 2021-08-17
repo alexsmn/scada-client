@@ -34,6 +34,8 @@ Needed for OPC UA connection.
 
 ## HardwareTree: Metrics from root
 
+## Custom Table: Open new table for multiple selection
+
 # Client Features
 
 ## Save expanded tree nodes
@@ -41,3 +43,7 @@ Needed for OPC UA connection.
 ## Locate current object in the ObjectTree
 
 ## ObjectTree: Search/Filter
+
+## Progress bar for object pulls for WindowDefinition building
+
+## Graph: A line mark for historical vs real-time points
