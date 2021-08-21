@@ -142,5 +142,20 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
                       CellIs(L"={IEC_DEV.3!Online}")),
           ElementsAre(CellIs(L"Включено"), CellIs(L"={IEC_DEV.1!Enabled}"),
                       CellIs(L"={IEC_DEV.2!Enabled}"),
-                      CellIs(L"={IEC_DEV.3!Enabled}"))));
+                      CellIs(L"={IEC_DEV.3!Enabled}")),
+          ElementsAre(CellIs(L"Принято сообщений"),
+                      CellIs(L"={IEC_DEV.1!MessagesIn}"),
+                      CellIs(L"={IEC_DEV.2!MessagesIn}"),
+                      CellIs(L"={IEC_DEV.3!MessagesIn}")),
+          ElementsAre(CellIs(L"Отправлено сообщений"),
+                      CellIs(L"={IEC_DEV.1!MessagesOut}"),
+                      CellIs(L"={IEC_DEV.2!MessagesOut}"),
+                      CellIs(L"={IEC_DEV.3!MessagesOut}")),
+          ElementsAre(CellIs(L"Принято байт"), CellIs(L"={IEC_DEV.1!BytesIn}"),
+                      CellIs(L"={IEC_DEV.2!BytesIn}"),
+                      CellIs(L"={IEC_DEV.3!BytesIn}")),
+          ElementsAre(CellIs(L"Отправлено байт"),
+                      CellIs(L"={IEC_DEV.1!BytesOut}"),
+                      CellIs(L"={IEC_DEV.2!BytesOut}"),
+                      CellIs(L"={IEC_DEV.3!BytesOut}"))));
 }
