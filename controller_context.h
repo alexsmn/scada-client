@@ -12,6 +12,7 @@ class BlinkerManager;
 class ControllerDelegate;
 class DialogService;
 class EventFetcher;
+class Executor;
 class ExportModel;
 class Favourites;
 class FileCache;
@@ -23,6 +24,7 @@ class TaskManager;
 class TimedDataService;
 
 struct ControllerContext {
+  const std::shared_ptr<Executor> executor_;
   ControllerDelegate& controller_delegate_;
   const AliasResolver alias_resolver_;
   TaskManager& task_manager_;

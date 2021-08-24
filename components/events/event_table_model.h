@@ -16,6 +16,7 @@
 #include <set>
 
 class EventFetcher;
+class Executor;
 class NodeService;
 
 enum EventColumnId {
@@ -31,6 +32,7 @@ enum EventColumnId {
 };
 
 struct EventTableModelContext {
+  const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   EventFetcher& event_fetcher_;
   LocalEvents& local_events_;

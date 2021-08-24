@@ -321,11 +321,11 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     }
 
     return registrar->CreateController(ControllerContext{
-        delegate, alias_resolver_, *task_manager_, *master_data_services_,
-        *event_fetcher_, *master_data_services_, *master_data_services_,
-        *timed_data_service_, *node_service_, *portfolio_manager_,
-        *local_events_, *favourites_, *file_cache_, *profile_, dialog_service,
-        *blinker_manager_});
+        executor_, delegate, alias_resolver_, *task_manager_,
+        *master_data_services_, *event_fetcher_, *master_data_services_,
+        *master_data_services_, *timed_data_service_, *node_service_,
+        *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
+        *profile_, dialog_service, *blinker_manager_});
   };
 
   auto login_handler = [this](bool login) {

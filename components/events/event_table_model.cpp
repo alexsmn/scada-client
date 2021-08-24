@@ -1,10 +1,10 @@
 ﻿#include "components/events/event_table_model.h"
 
 #include "base/excel.h"
+#include "base/executor.h"
 #include "base/format_time.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
@@ -370,18 +370,16 @@ void EventTableModel::Update() {
     assert(!request_running_);
     request_running_ = true;
 
-    auto runner = base::ThreadTaskRunnerHandle::Get();
     auto weak_ptr = weak_factory_.GetWeakPtr();
     history_service_.HistoryReadEvents(
-        scada::id::Server, from, to, {scada::EventFilter::ACKED},
-        [this, runner, weak_ptr](scada::Status status,
-                                 std::vector<scada::Event> events) {
-          runner->PostTask(
-              FROM_HERE,
-              base::Bind(&EventTableModel::OnHistoryReadEventsCompleted,
-                         weak_ptr, base::Passed(std::move(status)),
-                         base::Passed(std::move(events))));
-        });
+        scada::id::Server, from, to,
+        scada::EventFilter{scada::EventFilter::ACKED},
+        BindExecutor(executor_, [this, weak_ptr](
+                                    scada::Status status,
+                                    std::vector<scada::Event> events) {
+          if (weak_ptr.get())
+            OnHistoryReadEventsCompleted(std::move(status), std::move(events));
+        }));
   }
 
   RefilterNow();

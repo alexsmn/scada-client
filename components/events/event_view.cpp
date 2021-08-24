@@ -24,8 +24,8 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
       model_{std::make_unique<EventTableModel>(EventTableModelContext{
-          context.node_service_, context.event_fetcher_, context.local_events_,
-          context.history_service_, is_panel_})} {
+          context.executor_, context.node_service_, context.event_fetcher_,
+          context.local_events_, context.history_service_, is_panel_})} {
   const ui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, L"Время", 150, ui::TableColumn::LEFT,
        ui::TableColumn::DataType::DateTime},
