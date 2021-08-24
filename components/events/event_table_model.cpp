@@ -228,17 +228,18 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   UpdateAffectedRows(event.node_id);
 }
 
-void EventTableModel::OnEventReported(const scada::Event& event) {
-  if (IsEventShown(event)) {
-    auto* event_ptr = &event;
-    AddRows(CURRENT_EVENT, {&event_ptr, 1});
-  }
-}
+void EventTableModel::OnEvent(const scada::Event& event) {
+  if (event.acked) {
+    int index = FindRow(event);
+    if (index != -1)
+      AckRows(index, 1);
 
-void EventTableModel::OnEventAcknowledged(const scada::Event& event) {
-  int index = FindRow(event);
-  if (index != -1)
-    AckRows(index, 1);
+  } else {
+    if (IsEventShown(event)) {
+      auto* event_ptr = &event;
+      AddRows(CURRENT_EVENT, {&event_ptr, 1});
+    }
+  }
 }
 
 void EventTableModel::OnAllEventsAcknowledged() {

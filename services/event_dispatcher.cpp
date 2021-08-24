@@ -26,12 +26,8 @@ EventDispatcher::~EventDispatcher() {
   event_fetcher_.RemoveObserver(*this);
 }
 
-void EventDispatcher::OnEventReported(const scada::Event& event) {
-  ShowEventsDelayed(true);
-}
-
-void EventDispatcher::OnEventAcknowledged(const scada::Event& event) {
-  ShowEventsDelayed(false);
+void EventDispatcher::OnEvent(const scada::Event& event) {
+  ShowEventsDelayed(!event.acked);
 }
 
 void EventDispatcher::OnAllEventsAcknowledged() {

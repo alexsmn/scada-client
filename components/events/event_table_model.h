@@ -108,8 +108,7 @@ class EventTableModel : public ui::TableModel,
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
 
   // EventObserver
-  virtual void OnEventReported(const scada::Event& event) override;
-  virtual void OnEventAcknowledged(const scada::Event& event) override;
+  virtual void OnEvent(const scada::Event& event) override;
   virtual void OnAllEventsAcknowledged() override;
 
   // LocalEvents::Observer
