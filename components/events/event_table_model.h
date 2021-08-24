@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/containers/span.h"
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "common/event_observer.h"
@@ -86,7 +87,7 @@ class EventTableModel : public ui::TableModel,
   virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:
-  void AddRow(EventType type, const scada::Event& event);
+  void AddRows(EventType type, base::span<const scada::Event* const> events);
   void RemoveRows(int first, int count);
   int FindRow(const scada::Event& event) const;
 

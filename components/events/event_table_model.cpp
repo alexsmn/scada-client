@@ -167,23 +167,34 @@ bool EventTableModel::IsEventShown(const scada::Event& event) const {
   return false;
 }
 
-void EventTableModel::AddRow(EventType type, const scada::Event& event) {
-  int index = FindRow(event);
-  if (index == -1) {
-    if (IsEventShown(event)) {
-      Row row{type, event};
+void EventTableModel::AddRows(EventType type,
+                              base::span<const scada::Event* const> events) {
+  std::vector<const scada::Event*> added_events;
+
+  for (auto* event : events) {
+    int index = FindRow(*event);
+    if (index == -1) {
+      if (IsEventShown(*event))
+        added_events.emplace_back(event);
+    } else {
+      // Update row data.
+      auto& row = rows_[index];
+      assert(row.type == type);
       row.Update(node_service_);
-      index = static_cast<int>(rows_.size());
-      NotifyItemsAdding(index, 1);
-      rows_.emplace_back(std::move(row));
-      NotifyItemsAdded(index, 1);
+      NotifyItemsChanged(index, 1);
     }
-  } else {
-    // Update row data.
-    auto& row = rows_[index];
-    assert(row.type == type);
-    row.Update(node_service_);
-    NotifyItemsChanged(index, 1);
+  }
+
+  if (!added_events.empty()) {
+    int first = static_cast<int>(rows_.size());
+    NotifyItemsAdding(first, added_events.size());
+    rows_.reserve(rows_.size() + added_events.size());
+    for (auto* event : added_events) {
+      Row row{type, *event};
+      row.Update(node_service_);
+      rows_.emplace_back(std::move(row));
+    }
+    NotifyItemsAdded(first, added_events.size());
   }
 }
 
@@ -218,8 +229,10 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 }
 
 void EventTableModel::OnEventReported(const scada::Event& event) {
-  if (IsEventShown(event))
-    AddRow(CURRENT_EVENT, event);
+  if (IsEventShown(event)) {
+    auto* event_ptr = &event;
+    AddRows(CURRENT_EVENT, {&event_ptr, 1});
+  }
 }
 
 void EventTableModel::OnEventAcknowledged(const scada::Event& event) {
@@ -259,7 +272,8 @@ void EventTableModel::OnLocalEvent(const scada::Event& event) {
     if (index != -1)
       RemoveRows(index, 1);
   } else {
-    AddRow(LOCAL_EVENT, event);
+    auto* event_ptr = &event;
+    AddRows(LOCAL_EVENT, {&event_ptr, 1});
   }
 }
 
