@@ -199,7 +199,7 @@ void ClientApplication::Start() {
   master_data_services_->AddObserver(*this);
 
   event_fetcher_ = std::make_unique<EventFetcher>(EventFetcherContext{
-      *io_context_,
+      executor_,
       *master_data_services_,
       *master_data_services_,
       *master_data_services_,
