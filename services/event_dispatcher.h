@@ -32,7 +32,7 @@ class EventDispatcher final : private EventDispatcherContext,
   void ShowEvents(bool added);
 
   // EventObserver
-  virtual void OnEvent(const scada::Event& event) override;
+  virtual void OnEvents(base::span<const scada::Event* const> events) override;
   virtual void OnAllEventsAcknowledged() override;
 
   // LocalEvents::Observer

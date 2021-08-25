@@ -26,8 +26,11 @@ EventDispatcher::~EventDispatcher() {
   event_fetcher_.RemoveObserver(*this);
 }
 
-void EventDispatcher::OnEvent(const scada::Event& event) {
-  ShowEventsDelayed(!event.acked);
+void EventDispatcher::OnEvents(base::span<const scada::Event* const> events) {
+  bool all_acked =
+      std::all_of(events.begin(), events.end(),
+                  [](const scada::Event* event) { return event->acked; });
+  ShowEventsDelayed(!all_acked);
 }
 
 void EventDispatcher::OnAllEventsAcknowledged() {

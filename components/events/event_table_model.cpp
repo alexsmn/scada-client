@@ -228,17 +228,30 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   UpdateAffectedRows(event.node_id);
 }
 
-void EventTableModel::OnEvent(const scada::Event& event) {
-  if (event.acked) {
+void EventTableModel::OnEvents(base::span<const scada::Event* const> events) {
+  std::vector<const scada::Event*> groupped_events(events.begin(),
+                                                   events.end());
+  auto first_unacked = std::stable_partition(
+      groupped_events.begin(), groupped_events.end(),
+      [](const scada::Event* event) { return event->acked; });
+
+  // Remove acked.
+  for (auto i = groupped_events.begin(); i != first_unacked; ++i) {
+    auto& event = **i;
     int index = FindRow(event);
     if (index != -1)
       AckRows(index, 1);
+  }
 
-  } else {
-    if (IsEventShown(event)) {
-      auto* event_ptr = &event;
-      AddRows(CURRENT_EVENT, {&event_ptr, 1});
-    }
+  // Filter and add unacked.
+  {
+    std::vector<const scada::Event*> filtered_events;
+    filtered_events.reserve(groupped_events.end() - first_unacked);
+    std::copy_if(
+        first_unacked, groupped_events.end(),
+        std::back_inserter(filtered_events),
+        [this](const scada::Event* event) { return IsEventShown(*event); });
+    AddRows(CURRENT_EVENT, filtered_events);
   }
 }
 
