@@ -259,7 +259,8 @@ void ClientApplication::Start() {
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
 
-  task_manager_ = std::make_unique<TaskManagerImpl>(TaskManagerImplContext{
+  task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
+      executor_,
       *node_service_,
       *master_data_services_,
       *master_data_services_,

@@ -49,3 +49,5 @@ Needed for OPC UA connection.
 ## Graph: A line mark for historical vs real-time points
 
 ## Icons or hints for value indicators like [C]
+
+## Apply dependency injection

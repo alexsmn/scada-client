@@ -92,7 +92,7 @@ class ClientApplication : private ClientApplicationContext,
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;
-  std::unique_ptr<TaskManager> task_manager_;
+  std::shared_ptr<TaskManager> task_manager_;
   std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<PortfolioManager> portfolio_manager_;
   std::unique_ptr<Favourites> favourites_;

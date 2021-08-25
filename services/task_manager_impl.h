@@ -1,9 +1,9 @@
 #pragma once
 
 #include "base/callback_forward.h"
+#include "base/executor_timer.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/timer/timer.h"
 #include "core/status.h"
 #include "services/task_manager.h"
 
@@ -15,20 +15,24 @@ class AttributeService;
 class NodeManagementService;
 }  // namespace scada
 
+class Executor;
 class LocalEvents;
 class NodeService;
 class Profile;
 class ProgressDialog;
 
 struct TaskManagerImplContext {
+  const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
-  scada::NodeManagementService& node_management_service_;
   scada::AttributeService& attribute_service_;
+  scada::NodeManagementService& node_management_service_;
   LocalEvents& local_events_;
   Profile& profile_;
 };
 
-class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
+class TaskManagerImpl : private TaskManagerImplContext,
+                        public TaskManager,
+                        public std::enable_shared_from_this<TaskManagerImpl> {
  public:
   explicit TaskManagerImpl(TaskManagerImplContext&& context);
   ~TaskManagerImpl();
@@ -80,11 +84,9 @@ class TaskManagerImpl : private TaskManagerImplContext, public TaskManager {
   DWORD start_time = 0;
   std::unique_ptr<ProgressDialog> progress_dialog_;
 
-  base::RepeatingTimer timer_;
+  ExecutorTimer timer_{executor_};
 
   Task running_task_;
 
   base::ObserverList<TaskManagerObserver> observers_;
-
-  base::WeakPtrFactory<TaskManagerImpl> weak_factory_{this};
 };
