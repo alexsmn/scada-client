@@ -29,6 +29,7 @@ class EventFetcher;
 class Executor;
 class Favourites;
 class FileCache;
+class FileRegistry;
 class FileSynchronizer;
 class Logger;
 class LocalEvents;
@@ -99,6 +100,7 @@ class ClientApplication : private ClientApplicationContext,
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;
 
+  std::unique_ptr<FileRegistry> file_registry_;
   std::unique_ptr<FileCache> file_cache_;
 
   std::unique_ptr<ModusModule2> modus_module_;

@@ -42,6 +42,7 @@
 #include "services/connection_state_reporter.h"
 #include "services/event_dispatcher.h"
 #include "services/file_cache.h"
+#include "services/file_registry.h"
 #include "services/file_synchronizer.h"
 #include "services/local_events.h"
 #include "services/profile.h"
@@ -83,16 +84,16 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   return EXCEPTION_EXECUTE_HANDLER;
 }
 
-void RegisterFileCacheType(FileCache& cache,
-                           unsigned command_id,
-                           std::string ext) {
+void RegisterFileType(FileRegistry& file_registry,
+                      unsigned command_id,
+                      std::string_view extensions) {
   auto* window_info = FindWindowInfo(command_id);
   assert(window_info);
   if (!window_info)
     return;
 
-  cache.RegisterType(command_id, std::string{window_info->name},
-                     std::move(ext));
+  file_registry.RegisterType(command_id, std::string{window_info->name},
+                             extensions);
 }
 
 void PollIoContext(boost::asio::io_context* context) {
@@ -273,10 +274,11 @@ void ClientApplication::Start() {
   connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(
       ConnectionStateReporterContext{*master_data_services_, *local_events_});
 
-  file_cache_ = std::make_unique<FileCache>();
-  RegisterFileCacheType(*file_cache_, ID_MODUS_VIEW, ".sde;.xsde");
-  RegisterFileCacheType(*file_cache_, ID_VIDICON_DISPLAY_VIEW, ".vds");
-  file_cache_->Init();
+  file_registry_ = std::make_unique<FileRegistry>();
+  RegisterFileType(*file_registry_, ID_MODUS_VIEW, ".sde;.xsde");
+  RegisterFileType(*file_registry_, ID_VIDICON_DISPLAY_VIEW, ".vds");
+
+  file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());

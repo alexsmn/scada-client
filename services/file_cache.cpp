@@ -5,7 +5,6 @@
 #include "base/format.h"
 #include "base/logger.h"
 #include "base/path_service.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -13,6 +12,7 @@
 #include "client_paths.h"
 #include "client_utils.h"
 #include "model/node_id_util.h"
+#include "services/file_registry.h"
 #include "value_util.h"
 
 #include <optional>
@@ -35,10 +35,10 @@ FileCache::FileEntry LoadFileEntry(const base::Value& data) {
     entry.title = path.RemoveExtension().value();
 
   if (auto* items_data = GetDict(data, "items")) {
-    for (auto&& [key, value] : items_data->DictItems()) {
+    for (const auto& [key, value] : items_data->DictItems()) {
       auto node_id = NodeIdFromScadaString(key);
-      FileCache::ItemTag tag = value.is_int() ? value.GetInt() : -1;
-      entry.items.emplace(std::move(node_id), tag);
+      int tag = value.is_int() ? value.GetInt() : -1;
+      entry.items.try_emplace(std::move(node_id), tag);
     }
   }
 
@@ -66,24 +66,14 @@ base::Value SaveFileEntry(const FileCache::FileEntry& entry,
 
 }  // namespace
 
-FileCache::FileCache() {}
-
-FileCache::~FileCache() {
-  Save();
-}
-
-void FileCache::Init() {
+FileCache::FileCache(const FileRegistry& file_registry)
+    : file_registry_{file_registry} {
   Load();
   Refresh();
 }
 
-void FileCache::RegisterType(int id, std::string name, std::string extensions) {
-  DCHECK(type_map_.find(id) == type_map_.end());
-
-  TypeEntry& entry = type_map_[id];
-  entry.name = name;
-  entry.extensions = base::SplitString(extensions, ";", base::TRIM_WHITESPACE,
-                                       base::SPLIT_WANT_NONEMPTY);
+FileCache::~FileCache() {
+  Save();
 }
 
 int FileCache::FileList::Find(const base::FilePath& path) const {
@@ -107,12 +97,14 @@ void FileCache::Load() {
 
   if (data->is_list()) {
     for (auto& file_data : data->GetList()) {
-      if (auto* type = FindTypeByName(GetString(file_data, "type"))) {
+      if (auto* type =
+              file_registry_.FindTypeByName(GetString(file_data, "type"))) {
         auto entry = LoadFileEntry(file_data);
         // Skip removed displays.
         if (!base::PathExists(GetPublicFilePath(entry.path)))
           continue;
-        type->list.emplace_back(std::move(entry));
+        auto& file_list = file_map_[type->type_id];
+        file_list.emplace_back(std::move(entry));
       }
     }
   }
@@ -123,12 +115,13 @@ void FileCache::Save() {
   LOG(INFO) << "Saving file cache to " << cache_path.value();
 
   base::Value::ListStorage list_data;
-  for (auto& [id, type] : type_map_) {
-    if (type.list.empty())
+  for (auto& [type_id, file_list] : file_map_) {
+    auto* type = file_registry_.FindTypeById(type_id);
+    if (!type)
       continue;
 
-    for (auto& entry : type.list)
-      list_data.emplace_back(SaveFileEntry(entry, type.name));
+    for (auto& entry : file_list)
+      list_data.emplace_back(SaveFileEntry(entry, type->name));
   }
 
   SaveJsonToFile(base::Value{std::move(list_data)}, cache_path);
@@ -160,17 +153,17 @@ void FileCache::Refresh() {
   base::FilePath full_path;
   while (!(full_path = find.Next()).empty()) {
     auto path = full_path.BaseName();
-    auto* entry =
-        FindTypeByExtension(base::SysWideToNativeMB(path.Extension()));
-    if (!entry)
+    auto* type = file_registry_.FindTypeByExtension(
+        base::SysWideToNativeMB(path.Extension()));
+    if (!type)
       continue;
 
-    FileList& list = entry->list;
-    if (list.Find(path) != -1)
+    auto& file_list = file_map_[type->type_id];
+    if (file_list.Find(path) != -1)
       continue;
 
     std::wstring title = path.RemoveExtension().value();
-    list.emplace_back(FileEntry{std::move(path), std::move(title)});
+    file_list.emplace_back(FileEntry{std::move(path), std::move(title)});
   }
 }
 
@@ -197,40 +190,23 @@ void FileCache::Update(int type_id,
 }
 
 void FileCache::Remove(const base::FilePath& path) {
-  auto* type = FindTypeByExtension(base::SysWideToNativeMB(path.Extension()));
+  auto* type = file_registry_.FindTypeByExtension(
+      base::SysWideToNativeMB(path.Extension()));
   if (!type)
     return;
 
-  FileList& list = type->list;
-  int i = list.Find(path);
+  auto& file_list = file_map_[type->type_id];
+  int i = file_list.Find(path);
   if (i != -1)
-    list.erase(list.begin() + i);
+    file_list.erase(file_list.begin() + i);
 }
 
 const FileCache::FileList& FileCache::GetList(int type_id) const {
-  return const_cast<FileCache*>(this)->GetMutableList(type_id);
+  static FileList kEmptyList;
+  auto i = file_map_.find(type_id);
+  return i != file_map_.end() ? i->second : kEmptyList;
 }
 
 FileCache::FileList& FileCache::GetMutableList(int type_id) {
-  auto i = type_map_.find(type_id);
-  assert(i != type_map_.end());
-  return i->second.list;
-}
-
-FileCache::TypeEntry* FileCache::FindTypeByName(std::string_view name) {
-  for (auto& [id, entry] : type_map_) {
-    if (base::EqualsCaseInsensitiveASCII(entry.name, ToStringPiece(name)))
-      return &entry;
-  }
-  return nullptr;
-}
-
-FileCache::TypeEntry* FileCache::FindTypeByExtension(std::string_view ext) {
-  for (auto& [id, entry] : type_map_) {
-    for (auto& e : entry.extensions) {
-      if (base::EqualsCaseInsensitiveASCII(e, ToStringPiece(ext)))
-        return &entry;
-    }
-  }
-  return nullptr;
+  return file_map_[type_id];
 }
