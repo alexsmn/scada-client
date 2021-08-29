@@ -76,7 +76,8 @@ DeviceMetricsCommandTest::DeviceMetricsCommandTest() {
           scada::StatusCode::Good, NodeFetchStatus::NodeAndChildren())));
 
   GenericNodeFactory node_factory{address_space_};
-  CreateScadaAddressSpace(address_space_, node_factory);
+  ScadaAddressSpaceBuilder{address_space_, node_factory}
+      .CreateScadaAddressSpace();
 }
 
 DeviceMetricsCommandTest::~DeviceMetricsCommandTest() {

@@ -1,12 +1,14 @@
 #pragma once
 
 #include "node_service/node_observer.h"
+#include "node_service/node_ref.h"
 
 #include <filesystem>
+#include <map>
 #include <memory>
+#include <queue>
 
 class Logger;
-class NodeRef;
 class NodeService;
 
 struct FileSynchronizerContext {
@@ -21,15 +23,19 @@ class FileSynchronizer : private FileSynchronizerContext,
   explicit FileSynchronizer(FileSynchronizerContext&& context);
   ~FileSynchronizer();
 
+  using FetchCallback = std::function<void(bool ok)>;
+  void FetchFileNode(NodeRef node, const FetchCallback& callback);
+
  private:
-  void ProcessNodesRecursively(const NodeRef& root,
-                               const std::filesystem::path& path);
-  bool ProcessNode(const NodeRef& node, const std::filesystem::path& path);
-  bool ProcessFileDirectoryNode(const NodeRef& node,
-                                const std::filesystem::path& path);
-  bool ProcessFileNode(const NodeRef& node, const std::filesystem::path& path);
+  void ProcessNodesRecursively(NodeRef root);
+  bool ProcessNode(NodeRef node);
+  bool ProcessFileDirectoryNode(NodeRef node);
+  bool ProcessFileNode(NodeRef node);
 
   // NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+
+  std::queue<NodeRef> node_queue_;
+  std::map<NodeRef, std::vector<FetchCallback>> callbacks_;
 };
