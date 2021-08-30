@@ -30,7 +30,7 @@ class Executor;
 class Favourites;
 class FileCache;
 class FileRegistry;
-class FileSynchronizer;
+class FileSystemComponent;
 class Logger;
 class LocalEvents;
 class MainWindowManager;
@@ -89,7 +89,7 @@ class ClientApplication : private ClientApplicationContext,
 
   std::unique_ptr<EventFetcher> event_fetcher_;
   AliasResolver alias_resolver_;
-  std::unique_ptr<FileSynchronizer> file_synchronizer_;
+  std::unique_ptr<FileSystemComponent> filesystem_component_;
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;

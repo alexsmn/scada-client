@@ -18,9 +18,10 @@
 #include "common/common_paths.h"
 #include "common/event_fetcher.h"
 #include "common/master_data_services.h"
+#include "component_api_impl.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
-#include "components/filesystem/file_synchronizer.h"
+#include "components/filesystem/filesystem_component.h"
 #include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
@@ -184,7 +185,7 @@ ClientApplication::~ClientApplication() {
 
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
-  file_synchronizer_.reset();
+  filesystem_component_.reset();
   event_fetcher_.reset();
   node_service_.reset();
 
@@ -233,15 +234,8 @@ void ClientApplication::Start() {
     alias_service->Resolve(alias, callback);
   };
 
-  /*base::FilePath public_dir;
-  if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
-    file_synchronizer_ =
-        std::make_unique<FileSynchronizer>(FileSynchronizerContext{
-            std::make_shared<NestedLogger>(logger_, "FileSynchronizer"),
-            *node_service_,
-            public_dir.value(),
-        });
-  }*/
+  ComponentApiImpl component_api;
+  filesystem_component_ = std::make_unique<FileSystemComponent>(component_api);
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
       TimedDataContext{
