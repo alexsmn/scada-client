@@ -86,9 +86,6 @@ class OpenedView : private OpenedViewContext,
   // TODO: Move to private.
   virtual void SetModified(bool modified) override;
 
-  void OnActivated();
-  void OnDeactivated();
-
   std::unique_ptr<CommandHandler> commands;
 
  private:

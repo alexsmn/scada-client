@@ -50,8 +50,12 @@ Needed for OPC UA connection.
 
 ## Icons or hints for value indicators like [C]
 
-## Apply dependency injection
+## Apply dependency injection framework
 
 ## MainCommands, OpenedViewCommands and SelectionCommands should be singletons
 
 Then they can be contructed via ComponentApi.
+
+## Don't create MonitoredItem on selection
+
+E.g. for files selected in File View

@@ -142,6 +142,16 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           .set_available_handler([this] {
             return IsInstanceOf(GetSelectedNode(), devices::id::DeviceType);
           }));
+
+  command_registry_.AddCommand(
+      Command{ID_ADD_FILE}
+          .set_execute_handler([this] { AddFile(selection_->node()); })
+          .set_available_handler([this] {
+            return CanCreate(selection_->node(),
+                             node_service_.GetNode(filesystem::id::FileType))
+                       ? this
+                       : nullptr;
+          }));
 }
 
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
@@ -235,11 +245,6 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
 
     case ID_OPEN_WATCH:
       return IsInstanceOf(node, devices::id::DeviceType) ? this : nullptr;
-
-    case ID_ADD_FILE:
-      return CanCreate(node, node_service_.GetNode(filesystem::id::FileType))
-                 ? this
-                 : nullptr;
   }
 
   return command_registry_.GetCommandHandler(command_id);
@@ -387,10 +392,6 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
 
     case ID_DUMP_DEBUG_INFO:
       DumpDebugInfo();
-      return;
-
-    case ID_ADD_FILE:
-      AddFile(node);
       return;
 
     case ID_DEV1_REFR:

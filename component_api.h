@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 
+class SelectionCommands;
 struct WindowInfo;
 
 class ComponentApi {
@@ -19,6 +20,8 @@ class ComponentApi {
   virtual void RegisterControllerFactory(
       const WindowInfo& window_info,
       ControllerFactory controller_factory) = 0;
+
+  virtual SelectionCommands& GetSelectionCommands() = 0;
 };
 
 template <class ControllerClass>
