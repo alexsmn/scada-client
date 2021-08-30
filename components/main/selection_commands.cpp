@@ -1,5 +1,6 @@
 ﻿#include "components/main/selection_commands.h"
 
+#include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
@@ -27,6 +28,7 @@
 #include "main_window.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/filesystem_node_ids.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "model/security_node_ids.h"
@@ -41,6 +43,8 @@
 #include "window_info.h"
 
 namespace {
+
+const wchar_t kAddFileTitle[] = L"Добавить файл";
 
 bool CanCreateSomething(const NodeRef& node) {
   if (node.target(scada::id::Creates))
@@ -231,6 +235,11 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
 
     case ID_OPEN_WATCH:
       return IsInstanceOf(node, devices::id::DeviceType) ? this : nullptr;
+
+    case ID_ADD_FILE:
+      return CanCreate(node, node_service_.GetNode(filesystem::id::FileType))
+                 ? this
+                 : nullptr;
   }
 
   return command_registry_.GetCommandHandler(command_id);
@@ -368,17 +377,20 @@ void SelectionCommands::ExecuteCommand(unsigned command_id) {
       ExecuteDisableItem(task_manager_, node, command_id == ID_ITEM_DISABLE);
       return;
 
-    case ID_CHANGE_PASSWORD: {
+    case ID_CHANGE_PASSWORD:
       if (IsInstanceOf(node, security::id::UserType)) {
         ShowChangePasswordDialog(
             *dialog_service_,
             {node, node_management_service_, local_events_, profile_});
       }
       return;
-    }
 
     case ID_DUMP_DEBUG_INFO:
       DumpDebugInfo();
+      return;
+
+    case ID_ADD_FILE:
+      AddFile(node);
       return;
 
     case ID_DEV1_REFR:
@@ -546,4 +558,29 @@ void SelectionCommands::DumpDebugInfo() {
 
 NodeRef SelectionCommands::GetSelectedNode() {
   return selection_ ? selection_->node() : NodeRef{};
+}
+
+void SelectionCommands::AddFile(NodeRef directory) {
+  const auto& path = dialog_service_->SelectOpenFile(kAddFileTitle);
+  if (path.empty())
+    return;
+
+  std::string contents;
+  if (!base::ReadFileToString(base::FilePath{path.native()}, &contents)) {
+    dialog_service_->RunMessageBox(L"Не удалось считать файл.", kAddFileTitle,
+                                   MessageBoxMode::Error);
+    return;
+  }
+
+  const auto& u8name = base::SysWideToUTF8(path.filename().wstring());
+  const auto& name = EncodeUri(u8name);
+
+  scada::ByteString value{contents.begin(), contents.end()};
+
+  task_manager_.PostInsertTask({}, directory.node_id(),
+                               filesystem::id::FileType,
+                               scada::NodeAttributes{}
+                                   .set_browse_name(std::move(name))
+                                   .set_value(std::move(value)),
+                               {}, {});
 }

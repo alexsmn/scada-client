@@ -2,6 +2,7 @@
 
 #include "client_utils.h"
 #include "common_resources.h"
+#include "components/filesystem/filesystem_commands.h"
 #include "components/graph/graph_component.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
@@ -12,7 +13,7 @@
 #include "contents_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "model/scada_node_ids.h"
+#include "model/filesystem_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "window_definition_builder.h"
@@ -50,9 +51,16 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
 }
 
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,
+                               const std::shared_ptr<Executor>& executor,
+                               const FileRegistry& file_registry,
                                const NodeRef& node,
                                unsigned shift) {
   assert(main_window);
+
+  if (IsInstanceOf(node, filesystem::id::FileType)) {
+    return ExecuteFileCommand(main_window, executor, file_registry, node,
+                              shift);
+  }
 
   const auto& window_info = GetDefaultNodeWindowInfo(node, shift);
 

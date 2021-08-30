@@ -294,6 +294,7 @@ void MainMenuModel::Rebuild() {
   more_submenu_.AddCheckItem(ID_OBJECT_VIEW, L"Объекты");
   more_submenu_.AddCheckItem(ID_EVENT_VIEW, L"События");
   more_submenu_.AddCheckItem(ID_FAVOURITES_VIEW, L"Избранное");
+  more_submenu_.AddCheckItem(ID_FILE_SYSTEM_VIEW, L"Файлы");
   more_submenu_.AddCheckItem(ID_PORTFOLIO_VIEW, L"Портфолио");
   more_submenu_.AddCheckItem(ID_HARDWARE_VIEW, L"Оборудование");
   more_submenu_.AddCheckItem(ID_EVENT_JOURNAL_VIEW, L"Журнал событий");

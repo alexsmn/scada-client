@@ -81,6 +81,8 @@ class SelectionCommands : private SelectionCommandsContext,
 
   void DumpDebugInfo();
 
+  void AddFile(NodeRef directory);
+
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;

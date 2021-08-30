@@ -20,6 +20,7 @@
 #include "common/master_data_services.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
+#include "components/filesystem/file_synchronizer.h"
 #include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
@@ -43,7 +44,6 @@
 #include "services/event_dispatcher.h"
 #include "services/file_cache.h"
 #include "services/file_registry.h"
-#include "services/file_synchronizer.h"
 #include "services/local_events.h"
 #include "services/profile.h"
 #include "services/speech.h"
@@ -233,7 +233,7 @@ void ClientApplication::Start() {
     alias_service->Resolve(alias, callback);
   };
 
-  base::FilePath public_dir;
+  /*base::FilePath public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
     file_synchronizer_ =
         std::make_unique<FileSynchronizer>(FileSynchronizerContext{
@@ -241,7 +241,7 @@ void ClientApplication::Start() {
             *node_service_,
             public_dir.value(),
         });
-  }
+  }*/
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
       TimedDataContext{
@@ -393,8 +393,10 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     return master_data_services_->GetHostName();
   };
 
-  return MainWindowContext{*action_manager_,
+  return MainWindowContext{executor_,
+                           *action_manager_,
                            window_id,
+                           *file_registry_,
                            *file_cache_,
                            *main_window_manager_,
                            *profile_,

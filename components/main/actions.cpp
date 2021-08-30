@@ -22,7 +22,7 @@ const scada::NodeId kNewCommandTypeIds[] = {
     devices::id::Iec60870DeviceType,     devices::id::Iec61850DeviceType,
     devices::id::Iec61850RcbType,        devices::id::ModbusLinkType,
     devices::id::ModbusDeviceType,       data_items::id::TsFormatType,
-    devices::id::TransmissionItemType,
+    devices::id::TransmissionItemType,   filesystem::id::FileDirectoryType,
 };
 
 class NodeAction : private NodeRefObserver, public Action {
@@ -267,4 +267,7 @@ void AddGlobalActions(ActionManager& action_manager,
         *new NodeAction(action_manager, ID_NEW + i, CATEGORY_CREATE,
                         node_service.GetNode(kNewCommandTypeIds[i])));
   }
+
+  action_manager.AddAction(
+      *new Action(ID_ADD_FILE, CATEGORY_CREATE, L"Файл", L"Добавить файл..."));
 }

@@ -11,6 +11,8 @@ class MenuModel;
 
 class ActionManager;
 class FileCache;
+class FileRegistry;
+class Executor;
 class MainWindow;
 class MainWindowManager;
 class OpenedView;
@@ -19,8 +21,10 @@ class StatusBarModel;
 class ViewManager;
 
 struct MainWindowContext {
+  const std::shared_ptr<Executor> executor_;
   ActionManager& action_manager_;
   int window_id_;
+  const FileRegistry& file_registry_;
   FileCache& file_cache_;
   MainWindowManager& main_window_manager_;
   Profile& profile_;

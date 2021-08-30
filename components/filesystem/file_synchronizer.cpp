@@ -1,8 +1,9 @@
-#include "file_synchronizer.h"
+#include "components/filesystem/file_synchronizer.h"
 
 #include "base/files/file_util.h"
 #include "base/logger.h"
 #include "base/strings/utf_string_conversions.h"
+#include "components/filesystem/filesystem_util.h"
 #include "core/event.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/node_service.h"
@@ -25,22 +26,6 @@ std::string DecodeUri(std::string_view str) {
   return std::string{str};
 }
 #endif
-
-std::filesystem::path GetFilePath(NodeRef file_node) {
-  std::string encoded_path;
-  for (auto n = file_node; n.node_id() != filesystem::id::FileSystem;
-       n = n.parent()) {
-    if (!n)
-      return {};
-    if (encoded_path.empty())
-      encoded_path = n.browse_name().name();
-    else
-      encoded_path = encoded_path + '/' + n.browse_name().name();
-  }
-
-  auto u8_path = DecodeUri(encoded_path);
-  return base::UTF8ToUTF16(u8_path);
-}
 
 std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
   if (time.is_null())

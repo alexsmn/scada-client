@@ -8,8 +8,11 @@
 #include "print_util.h"
 #include "window_info.h"
 
+using namespace std::chrono_literals;
+
 OpenedView::OpenedView(OpenedViewContext&& context)
-    : OpenedViewContext{std::move(context)} {
+    : OpenedViewContext{std::move(context)},
+      update_working_timer_{context.executor_} {
   controller_ = controller_factory_(window_def_.window_info().command_id, *this,
                                     dialog_service_);
   if (!controller_)
@@ -27,8 +30,7 @@ OpenedView::OpenedView(OpenedViewContext&& context)
   view_->set_drop_controller(this);
 #endif
 
-  update_working_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(100),
-                              this, &OpenedView::UpdateWorking);
+  update_working_timer_.StartRepeating(100ms, [this] { UpdateWorking(); });
 
   //  image_ =
   //  ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
@@ -126,7 +128,8 @@ void OpenedView::ExecuteDefaultNodeCommand(const NodeRef& node) {
   if (::GetAsyncKeyState(VK_CONTROL))
     shift |= MK_CONTROL;
 
-  ::ExecuteDefaultNodeCommand(main_window_, node, shift);
+  ::ExecuteDefaultNodeCommand(main_window_, executor_, file_registry_, node,
+                              shift);
 }
 
 ContentsModel* OpenedView::GetActiveContentsModel() {

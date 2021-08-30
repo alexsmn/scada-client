@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/timer/timer.h"
+#include "base/executor_timer.h"
 #include "components/main/controller_factory.h"
 #include "controller_delegate.h"
 #include "controls/types.h"
@@ -18,6 +18,7 @@ class CommandHandler;
 class ContentsModel;
 class Controller;
 class DialogService;
+class FileRegistry;
 class MainWindow;
 class WindowDefinition;
 class PrintService;
@@ -28,11 +29,13 @@ class MenuModel;
 }
 
 struct OpenedViewContext {
+  const std::shared_ptr<Executor> executor_;
   MainWindow* main_window_;
   WindowDefinition& window_def_;
   DialogService& dialog_service_;
   ControllerFactory controller_factory_;
   ui::MenuModel& context_menu_model_;
+  const FileRegistry& file_registry_;
 };
 
 class OpenedView : private OpenedViewContext,
@@ -108,7 +111,7 @@ class OpenedView : private OpenedViewContext,
   std::wstring title_;
 
   bool working_ = false;
-  base::RepeatingTimer update_working_timer_;
+  ExecutorTimer update_working_timer_;
 
   UiView* view_ = nullptr;
 

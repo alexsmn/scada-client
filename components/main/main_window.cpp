@@ -249,7 +249,8 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
   auto& dialog_service = GetDialogService();
 
   auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
-      this, def, dialog_service, controller_factory_, *context_menu_model_});
+      executor_, this, def, dialog_service, controller_factory_,
+      *context_menu_model_, file_registry_});
 
   opened_view->commands = view_commands_factory_(*opened_view, dialog_service);
 
