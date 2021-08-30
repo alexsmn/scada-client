@@ -41,6 +41,7 @@ class TimedDataService;
 
 struct OpenedViewCommandsContext {
   const std::shared_ptr<Executor> executor_;
+  const std::shared_ptr<SelectionCommands> selection_commands_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   scada::NodeManagementService& node_management_service_;
@@ -89,8 +90,6 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   Controller* controller_ = nullptr;
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;
-
-  std::unique_ptr<SelectionCommands> selection_commands_;
 
   base::WeakPtrFactory<OpenedViewCommands> weak_factory_{this};
 };

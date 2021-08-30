@@ -44,6 +44,8 @@ struct SelectionCommandsContext {
   NodeService& node_service_;
 };
 
+// A singleton shared between |OpenedView|s. Once an |OpenView| is focused, it
+// calls |SetContext|.
 class SelectionCommands : private SelectionCommandsContext,
                           public CommandHandler {
  public:

@@ -51,3 +51,7 @@ Needed for OPC UA connection.
 ## Icons or hints for value indicators like [C]
 
 ## Apply dependency injection
+
+## MainCommands, OpenedViewCommands and SelectionCommands should be singletons
+
+Then they can be contructed via ComponentApi.

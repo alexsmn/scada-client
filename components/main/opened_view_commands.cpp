@@ -86,13 +86,7 @@ TimeRange::Type GetTimeRangeCommand(unsigned command_id) {
 OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
     : OpenedViewCommandsContext{std::move(context)},
       excel_enabled_{
-          base::CommandLine::ForCurrentProcess()->HasSwitch("excel")} {
-  selection_commands_ =
-      std::make_unique<SelectionCommands>(SelectionCommandsContext{
-          executor_, task_manager_, session_service_, node_management_service_,
-          event_fetcher_, timed_data_service_, local_events_, file_cache_,
-          profile_, main_window_manager_, node_service_});
-}
+          base::CommandLine::ForCurrentProcess()->HasSwitch("excel")} {}
 
 OpenedViewCommands::~OpenedViewCommands() {}
 
@@ -102,11 +96,6 @@ void OpenedViewCommands::SetContext(OpenedView* opened_view,
   main_window_ = opened_view ? &opened_view->main_window() : nullptr;
   dialog_service_ = dialog_service;
   controller_ = opened_view ? &opened_view->controller() : nullptr;
-
-  auto* selection =
-      opened_view_ ? opened_view_->controller().GetSelectionModel() : nullptr;
-  selection_commands_->SetContext(main_window_, dialog_service_, controller_,
-                                  selection);
 }
 
 CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {

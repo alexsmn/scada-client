@@ -31,6 +31,7 @@
 #include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view_commands.h"
+#include "components/main/selection_commands.h"
 #include "components/main/status_bar_model_impl.h"
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/portfolio/portfolio_manager.h"
@@ -359,19 +360,27 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
                                               main_commands);
   };
 
-  auto view_commands_factory = [this](OpenedView& opened_view,
-                                      DialogService& dialog_service) {
-    auto commands =
+  auto selection_commands =
+      std::make_shared<SelectionCommands>(SelectionCommandsContext{
+          executor_, *task_manager_, *master_data_services_,
+          *master_data_services_, *event_fetcher_, *timed_data_service_,
+          *local_events_, *file_cache_, *profile_, *main_window_manager_,
+          *node_service_});
+
+  auto view_commands_factory = [this, selection_commands](
+                                   OpenedView& opened_view,
+                                   DialogService& dialog_service) {
+    auto opened_view_commands =
         std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
-            executor_, *task_manager_, *master_data_services_,
-            *master_data_services_, *event_fetcher_, *master_data_services_,
-            *timed_data_service_, *node_service_, *portfolio_manager_,
-            *action_manager_, *local_events_, *favourites_, *file_cache_,
-            *profile_, *main_window_manager_});
+            executor_, selection_commands, *task_manager_,
+            *master_data_services_, *master_data_services_, *event_fetcher_,
+            *master_data_services_, *timed_data_service_, *node_service_,
+            *portfolio_manager_, *action_manager_, *local_events_, *favourites_,
+            *file_cache_, *profile_, *main_window_manager_});
 
-    commands->SetContext(&opened_view, &dialog_service);
+    opened_view_commands->SetContext(&opened_view, &dialog_service);
 
-    return commands;
+    return opened_view_commands;
   };
 
   PendingTaskProvider pending_task_provider = [node_service = node_service_] {
@@ -397,6 +406,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
                            controller_factory,
                            main_commands_factory,
                            view_commands_factory,
+                           selection_commands,
                            std::move(status_bar_model),
                            context_menu_factory,
                            main_menu_factory,

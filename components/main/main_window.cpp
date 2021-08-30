@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
+#include "components/main/selection_commands.h"
 #include "components/main/view_manager.h"
 #include "contents_model.h"
 #include "contents_observer.h"
@@ -84,15 +85,18 @@ void MainWindow::SetActiveView(OpenedView* view) {
   if (active_view_) {
     if (auto* selection_model = active_view_->controller().GetSelectionModel())
       selection_model->change_handler = nullptr;
+    selection_commands_->SetContext(nullptr, nullptr, nullptr, nullptr);
   }
 
   active_view_ = view;
 
   if (active_view_) {
-    if (auto* selection_model =
-            active_view_->controller().GetSelectionModel()) {
+    auto* selection_model = active_view_->controller().GetSelectionModel();
+    selection_commands_->SetContext(this, &GetDialogService(),
+                                    &active_view_->controller(),
+                                    selection_model);
+    if (selection_model)
       selection_model->change_handler = [this] { OnSelectionChanged(); };
-    }
   }
 
   const WindowInfo* window_info = nullptr;
