@@ -10,10 +10,8 @@
 #include "core/node_management_service.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "model/filesystem_node_ids.h"
-#include "model/history_node_ids.h"
 #include "model/node_id_util.h"
-#include "model/security_node_ids.h"
+#include "model/scada_node_ids.h"
 #include "net/transport_string.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -172,8 +170,12 @@ PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
     }
     for (const auto& r :
          supertype.references(scada::id::NonHierarchicalReferences)) {
-      if (auto* def = GetPropertyDef(r.reference_type))
-        properties.emplace_back(r.reference_type, def);
+      // TODO: Introduce common base reference type.
+      if (!IsSubtypeOf(r.reference_type, scada::id::Creates) &&
+          !IsSubtypeOf(r.reference_type, scada::id::HasSubtype)) {
+        if (auto* def = GetPropertyDef(r.reference_type))
+          properties.emplace_back(r.reference_type, def);
+      }
     }
   }
   return properties;

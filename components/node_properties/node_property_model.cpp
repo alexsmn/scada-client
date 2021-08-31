@@ -20,10 +20,6 @@ NodePropertyModel::~NodePropertyModel() {
     node_.Unsubscribe(*this);
 }
 
-int NodeGroupModel::GetCount() const {
-  return properties.size();
-}
-
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   assert(node_.node_id() == event.node_id);
 

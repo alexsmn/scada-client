@@ -9,6 +9,10 @@ NodeGroupModel::NodeGroupModel(NodePropertyModel& property_model)
 
 NodeGroupModel::~NodeGroupModel() {}
 
+int NodeGroupModel::GetCount() const {
+  return properties.size();
+}
+
 PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
   return properties[index].submodel.get();
 }

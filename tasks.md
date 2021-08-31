@@ -36,6 +36,8 @@ Needed for OPC UA connection.
 
 ## Custom Table: Open new table for multiple selection
 
+## Property Editor: Non-modifiable attributes must be grey
+
 # Client Features
 
 ## Save expanded tree nodes

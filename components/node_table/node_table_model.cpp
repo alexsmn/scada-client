@@ -21,6 +21,7 @@ namespace {
 const auto kParentReferenceTypeId = scada::id::Organizes;
 const auto kSortDelay = base::TimeDelta::FromMilliseconds(300);
 
+// TODO: Combine with property defs.
 void GetTypeProperties(const NodeRef& type_definition,
                        std::set<NodeRef>& property_declarations) {
   assert(type_definition.fetched());
@@ -29,8 +30,12 @@ void GetTypeProperties(const NodeRef& type_definition,
     for (const auto& p : supertype_definition.targets(scada::id::HasProperty))
       property_declarations.emplace(p);
     for (const auto& r : supertype_definition.references()) {
-      if (!IsSubtypeOf(r.reference_type, scada::id::HasProperty))
+      // TODO: Introduce common base reference type.
+      if (!IsSubtypeOf(r.reference_type, scada::id::HasProperty) &&
+          !IsSubtypeOf(r.reference_type, scada::id::Creates) &&
+          !IsSubtypeOf(r.reference_type, scada::id::HasSubtype)) {
         property_declarations.emplace(r.reference_type);
+      }
     }
   }
 }

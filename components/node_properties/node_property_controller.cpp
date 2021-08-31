@@ -1,5 +1,6 @@
 ﻿#include "components/node_properties/node_property_controller.h"
 
+#include "common/formula_util.h"
 #include "components/node_properties/node_property_model.h"
 #include "controller_delegate.h"
 #include "controller_registry.h"
@@ -22,7 +23,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
 
   if (const WindowItem* window_item = definition.FindItem("Item")) {
     auto path = window_item->GetString("path");
-    auto node_id = NodeIdFromScadaString(path);
+    auto node_id = GetFormulaSingleNodeId(path);
     node = node_service_.GetNode(node_id);
   }
 
