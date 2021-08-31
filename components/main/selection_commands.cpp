@@ -573,15 +573,13 @@ void SelectionCommands::AddFile(NodeRef directory) {
     return;
   }
 
-  const auto& u8name = base::SysWideToUTF8(path.filename().wstring());
-  const auto& name = EncodeUri(u8name);
-
+  scada::LocalizedText display_name = path.filename().wstring();
   scada::ByteString value{contents.begin(), contents.end()};
 
   task_manager_.PostInsertTask({}, directory.node_id(),
                                filesystem::id::FileType,
                                scada::NodeAttributes{}
-                                   .set_browse_name(std::move(name))
+                                   .set_display_name(std::move(display_name))
                                    .set_value(std::move(value)),
                                {}, {});
 }
