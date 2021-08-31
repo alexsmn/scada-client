@@ -63,7 +63,7 @@ PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
 
   PropertyDefs result;
   for (const auto& p : property_declarations) {
-    if (auto* def = GetPropertyDef(p.node_id()))
+    if (auto* def = GetPropertyDef(p))
       result.emplace_back(p, def);
   }
 

@@ -191,5 +191,5 @@ class ColorPropertyDefinition : public PropertyDefinition {
 typedef std::vector<std::pair<NodeRef /*prop_decl*/, const PropertyDefinition*>>
     PropertyDefs;
 
-const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_decl_id);
+const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl);
 PropertyDefs GetTypeProperties(const NodeRef& type_definition);

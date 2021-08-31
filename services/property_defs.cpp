@@ -10,6 +10,7 @@
 #include "core/node_management_service.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/filesystem_node_ids.h"
 #include "model/history_node_ids.h"
 #include "model/node_id_util.h"
 #include "model/security_node_ids.h"
@@ -107,129 +108,45 @@ const HierachicalPropertyDefinition kObjectOutputPropDef(
 
 const TransportPropertyDefinition kLinkTransportPropDef;
 
-// TODO: Avoid property definitions.
 std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
-    // Default
-    {data_items::id::DataItemType_Severity, &kIntPropDef},
-    {devices::id::DeviceType_Disabled, &kBoolPropDef},
-    {data_items::id::HasSimulationSignal, &kRefPropDef},
-    // DataGroup
-    {data_items::id::DataGroupType_Simulated, &kBoolPropDef},
-    // DataItem
-    {data_items::id::DataItemType_Simulated, &kBoolPropDef},
-    {data_items::id::DataItemType_Alias, &kStringPropDef},
     {data_items::id::DataItemType_Input1, &kObjectInput1PropDef},
     {data_items::id::DataItemType_Input2, &kObjectInput2PropDef},
     {data_items::id::DataItemType_Output, &kObjectOutputPropDef},
-    {data_items::id::DataItemType_OutputCondition, &kStringPropDef},
-    {data_items::id::DataItemType_OutputTwoStaged, &kBoolPropDef},
-    {data_items::id::DiscreteItemType_Inversion, &kBoolPropDef},
-    {data_items::id::AnalogItemType_DisplayFormat,
-     &kStringPropDef},  // TODO: Editor
-    {data_items::id::AnalogItemType_EngineeringUnits,
-     &kStringPropDef},  // TODO: Combo
-    {data_items::id::AnalogItemType_Aperture, &kDoublePropDef},
-    {data_items::id::AnalogItemType_Deadband, &kDoublePropDef},
-    {data_items::id::HasTsFormat, &kRefPropDef},
-    {data_items::id::AnalogItemType_Conversion, &kEnumPropDef},
-    {data_items::id::AnalogItemType_EuLo, &kDoublePropDef},
-    {data_items::id::AnalogItemType_EuHi, &kDoublePropDef},
-    {data_items::id::AnalogItemType_IrLo, &kDoublePropDef},
-    {data_items::id::AnalogItemType_IrHi, &kDoublePropDef},
-    {data_items::id::AnalogItemType_LimitLoLo, &kDoublePropDef},
-    {data_items::id::AnalogItemType_LimitLo, &kDoublePropDef},
-    {data_items::id::AnalogItemType_LimitHi, &kDoublePropDef},
-    {data_items::id::AnalogItemType_LimitHiHi, &kDoublePropDef},
-    {data_items::id::DataItemType_StalePeriod, &kIntPropDef},
-    {history::id::HasHistoricalDatabase, &kRefPropDef},
-    {data_items::id::AnalogItemType_Clamping, &kEnumPropDef},
-    {data_items::id::HasDevice, &kRefPropDef},
-    // Link
     {devices::id::LinkType_Transport, &kLinkTransportPropDef},
-    {devices::id::Iec60870LinkType_SendQueueSize, &kIntPropDef},
-    {devices::id::Iec60870LinkType_ReceiveQueueSize, &kIntPropDef},
-    {devices::id::Iec60870LinkType_ConfirmationTimeout,
-     &kIntPropDef},  // time delta
-    {devices::id::Iec60870LinkType_TerminationTimeout,
-     &kIntPropDef},  // time delta
-    // IEC-60870 Link
-    {devices::id::Iec60870LinkType_Protocol, &kEnumPropDef},
-    {devices::id::Iec60870LinkType_Mode, &kEnumPropDef},
-    {devices::id::Iec60870LinkType_ConnectTimeout, &kIntPropDef},
-    {devices::id::Iec60870LinkType_DeviceAddressSize, &kIntPropDef},
-    {devices::id::Iec60870LinkType_COTSize, &kIntPropDef},
-    {devices::id::Iec60870LinkType_InfoAddressSize, &kIntPropDef},
-    {devices::id::Iec60870LinkType_DataCollection, &kBoolPropDef},
-    {devices::id::Iec60870LinkType_SendRetryCount, &kIntPropDef},
-    {devices::id::Iec60870LinkType_CRCProtection, &kBoolPropDef},
-    {devices::id::Iec60870LinkType_SendTimeout, &kIntPropDef},
-    {devices::id::Iec60870LinkType_ReceiveTimeout, &kIntPropDef},
-    {devices::id::Iec60870LinkType_IdleTimeout, &kIntPropDef},
-    {devices::id::Iec60870LinkType_AnonymousMode, &kBoolPropDef},
-    // IEC-60870 Device
-    {devices::id::Iec60870DeviceType_Address, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_LinkAddress, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_StartupInterrogation, &kBoolPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriod,
-     &kIntPropDef},  // time delta
-    {devices::id::Iec60870DeviceType_StartupClockSync, &kBoolPropDef},
-    {devices::id::Iec60870DeviceType_ClockSyncPeriod, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_UtcTime, &kBoolPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup1, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup2, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup3, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup4, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup5, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup6, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup7, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup8, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup9, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup10, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup11, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup12, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup13, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup14, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup15, &kIntPropDef},
-    {devices::id::Iec60870DeviceType_InterrogationPeriodGroup16, &kIntPropDef},
-    // Modbus Link
-    {devices::id::ModbusLinkType_Protocol, &kEnumPropDef},
-    {devices::id::ModbusLinkType_RequestDelay, &kIntPropDef},
-    {devices::id::ModbusLinkType_Mode, &kEnumPropDef},
-    // Modbus Dev
-    {devices::id::ModbusDeviceType_Address, &kIntPropDef},
-    {devices::id::ModbusDeviceType_SendRetryCount, &kIntPropDef},
-    {devices::id::ModbusDeviceType_ResponseTimeout, &kIntPropDef},
-    // IEC-81650 Device
-    {devices::id::Iec61850DeviceType_Host, &kStringPropDef},
-    {devices::id::Iec61850DeviceType_Port, &kIntPropDef},
-    // IEC-81650 ConfigurableObject
-    {devices::id::Iec61850ConfigurableObjectType_Reference, &kStringPropDef},
-    // Sim Signal
-    {data_items::id::SimulationSignalType_Function, &kEnumPropDef},
-    {data_items::id::SimulationSignalType_Period, &kIntPropDef},  // time delta
-    {data_items::id::SimulationSignalType_Phase, &kIntPropDef},   // time delta
-    {data_items::id::SimulationSignalType_UpdateInterval,
-     &kIntPropDef},  // time delta
-    // User
-    {security::id::UserType_AccessRights, &kIntPropDef},  // TODO: Set
-    // TsFormat
-    {data_items::id::TsFormatType_OpenLabel, &kStringPropDef},
-    {data_items::id::TsFormatType_CloseLabel, &kStringPropDef},
     {data_items::id::TsFormatType_OpenColor, &kColorPropDef},
     {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
-    // Historical DB
-    {history::id::HistoricalDatabaseType_Depth, &kIntPropDef},  // time delta
-    // Transmission Item
-    {devices::id::TransmissionItemType_SourceAddress, &kIntPropDef},
-    {devices::id::HasTransmissionSource, &kRefPropDef},
-    {devices::id::HasTransmissionTarget, &kRefPropDef},
 };
 
 }  // namespace
 
-const PropertyDefinition* GetPropertyDef(const scada::NodeId& prop_decl_id) {
-  auto i = kPropertyDefinitionMap.find(prop_decl_id);
-  return i == kPropertyDefinitionMap.end() ? nullptr : i->second;
+const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl) {
+  auto i = kPropertyDefinitionMap.find(prop_decl.node_id());
+  if (i != kPropertyDefinitionMap.end())
+    return i->second;
+
+  if (prop_decl.node_class() == scada::NodeClass::ReferenceType)
+    return &kRefPropDef;
+
+  static const scada::NumericId kIntDataTypeIds[] = {
+      scada::id::Int16,  scada::id::UInt16, scada::id::Int32,
+      scada::id::UInt32, scada::id::Int64,  scada::id::UInt64};
+
+  auto data_type = prop_decl.data_type();
+  for (const auto data_type_id : kIntDataTypeIds) {
+    if (IsSubtypeOf(data_type, data_type_id))
+      return &kIntPropDef;
+  }
+
+  if (IsSubtypeOf(data_type, scada::id::Boolean))
+    return &kBoolPropDef;
+  if (IsSubtypeOf(data_type, scada::id::Double))
+    return &kIntPropDef;
+  if (IsSubtypeOf(data_type, scada::id::String))
+    return &kStringPropDef;
+  if (IsSubtypeOf(data_type, scada::id::Enumeration))
+    return &kEnumPropDef;
+
+  return nullptr;
 }
 
 PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
@@ -250,13 +167,12 @@ PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
   for (const auto& supertype : type_definitions) {
     assert(supertype.fetched());
     for (const auto& p : supertype.targets(scada::id::HasProperty)) {
-      if (auto* def = GetPropertyDef(p.node_id()))
+      if (auto* def = GetPropertyDef(p))
         properties.emplace_back(p, def);
     }
-    for (const auto& r : supertype.references()) {
-      if (IsSubtypeOf(r.reference_type, scada::id::HasProperty))
-        continue;
-      if (auto* def = GetPropertyDef(r.reference_type.node_id()))
+    for (const auto& r :
+         supertype.references(scada::id::NonHierarchicalReferences)) {
+      if (auto* def = GetPropertyDef(r.reference_type))
         properties.emplace_back(r.reference_type, def);
     }
   }
