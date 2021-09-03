@@ -9,6 +9,7 @@
 #include "components/change_password/change_password_dialog.h"
 #include "components/device_metrics/device_metrics_command.h"
 #include "components/events/events_component.h"
+#include "components/filesystem/filesystem_commands.h"
 #include "components/graph/graph_component.h"
 #include "components/limits/limit_dialog.h"
 #include "components/main/main_window_manager.h"
@@ -43,8 +44,6 @@
 #include "window_info.h"
 
 namespace {
-
-const wchar_t kAddFileTitle[] = L"Добавить файл";
 
 bool CanCreateSomething(const NodeRef& node) {
   if (node.target(scada::id::Creates))
@@ -122,6 +121,50 @@ WindowDefinition UpdateWindowDefinition(const WindowDefinition& window_def,
   return window_def;
 }
 
+// TODO: Revise ownership. Should be probably captured by a shared pointer.
+void RegisterFileSystemCommands(SelectionCommands& selection_commands,
+                                CommandRegistry& command_registry,
+                                NodeService& node_service,
+                                TaskManager& task_manager) {
+  const auto& file_type = node_service.GetNode(filesystem::id::FileType);
+  file_type.Fetch(NodeFetchStatus::NodeOnly());
+
+  command_registry.AddCommand(
+      Command{ID_ADD_FILE}
+          .set_execute_handler([&selection_commands, &task_manager] {
+            if (selection_commands.selection() &&
+                selection_commands.dialog_service()) {
+              AddFile(selection_commands.selection()->node(),
+                      *selection_commands.dialog_service(), task_manager);
+            }
+          })
+          .set_available_handler([&selection_commands, file_type] {
+            return selection_commands.selection() &&
+                   selection_commands.dialog_service() &&
+                   CanCreate(selection_commands.selection()->node(), file_type);
+          }));
+
+  const auto& file_directory_type =
+      node_service.GetNode(filesystem::id::FileType);
+  file_directory_type.Fetch(NodeFetchStatus::NodeOnly());
+
+  command_registry.AddCommand(
+      Command{ID_CREATE_FILE_DIRECTORY}
+          .set_execute_handler([&selection_commands, &task_manager] {
+            if (selection_commands.selection() &&
+                selection_commands.dialog_service()) {
+              CreateFileDirectory(selection_commands.selection()->node(),
+                                  *selection_commands.dialog_service(),
+                                  task_manager);
+            }
+          })
+          .set_available_handler([&selection_commands, file_directory_type] {
+            return selection_commands.selection() &&
+                   CanCreate(selection_commands.selection()->node(),
+                             file_directory_type);
+          }));
+}
+
 }  // namespace
 
 // SelectionCommands
@@ -143,15 +186,8 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             return IsInstanceOf(GetSelectedNode(), devices::id::DeviceType);
           }));
 
-  command_registry_.AddCommand(
-      Command{ID_ADD_FILE}
-          .set_execute_handler([this] { AddFile(selection_->node()); })
-          .set_available_handler([this] {
-            return CanCreate(selection_->node(),
-                             node_service_.GetNode(filesystem::id::FileType))
-                       ? this
-                       : nullptr;
-          }));
+  RegisterFileSystemCommands(*this, command_registry_, node_service_,
+                             task_manager_);
 }
 
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
@@ -559,27 +595,4 @@ void SelectionCommands::DumpDebugInfo() {
 
 NodeRef SelectionCommands::GetSelectedNode() {
   return selection_ ? selection_->node() : NodeRef{};
-}
-
-void SelectionCommands::AddFile(NodeRef directory) {
-  const auto& path = dialog_service_->SelectOpenFile(kAddFileTitle);
-  if (path.empty())
-    return;
-
-  std::string contents;
-  if (!base::ReadFileToString(base::FilePath{path.native()}, &contents)) {
-    dialog_service_->RunMessageBox(L"Не удалось считать файл.", kAddFileTitle,
-                                   MessageBoxMode::Error);
-    return;
-  }
-
-  scada::LocalizedText display_name = path.filename().wstring();
-  scada::ByteString value{contents.begin(), contents.end()};
-
-  task_manager_.PostInsertTask({}, directory.node_id(),
-                               filesystem::id::FileType,
-                               scada::NodeAttributes{}
-                                   .set_display_name(std::move(display_name))
-                                   .set_value(std::move(value)),
-                               {}, {});
 }

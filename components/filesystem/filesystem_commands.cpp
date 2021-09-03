@@ -7,11 +7,13 @@
 #include "components/main/main_window.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
+#include "components/prompt/prompt_dialog.h"
 #include "contents_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/file_registry.h"
+#include "services/task_manager.h"
 #include "value_util.h"
 #include "window_definition_util.h"
 #include "window_info.h"
@@ -20,8 +22,13 @@
 #include <filesystem>
 
 namespace {
+
+const wchar_t kAddFileTitle[] = L"Добавить файл";
 const wchar_t kOpenFileTitle[] = L"Открыть файл";
-}
+const wchar_t kAddFileDirectoryPrompt[] = L"Имя папки:";
+const wchar_t kAddFileDirectoryTitle[] = L"Создать папку";
+
+}  // namespace
 
 void OpenJsonFile(const std::filesystem::path& path,
                   MainWindow* main_window,
@@ -125,4 +132,45 @@ bool ExecuteFileCommand(MainWindow* main_window,
                }));
 
   return true;
+}
+
+void AddFile(NodeRef parent_directory,
+             DialogService& dialog_service,
+             TaskManager& task_manager) {
+  const auto& path = dialog_service.SelectOpenFile(kAddFileTitle);
+  if (path.empty())
+    return;
+
+  std::string contents_string;
+  if (!base::ReadFileToString(base::FilePath{path.native()},
+                              &contents_string)) {
+    dialog_service.RunMessageBox(L"Не удалось считать файл.", kAddFileTitle,
+                                 MessageBoxMode::Error);
+    return;
+  }
+
+  scada::LocalizedText new_file_name = path.filename().wstring();
+  scada::ByteString contents{contents_string.begin(), contents_string.end()};
+
+  task_manager.PostInsertTask({}, parent_directory.node_id(),
+                              filesystem::id::FileType,
+                              scada::NodeAttributes{}
+                                  .set_display_name(std::move(new_file_name))
+                                  .set_value(std::move(contents)),
+                              {}, {});
+}
+
+void CreateFileDirectory(NodeRef parent_directory,
+                         DialogService& dialog_service,
+                         TaskManager& task_manager) {
+  std::wstring new_directory_name;
+  bool ok = RunPromptDialog(dialog_service, kAddFileDirectoryPrompt,
+                            kAddFileDirectoryTitle, new_directory_name);
+  if (!ok)
+    return;
+
+  task_manager.PostInsertTask(
+      {}, parent_directory.node_id(), filesystem::id::FileDirectoryType,
+      scada::NodeAttributes{}.set_display_name(std::move(new_directory_name)),
+      {}, {});
 }

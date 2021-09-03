@@ -130,6 +130,7 @@
 #define ID_FAVOURITES_ADD_URL           204
 #define ID_FILE_SYSTEM_VIEW             205
 #define ID_ADD_FILE                     328
+#define ID_CREATE_FILE_DIRECTORY        329
 #define IDB_ITEMS                       206
 #define IDD_SUMM                        207
 #define IDR_GRAPH_POPUP                 209

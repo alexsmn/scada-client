@@ -51,6 +51,9 @@ class SelectionCommands : private SelectionCommandsContext,
  public:
   explicit SelectionCommands(SelectionCommandsContext&& context);
 
+  SelectionModel* selection() { return selection_; }
+  DialogService* dialog_service() { return dialog_service_; }
+
   void SetContext(MainWindow* main_window,
                   DialogService* dialog_service,
                   Controller* controller,
@@ -82,8 +85,6 @@ class SelectionCommands : private SelectionCommandsContext,
       const WindowInfo* window_info) const;
 
   void DumpDebugInfo();
-
-  void AddFile(NodeRef directory);
 
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;

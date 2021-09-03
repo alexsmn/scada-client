@@ -22,7 +22,7 @@ const scada::NodeId kNewCommandTypeIds[] = {
     devices::id::Iec60870DeviceType,     devices::id::Iec61850DeviceType,
     devices::id::Iec61850RcbType,        devices::id::ModbusLinkType,
     devices::id::ModbusDeviceType,       data_items::id::TsFormatType,
-    devices::id::TransmissionItemType,   filesystem::id::FileDirectoryType,
+    devices::id::TransmissionItemType,
 };
 
 class NodeAction : private NodeRefObserver, public Action {
@@ -56,6 +56,31 @@ class NodeAction : private NodeRefObserver, public Action {
   const std::shared_ptr<NodeAction*> weak_ptr_factory_ =
       std::make_shared<NodeAction*>(this);
 };
+
+void RegisterCreateActions(ActionManager& action_manager,
+                           NodeService& node_service) {
+  action_manager.AddAction(*new Action(ID_ADD_MULTIPLE_ITEMS, CATEGORY_CREATE,
+                                       L"Серия объектов..."));
+  action_manager.AddAction(*new Action(ID_NEW_SERVICE_ITEMS, CATEGORY_CREATE,
+                                       L"Сервисные объекты..."));
+  action_manager.AddAction(*new Action(ID_NEW_IEC60870_LINK101, CATEGORY_CREATE,
+                                       L"Направление МЭК-60870-101"));
+  action_manager.AddAction(*new Action(ID_NEW_IEC60870_LINK104, CATEGORY_CREATE,
+                                       L"Направление МЭК-60870-104"));
+
+  for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i) {
+    action_manager.AddAction(
+        *new NodeAction(action_manager, ID_NEW + i, CATEGORY_CREATE,
+                        node_service.GetNode(kNewCommandTypeIds[i])));
+  }
+}
+
+void RegisterFileSystemActions(ActionManager& action_manager) {
+  action_manager.AddAction(*new Action(ID_CREATE_FILE_DIRECTORY, CATEGORY_CREATE,
+                                       L"Папка", L"Создать папку..."));
+  action_manager.AddAction(
+      *new Action(ID_ADD_FILE, CATEGORY_CREATE, L"Файл", L"Добавить файл..."));
+}
 
 }  // namespace
 
@@ -254,20 +279,7 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(
       *new Action(ID_CLEAR_ALL, CATEGORY_EDIT, L"Очистить"));
 
-  action_manager.AddAction(*new Action(ID_ADD_MULTIPLE_ITEMS, CATEGORY_CREATE,
-                                       L"Серия объектов..."));
-  action_manager.AddAction(*new Action(ID_NEW_SERVICE_ITEMS, CATEGORY_CREATE,
-                                       L"Сервисные объекты..."));
-  action_manager.AddAction(*new Action(ID_NEW_IEC60870_LINK101, CATEGORY_CREATE,
-                                       L"Направление МЭК-60870-101"));
-  action_manager.AddAction(*new Action(ID_NEW_IEC60870_LINK104, CATEGORY_CREATE,
-                                       L"Направление МЭК-60870-104"));
-  for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i) {
-    action_manager.AddAction(
-        *new NodeAction(action_manager, ID_NEW + i, CATEGORY_CREATE,
-                        node_service.GetNode(kNewCommandTypeIds[i])));
-  }
+  RegisterCreateActions(action_manager, node_service);
 
-  action_manager.AddAction(
-      *new Action(ID_ADD_FILE, CATEGORY_CREATE, L"Файл", L"Добавить файл..."));
+  RegisterFileSystemActions(action_manager);
 }
