@@ -1,5 +1,6 @@
 ﻿#include "components/main/selection_commands.h"
 
+#include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
 #include "base/win/clipboard.h"
@@ -110,38 +111,24 @@ std::string GetNodeDebugInfo(const NodeRef& node) {
   return stream.str();
 }
 
-WindowDefinition UpdateWindowDefinition(const WindowDefinition& window_def,
-                                        unsigned command_id) {
-  if (command_id == ID_OPEN_EVENTS) {
-    auto new_window_def = window_def;
-    new_window_def.AddItem("Window").SetString("mode", "Current");
-    return new_window_def;
-  }
-
-  return window_def;
-}
-
 // TODO: Revise ownership. Should be probably captured by a shared pointer.
 void RegisterFileSystemCommands(SelectionCommands& selection_commands,
                                 CommandRegistry& command_registry,
                                 NodeService& node_service,
                                 TaskManager& task_manager) {
+  // |selection_| and |dialog_service_| are never null in command handlers.
+
   const auto& file_type = node_service.GetNode(filesystem::id::FileType);
   file_type.Fetch(NodeFetchStatus::NodeOnly());
 
   command_registry.AddCommand(
       Command{ID_ADD_FILE}
           .set_execute_handler([&selection_commands, &task_manager] {
-            if (selection_commands.selection() &&
-                selection_commands.dialog_service()) {
-              AddFile(selection_commands.selection()->node(),
-                      *selection_commands.dialog_service(), task_manager);
-            }
+            AddFile(selection_commands.selection()->node(),
+                    *selection_commands.dialog_service(), task_manager);
           })
           .set_available_handler([&selection_commands, file_type] {
-            return selection_commands.selection() &&
-                   selection_commands.dialog_service() &&
-                   CanCreate(selection_commands.selection()->node(), file_type);
+            return CanCreate(selection_commands.selection()->node(), file_type);
           }));
 
   const auto& file_directory_type =
@@ -151,17 +138,72 @@ void RegisterFileSystemCommands(SelectionCommands& selection_commands,
   command_registry.AddCommand(
       Command{ID_CREATE_FILE_DIRECTORY}
           .set_execute_handler([&selection_commands, &task_manager] {
-            if (selection_commands.selection() &&
-                selection_commands.dialog_service()) {
-              CreateFileDirectory(selection_commands.selection()->node(),
-                                  *selection_commands.dialog_service(),
-                                  task_manager);
-            }
+            CreateFileDirectory(selection_commands.selection()->node(),
+                                *selection_commands.dialog_service(),
+                                task_manager);
           })
           .set_available_handler([&selection_commands, file_directory_type] {
-            return selection_commands.selection() &&
-                   CanCreate(selection_commands.selection()->node(),
+            return CanCreate(selection_commands.selection()->node(),
                              file_directory_type);
+          }));
+}
+
+void RegisterDeviceEnableCommand(SelectionCommands& selection_commands,
+                                 CommandRegistry& command_registry,
+                                 const scada::SessionService& session_service,
+                                 TaskManager& task_manager,
+                                 unsigned command_id,
+                                 bool enable) {
+  command_registry.AddCommand(
+      Command{command_id}
+          .set_execute_handler([&selection_commands, &task_manager, enable] {
+            ExecuteDisableItem(task_manager,
+                               selection_commands.selection()->node(), !enable);
+          })
+          .set_enabled_handler([&selection_commands, enable] {
+            return selection_commands.selection()
+                       ->node()[devices::id::DeviceType_Disabled]
+                       .value()
+                       .get_or(false) == enable;
+          })
+          .set_available_handler([&selection_commands, &session_service] {
+            return session_service.HasPrivilege(scada::Privilege::Configure) &&
+                   selection_commands.selection()
+                       ->node()[devices::id::DeviceType_Disabled];
+          }));
+}
+
+void RegisterMethodCommand(SelectionCommands& selection_commands,
+                           CommandRegistry& command_registry,
+                           const scada::SessionService& session_service,
+                           unsigned command_id,
+                           const scada::NodeId& method_id) {
+  command_registry.AddCommand(
+      Command{command_id}
+          .set_execute_handler([&selection_commands, method_id] {
+            selection_commands.CallMethod(
+                selection_commands.selection()->node(), method_id, {});
+          })
+          .set_available_handler([&selection_commands, &session_service] {
+            return session_service.HasPrivilege(scada::Privilege::Control) &&
+                   IsInstanceOf(selection_commands.selection()->node(),
+                                data_items::id::DataItemType);
+          }));
+}
+
+void RegisterOpenViewCommand(SelectionCommands& selection_commands,
+                             CommandRegistry& command_registry,
+                             unsigned command_id,
+                             const WindowInfo& window_info) {
+  command_registry.AddCommand(
+      Command{command_id}
+          .set_execute_handler([&selection_commands, &window_info, command_id] {
+            ::OpenView(
+                selection_commands.main_window(),
+                selection_commands.GetOpenWindowDefinition(&window_info));
+          })
+          .set_available_handler([&selection_commands] {
+            return !selection_commands.selection()->empty();
           }));
 }
 
@@ -171,23 +213,254 @@ void RegisterFileSystemCommands(SelectionCommands& selection_commands,
 
 SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
     : SelectionCommandsContext{std::move(context)} {
+  // |selection_| and |dialog_service_| are never null in command handlers.
+
+  RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_TABLE,
+                          kTableWindowInfo);
+  RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_GRAPH,
+                          kGraphWindowInfo);
+  RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_SUMMARY,
+                          kSummaryWindowInfo);
+
   command_registry_.AddCommand(
       Command{ID_OPEN_DEVICE_METRICS}
           .set_execute_handler([this] {
-            auto node = GetSelectedNode();
-            MakeDeviceMetricsWindowDefinition(node).then(
-                [weak_ptr = weak_ptr_factory_.GetWeakPtr()](
-                    const WindowDefinition& window_definition) {
+            MakeDeviceMetricsWindowDefinition(selection_->node())
+                .then([weak_ptr = weak_ptr_factory_.GetWeakPtr()](
+                          const WindowDefinition& window_definition) {
                   if (auto* ptr = weak_ptr.get())
                     ptr->OpenWindow(window_definition);
                 });
           })
           .set_available_handler([this] {
-            return IsInstanceOf(GetSelectedNode(), devices::id::DeviceType);
+            return IsInstanceOf(selection()->node(), devices::id::DeviceType);
           }));
 
   RegisterFileSystemCommands(*this, command_registry_, node_service_,
                              task_manager_);
+
+  RegisterDeviceEnableCommand(*this, command_registry_, session_service_,
+                              task_manager_, ID_ITEM_ENABLE, true);
+  RegisterDeviceEnableCommand(*this, command_registry_, session_service_,
+                              task_manager_, ID_ITEM_DISABLE, false);
+
+  RegisterMethodCommand(*this, command_registry_, session_service_,
+                        ID_DEV1_REFR, devices::id::DeviceType_Interrogate);
+  RegisterMethodCommand(*this, command_registry_, session_service_,
+                        ID_DEV1_SYNC, devices::id::DeviceType_SyncClock);
+
+  command_registry_.AddCommand(
+      Command{ID_OPEN_EVENTS}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       GetOpenWindowDefinition(&kEventJournalWindowInfo)
+                           .then([](const WindowDefinition& window_def) {
+                             auto new_window_def = window_def;
+                             new_window_def.AddItem("Window").SetString(
+                                 "mode", "Current");
+                             return new_window_def;
+                           }),
+                       true);
+          })
+          .set_available_handler(
+              [this] { return !selection_->empty() ? this : nullptr; }));
+
+  command_registry_.AddCommand(
+      Command{ID_HISTORICAL_EVENTS}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       GetOpenWindowDefinition(&kEventJournalWindowInfo), true);
+          })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_OPEN_DISPLAY}
+          .set_execute_handler([this] { OpenModusView(selection_->node()); })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_TIMED_DATA_VIEW}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       GetOpenWindowDefinition(&kTimedDataWindowInfo));
+          })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_EDIT_LIMITS}
+          .set_execute_handler([this] {
+            ShowLimitsDialog(*dialog_service_,
+                             {selection_->node(), task_manager_});
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Control) &&
+                   IsInstanceOf(selection_->node(),
+                                data_items::id::AnalogItemType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_OPEN_GROUP_TABLE}
+          .set_execute_handler([this] {
+            // TODO: Capture |main_window_| by weak pointer.
+            MakeGroupWindowDefinition(&kTableWindowInfo, selection_->node())
+                .then([main_window = main_window_](
+                          const std::optional<WindowDefinition>& window_def) {
+                  if (window_def.has_value())
+                    ::OpenView(main_window, *window_def);
+                });
+          })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_ITEM_PARAMS}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       MakeSingleWindowDefinition(&kNodePropertyWindowInfo,
+                                                  selection_->node()));
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
+                   selection_->node();
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_TABLE_CONFIG}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       MakeSingleWindowDefinition(&kTableEditorWindowInfo,
+                                                  selection_->node()));
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
+                   CanCreateSomething(selection_->node());
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_OPEN_WATCH}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       MakeSingleWindowDefinition(&kWatchWindowInfo,
+                                                  selection_->node()));
+          })
+          .set_available_handler([this] {
+            return IsInstanceOf(selection_->node(), devices::id::DeviceType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_CHANGE_PASSWORD}
+          .set_execute_handler([this] {
+            ShowChangePasswordDialog(
+                *dialog_service_, {selection_->node(), node_management_service_,
+                                   local_events_, profile_});
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
+                   IsInstanceOf(selection_->node(), security::id::UserType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_DUMP_DEBUG_INFO}
+          .set_execute_handler([this] { DumpDebugInfo(); })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
+
+  // ID_TRANSMISSION_VIEW
+  command_registry_.AddCommand(
+      Command{ID_TRANSMISSION_VIEW}
+          .set_execute_handler([this] {
+            ::OpenView(main_window_,
+                       MakeSingleWindowDefinition(&kTransmissionWindowInfo,
+                                                  selection_->node()));
+          })
+          .set_available_handler([this] {
+            return !session_service_.HasPrivilege(
+                       scada::Privilege::Configure) &&
+                   IsInstanceOf(selection_->node(), devices::id::DeviceType) &&
+                   !IsInstanceOf(selection_->node(), devices::id::LinkType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_COPY}
+          .set_execute_handler([this] { CopyToClipboard(); })
+          .set_enabled_handler([this] { return !selection_->empty(); })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
+                   !selection_->empty();
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_DELETE}
+          .set_execute_handler([this] { DeleteSelection(); })
+          .set_enabled_handler([this] { return !selection_->empty(); })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
+                   !selection_->empty();
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_WRITE}
+          .set_execute_handler([this] {
+            ExecuteWriteDialog(
+                *dialog_service_,
+                WriteContext{executor_, timed_data_service_,
+                             selection_->node().node_id(), profile_, false});
+          })
+          .set_enabled_handler([this] {
+            return !selection_->node()[data_items::id::DataItemType_Output]
+                        .value()
+                        .is_null();
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Control) &&
+                   IsInstanceOf(selection_->node(),
+                                data_items::id::DataItemType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_WRITE_MANUAL}
+          .set_execute_handler([this] {
+            ExecuteWriteDialog(
+                *dialog_service_,
+                WriteContext{executor_, timed_data_service_,
+                             selection_->node().node_id(), profile_, true});
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Control) &&
+                   IsInstanceOf(selection_->node(),
+                                data_items::id::DataItemType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_UNLOCK_ITEM}
+          .set_execute_handler([this] {
+            task_manager_.PostUpdateTask(
+                selection_->node().node_id(), {},
+                {{data_items::id::DataItemType_Locked, false}});
+          })
+          .set_enabled_handler([this] {
+            return selection_->node()[data_items::id::DataItemType_Locked]
+                .value()
+                .get_or(false);
+          })
+          .set_available_handler([this] {
+            return session_service_.HasPrivilege(scada::Privilege::Control) &&
+                   IsInstanceOf(selection_->node(),
+                                data_items::id::DataItemType);
+          }));
+
+  command_registry_.AddCommand(
+      Command{ID_ACKNOWLEDGE_CURRENT}
+          .set_execute_handler([this] {
+            event_fetcher_.AcknowledgeItemEvents(selection_->node().node_id());
+          })
+          .set_enabled_handler(
+              [this] { return selection_->timed_data().alerting(); })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
 }
 
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
@@ -207,245 +480,10 @@ void SelectionCommands::OpenWindow(const WindowDefinition& window_definition) {
 }
 
 CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
-  if (!selection_)
+  if (!selection_ || !dialog_service_)
     return nullptr;
 
-  const auto& node = selection_->node();
-
-  switch (command_id) {
-    case ID_DELETE:
-    case ID_COPY:
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return nullptr;
-      return !selection_->empty() ? this : nullptr;
-
-    case ID_ITEM_PARAMS:
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return nullptr;
-      return node ? this : nullptr;
-
-    case ID_TABLE_CONFIG: {
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return nullptr;
-      return CanCreateSomething(node) ? this : nullptr;
-    }
-
-    case ID_OPEN_TABLE:
-    case ID_OPEN_GRAPH:
-    case ID_OPEN_SUMMARY:
-    case ID_OPEN_EVENTS:
-      return !selection_->empty() ? this : nullptr;
-
-    case ID_ACKNOWLEDGE_CURRENT:
-    case ID_OPEN_DISPLAY:
-    case ID_HISTORICAL_EVENTS:
-    case ID_TIMED_DATA_VIEW:
-    case ID_OPEN_GROUP_TABLE:
-    case ID_DUMP_DEBUG_INFO:
-      return selection_->timed_data().connected() ? this : nullptr;
-
-    case ID_DEV1_REFR:
-    case ID_DEV1_SYNC:
-    case ID_WRITE:
-    case ID_WRITE_MANUAL:
-    case ID_UNLOCK_ITEM: {
-      if (!session_service_.HasPrivilege(scada::Privilege::Control))
-        return nullptr;
-      return IsInstanceOf(node, data_items::id::DataItemType) ? this : nullptr;
-    }
-
-    case ID_EDIT_LIMITS:
-      if (!session_service_.HasPrivilege(scada::Privilege::Control))
-        return nullptr;
-      return IsInstanceOf(node, data_items::id::AnalogItemType) ? this
-                                                                : nullptr;
-
-    case ID_ITEM_ENABLE:
-    case ID_ITEM_DISABLE:
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return nullptr;
-      return node[devices::id::DeviceType_Disabled] ? this : nullptr;
-
-    case ID_TRANSMISSION_VIEW:
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return nullptr;
-      return IsInstanceOf(node, devices::id::DeviceType) &&
-                     !IsInstanceOf(node, devices::id::LinkType)
-                 ? this
-                 : nullptr;
-
-    case ID_CHANGE_PASSWORD:
-      if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-        return nullptr;
-      return IsInstanceOf(node, security::id::UserType) ? this : nullptr;
-
-    case ID_OPEN_WATCH:
-      return IsInstanceOf(node, devices::id::DeviceType) ? this : nullptr;
-  }
-
   return command_registry_.GetCommandHandler(command_id);
-}
-
-bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
-  const auto& node = selection_->node();
-
-  switch (command_id) {
-    case ID_DELETE:
-    case ID_COPY:
-      return !selection_->empty();
-
-    case ID_ACKNOWLEDGE_CURRENT:
-      return selection_->timed_data().alerting();
-
-    case ID_UNLOCK_ITEM:
-      return node &&
-             node[data_items::id::DataItemType_Locked].value().get_or(false);
-
-    case ID_WRITE:
-      return node &&
-             !node[data_items::id::DataItemType_Output].value().is_null();
-
-    case ID_ITEM_ENABLE:
-    case ID_ITEM_DISABLE: {
-      bool enable = command_id == ID_ITEM_ENABLE;
-      return node && node[devices::id::DeviceType_Disabled].value().get_or(
-                         false) == enable;
-    }
-
-    default:
-      return true;
-  }
-}
-
-bool SelectionCommands::IsCommandChecked(unsigned command_id) const {
-  return false;
-}
-
-void SelectionCommands::ExecuteCommand(unsigned command_id) {
-  assert(dialog_service_);
-  assert(selection_);
-
-  switch (command_id) {
-    case ID_DELETE:
-      DeleteSelection();
-      return;
-    case ID_COPY:
-      CopyToClipboard();
-      return;
-  }
-
-  const auto& node = selection_->node();
-
-  scada::NodeId method_id;
-
-  switch (command_id) {
-    case ID_OPEN_GRAPH:
-      // TODO: formula
-      ::OpenView(main_window_, GetOpenWindowDefinition(&kGraphWindowInfo));
-      return;
-    case ID_OPEN_TABLE:
-      // TODO: formula
-      ::OpenView(main_window_, GetOpenWindowDefinition(&kTableWindowInfo));
-      return;
-    case ID_OPEN_SUMMARY:
-      // TODO: formula
-      ::OpenView(main_window_, GetOpenWindowDefinition(&kSummaryWindowInfo));
-      return;
-    case ID_OPEN_EVENTS:
-    case ID_HISTORICAL_EVENTS: {
-      ::OpenView(main_window_,
-                 GetOpenWindowDefinition(&kEventJournalWindowInfo)
-                     .then([command_id](const WindowDefinition& window_def) {
-                       return UpdateWindowDefinition(window_def, command_id);
-                     }),
-                 true);
-      return;
-    }
-    case ID_OPEN_DISPLAY:
-      OpenModusView(node);
-      return;
-    case ID_TIMED_DATA_VIEW:
-      ::OpenView(main_window_, GetOpenWindowDefinition(&kTimedDataWindowInfo));
-      return;
-    case ID_OPEN_GROUP_TABLE:
-      // TODO: Capture |main_window_| by weak pointer.
-      MakeGroupWindowDefinition(&kTableWindowInfo, node)
-          .then([main_window = main_window_](
-                    const std::optional<WindowDefinition>& window_def) {
-            if (window_def.has_value())
-              ::OpenView(main_window, *window_def);
-          });
-      return;
-    case ID_WRITE:
-      ExecuteWriteDialog(*dialog_service_,
-                         WriteContext{executor_, timed_data_service_,
-                                      node.node_id(), profile_, false});
-      return;
-    case ID_WRITE_MANUAL:
-      ExecuteWriteDialog(*dialog_service_,
-                         WriteContext{executor_, timed_data_service_,
-                                      node.node_id(), profile_, true});
-      return;
-    case ID_UNLOCK_ITEM:
-      task_manager_.PostUpdateTask(
-          node.node_id(), {}, {{data_items::id::DataItemType_Locked, false}});
-      return;
-    case ID_EDIT_LIMITS:
-      if (IsInstanceOf(node, data_items::id::AnalogItemType))
-        ShowLimitsDialog(*dialog_service_, {node, task_manager_});
-      return;
-    case ID_ACKNOWLEDGE_CURRENT:
-      event_fetcher_.AcknowledgeItemEvents(node.node_id());
-      return;
-    case ID_ITEM_PARAMS:
-      ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(&kNodePropertyWindowInfo, node));
-      return;
-    case ID_TABLE_CONFIG:
-      ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(&kTableEditorWindowInfo, node));
-      return;
-    case ID_TRANSMISSION_VIEW:
-      ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(&kTransmissionWindowInfo, node));
-      return;
-    case ID_OPEN_WATCH:
-      ::OpenView(main_window_,
-                 MakeSingleWindowDefinition(&kWatchWindowInfo, node));
-      return;
-    case ID_ITEM_ENABLE:
-    case ID_ITEM_DISABLE:
-      ExecuteDisableItem(task_manager_, node, command_id == ID_ITEM_DISABLE);
-      return;
-
-    case ID_CHANGE_PASSWORD:
-      if (IsInstanceOf(node, security::id::UserType)) {
-        ShowChangePasswordDialog(
-            *dialog_service_,
-            {node, node_management_service_, local_events_, profile_});
-      }
-      return;
-
-    case ID_DUMP_DEBUG_INFO:
-      DumpDebugInfo();
-      return;
-
-    case ID_DEV1_REFR:
-      method_id = devices::id::DeviceType_Interrogate;
-      break;
-    case ID_DEV1_SYNC:
-      method_id = devices::id::DeviceType_SyncClock;
-      break;
-  }
-
-  if (!method_id.is_null() &&
-      IsInstanceOf(node, data_items::id::DataItemType)) {
-    CallMethod(node, method_id, {});
-    return;
-  }
-
-  // Command is supported but not handled.
-  assert(false);
 }
 
 void SelectionCommands::CallMethod(
@@ -591,8 +629,4 @@ void SelectionCommands::DumpDebugInfo() {
   dialog_service_->RunMessageBox(
       L"Отладочная информация скопирована в буфер обмена.", {},
       MessageBoxMode::Info);
-}
-
-NodeRef SelectionCommands::GetSelectedNode() {
-  return selection_ ? selection_->node() : NodeRef{};
 }

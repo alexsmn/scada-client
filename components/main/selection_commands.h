@@ -53,36 +53,31 @@ class SelectionCommands : private SelectionCommandsContext,
 
   SelectionModel* selection() { return selection_; }
   DialogService* dialog_service() { return dialog_service_; }
+  MainWindow* main_window() { return main_window_; }
 
   void SetContext(MainWindow* main_window,
                   DialogService* dialog_service,
                   Controller* controller,
                   SelectionModel* selection);
 
-  // Selection API
-
-  NodeRef GetSelectedNode();
-
   void OpenWindow(const WindowInfo* window_info);
   void OpenWindow(const WindowDefinition& window_definition);
 
+  promise<WindowDefinition> GetOpenWindowDefinition(
+      const WindowInfo* window_info) const;
+
+  void CallMethod(const NodeRef& node,
+                  const scada::NodeId& method_id,
+                  const std::vector<scada::Variant>& arguments);
+
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
-  virtual bool IsCommandEnabled(unsigned command_id) const;
-  virtual bool IsCommandChecked(unsigned command_id) const;
-  virtual void ExecuteCommand(unsigned command_id);
 
  private:
   void DeleteSelection();
   void CopyToClipboard();
 
-  void CallMethod(const NodeRef& node,
-                  const scada::NodeId& method_id,
-                  const std::vector<scada::Variant>& arguments);
   void OpenModusView(const NodeRef& node);
-
-  promise<WindowDefinition> GetOpenWindowDefinition(
-      const WindowInfo* window_info) const;
 
   void DumpDebugInfo();
 
