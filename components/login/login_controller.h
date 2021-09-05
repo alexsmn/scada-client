@@ -1,25 +1,28 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "core/data_services_factory.h"
 #include "core/localized_text.h"
+
+#include <memory>
 
 namespace scada {
 class Status;
 }
 
+class Executor;
 class DialogService;
 
-class LoginController {
+class LoginController : public std::enable_shared_from_this<LoginController> {
  public:
-  LoginController(DataServicesContext&& services_context,
+  LoginController(std::shared_ptr<Executor> executor,
+                  DataServicesContext&& services_context,
                   DialogService& dialog_service);
 
   void Login();
 
   void DeleteUserName(std::wstring_view user_name);
 
-  std::function<void(DataServices& services)> completion_handler;
+  std::function<void(DataServices services)> completion_handler;
   std::function<void()> error_handler;
 
   std::vector<std::wstring> server_type_list;
@@ -41,6 +44,7 @@ class LoginController {
 
   std::wstring GetUserListString() const;
 
+  const std::shared_ptr<Executor> executor_;
   DataServicesContext services_context_;
   DialogService& dialog_service_;
 
@@ -49,6 +53,4 @@ class LoginController {
   DataServices services_;
 
   std::string server_type_;
-
-  base::WeakPtrFactory<LoginController> weak_factory_{this};
 };

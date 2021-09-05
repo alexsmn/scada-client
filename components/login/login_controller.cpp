@@ -1,10 +1,9 @@
 ﻿#include "components/login/login_controller.h"
 
-#include "base/bind.h"
+#include "base/executor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry2.h"
 #include "core/session_service.h"
 #include "core/status.h"
@@ -27,9 +26,11 @@ const wchar_t kAutoLoginMessage[] =
 
 }  // namespace
 
-LoginController::LoginController(DataServicesContext&& services_context,
+LoginController::LoginController(std::shared_ptr<Executor> executor,
+                                 DataServicesContext&& services_context,
                                  DialogService& dialog_service)
-    : services_context_{std::move(services_context)},
+    : executor_{std::move(executor)},
+      services_context_{std::move(services_context)},
       dialog_service_{dialog_service} {
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
   user_name = reg.GetString(L"User");
@@ -73,23 +74,25 @@ void LoginController::Login() {
 }
 
 void LoginController::OnLoginResult(const scada::Status& status) {
-  connecting_ = false;
-
-  base::Closure task;
-  if (status)
-    task = base::Bind(&LoginController::OnLoginCompleted,
-                      weak_factory_.GetWeakPtr());
-  else
-    task = base::Bind(&LoginController::OnLoginFailed,
-                      weak_factory_.GetWeakPtr(), status);
-
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, task);
+  Dispatch(*executor_, [this, ref = shared_from_this(), status] {
+    if (status)
+      OnLoginCompleted();
+    else
+      OnLoginFailed(status);
+  });
 }
 
 void LoginController::OnLoginCompleted() {
+  // save last users
   auto i = std::find(user_list.begin(), user_list.end(), user_name);
   if (i == user_list.end())
     user_list.emplace_back(user_name);
+  if (user_list.size() > 10) {
+    user_list.erase(user_list.begin(),
+                    user_list.begin() + user_list.size() - 10);
+  }
+
+  std::wstring user_list_string = base::JoinString(user_list, L",");
 
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
   reg.SetString(L"User", ToString16(user_name).c_str());
@@ -103,7 +106,7 @@ void LoginController::OnLoginCompleted() {
   if (auto_login && login_message_)
     dialog_service_.RunMessageBox(kAutoLoginMessage, {}, MessageBoxMode::Info);
 
-  completion_handler(services_);
+  completion_handler(std::move(services_));
 }
 
 void LoginController::OnLoginFailed(const scada::Status& status) {

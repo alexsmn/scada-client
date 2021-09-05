@@ -452,11 +452,11 @@ bool ClientApplication::Login() {
       command_line.HasSwitch("log-service-node-semantics-change-event"),
   };
 
-  DataServicesContext services_context{logger_, *io_context_,
+  DataServicesContext services_context{logger_, executor_, *io_context_,
                                        *transport_factory_, service_log_params};
 
   DataServices services;
-  if (!ExecuteLoginDialog(std::move(services_context), services))
+  if (!ExecuteLoginDialog(executor_, std::move(services_context), services))
     return false;
 
   auto audit = std::make_shared<Audit>(

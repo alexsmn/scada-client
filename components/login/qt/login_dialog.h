@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/login/login_controller.h"
+#include "components/login/login_dialog.h"
 #include "core/data_services_factory.h"
 #include "qt/dialog_service_impl_qt.h"
 #include "ui_login_dialog.h"
@@ -8,6 +8,7 @@
 #include <QDialog>
 #include <memory>
 
+class LoginController;
 class QDialogButtonBox;
 class QCheckBox;
 class QComboBox;
@@ -17,7 +18,8 @@ class LoginDialog : public QDialog {
   Q_OBJECT
 
  public:
-  explicit LoginDialog(DataServicesContext&& services_context);
+  LoginDialog(std::shared_ptr<Executor> executor,
+              DataServicesContext&& services_context);
   ~LoginDialog();
 
   DataServices services;
@@ -34,5 +36,6 @@ class LoginDialog : public QDialog {
   Ui::LoginDialog ui;
 
   DialogServiceImplQt dialog_service_;
-  LoginController controller_;
+
+  const std::shared_ptr<LoginController> controller_;
 };

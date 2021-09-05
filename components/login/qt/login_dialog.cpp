@@ -1,5 +1,6 @@
 #include "components/login/qt/login_dialog.h"
 
+#include "components/login/login_controller.h"
 #include "core/session_service.h"
 #include "core/status.h"
 
@@ -28,48 +29,52 @@ QStringList MakeQStringList(const std::vector<std::wstring>& source) {
 
 }  // namespace
 
-LoginDialog::LoginDialog(DataServicesContext&& services_context)
-    : controller_{std::move(services_context), dialog_service_} {
+LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
+                         DataServicesContext&& services_context)
+    : controller_{std::make_shared<LoginController>(std::move(executor),
+                                                    std::move(services_context),
+                                                    dialog_service_)} {
   ui.setupUi(this);
 
   dialog_service_.parent_widget = this;
 
-  controller_.completion_handler = [this](DataServices& services) {
+  controller_->completion_handler = [this](DataServices services) {
     this->services = std::move(services);
     QDialog::accept();
   };
 
-  controller_.error_handler = [this] {
+  controller_->error_handler = [this] {
     EnableControls(true);
     ui.userNameComboBox->setFocus();
     ui.userNameComboBox->lineEdit()->selectAll();
   };
 
-  if (controller_.server_type_list.size() >= 2) {
+  if (controller_->server_type_list.size() >= 2) {
     ui.serverTypeComboBox->addItems(
-        MakeQStringList(controller_.server_type_list));
-    ui.serverTypeComboBox->setCurrentIndex(controller_.server_type_index);
+        MakeQStringList(controller_->server_type_list));
+    ui.serverTypeComboBox->setCurrentIndex(controller_->server_type_index);
   } else {
     ui.serverTypeComboBox->setVisible(false);
   }
 
   ui.serverComboBox->setCurrentText(
-      QString::fromStdString(controller_.server_host));
+      QString::fromStdString(controller_->server_host));
 
-  ui.userNameComboBox->addItems(MakeQStringList(controller_.user_list));
+  ui.userNameComboBox->addItems(MakeQStringList(controller_->user_list));
   ui.userNameComboBox->setCurrentText(
-      QString::fromStdWString(controller_.user_name));
+      QString::fromStdWString(controller_->user_name));
   ui.userNameComboBox->lineEdit()->selectAll();
 
-  ui.autoLoginCheckBox->setChecked(controller_.auto_login);
+  ui.autoLoginCheckBox->setChecked(controller_->auto_login);
 
   ui.userNameComboBox->view()->setToolTip(
       tr("You can remove the highlighted user from list by pressing Delete."));
 
   QApplication::instance()->installEventFilter(this);
 
-  if (controller_.auto_login) {
-    ui.passwordLineEdit->setText(QString::fromStdWString(controller_.password));
+  if (controller_->auto_login) {
+    ui.passwordLineEdit->setText(
+        QString::fromStdWString(controller_->password));
     accept();
   }
 }
@@ -79,15 +84,15 @@ LoginDialog::~LoginDialog() {}
 void LoginDialog::accept() {
   EnableControls(false);
 
-  controller_.server_type_index = controller_.server_type_list.size() >= 2
-                                      ? ui.serverTypeComboBox->currentIndex()
-                                      : 0;
-  controller_.server_host = ui.serverComboBox->currentText().toStdString();
-  controller_.user_name = ui.userNameComboBox->currentText().toStdWString();
-  controller_.password = ui.passwordLineEdit->text().toStdWString();
-  controller_.auto_login = ui.autoLoginCheckBox->isChecked();
+  controller_->server_type_index = controller_->server_type_list.size() >= 2
+                                       ? ui.serverTypeComboBox->currentIndex()
+                                       : 0;
+  controller_->server_host = ui.serverComboBox->currentText().toStdString();
+  controller_->user_name = ui.userNameComboBox->currentText().toStdWString();
+  controller_->password = ui.passwordLineEdit->text().toStdWString();
+  controller_->auto_login = ui.autoLoginCheckBox->isChecked();
 
-  controller_.Login();
+  controller_->Login();
 }
 
 void LoginDialog::EnableControls(bool enable) {
@@ -106,7 +111,7 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
       if (key_event->key() == Qt::Key_Delete) {
         int index = ui.userNameComboBox->view()->currentIndex().row();
         if (index != -1) {
-          controller_.DeleteUserName(
+          controller_->DeleteUserName(
               ui.userNameComboBox->itemText(index).toStdWString());
           ui.userNameComboBox->removeItem(index);
         }
@@ -118,9 +123,10 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
   return QDialog::eventFilter(object, event);
 }
 
-bool ExecuteLoginDialog(DataServicesContext&& services_context,
+bool ExecuteLoginDialog(std::shared_ptr<Executor> executor,
+                        DataServicesContext&& services_context,
                         DataServices& services) {
-  LoginDialog login_dialog{std::move(services_context)};
+  LoginDialog login_dialog{std::move(executor), std::move(services_context)};
   if (login_dialog.exec() == QDialog::Rejected)
     return false;
   services = std::move(login_dialog.services);
