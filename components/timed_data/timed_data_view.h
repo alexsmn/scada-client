@@ -45,10 +45,10 @@ class TimedDataView : protected ControllerContext,
 
   SelectionModel selection_{{timed_data_service_}};
 
-  TimedDataModel model_{TimedDataModelContext{timed_data_service_}};
-  ui::MirrorTableModel mirror_model_{model_};
+  std::shared_ptr<TimedDataModel> model_;
+  std::shared_ptr<ui::MirrorTableModel> mirror_model_;
 
-  std::unique_ptr<Table> view_;
+  Table* view_ = nullptr;
 
   CommandRegistry command_registry_;
 };

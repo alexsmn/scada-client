@@ -15,7 +15,7 @@
 
 WatchView::WatchView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_unique<WatchModel>(
+      model_{std::make_shared<WatchModel>(
           WatchModelContext{context.node_service_})} {}
 
 WatchView::~WatchView() {
@@ -48,7 +48,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
     model_->SetDevice(node_service_.GetNode(device_id));
   }
 
-  table_.reset(new Table(*model_, {columns, columns + _countof(columns)}));
+  table_ = new Table(model_, {columns, columns + _countof(columns)});
 
   table_->SetSelectionChangeHandler([this] {
     auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;

@@ -49,8 +49,9 @@ class TableView : protected ControllerContext,
 
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<TableModel> model_;
-  std::unique_ptr<Table> view_;
+  const std::shared_ptr<TableModel> model_;
+
+  Table* view_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
@@ -58,5 +59,6 @@ class TableView : protected ControllerContext,
   Command& move_up_command_ = command_registry_.AddCommand(ID_MOVE_UP);
   Command& move_down_command_ = command_registry_.AddCommand(ID_MOVE_DOWN);
   Command& sort_name_command_ = command_registry_.AddCommand(ID_SORT_NAME);
-  Command& sort_channel_command_ = command_registry_.AddCommand(ID_SORT_CHANNEL);
+  Command& sort_channel_command_ =
+      command_registry_.AddCommand(ID_SORT_CHANNEL);
 };

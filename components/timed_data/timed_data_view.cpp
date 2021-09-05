@@ -34,20 +34,36 @@ TimedDataView::TimedDataView(const ControllerContext& context)
     : ControllerContext{context} {}
 
 UiView* TimedDataView::Init(const WindowDefinition& definition) {
+  model_ = std::make_shared<TimedDataModel>(
+      TimedDataModelContext{timed_data_service_});
+
+  struct MirrorTableModelHolder {
+    explicit MirrorTableModelHolder(std::shared_ptr<TimedDataModel> model)
+        : model{std::move(model)} {}
+
+    const std::shared_ptr<TimedDataModel> model;
+    ui::MirrorTableModel mirror_model{*model};
+  };
+
+  auto mirror_table_holder = std::make_shared<MirrorTableModelHolder>(model_);
+
+  mirror_model_ = std::shared_ptr<ui::MirrorTableModel>(
+      mirror_table_holder, &mirror_table_holder->mirror_model);
+
   if (const WindowItem* item = definition.FindItem("Item"))
-    model_.SetFormula(item->GetString("path"));
+    model_->SetFormula(item->GetString("path"));
 
   if (auto time_range = RestoreTimeRange(definition))
-    model_.SetTimeRange(*time_range);
+    model_->SetTimeRange(*time_range);
 
   if (const auto* item = definition.FindItem("View")) {
-    mirror_model_.SetMirrored(
+    mirror_model_->SetMirrored(
         item->GetBool("mirrored", profile_.timed_data.mirrored));
   } else {
-    mirror_model_.SetMirrored(profile_.timed_data.mirrored);
+    mirror_model_->SetMirrored(profile_.timed_data.mirrored);
   }
 
-  view_ = std::make_unique<Table>(
+  view_ = new Table(
       mirror_model_,
       std::vector<ui::TableColumn>(s_columns, s_columns + _countof(s_columns)));
   view_->SetShowGrid(true);
@@ -60,31 +76,31 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
   view_->horizontalHeader()->setSectionsClickable(true);
   view_->horizontalHeader()->setSortIndicatorShown(true);
   view_->horizontalHeader()->setSortIndicator(
-      0, mirror_model_.mirrored() ? Qt::DescendingOrder : Qt::AscendingOrder);
+      0, mirror_model_->mirrored() ? Qt::DescendingOrder : Qt::AscendingOrder);
   QObject::connect(view_->horizontalHeader(), &QHeaderView::sectionClicked,
                    [this](int logical_index) {
                      if (logical_index == 0) {
-                       mirror_model_.SetMirrored(!mirror_model_.mirrored());
-                       profile_.timed_data.mirrored = mirror_model_.mirrored();
+                       mirror_model_->SetMirrored(!mirror_model_->mirrored());
+                       profile_.timed_data.mirrored = mirror_model_->mirrored();
                      }
                      // WARNING: Must reset sort indicator if |logical_index !=
                      // 0|.
                      view_->horizontalHeader()->setSortIndicator(
-                         0, mirror_model_.mirrored() ? Qt::DescendingOrder
-                                                     : Qt::AscendingOrder);
+                         0, mirror_model_->mirrored() ? Qt::DescendingOrder
+                                                      : Qt::AscendingOrder);
                    });
 #endif
 
-  selection_.SelectTimedData(model_.timed_data());
+  selection_.SelectTimedData(model_->timed_data());
 
   return view_->CreateParentIfNecessary();
 }
 
 void TimedDataView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
-  item.SetString("path", model_.timed_data().formula());
-  SaveTimeRange(definition, model_.GetTimeRange());
-  definition.AddItem("View").SetBool("mirrored", mirror_model_.mirrored());
+  item.SetString("path", model_->timed_data().formula());
+  SaveTimeRange(definition, model_->GetTimeRange());
+  definition.AddItem("View").SetBool("mirrored", mirror_model_->mirrored());
 }
 
 std::string GetTimedDataUnits(const TimedDataSpec& spec) {
@@ -101,18 +117,18 @@ void TimedDataView::UpdateColumnTitles() {
     return;
 
   std::wstring units =
-  base::SysNativeMBToWide(GetTimedDataUnits(model_.timed_data()));
+  base::SysNativeMBToWide(GetTimedDataUnits(model_->timed_data()));
   std::wstring title = base::StringPrintf(L"%ls, %ls", kValueColumnTitle,
   units.c_str()); view_->SetVisibleColumnTitle(index, title);*/
 }
 
 std::wstring TimedDataView::MakeTitle() const {
-  return model_.timed_data().GetTitle();
+  return model_->timed_data().GetTitle();
 }
 
 void TimedDataView::AddContainedItem(const scada::NodeId& node_id,
                                      unsigned flags) {
-  model_.SetFormula(MakeNodeIdFormula(node_id));
+  model_->SetFormula(MakeNodeIdFormula(node_id));
 }
 
 CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
@@ -120,19 +136,19 @@ CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
 }
 
 bool TimedDataView::IsWorking() const {
-  return !model_.timed_data().ready();
+  return !model_->timed_data().ready();
 }
 
 TimeModel* TimedDataView::GetTimeModel() {
-  return &model_;
+  return model_.get();
 }
 
 ExportModel::ExportData TimedDataView::GetExportData() {
-  return TableExportData{mirror_model_, view_->columns()};
+  return TableExportData{*mirror_model_, view_->columns()};
 }
 
 std::optional<OpenContext> TimedDataView::GetOpenContext() const {
-  const auto& node = model_.timed_data().GetNode();
+  const auto& node = model_->timed_data().GetNode();
   if (!node)
     return std::nullopt;
 
@@ -142,10 +158,10 @@ std::optional<OpenContext> TimedDataView::GetOpenContext() const {
   const auto& selected_rows = view_->GetSelectedRows();
   if (selected_rows.size() >= 2) {
     auto p = std::minmax_element(selected_rows.begin(), selected_rows.end());
-    const int row1 = mirror_model_.MapToSource(*p.first);
-    const int row2 = mirror_model_.MapToSource(*p.second);
-    const auto& first_data_value = model_.value(std::min(row1, row2));
-    const auto& last_data_value = model_.value(std::max(row1, row2));
+    const int row1 = mirror_model_->MapToSource(*p.first);
+    const int row2 = mirror_model_->MapToSource(*p.second);
+    const auto& first_data_value = model_->value(std::min(row1, row2));
+    const auto& last_data_value = model_->value(std::max(row1, row2));
     context.time_range = TimeRange{first_data_value.source_timestamp,
                                    last_data_value.source_timestamp +
                                        scada::Duration::FromMilliseconds(1)};

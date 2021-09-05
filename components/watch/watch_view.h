@@ -36,11 +36,11 @@ class WatchView : protected ControllerContext,
   // ui::TableModelObserver
   virtual void OnItemsAdded(int first, int count) override;
 
-  std::unique_ptr<WatchModel> model_;
+  const std::shared_ptr<WatchModel> model_;
 
   bool auto_scroll_ = false;
 
-  std::unique_ptr<Table> table_;
+  Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
 };

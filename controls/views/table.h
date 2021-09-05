@@ -9,7 +9,7 @@ class Table : public views::TableView,
               private views::ContextMenuController,
               private views::TableController {
  public:
-  Table(ui::TableModel& model,
+  Table(std::shared_ptr<ui::TableModel> model,
         std::vector<ui::TableColumn> columns,
         bool sorting = false);
 
@@ -46,6 +46,8 @@ class Table : public views::TableView,
   virtual bool OnDoubleClick() override;
   virtual bool OnKeyPressed(views::TableView& sender,
                             ui::KeyboardCode key_code) override;
+
+  const std::shared_ptr<ui::TableModel> model_;
 
   SelectionChangeHandler selection_change_handler_;
   ContextMenuHandler context_menu_handler_;

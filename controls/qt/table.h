@@ -10,7 +10,7 @@
 
 class Table : public QTableView {
  public:
-  Table(ui::TableModel& model,
+  Table(std::shared_ptr<ui::TableModel> model,
         std::vector<ui::TableColumn> columns,
         bool sorting = false);
   ~Table();

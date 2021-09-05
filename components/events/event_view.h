@@ -62,10 +62,11 @@ class EventView : protected ControllerContext,
 
   const bool is_panel_;
 
+  const std::shared_ptr<EventTableModel> model_;
+
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<EventTableModel> model_;
-  std::unique_ptr<Table> table_;
+  Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
 };

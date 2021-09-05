@@ -26,15 +26,16 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
                                const QModelIndex& source_right) const {
   assert(source_left.column() == source_right.column());
   int column_id = columns_[source_left.column()].id;
-  return model_.CompareCells(source_left.row(), source_right.row(), column_id) < 0;
+  return model_.CompareCells(source_left.row(), source_right.row(), column_id) <
+         0;
 }
 
 }  // namespace
 
-Table::Table(ui::TableModel& model,
+Table::Table(std::shared_ptr<ui::TableModel> model,
              std::vector<ui::TableColumn> columns,
              bool sorting)
-    : model_adapter_(model, std::move(columns)) {
+    : model_adapter_{std::move(model), std::move(columns)} {
   horizontalHeader()->setHighlightSections(false);
   verticalHeader()->setDefaultSectionSize(19);
 

@@ -23,7 +23,7 @@
 EventView::EventView(const ControllerContext& context, bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
-      model_{std::make_unique<EventTableModel>(EventTableModelContext{
+      model_{std::make_shared<EventTableModel>(EventTableModelContext{
           context.executor_, context.node_service_, context.event_fetcher_,
           context.local_events_, context.history_service_, is_panel_})} {
   const ui::TableColumn kEventViewColumns[] = {
@@ -43,10 +43,10 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   if (is_panel)
     count -= 2;
 
-  table_.reset(new Table(*model_,
-                         std::vector<ui::TableColumn>(
-                             kEventViewColumns, kEventViewColumns + count),
-                         true));
+  table_ = new Table{model_,
+                     std::vector<ui::TableColumn>(kEventViewColumns,
+                                                  kEventViewColumns + count),
+                     true};
 
 #if defined(UI_QT)
   table_->sortByColumn(0, Qt::DescendingOrder);

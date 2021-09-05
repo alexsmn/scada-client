@@ -22,18 +22,18 @@ Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
 
 }  // namespace
 
-TableModelAdapter::TableModelAdapter(ui::TableModel& model,
+TableModelAdapter::TableModelAdapter(std::shared_ptr<ui::TableModel> model,
                                      std::vector<ui::TableColumn> columns)
-    : model_(model), columns_(std::move(columns)) {
-  model_.observers().AddObserver(this);
+    : model_{std::move(model)}, columns_(std::move(columns)) {
+  model_->observers().AddObserver(this);
 }
 
 TableModelAdapter::~TableModelAdapter() {
-  model_.observers().RemoveObserver(this);
+  model_->observers().RemoveObserver(this);
 }
 
 int TableModelAdapter::rowCount(const QModelIndex& parent) const {
-  return model_.GetRowCount();
+  return model_->GetRowCount();
 }
 
 int TableModelAdapter::columnCount(const QModelIndex& parent) const {
@@ -51,7 +51,7 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
   ui::TableCell cell;
   cell.row = index.row();
   cell.column_id = column.id;
-  model_.GetCell(cell);
+  model_->GetCell(cell);
 
   switch (role) {
     case Qt::DisplayRole:
@@ -71,8 +71,8 @@ bool TableModelAdapter::setData(const QModelIndex& index,
                                 int role) {
   switch (role) {
     case Qt::EditRole:
-      return model_.SetCellText(index.row(), columns_[index.column()].id,
-                                value.toString().toStdWString());
+      return model_->SetCellText(index.row(), columns_[index.column()].id,
+                                 value.toString().toStdWString());
 
     default:
       return false;
@@ -97,13 +97,13 @@ QVariant TableModelAdapter::headerData(int section,
 
 Qt::ItemFlags TableModelAdapter::flags(const QModelIndex& index) const {
   auto flags = QAbstractItemModel::flags(index);
-  if (model_.IsEditable(index.row(), columns_[index.column()].id))
+  if (model_->IsEditable(index.row(), columns_[index.column()].id))
     flags |= Qt::ItemIsEditable;
   return flags;
 }
 
 void TableModelAdapter::sort(int column, Qt::SortOrder order) {
-  model_.Sort(columns_[column].id, order == Qt::AscendingOrder);
+  model_->Sort(columns_[column].id, order == Qt::AscendingOrder);
 }
 
 void TableModelAdapter::OnModelChanged() {

@@ -19,10 +19,10 @@
 // TableView
 
 TableView::TableView(const ControllerContext& context)
-    : ControllerContext{context} {
-  model_ = std::make_unique<TableModel>(
-      TableModelContext{timed_data_service_, event_fetcher_, profile_,
-                        dialog_service_, blinker_manager_});
+    : ControllerContext{context},
+      model_{std::make_shared<TableModel>(
+          TableModelContext{timed_data_service_, event_fetcher_, profile_,
+                            dialog_service_, blinker_manager_})} {
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
     NotifyContainedItemChanged(item_id, added);
   };
@@ -37,7 +37,7 @@ TableView::TableView(const ControllerContext& context)
       {TableModel::COLUMN_EVENT, L"Событие", 200, ui::TableColumn::LEFT},
   };
 
-  view_ = std::make_unique<Table>(*model_, std::move(columns));
+  view_ = new Table{model_, std::move(columns)};
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 

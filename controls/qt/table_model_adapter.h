@@ -13,12 +13,12 @@ struct TableColumn;
 class TableModelAdapter : public QAbstractTableModel,
                           private ui::TableModelObserver {
  public:
-  TableModelAdapter(ui::TableModel& model,
+  TableModelAdapter(std::shared_ptr<ui::TableModel> model,
                     std::vector<ui::TableColumn> columns);
   virtual ~TableModelAdapter();
 
-  ui::TableModel& model() { return model_; }
-  const ui::TableModel& model() const { return model_; }
+  ui::TableModel& model() { return *model_; }
+  const ui::TableModel& model() const { return *model_; }
 
   std::vector<ui::TableColumn>& columns() { return columns_; }
   const std::vector<ui::TableColumn>& columns() const { return columns_; }
@@ -49,6 +49,6 @@ class TableModelAdapter : public QAbstractTableModel,
   virtual void OnItemsRemoved(int first, int count) override;
 
  private:
-  ui::TableModel& model_;
+  const std::shared_ptr<ui::TableModel> model_;
   std::vector<ui::TableColumn> columns_;
 };
