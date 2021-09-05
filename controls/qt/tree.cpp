@@ -28,13 +28,13 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
 
 // Tree
 
-Tree::Tree(ui::TreeModel& model)
+Tree::Tree(std::shared_ptr<ui::TreeModel> model)
     : model_adapter_{model},
       proxy_model_{*this},
-      item_delegate_{[this, &model](const QModelIndex& index) {
+      item_delegate_{[this, model](const QModelIndex& index) {
         auto source_index = proxy_model_.mapToSource(index);
-        return model.GetEditData(source_index.internalPointer(),
-                                 source_index.column());
+        return model->GetEditData(source_index.internalPointer(),
+                                  source_index.column());
       }} {
   setHeaderHidden(true);
   setItemDelegate(&item_delegate_);
@@ -55,7 +55,7 @@ Tree::Tree(ui::TreeModel& model)
   // - reimplement method setModel and use and set initial widths of columns
   // based on Qt::SizeHintRole using method QTableView::setColumnWidth.
   for (int i = 0; i < this->model()->columnCount(); ++i) {
-    int width = model.GetColumnPreferredSize(i);
+    int width = model->GetColumnPreferredSize(i);
     if (width != 0)
       setColumnWidth(i, width);
   }

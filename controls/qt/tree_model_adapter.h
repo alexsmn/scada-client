@@ -13,7 +13,7 @@ class TreeModel;
 class TreeModelAdapter : public QAbstractItemModel,
                          private ui::TreeModelObserver {
  public:
-  explicit TreeModelAdapter(ui::TreeModel& model);
+  explicit TreeModelAdapter(std::shared_ptr<ui::TreeModel> model);
   virtual ~TreeModelAdapter();
 
   void SetCheckable(bool checkable) { checkable_ = checkable; }
@@ -69,7 +69,7 @@ class TreeModelAdapter : public QAbstractItemModel,
   virtual void OnTreeModelResetting() override;
   virtual void OnTreeModelReset() override;
 
-  ui::TreeModel& model_;
+  const std::shared_ptr<ui::TreeModel> model_;
 
   std::vector<QIcon> icons_;
 

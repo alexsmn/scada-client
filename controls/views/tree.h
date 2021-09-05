@@ -18,7 +18,7 @@ class Tree : public views::TreeView,
              private views::ContextMenuController,
              private views::TreeView::CustomPainter {
  public:
-  explicit Tree(ui::TreeModel& model);
+  explicit Tree(std::shared_ptr<ui::TreeModel> model);
   virtual ~Tree();
 
   void SetHeaderVisible(bool visible);
@@ -65,6 +65,8 @@ class Tree : public views::TreeView,
   virtual void OnPaintNode(gfx::Canvas* canvas,
                            const gfx::Rect& node_bounds,
                            void* node) override;
+
+  const std::shared_ptr<ui::TreeModel> model_;
 
   DoubleClickHandler double_click_handler_;
   SelectionChangedHandler selection_changed_handler_;

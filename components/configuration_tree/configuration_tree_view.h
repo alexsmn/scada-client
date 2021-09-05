@@ -16,9 +16,10 @@ class ConfigurationTreeDragDropControllerViews;
 
 class ConfigurationTreeView : protected ControllerContext, public Controller {
  public:
-  ConfigurationTreeView(const ControllerContext& context,
-                        ConfigurationTreeModel& model,
-                        ConfigurationTreeDropHandler& drop_handler);
+  ConfigurationTreeView(
+      const ControllerContext& context,
+      std::shared_ptr<ConfigurationTreeModel> model,
+      std::unique_ptr<ConfigurationTreeDropHandler> drop_handler);
   virtual ~ConfigurationTreeView();
 
   // View
@@ -42,9 +43,9 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
  private:
   void UpdateSelection();
 
-  SelectionModel selection_{{timed_data_service_}};
+  const std::shared_ptr<ConfigurationTreeModel> model_;
 
-  std::unique_ptr<ConfigurationTreeModel> model_;
+  SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<ConfigurationTreeDropHandler> drop_handler_;
 
@@ -53,5 +54,5 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
       drag_drop_controller_;
 #endif
 
-  std::unique_ptr<Tree> tree_view_;
+  Tree* tree_view_ = nullptr;
 };

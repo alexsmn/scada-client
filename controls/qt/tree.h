@@ -31,7 +31,7 @@ class TreeProxyModel : public QSortFilterProxyModel {
 
 class Tree : public QTreeView {
  public:
-  explicit Tree(ui::TreeModel& model);
+  explicit Tree(std::shared_ptr<ui::TreeModel> model);
   virtual ~Tree();
 
   void SetRootVisible(bool visible);

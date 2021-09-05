@@ -12,18 +12,29 @@ class FileSystemView : public ConfigurationTreeView {
   explicit FileSystemView(const ControllerContext& context)
       : ConfigurationTreeView{
             context,
-            *new ConfigurationTreeModel(ConfigurationTreeModelContext{
-                std::make_unique<NodeServiceTreeImpl>(
-                    NodeServiceTreeImplContext{
-                        context.node_service_,
-                        context.node_service_.GetNode(
-                            filesystem::id::FileSystem),
-                        {{scada::id::Organizes, true}},
-                        {},
-                    })}),
-            *new ConfigurationTreeDropHandler{
-                ConfigurationTreeDropHandlerContext{
-                    context.node_service_,
-                    context.task_manager_,
-                }}} {}
+            CreateConfigurationTreeModel(context),
+            CreateConfigurationTreeDropHandler(context),
+        } {}
+
+ private:
+  static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
+      const ControllerContext& context) {
+    return std::make_shared<ConfigurationTreeModel>(
+        ConfigurationTreeModelContext{
+            std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+                context.node_service_,
+                context.node_service_.GetNode(filesystem::id::FileSystem),
+                {{scada::id::Organizes, true}},
+                {},
+            })});
+  }
+
+  static std::unique_ptr<ConfigurationTreeDropHandler>
+  CreateConfigurationTreeDropHandler(const ControllerContext& context) {
+    return std::make_unique<ConfigurationTreeDropHandler>(
+        ConfigurationTreeDropHandlerContext{
+            context.node_service_,
+            context.task_manager_,
+        });
+  }
 };

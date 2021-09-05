@@ -29,11 +29,26 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
 
   selection_.SelectNode(node);
 
-  property_model_ = std::make_unique<NodePropertyModel>(
+  property_model_ = std::make_shared<NodePropertyModel>(
       PropertyContext{node_service_, task_manager_, dialog_service_},
       std::move(node));
-  tree_model_ = std::make_unique<PropertyTreeModel>(*property_model_);
-  tree_view_ = std::make_unique<Tree>(*tree_model_);
+
+  struct PropertyTreeModelHolder {
+    explicit PropertyTreeModelHolder(
+        std::shared_ptr<NodePropertyModel> property_model)
+        : property_model{std::move(property_model)} {}
+
+    const std::shared_ptr<NodePropertyModel> property_model;
+    PropertyTreeModel tree_model{*property_model};
+  };
+
+  auto tree_model_holder =
+      std::make_shared<PropertyTreeModelHolder>(property_model_);
+
+  tree_model_ = std::shared_ptr<PropertyTreeModel>(
+      tree_model_holder, &tree_model_holder->tree_model);
+
+  tree_view_ = new Tree{tree_model_};
 
   /*tree_view_->SetColumnWidth(0, 150);
   tree_view_->SetColumnWidth(1, 200);*/
@@ -69,7 +84,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   node_deleted_connection_ = property_model_->node_deleted.connect(
       [this] { controller_delegate_.Close(); });
 
-  return tree_view_.get();
+  return tree_view_;
 }
 
 void NodePropertyController::Save(WindowDefinition& definition) {

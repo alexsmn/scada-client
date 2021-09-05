@@ -12,7 +12,7 @@
 
 PortfolioView::PortfolioView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_unique<PortfolioTreeModel>(context.node_service_,
+      model_{std::make_shared<PortfolioTreeModel>(context.node_service_,
                                                   context.portfolio_manager_)} {
   selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
@@ -20,7 +20,7 @@ PortfolioView::PortfolioView(const ControllerContext& context)
 PortfolioView::~PortfolioView() {}
 
 UiView* PortfolioView::Init(const WindowDefinition& definition) {
-  tree_.reset(new Tree(*model_));
+  tree_ = new Tree{model_};
   tree_->SetRootVisible(false);
   tree_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
 
@@ -73,7 +73,7 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
           .set_execute_handler([this] { AddItemsToPortfolio(); })
           .set_enabled_handler([this] { return !!GetSelectedPortfolio(); }));
 
-  return tree_.get();
+  return tree_;
 }
 
 void PortfolioView::DeleteSelection() {

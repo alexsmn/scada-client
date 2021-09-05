@@ -11,14 +11,14 @@ class HardwareTreeView : public ConfigurationTreeView {
   explicit HardwareTreeView(const ControllerContext& context)
       : ConfigurationTreeView{
             context,
-            *new HardwareTreeModel(HardwareTreeModelContext{
+            std::make_shared<HardwareTreeModel>(HardwareTreeModelContext{
                 context.node_service_,
                 context.timed_data_service_,
             }),
-            *new ConfigurationTreeDropHandler{
+            std::make_unique<ConfigurationTreeDropHandler>(
                 ConfigurationTreeDropHandlerContext{
                     context.node_service_,
                     context.task_manager_,
-                }},
+                }),
         } {}
 };

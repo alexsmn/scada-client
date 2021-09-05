@@ -11,11 +11,11 @@
 #include <atlctrls.h>
 #include <atltypes.h>
 
-Tree::Tree(ui::TreeModel& model) {
+Tree::Tree(std::shared_ptr<ui::TreeModel> model) : model_{std::move(model)} {
   SetController(this);
-  SetModel(&model);
+  SetModel(model_.get());
 
-  if (model.GetColumnCount() != 1)
+  if (model_->GetColumnCount() != 1)
     set_custom_painter(this);
 }
 

@@ -15,12 +15,12 @@ const wchar_t kAddUrl[] = L"Добавить Web-страницу";
 
 FavouritesView::FavouritesView(const ControllerContext& context)
     : ControllerContext{context},
-      favourites_tree_model_(new FavouritesTreeModel(favourites_)) {}
+      favourites_tree_model_{new FavouritesTreeModel(favourites_)} {}
 
 FavouritesView::~FavouritesView() {}
 
 UiView* FavouritesView::Init(const WindowDefinition& definition) {
-  tree_view_.reset(new Tree(*favourites_tree_model_));
+  tree_view_ = new Tree{favourites_tree_model_};
   tree_view_->LoadIcons(IDB_WIN_TYPES, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
   tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
@@ -53,7 +53,7 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
 
   add_url_command_.execute_handler = [this] { AddUrl(); };
 
-  return tree_view_.get();
+  return tree_view_;
 }
 
 void FavouritesView::Save(WindowDefinition& definition) {

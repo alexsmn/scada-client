@@ -27,10 +27,10 @@ class NodePropertyController : protected ControllerContext, public Controller {
  private:
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<NodePropertyModel> property_model_;
-  std::unique_ptr<ui::TreeModel> tree_model_;
+  std::shared_ptr<NodePropertyModel> property_model_;
+  std::shared_ptr<ui::TreeModel> tree_model_;
 
-  std::unique_ptr<Tree> tree_view_;
+  Tree* tree_view_;
 
   boost::signals2::scoped_connection node_deleted_connection_;
 };

@@ -14,12 +14,13 @@
 #include <QtWin>
 #endif
 
-TreeModelAdapter::TreeModelAdapter(ui::TreeModel& model) : model_(model) {
-  model_.AddObserver(*this);
+TreeModelAdapter::TreeModelAdapter(std::shared_ptr<ui::TreeModel> model)
+    : model_{std::move(model)} {
+  model_->AddObserver(*this);
 }
 
 TreeModelAdapter::~TreeModelAdapter() {
-  model_.RemoveObserver(*this);
+  model_->RemoveObserver(*this);
 }
 
 void TreeModelAdapter::LoadIcons(unsigned resource_id,
@@ -53,12 +54,12 @@ QVariant TreeModelAdapter::headerData(int section,
 
   switch (role) {
     case Qt::DisplayRole:
-      return QString::fromStdWString(model_.GetColumnText(section));
+      return QString::fromStdWString(model_->GetColumnText(section));
     case Qt::SizeHintRole: {
       auto size =
           QAbstractItemModel::headerData(section, orientation, role).toSize();
       size.setHeight(20);
-      int peferred_width = model_.GetColumnPreferredSize(section);
+      int peferred_width = model_->GetColumnPreferredSize(section);
       if (peferred_width != 0)
         size.setWidth(peferred_width);
       return size;
@@ -73,14 +74,14 @@ QModelIndex TreeModelAdapter::index(int row,
                                     const QModelIndex& parent) const {
   if (!parent.isValid()) {
     assert(row == 0);
-    return GetNodeIndex(model_.GetRoot(), column);
+    return GetNodeIndex(model_->GetRoot(), column);
   }
 
   void* parent_node = GetNode(parent);
-  if (row >= model_.GetChildCount(parent_node))
+  if (row >= model_->GetChildCount(parent_node))
     return {};
 
-  void* child_node = model_.GetChild(parent_node, row);
+  void* child_node = model_->GetChild(parent_node, row);
   return createIndex(row, column, child_node);
 }
 
@@ -89,10 +90,10 @@ QModelIndex TreeModelAdapter::parent(const QModelIndex& child) const {
 
   void* child_node = GetNode(child);
 
-  if (child_node == model_.GetRoot())
+  if (child_node == model_->GetRoot())
     return QModelIndex();
 
-  void* parent_node = model_.GetParent(child_node);
+  void* parent_node = model_->GetParent(child_node);
   return createIndex(GetIndexOf(parent_node), 0, parent_node);
 }
 
@@ -103,11 +104,11 @@ int TreeModelAdapter::rowCount(const QModelIndex& parent) const {
   if (!parent.isValid())
     return 1;  // root only
 
-  return model_.GetChildCount(GetNode(parent));
+  return model_->GetChildCount(GetNode(parent));
 }
 
 int TreeModelAdapter::columnCount(const QModelIndex& parent) const {
-  return model_.GetColumnCount();
+  return model_->GetColumnCount();
 }
 
 QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
@@ -118,13 +119,13 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
-      return QString::fromStdWString(model_.GetText(node, index.column()));
+      return QString::fromStdWString(model_->GetText(node, index.column()));
     case Qt::ForegroundRole:
-      return ToQColor(model_.GetTextColor(node, index.column()));
+      return ToQColor(model_->GetTextColor(node, index.column()));
     case Qt::BackgroundRole:
-      return ToQColor(model_.GetBackgroundColor(node, index.column()));
+      return ToQColor(model_->GetBackgroundColor(node, index.column()));
     case Qt::DecorationRole: {
-      auto icon_index = index.column() == 0 ? model_.GetIcon(node) : -1;
+      auto icon_index = index.column() == 0 ? model_->GetIcon(node) : -1;
       return (icon_index >= 0 && icon_index < static_cast<int>(icons_.size()))
                  ? icons_[icon_index]
                  : QVariant();
@@ -132,7 +133,7 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::SizeHintRole:
       return QSize{-1, row_height};
     case Qt::CheckStateRole:
-      if (!checkable_ || index.column() != 0 || node == model_.GetRoot())
+      if (!checkable_ || index.column() != 0 || node == model_->GetRoot())
         return QVariant();
       return checked_nodes_.find(node) == checked_nodes_.end() ? Qt::Unchecked
                                                                : Qt::Checked;
@@ -149,7 +150,7 @@ bool TreeModelAdapter::setData(const QModelIndex& index,
   void* node = GetNode(index);
 
   if (role == Qt::EditRole) {
-    model_.SetText(node, index.column(), value.toString().toStdWString());
+    model_->SetText(node, index.column(), value.toString().toStdWString());
     return true;
 
   } else if (role == Qt::CheckStateRole) {
@@ -170,26 +171,26 @@ Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
 
   void* node = GetNode(index);
 
-  bool selectable = model_.IsSelectable(node, index.column());
+  bool selectable = model_->IsSelectable(node, index.column());
   flags.setFlag(Qt::ItemIsSelectable, selectable);
 
   bool checkable =
-      checkable_ && index.column() == 0 && node != model_.GetRoot();
+      checkable_ && index.column() == 0 && node != model_->GetRoot();
   flags.setFlag(Qt::ItemIsUserCheckable, checkable);
 
-  bool editable = model_.IsEditable(node, index.column());
+  bool editable = model_->IsEditable(node, index.column());
   flags.setFlag(Qt::ItemIsEditable, editable);
 
   return flags;
 }
 
 int TreeModelAdapter::GetIndexOf(void* node) const {
-  if (node == model_.GetRoot())
+  if (node == model_->GetRoot())
     return 0;
 
-  void* parent_node = model_.GetParent(node);
-  for (int i = 0; i < model_.GetChildCount(parent_node); ++i) {
-    if (model_.GetChild(parent_node, i) == node)
+  void* parent_node = model_->GetParent(node);
+  for (int i = 0; i < model_->GetChildCount(parent_node); ++i) {
+    if (model_->GetChild(parent_node, i) == node)
       return i;
   }
 
@@ -216,7 +217,7 @@ void TreeModelAdapter::OnTreeNodesDeleted(void* parent, int start, int count) {
 
 void TreeModelAdapter::OnTreeNodeChanged(void* node) {
   dataChanged(GetNodeIndex(node, 0),
-              GetNodeIndex(node, model_.GetColumnCount() - 1));
+              GetNodeIndex(node, model_->GetColumnCount() - 1));
 }
 
 bool TreeModelAdapter::IsChecked(void* node) const {
@@ -265,16 +266,16 @@ void TreeModelAdapter::OnTreeModelReset() {
 }
 
 bool TreeModelAdapter::hasChildren(const QModelIndex& parent) const {
-  void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
-  return model_.HasChildren(node);
+  void* node = parent.isValid() ? GetNode(parent) : model_->GetRoot();
+  return model_->HasChildren(node);
 }
 
 bool TreeModelAdapter::canFetchMore(const QModelIndex& parent) const {
-  void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
-  return model_.CanFetchMore(node);
+  void* node = parent.isValid() ? GetNode(parent) : model_->GetRoot();
+  return model_->CanFetchMore(node);
 }
 
 void TreeModelAdapter::fetchMore(const QModelIndex& parent) {
-  void* node = parent.isValid() ? GetNode(parent) : model_.GetRoot();
-  model_.FetchMore(node);
+  void* node = parent.isValid() ? GetNode(parent) : model_->GetRoot();
+  model_->FetchMore(node);
 }

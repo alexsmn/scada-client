@@ -39,10 +39,11 @@ class PortfolioView : protected ControllerContext,
   void NewPortfolio();
   void AddItemsToPortfolio();
 
+  const std::shared_ptr<PortfolioTreeModel> model_;
+
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<PortfolioTreeModel> model_;
-  std::unique_ptr<Tree> tree_;
+  Tree* tree_ = nullptr;
 
   CommandRegistry command_registry_;
 };

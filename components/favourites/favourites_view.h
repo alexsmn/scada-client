@@ -27,8 +27,9 @@ class FavouritesView : protected ControllerContext, public Controller {
 
   void AddUrl();
 
-  std::unique_ptr<FavouritesTreeModel> favourites_tree_model_;
-  std::unique_ptr<Tree> tree_view_;
+  const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
+
+  Tree* tree_view_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& open_command_ = command_registry_.AddCommand(ID_OPEN);

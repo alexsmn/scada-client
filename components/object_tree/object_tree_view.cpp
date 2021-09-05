@@ -20,17 +20,18 @@
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{
           context,
-          *new ObjectTreeModel(ObjectTreeModelContext{
+          std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
               context.node_service_,
               context.node_service_.GetNode(data_items::id::DataItems),
               context.timed_data_service_,
               context.profile_,
               context.blinker_manager_,
           }),
-          *new ConfigurationTreeDropHandler{ConfigurationTreeDropHandlerContext{
-              context.node_service_,
-              context.task_manager_,
-          }},
+          std::make_unique<ConfigurationTreeDropHandler>(
+              ConfigurationTreeDropHandlerContext{
+                  context.node_service_,
+                  context.task_manager_,
+              }),
       } {
   tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);

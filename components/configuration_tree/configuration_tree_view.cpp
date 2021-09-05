@@ -34,10 +34,12 @@ int CompareNodes(const NodeRef& a, const NodeRef& b) {
 
 ConfigurationTreeView::ConfigurationTreeView(
     const ControllerContext& context,
-    ConfigurationTreeModel& model,
-    ConfigurationTreeDropHandler& drop_handler)
-    : ControllerContext{context}, model_{&model}, drop_handler_{&drop_handler} {
-  tree_view_.reset(new Tree(*model_));
+    std::shared_ptr<ConfigurationTreeModel> model,
+    std::unique_ptr<ConfigurationTreeDropHandler> drop_handler)
+    : ControllerContext{context},
+      model_{std::move(model)},
+      drop_handler_{std::move(drop_handler)} {
+  tree_view_ = new Tree{model_};
   tree_view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetRootVisible(true);
   tree_view_->SetSorted(true);
@@ -79,7 +81,7 @@ UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
     tree_view_->RestoreState(state->attributes);
 
-  return tree_view_.get();
+  return tree_view_;
 }
 
 #if defined(UI_VIEWS)

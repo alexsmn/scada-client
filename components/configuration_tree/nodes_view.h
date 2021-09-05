@@ -11,18 +11,20 @@ class NodesView : public ConfigurationTreeView {
   explicit NodesView(const ControllerContext& context)
       : ConfigurationTreeView{
             context,
-            *new ConfigurationTreeModel{ConfigurationTreeModelContext{
-                std::make_unique<NodeServiceTreeImpl>(
-                    NodeServiceTreeImplContext{
-                        context.node_service_,
-                        context.node_service_.GetNode(scada::id::RootFolder),
-                        {{scada::id::HierarchicalReferences, true}},
-                        {}}),
-            }},
-            *new ConfigurationTreeDropHandler{
+            std::make_shared<ConfigurationTreeModel>(
+                ConfigurationTreeModelContext{
+                    std::make_unique<NodeServiceTreeImpl>(
+                        NodeServiceTreeImplContext{
+                            context.node_service_,
+                            context.node_service_.GetNode(
+                                scada::id::RootFolder),
+                            {{scada::id::HierarchicalReferences, true}},
+                            {}}),
+                }),
+            std::make_unique<ConfigurationTreeDropHandler>(
                 ConfigurationTreeDropHandlerContext{
                     context.node_service_,
                     context.task_manager_,
-                }},
+                }),
         } {}
 };
