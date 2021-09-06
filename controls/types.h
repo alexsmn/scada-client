@@ -11,6 +11,9 @@
 #include <QWidget>
 #elif defined(UI_VIEWS)
 #include "ui/views/view.h"
+#elif defined(UI_WT)
+#include <Wt/WPoint.h>
+#include <Wt/WWidget.h>
 #endif
 
 #if defined(UI_QT)
@@ -19,6 +22,9 @@ typedef QPoint UiPoint;
 #elif defined(UI_VIEWS)
 typedef views::View UiView;
 typedef gfx::Point UiPoint;
+#elif defined(UI_WT)
+typedef Wt::WWidget UiView;
+typedef Wt::WPoint UiPoint;
 #endif
 
 typedef SkColor UiColor;

@@ -23,6 +23,8 @@ struct Rgba {
 #include "controls/qt/color_qt.h"
 #elif defined(UI_VIEWS)
 #include "controls/views/color_views.h"
+#elif defined(UI_WT)
+#include "controls/wt/color_wt.h"
 #endif
 
 #include <SkColor.h>

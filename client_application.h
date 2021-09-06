@@ -67,6 +67,7 @@ class ClientApplication : private ClientApplicationContext,
   MainWindowContext MakeMainWindowContext(int window_id);
 
   promise<bool> Login();
+  void OnLoginCompleted(DataServices services);
   void OnStartLoginCompleted();
 
   void OnEvents(bool has_events);

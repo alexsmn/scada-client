@@ -1,6 +1,5 @@
 ﻿#include "client_application.h"
 
-#include "base/bind.h"
 #include "base/blinker.h"
 #include "base/boost_log.h"
 #include "base/boost_log_adapter.h"
@@ -9,8 +8,6 @@
 #include "base/nested_logger.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task_runner_executor.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/win/dump.h"
 #include "client_paths.h"
 #include "common/audit.h"
@@ -451,27 +448,27 @@ promise<bool> ClientApplication::Login() {
                                        *transport_factory_, service_log_params};
 
   return ExecuteLoginDialog(executor_, std::move(services_context))
-      .then(BindPromiseExecutor(
-          executor_, [this](std::optional<DataServices> optional_services) {
-            if (!optional_services)
-              return false;
+      .then(BindPromiseExecutor(executor_,
+                                [this](std::optional<DataServices> services) {
+                                  if (!services)
+                                    return false;
+                                  OnLoginCompleted(std::move(*services));
+                                  return true;
+                                }));
+}
 
-            auto& services = *optional_services;
+void ClientApplication::OnLoginCompleted(DataServices services) {
+  auto audit = std::make_shared<Audit>(
+      io_context_,
+      std::make_shared<AuditLoggerImpl>(
+          std::make_shared<NestedLogger>(logger_, "Audit")),
+      std::move(services.attribute_service_),
+      std::move(services.view_service_));
 
-            auto audit = std::make_shared<Audit>(
-                io_context_,
-                std::make_shared<AuditLoggerImpl>(
-                    std::make_shared<NestedLogger>(logger_, "Audit")),
-                std::move(services.attribute_service_),
-                std::move(services.view_service_));
+  services.attribute_service_ = audit;
+  services.view_service_ = audit;
 
-            services.attribute_service_ = audit;
-            services.view_service_ = audit;
-
-            master_data_services_->SetServices(std::move(services));
-
-            return true;
-          }));
+  master_data_services_->SetServices(std::move(services));
 }
 
 void ClientApplication::Quit() {

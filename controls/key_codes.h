@@ -4,6 +4,8 @@
 #include <QWidget>
 #elif defined(UI_VIEWS)
 #include "ui/views/view.h"
+#elif defined(UI_WT)
+#include <Wt/WWidget.h>
 #endif
 
 #if defined(UI_QT)
@@ -46,6 +48,16 @@ enum class KeyModifier : int {
   Control = ui::EF_CONTROL_DOWN,
   Alt = ui::EF_ALT_DOWN
 };
+
+#elif defined(UI_WT)
+/*enum class KeyCode : int {
+  Escape = Wt::Key::Escape,
+  Enter = Wt::Key::Enter,
+  Delete = Wt::Key::Delete,
+  Up = Wt::Key::Up,
+  Down = Wt::Key::Down,
+};*/
+using KeyCode = Wt::Key;
 #endif
 
 #if defined(UI_QT)
