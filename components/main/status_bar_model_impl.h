@@ -1,11 +1,8 @@
 ﻿#pragma once
 
 #include "base/observer_list.h"
-#include "base/timer/timer.h"
 #include "controls/status_bar_model.h"
-#include "services/task_manager.h"
-
-#include <functional>
+#include "services/progress_host.h"
 
 namespace scada {
 class SessionService;
@@ -14,19 +11,15 @@ class SessionService;
 class EventFetcher;
 class NodeService;
 
-using PendingTaskProvider = std::function<int()>;
-
 struct StatusBarModelImplContext {
   scada::SessionService& session_service_;
   EventFetcher& event_fetcher_;
   NodeService& node_service_;
-  TaskManager& task_manager_;
-  const PendingTaskProvider pending_task_provider_;
+  ProgressHost& progress_host_;
 };
 
 class StatusBarModelImpl final : private StatusBarModelImplContext,
-                                 public StatusBarModel,
-                                 private TaskManagerObserver {
+                                 public StatusBarModel {
  public:
   explicit StatusBarModelImpl(StatusBarModelImplContext&& context);
   ~StatusBarModelImpl();
@@ -40,22 +33,11 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
   virtual void RemoveObserver(StatusBarModelObserver& observer) override;
 
  private:
-  void OnTimer();
-
-  void UpdateProgress();
-
-  // TaskManagerObserver
-  virtual void OnTaskManagerStatus(
-      const TaskManagerObserver::Status& status) override;
+  void OnProgressStatus(const ProgressStatus& status);
 
   base::ObserverList<StatusBarModelObserver> observers_;
 
-  base::RepeatingTimer update_timer_;
-
-  int max_pending_task_count_ = 0;
-  int pending_task_count_ = 0;
-
-  TaskManagerObserver::Status task_manager_status_;
-
   Progress progress_{false};
+
+  boost::signals2::scoped_connection progress_host_connection_;
 };

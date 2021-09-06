@@ -21,6 +21,13 @@
 #include <QColorDialog>
 #include <QLayout>
 #include <QLineEdit>
+#elif defined(UI_WT)
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
+#include <wt/WContainerWidget.h>
+#include <wt/WLineEdit.h>
+#include <wt/WVBoxLayout.h>
+#pragma warning(pop)
 #elif defined(UI_VIEWS)
 #include "skia/ext/skia_utils_win.h"
 #include "ui/events/event.h"
@@ -66,34 +73,48 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
 #if defined(UI_QT)
-  formula_row_.reset(new QLineEdit);
-  QObject::connect(formula_row_.get(), &QLineEdit::editingFinished,
+  formula_row_ = new QLineEdit;
+  QObject::connect(formula_row_, &QLineEdit::editingFinished,
                    [this] { OnFormulaEdited(); });
 
-  grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
+  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
 
   auto* layout = new QVBoxLayout;
   layout->setMargin(0);
   layout->setSpacing(0);
-  layout->addWidget(formula_row_.get());
-  layout->addWidget(grid_.get());
+  layout->addWidget(formula_row_);
+  layout->addWidget(grid_);
 
-  contents_view_.reset(new QWidget);
+  contents_view_ = new QWidget;
   contents_view_->setLayout(layout);
 
+#elif defined(UI_WT)
+  formula_row_ = new Wt::WLineEdit;
+
+  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
+
+  auto layout = std::make_unique<Wt::WVBoxLayout>();
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  layout->addWidget(std::unique_ptr<Wt::WWidget>(formula_row_));
+  layout->addWidget(std::unique_ptr<Wt::WWidget>(grid_), 1);
+
+  contents_view_ = new Wt::WContainerWidget;
+  contents_view_->setLayout(std::move(layout));
+
 #elif defined(UI_VIEWS)
-  formula_row_.reset(new views::Textfield);
+  formula_row_ = new views::Textfield;
   //  formula_row_->set_show_border(false);
   formula_row_->SetVisible(false);
   formula_row_->SetController(this);
 
-  grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
+  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
   grid_->SetAllowDrag(true);
   grid_->set_controller(this);
   grid_->set_drop_controller(this);
 
-  contents_view_.reset(new ContentsView);
-  contents_view_->AddChildView(formula_row_.get());
+  contents_view_ = new ContentsView;
+  contents_view_->AddChildView(formula_row_);
   contents_view_->AddChildView(grid_->CreateParentIfNecessary());
   contents_view_->set_drop_controller(NULL);
 #endif
@@ -127,7 +148,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   UpdateEditing();
 
-  return contents_view_.get();
+  return contents_view_;
 }
 
 #if defined(UI_VIEWS)
@@ -195,7 +216,7 @@ void SheetController::ChooseSelectionColor() {
   const auto& current_color = model_->GetRangeColor(range);
 
   const auto& new_color =
-      QColorDialog::getColor(current_color.qcolor(), grid_.get());
+      QColorDialog::getColor(current_color.qcolor(), grid_);
   if (new_color.isValid())
     model_->SetRangeColor(range, aui::Color::FromQColor(new_color));
 #endif
@@ -248,6 +269,8 @@ void SheetController::OnFormulaEdited() {
   const auto& text = formula_row_->text().toStdWString();
 #elif defined(UI_VIEWS)
   const auto& text = formula_row_->GetText();
+#elif defined(UI_WT)
+  const auto& text = formula_row_->text();
 #endif
 
   if (model_->SetCellText(current_index.row, current_index.column, text))
@@ -362,7 +385,7 @@ int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
 
 void SheetController::ContentsChanged(views::Textfield* sender,
                                       const std::wstring& new_contents) {
-  DCHECK(sender == formula_row_.get());
+  DCHECK(sender == formula_row_);
   DCHECK(model_->is_editing());
   DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);
 

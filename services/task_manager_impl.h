@@ -1,9 +1,7 @@
 #pragma once
 
-#include "base/callback_forward.h"
 #include "base/executor_timer.h"
 #include "base/memory/weak_ptr.h"
-#include "base/observer_list.h"
 #include "core/status.h"
 #include "services/task_manager.h"
 
@@ -19,7 +17,8 @@ class Executor;
 class LocalEvents;
 class NodeService;
 class Profile;
-class ProgressDialog;
+class ProgressHost;
+class RunningProgress;
 
 struct TaskManagerImplContext {
   const std::shared_ptr<Executor> executor_;
@@ -28,6 +27,7 @@ struct TaskManagerImplContext {
   scada::NodeManagementService& node_management_service_;
   LocalEvents& local_events_;
   Profile& profile_;
+  ProgressHost& progress_host_;
 };
 
 class TaskManagerImpl : private TaskManagerImplContext,
@@ -55,8 +55,6 @@ class TaskManagerImpl : private TaskManagerImplContext,
   virtual void PostDeleteReference(const scada::NodeId& reference_type_id,
                                    const scada::NodeId& source_id,
                                    const scada::NodeId& target_id) override;
-  virtual void AddObserver(TaskManagerObserver& observer) override;
-  virtual void RemoveObserver(TaskManagerObserver& observer) override;
 
  private:
   using TaskMethod = std::function<void()>;
@@ -69,7 +67,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
   };
 
   void Run();
-  void CancelProgressDialog();
+  void CancelProgress();
 
   void PostTask(std::wstring_view title, TaskMethod task);
   void StartTask(Task&& task);
@@ -82,11 +80,9 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
   int count = 0;  // initial task count
   DWORD start_time = 0;
-  std::unique_ptr<ProgressDialog> progress_dialog_;
+  std::unique_ptr<RunningProgress> running_progress_;
 
   ExecutorTimer timer_{executor_};
 
   Task running_task_;
-
-  base::ObserverList<TaskManagerObserver> observers_;
 };

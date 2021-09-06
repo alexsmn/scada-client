@@ -1,10 +1,14 @@
 #include "controls/wt/item_delegate.h"
 
+#include <cassert>
+
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WLineEdit.h>
 #include <Wt/WPushButton.h>
-#include <cassert>
+#pragma warning(pop)
 
 std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     const Wt::WModelIndex& index,
@@ -66,8 +70,8 @@ void ItemDelegate::setEditState(Wt::WWidget* editor,
   if (auto* line_edit = static_cast<Wt::WLineEdit*>(editor))
     line_edit->setText(text);
   else if (auto* combo_box = static_cast<Wt::WComboBox*>(editor)) {
-    if (int index = combo_box->findText(text); index != -1)
-      combo_box->setCurrentIndex(index);
+    if (int combo_index = combo_box->findText(text); combo_index != -1)
+      combo_box->setCurrentIndex(combo_index);
     else
       combo_box->setValueText(text);
     // combo_box->showPopup();

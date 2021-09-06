@@ -15,8 +15,8 @@ set_property(TARGET client_wt PROPERTY FOLDER ${client_folder})
 target_link_libraries(client_wt PRIVATE
   Wt::Wt
   Wt::HTTP
-  address_space_node_service
-  remote_node_service
+  node_service_v1
+  node_service_v2
   scada_core_opcua
   scada_core_remote
   scada_core_vidicon

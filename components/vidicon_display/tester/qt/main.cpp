@@ -8,6 +8,7 @@
 #include "window_info.h"
 
 #include <QApplication>
+#include <QWidget>
 
 int main(int argc, char* argv[]) {
   client::RegisterPathProvider();

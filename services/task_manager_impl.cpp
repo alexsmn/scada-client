@@ -1,7 +1,6 @@
 ﻿#include "services/task_manager_impl.h"
 
 #include "base/executor.h"
-#include "commands/views/progress_dialog.h"
 #include "core/attribute_service.h"
 #include "core/node_management_service.h"
 #include "core/status.h"
@@ -9,6 +8,7 @@
 #include "node_service/node_util.h"
 #include "services/local_events.h"
 #include "services/profile.h"
+#include "services/progress_host.h"
 
 #undef ReportEvent
 
@@ -38,20 +38,13 @@ TaskManagerImpl::TaskManagerImpl(TaskManagerImplContext&& context)
 }
 
 TaskManagerImpl::~TaskManagerImpl() {
-  CancelProgressDialog();
+  CancelProgress();
 }
 
-void TaskManagerImpl::CancelProgressDialog() {
+void TaskManagerImpl::CancelProgress() {
   // WARNING: Limit callback count.
 
-  if (!progress_dialog_)
-    return;
-
-  progress_dialog_.reset();
-
-  const TaskManagerObserver::Status status{false};
-  for (auto& o : observers_)
-    o.OnTaskManagerStatus(status);
+  running_progress_.reset();
 }
 
 void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
@@ -228,8 +221,8 @@ void TaskManagerImpl::StartTask(Task&& task) {
 
   running_task_ = std::move(task);
 
-  if (progress_dialog_)
-    progress_dialog_->SetStatus((running_task_.title + L"...").c_str());
+  if (running_progress_)
+    running_progress_->SetStatus((running_task_.title + L"...").c_str());
 
   running_task_.task();
 }
@@ -253,8 +246,8 @@ void TaskManagerImpl::ReportRequestCompletion(const scada::Status& status,
 
 void TaskManagerImpl::Run() {
   // Handle dialog Cancel button. Allow complete current request.
-  if (progress_dialog_ && progress_dialog_->IsCancelled()) {
-    CancelProgressDialog();
+  if (running_progress_ && running_progress_->IsCanceled()) {
+    CancelProgress();
 
     while (!tasks_.empty())
       tasks_.pop();
@@ -270,20 +263,14 @@ void TaskManagerImpl::Run() {
     if (!start_time)
       start_time = GetTickCount();
 
-    if (!progress_dialog_ && GetTickCount() - start_time >= 300)
-      progress_dialog_ = CreateProgressDialog();
+    if (!running_progress_ && GetTickCount() - start_time >= 300)
+      running_progress_ = progress_host_.Start();
 
-    if (progress_dialog_) {
-      progress_dialog_->SetProgress(count, count - tasks_.size());
-
-      const TaskManagerObserver::Status status{
-          true, count, count - static_cast<int>(tasks_.size())};
-      for (auto& o : observers_)
-        o.OnTaskManagerStatus(status);
-    }
+    if (running_progress_)
+      running_progress_->SetProgress(count, count - tasks_.size());
 
   } else {
-    CancelProgressDialog();
+    CancelProgress();
     start_time = 0;
     count = 0;
   }
@@ -298,12 +285,4 @@ void TaskManagerImpl::Run() {
 
 void TaskManagerImpl::PostTask(std::wstring_view title, TaskMethod task) {
   tasks_.push({std::wstring{title}, std::move(task)});
-}
-
-void TaskManagerImpl::AddObserver(TaskManagerObserver& observer) {
-  observers_.AddObserver(&observer);
-}
-
-void TaskManagerImpl::RemoveObserver(TaskManagerObserver& observer) {
-  observers_.RemoveObserver(&observer);
 }

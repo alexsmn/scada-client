@@ -2,8 +2,12 @@
 
 #include "ui/base/models/grid_model.h"
 
-#include <Wt/WAbstractTableModel.h>
 #include <memory>
+
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
+#include <Wt/WAbstractTableModel.h>
+#pragma warning(pop)
 
 class GridModelAdapter final : public Wt::WAbstractTableModel,
                                private ui::GridModel::Observer,

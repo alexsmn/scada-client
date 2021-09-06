@@ -30,7 +30,7 @@ class NodePropertyController : protected ControllerContext, public Controller {
   std::shared_ptr<NodePropertyModel> property_model_;
   std::shared_ptr<ui::TreeModel> tree_model_;
 
-  Tree* tree_view_;
+  Tree* tree_view_ = nullptr;
 
   boost::signals2::scoped_connection node_deleted_connection_;
 };

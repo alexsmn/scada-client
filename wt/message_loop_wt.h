@@ -4,7 +4,11 @@
 #include "base/single_thread_task_runner.h"
 
 #include <mutex>
+
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <wt/WTimer.h>
+#pragma warning(pop)
 
 namespace boost::asio {
 class io_context;

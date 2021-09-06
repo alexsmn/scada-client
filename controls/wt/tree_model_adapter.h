@@ -2,9 +2,13 @@
 
 #include "ui/base/models/tree_node_model.h"
 
+#include <memory>
+
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WIcon.h>
-#include <memory>
+#pragma warning(pop)
 
 namespace ui {
 class TreeModel;

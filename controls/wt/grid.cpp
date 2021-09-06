@@ -4,7 +4,10 @@
 #include "ui/base/models/grid_range.h"
 #include "value_util.h"
 
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <wt/WPopupMenu.h>
+#pragma warning(pop)
 
 namespace {
 
@@ -300,6 +303,10 @@ ui::GridModelIndex Grid::GetCurrentIndex() const {
   return ui::GridModelIndex{index.row(), index.column()};
 }
 
+ui::GridRange Grid::GetSelectionRange() const {
+  return ui::GridRange{};
+}
+
 void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
   selectionChanged().connect(handler);
 }
@@ -307,6 +314,10 @@ void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
 void Grid::OpenEditor(const ui::GridModelIndex& index) {
   assert(index.is_valid());
   edit(model()->index(index.row, index.column));
+}
+
+void Grid::RequestFocus() {
+  setFocus(true);
 }
 
 base::Value Grid::SaveState() const {

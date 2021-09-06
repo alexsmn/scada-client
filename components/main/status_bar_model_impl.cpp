@@ -5,34 +5,15 @@
 #include "core/session_service.h"
 #include "node_service/node_util.h"
 
-namespace {
-
-void MergeProgress(const StatusBarModel::Progress& from,
-                   StatusBarModel::Progress& to) {
-  if (!from.active)
-    return;
-
-  to.active = true;
-  to.range += from.range;
-  to.current += from.current;
-}
-
-}  // namespace
-
 // StatusBarModelImpl
 
 StatusBarModelImpl::StatusBarModelImpl(StatusBarModelImplContext&& context)
     : StatusBarModelImplContext{std::move(context)} {
-  task_manager_.AddObserver(*this);
-
-  update_timer_.Start(
-      FROM_HERE, base::TimeDelta::FromMilliseconds(300),
-      base::Bind(&StatusBarModelImpl::OnTimer, base::Unretained(this)));
+  progress_host_connection_ = progress_host_.Subscribe(
+      [this](const ProgressStatus& status) { OnProgressStatus(status); });
 }
 
-StatusBarModelImpl::~StatusBarModelImpl() {
-  task_manager_.RemoveObserver(*this);
-}
+StatusBarModelImpl::~StatusBarModelImpl() {}
 
 int StatusBarModelImpl::GetPaneCount() {
   return 6;
@@ -92,36 +73,9 @@ void StatusBarModelImpl::RemoveObserver(StatusBarModelObserver& observer) {
   observers_.RemoveObserver(&observer);
 }
 
-void StatusBarModelImpl::OnTimer() {
-  const int pending_task_count = pending_task_provider_();
-  if (pending_task_count != pending_task_count_) {
-    pending_task_count_ = pending_task_count;
-    max_pending_task_count_ =
-        pending_task_count_ != 0
-            ? std ::max(max_pending_task_count_, pending_task_count_)
-            : 0;
-    UpdateProgress();
-  }
-
-  for (auto& o : observers_)
-    o.OnPanesChanged(0, 6);
-}
-
-void StatusBarModelImpl::UpdateProgress() {
-  progress_ = {};
-  MergeProgress({task_manager_status_.active, task_manager_status_.range,
-                 task_manager_status_.current},
-                progress_);
-  MergeProgress({pending_task_count_ != 0, max_pending_task_count_,
-                 max_pending_task_count_ - pending_task_count_},
-                progress_);
+void StatusBarModelImpl::OnProgressStatus(const ProgressStatus& status) {
+  progress_ = {status.active, status.range, status.current};
 
   for (auto& o : observers_)
     o.OnProgressChanged();
-}
-
-void StatusBarModelImpl::OnTaskManagerStatus(
-    const TaskManagerObserver::Status& status) {
-  task_manager_status_ = status;
-  UpdateProgress();
 }

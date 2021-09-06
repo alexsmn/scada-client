@@ -4,7 +4,10 @@
 #include "controls/wt/tree_model_adapter.h"
 #include "value_util.h"
 
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <Wt/WPainter.h>
+#pragma warning(pop)
 
 // TreeProxyModel
 

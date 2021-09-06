@@ -105,7 +105,7 @@ bool GridModelAdapter::setData(const Wt::WModelIndex& index,
                                const Wt::cpp17::any& value,
                                Wt::ItemDataRole role) {
   return model_.SetCellText(index.row(), index.column(),
-                            std::any_cast<Wt::WString>(value));
+                            Wt::cpp17::any_cast<Wt::WString>(value));
 }
 
 void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {

@@ -9,6 +9,10 @@
 
 #if defined(UI_QT)
 class QWidget;
+#elif defined(UI_WT)
+namespace Wt {
+class WWidget;
+}
 #endif
 
 enum class MessageBoxMode {
@@ -29,6 +33,8 @@ class DialogService {
 
 #if defined(UI_QT)
   virtual QWidget* GetParentWidget() const = 0;
+#elif defined(UI_WT)
+  virtual Wt::WWidget* GetParentWidget() const = 0;
 #endif
 
   virtual promise<MessageBoxResult> RunMessageBox(std::wstring_view message,

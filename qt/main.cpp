@@ -3,6 +3,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
 #include "client_application.h"
+#include "components/login/login_dialog.h"
 #include "components/main/qt/main_window_qt.h"
 #include "project.h"
 #include "qt/message_loop_qt.h"
@@ -89,6 +90,9 @@ int main(int argc, char* argv[]) {
         io_context, executor,
         [](MainWindowContext&& context) {
           return std::make_unique<MainWindowQt>(std::move(context));
+        },
+        [executor](DataServicesContext&& services_context) {
+          return ExecuteLoginDialog(executor, std::move(services_context));
         },
         [&qapp] { qapp.quit(); }}};
 

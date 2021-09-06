@@ -1,11 +1,14 @@
 #pragma once
 
 #if defined(UI_QT)
-#include <QWidget>
+#include <qnamespace.h>
 #elif defined(UI_VIEWS)
 #include "ui/views/view.h"
 #elif defined(UI_WT)
-#include <Wt/WWidget.h>
+#pragma warning(push)
+#pragma warning(disable : 4251)
+#include <Wt/WGlobal.h>
+#pragma warning(pop)
 #endif
 
 #if defined(UI_QT)
@@ -58,6 +61,7 @@ enum class KeyModifier : int {
   Down = Wt::Key::Down,
 };*/
 using KeyCode = Wt::Key;
+using KeyModifier = Wt::KeyboardModifier;
 #endif
 
 #if defined(UI_QT)

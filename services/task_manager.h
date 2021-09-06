@@ -6,19 +6,6 @@
 
 #include <functional>
 
-class TaskManagerObserver {
- public:
-  virtual ~TaskManagerObserver() {}
-
-  struct Status {
-    bool active = false;
-    int range = 0;
-    int current = 0;
-  };
-
-  virtual void OnTaskManagerStatus(const Status& status) = 0;
-};
-
 class TaskManager {
  public:
   virtual ~TaskManager() {}
@@ -45,7 +32,4 @@ class TaskManager {
   virtual void PostDeleteReference(const scada::NodeId& reference_type_id,
                                    const scada::NodeId& source_id,
                                    const scada::NodeId& target_id) = 0;
-
-  virtual void AddObserver(TaskManagerObserver& observer) = 0;
-  virtual void RemoveObserver(TaskManagerObserver& observer) = 0;
 };

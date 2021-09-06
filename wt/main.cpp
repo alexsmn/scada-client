@@ -9,6 +9,8 @@
 #include "components/main/wt/main_window_wt.h"
 #include "wt/message_loop_wt.h"
 
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <wt/WApplication.h>
 #include <wt/WBootstrapTheme.h>
 #include <wt/WBreak.h>
@@ -18,6 +20,7 @@
 #include <wt/WPushButton.h>
 #include <wt/WServer.h>
 #include <wt/WText.h>
+#pragma warning(pop)
 
 class HelloApplication : public Wt::WApplication {
  public:
@@ -38,10 +41,9 @@ class HelloApplication : public Wt::WApplication {
       [this](MainWindowContext&& context) {
         return std::make_unique<MainWindowWt>(*root(), std::move(context));
       },
-      [this](DataServicesContext&& services_context,
-             const ClientApplicationContext::LoginHandlerCallback& callback) {
-        ExecuteLoginDialog(executor_, *root(), std::move(services_context),
-                           callback);
+      [this](DataServicesContext&& services_context) {
+        return ExecuteLoginDialog(executor_, *root(),
+                                  std::move(services_context));
       },
       [] {},
   }};

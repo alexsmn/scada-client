@@ -1,6 +1,9 @@
 #include "wt/message_loop_wt.h"
 
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <wt/WServer.h>
+#pragma warning(pop)
 
 using namespace std::chrono_literals;
 

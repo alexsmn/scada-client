@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/values.h"
 #include "controls/qt/table_model_adapter.h"
 #include "controls/types.h"
 #include "ui/base/models/table_model.h"

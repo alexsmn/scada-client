@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/values.h"
 #include "controls/qt/grid_model_adapter.h"
 #include "controls/types.h"
 #include "item_delegate.h"

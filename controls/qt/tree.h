@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/values.h"
 #include "controls/qt/item_delegate.h"
 #include "controls/qt/tree_model_adapter.h"
 #include "controls/types.h"

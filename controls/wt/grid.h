@@ -1,12 +1,17 @@
 #pragma once
 
+#include "base/models/grid_range.h"
+#include "base/values.h"
 #include "controls/types.h"
 #include "controls/wt/grid_model_adapter.h"
 #include "item_delegate.h"
 #include "ui/base/models/grid_model.h"
 
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
 #include <Wt/WPen.h>
 #include <Wt/WTableView.h>
+#pragma warning(pop)
 
 class Grid final : public Wt::WTableView {
  public:
@@ -30,6 +35,8 @@ class Grid final : public Wt::WTableView {
   void SetContextMenuHandler(ContextMenuHandler handler);
 
   ui::GridModelIndex GetCurrentIndex() const;
+
+  ui::GridRange GetSelectionRange() const;
 
   auto GetSelectedRows() const {
     std::vector<int> rows;
@@ -58,6 +65,8 @@ class Grid final : public Wt::WTableView {
   void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
   void OpenEditor(const ui::GridModelIndex& index);
+
+  void RequestFocus();
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);

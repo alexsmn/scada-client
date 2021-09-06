@@ -2,11 +2,11 @@
 
 #include "base/strings/string_util.h"
 
-void DialogServiceImplWt::RunMessageBox(std::wstring_view message,
-                                        std::wstring_view title,
-                                        MessageBoxMode mode,
-                                        const MessageBoxCallback& callback) {
-  callback(MessageBoxResult::Ok);
+promise<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
+    std::wstring_view message,
+    std::wstring_view title,
+    MessageBoxMode mode) {
+  return make_resolved_promise(MessageBoxResult::Ok);
 }
 
 gfx::NativeView DialogServiceImplWt::GetDialogOwningWindow() const {

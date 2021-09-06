@@ -4,6 +4,7 @@
 #include "base/task_runner_executor.h"
 #include "base/win/gdiplus_initializer.h"
 #include "client_application.h"
+#include "components/login/login_dialog.h"
 #include "components/main/views/main_window_views.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/views/focus/accelerator_handler.h"
@@ -36,6 +37,9 @@ int Run(int show = SW_SHOWDEFAULT) {
         io_context, executor,
         [](MainWindowContext&& context) {
           return std::make_unique<MainWindowViews>(std::move(context));
+        },
+        [executor](DataServicesContext&& services_context) {
+          return ExecuteLoginDialog(executor, std::move(services_context));
         },
         [&run_loop] { run_loop.Quit(); }}};
 

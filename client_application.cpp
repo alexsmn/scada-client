@@ -19,7 +19,6 @@
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
 #include "components/filesystem/filesystem_component.h"
-#include "components/login/login_dialog.h"
 #include "components/main/action_manager.h"
 #include "components/main/actions.h"
 #include "components/main/context_menu_model.h"
@@ -30,13 +29,12 @@
 #include "components/main/opened_view_commands.h"
 #include "components/main/selection_commands.h"
 #include "components/main/status_bar_model_impl.h"
-#include "components/modus/libmodus/modus_module2.h"
 #include "components/portfolio/portfolio_manager.h"
-#include "components/vidicon_display/vidicon_client.h"
 #include "controller_context.h"
 #include "net/transport_factory_impl.h"
 #include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
+#include "node_service_progress_tracker.h"
 #include "project.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
@@ -45,10 +43,16 @@
 #include "services/file_registry.h"
 #include "services/local_events.h"
 #include "services/profile.h"
+#include "services/progress_host_impl.h"
 #include "services/speech.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_impl.h"
 #include "window_info.h"
+
+#if !defined(UI_WT)
+#include "components/modus/libmodus/modus_module2.h"
+#include "components/vidicon_display/vidicon_client.h"
+#endif
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
@@ -138,20 +142,23 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 }
 
 ClientApplication::~ClientApplication() {
+  node_service_progress_tracker_.reset();
   event_dispatcher_.reset();
   main_window_manager_.reset();
 
   if (profile_ && profile_loaded_)
     profile_->Save(*event_fetcher_, *portfolio_manager_, *favourites_);
 
-  VidiconClient::CleanupInstance();
+    // Shutdown OPC.
+    // extern void ShutdownOpc();
+    // ShutdownOpc();
 
-  // Shutdown OPC.
-  // extern void ShutdownOpc();
-  // ShutdownOpc();
+#if !defined(UI_WT)
+  VidiconClient::CleanupInstance();
 
   ModusModule2::SetInstance(nullptr);
   modus_module_.reset();
+#endif
 
   file_cache_.reset();
   connection_state_reporter_.reset();
@@ -247,6 +254,8 @@ void ClientApplication::OnStartLoginCompleted() {
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
 
+  progress_host_ = std::make_unique<ProgressHostImpl>();
+
   task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
       executor_,
       *node_service_,
@@ -254,6 +263,7 @@ void ClientApplication::OnStartLoginCompleted() {
       *master_data_services_,
       *local_events_,
       *profile_,
+      *progress_host_,
   });
   speech_.reset(new Speech);
   blinker_manager_ = std::make_unique<BlinkerManager>(executor_);
@@ -267,8 +277,10 @@ void ClientApplication::OnStartLoginCompleted() {
 
   file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
+#if !defined(UI_WT)
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());
+#endif
 
   action_manager_ = std::make_unique<ActionManager>();
   AddGlobalActions(*action_manager_, *node_service_);
@@ -295,6 +307,9 @@ void ClientApplication::OnStartLoginCompleted() {
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
       executor_, *event_fetcher_, *local_events_, *profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
+
+  node_service_progress_tracker_ = std::make_unique<NodeServiceProgressTracker>(
+      *node_service_, *progress_host_);
 }
 
 MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
@@ -375,14 +390,9 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
     return opened_view_commands;
   };
 
-  PendingTaskProvider pending_task_provider = [node_service = node_service_] {
-    return static_cast<int>(node_service->GetPendingTaskCount());
-  };
-
-  auto status_bar_model =
-      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
-          *master_data_services_, *event_fetcher_, *node_service_,
-          *task_manager_, std::move(pending_task_provider)});
+  auto status_bar_model = std::make_shared<StatusBarModelImpl>(
+      StatusBarModelImplContext{*master_data_services_, *event_fetcher_,
+                                *node_service_, *progress_host_});
 
   auto connection_info_provider = [this] {
     return master_data_services_->GetHostName();
@@ -447,7 +457,7 @@ promise<bool> ClientApplication::Login() {
   DataServicesContext services_context{logger_, executor_, io_context_,
                                        *transport_factory_, service_log_params};
 
-  return ExecuteLoginDialog(executor_, std::move(services_context))
+  return login_handler_(std::move(services_context))
       .then(BindPromiseExecutor(executor_,
                                 [this](std::optional<DataServices> services) {
                                   if (!services)

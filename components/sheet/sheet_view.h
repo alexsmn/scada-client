@@ -23,6 +23,9 @@ class OSExchangeData;
 #if defined(UI_QT)
 class QLineEdit;
 class QWidget;
+#elif defined(UI_WT)
+class WContainerWidget;
+class WLineEdit;
 #elif defined(UI_VIEWS)
 namespace views {
 class Textfield;
@@ -99,19 +102,22 @@ class SheetController : protected ControllerContext,
                                const std::wstring& new_contents) override;
 #endif
 
-  SelectionModel selection_{{timed_data_service_}};
-
   std::unique_ptr<SheetModel> model_;
 
+  SelectionModel selection_{{timed_data_service_}};
+
 #if defined(UI_QT)
-  std::unique_ptr<QWidget> contents_view_;
-  std::unique_ptr<QLineEdit> formula_row_;
+  QWidget* contents_view_ = nullptr;
+  QLineEdit* formula_row_ = nullptr;
+#elif defined(UI_WT)
+  Wt::WContainerWidget* contents_view_ = nullptr;
+  Wt::WLineEdit* formula_row_ = nullptr;
 #elif defined(UI_VIEWS)
-  std::unique_ptr<ContentsView> contents_view_;
-  std::unique_ptr<views::Textfield> formula_row_;
+  ContentsView* contents_view_ = nullptr;
+  views::Textfield* formula_row_ = nullptr;
 #endif
 
-  std::unique_ptr<Grid> grid_;
+  Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

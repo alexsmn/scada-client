@@ -2,8 +2,12 @@
 
 #include "ui/base/models/table_model_observer.h"
 
-#include <Wt/WAbstractTableModel.h>
 #include <memory>
+
+#pragma warning(push)
+#pragma warning(disable : 4251 4275)
+#include <Wt/WAbstractTableModel.h>
+#pragma warning(pop)
 
 namespace ui {
 class TableModel;
