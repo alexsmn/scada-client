@@ -544,31 +544,40 @@ void SelectionCommands::DeleteSelection() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return;
 
+  std::vector<NodeRef> nodes;
+
   if (selection_->multiple()) {
     auto node_ids = selection_->GetMultipleNodeIds();
-    if (node_ids.empty())
-      return;
-
-    std::wstring message = base::StringPrintf(
-        L"Вы действительно хотите %Iu объектов?", node_ids.size());
-    auto choice = dialog_service_->RunMessageBox(message, L"Удаление",
-                                                 MessageBoxMode::QuestionYesNo);
-    if (choice != MessageBoxResult::Yes)
-      return;
-
-    for (const auto& node_id : selection_->GetMultipleNodeIds())
-      DeleteTreeRecordsRecursive(task_manager_, node_service_.GetNode(node_id));
-
-  } else if (const auto& node = selection_->node()) {
-    std::wstring message = base::StringPrintf(
-        L"Вы действительно хотите удалить %ls?", node.display_name().c_str());
-    auto choice = dialog_service_->RunMessageBox(message, L"Удаление",
-                                                 MessageBoxMode::QuestionYesNo);
-    if (choice != MessageBoxResult::Yes)
-      return;
-
-    DeleteTreeRecordsRecursive(task_manager_, node);
+    nodes.reserve(node_ids.size());
+    std::transform(
+        node_ids.begin(), node_ids.end(), std::back_inserter(nodes),
+        [&node_service = node_service_](const scada::NodeId& node_id) {
+          return node_service.GetNode(node_id);
+        });
+  } else if (auto node = selection_->node()) {
+    nodes.emplace_back(std::move(node));
   }
+
+  if (nodes.empty())
+    return;
+
+  auto message =
+      nodes.size() == 1
+          ? base::StringPrintf(L"Вы действительно хотите удалить %ls?",
+                               nodes.front().display_name().c_str())
+          : base::StringPrintf(L"Вы действительно хотите удалить %Iu объектов?",
+                               nodes.size());
+
+  dialog_service_
+      ->RunMessageBox(message, L"Удаление", MessageBoxMode::QuestionYesNo)
+      .then(BindPromiseExecutor(
+          executor_, [&task_manager = task_manager_,
+                      nodes = std::move(nodes)](MessageBoxResult result) {
+            if (result != MessageBoxResult::Yes)
+              return;
+            for (auto& node : nodes)
+              DeleteTreeRecordsRecursive(task_manager, node);
+          }));
 }
 
 void SelectionCommands::CopyToClipboard() {

@@ -164,20 +164,29 @@ std::wstring WriteModel::GetConfirmationMessage(bool second_stage) const {
 }
 
 void WriteModel::StartWriting(bool second_stage) {
-  // Request confirmation from user.
-  if (profile_.control_confirmation) {
-    std::wstring title = spec_.GetTitle();
-    auto message = GetConfirmationMessage(second_stage);
-    if (dialog_service_->RunMessageBox(
-            message, title, MessageBoxMode::QuestionYesNoDefaultNo) !=
-        MessageBoxResult::Yes) {
-      writing_ = false;
-      completion_handler(false);
-      return;
-    }
+  if (!profile_.control_confirmation) {
+    StartWritingHelper();
+    return;
   }
 
-  StartWritingHelper();
+  // Request confirmation from user.
+  std::wstring title = spec_.GetTitle();
+  auto message = GetConfirmationMessage(second_stage);
+  dialog_service_
+      ->RunMessageBox(message, title, MessageBoxMode::QuestionYesNoDefaultNo)
+      .then(BindPromiseExecutor(
+          executor_, [this, weak_ptr = weak_factory_.GetWeakPtr()](
+                         MessageBoxResult message_box_result) {
+            if (!weak_ptr)
+              return;
+            if (message_box_result == MessageBoxResult::Yes) {
+              StartWritingHelper();
+            } else {
+              writing_ = false;
+              completion_handler(false);
+              return;
+            }
+          }));
 }
 
 void WriteModel::StartWritingHelper() {

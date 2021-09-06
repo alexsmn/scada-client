@@ -61,9 +61,10 @@ MessageBoxResult MapQtMesageBoxResult(int result) {
 }
 }  // namespace
 
-MessageBoxResult DialogServiceImplQt::RunMessageBox(std::wstring_view message,
-                                                    std::wstring_view title,
-                                                    MessageBoxMode mode) {
+promise<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
+    std::wstring_view message,
+    std::wstring_view title,
+    MessageBoxMode mode) {
   auto* message_box = new QMessageBox{parent_widget};
   message_box->setText(QString::fromWCharArray(message.data(), message.size()));
   message_box->setWindowTitle(
@@ -89,7 +90,7 @@ MessageBoxResult DialogServiceImplQt::RunMessageBox(std::wstring_view message,
     message_box->setDefaultButton(QMessageBox::No);
 
   auto result = message_box->exec();
-  return MapQtMesageBoxResult(result);
+  return make_resolved_promise(MapQtMesageBoxResult(result));
 }
 
 gfx::NativeView DialogServiceImplQt::GetDialogOwningWindow() const {

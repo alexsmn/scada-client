@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/containers/span.h"
+#include "base/promise.h"
 #include "gfx/native_widget_types.h"
 
 #include <filesystem>
@@ -30,9 +31,9 @@ class DialogService {
   virtual QWidget* GetParentWidget() const = 0;
 #endif
 
-  virtual MessageBoxResult RunMessageBox(std::wstring_view message,
-                                         std::wstring_view title,
-                                         MessageBoxMode mode) = 0;
+  virtual promise<MessageBoxResult> RunMessageBox(std::wstring_view message,
+                                                  std::wstring_view title,
+                                                  MessageBoxMode mode) = 0;
 
   virtual std::filesystem::path SelectOpenFile(std::wstring_view title) = 0;
 

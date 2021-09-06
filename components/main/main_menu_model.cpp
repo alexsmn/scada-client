@@ -139,22 +139,30 @@ void PageMenuModel::MenuWillShow() {
 void PageMenuModel::ActivatedAt(int index) {
   auto p = profile_.pages.begin();
   std::advance(p, index);
+  OpenPage(p->second);
+}
 
-  auto& page = p->second;
-
+void PageMenuModel::OpenPage(Page& page) {
   // check revert page
   bool revert = page.id == main_window_.current_page().id;
-  if (revert) {
-    std::wstring title = main_window_.current_page().GetTitle();
-    std::wstring message = base::StringPrintf(
-        L"Вернуться к сохраненному листу %ls?", title.c_str());
-    if (dialog_service_.RunMessageBox(message, {},
-                                      MessageBoxMode::QuestionYesNo) ==
-        MessageBoxResult::No) {
-      return;
-    }
+  if (!revert) {
+    OpenPageHelper(page, false);
+    return;
   }
 
+  std::wstring title = main_window_.current_page().GetTitle();
+  std::wstring message =
+      base::StringPrintf(L"Вернуться к сохраненному листу %ls?", title.c_str());
+  dialog_service_.RunMessageBox(message, {}, MessageBoxMode::QuestionYesNo)
+      .then(BindPromiseExecutor(
+          executor_, [this, weak_ptr = weak_ptr_factory_.GetWeakPtr(),
+                      &page](MessageBoxResult message_box_result) {
+            if (weak_ptr.get() && message_box_result == MessageBoxResult::Yes)
+              OpenPageHelper(page, true);
+          }));
+}
+
+void PageMenuModel::OpenPageHelper(Page& page, bool revert) {
   // Don't allow to open same page in different windows.
   if (!revert && main_window_manager_.IsPageOpened(page.id)) {
     dialog_service_.RunMessageBox(L"Указанный лист открыт в другом окне.", {},

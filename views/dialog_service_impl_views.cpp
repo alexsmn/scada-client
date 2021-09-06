@@ -38,9 +38,24 @@ auto* CreateFileSelector(Handler&& handler) {
   return new FileSelector<Handler>{std::forward<Handler>(handler)};
 }
 
+MessageBoxResult MapWinMessageBoxResult(int result) {
+  switch (result) {
+    case IDOK:
+      return MessageBoxResult::Ok;
+    case IDYES:
+      return MessageBoxResult::Yes;
+    case IDNO:
+      return MessageBoxResult::No;
+    case IDCANCEL:
+      return MessageBoxResult::Cancel;
+    default:
+      return MessageBoxResult::Ok;
+  }
+}
+
 }  // namespace
 
-MessageBoxResult DialogServiceImplViews::RunMessageBox(
+promise<MessageBoxResult> DialogServiceImplViews::RunMessageBox(
     std::wstring_view message,
     std::wstring_view title,
     MessageBoxMode mode) {
@@ -61,18 +76,7 @@ MessageBoxResult DialogServiceImplViews::RunMessageBox(
       dialog_owning_window, std::wstring{message}.c_str(), title_string.c_str(),
       kFlags[static_cast<std::size_t>(mode)]);
 
-  switch (result) {
-    case IDOK:
-      return MessageBoxResult::Ok;
-    case IDYES:
-      return MessageBoxResult::Yes;
-    case IDNO:
-      return MessageBoxResult::No;
-    case IDCANCEL:
-      return MessageBoxResult::Cancel;
-    default:
-      return MessageBoxResult::Ok;
-  }
+  return make_resolved_promise(MapWinMessageBoxResult(result));
 }
 
 gfx::NativeView DialogServiceImplViews::GetDialogOwningWindow() const {

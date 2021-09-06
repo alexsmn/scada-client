@@ -400,10 +400,14 @@ void OpenedViewCommands::ExportToCsv() {
     return;
   }
 
-  if (dialog_service_->RunMessageBox(
-          L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
-          MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
-    win_util::OpenWithAssociatedProgram(path);
+  dialog_service_
+      ->RunMessageBox(L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+                      MessageBoxMode::QuestionYesNo)
+      .then(BindExecutor(executor_, [path = std::move(path)](
+                                        MessageBoxResult message_box_result) {
+        if (message_box_result == MessageBoxResult::Yes)
+          win_util::OpenWithAssociatedProgram(path);
+      }));
 }
 
 void OpenedViewCommands::ExportToExcel() {

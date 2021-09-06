@@ -77,10 +77,13 @@ void ExportConfigurationToExcel(NodeService& node_service,
             CsvWriter writer{*stream};
             WriteExportData(export_data, writer);
 
-            if (dialog_service.RunMessageBox(
-                    L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
-                    MessageBoxMode::QuestionYesNo) == MessageBoxResult::Yes)
-              win_util::OpenWithAssociatedProgram(path);
+            dialog_service
+                .RunMessageBox(L"Экспорт завершен. Открыть файл сейчас?",
+                               kExportTitle, MessageBoxMode::QuestionYesNo)
+                .then([path](MessageBoxResult message_box_result) {
+                  if (message_box_result == MessageBoxResult::Yes)
+                    win_util::OpenWithAssociatedProgram(path);
+                });
           });
         });
   });
@@ -130,13 +133,14 @@ void ImportConfigurationFromExcel(NodeService& node_service,
 
   ShowImportReport(import_data, node_service);
 
-  bool confirmed =
-      dialog_service.RunMessageBox(L"Применить изменения?", kImportTitle,
-                                   MessageBoxMode::QuestionYesNoDefaultNo) ==
-      MessageBoxResult::Yes;
-
-  if (confirmed)
-    ApplyImportData(import_data, task_manager);
+  dialog_service
+      .RunMessageBox(L"Применить изменения?", kImportTitle,
+                     MessageBoxMode::QuestionYesNoDefaultNo)
+      .then([import_data = std::move(import_data),
+             &task_manager](MessageBoxResult message_box_result) {
+        if (message_box_result == MessageBoxResult::Yes)
+          ApplyImportData(import_data, task_manager);
+      });
 }
 
 void ImportConfigurationFromExcel(NodeService& node_service,

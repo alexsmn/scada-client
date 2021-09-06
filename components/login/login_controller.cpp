@@ -113,23 +113,30 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
   services_ = {};
 
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
-    if (dialog_service_.RunMessageBox(kForceLogoffMessage, {},
-                                      MessageBoxMode::QuestionYesNo) ==
-        MessageBoxResult::Yes) {
-      Connect(true);
+    dialog_service_
+        .RunMessageBox(kForceLogoffMessage, {}, MessageBoxMode::QuestionYesNo)
+        .then(BindPromiseExecutor(
+            executor_, [this, ref = shared_from_this()](
+                           MessageBoxResult message_box_result) {
+              if (message_box_result == MessageBoxResult::Yes) {
+                Connect(true);
 
-    } else {
-      login_message_ = true;
-      error_handler();
-    }
+              } else {
+                login_message_ = true;
+                error_handler();
+              }
+            }));
 
   } else {
     std::wstring message =
         base::StringPrintf(kLoginFailedMessage, ToString16(status).c_str());
-    dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error);
-
-    login_message_ = true;
-    error_handler();
+    dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error)
+        .then(BindPromiseExecutor(executor_,
+                                  [this, ref = shared_from_this()](
+                                      MessageBoxResult message_box_result) {
+                                    login_message_ = true;
+                                    error_handler();
+                                  }));
   }
 }
 

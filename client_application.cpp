@@ -342,8 +342,8 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
              ViewManager& view_manager, CommandHandler& main_commands,
              ui::MenuModel& context_menu_model) {
         return std::make_unique<MainMenuModel>(MainMenuContext{
-            *main_window_manager_, main_window, *action_manager_, *favourites_,
-            *file_cache_,
+            executor_, *main_window_manager_, main_window, *action_manager_,
+            *favourites_, *file_cache_,
             master_data_services_->HasPrivilege(scada::Privilege::Configure),
             *profile_, view_manager, main_commands, dialog_service,
             context_menu_model});

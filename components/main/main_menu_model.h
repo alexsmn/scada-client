@@ -8,15 +8,18 @@
 class ActionManager;
 class CommandHandler;
 class DialogService;
+class Executor;
 class Favourites;
 class MainWindow;
 class MainWindowManager;
+class Page;
 class Profile;
 class ViewManager;
 class WindowDefinition;
 struct WindowInfo;
 
 struct MainMenuContext {
+  const std::shared_ptr<Executor> executor_;
   MainWindowManager& main_window_manager_;
   MainWindow& main_window_;
   ActionManager& action_manager_;
@@ -79,7 +82,12 @@ class PageMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   virtual bool IsItemCheckedAt(int index) const override;
 
  private:
+  void OpenPage(Page& page);
+  void OpenPageHelper(Page& page, bool revert);
+
   int active_index_ = -1;
+
+  base::WeakPtrFactory<PageMenuModel> weak_ptr_factory_{this};
 };
 
 class WindowMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
