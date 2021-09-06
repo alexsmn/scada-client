@@ -98,10 +98,6 @@ void RegisterFileType(FileRegistry& file_registry,
                              extensions);
 }
 
-void PollIoContext(boost::asio::io_context* context) {
-  context->poll();
-}
-
 }  // namespace
 
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
@@ -141,16 +137,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
-  io_context_ = std::make_unique<boost::asio::io_context>();
-  executor_ =
-      std::make_shared<TaskRunnerExecutor>(base::ThreadTaskRunnerHandle::Get());
-  io_context_timer_ = std::make_unique<base::Timer>(true, true);
-  io_context_timer_->Start(
-      FROM_HERE, base::TimeDelta::FromMilliseconds(10),
-      base::Bind(&PollIoContext, base::Unretained(io_context_.get())));
-
-  transport_factory_ =
-      std::make_unique<net::TransportFactoryImpl>(*io_context_);
+  transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
 }
 
 ClientApplication::~ClientApplication() {
@@ -193,12 +180,18 @@ ClientApplication::~ClientApplication() {
   master_data_services_ = nullptr;
 
   transport_factory_.reset();
-  io_context_timer_.reset();
-  executor_.reset();
-  io_context_.reset();
 }
 
 void ClientApplication::Start() {
+  Login().then(BindExecutor(executor_, [this](bool ok) {
+    if (ok)
+      OnStartLoginCompleted();
+    else
+      quit_handler_();
+  }));
+}
+
+void ClientApplication::OnStartLoginCompleted() {
   master_data_services_->AddObserver(*this);
 
   event_fetcher_ = std::make_unique<EventFetcher>(EventFetcherContext{
@@ -240,7 +233,7 @@ void ClientApplication::Start() {
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
       TimedDataContext{
-          *io_context_,
+          io_context_,
           alias_resolver_,
           *node_service_,
           *master_data_services_,
@@ -439,7 +432,7 @@ void ClientApplication::OnEvents(bool has_events) {
   }
 }
 
-bool ClientApplication::Login() {
+promise<bool> ClientApplication::Login() {
   assert(base::CommandLine::ForCurrentProcess());
   auto& command_line = *base::CommandLine::ForCurrentProcess();
 
@@ -452,26 +445,31 @@ bool ClientApplication::Login() {
       command_line.HasSwitch("log-service-node-semantics-change-event"),
   };
 
-  DataServicesContext services_context{logger_, executor_, *io_context_,
+  DataServicesContext services_context{logger_, executor_, io_context_,
                                        *transport_factory_, service_log_params};
 
-  DataServices services;
-  if (!ExecuteLoginDialog(executor_, std::move(services_context), services))
-    return false;
+  return ExecuteLoginDialog(executor_, std::move(services_context))
+      .then(BindPromiseExecutor(
+          executor_, [this](std::optional<DataServices> optional_services) {
+            if (!optional_services)
+              return false;
 
-  auto audit = std::make_shared<Audit>(
-      *io_context_,
-      std::make_shared<AuditLoggerImpl>(
-          std::make_shared<NestedLogger>(logger_, "Audit")),
-      std::move(services.attribute_service_),
-      std::move(services.view_service_));
+            auto& services = *optional_services;
 
-  services.attribute_service_ = audit;
-  services.view_service_ = audit;
+            auto audit = std::make_shared<Audit>(
+                io_context_,
+                std::make_shared<AuditLoggerImpl>(
+                    std::make_shared<NestedLogger>(logger_, "Audit")),
+                std::move(services.attribute_service_),
+                std::move(services.view_service_));
 
-  master_data_services_->SetServices(std::move(services));
+            services.attribute_service_ = audit;
+            services.view_service_ = audit;
 
-  return true;
+            master_data_services_->SetServices(std::move(services));
+
+            return true;
+          }));
 }
 
 void ClientApplication::Quit() {

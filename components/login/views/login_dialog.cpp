@@ -110,12 +110,12 @@ void LoginDialog::OnOK() {
   controller_->Login();
 }
 
-bool ExecuteLoginDialog(std::shared_ptr<Executor> executor,
-                        DataServicesContext&& services_context,
-                        DataServices& services) {
+promise<std::optional<DataServices>> ExecuteLoginDialog(
+    std::shared_ptr<Executor> executor,
+    DataServicesContext&& services_context) {
   LoginDialog login_dialog{std::move(executor), std::move(services_context)};
   if (login_dialog.Execute() != IDOK)
-    return false;
-  services = login_dialog.services;
-  return true;
+    return make_resolved_promise(std::optional<DataServices>{});
+  return make_resolved_promise(
+      std::optional<DataServices>{std::move(login_dialog.services)});
 }

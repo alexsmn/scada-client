@@ -1,6 +1,7 @@
 #include "base/at_exit.h"
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
+#include "base/task_runner_executor.h"
 #include "base/win/gdiplus_initializer.h"
 #include "client_application.h"
 #include "components/main/views/main_window_views.h"
@@ -9,6 +10,7 @@
 #include "views/activex_host.h"
 
 #include <atlbase.h>
+#include <boost/asio/io_context.hpp>
 
 #include <atlapp.h>
 
@@ -20,25 +22,28 @@ int Run(int show = SW_SHOWDEFAULT) {
   GdiplusInitializer gdiplus;
   ui::ResourceBundle::InitSharedInstance();
 
+  boost::asio::io_context io_context;
+
   int result = 0;
 
   try {
     base::MessageLoop message_loop(base::MessageLoop::TYPE_UI);
     base::RunLoop run_loop(&ActiveXHost::instance());
 
+    auto executor =
+        std::make_shared<TaskRunnerExecutor>(message_loop.task_runner());
     ClientApplication app{ClientApplicationContext{
+        io_context, executor,
         [](MainWindowContext&& context) {
           return std::make_unique<MainWindowViews>(std::move(context));
         },
         [&run_loop] { run_loop.Quit(); }}};
 
-    if (!app.Login())
-      throw std::runtime_error("Login failed");
+    executor->PostTask([&app] { app.Start(); });
 
     views::AcceleratorHandler accelerator_handler;
     ActiveXHost::instance().AddMessageDispatcher(accelerator_handler);
 
-    app.Start();
     run_loop.Run();
 
     ActiveXHost::instance().RemoveMessageDispatcher(accelerator_handler);

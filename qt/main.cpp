@@ -1,8 +1,8 @@
-#include "client_application.h"
-
 #include "base/at_exit.h"
+#include "base/task_runner_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
+#include "client_application.h"
 #include "components/main/qt/main_window_qt.h"
 #include "project.h"
 #include "qt/message_loop_qt.h"
@@ -11,7 +11,9 @@
 #include <QLibraryInfo>
 #include <QSettings>
 #include <QStyle>
+#include <QTimer>
 #include <QTranslator>
+#include <boost/asio/io_context.hpp>
 
 namespace {
 const char kDefaultStyle[] = "Fusion";
@@ -64,22 +66,34 @@ int main(int argc, char* argv[]) {
 
   qapp.setQuitOnLastWindowClosed(false);
 
+  boost::asio::io_context io_context;
+
   // QApplication must be created.
-  base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};
+  auto task_runner = base::MakeRefCounted<MessageLoopQt>();
+  base::ThreadTaskRunnerHandle message_loop{task_runner};
+
+  auto executor = std::make_shared<TaskRunnerExecutor>(task_runner);
+
+  QTimer timer;
+  timer.setInterval(10);
+  QObject::connect(&timer, &QTimer::timeout, [&io_context, task_runner] {
+    task_runner->Run();
+    io_context.poll();
+  });
+  timer.start();
 
   int result = 0;
 
   try {
     ClientApplication app{ClientApplicationContext{
+        io_context, executor,
         [](MainWindowContext&& context) {
           return std::make_unique<MainWindowQt>(std::move(context));
         },
         [&qapp] { qapp.quit(); }}};
 
-    if (!app.Login())
-      throw std::runtime_error("Login failed");
+    executor->PostTask([&app] { app.Start(); });
 
-    app.Start();
     result = qapp.exec();
 
   } catch (const std::exception&) {

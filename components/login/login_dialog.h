@@ -1,11 +1,15 @@
 #pragma once
 
+#include "base/promise.h"
+#include "core/data_services.h"
+
 #include <memory>
+#include <optional>
 
 class Executor;
 struct DataServices;
 struct DataServicesContext;
 
-bool ExecuteLoginDialog(std::shared_ptr<Executor> executor,
-                        DataServicesContext&& services_context,
-                        DataServices& services);
+promise<std::optional<DataServices>> ExecuteLoginDialog(
+    std::shared_ptr<Executor> executor,
+    DataServicesContext&& services_context);

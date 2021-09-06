@@ -4,6 +4,11 @@
 #include "core/session_service.h"
 #include "core/status.h"
 
+#include <QAbstractItemView>
+#include <QApplication>
+#include <QCheckBox>
+#include <QKeyEvent>
+#include <QSettings>
 #include <QtWidgets/qcombobox.h>
 #include <QtWidgets/qdialogbuttonbox.h>
 #include <QtWidgets/qlabel.h>
@@ -11,11 +16,6 @@
 #include <QtWidgets/qlineedit.h>
 #include <QtWidgets/qmessagebox.h>
 #include <QtWidgets/qpushbutton.h>
-#include <QAbstractItemView>
-#include <QApplication>
-#include <QCheckBox>
-#include <QKeyEvent>
-#include <QSettings>
 
 namespace {
 
@@ -123,12 +123,12 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
   return QDialog::eventFilter(object, event);
 }
 
-bool ExecuteLoginDialog(std::shared_ptr<Executor> executor,
-                        DataServicesContext&& services_context,
-                        DataServices& services) {
+promise<std::optional<DataServices>> ExecuteLoginDialog(
+    std::shared_ptr<Executor> executor,
+    DataServicesContext&& services_context) {
   LoginDialog login_dialog{std::move(executor), std::move(services_context)};
   if (login_dialog.exec() == QDialog::Rejected)
-    return false;
-  services = std::move(login_dialog.services);
-  return true;
+    return make_resolved_promise(std::optional<DataServices>{});
+  return make_resolved_promise(
+      std::optional<DataServices>{std::move(login_dialog.services)});
 }

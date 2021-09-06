@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "common/aliases.h"
 #include "components/main/main_window_context.h"
 #include "core/data_services_factory.h"
@@ -44,6 +45,8 @@ class TimedDataService;
 class Speech;
 
 struct ClientApplicationContext {
+  boost::asio::io_context& io_context_;
+  const std::shared_ptr<Executor> executor_;
   const std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>
       main_window_factory_;
   const std::function<void()> quit_handler_;
@@ -58,13 +61,13 @@ class ClientApplication : private ClientApplicationContext,
   ClientApplication(const ClientApplication&) = delete;
   ClientApplication& operator=(const ClientApplication&) = delete;
 
-  bool Login();
-
-  // Called after Login().
   void Start();
 
  private:
   MainWindowContext MakeMainWindowContext(int window_id);
+
+  promise<bool> Login();
+  void OnStartLoginCompleted();
 
   void OnEvents(bool has_events);
 
@@ -76,9 +79,6 @@ class ClientApplication : private ClientApplicationContext,
 
   std::shared_ptr<Logger> logger_;
 
-  std::unique_ptr<boost::asio::io_context> io_context_;
-  std::shared_ptr<Executor> executor_;
-  std::unique_ptr<base::Timer> io_context_timer_;
   std::unique_ptr<net::TransportFactory> transport_factory_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
