@@ -180,6 +180,8 @@ ClientApplication::~ClientApplication() {
   master_data_services_ = nullptr;
 
   transport_factory_.reset();
+
+  ShutdownBoostLogging();
 }
 
 void ClientApplication::Start() {
