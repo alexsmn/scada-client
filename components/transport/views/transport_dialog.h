@@ -1,7 +1,7 @@
 #pragma once
 
-#include "commands/views/inplace_dialog.h"
 #include "components/transport/transport_dialog_model.h"
+#include "components/transport/views/inplace_dialog.h"
 #include "net/transport_string.h"
 #include "views/framework/control/combobox.h"
 #include "views/framework/dialog.h"
