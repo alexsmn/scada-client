@@ -3,6 +3,7 @@
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/main/main_window_manager.h"
+#include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
 #include "components/main/selection_commands.h"
 #include "components/main/view_manager.h"
@@ -253,8 +254,16 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
   auto& dialog_service = GetDialogService();
 
   auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
-      executor_, this, def, dialog_service, controller_factory_,
-      *context_menu_model_, file_registry_});
+      executor_,
+      this,
+      def,
+      dialog_service,
+      controller_factory_,
+      [this](unsigned resource_id, const UiPoint& point, bool right_click) {
+        ShowPopupMenu(resource_id, point, right_click);
+      },
+      [this](const NodeRef& node_ref) { ExecuteDefaultNodeCommand(node_ref); },
+  });
 
   opened_view->commands = view_commands_factory_(*opened_view, dialog_service);
 
@@ -304,4 +313,14 @@ void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
 
 void MainWindow::SplitView(OpenedView& view, bool vertically) {
   view_manager_->SplitView(view, vertically);
+}
+
+void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
+  WORD shift = 0;
+  if (::GetAsyncKeyState(VK_SHIFT))
+    shift |= MK_SHIFT;
+  if (::GetAsyncKeyState(VK_CONTROL))
+    shift |= MK_CONTROL;
+
+  ::ExecuteDefaultNodeCommand(this, executor_, file_registry_, node, shift);
 }

@@ -80,6 +80,10 @@ class MainWindow : protected MainWindowContext,
   virtual void UpdateTitle() = 0;
   virtual void SetToolbarPosition(unsigned position) = 0;
 
+  virtual void ShowPopupMenu(unsigned resource_id,
+                             const UiPoint& point,
+                             bool right_click) = 0;
+
   // ViewManagerDelegate
   virtual std::unique_ptr<OpenedView> OnCreateView(
       WindowDefinition& def) override;
@@ -97,6 +101,8 @@ class MainWindow : protected MainWindowContext,
   void SetActiveDataView(OpenedView* view);
 
   OpenedView* FindViewToRecycle(unsigned type);
+
+  void ExecuteDefaultNodeCommand(const NodeRef& node);
 
   // ContentsObserver
   virtual void OnContentsChanged(

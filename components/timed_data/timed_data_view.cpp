@@ -39,10 +39,10 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
 
   struct MirrorTableModelHolder {
     explicit MirrorTableModelHolder(std::shared_ptr<TimedDataModel> model)
-        : model{std::move(model)} {}
+        : model_{std::move(model)} {}
 
-    const std::shared_ptr<TimedDataModel> model;
-    ui::MirrorTableModel mirror_model{*model};
+    const std::shared_ptr<TimedDataModel> model_;
+    ui::MirrorTableModel mirror_model{*model_};
   };
 
   auto mirror_table_holder = std::make_shared<MirrorTableModelHolder>(model_);

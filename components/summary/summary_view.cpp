@@ -41,7 +41,7 @@ SummaryView::SummaryView(const ControllerContext& context)
 UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
-  grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
+  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
 
   grid_->SetSelectionChangeHandler([this] {
     auto columns = grid_->GetSelectedColumns();
@@ -74,12 +74,12 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
 
   for (const auto& [command_id, interval] : kIntervalCommands) {
     command_registry_.AddCommand(Command{command_id}
-                                    .set_execute_handler([this, interval] {
-                                      model_->SetInterval(interval);
-                                    })
-                                    .set_checked_handler([this, interval] {
-                                      return model_->interval() == interval;
-                                    }));
+                                     .set_execute_handler([this, interval] {
+                                       model_->SetInterval(interval);
+                                     })
+                                     .set_checked_handler([this, interval] {
+                                       return model_->interval() == interval;
+                                     }));
   }
 
   for (const auto& [command_id, aggregate_type] : kAggregateCommands) {

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "controls/types.h"
-#include "node_service/node_ref.h"
-#include "time_range.h"
+#include "open_context.h"
 
 #include <cassert>
 #include <optional>
@@ -13,15 +12,6 @@ class ExportModel;
 class SelectionModel;
 class TimeModel;
 class WindowDefinition;
-
-// Declares the context that can be used to build a |WindowDefinition|. A
-// |WindowDefinition| is view type specific, while context only defines the
-// contents.
-struct OpenContext {
-  NodeRef node;
-  std::vector<scada::NodeId> node_ids;
-  std::optional<TimeRange> time_range;
-};
 
 class Controller {
  public:

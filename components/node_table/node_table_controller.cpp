@@ -57,7 +57,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
-  grid_.reset(new Grid(*model_, model_->row_model(), model_->column_model()));
+  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
 
   grid_->SetExpandAllowed(true);
   grid_->SetRowHeaderVisible(true);
@@ -109,13 +109,13 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   for (const auto& [command_id, prop_decl_id] : GetSortCommands()) {
     command_registry_.AddCommand(Command{command_id}
-                                    .set_execute_handler([this, prop_decl_id] {
-                                      SetSorting(prop_decl_id);
-                                    })
-                                    .set_checked_handler([this, prop_decl_id] {
-                                      return model_->sort_property_id() ==
-                                             prop_decl_id;
-                                    }));
+                                     .set_execute_handler([this, prop_decl_id] {
+                                       SetSorting(prop_decl_id);
+                                     })
+                                     .set_checked_handler([this, prop_decl_id] {
+                                       return model_->sort_property_id() ==
+                                              prop_decl_id;
+                                     }));
   }
 
   return grid_->CreateParentIfNecessary();

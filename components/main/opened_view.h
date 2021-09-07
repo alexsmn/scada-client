@@ -18,24 +18,24 @@ class CommandHandler;
 class ContentsModel;
 class Controller;
 class DialogService;
-class FileRegistry;
 class MainWindow;
 class WindowDefinition;
 class PrintService;
 struct WindowInfo;
 
-namespace ui {
-class MenuModel;
-}
+using PopupMenuHandler = std::function<
+    void(unsigned resource_id, const UiPoint& point, bool right_click)>;
+
+using DefaultNodeCommandHandler = std::function<void(const NodeRef& node)>;
 
 struct OpenedViewContext {
   const std::shared_ptr<Executor> executor_;
   MainWindow* main_window_;
   WindowDefinition& window_def_;
   DialogService& dialog_service_;
-  ControllerFactory controller_factory_;
-  ui::MenuModel& context_menu_model_;
-  const FileRegistry& file_registry_;
+  const ControllerFactory controller_factory_;
+  const PopupMenuHandler popup_menu_handler_;
+  const DefaultNodeCommandHandler default_node_command_handler_;
 };
 
 class OpenedView : private OpenedViewContext,

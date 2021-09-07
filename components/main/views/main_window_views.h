@@ -32,6 +32,9 @@ class MainWindowViews final : public MainWindow,
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;
   virtual void SetToolbarPosition(unsigned position) override;
+  virtual void ShowPopupMenu(unsigned resource_id,
+                             const gfx::Point& point,
+                             bool right_click) override;
 
   // ViewManagerDelegate
   virtual void OnShowTabPopupMenu(OpenedView& view,

@@ -38,7 +38,7 @@ auto* CreateFileSelector(Handler&& handler) {
   return new FileSelector<Handler>{std::forward<Handler>(handler)};
 }
 
-MessageBoxResult MapWinMessageBoxResult(int result) {
+MessageBoxResult MapNativeMessageBoxResult(int result) {
   switch (result) {
     case IDOK:
       return MessageBoxResult::Ok;
@@ -76,7 +76,7 @@ promise<MessageBoxResult> DialogServiceImplViews::RunMessageBox(
       dialog_owning_window, std::wstring{message}.c_str(), title_string.c_str(),
       kFlags[static_cast<std::size_t>(mode)]);
 
-  return make_resolved_promise(MapWinMessageBoxResult(result));
+  return make_resolved_promise(MapNativeMessageBoxResult(result));
 }
 
 gfx::NativeView DialogServiceImplViews::GetDialogOwningWindow() const {
@@ -95,7 +95,7 @@ std::filesystem::path DialogServiceImplViews::SelectOpenFile(
 
   base::WrapRefCounted(ui::SelectFileDialog::Create(selector, nullptr))
       ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, std::wstring{title},
-                   base::FilePath(), nullptr, -1, std::wstring(),
+                   base::FilePath{}, nullptr, -1, std::wstring(),
                    dialog_owning_window, nullptr);
 
   // Run nested loop.

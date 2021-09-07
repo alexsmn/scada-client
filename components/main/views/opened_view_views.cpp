@@ -9,29 +9,6 @@
 #include "views/item_drag_data.h"
 #include "window_info.h"
 
-void OpenedView::ShowPopupMenu(unsigned resource_id,
-                               const gfx::Point& point,
-                               bool right_click) {
-  assert(main_window_);
-
-  if (resource_id == 0)
-    resource_id = window_info().menu;
-  if (resource_id == 0)
-    resource_id = IDR_ITEM_POPUP;
-
-  // TODO: Avoid the cast.
-  HMENU menu = CreatePopupMenu(resource_id, context_menu_model_);
-  if (!menu)
-    return;
-
-  HMENU popup_menu = GetSubMenu(menu, 0);
-  assert(popup_menu);
-  ::ShowPopupMenu(dialog_service_.GetDialogOwningWindow(), popup_menu, point,
-                  right_click);
-
-  DestroyMenu(menu);
-}
-
 bool OpenedView::CanDrop(const ui::OSExchangeData& data) {
   if (auto* drop_controller = controller_->GetDropController()) {
     if (drop_controller->CanDrop(data))

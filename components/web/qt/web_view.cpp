@@ -25,7 +25,7 @@ UiView* WebView::Init(const WindowDefinition& definition) {
                          ? definition.path.value()
                          : MakeFileUrl(GetPublicFilePath(definition.path));
 
-  ax_widget_ = std::make_unique<QAxWidget>();
+  ax_widget_ = new QAxWidget();
   ax_widget_->setFocusPolicy(Qt::StrongFocus);
   ax_widget_->setControl("{8856F961-340A-11D0-A96B-00C04FD705A2}");
 
@@ -42,7 +42,7 @@ UiView* WebView::Init(const WindowDefinition& definition) {
     }
   }
 
-  return ax_widget_.get();
+  return ax_widget_;
 }
 
 void WebView::Save(WindowDefinition& definition) {

@@ -29,7 +29,7 @@ class SummaryView : protected ControllerContext, public Controller {
   SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<SummaryModel> model_;
-  std::unique_ptr<Grid> grid_;
+  Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

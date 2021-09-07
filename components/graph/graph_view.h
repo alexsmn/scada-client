@@ -74,7 +74,7 @@ class GraphView : protected ControllerContext,
 
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<MetrixGraph> graph_;
+  MetrixGraph* graph_ = nullptr;
 
   views::GraphRange prezoom_horizontal_range_;
 

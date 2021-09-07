@@ -36,10 +36,10 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   struct PropertyTreeModelHolder {
     explicit PropertyTreeModelHolder(
         std::shared_ptr<NodePropertyModel> property_model)
-        : property_model{std::move(property_model)} {}
+        : property_model_{std::move(property_model)} {}
 
-    const std::shared_ptr<NodePropertyModel> property_model;
-    PropertyTreeModel tree_model{*property_model};
+    const std::shared_ptr<NodePropertyModel> property_model_;
+    PropertyTreeModel tree_model{*property_model_};
   };
 
   auto tree_model_holder =

@@ -1,18 +1,23 @@
-﻿#include "opened_view.h"
+﻿#include "components/main/opened_view.h"
 
 #include "command_handler.h"
+#include "common_resources.h"
 #include "components/main/main_window.h"
-#include "components/main/main_window_util.h"
 #include "controller.h"
 #include "export_model.h"
 #include "print_util.h"
 #include "window_info.h"
+
+#if defined(UI_QT)
+#include <QWidget>
+#endif
 
 using namespace std::chrono_literals;
 
 OpenedView::OpenedView(OpenedViewContext&& context)
     : OpenedViewContext{std::move(context)},
       update_working_timer_{context.executor_} {
+  assert(controller_factory_);
   controller_ = controller_factory_(window_def_.window_info().command_id, *this,
                                     dialog_service_);
   if (!controller_)
@@ -36,7 +41,9 @@ OpenedView::OpenedView(OpenedViewContext&& context)
   //  ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
 }
 
-OpenedView::~OpenedView() {}
+OpenedView::~OpenedView() {
+  delete view_;
+}
 
 void OpenedView::Activate() {
   if (main_window_)
@@ -122,14 +129,7 @@ void OpenedView::OpenView(const WindowDefinition& def) {
 }
 
 void OpenedView::ExecuteDefaultNodeCommand(const NodeRef& node) {
-  WORD shift = 0;
-  if (::GetAsyncKeyState(VK_SHIFT))
-    shift |= MK_SHIFT;
-  if (::GetAsyncKeyState(VK_CONTROL))
-    shift |= MK_CONTROL;
-
-  ::ExecuteDefaultNodeCommand(main_window_, executor_, file_registry_, node,
-                              shift);
+  default_node_command_handler_(node);
 }
 
 ContentsModel* OpenedView::GetActiveContentsModel() {
@@ -157,4 +157,16 @@ void OpenedView::Print(PrintService& print_service) {
 
 void OpenedView::Focus() {
   main_window_->SetActiveView(this);
+}
+
+void OpenedView::ShowPopupMenu(unsigned resource_id,
+                               const UiPoint& point,
+                               bool right_click) {
+  if (resource_id == 0)
+    resource_id = window_info().menu;
+
+  if (resource_id == 0)
+    resource_id = IDR_ITEM_POPUP;
+
+  popup_menu_handler_(resource_id, point, right_click);
 }

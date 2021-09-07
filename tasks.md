@@ -61,3 +61,5 @@ Then they can be contructed via ComponentApi.
 ## Don't create MonitoredItem on selection
 
 E.g. for files selected in File View
+
+## Get rid of IsWorking

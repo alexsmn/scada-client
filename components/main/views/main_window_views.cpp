@@ -201,3 +201,21 @@ bool MainWindowViews::ExecuteWindowsCommand(int command_id) {
 void MainWindowViews::UpdateTitle() {
   main_window_->SetWindowText(GetWindowTitle().c_str());
 }
+
+void MainWindowViews::ShowPopupMenu(unsigned resource_id,
+                                    const gfx::Point& point,
+                                    bool right_click) {
+  assert(main_window_);
+
+  // TODO: Avoid the cast.
+  HMENU menu = CreatePopupMenu(resource_id, *context_menu_model_);
+  if (!menu)
+    return;
+
+  HMENU popup_menu = GetSubMenu(menu, 0);
+  assert(popup_menu);
+  ::ShowPopupMenu(dialog_service_.GetDialogOwningWindow(), popup_menu, point,
+                  right_click);
+
+  DestroyMenu(menu);
+}

@@ -76,6 +76,9 @@ OpenedView* ViewManager::CreateView(WindowDefinition& def,
     return nullptr;
   }
 
+  if (!opened_view)
+    return nullptr;
+
   auto& opened_view_ref = *views_.emplace_back(opened_view.release());
 
   // TODO: Process |after_view|.

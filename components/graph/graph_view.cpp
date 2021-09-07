@@ -31,8 +31,7 @@ GraphView::GraphView(const ControllerContext& context)
 UiView* GraphView::Init(const WindowDefinition& definition) {
   BOOL time_set = FALSE;
 
-  graph_ =
-      std::make_unique<MetrixGraph>(MetrixGraphContext{timed_data_service_});
+  graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_});
 
 #if defined(UI_VIEWS)
   graph_->set_background(
@@ -206,7 +205,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
             return graph_->primary_line() && graph_->primary_line()->stepped();
           }));
 
-  return graph_.get();
+  return graph_;
 }
 
 bool GraphView::FindColor(aui::Color color) const {
@@ -560,7 +559,7 @@ void GraphView::ChooseLineColor() {
     return;
 
 #if defined(UI_QT)
-  auto new_color = QColorDialog::getColor(line->color(), graph_.get());
+  auto new_color = QColorDialog::getColor(line->color(), graph_);
   if (new_color.isValid())
     line->SetColor(new_color);
 #endif

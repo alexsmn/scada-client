@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/struct_writer.h"
 #include "base/time/time.h"
 
 #include <cassert>
@@ -29,3 +30,13 @@ std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);
 
 TimeRange::Type ParseTimeRangeType(std::string_view str);
+
+inline std::ostream& operator<<(std::ostream& stream,
+                                const TimeRange& time_range) {
+  StructWriter{stream}
+      .AddField("type", time_range.type)
+      .AddField("start", time_range.start)
+      .AddField("end", time_range.end)
+      .AddField("dates", time_range.dates);
+  return stream;
+}

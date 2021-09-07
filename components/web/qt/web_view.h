@@ -16,7 +16,7 @@ class WebView : protected ControllerContext, public Controller {
   virtual void Save(WindowDefinition& definition) override;
 
  private:
-  std::unique_ptr<QAxWidget> ax_widget_;
+  QAxWidget* ax_widget_ = nullptr;
 
   base::FilePath path_;
 };
