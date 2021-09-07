@@ -317,16 +317,11 @@ void ViewManagerQt::CloseView(OpenedView& opened_view) {
     // Doesn't delete |opened_view.view()|.
     tabs->removeTab(index);
 
-    // Detach from parent to avoid deletion by parent.
-    opened_view.view()->setParent(nullptr);
-
     // Remove tab widget.
     if (tabs->count() == 0 && tabs != root_widget_)
       DeleteTabBlock(*tabs, false);
 
   } else if (auto* dock = GetDockWidget(opened_view)) {
-    // Detach from parent to avoid deletion by parent.
-    opened_view.view()->setParent(nullptr);
     // Can't delete immediately, since it's called by close event handler that
     // expects the widget to exist after the handler is processed.
     dock->deleteLater();
