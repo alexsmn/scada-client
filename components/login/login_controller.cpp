@@ -103,10 +103,16 @@ void LoginController::OnLoginCompleted() {
   if (auto_login)
     reg.SetString(L"Password", password.c_str());
 
-  if (auto_login && login_message_)
-    dialog_service_.RunMessageBox(kAutoLoginMessage, {}, MessageBoxMode::Info);
+  auto promise = make_resolved_promise(MessageBoxResult::Ok);
+  if (auto_login && login_message_) {
+    promise = dialog_service_.RunMessageBox(kAutoLoginMessage, {},
+                                            MessageBoxMode::Info);
+  }
 
-  completion_handler(std::move(services_));
+  promise.then([completion_handler = this->completion_handler,
+                services = std::move(services_)](MessageBoxResult) mutable {
+    completion_handler(std::move(services));
+  });
 }
 
 void LoginController::OnLoginFailed(const scada::Status& status) {
