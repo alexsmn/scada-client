@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/types.h"
+#include "controls/handlers.h"
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/graph/graph.h"
 #include "ui/views/controls/graph/graph_axis.h"

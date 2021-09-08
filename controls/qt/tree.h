@@ -1,39 +1,23 @@
 #pragma once
 
 #include "base/values.h"
-#include "controls/qt/item_delegate.h"
-#include "controls/qt/tree_model_adapter.h"
-#include "controls/types.h"
+#include "controls/handlers.h"
 
-#include <QSortFilterProxyModel>
 #include <QTreeView>
 
 namespace ui {
 class TreeModel;
 }
 
+class ItemDelegate;
 class Tree;
-
-class TreeProxyModel : public QSortFilterProxyModel {
- public:
-  explicit TreeProxyModel(Tree& tree) : tree_{tree} {}
-
-  void SetCompareHandler(TreeCompareHandler handler);
-
- protected:
-  // QSortFilterProxyModel
-  virtual bool lessThan(const QModelIndex& source_left,
-                        const QModelIndex& source_right) const override;
-
- private:
-  Tree& tree_;
-  TreeCompareHandler compare_handler_;
-};
+class TreeModelAdapter;
+class TreeProxyModel;
 
 class Tree : public QTreeView {
  public:
   explicit Tree(std::shared_ptr<ui::TreeModel> model);
-  virtual ~Tree();
+  ~Tree();
 
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
@@ -80,10 +64,10 @@ class Tree : public QTreeView {
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetIndex(void* node, int column_id) const;
 
-  TreeModelAdapter model_adapter_;
-  TreeProxyModel proxy_model_;
+  std::unique_ptr<TreeModelAdapter> model_adapter_;
+  std::unique_ptr<TreeProxyModel> proxy_model_;
 
-  ItemDelegate item_delegate_;
+  std::unique_ptr<ItemDelegate> item_delegate_;
 
   friend class TreeProxyModel;
 };

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/values.h"
-#include "controls/types.h"
+#include "controls/handlers.h"
 #include "ui/views/context_menu_controller.h"
 #include "ui/views/controls/tree/tree_view.h"
 

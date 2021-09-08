@@ -1,13 +1,17 @@
 #pragma once
 
 #include "base/values.h"
-#include "controls/qt/table_model_adapter.h"
-#include "controls/types.h"
-#include "ui/base/models/table_model.h"
+#include "controls/handlers.h"
 
-#include <QHeaderView>
-#include <QSortFilterProxyModel>
 #include <QTableView>
+
+namespace ui {
+class TableModel;
+struct TableColumn;
+}  // namespace ui
+
+class QSortFilterProxyModel;
+class TableModelAdapter;
 
 class Table : public QTableView {
  public:
@@ -16,9 +20,7 @@ class Table : public QTableView {
         bool sorting = false);
   ~Table();
 
-  const std::vector<ui::TableColumn>& columns() const {
-    return model_adapter_.columns();
-  }
+  const std::vector<ui::TableColumn>& columns() const;
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 
@@ -56,7 +58,7 @@ class Table : public QTableView {
   QModelIndex RowToIndex(int row) const;
   int IndexToRow(const QModelIndex& index) const;
 
-  TableModelAdapter model_adapter_;
+  std::unique_ptr<TableModelAdapter> model_adapter_;
 
   std::unique_ptr<QSortFilterProxyModel> proxy_model_;
 

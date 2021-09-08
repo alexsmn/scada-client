@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/types.h"
+#include "controls/handlers.h"
 #include "graph_qt/graph.h"
 #include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_line.h"

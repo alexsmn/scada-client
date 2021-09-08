@@ -13,6 +13,10 @@
 #include "window_definition.h"
 #include "window_definition_util.h"
 
+#if defined(UI_QT)
+#include <QHeaderView>
+#endif
+
 namespace {
 
 const wchar_t kValueColumnTitle[] = L"Значение";

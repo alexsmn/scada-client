@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/types.h"
+#include "controls/handlers.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
 
 namespace scada {

@@ -1,9 +1,13 @@
-#include "table.h"
+#include "controls/qt/table.h"
 
+#include "controls/qt/table_model_adapter.h"
+#include "ui/base/models/table_model.h"
 #include "value_util.h"
 #include "window_definition_util.h"
 
+#include <QHeaderView>
 #include <QKeyEvent>
+#include <QSortFilterProxyModel>
 
 namespace {
 
@@ -35,36 +39,41 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
 Table::Table(std::shared_ptr<ui::TableModel> model,
              std::vector<ui::TableColumn> columns,
              bool sorting)
-    : model_adapter_{std::move(model), std::move(columns)} {
+    : model_adapter_{std::make_unique<TableModelAdapter>(std::move(model),
+                                                         std::move(columns))} {
   horizontalHeader()->setHighlightSections(false);
   verticalHeader()->setDefaultSectionSize(19);
 
   if (sorting) {
-    proxy_model_ = std::make_unique<TableProxyModel>(model_adapter_.model(),
-                                                     model_adapter_.columns());
-    proxy_model_->setSourceModel(&model_adapter_);
+    proxy_model_ = std::make_unique<TableProxyModel>(model_adapter_->model(),
+                                                     model_adapter_->columns());
+    proxy_model_->setSourceModel(model_adapter_.get());
     proxy_model_->setDynamicSortFilter(true);
     setModel(proxy_model_.get());
     setSortingEnabled(true);
     sortByColumn(0, Qt::AscendingOrder);
   } else {
-    setModel(&model_adapter_);
+    setModel(model_adapter_.get());
   }
 
-  for (int i = 0; i < static_cast<int>(model_adapter_.columns().size()); ++i)
-    setColumnWidth(i, model_adapter_.columns()[i].width);
+  for (int i = 0; i < static_cast<int>(model_adapter_->columns().size()); ++i)
+    setColumnWidth(i, model_adapter_->columns()[i].width);
 
   setWordWrap(false);
   setShowGrid(false);
   setSelectionBehavior(SelectRows);
   connect(horizontalHeader(), &QHeaderView::sectionResized,
           [this](int index, int old_size, int new_size) {
-            model_adapter_.columns()[index].width = new_size;
+            model_adapter_->columns()[index].width = new_size;
           });
 }
 
 Table::~Table() {
   setModel(nullptr);
+}
+
+const std::vector<ui::TableColumn>& Table::columns() const {
+  return model_adapter_->columns();
 }
 
 void Table::SetSelectionChangeHandler(SelectionChangeHandler handler) {
@@ -136,7 +145,7 @@ void Table::RestoreState(const base::Value& data) {
 }
 
 QModelIndex Table::RowToIndex(int row) const {
-  auto index = model_adapter_.index(row, 0);
+  auto index = model_adapter_->index(row, 0);
   if (proxy_model_)
     index = proxy_model_->mapFromSource(index);
   return index;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/values.h"
-#include "controls/types.h"
+#include "controls/handlers.h"
 #include "controls/wt/table_model_adapter.h"
 #include "ui/base/models/table_model.h"
 

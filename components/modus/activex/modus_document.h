@@ -3,14 +3,14 @@
 #include "base/files/file_path.h"
 #include "common/aliases.h"
 #include "components/modus/activex/modus.h"
-#include "controls/types.h"
+#include "controls/handlers.h"
 
 #include <atlbase.h>
 
 #include <atlcom.h>
-#include <wrl/client.h>
 #include <functional>
 #include <map>
+#include <wrl/client.h>
 
 class FileCache;
 class TimedDataService;

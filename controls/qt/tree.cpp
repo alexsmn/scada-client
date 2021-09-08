@@ -1,13 +1,31 @@
 #include "controls/qt/tree.h"
 
 #include "controls/color.h"
+#include "controls/qt/item_delegate.h"
 #include "controls/qt/tree_model_adapter.h"
 #include "value_util.h"
 
 #include <QHeaderView>
 #include <QPainter>
+#include <QSortFilterProxyModel>
 
 // TreeProxyModel
+
+class TreeProxyModel : public QSortFilterProxyModel {
+ public:
+  explicit TreeProxyModel(Tree& tree) : tree_{tree} {}
+
+  void SetCompareHandler(TreeCompareHandler handler);
+
+ protected:
+  // QSortFilterProxyModel
+  virtual bool lessThan(const QModelIndex& source_left,
+                        const QModelIndex& source_right) const override;
+
+ private:
+  Tree& tree_;
+  TreeCompareHandler compare_handler_;
+};
 
 void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
   compare_handler_ = std::move(handler);
@@ -19,8 +37,8 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
   assert(source_left.column() == source_right.column());
 
   if (compare_handler_ && source_left.column() == 0) {
-    return compare_handler_(tree_.model_adapter_.GetNode(source_left),
-                            tree_.model_adapter_.GetNode(source_right)) < 0;
+    return compare_handler_(tree_.model_adapter_->GetNode(source_left),
+                            tree_.model_adapter_->GetNode(source_right)) < 0;
   }
 
   return QSortFilterProxyModel::lessThan(source_left, source_right);
@@ -29,22 +47,23 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
 // Tree
 
 Tree::Tree(std::shared_ptr<ui::TreeModel> model)
-    : model_adapter_{model},
-      proxy_model_{*this},
-      item_delegate_{[this, model](const QModelIndex& index) {
-        auto source_index = proxy_model_.mapToSource(index);
-        return model->GetEditData(source_index.internalPointer(),
-                                  source_index.column());
-      }} {
+    : model_adapter_{std::make_unique<TreeModelAdapter>(model)},
+      proxy_model_{std::make_unique<TreeProxyModel>(*this)},
+      item_delegate_{std::make_unique<ItemDelegate>(
+          [this, model](const QModelIndex& index) {
+            auto source_index = proxy_model_->mapToSource(index);
+            return model->GetEditData(source_index.internalPointer(),
+                                      source_index.column());
+          })} {
   setHeaderHidden(true);
-  setItemDelegate(&item_delegate_);
+  setItemDelegate(item_delegate_.get());
 
   // Prevent from editing when double-clicked.
   setEditTriggers(QTreeView::EditTrigger::SelectedClicked);
 
-  proxy_model_.setDynamicSortFilter(true);
-  proxy_model_.setSourceModel(&model_adapter_);
-  setModel(&proxy_model_);
+  proxy_model_->setDynamicSortFilter(true);
+  proxy_model_->setSourceModel(model_adapter_.get());
+  setModel(proxy_model_.get());
 
   SetRootVisible(false);
 
@@ -75,7 +94,7 @@ void Tree::SetSorted(bool sorted) {
 }
 
 void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
-  model_adapter_.LoadIcons(resource_id, width, ToQColor(mask_color));
+  model_adapter_->LoadIcons(resource_id, width, ToQColor(mask_color));
 }
 
 void Tree::SelectNode(void* node) {
@@ -110,7 +129,7 @@ void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
 }
 
 void Tree::StartEditing(void* node) {
-  edit(proxy_model_.mapFromSource(model_adapter_.GetNodeIndex(node, 0)));
+  edit(proxy_model_->mapFromSource(model_adapter_->GetNodeIndex(node, 0)));
 }
 
 void Tree::SetDoubleClickHandler(DoubleClickHandler handler) {
@@ -122,23 +141,23 @@ void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {
 }
 
 void Tree::SetShowChecks(bool show) {
-  model_adapter_.SetCheckable(true);
+  model_adapter_->SetCheckable(true);
 }
 
 void Tree::SetCheckedHandler(TreeCheckedHandler handler) {
-  model_adapter_.SetCheckedHandler(std::move(handler));
+  model_adapter_->SetCheckedHandler(std::move(handler));
 }
 
 bool Tree::IsChecked(void* node) const {
-  return model_adapter_.IsChecked(node);
+  return model_adapter_->IsChecked(node);
 }
 
 void Tree::SetChecked(void* node, bool checked) {
-  model_adapter_.SetChecked(node, checked);
+  model_adapter_->SetChecked(node, checked);
 }
 
 void Tree::SetCheckedNodes(std::set<void*> nodes) {
-  model_adapter_.SetCheckedNodes(std::move(nodes));
+  model_adapter_->SetCheckedNodes(std::move(nodes));
 }
 
 void Tree::SetRootVisible(bool visible) {
@@ -150,7 +169,7 @@ void Tree::SetRootVisible(bool visible) {
 }
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {
-  proxy_model_.SetCompareHandler(std::move(handler));
+  proxy_model_->SetCompareHandler(std::move(handler));
 }
 
 void Tree::SetContextMenuHandler(ContextMenuHandler handler) {
@@ -165,11 +184,11 @@ std::vector<void*> Tree::GetOrderedNodes(void* root, bool checked) const {
   struct Helper {
     void Traverse(const QModelIndex& index) {
       auto* node = tree.GetNode(index);
-      if (tree.model_adapter_.IsChecked(node) != checked)
+      if (tree.model_adapter_->IsChecked(node) != checked)
         return;
       nodes.emplace_back(node);
-      for (int i = 0; i < tree.proxy_model_.rowCount(index); ++i)
-        Traverse(tree.proxy_model_.index(i, 0, index));
+      for (int i = 0; i < tree.proxy_model_->rowCount(index); ++i)
+        Traverse(tree.proxy_model_->index(i, 0, index));
     }
 
     const Tree& tree;
@@ -187,19 +206,19 @@ void Tree::SetHeaderVisible(bool visible) {
 }
 
 void* Tree::GetNode(const QModelIndex& index) const {
-  return model_adapter_.GetNode(proxy_model_.mapToSource(index));
+  return model_adapter_->GetNode(proxy_model_->mapToSource(index));
 }
 
 QModelIndex Tree::GetIndex(void* node, int column_id) const {
-  return proxy_model_.mapFromSource(
-      model_adapter_.GetNodeIndex(node, column_id));
+  return proxy_model_->mapFromSource(
+      model_adapter_->GetNodeIndex(node, column_id));
 }
 
 void Tree::drawBranches(QPainter* painter,
                         const QRect& rect,
                         const QModelIndex& index) const {
   const auto& brush =
-      proxy_model_.data(index, Qt::BackgroundRole).value<QBrush>();
+      proxy_model_->data(index, Qt::BackgroundRole).value<QBrush>();
   if (brush != Qt::NoBrush)
     painter->fillRect(rect, brush);
 
@@ -207,7 +226,7 @@ void Tree::drawBranches(QPainter* painter,
 }
 
 void Tree::SetRowHeight(int row_height) {
-  model_adapter_.row_height = row_height;
+  model_adapter_->row_height = row_height;
 }
 
 base::Value Tree::SaveState() const {

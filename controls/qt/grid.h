@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/values.h"
+#include "controls/handlers.h"
 #include "controls/qt/grid_model_adapter.h"
-#include "controls/types.h"
 #include "item_delegate.h"
 #include "ui/base/models/grid_model.h"
 #include "ui/base/models/grid_range.h"

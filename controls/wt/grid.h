@@ -2,7 +2,7 @@
 
 #include "base/models/grid_range.h"
 #include "base/values.h"
-#include "controls/types.h"
+#include "controls/handlers.h"
 #include "controls/wt/grid_model_adapter.h"
 #include "item_delegate.h"
 #include "ui/base/models/grid_model.h"
