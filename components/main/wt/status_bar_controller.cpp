@@ -2,11 +2,8 @@
 
 #include "controls/status_bar_model.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <Wt/WLabel.h>
 #include <Wt/WProgressBar.h>
-#pragma warning(pop)
 
 StatusBarController::StatusBarController(StatusBarModel& model)
     : model_{model} {

@@ -3,14 +3,11 @@
 #include "components/login/login_controller.h"
 #include "services/dialog_service.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <Wt/WDialog.h>
 #include <Wt/WLabel.h>
 #include <Wt/WLineEdit.h>
 #include <Wt/WMessageBox.h>
 #include <Wt/WPushButton.h>
-#pragma warning(pop)
 
 namespace {
 

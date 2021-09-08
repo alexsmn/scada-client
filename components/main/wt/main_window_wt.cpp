@@ -10,6 +10,8 @@
 #include <wt/WVBoxLayout.h>
 #pragma warning(pop)
 
+// MainWindowWt
+
 MainWindowWt::MainWindowWt(Wt::WContainerWidget& parent,
                            MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_}, parent_{parent} {
@@ -44,3 +46,7 @@ DialogService& MainWindowWt::GetDialogService() {
 void MainWindowWt::OnSelectionChanged() {
   toolbar_controller_->OnSelectionChanged();
 }
+
+void MainWindowWt::ShowPopupMenu(unsigned resource_id,
+                                 const UiPoint& point,
+                                 bool right_click) {}

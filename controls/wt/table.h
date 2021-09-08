@@ -5,11 +5,8 @@
 #include "controls/wt/table_model_adapter.h"
 #include "ui/base/models/table_model.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <Wt/WSortFilterProxyModel.h>
 #include <Wt/WTableView.h>
-#pragma warning(pop)
 
 class Table : public Wt::WTableView {
  public:

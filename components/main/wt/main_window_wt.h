@@ -22,6 +22,9 @@ class MainWindowWt final : public MainWindow {
   virtual void SetToolbarPosition(unsigned position) override {}
   virtual void OnShowTabPopupMenu(OpenedView& view,
                                   const gfx::Point& point) override {}
+  virtual void ShowPopupMenu(unsigned resource_id,
+                             const UiPoint& point,
+                             bool right_click) override;
 
  private:
   Wt::WContainerWidget& parent_;

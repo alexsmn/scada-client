@@ -28,3 +28,8 @@ target_link_libraries(client_wt PRIVATE
 target_compile_definitions(client_wt PUBLIC
   "-DUI_WT"
 )
+
+target_compile_options(client_wt PUBLIC
+  /wd4251
+  /wd4275
+)

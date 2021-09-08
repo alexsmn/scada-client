@@ -1,14 +1,10 @@
 #include "controls/wt/item_delegate.h"
 
-#include <cassert>
-
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WComboBox.h>
 #include <Wt/WLineEdit.h>
 #include <Wt/WPushButton.h>
-#pragma warning(pop)
+#include <cassert>
 
 std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     const Wt::WModelIndex& index,

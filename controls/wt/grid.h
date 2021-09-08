@@ -7,11 +7,8 @@
 #include "item_delegate.h"
 #include "ui/base/models/grid_model.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <Wt/WPen.h>
 #include <Wt/WTableView.h>
-#pragma warning(pop)
 
 class Grid final : public Wt::WTableView {
  public:

@@ -2,12 +2,8 @@
 
 #include "ui/base/models/edit_data.h"
 
-#include <functional>
-
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <Wt/WItemDelegate.h>
-#pragma warning(pop)
+#include <functional>
 
 class ItemDelegate final : public Wt::WItemDelegate {
  public:

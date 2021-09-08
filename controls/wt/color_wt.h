@@ -3,11 +3,7 @@
 #include "controls/color.h"
 
 #include <SkColor.h>
-
-#pragma warning(push)
-#pragma warning(disable : 4251)
 #include <Wt/WColor.h>
-#pragma warning(pop)
 
 Wt::WColor ToWColor(SkColor color);
 SkColor ToSkColor(Wt::WColor qcolor) noexcept;

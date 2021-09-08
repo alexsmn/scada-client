@@ -5,10 +5,7 @@
 #elif defined(UI_VIEWS)
 #include "ui/views/view.h"
 #elif defined(UI_WT)
-#pragma warning(push)
-#pragma warning(disable : 4251)
 #include <Wt/WGlobal.h>
-#pragma warning(pop)
 #endif
 
 #if defined(UI_QT)

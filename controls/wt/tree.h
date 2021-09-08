@@ -5,11 +5,8 @@
 #include "controls/wt/item_delegate.h"
 #include "controls/wt/tree_model_adapter.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251)
 #include <Wt/WSortFilterProxyModel.h>
 #include <Wt/WTreeView.h>
-#pragma warning(pop)
 
 namespace ui {
 class TreeModel;
