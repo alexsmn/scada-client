@@ -25,7 +25,9 @@ class FavouritesView : protected ControllerContext, public Controller {
   void OpenSelection();
   void DeleteSelection();
 
+#if !defined(UI_WT)
   void AddUrl();
+#endif
 
   const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
 
@@ -35,6 +37,9 @@ class FavouritesView : protected ControllerContext, public Controller {
   Command& open_command_ = command_registry_.AddCommand(ID_OPEN);
   Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
   Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
+
+#if !defined(UI_WT)
   Command& add_url_command_ =
       command_registry_.AddCommand(ID_FAVOURITES_ADD_URL);
+#endif
 };

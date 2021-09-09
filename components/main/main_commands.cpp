@@ -202,6 +202,7 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
 
 void MainCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
+#if !defined(UI_WT)
     case ID_HELP_MANUAL: {
       WindowDefinition def(kWebWindowInfo);
       def.title = L"Документация";
@@ -210,6 +211,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       main_window_.OpenView(def, true);
       return;
     }
+#endif
 
     case ID_APP_ABOUT:
       ShowAboutDialog(dialog_service_);

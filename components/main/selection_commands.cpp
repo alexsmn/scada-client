@@ -11,12 +11,10 @@
 #include "components/device_metrics/device_metrics_command.h"
 #include "components/events/events_component.h"
 #include "components/filesystem/filesystem_commands.h"
-#include "components/graph/graph_component.h"
 #include "components/limits/limit_dialog.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
-#include "components/modus/modus_component.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/summary/summary_component.h"
@@ -43,6 +41,11 @@
 #include "window_definition_builder.h"
 #include "window_definition_util.h"
 #include "window_info.h"
+
+#if !defined(UI_WT)
+#include "components/graph/graph_component.h"
+#include "components/modus/modus_component.h"
+#endif
 
 namespace {
 
@@ -217,8 +220,10 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
 
   RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_TABLE,
                           kTableWindowInfo);
+#if !defined(UI_WT)
   RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_GRAPH,
                           kGraphWindowInfo);
+#endif
   RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_SUMMARY,
                           kSummaryWindowInfo);
 
@@ -274,11 +279,13 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
 
+#if !defined(UI_WT)
   command_registry_.AddCommand(
       Command{ID_OPEN_DISPLAY}
           .set_execute_handler([this] { OpenModusView(selection_->node()); })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
+#endif
 
   command_registry_.AddCommand(
       Command{ID_TIMED_DATA_VIEW}
@@ -498,6 +505,7 @@ void SelectionCommands::CallMethod(
             });
 }
 
+#if !defined(UI_WT)
 void SelectionCommands::OpenModusView(const NodeRef& node) {
   assert(main_window_);
   assert(dialog_service_);
@@ -529,6 +537,7 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   if (view)
     view->SetSelection(node.node_id());
 }
+#endif
 
 void SelectionCommands::SetContext(MainWindow* main_window,
                                    DialogService* dialog_service,

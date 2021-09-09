@@ -5,7 +5,6 @@
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
-#include "components/graph/graph_component.h"
 #include "components/table/table_component.h"
 #include "controller.h"
 #include "model/data_items_node_ids.h"
@@ -14,7 +13,19 @@
 #include "node_service/node_util.h"
 #include "window_info.h"
 
+#if !defined(UI_WT)
+#include "components/graph/graph_component.h"
+#endif
+
 namespace {
+
+#if defined(UI_WT)
+static const WindowInfo& kDefaultWindowInfo = kTableWindowInfo;
+#else
+static const WindowInfo& kDefaultWindowInfo = kGraphWindowInfo;
+#endif
+
+static const WindowInfo& kDefaultMultiWindowInfo = kTableWindowInfo;
 
 std::wstring MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
   return base::StrCat({ToStringPiece(window_info.title), L": ",
@@ -26,7 +37,7 @@ std::wstring MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
 WindowDefinition MakeEmptyWindowDefinition(const WindowInfo* window_info,
                                            const NodeRef& node) {
   if (!window_info)
-    window_info = &kGraphWindowInfo;
+    window_info = &kDefaultWindowInfo;
 
   WindowDefinition window_def{*window_info};
   window_def.title = MakeTitle(*window_info, node);
@@ -87,7 +98,7 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
                                       const NodeRef& node,
                                       const NodeIdSet& item_ids) {
   if (!window_info)
-    window_info = &kGraphWindowInfo;
+    window_info = &kDefaultWindowInfo;
 
   WindowDefinition window_def(*window_info);
   window_def.title = MakeTitle(*window_info, node);
@@ -105,7 +116,7 @@ WindowDefinition MakeWindowDefinition(
     const std::vector<scada::NodeId>& node_ids,
     std::wstring title) {
   if (!window_info)
-    window_info = &kTableWindowInfo;
+    window_info = &kDefaultMultiWindowInfo;
 
   WindowDefinition window_def(*window_info);
   window_def.title = std::move(title);
@@ -121,7 +132,7 @@ WindowDefinition MakeWindowDefinition(
 WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
                                       std::string formula) {
   if (!window_info)
-    window_info = &kGraphWindowInfo;
+    window_info = &kDefaultWindowInfo;
 
   WindowDefinition window_def(*window_info);
   window_def.title = base::SysNativeMBToWide(formula);

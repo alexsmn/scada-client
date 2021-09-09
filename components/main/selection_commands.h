@@ -77,7 +77,9 @@ class SelectionCommands : private SelectionCommandsContext,
   void DeleteSelection();
   void CopyToClipboard();
 
+#if !defined(UI_WT)
   void OpenModusView(const NodeRef& node);
+#endif
 
   void DumpDebugInfo();
 

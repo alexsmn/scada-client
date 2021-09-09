@@ -4,22 +4,25 @@
 #include "command_handler.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
-#include "components/graph/graph_component.h"
 #include "components/main/context_menu_model.h"
 #include "components/main/main_window.h"
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
-#include "components/modus/modus_component.h"
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
-#include "components/vidicon_display/vidicon_display_component.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
 #include "window_definition.h"
 #include "window_info.h"
+
+#if !defined(UI_WT)
+#include "components/graph/graph_component.h"
+#include "components/modus/modus_component.h"
+#include "components/vidicon_display/vidicon_display_component.h"
+#endif
 
 #include <atlres.h>
 
@@ -31,7 +34,10 @@
 
 const WindowInfo* const kTableWindowInfos[] = {
     &kTableWindowInfo, &kSheetWindowInfo, &kTimedDataWindowInfo};
+
+#if !defined(UI_WT)
 const WindowInfo* const kGraphWindowInfos[] = {&kGraphWindowInfo};
+#endif
 
 // DisplayMenuModel
 
@@ -42,8 +48,10 @@ void DisplayMenuModel::MenuWillShow() {
   Clear();
   items_.clear();
 
+#if !defined(UI_WT)
   AddItems(kModusWindowInfo);
   AddItems(kVidiconDisplayWindowInfo);
+#endif
 }
 
 void DisplayMenuModel::ActivatedAt(int index) {
@@ -267,7 +275,11 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
       display_menu_model_{context},
       table_favourites_{base::make_span(kTableWindowInfos), context},
       table_submenu_{this},
-      graph_favourites_{base::make_span(kGraphWindowInfos), context},
+#if !defined(UI_WT)
+      graph_favourites_{std::make_unique<FavouritesMenuModel>(
+          base::make_span(kGraphWindowInfos),
+          context)},
+#endif
       graph_submenu_{this},
       more_submenu_{this},
       page_list_menu_{context},
@@ -294,7 +306,8 @@ void MainMenuModel::Rebuild() {
 
   graph_submenu_.AddItem(ID_GRAPH_VIEW, L"Новый");
   graph_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
-  graph_submenu_.AddInplaceMenu(&graph_favourites_);
+  if (graph_favourites_)
+    graph_submenu_.AddInplaceMenu(graph_favourites_.get());
   AddSubMenu(0, L"График", &graph_submenu_);
 
   AddSubMenu(0, L"Объект", &context_menu_model_);

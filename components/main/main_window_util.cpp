@@ -3,7 +3,6 @@
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/filesystem/filesystem_commands.h"
-#include "components/graph/graph_component.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
 #include "components/node_properties/node_property_component.h"
@@ -18,6 +17,10 @@
 #include "node_service/node_util.h"
 #include "window_definition_builder.h"
 #include "window_info.h"
+
+#if !defined(UI_WT)
+#include "components/graph/graph_component.h"
+#endif
 
 #include <cassert>
 
@@ -41,8 +44,10 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
                                            unsigned shift) {
   if (IsInstanceOf(node, data_items::id::DataGroupType))
     return kTableWindowInfo;
+#if !defined(UI_WT)
   else if (IsInstanceOf(node, data_items::id::DataItemType))
     return kGraphWindowInfo;
+#endif
   else if (IsInstanceOf(node, devices::id::DeviceType))
     return kWatchWindowInfo;
   else

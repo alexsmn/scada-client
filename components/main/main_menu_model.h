@@ -150,7 +150,7 @@ class MainMenuModel final : private MainMenuContext,
   DisplayMenuModel display_menu_model_;
   FavouritesMenuModel table_favourites_;
   ui::SimpleMenuModel table_submenu_;
-  FavouritesMenuModel graph_favourites_;
+  std::unique_ptr<FavouritesMenuModel> graph_favourites_;
   ui::SimpleMenuModel graph_submenu_;
   ui::SimpleMenuModel more_submenu_;
   PageMenuModel page_list_menu_;

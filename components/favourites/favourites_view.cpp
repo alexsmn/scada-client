@@ -4,10 +4,13 @@
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
 #include "components/prompt/prompt_dialog.h"
-#include "components/web/web_component.h"
 #include "controller_delegate.h"
 #include "controls/tree.h"
 #include "services/dialog_service.h"
+
+#if !defined(UI_WT)
+#include "components/web/web_component.h"
+#endif
 
 namespace {
 const wchar_t kAddUrl[] = L"Добавить Web-страницу";
@@ -51,7 +54,9 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   delete_command_.enabled_handler = selection_enabled_handler;
   delete_command_.execute_handler = [this] { DeleteSelection(); };
 
+#if !defined(UI_WT)
   add_url_command_.execute_handler = [this] { AddUrl(); };
+#endif
 
   return tree_view_;
 }
@@ -79,6 +84,7 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
   return command_registry_.GetCommandHandler(command_id);
 }
 
+#if !defined(UI_WT)
 void FavouritesView::AddUrl() {
   std::wstring url;
   if (!RunPromptDialog(dialog_service_, L"URL-адрес:", kAddUrl, url))
@@ -105,3 +111,4 @@ void FavouritesView::AddUrl() {
   win.path = base::FilePath{url};
   favourites_.Add(win, folder);
 }
+#endif
