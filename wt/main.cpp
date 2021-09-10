@@ -9,8 +9,6 @@
 #include "components/main/wt/main_window_wt.h"
 #include "wt/message_loop_wt.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <wt/WApplication.h>
 #include <wt/WBootstrapTheme.h>
 #include <wt/WBreak.h>
@@ -20,7 +18,6 @@
 #include <wt/WPushButton.h>
 #include <wt/WServer.h>
 #include <wt/WText.h>
-#pragma warning(pop)
 
 class HelloApplication : public Wt::WApplication {
  public:
@@ -78,7 +75,8 @@ int main(int argc, char** argv) {
         });
     server.run();
 
-  } catch (const std::exception&) {
+  } catch (const std::exception& e) {
+    LOG(ERROR) << "Error: " << e.what();
     result = -1;
   }
 

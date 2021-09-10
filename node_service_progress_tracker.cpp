@@ -3,13 +3,16 @@
 #include "node_service/node_service.h"
 #include "services/progress_host.h"
 
+using namespace std::chrono_literals;
+
 NodeServiceProgressTracker::NodeServiceProgressTracker(
+    const std::shared_ptr<Executor> executor,
     NodeService& node_service,
     ProgressHost& progress_host)
-    : node_service_{node_service}, progress_host_{progress_host} {
-  update_timer_.Start(
-      FROM_HERE, base::TimeDelta::FromMilliseconds(300),
-      base::Bind(&NodeServiceProgressTracker::OnTimer, base::Unretained(this)));
+    : node_service_{node_service},
+      progress_host_{progress_host},
+      update_timer_{std::move(executor)} {
+  update_timer_.StartRepeating(300ms, [this] { OnTimer(); });
 }
 
 NodeServiceProgressTracker::~NodeServiceProgressTracker() {}

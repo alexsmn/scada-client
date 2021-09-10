@@ -3,12 +3,16 @@
 #include "components/configuration_tree/node_service_tree.h"
 #include "node_service/node_observer.h"
 
+#include <memory>
+
+class Executor;
 class NodeService;
 
 struct NodeServiceTreeImplContext {
   using ReferenceFilter = std::vector<
       std::pair<scada::NodeId /*reference_type_id*/, bool /*forward*/>>;
 
+  const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   const NodeRef root_node_;
   const ReferenceFilter reference_filter_;

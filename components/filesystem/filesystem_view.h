@@ -22,6 +22,7 @@ class FileSystemView : public ConfigurationTreeView {
     return std::make_shared<ConfigurationTreeModel>(
         ConfigurationTreeModelContext{
             std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+                context.executor_,
                 context.node_service_,
                 context.node_service_.GetNode(filesystem::id::FileSystem),
                 {{scada::id::Organizes, true}},

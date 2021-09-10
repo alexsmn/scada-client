@@ -1,5 +1,3 @@
-find_package(wt CONFIG REQUIRED)
-
 file(GLOB MAIN_WT CONFIGURE_DEPENDS
   "main.cpp"
 )
@@ -10,11 +8,29 @@ list(FILTER SOURCES EXCLUDE REGEX "/modus/")
 list(FILTER SOURCES EXCLUDE REGEX "/vidicon_display/")
 list(FILTER SOURCES EXCLUDE REGEX "/web/")
 
-add_executable(client_wt ${SOURCES} ${SOURCES_WT} ${MAIN_WT})
-set_property(TARGET client_wt PROPERTY FOLDER ${client_folder})
-target_link_libraries(client_wt PRIVATE
+# Lib
+
+set(COMPONENTS ${SOURCES} ${SOURCES_QT})
+list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
+list(REMOVE_ITEM SOURCES ${COMPONENTS})
+list(REMOVE_ITEM SOURCES_QT ${COMPONENTS})
+
+add_library(client_wt_lib
+  ${SOURCES}
+  ${SOURCES_WT}
+)
+
+target_sources(client_wt_lib INTERFACE ${COMPONENTS})
+
+target_compile_definitions(client_wt_lib PUBLIC
+  "-DUI_WT"
+)
+
+set_property(TARGET client_wt_lib PROPERTY FOLDER ${client_folder})
+
+find_package(wt CONFIG REQUIRED)
+target_link_libraries(client_wt_lib PUBLIC
   Wt::Wt
-  Wt::HTTP
   node_service_v1
   node_service_v2
   scada_core_opcua
@@ -23,13 +39,29 @@ target_link_libraries(client_wt PRIVATE
   timed_data
   ui_base
 )
-# target_link_libraries(client_wt PRIVATE Wt::Wt Wt::HTTP Wt::Isapi)
 
-target_compile_definitions(client_wt PUBLIC
-  "-DUI_WT"
-)
-
-target_compile_options(client_wt PUBLIC
+target_compile_options(client_wt_lib PUBLIC
   /wd4251
   /wd4275
 )
+
+# Exe
+
+add_executable(client_wt ${MAIN_WT})
+
+target_link_libraries(client_wt PUBLIC
+  Wt::HTTP
+)
+
+target_link_libraries(client_wt PUBLIC client_wt_lib)
+
+set_property(TARGET client_wt PROPERTY FOLDER ${client_folder})
+set_property(TARGET client_wt PROPERTY OUTPUT_NAME "webserver")
+
+# UT-s
+
+add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
+target_link_libraries(client_wt_unittests PUBLIC client_wt_lib base_unittest)
+include(GoogleTest)
+gtest_discover_tests(client_wt_unittests)
+set_property(TARGET client_wt_unittests PROPERTY FOLDER ${client_folder})

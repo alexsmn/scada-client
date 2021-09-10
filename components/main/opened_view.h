@@ -58,6 +58,7 @@ class OpenedView : private OpenedViewContext,
   bool locked() const { return locked_; }
 
   UiView* view() { return view_; }
+  UiView* ReleaseView() { return std::exchange(view_, nullptr); }
 
 #if defined(UI_VIEWS)
   const gfx::Image& image() const { return image_; }

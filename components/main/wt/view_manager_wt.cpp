@@ -7,18 +7,16 @@
 #include "services/page.h"
 #include "window_info.h"
 
-#pragma warning(push)
-#pragma warning(disable : 4251 4275)
 #include <wt/WApplication.h>
 #include <wt/WBorderLayout.h>
 #include <wt/WContainerWidget.h>
 #include <wt/WHBoxLayout.h>
+#include <wt/WMenu.h>
 #include <wt/WMenuItem.h>
 #include <wt/WStackedWidget.h>
 #include <wt/WTabWidget.h>
 #include <wt/WVBoxLayout.h>
 #include <wt/WWidgetItem.h>
-#pragma warning(pop)
 
 namespace {
 
@@ -127,6 +125,8 @@ void ViewManagerWt::CloseView(OpenedView& opened_view) {
 
 std::unique_ptr<Wt::WWidget> ViewManagerWt::RootPane::RemoveView(
     OpenedView& opened_view) {
+  // TODO: Describe the scenario in a comment.
+  assert(opened_view.view());
   if (!opened_view.view())
     return nullptr;
 
@@ -135,6 +135,8 @@ std::unique_ptr<Wt::WWidget> ViewManagerWt::RootPane::RemoveView(
     return nullptr;
 
   auto w = pane->RemoveView(opened_view);
+
+  opened_view.ReleaseView();
   view_manager_.DestroyView(opened_view);
 
   return w;
@@ -150,7 +152,12 @@ void ViewManagerWt::DockPane::ClosePane() {}
 
 std::unique_ptr<Wt::WWidget> ViewManagerWt::DockSubPane::RemoveView(
     OpenedView& opened_view) {
+  assert(opened_view.view());
+
   auto w = tab_widget_->removeTab(opened_view.view());
+
+  assert(root_pane_.widget_data_.find(w.get()) !=
+         root_pane_.widget_data_.end());
   root_pane_.widget_data_.erase(w.get());
 
   if (tab_widget_->count() == 0)
@@ -164,6 +171,7 @@ void ViewManagerWt::DockSubPane::ClosePane() {
   assert(item);
 
   if (item->parentLayout() == root_pane_.root_layout_) {
+    assert(root_pane_.root_layout_->indexOf(item) != -1);
     root_pane_.root_layout_->removeItem(item);
   } else {
     Wt::WLayoutItem* other_item = nullptr;
@@ -173,6 +181,7 @@ void ViewManagerWt::DockSubPane::ClosePane() {
         break;
       }
     }
+    assert(other_item);
     auto* parent_layout =
         static_cast<Wt::WBoxLayout*>(other_item->parentLayout());
     auto other_item_ptr = parent_layout->removeItem(other_item);
@@ -188,12 +197,31 @@ void ViewManagerWt::DockSubPane::ClosePane() {
   }
 }
 
+// A workaround for a |WMenuItem::removeContents| bug that makes
+// |QTabWidget::removeTab| to return null.
+// https://github.com/emweb/wt/blob/c7802997dfa4a37db86b4a923d9ff61042907531/src/Wt/WMenuItem.C#L492
+std::unique_ptr<Wt::WWidget> RemoveTabWorkaround(Wt::WTabWidget& tab_widget,
+                                                 Wt::WWidget& widget) {
+  /*int index = tab_widget.indexOf(&widget);
+  assert(index != -1);
+  auto* item = tab_widget.itemAt(index);
+  auto w = item->removeWidget(&widget);
+  assert(w.get() == &widget);
+  tab_widget.removeChild(item);
+  return w;*/
+  //  std::unique_ptr<Wt::WWidget> w{&widget};
+  tab_widget.removeTab(&widget);
+  return nullptr;
+}
+
 std::unique_ptr<Wt::WWidget> ViewManagerWt::CenterPane::RemoveView(
     OpenedView& opened_view) {
+  assert(opened_view.view());
+
   auto* tab_widget = root_pane_.GetTabWidget(opened_view);
   assert(tab_widget);
 
-  auto w = tab_widget->removeTab(opened_view.view());
+  auto w = RemoveTabWorkaround(*tab_widget, *opened_view.view());
 
   if (tab_widget !=
           root_pane_.root_layout_->widgetAt(Wt::LayoutPosition::Center) &&
@@ -201,7 +229,9 @@ std::unique_ptr<Wt::WWidget> ViewManagerWt::CenterPane::RemoveView(
     tab_widget->removeFromParent();
   }
 
-  root_pane_.widget_data_.erase(w.get());
+  assert(root_pane_.widget_data_.find(opened_view.view()) !=
+         root_pane_.widget_data_.end());
+  root_pane_.widget_data_.erase(opened_view.view());
 
   return w;
 }
@@ -307,6 +337,8 @@ void ViewManagerWt::DockSubPane::AddView(OpenedView& view) {
                       Wt::WLength{100, Wt::LengthUnit::Percentage});*/
   view.view()->setHeight(Wt::WLength{99, Wt::LengthUnit::Percentage});
 
+  assert(root_pane_.widget_data_.find(view.view()) ==
+         root_pane_.widget_data_.end());
   root_pane_.widget_data_.emplace(view.view(),
                                   RootPane::WidgetData{tab_widget_});
 
@@ -399,6 +431,8 @@ void ViewManagerWt::CenterPane::AddView(OpenedView& view) {
                          view.GetWindowTitle(), Wt::ContentLoading::Eager);
   tab->setCloseable(true);
 
+  assert(root_pane_.widget_data_.find(view.view()) ==
+         root_pane_.widget_data_.end());
   root_pane_.widget_data_.emplace(view.view(),
                                   RootPane::WidgetData{tab_widget, this});
 
@@ -416,8 +450,10 @@ std::unique_ptr<Wt::WTabWidget> ViewManagerWt::RootPane::CreateTabWidget() {
   tab_widget->tabClosed().connect([this, &tab_widget = *tab_widget](int index) {
     auto* opened_view =
         view_manager_.FindViewByWidget(tab_widget.widget(index));
-    if (opened_view)
+    if (opened_view) {
+      assert(tab_widget.indexOf(opened_view->view()) != -1);
       RemoveView(*opened_view);
+    }
   });
 
   /*QObject::connect(

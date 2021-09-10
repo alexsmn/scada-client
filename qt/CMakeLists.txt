@@ -16,6 +16,8 @@ file(GLOB MAIN_QT
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 
+# Lib
+
 set(COMPONENTS ${SOURCES} ${SOURCES_QT})
 list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
 list(REMOVE_ITEM SOURCES ${COMPONENTS})
@@ -66,6 +68,8 @@ file(GLOB TRANSLATIONS "*.ts")
 qt5_create_translation(TRANSLATIONS_OUT ${SOURCES_QT} ${MAIN_QT} ${TRANSLATIONS})
 qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
 target_sources(client_qt_lib PRIVATE ${TRANSLATIONS} ${TRANSLATIONS_OUT})
+
+# Exe
 
 add_executable(client_qt WIN32 ${MAIN_QT})
 set_property(TARGET client_qt PROPERTY FOLDER ${client_folder})

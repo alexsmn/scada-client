@@ -9,6 +9,7 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
           std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+              ObjectTreeModelContext::executor_,
               ObjectTreeModelContext::node_service_,
               ObjectTreeModelContext::root_,
               {{scada::id::Organizes, true}},

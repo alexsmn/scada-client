@@ -21,6 +21,7 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{
           context,
           std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
+              context.executor_,
               context.node_service_,
               context.node_service_.GetNode(data_items::id::DataItems),
               context.timed_data_service_,

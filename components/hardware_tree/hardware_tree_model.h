@@ -2,10 +2,14 @@
 
 #include "components/configuration_tree/configuration_tree_model.h"
 
+#include <memory>
+
+class Executor;
 class NodeService;
 class TimedDataService;
 
 struct HardwareTreeModelContext {
+  const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   TimedDataService& timed_data_service_;
 };

@@ -1,16 +1,18 @@
 #pragma once
 
-#include "base/timer/timer.h"
+#include "base/executor_timer.h"
 
 #include <memory>
 
+class Executor;
 class NodeService;
 class ProgressHost;
 class RunningProgress;
 
 class NodeServiceProgressTracker {
  public:
-  NodeServiceProgressTracker(NodeService& node_service,
+  NodeServiceProgressTracker(const std::shared_ptr<Executor> executor,
+                             NodeService& node_service,
                              ProgressHost& progress_host);
   ~NodeServiceProgressTracker();
 
@@ -25,5 +27,5 @@ class NodeServiceProgressTracker {
 
   std::unique_ptr<RunningProgress> running_progress_;
 
-  base::RepeatingTimer update_timer_;
+  ExecutorTimer update_timer_;
 };

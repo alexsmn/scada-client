@@ -1,7 +1,6 @@
 #include "components/configuration_tree/node_service_tree_impl.h"
 
-#include "base/bind_util.h"
-#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/executor.h"
 #include "core/event.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -63,29 +62,28 @@ void NodeServiceTreeImpl::SetObserver(Observer* observer) {
 }
 
 void NodeServiceTreeImpl::OnModelChanged(const scada::ModelChangeEvent& event) {
-  auto task_runner = base::SequencedTaskRunnerHandle::Get();
-  task_runner->PostTask(
-      FROM_HERE, BindLambda([this, event] {
-        if (!observer_)
-          return;
+  // TODO: weak_ptr
+  // TODO: Dispatch?
+  executor_->PostTask([this, event] {
+    if (!observer_)
+      return;
 
-        if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
-          observer_->OnNodeDeleted(event.node_id);
+    if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
+      observer_->OnNodeDeleted(event.node_id);
 
-        } else {
-          if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
-                            scada::ModelChangeEvent::ReferenceDeleted))
-            observer_->OnNodeChildrenChanged(event.node_id);
-        }
+    } else {
+      if (event.verb & (scada::ModelChangeEvent::ReferenceAdded |
+                        scada::ModelChangeEvent::ReferenceDeleted))
+        observer_->OnNodeChildrenChanged(event.node_id);
+    }
 
-        observer_->OnNodeModelChanged(event.node_id);
-      }));
+    observer_->OnNodeModelChanged(event.node_id);
+  });
 }
 
 void NodeServiceTreeImpl::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  auto task_runner = base::SequencedTaskRunnerHandle::Get();
-  task_runner->PostTask(FROM_HERE, BindLambda([this, node_id] {
-                          if (observer_)
-                            observer_->OnNodeSemanticsChanged(node_id);
-                        }));
+  executor_->PostTask([this, node_id] {
+    if (observer_)
+      observer_->OnNodeSemanticsChanged(node_id);
+  });
 }

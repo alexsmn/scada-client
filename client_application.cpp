@@ -91,7 +91,6 @@ void RegisterFileType(FileRegistry& file_registry,
                       unsigned command_id,
                       std::string_view extensions) {
   auto* window_info = FindWindowInfo(command_id);
-  assert(window_info);
   if (!window_info)
     return;
 
@@ -309,7 +308,7 @@ void ClientApplication::OnStartLoginCompleted() {
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 
   node_service_progress_tracker_ = std::make_unique<NodeServiceProgressTracker>(
-      *node_service_, *progress_host_);
+      executor_, *node_service_, *progress_host_);
 }
 
 MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {

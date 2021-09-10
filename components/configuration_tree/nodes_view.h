@@ -15,6 +15,7 @@ class NodesView : public ConfigurationTreeView {
                 ConfigurationTreeModelContext{
                     std::make_unique<NodeServiceTreeImpl>(
                         NodeServiceTreeImplContext{
+                            context.executor_,
                             context.node_service_,
                             context.node_service_.GetNode(
                                 scada::id::RootFolder),

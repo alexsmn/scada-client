@@ -12,6 +12,7 @@ class HardwareTreeView : public ConfigurationTreeView {
       : ConfigurationTreeView{
             context,
             std::make_shared<HardwareTreeModel>(HardwareTreeModelContext{
+                context.executor_,
                 context.node_service_,
                 context.timed_data_service_,
             }),

@@ -78,6 +78,7 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
     : ConfigurationTreeModel{::ConfigurationTreeModelContext{
           std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+              context.executor_,
               context.node_service_,
               context.node_service_.GetNode(devices::id::Devices),
               {
