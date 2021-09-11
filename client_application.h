@@ -4,7 +4,6 @@
 #include "common/aliases.h"
 #include "components/main/main_window_context.h"
 #include "core/data_services_factory.h"
-#include "core/session_state_observer.h"
 
 #include <memory>
 
@@ -56,8 +55,7 @@ struct ClientApplicationContext {
   const std::function<void()> quit_handler_;
 };
 
-class ClientApplication : private ClientApplicationContext,
-                          private scada::SessionStateObserver {
+class ClientApplication : private ClientApplicationContext {
  public:
   explicit ClientApplication(ClientApplicationContext&& context);
   ~ClientApplication();
@@ -78,10 +76,6 @@ class ClientApplication : private ClientApplicationContext,
 
   void Quit();
 
-  // scada::SessionStateObserver
-  virtual void OnSessionCreated() override;
-  virtual void OnSessionDeleted(const scada::Status& status) override;
-
   std::shared_ptr<Logger> logger_;
 
   std::unique_ptr<net::TransportFactory> transport_factory_;
@@ -92,7 +86,7 @@ class ClientApplication : private ClientApplicationContext,
 
   std::shared_ptr<NodeService> node_service_;
 
-  std::unique_ptr<EventFetcher> event_fetcher_;
+  std::shared_ptr<EventFetcher> event_fetcher_;
   AliasResolver alias_resolver_;
   std::unique_ptr<FileSystemComponent> filesystem_component_;
   std::unique_ptr<TimedDataService> timed_data_service_;

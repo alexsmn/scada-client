@@ -1,35 +1,39 @@
 #pragma once
 
-#include "base/timer/timer.h"
-#include "core/session_state_observer.h"
+#include "base/executor_timer.h"
+
+#include <boost/signals2/connection.hpp>
 
 namespace scada {
 class SessionService;
-}
+class Status;
+}  // namespace scada
 
+class Executor;
 class LocalEvents;
 
 struct ConnectionStateReporterContext {
+  const std::shared_ptr<Executor> executor_;
   scada::SessionService& session_service_;
   LocalEvents& local_events_;
 };
 
-class ConnectionStateReporter final : private ConnectionStateReporterContext,
-                                      private scada::SessionStateObserver {
+class ConnectionStateReporter final : private ConnectionStateReporterContext {
  public:
   explicit ConnectionStateReporter(ConnectionStateReporterContext&& context);
   ~ConnectionStateReporter();
 
   ConnectionStateReporter(const ConnectionStateReporter&) = delete;
   ConnectionStateReporter& operator=(const ConnectionStateReporter&) = delete;
- 
+
  private:
   void OnReconnectTimer();
 
-  // scada::SessionStateObserver
-  virtual void OnSessionCreated() override;
-  virtual void OnSessionDeleted(const scada::Status& status) override;
+  void OnSessionCreated();
+  void OnSessionDeleted(const scada::Status& status);
 
-  base::OneShotTimer reconnect_timer_;
-  unsigned reconnect_retry_ = 0;
+  ExecutorTimer reconnect_timer_{executor_};
+  size_t reconnect_retry_ = 0;
+
+  const boost::signals2::scoped_connection session_state_changed_connection_;
 };

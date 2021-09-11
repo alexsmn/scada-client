@@ -10,21 +10,26 @@
 
 #include <cassert>
 
+using namespace std::chrono_literals;
+
 namespace {
-const base::TimeDelta kReconnectDelays[] = {base::TimeDelta::FromSeconds(1),
-                                            base::TimeDelta::FromSeconds(5),
-                                            base::TimeDelta::FromSeconds(30)};
+const Duration kReconnectDelays[] = {1s, 5s, 30s};
 }
 
 ConnectionStateReporter::ConnectionStateReporter(
     ConnectionStateReporterContext&& context)
-    : ConnectionStateReporterContext{std::move(context)} {
-  session_service_.AddObserver(*this);
-}
+    : ConnectionStateReporterContext{std::move(context)},
+      session_state_changed_connection_{
+          session_service_.SubscribeSessionStateChanged(
+              BindExecutor(executor_,
+                           [this](bool connected, const scada::Status& status) {
+                             if (connected)
+                               OnSessionCreated();
+                             else
+                               OnSessionDeleted(status);
+                           }))} {}
 
-ConnectionStateReporter::~ConnectionStateReporter() {
-  session_service_.RemoveObserver(*this);
-}
+ConnectionStateReporter::~ConnectionStateReporter() {}
 
 void ConnectionStateReporter::OnSessionCreated() {
   local_events_.ReportEvent(
@@ -37,11 +42,6 @@ void ConnectionStateReporter::OnSessionCreated() {
 
 void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   auto host_name = FormatHostName(session_service_.GetHostName());
-
-  auto delay = reconnect_retry_ < std::size(kReconnectDelays)
-                   ? kReconnectDelays[reconnect_retry_]
-                   : *std::prev(std::end(kReconnectDelays));
-  reconnect_retry_++;
 
   // User chose "Disconnect" from the menu.
   if (status) {
@@ -62,16 +62,20 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
     return;
   }
 
+  reconnect_retry_ =
+      std::min(reconnect_retry_ + 1, std::size(kReconnectDelays) - 1);
+
+  auto delay = kReconnectDelays[reconnect_retry_];
+  auto delay_s = static_cast<unsigned>(
+      std::chrono::duration_cast<std::chrono::seconds>(delay).count());
+
   local_events_.ReportEvent(
       LocalEvents::SEV_WARNING,
       base::StringPrintf(
           L"Разрыв связи с сервером %ls. %ls. Переподключение через %u секунд.",
-          host_name.c_str(), ToString16(status).c_str(),
-          static_cast<unsigned>(delay.InSeconds())));
+          host_name.c_str(), ToString16(status).c_str(), delay_s));
 
-  reconnect_timer_.Start(FROM_HERE, delay,
-                         base::Bind(&ConnectionStateReporter::OnReconnectTimer,
-                                    base::Unretained(this)));
+  reconnect_timer_.StartOne(delay, [this] { OnReconnectTimer(); });
 }
 
 void ConnectionStateReporter::OnReconnectTimer() {

@@ -14,6 +14,7 @@
 #include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
 #include "common/event_fetcher.h"
+#include "common/event_fetcher_notifier.h"
 #include "common/master_data_services.h"
 #include "component_api_impl.h"
 #include "components/events/events_component.h"
@@ -172,8 +173,6 @@ ClientApplication::~ClientApplication() {
 
   profile_.reset();
 
-  master_data_services_->RemoveObserver(*this);
-
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
   filesystem_component_.reset();
@@ -197,17 +196,25 @@ void ClientApplication::Start() {
 }
 
 void ClientApplication::OnStartLoginCompleted() {
-  master_data_services_->AddObserver(*this);
+  struct EventFetcherHolder {
+    EventFetcherHolder(std::shared_ptr<Executor> executor,
+                       std::shared_ptr<const Logger> logger,
+                       MasterDataServices& master_data_services)
+        : event_fetcher_{EventFetcherContext{
+              std::move(executor), master_data_services, master_data_services,
+              master_data_services,
+              std::make_shared<NestedLogger>(std::move(logger),
+                                             "EventFetcher")}},
+          event_fetcher_notifier_{event_fetcher_, master_data_services} {}
 
-  event_fetcher_ = std::make_unique<EventFetcher>(EventFetcherContext{
-      executor_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      std::make_shared<NestedLogger>(logger_, "EventFetcher"),
-  });
-  if (master_data_services_->IsConnected())
-    event_fetcher_->OnChannelOpened(master_data_services_->GetUserId());
+    EventFetcher event_fetcher_;
+    EventFetcherNotifier event_fetcher_notifier_;
+  };
+
+  auto event_fetcher_holder = std::make_shared<EventFetcherHolder>(
+      executor_, logger_, *master_data_services_);
+  event_fetcher_ = std::shared_ptr<EventFetcher>{
+      event_fetcher_holder, &event_fetcher_holder->event_fetcher_};
 
   node_service_ = CreateNodeService(NodeServiceContext{
       executor_,
@@ -267,8 +274,9 @@ void ClientApplication::OnStartLoginCompleted() {
   speech_.reset(new Speech);
   blinker_manager_ = std::make_unique<BlinkerManager>(executor_);
 
-  connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(
-      ConnectionStateReporterContext{*master_data_services_, *local_events_});
+  connection_state_reporter_ =
+      std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{
+          executor_, *master_data_services_, *local_events_});
 
   file_registry_ = std::make_unique<FileRegistry>();
   RegisterFileType(*file_registry_, ID_MODUS_VIEW, ".sde;.xsde");
@@ -412,16 +420,6 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
                            context_menu_factory,
                            main_menu_factory,
                            connection_info_provider};
-}
-
-void ClientApplication::OnSessionCreated() {
-  if (event_fetcher_)
-    event_fetcher_->OnChannelOpened(master_data_services_->GetUserId());
-}
-
-void ClientApplication::OnSessionDeleted(const scada::Status& status) {
-  if (event_fetcher_)
-    event_fetcher_->OnChannelClosed();
 }
 
 void ClientApplication::OnEvents(bool has_events) {
