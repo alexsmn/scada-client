@@ -361,8 +361,9 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       Command{ID_CHANGE_PASSWORD}
           .set_execute_handler([this] {
             ShowChangePasswordDialog(
-                *dialog_service_, {selection_->node(), node_management_service_,
-                                   local_events_, profile_});
+                *dialog_service_,
+                ChangePasswordContext{selection_->node(), local_events_,
+                                      profile_});
           })
           .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
