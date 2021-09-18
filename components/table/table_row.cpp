@@ -6,11 +6,13 @@ TableRow::TableRow(TableModel& model, int index)
     : model_{model}, index_{index} {
   timed_data_.node_modified_handler = [this] { NotifyUpdate(); };
   timed_data_.deletion_handler = [this] { NotifyUpdate(); };
-  timed_data_.property_change_handler =
-      BindExecutor(model_.executor_,
-                   [this](const PropertySet& properties) { NotifyUpdate(); });
-  timed_data_.event_change_handler = BindExecutor(
-      model_.executor_, [this] { SetBlinking(timed_data_.alerting()); });
+  // Do not bind executor, since timed data interface is synchronous.
+  timed_data_.property_change_handler = [this](const PropertySet& properties) {
+    NotifyUpdate();
+  };
+  timed_data_.event_change_handler = [this] {
+    SetBlinking(timed_data_.alerting());
+  };
 }
 
 TableRow::~TableRow() {
