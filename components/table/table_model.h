@@ -68,20 +68,10 @@ class TableModel : private TableModelContext,
  private:
   friend class TableRow;
 
-  class RowsComparer {
-   public:
-    explicit RowsComparer(unsigned command_id) : command_id_(command_id) {}
-
-    bool operator()(const TableRow* left, const TableRow* right) const;
-
-   private:
-    unsigned command_id_;
-  };
-
   // Blinker events
   virtual void OnBlink(bool state) override;
 
-  typedef std::vector<TableRow*> Rows;
+  typedef std::vector<std::unique_ptr<TableRow>> Rows;
   Rows rows_;
 
   typedef std::set<TableRow*> RowSet;

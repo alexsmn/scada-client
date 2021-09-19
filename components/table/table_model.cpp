@@ -8,8 +8,11 @@
 #include "model/data_items_node_ids.h"
 #include "services/dialog_service.h"
 
-bool TableModel::RowsComparer::operator()(const TableRow* left,
-                                          const TableRow* right) const {
+namespace {
+
+bool CompareRows(const TableRow* left,
+                 const TableRow* right,
+                 unsigned command_id) {
   if (!left && !right)
     return false;
   if (!left)
@@ -17,7 +20,7 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
   if (!right)
     return true;
 
-  switch (command_id_) {
+  switch (command_id) {
     case ID_SORT_NAME:
       return HumanCompareText(left->GetTitle(), right->GetTitle()) < 0;
 
@@ -42,16 +45,17 @@ bool TableModel::RowsComparer::operator()(const TableRow* left,
   }
 }
 
+}  // namespace
+
+// TableModel
+
 TableModel::TableModel(TableModelContext&& context)
     : TableModelContext{std::move(context)},
       Blinker{TableModelContext::blinker_manager_} {
   Blinker::Start();
 }
 
-TableModel::~TableModel() {
-  for (size_t i = 0; i < rows_.size(); ++i)
-    delete rows_[i];
-}
+TableModel::~TableModel() = default;
 
 void TableModel::GetCellEx(TableCellEx& cell) {
   assert(cell.row >= 0 && cell.row <= (long)rows_.size());
@@ -69,7 +73,7 @@ void TableModel::GetCellEx(TableCellEx& cell) {
     return;
   }
 
-  const TableRow* trow = rows_[cell.row];
+  const auto& trow = rows_[cell.row];
   if (!trow) {
     // cell.clrb = RGB(218, 218, 218);
     return;
@@ -115,7 +119,7 @@ bool TableModel::DeleteRows(int start, int count) {
 
   NodeIdSet item_ids;
   for (int i = 0; i < count; ++i) {
-    TableRow* row = rows_[start + i];
+    auto& row = rows_[start + i];
     if (!row)
       continue;
 
@@ -123,7 +127,7 @@ bool TableModel::DeleteRows(int start, int count) {
     if (!item_id.is_null())
       item_ids.insert(item_id);
 
-    delete row;
+    row.reset();
   }
 
   NotifyItemsRemoving(start, count);
@@ -178,7 +182,7 @@ bool TableModel::SetFormula(int row, std::string formula) {
   if (added_count > 0) {
     NotifyItemsAdding(added_first, added_count);
     for (int i = 0; i < added_count; ++i)
-      rows_.push_back(new TableRow(*this, added_first + i));
+      rows_.push_back(std::make_unique<TableRow>(*this, added_first + i));
     NotifyItemsAdded(added_first, added_count);
   }
 
@@ -217,7 +221,10 @@ int TableModel::FindItem(const scada::NodeId& node_id) const {
 void TableModel::Sort(unsigned command_id) {
   blinking_rows_.clear();
 
-  std::sort(rows_.begin(), rows_.end(), RowsComparer(command_id));
+  std::sort(rows_.begin(), rows_.end(),
+            [command_id](const auto& a, const auto& b) {
+              return CompareRows(a.get(), b.get(), command_id);
+            });
 
   NotifyItemsChanged(0, row_count());
 }
@@ -237,7 +244,7 @@ TableRow* TableModel::GetRow(int index) {
   assert(index >= 0 && index <= (int)rows_.size());
   if (index == static_cast<int>(rows_.size()))
     return NULL;
-  return rows_[index];
+  return rows_[index].get();
 }
 
 const TableRow* TableModel::GetRow(int index) const {
