@@ -1,6 +1,7 @@
 ﻿#include "components/table/table_view.h"
 
 #include "client_utils.h"
+#include "common/event_fetcher.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "components/table/table_model.h"
@@ -21,8 +22,8 @@
 TableView::TableView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_shared<TableModel>(
-          TableModelContext{executor_, timed_data_service_, event_fetcher_,
-                            profile_, dialog_service_, blinker_manager_})} {
+          TableModelContext{timed_data_service_, event_fetcher_, profile_,
+                            dialog_service_, blinker_manager_})} {
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
     NotifyContainedItemChanged(item_id, added);
   };

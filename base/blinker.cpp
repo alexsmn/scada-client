@@ -2,18 +2,21 @@
 
 using namespace std::chrono_literals;
 
-// BlinkerManager
+// BlinkerManagerImpl
 
-BlinkerManager::BlinkerManager(std::shared_ptr<Executor> executor)
+BlinkerManagerImpl::BlinkerManagerImpl(std::shared_ptr<Executor> executor)
     : timer_{std::move(executor)} {
   timer_.StartRepeating(300ms, [this] { Blink(); });
 }
 
-void BlinkerManager::Blink() {
+void BlinkerManagerImpl::Blink() {
   state_ = !state_;
+  signal_(state_);
+}
 
-  for (auto& blinker : blinkers_)
-    blinker.OnBlink(state_);
+boost::signals2::scoped_connection BlinkerManagerImpl::Subscribe(
+    const BlinkerCallback& callback) {
+  return signal_.connect(callback);
 }
 
 // Blinker
@@ -26,13 +29,14 @@ Blinker::~Blinker() {
 }
 
 bool Blinker::GetState() const {
-  return blinker_manager_.state();
+  return blinker_manager_.GetState();
 }
 
 void Blinker::Start() {
-  blinker_manager_.AddBlinker(*this);
+  connection_ =
+      blinker_manager_.Subscribe([this](bool state) { OnBlink(state); });
 }
 
 void Blinker::Stop() {
-  blinker_manager_.RemoveBlinker(*this);
+  connection_.disconnect();
 }

@@ -2,24 +2,22 @@
 
 #include "base/blinker.h"
 #include "core/configuration_types.h"
-#include "ui/base/models/table_model.h"
+#include "components/table/table_types.h"
 
 #include <functional>
 #include <set>
 
 class BlinkerManager;
 class DialogService;
-class EventFetcher;
-class Executor;
+class NodeEventProvider;
 class Profile;
 class TableRow;
 class TimedDataService;
 
 struct TableModelContext {
-  const std::shared_ptr<Executor> executor_;
   TimedDataService& timed_data_service_;
-  EventFetcher& event_fetcher_;
-  Profile& profile_;
+  NodeEventProvider& node_event_provider_;
+  const Profile& profile_;
   DialogService& dialog_service_;
   BlinkerManager& blinker_manager_;
 };
@@ -36,10 +34,6 @@ class TableModel : private TableModelContext,
     COLUMN_EVENT
   };
 
-  struct CellEx : public ui::TableCell {
-    int image_index;
-  };
-
   explicit TableModel(TableModelContext&& context);
   virtual ~TableModel();
 
@@ -49,7 +43,7 @@ class TableModel : private TableModelContext,
   TableRow* GetRow(int index);
   const TableRow* GetRow(int index) const;
 
-  void GetCellEx(CellEx& cell);
+  void GetCellEx(TableCellEx& cell);
 
   bool DeleteRows(int start, int count);
   void Clear();

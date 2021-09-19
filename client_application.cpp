@@ -272,7 +272,7 @@ void ClientApplication::OnStartLoginCompleted() {
       *progress_host_,
   });
   speech_.reset(new Speech);
-  blinker_manager_ = std::make_unique<BlinkerManager>(executor_);
+  blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
 
   connection_state_reporter_ =
       std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{

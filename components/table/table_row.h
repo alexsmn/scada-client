@@ -1,5 +1,6 @@
 #pragma once
 
+#include "components/table/table_types.h"
 #include "timed_data/timed_data_spec.h"
 
 class TableModel;
@@ -20,10 +21,15 @@ class TableRow {
 
   void SetFormula(std::string formula);
 
+  void GetCellEx(TableCellEx& cell) const;
+
   void NotifyUpdate();
 
  private:
   void SetBlinking(bool blinking);
+
+  void GetValueCell(TableCellEx& cell) const;
+  void GetEventCell(TableCellEx& cell) const;
 
   TableModel& model_;
   int index_;

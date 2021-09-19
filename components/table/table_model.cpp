@@ -1,25 +1,12 @@
 ﻿#include "components/table/table_model.h"
 
-#include "base/format_time.h"
 #include "base/time/time.h"
 #include "base/utils.h"
 #include "client_utils.h"
-#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
-#include "controls/color.h"
 #include "model/data_items_node_ids.h"
-#include "node_service/node_util.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
-
-int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
-
-#ifdef UI_VIEWS
-const int kValueFormat = FORMAT_DEFAULT | FORMAT_COLOR;
-#else
-const int kValueFormat = FORMAT_DEFAULT;
-#endif
 
 bool TableModel::RowsComparer::operator()(const TableRow* left,
                                           const TableRow* right) const {
@@ -66,7 +53,7 @@ TableModel::~TableModel() {
     delete rows_[i];
 }
 
-void TableModel::GetCellEx(CellEx& cell) {
+void TableModel::GetCellEx(TableCellEx& cell) {
   assert(cell.row >= 0 && cell.row <= (long)rows_.size());
 
   cell.text.clear();
@@ -88,70 +75,7 @@ void TableModel::GetCellEx(CellEx& cell) {
     return;
   }
 
-  auto node = trow->timed_data().GetNode();
-  const auto& value = trow->timed_data().current();
-
-  switch (cell.column_id) {
-    case COLUMN_TITLE: {
-      cell.text = trow->GetTitle();
-      cell.image_index = 1;
-      break;
-    }
-
-    case COLUMN_VALUE:
-      cell.text = trow->timed_data().GetValueString(
-          value.value, value.qualifier, kValueFormat);
-      if (IsInstanceOf(node, data_items::id::DiscreteItemType)) {
-        if (!value.value.is_null()) {
-          auto params = node.target(data_items::id::HasTsFormat);
-          int color_index = -1;
-          bool bool_value;
-          if (value.value.get(bool_value) && params) {
-            auto pid = bool_value ? data_items::id::TsFormatType_CloseColor
-                                  : data_items::id::TsFormatType_OpenColor;
-            color_index = params[pid].value().get_or(-1);
-          }
-          if (color_index >= 0 &&
-              color_index < static_cast<int>(aui::GetColorCount()))
-            cell.text_color = aui::GetColor(color_index).sk_color();
-          else
-            cell.text_color = bool_value ? SK_ColorRED : SK_ColorBLACK;
-        }
-      }
-      if (Blinker::GetState() && trow->is_blinking())
-        cell.cell_color = SK_ColorYELLOW;
-      break;
-
-    case COLUMN_UPDATE_TIME:
-      if (!value.source_timestamp.is_null())
-        cell.text = base::SysNativeMBToWide(
-            FormatTime(value.source_timestamp, g_time_format));
-      break;
-
-    case COLUMN_CHANGE_TIME: {
-      base::Time time = trow->timed_data().change_time();
-      if (!time.is_null())
-        cell.text = base::SysNativeMBToWide(FormatTime(time, g_time_format));
-      break;
-    }
-
-    case COLUMN_EVENT:
-      // last unacked event
-      if (node) {
-        const EventSet* events =
-            event_fetcher_.GetItemUnackedEvents(node.node_id());
-        if (events && !events->empty()) {
-          const scada::Event& event = **events->rbegin();
-          cell.text = event.message;
-          if (events->size() >= 2)
-            cell.text.insert(0, base::StringPrintf(L"[%d] ", events->size()));
-        }
-      }
-      break;
-  }
-
-  if (cell.column_id != COLUMN_TITLE && value.qualifier.general_bad())
-    cell.text_color = profile_.bad_value_color;
+  trow->GetCellEx(cell);
 }
 
 int TableModel::GetRowCount() {
@@ -159,7 +83,7 @@ int TableModel::GetRowCount() {
 }
 
 void TableModel::GetCell(ui::TableCell& cell) {
-  CellEx cell_ex;
+  TableCellEx cell_ex;
   static_cast<ui::TableCell&>(cell_ex) = cell;
   cell_ex.image_index = -1;
   GetCellEx(cell_ex);
@@ -244,6 +168,8 @@ int TableModel::MoveRow(int row, bool up) {
 }
 
 bool TableModel::SetFormula(int row, std::string formula) {
+  assert(row == -1 || row <= static_cast<int>(rows_.size()));
+
   if (row == -1)
     row = static_cast<int>(rows_.size());
 

@@ -1,24 +1,36 @@
 #pragma once
 
-#include "base/observer_list.h"
 #include "base/executor_timer.h"
 
-class Blinker;
+#include <boost/signals2/signal.hpp>
 
 class BlinkerManager {
  public:
-  explicit BlinkerManager(std::shared_ptr<Executor> executor);
+  virtual ~BlinkerManager() = default;
 
-  bool state() const { return state_; }
+  virtual bool GetState() const = 0;
 
-  void AddBlinker(Blinker& blinker) { blinkers_.AddObserver(&blinker); }
-  void RemoveBlinker(Blinker& blinker) { blinkers_.RemoveObserver(&blinker); }
+  using BlinkerCallback = std::function<void(bool state)>;
+
+  virtual boost::signals2::scoped_connection Subscribe(
+      const BlinkerCallback& callback) = 0;
+};
+
+class BlinkerManagerImpl : public BlinkerManager {
+ public:
+  explicit BlinkerManagerImpl(std::shared_ptr<Executor> executor);
+
+  // BlinkerManager
+  virtual bool GetState() const override { return state_; }
+  virtual boost::signals2::scoped_connection Subscribe(
+      const BlinkerCallback& callback) override;
 
  private:
   void Blink();
 
   bool state_ = false;
-  base::ObserverList<Blinker> blinkers_;
+
+  boost::signals2::signal<void(bool state)> signal_;
 
   ExecutorTimer timer_;
 };
@@ -45,4 +57,6 @@ class Blinker {
 
  private:
   BlinkerManager& blinker_manager_;
+
+  boost::signals2::scoped_connection connection_;
 };

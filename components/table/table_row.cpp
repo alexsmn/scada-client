@@ -1,6 +1,52 @@
 #include "components/table/table_row.h"
 
+#include "base/format_time.h"
+#include "base/strings/stringprintf.h"
+#include "common/node_event_provider.h"
 #include "components/table/table_model.h"
+#include "controls/color.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/node_util.h"
+#include "services/profile.h"
+
+int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
+
+#ifdef UI_VIEWS
+const int kValueFormat = FORMAT_DEFAULT | FORMAT_COLOR;
+#else
+const int kValueFormat = FORMAT_DEFAULT;
+#endif
+
+namespace {
+
+std::optional<aui::Color> GetNodeColor(const NodeRef& node,
+                                       const scada::DataValue& data_value) {
+  if (!IsInstanceOf(node, data_items::id::DiscreteItemType))
+    return std::nullopt;
+
+  if (data_value.value.is_null())
+    return std::nullopt;
+
+  int color_index = -1;
+
+  bool bool_value = false;
+  auto params = node.target(data_items::id::HasTsFormat);
+  if (data_value.value.get(bool_value) && params) {
+    auto pid = bool_value ? data_items::id::TsFormatType_CloseColor
+                          : data_items::id::TsFormatType_OpenColor;
+    color_index = params[pid].value().get_or(-1);
+  }
+
+  if (color_index >= 0 && color_index < static_cast<int>(aui::GetColorCount()))
+    return aui::GetColor(color_index);
+
+  return bool_value ? aui::Color::FromSkColor(SK_ColorRED)
+                    : aui::Color::FromSkColor(SK_ColorBLACK);
+}
+
+}  // namespace
+
+// TableRow
 
 TableRow::TableRow(TableModel& model, int index)
     : model_{model}, index_{index} {
@@ -56,4 +102,82 @@ void TableRow::SetBlinking(bool blinking) {
 
 void TableRow::NotifyUpdate() {
   model_.NotifyItemsChanged(index_, 1);
+}
+
+void TableRow::GetValueCell(TableCellEx& cell) const {
+  const auto& data_value = timed_data_.current();
+  cell.text = timed_data_.GetValueString(data_value.value, data_value.qualifier,
+                                         kValueFormat);
+
+  const auto& node = timed_data_.GetNode();
+  if (auto color = GetNodeColor(node, data_value))
+    cell.text_color = color->sk_color();
+
+  if (model_.Blinker::GetState() && is_blinking())
+    cell.cell_color = SK_ColorYELLOW;
+}
+
+void TableRow::GetEventCell(TableCellEx& cell) const {
+  // last unacked event
+  const auto& node = timed_data_.GetNode();
+  if (!node)
+    return;
+
+  const EventSet* events =
+      model_.node_event_provider_.GetItemUnackedEvents(node.node_id());
+  if (!events || events->empty())
+    return;
+
+  const scada::Event& last_event = **events->rbegin();
+  cell.text = last_event.message;
+
+  if (events->size() >= 2)
+    cell.text.insert(0, base::StringPrintf(L"[%d] ", events->size()));
+}
+
+void TableRow::GetCellEx(TableCellEx& cell) const {
+  cell.text.clear();
+
+  if (cell.column_id == TableModel::COLUMN_TITLE)
+    cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
+
+  switch (cell.column_id) {
+    case TableModel::COLUMN_TITLE: {
+      cell.text = GetTitle();
+      cell.image_index = 1;
+      break;
+    }
+
+    case TableModel::COLUMN_VALUE:
+      GetValueCell(cell);
+      break;
+
+    case TableModel::COLUMN_UPDATE_TIME: {
+      const auto source_timestamp = timed_data_.current().source_timestamp;
+      if (!source_timestamp.is_null()) {
+        cell.text = base::SysNativeMBToWide(
+            FormatTime(source_timestamp, g_time_format));
+      }
+      break;
+    }
+
+    case TableModel::COLUMN_CHANGE_TIME: {
+      const auto change_time = timed_data_.change_time();
+      if (!change_time.is_null()) {
+        cell.text =
+            base::SysNativeMBToWide(FormatTime(change_time, g_time_format));
+      }
+      break;
+    }
+
+    case TableModel::COLUMN_EVENT:
+      GetEventCell(cell);
+      break;
+  }
+
+  if (cell.column_id != TableModel::COLUMN_TITLE) {
+    const auto& data_value = timed_data_.current();
+    if (data_value.qualifier.general_bad())
+      cell.text_color = model_.profile_.bad_value_color;
+  }
 }
