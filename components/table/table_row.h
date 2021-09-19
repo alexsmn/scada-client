@@ -1,11 +1,12 @@
 #pragma once
 
+#include "base/blinker.h"
 #include "components/table/table_types.h"
 #include "timed_data/timed_data_spec.h"
 
 class TableModel;
 
-class TableRow {
+class TableRow : private Blinker {
  public:
   TableRow(TableModel& model, int index);
   ~TableRow();
@@ -19,7 +20,7 @@ class TableRow {
   std::string GetFormula() const;
   std::wstring GetTitle() const;
 
-  void SetFormula(std::string formula);
+  void SetFormula(std::string formula, bool notify_update = true);
 
   void GetCellEx(TableCellEx& cell) const;
 
@@ -30,6 +31,9 @@ class TableRow {
 
   void GetValueCell(TableCellEx& cell) const;
   void GetEventCell(TableCellEx& cell) const;
+
+  // Blinker events
+  virtual void OnBlink(bool state) override;
 
   TableModel& model_;
   int index_;

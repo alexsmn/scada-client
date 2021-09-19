@@ -50,19 +50,16 @@ bool CompareRows(const TableRow* left,
 // TableModel
 
 TableModel::TableModel(TableModelContext&& context)
-    : TableModelContext{std::move(context)},
-      Blinker{TableModelContext::blinker_manager_} {
-  Blinker::Start();
-}
+    : TableModelContext{std::move(context)} {}
 
 TableModel::~TableModel() = default;
 
-void TableModel::GetCellEx(TableCellEx& cell) {
+void TableModel::GetCellEx(TableCellEx& cell) const {
   assert(cell.row >= 0 && cell.row <= (long)rows_.size());
 
   cell.text.clear();
 
-  if (cell.column_id == COLUMN_TITLE)
+  if (cell.column_id == TableModel::COLUMN_TITLE)
     cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
 
   if (cell.row == static_cast<int>(rows_.size())) {
@@ -94,15 +91,8 @@ void TableModel::GetCell(ui::TableCell& cell) {
   cell = cell_ex;
 }
 
-void TableModel::OnBlink(bool state) {
-  for (auto* row : blinking_rows_)
-    row->NotifyUpdate();
-}
-
 void TableModel::Clear() {
   DeleteRows(0, rows_.size());
-
-  assert(blinking_rows_.empty());
 }
 
 bool TableModel::DeleteRows(int start, int count) {
@@ -172,8 +162,6 @@ int TableModel::MoveRow(int row, bool up) {
 }
 
 bool TableModel::SetFormula(int row, std::string formula) {
-  assert(row == -1 || row <= static_cast<int>(rows_.size()));
-
   if (row == -1)
     row = static_cast<int>(rows_.size());
 
@@ -183,28 +171,23 @@ bool TableModel::SetFormula(int row, std::string formula) {
     NotifyItemsAdding(added_first, added_count);
     for (int i = 0; i < added_count; ++i)
       rows_.push_back(std::make_unique<TableRow>(*this, added_first + i));
-    NotifyItemsAdded(added_first, added_count);
   }
 
   assert(rows_[row]);
   TableRow& trow = *rows_[row];
 
-  auto old_node_id = trow.timed_data().GetNode().node_id();
   try {
-    trow.SetFormula(std::move(formula));
+    trow.SetFormula(std::move(formula), false);
   } catch (const std::exception&) {
     return false;
   }
-  auto new_node_id = trow.timed_data().GetNode().node_id();
 
-  if (item_changed_ && old_node_id != new_node_id) {
-    if (!old_node_id.is_null() && FindItem(old_node_id) == -1)
-      item_changed_(old_node_id, false);
-    if (!new_node_id.is_null())
-      item_changed_(new_node_id, true);
+  if (added_count > 0) {
+    // Must be coherent with |NotifyItemsAdding| above.
+    NotifyItemsAdded(added_first, added_count);
+  } else {
+    NotifyItemsChanged(row, 1);
   }
-
-  NotifyItemsChanged(row, 1);
 
   return true;
 }
@@ -219,8 +202,6 @@ int TableModel::FindItem(const scada::NodeId& node_id) const {
 }
 
 void TableModel::Sort(unsigned command_id) {
-  blinking_rows_.clear();
-
   std::sort(rows_.begin(), rows_.end(),
             [command_id](const auto& a, const auto& b) {
               return CompareRows(a.get(), b.get(), command_id);
@@ -230,7 +211,7 @@ void TableModel::Sort(unsigned command_id) {
 }
 
 std::wstring TableModel::GetTooltip(int row, int column_id) {
-  if (column_id != COLUMN_TITLE)
+  if (column_id != TableModel::COLUMN_TITLE)
     return std::wstring();
 
   const TableRow* trow = GetRow(row);
@@ -269,4 +250,16 @@ bool TableModel::SetCellText(int row, int column_id, const std::wstring& text) {
 
 bool TableModel::IsEditable(int row, int column) {
   return column == 0;
+}
+
+void TableModel::OnRowNodeChanged(const scada::NodeId& old_node_id,
+                                  const scada::NodeId& new_node_id) {
+  if (!item_changed_)
+    return;
+
+  if (!old_node_id.is_null() && FindItem(old_node_id) == -1)
+    item_changed_(old_node_id, false);
+
+  if (!new_node_id.is_null())
+    item_changed_(new_node_id, true);
 }

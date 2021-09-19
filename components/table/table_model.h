@@ -1,8 +1,7 @@
 #pragma once
 
-#include "base/blinker.h"
-#include "core/configuration_types.h"
 #include "components/table/table_types.h"
+#include "core/configuration_types.h"
 
 #include <functional>
 #include <set>
@@ -22,16 +21,17 @@ struct TableModelContext {
   BlinkerManager& blinker_manager_;
 };
 
-class TableModel : private TableModelContext,
-                   public ui::TableModel,
-                   private Blinker {
+class TableModel : private TableModelContext, public ui::TableModel {
  public:
-  enum ColumnType {
+  enum ColumnId : int {
     COLUMN_TITLE,
     COLUMN_VALUE,
     COLUMN_CHANGE_TIME,
     COLUMN_UPDATE_TIME,
-    COLUMN_EVENT
+    COLUMN_EVENT,
+
+    COLUMN_FIRST = COLUMN_TITLE,
+    COLUMN_LAST = COLUMN_EVENT,
   };
 
   explicit TableModel(TableModelContext&& context);
@@ -43,7 +43,7 @@ class TableModel : private TableModelContext,
   TableRow* GetRow(int index);
   const TableRow* GetRow(int index) const;
 
-  void GetCellEx(TableCellEx& cell);
+  void GetCellEx(TableCellEx& cell) const;
 
   bool DeleteRows(int start, int count);
   void Clear();
@@ -68,12 +68,8 @@ class TableModel : private TableModelContext,
  private:
   friend class TableRow;
 
-  // Blinker events
-  virtual void OnBlink(bool state) override;
+  void OnRowNodeChanged(const scada::NodeId& old_node_id, const scada::NodeId& new_node_id);
 
   typedef std::vector<std::unique_ptr<TableRow>> Rows;
   Rows rows_;
-
-  typedef std::set<TableRow*> RowSet;
-  RowSet blinking_rows_;
 };

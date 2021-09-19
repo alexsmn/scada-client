@@ -49,7 +49,7 @@ std::optional<aui::Color> GetNodeColor(const NodeRef& node,
 // TableRow
 
 TableRow::TableRow(TableModel& model, int index)
-    : model_{model}, index_{index} {
+    : model_{model}, index_{index}, Blinker{model.blinker_manager_} {
   timed_data_.node_modified_handler = [this] { NotifyUpdate(); };
   timed_data_.deletion_handler = [this] { NotifyUpdate(); };
   // Do not bind executor, since timed data interface is synchronous.
@@ -61,9 +61,7 @@ TableRow::TableRow(TableModel& model, int index)
   };
 }
 
-TableRow::~TableRow() {
-  SetBlinking(false);
-}
+TableRow::~TableRow() = default;
 
 std::string TableRow::GetFormula() const {
   return formula_.empty() ? std::string{} : '=' + formula_;
@@ -73,17 +71,24 @@ std::wstring TableRow::GetTitle() const {
   return timed_data_.GetTitle();
 }
 
-void TableRow::SetFormula(std::string formula) {
+void TableRow::SetFormula(std::string formula, bool notify_update) {
+  auto old_node_id = timed_data_.GetNode().node_id();
+
   formula_ = std::move(formula);
   if (!formula_.empty() && formula_[0] == '=')
     formula_.erase(formula_.begin());
 
   timed_data_.Connect(model_.timed_data_service(), formula_);
 
-  const auto* events = timed_data_.GetEvents();
-  SetBlinking(events && !events->empty());
+  SetBlinking(timed_data_.alerting());
 
-  NotifyUpdate();
+  if (notify_update)
+    NotifyUpdate();
+
+  auto new_node_id = timed_data_.GetNode().node_id();
+
+  if (old_node_id != new_node_id)
+    model_.OnRowNodeChanged(old_node_id, new_node_id);
 }
 
 void TableRow::SetBlinking(bool blinking) {
@@ -93,9 +98,9 @@ void TableRow::SetBlinking(bool blinking) {
   is_blinking_ = blinking;
 
   if (is_blinking_)
-    model_.blinking_rows_.insert(this);
+    Blinker::Start();
   else
-    model_.blinking_rows_.erase(this);
+    Blinker::Stop();
 
   NotifyUpdate();
 }
@@ -113,7 +118,7 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
   if (auto color = GetNodeColor(node, data_value))
     cell.text_color = color->sk_color();
 
-  if (model_.Blinker::GetState() && is_blinking())
+  if (Blinker::GetState() && is_blinking_)
     cell.cell_color = SK_ColorYELLOW;
 }
 
@@ -180,4 +185,8 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
     if (data_value.qualifier.general_bad())
       cell.text_color = model_.profile_.bad_value_color;
   }
+}
+
+void TableRow::OnBlink(bool state) {
+  NotifyUpdate();
 }
