@@ -2,6 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/strings/stringprintf.h"
+#include "client_utils.h"
 #include "common/node_event_provider.h"
 #include "components/table/table_model.h"
 #include "controls/color.h"
@@ -69,6 +70,10 @@ std::string TableRow::GetFormula() const {
 
 std::wstring TableRow::GetTitle() const {
   return timed_data_.GetTitle();
+}
+
+std::wstring TableRow::GetTooltip() const {
+  return GetTimedDataTooltipText(timed_data_);
 }
 
 void TableRow::SetFormula(std::string formula, bool notify_update) {

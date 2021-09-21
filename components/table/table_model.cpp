@@ -2,10 +2,10 @@
 
 #include "base/time/time.h"
 #include "base/utils.h"
-#include "client_utils.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
 #include "model/data_items_node_ids.h"
+#include "node_id_set.h"
 #include "services/dialog_service.h"
 
 namespace {
@@ -217,7 +217,7 @@ std::wstring TableModel::GetTooltip(int row, int column_id) {
   if (!trow)
     return std::wstring();
 
-  return GetTimedDataTooltipText(trow->timed_data());
+  return trow->GetTooltip();
 }
 
 TableRow* TableModel::GetRow(int index) {

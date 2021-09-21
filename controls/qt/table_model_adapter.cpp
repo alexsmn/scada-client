@@ -53,6 +53,9 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::TextAlignmentRole:
       return UiAligmentToQt(column.alignment);
+    case Qt::ToolTipRole:
+      return QString::fromStdWString(
+          model_->GetTooltip(index.row(), column.id));
   }
 
   ui::TableCell cell;

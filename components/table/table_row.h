@@ -19,6 +19,7 @@ class TableRow : private Blinker {
 
   std::string GetFormula() const;
   std::wstring GetTitle() const;
+  std::wstring GetTooltip() const;
 
   void SetFormula(std::string formula, bool notify_update = true);
 
