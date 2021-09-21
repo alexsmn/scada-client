@@ -47,6 +47,8 @@ class Table : public QTableView {
 
   QWidget* CreateParentIfNecessary() { return this; }
 
+  void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
+
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
 

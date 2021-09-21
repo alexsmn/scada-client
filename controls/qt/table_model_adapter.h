@@ -1,14 +1,16 @@
 #pragma once
 
-#include <QtCore/qabstractitemmodel.h>
-#include <memory>
-
 #include "ui/base/models/table_model_observer.h"
+
+#include <QAbstractItemModel>
+#include <memory>
 
 namespace ui {
 class TableModel;
 struct TableColumn;
 }  // namespace ui
+
+class QIcon;
 
 class TableModelAdapter : public QAbstractTableModel,
                           private ui::TableModelObserver {
@@ -22,6 +24,8 @@ class TableModelAdapter : public QAbstractTableModel,
 
   std::vector<ui::TableColumn>& columns() { return columns_; }
   const std::vector<ui::TableColumn>& columns() const { return columns_; }
+
+  void LoadIcons(unsigned resource_id, int width, QColor mask_color);
 
   // QAbstractTableModel
   virtual int rowCount(
@@ -51,4 +55,5 @@ class TableModelAdapter : public QAbstractTableModel,
  private:
   const std::shared_ptr<ui::TableModel> model_;
   std::vector<ui::TableColumn> columns_;
+  std::vector<QIcon> icons_;
 };

@@ -40,6 +40,8 @@ TableView::TableView(const ControllerContext& context)
 
   view_ = new Table{model_, std::move(columns)};
 
+  view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
+
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   view_->SetContextMenuHandler([this](const UiPoint& point) {

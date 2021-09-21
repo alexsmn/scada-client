@@ -147,11 +147,10 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
     cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
 
   switch (cell.column_id) {
-    case TableModel::COLUMN_TITLE: {
+    case TableModel::COLUMN_TITLE:
       cell.text = GetTitle();
-      cell.image_index = 1;
+      cell.icon_index = timed_data_.GetNode() ? 1 : -1;
       break;
-    }
 
     case TableModel::COLUMN_VALUE:
       GetValueCell(cell);

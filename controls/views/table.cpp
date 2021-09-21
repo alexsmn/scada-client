@@ -9,6 +9,8 @@ Table::Table(std::shared_ptr<ui::TableModel> model,
   set_controller(this);
 }
 
+void Table::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {}
+
 void Table::SetSelectionChangeHandler(SelectionChangeHandler handler) {
   selection_change_handler_ = std::move(handler);
 }

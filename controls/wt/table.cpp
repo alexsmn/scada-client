@@ -61,6 +61,8 @@ Table::~Table() {
   // setModel(nullptr);
 }
 
+void Table::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {}
+
 int Table::GetCurrentRow() const {
   auto indexes = selectedIndexes();
   return indexes.empty() ? -1 : indexes.begin()->row();

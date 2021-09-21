@@ -3,12 +3,13 @@
 #include "ui/base/models/tree_node_model.h"
 
 #include <QAbstractitemmodel>
-#include <QIcon>
 #include <memory>
 
 namespace ui {
 class TreeModel;
 }
+
+class QIcon;
 
 class TreeModelAdapter : public QAbstractItemModel,
                          private ui::TreeModelObserver {

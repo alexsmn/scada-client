@@ -33,8 +33,10 @@ bool Blinker::GetState() const {
 }
 
 void Blinker::Start() {
-  connection_ =
-      blinker_manager_.Subscribe([this](bool state) { OnBlink(state); });
+  if (!connection_.connected()) {
+    connection_ =
+        blinker_manager_.Subscribe([this](bool state) { OnBlink(state); });
+  }
 }
 
 void Blinker::Stop() {

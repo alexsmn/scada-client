@@ -86,7 +86,6 @@ int TableModel::GetRowCount() {
 void TableModel::GetCell(ui::TableCell& cell) {
   TableCellEx cell_ex;
   static_cast<ui::TableCell&>(cell_ex) = cell;
-  cell_ex.image_index = -1;
   GetCellEx(cell_ex);
   cell = cell_ex;
 }

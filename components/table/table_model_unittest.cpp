@@ -26,6 +26,8 @@ class TableModelTest : public Test {
     StrictMock<MockTimedData> timed_data;
   };
 
+  // NOTE: |TableRow| references |RowContext| via |TimedData|, so the
+  // |RowContext| may outlive local reference.
   std::shared_ptr<RowContext> SetFormula();
 
   StrictMock<MockTimedDataService> timed_data_service_;
@@ -130,6 +132,8 @@ TEST_F(TableModelTest, GetTitle) {
 
   const base::string16 title = L"Title";
   EXPECT_CALL(row_context->timed_data, GetTitle()).WillOnce(Return(title));
+  // For icon index.
+  EXPECT_CALL(row_context->timed_data, GetNode());
   EXPECT_EQ(title, table_model_.GetCellText(0, TableModel::COLUMN_TITLE));
 }
 

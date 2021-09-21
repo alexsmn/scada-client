@@ -1,6 +1,7 @@
 #include "controls/qt/table_model_adapter.h"
 
 #include "controls/color.h"
+#include "controls/qt/image_util.h"
 #include "ui/base/models/table_model.h"
 
 #include <QSize>
@@ -32,6 +33,12 @@ TableModelAdapter::~TableModelAdapter() {
   model_->observers().RemoveObserver(this);
 }
 
+void TableModelAdapter::LoadIcons(unsigned resource_id,
+                                  int width,
+                                  QColor mask_color) {
+  icons_ = ::LoadIcons(resource_id, width, mask_color);
+}
+
 int TableModelAdapter::rowCount(const QModelIndex& parent) const {
   return model_->GetRowCount();
 }
@@ -61,6 +68,11 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
       return ToQColor(cell.text_color);
     case Qt::BackgroundRole:
       return ToQColor(cell.cell_color);
+    case Qt::DecorationRole:
+      return (cell.icon_index >= 0 &&
+              cell.icon_index < static_cast<int>(icons_.size()))
+                 ? icons_[cell.icon_index]
+                 : QVariant();
     default:
       return QVariant();
   }

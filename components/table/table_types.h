@@ -2,6 +2,5 @@
 
 #include "ui/base/models/table_model.h"
 
-struct TableCellEx : public ui::TableCell {
-  int image_index;
-};
+// TODO: Remove.
+struct TableCellEx : public ui::TableCell {};

@@ -2,10 +2,9 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "controls/color.h"
+#include "controls/qt/image_util.h"
 #include "ui/base/models/tree_model.h"
 
-#include <QBitmap>
-#include <QPixmap>
 #include <QSize>
 #include <cassert>
 #include <windows.h>
@@ -26,14 +25,7 @@ TreeModelAdapter::~TreeModelAdapter() {
 void TreeModelAdapter::LoadIcons(unsigned resource_id,
                                  int width,
                                  QColor mask_color) {
-  base::win::ScopedBitmap bitmap(
-      ::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id)));
-
-  QPixmap tile = QtWin::fromHBITMAP(bitmap.get());
-  tile.setMask(tile.createMaskFromColor(mask_color));
-
-  for (int x = 0; x < tile.width(); x += width)
-    icons_.emplace_back(QIcon(tile.copy(x, 0, width, tile.height())));
+  icons_ = ::LoadIcons(resource_id, width, mask_color);
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {
