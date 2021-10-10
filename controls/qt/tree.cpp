@@ -261,3 +261,12 @@ void Tree::RestoreState(const base::Value& data) {
       header.hideSection(header.logicalIndex(visual_index));
   }
 }
+
+void Tree::SetFocusHandler(FocusHandler handler) {}
+
+void Tree::SetDragHandler(std::vector<std::string> mime_types,
+                          DragHandler handler) {
+  setDragEnabled(!mime_types.empty() && handler);
+
+  model_adapter_->SetDragHandler(std::move(mime_types), std::move(handler));
+}

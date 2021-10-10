@@ -2,6 +2,7 @@
 
 #include "controller.h"
 #include "controller_context.h"
+#include "controls/handlers.h"
 #include "selection_model.h"
 
 #include <memory>
@@ -42,6 +43,8 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
 
  private:
   void UpdateSelection();
+
+  DragData GetDragData(const std::vector<void*>& nodes) const;
 
   const std::shared_ptr<ConfigurationTreeModel> model_;
 

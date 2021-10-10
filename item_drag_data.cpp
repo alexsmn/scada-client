@@ -1,5 +1,6 @@
+#include "item_drag_data.h"
+
 #include "base/pickle.h"
-#include "views/item_drag_data.h"
 
 namespace {
 const uint16_t kVersion = 0;
@@ -7,21 +8,7 @@ const uint16_t kVersion = 0;
 
 void ItemDragData::Save(ui::OSExchangeData& data) const {
   base::Pickle pickle;
-  pickle.WriteUInt16(0);
-  pickle.WriteUInt16(node_id_.namespace_index());
-  pickle.WriteUInt16(static_cast<uint16_t>(node_id_.type()));
-  switch (node_id_.type()) {
-    case scada::NodeIdType::Numeric:
-      pickle.WriteUInt32(node_id_.numeric_id());
-      break;
-    case scada::NodeIdType::String:
-      pickle.WriteString(node_id_.string_id());
-      break;
-    default:
-      assert(false);
-      break;
-  }
-
+  SaveToPickle(pickle);
   data.SetPickledData(GetCustomFormat(), pickle);
 }
 
@@ -35,8 +22,7 @@ bool ItemDragData::Load(const ui::OSExchangeData& data) {
   uint16_t identifier_type = 0;
 
   base::PickleIterator it(pickle);
-  if (!it.ReadUInt16(&version) ||
-      !it.ReadUInt16(&namespace_index) ||
+  if (!it.ReadUInt16(&version) || !it.ReadUInt16(&namespace_index) ||
       !it.ReadUInt16(&identifier_type))
     return false;
 
@@ -68,9 +54,36 @@ bool ItemDragData::Load(const ui::OSExchangeData& data) {
   return true;
 }
 
+void ItemDragData::Save(DragData& drag_data) const {
+  base::Pickle pickle;
+  SaveToPickle(pickle);
+  drag_data.emplace(
+      std::piecewise_construct, std::forward_as_tuple(kMimeType),
+      std::forward_as_tuple(
+          static_cast<const char*>(pickle.data()),
+          static_cast<const char*>(pickle.data()) + pickle.size()));
+}
+
 // static
 ui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
   static const ui::OSExchangeData::CustomFormat kFormat =
-      ui::OSExchangeData::RegisterCustomFormat("telecontrol/scada/item");
+      ui::OSExchangeData::RegisterCustomFormat("telecontrol/scada/node");
   return kFormat;
+}
+
+void ItemDragData::SaveToPickle(base::Pickle& pickle) const {
+  pickle.WriteUInt16(0);
+  pickle.WriteUInt16(node_id_.namespace_index());
+  pickle.WriteUInt16(static_cast<uint16_t>(node_id_.type()));
+  switch (node_id_.type()) {
+    case scada::NodeIdType::Numeric:
+      pickle.WriteUInt32(node_id_.numeric_id());
+      break;
+    case scada::NodeIdType::String:
+      pickle.WriteString(node_id_.string_id());
+      break;
+    default:
+      assert(false);
+      break;
+  }
 }

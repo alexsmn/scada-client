@@ -156,3 +156,6 @@ void Tree::OnPaintNode(gfx::Canvas* canvas,
 void Tree::SetHeaderVisible(bool visible) {}
 
 void Tree::SetRowHeight(int row_height) {}
+
+void Tree::SetDragHandler(std::vector<std::string> mime_types,
+                          DragHandler handler) {}

@@ -4,9 +4,9 @@
 #include "components/configuration_tree/configuration_tree_node.h"
 #include "core/privileges.h"
 #include "core/session_service.h"
+#include "item_drag_data.h"
 #include "ui/views/widget/widget.h"
 #include "views/controls/tree/tree_view.h"
-#include "views/item_drag_data.h"
 
 ConfigurationTreeDragDropControllerViews::
     ConfigurationTreeDragDropControllerViews(

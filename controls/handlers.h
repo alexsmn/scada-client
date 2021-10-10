@@ -22,3 +22,6 @@ typedef std::function<void()> StateChangeHandler;
 typedef std::function<void()> FocusHandler;
 
 using DropAction = std::function<int()>;
+
+using DragData = std::unordered_map<std::string, std::vector<char>>;
+using DragHandler = std::function<DragData(const std::vector<void*>& nodes)>;

@@ -40,6 +40,8 @@ class Tree : public views::TreeView,
   void SetContextMenuHandler(ContextMenuHandler handler);
   void SetFocusHandler(FocusHandler handler) {}
 
+  void SetDragHandler(std::vector<std::string> mime_types, DragHandler handler);
+
   base::Value SaveState() const { return {}; }
   void RestoreState(const base::Value& data) {}
 

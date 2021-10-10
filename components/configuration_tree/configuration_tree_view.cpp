@@ -5,6 +5,7 @@
 #include "components/configuration_tree/configuration_tree_model.h"
 #include "controller_delegate.h"
 #include "controls/tree.h"
+#include "item_drag_data.h"
 #include "node_service/node_util.h"
 #include "window_definition.h"
 
@@ -58,6 +59,10 @@ ConfigurationTreeView::ConfigurationTreeView(
     return CompareNodes(static_cast<ConfigurationTreeNode*>(left)->node(),
                         static_cast<ConfigurationTreeNode*>(right)->node());
   });
+
+  tree_view_->SetDragHandler(
+      {std::string{ItemDragData::kMimeType}},
+      [this](const std::vector<void*>& nodes) { return GetDragData(nodes); });
 
 #if defined(UI_VIEWS)
   drag_drop_controller_ =
@@ -136,4 +141,19 @@ void ConfigurationTreeView::UpdateSelection() {
     selection_.SelectNode(node ? node->node() : nullptr);
   } else
     selection_.SelectMultiple();
+}
+
+DragData ConfigurationTreeView::GetDragData(
+    const std::vector<void*>& nodes) const {
+  if (nodes.empty())
+    return {};
+
+  auto* tree_node = static_cast<ConfigurationTreeNode*>(nodes.front());
+  auto node_id = tree_node->node().node_id();
+  if (node_id.is_null())
+    return {};
+
+  DragData drag_data;
+  ItemDragData{std::move(node_id)}.Save(drag_data);
+  return drag_data;
 }

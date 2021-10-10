@@ -50,12 +50,15 @@ class Tree : public QTreeView {
   void SetCompareHandler(TreeCompareHandler handler);
 
   void SetContextMenuHandler(ContextMenuHandler handler);
-  void SetFocusHandler(FocusHandler handler) {}
+  void SetFocusHandler(FocusHandler handler);
+
+  void SetDragHandler(std::vector<std::string> mime_types, DragHandler handler);
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
 
  protected:
+  // QTreeView
   virtual void drawBranches(QPainter* painter,
                             const QRect& rect,
                             const QModelIndex& index) const override;

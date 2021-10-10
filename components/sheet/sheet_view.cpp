@@ -10,11 +10,11 @@
 #include "controls/color.h"
 #include "controls/grid.h"
 #include "core/session_service.h"
+#include "item_drag_data.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "selection_model.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
-#include "views/item_drag_data.h"
 #include "window_definition.h"
 
 #if defined(UI_QT)
@@ -215,8 +215,7 @@ void SheetController::ChooseSelectionColor() {
   const auto& range = grid_->GetSelectionRange();
   const auto& current_color = model_->GetRangeColor(range);
 
-  const auto& new_color =
-      QColorDialog::getColor(current_color.qcolor(), grid_);
+  const auto& new_color = QColorDialog::getColor(current_color.qcolor(), grid_);
   if (new_color.isValid())
     model_->SetRangeColor(range, aui::Color::FromQColor(new_color));
 #endif

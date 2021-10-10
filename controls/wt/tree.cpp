@@ -243,3 +243,6 @@ void Tree::SetFocusHandler(FocusHandler handler) {
 
   clicked().connect(std::move(handler));
 }
+
+void Tree::SetDragHandler(std::vector<std::string> mime_types,
+                          DragHandler handler) {}

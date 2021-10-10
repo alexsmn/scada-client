@@ -5,6 +5,7 @@
 #include "controls/qt/image_util.h"
 #include "ui/base/models/tree_model.h"
 
+#include <QMimeData>
 #include <QSize>
 #include <cassert>
 #include <windows.h>
@@ -12,6 +13,25 @@
 #ifdef OS_WIN
 #include <QtWin>
 #endif
+
+namespace {
+
+std::unique_ptr<QMimeData> CreateMimeData(const DragData drag_data) {
+  if (drag_data.empty())
+    return nullptr;
+
+  auto mime_data = std::make_unique<QMimeData>();
+  for (auto& [mime_type, buffer] : drag_data) {
+    mime_data->setData(
+        QString::fromLocal8Bit(mime_type.data(), mime_type.size()),
+        QByteArray::fromRawData(buffer.data(), buffer.size()));
+  }
+  return mime_data;
+}
+
+}  // namespace
+
+// TreeModelAdapter
 
 TreeModelAdapter::TreeModelAdapter(std::shared_ptr<ui::TreeModel> model)
     : model_{std::move(model)} {
@@ -173,6 +193,9 @@ Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
   bool editable = model_->IsEditable(node, index.column());
   flags.setFlag(Qt::ItemIsEditable, editable);
 
+  flags.setFlag(Qt::ItemIsDragEnabled,
+                !supported_mime_types_.empty() && drag_handler_);
+
   return flags;
 }
 
@@ -270,4 +293,28 @@ bool TreeModelAdapter::canFetchMore(const QModelIndex& parent) const {
 void TreeModelAdapter::fetchMore(const QModelIndex& parent) {
   void* node = parent.isValid() ? GetNode(parent) : model_->GetRoot();
   model_->FetchMore(node);
+}
+
+void TreeModelAdapter::SetDragHandler(std::vector<std::string> mime_types,
+                                      DragHandler handler) {
+  std::transform(
+      mime_types.begin(), mime_types.end(),
+      std::back_inserter(supported_mime_types_),
+      [](const std::string& str) { return QString::fromStdString(str); });
+
+  drag_handler_ = std::move(drag_handler_);
+}
+
+QStringList TreeModelAdapter::mimeTypes() const {
+  return supported_mime_types_;
+}
+
+QMimeData* TreeModelAdapter::mimeData(const QModelIndexList& indexes) const {
+  std::vector<void*> nodes;
+  nodes.reserve(indexes.size());
+  std::transform(indexes.begin(), indexes.end(), std::back_inserter(nodes),
+                 [&](const QModelIndex& index) { return GetNode(index); });
+
+  auto drag_data = drag_handler_(nodes);
+  return CreateMimeData(drag_data).release();
 }

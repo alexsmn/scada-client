@@ -1,5 +1,7 @@
 #pragma once
 
+#include "controls/handlers.h"
+#include "ui/base/dragdrop/os_exchange_data.h"
 #include "ui/base/models/tree_node_model.h"
 
 #include <QAbstractitemmodel>
@@ -33,6 +35,10 @@ class TreeModelAdapter : public QAbstractItemModel,
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetNodeIndex(void* node, int column) const;
 
+  void SetDragHandler(
+      std::vector<std::string> supported_formats,
+      DragHandler handler);
+
   // QAbstractItemModel
   virtual QVariant headerData(int section,
                               Qt::Orientation orientation,
@@ -55,6 +61,8 @@ class TreeModelAdapter : public QAbstractItemModel,
   virtual bool hasChildren(const QModelIndex& parent) const override;
   virtual bool canFetchMore(const QModelIndex& parent) const override;
   virtual void fetchMore(const QModelIndex& parent) override;
+  virtual QStringList mimeTypes() const override;
+  virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
   int row_height = 18;
 
@@ -77,4 +85,7 @@ class TreeModelAdapter : public QAbstractItemModel,
   bool checkable_ = false;
   CheckedHandler checked_handler_;
   std::set<void*> checked_nodes_;
+
+  QStringList supported_mime_types_;
+  DragHandler drag_handler_;
 };
