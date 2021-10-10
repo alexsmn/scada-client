@@ -8,7 +8,7 @@ const uint16_t kVersion = 0;
 
 void ItemDragData::Save(ui::OSExchangeData& data) const {
   base::Pickle pickle;
-  SaveToPickle(pickle);
+  Save(pickle);
   data.SetPickledData(GetCustomFormat(), pickle);
 }
 
@@ -17,6 +17,27 @@ bool ItemDragData::Load(const ui::OSExchangeData& data) {
   if (!data.GetPickledData(GetCustomFormat(), pickle))
     return false;
 
+  return Load(pickle);
+}
+
+void ItemDragData::Save(base::Pickle& pickle) const {
+  pickle.WriteUInt16(0);
+  pickle.WriteUInt16(node_id_.namespace_index());
+  pickle.WriteUInt16(static_cast<uint16_t>(node_id_.type()));
+  switch (node_id_.type()) {
+    case scada::NodeIdType::Numeric:
+      pickle.WriteUInt32(node_id_.numeric_id());
+      break;
+    case scada::NodeIdType::String:
+      pickle.WriteString(node_id_.string_id());
+      break;
+    default:
+      assert(false);
+      break;
+  }
+}
+
+bool ItemDragData::Load(const base::Pickle& pickle) {
   uint16_t version = 0;
   uint16_t namespace_index = 0;
   uint16_t identifier_type = 0;
@@ -56,12 +77,22 @@ bool ItemDragData::Load(const ui::OSExchangeData& data) {
 
 void ItemDragData::Save(DragData& drag_data) const {
   base::Pickle pickle;
-  SaveToPickle(pickle);
-  drag_data.emplace(
-      std::piecewise_construct, std::forward_as_tuple(kMimeType),
-      std::forward_as_tuple(
-          static_cast<const char*>(pickle.data()),
-          static_cast<const char*>(pickle.data()) + pickle.size()));
+  Save(pickle);
+  std::vector<char> buffer{
+      static_cast<const char*>(pickle.data()),
+      static_cast<const char*>(pickle.data()) + pickle.size()};
+  drag_data.emplace(std::piecewise_construct, std::forward_as_tuple(kMimeType),
+                    std::forward_as_tuple(std::move(buffer)));
+}
+
+bool ItemDragData::Load(const DragData& drag_data) {
+  auto i = drag_data.find(std::string{kMimeType});
+  if (i == drag_data.end())
+    return false;
+
+  const auto& buffer = i->second;
+  base::Pickle pickle{buffer.data(), static_cast<int>(buffer.size())};
+  return Load(pickle);
 }
 
 // static
@@ -69,21 +100,4 @@ ui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
   static const ui::OSExchangeData::CustomFormat kFormat =
       ui::OSExchangeData::RegisterCustomFormat("telecontrol/scada/node");
   return kFormat;
-}
-
-void ItemDragData::SaveToPickle(base::Pickle& pickle) const {
-  pickle.WriteUInt16(0);
-  pickle.WriteUInt16(node_id_.namespace_index());
-  pickle.WriteUInt16(static_cast<uint16_t>(node_id_.type()));
-  switch (node_id_.type()) {
-    case scada::NodeIdType::Numeric:
-      pickle.WriteUInt32(node_id_.numeric_id());
-      break;
-    case scada::NodeIdType::String:
-      pickle.WriteString(node_id_.string_id());
-      break;
-    default:
-      assert(false);
-      break;
-  }
 }

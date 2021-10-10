@@ -35,9 +35,8 @@ class TreeModelAdapter : public QAbstractItemModel,
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetNodeIndex(void* node, int column) const;
 
-  void SetDragHandler(
-      std::vector<std::string> supported_formats,
-      DragHandler handler);
+  void SetDragHandler(std::vector<std::string> supported_formats,
+                      DragHandler handler);
 
   // QAbstractItemModel
   virtual QVariant headerData(int section,
@@ -63,11 +62,29 @@ class TreeModelAdapter : public QAbstractItemModel,
   virtual void fetchMore(const QModelIndex& parent) override;
   virtual QStringList mimeTypes() const override;
   virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
+  virtual bool canDropMimeData(const QMimeData* data,
+                               Qt::DropAction action,
+                               int row,
+                               int column,
+                               const QModelIndex& parent) const override;
+  virtual bool dropMimeData(const QMimeData* data,
+                            Qt::DropAction action,
+                            int row,
+                            int column,
+                            const QModelIndex& parent) override;
 
   int row_height = 18;
 
+  DropHandler drop_handler;
+
  private:
   int GetIndexOf(void* node) const;
+
+  DropAction GetDropAction(const QMimeData* data,
+                           Qt::DropAction action,
+                           int row,
+                           int column,
+                           const QModelIndex& parent) const;
 
   // private ui::TreeModelObserver
   virtual void OnTreeNodesAdding(void* parent, int start, int count) override;

@@ -11,10 +11,14 @@ class ItemDragData {
 
   const scada::NodeId& item_id() const { return node_id_; }
 
+  void Save(base::Pickle& pickle) const;
+  bool Load(const base::Pickle& pickle);
+
   void Save(ui::OSExchangeData& data) const;
   bool Load(const ui::OSExchangeData& data);
 
   void Save(DragData& drag_data) const;
+  bool Load(const DragData& drag_data);
 
   static ui::OSExchangeData::CustomFormat GetCustomFormat();
 
@@ -22,7 +26,5 @@ class ItemDragData {
       "application/telecontrol.scada.nodes";
 
  private:
-  void SaveToPickle(base::Pickle& pickle) const;
-
   scada::NodeId node_id_;
 };

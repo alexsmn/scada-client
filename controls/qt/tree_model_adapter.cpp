@@ -3,6 +3,7 @@
 #include "base/win/scoped_gdi_object.h"
 #include "controls/color.h"
 #include "controls/qt/image_util.h"
+#include "ui/base/dragdrop/drag_drop_types.h"
 #include "ui/base/models/tree_model.h"
 
 #include <QMimeData>
@@ -16,17 +17,41 @@
 
 namespace {
 
-std::unique_ptr<QMimeData> CreateMimeData(const DragData drag_data) {
+std::unique_ptr<QMimeData> CreateMimeData(const DragData& drag_data) {
   if (drag_data.empty())
     return nullptr;
 
   auto mime_data = std::make_unique<QMimeData>();
   for (auto& [mime_type, buffer] : drag_data) {
+    // WARNING: |QByteArray::fromRawData| doesn't take ownership of the buffer.
     mime_data->setData(
         QString::fromLocal8Bit(mime_type.data(), mime_type.size()),
-        QByteArray::fromRawData(buffer.data(), buffer.size()));
+        QByteArray{buffer.data(), static_cast<int>(buffer.size())});
   }
   return mime_data;
+}
+
+DragData MakeDragData(const QMimeData& mime_data) {
+  DragData drag_data;
+  for (const auto& mime_type : mime_data.formats()) {
+    const auto& data = mime_data.data(mime_type);
+    std::vector<char> buffer{data.data(), data.data() + data.size()};
+    drag_data.emplace(mime_type.toStdString(), std::move(buffer));
+  }
+  return drag_data;
+}
+
+int ConvertDropAction(Qt::DropAction action) {
+  switch (action) {
+    case Qt::DropAction::CopyAction:
+      return ui::DragDropTypes::DRAG_COPY;
+    case Qt::DropAction::MoveAction:
+      return ui::DragDropTypes::DRAG_MOVE;
+    case Qt::DropAction::LinkAction:
+      return ui::DragDropTypes::DRAG_LINK;
+    default:
+      return ui::DragDropTypes::DRAG_NONE;
+  }
 }
 
 }  // namespace
@@ -49,8 +74,7 @@ void TreeModelAdapter::LoadIcons(unsigned resource_id,
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {
-  assert(index.isValid());
-  return index.internalPointer();
+  return index.isValid() ? index.internalPointer() : model_->GetRoot();
 }
 
 QModelIndex TreeModelAdapter::GetNodeIndex(void* node, int column) const {
@@ -196,6 +220,9 @@ Qt::ItemFlags TreeModelAdapter::flags(const QModelIndex& index) const {
   flags.setFlag(Qt::ItemIsDragEnabled,
                 !supported_mime_types_.empty() && drag_handler_);
 
+  flags.setFlag(Qt::ItemIsDropEnabled,
+                !supported_mime_types_.empty() && drop_handler);
+
   return flags;
 }
 
@@ -302,7 +329,7 @@ void TreeModelAdapter::SetDragHandler(std::vector<std::string> mime_types,
       std::back_inserter(supported_mime_types_),
       [](const std::string& str) { return QString::fromStdString(str); });
 
-  drag_handler_ = std::move(drag_handler_);
+  drag_handler_ = std::move(handler);
 }
 
 QStringList TreeModelAdapter::mimeTypes() const {
@@ -317,4 +344,43 @@ QMimeData* TreeModelAdapter::mimeData(const QModelIndexList& indexes) const {
 
   auto drag_data = drag_handler_(nodes);
   return CreateMimeData(drag_data).release();
+}
+
+bool TreeModelAdapter::canDropMimeData(const QMimeData* data,
+                                       Qt::DropAction action,
+                                       int row,
+                                       int column,
+                                       const QModelIndex& parent) const {
+  return !!GetDropAction(data, action, row, column, parent);
+}
+
+bool TreeModelAdapter::dropMimeData(const QMimeData* data,
+                                    Qt::DropAction action,
+                                    int row,
+                                    int column,
+                                    const QModelIndex& parent) {
+  auto drop_action = GetDropAction(data, action, row, column, parent);
+  if (!drop_action)
+    return false;
+
+  int drop_result = drop_action();
+  return drop_result != ui::DragDropTypes::DRAG_NONE;
+}
+
+DropAction TreeModelAdapter::GetDropAction(const QMimeData* data,
+                                           Qt::DropAction action,
+                                           int row,
+                                           int column,
+                                           const QModelIndex& parent) const {
+  if (!data || !drop_handler)
+    return nullptr;
+
+  auto drag_data = MakeDragData(*data);
+  if (drag_data.empty())
+    return nullptr;
+
+  const int drop_action = ConvertDropAction(action);
+  auto* node = GetNode(parent);
+
+  return drop_handler(drop_action, drag_data, node);
 }

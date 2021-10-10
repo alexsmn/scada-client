@@ -270,3 +270,10 @@ void Tree::SetDragHandler(std::vector<std::string> mime_types,
 
   model_adapter_->SetDragHandler(std::move(mime_types), std::move(handler));
 }
+
+void Tree::SetDropHandler(DropHandler handler) {
+  viewport()->setAcceptDrops(!!handler);
+  setDropIndicatorShown(!!handler);
+
+  model_adapter_->drop_handler = std::move(handler);
+}

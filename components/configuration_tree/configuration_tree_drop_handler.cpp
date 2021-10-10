@@ -2,6 +2,7 @@
 
 #include "common/formula_util.h"
 #include "components/configuration_tree/configuration_tree_node.h"
+#include "item_drag_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
@@ -71,7 +72,7 @@ ConfigurationTreeDropHandler::ConfigurationTreeDropHandler(
 
 int ConfigurationTreeDropHandler::GetDropAction(
     const scada::NodeId& dragging_id,
-    ConfigurationTreeNode*& target_node,
+    ConfigurationTreeNode* target_node,
     DropAction& action) {
   if (!target_node)
     return ui::DragDropTypes::DRAG_NONE;
@@ -111,11 +112,9 @@ int ConfigurationTreeDropHandler::GetDropAction(
 
   // Dropping a node to a node that can contain the node type causes move.
   {
-    for (; target_node; target_node = target_node->parent()) {
-      auto type_definition = target_node->node().type_definition();
-      if (type_definition && CanCreate(dragging_node, type_definition))
-        break;
-    }
+    auto type_definition = target_node->node().type_definition();
+    if (!type_definition || !CanCreate(dragging_node, type_definition))
+      return ui::DragDropTypes::DRAG_NONE;
 
     if (target_node && target_node->node() != dragging_node &&
         target_node->node() != dragging_node.parent()) {
@@ -128,4 +127,14 @@ int ConfigurationTreeDropHandler::GetDropAction(
   }
 
   return ui::DragDropTypes::DRAG_NONE;
+}
+
+int ConfigurationTreeDropHandler::GetDropAction(
+    const DragData& drag_data,
+    ConfigurationTreeNode* target_node,
+    DropAction& action) {
+  ItemDragData item_drag_data;
+  if (!item_drag_data.Load(drag_data))
+    return ui::DragDropTypes::DRAG_NONE;
+  return GetDropAction(item_drag_data.item_id(), target_node, action);
 }

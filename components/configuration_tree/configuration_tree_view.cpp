@@ -56,13 +56,22 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 
   tree_view_->SetCompareHandler([](void* left, void* right) {
-    return CompareNodes(static_cast<ConfigurationTreeNode*>(left)->node(),
-                        static_cast<ConfigurationTreeNode*>(right)->node());
+    return CompareNodes(
+        static_cast<const ConfigurationTreeNode*>(left)->node(),
+        static_cast<const ConfigurationTreeNode*>(right)->node());
   });
 
   tree_view_->SetDragHandler(
       {std::string{ItemDragData::kMimeType}},
       [this](const std::vector<void*>& nodes) { return GetDragData(nodes); });
+
+  tree_view_->SetDropHandler([this](int drop_action, const DragData& drag_data,
+                                    void* target_node) {
+    DropAction action;
+    auto* target_tree_node = static_cast<ConfigurationTreeNode*>(target_node);
+    drop_handler_->GetDropAction(drag_data, target_tree_node, action);
+    return action;
+  });
 
 #if defined(UI_VIEWS)
   drag_drop_controller_ =

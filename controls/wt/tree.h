@@ -70,6 +70,7 @@ class Tree : public Wt::WTreeView {
   void SetFocusHandler(FocusHandler handler);
 
   void SetDragHandler(std::vector<std::string> mime_types, DragHandler handler);
+  void SetDropHandler(DropHandler handler);
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);

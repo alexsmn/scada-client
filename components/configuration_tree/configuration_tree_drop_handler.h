@@ -22,7 +22,11 @@ class ConfigurationTreeDropHandler
   explicit ConfigurationTreeDropHandler(
       ConfigurationTreeDropHandlerContext&& context);
 
+  int GetDropAction(const DragData& drag_data,
+                    ConfigurationTreeNode* target_node,
+                    DropAction& action);
+
   int GetDropAction(const scada::NodeId& dragging_id,
-                    ConfigurationTreeNode*& target_node,
+                    ConfigurationTreeNode* target_node,
                     DropAction& action);
 };
