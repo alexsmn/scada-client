@@ -6,7 +6,6 @@
 #include "address_space/scada_address_space.h"
 #include "address_space/standard_address_space.h"
 #include "base/range_util.h"
-#include "base/test/test_executor.h"
 #include "common/node_state.h"
 #include "core/attribute_service_mock.h"
 #include "core/method_service_mock.h"
@@ -36,8 +35,6 @@ class DeviceMetricsCommandTest : public Test {
 
   scada::NodeState MakeDataVariableNode() const;
 
-  const std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
-
   AddressSpaceImpl address_space_;
   StandardAddressSpace standard_address_space_{address_space_};
 
@@ -49,8 +46,8 @@ class DeviceMetricsCommandTest : public Test {
   StrictMock<scada::MockMethodService> method_service_;
 
   v1::NodeServiceImpl node_service_{v1::NodeServiceImplContext{
-      executor_, MakeAddressSpaceFetcherFactory(), address_space_,
-      attribute_service_, monitored_item_service_, method_service_}};
+      MakeAddressSpaceFetcherFactory(), address_space_, attribute_service_,
+      monitored_item_service_, method_service_}};
 
   const scada::NodeId device_type_definition_id =
       devices::id::Iec60870DeviceType;
