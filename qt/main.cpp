@@ -83,26 +83,19 @@ int main(int argc, char* argv[]) {
   });
   timer.start();
 
-  int result = 0;
+  ClientApplication app{ClientApplicationContext{
+      io_context, executor,
+      [](MainWindowContext&& context) {
+        return std::make_unique<MainWindowQt>(std::move(context));
+      },
+      [executor](DataServicesContext&& services_context) {
+        return ExecuteLoginDialog(executor, std::move(services_context));
+      },
+      [&qapp] { qapp.quit(); }}};
 
-  try {
-    ClientApplication app{ClientApplicationContext{
-        io_context, executor,
-        [](MainWindowContext&& context) {
-          return std::make_unique<MainWindowQt>(std::move(context));
-        },
-        [executor](DataServicesContext&& services_context) {
-          return ExecuteLoginDialog(executor, std::move(services_context));
-        },
-        [&qapp] { qapp.quit(); }}};
+  executor->PostTask([&app] { app.Start(); });
 
-    executor->PostTask([&app] { app.Start(); });
-
-    result = qapp.exec();
-
-  } catch (const std::exception&) {
-    result = -1;
-  }
+  int result = qapp.exec();
 
   QSettings settings;
 
