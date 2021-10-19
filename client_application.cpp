@@ -465,12 +465,33 @@ promise<bool> ClientApplication::Login() {
 }
 
 void ClientApplication::OnLoginCompleted(DataServices services) {
-  auto audit = std::make_shared<Audit>(
-      io_context_,
-      std::make_shared<AuditLoggerImpl>(
-          std::make_shared<NestedLogger>(logger_, "Audit")),
-      std::move(services.attribute_service_),
-      std::move(services.view_service_));
+  // |Audit| doesn't own underlying services.
+  struct Holder {
+    Holder(std::shared_ptr<Executor> executor,
+           std::shared_ptr<AuditLogger> audit_logger,
+           DataServices data_services)
+        : executor_{std::move(executor)},
+          audit_logger_{std::move(audit_logger)},
+          data_services_{std::move(data_services)} {}
+
+    const std::shared_ptr<Executor> executor_;
+    const std::shared_ptr<AuditLogger> audit_logger_;
+    const DataServices data_services_;
+
+    const std::shared_ptr<Audit> audit_ =
+        std::make_shared<Audit>(executor_,
+                                audit_logger_,
+                                *data_services_.attribute_service_,
+                                *data_services_.view_service_);
+  };
+
+  auto audit_logger = std::make_shared<AuditLoggerImpl>(
+      std::make_shared<NestedLogger>(logger_, "Audit"));
+
+  auto holder =
+      std::make_shared<Holder>(executor_, std::move(audit_logger), services);
+
+  std::shared_ptr<Audit> audit{holder, holder->audit_.get()};
 
   services.attribute_service_ = audit;
   services.view_service_ = audit;
