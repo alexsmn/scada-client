@@ -14,6 +14,8 @@
 #include "services/dialog_service_mock.h"
 #include "services/task_manager_mock.h"
 
+#include "base/debug_util-inl.h"
+
 using namespace testing;
 
 TEST(ChannelPropertyDefinition, GetText_Device) {
