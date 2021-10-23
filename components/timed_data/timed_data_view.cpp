@@ -10,6 +10,7 @@
 #include "node_service/node_service.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
+#include "string_const.h"
 #include "window_definition.h"
 #include "window_definition_util.h"
 
@@ -19,15 +20,14 @@
 
 namespace {
 
-const wchar_t kValueColumnTitle[] = L"Значение";
-
 const ui::TableColumn s_columns[] = {
-    {TimedDataModel::CID_TIME, L"Время", 150, ui::TableColumn::LEFT,
-     ui::TableColumn::DataType::DateTime},
-    {TimedDataModel::CID_VALUE, kValueColumnTitle, 150, ui::TableColumn::RIGHT},
-    {TimedDataModel::CID_QUALITY, L"Качество", 65, ui::TableColumn::LEFT},
-    {TimedDataModel::CID_COLLECTION_TIME, L"Время приема", 150,
+    {TimedDataModel::CID_TIME, std::wstring{kSourceTimestampTitle}, 150,
      ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+    {TimedDataModel::CID_VALUE, std::wstring{kValueTitle}, 150,
+     ui::TableColumn::RIGHT},
+    {TimedDataModel::CID_QUALITY, L"Качество", 65, ui::TableColumn::LEFT},
+    {TimedDataModel::CID_COLLECTION_TIME, std::wstring{kServerTimestampTitle},
+     150, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
 };
 
 }  // namespace

@@ -29,7 +29,7 @@ class TimedDataModel : private TimedDataModelContext,
 
   void SetFormula(std::string_view formula);
 
-  void Update();
+  void Update(scada::DateTimeRange range);
 
   // ui::TableModel overrides
   virtual int GetRowCount() override;
@@ -46,6 +46,6 @@ class TimedDataModel : private TimedDataModelContext,
   int count_ = 0;
 
   TimeRange time_range_;
-  // Can be null.
-  base::Time end_time_;
+  // Cannot be null.
+  base::Time end_time_ = base::Time::Max();
 };

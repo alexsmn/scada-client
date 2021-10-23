@@ -2,10 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/csv_writer.h"
 #include "core/date_time.h"
-
-#include <fstream>
 
 // TimedDataModel
 
@@ -13,38 +10,38 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
     : TimedDataModelContext{std::move(context)} {
   timed_data_.property_change_handler = [this](const PropertySet& properties) {
     if (properties.is_current_changed())
-      Update();
+      Update({timed_data_.current().source_timestamp, scada::DateTime::Max()});
   };
 
   timed_data_.correction_handler = [this](size_t count,
                                           const scada::DataValue* tvqs) {
     assert(count > 0);
-    Update();
+    Update({tvqs[0].source_timestamp, tvqs[count - 1].source_timestamp});
   };
 
-  timed_data_.ready_handler = [this] { Update(); };
+  timed_data_.ready_handler = [this] {
+    Update({timed_data_.ready_from(), scada::DateTime::Max()});
+  };
+
   timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
 }
 
 void TimedDataModel::SetTimedData(TimedDataSpec timed_data) {
   timed_data_ = std::move(timed_data);
-  Update();
+  Update({scada::DateTime::Min(), scada::DateTime::Max()});
 }
 
-void TimedDataModel::Update() {
+void TimedDataModel::Update(scada::DateTimeRange range) {
   auto new_begin = begin_iterator_;
-  auto new_count = count_;
 
-  new_count = 0;
+  int new_count = 0;
   if (timed_data_.connected() && timed_data_.values()) {
     base::span<const scada::DataValue> values = *timed_data_.values();
     new_begin = LowerBound(values, timed_data_.from());
-    auto new_end =
-        end_time_.is_null() ? values.size() : UpperBound(values, end_time_);
+    auto new_end = UpperBound(values, end_time_);
     new_count = new_end - new_begin;
   }
 
-  // TODO: Fixme.
   if (new_count > count_) {
     int first = count_, count = new_count - count_;
     NotifyItemsAdding(first, count);
@@ -58,6 +55,16 @@ void TimedDataModel::Update() {
     begin_iterator_ = new_begin;
     count_ = new_count;
     NotifyItemsRemoved(first, count);
+  }
+
+  if (timed_data_.values()) {
+    base::span<const scada::DataValue> values = *timed_data_.values();
+    int start = LowerBound(values, timed_data_.from());
+    int first = LowerBound(values, range.first);
+    int last = UpperBound(values, range.second);
+    first = std::max(first, start);
+    last = std::min(last, start + count_);
+    NotifyItemsChanged(first - start, last - first + 1);
   }
 }
 
@@ -124,14 +131,10 @@ void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   if (!timed_data_.connected())
     return;
 
-#ifdef TIMED_DATA_RANGE_SUPPORT
   timed_data_.SetRange({start, end});
-#else
-  timed_data_.SetFrom(start);
-  end;
-#endif
 
-  end_time_ = time_range.end;
+  end_time_ =
+      time_range.end.is_null() ? scada::DateTime::Max() : time_range.end;
 
-  Update();
+  Update({scada::DateTime::Min(), end_time_});
 }

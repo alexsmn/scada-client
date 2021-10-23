@@ -4,7 +4,6 @@
 #include "core/configuration_types.h"
 
 #include <functional>
-#include <set>
 
 class BlinkerManager;
 class DialogService;
@@ -27,7 +26,8 @@ class TableModel : private TableModelContext, public ui::TableModel {
     COLUMN_TITLE,
     COLUMN_VALUE,
     COLUMN_CHANGE_TIME,
-    COLUMN_UPDATE_TIME,
+    COLUMN_SOURCE_TIMESTAMP,
+    COLUMN_SERVER_TIMESTAMP,
     COLUMN_EVENT,
 
     COLUMN_FIRST = COLUMN_TITLE,

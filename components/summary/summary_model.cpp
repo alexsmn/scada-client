@@ -83,11 +83,7 @@ void SummaryModel::Column::UpdateTimes() {
 
   timed_data_.Reset();
   timed_data_.SetAggregateFilter(model_.aggregate_filter_);
-#ifdef TIMED_DATA_RANGE_SUPPORT
   timed_data_.SetRange({model_.start_time_, model_.end_time_});
-#else
-  timed_data_.SetFrom(model_.start_time_);
-#endif
   timed_data_.Connect(model_.timed_data_service(), formula_);
   model_.OnColumnChanged(index_);
 }

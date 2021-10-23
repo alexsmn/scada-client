@@ -16,6 +16,7 @@
 #include "selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
+#include "string_const.h"
 
 // TableView
 
@@ -29,12 +30,16 @@ TableView::TableView(const ControllerContext& context)
   };
 
   std::vector<ui::TableColumn> columns = {
-      {TableModel::COLUMN_TITLE, L"Имя", 150, ui::TableColumn::LEFT},
-      {TableModel::COLUMN_VALUE, L"Значение", 100, ui::TableColumn::RIGHT},
+      {TableModel::COLUMN_TITLE, std::wstring{kDisplayNameAttributeString}, 150,
+       ui::TableColumn::LEFT},
+      {TableModel::COLUMN_VALUE, std::wstring{kValueTitle}, 100,
+       ui::TableColumn::RIGHT},
       {TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
        ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_UPDATE_TIME, L"Время обновления", 170,
-       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_SOURCE_TIMESTAMP, std::wstring{kSourceTimestampTitle},
+       170, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_SERVER_TIMESTAMP, std::wstring{kServerTimestampTitle},
+       170, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_EVENT, L"Событие", 200, ui::TableColumn::LEFT},
   };
 
@@ -74,112 +79,6 @@ TableView::TableView(const ControllerContext& context)
 }
 
 TableView::~TableView() {}
-
-/*bool TableView::OnDrawCell(views::TableView& sender,
-                           gfx::Canvas* canvas,
-                           int row,
-                           int col,
-                           const gfx::Rect& rect) {
-  if (view_->editing() && view_->selection_model().IsSelected(row))
-    return true;
-
-  static SkColor cell_color =
-      skia::COLORREFToSkColor(::GetSysColor(COLOR_WINDOW));
-  static SkColor text_color =
-      skia::COLORREFToSkColor(::GetSysColor(COLOR_WINDOWTEXT));
-
-  // get cell
-  TableModel::CellEx cell;
-  cell.row = row;
-  cell.column_id = sender.visible_columns()[col].column.id;
-  cell.cell_color = cell_color;
-  cell.text_color = text_color;
-  cell.image_index = -1;
-  model_->GetCellEx(cell);
-
-  if (view_->selection_model().IsSelected(row) && view_->HasFocus()) {
-    static const SkColor kSelectionCellColor =
-        skia::COLORREFToSkColor(::GetSysColor(COLOR_HIGHLIGHT));
-    static const SkColor kSelectionTextColor =
-        skia::COLORREFToSkColor(::GetSysColor(COLOR_HIGHLIGHTTEXT));
-    cell.cell_color = kSelectionCellColor;
-    cell.text_color = kSelectionTextColor;
-  }
-
-  unsigned text_format = DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS;
-  switch (cell.column_id) {
-    case ui::TableColumn::RIGHT:
-      text_format |= DT_RIGHT;
-      break;
-    case ui::TableColumn::CENTER:
-      text_format |= DT_CENTER;
-      break;
-    case ui::TableColumn::LEFT:
-    default:
-      text_format |= DT_LEFT;
-      break;
-  }
-
-  WTL::CDCHandle dc(canvas->native_canvas());
-
-  // Draw item.
-  canvas->FillRect(rect, cell.cell_color);
-
-  bool new_row = (row == model_->row_count()) && (col == 0);
-
-  // Draw text
-  if (!cell.text.empty() || new_row) {
-    RECT rect2 = rect.ToRECT();
-    InflateRect(&rect2, -4, -2);
-
-    if (cell.image_index != -1) {
-      SIZE size;
-      image_list_->GetIconSize(size);
-      image_list_->Draw(dc, cell.image_index, rect2.left,
-                        (rect2.top + rect2.bottom - size.cy) / 2,
-                        ILD_TRANSPARENT);
-      rect2.left += size.cx + 3;
-    }
-
-    const gfx::Font* font = &sender.font();
-    if (new_row) {
-      font = &new_row_font_;
-      if (cell.column_id == TableModel::COLUMN_TITLE) {
-        cell.text = L"Введите выражение для добавления строки";
-        cell.text_color = profile_.bad_value_color;
-      }
-    }
-
-    int save = dc.SaveDC();
-    RECT tmp_rect = rect.ToRECT();
-    dc.IntersectClipRect(&tmp_rect);
-    if (col == 1) {
-      DrawColoredString(canvas, *font, cell.text_color, rect2, cell.text,
-                        text_format);
-    } else {
-      canvas->DrawString(cell.text, *font, cell.text_color, gfx::Rect(rect2),
-                         text_format);
-    }
-    dc.RestoreDC(save);
-  }
-
-  return true;
-}
-
-views::ComboTextfield* TableView::OnCreateEditor(views::TableView& sender,
-                                                 int row,
-                                                 int column_id) {
-  assert(column_id == 0);
-
-  views::ComboTextfield* editor =
-      __super::OnCreateEditor(sender, row, column_id);
-
-  const TableRow* r = model_->GetRow(row);
-  if (r)
-    editor->SetText(base::SysNativeMBToWide(r->GetFormula()));
-
-  return editor;
-}*/
 
 UiView* TableView::Init(const WindowDefinition& definition) {
   for (auto& item : definition.items) {

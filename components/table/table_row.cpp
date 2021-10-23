@@ -45,6 +45,13 @@ std::optional<aui::Color> GetNodeColor(const NodeRef& node,
                     : aui::Color::FromSkColor(SK_ColorBLACK);
 }
 
+std::wstring FormatCellTime(scada::DateTime time) {
+  if (time.is_null())
+    return std::wstring{};
+
+  return base::SysNativeMBToWide(FormatTime(time, g_time_format));
+}
+
 }  // namespace
 
 // TableRow
@@ -161,23 +168,17 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
       GetValueCell(cell);
       break;
 
-    case TableModel::COLUMN_UPDATE_TIME: {
-      const auto source_timestamp = timed_data_.current().source_timestamp;
-      if (!source_timestamp.is_null()) {
-        cell.text = base::SysNativeMBToWide(
-            FormatTime(source_timestamp, g_time_format));
-      }
+    case TableModel::COLUMN_SOURCE_TIMESTAMP:
+      cell.text = FormatCellTime(timed_data_.current().source_timestamp);
       break;
-    }
 
-    case TableModel::COLUMN_CHANGE_TIME: {
-      const auto change_time = timed_data_.change_time();
-      if (!change_time.is_null()) {
-        cell.text =
-            base::SysNativeMBToWide(FormatTime(change_time, g_time_format));
-      }
+    case TableModel::COLUMN_SERVER_TIMESTAMP:
+      cell.text = FormatCellTime(timed_data_.current().server_timestamp);
       break;
-    }
+
+    case TableModel::COLUMN_CHANGE_TIME:
+      cell.text = FormatCellTime(timed_data_.change_time());
+      break;
 
     case TableModel::COLUMN_EVENT:
       GetEventCell(cell);
