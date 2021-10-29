@@ -24,9 +24,9 @@ ui::GridRange ToUiGridRange(const QItemSelectionRange& range) {
 
 }  // namespace
 
-Grid::Grid(ui::GridModel& model,
-           ui::HeaderModel& row_model,
-           ui::HeaderModel& column_model)
+Grid::Grid(std::shared_ptr<ui::GridModel> model,
+           std::shared_ptr<ui::HeaderModel> row_model,
+           std::shared_ptr<ui::HeaderModel> column_model)
     : model_{model},
       model_adapter_{
           std::make_shared<GridModelAdapter>(model, row_model, column_model)} {
@@ -36,8 +36,8 @@ Grid::Grid(ui::GridModel& model,
   setModel(model_adapter_);
   // resizeColumnsToContents();
   setItemDelegate(
-      std::make_shared<ItemDelegate>([&model](const Wt::WModelIndex& index) {
-        return model.GetEditData(index.row(), index.column());
+      std::make_shared<ItemDelegate>([model](const Wt::WModelIndex& index) {
+        return model->GetEditData(index.row(), index.column());
       }));
 
   setSelectionBehavior(Wt::SelectionBehavior::Items);

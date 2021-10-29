@@ -11,8 +11,9 @@
 
 TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},
-      model_(new TransmissionModel(context.node_service_,
-                                   context.task_manager_)) {}
+      model_{std::make_shared<TransmissionModel>(context.node_service_,
+                                                 context.task_manager_)},
+      column_model_{std::make_shared<ui::ColumnHeaderModel>()} {}
 
 TransmissionView::~TransmissionView() {}
 
@@ -27,9 +28,9 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
       {0, L"Объект", 250, ui::TableColumn::LEFT},
       {1, L"Адрес", 100, ui::TableColumn::RIGHT},
   };
-  column_model_.SetColumns(std::size(columns), columns);
+  column_model_->SetColumns(std::size(columns), columns);
 
-  grid_.reset(new Grid(*model_, *model_, column_model_));
+  grid_ = new Grid{model_, model_, column_model_};
 
   grid_->SetRowHeaderVisible(true);
   grid_->SetRowHeaderWidth(15);

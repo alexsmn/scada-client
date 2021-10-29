@@ -57,7 +57,9 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
-  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
+  grid_ = new Grid{
+      model_, std::shared_ptr<ui::HeaderModel>(model_, &model_->row_model()),
+      std::shared_ptr<ui::HeaderModel>(model_, &model_->column_model())};
 
   grid_->SetExpandAllowed(true);
   grid_->SetRowHeaderVisible(true);

@@ -61,7 +61,7 @@ class SheetController::ContentsView : public views::View {
 
 SheetController::SheetController(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_unique<SheetModel>(
+      model_{std::make_shared<SheetModel>(
           SheetModelContext{timed_data_service_, blinker_manager_})} {
   selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
@@ -72,12 +72,14 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   model_->Load(definition);
 
+  grid_ = new Grid{
+      model_, std::shared_ptr<ui::HeaderModel>{model_, &model_->row_model()},
+      std::shared_ptr<ui::HeaderModel>{model_, &model_->column_model()}};
+
 #if defined(UI_QT)
   formula_row_ = new QLineEdit;
   QObject::connect(formula_row_, &QLineEdit::editingFinished,
                    [this] { OnFormulaEdited(); });
-
-  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
 
   auto* layout = new QVBoxLayout;
   layout->setMargin(0);
@@ -90,8 +92,6 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
 #elif defined(UI_WT)
   formula_row_ = new Wt::WLineEdit;
-
-  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
 
   auto layout = std::make_unique<Wt::WVBoxLayout>();
   layout->setContentsMargins(0, 0, 0, 0);
@@ -108,7 +108,6 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   formula_row_->SetVisible(false);
   formula_row_->SetController(this);
 
-  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
   grid_->SetAllowDrag(true);
   grid_->set_controller(this);
   grid_->set_drop_controller(this);

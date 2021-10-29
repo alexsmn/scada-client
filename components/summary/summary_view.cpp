@@ -35,13 +35,15 @@ constexpr std::pair<unsigned, base::TimeDelta> kIntervalCommands[] = {
 
 SummaryView::SummaryView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_unique<SummaryModel>(
+      model_{std::make_shared<SummaryModel>(
           SummaryModelContext{node_service_, timed_data_service_})} {}
 
 UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
-  grid_ = new Grid(*model_, model_->row_model(), model_->column_model());
+  grid_ = new Grid{
+      model_, std::shared_ptr<ui::HeaderModel>{model_, &model_->row_model()},
+      std::shared_ptr<ui::HeaderModel>{model_, &model_->column_model()}};
 
   grid_->SetSelectionChangeHandler([this] {
     auto columns = grid_->GetSelectedColumns();

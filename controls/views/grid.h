@@ -12,12 +12,15 @@ class Grid final : private views::ContextMenuController,
                    private views::GridController,
                    public views::GridView {
  public:
-  Grid(ui::GridModel& model,
-       ui::HeaderModel& row_model,
-       ui::HeaderModel& column_model) {
-    SetModel(&model);
-    SetRowModel(&row_model);
-    SetColumnModel(&column_model);
+  Grid(std::shared_ptr<ui::GridModel> model,
+       std::shared_ptr<ui::HeaderModel> row_model,
+       std::shared_ptr<ui::HeaderModel> column_model)
+      : model_{std::move(model_)},
+        row_model_{std::move(row_model)},
+        column_model_{std::move(column_model)} {
+    SetModel(model_.get());
+    SetRowModel(row_model_.get());
+    SetColumnModel(column_model_.get());
     set_controller(this);
   }
 
@@ -64,6 +67,10 @@ class Grid final : private views::ContextMenuController,
     if (context_menu_handler_)
       context_menu_handler_(point);
   }
+
+  const std::shared_ptr<ui::GridModel> model_;
+  const std::shared_ptr<ui::HeaderModel> row_model_;
+  const std::shared_ptr<ui::HeaderModel> column_model_;
 
   SelectionChangedHandler selection_changed_handler_;
   ContextMenuHandler context_menu_handler_;

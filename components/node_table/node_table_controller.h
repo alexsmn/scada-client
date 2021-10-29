@@ -47,7 +47,7 @@ class NodeTableController : protected ControllerContext,
 
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<NodeTableModel> model_;
+  const std::shared_ptr<NodeTableModel> model_;
   Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;

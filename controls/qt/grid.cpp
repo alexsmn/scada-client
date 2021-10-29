@@ -23,13 +23,13 @@ ui::GridRange ToUiGridRange(const QItemSelectionRange& range) {
 
 }  // namespace
 
-Grid::Grid(ui::GridModel& model,
-           ui::HeaderModel& row_model,
-           ui::HeaderModel& column_model)
+Grid::Grid(std::shared_ptr<ui::GridModel> model,
+           std::shared_ptr<ui::HeaderModel> row_model,
+           std::shared_ptr<ui::HeaderModel> column_model)
     : model_{model},
       model_adapter_{model, row_model, column_model},
-      item_delegate_{[&model](const QModelIndex& index) {
-        return model.GetEditData(index.row(), index.column());
+      item_delegate_{[model](const QModelIndex& index) {
+        return model->GetEditData(index.row(), index.column());
       }} {
   horizontalHeader()->setHighlightSections(false);
   verticalHeader()->setHighlightSections(false);
@@ -262,8 +262,8 @@ void Grid::Expand(const QItemSelectionRange& range,
     return;
 
   const bool ctrl_pressed = GetAsyncKeyState(VK_CONTROL) < 0;
-  ui::ExpandGridRange(model_, ToUiGridRange(range), ToUiGridRange(expand_range),
-                      !ctrl_pressed);
+  ui::ExpandGridRange(*model_, ToUiGridRange(range),
+                      ToUiGridRange(expand_range), !ctrl_pressed);
 }
 
 ui::GridModelIndex Grid::GetCurrentIndex() const {

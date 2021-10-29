@@ -28,7 +28,7 @@ class SummaryView : protected ControllerContext, public Controller {
  private:
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<SummaryModel> model_;
+  const std::shared_ptr<SummaryModel> model_;
   Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;

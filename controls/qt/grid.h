@@ -12,9 +12,9 @@
 
 class Grid final : public QTableView {
  public:
-  Grid(ui::GridModel& model,
-       ui::HeaderModel& row_model,
-       ui::HeaderModel& column_model);
+  Grid(std::shared_ptr<ui::GridModel> model,
+       std::shared_ptr<ui::HeaderModel> row_model,
+       std::shared_ptr<ui::HeaderModel> column_model);
   ~Grid();
 
   ui::HeaderModel& row_model() { return model_adapter_.row_model(); }
@@ -91,7 +91,7 @@ class Grid final : public QTableView {
 
   ContextMenuHandler context_menu_handler_;
 
-  ui::GridModel& model_;
+  const std::shared_ptr<ui::GridModel> model_;
 
   ItemDelegate item_delegate_;
 

@@ -102,7 +102,7 @@ class SheetController : protected ControllerContext,
                                const std::wstring& new_contents) override;
 #endif
 
-  std::unique_ptr<SheetModel> model_;
+  std::shared_ptr<SheetModel> model_;
 
   SelectionModel selection_{{timed_data_service_}};
 

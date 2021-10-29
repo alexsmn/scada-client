@@ -22,37 +22,40 @@ Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
 
 }  // namespace
 
-GridModelAdapter::GridModelAdapter(ui::GridModel& model,
-                                   ui::HeaderModel& row_model,
-                                   ui::HeaderModel& column_model)
-    : model_(model), row_model_(row_model), column_model_(column_model) {
-  model_.observers().AddObserver(this);
-  column_model_.observers().AddObserver(this);
+GridModelAdapter::GridModelAdapter(
+    std::shared_ptr<ui::GridModel> model,
+    std::shared_ptr<ui::HeaderModel> row_model,
+    std::shared_ptr<ui::HeaderModel> column_model)
+    : model_{std::move(model)},
+      row_model_{std::move(row_model)},
+      column_model_{std::move(column_model)} {
+  model_->observers().AddObserver(this);
+  column_model_->observers().AddObserver(this);
 }
 
 GridModelAdapter::~GridModelAdapter() {
-  model_.observers().RemoveObserver(this);
-  column_model_.observers().RemoveObserver(this);
+  model_->observers().RemoveObserver(this);
+  column_model_->observers().RemoveObserver(this);
 }
 
 int GridModelAdapter::rowCount(const QModelIndex& parent) const {
-  return row_model_.GetCount();
+  return row_model_->GetCount();
 }
 
 int GridModelAdapter::columnCount(const QModelIndex& parent) const {
-  return column_model_.GetCount();
+  return column_model_->GetCount();
 }
 
 QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::TextAlignmentRole:
-      return column_model_.GetAlignment(index.column());
+      return column_model_->GetAlignment(index.column());
   }
 
   ui::GridCell cell;
   cell.row = index.row();
   cell.column = index.column();
-  model_.GetCell(cell);
+  model_->GetCell(cell);
 
   switch (role) {
     case Qt::DisplayRole:
@@ -69,7 +72,7 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
 
 Qt::ItemFlags GridModelAdapter::flags(const QModelIndex& index) const {
   auto flags = QAbstractTableModel::flags(index);
-  if (model_.IsEditable(index.row(), index.column()))
+  if (model_->IsEditable(index.row(), index.column()))
     flags |= Qt::ItemIsEditable;
   return flags;
 }
@@ -80,9 +83,9 @@ QVariant GridModelAdapter::headerData(int section,
   if (orientation == Qt::Horizontal) {
     switch (role) {
       case Qt::DisplayRole:
-        return QString::fromStdWString(column_model_.GetTitle(section));
+        return QString::fromStdWString(column_model_->GetTitle(section));
       case Qt::SizeHintRole:
-        return QSize(column_model_.GetSize(section), 19);
+        return QSize(column_model_->GetSize(section), 19);
       default:
         return QVariant();
     }
@@ -90,7 +93,7 @@ QVariant GridModelAdapter::headerData(int section,
   } else if (orientation == Qt::Vertical) {
     switch (role) {
       case Qt::DisplayRole:
-        return QString::fromStdWString(row_model_.GetTitle(section));
+        return QString::fromStdWString(row_model_->GetTitle(section));
       default:
         return QVariant();
     }
@@ -104,8 +107,8 @@ QVariant GridModelAdapter::headerData(int section,
 bool GridModelAdapter::setData(const QModelIndex& index,
                                const QVariant& value,
                                int role) {
-  return model_.SetCellText(index.row(), index.column(),
-                            value.toString().toStdWString());
+  return model_->SetCellText(index.row(), index.column(),
+                             value.toString().toStdWString());
 }
 
 void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {
@@ -133,8 +136,8 @@ void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
 }
 
 void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
-  if (&model == &column_model_)
+  if (&model == column_model_.get())
     headerDataChanged(Qt::Horizontal, 0, model.GetCount());
-  else if (&model == &row_model_)
+  else if (&model == row_model_.get())
     headerDataChanged(Qt::Vertical, 0, model.GetCount());
 }

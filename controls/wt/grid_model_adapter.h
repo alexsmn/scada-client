@@ -9,13 +9,13 @@ class GridModelAdapter final : public Wt::WAbstractTableModel,
                                private ui::GridModel::Observer,
                                private ui::ColumnHeaderModel::Observer {
  public:
-  GridModelAdapter(ui::GridModel& model,
-                   ui::HeaderModel& row_model,
-                   ui::HeaderModel& column_model);
+  GridModelAdapter(std::shared_ptr<ui::GridModel> model,
+                   std::shared_ptr<ui::HeaderModel> row_model,
+                   std::shared_ptr<ui::HeaderModel> column_model);
   ~GridModelAdapter();
 
-  ui::HeaderModel& row_model() { return row_model_; }
-  ui::HeaderModel& column_model() { return column_model_; }
+  ui::HeaderModel& row_model() { return *row_model_; }
+  ui::HeaderModel& column_model() { return *column_model_; }
 
   // QAbstractTableModel
   virtual int rowCount(
@@ -50,7 +50,7 @@ class GridModelAdapter final : public Wt::WAbstractTableModel,
   virtual void OnModelChanged(ui::HeaderModel& model) override;
 
  private:
-  ui::GridModel& model_;
-  ui::HeaderModel& row_model_;
-  ui::HeaderModel& column_model_;
+  const std::shared_ptr<ui::GridModel> model_;
+  const std::shared_ptr<ui::HeaderModel> row_model_;
+  const std::shared_ptr<ui::HeaderModel> column_model_;
 };

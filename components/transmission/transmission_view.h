@@ -23,10 +23,10 @@ class TransmissionView : protected ControllerContext, public Controller {
  private:
   void DeleteSelection();
 
-  std::unique_ptr<TransmissionModel> model_;
-  ui::ColumnHeaderModel column_model_;
+  const std::shared_ptr<TransmissionModel> model_;
+  const std::shared_ptr<ui::ColumnHeaderModel> column_model_;
 
-  std::unique_ptr<Grid> grid_;
+  Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

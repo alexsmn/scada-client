@@ -385,8 +385,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                                                   selection_->node()));
           })
           .set_available_handler([this] {
-            return !session_service_.HasPrivilege(
-                       scada::Privilege::Configure) &&
+            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
                    IsInstanceOf(selection_->node(), devices::id::DeviceType) &&
                    !IsInstanceOf(selection_->node(), devices::id::LinkType);
           }));

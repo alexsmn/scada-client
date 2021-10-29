@@ -20,38 +20,38 @@ Wt::AlignmentFlag UiAligmentToWt(ui::TableColumn::Alignment alignment) {
 
 }  // namespace
 
-GridModelAdapter::GridModelAdapter(ui::GridModel& model,
-                                   ui::HeaderModel& row_model,
-                                   ui::HeaderModel& column_model)
-    : model_(model), row_model_(row_model), column_model_(column_model) {
-  model_.observers().AddObserver(this);
-  column_model_.observers().AddObserver(this);
+GridModelAdapter::GridModelAdapter(
+    std::shared_ptr<ui::GridModel> model,
+    std::shared_ptr<ui::HeaderModel> row_model,
+    std::shared_ptr<ui::HeaderModel> column_model) {
+  model_->observers().AddObserver(this);
+  column_model_->observers().AddObserver(this);
 }
 
 GridModelAdapter::~GridModelAdapter() {
-  model_.observers().RemoveObserver(this);
-  column_model_.observers().RemoveObserver(this);
+  model_->observers().RemoveObserver(this);
+  column_model_->observers().RemoveObserver(this);
 }
 
 int GridModelAdapter::rowCount(const Wt::WModelIndex& parent) const {
-  return row_model_.GetCount();
+  return row_model_->GetCount();
 }
 
 int GridModelAdapter::columnCount(const Wt::WModelIndex& parent) const {
-  return column_model_.GetCount();
+  return column_model_->GetCount();
 }
 
 Wt::cpp17::any GridModelAdapter::data(const Wt::WModelIndex& index,
                                       Wt::ItemDataRole role) const {
   /*switch (role.value()) {
     case Wt::ItemDataRole::TextAlignmentRole:
-      return column_model_.GetAlignment(index.column());
+      return column_model_->GetAlignment(index.column());
   }*/
 
   ui::GridCell cell;
   cell.row = index.row();
   cell.column = index.column();
-  model_.GetCell(cell);
+  model_->GetCell(cell);
 
   switch (role.value()) {
     case Wt::ItemDataRole::Display:
@@ -69,7 +69,7 @@ Wt::cpp17::any GridModelAdapter::data(const Wt::WModelIndex& index,
 Wt::WFlags<Wt::ItemFlag> GridModelAdapter::flags(
     const Wt::WModelIndex& index) const {
   auto flags = Wt::WAbstractTableModel::flags(index);
-  if (model_.IsEditable(index.row(), index.column()))
+  if (model_->IsEditable(index.row(), index.column()))
     flags |= Wt::ItemFlag::Editable;
   return flags;
 }
@@ -80,9 +80,9 @@ Wt::cpp17::any GridModelAdapter::headerData(int section,
   if (orientation == Wt::Orientation::Horizontal) {
     switch (role.value()) {
       case Wt::ItemDataRole::Display:
-        return Wt::WString{column_model_.GetTitle(section)};
+        return Wt::WString{column_model_->GetTitle(section)};
       /*case Wt::ItemDataRole::SizeHintRole:
-        return QSize(column_model_.GetSize(section), 19);*/
+        return QSize(column_model_->GetSize(section), 19);*/
       default:
         return Wt::cpp17::any();
     }
@@ -90,7 +90,7 @@ Wt::cpp17::any GridModelAdapter::headerData(int section,
   } else if (orientation == Wt::Orientation::Vertical) {
     switch (role.value()) {
       case Wt::ItemDataRole::Display:
-        return Wt::WString{row_model_.GetTitle(section)};
+        return Wt::WString{row_model_->GetTitle(section)};
       default:
         return Wt::cpp17::any();
     }
@@ -104,8 +104,8 @@ Wt::cpp17::any GridModelAdapter::headerData(int section,
 bool GridModelAdapter::setData(const Wt::WModelIndex& index,
                                const Wt::cpp17::any& value,
                                Wt::ItemDataRole role) {
-  return model_.SetCellText(index.row(), index.column(),
-                            Wt::cpp17::any_cast<Wt::WString>(value));
+  return model_->SetCellText(index.row(), index.column(),
+                             Wt::cpp17::any_cast<Wt::WString>(value));
 }
 
 void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {
@@ -133,8 +133,8 @@ void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
 }
 
 void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
-  if (&model == &column_model_)
+  if (&model == column_model_.get())
     headerDataChanged()(Wt::Orientation::Horizontal, 0, model.GetCount());
-  else if (&model == &row_model_)
+  else if (&model == row_model_.get())
     headerDataChanged()(Wt::Orientation::Vertical, 0, model.GetCount());
 }
