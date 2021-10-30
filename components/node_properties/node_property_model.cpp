@@ -40,8 +40,7 @@ void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     PropertiesChanged(0, static_cast<int>(root_.properties.size()));
 }
 
-void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id,
-                                      bool children) {
+void NodePropertyModel::OnNodeFetched(const scada::NodeId& node_id) {
   Update();
   if (model_changed_handler)
     model_changed_handler();
