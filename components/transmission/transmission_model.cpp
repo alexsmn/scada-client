@@ -18,6 +18,11 @@ TransmissionModel::TransmissionModel(NodeService& node_service,
       task_manager_{task_manager} {
   // Must subscribe to root, since references will be deleted.
   node_service_.Subscribe(*this);
+
+  // WORKAROUND: Fetch all transmission items, since inverse fetches are not yet
+  // supported.
+  node_service_.GetNode(devices::id::TransmissionItems)
+      .Fetch(NodeFetchStatus::ChildrenOnly());
 }
 
 TransmissionModel::~TransmissionModel() {
@@ -122,6 +127,8 @@ void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
 
 void TransmissionModel::Update(NodeRef transmission) {
   assert(IsInstanceOf(transmission, devices::id::TransmissionItemType));
+
+  transmission.Fetch(NodeFetchStatus::NodeOnly());
 
   auto device = transmission.target(devices::id::HasTransmissionTarget);
   if (device != device_) {
