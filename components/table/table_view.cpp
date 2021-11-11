@@ -34,12 +34,12 @@ TableView::TableView(const ControllerContext& context)
        ui::TableColumn::LEFT},
       {TableModel::COLUMN_VALUE, std::wstring{kValueTitle}, 100,
        ui::TableColumn::RIGHT},
-      {TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
-       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_SOURCE_TIMESTAMP, std::wstring{kSourceTimestampTitle},
        170, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_SERVER_TIMESTAMP, std::wstring{kServerTimestampTitle},
        170, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
+       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_EVENT, L"Событие", 200, ui::TableColumn::LEFT},
   };
 
