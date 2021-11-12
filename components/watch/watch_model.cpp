@@ -4,6 +4,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "core/event_service.h"
 #include "core/monitored_item_service.h"
+#include "model/devices_node_ids.h"
+#include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
 #include <fstream>
@@ -51,7 +53,16 @@ void WatchModel::SetDevice(NodeRef device) {
     return;
 
   monitored_item_ =
-      device_.CreateMonitoredItem(scada::AttributeId::EventNotifier, {});
+      node_service_.GetNode(scada::id::Server)
+          .CreateMonitoredItem(
+              scada::AttributeId::EventNotifier,
+              scada::MonitoringParameters{}.set_filter(
+                  scada::EventFilter{}
+                      .add_of_type(devices::id::DeviceWatchEventType)
+                      .add_child_of(device_.node_id())));
+  if (!monitored_item_)
+    return OnError(scada::StatusCode::Bad);
+
   // FIXME: Captures |this|. No sync.
   monitored_item_->Subscribe(
       [this](const scada::Status& status, const std::any& event) {
