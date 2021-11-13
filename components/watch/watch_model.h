@@ -1,5 +1,6 @@
 #pragma once
 
+#include "components/watch/watch_event_source.h"
 #include "core/event.h"
 #include "node_service/node_ref.h"
 #include "ui/base/models/table_model.h"
@@ -8,17 +9,16 @@
 #include <filesystem>
 #include <memory>
 
-namespace scada {
-class MonitoredItem;
-}  // namespace scada
-
 class NodeService;
 
 struct WatchModelContext {
   NodeService& node_service_;
+  WatchEventSource& event_source_;
 };
 
-class WatchModel : private WatchModelContext, public ui::TableModel {
+class WatchModel : private WatchModelContext,
+                   public ui::TableModel,
+                   protected WatchEventSource::Delegate {
  public:
   explicit WatchModel(WatchModelContext&& context);
 
@@ -36,16 +36,17 @@ class WatchModel : private WatchModelContext, public ui::TableModel {
   virtual int GetRowCount() override;
   virtual void GetCell(ui::TableCell& cell) override;
 
+ protected:
+  // WatchEventSource
+  virtual void OnEvent(const scada::Event& event) override;
+  virtual void OnError(const scada::Status& status) override;
+
  private:
-  void OnEvent(const scada::Event& event);
-  void OnError(const scada::Status& status);
   void AddLine(const scada::Event& event);
 
-  typedef std::deque<scada::Event> Events;
-  Events events_;
-
   NodeRef device_;
-  std::shared_ptr<scada::MonitoredItem> monitored_item_;
+
+  std::deque<scada::Event> events_;
 
   bool paused_ = false;
 };

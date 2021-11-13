@@ -3,8 +3,6 @@
 #include "base/format_time.h"
 #include "base/strings/sys_string_conversions.h"
 #include "core/event_service.h"
-#include "core/monitored_item_service.h"
-#include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
@@ -15,7 +13,9 @@ static const int kMaxLines = 10000;
 // WatchModel
 
 WatchModel::WatchModel(WatchModelContext&& context)
-    : WatchModelContext{std::move(context)} {}
+    : WatchModelContext{std::move(context)} {
+  event_source_.SetDelegate(this);
+}
 
 void WatchModel::OnEvent(const scada::Event& event) {
   if (!paused_)
@@ -46,33 +46,9 @@ void WatchModel::SetDevice(NodeRef device) {
   if (device_ == device)
     return;
 
-  monitored_item_.reset();
-
   device_ = std::move(device);
-  if (!device_)
-    return;
 
-  monitored_item_ =
-      node_service_.GetNode(scada::id::Server)
-          .CreateMonitoredItem(
-              scada::AttributeId::EventNotifier,
-              scada::MonitoringParameters{}.set_filter(
-                  scada::EventFilter{}
-                      .add_of_type(devices::id::DeviceWatchEventType)
-                      .add_child_of(device_.node_id())));
-  if (!monitored_item_)
-    return OnError(scada::StatusCode::Bad);
-
-  // FIXME: Captures |this|. No sync.
-  monitored_item_->Subscribe(
-      [this](const scada::Status& status, const std::any& event) {
-        if (!status)
-          return OnError(status);
-        auto* system_event = std::any_cast<scada::Event>(&event);
-        assert(system_event);
-        if (system_event)
-          OnEvent(*system_event);
-      });
+  event_source_.SetDeviceId(device_.node_id());
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {

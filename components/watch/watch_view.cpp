@@ -1,6 +1,7 @@
 ﻿#include "components/watch/watch_view.h"
 
 #include "common_resources.h"
+#include "components/watch/watch_event_source_impl.h"
 #include "components/watch/watch_model.h"
 #include "controller_delegate.h"
 #include "controls/table.h"
@@ -11,12 +12,29 @@
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
+namespace {
+
+struct WatchModelHolder {
+  explicit WatchModelHolder(NodeService& node_service)
+      : node_service{node_service} {}
+
+  NodeService& node_service;
+  WatchEventSourceImpl event_source{WatchEventSourceImplContext{node_service}};
+  WatchModel model{WatchModelContext{node_service, event_source}};
+};
+
+std::shared_ptr<WatchModel> CreateWatchModel(NodeService& node_service) {
+  auto holder = std::make_shared<WatchModelHolder>(node_service);
+  return std::shared_ptr<WatchModel>(holder, &holder->model);
+}
+
+}  // namespace
+
 // WatchView
 
 WatchView::WatchView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{std::make_shared<WatchModel>(
-          WatchModelContext{context.node_service_})} {}
+      model_{CreateWatchModel(context.node_service_)} {}
 
 WatchView::~WatchView() {
   model_->observers().RemoveObserver(this);
