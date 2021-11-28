@@ -1,8 +1,10 @@
 #include "components/main/status_bar_model_impl.h"
 
+#include "base/executor.h"
 #include "base/strings/stringprintf.h"
 #include "common/event_fetcher.h"
 #include "core/session_service.h"
+#include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
 // StatusBarModelImpl
@@ -11,9 +13,20 @@ StatusBarModelImpl::StatusBarModelImpl(StatusBarModelImplContext&& context)
     : StatusBarModelImplContext{std::move(context)} {
   progress_host_connection_ = progress_host_.Subscribe(
       [this](const ProgressStatus& status) { OnProgressStatus(status); });
+
+  // TODO: weak_ptr.
+  session_state_changed_connection_ =
+      session_service_.SubscribeSessionStateChanged(BindExecutor(
+          executor_, [this](bool connected, const scada::Status& status) {
+            UpdateUser();
+          }));
+
+  UpdateUser();
 }
 
-StatusBarModelImpl::~StatusBarModelImpl() {}
+StatusBarModelImpl::~StatusBarModelImpl() {
+  user_node_.Unsubscribe(*this);
+}
 
 int StatusBarModelImpl::GetPaneCount() {
   return 6;
@@ -31,10 +44,8 @@ std::wstring StatusBarModelImpl::GetPaneText(int index) {
     case 2:
       return base::StringPrintf(L"Важность: %u", event_fetcher_.severity_min());
 
-    case 3: {
-      const auto& user_id = session_service_.GetUserId();
-      return GetDisplayName(node_service_, user_id);
-    }
+    case 3:
+      return user_node_.display_name();
 
     case 4: {
       base::TimeDelta ping_delay;
@@ -78,4 +89,24 @@ void StatusBarModelImpl::OnProgressStatus(const ProgressStatus& status) {
 
   for (auto& o : observers_)
     o.OnProgressChanged();
+}
+
+void StatusBarModelImpl::UpdateUser() {
+  auto user_id = session_service_.GetUserId();
+  if (user_id == user_node_.node_id())
+    return;
+
+  user_node_.Unsubscribe(*this);
+
+  user_node_ = node_service_.GetNode(user_id);
+  user_node_.Fetch(NodeFetchStatus::NodeOnly());
+  user_node_.Subscribe(*this);
+
+  for (auto& o : observers_)
+    o.OnPanesChanged(kUserPaneIndex, 1);
+}
+
+void StatusBarModelImpl::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  for (auto& o : observers_)
+    o.OnPanesChanged(kUserPaneIndex, 1);
 }

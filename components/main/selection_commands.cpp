@@ -277,7 +277,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                        GetOpenWindowDefinition(&kEventJournalWindowInfo), true);
           })
           .set_available_handler(
-              [this] { return selection_->timed_data().connected(); }));
+              [this] { return !selection_->empty() ? this : nullptr; }));
 
 #if !defined(UI_WT)
   command_registry_.AddCommand(

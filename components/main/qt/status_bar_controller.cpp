@@ -3,8 +3,8 @@
 #include "controls/status_bar_model.h"
 
 #include <QLabel>
-#include <QStatusBar>
 #include <QProgressBar>
+#include <QStatusBar>
 
 StatusBarController::StatusBarController(QStatusBar& status_bar,
                                          StatusBarModel& model)
@@ -33,8 +33,10 @@ StatusBarController::~StatusBarController() {
 }
 
 void StatusBarController::OnPanesChanged(int index, int count) {
-  for (int i = 0; i < count; ++i)
-    panes_[i]->setText(QString::fromStdWString(model_.GetPaneText(i)));
+  for (int i = 0; i < count; ++i) {
+    auto text = model_.GetPaneText(index + i);
+    panes_[index + i]->setText(QString::fromStdWString(text));
+  }
 }
 
 void StatusBarController::UpdateProgressBar() {
