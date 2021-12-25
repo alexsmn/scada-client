@@ -202,7 +202,7 @@ void ClientApplication::OnStartLoginCompleted() {
                        MasterDataServices& master_data_services)
         : event_fetcher_{EventFetcherContext{
               std::move(executor), master_data_services, master_data_services,
-              master_data_services,
+              master_data_services, master_data_services,
               std::make_shared<NestedLogger>(std::move(logger),
                                              "EventFetcher")}},
           event_fetcher_notifier_{event_fetcher_, master_data_services} {}
