@@ -120,7 +120,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
       auto path = log_path.Append(FILE_PATH_LITERAL("client.log"));
       logging::LoggingSettings log;
       log.logging_dest = logging::LOG_TO_FILE;
-      log.log_file = path.value().c_str();
+      log.log_file_path = path.value().c_str();
       log.lock_log = logging::LOCK_LOG_FILE;
       log.delete_old = logging::APPEND_TO_OLD_LOG_FILE;
       logging::InitLogging(log);
