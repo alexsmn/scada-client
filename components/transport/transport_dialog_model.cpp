@@ -4,7 +4,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "net/transport_string.h"
 
 #include <algorithm>
@@ -20,8 +20,8 @@ enum ConnectionType {
   CONNECTION_TYPE_COUNT
 };
 
-static const std::wstring_view kConnectionTypeStrings[] = {
-    L"TCP-клиент", L"TCP-сервер", L"UDP-клиент", L"UDP-сервер", L"COM-порт"};
+static const std::u16string_view kConnectionTypeStrings[] = {
+    u"TCP-клиент", u"TCP-сервер", u"UDP-клиент", u"UDP-сервер", u"COM-порт"};
 
 static const unsigned kBaudRates[] = {
     75,   110,  134,  150,   300,   600,   1200,  1800,   2400,
@@ -30,26 +30,26 @@ static const std::string_view kStopBitsStrings[] = {"1", "1.5", "2"};
 static const int kBitCountFirst = 4;
 static const int kBitCountLast = 8;
 
-typedef std::pair<std::wstring_view, std::string_view> StringPair;
+typedef std::pair<std::u16string_view, std::string_view> StringPair;
 
 static const StringPair kParityStrings[] = {
-    StringPair(L"Нет", "No"), StringPair(L"Чет", "Even"),
-    StringPair(L"Нечет", "Odd"), StringPair(L"Маркер", "Mark"),
-    StringPair(L"Пробел", "Space")};
+    StringPair(u"Нет", "No"), StringPair(u"Чет", "Even"),
+    StringPair(u"Нечет", "Odd"), StringPair(u"Маркер", "Mark"),
+    StringPair(u"Пробел", "Space")};
 
 static const StringPair kFlowControlStrings[] = {
-    StringPair(L"Нет", net::TransportString::kFlowControlNone),
-    StringPair(L"XON/XOFF", net::TransportString::kFlowControlSoftware),
-    StringPair(L"Аппаратное", net::TransportString::kFlowControlHardware)};
+    StringPair(u"Нет", net::TransportString::kFlowControlNone),
+    StringPair(u"XON/XOFF", net::TransportString::kFlowControlSoftware),
+    StringPair(u"Аппаратное", net::TransportString::kFlowControlHardware)};
 
-static const wchar_t kDefaultString[] = L"<Текущее>";
+static const char16_t kDefaultString[] = u"<Текущее>";
 
 static int FindString(const std::string_view strs[],
                       int count,
                       std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(ToStringPiece(strs[i]),
-                                         ToStringPiece(value))) {
+    if (base::EqualsCaseInsensitiveASCII(AsStringPiece(strs[i]),
+                                         AsStringPiece(value))) {
       return i;
     }
   }
@@ -60,8 +60,8 @@ static int FindStringPair(const StringPair pairs[],
                           int count,
                           std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(ToStringPiece(pairs[i].second),
-                                         ToStringPiece(value))) {
+    if (base::EqualsCaseInsensitiveASCII(AsStringPiece(pairs[i].second),
+                                         AsStringPiece(value))) {
       return i;
     }
   }
@@ -102,7 +102,7 @@ TransportDialogModel::TransportDialogModel(
   type_index = static_cast<int>(connection_type);
 
   for (int i = 1; i <= 255; ++i)
-    serial_port_items.emplace_back(base::StringPrintf(L"COM%d:", i));
+    serial_port_items.emplace_back(base::StringPrintf(u"COM%d:", i));
 
   baud_rate_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kBaudRates); ++i)
@@ -119,7 +119,7 @@ TransportDialogModel::TransportDialogModel(
   stop_bits_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kStopBitsStrings); ++i) {
     stop_bits_items.emplace_back(
-        base::SysNativeMBToWide(ToStringPiece(kStopBitsStrings[i])));
+        base::UTF8ToUTF16(AsStringPiece(kStopBitsStrings[i])));
   }
 
   flow_control_items.emplace_back(kDefaultString);
@@ -127,7 +127,7 @@ TransportDialogModel::TransportDialogModel(
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
-    network_host = base::SysNativeMBToWide(ToStringPiece(
+    network_host = base::UTF8ToUTF16(AsStringPiece(
         transport_string_.GetParamStr(net::TransportString::kParamHost)));
     network_port =
         transport_string_.GetParamInt(net::TransportString::kParamPort);
@@ -215,7 +215,7 @@ void TransportDialogModel::Save() {
 
   if (type != CONNECTION_TYPE_SERIAL) {
     transport_string_.SetParam(net::TransportString::kParamHost,
-                               base::SysWideToNativeMB(network_host));
+                               base::UTF16ToUTF8(network_host));
     transport_string_.SetParam(net::TransportString::kParamPort, network_port);
 
   } else {

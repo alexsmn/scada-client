@@ -20,7 +20,7 @@ SheetCell::~SheetCell() {
   SetBlinking(false);
 }
 
-bool SheetCell::SetFormula(std::wstring formula) {
+bool SheetCell::SetFormula(std::u16string formula) {
   timed_data_.Reset();
   SetBlinking(false);
 

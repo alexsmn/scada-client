@@ -120,5 +120,5 @@ class Profile {
                           const PortfolioManager& portfolio_manager,
                           const Favourites& favourites) const;
 
-  base::FilePath GetFilePath();
+  std::filesystem::path GetFilePath();
 };

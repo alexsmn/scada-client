@@ -50,7 +50,8 @@ class ModusView2 : private ModusView2Context,
     selection_signal_ = std::move(signal);
   }
 
-  typedef std::function<void(const base::FilePath& path)> NavigationSignal;
+  typedef std::function<void(const std::filesystem::path& path)>
+      NavigationSignal;
   void set_navigation_signal(NavigationSignal signal) {
     navigation_signal_ = std::move(signal);
   }
@@ -61,8 +62,8 @@ class ModusView2 : private ModusView2Context,
   }
 
   // ModusViewWrapper
-  virtual void Open(const base::FilePath& path) override;
-  virtual base::FilePath GetPath() const override;
+  virtual void Open(const std::filesystem::path& path) override;
+  virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
@@ -73,11 +74,11 @@ class ModusView2 : private ModusView2Context,
   virtual bool IsFocusable() const override { return true; }
   virtual bool OnMousePressed(const ui::MouseEvent& event) override;
   virtual bool GetTooltipText(const gfx::Point& p,
-                              std::wstring* tooltip) const override;
+                              std::u16string* tooltip) const override;
   virtual bool OnMouseWheel(const ui::MouseWheelEvent& event) override;
 
   using TitleChangedHandler =
-      std::function<void(std::wstring_view new_title)>;
+      std::function<void(std::u16string_view new_title)>;
   TitleChangedHandler title_changed_handler;
 
  private:
@@ -99,7 +100,7 @@ class ModusView2 : private ModusView2Context,
   // modus::RendererDelegate
   virtual void SchedulePaintShape(modus::Shape& shape) override;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
   std::wstring title_;
 
   views::ScrollView* scroll_view_ = nullptr;

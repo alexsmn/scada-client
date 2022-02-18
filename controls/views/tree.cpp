@@ -132,7 +132,7 @@ void Tree::OnPaintNode(gfx::Canvas* canvas,
                        void* node) {
   const int column_id = 1;
 
-  std::wstring text = model()->GetText(node, column_id);
+  auto text = model()->GetText(node, column_id);
 
   SkColor color = model()->GetTextColor(node, column_id);
 

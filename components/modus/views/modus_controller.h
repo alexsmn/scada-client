@@ -1,12 +1,13 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
+#include "controls/point.h"
 #include "selection_model.h"
 
+#include <filesystem>
 #include <memory>
 
 class ModusView;
@@ -29,10 +30,10 @@ class ModusController : protected ControllerContext, public Controller {
   views::View* CreateModusView();
   views::View* CreateModusView2();
 
-  void OpenHyperlink(std::wstring_view hyperlink);
-  void OpenPath(const base::FilePath& path);
+  void OpenHyperlink(std::u16string_view hyperlink);
+  void OpenPath(const std::filesystem::path& path);
 
-  void ShowPopupMenu(const gfx::Point& point);
+  void ShowPopupMenu(const aui::Point& point);
 
   SelectionModel selection_{{timed_data_service_}};
 

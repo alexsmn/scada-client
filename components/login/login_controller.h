@@ -20,18 +20,18 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
 
   void Login();
 
-  void DeleteUserName(std::wstring_view user_name);
+  void DeleteUserName(std::u16string_view user_name);
 
   std::function<void(DataServices services)> completion_handler;
   std::function<void()> error_handler;
 
-  std::vector<std::wstring> server_type_list;
+  std::vector<std::u16string> server_type_list;
   int server_type_index = 0;
 
-  std::wstring user_name;
-  std::wstring password;
+  std::u16string user_name;
+  std::u16string password;
   std::string server_host;
-  std::vector<std::wstring> user_list;
+  std::vector<std::u16string> user_list;
   // Automatic startup login is performed.
   bool auto_login = false;
 
@@ -42,7 +42,7 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   void OnLoginCompleted();
   void OnLoginFailed(const scada::Status& status);
 
-  std::wstring GetUserListString() const;
+  std::u16string GetUserListString() const;
 
   const std::shared_ptr<Executor> executor_;
   DataServicesContext services_context_;

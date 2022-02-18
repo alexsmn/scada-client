@@ -6,7 +6,7 @@
 const WindowInfo kTimedDataWindowInfo = {
     ID_TIMED_DATA_VIEW,
     "TimeVal",
-    L"Данные",
+    u"Данные",
     WIN_INS | WIN_DISALLOW_NEW | WIN_CAN_PRINT,
     0,
     0,

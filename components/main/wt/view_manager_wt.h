@@ -23,7 +23,7 @@ class ViewManagerWt final : public ViewManager {
   // ViewManager
   virtual OpenedView* GetActiveView() override;
   virtual void SetViewTitle(OpenedView& view,
-                            const std::wstring& title) override;
+                            const std::u16string& title) override;
   virtual void ActivateView(OpenedView& view) override;
   virtual void CloseView(OpenedView& view) override;
   virtual void SplitView(OpenedView& view, bool vertically) override;

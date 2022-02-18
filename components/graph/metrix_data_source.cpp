@@ -1,8 +1,8 @@
 #include "components/graph/metrix_data_source.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
+#include "node_service/node_util.h"
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_types.h"
@@ -239,10 +239,10 @@ void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
 
 #if defined(UI_QT)
 QString MetrixDataSource::GetYAxisLabel(double value) const {
-  return QString::fromStdWString(timed_data_.GetValueString(value, {}));
+  return QString::fromStdU16String(timed_data_.GetValueString(value, {}));
 }
 #elif defined(UI_VIEWS)
-std::wstring MetrixDataSource::GetYAxisLabel(double value) const {
+std::u16string MetrixDataSource::GetYAxisLabel(double value) const {
   return timed_data_.GetValueString(value, {});
 }
 #endif

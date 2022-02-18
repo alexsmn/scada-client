@@ -20,8 +20,8 @@ class ModusView : private modus::ModusDocumentContext,
   virtual ~ModusView();
 
   // ModusViewWrapper
-  virtual void Open(const base::FilePath& path) override;
-  virtual base::FilePath GetPath() const override;
+  virtual void Open(const std::filesystem::path& path) override;
+  virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
@@ -32,7 +32,7 @@ class ModusView : private modus::ModusDocumentContext,
   virtual void OnControlCreated(views::ActiveXControl& sender) override;
   virtual void OnContractDestroyed(views::ActiveXControl& sender) override;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
 
   std::unique_ptr<modus::ModusDocument> document_;
 };

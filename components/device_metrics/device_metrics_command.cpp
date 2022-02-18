@@ -12,7 +12,7 @@
 #include "window_info.h"
 
 WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
-    std::wstring title,
+    std::u16string title,
     base::span<const NodeRef> devices) {
   WindowDefinition win(kSheetWindowInfo);
   win.title = std::move(title);

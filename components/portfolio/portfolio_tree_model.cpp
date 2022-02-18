@@ -5,7 +5,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
-void PortfolioTreeNode::SetText(int column_id, const std::wstring& title) {
+void PortfolioTreeNode::SetText(int column_id, const std::u16string& title) {
   if (!is_portfolio())
     return;
 

@@ -44,7 +44,7 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
       selection_.SelectNode(node_service_.GetNode(node->item_id()));
   });
 
-  tree_->SetContextMenuHandler([this](const UiPoint& point) {
+  tree_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
   });
 
@@ -124,9 +124,9 @@ void PortfolioView::AddContainedItem(const scada::NodeId& node_id,
   tree_->SelectNode(item_node);
 }
 
-std::wstring PortfolioView::GetSelectionTitle() {
+std::u16string PortfolioView::GetSelectionTitle() {
   PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
-  return node ? node->GetText(0) : std::wstring();
+  return node ? node->GetText(0) : std::u16string();
 }
 
 NodeIdSet PortfolioView::GetSelectedNodeIdList() {

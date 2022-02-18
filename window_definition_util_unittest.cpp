@@ -1,8 +1,8 @@
 #include "window_definition_util.h"
 
+#include "base/json.h"
 #include "common_resources.h"
 #include "components/object_tree/object_tree_component.h"
-#include "value_util.h"
 #include "window_info.h"
 
 #include <gmock/gmock.h>
@@ -145,7 +145,7 @@ TEST(ToJson, NodeId) {
 }
 
 TEST(FromJson, WindowItems) {
-  std::unique_ptr<base::Value> json = LoadJsonFromString(kTestWindowItemsJson);
+  std::optional<base::Value> json = LoadJsonFromString(kTestWindowItemsJson);
   ASSERT_TRUE(json);
 
   auto window_items = FromJson<WindowItems>(*json);
@@ -156,7 +156,7 @@ TEST(FromJson, WindowItems) {
 TEST(ToJson, WindowItems) {
   auto json = ToJson(kTestWindowItems);
 
-  std::unique_ptr<base::Value> expected_json =
+  std::optional<base::Value> expected_json =
       LoadJsonFromString(kTestWindowItemsJson);
   ASSERT_TRUE(expected_json);
 
@@ -164,7 +164,7 @@ TEST(ToJson, WindowItems) {
 }
 
 TEST(FromJson, WindowDefinition) {
-  std::unique_ptr<base::Value> json =
+  std::optional<base::Value> json =
       LoadJsonFromString(kTestWindowDefinitionJson);
   ASSERT_TRUE(json);
 
@@ -176,7 +176,7 @@ TEST(FromJson, WindowDefinition) {
 TEST(ToJson, WindowDefinition) {
   auto json = ToJson(MakeTestWindowDefinition());
 
-  std::unique_ptr<base::Value> expected_json =
+  std::optional<base::Value> expected_json =
       LoadJsonFromString(kTestWindowDefinitionJson);
   ASSERT_TRUE(expected_json);
 

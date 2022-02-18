@@ -18,8 +18,8 @@ class TableRow : private Blinker {
   bool is_blinking() const { return is_blinking_; }
 
   std::string GetFormula() const;
-  std::wstring GetTitle() const;
-  std::wstring GetTooltip() const;
+  std::u16string GetTitle() const;
+  std::u16string GetTooltip() const;
 
   void SetFormula(std::string formula, bool notify_update = true);
 

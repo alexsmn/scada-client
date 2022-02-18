@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/strings/string16.h"
 #include "controls/key_codes.h"
 
 #include <optional>
@@ -24,16 +25,17 @@ enum CommandCategory {
 
 class Shortcut {
  public:
-  Shortcut(KeyCode key_code) : key_code_{key_code} {}
-  Shortcut(KeyModifier modifier, KeyCode key_code)
-      : modifiers_{static_cast<unsigned>(modifier)}, key_code_{key_code} {}
+  Shortcut(aui::KeyCode key_code) : key_code_{key_code} {}
+  Shortcut(aui::KeyModifier key_modifier, aui::KeyCode key_code)
+      : modifiers_{static_cast<aui::KeyModifiers>(key_modifier)},
+        key_code_{key_code} {}
 
-  KeyCode key_code() const { return key_code_; }
-  unsigned modifiers() const { return modifiers_; }
+  aui::KeyCode key_code() const { return key_code_; }
+  aui::KeyModifiers modifiers() const { return modifiers_; }
 
  private:
-  KeyCode key_code_ = KeyCode::Unknown;
-  unsigned modifiers_ = 0;
+  aui::KeyCode key_code_ = aui::KeyCode::Unknown;
+  aui::KeyModifiers modifiers_{};
 };
 
 class Action {
@@ -48,8 +50,8 @@ class Action {
 
   Action(unsigned command_id,
          CommandCategory category,
-         std::wstring title,
-         std::wstring short_title = std::wstring(),
+         std::u16string title,
+         std::u16string short_title = std::u16string(),
          int image_id = 0,
          unsigned flags = 0);
   virtual ~Action() {}
@@ -62,14 +64,14 @@ class Action {
   void set_checked(bool checked) { SetFlag(CHECKED, checked); }
   void set_visible(bool visible) { SetFlag(VISIBLE, visible); }
 
-  virtual std::wstring GetTitle() const { return title_; }
+  virtual std::u16string GetTitle() const { return title_; }
 
   unsigned command_id() const { return command_id_; }
 
-  std::wstring GetShortTitle() const {
+  std::u16string GetShortTitle() const {
     return short_title_.empty() ? title_ : short_title_;
   }
-  void SetTitle(std::wstring title) { title_ = std::move(title); }
+  void SetTitle(std::u16string title) { title_ = std::move(title); }
 
   int image_id() const { return image_id_; }
   bool enabled() const { return GetFlag(ENABLED); }
@@ -91,16 +93,16 @@ class Action {
       flags_ &= ~flag;
   }
 
-  std::wstring title_;
-  std::wstring short_title_;
+  std::u16string title_;
+  std::u16string short_title_;
   unsigned flags_;
   int image_id_;
 };
 
 inline Action::Action(unsigned command,
                       CommandCategory category,
-                      std::wstring title,
-                      std::wstring short_title,
+                      std::u16string title,
+                      std::u16string short_title,
                       int image_id,
                       unsigned flags)
     : command_id_(command),
@@ -114,7 +116,7 @@ class ActionBuilder {
  public:
   ActionBuilder(unsigned command_id,
                 CommandCategory category,
-                std::wstring title)
+                std::u16string title)
       : command_id_{command_id},
         category_{category},
         title_{std::move(title)} {}
@@ -139,7 +141,7 @@ class ActionBuilder {
  private:
   unsigned command_id_;
   CommandCategory category_;
-  std::wstring title_;
+  std::u16string title_;
   std::optional<Shortcut> shortcut_;
   int image_id_ = 0;
 };

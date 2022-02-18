@@ -33,10 +33,10 @@ class TableDocumentBuilder {
   explicit TableDocumentBuilder(int row_count, int column_count);
 
   void SetColumn(int column,
-                 const std::wstring& title,
+                 const std::u16string& title,
                  ui::TableColumn::Alignment alignment);
 
-  void SetCell(int row, int column, const std::wstring& text);
+  void SetCell(int row, int column, const std::u16string& text);
 
   QTextDocument& Build();
 
@@ -78,24 +78,24 @@ TableDocumentBuilder::TableDocumentBuilder(int row_count, int column_count)
 }
 
 void TableDocumentBuilder::SetColumn(int column,
-                                     const std::wstring& title,
+                                     const std::u16string& title,
                                      ui::TableColumn::Alignment alignment) {
   column_formats_[column].setAlignment(MakeQtAlignment(alignment));
 
   auto cell = table_->cellAt(0, column);
   auto cursor = cell.firstCursorPosition();
   cursor.setBlockFormat(column_formats_[column]);
-  cursor.insertText(QString::fromStdWString(title), header_format_);
+  cursor.insertText(QString::fromStdU16String(title), header_format_);
 }
 
 void TableDocumentBuilder::SetCell(int row,
                                    int column,
-                                   const std::wstring& text) {
+                                   const std::u16string& text) {
   auto cell = table_->cellAt(row + 1, column);
   cell.setFormat(row % 2 == 0 ? row_format_ : alternate_row_format_);
   auto cursor = cell.firstCursorPosition();
   cursor.setBlockFormat(column_formats_[column]);
-  cursor.insertText(QString::fromStdWString(text));
+  cursor.insertText(QString::fromStdU16String(text));
 }
 
 QTextDocument& TableDocumentBuilder::Build() {

@@ -6,6 +6,12 @@
 #include <cassert>
 #include <optional>
 
+#if defined(UI_VIEWS)
+namespace views {
+class DropController;
+}
+#endif
+
 class CommandHandler;
 class ContentsModel;
 class ExportModel;

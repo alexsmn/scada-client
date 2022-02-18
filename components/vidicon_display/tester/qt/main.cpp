@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   VidiconDisplayView vidicon_display_view;
 
   WindowDefinition definition{kVidiconDisplayWindowInfo};
-  definition.path = base::FilePath{FILE_PATH_LITERAL("pribilov.vds")};
+  definition.path = "pribilov.vds";
   auto* widget = vidicon_display_view.Init(definition);
   widget->resize(1000, 500);
   widget->show();

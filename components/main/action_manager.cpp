@@ -14,25 +14,25 @@ GroupedActions GroupCommands(ActionManager& action_manager,
   return grouped_commands;
 }
 
-const wchar_t* GetCommandCategoryTitle(CommandCategory category) {
-  const wchar_t* titles[] = {
-      L"Новый",       // CATEGORY_NEW
-      L"Открыть",     // CATEGORY_OPEN
-      L"Объект",      // CATEGORY_ITEM
-      L"Устройство",  // CATEGORY_DEVICE
-      L"Опции",       // CATEGORY_SETUP
-      L"Экспорт",     // CATEGORY_EXPORT
-      L"Разное",      // CATEGORY_SPECIFIC
-      L"Окно",        // CATEGORY_VIEW
-      L"Период",      // CATEGORY_PERIOD
-      L"Создать",     // CATEGORY_CREATE
-      L"Правка",      // CATEGORY_EDIT,
-      L"Функция",     // CATEGORY_AGGREGATION
-      L"Интервал",    // CATEGORY_INTERVAL
+std::u16string_view GetCommandCategoryTitle(CommandCategory category) {
+  static const std::u16string_view kTitles[] = {
+      u"Новый",       // CATEGORY_NEW
+      u"Открыть",     // CATEGORY_OPEN
+      u"Объект",      // CATEGORY_ITEM
+      u"Устройство",  // CATEGORY_DEVICE
+      u"Опции",       // CATEGORY_SETUP
+      u"Экспорт",     // CATEGORY_EXPORT
+      u"Разное",      // CATEGORY_SPECIFIC
+      u"Окно",        // CATEGORY_VIEW
+      u"Период",      // CATEGORY_PERIOD
+      u"Создать",     // CATEGORY_CREATE
+      u"Правка",      // CATEGORY_EDIT,
+      u"Функция",     // CATEGORY_AGGREGATION
+      u"Интервал",    // CATEGORY_INTERVAL
   };
-  static_assert(std::size(titles) == static_cast<size_t>(CATEGORY_COUNT));
-  assert(category >= 0 && category < _countof(titles));
-  return titles[category];
+  static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
+  assert(category >= 0 && category < _countof(kTitles));
+  return kTitles[category];
 }
 
 bool CanExpandCommandCategory(CommandCategory category) {

@@ -9,8 +9,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
+#include "base/value_util.h"
 #include "services/page_layout.h"
-#include "value_util.h"
 #include "window_definition_util.h"
 #include "window_info.h"
 
@@ -109,15 +109,15 @@ base::Value Page::Save(bool current) const {
   return result;
 }
 
-std::wstring Page::GetTitle() const {
+std::u16string Page::GetTitle() const {
   if (!title.empty())
     return title;
 
-  std::wstring title;
+  std::u16string title;
   for (int i = 0; i < GetWindowCount(); ++i) {
     WindowDefinition& win = GetWindow(i);
     if (!title.empty())
-      title += L", ";
+      title += u", ";
     title += win.title;
     if (title.length() >= MAX_TITLE)
       break;
@@ -125,11 +125,11 @@ std::wstring Page::GetTitle() const {
 
   if (title.length() > MAX_TITLE) {
     title.erase(MAX_TITLE, title.length() - MAX_TITLE);
-    title += L"...";
+    title += u"...";
   }
 
   if (title.empty())
-    title = L"(Пустой)";
+    title = u"(Пустой)";
 
   return title;
 }

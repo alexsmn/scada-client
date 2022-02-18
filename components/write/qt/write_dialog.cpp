@@ -33,12 +33,12 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
   dialog_service_.parent_widget = this;
   model_.set_dialog_service(&dialog_service_);
 
-  setWindowTitle(QString::fromStdWString(model_.GetWindowTitle()));
+  setWindowTitle(QString::fromStdU16String(model_.GetWindowTitle()));
 
   ui.descriptionLabel->setText(
-      QString::fromStdWString(model_.GetSourceTitle()));
+      QString::fromStdU16String(model_.GetSourceTitle()));
   ui.currentValueLabel->setText(
-      QString::fromStdWString(model_.GetCurrentValue(true)));
+      QString::fromStdU16String(model_.GetCurrentValue(true)));
 
   ui.valueComboBox->setEditable(!model_.discrete());
 
@@ -53,13 +53,13 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
 
   if (model_.discrete()) {
     for (const auto& state : model_.GetDiscreteStates())
-      ui.valueComboBox->addItem(QString::fromStdWString(state));
+      ui.valueComboBox->addItem(QString::fromStdU16String(state));
     ui.valueComboBox->setCurrentIndex(model_.GetCurrentDiscreteState());
 
   } else {
     ui.valueComboBox->setCurrentText(
-        QString::fromStdWString(model_.GetCurrentValue(false)));
-    ui.unitLabel->setText(QString::fromStdWString(model_.GetAnalogUnits()));
+        QString::fromStdU16String(model_.GetCurrentValue(false)));
+    ui.unitLabel->setText(QString::fromStdU16String(model_.GetAnalogUnits()));
   }
 
   model_.current_change_handler = [this] { UpdateCurrent(); };
@@ -79,7 +79,7 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
 
 void WriteDialog::UpdateCurrent() {
   ui.currentValueLabel->setText(
-      QString::fromStdWString(model_.GetCurrentValue(true)));
+      QString::fromStdU16String(model_.GetCurrentValue(true)));
 }
 
 void WriteDialog::UpdateCondition() {
@@ -89,7 +89,7 @@ void WriteDialog::UpdateCondition() {
 }
 
 void WriteDialog::UpdateStatus() {
-  ui.statusLabel->setText(QString::fromStdWString(model_.GetStatusText()));
+  ui.statusLabel->setText(QString::fromStdU16String(model_.GetStatusText()));
 }
 
 void WriteDialog::accept() {
@@ -103,7 +103,7 @@ void WriteDialog::accept() {
     value = ui.valueComboBox->currentText().toDouble(&ok);
     if (!ok) {
       dialog_service_.RunMessageBox(
-          tr("Incorrect floating point value.").toStdWString(), {},
+          tr("Incorrect floating point value.").toStdU16String(), {},
           MessageBoxMode::Error);
       return;
     }

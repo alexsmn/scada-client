@@ -14,7 +14,7 @@ class StatusBarController : private StatusBarModelObserver {
   void Layout();
 
  private:
-  void SetPaneText(int pane, const std::wstring& text);
+  void SetPaneText(int pane, const std::u16string& text);
 
   // StatusBarModelObserver
   virtual void OnPanesChanged(int index, int count) override;

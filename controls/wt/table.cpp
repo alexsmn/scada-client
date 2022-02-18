@@ -1,6 +1,5 @@
 #include "table.h"
 
-#include "value_util.h"
 #include "window_definition_util.h"
 
 namespace {
@@ -156,7 +155,7 @@ void Table::SetDoubleClickHandler(DoubleClickHandler handler) {
 
 void Table::keyPressEvent(const Wt::WKeyEvent& event) {
   if (key_press_handler_)
-    key_press_handler_(static_cast<KeyCode>(event.key()));
+    key_press_handler_(event.key());
 }
 
 void Table::SetStateChangeHandler(StateChangeHandler handler) {

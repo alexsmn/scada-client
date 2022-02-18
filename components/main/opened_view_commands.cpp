@@ -2,7 +2,9 @@
 
 #include "base/command_line.h"
 #include "base/excel.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
 #include "common/static_types.h"
@@ -44,11 +46,11 @@
 
 namespace {
 
-const wchar_t kExportTitle[] = L"Экспорт";
+const char16_t kExportTitle[] = u"Экспорт";
 
-std::filesystem::path MakeFileName(std::wstring_view text) {
-  std::wstring result;
-  base::ReplaceChars(std::wstring{text}, L":", L"-", &result);
+std::filesystem::path MakeFileName(std::u16string_view text) {
+  std::u16string result;
+  base::ReplaceChars(AsStringPiece(text), u":", u"-", &result);
   return result;
 }
 
@@ -285,7 +287,7 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   attributes.display_name = node_type.display_name();
   if (type_node_id == devices::id::Iec60870LinkType) {
     attributes.display_name =
-        is104 ? L"Направление МЭК-60870-104" : L"Направление МЭК-60870-101";
+        is104 ? u"Направление МЭК-60870-104" : u"Направление МЭК-60870-101";
   }
 
   // IEC link specific.
@@ -325,8 +327,8 @@ void OpenedViewCommands::OnCreateRecordComplete(
     const scada::LocalizedText& display_name,
     const scada::Status& status,
     const scada::NodeId& node_id) {
-  std::wstring title =
-      base::StringPrintf(L"Создание \"%ls\"", display_name.c_str());
+  std::u16string title =
+      base::StringPrintf(u"Создание \"%ls\"", display_name.c_str());
   ReportRequestResult(title, status, local_events_, profile_);
 
   if (!status)
@@ -368,7 +370,7 @@ void OpenedViewCommands::ExportToCsv() {
 
   const std::string_view kCsvExt[] = {"*.csv"};
   const DialogService::Filter kFilters[] = {
-      {L"Файлы CSV", kCsvExt},
+      {u"Файлы CSV", kCsvExt},
   };
 
   auto file_name = MakeFileName(opened_view_->GetWindowTitle());
@@ -395,13 +397,13 @@ void OpenedViewCommands::ExportToCsv() {
                export_data);
 
   } catch (const std::runtime_error&) {
-    dialog_service_->RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
+    dialog_service_->RunMessageBox(u"Ошибка при экспорте.", kExportTitle,
                                    MessageBoxMode::Error);
     return;
   }
 
   dialog_service_
-      ->RunMessageBox(L"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+      ->RunMessageBox(u"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
                       MessageBoxMode::QuestionYesNo)
       .then(BindExecutor(executor_, [path = std::move(path)](
                                         MessageBoxResult message_box_result) {
@@ -428,8 +430,8 @@ void OpenedViewCommands::ExportToExcel() {
 
   } catch (HRESULT /*err*/) {
     dialog_service_->RunMessageBox(
-        L"Не удалось выполнить экспорт. Проверьте корректность установки "
-        L"Microsoft Excel.",
-        L"Экспорт", MessageBoxMode::Error);
+        u"Не удалось выполнить экспорт. Проверьте корректность установки "
+        u"Microsoft Excel.",
+        u"Экспорт", MessageBoxMode::Error);
   }
 }

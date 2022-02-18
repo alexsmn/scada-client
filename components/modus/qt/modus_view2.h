@@ -40,7 +40,7 @@ class ModusView2 : public QWidget,
     selection_signal_ = std::move(signal);
   }
 
-  typedef std::function<void(const base::FilePath& path)> NavigationSignal;
+  typedef std::function<void(const std::filesystem::path& path)> NavigationSignal;
   void set_navigation_signal(NavigationSignal signal) {
     navigation_signal_ = std::move(signal);
   }
@@ -51,8 +51,8 @@ class ModusView2 : public QWidget,
   }
 
   // ModusViewWrapper
-  virtual void Open(const base::FilePath& path) override;
-  virtual base::FilePath GetPath() const override;
+  virtual void Open(const std::filesystem::path& path) override;
+  virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
@@ -90,7 +90,7 @@ class ModusView2 : public QWidget,
 
   TimedDataService& timed_data_service_;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
   std::wstring title_;
 
   std::unique_ptr<modus::Scheme> scheme_;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "node_service/node_ref.h"
 #include "components/limits/limit_dialog.h"
+#include "node_service/node_ref.h"
 
 class TaskManager;
 
@@ -10,13 +10,13 @@ class LimitModel : private LimitDialogContext {
   explicit LimitModel(LimitDialogContext&& context);
 
   struct Limits {
-    std::wstring lo;
-    std::wstring hi;
-    std::wstring lolo;
-    std::wstring hihi;
+    std::u16string lo;
+    std::u16string hi;
+    std::u16string lolo;
+    std::u16string hihi;
   };
 
-  std::wstring GetSourceTitle() const;
+  std::u16string GetSourceTitle() const;
   Limits GetLimits() const;
 
   void WriteLimits(const Limits& limits);

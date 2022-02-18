@@ -54,7 +54,7 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::TextAlignmentRole:
       return UiAligmentToQt(column.alignment);
     case Qt::ToolTipRole:
-      return QString::fromStdWString(
+      return QString::fromStdU16String(
           model_->GetTooltip(index.row(), column.id));
   }
 
@@ -66,7 +66,7 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
-      return QString::fromStdWString(cell.text);
+      return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
       return ToQColor(cell.text_color);
     case Qt::BackgroundRole:
@@ -87,7 +87,7 @@ bool TableModelAdapter::setData(const QModelIndex& index,
   switch (role) {
     case Qt::EditRole:
       return model_->SetCellText(index.row(), columns_[index.column()].id,
-                                 value.toString().toStdWString());
+                                 value.toString().toStdU16String());
 
     default:
       return false;
@@ -104,7 +104,7 @@ QVariant TableModelAdapter::headerData(int section,
 
   switch (role) {
     case Qt::DisplayRole:
-      return QString::fromStdWString(column.title);
+      return QString::fromStdU16String(column.title);
     default:
       return QVariant();
   }

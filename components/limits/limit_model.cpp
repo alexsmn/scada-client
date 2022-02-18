@@ -2,14 +2,14 @@
 
 #include "base/format.h"
 #include "common/format.h"
-#include "node_service/node_format.h"
 #include "model/data_items_node_ids.h"
+#include "node_service/node_format.h"
 #include "services/task_manager.h"
 
 LimitModel::LimitModel(LimitDialogContext&& context)
     : LimitDialogContext{std::move(context)} {}
 
-std::wstring LimitModel::GetSourceTitle() const {
+std::u16string LimitModel::GetSourceTitle() const {
   return node_.display_name();
 }
 

@@ -34,7 +34,7 @@ class NodeTableModel : private PropertyContext,
   virtual void GetCell(ui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
-                           const std::wstring& text) override;
+                           const std::u16string& text) override;
   virtual ui::EditData GetEditData(int row, int column) override;
 
  private:
@@ -55,7 +55,7 @@ class NodeTableModel : private PropertyContext,
 
   // views::FixedRowModel::Delegate
   virtual int GetRowCount() override;
-  virtual std::wstring GetRowTitle(int row) override;
+  virtual std::u16string GetRowTitle(int row) override;
 
   // NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;

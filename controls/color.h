@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/types.h"
+#include "base/strings/string_piece.h"
 
 #include <string>
 
@@ -29,6 +29,10 @@ struct Rgba {
 
 #include <SkColor.h>
 
+typedef SkColor UiColor;
+
+#define UiColorRGB(r, g, b) SkColorSetRGB(r, g, b)
+
 // For convenience.
 inline SkColor ToSkColor(SkColor color) {
   return color;
@@ -41,8 +45,8 @@ size_t GetColorCount();
 Color GetColor(int index);
 int FindColor(Color color);
 
-std::wstring_view GetColorName(int index);
-int FindColorName(std::wstring_view);
+std::u16string_view GetColorName(int index);
+int FindColorName(std::u16string_view name);
 
 Color StringToColor(std::string_view str);
 std::string ColorToString(Color color);

@@ -1,5 +1,6 @@
 #include "components/filesystem/file_synchronizer.h"
 
+#include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "base/logger.h"
 #include "base/strings/utf_string_conversions.h"
@@ -115,36 +116,32 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
   std::error_code ec;
   auto actual_last_update_time = std::filesystem::last_write_time(path, ec);
   if (actual_last_update_time == last_update_time) {
-    logger_->WriteF(LogSeverity::Normal, "File '%s' is actual",
-                    path.string().c_str());
+    logger_->WriteF(LogSeverity::Normal, "File '%s' is actual", path.c_str());
     return true;
   }
 
-  logger_->WriteF(LogSeverity::Normal, "Download outdated '%s'",
-                  path.string().c_str());
+  logger_->WriteF(LogSeverity::Normal, "Download outdated '%s'", path.c_str());
 
   // TODO: Weak ptr.
   node.Read(scada::AttributeId::Value, [this, path, last_update_time](
                                            scada::DataValue&& value) {
     if (!scada::IsGood(value.status_code)) {
       logger_->WriteF(LogSeverity::Warning, "Download '%s' error: %s",
-                      path.string().c_str(),
-                      ToString(value.status_code).c_str());
+                      path.c_str(), ToString(value.status_code).c_str());
       return;
     }
 
     auto* data = value.value.get_if<scada::ByteString>();
     if (!data) {
       logger_->WriteF(LogSeverity::Warning,
-                      "Wrong downloaded data for file '%s'",
-                      path.string().c_str());
+                      "Wrong downloaded data for file '%s'", path.c_str());
       return;
     }
 
     logger_->WriteF(LogSeverity::Normal, "Download '%s' complete",
-                    path.string().c_str());
+                    path.c_str());
 
-    base::WriteFile(base::FilePath{path.wstring()}, data->data(), data->size());
+    base::WriteFile(AsFilePath(path), data->data(), data->size());
 
     std::error_code ec;
     std::filesystem::last_write_time(path, last_update_time, ec);

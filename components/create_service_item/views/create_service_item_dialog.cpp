@@ -1,5 +1,6 @@
 ﻿#include "components/create_service_item/create_service_item_dialog.h"
 
+#include "base/strings/string_util.h"
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_model.h"
 #include "views/framework/control/combobox.h"
@@ -64,13 +65,13 @@ void CreateServiceItemDialog::OnOK() {
 void CreateServiceItemDialog::FillDevicesList() {
   devices_combo_box_.ResetContent();
   for (auto& p : model_.devices())
-    devices_combo_box_.AddString(p.first.c_str());
+    devices_combo_box_.AddString(base::AsWString(p.first).c_str());
 }
 
 void CreateServiceItemDialog::FillChannelsList() {
   components_list_box_.ResetContent();
   for (auto& p : model_.components())
-    components_list_box_.AddString(p.first.c_str());
+    components_list_box_.AddString(base::AsWString(p.first).c_str());
 }
 
 void CreateServiceItemDialog::OnItemChanged(framework::ComboBox& sender,

@@ -26,21 +26,21 @@ LimitDialog::LimitDialog(LimitModel& model, QWidget* parent)
   ui.setupUi(this);
 
   ui.descriptionLabel->setText(
-      QString::fromStdWString(model_.GetSourceTitle()));
+      QString::fromStdU16String(model_.GetSourceTitle()));
 
   auto limits = model_.GetLimits();
-  ui.loEdit->setText(QString::fromStdWString(limits.lo));
-  ui.hiEdit->setText(QString::fromStdWString(limits.hi));
-  ui.loLoEdit->setText(QString::fromStdWString(limits.lolo));
-  ui.hiHiEdit->setText(QString::fromStdWString(limits.hihi));
+  ui.loEdit->setText(QString::fromStdU16String(limits.lo));
+  ui.hiEdit->setText(QString::fromStdU16String(limits.hi));
+  ui.loLoEdit->setText(QString::fromStdU16String(limits.lolo));
+  ui.hiHiEdit->setText(QString::fromStdU16String(limits.hihi));
 }
 
 void LimitDialog::accept() {
   LimitModel::Limits limits = {};
-  limits.lo = ui.loEdit->text().toStdWString();
-  limits.hi = ui.hiEdit->text().toStdWString();
-  limits.lolo = ui.loLoEdit->text().toStdWString();
-  limits.hihi = ui.hiHiEdit->text().toStdWString();
+  limits.lo = ui.loEdit->text().toStdU16String();
+  limits.hi = ui.hiEdit->text().toStdU16String();
+  limits.lolo = ui.loLoEdit->text().toStdU16String();
+  limits.hihi = ui.hiHiEdit->text().toStdU16String();
   model_.WriteLimits(limits);
 
   QDialog::accept();

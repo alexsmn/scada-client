@@ -109,7 +109,7 @@ OpenedView* ViewManager2Wt::GetActiveView() {
 }
 
 void ViewManager2Wt::SetViewTitle(OpenedView& opened_view,
-                                  const std::wstring& title) {}
+                                  const std::u16string& title) {}
 
 void ViewManager2Wt::SaveLayout(PageLayout& layout) {}
 

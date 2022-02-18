@@ -8,7 +8,7 @@
 
 #include <atlapp.h>
 #include <atlctrls.h>
-#include <map>
+#include <unordered_map>
 
 class NodeService;
 
@@ -48,7 +48,7 @@ class ItemComboBox {
  private:
   void AddNodesRecursive(const scada::NodeId& parent_id,
                          const std::vector<scada::NodeId>& reference_type_ids,
-                         const std::wstring& name_prefix);
+                         const std::u16string& name_prefix);
 
   NodeService* node_service_ = nullptr;
 
@@ -56,8 +56,8 @@ class ItemComboBox {
 
   scada::NodeId device_id_;
 
-  std::map<std::wstring, scada::NodeId> items_;
-  std::map<scada::NodeId, std::wstring> node_ids_;
+  std::unordered_map<std::u16string, scada::NodeId> items_;
+  std::unordered_map<scada::NodeId, std::u16string> node_ids_;
 
   base::WeakPtrFactory<ItemComboBox> weak_ptr_factory_{this};
 };

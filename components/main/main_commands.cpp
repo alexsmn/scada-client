@@ -205,8 +205,8 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
 #if !defined(UI_WT)
     case ID_HELP_MANUAL: {
       WindowDefinition def(kWebWindowInfo);
-      def.title = L"Документация";
-      def.path = base::FilePath(
+      def.title = u"Документация";
+      def.path = std::filesystem::path(
           FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));
       main_window_.OpenView(def, true);
       return;
@@ -245,7 +245,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     case ID_PAGE_RENAME: {
       auto& page = main_window_.current_page();
       auto title = page.title;
-      if (RunPromptDialog(dialog_service_, L"Имя:", L"Переименование", title))
+      if (RunPromptDialog(dialog_service_, u"Имя:", u"Переименование", title))
         main_window_.SetPageTitle(title);
       return;
     }
@@ -358,7 +358,7 @@ void MainCommands::ShowRenameWindowDialog() {
   if (view->window_info().is_pane())
     return;
 
-  std::wstring title = view->GetWindowTitle();
-  if (RunPromptDialog(dialog_service_, L"Имя:", L"Переименовать", title))
+  auto title = view->GetWindowTitle();
+  if (RunPromptDialog(dialog_service_, u"Имя:", u"Переименовать", title))
     view->SetUserTitle(title);
 }

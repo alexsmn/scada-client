@@ -1,9 +1,9 @@
 #include "controls/qt/tree.h"
 
+#include "base/value_util.h"
 #include "controls/color.h"
 #include "controls/qt/item_delegate.h"
 #include "controls/qt/tree_model_adapter.h"
-#include "value_util.h"
 
 #include <QHeaderView>
 #include <QPainter>

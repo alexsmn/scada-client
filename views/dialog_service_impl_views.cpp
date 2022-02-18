@@ -1,6 +1,9 @@
 #include "views/dialog_service_impl_views.h"
 
+#include "base/file_path_util.h"
 #include "base/run_loop.h"
+#include "base/string_piece_util.h"
+#include "base/strings/string_util.h"
 #include "base/win/win_util2.h"
 #include "ui/base/dialogs/select_file_dialog.h"
 
@@ -56,8 +59,8 @@ MessageBoxResult MapNativeMessageBoxResult(int result) {
 }  // namespace
 
 promise<MessageBoxResult> DialogServiceImplViews::RunMessageBox(
-    std::wstring_view message,
-    std::wstring_view title,
+    std::u16string_view message,
+    std::u16string_view title,
     MessageBoxMode mode) {
   const unsigned kFlags[] = {
       MB_ICONINFORMATION | MB_OK,
@@ -68,13 +71,13 @@ promise<MessageBoxResult> DialogServiceImplViews::RunMessageBox(
   static_assert(std::size(kFlags) ==
                 static_cast<std::size_t>(MessageBoxMode::Count));
 
-  auto title_string = std::wstring{title};
+  auto title_string = base::AsWString(AsStringPiece(title));
   if (title_string.empty())
     title_string = win_util::GetWindowText(dialog_owning_window);
 
   int result = ::AtlMessageBox(
-      dialog_owning_window, std::wstring{message}.c_str(), title_string.c_str(),
-      kFlags[static_cast<std::size_t>(mode)]);
+      dialog_owning_window, base::AsWString(AsStringPiece(message)).c_str(),
+      title_string.c_str(), kFlags[static_cast<std::size_t>(mode)]);
 
   return make_resolved_promise(MapNativeMessageBoxResult(result));
 }
@@ -84,7 +87,7 @@ gfx::NativeView DialogServiceImplViews::GetDialogOwningWindow() const {
 }
 
 std::filesystem::path DialogServiceImplViews::SelectOpenFile(
-    std::wstring_view title) {
+    std::u16string_view title) {
   std::filesystem::path result;
 
   base::RunLoop nested_loop;
@@ -94,8 +97,8 @@ std::filesystem::path DialogServiceImplViews::SelectOpenFile(
   });
 
   base::WrapRefCounted(ui::SelectFileDialog::Create(selector, nullptr))
-      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE, std::wstring{title},
-                   base::FilePath{}, nullptr, -1, std::wstring(),
+      ->SelectFile(ui::SelectFileDialog::SELECT_OPEN_FILE,
+                   std::u16string{title}, {}, nullptr, -1, {},
                    dialog_owning_window, nullptr);
 
   // Run nested loop.
@@ -116,9 +119,9 @@ std::filesystem::path DialogServiceImplViews::SelectSaveFile(
 
   base::WrapRefCounted(ui::SelectFileDialog::Create(selector, nullptr))
       ->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
-                   std::wstring{params.title},
-                   base::FilePath{params.default_path.wstring()}, nullptr, -1,
-                   std::wstring(), dialog_owning_window, nullptr);
+                   std::u16string{params.title},
+                   AsFilePath(params.default_path), nullptr, -1, {},
+                   dialog_owning_window, nullptr);
 
   nested_loop.Run();
 

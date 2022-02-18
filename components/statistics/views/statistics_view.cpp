@@ -2,19 +2,19 @@
 
 #include "ui/views/controls/table/table_view.h"
 
-static const wchar_t* kStatisticTitles[] = {
-    L"Состояние связи",        L"Принято байт",         L"Отправлено байт",
-    L"Принято сообщений",      L"Отправлено сообщений", L"Сообщений в очереди",
-    L"Байт в буфере приема",   L"Обновляется таблиц",   L"Выполнено транзакций",
-    L"Выполняется транзакций", L"Обновлено записей"};
+static const std::u16string_view kStatisticTitles[] = {
+    u"Состояние связи",        u"Принято байт",         u"Отправлено байт",
+    u"Принято сообщений",      u"Отправлено сообщений", u"Сообщений в очереди",
+    u"Байт в буфере приема",   u"Обновляется таблиц",   u"Выполнено транзакций",
+    u"Выполняется транзакций", u"Обновлено записей"};
 
 // StatisticsView
 
 StatisticsView::StatisticsView(const ControllerContext& context)
     : ControllerContext{context} {
   ui::TableColumn columns[] = {
-      {0, L"Параметр", 150, ui::TableColumn::LEFT},
-      {1, L"Значение", 100, ui::TableColumn::RIGHT},
+      {0, u"Параметр", 150, ui::TableColumn::LEFT},
+      {1, u"Значение", 100, ui::TableColumn::RIGHT},
   };
 
   table_.reset(new views::TableView(*this));
@@ -29,16 +29,17 @@ views::View* StatisticsView::Init(const WindowDefinition& definition) {
 }
 
 void StatisticsView::UpdateStatistics() {
-  NotifyItemsChanged(0, _countof(kStatisticTitles));
+  NotifyItemsChanged(0, std::size(kStatisticTitles));
 }
 
 int StatisticsView::GetRowCount() {
-  return _countof(kStatisticTitles);
+  return std::size(kStatisticTitles);
 }
 
 void StatisticsView::GetCell(ui::TableCell& cell) {
   DCHECK(cell.column_id >= 0 && cell.column_id < 2);
-  DCHECK(cell.row >= 0 && cell.row < _countof(kStatisticTitles));
+  DCHECK(cell.row >= 0 &&
+         cell.row < static_cast<int>(std::size(kStatisticTitles)));
 
   if (cell.column_id == 0) {
     cell.text = kStatisticTitles[cell.row];

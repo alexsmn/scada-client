@@ -14,6 +14,6 @@ class MockViewManagerDelegate : public ViewManagerDelegate {
   MOCK_METHOD(void, OnActiveViewChanged, (OpenedView * view), (override));
   MOCK_METHOD(void,
               OnShowTabPopupMenu,
-              (OpenedView & view, const gfx::Point& point),
+              (OpenedView & view, const aui::Point& point),
               (override));
 };

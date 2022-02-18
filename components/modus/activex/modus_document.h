@@ -1,24 +1,30 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "common/aliases.h"
-#include "components/modus/activex/modus.h"
 #include "controls/handlers.h"
 
-#include <atlbase.h>
-
-#include <atlcom.h>
-#include <functional>
-#include <map>
+#include <unordered_map>
 #include <wrl/client.h>
 
 class FileCache;
 class TimedDataService;
 class TimedDataSpec;
 
+namespace SDECore {
+struct ISDEDocument50;
+struct IUIEventInfo;
+}  // namespace SDECore
+
+namespace std::filesystem {
+class path;
+}
+
+namespace htsde2 {
+struct IHTSDEForm2;
+}
+
 namespace modus {
 
-class ModusLoader;
 class ModusObject;
 
 struct ModusDocumentContext {
@@ -26,62 +32,39 @@ struct ModusDocumentContext {
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
 
-  const std::function<void(const std::wstring& title)> title_callback_;
-  const std::function<void(std::wstring_view hyperlink)> navigation_callback_;
+  const std::function<void(const std::u16string& title)> title_callback_;
+  const std::function<void(std::u16string_view hyperlink)> navigation_callback_;
   const std::function<void(const TimedDataSpec& selection)> selection_callback_;
   const ContextMenuHandler context_menu_callback_;
 };
 
-class ModusDocument
-    : protected ModusDocumentContext,
-      public ATL::IDispEventImpl<1,
-                                 ModusDocument,
-                                 &__uuidof(htsde2::IHTSDEForm2Events),
-                                 &__uuidof(htsde2::__htsde2),
-                                 0xFFFF,
-                                 0xFFFF> {
+class ModusDocument : private ModusDocumentContext {
  public:
+  enum class MouseButton { Left, Right };
+
   ModusDocument(ModusDocumentContext&& context,
                 htsde2::IHTSDEForm2& sde_form,
-                const base::FilePath& path);
+                const std::filesystem::path& path);
   ~ModusDocument();
 
   htsde2::IHTSDEForm2& sde_form() { return *sde_form_.Get(); }
-  const std::wstring& title() const { return title_; }
+  const std::u16string& title() const { return title_; }
 
   // Find entity by TRID. Method has linear complexity.
   ModusObject* FindObject(const scada::NodeId& node_id);
 
-  bool ShowContainedItem(const scada::NodeId& item_id);
+  bool ShowContainedItem(const scada::NodeId& node_id);
 
-  BEGIN_SINK_MAP(ModusDocument)
-  SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x0000000b, OnDocPopup)
-  SINK_ENTRY_EX(1,
-                __uuidof(htsde2::IHTSDEForm2Events),
-                0x0000001a,
-                OnDocClick)  // click
-  SINK_ENTRY_EX(1,
-                __uuidof(htsde2::IHTSDEForm2Events),
-                0x00000012,
-                OnDocDblClick)  // double-click
-  SINK_ENTRY_EX(1,
-                __uuidof(htsde2::IHTSDEForm2Events),
-                0x00000019,
-                OnDocRightClick)  // right-click
-  END_SINK_MAP()
+  void OnDocPopup(bool& popup);
+  void OnDocClick(MouseButton button, SDECore::IUIEventInfo& ui_event_info);
+  void OnDocDblClick(SDECore::IUIEventInfo& ui_event_info);
 
-  STDMETHOD_(void, OnDocPopup)(ISDEDocument50* doc, VARIANT_BOOL* popup);
-  STDMETHOD_(void, OnDocClick)
-  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
-  STDMETHOD_(void, OnDocRightClick)
-  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
-  STDMETHOD_(void, OnDocDblClick)
-  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
+ private:
+  class EventSink;
 
- protected:
-  enum class MouseButton { Left, Right };
+  void CreateEventSink();
 
-  void HandleClick(MouseButton button, SDECore::IUIEventInfo* info);
+  Microsoft::WRL::ComPtr<EventSink> event_sink_;
 
   Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form_;
   Microsoft::WRL::ComPtr<SDECore::ISDEDocument50> sde_document_;
@@ -89,11 +72,9 @@ class ModusDocument
   std::vector<std::unique_ptr<modus::ModusObject>> objects_;
 
   using ObjectId = long;
-  std::map<ObjectId, modus::ModusObject*> object_map_;
+  std::unordered_map<ObjectId, modus::ModusObject*> object_map_;
 
-  std::wstring title_;
-
-  friend class modus::ModusLoader;
+  std::u16string title_;
 };
 
 }  // namespace modus

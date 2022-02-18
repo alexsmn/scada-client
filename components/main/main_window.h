@@ -46,7 +46,7 @@ class MainWindow : protected MainWindowContext,
   void CloseView(OpenedView& view);
   void SplitView(OpenedView& view, bool vertically);
 
-  void OnViewTitleUpdated(OpenedView& view, const std::wstring& title);
+  void OnViewTitleUpdated(OpenedView& view, const std::u16string& title);
 
   void AddContentsObserver(ContentsObserver& observer);
   void RemoveContentsObserver(ContentsObserver& observer);
@@ -57,12 +57,12 @@ class MainWindow : protected MainWindowContext,
   const Page* GetCurrentPage() const { return &current_page(); }
   void OpenPage(const Page& page);
   void SavePage();
-  void SetPageTitle(const std::wstring& title);
+  void SetPageTitle(const std::u16string& title);
   OpenedView* GetActiveView();
   OpenedView* GetActiveDataView();
   OpenedView* OpenView(const WindowDefinition& window_definition,
                        bool make_active);
-  OpenedView* FindOpenedViewByFilePath(const base::FilePath& path);
+  OpenedView* FindOpenedViewByFilePath(const std::filesystem::path& path);
   OpenedView* FindOpenedViewByType(const WindowInfo& window_info);
   void OpenPane(const WindowInfo& window_info, bool activate);
   void ClosePane(const WindowInfo& window_info);
@@ -81,7 +81,7 @@ class MainWindow : protected MainWindowContext,
   virtual void SetToolbarPosition(unsigned position) = 0;
 
   virtual void ShowPopupMenu(unsigned resource_id,
-                             const UiPoint& point,
+                             const aui::Point& point,
                              bool right_click) = 0;
 
   // ViewManagerDelegate

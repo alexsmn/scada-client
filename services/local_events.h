@@ -6,8 +6,6 @@
 #include <deque>
 #include <string>
 
-#undef ReportEvent
-
 class LocalEvents {
  public:
   enum Severity { SEV_INFO, SEV_WARNING, SEV_ERROR };
@@ -20,10 +18,13 @@ class LocalEvents {
   LocalEvents();
   ~LocalEvents();
 
+  LocalEvents(const LocalEvents&) = delete;
+  LocalEvents& operator=(const LocalEvents&) = delete;
+
   typedef std::vector<scada::Event*> Events;
   const Events& events() const { return events_; }
 
-  void ReportEvent(Severity severity, const std::wstring& message);
+  void ReportEvent(Severity severity, const scada::LocalizedText& message);
 
   void AcknowledgeEvent(unsigned ack_id);
   void AcknowledgeAll();
@@ -40,6 +41,4 @@ class LocalEvents {
   Events events_;
 
   base::ObserverList<Observer> observers_;
-
-  DISALLOW_COPY_AND_ASSIGN(LocalEvents);
 };

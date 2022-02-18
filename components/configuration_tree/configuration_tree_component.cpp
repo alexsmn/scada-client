@@ -2,7 +2,7 @@
 #include "controller_registry.h"
 
 const WindowInfo kWindowInfo = {
-    ID_NODES_VIEW, "Nodes", L"Узлы", WIN_SING | WIN_REQUIRES_ADMIN,
+    ID_NODES_VIEW, "Nodes", u"Узлы", WIN_SING | WIN_REQUIRES_ADMIN,
     200,           400,     0};
 
 REGISTER_CONTROLLER(NodesView, kWindowInfo);

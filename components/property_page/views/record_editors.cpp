@@ -1,6 +1,9 @@
 ﻿#include "components/property_page/views/record_editors.h"
 
+#include "base/format.h"
+#include "base/string_piece_util.h"
 #include "base/string_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
@@ -143,12 +146,11 @@ LRESULT NamedRecordEditor::OnInitDialog(UINT uMsg,
 
 void NamedRecordEditor::ReadControlsData() {
   display_name_ =
-      scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+      base::AsString16(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
 }
 
 void NamedRecordEditor::ReadNodeToControls(const NodeRef& node) {
-  auto name = ToString16(node_.display_name());
-  SetDlgItemText(IDC_NAME, name.c_str());
+  SetDlgItemText(IDC_NAME, base::AsWString(node_.display_name()).c_str());
 }
 
 void NamedRecordEditor::GetModifiedProperties(
@@ -173,13 +175,13 @@ LRESULT GroupEditor::OnInitDialog(UINT uMsg,
 
 void GroupEditor::ReadControlsData() {
   display_name_ =
-      scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+      base::AsString16(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
 
   simulate_ = CButton(GetDlgItem(IDC_SIMULATE)).GetCheck() == BST_CHECKED;
 }
 
 void GroupEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
+  SetDlgItemText(IDC_NAME, base::AsWString(node.display_name()).c_str());
   bool simulated =
       node[data_items::id::DataGroupType_Simulated].value().get_or(false);
   CButton(GetDlgItem(IDC_SIMULATE))
@@ -315,7 +317,7 @@ void ItemEditor::SaveChannel() {
 void ItemEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  display_name_ = scada::ToLocalizedText(win_util::GetWindowText(wnd_name));
+  display_name_ = base::AsString16(win_util::GetWindowText(wnd_name));
   alias = base::SysWideToNativeMB(win_util::GetWindowText(wnd_alias));
   // TODO: check and limit name and alias
 
@@ -337,7 +339,7 @@ void ItemEditor::ReadControlsData() {
 void ItemEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  wnd_name.SetWindowText(ToString16(node.display_name()).c_str());
+  wnd_name.SetWindowText(base::AsWString(node.display_name()).c_str());
 
   wnd_alias.SetWindowText(
       base::SysNativeMBToWide(
@@ -508,12 +510,12 @@ TitEditor::TitEditor(RecordEditorContext&& context)
     : ItemEditor(IDD_TIT, std::move(context)) {}
 
 double SaveFloat(CEdit edit) {
-  std::wstring str = win_util::GetWindowText(edit);
+  auto str = base::AsString16(win_util::GetWindowText(edit));
   return ParseWithDefault(str, 0.0);
 }
 
 void LoadFloat(CEdit edit, double val) {
-  edit.SetWindowText(WideFormat(val).c_str());
+  edit.SetWindowText(base::AsWString(WideFormat(val)).c_str());
 }
 
 void TitEditor::ReadControlsData() {
@@ -635,7 +637,7 @@ void TsFormatEditor::ReadControlsData() {
   __super::ReadControlsData();
 
   display_name_ =
-      scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+      base::AsString16(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
   lbl_open = base::SysWideToNativeMB(win_util::GetWindowText(wnd_lbl_open));
   lbl_close = base::SysWideToNativeMB(win_util::GetWindowText(wnd_lbl_close));
 }
@@ -643,7 +645,7 @@ void TsFormatEditor::ReadControlsData() {
 void TsFormatEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
+  SetDlgItemText(IDC_NAME, base::AsWString(node.display_name()).c_str());
   wnd_lbl_open.SetWindowText(
       base::SysNativeMBToWide(
           node[data_items::id::TsFormatType_OpenLabel].value().get_or(
@@ -723,7 +725,7 @@ void TsFormatEditor::DrawItem(LPDRAWITEMSTRUCT dis) {
     dc.SelectStockPen(BLACK_PEN);
     dc.Rectangle(&crect);
     // draw text
-    text = aui::GetColorName(color_index);
+    text = base::AsWString(AsStringPiece(aui::GetColorName(color_index)));
     rect.left = crect.right + 3;
   }
 
@@ -817,8 +819,8 @@ void Iec60870LinkEditor::ReadControlsData() {
 }
 
 void SetComboInt(CComboBox combo, int val) {
-  std::wstring str = WideFormat(val);
-  combo.SelectString(-1, str.c_str());
+  auto str = WideFormat(val);
+  combo.SelectString(-1, base::AsWString(str).c_str());
 }
 
 void Iec60870LinkEditor::ReadNodeToControls(const NodeRef& node) {
@@ -935,8 +937,8 @@ void Iec60870LinkEditor::GetModifiedProperties(
 
 static void AddComboValues(CComboBox combo, const int* items) {
   for (; *items; ++items) {
-    std::wstring str = WideFormat(*items);
-    combo.AddString(str.c_str());
+    auto str = WideFormat(*items);
+    combo.AddString(base::AsWString(str).c_str());
   }
 }
 
@@ -979,7 +981,7 @@ Iec60870DeviceEditor::Iec60870DeviceEditor(RecordEditorContext&& context)
 void Iec60870DeviceEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  display_name_ = win_util::GetWindowText(wnd_name);
+  display_name_ = base::AsString16(win_util::GetWindowText(wnd_name));
   poll_on_start_ =
       WTL::CButton(GetDlgItem(IDC_INTER)).GetCheck() == BST_CHECKED;
   inter_per = win_util::GetWindowInt(wnd_inter_per);
@@ -1005,7 +1007,7 @@ void Iec60870DeviceEditor::ReadNodeToControls(const NodeRef& node) {
   wnd_link_addr.ShowWindow(is_104 ? SW_HIDE : SW_SHOW);
   GetDlgItem(IDC_LINK_ADDR_LABEL).ShowWindow(is_104 ? SW_HIDE : SW_SHOW);
 
-  wnd_name.SetWindowText(node.display_name().c_str());
+  wnd_name.SetWindowText(base::AsWString(node.display_name()).c_str());
   win_util::SetWindowTextInt(
       wnd_addr,
       node[devices::id::Iec60870DeviceType_Address].value().get_or(0));
@@ -1177,7 +1179,7 @@ LRESULT SimulationItemEditor::OnInitDialog(UINT uMsg,
 
 void SimulationItemEditor::ReadControlsData() {
   display_name_ =
-      scada::ToLocalizedText(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
+      base::AsString16(win_util::GetWindowText(GetDlgItem(IDC_NAME)));
 
   if (CButton(GetDlgItem(IDC_RAMP)).GetCheck() == BST_CHECKED)
     type_ = cfg::SimulationSignalType::RAMP;
@@ -1196,7 +1198,7 @@ void SimulationItemEditor::ReadControlsData() {
 }
 
 void SimulationItemEditor::ReadNodeToControls(const NodeRef& node) {
-  SetDlgItemText(IDC_NAME, ToString16(node.display_name()).c_str());
+  SetDlgItemText(IDC_NAME, base::AsWString(node.display_name()).c_str());
 
   UINT type_id;
   auto simulation_signal_type = static_cast<cfg::SimulationSignalType>(
@@ -1358,7 +1360,7 @@ Iec61850DeviceEditor::Iec61850DeviceEditor(RecordEditorContext&& context)
 void Iec61850DeviceEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  display_name_ = win_util::GetWindowText(name_edit_);
+  display_name_ = base::AsString16(win_util::GetWindowText(name_edit_));
   disabled_ = disabled_button_.GetCheck() == BST_CHECKED;
   host_ = base::SysWideToNativeMB(win_util::GetWindowText(host_edit_));
   port_ = win_util::GetWindowInt(port_edit_);
@@ -1367,7 +1369,7 @@ void Iec61850DeviceEditor::ReadControlsData() {
 void Iec61850DeviceEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  name_edit_.SetWindowText(node.display_name().c_str());
+  name_edit_.SetWindowText(base::AsWString(node.display_name()).c_str());
   disabled_button_.SetCheck(
       node[devices::id::DeviceType_Disabled].value().get_or(false)
           ? BST_CHECKED
@@ -1414,7 +1416,7 @@ Iec61850RCBEditor::Iec61850RCBEditor(RecordEditorContext&& context)
 void Iec61850RCBEditor::ReadControlsData() {
   __super::ReadControlsData();
 
-  display_name_ = win_util::GetWindowText(name_edit_);
+  display_name_ = base::AsString16(win_util::GetWindowText(name_edit_));
   reference_ =
       base::SysWideToNativeMB(win_util::GetWindowText(reference_edit_));
 }
@@ -1422,7 +1424,7 @@ void Iec61850RCBEditor::ReadControlsData() {
 void Iec61850RCBEditor::ReadNodeToControls(const NodeRef& node) {
   __super::ReadNodeToControls(node);
 
-  name_edit_.SetWindowText(node.display_name().c_str());
+  name_edit_.SetWindowText(base::AsWString(node.display_name()).c_str());
   reference_edit_.SetWindowText(
       base::SysNativeMBToWide(
           node[devices::id::Iec61850ConfigurableObjectType_Reference]

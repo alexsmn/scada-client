@@ -16,12 +16,12 @@ class EventJournal : public EventView {
 };
 
 const WindowInfo kEventWindowInfo = {
-    ID_EVENT_VIEW, "Event", L"События", WIN_SING | WIN_DOCKB | WIN_CAN_PRINT,
+    ID_EVENT_VIEW, "Event", u"События", WIN_SING | WIN_DOCKB | WIN_CAN_PRINT,
     800,           200,     0};
 
 const WindowInfo kEventJournalWindowInfo = {ID_EVENT_JOURNAL_VIEW,
                                             "EventJournal",
-                                            L"Журнал событий",
+                                            u"Журнал событий",
                                             WIN_INS | WIN_CAN_PRINT,
                                             0,
                                             0,

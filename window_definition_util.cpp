@@ -5,10 +5,10 @@
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
+#include "base/value_util.h"
 #include "core/node_id.h"
 #include "model/node_id_util.h"
 #include "time_range.h"
-#include "value_util.h"
 #include "window_definition.h"
 #include "window_info.h"
 
@@ -54,7 +54,7 @@ std::optional<base::Time> FromJson(const base::Value& value) {
     return std::nullopt;
 
   base::Time time;
-  if (!Deserialize(std::string_view{str.data(), str.size()}, time))
+  if (!Deserialize(AsStringView(str), time))
     return std::nullopt;
 
   return time;
@@ -131,12 +131,12 @@ base::Value ToJson(base::TimeDelta duration) {
 
 std::string SaveBlob(std::string_view blob) {
   std::string text;
-  base::Base64Encode(ToStringPiece(blob), &text);
+  base::Base64Encode(AsStringPiece(blob), &text);
   return text;
 }
 
 std::string RestoreBlob(std::string_view text) {
-  auto trimmed_text = base::TrimString(ToStringPiece(text),
+  auto trimmed_text = base::TrimString(AsStringPiece(text),
                                        base::kWhitespaceASCII, base::TRIM_ALL);
   std::string blob;
   base::Base64Decode(trimmed_text, &blob);
@@ -182,7 +182,7 @@ base::Value ToJson(const WindowDefinition& def) {
   if (!def.title.empty())
     SetKey(win, "title", def.title);
   if (!def.path.empty())
-    SetKey(win, "path", def.path.value());
+    SetKey(win, "path", def.path.u16string());
   SetKey(win, "width", def.size.width());
   SetKey(win, "height", def.size.height());
   SetKey(win, "locked", def.locked);
@@ -204,7 +204,7 @@ std::optional<WindowDefinition> FromJson(const base::Value& win) {
   if (info->flags & WIN_SING)
     w.visible = GetBool(win, "visible", true);
   w.title = GetString16(win, "title");
-  w.path = base::FilePath(GetString16(win, "path"));
+  w.path = std::filesystem::path(GetString16(win, "path"));
   w.size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
   if (auto* items = win.FindKey("items"))
     w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});

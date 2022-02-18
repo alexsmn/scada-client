@@ -40,10 +40,10 @@ void VisibleNodeModel::SetNode(void* tree_node,
   node_change_handler_(tree_node);
 }
 
-std::wstring VisibleNodeModel::GetText(void* tree_node) {
+std::u16string VisibleNodeModel::GetText(void* tree_node) {
   auto* node = GetNode(tree_node);
   if (!node)
-    return std::wstring();
+    return std::u16string();
   return node->GetText();
 }
 
@@ -113,7 +113,7 @@ void ProxyVisibleNode::SetUnderlyingNode(std::shared_ptr<VisibleNode> node) {
   }
 }
 
-std::wstring ProxyVisibleNode::GetText() const {
+std::u16string ProxyVisibleNode::GetText() const {
   return underlying_node_ ? underlying_node_->GetText() : nullptr;
 }
 
@@ -150,7 +150,7 @@ void DataItemVisibleNode::OnBlink(bool state) {
   NotifyChanged();
 }
 
-std::wstring DataItemVisibleNode::GetText() const {
+std::u16string DataItemVisibleNode::GetText() const {
   return spec_.GetCurrentString(FORMAT_DEFAULT);
 }
 
@@ -190,10 +190,10 @@ DataGroupVisibleNode::~DataGroupVisibleNode() {
   node_.Unsubscribe(*this);
 }
 
-std::wstring DataGroupVisibleNode::GetText() const {
-  return device_state_notifier_ ? std::wstring{ToLocalizedString(
+std::u16string DataGroupVisibleNode::GetText() const {
+  return device_state_notifier_ ? std::u16string{ToLocalizedString(
                                       device_state_notifier_->device_state())}
-                                : std::wstring{};
+                                : std::u16string{};
 }
 
 bool DataGroupVisibleNode::IsBad() const {

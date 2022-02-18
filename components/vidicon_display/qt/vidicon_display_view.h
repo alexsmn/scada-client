@@ -1,10 +1,10 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "base/timer/timer.h"
 #include "components/vidicon_display/display_viewer_api.h"
 #include "controller.h"
 
+#include <filesystem>
 #include <wrl/client.h>
 
 class QAxWidget;
@@ -21,7 +21,7 @@ class VidiconDisplayView : public Controller {
  private:
   void SynchronizeView();
 
-  base::FilePath path_;
+  std::filesystem::path path_;
 
   std::unique_ptr<QAxWidget> ax_widget_;
   Microsoft::WRL::ComPtr<ViewerX::IViewerForm> form_;

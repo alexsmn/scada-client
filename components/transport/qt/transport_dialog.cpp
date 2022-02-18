@@ -29,35 +29,36 @@ TransportDialog::TransportDialog(TransportDialogModel& model, QWidget* parent)
     : QDialog{parent}, model_{model} {
   ui.setupUi(this);
 
-  ui.networkHostLineEdit->setText(QString::fromStdWString(model_.network_host));
+  ui.networkHostLineEdit->setText(
+      QString::fromStdU16String(model_.network_host));
   ui.networkPortLineEdit->setText(QString::number(model_.network_port));
 
   for (auto& item : model_.type_items)
-    ui.typeComboBox->addItem(QString::fromStdWString(item));
+    ui.typeComboBox->addItem(QString::fromStdU16String(item));
   ui.typeComboBox->setCurrentIndex(model_.type_index);
 
   for (auto& item : model_.serial_port_items)
-    ui.serialPortComboBox->addItem(QString::fromStdWString(item));
+    ui.serialPortComboBox->addItem(QString::fromStdU16String(item));
   ui.serialPortComboBox->setCurrentIndex(model_.serial_port_index);
 
   for (auto& item : model_.baud_rate_items)
-    ui.baudRateComboBox->addItem(QString::fromStdWString(item));
+    ui.baudRateComboBox->addItem(QString::fromStdU16String(item));
   ui.baudRateComboBox->setCurrentIndex(model_.baud_rate_index);
 
   for (auto& item : model_.bit_count_items)
-    ui.bitCountComboBox->addItem(QString::fromStdWString(item));
+    ui.bitCountComboBox->addItem(QString::fromStdU16String(item));
   ui.bitCountComboBox->setCurrentIndex(model_.bit_count_index);
 
   for (auto& item : model_.parity_items)
-    ui.parityComboBox->addItem(QString::fromStdWString(item));
+    ui.parityComboBox->addItem(QString::fromStdU16String(item));
   ui.parityComboBox->setCurrentIndex(model_.parity_index);
 
   for (auto& item : model_.flow_control_items)
-    ui.flowControlComboBox->addItem(QString::fromStdWString(item));
+    ui.flowControlComboBox->addItem(QString::fromStdU16String(item));
   ui.flowControlComboBox->setCurrentIndex(model_.flow_control_index);
 
   for (auto& item : model_.stop_bits_items)
-    ui.stopBitsComboBox->addItem(QString::fromStdWString(item));
+    ui.stopBitsComboBox->addItem(QString::fromStdU16String(item));
   ui.stopBitsComboBox->setCurrentIndex(model_.stop_bits_index);
 
   ui.typeComboBox->setCurrentIndex(model_.type_index);
@@ -69,7 +70,7 @@ TransportDialog::TransportDialog(TransportDialogModel& model, QWidget* parent)
 void TransportDialog::accept() {
   model_.type_index = ui.typeComboBox->currentIndex();
 
-  model_.network_host = ui.networkHostLineEdit->text().toStdWString();
+  model_.network_host = ui.networkHostLineEdit->text().toStdU16String();
   model_.network_port = ui.networkPortLineEdit->text().toInt();
 
   model_.serial_port_index = ui.serialPortComboBox->currentIndex();

@@ -6,12 +6,12 @@
 #include "controller_registry.h"
 
 const WindowInfo kWindowInfo = {
-    ID_FILE_SYSTEM_VIEW, "FileSystemView", L"Файлы", WIN_SING, 200, 400};
+    ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Файлы", WIN_SING, 200, 400};
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 
 FileSystemComponent::FileSystemComponent(ComponentApi& api) {
-  /*base::FilePath public_dir;
+  /*std::filesystem::path public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
     file_synchronizer_ =
         std::make_unique<FileSynchronizer>(FileSynchronizerContext{

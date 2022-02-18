@@ -32,7 +32,7 @@ TEST(ChannelPropertyDefinition, GetText_Device) {
           .set_type_definition_id(devices::id::Iec61850DeviceType)
           .set_parent(scada::id::Organizes, devices::id::Devices)
           .set_attributes(
-              scada::NodeAttributes{}.set_display_name(L"DeviceDisplayName")));
+              scada::NodeAttributes{}.set_display_name(u"DeviceDisplayName")));
   auto [status, node_ptr] = node_factory.CreateNode(
       scada::NodeState{}
           .set_node_id(node_id)
@@ -48,13 +48,13 @@ TEST(ChannelPropertyDefinition, GetText_Device) {
   auto node_service = v1::CreateTestNodeService(address_space);
   const auto& node = node_service->GetNode(node_id);
 
-  ChannelPropertyDefinition channel_property_definition{L"Title", true};
+  ChannelPropertyDefinition channel_property_definition{u"Title", true};
 
   StrictMock<MockTaskManager> task_manager;
   StrictMock<MockDialogService> dialog_service;
   PropertyContext property_context{*node_service, task_manager, dialog_service};
 
-  const std::wstring expected_text = L"DeviceDisplayName";
+  const std::u16string expected_text = u"DeviceDisplayName";
   EXPECT_EQ(expected_text, channel_property_definition.GetText(
                                property_context, node, prop_decl_id));
 }

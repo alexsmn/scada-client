@@ -23,7 +23,6 @@ struct ISDEObjects2;
 
 namespace modus {
 
-class ModusDocument;
 class ModusObject;
 
 struct ModusLoaderContext {
@@ -38,9 +37,12 @@ class ModusLoader : private ModusLoaderContext {
 
   const std::wstring& title() const { return title_; }
 
+  using ObjectHandler =
+      std::function<void(long object_id, std::unique_ptr<ModusObject> object)>;
+
   void Load(SDECore::ISDEDocument50& sde_document,
-            const base::FilePath& path,
-            ModusDocument* document);
+            const std::filesystem::path& path,
+            const ObjectHandler& object_handler);
 
  private:
   void LoadElement(std::unique_ptr<ModusObject>& object,
@@ -56,9 +58,9 @@ class ModusLoader : private ModusLoaderContext {
 
   BoostLogger logger_{LOG_NAME("ModusLoader")};
 
-  ModusDocument* document_ = nullptr;
-
   std::wstring title_;
+
+  ObjectHandler object_handler_;
 
   std::shared_ptr<FileCacheUpdater> cache_updater_;
 };

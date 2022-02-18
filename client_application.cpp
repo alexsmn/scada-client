@@ -4,6 +4,7 @@
 #include "base/boost_log.h"
 #include "base/boost_log_adapter.h"
 #include "base/command_line.h"
+#include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "base/nested_logger.h"
 #include "base/path_service.h"
@@ -62,10 +63,10 @@ extern bool CreateScadaServices(const DataServicesContext& context,
 extern bool CreateOpcUaServices(const DataServicesContext& context,
                                 DataServices& services);
 
-REGISTER_DATA_SERVICES("Scada", L"Телеконтроль", CreateScadaServices);
+REGISTER_DATA_SERVICES("Scada", u"Телеконтроль", CreateScadaServices);
 #ifndef NDEBUG
-REGISTER_DATA_SERVICES("Vidicon", L"Видикон", CreateVidiconServices);
-REGISTER_DATA_SERVICES("OpcUa", L"OPC UA", CreateOpcUaServices);
+REGISTER_DATA_SERVICES("Vidicon", u"Видикон", CreateVidiconServices);
+REGISTER_DATA_SERVICES("OpcUa", u"OPC UA", CreateOpcUaServices);
 #endif
 
 namespace {
@@ -507,7 +508,7 @@ void ClientApplication::Quit() {
   }
 
   local_events_->ReportEvent(LocalEvents::SEV_ERROR,
-                             base::WideToUTF16(L"Отключение от сервера..."));
+                             u"Отключение от сервера...");
 
   master_data_services_->Disconnect(
       [this](const scada::Status& status) { quit_handler_(); });

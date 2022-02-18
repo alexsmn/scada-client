@@ -7,7 +7,7 @@
 PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
                                              PropertyGroup::ItemType type,
                                              int index,
-                                             std::wstring title)
+                                             std::u16string title)
     : property_group{property_group},
       type{type},
       index{index},
@@ -29,8 +29,8 @@ void PropertyGroupTreeNode::Update() {
   }
 }
 
-std::wstring PropertyGroupTreeNode::GetText(int column_id) const {
-  return column_id == 0 ? title : std::wstring{};
+std::u16string PropertyGroupTreeNode::GetText(int column_id) const {
+  return column_id == 0 ? title : std::u16string{};
 }
 
 SkColor PropertyGroupTreeNode::GetTextColor(int column_id) const {
@@ -51,12 +51,12 @@ PropertyItemTreeNode::PropertyItemTreeNode(PropertyGroup& property_group,
                                            int index)
     : property_group{property_group}, index{index} {}
 
-std::wstring PropertyItemTreeNode::GetText(int column_id) const {
+std::u16string PropertyItemTreeNode::GetText(int column_id) const {
   return column_id == 0 ? property_group.GetName(index)
                         : property_group.GetValue(index);
 }
 
-void PropertyItemTreeNode::SetText(int column_id, const std::wstring& text) {
+void PropertyItemTreeNode::SetText(int column_id, const std::u16string& text) {
   if (column_id != 1)
     return;
 
@@ -99,7 +99,7 @@ PropertyTreeModel::PropertyTreeModel(PropertyModel& property_model)
 
   set_root(std::make_unique<PropertyGroupTreeNode>(
       property_model_.GetRootGroup(), PropertyGroup::ItemType::Category, 0,
-      std::wstring{}));
+      std::u16string{}));
 }
 
 PropertyTreeModel::~PropertyTreeModel() {
@@ -107,8 +107,8 @@ PropertyTreeModel::~PropertyTreeModel() {
   property_model_.properties_changed_handler = nullptr;
 }
 
-std::wstring PropertyTreeModel::GetColumnText(int column_id) const {
-  return column_id == 0 ? L"Параметр" : L"Значение";
+std::u16string PropertyTreeModel::GetColumnText(int column_id) const {
+  return column_id == 0 ? u"Параметр" : u"Значение";
 }
 
 PropertyGroupTreeNode* PropertyTreeModel::FindGroupNode(PropertyGroup& group) {

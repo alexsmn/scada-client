@@ -1,6 +1,9 @@
 ﻿#include "components/transport/views/transport_dialog.h"
 
+#include "base/containers/span.h"
 #include "base/format.h"
+#include "base/string_piece_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
 #include "components/transport/transport_dialog.h"
@@ -9,6 +12,16 @@
 
 #include <algorithm>
 #include <atlstr.h>
+
+namespace {
+
+void AddComboBoxItems(WTL::CComboBox combo_box,
+                      base::span<const std::u16string> items) {
+  for (auto& item : items)
+    combo_box.AddString(base::AsWString(item).c_str());
+}
+
+}  // namespace
 
 static const RECT kConnectionFrameRect = {15, 33, 15 + 454, 33 + 102};
 
@@ -22,7 +35,7 @@ void TransportDialog::OnInitDialog() {
   AttachView(type_combobox_, IDC_TYPE_COMBO);
   type_combobox_.SetController(this);
   for (auto& item : model_.type_items)
-    type_combobox_.AddString(item.c_str());
+    type_combobox_.AddString(base::AsWString(item).c_str());
 
   type_combobox_.SetCurSel(model_.type_index);
   SwitchConnectionType(model_.type_index);
@@ -30,8 +43,8 @@ void TransportDialog::OnInitDialog() {
 
 void TransportDialog::LoadControlsData() {
   if (connection_frame_.IDD == IDD_CONNECTION_NETWORK) {
-    connection_frame_.SetDlgItemText(IDC_HOST_EDIT,
-                                     model_.network_host.c_str());
+    connection_frame_.SetDlgItemText(
+        IDC_HOST_EDIT, base::AsWString(model_.network_host).c_str());
     connection_frame_.SetDlgItemInt(IDC_PORT_EDIT, model_.network_port);
 
   } else {
@@ -61,8 +74,8 @@ void TransportDialog::OnOK() {
   model_.type_index = type_combobox_.GetCurSel();
 
   if (connection_frame_.IDD == IDD_CONNECTION_NETWORK) {
-    model_.network_host =
-        win_util::GetWindowText(connection_frame_.GetDlgItem(IDC_HOST_EDIT));
+    model_.network_host = base::AsString16(
+        win_util::GetWindowText(connection_frame_.GetDlgItem(IDC_HOST_EDIT)));
     model_.network_port =
         win_util::GetWindowInt(connection_frame_.GetDlgItem(IDC_PORT_EDIT));
 
@@ -120,33 +133,27 @@ void TransportDialog::SwitchConnectionType(int type_index) {
   if (frame_id == IDD_CONNECTION_SERIAL) {
     WTL::CComboBox port_combo =
         static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PORT_COMBO));
-    for (auto& item : model_.serial_port_items)
-      port_combo.AddString(item.c_str());
+    AddComboBoxItems(port_combo, model_.serial_port_items);
 
     WTL::CComboBox baudrate_combo =
         static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BAUDRATE_COMBO));
-    for (auto& item : model_.baud_rate_items)
-      baudrate_combo.AddString(item.c_str());
+    AddComboBoxItems(baudrate_combo, model_.baud_rate_items);
 
     WTL::CComboBox bitcount_combo =
         static_cast<HWND>(connection_frame_.GetDlgItem(IDC_BITCOUNT_COMBO));
-    for (auto& item : model_.bit_count_items)
-      baudrate_combo.AddString(item.c_str());
+    AddComboBoxItems(bitcount_combo, model_.bit_count_items);
 
     WTL::CComboBox parity_combo =
         static_cast<HWND>(connection_frame_.GetDlgItem(IDC_PARITY_COMBO));
-    for (auto& item : model_.parity_items)
-      parity_combo.AddString(item.c_str());
+    AddComboBoxItems(parity_combo, model_.parity_items);
 
     WTL::CComboBox stopbits_combo =
         static_cast<HWND>(connection_frame_.GetDlgItem(IDC_STOPBITS_COMBO));
-    for (auto& item : model_.stop_bits_items)
-      stopbits_combo.AddString(item.c_str());
+    AddComboBoxItems(stopbits_combo, model_.stop_bits_items);
 
     WTL::CComboBox flowcontrol_combo =
         static_cast<HWND>(connection_frame_.GetDlgItem(IDC_FLOWCONTROL_COMBO));
-    for (auto& item : model_.flow_control_items)
-      stopbits_combo.AddString(item.c_str());
+    AddComboBoxItems(flowcontrol_combo, model_.flow_control_items);
   }
 
   LoadControlsData();

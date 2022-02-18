@@ -5,7 +5,7 @@
 
 const WindowInfo kPortfolioWindowInfo = {ID_PORTFOLIO_VIEW,
                                          "Portfolio",
-                                         L"Портфолио",
+                                         u"Портфолио",
                                          WIN_SING | WIN_INS,
                                          200,
                                          400,

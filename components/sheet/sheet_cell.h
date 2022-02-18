@@ -16,12 +16,12 @@ class SheetCell {
   int column() const { return column_; }
   int row() const { return row_; }
 
-  const std::wstring& text() const { return text_; }
+  const std::u16string& text() const { return text_; }
   bool is_blinking() const { return blinking_; }
   const TimedDataSpec& timed_data() const { return timed_data_; }
 
-  const std::wstring& formula() const { return formula_; }
-  bool SetFormula(std::wstring formula);
+  const std::u16string& formula() const { return formula_; }
+  bool SetFormula(std::u16string formula);
 
   TimedDataSpec timed_data_;
 
@@ -38,8 +38,8 @@ class SheetCell {
   int row_;
   int column_;
 
-  std::wstring formula_;
-  std::wstring text_;
+  std::u16string formula_;
+  std::u16string text_;
 
   bool blinking_;
 

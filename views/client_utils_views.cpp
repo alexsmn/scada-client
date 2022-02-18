@@ -1,11 +1,14 @@
 #include "views/client_utils_views.h"
 
+#include "base/string_piece_util.h"
+#include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util2.h"
-#include "model/scada_node_ids.h"
 #include "common_resources.h"
 #include "components/main/context_menu_model.h"
 #include "components/write/write_dialog.h"
 #include "controller.h"
+#include "model/scada_node_ids.h"
 #include "remote/session_proxy.h"
 #include "window_info.h"
 
@@ -36,7 +39,7 @@ void BuildMenu(HMENU hmenu, ui::MenuModel& model, int start_position) {
       menu.InsertMenu(position++, MFT_SEPARATOR | MF_BYPOSITION);
 
     } else {
-      std::wstring label = model.GetLabelAt(i);
+      std::wstring label = base::AsWString(model.GetLabelAt(i));
 
       if (type == ui::MenuModel::TYPE_SUBMENU) {
         ui::MenuModel* submenu_model = model.GetSubmenuModelAt(i);
@@ -72,17 +75,15 @@ HMENU CreatePopupMenu(unsigned resource_id, ui::MenuModel& context_menu_model) {
   return menu;
 }
 
-std::wstring Translate(const char* text) {
-  return base::SysNativeMBToWide(text);
+std::u16string Translate(std::string_view text) {
+  return base::UTF8ToUTF16(AsStringPiece(text));
 }
 
-std::wstring FormatHostName(const std::string& host_name) {
+std::u16string FormatHostName(std::string_view host_name) {
   if (host_name.empty()) {
-    static const std::wstring local_server_string =
-        win_util::LoadResourceString(WTL::ModuleHelper::GetResourceInstance(),
-                                     IDS_LOCAL_SERVER);
-    return local_server_string;
+    return base::AsString16(win_util::LoadResourceString(
+        WTL::ModuleHelper::GetResourceInstance(), IDS_LOCAL_SERVER));
   } else {
-    return base::SysNativeMBToWide(host_name);
+    return base::UTF8ToUTF16(AsStringPiece(host_name));
   }
 }

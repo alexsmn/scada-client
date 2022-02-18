@@ -1,5 +1,6 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
-std::wstring Translate(const char* text);
+std::u16string Translate(std::string_view text);

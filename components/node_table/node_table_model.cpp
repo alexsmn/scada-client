@@ -1,7 +1,7 @@
 ﻿#include "components/node_table/node_table_model.h"
 
 #include "base/bind.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/utils.h"
 #include "core/event.h"
@@ -118,8 +118,8 @@ int NodeTableModel::GetRowCount() {
   return static_cast<int>(nodes_.size());
 }
 
-std::wstring NodeTableModel::GetRowTitle(int row) {
-  return base::SysNativeMBToWide(NodeIdToScadaString(nodes_[row].node_id()));
+std::u16string NodeTableModel::GetRowTitle(int row) {
+  return base::UTF8ToUTF16(NodeIdToScadaString(nodes_[row].node_id()));
 }
 
 void NodeTableModel::GetCell(ui::GridCell& cell) {
@@ -130,10 +130,10 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
   auto& column = columns_[cell.column];
 
   if (column.attr_id == scada::AttributeId::NodeId) {
-    cell.text = base::SysNativeMBToWide(NodeIdToScadaString(node.node_id()));
+    cell.text = base::UTF8ToUTF16(NodeIdToScadaString(node.node_id()));
     cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
   } else if (column.attr_id == scada::AttributeId::BrowseName)
-    cell.text = base::SysNativeMBToWide(node.browse_name().name());
+    cell.text = base::UTF8ToUTF16(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
   else if (column.prop_def->IsReadOnly(node,
@@ -146,7 +146,7 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
 
 bool NodeTableModel::SetCellText(int row,
                                  int column,
-                                 const std::wstring& text) {
+                                 const std::u16string& text) {
   assert(row >= 0 && row < static_cast<int>(nodes_.size()));
   if (row < 0 || row >= static_cast<int>(nodes_.size()))
     return false;
@@ -156,8 +156,7 @@ bool NodeTableModel::SetCellText(int row,
   if (c.attr_id == scada::AttributeId::BrowseName) {
     task_manager_.PostUpdateTask(
         node.node_id(),
-        scada::NodeAttributes().set_browse_name(base::SysWideToNativeMB(text)),
-        {});
+        scada::NodeAttributes().set_browse_name(base::UTF16ToUTF8(text)), {});
   } else if (c.attr_id == scada::AttributeId::DisplayName) {
     task_manager_.PostUpdateTask(
         node.node_id(),
@@ -260,8 +259,8 @@ void NodeTableModel::Sort() {
 
   struct CompareNodes {
     bool operator()(const NodeRef& left, const NodeRef& right) const {
-      const auto& a = left[property_id].value().get_or(std::wstring());
-      const auto& b = right[property_id].value().get_or(std::wstring());
+      const auto& a = left[property_id].value().get_or(std::u16string());
+      const auto& b = right[property_id].value().get_or(std::u16string());
       return HumanCompareText(a, b) < 0;
     }
 
@@ -308,9 +307,10 @@ void NodeTableModel::InitColumns() {
   // Display name
   {
     columns_.push_back({scada::AttributeId::DisplayName});
-    columns.emplace_back(ui::TableColumn{
-        static_cast<int>(columns.size()),
-        std::wstring{kDisplayNameAttributeString}, 75, ui::TableColumn::LEFT});
+    columns.emplace_back(
+        ui::TableColumn{static_cast<int>(columns.size()),
+                        std::u16string{kDisplayNameAttributeString}, 75,
+                        ui::TableColumn::LEFT});
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,

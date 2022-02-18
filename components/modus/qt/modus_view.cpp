@@ -1,7 +1,11 @@
 ﻿#include "components/modus/qt/modus_view.h"
 
+#include "components/modus/activex/modus.h"
+
 #include <QHBoxLayout>
 #include <QUuid>
+#include <atlcomcli.h>
+#include <wrl/client.h>
 
 ModusView::ModusView(ModusDocumentContext&& context)
     : ModusDocumentContext{std::move(context)} {
@@ -18,7 +22,7 @@ ModusView::ModusView(ModusDocumentContext&& context)
 
 ModusView::~ModusView() {}
 
-void ModusView::Open(const base::FilePath& path) {
+void ModusView::Open(const std::filesystem::path& path) {
   assert(!document_);
 
   path_ = path;
@@ -43,7 +47,7 @@ void ModusView::Open(const base::FilePath& path) {
   title_callback_(document_->title());
 }
 
-base::FilePath ModusView::GetPath() const {
+std::filesystem::path ModusView::GetPath() const {
   return path_;
 }
 
@@ -56,35 +60,35 @@ htsde2::IHTSDEForm2* ModusView::GetSdeForm() {
 }
 
 void ModusView::OnDocClick(IDispatch* disp_doc, IDispatch* disp_info) {
-  CComQIPtr<SDECore::ISDEDocument50> doc(disp_doc);
-  CComQIPtr<SDECore::IUIEventInfo> info(disp_info);
+  CComQIPtr<SDECore::IUIEventInfo> ui_event_info(disp_info);
 
-  if (document_)
-    document_->OnDocClick(doc.p, info.p);
+  if (!document_ || !ui_event_info)
+    return;
+
+  document_->OnDocClick(modus::ModusDocument::MouseButton::Left,
+                        *ui_event_info);
 }
 
 void ModusView::OnDocRightClick(IDispatch* disp_doc, IDispatch* disp_info) {
-  CComQIPtr<SDECore::ISDEDocument50> doc(disp_doc);
-  CComQIPtr<SDECore::IUIEventInfo> info(disp_info);
+  CComQIPtr<SDECore::IUIEventInfo> ui_event_info(disp_info);
 
-  if (document_)
-    document_->OnDocRightClick(doc.p, info.p);
+  if (!document_ || !ui_event_info)
+    return;
+
+  document_->OnDocClick(modus::ModusDocument::MouseButton::Right,
+                        *ui_event_info);
 }
 
 void ModusView::OnDocDblClick(IDispatch* disp_doc, IDispatch* disp_info) {
-  CComQIPtr<SDECore::ISDEDocument50> doc(disp_doc);
-  CComQIPtr<SDECore::IUIEventInfo> info(disp_info);
+  CComQIPtr<SDECore::IUIEventInfo> ui_event_info(disp_info);
 
-  if (document_)
-    document_->OnDocDblClick(doc.p, info.p);
+  if (!document_ || !ui_event_info)
+    return;
+
+  document_->OnDocDblClick(*ui_event_info);
 }
 
 void ModusView::OnDocPopup(IDispatch* disp_doc, bool& popup) {
-  CComQIPtr<SDECore::ISDEDocument50> doc(disp_doc);
-  VARIANT_BOOL var_popup = popup ? VARIANT_TRUE : VARIANT_FALSE;
-
   if (document_)
-    document_->OnDocPopup(doc.p, &var_popup);
-
-  popup = var_popup != VARIANT_FALSE;
+    document_->OnDocPopup(popup);
 }

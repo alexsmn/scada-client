@@ -29,7 +29,7 @@ class WatchView : protected ControllerContext,
   virtual ExportData GetExportData() override;
 
  private:
-  std::wstring MakeTitle() const;
+  std::u16string MakeTitle() const;
 
   void SaveLog();
 

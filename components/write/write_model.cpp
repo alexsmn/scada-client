@@ -1,6 +1,8 @@
 ﻿#include "components/write/write_model.h"
 
 #include "base/executor.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "common/formula_util.h"
 #include "core/status.h"
 #include "model/data_items_node_ids.h"
@@ -8,11 +10,11 @@
 #include "services/profile.h"
 
 namespace {
-const wchar_t kDiscreteConfirmationQuestion[] =
-    L"Перевести %ls в состояние %ls?";
-const wchar_t kAnalogConfirmationQuestion[] = L"Записать в %ls значение %ls?";
-const wchar_t kSecondStagePrefix[] =
-    L"Удаленное устройство готово к исполнению команды.\n\n";
+const char16_t kDiscreteConfirmationQuestion[] =
+    u"Перевести %ls в состояние %ls?";
+const char16_t kAnalogConfirmationQuestion[] = u"Записать в %ls значение %ls?";
+const char16_t kSecondStagePrefix[] =
+    u"Удаленное устройство готово к исполнению команды.\n\n";
 }  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
@@ -45,30 +47,30 @@ WriteModel::WriteModel(WriteContext&& context)
   }
 }
 
-std::wstring WriteModel::GetWindowTitle() const {
-  return manual_ ? L"Ручной ввод" : L"Управление";
+std::u16string WriteModel::GetWindowTitle() const {
+  return manual_ ? u"Ручной ввод" : u"Управление";
 }
 
-std::wstring WriteModel::GetSourceTitle() const {
+std::u16string WriteModel::GetSourceTitle() const {
   return spec_.GetTitle();
 }
 
-std::wstring WriteModel::GetCurrentValue(bool formatted) const {
+std::u16string WriteModel::GetCurrentValue(bool formatted) const {
   return spec_.GetCurrentString(formatted ? FORMAT_QUALITY | FORMAT_UNITS : 0);
 }
 
-std::vector<std::wstring> WriteModel::GetDiscreteStates() const {
+std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
   assert(discrete_);
 
-  std::wstring close_label = kDefaultCloseLabel;
-  std::wstring open_label = kDefaultOpenLabel;
+  std::u16string close_label = kDefaultCloseLabel;
+  std::u16string open_label = kDefaultOpenLabel;
 
   const auto node = spec_.GetNode();
   if (auto format = node.target(data_items::id::HasTsFormat)) {
-    close_label = base::SysNativeMBToWide(
+    close_label = base::UTF8ToUTF16(
         format[data_items::id::TsFormatType_CloseLabel].value().get_or(
             std::string()));
-    open_label = base::SysNativeMBToWide(
+    open_label = base::UTF8ToUTF16(
         format[data_items::id::TsFormatType_OpenLabel].value().get_or(
             std::string()));
   }
@@ -80,12 +82,12 @@ int WriteModel::GetCurrentDiscreteState() const {
   return spec_.current().value.get_or(true) ? 0 : 1;  // invert state
 }
 
-std::wstring WriteModel::GetAnalogUnits() const {
+std::u16string WriteModel::GetAnalogUnits() const {
   auto node = spec_.GetNode();
   auto units =
       node[data_items::id::AnalogItemType_EngineeringUnits].value().get_or(
           std::string());
-  return base::SysNativeMBToWide(units);
+  return base::UTF8ToUTF16(units);
 }
 
 void WriteModel::Write(double value, bool lock) {
@@ -119,11 +121,11 @@ void WriteModel::Write(double value, bool lock) {
   }
 }
 
-std::wstring WriteModel::GetStatusText() const {
+std::u16string WriteModel::GetStatusText() const {
   if (!writing_)
     return {};
 
-  return write_selecting_ ? L"Подготовка к управлению..." : L"Управление...";
+  return write_selecting_ ? u"Подготовка к управлению..." : u"Управление...";
 }
 
 bool WriteModel::IsConditionOk() const {
@@ -138,7 +140,7 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   if (!status) {
     writing_ = true;
     auto title = GetWindowTitle();
-    std::wstring message = ToString16(status) + L'.';
+    std::u16string message = ToString16(status) + u'.';
     dialog_service_->RunMessageBox(message, title, MessageBoxMode::Error);
     completion_handler(true);
     return;
@@ -153,9 +155,9 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
   completion_handler(true);
 }
 
-std::wstring WriteModel::GetConfirmationMessage(bool second_stage) const {
-  std::wstring value_str = spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
-  std::wstring message = base::StringPrintf(
+std::u16string WriteModel::GetConfirmationMessage(bool second_stage) const {
+  auto value_str = spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
+  auto message = base::StringPrintf(
       discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
       spec_.GetTitle().c_str(), value_str.c_str());
   if (second_stage)
@@ -170,7 +172,7 @@ void WriteModel::StartWriting(bool second_stage) {
   }
 
   // Request confirmation from user.
-  std::wstring title = spec_.GetTitle();
+  std::u16string title = spec_.GetTitle();
   auto message = GetConfirmationMessage(second_stage);
   dialog_service_
       ->RunMessageBox(message, title, MessageBoxMode::QuestionYesNoDefaultNo)

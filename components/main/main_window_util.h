@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
+#include "controls/key_codes.h"
 #include "window_definition.h"
 
 class Executor;
@@ -20,4 +21,4 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const std::shared_ptr<Executor>& executor,
                                const FileRegistry& file_registry,
                                const NodeRef& node,
-                               unsigned shift);
+                               aui::KeyModifiers key_modifiers);

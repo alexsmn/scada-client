@@ -23,8 +23,7 @@ std::string JoinStrings(base::span<const std::string_view> strings,
 QString MakeFilter(const DialogService::Filter& filter) {
   assert(!filter.extensions.empty());
 
-  QString result =
-      QString::fromWCharArray(filter.title.data(), filter.title.size());
+  QString result = QString::fromUtf16(filter.title.data(), filter.title.size());
   result += " (";
   result += QString::fromStdString(JoinStrings(filter.extensions, ' '));
   result += ')';
@@ -62,13 +61,12 @@ MessageBoxResult MapQtMesageBoxResult(int result) {
 }  // namespace
 
 promise<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
-    std::wstring_view message,
-    std::wstring_view title,
+    std::u16string_view message,
+    std::u16string_view title,
     MessageBoxMode mode) {
   auto* message_box = new QMessageBox{parent_widget};
-  message_box->setText(QString::fromWCharArray(message.data(), message.size()));
-  message_box->setWindowTitle(
-      QString::fromWCharArray(title.data(), title.size()));
+  message_box->setText(QString::fromUtf16(message.data(), message.size()));
+  message_box->setWindowTitle(QString::fromUtf16(title.data(), title.size()));
 
   switch (mode) {
     case MessageBoxMode::Info:
@@ -102,9 +100,9 @@ QWidget* DialogServiceImplQt::GetParentWidget() const {
 }
 
 std::filesystem::path DialogServiceImplQt::SelectOpenFile(
-    std::wstring_view title) {
+    std::u16string_view title) {
   return QFileDialog::getOpenFileName(
-             parent_widget, QString::fromWCharArray(title.data(), title.size()))
+             parent_widget, QString::fromUtf16(title.data(), title.size()))
       .toStdWString();
 }
 
@@ -112,8 +110,8 @@ std::filesystem::path DialogServiceImplQt::SelectSaveFile(
     const SaveParams& params) {
   return QFileDialog::getSaveFileName(
              parent_widget,
-             QString::fromWCharArray(params.title.data(), params.title.size()),
-             QString::fromStdWString(params.default_path.wstring()),
+             QString::fromUtf16(params.title.data(), params.title.size()),
+             QString::fromStdU16String(params.default_path.u16string()),
              MakeFilter(params.filters))
       .toStdWString();
 }

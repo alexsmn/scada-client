@@ -29,8 +29,8 @@ class FavouritesRootNode : public FavouritesNode {
   int FindFolderNode(const Page& folder) const;
 
   // TreeNode
-  virtual std::wstring GetText(int column_id) const override {
-    return std::wstring();
+  virtual std::u16string GetText(int column_id) const override {
+    return std::u16string();
   }
 };
 
@@ -43,11 +43,11 @@ class FavouritesFolderNode : public FavouritesNode {
   int FindWindowNode(const WindowDefinition& window) const;
 
   // FavouritesNode
-  virtual std::wstring GetText(int column_id) const override {
+  virtual std::u16string GetText(int column_id) const override {
     return folder_.GetTitle();
   }
   virtual int GetIcon() const override { return 2; }
-  virtual void SetText(int column_id, const std::wstring& title) override;
+  virtual void SetText(int column_id, const std::u16string& title) override;
   virtual bool IsEditable(int column_id) const override { return true; }
   virtual void Delete() override;
   virtual FavouritesFolderNode* AsFolderNode() override { return this; }
@@ -68,11 +68,11 @@ class FavouritesWindowNode : public FavouritesNode {
   const WindowDefinition& window() const { return window_; }
 
   // FavouritesNode
-  virtual std::wstring GetText(int column_id) const override {
+  virtual std::u16string GetText(int column_id) const override {
     return window_.GetTitle();
   }
   virtual int GetIcon() const override;
-  virtual void SetText(int column_id, const std::wstring& title) override;
+  virtual void SetText(int column_id, const std::u16string& title) override;
   virtual bool IsEditable(int column_id) const override { return true; }
   virtual void Delete() override;
   virtual FavouritesWindowNode* AsWindowNode() override { return this; }

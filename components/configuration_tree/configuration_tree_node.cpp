@@ -41,11 +41,11 @@ void ConfigurationTreeNode::AddChildren() {
   }
 }
 
-std::wstring ConfigurationTreeNode::GetText(int column_id) const {
+std::u16string ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(node_.display_name());
 
   if (children_requested_ && !children_loaded_)
-    text += L" [Загрузка]";
+    text += u" [Загрузка]";
 
   return text;
 }
@@ -100,8 +100,8 @@ ConfigurationTreeRootNode::ConfigurationTreeRootNode(
     NodeRef tree)
     : ConfigurationTreeNode{model, {}, true, tree} {}
 
-std::wstring ConfigurationTreeRootNode::GetText(int column_id) const {
-  return node().display_name();
+std::u16string ConfigurationTreeRootNode::GetText(int column_id) const {
+  return ToString16(node().display_name());
 }
 
 int ConfigurationTreeRootNode::GetIcon() const {

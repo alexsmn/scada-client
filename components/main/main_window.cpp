@@ -1,5 +1,6 @@
 ﻿#include "components/main/main_window.h"
 
+#include "base/string_piece_util.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/main/main_window_manager.h"
@@ -10,6 +11,7 @@
 #include "contents_model.h"
 #include "contents_observer.h"
 #include "controller.h"
+#include "controls/key_codes.h"
 #include "selection_model.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
@@ -23,10 +25,10 @@ class TabPopupMenu : public ui::SimpleMenuModel {
  public:
   explicit TabPopupMenu(CommandHandler& commands)
       : ui::SimpleMenuModel{&handler_}, handler_{commands} {
-    AddItem(ID_VIEW_ADD_TO_FAVOURITES, L"В избранное");
-    AddItem(ID_VIEW_CHANGE_TITLE, L"Переименовать");
+    AddItem(ID_VIEW_ADD_TO_FAVOURITES, u"В избранное");
+    AddItem(ID_VIEW_CHANGE_TITLE, u"Переименовать");
     AddSeparator(ui::NORMAL_SEPARATOR);
-    AddItem(ID_VIEW_CLOSE, L"Закрыть");
+    AddItem(ID_VIEW_CLOSE, u"Закрыть");
   }
 
  private:
@@ -173,7 +175,7 @@ void MainWindow::OnViewClosed(OpenedView& view) {
   if (&view == active_data_view_)
     SetActiveDataView(nullptr);
 
-  LOG(INFO) << "Window " << std::wstring{view.window_info().title}
+  LOG(INFO) << "Window " << AsStringPiece(view.window_info().title)
             << " closed.";
 
   if (view_manager_->is_closing_page())
@@ -222,7 +224,8 @@ OpenedView* MainWindow::GetActiveDataView() {
   return active_data_view_;
 }
 
-OpenedView* MainWindow::FindOpenedViewByFilePath(const base::FilePath& path) {
+OpenedView* MainWindow::FindOpenedViewByFilePath(
+    const std::filesystem::path& path) {
   for (auto* opened_view : view_manager_->views()) {
     if (opened_view->window_def().path == path)
       return opened_view;
@@ -259,7 +262,7 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
       def,
       dialog_service,
       controller_factory_,
-      [this](unsigned resource_id, const UiPoint& point, bool right_click) {
+      [this](unsigned resource_id, const aui::Point& point, bool right_click) {
         ShowPopupMenu(resource_id, point, right_click);
       },
       [this](const NodeRef& node_ref) { ExecuteDefaultNodeCommand(node_ref); },
@@ -271,7 +274,7 @@ std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
 }
 
 void MainWindow::OnViewTitleUpdated(OpenedView& view,
-                                    const std::wstring& title) {
+                                    const std::u16string& title) {
   view_manager_->SetViewTitle(view, title);
 }
 
@@ -287,7 +290,7 @@ void MainWindow::CloseView(OpenedView& view) {
     view_manager_->CloseView(view);
 }
 
-void MainWindow::SetPageTitle(const std::wstring& title) {
+void MainWindow::SetPageTitle(const std::u16string& title) {
   const_cast<Page&>(current_page()).title = title;
   UpdateTitle();
 }
@@ -316,11 +319,12 @@ void MainWindow::SplitView(OpenedView& view, bool vertically) {
 }
 
 void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
-  WORD shift = 0;
+  aui::KeyModifiers key_modifiers{};
   if (::GetAsyncKeyState(VK_SHIFT))
-    shift |= MK_SHIFT;
+    key_modifiers |= aui::ShiftModifier;
   if (::GetAsyncKeyState(VK_CONTROL))
-    shift |= MK_CONTROL;
+    key_modifiers |= aui::ControlModifier;
 
-  ::ExecuteDefaultNodeCommand(this, executor_, file_registry_, node, shift);
+  ::ExecuteDefaultNodeCommand(this, executor_, file_registry_, node,
+                              key_modifiers);
 }

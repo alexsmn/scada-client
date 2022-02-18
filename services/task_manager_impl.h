@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/executor_timer.h"
-#include "base/memory/weak_ptr.h"
 #include "core/status.h"
 #include "services/task_manager.h"
 
@@ -62,24 +61,24 @@ class TaskManagerImpl : private TaskManagerImplContext,
   struct Task {
     bool IsNull() const { return !task; }
 
-    std::wstring title;
+    std::u16string title;
     std::function<void()> task;
   };
 
   void Run();
   void CancelProgress();
 
-  void PostTask(std::wstring_view title, TaskMethod task);
+  void PostTask(std::u16string_view title, TaskMethod task);
   void StartTask(Task&& task);
 
   void ReportRequestCompletion(const scada::Status& status,
-                               const std::wstring& result_text);
+                               const std::u16string& result_text);
 
   typedef std::queue<Task> TaskQueue;
   TaskQueue tasks_;
 
-  int count = 0;  // initial task count
-  DWORD start_time = 0;
+  int count_ = 0;  // initial task count
+  std::optional<std::chrono::steady_clock::time_point> start_time_;
   std::unique_ptr<RunningProgress> running_progress_;
 
   ExecutorTimer timer_{executor_};

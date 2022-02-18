@@ -1,9 +1,14 @@
 ﻿#include "client_utils.h"
 
+#include "base/file_path_util.h"
 #include "base/format_time.h"
 #include "base/path_service.h"
 #include "base/range_util.h"
+#include "base/string_piece_util.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_paths.h"
 #include "common/event_fetcher.h"
@@ -27,36 +32,37 @@
 
 namespace {
 
-const wchar_t kHttpPrefix[] = L"http://";
-const wchar_t kHttpsPrefix[] = L"https://";
-const wchar_t kFilePrefix[] = L"file://";
+const char16_t kHttpPrefix[] = u"http://";
+const char16_t kHttpsPrefix[] = u"https://";
+const char16_t kFilePrefix[] = u"file://";
 
 }  // namespace
 
-inline void AppendHint(std::wstring& hint,
-                       const wchar_t* title,
-                       const std::wstring& value) {
+inline void AppendHint(std::u16string& hint,
+                       std::u16string_view title,
+                       std::u16string_view value) {
   if (value.empty())
     return;
-  hint += base::StringPrintf(L"\n%ls: %ls", title, value.c_str());
+  hint +=
+      base::StrCat({u"\n", AsStringPiece(title), u": ", AsStringPiece(value)});
 }
 
-std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
-  std::wstring name = timed_data.GetTitle();
+std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
+  auto name = timed_data.GetTitle();
 
-  std::wstring val = timed_data.GetCurrentString();
+  auto val = timed_data.GetCurrentString();
 
-  std::wstring str_time = base::SysNativeMBToWide(
+  auto str_time = base::UTF8ToUTF16(
       FormatTime(timed_data.change_time(),
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-  std::wstring str_utime = base::SysNativeMBToWide(
+  auto str_utime = base::UTF8ToUTF16(
       FormatTime(timed_data.current().source_timestamp,
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
 
-  std::wstring str = name;
-  AppendHint(str, L"Значение", val);
-  AppendHint(str, L"Время", str_time);
-  AppendHint(str, L"Обновлен", str_utime);
+  auto str = name;
+  AppendHint(str, u"Значение", val);
+  AppendHint(str, u"Время", str_time);
+  AppendHint(str, u"Обновлен", str_utime);
 
   // events
   const auto* events = timed_data.GetEvents();
@@ -68,13 +74,13 @@ std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
         str += L'\n';
       // limit for 3 events
       if (count >= 3) {
-        str += base::StringPrintf(L"\n(+ %d событий)", events->size() - count);
+        str += base::StringPrintf(u"\n(+ %d событий)", events->size() - count);
         break;
       }
       // add event
-      std::wstring stime = base::SysNativeMBToWide(FormatTime(
+      std::u16string stime = base::UTF8ToUTF16(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-      str += base::StringPrintf(L"\n%ls %ls", stime.c_str(),
+      str += base::StringPrintf(u"\n%ls %ls", stime.c_str(),
                                 event.message.c_str());
     }
   }
@@ -82,15 +88,15 @@ std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   return str;
 }
 
-void ReportRequestResult(const std::wstring& title,
+void ReportRequestResult(const std::u16string& title,
                          const scada::Status& status,
                          LocalEvents& local_events,
                          Profile& profile) {
   if (status && !profile.show_write_ok)
     return;
 
-  std::wstring message = base::StringPrintf(L"%ls - %ls.", title.c_str(),
-                                            ToString16(status).c_str());
+  scada::LocalizedText message = base::StringPrintf(
+      u"%ls - %ls.", title.c_str(), ToString16(status).c_str());
   LocalEvents::Severity severity =
       status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
   local_events.ReportEvent(severity, message);
@@ -160,9 +166,9 @@ bool ExecuteDisableItem(TaskManager& task_manager,
   return true;
 }
 
-void CompletePath(const std::wstring& text,
+void CompletePath(const std::u16string& text,
                   int& start,
-                  std::vector<std::wstring>& list) {}
+                  std::vector<std::u16string>& list) {}
 
 void DeleteTreeRecordsRecursive(TaskManager& task_manager,
                                 const NodeRef& node) {
@@ -203,23 +209,23 @@ void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes) {
   }
 }
 
-bool IsWebUrl(std::wstring_view str) {
-  return base::StartsWith(ToStringPiece(str), kHttpPrefix,
+bool IsWebUrl(std::u16string_view str) {
+  return base::StartsWith(AsStringPiece(str), kHttpPrefix,
                           base::CompareCase::SENSITIVE) ||
-         base::StartsWith(ToStringPiece(str), kHttpsPrefix,
+         base::StartsWith(AsStringPiece(str), kHttpsPrefix,
                           base::CompareCase::SENSITIVE);
 }
 
-std::wstring MakeFileUrl(const base::FilePath& path) {
-  return kFilePrefix + path.AsUTF16Unsafe();
+std::u16string MakeFileUrl(const std::filesystem::path& path) {
+  return kFilePrefix + path.u16string();
 }
 
-base::FilePath GetPublicFilePath(const base::FilePath& path) {
+std::filesystem::path GetPublicFilePath(const std::filesystem::path& path) {
   base::FilePath public_path;
   base::PathService::Get(client::DIR_PUBLIC, &public_path);
-  return public_path.Append(path);
+  return AsFilesystemPath(public_path) / path;
 }
 
-base::FilePath FullFilePathToPublic(const base::FilePath& path) {
-  return path.BaseName();
+std::filesystem::path FullFilePathToPublic(const std::filesystem::path& path) {
+  return path.filename();
 }

@@ -56,7 +56,7 @@ Page* MainWindowManager::FindFirstNotOpenedPage() {
 }
 
 OpenedView* MainWindowManager::FindOpenedViewByFilePath(
-    const base::FilePath& path) {
+    const std::filesystem::path& path) {
   for (auto& p : main_windows_) {
     if (auto* view = p.second->FindOpenedViewByFilePath(path))
       return view;

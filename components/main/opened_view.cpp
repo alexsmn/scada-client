@@ -52,19 +52,19 @@ void OpenedView::Activate() {
     main_window_->ActivateView(*this);
 }
 
-void OpenedView::SetUserTitle(const std::wstring_view& title) {
+void OpenedView::SetUserTitle(std::u16string_view title) {
   assert(!window_info().is_pane());
 
   if (user_title_ != title) {
-    user_title_ = std::wstring{title};
+    user_title_.assign(title.data(), title.size());
     UpdateTitle();
   }
 }
 
-std::wstring OpenedView::GetWindowTitle() const {
+std::u16string OpenedView::GetWindowTitle() const {
   // don't allow custom titles for predefined windows
   if (window_info().is_pane())
-    return std::wstring{window_info().title};
+    return std::u16string{window_info().title};
 
   if (!user_title_.empty())
     return user_title_;
@@ -72,13 +72,13 @@ std::wstring OpenedView::GetWindowTitle() const {
   if (!title_.empty())
     return title_;
 
-  return std::wstring{window_info().title};
+  return std::u16string{window_info().title};
 }
 
 void OpenedView::UpdateTitle() {
-  std::wstring title = GetWindowTitle();
+  std::u16string title = GetWindowTitle();
   if (working_)
-    title += L" [Выполнение]";
+    title += u" [Выполнение]";
 
   assert(main_window_);
   main_window_->OnViewTitleUpdated(*this, title);
@@ -109,10 +109,10 @@ void OpenedView::UpdateWorking() {
   }
 }
 
-void OpenedView::SetTitle(const std::wstring_view& title) {
+void OpenedView::SetTitle(std::u16string_view title) {
   assert(!window_info().is_pane());
   if (title_ != title) {
-    title_ = std::wstring{title};
+    title_.assign(title.data(), title.size());
     UpdateTitle();
   }
 }
@@ -162,7 +162,7 @@ void OpenedView::Focus() {
 }
 
 void OpenedView::ShowPopupMenu(unsigned resource_id,
-                               const UiPoint& point,
+                               const aui::Point& point,
                                bool right_click) {
   if (resource_id == 0)
     resource_id = window_info().menu;

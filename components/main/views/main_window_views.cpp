@@ -1,5 +1,7 @@
 ﻿#include "components/main/views/main_window_views.h"
 
+#include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
 #include "command_handler.h"
 #include "common_resources.h"
@@ -169,15 +171,17 @@ bool MainWindowViews::CanHandleAccelerators() const {
   return true;
 }
 
-std::wstring MainWindowViews::GetWindowTitle() const {
-  std::wstring server = FormatHostName(connection_info_provider_());
+std::u16string MainWindowViews::GetWindowTitle() const {
+  auto server = FormatHostName(connection_info_provider_());
 
-  static std::wstring application_title = win_util::LoadResourceString(
-      WTL::ModuleHelper::GetResourceInstance(), IDR_MAINFRAME);
-  std::wstring page = view_manager_->current_page().GetTitle();
+  auto application_title = base::AsString16(win_util::LoadResourceString(
+      WTL::ModuleHelper::GetResourceInstance(), IDR_MAINFRAME));
 
-  static std::wstring title_format_string = win_util::LoadResourceString(
-      WTL::ModuleHelper::GetResourceInstance(), IDS_MAIN_WINDOW_TITLE);
+  auto page = view_manager_->current_page().GetTitle();
+
+  auto title_format_string = base::AsString16(win_util::LoadResourceString(
+      WTL::ModuleHelper::GetResourceInstance(), IDS_MAIN_WINDOW_TITLE));
+
   return base::StringPrintf(title_format_string.c_str(),
                             application_title.c_str(), page.c_str(),
                             server.c_str());
@@ -199,7 +203,7 @@ bool MainWindowViews::ExecuteWindowsCommand(int command_id) {
 }
 
 void MainWindowViews::UpdateTitle() {
-  main_window_->SetWindowText(GetWindowTitle().c_str());
+  main_window_->SetWindowText(base::AsWString(GetWindowTitle()).c_str());
 }
 
 void MainWindowViews::ShowPopupMenu(unsigned resource_id,

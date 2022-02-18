@@ -1,5 +1,6 @@
 ﻿#include "components/login/login_dialog.h"
 
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
 #include "components/login/login_controller.h"
@@ -70,8 +71,8 @@ void LoginDialog::OnInitDialog() {
   {
     WTL::CComboBox user_combo = GetItem(IDC_NAME);
     for (auto& user_name : controller_->user_list)
-      user_combo.AddString(user_name.c_str());
-    user_combo.SetWindowText(controller_->user_name.c_str());
+      user_combo.AddString(base::AsWString(user_name).c_str());
+    user_combo.SetWindowText(base::AsWString(controller_->user_name).c_str());
   }
 
   SetItemText(IDC_HOST, base::SysNativeMBToWide(controller_->server_host));
@@ -80,7 +81,7 @@ void LoginDialog::OnInitDialog() {
   {
     WTL::CComboBox server_type_combo = GetItem(IDC_SERVER_TYPE);
     for (auto& item : controller_->server_type_list)
-      server_type_combo.AddString(item.c_str());
+      server_type_combo.AddString(base::AsWString(item).c_str());
     server_type_combo.SetCurSel(controller_->server_type_index);
   }
 
@@ -88,14 +89,14 @@ void LoginDialog::OnInitDialog() {
   SetItemText(IDC_STATUS, L"");
 
   if (controller_->auto_login) {
-    SetItemText(IDC_PASSWORD, controller_->password);
+    SetItemText(IDC_PASSWORD, base::AsWString(controller_->password));
     OnOK();
   }
 }
 
 void LoginDialog::OnOK() {
-  controller_->user_name = GetItemText(IDC_NAME);
-  controller_->password = GetItemText(IDC_PASSWORD);
+  controller_->user_name = base::AsString16(GetItemText(IDC_NAME));
+  controller_->password = base::AsString16(GetItemText(IDC_PASSWORD));
   controller_->server_host = base::SysWideToNativeMB(GetItemText(IDC_HOST));
   {
     int server_type_index =

@@ -27,10 +27,10 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       auto* action = line_edit->addAction(icon, QLineEdit::TrailingPosition);
       connect(action, &QAction::triggered,
               [index, line_edit, handler = edit_data.action_handler] {
-                auto text = line_edit->text().toStdWString();
+                auto text = line_edit->text().toStdU16String();
                 if (handler(text)) {
                   const_cast<QAbstractItemModel*>(index.model())
-                      ->setData(index, QString::fromStdWString(text),
+                      ->setData(index, QString::fromStdU16String(text),
                                 Qt::EditRole);
                 }
               });
@@ -44,7 +44,7 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       combo_box->setFrame(false);
       combo_box->setInsertPolicy(QComboBox::InsertPolicy::NoInsert);
       for (const auto& choice : edit_data.choices)
-        combo_box->addItem(QString::fromStdWString(choice));
+        combo_box->addItem(QString::fromStdU16String(choice));
       connect(
           combo_box, QOverload<int>::of(&QComboBox::activated), this,
           [this] { const_cast<ItemDelegate*>(this)->CommitAndCloseEditor(); });

@@ -104,11 +104,11 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
   const auto device_id2 = scada::NodeId{2, device_namespace_index};
   const auto device_id3 = scada::NodeId{3, device_namespace_index};
 
-  auto* device1 = CreateDevice(device_id1, L"Device 1");
-  auto* device2 = CreateDevice(device_id2, L"Device 2");
-  auto* device3 = CreateDevice(device_id3, L"Device 3");
+  auto* device1 = CreateDevice(device_id1, u"Device 1");
+  auto* device2 = CreateDevice(device_id2, u"Device 2");
+  auto* device3 = CreateDevice(device_id3, u"Device 3");
 
-  const std::wstring title = L"Test title";
+  const std::u16string title = u"Test title";
   const std::vector devices{
       node_service_.GetNode(device1->id()),
       node_service_.GetNode(device2->id()),
@@ -132,27 +132,27 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
   EXPECT_THAT(
       rows,
       ElementsAre(
-          ElementsAre(CellIs(L"Device 1"), CellIs(L"Device 2"),
-                      CellIs(L"Device 3")),
-          ElementsAre(CellIs(L"Связь"), CellIs(L"={IEC_DEV.1!Online}"),
-                      CellIs(L"={IEC_DEV.2!Online}"),
-                      CellIs(L"={IEC_DEV.3!Online}")),
-          ElementsAre(CellIs(L"Включено"), CellIs(L"={IEC_DEV.1!Enabled}"),
-                      CellIs(L"={IEC_DEV.2!Enabled}"),
-                      CellIs(L"={IEC_DEV.3!Enabled}")),
-          ElementsAre(CellIs(L"Принято сообщений"),
-                      CellIs(L"={IEC_DEV.1!MessagesIn}"),
-                      CellIs(L"={IEC_DEV.2!MessagesIn}"),
-                      CellIs(L"={IEC_DEV.3!MessagesIn}")),
-          ElementsAre(CellIs(L"Отправлено сообщений"),
-                      CellIs(L"={IEC_DEV.1!MessagesOut}"),
-                      CellIs(L"={IEC_DEV.2!MessagesOut}"),
-                      CellIs(L"={IEC_DEV.3!MessagesOut}")),
-          ElementsAre(CellIs(L"Принято байт"), CellIs(L"={IEC_DEV.1!BytesIn}"),
-                      CellIs(L"={IEC_DEV.2!BytesIn}"),
-                      CellIs(L"={IEC_DEV.3!BytesIn}")),
-          ElementsAre(CellIs(L"Отправлено байт"),
-                      CellIs(L"={IEC_DEV.1!BytesOut}"),
-                      CellIs(L"={IEC_DEV.2!BytesOut}"),
-                      CellIs(L"={IEC_DEV.3!BytesOut}"))));
+          ElementsAre(CellIs(u"Device 1"), CellIs(u"Device 2"),
+                      CellIs(u"Device 3")),
+          ElementsAre(CellIs(u"Связь"), CellIs(u"={IEC_DEV.1!Online}"),
+                      CellIs(u"={IEC_DEV.2!Online}"),
+                      CellIs(u"={IEC_DEV.3!Online}")),
+          ElementsAre(CellIs(u"Включено"), CellIs(u"={IEC_DEV.1!Enabled}"),
+                      CellIs(u"={IEC_DEV.2!Enabled}"),
+                      CellIs(u"={IEC_DEV.3!Enabled}")),
+          ElementsAre(CellIs(u"Принято сообщений"),
+                      CellIs(u"={IEC_DEV.1!MessagesIn}"),
+                      CellIs(u"={IEC_DEV.2!MessagesIn}"),
+                      CellIs(u"={IEC_DEV.3!MessagesIn}")),
+          ElementsAre(CellIs(u"Отправлено сообщений"),
+                      CellIs(u"={IEC_DEV.1!MessagesOut}"),
+                      CellIs(u"={IEC_DEV.2!MessagesOut}"),
+                      CellIs(u"={IEC_DEV.3!MessagesOut}")),
+          ElementsAre(CellIs(u"Принято байт"), CellIs(u"={IEC_DEV.1!BytesIn}"),
+                      CellIs(u"={IEC_DEV.2!BytesIn}"),
+                      CellIs(u"={IEC_DEV.3!BytesIn}")),
+          ElementsAre(CellIs(u"Отправлено байт"),
+                      CellIs(u"={IEC_DEV.1!BytesOut}"),
+                      CellIs(u"={IEC_DEV.2!BytesOut}"),
+                      CellIs(u"={IEC_DEV.3!BytesOut}"))));
 }

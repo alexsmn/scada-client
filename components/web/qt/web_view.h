@@ -1,8 +1,9 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "controller.h"
 #include "controller_context.h"
+
+#include <filesystem>
 
 class QAxWidget;
 
@@ -18,5 +19,5 @@ class WebView : protected ControllerContext, public Controller {
  private:
   QAxWidget* ax_widget_ = nullptr;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
 };

@@ -90,7 +90,7 @@ QVariant TreeModelAdapter::headerData(int section,
 
   switch (role) {
     case Qt::DisplayRole:
-      return QString::fromStdWString(model_->GetColumnText(section));
+      return QString::fromStdU16String(model_->GetColumnText(section));
     case Qt::SizeHintRole: {
       auto size =
           QAbstractItemModel::headerData(section, orientation, role).toSize();
@@ -155,7 +155,7 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
-      return QString::fromStdWString(model_->GetText(node, index.column()));
+      return QString::fromStdU16String(model_->GetText(node, index.column()));
     case Qt::ForegroundRole:
       return ToQColor(model_->GetTextColor(node, index.column()));
     case Qt::BackgroundRole:
@@ -186,7 +186,7 @@ bool TreeModelAdapter::setData(const QModelIndex& index,
   void* node = GetNode(index);
 
   if (role == Qt::EditRole) {
-    model_->SetText(node, index.column(), value.toString().toStdWString());
+    model_->SetText(node, index.column(), value.toString().toStdU16String());
     return true;
 
   } else if (role == Qt::CheckStateRole) {

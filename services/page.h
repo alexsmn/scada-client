@@ -11,7 +11,7 @@ class Page {
   Page(const Page& source);
   Page& operator=(const Page& source);
 
-  std::wstring GetTitle() const;
+  std::u16string GetTitle() const;
 
   WindowDefinition& AddWindow(const WindowDefinition& window);
   WindowDefinition* FindWindowDef(int id);
@@ -27,7 +27,7 @@ class Page {
   base::Value Save(bool current) const;
 
   int id;
-  std::wstring title;
+  std::u16string title;
 
   PageLayout layout;
 

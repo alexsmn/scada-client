@@ -1,8 +1,8 @@
 #include "controls/qt/table.h"
 
+#include "base/value_util.h"
 #include "controls/qt/table_model_adapter.h"
 #include "ui/base/models/table_model.h"
-#include "value_util.h"
 #include "window_definition_util.h"
 
 #include <QHeaderView>
@@ -168,7 +168,7 @@ void Table::SetDoubleClickHandler(DoubleClickHandler handler) {
 
 void Table::keyPressEvent(QKeyEvent* event) {
   if (key_press_handler_ &&
-      key_press_handler_(static_cast<KeyCode>(event->key())))
+      key_press_handler_(static_cast<aui::KeyCode>(event->key())))
     return;
 
   QTableView::keyPressEvent(event);

@@ -68,7 +68,10 @@ class ModusElement : private ModusElementContext {
 SDEParam GetParam(SDECore::IParams& params, const VARIANT& index);
 bool HasParam(SDECore::IParams& params, const VARIANT& index);
 std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index);
-bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR val);
+bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR value);
+bool SetParamValue(SDECore::IParams& params,
+                   std::u16string_view index,
+                   BSTR value);
 std::wstring GetHyperlink(SDECore::ISDEObject50& object);
 
 extern const base::win::ScopedVariant kParameterBinding;

@@ -30,17 +30,16 @@ TableView::TableView(const ControllerContext& context)
   };
 
   std::vector<ui::TableColumn> columns = {
-      {TableModel::COLUMN_TITLE, std::wstring{kDisplayNameAttributeString}, 150,
+      {TableModel::COLUMN_TITLE, kDisplayNameAttributeString, 150,
        ui::TableColumn::LEFT},
-      {TableModel::COLUMN_VALUE, std::wstring{kValueTitle}, 100,
-       ui::TableColumn::RIGHT},
-      {TableModel::COLUMN_SOURCE_TIMESTAMP, std::wstring{kSourceTimestampTitle},
-       170, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_SERVER_TIMESTAMP, std::wstring{kServerTimestampTitle},
-       170, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_CHANGE_TIME, L"Время изменения", 170,
+      {TableModel::COLUMN_VALUE, kValueTitle, 100, ui::TableColumn::RIGHT},
+      {TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle, 170,
        ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_EVENT, L"Событие", 200, ui::TableColumn::LEFT},
+      {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle, 170,
+       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_CHANGE_TIME, u"Время изменения", 170,
+       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_EVENT, u"Событие", 200, ui::TableColumn::LEFT},
   };
 
   view_ = new Table{model_, std::move(columns)};
@@ -49,14 +48,14 @@ TableView::TableView(const ControllerContext& context)
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
-  view_->SetContextMenuHandler([this](const UiPoint& point) {
+  view_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_TABLE_POPUP, point, true);
   });
 
   view_->SetDoubleClickHandler([this] { OnDoubleClick(); });
 
   view_->SetKeyPressHandler(
-      [this](KeyCode key_code) { return OnKeyPressed(key_code); });
+      [this](aui::KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection_.multiple_handler = [this] { return GetMultipleSelection(); };
 
@@ -116,26 +115,26 @@ void TableView::Save(WindowDefinition& definition) {
   }
 }
 
-bool TableView::OnKeyPressed(KeyCode key_code) {
+bool TableView::OnKeyPressed(aui::KeyCode key_code) {
   switch (key_code) {
-    case KeyCode::Enter:
+    case aui::KeyCode::Enter:
       if (!view_->editing()) {
         OnDoubleClick();
         return true;
       }
       break;
 
-    case KeyCode::Delete:
+    case aui::KeyCode::Delete:
       if (!view_->editing()) {
         DeleteSelection();
         return true;
       }
       break;
 
-    case KeyCode::Up:
-    case KeyCode::Down:
+    case aui::KeyCode::Up:
+    case aui::KeyCode::Down:
       if (GetAsyncKeyState(VK_CONTROL) < 0) {
-        MoveRow(key_code == KeyCode::Up);
+        MoveRow(key_code == aui::KeyCode::Up);
         return true;
       }
       break;

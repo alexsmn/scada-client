@@ -32,7 +32,7 @@ class ProgressHostImpl::RunningProgressImpl : public RunningProgress {
     progress_host_impl_.UpdateProgressStatus();
   }
 
-  virtual void SetStatus(std::wstring_view status) override {}
+  virtual void SetStatus(std::u16string_view status) override {}
 
   virtual bool IsCanceled() override { return false; }
 

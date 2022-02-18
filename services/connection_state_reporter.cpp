@@ -34,7 +34,7 @@ ConnectionStateReporter::~ConnectionStateReporter() {}
 void ConnectionStateReporter::OnSessionCreated() {
   local_events_.ReportEvent(
       LocalEvents::SEV_INFO,
-      L"Связь с сервером установлена. Выполнен вход в систему.");
+      u"Связь с сервером установлена. Выполнен вход в систему.");
 
   reconnect_timer_.Stop();
   reconnect_retry_ = 0;
@@ -47,7 +47,7 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   if (status) {
     local_events_.ReportEvent(
         LocalEvents::SEV_INFO,
-        base::StringPrintf(L"Отключение от сервера %ls. ", host_name.c_str()));
+        base::StringPrintf(u"Отключение от сервера %ls. ", host_name.c_str()));
     return;
   }
 
@@ -56,8 +56,8 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
     local_events_.ReportEvent(
         LocalEvents::SEV_ERROR,
         base::StringPrintf(
-            L"Отключение от сервера %ls. Данные реквизиты используются для "
-            L"входа в систему с другого рабочего места.",
+            u"Отключение от сервера %ls. Данные реквизиты используются для "
+            u"входа в систему с другого рабочего места.",
             host_name.c_str()));
     return;
   }
@@ -72,7 +72,7 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   local_events_.ReportEvent(
       LocalEvents::SEV_WARNING,
       base::StringPrintf(
-          L"Разрыв связи с сервером %ls. %ls. Переподключение через %u секунд.",
+          u"Разрыв связи с сервером %ls. %ls. Переподключение через %u секунд.",
           host_name.c_str(), ToString16(status).c_str(), delay_s));
 
   reconnect_timer_.StartOne(delay, [this] { OnReconnectTimer(); });

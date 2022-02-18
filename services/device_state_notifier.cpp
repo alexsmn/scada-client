@@ -10,9 +10,9 @@ std::string ToString(DeviceState device_state) {
   return kStrings[static_cast<size_t>(device_state)];
 }
 
-std::wstring_view ToLocalizedString(DeviceState device_state) {
-  static const std::wstring_view kStrings[] = {L"", L"Отключено", L"Нет связи",
-                                               L"Есть связь"};
+std::u16string_view ToLocalizedString(DeviceState device_state) {
+  static const std::u16string_view kStrings[] = {u"", u"Отключено",
+                                                 u"Нет связи", u"Есть связь"};
   static_assert(std::size(kStrings) == static_cast<size_t>(DeviceState::Count));
   return kStrings[static_cast<size_t>(device_state)];
 }

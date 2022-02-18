@@ -5,7 +5,7 @@
 #include "controller_registry.h"
 
 const WindowInfo kObjectTreeWindowInfo = {
-    ID_OBJECT_VIEW, "Struct", L"Объекты", WIN_SING, 200, 400, 0};
+    ID_OBJECT_VIEW, "Struct", u"Объекты", WIN_SING, 200, 400, 0};
 
 REGISTER_CONTROLLER(ObjectTreeView, kObjectTreeWindowInfo);
 

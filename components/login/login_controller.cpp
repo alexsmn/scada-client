@@ -3,7 +3,7 @@
 #include "base/executor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/registry2.h"
 #include "core/session_service.h"
 #include "core/status.h"
@@ -15,14 +15,14 @@ namespace {
 
 const wchar_t kRegistryKey[] = L"Software\\Telecontrol\\Workplace";
 
-const wchar_t kForceLogoffMessage[] =
-    L"Указанное имя пользователя уже используется другой сессией. Разорвать "
-    L"открытую сессию и продолжить?";
-const wchar_t kLoginFailedMessage[] =
-    L"Ошибка при подключении к серверу (%ls).";
-const wchar_t kAutoLoginMessage[] =
-    L"Чтобы отключить автоматический вход, удерживайте Ctrl при запуске "
-    L"приложения.";
+const char16_t kForceLogoffMessage[] =
+    u"Указанное имя пользователя уже используется другой сессией. Разорвать "
+    u"открытую сессию и продолжить?";
+const char16_t kLoginFailedMessage[] =
+    u"Ошибка при подключении к серверу (%ls).";
+const char16_t kAutoLoginMessage[] =
+    u"Чтобы отключить автоматический вход, удерживайте Ctrl при запуске "
+    u"приложения.";
 
 }  // namespace
 
@@ -32,25 +32,25 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
     : executor_{std::move(executor)},
       services_context_{std::move(services_context)},
       dialog_service_{dialog_service} {
-  Registry reg(HKEY_CURRENT_USER, kRegistryKey);
-  user_name = reg.GetString(L"User");
-  std::wstring users = reg.GetString(L"UserList");
+  Registry reg(HKEY_CURRENT_USER, kRegistryKey, true);
+  user_name = base::WideToUTF16(reg.GetString(L"User"));
+  std::u16string users = base::WideToUTF16(reg.GetString(L"UserList"));
   for (size_t p = 0; p < users.length();) {
     size_t n = users.find(',', p);
     auto user_name =
-        (n == std::wstring::npos) ? users.substr(p) : users.substr(p, n - p);
+        (n == std::u16string::npos) ? users.substr(p) : users.substr(p, n - p);
     if (std::find(user_list.begin(), user_list.end(), user_name) ==
         user_list.end()) {
       user_list.emplace_back(std::move(user_name));
     }
-    if (n == std::wstring::npos)
+    if (n == std::u16string::npos)
       break;
     p = n + 1;
   }
 
-  server_host = base::SysWideToNativeMB(reg.GetString(L"Host"));
-  auto server_type = base::SysWideToNativeMB(reg.GetString(L"ServerType"));
-  password = reg.GetString(L"Password");
+  server_host = base::WideToUTF8(reg.GetString(L"Host"));
+  auto server_type = base::WideToUTF8(reg.GetString(L"ServerType"));
+  password = base::WideToUTF16(reg.GetString(L"Password"));
   auto_login = reg.GetDWORD(L"AutoLogin") != 0;
 
   auto& list = GetDataServicesInfoList();
@@ -92,16 +92,14 @@ void LoginController::OnLoginCompleted() {
                     user_list.begin() + user_list.size() - 10);
   }
 
-  std::wstring user_list_string = base::JoinString(user_list, L",");
-
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
-  reg.SetString(L"User", ToString16(user_name).c_str());
-  reg.SetString(L"UserList", GetUserListString().c_str());
-  reg.SetString(L"Host", base::SysNativeMBToWide(server_host).c_str());
-  reg.SetString(L"ServerType", base::SysNativeMBToWide(server_type_).c_str());
+  reg.SetString(L"User", base::UTF16ToWide(user_name).c_str());
+  reg.SetString(L"UserList", base::UTF16ToWide(GetUserListString()).c_str());
+  reg.SetString(L"Host", base::UTF8ToWide(server_host).c_str());
+  reg.SetString(L"ServerType", base::UTF8ToWide(server_type_).c_str());
   reg.SetDWORD(L"AutoLogin", auto_login);
   if (auto_login)
-    reg.SetString(L"Password", password.c_str());
+    reg.SetString(L"Password", base::UTF16ToWide(password).c_str());
 
   auto promise = make_resolved_promise(MessageBoxResult::Ok);
   if (auto_login && login_message_) {
@@ -134,7 +132,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
             }));
 
   } else {
-    std::wstring message =
+    std::u16string message =
         base::StringPrintf(kLoginFailedMessage, ToString16(status).c_str());
     dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error)
         .then(BindPromiseExecutor(executor_,
@@ -160,7 +158,7 @@ void LoginController::Connect(bool allow_remote_logoff) {
       [this](const scada::Status& status) { OnLoginResult(status); });
 }
 
-void LoginController::DeleteUserName(std::wstring_view user_name) {
+void LoginController::DeleteUserName(std::u16string_view user_name) {
   auto i = std::find(user_list.begin(), user_list.end(), user_name);
   if (i == user_list.end())
     return;
@@ -168,13 +166,13 @@ void LoginController::DeleteUserName(std::wstring_view user_name) {
   user_list.erase(i);
 
   Registry reg(HKEY_CURRENT_USER, kRegistryKey);
-  reg.SetString(L"UserList", GetUserListString().c_str());
+  reg.SetString(L"UserList", base::UTF16ToWide(GetUserListString()).c_str());
 }
 
-std::wstring LoginController::GetUserListString() const {
+std::u16string LoginController::GetUserListString() const {
   constexpr size_t kMaxCount = 10;
   const size_t count = std::min(kMaxCount, user_list.size());
-  const std::vector<std::wstring> truncated_user_list(
+  const std::vector<std::u16string> truncated_user_list(
       user_list.begin(), user_list.begin() + count);
-  return base::JoinString(truncated_user_list, L",");
+  return base::JoinString(truncated_user_list, u",");
 }

@@ -36,14 +36,14 @@ ModusBinding2* ModusView2::GetBinding(modus::Shape* shape) const {
   return i == bindings_.end() ? nullptr : i->second.get();
 }
 
-void ModusView2::Open(const base::FilePath& path) {
+void ModusView2::Open(const std::filesystem::path& path) {
   path_ = path;
 
   auto& master_library = ModusModule2::GetInstance()->master_library();
   scheme_ = std::make_unique<modus::Scheme>();
   scheme_->set_master_library(&master_library);
   // TODO: Check result.
-  modus::LoadScheme(*scheme_, path.value());
+  modus::LoadScheme(*scheme_, path);
 
   if (scheme_) {
     title_ = scheme_->GetValue(modus::kAttrSchemeTitle).as_string();
@@ -54,7 +54,7 @@ void ModusView2::Open(const base::FilePath& path) {
   updateGeometry();
 }
 
-base::FilePath ModusView2::GetPath() const {
+std::filesystem::path ModusView2::GetPath() const {
   return path_;
 }
 
@@ -137,7 +137,7 @@ void ModusView2::mouseDoubleClickEvent(QMouseEvent* e) {
   auto link = shape->element().GetValue("Links[0]");
   if (!link.empty() && navigation_signal_) {
     navigation_signal_(
-        base::FilePath(modus::GetLinkFilePath(link.as_string_view())));
+        std::filesystem::path(modus::GetLinkFilePath(link.as_string_view())));
   }
 
   if (double_click_signal_)

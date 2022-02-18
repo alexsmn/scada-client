@@ -3,6 +3,8 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "common/event_fetcher.h"
@@ -500,7 +502,7 @@ void SelectionCommands::CallMethod(
   node.Call(method_id, arguments, {},
             [node, &local_events = local_events_,
              &profile = profile_](const scada::Status& status) {
-              std::wstring title = ToString16(node.display_name());
+              auto title = ToString16(node.display_name());
               ReportRequestResult(title, status, local_events, profile);
             });
 }
@@ -514,16 +516,15 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
       file_cache_.GetList(ID_MODUS_VIEW).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
-    std::wstring msg =
-        base::StringPrintf(L"Схема для объекта \"%ls\" не найдена.",
-                           ToString16(node.display_name()).c_str());
-    dialog_service_->RunMessageBox(msg, L"Схема", MessageBoxMode::Info);
+    auto msg = base::StringPrintf(u"Схема для объекта \"%ls\" не найдена.",
+                                  ToString16(node.display_name()).c_str());
+    dialog_service_->RunMessageBox(msg, u"Схема", MessageBoxMode::Info);
     return;
   }
 
   // TODO: Let user select scheme from list.
   const FileCache::DisplayItem& cached_item = cached_items.front();
-  const base::FilePath& path = cached_item.first;
+  const std::filesystem::path& path = cached_item.first;
 
   auto* view = main_window_manager_.FindOpenedViewByFilePath(path);
   if (view) {
@@ -572,13 +573,13 @@ void SelectionCommands::DeleteSelection() {
 
   auto message =
       nodes.size() == 1
-          ? base::StringPrintf(L"Вы действительно хотите удалить %ls?",
+          ? base::StringPrintf(u"Вы действительно хотите удалить %ls?",
                                nodes.front().display_name().c_str())
-          : base::StringPrintf(L"Вы действительно хотите удалить %Iu объектов?",
+          : base::StringPrintf(u"Вы действительно хотите удалить %Iu объектов?",
                                nodes.size());
 
   dialog_service_
-      ->RunMessageBox(message, L"Удаление", MessageBoxMode::QuestionYesNo)
+      ->RunMessageBox(message, u"Удаление", MessageBoxMode::QuestionYesNo)
       .then(BindPromiseExecutor(
           executor_, [&task_manager = task_manager_,
                       nodes = std::move(nodes)](MessageBoxResult result) {
@@ -616,7 +617,7 @@ promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
     auto title = selection_->GetTitle();
     auto node_ids = selection_->GetMultipleNodeIds();
     return make_resolved_promise(MakeWindowDefinition(
-        window_info, {node_ids.begin(), node_ids.end()}, title.c_str()));
+        window_info, {node_ids.begin(), node_ids.end()}, title));
   }
 
   const auto& node_id = selection_->node().node_id();
@@ -641,10 +642,10 @@ void SelectionCommands::DumpDebugInfo() {
   Clipboard clipboard;
   if (!clipboard.SetText(debug_text))
     LOG(WARNING) << "Can't set clipboard data";
-  if (!clipboard.SetText(base::SysNativeMBToWide(debug_text)))
+  if (!clipboard.SetText(base::UTF8ToWide(debug_text)))
     LOG(WARNING) << "Can't set clipboard data";
 
   dialog_service_->RunMessageBox(
-      L"Отладочная информация скопирована в буфер обмена.", {},
+      u"Отладочная информация скопирована в буфер обмена.", {},
       MessageBoxMode::Info);
 }

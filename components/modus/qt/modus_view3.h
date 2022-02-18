@@ -21,8 +21,8 @@ class ModusView3 : public QGraphicsView,
   virtual ~ModusView3();
 
   // ModusViewWrapper
-  virtual void Open(const base::FilePath& path) override;
-  virtual base::FilePath GetPath() const override;
+  virtual void Open(const std::filesystem::path& path) override;
+  virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
@@ -31,7 +31,7 @@ class ModusView3 : public QGraphicsView,
 
   TimedDataService& timed_data_service_;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
   std::wstring title_;
 
   Schematic::Document document_;

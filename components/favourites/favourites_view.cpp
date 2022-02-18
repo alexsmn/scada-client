@@ -13,7 +13,7 @@
 #endif
 
 namespace {
-const wchar_t kAddUrl[] = L"Добавить Web-страницу";
+const char16_t kAddUrl[] = u"Добавить Web-страницу";
 }
 
 FavouritesView::FavouritesView(const ControllerContext& context)
@@ -26,7 +26,7 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   tree_view_ = new Tree{favourites_tree_model_};
   tree_view_->LoadIcons(IDB_WIN_TYPES, 16, UiColorRGB(255, 0, 255));
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
-  tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
+  tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_FAVOR_POPUP, point, true);
   });
 
@@ -86,14 +86,14 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 
 #if !defined(UI_WT)
 void FavouritesView::AddUrl() {
-  std::wstring url;
-  if (!RunPromptDialog(dialog_service_, L"URL-адрес:", kAddUrl, url))
+  std::u16string url;
+  if (!RunPromptDialog(dialog_service_, u"URL-адрес:", kAddUrl, url))
     return;
 
   if (!IsWebUrl(url)) {
     dialog_service_.RunMessageBox(
-        L"Допустимый URL-адрес должен начинаться с \"http://\" или "
-        L"\"https://\".",
+        u"Допустимый URL-адрес должен начинаться с \"http://\" или "
+        u"\"https://\".",
         kAddUrl, MessageBoxMode::Error);
     return;
   }
@@ -108,7 +108,7 @@ void FavouritesView::AddUrl() {
                            : favourites_.GetOrAddFolder();
 
   WindowDefinition win{kWebWindowInfo};
-  win.path = base::FilePath{url};
+  win.path = url;
   favourites_.Add(win, folder);
 }
 #endif

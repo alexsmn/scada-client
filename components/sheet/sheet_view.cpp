@@ -1,6 +1,6 @@
 ﻿#include "components/sheet/sheet_view.h"
 
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -120,7 +120,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
-  grid_->SetContextMenuHandler([this](const UiPoint& point) {
+  grid_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(
         model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
   });
@@ -153,14 +153,14 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 #if defined(UI_VIEWS)
 void SheetController::OnGridGetAutocompleteList(
     views::GridView& sender,
-    const std::wstring& text,
+    const std::u16string& text,
     int& start,
-    std::vector<std::wstring>& list) {
+    std::vector<std::u16string>& list) {
   if (text.empty() || text[0] != '=')
     return;
 
   // Remove '='.
-  std::wstring text2 = text.substr(1);
+  std::u16string text2 = text.substr(1);
   int start2 = start;
   CompletePath(text2, start2, list);
 
@@ -188,7 +188,7 @@ void SheetController::AddContainedItem(const scada::NodeId& node_id,
   if (model_->is_editing() && current_index.column != -1 &&
       current_index.row != -1) {
     SheetCell& cell = model_->GetCell(current_index.row, current_index.column);
-    cell.SetFormula(L'=' + base::SysNativeMBToWide(MakeNodeIdFormula(node_id)));
+    cell.SetFormula(u'=' + base::UTF8ToUTF16(MakeNodeIdFormula(node_id)));
   }
 }
 
@@ -244,7 +244,7 @@ void SheetController::UpdateFormulaRow() {
   formula_row_->SetEnabled(!range.empty());
 #endif
 
-  std::wstring text;
+  std::u16string text;
   if (!range.empty()) {
     const SheetCell* cell = model_->cell(range.row(), range.column());
     if (cell)
@@ -252,7 +252,7 @@ void SheetController::UpdateFormulaRow() {
   }
 
 #if defined(UI_QT)
-  formula_row_->setText(QString::fromStdWString(text));
+  formula_row_->setText(QString::fromStdU16String(text));
 #elif defined(UI_VIEWS)
   formula_row_->SetText(text);
 #endif
@@ -264,7 +264,7 @@ void SheetController::OnFormulaEdited() {
     return;
 
 #if defined(UI_QT)
-  const auto& text = formula_row_->text().toStdWString();
+  const auto& text = formula_row_->text().toStdU16String();
 #elif defined(UI_VIEWS)
   const auto& text = formula_row_->GetText();
 #elif defined(UI_WT)
@@ -372,8 +372,8 @@ int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
     int row = 0, col = 0;
     if (grid_->GetCellAt(event.location(), row, col)) {
       SheetCell& cell = model_->GetCell(row, col);
-      cell.SetFormula(L'=' + base::SysNativeMBToWide(
-                                 MakeNodeIdFormula(item_data.item_id())));
+      cell.SetFormula(
+          u'=' + base::UTF8ToUTF16(MakeNodeIdFormula(item_data.item_id())));
       return ui::DragDropTypes::DRAG_COPY;
     }
   }
@@ -382,7 +382,7 @@ int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
 }
 
 void SheetController::ContentsChanged(views::Textfield* sender,
-                                      const std::wstring& new_contents) {
+                                      const std::u16string& new_contents) {
   DCHECK(sender == formula_row_);
   DCHECK(model_->is_editing());
   DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);

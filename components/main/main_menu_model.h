@@ -1,9 +1,10 @@
 #pragma once
 
 #include "base/containers/span.h"
-#include "base/files/file_path.h"
 #include "services/file_cache.h"
 #include "ui/base/models/simple_menu_model.h"
+
+#include <filesystem>
 
 class ActionManager;
 class CommandHandler;
@@ -47,7 +48,7 @@ class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
 
   struct Item {
     const WindowInfo* window_info = nullptr;
-    base::FilePath path;
+    std::filesystem::path path;
   };
 
   std::vector<Item> items_;

@@ -4,6 +4,7 @@
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
+#include "controls/key_codes.h"
 #include "export_model.h"
 #include "selection_model.h"
 #include "time_model.h"
@@ -49,7 +50,7 @@ class EventView : protected ControllerContext,
   virtual ExportData GetExportData() override;
 
  private:
-  std::wstring MakeTitle() const;
+  std::u16string MakeTitle() const;
 
   void ExportToExcel();
   void SelectSeverity();
@@ -58,7 +59,7 @@ class EventView : protected ControllerContext,
 
   void OnSelectionChanged();
 
-  bool OnKeyPressed(KeyCode key_code);
+  bool OnKeyPressed(aui::KeyCode key_code);
 
   const bool is_panel_;
 

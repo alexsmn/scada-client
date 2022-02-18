@@ -60,7 +60,7 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
   switch (role) {
     case Qt::DisplayRole:
     case Qt::EditRole:
-      return QString::fromStdWString(cell.text);
+      return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
       return ToQColor(cell.text_color);
     case Qt::BackgroundRole:
@@ -83,7 +83,7 @@ QVariant GridModelAdapter::headerData(int section,
   if (orientation == Qt::Horizontal) {
     switch (role) {
       case Qt::DisplayRole:
-        return QString::fromStdWString(column_model_->GetTitle(section));
+        return QString::fromStdU16String(column_model_->GetTitle(section));
       case Qt::SizeHintRole:
         return QSize(column_model_->GetSize(section), 19);
       default:
@@ -93,7 +93,7 @@ QVariant GridModelAdapter::headerData(int section,
   } else if (orientation == Qt::Vertical) {
     switch (role) {
       case Qt::DisplayRole:
-        return QString::fromStdWString(row_model_->GetTitle(section));
+        return QString::fromStdU16String(row_model_->GetTitle(section));
       default:
         return QVariant();
     }
@@ -108,7 +108,7 @@ bool GridModelAdapter::setData(const QModelIndex& index,
                                const QVariant& value,
                                int role) {
   return model_->SetCellText(index.row(), index.column(),
-                             value.toString().toStdWString());
+                             value.toString().toStdU16String());
 }
 
 void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {

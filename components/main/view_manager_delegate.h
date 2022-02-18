@@ -1,12 +1,9 @@
 #pragma once
 
 #include "components/main/opened_view.h"
+#include "controls/point.h"
 
 #include <memory>
-
-namespace gfx {
-class Point;
-}
 
 class WindowDefinition;
 
@@ -19,6 +16,5 @@ class ViewManagerDelegate {
 
   virtual void OnActiveViewChanged(OpenedView* view) = 0;
 
-  virtual void OnShowTabPopupMenu(OpenedView& view,
-                                  const gfx::Point& point) = 0;
+  virtual void OnShowTabPopupMenu(OpenedView& view, const aui::Point& point) = 0;
 };

@@ -16,12 +16,12 @@ WebView::WebView(const ControllerContext& context)
     : ControllerContext{context}, ActiveXControl{ActiveXHost::instance()} {}
 
 views::View* WebView::Init(const WindowDefinition& definition) {
-  url_ = definition.path.value();
+  url_ = definition.path.wstring();
   return this;
 }
 
 void WebView::Save(WindowDefinition& definition) {
-  definition.path = base::FilePath(url_);
+  definition.path = std::filesystem::path(url_);
 }
 
 void WebView::NativeControlCreated(HWND window_handle) {

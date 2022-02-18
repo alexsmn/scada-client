@@ -1,5 +1,6 @@
 ﻿#include "components/watch/watch_view.h"
 
+#include "base/strings/stringprintf.h"
 #include "common_resources.h"
 #include "components/watch/watch_event_source_impl.h"
 #include "components/watch/watch_model.h"
@@ -45,19 +46,19 @@ void WatchView::Save(WindowDefinition& definition) {
   item.SetString("path", NodeIdToScadaString(model_->device().node_id()));
 }
 
-std::wstring WatchView::MakeTitle() const {
-  std::wstring title = ToString16(model_->device().display_name());
+std::u16string WatchView::MakeTitle() const {
+  std::u16string title = ToString16(model_->device().display_name());
   if (model_->paused())
-    title += L" [Пауза]";
+    title += u" [Пауза]";
   return title;
 }
 
 UiView* WatchView::Init(const WindowDefinition& definition) {
   const ui::TableColumn columns[] = {
-      {0, L"Время", 100, ui::TableColumn::LEFT,
+      {0, u"Время", 100, ui::TableColumn::LEFT,
        ui::TableColumn::DataType::DateTime},
-      {1, L"Устройство", 100, ui::TableColumn::LEFT},
-      {2, L"Событие", 400, ui::TableColumn::LEFT},
+      {1, u"Устройство", 100, ui::TableColumn::LEFT},
+      {2, u"Событие", 400, ui::TableColumn::LEFT},
   };
 
   if (const WindowItem* item = definition.FindItem("Item")) {
@@ -72,7 +73,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
     auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;
   });
 
-  table_->SetContextMenuHandler([this](const UiPoint& point) {
+  table_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_LOG_POPUP, point, true);
   });
 
@@ -100,11 +101,11 @@ void WatchView::SaveLog() {
   SYSTEMTIME time;
   GetLocalTime(&time);
 
-  std::wstring name = base::StringPrintf(
-      L"%04d%02d%02d_%02d%02d%02d.log", time.wYear, time.wMonth, time.wDay,
-      time.wHour, time.wMinute, time.wSecond);
+  auto name = base::StringPrintf(u"%04d%02d%02d_%02d%02d%02d.log", time.wYear,
+                                 time.wMonth, time.wDay, time.wHour,
+                                 time.wMinute, time.wSecond);
 
-  auto path = dialog_service_.SelectSaveFile({L"Сохранить как", name});
+  auto path = dialog_service_.SelectSaveFile({u"Сохранить как", name});
   if (!path.empty())
     model_->SaveLog(path);
 }

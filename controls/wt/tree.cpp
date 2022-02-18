@@ -2,7 +2,6 @@
 
 #include "controls/color.h"
 #include "controls/wt/tree_model_adapter.h"
-#include "value_util.h"
 
 #include <Wt/WPainter.h>
 

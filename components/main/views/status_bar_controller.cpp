@@ -1,5 +1,6 @@
 ﻿#include "components/main/views/status_bar_controller.h"
 
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "controls/status_bar_model.h"
 
@@ -48,12 +49,13 @@ void StatusBarController::Layout() {
   status_bar.SetParts(static_cast<int>(parts.size()), parts.data());
 }
 
-void StatusBarController::SetPaneText(int pane, const std::wstring& text) {
+void StatusBarController::SetPaneText(int pane, const std::u16string& text) {
+  auto text_wstring = base::AsWString(text);
   WTL::CStatusBarCtrl status_bar(hwnd_);
   wchar_t buffer[256] = L"";
   status_bar.GetText(pane, buffer);
-  if (text != buffer)
-    status_bar.SetText(pane, text.c_str());
+  if (text_wstring != buffer)
+    status_bar.SetText(pane, text_wstring.c_str());
 }
 
 void StatusBarController::OnPanesChanged(int index, int count) {

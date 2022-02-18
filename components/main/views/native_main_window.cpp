@@ -1,9 +1,11 @@
 #include "components/main/views/native_main_window.h"
 
-#include "controls/color.h"
+#include "base/string_piece_util.h"
+#include "base/strings/string_util.h"
 #include "command_handler.h"
 #include "components/main/views/main_window_views.h"
 #include "components/main/views/status_bar_controller.h"
+#include "controls/color.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/widget/widget.h"
 
@@ -189,7 +191,7 @@ LRESULT NativeMainWindow::OnInitMenuPopup(UINT /*uMsg*/,
       menu.DeleteMenu(pos, MF_BYPOSITION);
       int n = 0;
       for (size_t i = 0; i < aui::GetColorCount(); i++) {
-        const auto color_name = aui::GetColorName(i);
+        auto color_name = base::AsWString(AsStringPiece(aui::GetColorName(i)));
         MENUITEMINFO item = {};
         item.cbSize = sizeof(item);
         item.fMask = MIIM_FTYPE | MIIM_ID | MIIM_STRING | MIIM_STATE;
@@ -261,7 +263,8 @@ LRESULT NativeMainWindow::OnDrawItem(UINT /*uMsg*/,
     rect.right = info->rcItem.right - 2;
     dc.SetBkColor(GetSysColor(back));
     dc.SetTextColor(GetSysColor(fore));
-    const auto color_name = aui::GetColorName(color_index);
+    const auto color_name =
+        base::AsWStringPiece(AsStringPiece(aui::GetColorName(color_index)));
     dc.DrawText(color_name.data(), color_name.size(), &rect,
                 DT_LEFT | DT_SINGLELINE | DT_VCENTER);
     dc.RestoreDC(save);

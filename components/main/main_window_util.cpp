@@ -10,6 +10,7 @@
 #include "components/table/table_component.h"
 #include "components/watch/watch_component.h"
 #include "contents_model.h"
+#include "controls/key_codes.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
@@ -41,7 +42,7 @@ void OpenView(MainWindow* main_window,
 }
 
 const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
-                                           unsigned shift) {
+                                           aui::KeyModifiers key_modifiers) {
   if (IsInstanceOf(node, data_items::id::DataGroupType))
     return kTableWindowInfo;
 #if !defined(UI_WT)
@@ -51,36 +52,39 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
   else if (IsInstanceOf(node, devices::id::DeviceType))
     return kWatchWindowInfo;
   else
-    return (shift & MK_CONTROL) ? kTableEditorWindowInfo
-                                : kNodePropertyWindowInfo;
+    return (key_modifiers & aui::ControlModifier) ? kTableEditorWindowInfo
+                                                  : kNodePropertyWindowInfo;
 }
 
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const std::shared_ptr<Executor>& executor,
                                const FileRegistry& file_registry,
                                const NodeRef& node,
-                               unsigned shift) {
+                               aui::KeyModifiers key_modifiers) {
   assert(main_window);
 
   if (IsInstanceOf(node, filesystem::id::FileType)) {
     return ExecuteFileCommand(main_window, executor, file_registry, node,
-                              shift);
+                              key_modifiers);
   }
 
-  const auto& window_info = GetDefaultNodeWindowInfo(node, shift);
+  const auto& window_info = GetDefaultNodeWindowInfo(node, key_modifiers);
 
   auto* view = main_window->GetActiveDataView();
   auto* contents = view ? view->GetContentsModel() : nullptr;
   if (view && contents && view->window_info().can_insert_item()) {
-    if ((&view->window_info() == &window_info) || (shift & MK_CONTROL)) {
+    if ((&view->window_info() == &window_info) ||
+        (key_modifiers & aui::ControlModifier)) {
       // insert items into active frame
       promise<NodeIdSet> node_ids_promise =
           IsInstanceOf(node, data_items::id::DataGroupType)
               ? ExpandGroupItemIds(node)
               : make_resolved_promise(MakeNodeIdSet(node.node_id()));
       // TODO: Capture weak pointer.
-      node_ids_promise.then([contents, shift](const NodeIdSet& node_ids) {
-        unsigned flags = (shift & MK_CONTROL) ? ContentsModel::APPEND : 0;
+      node_ids_promise.then([contents,
+                             key_modifiers](const NodeIdSet& node_ids) {
+        unsigned flags =
+            (key_modifiers & aui::ControlModifier) ? ContentsModel::APPEND : 0;
         for (const auto& node_id : node_ids) {
           contents->AddContainedItem(node_id, flags);
           flags |= ContentsModel::APPEND;

@@ -62,14 +62,14 @@ class TestDialogService : public DialogService {
   virtual Wt::WWidget* GetParentWidget() const override { return nullptr; }
 
   virtual promise<MessageBoxResult> RunMessageBox(
-      std::wstring_view message,
-      std::wstring_view title,
+      std::u16string_view message,
+      std::u16string_view title,
       MessageBoxMode mode) override {
     auto promise = make_promise<MessageBoxResult>();
 
-    auto actual_title = title.empty() ? L"Title" : std::wstring{title};
+    auto actual_title = title.empty() ? u"Title" : std::u16string{title};
     auto message_box = parent_.addChild(Wt::cpp14::make_unique<Wt::WMessageBox>(
-        actual_title, std::wstring{message}, ToWtIcon(mode),
+        actual_title, std::u16string{message}, ToWtIcon(mode),
         ToStandardButtons(mode)));
 
     message_box->buttonClicked().connect(
@@ -85,7 +85,7 @@ class TestDialogService : public DialogService {
   }
 
   virtual std::filesystem::path SelectOpenFile(
-      std::wstring_view title) override {
+      std::u16string_view title) override {
     return {};
   }
 

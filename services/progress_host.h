@@ -11,7 +11,7 @@ class RunningProgress {
 
   virtual void SetProgress(int range, int position) = 0;
 
-  virtual void SetStatus(std::wstring_view status) = 0;
+  virtual void SetStatus(std::u16string_view status) = 0;
 
   virtual bool IsCanceled() = 0;
 };

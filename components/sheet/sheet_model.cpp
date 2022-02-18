@@ -9,10 +9,10 @@
 
 // SheetColumnModel -----------------------------------------------------------
 
-std::wstring SheetColumnModel::GetTitle(int index) const {
+std::u16string SheetColumnModel::GetTitle(int index) const {
   assert(index >= 0);
   wchar_t ch = L'A' + static_cast<char>(index);
-  return std::wstring(1, ch);
+  return std::u16string(1, ch);
 }
 
 // SheetModel -----------------------------------------------------------------
@@ -227,7 +227,7 @@ void SheetModel::SetRangeColor(const ui::GridRange& range, aui::Color color) {
   NotifyRangeChanged(update_range);
 }
 
-bool SheetModel::SetCellText(int row, int column, const std::wstring& text) {
+bool SheetModel::SetCellText(int row, int column, const std::u16string& text) {
   GetCell(row, column).SetFormula(text);
   // TODO: Update formula row on model change notification.
   // UpdateFormulaRow();

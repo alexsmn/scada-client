@@ -2,6 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
 #include "common/node_event_provider.h"
 #include "components/table/table_model.h"
@@ -45,11 +46,11 @@ std::optional<aui::Color> GetNodeColor(const NodeRef& node,
                     : aui::Color::FromSkColor(SK_ColorBLACK);
 }
 
-std::wstring FormatCellTime(scada::DateTime time) {
+std::u16string FormatCellTime(scada::DateTime time) {
   if (time.is_null())
-    return std::wstring{};
+    return std::u16string{};
 
-  return base::SysNativeMBToWide(FormatTime(time, g_time_format));
+  return base::UTF8ToUTF16(FormatTime(time, g_time_format));
 }
 
 }  // namespace
@@ -75,11 +76,11 @@ std::string TableRow::GetFormula() const {
   return formula_.empty() ? std::string{} : '=' + formula_;
 }
 
-std::wstring TableRow::GetTitle() const {
+std::u16string TableRow::GetTitle() const {
   return timed_data_.GetTitle();
 }
 
-std::wstring TableRow::GetTooltip() const {
+std::u16string TableRow::GetTooltip() const {
   return GetTimedDataTooltipText(timed_data_);
 }
 
@@ -149,7 +150,7 @@ void TableRow::GetEventCell(TableCellEx& cell) const {
   cell.text = last_event.message;
 
   if (events->size() >= 2)
-    cell.text.insert(0, base::StringPrintf(L"[%d] ", events->size()));
+    cell.text.insert(0, base::StringPrintf(u"[%d] ", events->size()));
 }
 
 void TableRow::GetCellEx(TableCellEx& cell) const {

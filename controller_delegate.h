@@ -1,8 +1,7 @@
 #pragma once
 
-#include "controls/types.h"
-
-#include <string_view>
+#include "base/strings/string_piece.h"
+#include "controls/point.h"
 
 namespace ui {
 class MenuModel;
@@ -15,12 +14,12 @@ class WindowDefinition;
 
 class ControllerDelegate {
  public:
-  virtual void SetTitle(const std::wstring_view& title) = 0;
+  virtual void SetTitle(std::u16string_view title) = 0;
 
   // |point| is in _screen_ coordinates.
   // |right_click| should be set if popup is initated by right-click.
   virtual void ShowPopupMenu(unsigned resource_id,
-                             const UiPoint& point,
+                             const aui::Point& point,
                              bool right_click) = 0;
 
   virtual void SetModified(bool modified) = 0;

@@ -27,21 +27,20 @@ AddFavouritesDialog::AddFavouritesDialog(AddFavouritesContext&& context,
     : QDialog{parent}, AddFavouritesContext{std::move(context)} {
   ui.setupUi(this);
 
-  ui.nameLineEdit->setText(QString::fromStdWString(window_def_.title));
+  ui.nameLineEdit->setText(QString::fromStdU16String(window_def_.title));
 
   ui.folderListWidget->addItem(empty_folder_title_);
   for (auto& folder : favourites_.folders())
-    ui.folderListWidget->addItem(QString::fromStdWString(folder.GetTitle()));
+    ui.folderListWidget->addItem(QString::fromStdU16String(folder.GetTitle()));
   ui.folderListWidget->setCurrentRow(0);
 }
 
 void AddFavouritesDialog::accept() {
-  window_def_.title = ui.nameLineEdit->text().toStdWString();
+  window_def_.title = ui.nameLineEdit->text().toStdU16String();
   auto folder_name = ui.folderLineEdit->text();
   if (folder_name == empty_folder_title_)
     folder_name.clear();
-  const Page& folder =
-      favourites_.GetOrAddFolder(folder_name.toStdWString().c_str());
+  const Page& folder = favourites_.GetOrAddFolder(folder_name.toStdU16String());
   favourites_.Add(window_def_, folder);
 
   QDialog::accept();

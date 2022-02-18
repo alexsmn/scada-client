@@ -25,8 +25,8 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   }
 
   const ui::TableColumn columns[] = {
-      {0, L"Объект", 250, ui::TableColumn::LEFT},
-      {1, L"Адрес", 100, ui::TableColumn::RIGHT},
+      {0, u"Объект", 250, ui::TableColumn::LEFT},
+      {1, u"Адрес", 100, ui::TableColumn::RIGHT},
   };
   column_model_->SetColumns(std::size(columns), columns);
 

@@ -46,15 +46,15 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
    private:
     scada::DataValue GetCurrentValue(const MetrixDataSource& data_source) const;
-    std::wstring GetText(const MetrixDataSource& data_source,
+    std::u16string GetText(const MetrixDataSource& data_source,
                            int column_id) const;
     int GetColumnWidth(int column_id) const;
     int GetColumnCount() const;
 
-    static const int MARGX = 5;  // margin inside legend
-    static const int MARGY = 5;  // margin inside legend
+    static const int MARGX = 5;    // margin inside legend
+    static const int MARGY = 5;    // margin inside legend
     static const int INDENTX = 2;  // distance between columns
-    static const int ROW = 13;   // legend row height
+    static const int ROW = 13;     // legend row height
 
     mutable int title_width_ = 0;
   };

@@ -1,5 +1,7 @@
 #include "components/graph/graph_setup_dialog.h"
 
+#include "base/string_piece_util.h"
+#include "base/strings/string_util.h"
 #include "skia/ext/skia_utils_win.h"
 
 LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
@@ -47,7 +49,7 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
   dc.FillRect(&rect, brush);
 
   InflateRect(&rect, -3, -2);
-  std::wstring_view text;
+  std::wstring text;
 
   if (dis->itemID >= 0 && dis->itemID < aui::GetColorCount()) {
     // draw color
@@ -59,7 +61,7 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
     dc.SelectStockPen(BLACK_PEN);
     dc.Rectangle(&crect);
     // draw text
-    text = aui::GetColorName(dis->itemID);
+    text = base::AsWString(AsStringPiece(aui::GetColorName(dis->itemID)));
     rect.left = crect.right + 3;
   }
 

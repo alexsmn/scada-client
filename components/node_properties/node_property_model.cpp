@@ -63,18 +63,18 @@ void NodePropertyModel::Update() {
 #ifndef NDEBUG
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
-        std::wstring{kNodeIdAttributeString},
+        std::u16string{kNodeIdAttributeString},
         scada::AttributeId::NodeId,
     });
 #endif
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
-        std::wstring{kBrowseNameAttributeString},
+        std::u16string{kBrowseNameAttributeString},
         scada::AttributeId::BrowseName,
     });
     group->properties.push_back({
         PropertyGroup::ItemType::Property,
-        std::wstring{kDisplayNameAttributeString},
+        std::u16string{kDisplayNameAttributeString},
         scada::AttributeId::DisplayName,
     });
   }
@@ -120,7 +120,7 @@ void NodePropertyModel::Update() {
   }
 
   for (auto& category : ordered_groups) {
-    auto title = category ? ToString16(category.display_name()) : L"Общие";
+    auto title = category ? ToString16(category.display_name()) : u"Общие";
     root_.properties.push_back({PropertyGroup::ItemType::Category,
                                 std::move(title), scada::AttributeId::NodeId,
                                 nullptr, scada::NodeId{},

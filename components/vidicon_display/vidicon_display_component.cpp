@@ -4,7 +4,7 @@
 #include "controller_registry.h"
 
 const WindowInfo kVidiconDisplayWindowInfo = {
-    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", L"Схема", 0, 0, 0, 0};
+    ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", u"Схема", 0, 0, 0, 0};
 
 class VidiconDisplayViewFactory : public ControllerRegistrarBase {
  public:

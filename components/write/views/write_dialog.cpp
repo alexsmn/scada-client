@@ -1,5 +1,8 @@
 ﻿#include "components/write/write_dialog.h"
 
+#include "base/format.h"
+#include "base/string_piece_util.h"
+#include "base/strings/string_util.h"
 #include "common_resources.h"
 #include "components/write/write_model.h"
 #include "services/dialog_service.h"
@@ -40,7 +43,7 @@ WriteDialog::WriteDialog(WriteModel& model)
   model_.condition_change_handler = [this] { UpdateCondition(); };
 
   model_.status_change_handler = [this] {
-    SetItemText(IDC_STATUS, model_.GetStatusText());
+    SetItemText(IDC_STATUS, base::AsWString(model_.GetStatusText()));
   };
 
   model_.completion_handler = [this](bool ok) {
@@ -54,20 +57,20 @@ void WriteDialog::OnInitDialog() {
   dialog_service_.dialog_owning_window = window_handle();
   model_.set_dialog_service(&dialog_service_);
 
-  SetWindowText(model_.GetWindowTitle());
-  SetItemText(IDC_TITLE, model_.GetSourceTitle());
+  SetWindowText(base::AsWString(model_.GetWindowTitle()));
+  SetItemText(IDC_TITLE, base::AsWString(model_.GetSourceTitle()));
 
   UpdateCurrent();
 
   if (model_.discrete()) {
     wnd_state = GetItem(IDC_STATE);
     for (const auto& choice : model_.GetDiscreteStates())
-      wnd_state.AddString(choice.c_str());
+      wnd_state.AddString(base::AsWString(choice).c_str());
     wnd_state.SetCurSel(model_.GetCurrentDiscreteState());
 
   } else {
-    SetItemText(IDC_UNITS, model_.GetAnalogUnits());
-    SetItemText(IDC_VALUE, model_.GetCurrentValue(false));
+    SetItemText(IDC_UNITS, base::AsWString(model_.GetAnalogUnits()));
+    SetItemText(IDC_VALUE, base::AsWString(model_.GetCurrentValue(false)));
   }
 
   wnd_lock = GetItem(IDC_LOCK);
@@ -85,10 +88,10 @@ void WriteDialog::OnOK() {
 
   } else {
     std::wstring value_str = GetItemText(IDC_VALUE);
-    if (!Parse(value_str, value)) {
+    if (!Parse(AsStringView(base::AsStringPiece16(value_str)), value)) {
       dialog_service_.RunMessageBox(
-          L"Введено неверное значение. Используйте точку в качестве "
-          L"разделителя десятичных разрядов.",
+          u"Введено неверное значение. Используйте точку в качестве "
+          u"разделителя десятичных разрядов.",
           model_.GetWindowTitle(), MessageBoxMode::Error);
       return;
     }
@@ -105,11 +108,11 @@ void WriteDialog::OnOK() {
 
 void WriteDialog::set_running(bool running) {
   ::EnableWindow(GetItem(IDOK), !running);
-  SetItemText(IDC_STATUS, model_.GetStatusText());
+  SetItemText(IDC_STATUS, base::AsWString(model_.GetStatusText()));
 }
 
 void WriteDialog::UpdateCurrent() {
-  SetItemText(IDC_CURRENT, model_.GetCurrentValue(true));
+  SetItemText(IDC_CURRENT, base::AsWString(model_.GetCurrentValue(true)));
 }
 
 void WriteDialog::UpdateCondition() {

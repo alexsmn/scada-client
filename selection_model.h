@@ -27,7 +27,7 @@ class SelectionModel final : private SelectionModelContext,
   void SelectTimedData(const TimedDataSpec& spec);
   void SelectMultiple();
 
-  std::wstring GetTitle() const;
+  std::u16string GetTitle() const;
   NodeIdSet GetMultipleNodeIds() const;
   const NodeRef& node() const { return node_; }
   const TimedDataSpec& timed_data() const { return timed_data_; }

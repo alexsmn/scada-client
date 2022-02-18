@@ -5,6 +5,7 @@
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
+#include "controls/key_codes.h"
 #include "export_model.h"
 #include "selection_model.h"
 
@@ -45,7 +46,7 @@ class TableView : protected ControllerContext,
 
   void OnSelectionChanged();
   void OnDoubleClick();
-  bool OnKeyPressed(KeyCode key_code);
+  bool OnKeyPressed(aui::KeyCode key_code);
 
   SelectionModel selection_{{timed_data_service_}};
 

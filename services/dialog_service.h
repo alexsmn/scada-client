@@ -2,6 +2,7 @@
 
 #include "base/containers/span.h"
 #include "base/promise.h"
+#include "base/strings/string_piece.h"
 #include "gfx/native_widget_types.h"
 
 #include <filesystem>
@@ -37,19 +38,19 @@ class DialogService {
   virtual Wt::WWidget* GetParentWidget() const = 0;
 #endif
 
-  virtual promise<MessageBoxResult> RunMessageBox(std::wstring_view message,
-                                                  std::wstring_view title,
+  virtual promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                                  std::u16string_view title,
                                                   MessageBoxMode mode) = 0;
 
-  virtual std::filesystem::path SelectOpenFile(std::wstring_view title) = 0;
+  virtual std::filesystem::path SelectOpenFile(std::u16string_view title) = 0;
 
   struct Filter {
-    std::wstring_view title;
+    std::u16string_view title;
     base::span<const std::string_view> extensions;
   };
 
   struct SaveParams {
-    std::wstring_view title;
+    std::u16string_view title;
     std::filesystem::path default_path;
     base::span<const Filter> filters;
   };

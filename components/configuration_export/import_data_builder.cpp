@@ -1,7 +1,7 @@
 #include "import_data_builder.h"
 
 #include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "components/configuration_export/export_data.h"
 #include "components/configuration_export/resource_error.h"
 #include "model/data_items_node_ids.h"
@@ -43,9 +43,8 @@ ImportData BuildImportData(NodeService& node_service,
     auto type_definition = node_service.GetNode(export_node.type_id);
     if (!type_definition) {
       throw ResourceError{base::StringPrintf(
-          L"“ип %ls не найден",
-          base::SysNativeMBToWide(NodeIdToScadaString(export_node.type_id))
-              .c_str())};
+          u"“ип %ls не найден",
+          base::UTF8ToUTF16(NodeIdToScadaString(export_node.type_id)).c_str())};
     }
 
     scada::NodeAttributes attrs;

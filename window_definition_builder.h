@@ -22,7 +22,7 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
 WindowDefinition MakeWindowDefinition(
     const WindowInfo* window_info,
     const std::vector<scada::NodeId>& node_ids,
-    std::wstring title = std::wstring{});
+    std::u16string title = std::u16string{});
 
 promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
     const WindowInfo* window_info,

@@ -1,14 +1,14 @@
 ﻿#pragma once
 
-#include <string_view>
+#include "base/strings/string16.h"
 
 namespace {
 
-const std::wstring_view kNodeIdAttributeString{L"Индекс"};
-const std::wstring_view kBrowseNameAttributeString{L"Обозначение"};
-const std::wstring_view kDisplayNameAttributeString{L"Имя"};
-const std::wstring_view kSourceTimestampTitle{L"Время источника"};
-const std::wstring_view kServerTimestampTitle{L"Время сервера"};
-const std::wstring_view kValueTitle{L"Значение"};
+const char16_t kNodeIdAttributeString[] = u"Индекс";
+const char16_t kBrowseNameAttributeString[] = u"Обозначение";
+const char16_t kDisplayNameAttributeString[] = u"Имя";
+const char16_t kSourceTimestampTitle[] = u"Время источника";
+const char16_t kServerTimestampTitle[] = u"Время сервера";
+const char16_t kValueTitle[] = u"Значение";
 
 }  // namespace

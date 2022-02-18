@@ -16,7 +16,7 @@ class ExportDataReader {
   ExportData Read();
 
  private:
-  ExportData::Property ReadProperty(std::wstring_view cell);
+  ExportData::Property ReadProperty(std::u16string_view cell);
 
   ExportData::Node ReadNode(const std::vector<ExportData::Property>& props);
 
@@ -24,12 +24,12 @@ class ExportDataReader {
       const ExportData::Property& prop,
       const NodeRef& type_definition);
 
-  std::wstring& ReadCell();
+  std::u16string& ReadCell();
 
-  std::wstring* TryReadCell();
+  std::u16string* TryReadCell();
 
   NodeService& node_service_;
   CsvReader& reader_;
 
-  std::wstring cell_;
+  std::u16string cell_;
 };

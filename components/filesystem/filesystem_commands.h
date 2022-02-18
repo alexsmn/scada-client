@@ -1,5 +1,7 @@
 #pragma once
 
+#include "controls/key_codes.h"
+
 #include <memory>
 
 class DialogService;
@@ -13,7 +15,7 @@ bool ExecuteFileCommand(MainWindow* main_window,
                         const std::shared_ptr<Executor>& executor,
                         const FileRegistry& file_registry,
                         const NodeRef& file_node,
-                        unsigned shift);
+                        aui::KeyModifiers key_modifiers);
 
 void AddFile(NodeRef parent_directory,
              DialogService& dialog_service,

@@ -24,7 +24,7 @@ class SummaryModel::Column {
   int width() const { return width_; }
   void set_width(int width) { width_ = width; }
 
-  std::wstring GetTitle() const;
+  std::u16string GetTitle() const;
   scada::NodeId GetNodeId() const { return timed_data_.GetNode().node_id(); }
 
   void UpdateTimes();
@@ -65,7 +65,7 @@ SummaryModel::Column::Column(SummaryModel& model,
   UpdateTimes();
 }
 
-std::wstring SummaryModel::Column::GetTitle() const {
+std::u16string SummaryModel::Column::GetTitle() const {
   if (model_.path_title_) {
     if (auto node = timed_data_.GetNode()) {
       auto title = GetFullDisplayName(node);
@@ -145,7 +145,7 @@ class SummaryModel::RowModel : public ui::HeaderModel {
   // ui::HeaderModel
   virtual int GetCount() const override { return model_.row_count_; }
   virtual int GetSize(int index) const override { return 18; }
-  virtual std::wstring GetTitle(int index) const override;
+  virtual std::u16string GetTitle(int index) const override;
 
  private:
   friend class SummaryModel;
@@ -157,9 +157,9 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
   SetFixedSize(true);
 }
 
-std::wstring SummaryModel::RowModel::GetTitle(int index) const {
+std::u16string SummaryModel::RowModel::GetTitle(int index) const {
   base::Time time = model_.GetRowTime(index);
-  return base::SysNativeMBToWide(
+  return base::UTF8ToUTF16(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
 }
 
@@ -173,7 +173,7 @@ class SummaryModel::ColumnModel : public ui::HeaderModel {
   virtual int GetCount() const override;
   virtual int GetSize(int index) const override;
   virtual void SetSize(int index, int new_size) override;
-  virtual std::wstring GetTitle(int index) const override;
+  virtual std::u16string GetTitle(int index) const override;
   virtual ui::TableColumn::Alignment GetAlignment(int index) const override;
 
  private:
@@ -198,7 +198,7 @@ void SummaryModel::ColumnModel::SetSize(int index, int new_size) {
   }
 }
 
-std::wstring SummaryModel::ColumnModel::GetTitle(int index) const {
+std::u16string SummaryModel::ColumnModel::GetTitle(int index) const {
   return model_.columns_[index]->GetTitle();
 }
 
@@ -440,7 +440,7 @@ bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
 
 ExportModel::ExportData SummaryModel::GetExportData() {
   return GridExportData{
-      ui::TableColumn{-1, L"Время", 100, ui::TableColumn::LEFT,
+      ui::TableColumn{-1, u"Время", 100, ui::TableColumn::LEFT,
                       ui::TableColumn::DataType::General},
       *this, row_model(), column_model()};
 }

@@ -1,5 +1,6 @@
 ﻿#include "components/main/qt/main_window_qt.h"
 
+#include "base/strings/string_util.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
 #include "common_resources.h"
@@ -65,20 +66,21 @@ void BuildMenuModel(CMenuHandle menu_handle,
           std::make_unique<ui::SimpleMenuModel>(menu_model.delegate());
       BuildMenuModel(menu_info.hSubMenu, context_menu_model, *submenu_model,
                      submenus);
-      menu_model.AddSubMenu(menu_info.wID, title, submenu_model.get());
+      menu_model.AddSubMenu(menu_info.wID, base::AsString16(title),
+                            submenu_model.get());
       submenus.emplace_back(std::move(submenu_model));
 
     } else if (menu_info.fType & MFT_SEPARATOR) {
       menu_model.AddSeparator(ui::NORMAL_SEPARATOR);
 
     } else if (menu_info.fState & MFS_CHECKED) {
-      menu_model.AddCheckItem(menu_info.wID, title);
+      menu_model.AddCheckItem(menu_info.wID, base::AsString16(title));
 
     } else if (menu_info.wID == ID_ITEM_COMMANDS) {
       menu_model.AddInplaceMenu(&context_menu_model);
 
     } else {
-      menu_model.AddItem(menu_info.wID, title);
+      menu_model.AddItem(menu_info.wID, base::AsString16(title));
     }
   }
 }
@@ -123,9 +125,9 @@ MainWindowQt::~MainWindowQt() {
 
 void MainWindowQt::UpdateTitle() {
   QString server =
-      QString::fromStdWString(FormatHostName(connection_info_provider_()));
+      QString::fromStdU16String(FormatHostName(connection_info_provider_()));
   QString page =
-      QString::fromStdWString(view_manager_->current_page().GetTitle());
+      QString::fromStdU16String(view_manager_->current_page().GetTitle());
   QString title = tr("%1 (Server: %2)").arg(page).arg(server);
   setWindowTitle(title);
 }
@@ -146,7 +148,7 @@ void MainWindowQt::CreateToolbar() {
 
   for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
     auto* submenu = menu_bar->addMenu(
-        QString::fromStdWString(main_menu_model_->GetLabelAt(i)));
+        QString::fromStdU16String(main_menu_model_->GetLabelAt(i)));
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
     assert(submenu_model);
     QObject::connect(submenu, &QMenu::aboutToShow, this,
@@ -163,7 +165,7 @@ void MainWindowQt::CreateToolbar() {
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
     auto* action = new QAction(
-        QString::fromStdWString(action_info->GetShortTitle()), this);
+        QString::fromStdU16String(action_info->GetShortTitle()), this);
     action->setPriority(collapsible ? QAction::LowPriority
                                     : QAction::NormalPriority);
     action->setVisible(false);
@@ -201,8 +203,8 @@ void MainWindowQt::CreateToolbar() {
         if (!category_action.menu) {
           auto* button = new QToolButton(toolbar_);
           auto* menu = new QMenu(this);
-          auto text = QString::fromWCharArray(
-              GetCommandCategoryTitle(action_info->category_));
+          auto title = GetCommandCategoryTitle(action_info->category_);
+          auto text = QString::fromUtf16(title.data(), title.size());
           button->setMenu(menu);
           button->setPopupMode(QToolButton::InstantPopup);
           button->setText(text);
@@ -251,10 +253,10 @@ void MainWindowQt::OnSelectionChanged() {
 void MainWindowQt::SetToolbarPosition(unsigned position) {}
 
 void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
-                                      const gfx::Point& point) {
+                                      const aui::Point& point) {
   QMenu menu;
   BuildMenu(menu, *tab_popup_menu_);
-  menu.exec({point.x(), point.y()});
+  menu.exec(point);
 }
 
 QAction* MainWindowQt::FindAction(unsigned command_id) {
@@ -275,7 +277,7 @@ void MainWindowQt::UpdateAction(QAction& action,
   if (static_cast<unsigned>(change_mask) &
       static_cast<unsigned>(ActionChangeMask::Title)) {
     if (auto* a = action_manager_.FindAction(command_id))
-      action.setText(QString::fromStdWString(a->GetTitle()));
+      action.setText(QString::fromStdU16String(a->GetTitle()));
   }
 
   auto* handler = commands_->GetCommandHandler(command_id);
@@ -312,7 +314,7 @@ void MainWindowQt::closeEvent(QCloseEvent* event) {
 }
 
 void MainWindowQt::ShowPopupMenu(unsigned resource_id,
-                                 const UiPoint& point,
+                                 const aui::Point& point,
                                  bool right_click) {
   if (resource_id == 0) {
     QMenu menu;

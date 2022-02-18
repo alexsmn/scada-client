@@ -1,6 +1,7 @@
 ﻿#include "services/task_manager_impl.h"
 
 #include "base/executor.h"
+#include "base/strings/stringprintf.h"
 #include "core/attribute_service.h"
 #include "core/node_management_service.h"
 #include "core/status.h"
@@ -10,19 +11,17 @@
 #include "services/profile.h"
 #include "services/progress_host.h"
 
-#undef ReportEvent
-
 using namespace std::chrono_literals;
 
 namespace {
 
-std::wstring FormatReference(NodeService& node_service,
-                             const scada::NodeId& reference_type_id,
-                             const scada::NodeId& source_id,
-                             const scada::NodeId& target_id,
-                             bool add) {
+std::u16string FormatReference(NodeService& node_service,
+                               const scada::NodeId& reference_type_id,
+                               const scada::NodeId& source_id,
+                               const scada::NodeId& target_id,
+                               bool add) {
   return base::StringPrintf(
-      L"%ls типа %ls от %ls к %ls", add ? L"Создание связи" : L"Удаление связи",
+      u"%ls типа %ls от %ls к %ls", add ? u"Создание связи" : u"Удаление связи",
       GetDisplayName(node_service, reference_type_id).c_str(),
       GetDisplayName(node_service, source_id).c_str(),
       GetDisplayName(node_service, target_id).c_str());
@@ -69,7 +68,7 @@ void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
                         ? scada::NodeClass::Object
                         : scada::NodeClass::Variable;
 
-  PostTask(L"Вставка", [=,
+  PostTask(u"Вставка", [=,
                         &node_management_service = node_management_service_] {
     scada::AddNode(
         node_management_service,
@@ -102,9 +101,9 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
                                      scada::NodeAttributes attributes,
                                      scada::NodeProperties properties,
                                      UpdateCallback callback) {
-  std::wstring title = GetDisplayName(node_service_, node_id);
+  std::u16string title = GetDisplayName(node_service_, node_id);
 
-  PostTask(base::StringPrintf(L"Изменение %ls", title.c_str()), [=] {
+  PostTask(base::StringPrintf(u"Изменение %ls", title.c_str()), [=] {
     node_service_.GetNode(node_id).Fetch(
         NodeFetchStatus::NodeOnly(),
         BindExecutor(
@@ -151,7 +150,8 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
                         }
 
                         if (auto ptr = weak_ptr.lock())
-                          ptr->ReportRequestCompletion(status, std::wstring());
+                          ptr->ReportRequestCompletion(status,
+                                                       std::u16string());
 
                         // TODO: Handle |results|.
                         if (callback)
@@ -162,8 +162,8 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
 }
 
 void TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
-  std::wstring title = GetDisplayName(node_service_, node_id);
-  PostTask(base::StringPrintf(L"Удаление %ls", title.c_str()),
+  std::u16string title = GetDisplayName(node_service_, node_id);
+  PostTask(base::StringPrintf(u"Удаление %ls", title.c_str()),
            [=, &node_management_service = node_management_service_] {
              scada::DeleteNode(
                  node_management_service, {node_id},
@@ -190,7 +190,7 @@ void TaskManagerImpl::PostAddReference(const scada::NodeId& reference_type_id,
                                     std::vector<scada::StatusCode> results) {
           auto result = status ? results.front() : std::move(status);
           if (auto ptr = weak_ptr.lock())
-            ptr->ReportRequestCompletion(result, std::wstring());
+            ptr->ReportRequestCompletion(result, std::u16string());
         }));
   });
 }
@@ -211,7 +211,7 @@ void TaskManagerImpl::PostDeleteReference(
                                     std::vector<scada::StatusCode> results) {
           auto result = status ? results.front() : std::move(status);
           if (auto ptr = weak_ptr.lock())
-            ptr->ReportRequestCompletion(result, std::wstring());
+            ptr->ReportRequestCompletion(result, std::u16string());
         }));
   });
 }
@@ -222,23 +222,24 @@ void TaskManagerImpl::StartTask(Task&& task) {
   running_task_ = std::move(task);
 
   if (running_progress_)
-    running_progress_->SetStatus((running_task_.title + L"...").c_str());
+    running_progress_->SetStatus((running_task_.title + u"...").c_str());
 
   running_task_.task();
 }
 
-void TaskManagerImpl::ReportRequestCompletion(const scada::Status& status,
-                                              const std::wstring& result_text) {
+void TaskManagerImpl::ReportRequestCompletion(
+    const scada::Status& status,
+    const std::u16string& result_text) {
   auto task = std::move(running_task_);
   running_task_ = Task();
 
   if (status && !profile_.show_write_ok)
     return;
 
-  std::wstring message = base::StringPrintf(L"%ls: %ls.", task.title.c_str(),
-                                            ToString16(status).c_str());
+  std::u16string message = base::StringPrintf(u"%ls: %ls.", task.title.c_str(),
+                                              ToString16(status).c_str());
   if (!result_text.empty())
-    message += L'\n' + result_text;
+    message += u'\n' + result_text;
 
   auto severity = status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
   local_events_.ReportEvent(severity, message);
@@ -255,24 +256,26 @@ void TaskManagerImpl::Run() {
     running_task_ = Task();
   }
 
-  if (count < (int)tasks_.size())
-    count = tasks_.size();
+  if (count_ < static_cast<int>(tasks_.size()))
+    count_ = tasks_.size();
 
   // show or hide dialog
   if (!running_task_.IsNull() || !tasks_.empty()) {
-    if (!start_time)
-      start_time = GetTickCount();
+    if (!start_time_.has_value())
+      start_time_ = std::chrono::steady_clock::now();
 
-    if (!running_progress_ && GetTickCount() - start_time >= 300)
+    if (!running_progress_ &&
+        std::chrono::steady_clock::now() - *start_time_ >= 300ms) {
       running_progress_ = progress_host_.Start();
+    }
 
     if (running_progress_)
-      running_progress_->SetProgress(count, count - tasks_.size());
+      running_progress_->SetProgress(count_, count_ - tasks_.size());
 
   } else {
     CancelProgress();
-    start_time = 0;
-    count = 0;
+    start_time_.reset();
+    count_ = 0;
   }
 
   // process next task
@@ -283,6 +286,6 @@ void TaskManagerImpl::Run() {
   }
 }
 
-void TaskManagerImpl::PostTask(std::wstring_view title, TaskMethod task) {
-  tasks_.push({std::wstring{title}, std::move(task)});
+void TaskManagerImpl::PostTask(std::u16string_view title, TaskMethod task) {
+  tasks_.push({std::u16string{title}, std::move(task)});
 }

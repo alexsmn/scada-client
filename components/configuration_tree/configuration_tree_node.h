@@ -26,7 +26,7 @@ class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
   bool forward_reference() const { return forward_reference_; }
 
   // TreeNode
-  virtual std::wstring GetText(int column_id) const override;
+  virtual std::u16string GetText(int column_id) const override;
   virtual int GetIcon() const override;
   virtual bool HasChildren() const override;
   virtual bool CanFetchMore() const override;
@@ -67,6 +67,6 @@ class ConfigurationTreeRootNode : public ConfigurationTreeNode {
   ConfigurationTreeRootNode(ConfigurationTreeModel& model, NodeRef tree);
 
   // TreeNode
-  virtual std::wstring GetText(int column_id) const override;
+  virtual std::u16string GetText(int column_id) const override;
   virtual int GetIcon() const override;
 };

@@ -1,7 +1,9 @@
 ﻿#include "components/events/event_view.h"
 
 #include "base/excel.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "client_utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
@@ -27,15 +29,15 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
           context.executor_, context.node_service_, context.event_fetcher_,
           context.local_events_, context.history_service_, is_panel_})} {
   const ui::TableColumn kEventViewColumns[] = {
-      {EventColumnTime, L"Время", 150, ui::TableColumn::LEFT,
+      {EventColumnTime, u"Время", 150, ui::TableColumn::LEFT,
        ui::TableColumn::DataType::DateTime},
-      {EventColumnItem, L"Объект", 170, ui::TableColumn::LEFT},
-      {EventColumnSeverity, L"Важность", 45, ui::TableColumn::RIGHT},
-      {EventColumnValue, L"Значение", 100, ui::TableColumn::RIGHT},
-      {EventColumnMessage, L"Сообщение", 300, ui::TableColumn::LEFT},
-      {EventColumnUser, L"Инициатор", 100, ui::TableColumn::LEFT},
-      {EventColumnAckUser, L"Квитировал", 100, ui::TableColumn::LEFT},
-      {EventColumnAckTime, L"Время квитирования", 150, ui::TableColumn::LEFT,
+      {EventColumnItem, u"Объект", 170, ui::TableColumn::LEFT},
+      {EventColumnSeverity, u"Важность", 45, ui::TableColumn::RIGHT},
+      {EventColumnValue, u"Значение", 100, ui::TableColumn::RIGHT},
+      {EventColumnMessage, u"Сообщение", 300, ui::TableColumn::LEFT},
+      {EventColumnUser, u"Инициатор", 100, ui::TableColumn::LEFT},
+      {EventColumnAckUser, u"Квитировал", 100, ui::TableColumn::LEFT},
+      {EventColumnAckTime, u"Время квитирования", 150, ui::TableColumn::LEFT,
        ui::TableColumn::DataType::DateTime},
   };
 
@@ -52,7 +54,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->sortByColumn(0, Qt::DescendingOrder);
 #endif
 
-  table_->SetContextMenuHandler([this](const UiPoint& point) {
+  table_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
   });
 
@@ -61,7 +63,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   table_->SetDoubleClickHandler([this] { AcknowledgeSelection(); });
 
   table_->SetKeyPressHandler(
-      [this](KeyCode key_code) { return OnKeyPressed(key_code); });
+      [this](aui::KeyCode key_code) { return OnKeyPressed(key_code); });
 
   selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
 
@@ -149,9 +151,9 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   return table_->CreateParentIfNecessary();
 }
 
-bool EventView::OnKeyPressed(KeyCode key_code) {
+bool EventView::OnKeyPressed(aui::KeyCode key_code) {
   switch (key_code) {
-    case KeyCode::Escape:
+    case aui::KeyCode::Escape:
       model_->CancelRequest();
       return true;
 
@@ -164,7 +166,7 @@ bool EventView::IsWorking() const {
   return model_->IsWorking();
 }
 
-std::wstring EventView::MakeTitle() const {
+std::u16string EventView::MakeTitle() const {
   return model_->MakeTitle();
 }
 
@@ -186,7 +188,7 @@ void EventView::Save(WindowDefinition& definition) {
 void EventView::ExportToExcel() {
   int rows = model_->GetRowCount();
   if (!rows) {
-    dialog_service_.RunMessageBox(L"Нет данных для экспорта.", L"Экспорт",
+    dialog_service_.RunMessageBox(u"Нет данных для экспорта.", u"Экспорт",
                                   MessageBoxMode::Info);
     return;
   }
@@ -197,12 +199,12 @@ void EventView::ExportToExcel() {
     const auto& columns = table_->columns();
 
     for (size_t i = 0; i < columns.size(); ++i)
-      sheet.SetData(1, i + 1, columns[i].title);
+      sheet.SetData(1, i + 1, base::AsWString(columns[i].title));
 
     for (int row = 0; row < model_->GetRowCount(); ++row) {
       for (size_t col = 0; col < columns.size(); ++col) {
-        std::wstring text = model_->GetCellText(row, columns[col].id);
-        sheet.SetData(2 + row, col + 1, text);
+        auto text = model_->GetCellText(row, columns[col].id);
+        sheet.SetData(2 + row, col + 1, base::AsWString(text));
       }
     }
 
@@ -212,7 +214,7 @@ void EventView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(L"Ошибка при экспорте.", L"Экспорт",
+    dialog_service_.RunMessageBox(u"Ошибка при экспорте.", u"Экспорт",
                                   MessageBoxMode::Error);
   }
 }
@@ -249,16 +251,17 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
 void EventView::SelectSeverity() {
   unsigned severity = model_->current_events() ? event_fetcher_.severity_min()
                                                : model_->severity_min();
-  const wchar_t prompt[] = L"Минимальный порог важности (0 - все события):";
-  std::wstring value = WideFormat(severity);
+  const char16_t prompt[] = u"Минимальный порог важности (0 - все события):";
+  auto value = base::NumberToString16(severity);
   for (;;) {
-    if (!RunPromptDialog(dialog_service_, prompt, L"Фильтр", value))
+    if (!RunPromptDialog(dialog_service_, prompt, u"Фильтр", value))
       return;
-    if (!Parse(value, severity) || severity > scada::kSeverityMax) {
-      std::wstring message =
-          base::StringPrintf(L"Введите число от %d до %d.", scada::kSeverityMin,
+    if (!base::StringToUint(value, &severity) ||
+        severity > scada::kSeverityMax) {
+      auto message =
+          base::StringPrintf(u"Введите число от %d до %d.", scada::kSeverityMin,
                              scada::kSeverityMax);
-      MessageBox(GetActiveWindow(), message.c_str(), L"Фильтр", MB_ICONSTOP);
+      dialog_service_.RunMessageBox(message, u"Фильтр", MessageBoxMode::Error);
       continue;
     }
     break;

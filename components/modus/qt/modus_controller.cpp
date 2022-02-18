@@ -1,6 +1,7 @@
 ﻿#include "components/modus/qt/modus_controller.h"
 
 #include "base/bind.h"
+#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_utils.h"
@@ -28,15 +29,15 @@ ModusController::ModusController(const ControllerContext& context)
 ModusController::~ModusController() {}
 
 QWidget* ModusController::CreateModusView() {
-  auto title_callback = [this](const std::wstring& title) {
+  auto title_callback = [this](const std::u16string& title) {
     controller_delegate_.SetTitle(title);
   };
 
-  auto navigation_callback = [this](std::wstring_view hyperlink) {
+  auto navigation_callback = [this](std::u16string_view hyperlink) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,
         base::Bind(&ModusController::OpenHyperlink, weak_factory_.GetWeakPtr(),
-                   std::wstring{hyperlink}));
+                   std::u16string{hyperlink}));
   };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
@@ -44,7 +45,7 @@ QWidget* ModusController::CreateModusView() {
   };
 
   // TODO: Change on ContextMenu.
-  auto context_menu_handler = [this](const UiPoint& point) {
+  auto context_menu_handler = [this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
   };
 
@@ -54,7 +55,7 @@ QWidget* ModusController::CreateModusView() {
 
   wrapper_ = view_.get();
 
-  command_registry_.AddCommand(Command{ID_SETUP}.set_execute_handler([]{}));
+  command_registry_.AddCommand(Command{ID_SETUP}.set_execute_handler([] {}));
 
   return view_.get();
 }
@@ -65,7 +66,7 @@ QWidget* ModusController::CreateModusView2() {
   view2_->set_selection_signal(
       [this](const TimedDataSpec& spec) { selection_.SelectTimedData(spec); });
 
-  view2_->set_navigation_signal([this](const base::FilePath& path) {
+  view2_->set_navigation_signal([this](const std::filesystem::path& path) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, base::Bind(&ModusController::OpenPath,
                               weak_factory_.GetWeakPtr(), path));
@@ -115,20 +116,19 @@ CommandHandler* ModusController::GetCommandHandler(unsigned command_id) {
   return command_registry_.GetCommandHandler(command_id);
 }
 
-void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
+void ModusController::OpenHyperlink(std::u16string_view hyperlink) {
   if (IsWebUrl(hyperlink)) {
     WindowDefinition win(kWebWindowInfo);
-    win.path = base::FilePath{ToStringPiece(hyperlink)};
+    win.path = hyperlink;
     controller_delegate_.OpenView(win);
     return;
   }
 
-  auto path = MakeModusFilePath(base::FilePath{ToStringPiece(hyperlink)},
-                                wrapper_->GetPath());
+  auto path = MakeModusFilePath(hyperlink, wrapper_->GetPath());
   if (!path.has_value()) {
     dialog_service_.RunMessageBox(
-        base::StrCat({L"Файл ", ToStringPiece(hyperlink),
-                      L" не найден или находится вне папки схем."}),
+        base::StrCat({u"Файл ", AsStringPiece(hyperlink),
+                      u" не найден или находится вне папки схем."}),
         {}, MessageBoxMode::Error);
     return;
   }
@@ -143,7 +143,7 @@ void ModusController::OpenHyperlink(std::wstring_view hyperlink) {
   OpenPath(std::move(*path));
 }
 
-void ModusController::OpenPath(const base::FilePath& path) {
+void ModusController::OpenPath(const std::filesystem::path& path) {
   WindowDefinition win(kModusWindowInfo);
   win.path = path;
   controller_delegate_.OpenView(win);

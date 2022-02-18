@@ -5,6 +5,8 @@
 class NodeService;
 struct ImportData;
 
-void PrintImportReport(std::wostream& report,
+using u16ostream = std::basic_ostream<char16_t>;
+
+void PrintImportReport(u16ostream& report,
                        const ImportData& import_data,
                        NodeService& node_service);

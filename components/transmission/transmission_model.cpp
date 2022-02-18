@@ -38,8 +38,8 @@ int TransmissionModel::GetRowCount() {
   return static_cast<int>(rows_.size());
 }
 
-std::wstring TransmissionModel::GetRowTitle(int row) {
-  return std::wstring();
+std::u16string TransmissionModel::GetRowTitle(int row) {
+  return std::u16string();
 }
 
 void TransmissionModel::GetCell(ui::GridCell& cell) {
@@ -54,7 +54,7 @@ void TransmissionModel::GetCell(ui::GridCell& cell) {
   switch (cell.column) {
     case 0: {
       auto source = row.transmission.target(devices::id::HasTransmissionSource);
-      cell.text = source ? source.display_name() : std::wstring();
+      cell.text = source ? source.display_name() : std::u16string();
       break;
     }
 
@@ -74,7 +74,7 @@ bool TransmissionModel::IsEditable(int row, int column) {
 
 bool TransmissionModel::SetCellText(int row,
                                     int column,
-                                    const std::wstring& text) {
+                                    const std::u16string& text) {
   assert(row >= 0 && row < GetRowCount());
 
   /*	GridRange range = selection();

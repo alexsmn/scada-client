@@ -1,7 +1,11 @@
 ﻿#include "components/modus/activex/modus_element.h"
 
 #include "base/format.h"
+#include "base/string_piece_util.h"
+#include "base/strings/strcat.h"
 #include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
 #include "common/event_fetcher.h"
 #include "components/modus/activex/modus_object.h"
@@ -51,9 +55,16 @@ std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index) {
   return static_cast<const wchar_t*>(val);
 }
 
-bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR val) {
+bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR value) {
   SDEParam param = GetParam(params, index);
-  return param ? SUCCEEDED(param->put_Value(val)) : false;
+  return param ? SUCCEEDED(param->put_Value(value)) : false;
+}
+
+bool SetParamValue(SDECore::IParams& params,
+                   std::wstring_view index,
+                   BSTR value) {
+  base::win::ScopedVariant index_variant{index.data(), index.size()};
+  return SetParamValue(params, index_variant, value);
 }
 
 std::wstring GetHyperlink(SDECore::ISDEObject50& object) {
@@ -94,14 +105,14 @@ Limits GetLimits(const NodeRef& node) {
   };
 }
 
-const wchar_t* ToString(Limit limit) {
-  const wchar_t* strs[] = {L"мин_аларм", L"мин_уставка", L"макс_уставка",
-                                L"макс_аларм"};
-  static_assert(_countof(strs) == static_cast<int>(Limit::Count),
+std::wstring_view ToString(Limit limit) {
+  static const std::wstring_view kStrings[] = {L"мин_аларм", L"мин_уставка",
+                                               L"макс_уставка", L"макс_аларм"};
+  static_assert(std::size(kStrings) == static_cast<int>(Limit::Count),
                 "Wrong limits");
   auto index = static_cast<size_t>(limit);
-  assert(index < _countof(strs));
-  return strs[index];
+  assert(index < std::size(kStrings));
+  return kStrings[index];
 }
 
 std::wstring GetLimitSetString(const Limits& limits) {
@@ -109,11 +120,12 @@ std::wstring GetLimitSetString(const Limits& limits) {
   for (int i = 0; i < static_cast<int>(Limit::Count); ++i) {
     if (limits.limits[i] != kNoLimit) {
       if (!result.empty())
-        result += L',';
-      result += ToString(static_cast<Limit>(i));
+        result += u',';
+      auto limit_string = ToString(static_cast<Limit>(i));
+      result.append(limit_string.data(), limit_string.size());
     }
   }
-  return L'[' + result + L']';
+  return base::StrCat({L"[", result, L"]"});
 }
 
 inline bool operator==(const Limits& left, const Limits& right) {
@@ -165,13 +177,11 @@ void ModusElement::UpdateData(bool init) {
           text = state ? kStateClose : kStateOpen;
 
       } else {
-        text = WideFormat(value_);
+        text = base::AsWString(WideFormat(value_));
       }
 
-      SetParamValue(
-          *sde_params_.Get(),
-          base::win::ScopedVariant(prop_name_.data(), prop_name_.size()),
-          base::win::ScopedBstr(text.c_str()));
+      SetParamValue(*sde_params_.Get(), prop_name_,
+                    base::win::ScopedBstr(text));
     }
 
     // bad quality
@@ -190,13 +200,12 @@ void ModusElement::UpdateData(bool init) {
         limits_ = limits;
         auto limit_set_string = GetLimitSetString(limits_);
         SetParamValue(*sde_params_.Get(), kParameterLimits,
-                      base::win::ScopedBstr(limit_set_string.c_str()));
+                      base::win::ScopedBstr(limit_set_string));
         for (size_t i = 0; i < static_cast<size_t>(Limit::Count); ++i) {
           if (limits.limits[i] != kNoLimit) {
-            SetParamValue(
-                *sde_params_.Get(),
-                base::win::ScopedVariant(ToString(static_cast<Limit>(i))),
-                base::win::ScopedBstr(WideFormat(limits.limits[i]).c_str()));
+            SetParamValue(*sde_params_.Get(), ToString(static_cast<Limit>(i)),
+                          base::win::ScopedBstr(
+                              base::UTF16ToWide(WideFormat(limits.limits[i]))));
           }
         }
       }

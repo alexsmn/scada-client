@@ -64,7 +64,7 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
     return node_ids;
   };
 
-  grid_->SetContextMenuHandler([this](const UiPoint& point) {
+  grid_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 

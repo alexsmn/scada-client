@@ -1,7 +1,7 @@
 ﻿#include "components/watch/watch_model.h"
 
 #include "base/format_time.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "core/event_service.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -24,7 +24,7 @@ void WatchModel::OnEvent(const scada::Event& event) {
 
 void WatchModel::OnError(const scada::Status& status) {
   scada::Event event;
-  event.message = L"Подписка прервана. Возможно, устройство было удалено.";
+  event.message = u"Подписка прервана. Возможно, устройство было удалено.";
   AddLine(event);
 }
 
@@ -55,7 +55,7 @@ void WatchModel::SaveLog(const std::filesystem::path& path) {
   std::ofstream str(path);
   for (int i = 0; i < GetRowCount(); ++i) {
     for (int j = 0; j < 3; j++) {
-      std::string text = base::SysWideToNativeMB(GetCellText(i, j));
+      std::string text = base::UTF16ToUTF8(GetCellText(i, j));
       if (j)
         str << '\t';
       str << text.c_str();
@@ -80,7 +80,7 @@ void WatchModel::GetCell(ui::TableCell& cell) {
 
   switch (cell.column_id) {
     case 0:
-      cell.text = base::SysNativeMBToWide(
+      cell.text = base::UTF8ToUTF16(
           FormatTime(event.time, TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
 
@@ -89,7 +89,7 @@ void WatchModel::GetCell(ui::TableCell& cell) {
         break;
       cell.text = GetDisplayName(node_service_, event.node_id);
       if (cell.text.empty())
-        cell.text = L"?";
+        cell.text = u"?";
       break;
 
     case 2:

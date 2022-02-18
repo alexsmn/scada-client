@@ -26,9 +26,9 @@ class ObjectTreeModel : private ObjectTreeModelContext,
 
   // TreeModel
   virtual int GetColumnCount() const override;
-  virtual std::wstring GetColumnText(int column_id) const override;
+  virtual std::u16string GetColumnText(int column_id) const override;
   virtual int GetColumnPreferredSize(int column_id) const override;
-  virtual std::wstring GetText(void* tree_node, int column_id) override;
+  virtual std::u16string GetText(void* tree_node, int column_id) override;
   virtual SkColor GetTextColor(void* tree_node, int column_id) override;
   virtual SkColor GetBackgroundColor(void* tree_node, int column_id) override;
 

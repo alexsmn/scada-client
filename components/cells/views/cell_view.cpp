@@ -1,6 +1,7 @@
 ﻿#include "components/cells/views/cell_view.h"
 
 #include "base/format_time.h"
+#include "base/strings/utf_string_conversions.h"
 #include "common/formula_util.h"
 #include "controller_delegate.h"
 #include "model/scada_node_ids.h"
@@ -82,12 +83,12 @@ void CellModel::GetCell(ui::GridCell& cell) {
   cell.text = c->value_spec_.GetCurrentString();
 }
 
-bool CellModel::SetCellText(int row, int column, const std::wstring& text) {
+bool CellModel::SetCellText(int row, int column, const std::u16string& text) {
   try {
-    SetCellFormula(row, column, base::SysWideToNativeMB(text));
+    SetCellFormula(row, column, base::UTF16ToUTF8(text));
   } catch (const std::exception& e) {
-    dialog_service_.RunMessageBox(base::SysNativeMBToWide(e.what()).c_str(),
-                                  L"Ошибка", MessageBoxMode::Error);
+    dialog_service_.RunMessageBox(base::UTF8ToUTF16(e.what()), u"Ошибка",
+                                  MessageBoxMode::Error);
     return false;
   }
 
@@ -163,19 +164,16 @@ bool CellView::OnGridDrawCell(views::GridView& sender,
 
   const auto& tvq = cell->value_spec_.current();
 
-  std::wstring lines[4];
+  std::u16string lines[4];
   lines[0] = cell->value_spec_.GetTitle();
   lines[1] = cell->value_spec_.GetCurrentString();
-  lines[2] = base::SysNativeMBToWide(FormatTime(tvq.source_timestamp));
-  lines[3] =
-      base::SysNativeMBToWide(FormatTime(cell->value_spec_.change_time()));
+  lines[2] = base::UTF8ToUTF16(FormatTime(tvq.source_timestamp));
+  lines[3] = base::UTF8ToUTF16(FormatTime(cell->value_spec_.change_time()));
 
   gfx::Rect line_rect = rect;
   line_rect.Inset(4, 2);
 
-  for (int i = 0; i < _countof(lines); ++i) {
-    const std::wstring& line = lines[i];
-
+  for (const auto& line : lines) {
     line_rect.set_height(15);
 
     canvas->DrawString(line, sender.font(), SK_ColorBLACK, line_rect,

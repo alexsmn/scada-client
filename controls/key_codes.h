@@ -8,6 +8,8 @@
 #include <Wt/WGlobal.h>
 #endif
 
+namespace aui {
+
 #if defined(UI_QT)
 enum class KeyCode : int {
   Escape = Qt::Key_Escape,
@@ -21,11 +23,13 @@ enum class KeyCode : int {
   Unknown = Qt::Key_unknown,
 };
 
-enum class KeyModifier : int {
-  Shift = Qt::ShiftModifier,
-  Control = Qt::ControlModifier,
-  Alt = Qt::AltModifier
-};
+using KeyModifier = Qt::KeyboardModifier;
+
+constexpr KeyModifier ShiftModifier = Qt::ShiftModifier;
+constexpr KeyModifier ControlModifier = Qt::ControlModifier;
+constexpr KeyModifier AltModifier = Qt::AltModifier;
+
+using KeyModifiers = Qt::KeyboardModifiers;
 
 #elif defined(UI_VIEWS)
 enum class KeyCode : unsigned {
@@ -43,11 +47,13 @@ enum class KeyCode : unsigned {
   Unknown = ui::KeyboardCode::VKEY_UNKNOWN,
 };
 
-enum class KeyModifier : int {
-  Shift = ui::EF_SHIFT_DOWN,
-  Control = ui::EF_CONTROL_DOWN,
-  Alt = ui::EF_ALT_DOWN
-};
+using KeyModifier = ui::EventFlags;
+
+constexpr KeyModifier ShiftModifier = ui::EF_SHIFT_DOWN;
+constexpr KeyModifier ControlModifier = ui::EF_CONTROL_DOWN;
+constexpr KeyModifier AltModifier = ui::EF_ALT_DOWN;
+
+using KeyModifiers = unsigned;
 
 #elif defined(UI_WT)
 /*enum class KeyCode : int {
@@ -58,8 +64,21 @@ enum class KeyModifier : int {
   Down = Wt::Key::Down,
 };*/
 using KeyCode = Wt::Key;
-using KeyModifier = Wt::KeyboardModifier;
+
+// Wt flags are too restrictive. &, |= are not supported.
+using KeyModifier = unsigned;
+
+constexpr KeyModifier ShiftModifier =
+    static_cast<unsigned>(Wt::KeyboardModifier::Shift);
+constexpr KeyModifier ControlModifier =
+    static_cast<unsigned>(Wt::KeyboardModifier::Control);
+constexpr KeyModifier AltModifier =
+    static_cast<unsigned>(Wt::KeyboardModifier::Alt);
+
+using KeyModifiers = unsigned;
 #endif
+
+}  // namespace aui
 
 #if defined(UI_QT)
 #include "controls/qt/key_codes.h"

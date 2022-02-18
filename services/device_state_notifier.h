@@ -42,4 +42,4 @@ class DeviceStateNotifier {
 
 std::string ToString(DeviceState device_state);
 
-std::wstring_view ToLocalizedString(DeviceState device_state);
+std::u16string_view ToLocalizedString(DeviceState device_state);

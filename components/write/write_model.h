@@ -18,16 +18,16 @@ class WriteModel : private WriteContext {
   bool has_condition() const { return has_condition_; }
   bool two_staged() const { return two_staged_; }
 
-  std::wstring GetWindowTitle() const;
-  std::wstring GetSourceTitle() const;
-  std::wstring GetCurrentValue(bool formatted) const;
-  std::wstring GetStatusText() const;
+  std::u16string GetWindowTitle() const;
+  std::u16string GetSourceTitle() const;
+  std::u16string GetCurrentValue(bool formatted) const;
+  std::u16string GetStatusText() const;
   bool IsConditionOk() const;
 
-  std::vector<std::wstring> GetDiscreteStates() const;
+  std::vector<std::u16string> GetDiscreteStates() const;
   int GetCurrentDiscreteState() const;
 
-  std::wstring GetAnalogUnits() const;
+  std::u16string GetAnalogUnits() const;
 
   void Write(double value, bool lock);
 
@@ -42,7 +42,7 @@ class WriteModel : private WriteContext {
   void StartWriting(bool second_stage);
   void StartWritingHelper();
 
-  std::wstring GetConfirmationMessage(bool second_stage) const;
+  std::u16string GetConfirmationMessage(bool second_stage) const;
 
   DialogService* dialog_service_ = nullptr;
 

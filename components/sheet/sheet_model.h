@@ -15,7 +15,7 @@ class WindowDefinition;
 class SheetColumnModel : public ui::ColumnHeaderModel {
  public:
   // ui::HeaderModel
-  virtual std::wstring GetTitle(int index) const override;
+  virtual std::u16string GetTitle(int index) const override;
 };
 
 struct SheetModelContext {
@@ -65,7 +65,7 @@ class SheetModel : private SheetModelContext,
   virtual void GetCell(ui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
-                           const std::wstring& text) override;
+                           const std::u16string& text) override;
   virtual bool IsEditable(int row, int column) override;
 
  private:

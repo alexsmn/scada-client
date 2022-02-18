@@ -1,6 +1,8 @@
 #include "components/modus/views/modus_view2.h"
 
+#include "base/string_piece_util.h"
 #include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
 #include "base/win/scoped_gdi_object.h"
 #include "client_utils.h"
 #include "components/modus/libmodus/modus_binding2.h"
@@ -43,7 +45,7 @@ ModusBinding2* ModusView2::GetBinding(modus::Shape* shape) const {
   return i == bindings_.end() ? nullptr : i->second.get();
 }
 
-void ModusView2::Open(const base::FilePath& path) {
+void ModusView2::Open(const std::filesystem::path& path) {
   path_ = path;
 
   auto& master_library = ModusModule2::GetInstance()->master_library();
@@ -51,12 +53,12 @@ void ModusView2::Open(const base::FilePath& path) {
   scheme_ = std::make_unique<modus::Scheme>();
   scheme_->set_master_library(&master_library);
   // TODO: Check load result.
-  modus::LoadScheme(*scheme_, path.value());
+  modus::LoadScheme(*scheme_, path);
 
   if (scheme_) {
     title_ = scheme_->GetValue(modus::kAttrSchemeTitle).as_string();
     if (title_changed_handler)
-      title_changed_handler(title_);
+      title_changed_handler(AsStringView(base::AsStringPiece16(title_)));
 
     renderer_.reset(new modus::Renderer(*scheme_, *this));
     CreateBindings();
@@ -65,7 +67,7 @@ void ModusView2::Open(const base::FilePath& path) {
   PreferredSizeChanged();
 }
 
-base::FilePath ModusView2::GetPath() const {
+std::filesystem::path ModusView2::GetPath() const {
   return path_;
 }
 
@@ -129,7 +131,7 @@ bool ModusView2::OnMousePressed(const ui::MouseEvent& event) {
     auto link = shape->element().GetValue("Links[0]");
     if (!link.empty() && navigation_signal_) {
       navigation_signal_(
-          base::FilePath(modus::GetLinkFilePath(link.as_string_view())));
+          std::filesystem::path(modus::GetLinkFilePath(link.as_string_view())));
     }
 
     if (double_click_signal_)
@@ -140,7 +142,7 @@ bool ModusView2::OnMousePressed(const ui::MouseEvent& event) {
 }
 
 bool ModusView2::GetTooltipText(const gfx::Point& p,
-                                std::wstring* tooltip) const {
+                                std::u16string* tooltip) const {
   auto point = PointToScheme(p);
   auto shape = GetShapeAt(point);
   auto binding = GetBinding(shape);

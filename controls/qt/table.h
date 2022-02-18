@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/values.h"
+#include "controls/color.h"
 #include "controls/handlers.h"
 
 #include <QTableView>

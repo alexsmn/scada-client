@@ -10,7 +10,7 @@
 inline std::filesystem::path GetFilePath(const NodeRef& file_node) {
   // TODO: Fetch all parents.
 
-  std::wstring path = file_node.display_name();
+  auto path = file_node.display_name();
 
   for (auto directory_node = file_node;
        IsSubtypeOf(directory_node, filesystem::id::FileDirectoryType);

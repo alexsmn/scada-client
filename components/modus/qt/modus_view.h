@@ -23,8 +23,8 @@ class ModusView : public QWidget,
   virtual ~ModusView();
 
   // ModusViewWrapper
-  virtual void Open(const base::FilePath& path) override;
-  virtual base::FilePath GetPath() const override;
+  virtual void Open(const std::filesystem::path& path) override;
+  virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
@@ -37,7 +37,7 @@ class ModusView : public QWidget,
  protected:
   friend class ModusController;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
 
   // WARNING: QAxWidget must be a child of the view widget. Otherwise, it's not
   // responsive.

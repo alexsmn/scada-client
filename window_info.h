@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/strings/string_piece.h"
+
 #include <string_view>
 
 enum WindowFlags {
@@ -14,7 +16,7 @@ enum WindowFlags {
 struct WindowInfo {
   unsigned command_id;
   std::string_view name;
-  std::wstring_view title;
+  std::u16string_view title;
   unsigned flags;
   unsigned cx;
   unsigned cy;

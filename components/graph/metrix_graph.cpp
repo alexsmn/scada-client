@@ -111,15 +111,15 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   }
 }
 
-std::wstring MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
-                                          int column_id) const {
+std::u16string MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
+                                            int column_id) const {
   switch (column_id) {
     case 0: {
       return data_source.title();
     }
     case 1: {
       auto data_value = GetCurrentValue(data_source);
-      return L"= " + data_source.timed_data().GetValueString(
+      return u"= " + data_source.timed_data().GetValueString(
                          data_value.value, data_value.qualifier);
     }
     case 2: {
@@ -163,7 +163,7 @@ void MetrixGraph::Legend::Update() {
   title_width_ = 0;
   for (auto i = plot().lines().begin(); i != plot().lines().end(); ++i) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
-    auto title = QString::fromStdWString(line.data_source().title());
+    auto title = QString::fromStdU16String(line.data_source().title());
     auto width = QFontMetrics(font()).horizontalAdvance(title);
     title_width_ = std::max(title_width_, width);
   }
@@ -186,7 +186,7 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
 
     int left = MARGX;
     for (int i = 0; i < GetColumnCount(); ++i) {
-      auto text = QString::fromStdWString(GetText(data_source, i));
+      auto text = QString::fromStdU16String(GetText(data_source, i));
       int width = GetColumnWidth(i);
       QRect rect{left, top, width, ROW};
       painter.drawText(rect, Qt::AlignLeft | Qt::AlignVCenter, text);
@@ -230,8 +230,8 @@ void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
     // Draw value.
-    std::wstring text = L"= " + line.data_source().timed_data().GetValueString(
-                                    value.value, value.qualifier);
+    auto text = u"= " + line.data_source().timed_data().GetValueString(
+                            value.value, value.qualifier);
     rc = gfx::Rect(title_width_, top, 80, ROW);
     canvas->DrawString(text, graph.font_, SK_ColorBLACK, rc,
                        DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);

@@ -1,10 +1,13 @@
 #pragma once
 
-#include "value_util.h"
+#include "base/json.h"
 
 #include <cassert>
+#include <memory>
+#include <optional>
 #include <vector>
 
+// TODO: Replace with std::variant.
 class PageLayoutBlock {
  public:
   enum Type { SPLIT, PANE };

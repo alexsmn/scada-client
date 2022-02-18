@@ -1,7 +1,9 @@
 ﻿#pragma once
 
+#include "base/strings/string16.h"
+
 // Can be used as a signature for CsvReader.
-const wchar_t kNodeIdTitle[] = L"Ид";
+const char16_t kNodeIdTitle[] = u"Ид";
 
 class CsvWriter;
 struct ExportData;

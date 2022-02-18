@@ -1,9 +1,11 @@
 #pragma once
 
 #include "base/values.h"
+#include "controls/color.h"
 #include "controls/handlers.h"
 
 #include <QTreeView>
+#include <set>
 
 namespace ui {
 class TreeModel;

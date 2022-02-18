@@ -13,7 +13,7 @@ class NodeService;
 class HierachicalPropertyDefinition;
 class TaskManager;
 
-typedef std::pair<std::wstring, bool /*read_only*/> PropertyValue;
+typedef std::pair<std::u16string, bool /*read_only*/> PropertyValue;
 
 struct PropertyContext {
   NodeService& node_service_;
@@ -32,20 +32,20 @@ class PropertyDefinition {
   virtual bool IsReadOnly(const NodeRef& node,
                           const scada::NodeId& prop_decl_id) const;
 
-  virtual std::wstring GetTitle(const PropertyContext& context,
-                                const NodeRef& property_declaration) const;
+  virtual std::u16string GetTitle(const PropertyContext& context,
+                                  const NodeRef& property_declaration) const;
 
   virtual const HierachicalPropertyDefinition* AsHierarchical() const {
     return nullptr;
   }
 
-  virtual std::wstring GetText(const PropertyContext& context,
-                               const NodeRef& node,
-                               const scada::NodeId& prop_decl_id) const;
+  virtual std::u16string GetText(const PropertyContext& context,
+                                 const NodeRef& node,
+                                 const scada::NodeId& prop_decl_id) const;
   virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
-                       const std::wstring& text) const;
+                       const std::u16string& text) const;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
@@ -79,14 +79,14 @@ class ReferencePropertyDefinition : public PropertyDefinition {
   ReferencePropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual std::wstring GetText(
+  virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
   virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
-                       const std::wstring& text) const override;
+                       const std::u16string& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
@@ -100,7 +100,7 @@ class BoolPropertyDefinition : public PropertyDefinition {
   BoolPropertyDefinition() : PropertyDefinition(ui::TableColumn::CENTER) {}
 
   // PropertyDefinition
-  virtual std::wstring GetText(
+  virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -115,14 +115,14 @@ class EnumPropertyDefinition : public PropertyDefinition {
   EnumPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual std::wstring GetText(
+  virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
   virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
-                       const std::wstring& text) const override;
+                       const std::u16string& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
@@ -131,30 +131,30 @@ class EnumPropertyDefinition : public PropertyDefinition {
 
 class ChannelPropertyDefinition : public PropertyDefinition {
  public:
-  ChannelPropertyDefinition(std::wstring title, bool device)
+  ChannelPropertyDefinition(std::u16string title, bool device)
       : PropertyDefinition(ui::TableColumn::LEFT),
         title_(std::move(title)),
         device_(device) {}
 
   // PropertyDefinition
-  virtual std::wstring GetTitle(
+  virtual std::u16string GetTitle(
       const PropertyContext& context,
       const NodeRef& property_declaration) const override;
-  virtual std::wstring GetText(
+  virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
   virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
-                       const std::wstring& text) const override;
+                       const std::u16string& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 
  private:
-  const std::wstring title_;
+  const std::u16string title_;
   const bool device_;
 };
 
@@ -174,14 +174,14 @@ class ColorPropertyDefinition : public PropertyDefinition {
   ColorPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual std::wstring GetText(
+  virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
   virtual void SetText(const PropertyContext& context,
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
-                       const std::wstring& text) const override;
+                       const std::u16string& text) const override;
   virtual ui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,

@@ -84,7 +84,7 @@ ConfigurationTreeView::ConfigurationTreeView(
       });
 #endif
 
-  tree_view_->SetContextMenuHandler([this](const UiPoint& point) {
+  tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
   });
 }

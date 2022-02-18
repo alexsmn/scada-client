@@ -1,10 +1,13 @@
 #include "window_definition.h"
 
+#include "base/format.h"
 #include "base/string_piece_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/strings/sys_string_conversions.h"
 #include "base/struct_writer.h"
+#include "base/value_util.h"
 #include "base/values.h"
-#include "value_util.h"
 #include "window_info.h"
 
 #include "base/debug_util-inl.h"
@@ -51,7 +54,7 @@ WindowItem& WindowItem::operator=(const WindowItem& source) {
 }
 
 bool WindowItem::name_is(std::string_view n) const {
-  return base::EqualsCaseInsensitiveASCII(name, ToStringPiece(n));
+  return base::EqualsCaseInsensitiveASCII(name, AsStringPiece(n));
 }
 
 bool WindowItem::GetBool(std::string_view attr, bool default_value) const {
@@ -67,8 +70,9 @@ std::string_view WindowItem::GetString(std::string_view attr,
   return ::GetString(attributes, attr, default_value);
 }
 
-std::wstring WindowItem::GetString16(std::string_view attr,
-                                     std::wstring_view default_value) const {
+std::u16string WindowItem::GetString16(
+    std::string_view attr,
+    std::u16string_view default_value) const {
   return ::GetString16(attributes, attr, default_value);
 }
 
@@ -89,8 +93,8 @@ WindowItem& WindowItem::SetString(std::string_view attr,
 }
 
 WindowItem& WindowItem::SetString(std::string_view attr,
-                                  std::wstring_view value) {
-  SetKey(attributes, attr, base::UTF16ToUTF8(ToStringPiece(value)));
+                                  std::u16string_view value) {
+  SetKey(attributes, attr, value);
   return *this;
 }
 
@@ -129,13 +133,13 @@ WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
   return *this;
 }
 
-std::wstring WindowDefinition::GetTitle() const {
+std::u16string WindowDefinition::GetTitle() const {
   if (!title.empty())
     return title;
 
-  std::wstring title{window_info().title};
+  std::u16string title{window_info().title};
   if (!path.empty())
-    title += L": " + path.value();
+    title += u": " + path.u16string();
   return title;
 }
 

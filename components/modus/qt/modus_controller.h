@@ -1,12 +1,12 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
 #include "selection_model.h"
 
+#include <filesystem>
 #include <memory>
 
 class ModusView;
@@ -31,8 +31,8 @@ class ModusController : protected ControllerContext, public Controller {
   QWidget* CreateModusView2();
   QWidget* CreateModusView3();
 
-  void OpenPath(const base::FilePath& path);
-  void OpenHyperlink(std::wstring_view hyperlink);
+  void OpenPath(const std::filesystem::path& path);
+  void OpenHyperlink(std::u16string_view hyperlink);
 
   SelectionModel selection_{{timed_data_service_}};
 

@@ -1,5 +1,6 @@
 #include "components/favourites/add_favourites_dialog.h"
 
+#include "base/strings/string_util.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
 #include "services/dialog_service.h"
@@ -25,7 +26,7 @@ class AddFavouritesDialog : public framework::Dialog {
 
     folder_combo_ = GetItem(IDC_FOLDER);
     for (auto& folder : favourites_.folders())
-      folder_combo_.AddString(folder.GetTitle().c_str());
+      folder_combo_.AddString(base::AsWString(folder.GetTitle()).c_str());
     folder_combo_.SetCurSel(0);
   }
 
@@ -45,12 +46,13 @@ class AddFavouritesDialog : public framework::Dialog {
 bool ShowAddFavouritesDialog(DialogService& dialog_service,
                              AddFavouritesContext&& context) {
   AddFavouritesDialog dlg{context.favourites_};
-  dlg.title = context.window_def_.title;
+  dlg.title = base::AsWString(context.window_def_.title);
   if (dlg.Execute(dialog_service.GetDialogOwningWindow()) != IDOK)
     return false;
 
-  const Page& folder = context.favourites_.GetOrAddFolder(dlg.folder.c_str());
-  context.window_def_.title = std::move(dlg.title);
+  const Page& folder =
+      context.favourites_.GetOrAddFolder(base::AsString16(dlg.folder));
+  context.window_def_.title = base::AsString16(dlg.title);
   context.favourites_.Add(context.window_def_, folder);
   return true;
 }

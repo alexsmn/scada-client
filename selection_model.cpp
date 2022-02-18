@@ -1,9 +1,9 @@
 #include "selection_model.h"
 
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "model/scada_node_ids.h"
 #include "controller.h"
+#include "model/scada_node_ids.h"
+#include "node_service/node_service.h"
 
 SelectionModel::SelectionModel(SelectionModelContext&& context)
     : SelectionModelContext{std::move(context)} {
@@ -69,7 +69,7 @@ void SelectionModel::SelectMultiple() {
   Changed();
 }
 
-std::wstring SelectionModel::GetTitle() const {
+std::u16string SelectionModel::GetTitle() const {
   return timed_data_.GetTitle();
 }
 

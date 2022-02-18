@@ -37,7 +37,7 @@ CreateServiceItemDialog::CreateServiceItemDialog(CreateServiceItemModel& model,
   QStringList devices;
   devices.reserve(model_.devices().size());
   for (const auto& p : model_.devices())
-    devices.push_back(QString::fromStdWString(p.first));
+    devices.push_back(QString::fromStdU16String(p.first));
   ui.deviceComboBox->addItems(devices);
 
   UpdateComponents();
@@ -61,7 +61,7 @@ void CreateServiceItemDialog::UpdateComponents() {
   QStringList components;
   components.reserve(model_.components().size());
   for (const auto& p : model_.components())
-    components.push_back(QString::fromStdWString(p.first));
+    components.push_back(QString::fromStdU16String(p.first));
   ui.componentListWidget->clear();
   ui.componentListWidget->addItems(components);
 }

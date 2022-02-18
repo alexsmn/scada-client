@@ -90,7 +90,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
     selection_.SelectNode(node);
   });
 
-  grid_->SetContextMenuHandler([this](const UiPoint& point) {
+  grid_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
@@ -149,7 +149,7 @@ bool NodeTableController::OnKeyPressed(views::GridView& sender,
     if (!range.empty()) {
       for (int row = range.row(); row <= range.last_row(); row++)
         for (int col = range.column(); col <= range.last_column(); col++)
-          model_->SetCellText(row, col, std::wstring());
+          model_->SetCellText(row, col, std::u16string());
       return true;
     }
   }

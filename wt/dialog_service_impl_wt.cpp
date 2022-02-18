@@ -3,8 +3,8 @@
 #include "base/strings/string_util.h"
 
 promise<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
-    std::wstring_view message,
-    std::wstring_view title,
+    std::u16string_view message,
+    std::u16string_view title,
     MessageBoxMode mode) {
   return make_resolved_promise(MessageBoxResult::Ok);
 }
@@ -18,7 +18,7 @@ Wt::WWidget* DialogServiceImplWt::GetParentWidget() const {
 }
 
 std::filesystem::path DialogServiceImplWt::SelectOpenFile(
-    std::wstring_view title) {
+    std::u16string_view title) {
   return {};
 }
 

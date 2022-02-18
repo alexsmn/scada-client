@@ -2,22 +2,18 @@
 
 #include "base/utils.h"
 
-const Page* Favourites::GetFolder(const wchar_t* folder) const {
-  if (!folder)
-    folder = L"";
-
-  for (Folders::const_iterator i = folders_.begin(); i != folders_.end(); ++i)
-    if (_wcsicmp(i->title.c_str(), folder) == 0)
-      return &*i;
-  return NULL;
+const Page* Favourites::GetFolder(std::u16string_view name) const {
+  for (auto& folder : folders_)
+    if (folder.title == name)
+      return &folder;
+  return nullptr;
 }
 
-const Page& Favourites::GetOrAddFolder(const wchar_t* name) {
+const Page& Favourites::GetOrAddFolder(std::u16string_view name) {
   const Page* folder = GetFolder(name);
   if (!folder) {
     Page new_folder;
-    if (name)
-      new_folder.title = name;
+    new_folder.title.assign(name.data(), name.size());
     folders_.push_back(new_folder);
 
     folder = &folders_.back();

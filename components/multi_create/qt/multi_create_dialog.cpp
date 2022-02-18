@@ -38,18 +38,18 @@ MultiCreateDialog::MultiCreateDialog(MultiCreateModel& model, QWidget* parent)
   QStringList devices;
   devices.reserve(model_.devices().size());
   for (const auto& p : model_.devices())
-    devices.push_back(QString::fromStdWString(p.first));
+    devices.push_back(QString::fromStdU16String(p.first));
   ui.deviceComboBox->addItems(devices);
 }
 
 void MultiCreateDialog::accept() {
   MultiCreateModel::RunParams params = {};
-  params.device = ui.deviceComboBox->currentText().toStdWString();
+  params.device = ui.deviceComboBox->currentText().toStdU16String();
   params.count = ui.countSpinBox->value();
   params.ts = ui.discreteTypeRadioButton->isChecked();
   params.starting_number = ui.startingNumberSpinBox->value();
   params.starting_address = ui.startingAddressSpinBox->value();
-  params.name_prefix = ui.namePrefixLineEdit->text().toStdWString();
+  params.name_prefix = ui.namePrefixLineEdit->text().toStdU16String();
   params.path_prefix = ui.addressPrefixLineEdit->text().toStdString();
   model_.Run(params);
 
@@ -60,7 +60,7 @@ void MultiCreateDialog::SetAutoName() {
   if (auto_name_) {
     bool ts = ui.discreteTypeRadioButton->isChecked();
     ui.namePrefixLineEdit->setText(
-        QString::fromStdWString(model_.GetAutoName(ts)));
+        QString::fromStdU16String(model_.GetAutoName(ts)));
   }
 }
 

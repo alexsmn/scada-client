@@ -16,14 +16,14 @@ class MockDialogService : public DialogService {
 
   MOCK_METHOD(promise<MessageBoxResult>,
               RunMessageBox,
-              (std::wstring_view message,
-               std::wstring_view title,
+              (std::u16string_view message,
+               std::u16string_view title,
                MessageBoxMode mode),
               (override));
 
   MOCK_METHOD(std::filesystem::path,
               SelectOpenFile,
-              (std::wstring_view title),
+              (std::u16string_view title),
               (override));
 
   MOCK_METHOD(std::filesystem::path,

@@ -2,6 +2,7 @@
 
 #include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
+#include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -27,8 +28,8 @@ static const WindowInfo& kDefaultWindowInfo = kGraphWindowInfo;
 
 static const WindowInfo& kDefaultMultiWindowInfo = kTableWindowInfo;
 
-std::wstring MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
-  return base::StrCat({ToStringPiece(window_info.title), L": ",
+std::u16string MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
+  return base::StrCat({AsStringPiece(window_info.title), u": ",
                        ToString16(node.display_name())});
 }
 
@@ -114,7 +115,7 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
 WindowDefinition MakeWindowDefinition(
     const WindowInfo* window_info,
     const std::vector<scada::NodeId>& node_ids,
-    std::wstring title) {
+    std::u16string title) {
   if (!window_info)
     window_info = &kDefaultMultiWindowInfo;
 
@@ -135,7 +136,7 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
     window_info = &kDefaultWindowInfo;
 
   WindowDefinition window_def(*window_info);
-  window_def.title = base::SysNativeMBToWide(formula);
+  window_def.title = base::UTF8ToUTF16(formula);
 
   WindowItem& item = window_def.AddItem("Item");
   item.SetString("path", std::move(formula));

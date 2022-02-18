@@ -19,11 +19,11 @@
 
 namespace {
 
-QStringList MakeQStringList(const std::vector<std::wstring>& source) {
+QStringList MakeQStringList(const std::vector<std::u16string>& source) {
   QStringList list;
   list.reserve(source.size());
   for (auto& str : source)
-    list.push_back(QString::fromStdWString(str));
+    list.push_back(QString::fromStdU16String(str));
   return list;
 }
 
@@ -62,7 +62,7 @@ LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
 
   ui.userNameComboBox->addItems(MakeQStringList(controller_->user_list));
   ui.userNameComboBox->setCurrentText(
-      QString::fromStdWString(controller_->user_name));
+      QString::fromStdU16String(controller_->user_name));
   ui.userNameComboBox->lineEdit()->selectAll();
 
   ui.autoLoginCheckBox->setChecked(controller_->auto_login);
@@ -74,7 +74,7 @@ LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
 
   if (controller_->auto_login) {
     ui.passwordLineEdit->setText(
-        QString::fromStdWString(controller_->password));
+        QString::fromStdU16String(controller_->password));
     accept();
   }
 }
@@ -88,8 +88,8 @@ void LoginDialog::accept() {
                                        ? ui.serverTypeComboBox->currentIndex()
                                        : 0;
   controller_->server_host = ui.serverComboBox->currentText().toStdString();
-  controller_->user_name = ui.userNameComboBox->currentText().toStdWString();
-  controller_->password = ui.passwordLineEdit->text().toStdWString();
+  controller_->user_name = ui.userNameComboBox->currentText().toStdU16String();
+  controller_->password = ui.passwordLineEdit->text().toStdU16String();
   controller_->auto_login = ui.autoLoginCheckBox->isChecked();
 
   controller_->Login();
@@ -112,7 +112,7 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
         int index = ui.userNameComboBox->view()->currentIndex().row();
         if (index != -1) {
           controller_->DeleteUserName(
-              ui.userNameComboBox->itemText(index).toStdWString());
+              ui.userNameComboBox->itemText(index).toStdU16String());
           ui.userNameComboBox->removeItem(index);
         }
         return true;

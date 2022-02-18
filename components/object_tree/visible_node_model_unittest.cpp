@@ -21,7 +21,7 @@ class VisibleNodeModelTest : public Test {
 
 class TestVisibleNode : public VisibleNode {
  public:
-  MOCK_METHOD(std::wstring, GetText, (), (const));
+  MOCK_METHOD(std::u16string, GetText, (), (const));
   MOCK_METHOD(bool, IsBad, (), (const));
   MOCK_METHOD(bool, IsAlerting, (), (const));
 };

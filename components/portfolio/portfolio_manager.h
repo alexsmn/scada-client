@@ -37,10 +37,10 @@ class PortfolioManager : private PortfolioManagerContext,
   void Unsubscribe(PortfolioEvents& events);
 
   Portfolios::iterator Find(const Portfolio& portfolio);
-  Portfolios::iterator Find(const wchar_t* name);
+  Portfolios::iterator Find(std::u16string_view name);
 
   Portfolio& New();
-  void Rename(const Portfolio& portfolio, const wchar_t* name);
+  void Rename(const Portfolio& portfolio, std::u16string_view name);
   void Delete(const Portfolio& portfolio);
 
   void AddItem(const Portfolio& portfolio, const scada::NodeId& item);

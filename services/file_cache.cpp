@@ -1,5 +1,6 @@
 #include "services/file_cache.h"
 
+#include "base/file_path_util.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_util.h"
 #include "base/format.h"
@@ -8,31 +9,31 @@
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/value_util.h"
 #include "base/values.h"
 #include "client_paths.h"
 #include "client_utils.h"
 #include "model/node_id_util.h"
 #include "services/file_registry.h"
-#include "value_util.h"
 
 #include <optional>
 
 namespace {
 
-base::FilePath GetCachePath() {
+std::filesystem::path GetCachePath() {
   base::FilePath path;
   base::PathService::Get(client::DIR_PUBLIC, &path);
-  return path.Append(FILE_PATH_LITERAL("file-cache.json"));
+  return AsFilesystemPath(path.Append(FILE_PATH_LITERAL("file-cache.json")));
 }
 
 FileCache::FileEntry LoadFileEntry(const base::Value& data) {
-  base::FilePath path{GetString16(data, "path")};
+  std::filesystem::path path{GetString16(data, "path")};
 
   FileCache::FileEntry entry{path, GetString16(data, "title")};
 
   // Old format could contain empty title.
   if (entry.title.empty())
-    entry.title = path.RemoveExtension().value();
+    entry.title = path.stem().u16string();
 
   if (auto* items_data = GetDict(data, "items")) {
     for (const auto& [key, value] : items_data->DictItems()) {
@@ -50,7 +51,7 @@ base::Value SaveFileEntry(const FileCache::FileEntry& entry,
   base::Value file_data{base::Value::Type::DICTIONARY};
 
   SetKey(file_data, "type", type_name);
-  SetKey(file_data, "path", entry.path.value());
+  SetKey(file_data, "path", entry.path.u16string());
   if (!entry.title.empty())
     SetKey(file_data, "title", entry.title);
 
@@ -76,7 +77,7 @@ FileCache::~FileCache() {
   Save();
 }
 
-int FileCache::FileList::Find(const base::FilePath& path) const {
+int FileCache::FileList::Find(const std::filesystem::path& path) const {
   for (size_t i = 0; i < size(); ++i) {
     if (at(i).path == path)
       return static_cast<int>(i);
@@ -85,8 +86,8 @@ int FileCache::FileList::Find(const base::FilePath& path) const {
 }
 
 void FileCache::Load() {
-  base::FilePath cache_path = GetCachePath();
-  LOG(INFO) << "Loading file cache from " << cache_path.value();
+  std::filesystem::path cache_path = GetCachePath();
+  LOG(INFO) << "Loading file cache from " << cache_path.string();
 
   std::string error_message;
   auto data = LoadJsonFromFile(cache_path, &error_message);
@@ -101,7 +102,7 @@ void FileCache::Load() {
               file_registry_.FindTypeByName(GetString(file_data, "type"))) {
         auto entry = LoadFileEntry(file_data);
         // Skip removed displays.
-        if (!base::PathExists(GetPublicFilePath(entry.path)))
+        if (!base::PathExists(AsFilePath(GetPublicFilePath(entry.path))))
           continue;
         auto& file_list = file_map_[type->type_id];
         file_list.emplace_back(std::move(entry));
@@ -111,8 +112,8 @@ void FileCache::Load() {
 }
 
 void FileCache::Save() {
-  base::FilePath cache_path = GetCachePath();
-  LOG(INFO) << "Saving file cache to " << cache_path.value();
+  auto cache_path = GetCachePath();
+  LOG(INFO) << "Saving file cache to " << cache_path.string();
 
   base::Value::ListStorage list_data;
   for (auto& [type_id, file_list] : file_map_) {
@@ -149,12 +150,12 @@ void FileCache::Refresh() {
   // Add new files.
   // WARNING: FileEnumerator matches ".tsdt" by "*.tsd". Need to check
   // extension explicitly.
-  base::FileEnumerator find(public_path, false, base::FileEnumerator::FILES);
+  base::FileEnumerator file_enumerator(public_path, false,
+                                       base::FileEnumerator::FILES);
   base::FilePath full_path;
-  while (!(full_path = find.Next()).empty()) {
-    auto path = full_path.BaseName();
-    auto* type = file_registry_.FindTypeByExtension(
-        base::SysWideToNativeMB(path.Extension()));
+  while (!(full_path = file_enumerator.Next()).empty()) {
+    auto path = AsFilesystemPath(full_path.BaseName());
+    auto* type = file_registry_.FindTypeByExtension(path.extension().string());
     if (!type)
       continue;
 
@@ -162,14 +163,14 @@ void FileCache::Refresh() {
     if (file_list.Find(path) != -1)
       continue;
 
-    std::wstring title = path.RemoveExtension().value();
+    std::u16string title = path.stem().u16string();
     file_list.emplace_back(FileEntry{std::move(path), std::move(title)});
   }
 }
 
 void FileCache::Update(int type_id,
-                       const base::FilePath& path,
-                       const std::wstring& title,
+                       const std::filesystem::path& path,
+                       const std::u16string& title,
                        ItemMap& items) {
   FileList& list = GetMutableList(type_id);
 
@@ -189,9 +190,8 @@ void FileCache::Update(int type_id,
   items.clear();
 }
 
-void FileCache::Remove(const base::FilePath& path) {
-  auto* type = file_registry_.FindTypeByExtension(
-      base::SysWideToNativeMB(path.Extension()));
+void FileCache::Remove(const std::filesystem::path& path) {
+  auto* type = file_registry_.FindTypeByExtension(path.extension().string());
   if (!type)
     return;
 

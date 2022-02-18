@@ -1,5 +1,6 @@
 ﻿#include "components/multi_create/multi_create_dialog.h"
 
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
 #include "components/multi_create/multi_create_model.h"
@@ -65,7 +66,7 @@ void MultiCreateDialog::OnInitDialog() {
   device_combo_box_ = GetDlgItem(window_handle(), IDC_DEVICES_COMBO);
 
   for (auto& p : model_.devices())
-    device_combo_box_.AddString(p.first.c_str());
+    device_combo_box_.AddString(base::AsWString(p.first).c_str());
   device_combo_box_.SetCurSel(0);
 
   WTL::CButton(GetDlgItem(window_handle(), IDC_TYPE)).SetCheck(BST_CHECKED);
@@ -85,8 +86,8 @@ void MultiCreateDialog::OnInitDialog() {
 
 void MultiCreateDialog::OnOK() {
   MultiCreateModel::RunParams params{};
-  params.device = win_util::GetWindowText(device_combo_box_);
-  params.name_prefix = GetItemText(IDC_NAME_PREFIX);
+  params.device = base::AsString16(win_util::GetWindowText(device_combo_box_));
+  params.name_prefix = base::AsString16(GetItemText(IDC_NAME_PREFIX));
   params.path_prefix = base::SysWideToNativeMB(GetItemText(IDC_PATH_PREFIX));
   params.starting_number = GetItemInt(IDC_STARTING_NUMBER);
   params.starting_address = GetItemInt(IDC_STARTING_ADDRESS);
@@ -99,7 +100,7 @@ void MultiCreateDialog::OnOK() {
 }
 
 void MultiCreateDialog::SetAutoName() {
-  name_edit_.SetText(model_.GetAutoName(ts_));
+  name_edit_.SetText(base::AsWString(model_.GetAutoName(ts_)));
 }
 
 void MultiCreateDialog::OnButtonPressed(framework::Button& sender) {

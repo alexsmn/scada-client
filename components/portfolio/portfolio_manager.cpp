@@ -1,7 +1,8 @@
 ﻿#include "components/portfolio/portfolio_manager.h"
 
 #include "base/logging.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "components/portfolio/portfolio.h"
 #include "core/event.h"
 #include "model/node_id_util.h"
@@ -70,20 +71,20 @@ PortfolioManager::Portfolios::iterator PortfolioManager::Find(
 }
 
 PortfolioManager::Portfolios::iterator PortfolioManager::Find(
-    const wchar_t* name) {
+    std::u16string_view name) {
   for (Portfolios::iterator i = portfolios.begin(); i != portfolios.end(); ++i)
-    if (i->name.compare(name) == 0)
+    if (i->name == name)
       return i;
   return portfolios.end();
 }
 
 Portfolio& PortfolioManager::New() {
-  static const wchar_t mask[] = L"Портфолио";
+  static const char16_t mask[] = u"Портфолио";
 
-  std::wstring name = mask;
+  std::u16string name = mask;
   int id = 2;
-  while (Find(name.c_str()) != portfolios.end())
-    name = base::StringPrintf(L"%ls %d", mask, id++);
+  while (Find(name) != portfolios.end())
+    name = base::StrCat({mask, u" ", base::NumberToString16(id++)});
 
   portfolios.push_back(Portfolio());
   Portfolio& portfolio = portfolios.back();
@@ -96,11 +97,11 @@ Portfolio& PortfolioManager::New() {
 }
 
 void PortfolioManager::Rename(const Portfolio& portfolio,
-                              const wchar_t* name) {
+                              std::u16string_view name) {
   assert(Find(portfolio) != portfolios.end());
 
   Portfolio& p = const_cast<Portfolio&>(portfolio);
-  p.name = name;
+  p.name.assign(name.data(), name.size());
 
   for (auto* events : portfolio_events)
     events->Portfolio_OnUpdate(p);

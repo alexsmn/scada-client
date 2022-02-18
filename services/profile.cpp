@@ -1,13 +1,16 @@
 ﻿#include "services/profile.h"
 
+#include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/string_piece_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
+#include "base/value_util.h"
 #include "client_paths.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
@@ -21,7 +24,6 @@
 #include "components/table/table_component.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
-#include "value_util.h"
 #include "window_info.h"
 
 #if !defined(UI_WT)
@@ -33,9 +35,9 @@
 namespace {
 
 UINT ParseToolbarPosition(std::string_view str) {
-  if (base::EqualsCaseInsensitiveASCII(ToStringPiece(str), "top"))
+  if (base::EqualsCaseInsensitiveASCII(AsStringPiece(str), "top"))
     return ID_TOOLBAR_TOP;
-  else if (base::EqualsCaseInsensitiveASCII(ToStringPiece(str), "hidden"))
+  else if (base::EqualsCaseInsensitiveASCII(AsStringPiece(str), "hidden"))
     return ID_TOOLBAR_HIDDEN;
   else
     return ID_TOOLBAR_LEFT;
@@ -56,7 +58,7 @@ Page CreateInitialPage() {
   Page page;
 
   page.id = 1;
-  page.title = L"Лист 1";
+  page.title = u"Лист 1";
 
   /*// welcome
   WindowDefinition& def = page.AddWin();
@@ -400,15 +402,15 @@ base::Value Profile::SaveToValue(const EventFetcher& event_manager,
   }
 
   data.SetKey("csv", ToJson(csv_export_params));
-  SetKey(data, "csvPath", csv_export_dir.wstring());
+  SetKey(data, "csvPath", csv_export_dir.u16string());
 
   return data;
 }
 
-base::FilePath Profile::GetFilePath() {
+std::filesystem::path Profile::GetFilePath() {
   base::FilePath path;
   base::PathService::Get(client::DIR_PRIVATE, &path);
-  return path.Append(L"profile.json");
+  return AsFilesystemPath(path.Append(L"profile.json"));
 }
 
 Page& Profile::CreatePage() {
@@ -418,7 +420,7 @@ Page& Profile::CreatePage() {
 
   Page& page = pages[id];
   page.id = id;
-  page.title = base::WideToUTF16(L"Лист ") + base::NumberToString16(id);
+  page.title = u"Лист " + base::NumberToString16(id);
   return page;
 }
 

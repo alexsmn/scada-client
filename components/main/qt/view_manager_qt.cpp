@@ -177,18 +177,17 @@ std::unique_ptr<DockTabWidget> ViewManagerQt::CreateTabBlock() {
 
   auto tab_bar = tabs_ptr->tabBar();
   tab_bar->setContextMenuPolicy(Qt::CustomContextMenu);
-  QObject::connect(
-      tab_bar, &DockTabWidget::customContextMenuRequested, this,
-      [this, tabs_ptr, tab_bar](const QPoint& pos) {
-        int index = tab_bar->tabAt(pos);
-        if (index == -1)
-          return;
-        auto* view = FindViewByWidget(tabs_ptr->widget(index));
-        if (!view)
-          return;
-        auto global_pos = tab_bar->mapToGlobal(pos);
-        delegate_.OnShowTabPopupMenu(*view, {global_pos.x(), global_pos.y()});
-      });
+  QObject::connect(tab_bar, &DockTabWidget::customContextMenuRequested, this,
+                   [this, tabs_ptr, tab_bar](const QPoint& pos) {
+                     int index = tab_bar->tabAt(pos);
+                     if (index == -1)
+                       return;
+                     auto* view = FindViewByWidget(tabs_ptr->widget(index));
+                     if (!view)
+                       return;
+                     auto global_pos = tab_bar->mapToGlobal(pos);
+                     delegate_.OnShowTabPopupMenu(*view, global_pos);
+                   });
 
   return tabs;
 }
@@ -253,7 +252,7 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
     for (auto* opened_view : tab_views) {
       if (!IsViewAdded(*opened_view)) {
         tabs->addTab(opened_view->view(),
-                     QString::fromStdWString(opened_view->GetWindowTitle()));
+                     QString::fromStdU16String(opened_view->GetWindowTitle()));
         added_views_.emplace_back(opened_view);
       }
     }
@@ -337,14 +336,14 @@ OpenedView* ViewManagerQt::GetActiveView() {
 }
 
 void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
-                                 const std::wstring& title) {
+                                 const std::u16string& title) {
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
     if (index != -1)
-      tabs->setTabText(index, QString::fromStdWString(title));
+      tabs->setTabText(index, QString::fromStdU16String(title));
 
   } else if (auto* dock = GetDockWidget(opened_view)) {
-    dock->setWindowTitle(QString::fromStdWString(title));
+    dock->setWindowTitle(QString::fromStdU16String(title));
   }
 }
 
@@ -398,7 +397,7 @@ void ViewManagerQt::AddDockView(OpenedView& view) {
   auto area = view.window_info().dock_bottom() ? Qt::BottomDockWidgetArea
                                                : Qt::LeftDockWidgetArea;
   auto* dock = new CustomDockWidget(&main_window_);
-  dock->setWindowTitle(QString::fromStdWString(view.GetWindowTitle()));
+  dock->setWindowTitle(QString::fromStdU16String(view.GetWindowTitle()));
   dock->setWidget(view.view());
   dock->SetClosedHandler([this, &view] { CloseView(view); });
 
@@ -434,7 +433,7 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
     SetRootWidget(tabs);
   }
 
-  tabs->addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
+  tabs->addTab(view.view(), QString::fromStdU16String(view.GetWindowTitle()));
 
   added_views_.emplace_back(&view);
 }
@@ -455,7 +454,8 @@ void ViewManagerQt::SplitView(OpenedView& view, bool vertically) {
   auto side = vertically ? DockTabWidget::DropSide::Right
                          : DockTabWidget::DropSide::Bottom;
   auto& new_tabs = SplitTabBlock(*tabs, side);
-  new_tabs.addTab(view.view(), QString::fromStdWString(view.GetWindowTitle()));
+  new_tabs.addTab(view.view(),
+                  QString::fromStdU16String(view.GetWindowTitle()));
 }
 
 DockTabWidget& ViewManagerQt::SplitTabBlock(DockTabWidget& tabs,

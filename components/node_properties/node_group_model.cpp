@@ -17,11 +17,11 @@ PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
   return properties[index].submodel.get();
 }
 
-std::wstring NodeGroupModel::GetName(int index) const {
+std::u16string NodeGroupModel::GetName(int index) const {
   return properties[index].name;
 }
 
-std::wstring NodeGroupModel::GetValue(int index) const {
+std::u16string NodeGroupModel::GetValue(int index) const {
   auto& prop = properties[index];
   if (prop.def)
     return prop.def->GetText(property_model_, property_model_.node_,
@@ -38,7 +38,7 @@ bool NodeGroupModel::IsInherited(int index) const {
   return false;
 }
 
-void NodeGroupModel::SetValue(int index, const std::wstring& value) {
+void NodeGroupModel::SetValue(int index, const std::u16string& value) {
   auto& prop = properties[index];
   if (prop.def)
     prop.def->SetText(property_model_, property_model_.node_, prop.prop_decl_id,

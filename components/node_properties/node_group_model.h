@@ -14,23 +14,23 @@ class NodeGroupModel : public PropertyGroup {
 
   virtual int GetCount() const override;
   virtual PropertyGroup* GetSubgroup(int index) const override;
-  virtual std::wstring GetName(int index) const override;
-  virtual std::wstring GetValue(int index) const override;
+  virtual std::u16string GetName(int index) const override;
+  virtual std::u16string GetValue(int index) const override;
   virtual ItemType GetType(int index) const override;
   virtual bool IsInherited(int index) const override;
-  virtual void SetValue(int index, const std::wstring& value) override;
+  virtual void SetValue(int index, const std::u16string& value) override;
   virtual ui::EditData GetEditData(int index) const override;
 
   struct Property {
     ItemType type;
-    std::wstring name;
+    std::u16string name;
     scada::AttributeId attribute_id;
     const PropertyDefinition* def;
     scada::NodeId prop_decl_id;
     std::unique_ptr<NodeGroupModel> submodel;
   };
 
-  std::wstring group_title;
+  std::u16string group_title;
   std::vector<Property> properties;
 
  private:

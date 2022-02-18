@@ -21,12 +21,12 @@
 namespace {
 
 const ui::TableColumn s_columns[] = {
-    {TimedDataModel::CID_TIME, std::wstring{kSourceTimestampTitle}, 150,
+    {TimedDataModel::CID_TIME, kSourceTimestampTitle, 150,
      ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-    {TimedDataModel::CID_VALUE, std::wstring{kValueTitle}, 150,
+    {TimedDataModel::CID_VALUE, kValueTitle, 150,
      ui::TableColumn::RIGHT},
-    {TimedDataModel::CID_QUALITY, L"Качество", 65, ui::TableColumn::LEFT},
-    {TimedDataModel::CID_COLLECTION_TIME, std::wstring{kServerTimestampTitle},
+    {TimedDataModel::CID_QUALITY, u"Качество", 65, ui::TableColumn::LEFT},
+    {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle,
      150, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
 };
 
@@ -72,7 +72,7 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
       std::vector<ui::TableColumn>(s_columns, s_columns + _countof(s_columns)));
   view_->SetShowGrid(true);
 
-  view_->SetContextMenuHandler([this](const UiPoint& point) {
+  view_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
   });
 
@@ -120,13 +120,13 @@ void TimedDataView::UpdateColumnTitles() {
   if (index == -1)
     return;
 
-  std::wstring units =
+  std::u16string units =
   base::SysNativeMBToWide(GetTimedDataUnits(model_->timed_data()));
-  std::wstring title = base::StringPrintf(L"%ls, %ls", kValueColumnTitle,
+  std::u16string title = base::StringPrintf(L"%ls, %ls", kValueColumnTitle,
   units.c_str()); view_->SetVisibleColumnTitle(index, title);*/
 }
 
-std::wstring TimedDataView::MakeTitle() const {
+std::u16string TimedDataView::MakeTitle() const {
   return model_->timed_data().GetTitle();
 }
 

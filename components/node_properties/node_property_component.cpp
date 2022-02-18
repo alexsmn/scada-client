@@ -6,7 +6,7 @@
 const WindowInfo kNodePropertyWindowInfo = {
     ID_NEW_PROPERTY_VIEW,
     "NewProps",
-    L"Параметры",
+    u"Параметры",
     WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
     200,
     400};

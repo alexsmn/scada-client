@@ -1,7 +1,7 @@
 ﻿#include "components/timed_data/timed_data_model.h"
 
 #include "base/format_time.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "core/date_time.h"
 
 // TimedDataModel
@@ -97,7 +97,7 @@ void TimedDataModel::GetCell(ui::TableCell& cell) {
       break;
 
     case CID_COLLECTION_TIME:
-      cell.text = base::SysNativeMBToWide(
+      cell.text = base::UTF8ToUTF16(
           FormatTime(tvq.server_timestamp,
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;

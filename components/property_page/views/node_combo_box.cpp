@@ -2,7 +2,9 @@
 
 #include "base/string_piece_util.h"
 #include "base/string_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "core/standard_node_ids.h"
 #include "model/node_id_util.h"
@@ -10,7 +12,7 @@
 #include "node_service/node_util.h"
 
 namespace {
-const wchar_t kNoneChoice[] = L"<Нет>";
+const char16_t kNoneChoice[] = u"<Нет>";
 }  // namespace
 
 // NodeComboBox
@@ -29,7 +31,7 @@ void NodeComboBox::Fill(const NodeRef& root,
   nodes_.insert(nodes_.begin(), {kNoneChoice, nullptr});
 
   for (auto& p : nodes_)
-    combo_box_.AddString(p.first.c_str());
+    combo_box_.AddString(base::AsWString(p.first).c_str());
 
   Select(selected_node_id);
 }
@@ -60,12 +62,12 @@ void ItemComboBox::Init(NodeService& node_service, HWND combo_box_handle) {
 }
 
 scada::NodeId ItemComboBox::GetNodeId() const {
-  std::wstring text = win_util::GetWindowText(combo_box_);
+  auto text = base::AsString16(win_util::GetWindowText(combo_box_));
   auto i = items_.find(text);
   if (i != items_.end())
     return i->second;
 
-  return MakeNestedNodeId(device_id_, base::SysWideToNativeMB(text));
+  return MakeNestedNodeId(device_id_, base::UTF16ToUTF8(text));
 }
 
 void ItemComboBox::SetDeviceId(const scada::NodeId& device_id) {
@@ -83,7 +85,7 @@ void ItemComboBox::SetDeviceId(const scada::NodeId& device_id) {
 void ItemComboBox::SetNodeId(const scada::NodeId& node_id) {
   auto i = node_ids_.find(node_id);
   if (i != node_ids_.end()) {
-    combo_box_.SetWindowTextW(i->second.c_str());
+    combo_box_.SetWindowTextW(base::AsWString(i->second).c_str());
     return;
   }
 
@@ -94,13 +96,13 @@ void ItemComboBox::SetNodeId(const scada::NodeId& node_id) {
   assert(device_id == device_id_);
 
   combo_box_.SetWindowTextW(
-      base::SysNativeMBToWide(ToStringPiece(nested_name)).c_str());
+      base::SysNativeMBToWide(AsStringPiece(nested_name)).c_str());
 }
 
 void ItemComboBox::AddNodesRecursive(
     const scada::NodeId& parent_id,
     const std::vector<scada::NodeId>& reference_type_ids,
-    const std::wstring& name_prefix) {
+    const std::u16string& name_prefix) {
   assert(node_service_);
 
   for (auto& reference_type_id : reference_type_ids) {
@@ -111,10 +113,10 @@ void ItemComboBox::AddNodesRecursive(
       if (child.node_class() == scada::NodeClass::Variable) {
         items_.emplace(name, child.node_id());
         node_ids_.emplace(child.node_id(), name);
-        combo_box_.AddString(name.c_str());
+        combo_box_.AddString(base::AsWString(name).c_str());
       }
 
-      AddNodesRecursive(child.node_id(), reference_type_ids, name + L" : ");
+      AddNodesRecursive(child.node_id(), reference_type_ids, name + u" : ");
     }
   }
 }

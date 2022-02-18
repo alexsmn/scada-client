@@ -39,8 +39,8 @@ void ChangePasswordDialog::accept() {
     return;
   }
 
-  ChangePassword(*this, current_password.toStdWString(),
-                 new_password.toStdWString());
+  ChangePassword(*this, current_password.toStdU16String(),
+                 new_password.toStdU16String());
 
   QDialog::accept();
 }

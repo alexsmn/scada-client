@@ -21,15 +21,15 @@
 
 namespace {
 
-const wchar_t kImportTitle[] = L"Импорт";
-const wchar_t kExportTitle[] = L"Экспорт";
+const char16_t kImportTitle[] = u"Импорт";
+const char16_t kExportTitle[] = u"Экспорт";
 const char kDefaultFileName[] = "configuration.csv";
 
 }  // namespace
 
 void ShowImportReport(const ImportData& import_data,
                       NodeService& node_service) {
-  std::wofstream report("report.txt");
+  std::basic_ofstream<char16_t> report("report.txt");
   PrintImportReport(report, import_data, node_service);
 
   base::FilePath system_path;
@@ -43,7 +43,7 @@ void ShowImportReport(const ImportData& import_data,
   if (!CreateProcess(nullptr, const_cast<LPTSTR>(command_line.c_str()), nullptr,
                      nullptr, FALSE, 0, nullptr, nullptr, &startup_info,
                      &process_info))
-    throw ResourceError{L"Не удалось запустить Блокнот"};
+    throw ResourceError{u"Не удалось запустить Блокнот"};
   ::WaitForSingleObject(process_info.hProcess, INFINITE);
   CloseHandle(process_info.hProcess);
   CloseHandle(process_info.hThread);
@@ -54,10 +54,10 @@ void CatchExportException(DialogService& dialog_service, Func&& func) {
   try {
     func();
   } catch (const ResourceError& e) {
-    dialog_service.RunMessageBox((e.message() + L".").c_str(), kExportTitle,
+    dialog_service.RunMessageBox((e.message() + u".").c_str(), kExportTitle,
                                  MessageBoxMode::Error);
   } catch (const std::runtime_error&) {
-    dialog_service.RunMessageBox(L"Ошибка при экспорте.", kExportTitle,
+    dialog_service.RunMessageBox(u"Ошибка при экспорте.", kExportTitle,
                                  MessageBoxMode::Error);
   }
 }
@@ -68,7 +68,7 @@ void ExportConfigurationToExcel(NodeService& node_service,
   CatchExportException(dialog_service, [&] {
     std::ofstream stream{path};
     if (!stream)
-      throw ResourceError{L"Не удалось открыть файл."};
+      throw ResourceError{u"Не удалось открыть файл."};
 
     ExportDataBuilder{node_service}.Build().then(
         [stream = std::make_shared<std::ofstream>(std::move(stream)),
@@ -78,7 +78,7 @@ void ExportConfigurationToExcel(NodeService& node_service,
             WriteExportData(export_data, writer);
 
             dialog_service
-                .RunMessageBox(L"Экспорт завершен. Открыть файл сейчас?",
+                .RunMessageBox(u"Экспорт завершен. Открыть файл сейчас?",
                                kExportTitle, MessageBoxMode::QuestionYesNo)
                 .then([path](MessageBoxResult message_box_result) {
                   if (message_box_result == MessageBoxResult::Yes)
@@ -104,7 +104,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
                                   const std::filesystem::path& path) {
   std::ifstream stream{path};
   if (!stream) {
-    dialog_service.RunMessageBox(L"Не удалось открыть файл.", kImportTitle,
+    dialog_service.RunMessageBox(u"Не удалось открыть файл.", kImportTitle,
                                  MessageBoxMode::Error);
     return;
   }
@@ -118,7 +118,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
 
   } catch (const ResourceError& e) {
     auto message = base::StringPrintf(
-        L"Ошибка при импорте строки %d, столбца %d: %ls.", reader.row_index(),
+        u"Ошибка при импорте строки %d, столбца %d: %ls.", reader.row_index(),
         reader.cell_index(), e.message().c_str());
     dialog_service.RunMessageBox(message.c_str(), kImportTitle,
                                  MessageBoxMode::Error);
@@ -126,7 +126,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
   }
 
   if (import_data.IsEmpty()) {
-    dialog_service.RunMessageBox(L"Изменений не найдено.", kImportTitle,
+    dialog_service.RunMessageBox(u"Изменений не найдено.", kImportTitle,
                                  MessageBoxMode::Info);
     return;
   }
@@ -134,7 +134,7 @@ void ImportConfigurationFromExcel(NodeService& node_service,
   ShowImportReport(import_data, node_service);
 
   dialog_service
-      .RunMessageBox(L"Применить изменения?", kImportTitle,
+      .RunMessageBox(u"Применить изменения?", kImportTitle,
                      MessageBoxMode::QuestionYesNoDefaultNo)
       .then([import_data = std::move(import_data),
              &task_manager](MessageBoxResult message_box_result) {

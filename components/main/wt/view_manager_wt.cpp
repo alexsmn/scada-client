@@ -241,7 +241,7 @@ OpenedView* ViewManagerWt::GetActiveView() {
 }
 
 void ViewManagerWt::SetViewTitle(OpenedView& opened_view,
-                                 const std::wstring& title) {}
+                                 const std::u16string& title) {}
 
 void ViewManagerWt::SaveLayout(PageLayout& layout) {}
 

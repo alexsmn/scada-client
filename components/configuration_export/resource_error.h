@@ -5,10 +5,11 @@
 
 class ResourceError {
  public:
-  explicit ResourceError(std::wstring message) : message_{std::move(message)} {}
+  explicit ResourceError(std::u16string message)
+      : message_{std::move(message)} {}
 
-  const std::wstring& message() const { return message_; }
+  const std::u16string& message() const { return message_; }
 
  private:
-  const std::wstring message_;
+  const std::u16string message_;
 };

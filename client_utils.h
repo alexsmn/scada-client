@@ -27,10 +27,10 @@ class OpenedView;
 class TaskManager;
 class TimedDataSpec;
 
-std::wstring GetTimedDataTooltipText(const TimedDataSpec& timed_data);
+std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data);
 
 // TODO: Move to different file.
-void ReportRequestResult(const std::wstring& title,
+void ReportRequestResult(const std::u16string& title,
                          const scada::Status& status,
                          LocalEvents& local_events,
                          Profile& profile);
@@ -44,20 +44,20 @@ const size_t kTableLimitation = 1000;
 promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node,
                                       size_t max_count = kTableLimitation);
 
-void CompletePath(const std::wstring& text,
+void CompletePath(const std::u16string& text,
                   int& start,
-                  std::vector<std::wstring>& list);
+                  std::vector<std::u16string>& list);
 
 void DeleteTreeRecordsRecursive(TaskManager& task_manager, const NodeRef& node);
 
-using NamedNodes = std::vector<std::pair<std::wstring, NodeRef>>;
+using NamedNodes = std::vector<std::pair<std::u16string, NodeRef>>;
 
 void SortNamedNodes(NamedNodes& list);
 
 NamedNodes GetNamedNodes(const NodeRef& root,
                          const scada::NodeId& type_definition_id);
 
-std::wstring FormatHostName(const std::string& host_name);
+std::u16string FormatHostName(std::string_view host_name);
 
 void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes);
 
@@ -68,8 +68,8 @@ NodeRef GetPasteParentNode(NodeService& node_service,
                            const NodeRef& selected_node,
                            const NodeRef& root_node);
 
-bool IsWebUrl(std::wstring_view str);
-std::wstring MakeFileUrl(const base::FilePath& path);
+bool IsWebUrl(std::u16string_view str);
+std::u16string MakeFileUrl(const std::filesystem::path& path);
 
-base::FilePath GetPublicFilePath(const base::FilePath& path);
-base::FilePath FullFilePathToPublic(const base::FilePath& path);
+std::filesystem::path GetPublicFilePath(const std::filesystem::path& path);
+std::filesystem::path FullFilePathToPublic(const std::filesystem::path& path);

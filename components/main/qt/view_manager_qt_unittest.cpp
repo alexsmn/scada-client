@@ -40,7 +40,7 @@ ViewManagerQtTest::ViewManagerQtTest() {}
 ViewManagerQtTest::~ViewManagerQtTest() {}
 
 TEST_F(ViewManagerQtTest, CloseView_DeletesNativeView) {
-  const WindowInfo window_info{123, "name", L"title"};
+  const WindowInfo window_info{123, "name", u"title"};
   WindowDefinition window_definition{window_info};
 
   auto controller = std::make_unique<StrictMock<MockController>>();

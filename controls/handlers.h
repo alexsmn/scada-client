@@ -1,6 +1,7 @@
 #pragma once
 
-#include "controls/types.h"
+#include "controls/key_codes.h"
+#include "controls/point.h"
 
 #include <functional>
 
@@ -12,10 +13,10 @@ typedef std::function<void(void* node, bool checked)> TreeCheckedHandler;
 typedef std::function<void(void* node)> TreeDragHandler;
 typedef std::function<bool(void* node)> TreeEditHandler;
 typedef std::function<int(void* left, void* right)> TreeCompareHandler;
-typedef std::function<void(const UiPoint& point)> ContextMenuHandler;
+typedef std::function<void(const aui::Point& point)> ContextMenuHandler;
 typedef std::function<void()> SelectionChangeHandler;
 
-typedef std::function<bool(KeyCode key_code)> KeyPressHandler;
+typedef std::function<bool(aui::KeyCode key_code)> KeyPressHandler;
 
 typedef std::function<void()> StateChangeHandler;
 

@@ -1,6 +1,7 @@
 #include "client_utils_qt.h"
 
-#include "base/strings/sys_string_conversions.h"
+#include "base/string_piece_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "translation.h"
 #include "ui/base/models/menu_model.h"
 
@@ -19,7 +20,7 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
       case ui::MenuModel::TYPE_SUBMENU:
         if (auto* submenu_model = model.GetSubmenuModelAt(i)) {
           auto* submenu =
-              menu.addMenu(QString::fromStdWString(model.GetLabelAt(i)));
+              menu.addMenu(QString::fromStdU16String(model.GetLabelAt(i)));
           QObject::connect(submenu, &QMenu::aboutToShow,
                            [submenu, submenu_model] {
                              submenu->clear();
@@ -35,7 +36,7 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
 
       default: {
         auto* action =
-            menu.addAction(QString::fromStdWString(model.GetLabelAt(i)));
+            menu.addAction(QString::fromStdU16String(model.GetLabelAt(i)));
         action->setEnabled(model.IsEnabledAt(i));
         if (item_type == ui::MenuModel::TYPE_CHECK ||
             item_type == ui::MenuModel::TYPE_RADIO) {
@@ -50,15 +51,15 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
   }
 }
 
-std::wstring Translate(const char* text) {
-  return QObject::tr(text).toStdWString();
+std::u16string Translate(std::string_view text) {
+  return QObject::tr(std::string(text).c_str()).toStdU16String();
 }
 
-std::wstring FormatHostName(const std::string& host_name) {
+std::u16string FormatHostName(std::string_view host_name) {
   if (host_name.empty()) {
-    return QObject::tr("Local").toStdWString();
+    return QObject::tr("Local").toStdU16String();
   } else {
-    return base::SysNativeMBToWide(host_name);
+    return base::UTF8ToUTF16(AsStringPiece(host_name));
   }
 }
 

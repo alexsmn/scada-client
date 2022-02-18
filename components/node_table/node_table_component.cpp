@@ -27,23 +27,23 @@ class NodeTableControllerImpl : public NodeTableController {
 const WindowInfo kTableEditorWindowInfo = {
     ID_TABLE_EDITOR,
     "TableEditor",
-    L"Конфигурация",
+    u"Конфигурация",
     WIN_DISALLOW_NEW | WIN_REQUIRES_ADMIN,
     0,
     0,
     IDR_GRID_POPUP};
 
 const WindowInfo kTsFormatsWindowInfo = {
-    ID_TS_FORMATS_VIEW, "Params", L"Форматы", WIN_REQUIRES_ADMIN, 0, 0,
+    ID_TS_FORMATS_VIEW, "Params", u"Форматы", WIN_REQUIRES_ADMIN, 0, 0,
     IDR_GRID_POPUP};
 
 const WindowInfo kUsersWindowInfo = {
-    ID_USERS_VIEW, "Users", L"Пользователи", WIN_REQUIRES_ADMIN, 0, 0,
+    ID_USERS_VIEW, "Users", u"Пользователи", WIN_REQUIRES_ADMIN, 0, 0,
     IDR_GRID_POPUP};
 
 const WindowInfo kSimulationSignalsWindowInfo = {ID_SIMULATION_ITEMS_VIEW,
                                                  "SimulationItems",
-                                                 L"Эмулируемые сигналы",
+                                                 u"Эмулируемые сигналы",
                                                  WIN_REQUIRES_ADMIN,
                                                  0,
                                                  0,
@@ -51,7 +51,7 @@ const WindowInfo kSimulationSignalsWindowInfo = {ID_SIMULATION_ITEMS_VIEW,
 
 const WindowInfo kHistoricalDatabasesWindowInfo = {ID_HISTORICAL_DB_VIEW,
                                                    "HistoricalDB",
-                                                   L"Базы данных",
+                                                   u"Базы данных",
                                                    WIN_REQUIRES_ADMIN,
                                                    0,
                                                    0,

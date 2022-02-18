@@ -130,7 +130,7 @@ TEST_F(TableModelTest, GetTitle) {
   // + empty row.
   ASSERT_EQ(2, table_model_.GetRowCount());
 
-  const base::string16 title = L"Title";
+  const std::u16string title = u"Title";
   EXPECT_CALL(row_context->timed_data, GetTitle()).WillOnce(Return(title));
   // For icon index.
   EXPECT_CALL(row_context->timed_data, GetNode());
@@ -144,7 +144,7 @@ TEST_F(TableModelTest, GetValue) {
   ASSERT_EQ(2, table_model_.GetRowCount());
 
   EXPECT_CALL(row_context->timed_data, GetNode()).Times(AnyNumber());
-  const scada::LocalizedText value = L"value";
+  const scada::LocalizedText value = u"value";
   const scada::DataValue data_value{value, {}, {}, {}};
   EXPECT_CALL(row_context->timed_data, GetDataValue())
       .Times(AnyNumber())

@@ -12,8 +12,8 @@ void ChangePassword(const ChangePasswordContext& context,
   context.user_.Call(security::id::UserType_ChangePassword,
                      {current_password, new_password}, {},
                      [context](const scada::Status& status) {
-                       std::wstring title = base::StringPrintf(
-                           L"Смена пароля пользователя %ls",
+                       auto title = base::StringPrintf(
+                           u"Смена пароля пользователя %ls",
                            ToString16(context.user_.display_name()).c_str());
                        ReportRequestResult(title, status, context.local_events_,
                                            context.profile_);

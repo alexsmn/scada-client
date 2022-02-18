@@ -106,8 +106,8 @@ void VidiconDisplayView::OnControlCreated(views::ActiveXControl& sender) {
     form_->put_AutoStartRuntime(VARIANT_TRUE);
     form_->put_AxBorderStyle(ViewerX::afbNone);
 
-    base::FilePath full_path = GetPublicFilePath(path_);
-    form_->put_FileName(base::win::ScopedBstr(full_path.value().c_str()));
+    std::filesystem::path full_path = GetPublicFilePath(path_);
+    form_->put_FileName(base::win::ScopedBstr(full_path.wstring()));
 
     synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
                              base::Bind(&VidiconDisplayView::SynchronizeView,

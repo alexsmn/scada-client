@@ -26,15 +26,15 @@ int ObjectTreeModel::GetColumnCount() const {
   return 2;
 }
 
-std::wstring ObjectTreeModel::GetColumnText(int column_id) const {
-  return column_id == 0 ? L"Имя" : L"Значение";
+std::u16string ObjectTreeModel::GetColumnText(int column_id) const {
+  return column_id == 0 ? u"Имя" : u"Значение";
 }
 
 int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {
   return column_id == 0 ? 200 : 0;
 }
 
-std::wstring ObjectTreeModel::GetText(void* tree_node, int column_id) {
+std::u16string ObjectTreeModel::GetText(void* tree_node, int column_id) {
   if (column_id == 1)
     return visible_node_model_.GetText(tree_node);
   else

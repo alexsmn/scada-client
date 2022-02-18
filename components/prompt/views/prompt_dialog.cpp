@@ -1,5 +1,6 @@
 #include "components/prompt/prompt_dialog.h"
 
+#include "base/strings/string_util.h"
 #include "common_resources.h"
 #include "services/dialog_service.h"
 #include "views/client_utils_views.h"
@@ -9,42 +10,33 @@ class PromptDialog : public framework::Dialog {
  public:
   PromptDialog() : Dialog(IDD_PROMPT) {}
 
-  bool Execute(HWND parent,
-               std::wstring& value,
-               const wchar_t* prompt,
-               const wchar_t* title) {
-    title_ = title;
-    prompt_ = prompt;
-    value_ = value;
-    if (Dialog::Execute(parent) != IDOK)
-      return false;
-    value = value_;
-    return true;
-  }
+  std::wstring title;
+  std::wstring prompt;
+  std::wstring value;
 
  protected:
-  virtual void OnInitDialog() {
-    SetWindowText(title_);
-    SetItemText(IDC_PROMPT, prompt_);
-    SetItemText(IDC_EDIT, value_);
+  virtual void OnInitDialog() override {
+    SetWindowText(title);
+    SetItemText(IDC_PROMPT, prompt);
+    SetItemText(IDC_EDIT, value);
   }
 
-  virtual void OnOK() {
-    value_ = GetItemText(IDC_EDIT);
+  virtual void OnOK() override {
+    value = GetItemText(IDC_EDIT);
     Dialog::OnOK();
   }
-
- private:
-  std::wstring title_;
-  std::wstring prompt_;
-  std::wstring value_;
 };
 
 bool RunPromptDialog(DialogService& dialog_service,
-                     const std::wstring& prompt,
-                     const std::wstring& title,
-                     std::wstring& value) {
-  PromptDialog dlg;
-  return dlg.Execute(dialog_service.GetDialogOwningWindow(), value,
-                     prompt.c_str(), title.c_str());
+                     const std::u16string& prompt,
+                     const std::u16string& title,
+                     std::u16string& value) {
+  PromptDialog prompt_dialog;
+  prompt_dialog.title = base::AsWString(title);
+  prompt_dialog.prompt = base::AsWString(prompt);
+  prompt_dialog.value = base::AsWString(value);
+  if (prompt_dialog.Execute(dialog_service.GetDialogOwningWindow()) != IDOK)
+    return false;
+  value = base::AsString16(prompt_dialog.value);
+  return true;
 }

@@ -1,5 +1,6 @@
 #include "components/limits/limit_dialog.h"
 
+#include "base/strings/string_util.h"
 #include "common_resources.h"
 #include "components/limits/limit_model.h"
 #include "services/dialog_service.h"
@@ -22,9 +23,9 @@ class LimitsDialog : protected ATL::CDialogImpl<LimitsDialog> {
   enum { IDD = IDD_LIMITS };
 
   BEGIN_MSG_MAP(LimitsDialog)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  COMMAND_ID_HANDLER(IDOK, OnOK)
-  COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    COMMAND_ID_HANDLER(IDOK, OnOK)
+    COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT /*uMsg*/,
@@ -57,13 +58,13 @@ LRESULT LimitsDialog::OnInitDialog(UINT /*uMsg*/,
                                    /*bHandled*/) {
   CenterWindow(GetParent());
 
-  SetDlgItemText(IDC_DESC, model_.GetSourceTitle().c_str());
+  SetDlgItemText(IDC_DESC, base::AsWString(model_.GetSourceTitle()).c_str());
 
   auto limits = model_.GetLimits();
-  SetDlgItemText(IDC_LIMIT_LOLO, limits.lolo.c_str());
-  SetDlgItemText(IDC_LIMIT_HIHI, limits.hihi.c_str());
-  SetDlgItemText(IDC_LIMIT_LO, limits.lo.c_str());
-  SetDlgItemText(IDC_LIMIT_HI, limits.hi.c_str());
+  SetDlgItemText(IDC_LIMIT_LOLO, base::AsWString(limits.lolo).c_str());
+  SetDlgItemText(IDC_LIMIT_HIHI, base::AsWString(limits.hihi).c_str());
+  SetDlgItemText(IDC_LIMIT_LO, base::AsWString(limits.lo).c_str());
+  SetDlgItemText(IDC_LIMIT_HI, base::AsWString(limits.hi).c_str());
 
   return TRUE;
 }
@@ -76,13 +77,13 @@ LRESULT LimitsDialog::OnOK(WORD /*wNotifyCode*/,
   LimitModel::Limits limits = {};
   ATL::CString str;
   GetDlgItemText(IDC_LIMIT_LO, str);
-  limits.lo = str;
+  limits.lo = base::AsString16(static_cast<LPCTSTR>(str));
   GetDlgItemText(IDC_LIMIT_HI, str);
-  limits.hi = str;
+  limits.hi = base::AsString16(static_cast<LPCTSTR>(str));
   GetDlgItemText(IDC_LIMIT_LOLO, str);
-  limits.lolo = str;
+  limits.lolo = base::AsString16(static_cast<LPCTSTR>(str));
   GetDlgItemText(IDC_LIMIT_HIHI, str);
-  limits.hihi = str;
+  limits.hihi = base::AsString16(static_cast<LPCTSTR>(str));
 
   model_.WriteLimits(limits);
 

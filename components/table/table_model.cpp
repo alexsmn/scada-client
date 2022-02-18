@@ -1,5 +1,6 @@
 ﻿#include "components/table/table_model.h"
 
+#include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
 #include "base/utils.h"
 #include "common_resources.h"
@@ -64,7 +65,7 @@ void TableModel::GetCellEx(TableCellEx& cell) const {
 
   if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
-      cell.text = L"Введите выражение";
+      cell.text = u"Введите выражение";
       cell.text_color = SkColorSetRGB(192, 192, 192);
     }
     return;
@@ -209,13 +210,13 @@ void TableModel::Sort(unsigned command_id) {
   NotifyItemsChanged(0, row_count());
 }
 
-std::wstring TableModel::GetTooltip(int row, int column_id) {
+std::u16string TableModel::GetTooltip(int row, int column_id) {
   if (column_id != TableModel::COLUMN_TITLE)
-    return std::wstring();
+    return std::u16string();
 
   const TableRow* trow = GetRow(row);
   if (!trow)
-    return std::wstring();
+    return std::u16string();
 
   return trow->GetTooltip();
 }
@@ -231,15 +232,17 @@ const TableRow* TableModel::GetRow(int index) const {
   return const_cast<TableModel*>(this)->GetRow(index);
 }
 
-bool TableModel::SetCellText(int row, int column_id, const std::wstring& text) {
+bool TableModel::SetCellText(int row,
+                             int column_id,
+                             const std::u16string& text) {
   assert(column_id == TableModel::COLUMN_TITLE);
 
-  std::string text2 = base::SysWideToNativeMB(text);
+  std::string text2 = base::UTF16ToUTF8(text);
   if (!text2.empty() && text2[0] == L'=')
     text2.erase(0, 1);
 
   if (!SetFormula(row, text2)) {
-    dialog_service_.RunMessageBox(L"Неверное выражение.", {},
+    dialog_service_.RunMessageBox(u"Неверное выражение.", {},
                                   MessageBoxMode::Error);
     return false;
   }

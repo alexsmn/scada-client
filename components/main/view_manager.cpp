@@ -158,7 +158,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     }
   }
 
-  LOG(INFO) << "Open window " << std::wstring{window_info.title};
+  LOG(INFO) << "Open window " << std::u16string{window_info.title};
 
   if (!window_def)
     window_def = &current_page().AddWindow(def);

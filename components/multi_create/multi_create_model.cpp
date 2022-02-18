@@ -12,7 +12,7 @@
 namespace {
 
 void FillDeviceItems(const NodeRef& parent,
-                     std::map<std::wstring, scada::NodeId>& items) {
+                     std::map<std::u16string, scada::NodeId>& items) {
   for (auto& node : parent.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, devices::id::DeviceType)) {
       auto title = GetFullDisplayName(node);
@@ -29,8 +29,8 @@ MultiCreateModel::MultiCreateModel(MultiCreateContext&& context)
   FillDeviceItems(node_service_.GetNode(devices::id::Devices), devices_);
 }
 
-std::wstring MultiCreateModel::GetAutoName(bool ts) const {
-  return ts ? L"ТС" : L"ТИТ";
+std::u16string MultiCreateModel::GetAutoName(bool ts) const {
+  return ts ? u"ТС" : u"ТИТ";
 }
 
 void MultiCreateModel::Run(const RunParams& params) {
@@ -46,7 +46,7 @@ void MultiCreateModel::Run(const RunParams& params) {
     int address = params.starting_address + i;
 
     auto display_name = scada::ToLocalizedText(
-        base::StringPrintf(L"%ls%d", params.name_prefix.c_str(), number));
+        base::StringPrintf(u"%ls%d", params.name_prefix.c_str(), number));
     auto item_path =
         base::StringPrintf("%s%d", params.path_prefix.c_str(), address);
     auto path = MakeNodeIdFormula(MakeNestedNodeId(device_id, item_path));

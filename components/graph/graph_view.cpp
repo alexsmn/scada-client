@@ -84,7 +84,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       auto stime = item.GetString("time");
       base::Time from, to;
       graph_->m_time_fit =
-          base::EqualsCaseInsensitiveASCII(ToStringPiece(stime), "Now");
+          base::EqualsCaseInsensitiveASCII(AsStringPiece(stime), "Now");
       if (graph_->m_time_fit || !Deserialize(stime, to)) {
         graph_->m_time_fit = true;
         to = base::Time::Now();
@@ -134,7 +134,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   // Don't set controller until graph is initialized.
   graph_->set_controller(this);
 
-  graph_->SetContextMenuHandler([this](const UiPoint& point) {
+  graph_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(0, point, true);
   });
 
@@ -351,13 +351,13 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   controller_delegate_.SetModified(true);
 }
 
-std::wstring GraphView::MakeTitle() const {
+std::u16string GraphView::MakeTitle() const {
   MetrixGraph::MetrixLine* line =
       !graph_->panes().empty()
           ? static_cast<MetrixGraph::MetrixLine*>(
                 graph_->panes().front()->plot().primary_line())
           : NULL;
-  return line ? line->data_source().title() : L"Нет объекта";
+  return line ? line->data_source().title() : u"Нет объекта";
 }
 
 bool GraphView::CanClose() const {

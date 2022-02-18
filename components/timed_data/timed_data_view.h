@@ -40,7 +40,7 @@ class TimedDataView : protected ControllerContext,
   virtual ExportData GetExportData() override;
 
  private:
-  std::wstring MakeTitle() const;
+  std::u16string MakeTitle() const;
   void UpdateColumnTitles();
 
   SelectionModel selection_{{timed_data_service_}};

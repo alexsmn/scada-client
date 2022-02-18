@@ -1,7 +1,10 @@
 ﻿#include "components/modus/views/modus_view.h"
 
+#include "components/modus/activex/modus.h"
 #include "views/activex_host.h"
 #include "views/ambient_props.h"
+
+#include <wrl/client.h>
 
 // ModusView
 
@@ -13,11 +16,11 @@ ModusView::ModusView(ModusDocumentContext&& context)
 
 ModusView::~ModusView() {}
 
-void ModusView::Open(const base::FilePath& path) {
+void ModusView::Open(const std::filesystem::path& path) {
   path_ = path;
 }
 
-base::FilePath ModusView::GetPath() const {
+std::filesystem::path ModusView::GetPath() const {
   return path_;
 }
 

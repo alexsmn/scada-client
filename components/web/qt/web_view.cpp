@@ -1,5 +1,6 @@
 #include "components/web/qt/web_view.h"
 
+#include "base/strings/string_util.h"
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "client_utils.h"
@@ -21,9 +22,10 @@ WebView::~WebView() {}
 
 UiView* WebView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
-  std::wstring url = IsWebUrl(definition.path.value())
-                         ? definition.path.value()
-                         : MakeFileUrl(GetPublicFilePath(definition.path));
+
+  auto url = IsWebUrl(path_.u16string())
+                 ? path_.u16string()
+                 : MakeFileUrl(GetPublicFilePath(path_));
 
   ax_widget_ = new QAxWidget();
   ax_widget_->setFocusPolicy(Qt::StrongFocus);
@@ -37,8 +39,8 @@ UiView* WebView::Init(const WindowDefinition& definition) {
     if (!url.empty()) {
       base::win::ScopedVariant e;
       VARIANT* empty = const_cast<VARIANT*>(e.ptr());
-      web->Navigate(base::win::ScopedBstr(url.c_str()), empty, empty, empty,
-                    empty);
+      web->Navigate(base::win::ScopedBstr(base::AsWString(url)), empty, empty,
+                    empty, empty);
     }
   }
 

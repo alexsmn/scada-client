@@ -1,17 +1,17 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "common/aliases.h"
-#include "model/node_id_util.h"
 #include "file_cache.h"
+#include "model/node_id_util.h"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
 struct FileCacheUpdaterContext {
   const int type_id_;
-  const base::FilePath path_;
-  const std::wstring title_;
+  const std::filesystem::path path_;
+  const std::u16string title_;
   const AliasResolver alias_resolver_;
   FileCache& cache_;
 };
@@ -54,7 +54,7 @@ inline void FileCacheUpdater::Add(std::string_view formula, int object_tag) {
         if (node_id.is_null())
           return;
 
-        LOG_INFO(logger_) << "Set" << LOG_TAG("Path", path_.value())
+        LOG_INFO(logger_) << "Set" << LOG_TAG("Path", path_.u16string())
                           << LOG_TAG("NodeId", NodeIdToScadaString(node_id))
                           << LOG_TAG("Tag", object_tag);
         items_[node_id] = object_tag;

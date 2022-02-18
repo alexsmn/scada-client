@@ -22,7 +22,7 @@ TEST(NodeSerialization, DISABLED_NodeToData) {
       data_items::id::DataItemType,
       data_items::id::DataItems,
       scada::id::Organizes,
-      scada::NodeAttributes{}.set_display_name(L"Display Name"),
+      scada::NodeAttributes{}.set_display_name(u"Display Name"),
       scada::NodeProperties{{data_items::id::DataItemType_Alias, "Alias"}},
       {},
       {},

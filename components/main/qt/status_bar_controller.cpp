@@ -20,7 +20,7 @@ StatusBarController::StatusBarController(QStatusBar& status_bar,
   for (int i = 0; i < model_.GetPaneCount(); ++i) {
     auto* pane = new QLabel{&status_bar_};
     pane->setMargin(2);
-    pane->setText(QString::fromStdWString(model_.GetPaneText(i)));
+    pane->setText(QString::fromStdU16String(model_.GetPaneText(i)));
     status_bar_.addPermanentWidget(pane);
     panes_.emplace_back(pane);
   }
@@ -35,7 +35,7 @@ StatusBarController::~StatusBarController() {
 void StatusBarController::OnPanesChanged(int index, int count) {
   for (int i = 0; i < count; ++i) {
     auto text = model_.GetPaneText(index + i);
-    panes_[index + i]->setText(QString::fromStdWString(text));
+    panes_[index + i]->setText(QString::fromStdU16String(text));
   }
 }
 

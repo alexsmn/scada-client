@@ -19,14 +19,14 @@ TEST(MakeWindowDefinition, OpenContext_Node) {
   EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
       .WillOnce(Return(static_cast<scada::Int32>(scada::NodeClass::Variable)));
   EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
-      .WillOnce(Return(L"Имя в русской локали"));
+      .WillOnce(Return(u"Имя в русской локали"));
   OpenContext open_context{node_model};
   const auto& window_info = kEventJournalWindowInfo;
   auto window_definition =
       MakeWindowDefinition(&window_info, open_context).get();
   const auto kExpectedWindowDefinition =
       WindowDefinition{window_info}
-          .set_title(L"Журнал событий: Имя в русской локали")
+          .set_title(u"Журнал событий: Имя в русской локали")
           .AddItem(
               std::move(WindowItem{"Item"}.SetString("path", "{TS.NodeId}")));
   EXPECT_EQ(window_definition, kExpectedWindowDefinition);

@@ -4,9 +4,7 @@
 
 #include "core/event.h"
 
-LocalEvents::LocalEvents()
-    : next_ack_id_(1) {
-}
+LocalEvents::LocalEvents() : next_ack_id_(1) {}
 
 LocalEvents::~LocalEvents() {
   for (Events::iterator i = events_.begin(); i != events_.end(); ++i)
@@ -14,7 +12,7 @@ LocalEvents::~LocalEvents() {
 }
 
 void LocalEvents::ReportEvent(Severity severity,
-                              const std::wstring& message) {
+                              const scada::LocalizedText& message) {
   unsigned ack_id = next_ack_id_++;
   while ((ack_id != 0) && (FindAckId(ack_id) != events_.end()))
     ack_id = next_ack_id_++;

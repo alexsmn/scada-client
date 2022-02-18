@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "base/timer/timer.h"
 #include "components/vidicon_display/display_viewer_api.h"
 #include "controller.h"
 #include "ui/views/controls/activex_control.h"
 
+#include <filesystem>
 #include <wrl/client.h>
 
 class VidiconDisplayView : public Controller,
@@ -25,7 +25,7 @@ class VidiconDisplayView : public Controller,
   virtual void OnControlCreated(views::ActiveXControl& sender) override;
   virtual void OnContractDestroyed(views::ActiveXControl& sender) override;
 
-  base::FilePath path_;
+  std::filesystem::path path_;
 
   std::unique_ptr<views::ActiveXControl> control_;
   Microsoft::WRL::ComPtr<ViewerX::IViewerForm> form_;

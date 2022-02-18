@@ -43,13 +43,13 @@ int HumanCompareTextT(std::basic_string_view<T> left,
   int right_value = ScanEndingNumber(right, right_len);
 
   if (left_len != right_len) {
-    return base::CompareCaseInsensitiveASCII(ToStringPiece(left),
-                                             ToStringPiece(right));
+    return base::CompareCaseInsensitiveASCII(AsStringPiece(left),
+                                             AsStringPiece(right));
   }
 
   int res = base::CompareCaseInsensitiveASCII(
-      ToStringPiece(left.substr(0, left_len)),
-      ToStringPiece(right.substr(0, right_len)));
+      AsStringPiece(left.substr(0, left_len)),
+      AsStringPiece(right.substr(0, right_len)));
   if (res != 0)
     return res;
 
@@ -59,5 +59,5 @@ int HumanCompareTextT(std::basic_string_view<T> left,
 template int HumanCompareTextT(std::basic_string_view<char> left,
                                std::basic_string_view<char> right);
 
-template int HumanCompareTextT(std::basic_string_view<wchar_t> left,
-                               std::basic_string_view<wchar_t> right);
+template int HumanCompareTextT(std::basic_string_view<char16_t> left,
+                               std::basic_string_view<char16_t> right);

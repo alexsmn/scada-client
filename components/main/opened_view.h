@@ -24,7 +24,7 @@ class PrintService;
 struct WindowInfo;
 
 using PopupMenuHandler = std::function<
-    void(unsigned resource_id, const UiPoint& point, bool right_click)>;
+    void(unsigned resource_id, const aui::Point& point, bool right_click)>;
 
 using DefaultNodeCommandHandler = std::function<void(const NodeRef& node)>;
 
@@ -69,9 +69,9 @@ class OpenedView : private OpenedViewContext,
   void Activate();
   void SetSelection(const scada::NodeId& item_id);
   ContentsModel* GetContentsModel();
-  void SetUserTitle(const std::wstring_view& title);
+  void SetUserTitle(std::u16string_view title);
   void Save();
-  std::wstring GetWindowTitle() const;
+  std::u16string GetWindowTitle() const;
   void Close();
 
 #if defined(UI_VIEWS)
@@ -94,9 +94,9 @@ class OpenedView : private OpenedViewContext,
   void UpdateTitle();
 
   // ControllerDelegate
-  virtual void SetTitle(const std::wstring_view& title) override;
+  virtual void SetTitle(std::u16string_view) override;
   virtual void ShowPopupMenu(unsigned resource_id,
-                             const UiPoint& point,
+                             const aui::Point& point,
                              bool right_click) override;
   virtual void OpenView(const WindowDefinition& def) override;
   virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override;
@@ -109,7 +109,7 @@ class OpenedView : private OpenedViewContext,
 
   bool modified_ = false;
 
-  std::wstring title_;
+  std::u16string title_;
 
   bool working_ = false;
   ExecutorTimer update_working_timer_;
@@ -122,7 +122,7 @@ class OpenedView : private OpenedViewContext,
 
   // TODO: Next members should be out of this class.
 
-  std::wstring user_title_;
+  std::u16string user_title_;
   // Window is locked for adding of new items.
   bool locked_ = false;
 };

@@ -32,16 +32,16 @@ ModusView3::ModusView3(TimedDataService& timed_data_service)
 
 ModusView3::~ModusView3() {}
 
-void ModusView3::Open(const base::FilePath& path) {
+void ModusView3::Open(const std::filesystem::path& path) {
   path_ = path;
 
-  document_.Load(QString::fromStdWString(path_.value()));
+  document_.Load(QString::fromStdU16String(path_.u16string()));
 
   for (auto* element : document_.elements())
     CreateBindings(*element);
 }
 
-base::FilePath ModusView3::GetPath() const {
+std::filesystem::path ModusView3::GetPath() const {
   return path_;
 }
 

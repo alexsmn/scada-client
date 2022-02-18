@@ -32,17 +32,17 @@ int StatusBarModelImpl::GetPaneCount() {
   return 6;
 }
 
-std::wstring StatusBarModelImpl::GetPaneText(int index) {
+std::u16string StatusBarModelImpl::GetPaneText(int index) {
   switch (index) {
     case 1: {
       size_t unacked_event_count = event_fetcher_.unacked_events().size();
       return unacked_event_count
-                 ? base::StringPrintf(L"Событий: %u", unacked_event_count)
-                 : L"Нет событий";
+                 ? base::StringPrintf(u"Событий: %u", unacked_event_count)
+                 : u"Нет событий";
     }
 
     case 2:
-      return base::StringPrintf(L"Важность: %u", event_fetcher_.severity_min());
+      return base::StringPrintf(u"Важность: %u", event_fetcher_.severity_min());
 
     case 3:
       return user_node_.display_name();
@@ -50,16 +50,16 @@ std::wstring StatusBarModelImpl::GetPaneText(int index) {
     case 4: {
       base::TimeDelta ping_delay;
       auto connected = session_service_.IsConnected(&ping_delay);
-      return connected ? L"Подключен" : L"Отключен";
+      return connected ? u"Подключен" : u"Отключен";
     }
 
     case 5: {
       base::TimeDelta ping_delay;
       auto connected = session_service_.IsConnected(&ping_delay);
       return connected ? base::StringPrintf(
-                             L"Отклик: %u мс",
+                             u"Отклик: %u мс",
                              static_cast<unsigned>(ping_delay.InMilliseconds()))
-                       : L"Нет отклика";
+                       : u"Нет отклика";
     }
 
     default:

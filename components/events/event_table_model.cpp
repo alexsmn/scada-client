@@ -4,7 +4,7 @@
 #include "base/executor.h"
 #include "base/format_time.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
@@ -17,7 +17,7 @@
 
 namespace {
 
-const wchar_t kLocalEventSource[] = L"Локальное событие";
+const char16_t kLocalEventSource[] = u"Локальное событие";
 
 void GetEventColors(const scada::Event& event,
                     SkColor& text_color,
@@ -96,11 +96,11 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
 
   switch (cell.column_id) {
     case EventColumnTime:
-      cell.text = base::SysNativeMBToWide(FormatTime(
+      cell.text = base::UTF8ToUTF16(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     case EventColumnSeverity:
-      cell.text = base::IntToString16(event.severity);
+      cell.text = base::NumberToString16(event.severity);
       break;
     case EventColumnItem:
       if (row.node)
@@ -126,7 +126,7 @@ void EventTableModel::GetCell(ui::TableCell& cell) {
         cell.text = ToString16(row.acknowledged_user.display_name());
       break;
     case EventColumnAckTime:
-      cell.text = base::SysNativeMBToWide(
+      cell.text = base::UTF8ToUTF16(
           FormatTime(event.acknowledged_time,
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
@@ -467,30 +467,30 @@ void EventTableModel::UnlockUpdate() {
     Update();
 }
 
-std::wstring EventTableModel::MakeTitle() const {
-  std::wstring title;
+std::u16string EventTableModel::MakeTitle() const {
+  std::u16string title;
   if (current_events_) {
-    title = L"Текущие события";
+    title = u"Текущие события";
   } else {
     switch (time_range_.type) {
       case TimeRange::Type::Day:
-        title = L"Журнал событий за день";
+        title = u"Журнал событий за день";
         break;
       case TimeRange::Type::Week:
-        title = L"Журнал событий за неделю";
+        title = u"Журнал событий за неделю";
         break;
       case TimeRange::Type::Month:
-        title = L"Журнал событий за месяц";
+        title = u"Журнал событий за месяц";
         break;
       case TimeRange::Type::Custom:
       default:
-        title = L"Журнал событий";  // TODO: Format time range.
+        title = u"Журнал событий";  // TODO: Format time range.
         break;
     }
   }
 
   if (severity_min_ || !filter_node_ids_.empty())
-    title += L" (Фильтр)";
+    title += u" (Фильтр)";
 
   return title;
 }

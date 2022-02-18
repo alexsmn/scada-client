@@ -1,6 +1,8 @@
 ﻿#include "components/modus/activex/modus_loader.h"
 
+#include "base/debug_util.h"
 #include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common_resources.h"
@@ -8,7 +10,6 @@
 #include "components/modus/activex/modus_document.h"
 #include "components/modus/activex/modus_element.h"
 #include "components/modus/activex/modus_object.h"
-#include "base/debug_util.h"
 #include "services/file_cache_updater.h"
 #include "window_info.h"
 
@@ -47,11 +48,11 @@ ModusLoader::ModusLoader(ModusLoaderContext&& context)
     : ModusLoaderContext{std::move(context)} {}
 
 void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
-                       const base::FilePath& path,
-                       ModusDocument* document) {
-  LOG_INFO(logger_) << "Load" << LOG_TAG("Path", path.value());
+                       const std::filesystem::path& path,
+                       const ObjectHandler& object_handler) {
+  LOG_INFO(logger_) << "Load" << LOG_TAG("Path", path.u16string());
 
-  document_ = document;
+  object_handler_ = object_handler;
 
   {
     base::win::ScopedBstr bstr;
@@ -73,14 +74,14 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
   }
 
   if (title_.empty())
-    title_ = path.BaseName().RemoveExtension().value();
+    title_ = path.stem().wstring();
 
   LOG_INFO(logger_) << "Load title" << LOG_TAG("Title", title_);
 
   cache_updater_ = FileCacheUpdater::Create(FileCacheUpdaterContext{
       ID_MODUS_VIEW,
       FullFilePathToPublic(path),
-      title_,
+      base::AsString16(title_),
       alias_resolver_,
       file_cache_,
   });
@@ -168,7 +169,7 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
     }
   }
 
-  if (document_) {
+  if (object_handler_) {
     if (!object) {
       LOG_INFO(logger_) << "Create object"
                         << LOG_TAG("ShortPath", GetShortPath(sde_object))
@@ -250,12 +251,8 @@ void ModusLoader::LoadObject(SDECore::ISDEObject50& sde_object) {
   if (object)
     object->Init();
 
-  if (document_ && object) {
-    auto& added_object = document_->objects_.emplace_back(std::move(object));
-
-    if (id != -1)
-      document_->object_map_[id] = added_object.get();
-  }
+  if (object_handler_ && object)
+    object_handler_(id, std::move(object));
 
   LOG_INFO(logger_) << "Processing object completed";
 }

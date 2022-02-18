@@ -1,6 +1,7 @@
 #include "base/color_string.h"
 
 #include "base/format.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_select_object.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/canvas.h"
@@ -64,7 +65,7 @@ void DrawColoredStringHelper(HDC dc,
       // Escape sequence: &;
     } else if (_wcsnicmp(L"color:", tag, std::min(tag_len, 6)) == 0) {
       if (!measure) {
-        int color = ParseWithDefault(tag + 6, 0);
+        int color = ParseWithDefault(base::WideToUTF16(tag + 6), 0);
         SetTextColor(dc, color);
       }
     } else

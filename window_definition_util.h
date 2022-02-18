@@ -1,7 +1,7 @@
 #pragma once
 
+#include "base/json.h"
 #include "core/node_id.h"
-#include "json.h"
 #include "time_range.h"
 #include "window_definition.h"
 

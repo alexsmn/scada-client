@@ -5,7 +5,7 @@
 
 const WindowInfo kTransmissionWindowInfo = {ID_TRANSMISSION_VIEW,
                                             "Transmission",
-                                            L"Ретрансляция",
+                                            u"Ретрансляция",
                                             WIN_INS | WIN_DISALLOW_NEW,
                                             0,
                                             0,

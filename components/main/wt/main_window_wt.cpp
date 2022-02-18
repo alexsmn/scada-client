@@ -48,5 +48,5 @@ void MainWindowWt::OnSelectionChanged() {
 }
 
 void MainWindowWt::ShowPopupMenu(unsigned resource_id,
-                                 const UiPoint& point,
+                                 const aui::Point& point,
                                  bool right_click) {}

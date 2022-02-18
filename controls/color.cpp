@@ -2,6 +2,7 @@
 
 #include "base/containers/span.h"
 #include "base/string_piece_util.h"
+#include "base/string_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 
@@ -11,20 +12,20 @@
 namespace aui {
 
 struct ColorEntry {
-  std::wstring_view name;
+  std::u16string_view name;
   Rgba color;
 };
 
 constexpr ColorEntry kColorEntries[] = {
-    {L"Прозрачный", ColorCode::Transparent},
-    {L"Черный", ColorCode::Black},
-    {L"Белый", ColorCode::White},
-    {L"Красный", ColorCode::Red},
-    {L"Зеленый", ColorCode::Green},
-    {L"Синий", ColorCode::Blue},
-    {L"Желтый", ColorCode::Yellow},
-    {L"Голубой", ColorCode::Cyan},
-    {L"Малиновый", ColorCode::Crimson},
+    {u"Прозрачный", ColorCode::Transparent},
+    {u"Черный", ColorCode::Black},
+    {u"Белый", ColorCode::White},
+    {u"Красный", ColorCode::Red},
+    {u"Зеленый", ColorCode::Green},
+    {u"Синий", ColorCode::Blue},
+    {u"Желтый", ColorCode::Yellow},
+    {u"Голубой", ColorCode::Cyan},
+    {u"Малиновый", ColorCode::Crimson},
 };
 
 static const ColorEntry* GetColorEntry(int index) {
@@ -50,15 +51,14 @@ int FindColor(Color color) {
   return -1;
 }
 
-std::wstring_view GetColorName(int index) {
+std::u16string_view GetColorName(int index) {
   const ColorEntry* entry = GetColorEntry(index);
-  return entry ? entry->name : std::wstring_view{};
+  return entry ? entry->name : std::u16string_view{};
 }
 
-int FindColorName(std::wstring_view str) {
+int FindColorName(std::u16string_view str) {
   for (size_t i = 0; i < std::size(kColorEntries); i++) {
-    if (_wcsicmp(std::wstring{str}.c_str(),
-                 std::wstring{kColorEntries[i].name}.c_str()) == 0) {
+    if (IsEqualNoCase(str, kColorEntries[i].name)) {
       return i;
     }
   }
@@ -69,7 +69,7 @@ Color StringToColor(std::string_view str) {
   if (!str.empty() && str[0] == '#') {
     auto hex_string = str.substr(1);
     unsigned color = 0;
-    if (!base::HexStringToUInt(ToStringPiece(hex_string), &color))
+    if (!base::HexStringToUInt(AsStringPiece(hex_string), &color))
       return ColorCode::Black;
     return aui::Color::FromSkColor(color);
   }

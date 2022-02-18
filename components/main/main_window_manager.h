@@ -1,12 +1,9 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
-
-namespace base {
-class FilePath;
-}
 
 class MainWindow;
 class OpenedView;
@@ -38,7 +35,7 @@ class MainWindowManager : private MainWindowManagerContext {
 
   bool IsPageOpened(int page_id) const;
   Page* FindFirstNotOpenedPage();
-  OpenedView* FindOpenedViewByFilePath(const base::FilePath& path);
+  OpenedView* FindOpenedViewByFilePath(const std::filesystem::path& path);
 
  private:
   MainWindows main_windows_;

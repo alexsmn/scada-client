@@ -1,8 +1,9 @@
 #include "components/configuration_export/export_data_reader.h"
 
 #include "base/csv_reader.h"
+#include "base/string_piece_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/strings/sys_string_conversions.h"
+#include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
 #include "components/configuration_export/resource_error.h"
 #include "model/node_id_util.h"
@@ -11,12 +12,12 @@
 
 namespace {
 
-scada::NodeId ParseReferenceCell(std::wstring_view s) {
+scada::NodeId ParseReferenceCell(std::u16string_view s) {
   auto p = s.rfind(L'@');
-  if (p == std::string_view::npos)
+  if (p == s.npos)
     return scada::NodeId();
   auto n = s.substr(p + 1);
-  return NodeIdFromScadaString(base::SysWideToNativeMB(std::wstring{n}));
+  return NodeIdFromScadaString(base::UTF16ToUTF8(AsStringPiece(n)));
 }
 
 scada::NodeId GetBuiltInDataTypeId(const NodeRef& data_type) {
@@ -39,7 +40,7 @@ ExportDataReader::ExportDataReader(NodeService& node_service, CsvReader& reader)
 
 ExportData ExportDataReader::Read() {
   if (!reader_.NextRow())
-    throw ResourceError{L"Нет строки заголовка"};
+    throw ResourceError{u"Нет строки заголовка"};
 
   // Skip Id, Parent, Type, Name.
   for (int i = 0; i < 4; ++i)
@@ -56,10 +57,10 @@ ExportData ExportDataReader::Read() {
   return {std::move(props), std::move(nodes)};
 }
 
-ExportData::Property ExportDataReader::ReadProperty(std::wstring_view cell) {
+ExportData::Property ExportDataReader::ReadProperty(std::u16string_view cell) {
   auto prop_type_id = ParseReferenceCell(cell);
   if (prop_type_id.is_null())
-    throw ResourceError{L"Неверный формат имени столбца"};
+    throw ResourceError{u"Неверный формат имени столбца"};
 
   auto prop_decl = node_service_.GetNode(prop_type_id);
   bool reference = prop_decl.node_class() == scada::NodeClass::ReferenceType;
@@ -71,17 +72,17 @@ ExportData::Property ExportDataReader::ReadProperty(std::wstring_view cell) {
 ExportData::Node ExportDataReader::ReadNode(
     const std::vector<ExportData::Property>& props) {
   // Id.
-  auto node_id = NodeIdFromScadaString(base::SysWideToNativeMB(ReadCell()));
+  auto node_id = NodeIdFromScadaString(base::UTF16ToUTF8(ReadCell()));
 
   // Parent.
-  auto parent_id = NodeIdFromScadaString(base::SysWideToNativeMB(ReadCell()));
+  auto parent_id = NodeIdFromScadaString(base::UTF16ToUTF8(ReadCell()));
   if (parent_id.is_null())
-    throw ResourceError{L"Группа не найдена"};
+    throw ResourceError{u"Группа не найдена"};
 
   // Type.
   auto type_definition = node_service_.GetNode(ParseReferenceCell(ReadCell()));
   if (!type_definition)
-    throw ResourceError{L"Тип не найден"};
+    throw ResourceError{u"Тип не найден"};
 
   scada::LocalizedText display_name = ReadCell();
 
@@ -124,9 +125,9 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
       if (!StringToValue(string_value, built_in_data_type_id, new_value)) {
         auto data_type = node_service_.GetNode(built_in_data_type_id);
         auto data_type_name =
-            data_type ? ToString16(data_type.display_name()) : L"(Неизвестный)";
+            data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
         throw ResourceError{base::StringPrintf(
-            L"Невозможно распознать значение '%ls' как '%ls'",
+            u"Невозможно распознать значение '%ls' как '%ls'",
             string_value.c_str(), data_type_name.c_str())};
       }
 
@@ -137,14 +138,14 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
   return std::nullopt;
 }
 
-std::wstring& ExportDataReader::ReadCell() {
+std::u16string& ExportDataReader::ReadCell() {
   auto* cell = TryReadCell();
   if (!cell)
-    throw ResourceError(L"Количество ячеек в строке меньше ожидаемого");
+    throw ResourceError(u"Количество ячеек в строке меньше ожидаемого");
   return *cell;
 }
 
-std::wstring* ExportDataReader::TryReadCell() {
+std::u16string* ExportDataReader::TryReadCell() {
   if (!reader_.NextCell(cell_))
     return nullptr;
   return &cell_;

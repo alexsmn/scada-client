@@ -16,7 +16,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
   // ViewManager
   virtual OpenedView* GetActiveView() override;
   virtual void SetViewTitle(OpenedView& view,
-                            const std::wstring& title) override;
+                            const std::u16string& title) override;
   virtual void ActivateView(OpenedView& view) override;
   virtual void CloseView(OpenedView& view) override;
   virtual void SplitView(OpenedView& view, bool vertically) override;
@@ -33,7 +33,8 @@ class ViewManagerQt final : public QObject, public ViewManager {
 
   std::unique_ptr<DockTabWidget> CreateTabBlock();
   void DeleteTabBlock(DockTabWidget& tabs, bool later);
-  DockTabWidget& SplitTabBlock(DockTabWidget& tabs, DockTabWidget::DropSide side);
+  DockTabWidget& SplitTabBlock(DockTabWidget& tabs,
+                               DockTabWidget::DropSide side);
 
   std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page,
                                            const PageLayoutBlock& block);

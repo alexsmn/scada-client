@@ -1,8 +1,8 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "core/configuration_types.h"
 
+#include <filesystem>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -14,7 +14,7 @@ class FileCache {
   typedef int ItemTag;
   typedef std::map<scada::NodeId, ItemTag> ItemMap;
 
-  typedef std::pair<base::FilePath, ItemTag> DisplayItem;
+  using DisplayItem = std::pair<std::filesystem::path, ItemTag>;
 
   explicit FileCache(const FileRegistry& file_registry);
   ~FileCache();
@@ -23,14 +23,14 @@ class FileCache {
   FileCache& operator=(const FileCache&) = delete;
 
   struct FileEntry {
-    base::FilePath path;
-    std::wstring title;
+    std::filesystem::path path;
+    std::u16string title;
     ItemMap items;
   };
 
   class FileList : public std::vector<FileEntry> {
    public:
-    int Find(const base::FilePath& path) const;
+    int Find(const std::filesystem::path& path) const;
 
     std::vector<DisplayItem> GetFilesContainingItem(
         const scada::NodeId& item_id) const;
@@ -38,13 +38,13 @@ class FileCache {
 
   const FileList& GetList(int type_id) const;
 
-  void Remove(const base::FilePath& path);
+  void Remove(const std::filesystem::path& path);
 
   void Refresh();
 
   void Update(int type_id,
-              const base::FilePath& path,
-              const std::wstring& title,
+              const std::filesystem::path& path,
+              const std::u16string& title,
               ItemMap& items);
 
  private:

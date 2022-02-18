@@ -19,7 +19,7 @@ class VisibleNode {
   using ChangeHandler = std::function<void()>;
   void SetChangeHandler(ChangeHandler change_handler);
 
-  virtual std::wstring GetText() const = 0;
+  virtual std::u16string GetText() const = 0;
   virtual bool IsBad() const { return false; }
   virtual bool IsAlerting() const { return false; }
 
@@ -41,7 +41,7 @@ class ProxyVisibleNode final
   void SetUnderlyingNode(std::shared_ptr<VisibleNode> node);
 
   // VisibleNode
-  virtual std::wstring GetText() const override;
+  virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
   virtual bool IsAlerting() const override;
 
@@ -56,7 +56,7 @@ class DataItemVisibleNode final : private Blinker, public VisibleNode {
                       NodeRef node);
 
   // VisibleNode
-  virtual std::wstring GetText() const override;
+  virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
   virtual bool IsAlerting() const override;
 
@@ -77,7 +77,7 @@ class DataGroupVisibleNode final : public VisibleNode, private NodeRefObserver {
   ~DataGroupVisibleNode();
 
   // VisibleNode
-  virtual std::wstring GetText() const override;
+  virtual std::u16string GetText() const override;
   virtual bool IsBad() const override;
 
  private:
@@ -104,7 +104,7 @@ class VisibleNodeModel {
 
   void SetNode(void* tree_node, std::shared_ptr<VisibleNode> node);
 
-  std::wstring GetText(void* tree_node);
+  std::u16string GetText(void* tree_node);
   SkColor GetTextColor(void* tree_node);
   SkColor GetBackgroundColor(void* tree_node);
 

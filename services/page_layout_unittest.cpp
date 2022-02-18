@@ -1,5 +1,7 @@
 #include "services/page_layout.h"
 
+#include "base/json.h"
+
 #include <gmock/gmock.h>
 
 TEST(PageLayout, Serialization) {

@@ -1,12 +1,9 @@
 #pragma once
 
-#include "base/files/file_path.h"
-#include "base/format.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "ui/gfx/size.h"
 
+#include <filesystem>
 #include <optional>
 #include <vector>
 
@@ -30,13 +27,13 @@ class WindowItem {
   int GetInt(std::string_view attr, int default_value = 0) const;
   std::string_view GetString(std::string_view attr,
                              std::string_view default_value = {}) const;
-  std::wstring GetString16(std::string_view attr,
-                           std::wstring_view default_value = {}) const;
+  std::u16string GetString16(std::string_view attr,
+                             std::u16string_view default_value = {}) const;
 
   WindowItem& SetBool(std::string_view attr, bool value);
   WindowItem& SetInt(std::string_view attr, int value);
   WindowItem& SetString(std::string_view attr, std::string_view value);
-  WindowItem& SetString(std::string_view attr, std::wstring_view value);
+  WindowItem& SetString(std::string_view attr, std::u16string_view value);
 
   template <class T>
   std::optional<T> Get() const;
@@ -65,7 +62,7 @@ class WindowDefinition {
     return *window_info_;
   }
 
-  std::wstring GetTitle() const;
+  std::u16string GetTitle() const;
 
   WindowDefinition& AddItem(WindowItem&& window_item);
   template <class T>
@@ -82,8 +79,8 @@ class WindowDefinition {
   void Set(const char* name, const T& value);
 
   int id = 0;
-  std::wstring title;
-  base::FilePath path;
+  std::u16string title;
+  std::filesystem::path path;
   gfx::Size size;
   bool visible = true;
   bool locked = false;
@@ -92,8 +89,8 @@ class WindowDefinition {
 
   base::Value storage;
 
-  WindowDefinition& set_title(std::wstring_view title) {
-    this->title = std::wstring{title};
+  WindowDefinition& set_title(std::u16string_view title) {
+    this->title = std::u16string{title};
     return *this;
   }
 
