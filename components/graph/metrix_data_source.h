@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
 

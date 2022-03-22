@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/portfolio/portfolio_manager.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "ui/base/models/tree_node_model.h"
 
 class PortfolioManager;

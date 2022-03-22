@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controls/handlers.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 
 class ItemDragData {

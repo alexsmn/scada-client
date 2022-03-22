@@ -3,7 +3,7 @@
 #include "node_service/node_ref.h"
 #include "common/static_types.h"
 #include "common_resources.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "core/view_service.h"
 #include "net/transport_string.h"
 #include "node_combo_box.h"

@@ -1,8 +1,8 @@
 #pragma once
 
+#include "common/node_state.h"
 #include "contents_observer.h"
 #include "controls/types.h"
-#include "core/configuration_types.h"
 
 class ContentsObserver;
 

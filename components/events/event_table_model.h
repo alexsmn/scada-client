@@ -4,7 +4,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "common/event_observer.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "core/event.h"
 #include "core/history_service.h"
 #include "node_service/node_observer.h"

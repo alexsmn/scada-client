@@ -3,7 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "components/modus/libmodus/modus_module2.h"
 #include "components/modus/libmodus/modus_style_library2.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
 #include "libmodus/scheme/value.h"

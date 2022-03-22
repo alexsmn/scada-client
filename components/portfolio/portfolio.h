@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string16.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 
 #include <set>
 #include <string>

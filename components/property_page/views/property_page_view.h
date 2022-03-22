@@ -2,7 +2,7 @@
 
 #include "controller.h"
 #include "controller_context.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "node_service/node_observer.h"
 #include "ui/views/controls/native_control.h"
 #include "ui/views/controls/scroll_view.h"

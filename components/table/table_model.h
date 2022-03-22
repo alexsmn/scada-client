@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/table/table_types.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 
 #include <functional>
 

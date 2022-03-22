@@ -4,7 +4,7 @@
 #include "base/time/time.h"
 #include "contents_model.h"
 #include "core/aggregate_filter.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "export_model.h"
 #include "node_service/node_ref.h"
 #include "time_model.h"

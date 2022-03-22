@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "node_service/node_ref.h"
 #include "ui/base/models/grid_model.h"
 #include "ui/base/models/table_column.h"

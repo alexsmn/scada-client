@@ -2,7 +2,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "components/configuration_export/import_data.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

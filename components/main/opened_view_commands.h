@@ -6,7 +6,7 @@
 #include "controller_delegate.h"
 #include "controller_registry.h"
 #include "controls/types.h"
-#include "core/configuration_types.h"
+#include "common/node_state.h"
 #include "core/status.h"
 #include "window_definition.h"
 
