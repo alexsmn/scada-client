@@ -1,4 +1,4 @@
-#include "window_definition_builder.h"
+п»ї#include "window_definition_builder.h"
 
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -19,14 +19,14 @@ TEST(MakeWindowDefinition, OpenContext_Node) {
   EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
       .WillOnce(Return(static_cast<scada::Int32>(scada::NodeClass::Variable)));
   EXPECT_CALL(*node_model, GetAttribute(scada::AttributeId::DisplayName))
-      .WillOnce(Return(u"Имя в русской локали"));
+      .WillOnce(Return(u"РРјСЏ РІ СЂСѓСЃСЃРєРѕР№ Р»РѕРєР°Р»Рё"));
   OpenContext open_context{node_model};
   const auto& window_info = kEventJournalWindowInfo;
   auto window_definition =
       MakeWindowDefinition(&window_info, open_context).get();
   const auto kExpectedWindowDefinition =
       WindowDefinition{window_info}
-          .set_title(u"Журнал событий: Имя в русской локали")
+          .set_title(u"Р–СѓСЂРЅР°Р» СЃРѕР±С‹С‚РёР№: РРјСЏ РІ СЂСѓСЃСЃРєРѕР№ Р»РѕРєР°Р»Рё")
           .AddItem(
               std::move(WindowItem{"Item"}.SetString("path", "{TS.NodeId}")));
   EXPECT_EQ(window_definition, kExpectedWindowDefinition);

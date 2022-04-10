@@ -1,4 +1,4 @@
-#include "components/device_metrics/device_metrics_command.h"
+п»ї#include "components/device_metrics/device_metrics_command.h"
 
 #include "address_space/address_space_impl.h"
 #include "address_space/generic_node_factory.h"
@@ -134,24 +134,24 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
       ElementsAre(
           ElementsAre(CellIs(u"Device 1"), CellIs(u"Device 2"),
                       CellIs(u"Device 3")),
-          ElementsAre(CellIs(u"Связь"), CellIs(u"={IEC_DEV.1!Online}"),
+          ElementsAre(CellIs(u"РЎРІСЏР·СЊ"), CellIs(u"={IEC_DEV.1!Online}"),
                       CellIs(u"={IEC_DEV.2!Online}"),
                       CellIs(u"={IEC_DEV.3!Online}")),
-          ElementsAre(CellIs(u"Включено"), CellIs(u"={IEC_DEV.1!Enabled}"),
+          ElementsAre(CellIs(u"Р’РєР»СЋС‡РµРЅРѕ"), CellIs(u"={IEC_DEV.1!Enabled}"),
                       CellIs(u"={IEC_DEV.2!Enabled}"),
                       CellIs(u"={IEC_DEV.3!Enabled}")),
-          ElementsAre(CellIs(u"Принято сообщений"),
+          ElementsAre(CellIs(u"РџСЂРёРЅСЏС‚Рѕ СЃРѕРѕР±С‰РµРЅРёР№"),
                       CellIs(u"={IEC_DEV.1!MessagesIn}"),
                       CellIs(u"={IEC_DEV.2!MessagesIn}"),
                       CellIs(u"={IEC_DEV.3!MessagesIn}")),
-          ElementsAre(CellIs(u"Отправлено сообщений"),
+          ElementsAre(CellIs(u"РћС‚РїСЂР°РІР»РµРЅРѕ СЃРѕРѕР±С‰РµРЅРёР№"),
                       CellIs(u"={IEC_DEV.1!MessagesOut}"),
                       CellIs(u"={IEC_DEV.2!MessagesOut}"),
                       CellIs(u"={IEC_DEV.3!MessagesOut}")),
-          ElementsAre(CellIs(u"Принято байт"), CellIs(u"={IEC_DEV.1!BytesIn}"),
+          ElementsAre(CellIs(u"РџСЂРёРЅСЏС‚Рѕ Р±Р°Р№С‚"), CellIs(u"={IEC_DEV.1!BytesIn}"),
                       CellIs(u"={IEC_DEV.2!BytesIn}"),
                       CellIs(u"={IEC_DEV.3!BytesIn}")),
-          ElementsAre(CellIs(u"Отправлено байт"),
+          ElementsAre(CellIs(u"РћС‚РїСЂР°РІР»РµРЅРѕ Р±Р°Р№С‚"),
                       CellIs(u"={IEC_DEV.1!BytesOut}"),
                       CellIs(u"={IEC_DEV.2!BytesOut}"),
                       CellIs(u"={IEC_DEV.3!BytesOut}"))));
