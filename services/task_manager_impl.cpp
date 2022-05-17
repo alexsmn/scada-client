@@ -118,7 +118,12 @@ void TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
               }
 
               auto inputs = std::make_shared<std::vector<scada::WriteValue>>();
-              inputs->reserve(1 + properties.size());
+              inputs->reserve(2 + properties.size());
+              if (!attributes.browse_name.empty()) {
+                inputs->emplace_back(
+                    scada::WriteValue{node_id, scada::AttributeId::BrowseName,
+                                      std::move(attributes.browse_name)});
+              }
               if (!attributes.display_name.empty()) {
                 inputs->emplace_back(
                     scada::WriteValue{node_id, scada::AttributeId::DisplayName,
