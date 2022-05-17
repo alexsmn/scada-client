@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "ui/base/models/edit_data.h"
 
 #include <functional>

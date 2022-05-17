@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "base/strings/string16.h"
-
 namespace {
 
 const char16_t kNodeIdAttributeString[] = u"Индекс";

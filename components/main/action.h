@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "controls/key_codes.h"
 
 #include <optional>

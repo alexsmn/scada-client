@@ -2,7 +2,6 @@
 
 #include "base/containers/span.h"
 #include "base/promise.h"
-#include "base/strings/string16.h"
 #include "window_definition.h"
 
 #include <optional>

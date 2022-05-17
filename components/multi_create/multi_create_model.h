@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/strings/string16.h"
 #include "components/multi_create/multi_create_dialog.h"
 
 #include <map>

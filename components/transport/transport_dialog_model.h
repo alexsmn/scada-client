@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "base/strings/string16.h"
-
 #include <string>
 #include <vector>
 
