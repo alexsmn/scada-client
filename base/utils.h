@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
+#include <string_view>
 
 template <class T>
 int HumanCompareTextT(std::basic_string_view<T> left,

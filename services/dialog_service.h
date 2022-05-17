@@ -2,7 +2,6 @@
 
 #include "base/containers/span.h"
 #include "base/promise.h"
-#include "base/strings/string_piece.h"
 #include "gfx/native_widget_types.h"
 
 #include <filesystem>

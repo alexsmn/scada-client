@@ -1,8 +1,7 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
-
 #include <string>
+#include <string_view>
 
 namespace aui {
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/strings/string_piece.h"
 #include "controls/point.h"
+
+#include <string_view>
 
 namespace ui {
 class MenuModel;

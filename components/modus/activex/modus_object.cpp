@@ -1,6 +1,7 @@
 ﻿#include "components/modus/activex/modus_object.h"
 
 #include "base/stl_util.h"
+#include "base/strings/string_piece.h"
 #include "components/modus/activex/modus_element.h"
 
 namespace modus {
@@ -54,7 +55,7 @@ void ModusObject::UpdateStyle(bool init) {
     sde_object().get_Params(params.GetAddressOf());
     if (params)
       SetParamValue(*params.Get(), kParameterStyle,
-                    base::win::ScopedBstr(style.c_str()));
+                    base::win::ScopedBstr(style));
   }
 }
 
