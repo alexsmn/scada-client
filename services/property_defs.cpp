@@ -2,9 +2,11 @@
 
 #include "base/string_piece_util.h"
 #include "base/string_util.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
 #include "common/formula_util.h"
+#include "common/scada_expression.h"
 #include "components/transport/transport_dialog.h"
 #include "controls/color.h"
 #include "core/node_management_service.h"
@@ -390,6 +392,10 @@ ui::EditData EnumPropertyDefinition::GetPropertyEditor(
   return result;
 }
 
+// ChannelPropertyDefinition
+
+const char16_t ChannelPropertyDefinition::kParentGroupDevice[] = u"<Группа>";
+
 std::u16string ChannelPropertyDefinition::GetTitle(
     const PropertyContext& context,
     const NodeRef& property_declaration) const {
@@ -405,20 +411,23 @@ std::u16string ChannelPropertyDefinition::GetText(
 
   auto channel_path = node[prop_decl_id].value().get_or(std::string{});
 
-  scada::NodeId parent_id;
-  std::string_view component_name;
-  auto node_id = GetFormulaSingleNodeId(channel_path);
-  if (!node_id.is_null() &&
-      IsNestedNodeId(node_id, parent_id, component_name)) {
-    return device_
-               ? GetFullDisplayName(context.node_service_.GetNode(parent_id))
-               : base::UTF8ToUTF16(AsStringPiece(component_name));
-  } else {
-    if (device_)
-      return std::u16string{};
-    else
-      return base::UTF8ToUTF16(channel_path);
+  std::string name = GetFormulaSingleName(channel_path);
+  if (!name.empty()) {
+    auto node_id = NodeIdFromScadaString(name);
+    scada::NodeId parent_id;
+    std::string_view component_name;
+    if (!node_id.is_null() &&
+        IsNestedNodeId(node_id, parent_id, component_name)) {
+      return device_
+                 ? GetFullDisplayName(context.node_service_.GetNode(parent_id))
+                 : base::UTF8ToUTF16(AsStringPiece(component_name));
+    } else if (auto path = GetParentGroupChannelPath(name); !path.empty()) {
+      return device_ ? kParentGroupDevice
+                     : base::UTF8ToUTF16(AsStringPiece(path));
+    }
   }
+
+  return device_ ? std::u16string{} : base::UTF8ToUTF16(channel_path);
 }
 
 void ChannelPropertyDefinition::SetText(const PropertyContext& context,

@@ -18,13 +18,34 @@
 
 using namespace testing;
 
-TEST(ChannelPropertyDefinition, GetText_Device) {
-  const scada::NodeId node_id{1, 1};
-  const scada::NodeId device_id{1, NamespaceIndexes::IEC61850_DEVICE};
-  const scada::NodeId prop_decl_id = data_items::id::DataItemType_Input1;
+class ChannelPropertyDefinitionTest : public Test {
+ protected:
+  ChannelPropertyDefinitionTest();
+
+  NodeRef CreateDataItem(std::string_view channel_path);
 
   AddressSpaceImpl3 address_space;
   GenericNodeFactory node_factory{address_space};
+
+  std::shared_ptr<NodeService> node_service =
+      v1::CreateTestNodeService(address_space);
+
+  StrictMock<MockTaskManager> task_manager;
+  StrictMock<MockDialogService> dialog_service;
+  PropertyContext property_context{*node_service, task_manager, dialog_service};
+
+  ChannelPropertyDefinition channel_property_definition{u"Title", true};
+
+  inline static const scada::NodeId data_item_id{1, 1};
+  inline static const scada::NodeId data_group_id{2, 1};
+  inline static const scada::NodeId prop_decl_id =
+      data_items::id::DataItemType_Input1;
+  inline static const scada::NodeId device_id{
+      1, NamespaceIndexes::IEC61850_DEVICE};
+  inline static const char16_t kDeviceDisplayName[] = u"DeviceDisplayName";
+};
+
+ChannelPropertyDefinitionTest::ChannelPropertyDefinitionTest() {
   node_factory.CreateNode(
       scada::NodeState{}
           .set_node_id(device_id)
@@ -32,29 +53,53 @@ TEST(ChannelPropertyDefinition, GetText_Device) {
           .set_type_definition_id(devices::id::Iec61850DeviceType)
           .set_parent(scada::id::Organizes, devices::id::Devices)
           .set_attributes(
-              scada::NodeAttributes{}.set_display_name(u"DeviceDisplayName")));
+              scada::NodeAttributes{}.set_display_name(kDeviceDisplayName)));
+
+  // Create Data Group.
+  {
+    auto [status, node_ptr] = node_factory.CreateNode(
+        scada::NodeState{}
+            .set_node_id(data_group_id)
+            .set_node_class(scada::NodeClass::Object)
+            .set_type_definition_id(data_items::id::DataGroupType)
+            .set_parent(scada::id::Organizes, data_items::id::DataItems));
+    assert(status);
+    assert(node_ptr);
+
+    scada::AddReference(address_space, data_items::id::HasDevice, data_group_id,
+                        device_id);
+  }
+}
+
+NodeRef ChannelPropertyDefinitionTest::CreateDataItem(
+    std::string_view channel_path) {
   auto [status, node_ptr] = node_factory.CreateNode(
       scada::NodeState{}
-          .set_node_id(node_id)
+          .set_node_id(data_item_id)
           .set_node_class(scada::NodeClass::Variable)
           .set_type_definition_id(data_items::id::DiscreteItemType)
-          .set_parent(scada::id::Organizes, data_items::id::DataItems));
-  ASSERT_TRUE(status);
-  ASSERT_TRUE(node_ptr);
-  scada::SetPropertyValue(
-      *node_ptr, prop_decl_id,
+          .set_parent(scada::id::Organizes, data_group_id));
+  assert(status);
+  assert(node_ptr);
+
+  scada::SetPropertyValue(*node_ptr, prop_decl_id, scada::String{channel_path});
+
+  return node_service->GetNode(data_item_id);
+}
+
+TEST_F(ChannelPropertyDefinitionTest, GetText_Device) {
+  auto data_item_node = CreateDataItem(
       MakeNodeIdFormula(MakeNestedNodeId(device_id, "device.channel.path")));
 
-  auto node_service = v1::CreateTestNodeService(address_space);
-  const auto& node = node_service->GetNode(node_id);
+  EXPECT_EQ(kDeviceDisplayName,
+            channel_property_definition.GetText(property_context,
+                                                data_item_node, prop_decl_id));
+}
 
-  ChannelPropertyDefinition channel_property_definition{u"Title", true};
+TEST_F(ChannelPropertyDefinitionTest, GetText_GroupDevice) {
+  auto data_item_node = CreateDataItem("GROUP_DEVICE!device.channel.path");
 
-  StrictMock<MockTaskManager> task_manager;
-  StrictMock<MockDialogService> dialog_service;
-  PropertyContext property_context{*node_service, task_manager, dialog_service};
-
-  const std::u16string expected_text = u"DeviceDisplayName";
-  EXPECT_EQ(expected_text, channel_property_definition.GetText(
-                               property_context, node, prop_decl_id));
+  EXPECT_EQ(ChannelPropertyDefinition::kParentGroupDevice,
+            channel_property_definition.GetText(property_context,
+                                                data_item_node, prop_decl_id));
 }

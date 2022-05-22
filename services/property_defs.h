@@ -153,6 +153,8 @@ class ChannelPropertyDefinition : public PropertyDefinition {
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
 
+  static const char16_t kParentGroupDevice[];
+
  private:
   const std::u16string title_;
   const bool device_;
