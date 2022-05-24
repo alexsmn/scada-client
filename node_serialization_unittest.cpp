@@ -29,7 +29,8 @@ TEST(NodeSerialization, DISABLED_NodeToData) {
       {}};
   ON_CALL(*node_model, GetAttribute(_))
       .WillByDefault(Invoke([&](scada::AttributeId attribute_id) {
-        return scada::Read(source_node_state, attribute_id);
+        return scada::ReadAttribute(source_node_state, attribute_id)
+            .value_or(scada::Variant{});
       }));
   /*ON_CALL(*node_model, GetReferences(_, _))
       .WillByDefault(
