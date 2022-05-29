@@ -460,8 +460,8 @@ promise<bool> ClientApplication::Login() {
       command_line.HasSwitch("log-service-node-semantics-change-event"),
   };
 
-  DataServicesContext services_context{logger_, executor_, io_context_,
-                                       *transport_factory_, service_log_params};
+  DataServicesContext services_context{logger_, executor_, *transport_factory_,
+                                       service_log_params};
 
   return login_handler_(std::move(services_context))
       .then(BindPromiseExecutor(executor_,
