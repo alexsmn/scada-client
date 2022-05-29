@@ -34,6 +34,7 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
 
   grid_->SetRowHeaderVisible(true);
   grid_->SetRowHeaderWidth(15);
+  grid_->SetExpandAllowed(true);
 
 #if defined(UI_VIEWS)
   grid_->set_allow_row_select(true);

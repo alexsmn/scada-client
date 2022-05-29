@@ -82,7 +82,7 @@ void LoginDialog::OnInitDialog() {
     WTL::CComboBox server_type_combo = GetItem(IDC_SERVER_TYPE);
     for (auto& item : controller_->server_type_list)
       server_type_combo.AddString(base::AsWString(item).c_str());
-    server_type_combo.SetCurSel(controller_->server_type_index);
+    server_type_combo.SetCurSel(controller_->server_type_index());
   }
 
   UpdateControls(true);
@@ -101,7 +101,7 @@ void LoginDialog::OnOK() {
   {
     int server_type_index =
         WTL::CComboBox(GetItem(IDC_SERVER_TYPE)).GetCurSel();
-    controller_->server_type_index = std::max(server_type_index, 0);
+    controller_->SetServerTypeIndex(std::max(server_type_index, 0));
   }
   controller_->auto_login =
       WTL::CButton(GetItem(IDC_AUTO_LOGIN)).GetState() == BST_CHECKED;

@@ -26,7 +26,9 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   std::function<void()> error_handler;
 
   std::vector<std::u16string> server_type_list;
-  int server_type_index = 0;
+
+  int server_type_index() const { return server_type_index_; }
+  void SetServerTypeIndex(int index);
 
   std::u16string user_name;
   std::u16string password;
@@ -53,4 +55,6 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   DataServices services_;
 
   std::string server_type_;
+  int server_type_index_ = 0;
+  std::vector<std::string> server_type_hosts_;
 };

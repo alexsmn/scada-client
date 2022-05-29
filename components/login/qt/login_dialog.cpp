@@ -49,13 +49,19 @@ LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
     ui.userNameComboBox->lineEdit()->selectAll();
   };
 
-  if (controller_->server_type_list.size() >= 2) {
-    ui.serverTypeComboBox->addItems(
-        MakeQStringList(controller_->server_type_list));
-    ui.serverTypeComboBox->setCurrentIndex(controller_->server_type_index);
-  } else {
-    ui.serverTypeComboBox->setVisible(false);
-  }
+  ui.serverTypeComboBox->addItems(
+      MakeQStringList(controller_->server_type_list));
+  ui.serverTypeComboBox->setCurrentIndex(controller_->server_type_index());
+  ui.serverTypeComboBox->setVisible(controller_->server_type_list.size() >= 2);
+  connect(ui.serverTypeComboBox,
+          qOverload<int>(&QComboBox::currentIndexChanged), this,
+          [this](int server_type_index) {
+            controller_->server_host =
+                ui.serverComboBox->currentText().toStdString();
+            controller_->SetServerTypeIndex(server_type_index);
+            ui.serverComboBox->setCurrentText(
+                QString::fromStdString(controller_->server_host));
+          });
 
   ui.serverComboBox->setCurrentText(
       QString::fromStdString(controller_->server_host));
@@ -84,9 +90,9 @@ LoginDialog::~LoginDialog() {}
 void LoginDialog::accept() {
   EnableControls(false);
 
-  controller_->server_type_index = controller_->server_type_list.size() >= 2
-                                       ? ui.serverTypeComboBox->currentIndex()
-                                       : 0;
+  controller_->SetServerTypeIndex(controller_->server_type_list.size() >= 2
+                                      ? ui.serverTypeComboBox->currentIndex()
+                                      : 0);
   controller_->server_host = ui.serverComboBox->currentText().toStdString();
   controller_->user_name = ui.userNameComboBox->currentText().toStdU16String();
   controller_->password = ui.passwordLineEdit->text().toStdU16String();

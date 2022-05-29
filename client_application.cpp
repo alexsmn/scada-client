@@ -63,11 +63,18 @@ extern bool CreateScadaServices(const DataServicesContext& context,
 extern bool CreateOpcUaServices(const DataServicesContext& context,
                                 DataServices& services);
 
-REGISTER_DATA_SERVICES("Scada", u"Телеконтроль", CreateScadaServices);
-#ifndef NDEBUG
-REGISTER_DATA_SERVICES("Vidicon", u"Видикон", CreateVidiconServices);
-REGISTER_DATA_SERVICES("OpcUa", u"OPC UA", CreateOpcUaServices);
-#endif
+REGISTER_DATA_SERVICES("Scada",
+                       u"Телеконтроль",
+                       CreateScadaServices,
+                       "localhost");
+REGISTER_DATA_SERVICES("OpcUa",
+                       u"OPC UA",
+                       CreateOpcUaServices,
+                       "opc.tcp://localhost:4840");
+REGISTER_DATA_SERVICES("Vidicon",
+                       u"Видикон",
+                       CreateVidiconServices,
+                       "localhost");
 
 namespace {
 

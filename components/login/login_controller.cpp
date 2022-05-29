@@ -1,9 +1,11 @@
 ﻿#include "components/login/login_controller.h"
 
 #include "base/executor.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/registry.h"
 #include "base/win/registry2.h"
 #include "core/session_service.h"
 #include "core/status.h"
@@ -11,9 +13,13 @@
 
 #include <algorithm>
 
+#undef StrCat
+#include "base/strings/strcat.h"
+
 namespace {
 
 const wchar_t kRegistryKey[] = L"Software\\Telecontrol\\Workplace";
+const char kServerHostKeyPrefix[] = "Host:";
 
 const char16_t kForceLogoffMessage[] =
     u"Указанное имя пользователя уже используется другой сессией. Разорвать "
@@ -23,6 +29,11 @@ const char16_t kLoginFailedMessage[] =
 const char16_t kAutoLoginMessage[] =
     u"Чтобы отключить автоматический вход, удерживайте Ctrl при запуске "
     u"приложения.";
+
+std::wstring GetServerHostTypeKey(std::string_view server_type_name) {
+  return base::UTF8ToWide(
+      base::StrCat({kServerHostKeyPrefix, AsStringPiece(server_type_name)}));
+}
 
 }  // namespace
 
@@ -48,18 +59,32 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
     p = n + 1;
   }
 
-  server_host = base::WideToUTF8(reg.GetString(L"Host"));
   auto server_type = base::WideToUTF8(reg.GetString(L"ServerType"));
   password = base::WideToUTF16(reg.GetString(L"Password"));
   auto_login = reg.GetDWORD(L"AutoLogin") != 0;
 
   auto& list = GetDataServicesInfoList();
+  server_type_hosts_.resize(list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     auto& info = list[i];
     server_type_list.emplace_back(info.display_name);
+    server_type_hosts_[i] = base::WideToUTF8(
+        reg.GetString(GetServerHostTypeKey(info.name).c_str()));
     if (EqualDataServicesName(info.name, server_type))
-      server_type_index = i;
+      SetServerTypeIndex(i);
   }
+
+  // Backward compatibility.
+  assert(!server_type_hosts_.empty());
+  if (server_type_hosts_[0].empty())
+    server_type_hosts_[0] = base::WideToUTF8(reg.GetString(L"Host"));
+
+  for (size_t i = 0; i < list.size(); ++i) {
+    if (server_type_hosts_[i].empty())
+      server_type_hosts_[i] = list[i].default_host;
+  }
+
+  server_host = server_type_hosts_[server_type_index_];
 
   // Don't perform automatic login if Shift is pressed.
   if (GetAsyncKeyState(VK_CONTROL) < 0)
@@ -68,7 +93,7 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
 }
 
 void LoginController::Login() {
-  server_type_ = GetDataServicesInfoList()[server_type_index].name;
+  server_type_ = GetDataServicesInfoList()[server_type_index_].name;
 
   Connect(false);
 }
@@ -96,6 +121,10 @@ void LoginController::OnLoginCompleted() {
   reg.SetString(L"User", base::UTF16ToWide(user_name).c_str());
   reg.SetString(L"UserList", base::UTF16ToWide(GetUserListString()).c_str());
   reg.SetString(L"Host", base::UTF8ToWide(server_host).c_str());
+  reg.SetString(
+      GetServerHostTypeKey(GetDataServicesInfoList()[server_type_index_].name)
+          .c_str(),
+      base::UTF8ToWide(server_host).c_str());
   reg.SetString(L"ServerType", base::UTF8ToWide(server_type_).c_str());
   reg.SetDWORD(L"AutoLogin", auto_login);
   if (auto_login)
@@ -175,4 +204,16 @@ std::u16string LoginController::GetUserListString() const {
   const std::vector<std::u16string> truncated_user_list(
       user_list.begin(), user_list.begin() + count);
   return base::JoinString(truncated_user_list, u",");
+}
+
+void LoginController::SetServerTypeIndex(int index) {
+  assert(index >= 0);
+  assert(index < static_cast<int>(server_type_list.size()));
+
+  if (server_type_index_ == index)
+    return;
+
+  server_type_hosts_[server_type_index_] = std::move(server_host);
+  server_type_index_ = index;
+  server_host = server_type_hosts_[index];
 }
