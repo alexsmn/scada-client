@@ -5,6 +5,8 @@
 #include "ui/base/models/table_model.h"
 #include "window_definition_util.h"
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QSortFilterProxyModel>
@@ -171,9 +173,22 @@ void Table::keyPressEvent(QKeyEvent* event) {
       key_press_handler_(static_cast<aui::KeyCode>(event->key())))
     return;
 
+  if (event->matches(QKeySequence::Copy)) {
+    CopyToClipbard();
+    return;
+  }
+
   QTableView::keyPressEvent(event);
 }
 
 void Table::SetStateChangeHandler(StateChangeHandler handler) {
   connect(horizontalHeader(), &QHeaderView::sectionResized, handler);
+}
+
+void Table::CopyToClipbard() {
+  QModelIndexList indexes;
+  for (int row : GetSelectedRows())
+    indexes.push_back(RowToIndex(row));
+  auto* mime_data = model()->mimeData(indexes);
+  QGuiApplication::clipboard()->setMimeData(mime_data);
 }

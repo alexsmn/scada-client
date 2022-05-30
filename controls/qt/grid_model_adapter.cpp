@@ -3,6 +3,7 @@
 #include "controls/color.h"
 #include "ui/base/models/grid_range.h"
 
+#include <QMimeData>
 #include <QSize>
 
 namespace {
@@ -140,4 +141,41 @@ void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
     headerDataChanged(Qt::Horizontal, 0, model.GetCount());
   else if (&model == row_model_.get())
     headerDataChanged(Qt::Vertical, 0, model.GetCount());
+}
+
+QStringList GridModelAdapter::mimeTypes() const {
+  return {"text/plain"};
+}
+
+QMimeData* GridModelAdapter::mimeData(const QModelIndexList& indexes) const {
+  QMimeData* mime_data = new QMimeData;
+  mime_data->setData("text/plain",
+                     QString::fromStdU16String(GetCsvData(indexes)).toUtf8());
+  return mime_data;
+}
+
+std::u16string GridModelAdapter::GetCsvData(
+    const QModelIndexList& indexes) const {
+  // Stable sort by rows.
+  auto sorted_indexes = indexes;
+  std::stable_sort(sorted_indexes.begin(), sorted_indexes.end(),
+                   [](auto& a, auto& b) { return a.row() < b.row(); });
+
+  std::u16string csv;
+  int next_index = 0;
+  while (next_index < sorted_indexes.size()) {
+    int row_index = sorted_indexes[next_index].row();
+    bool first_in_row = true;
+    while (next_index < sorted_indexes.size() &&
+           sorted_indexes[next_index].row() == row_index) {
+      if (!first_in_row)
+        csv += u',';
+      first_in_row = false;
+      csv += model_->GetCellText(sorted_indexes[next_index].row(),
+                                 sorted_indexes[next_index].column());
+      ++next_index;
+    }
+    csv += u'\n';
+  }
+  return csv;
 }

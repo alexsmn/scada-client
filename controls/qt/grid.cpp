@@ -4,6 +4,8 @@
 #include "ui/base/models/grid_model_util.h"
 #include "ui/base/models/grid_range.h"
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QPainter>
@@ -326,4 +328,21 @@ void Grid::RestoreState(const base::Value& data) {
 
 void Grid::RequestFocus() {
   setFocus();
+}
+
+void Grid::keyPressEvent(QKeyEvent* event) {
+  if (event->matches(QKeySequence::Copy)) {
+    CopyToClipboard();
+    return;
+  }
+
+  QTableView::keyPressEvent(event);
+}
+
+void Grid::CopyToClipboard() {
+  if (!model() || !selectionModel() || !QGuiApplication::clipboard())
+    return;
+  auto* mime_data = model()->mimeData(selectionModel()->selectedIndexes());
+  if (mime_data)
+    QGuiApplication::clipboard()->setMimeData(mime_data);
 }

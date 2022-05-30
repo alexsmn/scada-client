@@ -68,6 +68,8 @@ class Grid final : public QTableView {
 
   void RequestFocus();
 
+  void CopyToClipboard();
+
  protected:
   // QTableView
   virtual void mousePressEvent(QMouseEvent* event) override;
@@ -76,6 +78,7 @@ class Grid final : public QTableView {
   virtual void paintEvent(QPaintEvent* e) override;
   virtual void selectionChanged(const QItemSelection& selected,
                                 const QItemSelection& deselected) override;
+  virtual void keyPressEvent(QKeyEvent* event) override;
 
  private:
   void UpdateSelectionRange();

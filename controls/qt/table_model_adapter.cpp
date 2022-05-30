@@ -146,3 +146,11 @@ void TableModelAdapter::OnItemsRemoving(int first, int count) {
 void TableModelAdapter::OnItemsRemoved(int first, int count) {
   endRemoveRows();
 }
+
+QStringList TableModelAdapter::mimeTypes() const {
+  return QAbstractItemModel::mimeTypes();
+}
+
+QMimeData* TableModelAdapter::mimeData(const QModelIndexList& indexes) const {
+  return QAbstractItemModel::mimeData(indexes);
+}

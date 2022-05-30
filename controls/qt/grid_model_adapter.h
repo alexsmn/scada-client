@@ -31,6 +31,8 @@ class GridModelAdapter final : public QAbstractTableModel,
   virtual bool setData(const QModelIndex& index,
                        const QVariant& value,
                        int role) override;
+  virtual QStringList mimeTypes() const override;
+  virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
   // ui::GridModel::Observer
   virtual void OnGridModelChanged(ui::GridModel& model) override;
@@ -47,6 +49,8 @@ class GridModelAdapter final : public QAbstractTableModel,
   virtual void OnModelChanged(ui::HeaderModel& model) override;
 
  private:
+  std::u16string GetCsvData(const QModelIndexList& indexes) const;
+
   const std::shared_ptr<ui::GridModel> model_;
   const std::shared_ptr<ui::HeaderModel> row_model_;
   const std::shared_ptr<ui::HeaderModel> column_model_;

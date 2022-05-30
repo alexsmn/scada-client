@@ -53,6 +53,8 @@ class Table : public QTableView {
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
 
+  void CopyToClipbard();
+
  protected:
   // QTableView
   virtual void keyPressEvent(QKeyEvent* event) override;
