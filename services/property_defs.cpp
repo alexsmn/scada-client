@@ -26,6 +26,7 @@ namespace {
 
 static const char16_t kDefaultColorString[] = u"<Стандартный>";
 static const char16_t kChoiceNone[] = u"<Нет>";
+static const char16_t kChoiceLoading[] = u"<Загрузка...>";
 
 NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
                               const std::u16string_view& name,
@@ -42,14 +43,19 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
   return nullptr;
 }
 
-void GetNodeNamesRecursive(const NodeRef& parent_node,
+// Returns false if node all nodes were loaded and returned.
+bool GetNodeNamesRecursive(const NodeRef& parent_node,
                            const scada::NodeId& type_definition_id,
                            std::vector<std::u16string>& names) {
+  bool all_loaded = true;
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, type_definition_id))
       names.emplace_back(GetFullDisplayName(node));
-    GetNodeNamesRecursive(node, type_definition_id, names);
+    all_loaded &= GetNodeNamesRecursive(node, type_definition_id, names);
   }
+  if (!parent_node.children_fetched())
+    parent_node.Fetch(NodeFetchStatus::ChildrenOnly());
+  return all_loaded;
 }
 
 NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
@@ -290,9 +296,11 @@ ui::EditData ReferencePropertyDefinition::GetPropertyEditor(
   if (auto target_type_definition =
           GetTargetTypeDefinition(type_definition, prop_decl_id)) {
     result.choices.emplace_back(kChoiceNone);
-    GetNodeNamesRecursive(
+    bool all_loaded = GetNodeNamesRecursive(
         context.node_service_.GetNode(scada::id::ObjectsFolder),
         target_type_definition.node_id(), result.choices);
+    if (!all_loaded)
+      result.choices.emplace_back(kChoiceLoading);
   }
 
   return result;

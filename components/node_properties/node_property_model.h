@@ -36,7 +36,7 @@ class NodePropertyModel : protected PropertyContext,
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnNodeFetched(const scada::NodeId& node_id) override;
+  virtual void OnNodeFetched(const NodeFetchedEvent& event) override;
 
   NodeGroupModel root_{*this};
 
