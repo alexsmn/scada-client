@@ -1,5 +1,6 @@
 ﻿#include "property_defs.h"
 
+#include "base/range_util.h"
 #include "base/string_piece_util.h"
 #include "base/string_util.h"
 #include "base/strings/string_util.h"
@@ -15,12 +16,14 @@
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "net/transport_string.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
 
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <iterator>
-#include <map>
 
 namespace {
 
@@ -81,6 +84,22 @@ ParseChannelPath(std::string_view channel_path) {
   return {parent_id, std::string{component_name}};
 }
 
+promise<> GetAllSubtypesProperties(
+    const NodeRef& type_definition,
+    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
+  return FetchNode(type_definition).then([=] {
+    GetTypeProperties(type_definition, *property_decls);
+
+    auto subtypes = type_definition.targets(scada::id::HasSubtype);
+    auto subtype_fetch_promises =
+        subtypes | boost::adaptors::transformed([&](const NodeRef& node) {
+          return GetAllSubtypesProperties(node, property_decls);
+        });
+
+    return make_all_promise_void(subtype_fetch_promises);
+  });
+}
+
 const PropertyDefinition kNamePropDef(ui::TableColumn::LEFT, 150);
 const PropertyDefinition kStringPropDef(ui::TableColumn::LEFT);
 const PropertyDefinition kIntPropDef(ui::TableColumn::RIGHT);
@@ -114,13 +133,14 @@ const HierachicalPropertyDefinition kObjectOutputPropDef(
 
 const TransportPropertyDefinition kLinkTransportPropDef;
 
-std::map<scada::NodeId, const PropertyDefinition*> kPropertyDefinitionMap = {
-    {data_items::id::DataItemType_Input1, &kObjectInput1PropDef},
-    {data_items::id::DataItemType_Input2, &kObjectInput2PropDef},
-    {data_items::id::DataItemType_Output, &kObjectOutputPropDef},
-    {devices::id::LinkType_Transport, &kLinkTransportPropDef},
-    {data_items::id::TsFormatType_OpenColor, &kColorPropDef},
-    {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
+std::unordered_map<scada::NodeId, const PropertyDefinition*>
+    kPropertyDefinitionMap = {
+        {data_items::id::DataItemType_Input1, &kObjectInput1PropDef},
+        {data_items::id::DataItemType_Input2, &kObjectInput2PropDef},
+        {data_items::id::DataItemType_Output, &kObjectOutputPropDef},
+        {devices::id::LinkType_Transport, &kLinkTransportPropDef},
+        {data_items::id::TsFormatType_OpenColor, &kColorPropDef},
+        {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
 };
 
 }  // namespace
@@ -155,39 +175,96 @@ const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl) {
   return nullptr;
 }
 
-PropertyDefs GetTypeProperties(const NodeRef& type_definition) {
+// Returns property declarations and forward reference types.
+void GetTypeProperties(const NodeRef& type_definition,
+                       std::unordered_set<NodeRef>& property_decls) {
   assert(type_definition.fetched());
-
-  PropertyDefs properties;
-  properties.reserve(32);
-
-  std::vector<NodeRef> type_definitions;
-  for (auto supertype = type_definition; supertype;
-       supertype = supertype.supertype()) {
-    assert(supertype.fetched());
-    type_definitions.emplace_back(supertype);
-  }
-
-  std::reverse(type_definitions.begin(), type_definitions.end());
-
-  for (const auto& supertype : type_definitions) {
-    assert(supertype.fetched());
-    for (const auto& p : supertype.targets(scada::id::HasProperty)) {
-      if (auto* def = GetPropertyDef(p))
-        properties.emplace_back(p, def);
-    }
-    for (const auto& r :
-         supertype.references(scada::id::NonHierarchicalReferences)) {
+  for (auto supertype_definition = type_definition; supertype_definition;
+       supertype_definition = supertype_definition.supertype()) {
+    for (const auto& p : supertype_definition.targets(scada::id::HasProperty))
+      property_decls.emplace(p);
+    for (const auto& r : supertype_definition.references(
+             scada::id::NonHierarchicalReferences)) {
       // TODO: Introduce common base reference type.
       if (!IsSubtypeOf(r.reference_type, scada::id::Creates) &&
           !IsSubtypeOf(r.reference_type, scada::id::HasSubtype)) {
-        if (auto* def = GetPropertyDef(r.reference_type))
-          properties.emplace_back(r.reference_type, def);
+        property_decls.emplace(r.reference_type);
       }
     }
   }
+}
+
+PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition) {
+  assert(type_definition.fetched());
+
+  std::unordered_set<NodeRef> prop_decls;
+  GetTypeProperties(type_definition, prop_decls);
+
+  PropertyDefs properties;
+  properties.reserve(prop_decls.size());
+
+  for (auto& prop_decl : prop_decls) {
+    if (auto* def = GetPropertyDef(prop_decl))
+      properties.emplace_back(prop_decl, def);
+  }
   return properties;
 }
+
+void CollectCreates(const NodeRef& node,
+                    std::unordered_set<NodeRef>& child_type_definitions) {
+  for (auto&& creates : node.targets(scada::id::Creates))
+    child_type_definitions.emplace(std::move(creates));
+}
+
+// Returns unfetched type definitions.
+std::unordered_set<NodeRef> GetChildTypeDefinitions(
+    const NodeRef& parent_node) {
+  assert(parent_node.fetched());
+  assert(parent_node.type_definition().fetched());
+
+  std::unordered_set<NodeRef> child_type_definitions;
+
+  CollectCreates(parent_node, child_type_definitions);
+
+  for (auto node_type = parent_node.type_definition(); node_type;
+       node_type = node_type.supertype()) {
+    CollectCreates(node_type, child_type_definitions);
+  }
+
+  return child_type_definitions;
+}
+
+PropertyDefs GetPropertyDefs(
+    const std::unordered_set<NodeRef>& property_decls) {
+  PropertyDefs property_defs =
+      property_decls |
+      boost::adaptors::transformed([](const NodeRef& property_decl) {
+        return std::make_pair(property_decl, GetPropertyDef(property_decl));
+      }) |
+      boost::adaptors::filtered([](const auto& p) { return !!p.second; }) |
+      to_vector;
+  std::sort(property_defs.begin(), property_defs.end());
+  return property_defs;
+}
+
+promise<PropertyDefs> GetChildPropertyDefs(const NodeRef& parent_node) {
+  auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
+  return FetchNode(parent_node)
+      .then([parent_node] { return GetChildTypeDefinitions(parent_node); })
+      .then([property_decls](
+                const std::unordered_set<NodeRef>& child_type_definitions) {
+        auto child_promises = child_type_definitions |
+                              boost::adaptors::transformed(
+                                  [&](const NodeRef& child_type_definition) {
+                                    return GetAllSubtypesProperties(
+                                        child_type_definition, property_decls);
+                                  });
+        return make_all_promise_void(child_promises);
+      })
+      .then([property_decls] { return GetPropertyDefs(*property_decls); });
+}
+
+// PropertyDefinition
 
 PropertyDefinition::PropertyDefinition(ui::TableColumn::Alignment alignment,
                                        int width)

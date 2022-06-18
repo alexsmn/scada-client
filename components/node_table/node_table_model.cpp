@@ -1,12 +1,12 @@
 ﻿#include "components/node_table/node_table_model.h"
 
-#include "base/bind.h"
+#include "base/executor.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/utils.h"
 #include "core/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/property_defs.h"
@@ -14,115 +14,57 @@
 #include "skia/ext/skia_utils_win.h"
 #include "string_const.h"
 
-#include <set>
+using namespace std::chrono_literals;
 
 namespace {
 
+const char16_t kFetching[] = u"Загрузка...";
 const auto kParentReferenceTypeId = scada::id::Organizes;
-const auto kSortDelay = base::TimeDelta::FromMilliseconds(300);
-
-// TODO: Combine with property defs.
-void GetTypeProperties(const NodeRef& type_definition,
-                       std::set<NodeRef>& property_declarations) {
-  assert(type_definition.fetched());
-  for (auto supertype_definition = type_definition; supertype_definition;
-       supertype_definition = supertype_definition.supertype()) {
-    for (const auto& p : supertype_definition.targets(scada::id::HasProperty))
-      property_declarations.emplace(p);
-    for (const auto& r : supertype_definition.references()) {
-      // TODO: Introduce common base reference type.
-      if (!IsSubtypeOf(r.reference_type, scada::id::HasProperty) &&
-          !IsSubtypeOf(r.reference_type, scada::id::Creates) &&
-          !IsSubtypeOf(r.reference_type, scada::id::HasSubtype)) {
-        property_declarations.emplace(r.reference_type);
-      }
-    }
-  }
-}
-
-void GetAllSubtypesProperties(const NodeRef& type_definition,
-                              std::set<NodeRef>& property_declarations) {
-  assert(type_definition.fetched());
-  GetTypeProperties(type_definition, property_declarations);
-  for (auto& subtype_definition :
-       type_definition.targets(scada::id::HasSubtype)) {
-    GetAllSubtypesProperties(subtype_definition, property_declarations);
-  }
-}
-
-PropertyDefs GetChildPropertyDefs(const NodeRef& parent_node) {
-  assert(parent_node.fetched());
-
-  std::set<NodeRef> child_type_definitions;
-  for (auto& creates : parent_node.targets(scada::id::Creates))
-    child_type_definitions.emplace(creates);
-  for (auto node_type = parent_node.type_definition(); node_type;
-       node_type = node_type.supertype()) {
-    for (auto& creates : node_type.targets(scada::id::Creates))
-      child_type_definitions.emplace(creates);
-  }
-
-  std::set<NodeRef> property_declarations;
-  for (auto& child_type_definition : child_type_definitions)
-    GetAllSubtypesProperties(child_type_definition, property_declarations);
-
-  PropertyDefs result;
-  for (const auto& p : property_declarations) {
-    if (auto* def = GetPropertyDef(p))
-      result.emplace_back(p, def);
-  }
-
-  std::sort(result.begin(), result.end());
-
-  return result;
-}
+const auto kSortDelay = 300ms;
 
 }  // namespace
 
-NodeTableModel::NodeTableModel(PropertyContext&& context)
-    : PropertyContext{std::move(context)} {
+NodeTableModel::NodeTableModel(std::shared_ptr<Executor> executor,
+                               PropertyContext&& context)
+    : PropertyContext{std::move(context)}, executor_{std::move(executor)} {
   row_model_.set_row_height(19);
 }
 
 NodeTableModel::~NodeTableModel() {
-  SetFetchedParentNode(nullptr);
+  node_service_.Unsubscribe(*this);
 }
 
 void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
-  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
-  parent_node.Fetch(NodeFetchStatus::NodeAndChildren(),
-                    [weak_ptr](const NodeRef& node) {
-                      if (auto* ptr = weak_ptr.get())
-                        ptr->SetFetchedParentNode(node);
-                    });
-}
-
-void NodeTableModel::SetFetchedParentNode(const NodeRef& parent_node) {
-  if (parent_node_ == parent_node)
-    return;
-
-  if (parent_node_) {
-    node_service_.Unsubscribe(*this);
-    parent_node_ = nullptr;
-  }
+  cancelation_.Cancel();
 
   parent_node_ = parent_node;
 
-  if (parent_node_)
-    node_service_.Subscribe(*this);
-
-  Update();
+  GetChildPropertyDefs(parent_node_)
+      .then(cancelation_.Bind([this](const PropertyDefs& property_defs) {
+        UpdateColumns(property_defs);
+      }))
+      .then(cancelation_.Bind([this] { return FetchChildren(parent_node_); }))
+      .then(cancelation_.Bind([this] { UpdateParent(); }));
 }
 
 int NodeTableModel::GetRowCount() {
-  return static_cast<int>(nodes_.size());
+  return loading_ ? 1 : static_cast<int>(nodes_.size());
 }
 
 std::u16string NodeTableModel::GetRowTitle(int row) {
+  if (loading_)
+    return {};
+
   return base::UTF8ToUTF16(NodeIdToScadaString(nodes_[row].node_id()));
 }
 
 void NodeTableModel::GetCell(ui::GridCell& cell) {
+  if (loading_) {
+    cell.text = kFetching;
+    cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
+    return;
+  }
+
   assert(cell.row >= 0 && cell.row < (long)nodes_.size());
   assert(cell.column >= 0 && cell.column < column_model_.GetCount());
 
@@ -184,16 +126,13 @@ ui::EditData NodeTableModel::GetEditData(int row, int column) {
                                        c.property_declaration.node_id());
 }
 
-void NodeTableModel::Update() {
-  columns_.clear();
-  nodes_.clear();
+void NodeTableModel::UpdateParent() {
+  loading_ = false;
 
-  if (parent_node_) {
-    for (const auto& node : parent_node_.targets(kParentReferenceTypeId))
-      nodes_.push_back(node);
+  nodes_ = parent_node_.targets(kParentReferenceTypeId);
 
-    InitColumns();
-  }
+  // Subscribe only when nodes are loaded.
+  node_service_.Subscribe(*this);
 
   Sort();
   NotifyModelChanged();
@@ -283,11 +222,8 @@ void NodeTableModel::ScheduleSort() {
 
   sort_scheduled_ = true;
 
-  base::SequencedTaskRunnerHandle::Get()->PostDelayedTask(
-      FROM_HERE,
-      base::Bind(&NodeTableModel::ScheduleSortHelper,
-                 weak_ptr_factory_.GetWeakPtr()),
-      kSortDelay);
+  executor_->PostDelayedTask(
+      kSortDelay, cancelation_.Bind([this]() { ScheduleSortHelper(); }));
 }
 
 void NodeTableModel::ScheduleSortHelper() {
@@ -297,12 +233,12 @@ void NodeTableModel::ScheduleSortHelper() {
     Sort();
 }
 
-void NodeTableModel::InitColumns() {
-  auto properties = GetChildPropertyDefs(parent_node_);
+void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
+  columns_.clear();
 
   std::vector<ui::TableColumn> columns;
 
-  columns.reserve(properties.size() + 1);
+  columns.reserve(property_defs.size() + 1);
 
   // Display name
   {
@@ -322,7 +258,7 @@ void NodeTableModel::InitColumns() {
                                          title, width, def.alignment()});
   };
 
-  for (auto& prop : properties) {
+  for (auto& prop : property_defs) {
     if (auto* hier_prop = prop.second->AsHierarchical()) {
       for (auto& p : hier_prop->children())
         AddProp(prop.first, *p);

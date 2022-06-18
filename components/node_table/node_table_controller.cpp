@@ -40,6 +40,7 @@ NodeTableController::NodeTableController(const ControllerContext& context,
                                          const NodeRef& parent_node)
     : ControllerContext{context},
       model_{std::make_unique<NodeTableModel>(
+          executor_,
           PropertyContext{context.node_service_, context.task_manager_,
                           context.dialog_service_})} {
   if (parent_node)
@@ -174,4 +175,8 @@ void NodeTableController::OnGridColumnClicked(views::GridView& sender,
 void NodeTableController::SetSorting(const scada::NodeId& property_id) {
   profile_.node_table.default_sort_property_id = property_id;
   model_->SetSorting(property_id);
+}
+
+bool NodeTableController::IsWorking() const {
+  return model_->loading();
 }

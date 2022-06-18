@@ -32,6 +32,7 @@ class NodeTableController : protected ControllerContext,
   virtual void Save(WindowDefinition& definition) override;
   virtual NodeRef GetRootNode() const override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
+  virtual bool IsWorking() const override;
 
  protected:
 #if defined(UI_VIEWS)

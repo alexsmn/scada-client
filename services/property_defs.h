@@ -1,11 +1,13 @@
 #pragma once
 
+#include "base/promise.h"
 #include "common/node_state.h"
 #include "node_service/node_ref.h"
 #include "ui/base/models/grid_model.h"
 #include "ui/base/models/table_column.h"
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 class DialogService;
@@ -194,4 +196,9 @@ typedef std::vector<std::pair<NodeRef /*prop_decl*/, const PropertyDefinition*>>
     PropertyDefs;
 
 const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl);
-PropertyDefs GetTypeProperties(const NodeRef& type_definition);
+
+PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition);
+promise<PropertyDefs> GetChildPropertyDefs(const NodeRef& parent_node);
+
+void GetTypeProperties(const NodeRef& type_definition,
+                       std::unordered_set<NodeRef>& property_declarations);

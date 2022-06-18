@@ -18,7 +18,7 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
 
   // AddChildren();
 
-  node_.Fetch(NodeFetchStatus::NodeOnly(), nullptr);
+  node_.Fetch(NodeFetchStatus::NodeOnly());
 }
 
 ConfigurationTreeNode::~ConfigurationTreeNode() {

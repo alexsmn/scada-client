@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
+#include "base/cancelation.h"
 #include "components/node_properties/node_group_model.h"
 #include "controls/property_model.h"
 #include "node_service/node_observer.h"
@@ -23,6 +23,7 @@ class NodePropertyModel : protected PropertyContext,
   boost::signals2::signal<void()> node_deleted;
 
  private:
+  void OnNodeFetched();
   void Update();
 
   int FindProperty(const scada::NodeId& prop_decl_id) const;
@@ -36,13 +37,12 @@ class NodePropertyModel : protected PropertyContext,
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
-  virtual void OnNodeFetched(const NodeFetchedEvent& event) override;
 
   NodeGroupModel root_{*this};
 
   NodeRef node_;
 
-  base::WeakPtrFactory<NodePropertyModel> weak_ptr_factory_{this};
+  Cancelation cancelation_;
 
   friend class NodeGroupModel;
 };

@@ -2,22 +2,20 @@
 
 #include "core/event.h"
 #include "model/scada_node_ids.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "services/property_defs.h"
 #include "string_const.h"
 
 NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
     : PropertyContext{std::move(context)}, node_{std::move(node)} {
-  if (node_) {
-    node_.Fetch(NodeFetchStatus::NodeOnly());
-    node_.Subscribe(*this);
-    Update();
-  }
+  node_.Subscribe(*this);
+
+  FetchNode(node_).then(cancelation_.Bind([this] { OnNodeFetched(); }));
 }
 
 NodePropertyModel::~NodePropertyModel() {
-  if (node_)
-    node_.Unsubscribe(*this);
+  node_.Unsubscribe(*this);
 }
 
 void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
@@ -40,8 +38,9 @@ void NodePropertyModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     PropertiesChanged(0, static_cast<int>(root_.properties.size()));
 }
 
-void NodePropertyModel::OnNodeFetched(const NodeFetchedEvent& event) {
+void NodePropertyModel::OnNodeFetched() {
   Update();
+
   if (model_changed_handler)
     model_changed_handler();
 }
@@ -82,7 +81,7 @@ void NodePropertyModel::Update() {
   if (const auto& type_definition = node_.type_definition()) {
     assert(type_definition.fetched());
 
-    for (auto& p : GetTypeProperties(type_definition)) {
+    for (auto& p : GetTypePropertyDefs(type_definition)) {
       const auto& prop_decl = p.first;
       if (!prop_decl)
         continue;
