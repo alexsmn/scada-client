@@ -42,7 +42,7 @@ class NodeTableModel : private PropertyContext,
 
  private:
   void UpdateColumns(const PropertyDefs& property_defs);
-  void UpdateParent();
+  void UpdateRows();
 
   bool IsMatchingNode(const NodeRef& node) const;
   void Update(const NodeRef& node);

@@ -29,7 +29,6 @@ namespace {
 
 static const char16_t kDefaultColorString[] = u"<Стандартный>";
 static const char16_t kChoiceNone[] = u"<Нет>";
-static const char16_t kChoiceLoading[] = u"<Загрузка...>";
 
 NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
                               const std::u16string_view& name,
@@ -46,19 +45,40 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
   return nullptr;
 }
 
-// Returns false if node all nodes were loaded and returned.
-bool GetNodeNamesRecursive(const NodeRef& parent_node,
-                           const scada::NodeId& type_definition_id,
-                           std::vector<std::u16string>& names) {
-  bool all_loaded = true;
-  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(node, type_definition_id))
-      names.emplace_back(GetFullDisplayName(node));
-    all_loaded &= GetNodeNamesRecursive(node, type_definition_id, names);
-  }
-  if (!parent_node.children_fetched())
-    parent_node.Fetch(NodeFetchStatus::ChildrenOnly());
-  return all_loaded;
+promise<> FetchNodeNamesRecursive(
+    const NodeRef& parent_node,
+    const scada::NodeId& type_definition_id,
+    const ui::EditData::AsyncChoiceCallback& callback) {
+  return FetchChildren(parent_node).then([=] {
+    auto children = parent_node.targets(scada::id::Organizes);
+
+    auto child_names =
+        children |
+        boost::adaptors::filtered([type_definition_id](const NodeRef& node) {
+          return IsInstanceOf(node, type_definition_id);
+        }) |
+        boost::adaptors::transformed(&GetFullDisplayName) | to_vector;
+    callback(child_names, false);
+
+    auto recursive_promises =
+        children | boost::adaptors::transformed([type_definition_id, callback](
+                                                    const NodeRef& node) {
+          return FetchNodeNamesRecursive(node, type_definition_id, callback);
+        });
+
+    return make_all_promise_void(recursive_promises);
+  });
+}
+
+ui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
+    const NodeRef& parent,
+    const scada::NodeId& type_definition_id) {
+  return [parent, type_definition_id](
+             const ui::EditData::AsyncChoiceCallback& callback) {
+    callback({kChoiceNone}, false);
+    FetchNodeNamesRecursive(parent, type_definition_id, callback)
+        .then([callback] { callback({}, true); });
+  };
 }
 
 NodeRef GetTargetTypeDefinition(const NodeRef& type_definition,
@@ -369,16 +389,13 @@ ui::EditData ReferencePropertyDefinition::GetPropertyEditor(
     const scada::NodeId& prop_decl_id) const {
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
 
-  const auto& type_definition = node.type_definition();
-  if (auto target_type_definition =
-          GetTargetTypeDefinition(type_definition, prop_decl_id)) {
-    result.choices.emplace_back(kChoiceNone);
-    bool all_loaded = GetNodeNamesRecursive(
-        context.node_service_.GetNode(scada::id::ObjectsFolder),
-        target_type_definition.node_id(), result.choices);
-    if (!all_loaded)
-      result.choices.emplace_back(kChoiceLoading);
-  }
+  auto objects = context.node_service_.GetNode(scada::id::ObjectsFolder);
+  auto target_type_definition =
+      GetTargetTypeDefinition(node.type_definition(), prop_decl_id);
+
+  result.async_choice_handler = MakeAsyncChoiceHandler(
+      context.node_service_.GetNode(scada::id::ObjectsFolder),
+      target_type_definition.node_id());
 
   return result;
 }
@@ -562,9 +579,9 @@ ui::EditData ChannelPropertyDefinition::GetPropertyEditor(
   ui::EditData result{ui::EditData::EditorType::DROPDOWN};
 
   if (device_) {
-    result.choices.emplace_back(kChoiceNone);
-    GetNodeNamesRecursive(context.node_service_.GetNode(devices::id::Devices),
-                          devices::id::DeviceType, result.choices);
+    result.async_choice_handler = MakeAsyncChoiceHandler(
+        context.node_service_.GetNode(devices::id::Devices),
+        devices::id::DeviceType);
 
   } else {
     auto channel_path = node[prop_decl_id].value().get_or(std::string{});

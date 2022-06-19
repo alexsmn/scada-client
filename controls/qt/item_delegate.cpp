@@ -37,22 +37,8 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       return line_edit;
     }
 
-    case ui::EditData::EditorType::DROPDOWN: {
-      auto* combo_box = new QComboBox{parent};
-      combo_box->setFocusPolicy(Qt::WheelFocus);
-      combo_box->setEditable(true);
-      combo_box->setFrame(false);
-      combo_box->setInsertPolicy(QComboBox::InsertPolicy::NoInsert);
-      for (const auto& choice : edit_data.choices)
-        combo_box->addItem(QString::fromStdU16String(choice));
-      connect(
-          combo_box, QOverload<int>::of(&QComboBox::activated), this,
-          [this] { const_cast<ItemDelegate*>(this)->CommitAndCloseEditor(); });
-      connect(combo_box->lineEdit(), &QLineEdit::returnPressed, this, [this] {
-        const_cast<ItemDelegate*>(this)->CommitAndCloseEditor();
-      });
-      return combo_box;
-    }
+    case ui::EditData::EditorType::DROPDOWN:
+      return CreateDropDown(parent, edit_data);
 
     default:
       assert(false);
@@ -92,4 +78,50 @@ void ItemDelegate::CommitAndCloseEditor() {
   QWidget* editor = qobject_cast<QWidget*>(sender());
   emit commitData(editor);
   emit closeEditor(editor);
+}
+
+QComboBox* ItemDelegate::CreateDropDown(QWidget* parent,
+                                        const ui::EditData& edit_data) const {
+  auto* combo_box = new QComboBox{parent};
+  combo_box->setFocusPolicy(Qt::WheelFocus);
+  combo_box->setEditable(true);
+  combo_box->setFrame(false);
+  combo_box->setInsertPolicy(QComboBox::InsertPolicy::NoInsert);
+
+  connect(combo_box, QOverload<int>::of(&QComboBox::activated), this,
+          [this] { const_cast<ItemDelegate*>(this)->CommitAndCloseEditor(); });
+
+  connect(combo_box->lineEdit(), &QLineEdit::returnPressed, this,
+          [this] { const_cast<ItemDelegate*>(this)->CommitAndCloseEditor(); });
+
+  if (edit_data.async_choice_handler) {
+    combo_box->addItem(tr("Loading..."));
+
+    auto canceled = std::make_shared<bool>(false);
+    connect(combo_box, &QObject::destroyed, [canceled] { *canceled = true; });
+
+    edit_data.async_choice_handler(
+        [combo_box, canceled](const std::vector<std::u16string>& choices,
+                              bool last) {
+          if (*canceled)
+            return;
+
+          QStringList items;
+          items.reserve(choices.size());
+          for (const auto& choice : choices)
+            items.push_back(QString::fromStdU16String(choice));
+
+          // Insert before loading.
+          combo_box->insertItems(combo_box->count() - 1, items);
+
+          if (last)
+            combo_box->removeItem(combo_box->count() - 1);
+        });
+
+  } else {
+    for (const auto& choice : edit_data.choices)
+      combo_box->addItem(QString::fromStdU16String(choice));
+  }
+
+  return combo_box;
 }

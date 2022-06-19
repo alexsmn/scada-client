@@ -5,6 +5,8 @@
 #include <QItemDelegate>
 #include <functional>
 
+class QComboBox;
+
 class ItemDelegate final : public QItemDelegate {
  public:
   using EditDataProvider =
@@ -25,6 +27,9 @@ class ItemDelegate final : public QItemDelegate {
 
  private:
   void CommitAndCloseEditor();
+
+  QComboBox* CreateDropDown(QWidget* parent,
+                            const ui::EditData& edit_data) const;
 
   const EditDataProvider edit_data_provider_;
 };

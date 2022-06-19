@@ -43,8 +43,9 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
       .then(cancelation_.Bind([this](const PropertyDefs& property_defs) {
         UpdateColumns(property_defs);
       }))
-      .then(cancelation_.Bind([this] { return FetchChildren(parent_node_); }))
-      .then(cancelation_.Bind([this] { UpdateParent(); }));
+      // It's important to return promise form the callback.
+      .then([parent_node] { return FetchChildren(parent_node); })
+      .then(cancelation_.Bind([this] { UpdateRows(); }));
 }
 
 int NodeTableModel::GetRowCount() {
@@ -126,7 +127,7 @@ ui::EditData NodeTableModel::GetEditData(int row, int column) {
                                        c.property_declaration.node_id());
 }
 
-void NodeTableModel::UpdateParent() {
+void NodeTableModel::UpdateRows() {
   loading_ = false;
 
   nodes_ = parent_node_.targets(kParentReferenceTypeId);
