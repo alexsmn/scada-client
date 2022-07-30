@@ -31,6 +31,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "selection_model.h"
+#include "services/create_tree.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"
 #include "services/profile.h"
@@ -52,20 +53,6 @@ std::filesystem::path MakeFileName(std::u16string_view text) {
   std::u16string result;
   base::ReplaceChars(AsStringPiece(text), u":", u"-", &result);
   return result;
-}
-
-NodeRef GetCreateParentNode(const NodeRef& suggested_parent,
-                            const NodeRef& root,
-                            const NodeRef& component_type) {
-  if (!component_type)
-    return nullptr;
-
-  for (const auto& parent : {suggested_parent, root}) {
-    if (parent && CanCreate(parent, component_type))
-      return parent;
-  }
-
-  return nullptr;
 }
 
 TimeRange::Type GetTimeRangeCommand(unsigned command_id) {
@@ -238,7 +225,8 @@ bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {
       auto* selection_model = controller_->GetSelectionModel();
       return selection_model &&
              session_service_.HasPrivilege(scada::Privilege::Configure) &&
-             GetPasteParentNode(node_service_, selection_model->node(),
+             GetPasteParentNode(node_service_, create_tree_,
+                                selection_model->node(),
                                 controller_->GetRootNode());
     }
     default:
@@ -255,9 +243,9 @@ bool OpenedViewCommands::CanCreateRecord(
   if (!selection_model)
     return false;
 
-  return GetCreateParentNode(selection_model->node(),
-                             controller_->GetRootNode(),
-                             node_service_.GetNode(type_node_id)) != nullptr;
+  return create_tree_.GetCreateParentNode(
+             selection_model->node(), controller_->GetRootNode(),
+             node_service_.GetNode(type_node_id)) != nullptr;
 }
 
 void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
@@ -273,8 +261,8 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   if (!selection_model)
     return;
 
-  auto parent_node = GetCreateParentNode(selection_model->node(),
-                                         controller_->GetRootNode(), node_type);
+  auto parent_node = create_tree_.GetCreateParentNode(
+      selection_model->node(), controller_->GetRootNode(), node_type);
   if (!parent_node)
     return;
 
@@ -354,8 +342,9 @@ void OpenedViewCommands::PasteFromClipboard() {
   if (!selection_model)
     return;
 
-  const auto& parent_node = GetPasteParentNode(
-      node_service_, selection_model->node(), controller_->GetRootNode());
+  const auto& parent_node =
+      GetPasteParentNode(node_service_, create_tree_, selection_model->node(),
+                         controller_->GetRootNode());
   if (!parent_node)
     return;
 

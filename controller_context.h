@@ -10,6 +10,7 @@ class SessionService;
 
 class BlinkerManager;
 class ControllerDelegate;
+class CreateTree;
 class DialogService;
 class EventFetcher;
 class Executor;
@@ -41,4 +42,5 @@ struct ControllerContext {
   Profile& profile_;
   DialogService& dialog_service_;
   BlinkerManager& blinker_manager_;
+  CreateTree& create_tree_;
 };

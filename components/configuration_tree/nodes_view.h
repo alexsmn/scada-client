@@ -26,6 +26,7 @@ class NodesView : public ConfigurationTreeView {
                 ConfigurationTreeDropHandlerContext{
                     context.node_service_,
                     context.task_manager_,
+                    context.create_tree_,
                 }),
         } {}
 };

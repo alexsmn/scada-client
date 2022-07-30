@@ -7,6 +7,7 @@
 #include "node_service/node_promises.h"
 #include "node_service/node_util.h"
 #include "remote/protocol_utils.h"
+#include "services/create_tree.h"
 #include "services/task_manager.h"
 
 #include <Windows.h>
@@ -121,6 +122,7 @@ bool PasteNodesFromClipboard(TaskManager& task_manager,
 }
 
 NodeRef GetPasteParentNode(NodeService& node_service,
+                           CreateTree& create_tree,
                            const NodeRef& selected_node,
                            const NodeRef& root_node) {
   const auto buffer = ReadClipboard(kNodeTreeHeaderFormat);
@@ -138,7 +140,7 @@ NodeRef GetPasteParentNode(NodeService& node_service,
 
   for (const auto& node : {selected_node, root_node}) {
     for (auto n = node; n; n = n.parent()) {
-      if (CanCreate(n, type_definition))
+      if (create_tree.CanCreate(n, type_definition))
         return n;
     }
   }

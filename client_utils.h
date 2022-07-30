@@ -16,6 +16,7 @@ namespace scada {
 class Status;
 }  // namespace scada
 
+class CreateTree;
 class DialogService;
 class FileCache;
 class LocalEvents;
@@ -65,6 +66,7 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes);
 bool PasteNodesFromClipboard(TaskManager& task_manager,
                              const scada::NodeId& new_parent_id);
 NodeRef GetPasteParentNode(NodeService& node_service,
+                           CreateTree& create_tree,
                            const NodeRef& selected_node,
                            const NodeRef& root_node);
 

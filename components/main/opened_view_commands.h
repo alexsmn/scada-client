@@ -3,10 +3,10 @@
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "command_handler.h"
+#include "common/node_state.h"
 #include "controller_delegate.h"
 #include "controller_registry.h"
 #include "controls/types.h"
-#include "common/node_state.h"
 #include "core/status.h"
 #include "window_definition.h"
 
@@ -23,6 +23,7 @@ class SessionService;
 class ActionManager;
 class ContentsModel;
 class Controller;
+class CreateTree;
 class DialogService;
 class EventFetcher;
 class Executor;
@@ -56,6 +57,7 @@ struct OpenedViewCommandsContext {
   FileCache& file_cache_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
+  CreateTree& create_tree_;
 };
 
 class OpenedViewCommands : private OpenedViewCommandsContext,

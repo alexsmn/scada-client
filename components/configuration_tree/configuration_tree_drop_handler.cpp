@@ -7,6 +7,7 @@
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "services/create_tree.h"
 #include "services/task_manager.h"
 
 namespace {
@@ -113,7 +114,8 @@ int ConfigurationTreeDropHandler::GetDropAction(
   // Dropping a node to a node that can contain the node type causes move.
   {
     auto type_definition = target_node->node().type_definition();
-    if (!type_definition || !CanCreate(dragging_node, type_definition))
+    if (!type_definition ||
+        !create_tree_.CanCreate(dragging_node, type_definition))
       return ui::DragDropTypes::DRAG_NONE;
 
     if (target_node && target_node->node() != dragging_node &&

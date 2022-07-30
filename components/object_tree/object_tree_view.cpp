@@ -32,6 +32,7 @@ ObjectTreeView::ObjectTreeView(const ControllerContext& context)
               ConfigurationTreeDropHandlerContext{
                   context.node_service_,
                   context.task_manager_,
+                  context.create_tree_,
               }),
       } {
   tree_view().SetHeaderVisible(true);

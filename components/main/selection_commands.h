@@ -16,6 +16,7 @@ class Variant;
 }  // namespace scada
 
 class Controller;
+class CreateTree;
 class DialogService;
 class EventFetcher;
 class Executor;
@@ -42,6 +43,7 @@ struct SelectionCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   NodeService& node_service_;
+  CreateTree& create_tree_;
 };
 
 // A singleton shared between |OpenedView|s. Once an |OpenView| is focused, it

@@ -8,12 +8,14 @@ class NodeId;
 }
 
 class ConfigurationTreeNode;
+class CreateTree;
 class NodeService;
 class TaskManager;
 
 struct ConfigurationTreeDropHandlerContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
+  CreateTree& create_tree_;
 };
 
 class ConfigurationTreeDropHandler

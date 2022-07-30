@@ -40,6 +40,7 @@
 #include "project.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
+#include "services/create_tree.h"
 #include "services/event_dispatcher.h"
 #include "services/file_cache.h"
 #include "services/file_registry.h"
@@ -308,6 +309,8 @@ void ClientApplication::OnStartLoginCompleted() {
   profile_->Load(*event_fetcher_, *portfolio_manager_, *favourites_);
   profile_loaded_ = true;
 
+  create_tree_ = std::make_unique<CreateTree>();
+
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{
           *profile_,
@@ -345,7 +348,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
         *master_data_services_, *event_fetcher_, *master_data_services_,
         *master_data_services_, *timed_data_service_, *node_service_,
         *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
-        *profile_, dialog_service, *blinker_manager_});
+        *profile_, dialog_service, *blinker_manager_, *create_tree_});
   };
 
   auto login_handler = [this](bool login) {
@@ -387,7 +390,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
           executor_, *task_manager_, *master_data_services_,
           *master_data_services_, *event_fetcher_, *timed_data_service_,
           *local_events_, *file_cache_, *profile_, *main_window_manager_,
-          *node_service_});
+          *node_service_, *create_tree_});
 
   auto view_commands_factory = [this, selection_commands](
                                    OpenedView& opened_view,
@@ -398,7 +401,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
             *master_data_services_, *master_data_services_, *event_fetcher_,
             *master_data_services_, *timed_data_service_, *node_service_,
             *portfolio_manager_, *action_manager_, *local_events_, *favourites_,
-            *file_cache_, *profile_, *main_window_manager_});
+            *file_cache_, *profile_, *main_window_manager_, *create_tree_});
 
     opened_view_commands->SetContext(&opened_view, &dialog_service);
 

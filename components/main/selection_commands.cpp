@@ -37,6 +37,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "selection_model.h"
+#include "services/create_tree.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/task_manager.h"
@@ -120,7 +121,8 @@ std::string GetNodeDebugInfo(const NodeRef& node) {
 void RegisterFileSystemCommands(SelectionCommands& selection_commands,
                                 CommandRegistry& command_registry,
                                 NodeService& node_service,
-                                TaskManager& task_manager) {
+                                TaskManager& task_manager,
+                                CreateTree& create_tree) {
   // |selection_| and |dialog_service_| are never null in command handlers.
 
   const auto& file_type = node_service.GetNode(filesystem::id::FileType);
@@ -132,9 +134,11 @@ void RegisterFileSystemCommands(SelectionCommands& selection_commands,
             AddFile(selection_commands.selection()->node(),
                     *selection_commands.dialog_service(), task_manager);
           })
-          .set_available_handler([&selection_commands, file_type] {
-            return CanCreate(selection_commands.selection()->node(), file_type);
-          }));
+          .set_available_handler(
+              [&create_tree, &selection_commands, file_type] {
+                return create_tree.CanCreate(
+                    selection_commands.selection()->node(), file_type);
+              }));
 
   const auto& file_directory_type =
       node_service.GetNode(filesystem::id::FileType);
@@ -147,9 +151,10 @@ void RegisterFileSystemCommands(SelectionCommands& selection_commands,
                                 *selection_commands.dialog_service(),
                                 task_manager);
           })
-          .set_available_handler([&selection_commands, file_directory_type] {
-            return CanCreate(selection_commands.selection()->node(),
-                             file_directory_type);
+          .set_available_handler([&create_tree, &selection_commands,
+                                  file_directory_type] {
+            return create_tree.CanCreate(selection_commands.selection()->node(),
+                                         file_directory_type);
           }));
 }
 
@@ -244,7 +249,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           }));
 
   RegisterFileSystemCommands(*this, command_registry_, node_service_,
-                             task_manager_);
+                             task_manager_, create_tree_);
 
   RegisterDeviceEnableCommand(*this, command_registry_, session_service_,
                               task_manager_, ID_ITEM_ENABLE, true);
