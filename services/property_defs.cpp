@@ -178,10 +178,6 @@ const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl) {
       scada::id::UInt32, scada::id::Int64,  scada::id::UInt64};
 
   auto data_type = prop_decl.data_type();
-  for (const auto data_type_id : kIntDataTypeIds) {
-    if (IsSubtypeOf(data_type, data_type_id))
-      return &kIntPropDef;
-  }
 
   if (IsSubtypeOf(data_type, scada::id::Boolean))
     return &kBoolPropDef;
@@ -191,6 +187,12 @@ const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl) {
     return &kStringPropDef;
   if (IsSubtypeOf(data_type, scada::id::Enumeration))
     return &kEnumPropDef;
+
+  // NOTE: Enums are subtypes of INT.
+  for (const auto data_type_id : kIntDataTypeIds) {
+    if (IsSubtypeOf(data_type, data_type_id))
+      return &kIntPropDef;
+  }
 
   return nullptr;
 }
