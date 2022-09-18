@@ -43,7 +43,7 @@ int Run(int show = SW_SHOWDEFAULT) {
         },
         [&run_loop] { run_loop.Quit(); }}};
 
-    executor->PostTask([&app] { app.Start(); });
+    Dispatch(*executor, [&app] { app.Start(); });
 
     views::AcceleratorHandler accelerator_handler;
     ActiveXHost::instance().AddMessageDispatcher(accelerator_handler);

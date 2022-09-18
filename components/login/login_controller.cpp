@@ -99,7 +99,7 @@ void LoginController::Login() {
 }
 
 void LoginController::OnLoginResult(const scada::Status& status) {
-  Dispatch(*executor_, [this, ref = shared_from_this(), status] {
+  Dispatch(*executor_, weak_from_this(), [this, status] {
     if (status)
       OnLoginCompleted();
     else
@@ -148,25 +148,24 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
     dialog_service_
         .RunMessageBox(kForceLogoffMessage, {}, MessageBoxMode::QuestionYesNo)
-        .then(BindPromiseExecutor(
-            executor_, [this, ref = shared_from_this()](
-                           MessageBoxResult message_box_result) {
-              if (message_box_result == MessageBoxResult::Yes) {
-                Connect(true);
+        .then(BindPromiseExecutor(executor_, weak_from_this(),
+                                  [this](MessageBoxResult message_box_result) {
+                                    if (message_box_result ==
+                                        MessageBoxResult::Yes) {
+                                      Connect(true);
 
-              } else {
-                login_message_ = true;
-                error_handler();
-              }
-            }));
+                                    } else {
+                                      login_message_ = true;
+                                      error_handler();
+                                    }
+                                  }));
 
   } else {
     std::u16string message =
         base::StringPrintf(kLoginFailedMessage, ToString16(status).c_str());
     dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error)
-        .then(BindPromiseExecutor(executor_,
-                                  [this, ref = shared_from_this()](
-                                      MessageBoxResult message_box_result) {
+        .then(BindPromiseExecutor(executor_, weak_from_this(),
+                                  [this](MessageBoxResult message_box_result) {
                                     login_message_ = true;
                                     error_handler();
                                   }));

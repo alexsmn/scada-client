@@ -63,8 +63,7 @@ void NodeServiceTreeImpl::SetObserver(Observer* observer) {
 
 void NodeServiceTreeImpl::OnModelChanged(const scada::ModelChangeEvent& event) {
   // TODO: weak_ptr
-  // TODO: Dispatch?
-  executor_->PostTask([this, event] {
+  Dispatch(*executor_, [this, event] {
     if (!observer_)
       return;
 
@@ -82,7 +81,8 @@ void NodeServiceTreeImpl::OnModelChanged(const scada::ModelChangeEvent& event) {
 }
 
 void NodeServiceTreeImpl::OnNodeSemanticChanged(const scada::NodeId& node_id) {
-  executor_->PostTask([this, node_id] {
+  // TODO: weak_ptr
+  Dispatch(*executor_, [this, node_id] {
     if (observer_)
       observer_->OnNodeSemanticsChanged(node_id);
   });

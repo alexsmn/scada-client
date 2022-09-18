@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
       },
       [&qapp] { qapp.quit(); }}};
 
-  executor->PostTask([&app] { app.Start(); });
+  Dispatch(*executor, [&app] { app.Start(); });
 
   int result = qapp.exec();
 
