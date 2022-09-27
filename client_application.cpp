@@ -252,19 +252,17 @@ void ClientApplication::OnStartLoginCompleted() {
   ComponentApiImpl component_api;
   filesystem_component_ = std::make_unique<FileSystemComponent>(component_api);
 
-  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
-      TimedDataContext{
-          io_context_,
-          alias_resolver_,
-          *node_service_,
-          *master_data_services_,
-          *master_data_services_,
-          *master_data_services_,
-          *master_data_services_,
-          *master_data_services_,
-          *event_fetcher_,
-      },
-      std::make_shared<NestedLogger>(logger_, "TimedDataService"));
+  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
+      io_context_,
+      alias_resolver_,
+      *node_service_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *master_data_services_,
+      *event_fetcher_,
+  });
 
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
