@@ -3,6 +3,7 @@
 #include "base/blinker.h"
 #include "base/boost_log.h"
 #include "base/boost_log_adapter.h"
+#include "base/boost_log_init.h"
 #include "base/command_line.h"
 #include "base/file_path_util.h"
 #include "base/files/file_util.h"
