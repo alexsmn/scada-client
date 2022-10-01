@@ -6,7 +6,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
-#include "base/win/registry2.h"
 #include "core/session_service.h"
 #include "core/status.h"
 #include "services/dialog_service.h"
@@ -30,22 +29,54 @@ const char16_t kAutoLoginMessage[] =
     u"Чтобы отключить автоматический вход, удерживайте Ctrl при запуске "
     u"приложения.";
 
-std::wstring GetServerHostTypeKey(std::string_view server_type_name) {
-  return base::UTF8ToWide(
-      base::StrCat({kServerHostKeyPrefix, AsStringPiece(server_type_name)}));
+struct RegHelper {
+  bool ReadBool(std::string_view name) {
+    DWORD value = 0;
+    key_.ReadValueDW(base::ASCIIToWide(AsStringPiece(name)).c_str(), &value);
+    return value != 0;
+  }
+
+  std::string ReadString(std::string_view name) {
+    std::wstring value;
+    key_.ReadValue(base::ASCIIToWide(AsStringPiece(name)).c_str(), &value);
+    return base::WideToASCII(value);
+  }
+
+  std::u16string ReadString16(std::string_view name) {
+    std::wstring value;
+    key_.ReadValue(base::ASCIIToWide(AsStringPiece(name)).c_str(), &value);
+    return base::WideToUTF16(value);
+  }
+
+  bool Write(std::string_view name, bool bool_value) {
+    DWORD dword_value = bool_value ? 1 : 0;
+    return key_.WriteValue(base::ASCIIToWide(AsStringPiece(name)).c_str(),
+                           dword_value) == ERROR_SUCCESS;
+  }
+
+  bool Write(std::string_view name, std::string_view string_value) {
+    return key_.WriteValue(
+               base::ASCIIToWide(AsStringPiece(name)).c_str(),
+               base::ASCIIToWide(AsStringPiece(string_value)).c_str()) ==
+           ERROR_SUCCESS;
+  }
+
+  bool Write(std::string_view name, std::u16string_view string16_value) {
+    return key_.WriteValue(
+               base::ASCIIToWide(AsStringPiece(name)).c_str(),
+               base::UTF16ToWide(AsStringPiece(string16_value)).c_str()) ==
+           ERROR_SUCCESS;
+  }
+
+  base::win::RegKey& key_;
+};
+
+std::string GetServerHostTypeKey(std::string_view server_type_name) {
+  return base::StrCat({kServerHostKeyPrefix, AsStringPiece(server_type_name)});
 }
 
-}  // namespace
-
-LoginController::LoginController(std::shared_ptr<Executor> executor,
-                                 DataServicesContext&& services_context,
-                                 DialogService& dialog_service)
-    : executor_{std::move(executor)},
-      services_context_{std::move(services_context)},
-      dialog_service_{dialog_service} {
-  Registry reg(HKEY_CURRENT_USER, kRegistryKey, true);
-  user_name = base::WideToUTF16(reg.GetString(L"User"));
-  std::u16string users = base::WideToUTF16(reg.GetString(L"UserList"));
+std::vector<std::u16string> ParseUserList(std::u16string_view users) {
+  std::vector<std::u16string> user_list;
   for (size_t p = 0; p < users.length();) {
     size_t n = users.find(',', p);
     auto user_name =
@@ -58,18 +89,34 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
       break;
     p = n + 1;
   }
+  return user_list;
+}
 
-  auto server_type = base::WideToUTF8(reg.GetString(L"ServerType"));
-  password = base::WideToUTF16(reg.GetString(L"Password"));
-  auto_login = reg.GetDWORD(L"AutoLogin") != 0;
+}  // namespace
+
+LoginController::LoginController(std::shared_ptr<Executor> executor,
+                                 DataServicesContext&& services_context,
+                                 DialogService& dialog_service)
+    : executor_{std::move(executor)},
+      services_context_{std::move(services_context)},
+      dialog_service_{dialog_service} {
+  base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey, KEY_QUERY_VALUE);
+  RegHelper reg_helper{reg};
+  user_name = reg_helper.ReadString16("User");
+  std::u16string users = reg_helper.ReadString16("UserList");
+  user_list = ParseUserList(users);
+
+  auto server_type = reg_helper.ReadString("ServerType");
+  password = reg_helper.ReadString16("Password");
+  auto_login = reg_helper.ReadBool("AutoLogin");
 
   auto& list = GetDataServicesInfoList();
   server_type_hosts_.resize(list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     auto& info = list[i];
     server_type_list.emplace_back(info.display_name);
-    server_type_hosts_[i] = base::WideToUTF8(
-        reg.GetString(GetServerHostTypeKey(info.name).c_str()));
+    server_type_hosts_[i] =
+        reg_helper.ReadString(GetServerHostTypeKey(info.name));
     if (EqualDataServicesName(info.name, server_type))
       SetServerTypeIndex(i);
   }
@@ -77,7 +124,7 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
   // Backward compatibility.
   assert(!server_type_hosts_.empty());
   if (server_type_hosts_[0].empty())
-    server_type_hosts_[0] = base::WideToUTF8(reg.GetString(L"Host"));
+    server_type_hosts_[0] = reg_helper.ReadString("Host");
 
   for (size_t i = 0; i < list.size(); ++i) {
     if (server_type_hosts_[i].empty())
@@ -117,18 +164,19 @@ void LoginController::OnLoginCompleted() {
                     user_list.begin() + user_list.size() - 10);
   }
 
-  Registry reg(HKEY_CURRENT_USER, kRegistryKey);
-  reg.SetString(L"User", base::UTF16ToWide(user_name).c_str());
-  reg.SetString(L"UserList", base::UTF16ToWide(GetUserListString()).c_str());
-  reg.SetString(L"Host", base::UTF8ToWide(server_host).c_str());
-  reg.SetString(
-      GetServerHostTypeKey(GetDataServicesInfoList()[server_type_index_].name)
-          .c_str(),
-      base::UTF8ToWide(server_host).c_str());
-  reg.SetString(L"ServerType", base::UTF8ToWide(server_type_).c_str());
-  reg.SetDWORD(L"AutoLogin", auto_login);
+  base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
+                        KEY_SET_VALUE | KEY_QUERY_VALUE);
+  RegHelper reg_helper{reg};
+  reg_helper.Write("User", user_name);
+  reg_helper.Write("UserList", GetUserListString());
+  reg_helper.Write("Host", server_host);
+  reg_helper.Write(
+      GetServerHostTypeKey(GetDataServicesInfoList()[server_type_index_].name),
+      server_host);
+  reg_helper.Write("ServerType", server_type_);
+  reg_helper.Write("AutoLogin", auto_login);
   if (auto_login)
-    reg.SetString(L"Password", base::UTF16ToWide(password).c_str());
+    reg_helper.Write("Password", password);
 
   auto promise = make_resolved_promise(MessageBoxResult::Ok);
   if (auto_login && login_message_) {
@@ -193,8 +241,10 @@ void LoginController::DeleteUserName(std::u16string_view user_name) {
 
   user_list.erase(i);
 
-  Registry reg(HKEY_CURRENT_USER, kRegistryKey);
-  reg.SetString(L"UserList", base::UTF16ToWide(GetUserListString()).c_str());
+  base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
+                        KEY_SET_VALUE | KEY_QUERY_VALUE);
+  RegHelper reg_helper{reg};
+  reg_helper.Write("UserList", GetUserListString());
 }
 
 std::u16string LoginController::GetUserListString() const {
