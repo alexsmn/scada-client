@@ -253,7 +253,7 @@ void ClientApplication::OnStartLoginCompleted() {
   filesystem_component_ = std::make_unique<FileSystemComponent>(component_api);
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
-      io_context_,
+      executor_,
       alias_resolver_,
       *node_service_,
       *master_data_services_,
