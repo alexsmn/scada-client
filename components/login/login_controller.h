@@ -44,8 +44,6 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   void OnLoginCompleted();
   void OnLoginFailed(const scada::Status& status);
 
-  std::u16string GetUserListString() const;
-
   const std::shared_ptr<Executor> executor_;
   DataServicesContext services_context_;
   DialogService& dialog_service_;
@@ -56,5 +54,10 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
 
   std::string server_type_;
   int server_type_index_ = 0;
-  std::vector<std::string> server_type_hosts_;
+
+  struct ServerTypeData {
+    std::string host;
+  };
+
+  std::vector<ServerTypeData> server_type_data_;
 };

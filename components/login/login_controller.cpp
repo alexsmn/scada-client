@@ -1,5 +1,8 @@
 ﻿#include "components/login/login_controller.h"
 
+#include "Base/strings/string_split.h"
+#include "base/containers/contains.h"
+#include "base/containers/cxx20_erase.h"
 #include "base/executor.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
@@ -75,21 +78,38 @@ std::string GetServerHostTypeKey(std::string_view server_type_name) {
   return base::StrCat({kServerHostKeyPrefix, AsStringPiece(server_type_name)});
 }
 
-std::vector<std::u16string> ParseUserList(std::u16string_view users) {
-  std::vector<std::u16string> user_list;
-  for (size_t p = 0; p < users.length();) {
-    size_t n = users.find(',', p);
-    auto user_name =
-        (n == std::u16string::npos) ? users.substr(p) : users.substr(p, n - p);
-    if (std::find(user_list.begin(), user_list.end(), user_name) ==
-        user_list.end()) {
-      user_list.emplace_back(std::move(user_name));
-    }
-    if (n == std::u16string::npos)
-      break;
-    p = n + 1;
+std::vector<std::string> ParseListString(std::string_view users) {
+  return base::SplitString(AsStringPiece(users), ",", base::TRIM_WHITESPACE,
+                           base::SPLIT_WANT_NONEMPTY);
+}
+
+std::vector<std::u16string> ParseListString(std::u16string_view users) {
+  return base::SplitString(AsStringPiece(users), u",", base::TRIM_WHITESPACE,
+                           base::SPLIT_WANT_NONEMPTY);
+}
+
+std::string BuildListString(base::span<const std::string> list) {
+  constexpr size_t kMaxCount = 10;
+  auto sublist = list.subspan(0, kMaxCount);
+  return base::JoinString(sublist, ",");
+}
+
+std::u16string BuildListString(base::span<const std::u16string> list) {
+  constexpr size_t kMaxCount = 10;
+  auto count = std::min(kMaxCount, list.size());
+  auto sublist = list.subspan(0, count);
+  return base::JoinString(sublist, u",");
+}
+
+void AppendMruList(std::vector<std::u16string>& list,
+                   std::u16string_view new_item) {
+  if (list.empty() || list.front() != new_item) {
+    base::Erase(list, new_item);
+    list.emplace(list.begin(), new_item);
   }
-  return user_list;
+
+  if (list.size() > 10)
+    list.resize(10);
 }
 
 }  // namespace
@@ -104,34 +124,34 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
   RegHelper reg_helper{reg};
   user_name = reg_helper.ReadString16("User");
   std::u16string users = reg_helper.ReadString16("UserList");
-  user_list = ParseUserList(users);
+  user_list = ParseListString(users);
 
   auto server_type = reg_helper.ReadString("ServerType");
   password = reg_helper.ReadString16("Password");
   auto_login = reg_helper.ReadBool("AutoLogin");
 
   auto& list = GetDataServicesInfoList();
-  server_type_hosts_.resize(list.size());
+  server_type_data_.resize(list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     auto& info = list[i];
     server_type_list.emplace_back(info.display_name);
-    server_type_hosts_[i] =
+    server_type_data_[i].host =
         reg_helper.ReadString(GetServerHostTypeKey(info.name));
     if (EqualDataServicesName(info.name, server_type))
       SetServerTypeIndex(i);
   }
 
   // Backward compatibility.
-  assert(!server_type_hosts_.empty());
-  if (server_type_hosts_[0].empty())
-    server_type_hosts_[0] = reg_helper.ReadString("Host");
+  assert(!server_type_data_.empty());
+  if (server_type_data_[0].host.empty())
+    server_type_data_[0].host = reg_helper.ReadString("Host");
 
   for (size_t i = 0; i < list.size(); ++i) {
-    if (server_type_hosts_[i].empty())
-      server_type_hosts_[i] = list[i].default_host;
+    if (server_type_data_[i].host.empty())
+      server_type_data_[i].host = list[i].default_host;
   }
 
-  server_host = server_type_hosts_[server_type_index_];
+  server_host = server_type_data_[server_type_index_].host;
 
   // Don't perform automatic login if Shift is pressed.
   if (GetAsyncKeyState(VK_CONTROL) < 0)
@@ -156,19 +176,13 @@ void LoginController::OnLoginResult(const scada::Status& status) {
 
 void LoginController::OnLoginCompleted() {
   // save last users
-  auto i = std::find(user_list.begin(), user_list.end(), user_name);
-  if (i == user_list.end())
-    user_list.emplace_back(user_name);
-  if (user_list.size() > 10) {
-    user_list.erase(user_list.begin(),
-                    user_list.begin() + user_list.size() - 10);
-  }
+  AppendMruList(user_list, user_name);
 
   base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
                         KEY_SET_VALUE | KEY_QUERY_VALUE);
   RegHelper reg_helper{reg};
   reg_helper.Write("User", user_name);
-  reg_helper.Write("UserList", GetUserListString());
+  reg_helper.Write("UserList", BuildListString(user_list));
   reg_helper.Write("Host", server_host);
   reg_helper.Write(
       GetServerHostTypeKey(GetDataServicesInfoList()[server_type_index_].name),
@@ -244,15 +258,7 @@ void LoginController::DeleteUserName(std::u16string_view user_name) {
   base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
                         KEY_SET_VALUE | KEY_QUERY_VALUE);
   RegHelper reg_helper{reg};
-  reg_helper.Write("UserList", GetUserListString());
-}
-
-std::u16string LoginController::GetUserListString() const {
-  constexpr size_t kMaxCount = 10;
-  const size_t count = std::min(kMaxCount, user_list.size());
-  const std::vector<std::u16string> truncated_user_list(
-      user_list.begin(), user_list.begin() + count);
-  return base::JoinString(truncated_user_list, u",");
+  reg_helper.Write("UserList", BuildListString(user_list));
 }
 
 void LoginController::SetServerTypeIndex(int index) {
@@ -262,7 +268,7 @@ void LoginController::SetServerTypeIndex(int index) {
   if (server_type_index_ == index)
     return;
 
-  server_type_hosts_[server_type_index_] = std::move(server_host);
+  server_type_data_[server_type_index_].host = std::move(server_host);
   server_type_index_ = index;
-  server_host = server_type_hosts_[index];
+  server_host = server_type_data_[index].host;
 }
