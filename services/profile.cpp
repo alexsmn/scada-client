@@ -253,30 +253,30 @@ void Profile::Load(const base::Value& data,
     }
   }
 
-  if (auto* event_journal = GetDict(data, "eventJournal")) {
-    if (auto* state = GetDict(*event_journal, "defaultState"))
+  if (auto* event_journal = FindDict(data, "eventJournal")) {
+    if (auto* state = FindDict(*event_journal, "defaultState"))
       this->event_journal.default_state = state->Clone();
   }
 
-  if (auto* graphe = GetDict(data, "graph")) {
+  if (auto* graphe = FindDict(data, "graph")) {
     Deserialize(GetString(*graphe, "def_span"), graph_view.default_span);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
   }
 
-  if (auto* node = GetDict(data, "timeRangeDialog")) {
+  if (auto* node = FindDict(data, "timeRangeDialog")) {
     time_range_dialog.width = GetInt(*node, "width", 0);
     time_range_dialog.height = GetInt(*node, "height", 0);
   }
 
-  if (auto* node = GetDict(data, "nodeTable")) {
+  if (auto* node = FindDict(data, "nodeTable")) {
     node_table.default_sort_property_id =
         NodeIdFromScadaString(GetString(*node, "sort-property-id"));
   }
 
-  if (auto* node = GetDict(data, "timedData"))
+  if (auto* node = FindDict(data, "timedData"))
     timed_data.mirrored = GetBool(*node, "mirrored");
 
-  if (auto* node = GetDict(data, "csv")) {
+  if (auto* node = FindDict(data, "csv")) {
     if (auto params = FromJson<CsvExportParams>(*node))
       csv_export_params = std::move(*params);
   }

@@ -130,7 +130,7 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
   password = reg_helper.ReadString16("Password");
   auto_login = reg_helper.ReadBool("AutoLogin");
 
-  auto& list = GetDataServicesInfoList();
+  const auto& list = GetDataServicesInfoList();
   server_type_data_.resize(list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     auto& info = list[i];

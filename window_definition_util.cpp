@@ -209,7 +209,7 @@ std::optional<WindowDefinition> FromJson(const base::Value& win) {
   if (auto* items = win.FindKey("items"))
     w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});
 
-  if (auto* data = GetDict(win, "data"))
+  if (auto* data = FindDict(win, "data"))
     w.storage = data->Clone();
 
   return w;

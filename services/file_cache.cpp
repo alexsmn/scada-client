@@ -35,7 +35,7 @@ FileCache::FileEntry LoadFileEntry(const base::Value& data) {
   if (entry.title.empty())
     entry.title = path.stem().u16string();
 
-  if (auto* items_data = GetDict(data, "items")) {
+  if (auto* items_data = FindDict(data, "items")) {
     for (const auto& [key, value] : items_data->DictItems()) {
       auto node_id = NodeIdFromScadaString(key);
       int tag = value.is_int() ? value.GetInt() : -1;

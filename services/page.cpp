@@ -82,7 +82,7 @@ void Page::Load(const base::Value& data) {
   }
 
   // layout
-  if (const auto* layoute = GetDict(data, "layout")) {
+  if (const auto* layoute = FindDict(data, "layout")) {
     if (auto l = FromJson<PageLayout>(*layoute))
       layout = std::move(*l);
   }

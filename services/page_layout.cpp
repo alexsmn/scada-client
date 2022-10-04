@@ -49,9 +49,9 @@ void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
                                                  "horizontal");
     block.split(horz);
     block.pos = GetInt(value, "pos", -1);
-    if (auto* pane = GetDict(value, "first"))
+    if (auto* pane = FindDict(value, "first"))
       LoadLayoutBlock(*block.left, *pane);
-    if (auto* pane = GetDict(value, "second"))
+    if (auto* pane = FindDict(value, "second"))
       LoadLayoutBlock(*block.right, *pane);
 
   } else if (base::EqualsCaseInsensitiveASCII(AsStringPiece(type), "pane")) {
@@ -91,11 +91,11 @@ template <>
 std::optional<PageLayout> FromJson(const base::Value& json) {
   PageLayout layout;
 
-  if (const auto* maine = GetDict(json, "center"))
+  if (const auto* maine = FindDict(json, "center"))
     LoadLayoutBlock(layout.main, *maine);
 
   for (int i = 0; i < 4; i++) {
-    const auto* docke = GetDict(json, kDockNames[i]);
+    const auto* docke = FindDict(json, kDockNames[i]);
     if (!docke)
       continue;
 
