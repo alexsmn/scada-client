@@ -145,9 +145,11 @@ ModusDocument::~ModusDocument() {
 
   sde_document_.Reset();
 
-  if (sde_form_)
-    event_sink_->DispEventUnadvise(sde_form_.Get());
-  event_sink_->set_document(nullptr);
+  if (event_sink_) {
+    if (sde_form_)
+      event_sink_->DispEventUnadvise(sde_form_.Get());
+    event_sink_->set_document(nullptr);
+  }
 
   sde_form_.Reset();
 }
@@ -156,9 +158,9 @@ void ModusDocument::CreateEventSink() {
   HRESULT res;
   CComObject<EventSink>* event_sink = nullptr;
   if (FAILED(res = CComObject<EventSink>::CreateInstance(&event_sink)))
-    return;
+    throw std::runtime_error("Cannot create event sink");
 
-  event_sink_ = event_sink_;
+  event_sink_ = event_sink;
   event_sink_->set_document(this);
 }
 

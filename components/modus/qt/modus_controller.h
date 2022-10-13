@@ -36,9 +36,9 @@ class ModusController : protected ControllerContext, public Controller {
 
   SelectionModel selection_{{timed_data_service_}};
 
-  std::unique_ptr<ModusView> view_;
-  std::unique_ptr<ModusView2> view2_;
-  std::unique_ptr<ModusView3> view3_;
+  ModusView* view_ = nullptr;
+  ModusView2* view2_ = nullptr;
+  ModusView3* view3_ = nullptr;
   ModusViewWrapper* wrapper_;
 
   CommandRegistry command_registry_;

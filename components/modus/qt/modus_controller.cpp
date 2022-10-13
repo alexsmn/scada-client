@@ -49,19 +49,19 @@ QWidget* ModusController::CreateModusView() {
     controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
   };
 
-  view_ = std::make_unique<ModusView>(modus::ModusDocumentContext{
+  view_ = new ModusView{modus::ModusDocumentContext{
       alias_resolver_, timed_data_service_, file_cache_, title_callback,
-      navigation_callback, selection_callback, context_menu_handler});
+      navigation_callback, selection_callback, context_menu_handler}};
 
-  wrapper_ = view_.get();
+  wrapper_ = view_;
 
   command_registry_.AddCommand(Command{ID_SETUP}.set_execute_handler([] {}));
 
-  return view_.get();
+  return view_;
 }
 
 QWidget* ModusController::CreateModusView2() {
-  view2_ = std::make_unique<ModusView2>(timed_data_service_);
+  view2_ = new ModusView2{timed_data_service_};
 
   view2_->set_selection_signal(
       [this](const TimedDataSpec& spec) { selection_.SelectTimedData(spec); });
@@ -75,21 +75,21 @@ QWidget* ModusController::CreateModusView2() {
   view2_->set_double_click_signal(
       [this] { selection_.timed_data().Acknowledge(); });
 
-  wrapper_ = view2_.get();
+  wrapper_ = view2_;
 
   auto* scroll_area = new QScrollArea;
-  scroll_area->setWidget(view2_.get());
+  scroll_area->setWidget(view2_);
   scroll_area->setStyleSheet("background-color: white;");
 
   return scroll_area;
 }
 
 QWidget* ModusController::CreateModusView3() {
-  view3_ = std::make_unique<ModusView3>(timed_data_service_);
+  view3_ = new ModusView3{timed_data_service_};
 
-  wrapper_ = view3_.get();
+  wrapper_ = view3_;
 
-  return view3_.get();
+  return view3_;
 }
 
 QWidget* ModusController::Init(const WindowDefinition& definition) {
