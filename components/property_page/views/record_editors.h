@@ -1,12 +1,12 @@
 #pragma once
 
-#include "node_service/node_ref.h"
-#include "common/static_types.h"
-#include "common_resources.h"
 #include "common/node_state.h"
+#include "common_resources.h"
 #include "core/view_service.h"
+#include "model/static_types.h"
 #include "net/transport_string.h"
 #include "node_combo_box.h"
+#include "node_service/node_ref.h"
 
 #include <algorithm>
 #include <set>
@@ -62,14 +62,14 @@ class RecordEditor : protected RecordEditorContext,
   virtual void OnFinalMessage(HWND) override;
 
   BEGIN_MSG_MAP(RecordEditor)
-  CHAIN_MSG_MAP(WTL::CScrollImpl<RecordEditor>)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  COMMAND_ID_HANDLER(ID_OK, OnOK)
-  COMMAND_ID_HANDLER(ID_CANCEL, OnCancel)
-  COMMAND_CODE_HANDLER(EN_CHANGE, OnChange)
-  COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnChange)
-  COMMAND_CODE_HANDLER(CBN_EDITCHANGE, OnChange)
-  COMMAND_CODE_HANDLER(BN_CLICKED, OnChange)
+    CHAIN_MSG_MAP(WTL::CScrollImpl<RecordEditor>)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    COMMAND_ID_HANDLER(ID_OK, OnOK)
+    COMMAND_ID_HANDLER(ID_CANCEL, OnCancel)
+    COMMAND_CODE_HANDLER(EN_CHANGE, OnChange)
+    COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnChange)
+    COMMAND_CODE_HANDLER(CBN_EDITCHANGE, OnChange)
+    COMMAND_CODE_HANDLER(BN_CLICKED, OnChange)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -109,8 +109,8 @@ class NamedRecordEditor : public RecordEditor {
 
  protected:
   BEGIN_MSG_MAP(NamedRecordEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -133,8 +133,8 @@ class GroupEditor : public RecordEditor {
 
  protected:
   BEGIN_MSG_MAP(GroupEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -157,12 +157,12 @@ class ItemEditor : public RecordEditor {
   ItemEditor(UINT IDD, RecordEditorContext&& context);
 
   BEGIN_MSG_MAP(ItemEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  COMMAND_HANDLER(IDC_CHAN, CBN_SELCHANGE, OnChanChange)
-  COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnSelChange)
-  COMMAND_HANDLER(IDC_STALE_CHECK, BN_CLICKED, OnStaleCheckClicked)
-  COMMAND_HANDLER(IDC_FORMULA_CHECK, BN_CLICKED, OnFormulaCheckClicked)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    COMMAND_HANDLER(IDC_CHAN, CBN_SELCHANGE, OnChanChange)
+    COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnSelChange)
+    COMMAND_HANDLER(IDC_STALE_CHECK, BN_CLICKED, OnStaleCheckClicked)
+    COMMAND_HANDLER(IDC_FORMULA_CHECK, BN_CLICKED, OnFormulaCheckClicked)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -249,8 +249,8 @@ class TsEditor : public ItemEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(TsEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(ItemEditor)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(ItemEditor)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -277,10 +277,10 @@ class TitEditor : public ItemEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(TitEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  COMMAND_HANDLER(IDC_CONV_NONE, BN_CLICKED, OnConvClicked)
-  COMMAND_HANDLER(IDC_CONV_LINE, BN_CLICKED, OnConvClicked)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    COMMAND_HANDLER(IDC_CONV_NONE, BN_CLICKED, OnConvClicked)
+    COMMAND_HANDLER(IDC_CONV_LINE, BN_CLICKED, OnConvClicked)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -331,9 +331,9 @@ class TsFormatEditor : public RecordEditor,
   void DrawItem(LPDRAWITEMSTRUCT dis);
 
   BEGIN_MSG_MAP(TsFormatEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(RecordEditor)
-  CHAIN_MSG_MAP(WTL::COwnerDraw<TsFormatEditor>)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(RecordEditor)
+    CHAIN_MSG_MAP(WTL::COwnerDraw<TsFormatEditor>)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -363,8 +363,8 @@ class LinkEditor : public NamedRecordEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(LinkEditor)
-  COMMAND_ID_HANDLER(IDC_EDIT_TRANSPORT, OnEditTransport)
-  CHAIN_MSG_MAP(__super)
+    COMMAND_ID_HANDLER(IDC_EDIT_TRANSPORT, OnEditTransport)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
  protected:
@@ -396,8 +396,8 @@ class Iec60870LinkEditor : public LinkEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(Iec60870LinkEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -461,9 +461,9 @@ class Iec60870DeviceEditor : public RecordEditor {
   void UpdateSync();
 
   BEGIN_MSG_MAP(Iec60870DeviceEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  COMMAND_HANDLER(IDC_SYNC, BN_CLICKED, OnSync)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    COMMAND_HANDLER(IDC_SYNC, BN_CLICKED, OnSync)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -500,8 +500,8 @@ class SimulationItemEditor : public RecordEditor {
 
  protected:
   BEGIN_MSG_MAP(SimulationItemEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -530,10 +530,10 @@ class InplaceDialog : public ATL::CDialogImpl<InplaceDialog> {
       : parent_window_(parent_window) {}
 
   BEGIN_MSG_MAP(RecordEditor)
-  COMMAND_CODE_HANDLER(EN_CHANGE, OnChange)
-  COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnChange)
-  COMMAND_CODE_HANDLER(CBN_EDITCHANGE, OnChange)
-  COMMAND_CODE_HANDLER(BN_CLICKED, OnChange)
+    COMMAND_CODE_HANDLER(EN_CHANGE, OnChange)
+    COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnChange)
+    COMMAND_CODE_HANDLER(CBN_EDITCHANGE, OnChange)
+    COMMAND_CODE_HANDLER(BN_CLICKED, OnChange)
   END_MSG_MAP()
 
  private:
@@ -559,8 +559,8 @@ class ModbusDeviceEditor : public NamedRecordEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(ModbusDeviceEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -586,8 +586,8 @@ class HistoricalDBEditor : public NamedRecordEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(HistoricalDBEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -608,8 +608,8 @@ class Iec61850DeviceEditor : public RecordEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(Iec61850DeviceEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
@@ -637,8 +637,8 @@ class Iec61850RCBEditor : public RecordEditor {
       scada::ReferenceDescriptions& references) override;
 
   BEGIN_MSG_MAP(Iec61850RCBEditor)
-  MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-  CHAIN_MSG_MAP(__super)
+    MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+    CHAIN_MSG_MAP(__super)
   END_MSG_MAP()
 
   LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
