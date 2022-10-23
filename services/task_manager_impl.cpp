@@ -52,45 +52,53 @@ void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
                                      scada::NodeAttributes attributes,
                                      scada::NodeProperties properties,
                                      InsertCallback callback) {
-  auto type = node_service_.GetNode(type_id);
-  if (!type) {
-    assert(false);
-    return;
-  }
+  node_service_.GetNode(type_id).Fetch(
+      NodeFetchStatus::NodeOnly(),
+      [=, ref = shared_from_this()](const NodeRef& type) {
+        if (!type) {
+          assert(false);
+          if (callback)
+            callback(scada::StatusCode::Bad, {});
+          return;
+        }
 
-  if (type.node_class() != scada::NodeClass::ObjectType &&
-      type.node_class() != scada::NodeClass::VariableType) {
-    assert(false);
-    return;
-  }
+        if (type.node_class() != scada::NodeClass::ObjectType &&
+            type.node_class() != scada::NodeClass::VariableType) {
+          assert(false);
+          if (callback)
+            callback(scada::StatusCode::Bad, {});
+          return;
+        }
 
-  auto node_class = type.node_class() == scada::NodeClass::ObjectType
-                        ? scada::NodeClass::Object
-                        : scada::NodeClass::Variable;
+        auto node_class = type.node_class() == scada::NodeClass::ObjectType
+                              ? scada::NodeClass::Object
+                              : scada::NodeClass::Variable;
 
-  PostTask(
-      u"Вставка", [=, &node_management_service = node_management_service_] {
-        scada::AddNode(
-            node_management_service,
-            {requested_id, parent_id, node_class, type_id, attributes},
-            BindExecutor(
-                executor_, weak_from_this(),
-                [this, properties, callback](scada::AddNodesResult result) {
-                  ReportRequestCompletion(result.status_code, {});
+        PostTask(u"Вставка", [=, ref = shared_from_this()] {
+          scada::AddNode(
+              node_management_service_,
+              {requested_id, parent_id, node_class, type_id, attributes},
+              BindExecutor(
+                  executor_, weak_from_this(),
+                  [this, properties, callback](scada::AddNodesResult result) {
+                    ReportRequestCompletion(result.status_code, {});
 
-                  if (properties.empty() || scada::IsBad(result.status_code)) {
-                    if (callback)
-                      callback(result.status_code, result.added_node_id);
-                    return;
-                  }
+                    if (properties.empty() ||
+                        scada::IsBad(result.status_code)) {
+                      if (callback)
+                        callback(result.status_code, result.added_node_id);
+                      return;
+                    }
 
-                  PostUpdateTask(result.added_node_id, {}, properties,
-                                 [added_node_id = result.added_node_id,
-                                  callback](scada::Status status) {
-                                   if (callback)
-                                     callback(std::move(status), added_node_id);
-                                 });
-                }));
+                    PostUpdateTask(result.added_node_id, {}, properties,
+                                   [added_node_id = result.added_node_id,
+                                    callback](scada::Status status) {
+                                     if (callback)
+                                       callback(std::move(status),
+                                                added_node_id);
+                                   });
+                  }));
+        });
       });
 }
 

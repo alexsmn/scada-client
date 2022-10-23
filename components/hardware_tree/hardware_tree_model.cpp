@@ -84,7 +84,6 @@ HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
               {
                   {scada::id::Organizes, true},
                   {scada::id::HasComponent, true},
-                  {devices::id::HasTransmissionTarget, false},
               },
               {
                   devices::id::DeviceType,

@@ -21,7 +21,7 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
     auto path = item->GetString("path");
     auto device_id = NodeIdFromScadaString(path);
-    model_->SetDevice(node_service_.GetNode(device_id));
+    model_->Init(node_service_.GetNode(device_id));
   }
 
   const ui::TableColumn columns[] = {

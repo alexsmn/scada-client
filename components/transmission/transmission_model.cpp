@@ -15,22 +15,15 @@ TransmissionModel::TransmissionModel(NodeService& node_service,
                                      TaskManager& task_manager)
     : FixedRowModel(*static_cast<FixedRowModel::Delegate*>(this)),
       node_service_{node_service},
-      task_manager_{task_manager} {
-  // Must subscribe to root, since references will be deleted.
-  node_service_.Subscribe(*this);
-
-  // WORKAROUND: Fetch all transmission items, since inverse fetches are not yet
-  // supported.
-  node_service_.GetNode(devices::id::TransmissionItems)
-      .Fetch(NodeFetchStatus::ChildrenOnly());
-}
+      task_manager_{task_manager} {}
 
 TransmissionModel::~TransmissionModel() {
-  node_service_.Unsubscribe(*this);
+  device_.Unsubscribe(*this);
 }
 
-void TransmissionModel::SetDevice(NodeRef device) {
-  device_ = std::move(device);
+void TransmissionModel::Init(NodeRef device) {
+  device_.Subscribe(*this);
+
   Update();
 }
 
@@ -100,7 +93,7 @@ void TransmissionModel::Update() {
 
   if (device_) {
     for (auto reference :
-         device_.inverse_references(devices::id::HasTransmissionTarget)) {
+         device_.references(devices::id::HasTransmissionItem)) {
       assert(IsInstanceOf(reference.target, devices::id::TransmissionItemType));
       Update(reference.target);
     }
@@ -129,12 +122,6 @@ void TransmissionModel::Update(NodeRef transmission) {
   assert(IsInstanceOf(transmission, devices::id::TransmissionItemType));
 
   transmission.Fetch(NodeFetchStatus::NodeOnly());
-
-  auto device = transmission.target(devices::id::HasTransmissionTarget);
-  if (device != device_) {
-    Delete(transmission.node_id());
-    return;
-  }
 
   auto source_id =
       transmission.target(devices::id::HasTransmissionSource).node_id();
@@ -201,20 +188,8 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   if (!device())
     return;
 
-  auto device_id = device().node_id();
-  task_manager_.PostInsertTask(
-      scada::NodeId(), devices::id::TransmissionItems,
-      devices::id::TransmissionItemType, {}, {},
-      [node_id, device_id, &task_manager = task_manager_](
-          const scada::Status& status, const scada::NodeId& transmission_id) {
-        if (!status)
-          return;
-
-        task_manager.PostAddReference(devices::id::HasTransmissionSource,
-                                      transmission_id, node_id);
-        task_manager.PostAddReference(devices::id::HasTransmissionTarget,
-                                      transmission_id, device_id);
-      });
+  task_manager_.PostInsertTask(scada::NodeId(), device_.node_id(),
+                               devices::id::TransmissionItemType, {}, {});
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {

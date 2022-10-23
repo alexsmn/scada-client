@@ -3,9 +3,9 @@
 #include <functional>
 #include <vector>
 
+#include "contents_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "contents_model.h"
 #include "ui/base/models/fixed_row_model.h"
 #include "ui/base/models/grid_model.h"
 
@@ -26,8 +26,12 @@ class TransmissionModel : public ui::GridModel,
   TransmissionModel(NodeService& node_service, TaskManager& task_manager);
   ~TransmissionModel();
 
-  NodeRef device() const { return device_; }
-  void SetDevice(NodeRef device);
+  TransmissionModel(const TransmissionModel&) = delete;
+  TransmissionModel& operator=(const TransmissionModel&) = delete;
+
+  void Init(NodeRef device);
+
+  const NodeRef& device() const { return device_; }
 
   const Row& row(size_t index) const { return rows_[index]; }
 
@@ -47,7 +51,9 @@ class TransmissionModel : public ui::GridModel,
   virtual std::u16string GetRowTitle(int row) override;
   virtual void GetCell(ui::GridCell& cell) override;
   virtual bool IsEditable(int row, int column) override;
-  virtual bool SetCellText(int row, int column, const std::u16string& text) override;
+  virtual bool SetCellText(int row,
+                           int column,
+                           const std::u16string& text) override;
 
  private:
   int FindRow(const scada::NodeId& transmission_id) const;
@@ -64,9 +70,8 @@ class TransmissionModel : public ui::GridModel,
 
   NodeService& node_service_;
   TaskManager& task_manager_;
-
-  Rows rows_;
+    
   NodeRef device_;
 
-  DISALLOW_COPY_AND_ASSIGN(TransmissionModel);
+  Rows rows_;
 };
