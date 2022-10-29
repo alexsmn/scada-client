@@ -1,5 +1,6 @@
 #include "components/transmission/transmission_model.h"
 
+#include "base/cancelation.h"
 #include "base/format.h"
 #include "base/strings/sys_string_conversions.h"
 #include "contents_observer.h"
@@ -22,9 +23,13 @@ TransmissionModel::~TransmissionModel() {
 }
 
 void TransmissionModel::Init(NodeRef device) {
+  device_ = std::move(device);
+
   device_.Subscribe(*this);
 
-  Update();
+  device_.Fetch(NodeFetchStatus::ChildrenOnly(),
+                BindCancelation(weak_from_this(),
+                                [this](const NodeRef& device) { Update(); }));
 }
 
 int TransmissionModel::GetRowCount() {
@@ -91,11 +96,12 @@ bool TransmissionModel::SetCellText(int row,
 void TransmissionModel::Update() {
   rows_.clear();
 
+  // TODO: Optimize.
+
   if (device_) {
-    for (auto reference :
-         device_.references(devices::id::HasTransmissionItem)) {
-      assert(IsInstanceOf(reference.target, devices::id::TransmissionItemType));
-      Update(reference.target);
+    for (auto reference : device_.references(scada::id::Organizes)) {
+      if (IsInstanceOf(reference.target, devices::id::TransmissionItemType))
+        Update(reference.target);
     }
   }
 

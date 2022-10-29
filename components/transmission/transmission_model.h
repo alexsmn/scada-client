@@ -12,11 +12,13 @@
 class NodeService;
 class TaskManager;
 
-class TransmissionModel : public ui::GridModel,
-                          public views::FixedRowModel,
-                          public ContentsModel,
-                          private views::FixedRowModel::Delegate,
-                          private NodeRefObserver {
+class TransmissionModel
+    : private views::FixedRowModel::Delegate,
+      private NodeRefObserver,
+      public ui::GridModel,
+      public views::FixedRowModel,
+      public ContentsModel,
+      public std::enable_shared_from_this<TransmissionModel> {
  public:
   struct Row {
     NodeRef transmission;
@@ -70,7 +72,7 @@ class TransmissionModel : public ui::GridModel,
 
   NodeService& node_service_;
   TaskManager& task_manager_;
-    
+
   NodeRef device_;
 
   Rows rows_;
