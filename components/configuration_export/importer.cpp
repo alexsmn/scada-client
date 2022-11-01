@@ -5,7 +5,8 @@
 
 void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
   for (auto& p : import_data.create_nodes) {
-    task_manager.PostInsertTask(p.id, p.parent_id, p.type_id, p.attrs, p.props);
+    task_manager.PostInsertTask(p.id, p.parent_id, p.type_id, p.attrs, p.props,
+                                {});
     for (auto& ref : p.refs) {
       assert(ref.delete_target_id.is_null());
       assert(!ref.add_target_id.is_null());

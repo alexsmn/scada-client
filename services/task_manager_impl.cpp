@@ -46,12 +46,14 @@ void TaskManagerImpl::CancelProgress() {
   running_progress_.reset();
 }
 
-void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
-                                     const scada::NodeId& parent_id,
-                                     const scada::NodeId& type_id,
-                                     scada::NodeAttributes attributes,
-                                     scada::NodeProperties properties,
-                                     InsertCallback callback) {
+void TaskManagerImpl::PostInsertTask(
+    const scada::NodeId& requested_id,
+    const scada::NodeId& parent_id,
+    const scada::NodeId& type_id,
+    scada::NodeAttributes attributes,
+    scada::NodeProperties properties,
+    std::vector<scada::ReferenceDescription> references,
+    InsertCallback callback) {
   node_service_.GetNode(type_id).Fetch(
       NodeFetchStatus::NodeOnly(),
       [=, ref = shared_from_this()](const NodeRef& type) {
@@ -80,23 +82,39 @@ void TaskManagerImpl::PostInsertTask(const scada::NodeId& requested_id,
               {requested_id, parent_id, node_class, type_id, attributes},
               BindExecutor(
                   executor_, weak_from_this(),
-                  [this, properties, callback](scada::AddNodesResult result) {
+                  [=](scada::AddNodesResult result) {
                     ReportRequestCompletion(result.status_code, {});
 
-                    if (properties.empty() ||
-                        scada::IsBad(result.status_code)) {
+                    if (scada::IsBad(result.status_code)) {
                       if (callback)
                         callback(result.status_code, result.added_node_id);
                       return;
                     }
 
-                    PostUpdateTask(result.added_node_id, {}, properties,
-                                   [added_node_id = result.added_node_id,
-                                    callback](scada::Status status) {
-                                     if (callback)
-                                       callback(std::move(status),
-                                                added_node_id);
-                                   });
+                    if (properties.empty()) {
+                      if (callback)
+                        callback(result.status_code, result.added_node_id);
+
+                    } else {
+                      PostUpdateTask(result.added_node_id, {}, properties,
+                                     [added_node_id = result.added_node_id,
+                                      callback](scada::Status status) {
+                                       if (callback)
+                                         callback(std::move(status),
+                                                  added_node_id);
+                                     });
+                    }
+
+                    for (auto&& reference : references) {
+                      if (reference.forward)
+                        PostAddReference(reference.reference_type_id,
+                                         result.added_node_id,
+                                         reference.node_id);
+                      else
+                        PostAddReference(reference.reference_type_id,
+                                         reference.node_id,
+                                         result.added_node_id);
+                    }
                   }));
         });
       });

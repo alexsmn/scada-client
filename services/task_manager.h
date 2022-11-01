@@ -14,12 +14,14 @@ class TaskManager {
       std::function<void(scada::Status status, const scada::NodeId& node_id)>;
   using UpdateCallback = std::function<void(scada::Status status)>;
 
-  virtual void PostInsertTask(const scada::NodeId& requested_id,
-                              const scada::NodeId& parent_id,
-                              const scada::NodeId& type_id,
-                              scada::NodeAttributes attributes,
-                              scada::NodeProperties properties,
-                              InsertCallback callback = {}) = 0;
+  virtual void PostInsertTask(
+      const scada::NodeId& requested_id,
+      const scada::NodeId& parent_id,
+      const scada::NodeId& type_id,
+      scada::NodeAttributes attributes,
+      scada::NodeProperties properties,
+      std::vector<scada::ReferenceDescription> references,
+      InsertCallback callback = {}) = 0;
   virtual void PostUpdateTask(const scada::NodeId& node_id,
                               scada::NodeAttributes attributes,
                               scada::NodeProperties properties,

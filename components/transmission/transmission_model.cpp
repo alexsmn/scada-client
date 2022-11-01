@@ -12,6 +12,20 @@
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
 
+namespace {
+
+scada::NodeId GetTransmissionItemTypeId(const NodeRef& device) {
+  auto creates = device.type_definition().references(scada::id::Creates);
+  for (auto&& create : creates) {
+    if (create.forward &&
+        IsSubtypeOf(create.target, devices::id::TransmissionItemType))
+      return create.target.node_id();
+  }
+  return {};
+}
+
+}  // namespace
+
 TransmissionModel::TransmissionModel(NodeService& node_service,
                                      TaskManager& task_manager)
     : FixedRowModel(*static_cast<FixedRowModel::Delegate*>(this)),
@@ -19,13 +33,13 @@ TransmissionModel::TransmissionModel(NodeService& node_service,
       task_manager_{task_manager} {}
 
 TransmissionModel::~TransmissionModel() {
-  device_.Unsubscribe(*this);
+  node_service_.Unsubscribe(*this);
 }
 
 void TransmissionModel::Init(NodeRef device) {
   device_ = std::move(device);
 
-  device_.Subscribe(*this);
+  node_service_.Subscribe(*this);
 
   device_.Fetch(NodeFetchStatus::ChildrenOnly(),
                 BindCancelation(weak_from_this(),
@@ -194,8 +208,10 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
   if (!device())
     return;
 
-  task_manager_.PostInsertTask(scada::NodeId(), device_.node_id(),
-                               devices::id::TransmissionItemType, {}, {});
+  auto transmission_item_type_id = GetTransmissionItemTypeId(device_);
+  task_manager_.PostInsertTask(
+      scada::NodeId(), device_.node_id(), transmission_item_type_id, {}, {},
+      {{devices::id::HasTransmissionSource, true, node_id}});
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {

@@ -37,12 +37,14 @@ class TaskManagerImpl : private TaskManagerImplContext,
   ~TaskManagerImpl();
 
   // TaskManager
-  virtual void PostInsertTask(const scada::NodeId& requested_id,
-                              const scada::NodeId& parent_id,
-                              const scada::NodeId& type_id,
-                              scada::NodeAttributes attributes,
-                              scada::NodeProperties properties,
-                              InsertCallback callback) override;
+  virtual void PostInsertTask(
+      const scada::NodeId& requested_id,
+      const scada::NodeId& parent_id,
+      const scada::NodeId& type_id,
+      scada::NodeAttributes attributes,
+      scada::NodeProperties properties,
+      std::vector<scada::ReferenceDescription> references,
+      InsertCallback callback) override;
   virtual void PostUpdateTask(const scada::NodeId& node_id,
                               scada::NodeAttributes attributes,
                               scada::NodeProperties properties,

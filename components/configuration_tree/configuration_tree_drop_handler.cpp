@@ -45,7 +45,7 @@ DropAction MakeCreateDataItemAction(TaskManager& task_manager,
                                         : data_items::id::DataItemType_Input1;
     task_manager.PostInsertTask(
         {}, parent_id, std::move(type_definition_id), std::move(attributes),
-        {{std::move(channel_prop_id), std::move(formula)}});
+        {{std::move(channel_prop_id), std::move(formula)}}, {});
 
     return ui::DragDropTypes::DRAG_COPY;
   };

@@ -303,7 +303,7 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   auto weak_ptr = weak_factory_.GetWeakPtr();
   task_manager_.PostInsertTask(
       scada::NodeId(), parent_node.node_id(), type_node_id,
-      std::move(attributes), std::move(properties),
+      std::move(attributes), std::move(properties), {},
       [weak_ptr, dispay_name](const scada::Status& status,
                               const scada::NodeId& node_id) {
         if (auto ptr = weak_ptr.get())

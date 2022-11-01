@@ -1,11 +1,11 @@
 #include "components/create_service_item/create_service_item_model.h"
 
 #include "common/formula_util.h"
-#include "node_service/node_service.h"
-#include "node_service/node_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "services/task_manager.h"
 
 CreateServiceItemModel::CreateServiceItemModel(
@@ -68,6 +68,6 @@ void CreateServiceItemModel::Run(const RunParams& params) {
     task_manager_.PostInsertTask(
         scada::NodeId{}, parent_id_, type_definition_id,
         scada::NodeAttributes{}.set_display_name(std::move(display_name)),
-        std::move(properties));
+        std::move(properties), {});
   }
 }

@@ -11,6 +11,7 @@
 #include "services/task_manager.h"
 
 #include <Windows.h>
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace {
@@ -77,21 +78,20 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
 
 void PasteNodesFromClipboardHelper(TaskManager& task_manager,
                                    scada::NodeState&& node_state) {
+  auto forward_references =
+      node_state.references |
+      boost::adaptors::filtered(
+          [](const scada::ReferenceDescription& ref) { return ref.forward; }) |
+      to_vector;
+
   task_manager.PostInsertTask(
       {}, node_state.parent_id, node_state.type_definition_id,
       std::move(node_state.attributes), std::move(node_state.properties),
-      [&task_manager, references = std::move(node_state.references),
-       children = std::move(node_state.children)](
+      std::move(forward_references),
+      [&task_manager, children = std::move(node_state.children)](
           const scada::Status& status, const scada::NodeId& node_id) mutable {
         if (!status)
           return;
-
-        for (auto& reference : references) {
-          if (reference.forward) {
-            task_manager.PostAddReference(reference.reference_type_id, node_id,
-                                          reference.node_id);
-          }
-        }
 
         for (auto& child : children) {
           assert(child.reference_type_id == scada::id::Organizes);

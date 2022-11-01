@@ -54,6 +54,6 @@ void MultiCreateModel::Run(const RunParams& params) {
     task_manager_.PostInsertTask(
         scada::NodeId(), parent_id_, type_definition_id,
         scada::NodeAttributes().set_display_name(std::move(display_name)),
-        {{data_items::id::DataItemType_Input1, std::move(path)}});
+        {{data_items::id::DataItemType_Input1, std::move(path)}}, {});
   }
 }

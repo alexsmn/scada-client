@@ -13,6 +13,7 @@ class MockTaskManager : public TaskManager {
                const scada::NodeId& type_id,
                scada::NodeAttributes attributes,
                scada::NodeProperties properties,
+               std::vector<scada::ReferenceDescription> references,
                InsertCallback callback),
               (override));
 
