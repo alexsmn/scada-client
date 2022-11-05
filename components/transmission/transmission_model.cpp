@@ -2,6 +2,7 @@
 
 #include "base/cancelation.h"
 #include "base/format.h"
+#include "base/range_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "contents_observer.h"
 #include "core/event.h"
@@ -11,6 +12,9 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
+
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 namespace {
 
@@ -43,7 +47,7 @@ void TransmissionModel::Init(NodeRef device) {
 
   device_.Fetch(NodeFetchStatus::ChildrenOnly(),
                 BindCancelation(weak_from_this(),
-                                [this](const NodeRef& device) { Update(); }));
+                                [this](const NodeRef& device) { Refresh(); }));
 }
 
 int TransmissionModel::GetRowCount() {
@@ -107,19 +111,35 @@ bool TransmissionModel::SetCellText(int row,
   return true;
 }
 
-void TransmissionModel::Update() {
-  rows_.clear();
-
-  // TODO: Optimize.
-
-  if (device_) {
-    for (auto reference : device_.references(scada::id::Organizes)) {
-      if (IsInstanceOf(reference.target, devices::id::TransmissionItemType))
-        Update(reference.target);
-    }
-  }
+void TransmissionModel::Refresh() {
+  rows_ =
+      device_.references(scada::id::Organizes) |
+      boost::adaptors::filtered([](const NodeRef::Reference& reference) {
+        return IsInstanceOf(reference.target,
+                            devices::id::TransmissionItemType);
+      }) |
+      boost::adaptors::transformed([](const NodeRef::Reference& reference) {
+        return reference.target;
+      }) |
+      boost::adaptors::transformed([](const NodeRef& transmission) {
+        auto source_id =
+            transmission.target(devices::id::HasTransmissionSource).node_id();
+        return Row{transmission, source_id};
+      }) |
+      to_vector;
 
   GridModel::NotifyModelChanged();
+
+  for (auto& row : rows_)
+    row.transmission.Fetch(NodeFetchStatus::NodeOnly());
+
+  auto source_ids = rows_ | boost::adaptors::filtered([](const Row& row) {
+                      return !row.source_id.is_null();
+                    }) |
+                    boost::adaptors::transformed(
+                        [](const Row& row) { return row.source_id; }) |
+                    to_set;
+  NotifyContentsChanged(source_ids);
 }
 
 void TransmissionModel::OnModelChanged(const scada::ModelChangeEvent& event) {

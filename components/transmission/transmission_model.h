@@ -40,7 +40,7 @@ class TransmissionModel
   typedef std::vector<Row> Rows;
   const Rows& rows() const { return rows_; }
 
-  void Update();
+  void Refresh();
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
