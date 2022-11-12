@@ -44,7 +44,7 @@ foreach(PATH ${PATHS})
   ENDIF()
 endforeach()
 
-add_subdirectory(views)
+# add_subdirectory(views)
 add_subdirectory(qt)
 add_subdirectory(wt)
 add_subdirectory(components)

@@ -129,10 +129,10 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
 
   const auto& node = timed_data_.GetNode();
   if (auto color = GetNodeColor(node, data_value))
-    cell.text_color = color->sk_color();
+    cell.text_color = color.value();
 
   if (Blinker::GetState() && is_blinking_)
-    cell.cell_color = SK_ColorYELLOW;
+    cell.cell_color = aui::ColorCode::Yellow;
 }
 
 void TableRow::GetEventCell(TableCellEx& cell) const {
@@ -157,7 +157,7 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
   cell.text.clear();
 
   if (cell.column_id == TableModel::COLUMN_TITLE)
-    cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
+    cell.cell_color = aui::Rgba{0xF8, 0xF8, 0xF8};
 
   switch (cell.column_id) {
     case TableModel::COLUMN_TITLE:

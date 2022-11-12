@@ -4,6 +4,7 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "controller_delegate.h"
+#include "controls/models/mirror_table_model.h"
 #include "controls/table.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -20,14 +21,13 @@
 
 namespace {
 
-const ui::TableColumn s_columns[] = {
+const aui::TableColumn s_columns[] = {
     {TimedDataModel::CID_TIME, kSourceTimestampTitle, 150,
-     ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-    {TimedDataModel::CID_VALUE, kValueTitle, 150,
-     ui::TableColumn::RIGHT},
-    {TimedDataModel::CID_QUALITY, u"Качество", 65, ui::TableColumn::LEFT},
-    {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle,
-     150, ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+     aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+    {TimedDataModel::CID_VALUE, kValueTitle, 150, aui::TableColumn::RIGHT},
+    {TimedDataModel::CID_QUALITY, u"Качество", 65, aui::TableColumn::LEFT},
+    {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle, 150,
+     aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
 };
 
 }  // namespace
@@ -46,12 +46,12 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
         : model_{std::move(model)} {}
 
     const std::shared_ptr<TimedDataModel> model_;
-    ui::MirrorTableModel mirror_model{*model_};
+    aui::MirrorTableModel mirror_model{*model_};
   };
 
   auto mirror_table_holder = std::make_shared<MirrorTableModelHolder>(model_);
 
-  mirror_model_ = std::shared_ptr<ui::MirrorTableModel>(
+  mirror_model_ = std::shared_ptr<aui::MirrorTableModel>(
       mirror_table_holder, &mirror_table_holder->mirror_model);
 
   if (const WindowItem* item = definition.FindItem("Item"))
@@ -67,9 +67,9 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
     mirror_model_->SetMirrored(profile_.timed_data.mirrored);
   }
 
-  view_ = new Table(
-      mirror_model_,
-      std::vector<ui::TableColumn>(s_columns, s_columns + _countof(s_columns)));
+  view_ =
+      new Table(mirror_model_, std::vector<aui::TableColumn>(
+                                   std::begin(s_columns), std::end(s_columns)));
   view_->SetShowGrid(true);
 
   view_->SetContextMenuHandler([this](const aui::Point& point) {

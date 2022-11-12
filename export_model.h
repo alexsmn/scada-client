@@ -1,17 +1,20 @@
 #pragma once
 
-#include "ui/base/models/table_column.h"
-#include "ui/base/models/table_model.h"
+#include "controls/models/table_column.h"
+#include "controls/models/table_model.h"
 
 #include <optional>
 #include <variant>
 #include <vector>
 
+namespace aui {
+class TableModel;
+struct TableColumn;
+}  // namespace aui
+
 namespace ui {
 class GridModel;
 class HeaderModel;
-class TableModel;
-struct TableColumn;
 }  // namespace ui
 
 class ExportModel {
@@ -24,8 +27,8 @@ class ExportModel {
   };
 
   struct TableExportData {
-    ui::TableModel& model;
-    const std::vector<ui::TableColumn>& columns;
+    aui::TableModel& model;
+    const std::vector<aui::TableColumn>& columns;
     std::optional<Range> row_range;
 
     Range GetRowRange() const {
@@ -34,7 +37,7 @@ class ExportModel {
   };
 
   struct GridExportData {
-    ui::TableColumn row_title_column;
+    aui::TableColumn row_title_column;
     ui::GridModel& model;
     ui::HeaderModel& rows;
     ui::HeaderModel& columns;

@@ -1,10 +1,8 @@
 #pragma once
 
+#include "controls/models/table_model.h"
 #include "time_model.h"
 #include "timed_data/timed_data_spec.h"
-#include "ui/base/models/table_model.h"
-
-#include <filesystem>
 
 class TimedDataService;
 
@@ -13,7 +11,7 @@ struct TimedDataModelContext {
 };
 
 class TimedDataModel : private TimedDataModelContext,
-                       public ui::TableModel,
+                       public aui::TableModel,
                        public TimeModel {
  public:
   enum { CID_TIME, CID_QUALITY, CID_VALUE, CID_COLLECTION_TIME };
@@ -31,9 +29,9 @@ class TimedDataModel : private TimedDataModelContext,
 
   void Update(scada::DateTimeRange range);
 
-  // ui::TableModel overrides
+  // aui::TableModel overrides
   virtual int GetRowCount() override;
-  virtual void GetCell(ui::TableCell& cell) override;
+  virtual void GetCell(aui::TableCell& cell) override;
 
   // TimeModel
   virtual TimeRange GetTimeRange() const override;

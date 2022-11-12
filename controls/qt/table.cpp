@@ -1,8 +1,8 @@
 #include "controls/qt/table.h"
 
 #include "base/value_util.h"
+#include "controls/models/table_model.h"
 #include "controls/qt/table_model_adapter.h"
-#include "ui/base/models/table_model.h"
 #include "window_definition_util.h"
 
 #include <QClipboard>
@@ -15,8 +15,8 @@ namespace {
 
 class TableProxyModel : public QSortFilterProxyModel {
  public:
-  TableProxyModel(ui::TableModel& model,
-                  const std::vector<ui::TableColumn>& columns)
+  TableProxyModel(aui::TableModel& model,
+                  const std::vector<aui::TableColumn>& columns)
       : model_{model}, columns_{columns} {}
 
  protected:
@@ -24,8 +24,8 @@ class TableProxyModel : public QSortFilterProxyModel {
                         const QModelIndex& source_right) const override;
 
  private:
-  ui::TableModel& model_;
-  const std::vector<ui::TableColumn>& columns_;
+  aui::TableModel& model_;
+  const std::vector<aui::TableColumn>& columns_;
 };
 
 bool TableProxyModel::lessThan(const QModelIndex& source_left,
@@ -38,8 +38,8 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
 
 }  // namespace
 
-Table::Table(std::shared_ptr<ui::TableModel> model,
-             std::vector<ui::TableColumn> columns,
+Table::Table(std::shared_ptr<aui::TableModel> model,
+             std::vector<aui::TableColumn> columns,
              bool sorting)
     : model_adapter_{std::make_unique<TableModelAdapter>(std::move(model),
                                                          std::move(columns))} {
@@ -78,7 +78,7 @@ void Table::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
   model_adapter_->LoadIcons(resource_id, width, mask_color);
 }
 
-const std::vector<ui::TableColumn>& Table::columns() const {
+const std::vector<aui::TableColumn>& Table::columns() const {
   return model_adapter_->columns();
 }
 

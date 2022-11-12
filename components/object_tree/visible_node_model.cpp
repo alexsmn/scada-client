@@ -50,7 +50,7 @@ std::u16string VisibleNodeModel::GetText(void* tree_node) {
 SkColor VisibleNodeModel::GetTextColor(void* tree_node) {
   auto* node = GetNode(tree_node);
   if (!node || node->IsBad())
-    return profile_.bad_value_color;
+    return profile_.bad_value_color.sk_color();
 
   return SK_ColorBLACK;
 }
@@ -58,7 +58,7 @@ SkColor VisibleNodeModel::GetTextColor(void* tree_node) {
 SkColor VisibleNodeModel::GetBackgroundColor(void* tree_node) {
   auto* node = GetNode(tree_node);
   if (node && node->IsAlerting())
-    return profile_.alarm_color;
+    return profile_.alarm_color.sk_color();
 
   return SK_ColorTRANSPARENT;
 }

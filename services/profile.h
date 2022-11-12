@@ -2,12 +2,12 @@
 
 #include "base/files/file_path.h"
 #include "base/time/time.h"
+#include "controls/color.h"
 #include "core/node_id.h"
 #include "export_util.h"
 #include "services/page.h"
 #include "ui/gfx/rect.h"
 
-#include <SkColor.h>
 #include <map>
 
 class EventFetcher;
@@ -44,8 +44,8 @@ class Profile {
 
   Page out_wins;  // windows out-of-page
 
-  SkColor bad_value_color = SkColorSetRGB(192, 192, 192);
-  SkColor alarm_color = SK_ColorYELLOW;
+  aui::Color bad_value_color = aui::Rgba{192, 192, 192};
+  aui::Color alarm_color = aui::ColorCode::Yellow;
 
   struct EventJournal {
     base::Value default_state;
@@ -83,7 +83,7 @@ class Profile {
 
   struct GraphView {
     base::TimeDelta default_span = base::TimeDelta::FromHours(1);
-    SkColor default_color = SK_ColorWHITE;
+    aui::Color default_color = aui::ColorCode::White;
     int default_width = 1;
   };
 

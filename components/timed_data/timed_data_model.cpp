@@ -79,7 +79,7 @@ int TimedDataModel::GetRowCount() {
   return count_;
 }
 
-void TimedDataModel::GetCell(ui::TableCell& cell) {
+void TimedDataModel::GetCell(aui::TableCell& cell) {
   const auto& tvq = value(cell.row);
 
   switch (cell.column_id) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/base/models/table_model.h"
+#include "controls/models/table_model.h"
 
 // TODO: Remove.
-struct TableCellEx : public ui::TableCell {};
+struct TableCellEx : public aui::TableCell {};

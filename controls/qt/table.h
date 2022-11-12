@@ -6,22 +6,22 @@
 
 #include <QTableView>
 
-namespace ui {
+namespace aui {
 class TableModel;
 struct TableColumn;
-}  // namespace ui
+}  // namespace aui
 
 class QSortFilterProxyModel;
 class TableModelAdapter;
 
 class Table : public QTableView {
  public:
-  Table(std::shared_ptr<ui::TableModel> model,
-        std::vector<ui::TableColumn> columns,
+  Table(std::shared_ptr<aui::TableModel> model,
+        std::vector<aui::TableColumn> columns,
         bool sorting = false);
   ~Table();
 
-  const std::vector<ui::TableColumn>& columns() const;
+  const std::vector<aui::TableColumn>& columns() const;
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 

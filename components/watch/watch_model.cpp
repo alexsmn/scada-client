@@ -68,14 +68,14 @@ int WatchModel::GetRowCount() {
   return static_cast<int>(events_.size());
 }
 
-void WatchModel::GetCell(ui::TableCell& cell) {
+void WatchModel::GetCell(aui::TableCell& cell) {
   const scada::Event& event = events_[cell.row];
 
   // TODO: Unify with GetEventColors().
   if (event.severity >= scada::kSeverityCritical) {
-    cell.cell_color = SkColorSetRGB(248, 105, 107);
+    cell.cell_color = aui::Rgba{248, 105, 107};
   } else if (event.severity >= scada::kSeverityWarning) {
-    cell.cell_color = SkColorSetRGB(255, 235, 132);
+    cell.cell_color = aui::Rgba{255, 235, 132};
   }
 
   switch (cell.column_id) {

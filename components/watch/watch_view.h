@@ -3,8 +3,8 @@
 #include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
+#include "controls/models/table_model_observer.h"
 #include "export_model.h"
-#include "ui/base/models/table_model_observer.h"
 
 #include <memory>
 
@@ -13,7 +13,7 @@ class WatchModel;
 
 class WatchView : protected ControllerContext,
                   public Controller,
-                  private ui::TableModelObserver,
+                  private aui::TableModelObserver,
                   public ExportModel {
  public:
   explicit WatchView(const ControllerContext& context);
@@ -33,7 +33,7 @@ class WatchView : protected ControllerContext,
 
   void SaveLog();
 
-  // ui::TableModelObserver
+  // aui::TableModelObserver
   virtual void OnItemsAdded(int first, int count) override;
 
   const std::shared_ptr<WatchModel> model_;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "components/table/table_types.h"
 #include "common/node_state.h"
+#include "components/table/table_types.h"
 
 #include <functional>
 
@@ -20,7 +20,7 @@ struct TableModelContext {
   BlinkerManager& blinker_manager_;
 };
 
-class TableModel : private TableModelContext, public ui::TableModel {
+class TableModel : private TableModelContext, public aui::TableModel {
  public:
   enum ColumnId : int {
     COLUMN_TITLE,
@@ -56,7 +56,7 @@ class TableModel : private TableModelContext, public ui::TableModel {
 
   // ui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(ui::TableCell& cell) override;
+  virtual void GetCell(aui::TableCell& cell) override;
   virtual std::u16string GetTooltip(int row, int column_id) override;
   virtual bool SetCellText(int row,
                            int column_id,
@@ -68,7 +68,8 @@ class TableModel : private TableModelContext, public ui::TableModel {
  private:
   friend class TableRow;
 
-  void OnRowNodeChanged(const scada::NodeId& old_node_id, const scada::NodeId& new_node_id);
+  void OnRowNodeChanged(const scada::NodeId& old_node_id,
+                        const scada::NodeId& new_node_id);
 
   typedef std::vector<std::unique_ptr<TableRow>> Rows;
   Rows rows_;

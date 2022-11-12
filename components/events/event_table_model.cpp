@@ -13,21 +13,21 @@
 #include "node_service/node_format.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "ui/base/models/grid_range.h"
+// #include "ui/base/models/grid_range.h"
 
 namespace {
 
 const char16_t kLocalEventSource[] = u"Локальное событие";
 
 void GetEventColors(const scada::Event& event,
-                    SkColor& text_color,
-                    SkColor& back_color) {
+                    aui::Color& text_color,
+                    aui::Color& back_color) {
   if (!event.acked) {
-    back_color = SkColorSetRGB(99, 190, 123);
+    back_color = aui::Rgba{99, 190, 123};
   } else if (event.severity >= scada::kSeverityCritical) {
-    back_color = SkColorSetRGB(248, 105, 107);
+    back_color = aui::Rgba{248, 105, 107};
   } else if (event.severity >= scada::kSeverityWarning) {
-    back_color = SkColorSetRGB(255, 235, 132);
+    back_color = aui::Rgba{255, 235, 132};
   }
 }
 
@@ -88,7 +88,7 @@ int EventTableModel::GetRowCount() {
   return static_cast<int>(rows_.size());
 }
 
-void EventTableModel::GetCell(ui::TableCell& cell) {
+void EventTableModel::GetCell(aui::TableCell& cell) {
   const Row& row = rows_[cell.row];
   const scada::Event& event = *row.event;
 
@@ -512,6 +512,6 @@ int EventTableModel::CompareCells(int row1, int row2, int column_id) {
     case EventColumnAckTime:
       return Compare(event1.acknowledged_time, event2.acknowledged_time);
     default:
-      return ui::TableModel::CompareCells(row1, row2, column_id);
+      return aui::TableModel::CompareCells(row1, row2, column_id);
   }
 }

@@ -4,19 +4,23 @@
 #include "controls/color.h"
 #include "controls/handlers.h"
 #include "controls/wt/table_model_adapter.h"
-#include "ui/base/models/table_model.h"
 
 #include <Wt/WSortFilterProxyModel.h>
 #include <Wt/WTableView.h>
 
+namespace aui {
+class TableModel;
+struct TableColumn;
+}  // namespace aui
+
 class Table : public Wt::WTableView {
  public:
-  Table(std::shared_ptr<ui::TableModel> model,
-        std::vector<ui::TableColumn> columns,
+  Table(std::shared_ptr<aui::TableModel> model,
+        std::vector<aui::TableColumn> columns,
         bool sorting = false);
   ~Table();
 
-  const std::vector<ui::TableColumn>& columns() const {
+  const std::vector<aui::TableColumn>& columns() const {
     return model_adapter_->columns();
   }
 

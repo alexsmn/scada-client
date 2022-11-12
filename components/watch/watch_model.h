@@ -1,9 +1,9 @@
 #pragma once
 
 #include "components/watch/watch_event_source.h"
+#include "controls/models/table_model.h"
 #include "core/event.h"
 #include "node_service/node_ref.h"
-#include "ui/base/models/table_model.h"
 
 #include <deque>
 #include <filesystem>
@@ -17,7 +17,7 @@ struct WatchModelContext {
 };
 
 class WatchModel : private WatchModelContext,
-                   public ui::TableModel,
+                   public aui::TableModel,
                    protected WatchEventSource::Delegate {
  public:
   explicit WatchModel(WatchModelContext&& context);
@@ -34,7 +34,7 @@ class WatchModel : private WatchModelContext,
 
   // ui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(ui::TableCell& cell) override;
+  virtual void GetCell(aui::TableCell& cell) override;
 
  protected:
   // WatchEventSource

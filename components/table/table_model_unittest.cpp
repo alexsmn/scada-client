@@ -3,13 +3,13 @@
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "common/node_event_provider_mock.h"
+#include "controls/models/table_model_observer_mock.h"
 #include "node_service/test/test_node_model.h"
 #include "services/dialog_service_mock.h"
 #include "services/profile.h"
 #include "timed_data/timed_data_delegate.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_service_mock.h"
-#include "ui/base/models/table_model_observer_mock.h"
 
 #include <gmock/gmock.h>
 
@@ -37,7 +37,7 @@ class TableModelTest : public Test {
   NiceMock<MockBlinkerManager> blinker_manager_;
   StrictMock<MockFunction<void(const scada::NodeId& item_id, bool added)>>
       item_changed_;
-  StrictMock<ui::TableModelObserverMock> table_model_observer_;
+  StrictMock<aui::TableModelObserverMock> table_model_observer_;
 
   TableModel table_model_{TableModelContext{timed_data_service_,
                                             node_event_provider_, profile_,
@@ -46,7 +46,7 @@ class TableModelTest : public Test {
 
 namespace {
 
-SkColor GetCellColor(const TableModel& table_model, int row, int column_id) {
+aui::Color GetCellColor(const TableModel& table_model, int row, int column_id) {
   TableCellEx cell = {};
   cell.row = row;
   cell.column_id = column_id;
@@ -163,7 +163,7 @@ TEST_F(TableModelTest, ValueBlinking) {
 
   // Not alerting, not blinking.
 
-  EXPECT_EQ(static_cast<SkColor>(SK_ColorTRANSPARENT),
+  EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
 
   // Alerting, but not blinking.
@@ -175,12 +175,12 @@ TEST_F(TableModelTest, ValueBlinking) {
     o.OnEventsChanged();
 
   EXPECT_CALL(blinker_manager_, GetState()).WillOnce(Return(false));
-  EXPECT_EQ(static_cast<SkColor>(SK_ColorTRANSPARENT),
+  EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
 
   // Alerting and blinking.
 
   EXPECT_CALL(blinker_manager_, GetState()).WillOnce(Return(true));
-  EXPECT_EQ(static_cast<SkColor>(SK_ColorYELLOW),
+  EXPECT_EQ(aui::Color{aui::ColorCode::Yellow},
             GetCellColor(table_model_, 0, TableModel::COLUMN_VALUE));
 }

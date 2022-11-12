@@ -1,10 +1,10 @@
 #include "controls/wt/table_model_adapter.h"
 
 #include "controls/color.h"
-#include "ui/base/models/table_model.h"
+#include "controls/models/table_model.h"
 
-TableModelAdapter::TableModelAdapter(std::shared_ptr<ui::TableModel> model,
-                                     std::vector<ui::TableColumn> columns)
+TableModelAdapter::TableModelAdapter(std::shared_ptr<aui::TableModel> model,
+                                     std::vector<aui::TableColumn> columns)
     : model_{std::move(model)}, columns_(std::move(columns)) {
   model_->observers().AddObserver(this);
 }
@@ -25,7 +25,7 @@ Wt::cpp17::any TableModelAdapter::data(const Wt::WModelIndex& index,
                                        Wt::ItemDataRole role) const {
   auto& column = columns_[index.column()];
 
-  ui::TableCell cell;
+  aui::TableCell cell;
   cell.row = index.row();
   cell.column_id = column.id;
   model_->GetCell(cell);

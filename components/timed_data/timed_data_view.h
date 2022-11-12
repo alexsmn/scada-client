@@ -7,9 +7,12 @@
 #include "controller_context.h"
 #include "export_model.h"
 #include "selection_model.h"
-#include "ui/base/models/mirror_table_model.h"
 
 #include <memory>
+
+namespace aui {
+class MirrorTableModel;
+}
 
 class Table;
 class TimedDataModel;
@@ -46,7 +49,7 @@ class TimedDataView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   std::shared_ptr<TimedDataModel> model_;
-  std::shared_ptr<ui::MirrorTableModel> mirror_model_;
+  std::shared_ptr<aui::MirrorTableModel> mirror_model_;
 
   Table* view_ = nullptr;
 

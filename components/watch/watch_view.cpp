@@ -54,11 +54,11 @@ std::u16string WatchView::MakeTitle() const {
 }
 
 UiView* WatchView::Init(const WindowDefinition& definition) {
-  const ui::TableColumn columns[] = {
-      {0, u"Время", 100, ui::TableColumn::LEFT,
-       ui::TableColumn::DataType::DateTime},
-      {1, u"Устройство", 100, ui::TableColumn::LEFT},
-      {2, u"Событие", 400, ui::TableColumn::LEFT},
+  const aui::TableColumn columns[] = {
+      {0, u"Время", 100, aui::TableColumn::LEFT,
+       aui::TableColumn::DataType::DateTime},
+      {1, u"Устройство", 100, aui::TableColumn::LEFT},
+      {2, u"Событие", 400, aui::TableColumn::LEFT},
   };
 
   if (const WindowItem* item = definition.FindItem("Item")) {

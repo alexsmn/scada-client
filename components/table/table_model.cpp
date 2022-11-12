@@ -61,12 +61,12 @@ void TableModel::GetCellEx(TableCellEx& cell) const {
   cell.text.clear();
 
   if (cell.column_id == TableModel::COLUMN_TITLE)
-    cell.cell_color = SkColorSetRGB(0xF8, 0xF8, 0xF8);
+    cell.cell_color = aui::Rgba{0xF8, 0xF8, 0xF8};
 
   if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
       cell.text = u"Введите выражение";
-      cell.text_color = SkColorSetRGB(192, 192, 192);
+      cell.text_color = aui::Rgba{192, 192, 192};
     }
     return;
   }
@@ -84,9 +84,9 @@ int TableModel::GetRowCount() {
   return static_cast<int>(rows_.size()) + 1;
 }
 
-void TableModel::GetCell(ui::TableCell& cell) {
+void TableModel::GetCell(aui::TableCell& cell) {
   TableCellEx cell_ex;
-  static_cast<ui::TableCell&>(cell_ex) = cell;
+  static_cast<aui::TableCell&>(cell_ex) = cell;
   GetCellEx(cell_ex);
   cell = cell_ex;
 }

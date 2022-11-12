@@ -1,13 +1,15 @@
 #include "table.h"
 
+#include "controls/models/table_column.h"
+#include "controls/models/table_model.h"
 #include "window_definition_util.h"
 
 namespace {
 
 class TableProxyModel : public Wt::WSortFilterProxyModel {
  public:
-  TableProxyModel(ui::TableModel& model,
-                  const std::vector<ui::TableColumn>& columns)
+  TableProxyModel(aui::TableModel& model,
+                  const std::vector<aui::TableColumn>& columns)
       : model_{model}, columns_{columns} {}
 
  protected:
@@ -15,8 +17,8 @@ class TableProxyModel : public Wt::WSortFilterProxyModel {
                         const Wt::WModelIndex& source_right) const override;
 
  private:
-  ui::TableModel& model_;
-  const std::vector<ui::TableColumn>& columns_;
+  aui::TableModel& model_;
+  const std::vector<aui::TableColumn>& columns_;
 };
 
 bool TableProxyModel::lessThan(const Wt::WModelIndex& source_left,
@@ -29,8 +31,8 @@ bool TableProxyModel::lessThan(const Wt::WModelIndex& source_left,
 
 }  // namespace
 
-Table::Table(std::shared_ptr<ui::TableModel> model,
-             std::vector<ui::TableColumn> columns,
+Table::Table(std::shared_ptr<aui::TableModel> model,
+             std::vector<aui::TableColumn> columns,
              bool sorting)
     : model_adapter_{std::make_shared<TableModelAdapter>(std::move(model),
                                                          std::move(columns))} {

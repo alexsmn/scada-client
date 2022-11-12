@@ -29,17 +29,17 @@ TableView::TableView(const ControllerContext& context)
     NotifyContainedItemChanged(item_id, added);
   };
 
-  std::vector<ui::TableColumn> columns = {
+  std::vector<aui::TableColumn> columns = {
       {TableModel::COLUMN_TITLE, kDisplayNameAttributeString, 150,
-       ui::TableColumn::LEFT},
-      {TableModel::COLUMN_VALUE, kValueTitle, 100, ui::TableColumn::RIGHT},
+       aui::TableColumn::LEFT},
+      {TableModel::COLUMN_VALUE, kValueTitle, 100, aui::TableColumn::RIGHT},
       {TableModel::COLUMN_SOURCE_TIMESTAMP, kSourceTimestampTitle, 170,
-       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle, 170,
-       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
+       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_CHANGE_TIME, u"Время изменения", 170,
-       ui::TableColumn::LEFT, ui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_EVENT, u"Событие", 200, ui::TableColumn::LEFT},
+       aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
+      {TableModel::COLUMN_EVENT, u"Событие", 200, aui::TableColumn::LEFT},
   };
 
   view_ = new Table{model_, std::move(columns)};

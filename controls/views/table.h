@@ -7,12 +7,17 @@
 #include "ui/views/controls/table/table_controller.h"
 #include "ui/views/controls/table/table_view.h"
 
+namespace aui {
+class TableModel;
+struct TableColumn;
+}  // namespace aui
+
 class Table : public views::TableView,
               private views::ContextMenuController,
               private views::TableController {
  public:
-  Table(std::shared_ptr<ui::TableModel> model,
-        std::vector<ui::TableColumn> columns,
+  Table(std::shared_ptr<aui::TableModel> model,
+        std::vector<aui::TableColumn> columns,
         bool sorting = false);
 
   void SetShowGrid(bool show_grid) { set_show_grid(show_grid); }

@@ -26,6 +26,23 @@ Qt::Alignment MakeQtAlignment(ui::TableColumn::Alignment alignment) {
   return result;
 }
 
+// TODO: Can be a duplicate with Table.
+Qt::Alignment MakeQtAlignment(aui::TableColumn::Alignment alignment) {
+  Qt::Alignment result;
+  switch (alignment) {
+    case aui::TableColumn::LEFT:
+      result |= Qt::AlignLeft;
+      break;
+    case aui::TableColumn::RIGHT:
+      result |= Qt::AlignRight;
+      break;
+    case aui::TableColumn::CENTER:
+      result |= Qt::AlignCenter;
+      break;
+  }
+  return result;
+}
+
 }  // namespace
 
 class TableDocumentBuilder {
@@ -35,6 +52,10 @@ class TableDocumentBuilder {
   void SetColumn(int column,
                  const std::u16string& title,
                  ui::TableColumn::Alignment alignment);
+
+  void SetColumn(int column,
+                 const std::u16string& title,
+                 aui::TableColumn::Alignment alignment);
 
   void SetCell(int row, int column, const std::u16string& text);
 
@@ -88,6 +109,17 @@ void TableDocumentBuilder::SetColumn(int column,
   cursor.insertText(QString::fromStdU16String(title), header_format_);
 }
 
+void TableDocumentBuilder::SetColumn(int column,
+                                     const std::u16string& title,
+                                     aui::TableColumn::Alignment alignment) {
+  column_formats_[column].setAlignment(MakeQtAlignment(alignment));
+
+  auto cell = table_->cellAt(0, column);
+  auto cursor = cell.firstCursorPosition();
+  cursor.setBlockFormat(column_formats_[column]);
+  cursor.insertText(QString::fromStdU16String(title), header_format_);
+}
+
 void TableDocumentBuilder::SetCell(int row,
                                    int column,
                                    const std::u16string& text) {
@@ -112,9 +144,8 @@ void Print(PrintService& print_service,
 
   TableDocumentBuilder builder{row_range.count, column_count};
 
-  for (int i = 0; i < column_count; ++i) {
+  for (int i = 0; i < column_count; ++i)
     builder.SetColumn(i, table.columns[i].title, table.columns[i].alignment);
-  }
 
   for (int row = 0; row < row_range.count; ++row) {
     for (int column = 0; column < column_count; ++column) {
@@ -137,7 +168,7 @@ void Print(PrintService& print_service,
 
   TableDocumentBuilder builder{row_count, 1 + column_count};
 
-  builder.SetColumn(0, {}, ui::TableColumn::Alignment::RIGHT);
+  builder.SetColumn(0, {}, aui::TableColumn::Alignment::RIGHT);
   for (int i = 0; i < column_count; ++i) {
     builder.SetColumn(1 + i, grid.columns.GetTitle(i),
                       grid.columns.GetAlignment(i));

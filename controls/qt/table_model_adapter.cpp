@@ -1,20 +1,20 @@
 #include "controls/qt/table_model_adapter.h"
 
 #include "controls/color.h"
+#include "controls/models/table_model.h"
 #include "controls/qt/image_util.h"
-#include "ui/base/models/table_model.h"
 
 #include <QSize>
 
 namespace {
 
-Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
+Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
   switch (alignment) {
-    case ui::TableColumn::LEFT:
+    case aui::TableColumn::LEFT:
       return Qt::AlignLeft;
-    case ui::TableColumn::CENTER:
+    case aui::TableColumn::CENTER:
       return Qt::AlignHCenter;
-    case ui::TableColumn::RIGHT:
+    case aui::TableColumn::RIGHT:
       return Qt::AlignRight;
     default:
       return Qt::AlignLeft;
@@ -23,8 +23,8 @@ Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
 
 }  // namespace
 
-TableModelAdapter::TableModelAdapter(std::shared_ptr<ui::TableModel> model,
-                                     std::vector<ui::TableColumn> columns)
+TableModelAdapter::TableModelAdapter(std::shared_ptr<aui::TableModel> model,
+                                     std::vector<aui::TableColumn> columns)
     : model_{std::move(model)}, columns_(std::move(columns)) {
   model_->observers().AddObserver(this);
 }
@@ -52,13 +52,13 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
 
   switch (role) {
     case Qt::TextAlignmentRole:
-      return UiAligmentToQt(column.alignment);
+      return AuiAligmentToQt(column.alignment);
     case Qt::ToolTipRole:
       return QString::fromStdU16String(
           model_->GetTooltip(index.row(), column.id));
   }
 
-  ui::TableCell cell;
+  aui::TableCell cell;
   cell.row = index.row();
   cell.column_id = column.id;
   model_->GetCell(cell);
@@ -68,9 +68,9 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
-      return ToQColor(cell.text_color);
+      return cell.text_color.qcolor();
     case Qt::BackgroundRole:
-      return ToQColor(cell.cell_color);
+      return cell.cell_color.qcolor();
     case Qt::DecorationRole:
       return (cell.icon_index >= 0 &&
               cell.icon_index < static_cast<int>(icons_.size()))

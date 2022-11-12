@@ -12,6 +12,7 @@
 #include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
 #include "controller_delegate.h"
+#include "controls/models/table_column.h"
 #include "controls/table.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -28,17 +29,17 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
       model_{std::make_shared<EventTableModel>(EventTableModelContext{
           context.executor_, context.node_service_, context.event_fetcher_,
           context.local_events_, context.history_service_, is_panel_})} {
-  const ui::TableColumn kEventViewColumns[] = {
-      {EventColumnTime, u"Время", 150, ui::TableColumn::LEFT,
-       ui::TableColumn::DataType::DateTime},
-      {EventColumnItem, u"Объект", 170, ui::TableColumn::LEFT},
-      {EventColumnSeverity, u"Важность", 45, ui::TableColumn::RIGHT},
-      {EventColumnValue, u"Значение", 100, ui::TableColumn::RIGHT},
-      {EventColumnMessage, u"Сообщение", 300, ui::TableColumn::LEFT},
-      {EventColumnUser, u"Инициатор", 100, ui::TableColumn::LEFT},
-      {EventColumnAckUser, u"Квитировал", 100, ui::TableColumn::LEFT},
-      {EventColumnAckTime, u"Время квитирования", 150, ui::TableColumn::LEFT,
-       ui::TableColumn::DataType::DateTime},
+  const aui::TableColumn kEventViewColumns[] = {
+      {EventColumnTime, u"Время", 150, aui::TableColumn::LEFT,
+       aui::TableColumn::DataType::DateTime},
+      {EventColumnItem, u"Объект", 170, aui::TableColumn::LEFT},
+      {EventColumnSeverity, u"Важность", 45, aui::TableColumn::RIGHT},
+      {EventColumnValue, u"Значение", 100, aui::TableColumn::RIGHT},
+      {EventColumnMessage, u"Сообщение", 300, aui::TableColumn::LEFT},
+      {EventColumnUser, u"Инициатор", 100, aui::TableColumn::LEFT},
+      {EventColumnAckUser, u"Квитировал", 100, aui::TableColumn::LEFT},
+      {EventColumnAckTime, u"Время квитирования", 150, aui::TableColumn::LEFT,
+       aui::TableColumn::DataType::DateTime},
   };
 
   size_t count = std::size(kEventViewColumns);
@@ -46,8 +47,8 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
     count -= 2;
 
   table_ = new Table{model_,
-                     std::vector<ui::TableColumn>(kEventViewColumns,
-                                                  kEventViewColumns + count),
+                     std::vector<aui::TableColumn>(kEventViewColumns,
+                                                   kEventViewColumns + count),
                      true};
 
 #if defined(UI_QT)

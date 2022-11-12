@@ -5,13 +5,13 @@
 #include "base/timer/timer.h"
 #include "common/event_observer.h"
 #include "common/node_state.h"
+#include "controls/models/table_model.h"
 #include "core/event.h"
 #include "core/history_service.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/local_events.h"
 #include "time_range.h"
-#include "ui/base/models/table_model.h"
 
 #include <list>
 #include <set>
@@ -41,7 +41,7 @@ struct EventTableModelContext {
   const bool current_events_;
 };
 
-class EventTableModel : public ui::TableModel,
+class EventTableModel : public aui::TableModel,
                         private NodeRefObserver,
                         private EventObserver,
                         private LocalEvents::Observer,
@@ -81,9 +81,9 @@ class EventTableModel : public ui::TableModel,
 
   std::u16string MakeTitle() const;
 
-  // ui::TableModel
+  // aui::TableModel
   virtual int GetRowCount() override;
-  virtual void GetCell(ui::TableCell& cell) override;
+  virtual void GetCell(aui::TableCell& cell) override;
   virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:
