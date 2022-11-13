@@ -1,31 +1,32 @@
 #pragma once
 
+#include "controls/color.h"
 #include "controls/models/table_model_observer.h"
 
 #include <QAbstractItemModel>
 #include <memory>
 
-namespace aui {
-class TableModel;
-struct TableColumn;
-}  // namespace aui
-
 class QIcon;
 
+namespace aui {
+
+class TableModel;
+struct TableColumn;
+
 class TableModelAdapter : public QAbstractTableModel,
-                          private aui::TableModelObserver {
+                          private TableModelObserver {
  public:
-  TableModelAdapter(std::shared_ptr<aui::TableModel> model,
-                    std::vector<aui::TableColumn> columns);
+  TableModelAdapter(std::shared_ptr<TableModel> model,
+                    std::vector<TableColumn> columns);
   virtual ~TableModelAdapter();
 
-  aui::TableModel& model() { return *model_; }
-  const aui::TableModel& model() const { return *model_; }
+  TableModel& model() { return *model_; }
+  const TableModel& model() const { return *model_; }
 
-  std::vector<aui::TableColumn>& columns() { return columns_; }
-  const std::vector<aui::TableColumn>& columns() const { return columns_; }
+  std::vector<TableColumn>& columns() { return columns_; }
+  const std::vector<TableColumn>& columns() const { return columns_; }
 
-  void LoadIcons(unsigned resource_id, int width, QColor mask_color);
+  void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
   // QAbstractTableModel
   virtual int rowCount(
@@ -46,7 +47,7 @@ class TableModelAdapter : public QAbstractTableModel,
   virtual QStringList mimeTypes() const override;
   virtual QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
-  // aui::TableModelObserver
+  // TableModelObserver
   virtual void OnModelChanged() override;
   virtual void OnItemsChanged(int first, int count) override;
   virtual void OnItemsAdding(int first, int count) override;
@@ -55,7 +56,9 @@ class TableModelAdapter : public QAbstractTableModel,
   virtual void OnItemsRemoved(int first, int count) override;
 
  private:
-  const std::shared_ptr<aui::TableModel> model_;
-  std::vector<aui::TableColumn> columns_;
+  const std::shared_ptr<TableModel> model_;
+  std::vector<TableColumn> columns_;
   std::vector<QIcon> icons_;
 };
+
+}  // namespace aui

@@ -11,7 +11,10 @@
 
 #include <memory>
 
+namespace aui {
 class Table;
+}
+
 class EventTableModel;
 
 class EventView : protected ControllerContext,
@@ -68,7 +71,7 @@ class EventView : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   // Owned by the parent widget.
-  Table* table_ = nullptr;
+  aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
 };

@@ -46,10 +46,10 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
   if (is_panel)
     count -= 2;
 
-  table_ = new Table{model_,
-                     std::vector<aui::TableColumn>(kEventViewColumns,
-                                                   kEventViewColumns + count),
-                     true};
+  table_ = new aui::Table{model_,
+                          std::vector<aui::TableColumn>(
+                              kEventViewColumns, kEventViewColumns + count),
+                          true};
 
 #if defined(UI_QT)
   table_->sortByColumn(0, Qt::DescendingOrder);

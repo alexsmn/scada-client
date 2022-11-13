@@ -3,26 +3,27 @@
 #include "base/values.h"
 #include "controls/color.h"
 #include "controls/handlers.h"
-#include "controls/wt/table_model_adapter.h"
 
-#include <Wt/WSortFilterProxyModel.h>
 #include <Wt/WTableView.h>
 
+namespace Wt {
+class WSortFilterProxyModel;
+}
+
 namespace aui {
+
 class TableModel;
+class TableModelAdapter;
 struct TableColumn;
-}  // namespace aui
 
 class Table : public Wt::WTableView {
  public:
-  Table(std::shared_ptr<aui::TableModel> model,
-        std::vector<aui::TableColumn> columns,
+  Table(std::shared_ptr<TableModel> model,
+        std::vector<TableColumn> columns,
         bool sorting = false);
   ~Table();
 
-  const std::vector<aui::TableColumn>& columns() const {
-    return model_adapter_->columns();
-  }
+  const std::vector<TableColumn>& columns() const;
 
   void SetShowGrid(bool show_grid) {}
 
@@ -49,7 +50,7 @@ class Table : public Wt::WTableView {
 
   Wt::WWidget* CreateParentIfNecessary() { return this; }
 
-  void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
+  void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
@@ -66,3 +67,5 @@ class Table : public Wt::WTableView {
 
   KeyPressHandler key_press_handler_;
 };
+
+}  // namespace aui

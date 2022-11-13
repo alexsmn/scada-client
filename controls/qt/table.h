@@ -6,22 +6,22 @@
 
 #include <QTableView>
 
-namespace aui {
-class TableModel;
-struct TableColumn;
-}  // namespace aui
-
 class QSortFilterProxyModel;
+
+namespace aui {
+
+class TableModel;
 class TableModelAdapter;
+struct TableColumn;
 
 class Table : public QTableView {
  public:
-  Table(std::shared_ptr<aui::TableModel> model,
-        std::vector<aui::TableColumn> columns,
+  Table(std::shared_ptr<TableModel> model,
+        std::vector<TableColumn> columns,
         bool sorting = false);
   ~Table();
 
-  const std::vector<aui::TableColumn>& columns() const;
+  const std::vector<TableColumn>& columns() const;
 
   void SetShowGrid(bool show_grid) { setShowGrid(show_grid); }
 
@@ -48,7 +48,7 @@ class Table : public QTableView {
 
   QWidget* CreateParentIfNecessary() { return this; }
 
-  void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
+  void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
@@ -69,3 +69,5 @@ class Table : public QTableView {
 
   KeyPressHandler key_press_handler_;
 };
+
+}  // namespace aui

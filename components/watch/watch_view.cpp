@@ -67,7 +67,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
     model_->SetDevice(node_service_.GetNode(device_id));
   }
 
-  table_ = new Table(model_, {columns, columns + _countof(columns)});
+  table_ = new aui::Table(model_, {columns, columns + _countof(columns)});
 
   table_->SetSelectionChangeHandler([this] {
     auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;

@@ -67,9 +67,9 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
     mirror_model_->SetMirrored(profile_.timed_data.mirrored);
   }
 
-  view_ =
-      new Table(mirror_model_, std::vector<aui::TableColumn>(
-                                   std::begin(s_columns), std::end(s_columns)));
+  view_ = new aui::Table(mirror_model_,
+                         std::vector<aui::TableColumn>(std::begin(s_columns),
+                                                       std::end(s_columns)));
   view_->SetShowGrid(true);
 
   view_->SetContextMenuHandler([this](const aui::Point& point) {

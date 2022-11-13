@@ -12,9 +12,9 @@
 
 namespace aui {
 class MirrorTableModel;
-}
-
 class Table;
+}  // namespace aui
+
 class TimedDataModel;
 
 class TimedDataView : protected ControllerContext,
@@ -51,7 +51,7 @@ class TimedDataView : protected ControllerContext,
   std::shared_ptr<TimedDataModel> model_;
   std::shared_ptr<aui::MirrorTableModel> mirror_model_;
 
-  Table* view_ = nullptr;
+  aui::Table* view_ = nullptr;
 
   CommandRegistry command_registry_;
 };

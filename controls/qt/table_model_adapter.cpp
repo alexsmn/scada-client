@@ -6,6 +6,8 @@
 
 #include <QSize>
 
+namespace aui {
+
 namespace {
 
 Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
@@ -35,8 +37,8 @@ TableModelAdapter::~TableModelAdapter() {
 
 void TableModelAdapter::LoadIcons(unsigned resource_id,
                                   int width,
-                                  QColor mask_color) {
-  icons_ = ::LoadIcons(resource_id, width, mask_color);
+                                  Color mask_color) {
+  icons_ = ::LoadIcons(resource_id, width, mask_color.qcolor());
 }
 
 int TableModelAdapter::rowCount(const QModelIndex& parent) const {
@@ -154,3 +156,5 @@ QStringList TableModelAdapter::mimeTypes() const {
 QMimeData* TableModelAdapter::mimeData(const QModelIndexList& indexes) const {
   return QAbstractItemModel::mimeData(indexes);
 }
+
+}  // namespace aui

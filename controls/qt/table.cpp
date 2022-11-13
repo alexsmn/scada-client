@@ -11,12 +11,13 @@
 #include <QKeyEvent>
 #include <QSortFilterProxyModel>
 
+namespace aui {
+
 namespace {
 
 class TableProxyModel : public QSortFilterProxyModel {
  public:
-  TableProxyModel(aui::TableModel& model,
-                  const std::vector<aui::TableColumn>& columns)
+  TableProxyModel(TableModel& model, const std::vector<TableColumn>& columns)
       : model_{model}, columns_{columns} {}
 
  protected:
@@ -24,8 +25,8 @@ class TableProxyModel : public QSortFilterProxyModel {
                         const QModelIndex& source_right) const override;
 
  private:
-  aui::TableModel& model_;
-  const std::vector<aui::TableColumn>& columns_;
+  TableModel& model_;
+  const std::vector<TableColumn>& columns_;
 };
 
 bool TableProxyModel::lessThan(const QModelIndex& source_left,
@@ -38,8 +39,8 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
 
 }  // namespace
 
-Table::Table(std::shared_ptr<aui::TableModel> model,
-             std::vector<aui::TableColumn> columns,
+Table::Table(std::shared_ptr<TableModel> model,
+             std::vector<TableColumn> columns,
              bool sorting)
     : model_adapter_{std::make_unique<TableModelAdapter>(std::move(model),
                                                          std::move(columns))} {
@@ -74,11 +75,11 @@ Table::~Table() {
   setModel(nullptr);
 }
 
-void Table::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
+void Table::LoadIcons(unsigned resource_id, int width, Color mask_color) {
   model_adapter_->LoadIcons(resource_id, width, mask_color);
 }
 
-const std::vector<aui::TableColumn>& Table::columns() const {
+const std::vector<TableColumn>& Table::columns() const {
   return model_adapter_->columns();
 }
 
@@ -170,7 +171,7 @@ void Table::SetDoubleClickHandler(DoubleClickHandler handler) {
 
 void Table::keyPressEvent(QKeyEvent* event) {
   if (key_press_handler_ &&
-      key_press_handler_(static_cast<aui::KeyCode>(event->key())))
+      key_press_handler_(static_cast<KeyCode>(event->key())))
     return;
 
   if (event->matches(QKeySequence::Copy)) {
@@ -192,3 +193,5 @@ void Table::CopyToClipbard() {
   auto* mime_data = model()->mimeData(indexes);
   QGuiApplication::clipboard()->setMimeData(mime_data);
 }
+
+}  // namespace aui

@@ -9,7 +9,10 @@
 #include "export_model.h"
 #include "selection_model.h"
 
+namespace aui {
 class Table;
+}
+
 class TableModel;
 
 class TableView : protected ControllerContext,
@@ -52,7 +55,7 @@ class TableView : protected ControllerContext,
 
   const std::shared_ptr<TableModel> model_;
 
-  Table* view_ = nullptr;
+  aui::Table* view_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);

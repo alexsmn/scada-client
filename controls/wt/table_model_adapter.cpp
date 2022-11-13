@@ -3,8 +3,10 @@
 #include "controls/color.h"
 #include "controls/models/table_model.h"
 
-TableModelAdapter::TableModelAdapter(std::shared_ptr<aui::TableModel> model,
-                                     std::vector<aui::TableColumn> columns)
+namespace aui {
+
+TableModelAdapter::TableModelAdapter(std::shared_ptr<TableModel> model,
+                                     std::vector<TableColumn> columns)
     : model_{std::move(model)}, columns_(std::move(columns)) {
   model_->observers().AddObserver(this);
 }
@@ -25,7 +27,7 @@ Wt::cpp17::any TableModelAdapter::data(const Wt::WModelIndex& index,
                                        Wt::ItemDataRole role) const {
   auto& column = columns_[index.column()];
 
-  aui::TableCell cell;
+  TableCell cell;
   cell.row = index.row();
   cell.column_id = column.id;
   model_->GetCell(cell);
@@ -100,3 +102,5 @@ void TableModelAdapter::OnItemsRemoving(int first, int count) {
 void TableModelAdapter::OnItemsRemoved(int first, int count) {
   endRemoveRows();
 }
+
+}  // namespace aui

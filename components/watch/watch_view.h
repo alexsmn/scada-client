@@ -8,7 +8,10 @@
 
 #include <memory>
 
+namespace aui {
 class Table;
+}
+
 class WatchModel;
 
 class WatchView : protected ControllerContext,
@@ -40,7 +43,7 @@ class WatchView : protected ControllerContext,
 
   bool auto_scroll_ = false;
 
-  Table* table_ = nullptr;
+  aui::Table* table_ = nullptr;
 
   CommandRegistry command_registry_;
 };

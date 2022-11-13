@@ -42,9 +42,9 @@ TableView::TableView(const ControllerContext& context)
       {TableModel::COLUMN_EVENT, u"Событие", 200, aui::TableColumn::LEFT},
   };
 
-  view_ = new Table{model_, std::move(columns)};
+  view_ = new aui::Table{model_, std::move(columns)};
 
-  view_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
+  view_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
 
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
