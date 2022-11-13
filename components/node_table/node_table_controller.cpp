@@ -59,7 +59,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
 
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
-  grid_ = new Grid{
+  grid_ = new aui::Grid{
       model_, std::shared_ptr<aui::HeaderModel>(model_, &model_->row_model()),
       std::shared_ptr<aui::HeaderModel>(model_, &model_->column_model())};
 

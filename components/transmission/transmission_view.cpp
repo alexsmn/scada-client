@@ -31,7 +31,7 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   };
   column_model_->SetColumns(std::size(columns), columns);
 
-  grid_ = new Grid{model_, model_, column_model_};
+  grid_ = new aui::Grid{model_, model_, column_model_};
 
   grid_->SetRowHeaderVisible(true);
   grid_->SetRowHeaderWidth(15);

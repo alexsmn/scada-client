@@ -5,17 +5,19 @@
 #include <Wt/WAbstractTableModel.h>
 #include <memory>
 
+namespace aui {
+
 class GridModelAdapter final : public Wt::WAbstractTableModel,
-                               private aui::GridModel::Observer,
-                               private aui::ColumnHeaderModel::Observer {
+                               private GridModel::Observer,
+                               private ColumnHeaderModel::Observer {
  public:
-  GridModelAdapter(std::shared_ptr<aui::GridModel> model,
-                   std::shared_ptr<aui::HeaderModel> row_model,
-                   std::shared_ptr<aui::HeaderModel> column_model);
+  GridModelAdapter(std::shared_ptr<GridModel> model,
+                   std::shared_ptr<HeaderModel> row_model,
+                   std::shared_ptr<HeaderModel> column_model);
   ~GridModelAdapter();
 
-  aui::HeaderModel& row_model() { return *row_model_; }
-  aui::HeaderModel& column_model() { return *column_model_; }
+  HeaderModel& row_model() { return *row_model_; }
+  HeaderModel& column_model() { return *column_model_; }
 
   // QAbstractTableModel
   virtual int rowCount(
@@ -35,22 +37,22 @@ class GridModelAdapter final : public Wt::WAbstractTableModel,
                        const Wt::cpp17::any& value,
                        Wt::ItemDataRole role) override;
 
-  // aui::GridModel::Observer
-  virtual void OnGridModelChanged(aui::GridModel& model) override;
-  virtual void OnGridRangeChanged(aui::GridModel& model,
-                                  const aui::GridRange& range) override;
-  virtual void OnGridRowsAdded(aui::GridModel& model,
-                               int first,
-                               int count) override;
-  virtual void OnGridRowsRemoved(aui::GridModel& model,
+  // GridModel::Observer
+  virtual void OnGridModelChanged(GridModel& model) override;
+  virtual void OnGridRangeChanged(GridModel& model,
+                                  const GridRange& range) override;
+  virtual void OnGridRowsAdded(GridModel& model, int first, int count) override;
+  virtual void OnGridRowsRemoved(GridModel& model,
                                  int first,
                                  int count) override;
 
-  // aui::ColumnHeaderModel::Observer
-  virtual void OnModelChanged(aui::HeaderModel& model) override;
+  // ColumnHeaderModel::Observer
+  virtual void OnModelChanged(HeaderModel& model) override;
 
  private:
-  const std::shared_ptr<aui::GridModel> model_;
-  const std::shared_ptr<aui::HeaderModel> row_model_;
-  const std::shared_ptr<aui::HeaderModel> column_model_;
+  const std::shared_ptr<GridModel> model_;
+  const std::shared_ptr<HeaderModel> row_model_;
+  const std::shared_ptr<HeaderModel> column_model_;
 };
+
+}  // namespace aui

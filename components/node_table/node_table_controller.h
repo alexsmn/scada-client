@@ -7,12 +7,14 @@
 #include "controller_context.h"
 #include "selection_model.h"
 
-#if defined(UI_QT)
-#elif defined(UI_VIEWS)
+#if defined(UI_VIEWS)
 #include "ui/views/controls/grid/grid_controller.h"
 #endif
 
+namespace aui {
 class Grid;
+}
+
 class NodeTableModel;
 
 class NodeTableController : protected ControllerContext,
@@ -49,7 +51,7 @@ class NodeTableController : protected ControllerContext,
   SelectionModel selection_{{timed_data_service_}};
 
   const std::shared_ptr<NodeTableModel> model_;
-  Grid* grid_ = nullptr;
+  aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 

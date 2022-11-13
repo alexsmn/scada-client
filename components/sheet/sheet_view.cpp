@@ -72,7 +72,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   model_->Load(definition);
 
-  grid_ = new Grid{
+  grid_ = new aui::Grid{
       model_, std::shared_ptr<aui::HeaderModel>{model_, &model_->row_model()},
       std::shared_ptr<aui::HeaderModel>{model_, &model_->column_model()}};
 

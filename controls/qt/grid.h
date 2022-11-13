@@ -10,19 +10,19 @@
 #include <QTableView>
 
 namespace aui {
+
 class GridModel;
 class HeaderModel;
-}  // namespace aui
 
 class Grid final : public QTableView {
  public:
-  Grid(std::shared_ptr<aui::GridModel> model,
-       std::shared_ptr<aui::HeaderModel> row_model,
-       std::shared_ptr<aui::HeaderModel> column_model);
+  Grid(std::shared_ptr<GridModel> model,
+       std::shared_ptr<HeaderModel> row_model,
+       std::shared_ptr<HeaderModel> column_model);
   ~Grid();
 
-  aui::HeaderModel& row_model() { return model_adapter_.row_model(); }
-  aui::HeaderModel& column_model() { return model_adapter_.column_model(); }
+  HeaderModel& row_model() { return model_adapter_.row_model(); }
+  HeaderModel& column_model() { return model_adapter_.column_model(); }
 
   QWidget* CreateParentIfNecessary() { return this; }
 
@@ -35,9 +35,9 @@ class Grid final : public QTableView {
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 
-  aui::GridModelIndex GetCurrentIndex() const;
+  GridModelIndex GetCurrentIndex() const;
 
-  aui::GridRange GetSelectionRange() const;
+  GridRange GetSelectionRange() const;
 
   auto GetSelectedRows() const {
     std::vector<int> rows;
@@ -65,7 +65,7 @@ class Grid final : public QTableView {
 
   void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
-  void OpenEditor(const aui::GridModelIndex& index);
+  void OpenEditor(const GridModelIndex& index);
 
   base::Value SaveState() const;
   void RestoreState(const base::Value& data);
@@ -98,7 +98,7 @@ class Grid final : public QTableView {
 
   ContextMenuHandler context_menu_handler_;
 
-  const std::shared_ptr<aui::GridModel> model_;
+  const std::shared_ptr<GridModel> model_;
 
   ItemDelegate item_delegate_;
 
@@ -108,3 +108,5 @@ class Grid final : public QTableView {
   bool expanding_ = false;
   QItemSelectionRange expand_range_;
 };
+
+}  // namespace aui

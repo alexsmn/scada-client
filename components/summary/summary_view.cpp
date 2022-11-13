@@ -41,7 +41,7 @@ SummaryView::SummaryView(const ControllerContext& context)
 UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
-  grid_ = new Grid{
+  grid_ = new aui::Grid{
       model_, std::shared_ptr<aui::HeaderModel>{model_, &model_->row_model()},
       std::shared_ptr<aui::HeaderModel>{model_, &model_->column_model()}};
 
@@ -87,10 +87,10 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   for (const auto& [command_id, aggregate_type] : kAggregateCommands) {
     command_registry_.AddCommand(
         Command{command_id}
-            .set_execute_handler([this, aggregate_type] {
+            .set_execute_handler([this, aggregate_type = aggregate_type] {
               model_->SetAggregateType(aggregate_type);
             })
-            .set_checked_handler([this, aggregate_type] {
+            .set_checked_handler([this, aggregate_type = aggregate_type] {
               return model_->aggregate_type() == aggregate_type;
             }));
   }

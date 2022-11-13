@@ -10,13 +10,13 @@ namespace aui {
 
 namespace {
 
-Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
+Qt::AlignmentFlag AuiAligmentToQt(TableColumn::Alignment alignment) {
   switch (alignment) {
-    case aui::TableColumn::LEFT:
+    case TableColumn::LEFT:
       return Qt::AlignLeft;
-    case aui::TableColumn::CENTER:
+    case TableColumn::CENTER:
       return Qt::AlignHCenter;
-    case aui::TableColumn::RIGHT:
+    case TableColumn::RIGHT:
       return Qt::AlignRight;
     default:
       return Qt::AlignLeft;
@@ -25,8 +25,8 @@ Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
 
 }  // namespace
 
-TableModelAdapter::TableModelAdapter(std::shared_ptr<aui::TableModel> model,
-                                     std::vector<aui::TableColumn> columns)
+TableModelAdapter::TableModelAdapter(std::shared_ptr<TableModel> model,
+                                     std::vector<TableColumn> columns)
     : model_{std::move(model)}, columns_(std::move(columns)) {
   model_->observers().AddObserver(this);
 }
@@ -60,7 +60,7 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
           model_->GetTooltip(index.row(), column.id));
   }
 
-  aui::TableCell cell;
+  TableCell cell;
   cell.row = index.row();
   cell.column_id = column.id;
   model_->GetCell(cell);

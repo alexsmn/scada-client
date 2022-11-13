@@ -8,9 +8,9 @@
 
 namespace aui {
 class ColumnHeaderModel;
-}
-
 class Grid;
+}  // namespace aui
+
 class TransmissionModel;
 
 class TransmissionView : protected ControllerContext, public Controller {
@@ -29,7 +29,7 @@ class TransmissionView : protected ControllerContext, public Controller {
   const std::shared_ptr<TransmissionModel> model_;
   const std::shared_ptr<aui::ColumnHeaderModel> column_model_;
 
-  Grid* grid_ = nullptr;
+  aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

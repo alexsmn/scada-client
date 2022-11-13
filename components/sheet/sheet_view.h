@@ -16,6 +16,10 @@
 
 #include <memory>
 
+namespace aui {
+class Grid;
+}
+
 namespace ui {
 class OSExchangeData;
 }
@@ -33,7 +37,6 @@ class Textfield;
 #endif
 
 class SheetModel;
-class Grid;
 
 class SheetController : protected ControllerContext,
                         public Controller,
@@ -117,7 +120,7 @@ class SheetController : protected ControllerContext,
   views::Textfield* formula_row_ = nullptr;
 #endif
 
-  Grid* grid_ = nullptr;
+  aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };

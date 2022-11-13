@@ -4,21 +4,25 @@
 #include "controls/handlers.h"
 #include "controls/models/grid_model.h"
 #include "controls/models/grid_range.h"
-#include "controls/wt/grid_model_adapter.h"
-#include "controls/wt/item_delegate.h"
 
 #include <Wt/WPen.h>
 #include <Wt/WTableView.h>
 
+namespace aui {
+
+class GridModel;
+class GridModelAdapter;
+class HeaderModel;
+
 class Grid final : public Wt::WTableView {
  public:
-  Grid(std::shared_ptr<aui::GridModel> model,
-       std::shared_ptr<aui::HeaderModel> row_model,
-       std::shared_ptr<aui::HeaderModel> column_model);
+  Grid(std::shared_ptr<GridModel> model,
+       std::shared_ptr<HeaderModel> row_model,
+       std::shared_ptr<HeaderModel> column_model);
   ~Grid();
 
-  aui::HeaderModel& row_model() { return model_adapter_->row_model(); }
-  aui::HeaderModel& column_model() { return model_adapter_->column_model(); }
+  HeaderModel& row_model();
+  HeaderModel& column_model();
 
   Wt::WWidget* CreateParentIfNecessary() { return this; }
 
@@ -31,9 +35,9 @@ class Grid final : public Wt::WTableView {
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 
-  aui::GridModelIndex GetCurrentIndex() const;
+  GridModelIndex GetCurrentIndex() const;
 
-  aui::GridRange GetSelectionRange() const;
+  GridRange GetSelectionRange() const;
 
   auto GetSelectedRows() const {
     std::vector<int> rows;
@@ -61,7 +65,7 @@ class Grid final : public Wt::WTableView {
 
   void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
-  void OpenEditor(const aui::GridModelIndex& index);
+  void OpenEditor(const GridModelIndex& index);
 
   void RequestFocus();
 
@@ -88,7 +92,7 @@ class Grid final : public Wt::WTableView {
 
   ContextMenuHandler context_menu_handler_;
 
-  const std::shared_ptr<aui::GridModel> model_;
+  const std::shared_ptr<GridModel> model_;
 
   // QItemSelectionRange selection_range_;
 
@@ -98,3 +102,5 @@ class Grid final : public Wt::WTableView {
 
   Wt::Signals::connection context_menu_connection_;
 };
+
+}  // namespace aui

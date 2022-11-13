@@ -6,16 +6,18 @@
 #include <QMimeData>
 #include <QSize>
 
+namespace aui {
+
 namespace {
 
 // TODO: Combine with Table.
-Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
+Qt::AlignmentFlag AuiAligmentToQt(TableColumn::Alignment alignment) {
   switch (alignment) {
-    case aui::TableColumn::LEFT:
+    case TableColumn::LEFT:
       return Qt::AlignLeft;
-    case aui::TableColumn::CENTER:
+    case TableColumn::CENTER:
       return Qt::AlignHCenter;
-    case aui::TableColumn::RIGHT:
+    case TableColumn::RIGHT:
       return Qt::AlignRight;
     default:
       return Qt::AlignLeft;
@@ -24,10 +26,9 @@ Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
 
 }  // namespace
 
-GridModelAdapter::GridModelAdapter(
-    std::shared_ptr<aui::GridModel> model,
-    std::shared_ptr<aui::HeaderModel> row_model,
-    std::shared_ptr<aui::HeaderModel> column_model)
+GridModelAdapter::GridModelAdapter(std::shared_ptr<GridModel> model,
+                                   std::shared_ptr<HeaderModel> row_model,
+                                   std::shared_ptr<HeaderModel> column_model)
     : model_{std::move(model)},
       row_model_{std::move(row_model)},
       column_model_{std::move(column_model)} {
@@ -54,7 +55,7 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
       return column_model_->GetAlignment(index.column());
   }
 
-  aui::GridCell cell;
+  GridCell cell;
   cell.row = index.row();
   cell.column = index.column();
   model_->GetCell(cell);
@@ -113,31 +114,29 @@ bool GridModelAdapter::setData(const QModelIndex& index,
                              value.toString().toStdU16String());
 }
 
-void GridModelAdapter::OnGridModelChanged(aui::GridModel& model) {
+void GridModelAdapter::OnGridModelChanged(GridModel& model) {
   resetInternalData();
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRangeChanged(aui::GridModel& model,
-                                          const aui::GridRange& range) {
+void GridModelAdapter::OnGridRangeChanged(GridModel& model,
+                                          const GridRange& range) {
   dataChanged(index(range.row(), range.column()),
               index(range.row() + range.row_count() - 1,
                     range.column() + range.column_count() - 1));
 }
 
-void GridModelAdapter::OnGridRowsAdded(aui::GridModel& model,
-                                       int first,
-                                       int count) {
+void GridModelAdapter::OnGridRowsAdded(GridModel& model, int first, int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRowsRemoved(aui::GridModel& model,
+void GridModelAdapter::OnGridRowsRemoved(GridModel& model,
                                          int first,
                                          int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnModelChanged(aui::HeaderModel& model) {
+void GridModelAdapter::OnModelChanged(HeaderModel& model) {
   if (&model == column_model_.get())
     headerDataChanged(Qt::Horizontal, 0, model.GetCount());
   else if (&model == row_model_.get())
@@ -180,3 +179,5 @@ std::u16string GridModelAdapter::GetCsvData(
   }
   return csv;
 }
+
+}  // namespace aui

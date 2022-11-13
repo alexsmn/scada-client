@@ -8,7 +8,10 @@
 
 #include <memory>
 
+namespace aui {
 class Grid;
+}
+
 class SummaryModel;
 
 class SummaryView : protected ControllerContext, public Controller {
@@ -29,7 +32,7 @@ class SummaryView : protected ControllerContext, public Controller {
   SelectionModel selection_{{timed_data_service_}};
 
   const std::shared_ptr<SummaryModel> model_;
-  Grid* grid_ = nullptr;
+  aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
 };
