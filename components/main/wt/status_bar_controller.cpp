@@ -1,11 +1,11 @@
 #include "status_bar_controller.h"
 
-#include "controls/status_bar_model.h"
+#include "controls/models/status_bar_model.h"
 
 #include <Wt/WLabel.h>
 #include <Wt/WProgressBar.h>
 
-StatusBarController::StatusBarController(StatusBarModel& model)
+StatusBarController::StatusBarController(aui::StatusBarModel& model)
     : model_{model} {
   /*progress_bar_ = new QProgressBar{&status_bar_};
   progress_bar_->setAlignment(Qt::AlignRight);

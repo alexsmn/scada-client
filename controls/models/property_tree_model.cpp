@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+namespace aui {
+
 // PropertyGroupTreeNode
 
 PropertyGroupTreeNode::PropertyGroupTreeNode(PropertyGroup& property_group,
@@ -137,3 +139,5 @@ void PropertyTreeModel::PropertiesChanged(PropertyGroup& group,
   for (int i = 0; i < count; ++i)
     TreeNodeChanged(&node->GetChild(first + i));
 }
+
+}  // namespace aui

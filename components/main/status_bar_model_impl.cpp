@@ -72,15 +72,15 @@ int StatusBarModelImpl::GetPaneSize(int index) {
   return kSizes[index];
 }
 
-StatusBarModel::Progress StatusBarModelImpl::GetProgress() const {
+aui::StatusBarModel::Progress StatusBarModelImpl::GetProgress() const {
   return progress_;
 }
 
-void StatusBarModelImpl::AddObserver(StatusBarModelObserver& observer) {
+void StatusBarModelImpl::AddObserver(aui::StatusBarModelObserver& observer) {
   observers_.AddObserver(&observer);
 }
 
-void StatusBarModelImpl::RemoveObserver(StatusBarModelObserver& observer) {
+void StatusBarModelImpl::RemoveObserver(aui::StatusBarModelObserver& observer) {
   observers_.RemoveObserver(&observer);
 }
 

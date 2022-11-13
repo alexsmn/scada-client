@@ -2,7 +2,7 @@
 
 #include "base/cancelation.h"
 #include "components/node_properties/node_group_model.h"
-#include "controls/property_model.h"
+#include "controls/models/property_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/property_defs.h"
@@ -13,7 +13,7 @@ struct PropertyContext;
 
 class NodePropertyModel : protected PropertyContext,
                           private NodeRefObserver,
-                          public PropertyModel {
+                          public aui::PropertyModel {
  public:
   NodePropertyModel(PropertyContext&& context, NodeRef node);
   virtual ~NodePropertyModel();
@@ -32,7 +32,7 @@ class NodePropertyModel : protected PropertyContext,
   void PropertiesChanged(int first, int count);
 
   // PropertyModel
-  virtual PropertyGroup& GetRootGroup() { return root_; }
+  virtual aui::PropertyGroup& GetRootGroup() { return root_; }
 
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;

@@ -1,13 +1,13 @@
 #include "status_bar_controller.h"
 
-#include "controls/status_bar_model.h"
+#include "controls/models/status_bar_model.h"
 
 #include <QLabel>
 #include <QProgressBar>
 #include <QStatusBar>
 
 StatusBarController::StatusBarController(QStatusBar& status_bar,
-                                         StatusBarModel& model)
+                                         aui::StatusBarModel& model)
     : status_bar_{status_bar}, model_{model} {
   progress_bar_ = new QProgressBar{&status_bar_};
   progress_bar_->setAlignment(Qt::AlignRight);

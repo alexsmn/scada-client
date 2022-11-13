@@ -4,7 +4,7 @@
 #include "components/node_properties/node_property_model.h"
 #include "controller_delegate.h"
 #include "controller_registry.h"
-#include "controls/property_tree_model.h"
+#include "controls/models/property_tree_model.h"
 #include "controls/tree.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -39,13 +39,13 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
         : property_model_{std::move(property_model)} {}
 
     const std::shared_ptr<NodePropertyModel> property_model_;
-    PropertyTreeModel tree_model{*property_model_};
+    aui::PropertyTreeModel tree_model{*property_model_};
   };
 
   auto tree_model_holder =
       std::make_shared<PropertyTreeModelHolder>(property_model_);
 
-  tree_model_ = std::shared_ptr<PropertyTreeModel>(
+  tree_model_ = std::shared_ptr<aui::PropertyTreeModel>(
       tree_model_holder, &tree_model_holder->tree_model);
 
   tree_view_ = new Tree{tree_model_};
@@ -57,8 +57,8 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   tree_view_->SetRowHeight(21);
 
   tree_view_->SetCompareHandler([this](void* left, void* right) {
-    auto& left_node = *static_cast<PropertyTreeModel::Node*>(left);
-    auto& right_node = *static_cast<PropertyTreeModel::Node*>(right);
+    auto& left_node = *static_cast<aui::PropertyTreeModel::Node*>(left);
+    auto& right_node = *static_cast<aui::PropertyTreeModel::Node*>(right);
     auto* left_group = left_node.AsGroup();
     auto* right_group = right_node.AsGroup();
     if (left_group && right_group)

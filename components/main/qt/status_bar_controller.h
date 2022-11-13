@@ -1,28 +1,31 @@
 #pragma once
 
-#include "controls/status_bar_model.h"
+#include "controls/models/status_bar_model.h"
 
 #include <vector>
+
+namespace aui {
+class StatusBarModel;
+}
 
 class QLabel;
 class QProgressBar;
 class QStatusBar;
-class StatusBarModel;
 
-class StatusBarController : private StatusBarModelObserver {
+class StatusBarController : private aui::StatusBarModelObserver {
  public:
-  StatusBarController(QStatusBar& status_bar, StatusBarModel& model);
+  StatusBarController(QStatusBar& status_bar, aui::StatusBarModel& model);
   ~StatusBarController();
 
  private:
   void UpdateProgressBar();
 
-  // StatusBarModelObserver
+  // aui::StatusBarModelObserver
   virtual void OnPanesChanged(int index, int count) override;
   virtual void OnProgressChanged() override;
 
   QStatusBar& status_bar_;
-  StatusBarModel& model_;
+  aui::StatusBarModel& model_;
 
   std::vector<QLabel*> panes_;
 

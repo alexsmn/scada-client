@@ -1,13 +1,13 @@
 #pragma once
 
-#include "controls/property_model.h"
+#include "controls/models/property_model.h"
 #include "core/attribute_ids.h"
 #include "core/node_id.h"
 
 class NodePropertyModel;
 class PropertyDefinition;
 
-class NodeGroupModel : public PropertyGroup {
+class NodeGroupModel : public aui::PropertyGroup {
  public:
   explicit NodeGroupModel(NodePropertyModel& property_model);
   ~NodeGroupModel();

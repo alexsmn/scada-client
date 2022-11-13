@@ -61,18 +61,18 @@ void NodePropertyModel::Update() {
 
 #ifndef NDEBUG
     group->properties.push_back({
-        PropertyGroup::ItemType::Property,
+        aui::PropertyGroup::ItemType::Property,
         std::u16string{kNodeIdAttributeString},
         scada::AttributeId::NodeId,
     });
 #endif
     group->properties.push_back({
-        PropertyGroup::ItemType::Property,
+        aui::PropertyGroup::ItemType::Property,
         std::u16string{kBrowseNameAttributeString},
         scada::AttributeId::BrowseName,
     });
     group->properties.push_back({
-        PropertyGroup::ItemType::Property,
+        aui::PropertyGroup::ItemType::Property,
         std::u16string{kDisplayNameAttributeString},
         scada::AttributeId::DisplayName,
     });
@@ -96,17 +96,17 @@ void NodePropertyModel::Update() {
       auto& def = *p.second;
 
       NodeGroupModel::Property prop;
-      prop.type = PropertyGroup::ItemType::Property;
+      prop.type = aui::PropertyGroup::ItemType::Property;
       prop.name = def.GetTitle(*this, prop_decl);
       prop.def = &def;
       prop.prop_decl_id = prop_decl.node_id();
 
       if (auto* hierarchical_prop = def.AsHierarchical()) {
-        prop.type = PropertyGroup::ItemType::Group;
+        prop.type = aui::PropertyGroup::ItemType::Group;
         prop.submodel = std::make_unique<NodeGroupModel>(*this);
         for (auto* child : hierarchical_prop->children()) {
           NodeGroupModel::Property child_prop;
-          child_prop.type = PropertyGroup::ItemType::Property;
+          child_prop.type = aui::PropertyGroup::ItemType::Property;
           child_prop.name = child->GetTitle(*this, prop_decl);
           child_prop.def = child;
           child_prop.prop_decl_id = prop_decl.node_id();
@@ -120,7 +120,7 @@ void NodePropertyModel::Update() {
 
   for (auto& category : ordered_groups) {
     auto title = category ? ToString16(category.display_name()) : u"Общие";
-    root_.properties.push_back({PropertyGroup::ItemType::Category,
+    root_.properties.push_back({aui::PropertyGroup::ItemType::Category,
                                 std::move(title), scada::AttributeId::NodeId,
                                 nullptr, scada::NodeId{},
                                 std::move(groups[category])});

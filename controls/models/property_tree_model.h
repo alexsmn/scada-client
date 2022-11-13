@@ -1,7 +1,9 @@
 #pragma once
 
-#include "controls/property_model.h"
+#include "controls/models/property_model.h"
 #include "controls/models/tree_node_model.h"
+
+namespace aui {
 
 class PropertyGroupTreeNode;
 
@@ -69,3 +71,5 @@ class PropertyTreeModel : public aui::TreeNodeModel<PropertyTreeNode> {
 
   PropertyModel& property_model_;
 };
+
+}  // namespace aui

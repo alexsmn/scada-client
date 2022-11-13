@@ -4,6 +4,8 @@
 
 #include <functional>
 
+namespace aui {
+
 class PropertyGroup {
  public:
   virtual ~PropertyGroup() {}
@@ -34,3 +36,5 @@ class PropertyModel {
       std::function<void(PropertyGroup& group, int first, int count)>;
   PropertiesChangedHandler properties_changed_handler;
 };
+
+}  // namespace aui

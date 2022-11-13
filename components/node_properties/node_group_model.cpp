@@ -13,7 +13,7 @@ int NodeGroupModel::GetCount() const {
   return properties.size();
 }
 
-PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
+aui::PropertyGroup* NodeGroupModel::GetSubgroup(int index) const {
   return properties[index].submodel.get();
 }
 
@@ -30,7 +30,7 @@ std::u16string NodeGroupModel::GetValue(int index) const {
     return ToString16(property_model_.node_.attribute(prop.attribute_id));
 }
 
-PropertyGroup::ItemType NodeGroupModel::GetType(int index) const {
+aui::PropertyGroup::ItemType NodeGroupModel::GetType(int index) const {
   return properties[index].type;
 }
 

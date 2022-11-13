@@ -5,6 +5,10 @@
 #include <memory>
 #include <string>
 
+namespace aui {
+class StatusBarModel;
+}
+
 namespace ui {
 class MenuModel;
 }
@@ -18,7 +22,6 @@ class MainWindowManager;
 class OpenedView;
 class Profile;
 class SelectionCommands;
-class StatusBarModel;
 class ViewManager;
 
 struct MainWindowContext {
@@ -37,7 +40,7 @@ struct MainWindowContext {
                                                 DialogService& dialog_service)>
       view_commands_factory_;
   const std::shared_ptr<SelectionCommands> selection_commands_;
-  std::shared_ptr<StatusBarModel> status_bar_model_;
+  std::shared_ptr<aui::StatusBarModel> status_bar_model_;
   std::function<std::unique_ptr<ui::MenuModel>(MainWindow& main_window,
                                                CommandHandler& main_commands)>
       context_menu_factory_;

@@ -1,26 +1,29 @@
 #pragma once
 
-#include "controls/status_bar_model.h"
+#include "controls/models/status_bar_model.h"
 
 #include <vector>
 
+namespace aui {
+class StatusBarModel;
+}
+
 class WLabel;
 class WProgressBar;
-class StatusBarModel;
 
-class StatusBarController : private StatusBarModelObserver {
+class StatusBarController : private aui::StatusBarModelObserver {
  public:
-  StatusBarController(StatusBarModel& model);
+  explicit StatusBarController(aui::StatusBarModel& model);
   ~StatusBarController();
 
  private:
   void UpdateProgressBar();
 
-  // StatusBarModelObserver
+  // aui::StatusBarModelObserver
   virtual void OnPanesChanged(int index, int count) override;
   virtual void OnProgressChanged() override;
 
-  StatusBarModel& model_;
+  aui::StatusBarModel& model_;
 
   std::vector<WLabel*> panes_;
 

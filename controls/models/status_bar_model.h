@@ -2,6 +2,8 @@
 
 #include <string>
 
+namespace aui {
+
 class StatusBarModelObserver {
  public:
   virtual ~StatusBarModelObserver() {}
@@ -29,3 +31,5 @@ class StatusBarModel {
   virtual void AddObserver(StatusBarModelObserver& observer) = 0;
   virtual void RemoveObserver(StatusBarModelObserver& observer) = 0;
 };
+
+}  // namespace aui

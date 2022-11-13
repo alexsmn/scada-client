@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "base/observer_list.h"
-#include "controls/status_bar_model.h"
+#include "controls/models/status_bar_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/progress_host.h"
@@ -23,7 +23,7 @@ struct StatusBarModelImplContext {
 };
 
 class StatusBarModelImpl final : private StatusBarModelImplContext,
-                                 public StatusBarModel,
+                                 public aui::StatusBarModel,
                                  private NodeRefObserver {
  public:
   explicit StatusBarModelImpl(StatusBarModelImplContext&& context);
@@ -34,8 +34,8 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
   virtual std::u16string GetPaneText(int index) override;
   virtual int GetPaneSize(int index) override;
   virtual Progress GetProgress() const override;
-  virtual void AddObserver(StatusBarModelObserver& observer) override;
-  virtual void RemoveObserver(StatusBarModelObserver& observer) override;
+  virtual void AddObserver(aui::StatusBarModelObserver& observer) override;
+  virtual void RemoveObserver(aui::StatusBarModelObserver& observer) override;
 
  private:
   void OnProgressStatus(const ProgressStatus& status);
@@ -45,7 +45,7 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  base::ObserverList<StatusBarModelObserver> observers_;
+  base::ObserverList<aui::StatusBarModelObserver> observers_;
 
   Progress progress_{false};
 
