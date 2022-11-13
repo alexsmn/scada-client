@@ -1,22 +1,22 @@
 #pragma once
 
-#include <functional>
-#include <vector>
-
 #include "contents_model.h"
+#include "controls/models/fixed_row_model.h"
+#include "controls/models/grid_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "ui/base/models/fixed_row_model.h"
-#include "ui/base/models/grid_model.h"
+
+#include <functional>
+#include <vector>
 
 class NodeService;
 class TaskManager;
 
 class TransmissionModel
-    : private views::FixedRowModel::Delegate,
+    : private aui::FixedRowModel::Delegate,
       private NodeRefObserver,
-      public ui::GridModel,
-      public views::FixedRowModel,
+      public aui::GridModel,
+      public aui::FixedRowModel,
       public ContentsModel,
       public std::enable_shared_from_this<TransmissionModel> {
  public:
@@ -51,7 +51,7 @@ class TransmissionModel
   // GridModel
   virtual int GetRowCount() override;
   virtual std::u16string GetRowTitle(int row) override;
-  virtual void GetCell(ui::GridCell& cell) override;
+  virtual void GetCell(aui::GridCell& cell) override;
   virtual bool IsEditable(int row, int column) override;
   virtual bool SetCellText(int row,
                            int column,

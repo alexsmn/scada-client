@@ -58,7 +58,7 @@ std::u16string TransmissionModel::GetRowTitle(int row) {
   return std::u16string();
 }
 
-void TransmissionModel::GetCell(ui::GridCell& cell) {
+void TransmissionModel::GetCell(aui::GridCell& cell) {
   assert(cell.row >= 0 && cell.row <= (int)rows_.size());
 
   //	// Last cell.row is new cell.row.

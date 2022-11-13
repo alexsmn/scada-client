@@ -13,7 +13,8 @@ namespace aui {
 using NativeColor = ::QColor;
 
 struct Color {
-  Color(const Rgba& rgba) : native_color_{rgba.r, rgba.g, rgba.b, rgba.a} {}
+  Color(const Rgba& rgba) noexcept
+      : native_color_{rgba.r, rgba.g, rgba.b, rgba.a} {}
 
   static Color FromSkColor(::SkColor sk_color) {
     return FromQColor(ToQColor(sk_color));

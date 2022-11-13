@@ -29,8 +29,9 @@ class ObjectTreeModel : private ObjectTreeModelContext,
   virtual std::u16string GetColumnText(int column_id) const override;
   virtual int GetColumnPreferredSize(int column_id) const override;
   virtual std::u16string GetText(void* tree_node, int column_id) override;
-  virtual SkColor GetTextColor(void* tree_node, int column_id) override;
-  virtual SkColor GetBackgroundColor(void* tree_node, int column_id) override;
+  virtual aui::Color GetTextColor(void* tree_node, int column_id) override;
+  virtual aui::Color GetBackgroundColor(void* tree_node,
+                                        int column_id) override;
 
  private:
   std::shared_ptr<VisibleNode> CreateVisibleNode(void* tree_node);

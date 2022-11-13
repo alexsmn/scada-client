@@ -48,7 +48,7 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
 promise<> FetchNodeNamesRecursive(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id,
-    const ui::EditData::AsyncChoiceCallback& callback) {
+    const aui::EditData::AsyncChoiceCallback& callback) {
   return FetchChildren(parent_node).then([=] {
     auto children = parent_node.targets(scada::id::Organizes);
 
@@ -70,11 +70,11 @@ promise<> FetchNodeNamesRecursive(
   });
 }
 
-ui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
+aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
     const NodeRef& parent,
     const scada::NodeId& type_definition_id) {
   return [parent, type_definition_id](
-             const ui::EditData::AsyncChoiceCallback& callback) {
+             const aui::EditData::AsyncChoiceCallback& callback) {
     callback({kChoiceNone}, false);
     FetchNodeNamesRecursive(parent, type_definition_id, callback)
         .then([callback] { callback({}, true); });
@@ -120,10 +120,10 @@ promise<> GetAllSubtypesProperties(
   });
 }
 
-const PropertyDefinition kNamePropDef(ui::TableColumn::LEFT, 150);
-const PropertyDefinition kStringPropDef(ui::TableColumn::LEFT);
-const PropertyDefinition kIntPropDef(ui::TableColumn::RIGHT);
-const PropertyDefinition kDoublePropDef(ui::TableColumn::RIGHT);
+const PropertyDefinition kNamePropDef(aui::TableColumn::LEFT, 150);
+const PropertyDefinition kStringPropDef(aui::TableColumn::LEFT);
+const PropertyDefinition kIntPropDef(aui::TableColumn::RIGHT);
+const PropertyDefinition kDoublePropDef(aui::TableColumn::RIGHT);
 const BoolPropertyDefinition kBoolPropDef;
 const ReferencePropertyDefinition kRefPropDef;
 const ColorPropertyDefinition kColorPropDef;
@@ -288,7 +288,7 @@ promise<PropertyDefs> GetChildPropertyDefs(const NodeRef& parent_node) {
 
 // PropertyDefinition
 
-PropertyDefinition::PropertyDefinition(ui::TableColumn::Alignment alignment,
+PropertyDefinition::PropertyDefinition(aui::TableColumn::Alignment alignment,
                                        int width)
     : alignment_(alignment), width_(width) {}
 
@@ -327,17 +327,17 @@ void PropertyDefinition::SetText(const PropertyContext& context,
                                        {{prop_decl_id, std::move(value)}});
 }
 
-ui::EditData PropertyDefinition::GetPropertyEditor(
+aui::EditData PropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   const auto& type_definition = node.type_definition();
   const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
-    return ui::EditData{ui::EditData::EditorType::NONE};
+    return aui::EditData{aui::EditData::EditorType::NONE};
 
   assert(property_declaration.node_class() == scada::NodeClass::Variable);
-  return ui::EditData{ui::EditData::EditorType::TEXT};
+  return aui::EditData{aui::EditData::EditorType::TEXT};
 }
 
 std::u16string ReferencePropertyDefinition::GetText(
@@ -385,11 +385,11 @@ void ReferencePropertyDefinition::SetText(const PropertyContext& context,
   }
 }
 
-ui::EditData ReferencePropertyDefinition::GetPropertyEditor(
+aui::EditData ReferencePropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  ui::EditData result{ui::EditData::EditorType::DROPDOWN};
+  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
 
   auto objects = context.node_service_.GetNode(scada::id::ObjectsFolder);
   auto target_type_definition =
@@ -421,11 +421,11 @@ std::u16string BoolPropertyDefinition::GetText(
                     : scada::Variant::kFalseString;
 }
 
-ui::EditData BoolPropertyDefinition::GetPropertyEditor(
+aui::EditData BoolPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  ui::EditData result{ui::EditData::EditorType::DROPDOWN};
+  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
   result.choices = {scada::Variant::kFalseString, scada::Variant::kTrueString};
   return result;
 }
@@ -475,16 +475,16 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
                                        {{prop_decl_id, int_value}});
 }
 
-ui::EditData EnumPropertyDefinition::GetPropertyEditor(
+aui::EditData EnumPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   const auto& type_definition = node.type_definition();
   const auto& property_declaration = type_definition[prop_decl_id];
   if (!property_declaration)
-    return ui::EditData{ui::EditData::EditorType::NONE};
+    return aui::EditData{aui::EditData::EditorType::NONE};
 
-  ui::EditData result{ui::EditData::EditorType::DROPDOWN};
+  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
 
   auto enum_strings_value =
       property_declaration.data_type()["EnumStrings"].value();
@@ -574,11 +574,11 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
                                        {{prop_decl_id, std::move(formula)}});
 }
 
-ui::EditData ChannelPropertyDefinition::GetPropertyEditor(
+aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  ui::EditData result{ui::EditData::EditorType::DROPDOWN};
+  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
 
   if (device_) {
     result.async_choice_handler = MakeAsyncChoiceHandler(
@@ -598,11 +598,11 @@ ui::EditData ChannelPropertyDefinition::GetPropertyEditor(
   return result;
 }
 
-ui::EditData TransportPropertyDefinition::GetPropertyEditor(
+aui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  ui::EditData data{ui::EditData::EditorType::BUTTON};
+  aui::EditData data{aui::EditData::EditorType::BUTTON};
 
   data.action_handler = [&dialog_service =
                              context.dialog_service_](std::u16string& text) {
@@ -640,11 +640,11 @@ void ColorPropertyDefinition::SetText(const PropertyContext& context,
                                        {{prop_decl_id, color}});
 }
 
-ui::EditData ColorPropertyDefinition::GetPropertyEditor(
+aui::EditData ColorPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  ui::EditData result{ui::EditData::EditorType::DROPDOWN};
+  aui::EditData result{aui::EditData::EditorType::DROPDOWN};
   result.choices.reserve(1 + aui::GetColorCount());
   result.choices.emplace_back(kDefaultColorString);
   for (size_t i = 0; i < aui::GetColorCount(); i++)

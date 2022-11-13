@@ -2,9 +2,9 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "controls/color.h"
+#include "controls/models/tree_model.h"
 #include "controls/qt/image_util.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
-#include "ui/base/models/tree_model.h"
 
 #include <QMimeData>
 #include <QSize>
@@ -58,7 +58,7 @@ int ConvertDropAction(Qt::DropAction action) {
 
 // TreeModelAdapter
 
-TreeModelAdapter::TreeModelAdapter(std::shared_ptr<ui::TreeModel> model)
+TreeModelAdapter::TreeModelAdapter(std::shared_ptr<aui::TreeModel> model)
     : model_{std::move(model)} {
   model_->AddObserver(*this);
 }
@@ -157,9 +157,9 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdU16String(model_->GetText(node, index.column()));
     case Qt::ForegroundRole:
-      return ToQColor(model_->GetTextColor(node, index.column()));
+      return model_->GetTextColor(node, index.column()).qcolor();
     case Qt::BackgroundRole:
-      return ToQColor(model_->GetBackgroundColor(node, index.column()));
+      return model_->GetBackgroundColor(node, index.column()).qcolor();
     case Qt::DecorationRole: {
       auto icon_index = index.column() == 0 ? model_->GetIcon(node) : -1;
       return (icon_index >= 0 && icon_index < static_cast<int>(icons_.size()))

@@ -42,8 +42,8 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
   grid_ = new Grid{
-      model_, std::shared_ptr<ui::HeaderModel>{model_, &model_->row_model()},
-      std::shared_ptr<ui::HeaderModel>{model_, &model_->column_model()}};
+      model_, std::shared_ptr<aui::HeaderModel>{model_, &model_->row_model()},
+      std::shared_ptr<aui::HeaderModel>{model_, &model_->column_model()}};
 
   grid_->SetSelectionChangeHandler([this] {
     auto columns = grid_->GetSelectedColumns();

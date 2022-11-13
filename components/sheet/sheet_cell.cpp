@@ -3,7 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "common/event_fetcher.h"
 #include "components/sheet/sheet_model.h"
-#include "ui/base/models/grid_range.h"
+#include "controls/models/grid_range.h"
 
 SheetCell::SheetCell(SheetModel& model, int row, int column)
     : model_(model), row_(row), column_(column), blinking_(false) {
@@ -47,7 +47,7 @@ void SheetCell::UpdateTextFromFormula() {
 }
 
 void SheetCell::NotifyChanged() {
-  model_.NotifyRangeChanged(ui::GridRange::Cell(row_, column_));
+  model_.NotifyRangeChanged(aui::GridRange::Cell(row_, column_));
 }
 
 void SheetCell::SetBlinking(bool blinking) {

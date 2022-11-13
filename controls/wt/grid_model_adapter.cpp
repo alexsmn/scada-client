@@ -1,17 +1,18 @@
 #include "controls/wt/grid_model_adapter.h"
 
 #include "controls/color.h"
-#include "ui/base/models/grid_range.h"
+#include "controls/models/grid_range.h"
 
 namespace {
 
-Wt::AlignmentFlag UiAligmentToWt(ui::TableColumn::Alignment alignment) {
+// TODO: Combine with Table.
+Wt::AlignmentFlag AuiAligmentToWt(aui::TableColumn::Alignment alignment) {
   switch (alignment) {
-    case ui::TableColumn::LEFT:
+    case aui::TableColumn::LEFT:
       return Wt::AlignmentFlag::Left;
-    case ui::TableColumn::CENTER:
+    case aui::TableColumn::CENTER:
       return Wt::AlignmentFlag::Center;
-    case ui::TableColumn::RIGHT:
+    case aui::TableColumn::RIGHT:
       return Wt::AlignmentFlag::Right;
     default:
       return Wt::AlignmentFlag::Left;
@@ -21,9 +22,9 @@ Wt::AlignmentFlag UiAligmentToWt(ui::TableColumn::Alignment alignment) {
 }  // namespace
 
 GridModelAdapter::GridModelAdapter(
-    std::shared_ptr<ui::GridModel> model,
-    std::shared_ptr<ui::HeaderModel> row_model,
-    std::shared_ptr<ui::HeaderModel> column_model) {
+    std::shared_ptr<aui::GridModel> model,
+    std::shared_ptr<aui::HeaderModel> row_model,
+    std::shared_ptr<aui::HeaderModel> column_model) {
   model_->observers().AddObserver(this);
   column_model_->observers().AddObserver(this);
 }
@@ -48,7 +49,7 @@ Wt::cpp17::any GridModelAdapter::data(const Wt::WModelIndex& index,
       return column_model_->GetAlignment(index.column());
   }*/
 
-  ui::GridCell cell;
+  aui::GridCell cell;
   cell.row = index.row();
   cell.column = index.column();
   model_->GetCell(cell);
@@ -108,31 +109,31 @@ bool GridModelAdapter::setData(const Wt::WModelIndex& index,
                              Wt::cpp17::any_cast<Wt::WString>(value));
 }
 
-void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {
+void GridModelAdapter::OnGridModelChanged(aui::GridModel& model) {
   // resetInternalData();
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRangeChanged(ui::GridModel& model,
-                                          const ui::GridRange& range) {
+void GridModelAdapter::OnGridRangeChanged(aui::GridModel& model,
+                                          const aui::GridRange& range) {
   dataChanged()(index(range.row(), range.column()),
                 index(range.row() + range.row_count() - 1,
                       range.column() + range.column_count() - 1));
 }
 
-void GridModelAdapter::OnGridRowsAdded(ui::GridModel& model,
+void GridModelAdapter::OnGridRowsAdded(aui::GridModel& model,
                                        int first,
                                        int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
+void GridModelAdapter::OnGridRowsRemoved(aui::GridModel& model,
                                          int first,
                                          int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
+void GridModelAdapter::OnModelChanged(aui::HeaderModel& model) {
   if (&model == column_model_.get())
     headerDataChanged()(Wt::Orientation::Horizontal, 0, model.GetCount());
   else if (&model == row_model_.get())

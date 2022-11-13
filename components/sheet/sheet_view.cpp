@@ -73,8 +73,8 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
   grid_ = new Grid{
-      model_, std::shared_ptr<ui::HeaderModel>{model_, &model_->row_model()},
-      std::shared_ptr<ui::HeaderModel>{model_, &model_->column_model()}};
+      model_, std::shared_ptr<aui::HeaderModel>{model_, &model_->row_model()},
+      std::shared_ptr<aui::HeaderModel>{model_, &model_->column_model()}};
 
 #if defined(UI_QT)
   formula_row_ = new QLineEdit;
@@ -236,7 +236,7 @@ void SheetController::UpdateFormulaRow() {
   if (!model_->is_editing())
     return;
 
-  ui::GridRange range = grid_->GetSelectionRange();
+  aui::GridRange range = grid_->GetSelectionRange();
 
 #if defined(UI_QT)
   formula_row_->setEnabled(!range.empty());
@@ -278,7 +278,7 @@ void SheetController::OnFormulaEdited() {
 void SheetController::OnSelectionChanged() {
   UpdateFormulaRow();
 
-  ui::GridRange range = grid_->GetSelectionRange();
+  aui::GridRange range = grid_->GetSelectionRange();
   if (range.empty()) {
     selection_.Clear();
   } else if (range.is_cell()) {
@@ -294,9 +294,9 @@ void SheetController::OnSelectionChanged() {
 
 #if defined(UI_VIEWS)
 bool SheetController::OnKeyPressed(views::GridView& sender,
-                                   ui::KeyboardCode key_code) {
+                                   aui::KeyboardCode key_code) {
   switch (key_code) {
-    case ui::VKEY_DELETE:
+    case aui::VKEY_DELETE:
       if (!grid_->editing()) {
         ClearSelection();
         return true;
@@ -350,7 +350,7 @@ NodeIdSet SheetController::GetSelectedNodeIdList() {
 }
 
 #if defined(UI_VIEWS)
-bool SheetController::CanDrop(const ui::OSExchangeData& data) {
+bool SheetController::CanDrop(const aui::OSExchangeData& data) {
   if (!model_->is_editing())
     return false;
 
@@ -361,11 +361,11 @@ bool SheetController::CanDrop(const ui::OSExchangeData& data) {
   return false;
 }
 
-int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
-  grid_->SetDropRange(ui::GridRange());
+int SheetController::OnPerformDrop(const aui::DropTargetEvent& event) {
+  grid_->SetDropRange(aui::GridRange());
 
   if (!model_->is_editing())
-    return ui::DragDropTypes::DRAG_NONE;
+    return aui::DragDropTypes::DRAG_NONE;
 
   ItemDragData item_data;
   if (item_data.Load(event.data())) {
@@ -374,11 +374,11 @@ int SheetController::OnPerformDrop(const ui::DropTargetEvent& event) {
       SheetCell& cell = model_->GetCell(row, col);
       cell.SetFormula(
           u'=' + base::UTF8ToUTF16(MakeNodeIdFormula(item_data.item_id())));
-      return ui::DragDropTypes::DRAG_COPY;
+      return aui::DragDropTypes::DRAG_COPY;
     }
   }
 
-  return ui::DragDropTypes::DRAG_NONE;
+  return aui::DragDropTypes::DRAG_NONE;
 }
 
 void SheetController::ContentsChanged(views::Textfield* sender,

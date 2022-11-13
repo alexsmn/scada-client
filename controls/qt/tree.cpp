@@ -2,6 +2,7 @@
 
 #include "base/value_util.h"
 #include "controls/color.h"
+#include "controls/models/tree_model.h"
 #include "controls/qt/item_delegate.h"
 #include "controls/qt/tree_model_adapter.h"
 
@@ -46,7 +47,7 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
 
 // Tree
 
-Tree::Tree(std::shared_ptr<ui::TreeModel> model)
+Tree::Tree(std::shared_ptr<aui::TreeModel> model)
     : model_adapter_{std::make_unique<TreeModelAdapter>(model)},
       proxy_model_{std::make_unique<TreeProxyModel>(*this)},
       item_delegate_{std::make_unique<ItemDelegate>(

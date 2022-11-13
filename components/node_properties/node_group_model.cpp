@@ -63,7 +63,7 @@ void NodeGroupModel::SetValue(int index, const std::u16string& value) {
   }
 }
 
-ui::EditData NodeGroupModel::GetEditData(int index) const {
+aui::EditData NodeGroupModel::GetEditData(int index) const {
   auto& prop = properties[index];
   if (prop.def)
     return prop.def->GetPropertyEditor(property_model_, property_model_.node_,

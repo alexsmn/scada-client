@@ -1,30 +1,14 @@
 #include "print_util.h"
 
+#include "controls/models/grid_model.h"
+#include "controls/models/table_model.h"
 #include "services/print_service.h"
-#include "ui/base/models/grid_model.h"
-#include "ui/base/models/table_model.h"
 
 #include <QTextCursor>
 #include <QTextDocument>
 #include <QTextTable>
 
 namespace {
-
-Qt::Alignment MakeQtAlignment(ui::TableColumn::Alignment alignment) {
-  Qt::Alignment result;
-  switch (alignment) {
-    case ui::TableColumn::LEFT:
-      result |= Qt::AlignLeft;
-      break;
-    case ui::TableColumn::RIGHT:
-      result |= Qt::AlignRight;
-      break;
-    case ui::TableColumn::CENTER:
-      result |= Qt::AlignCenter;
-      break;
-  }
-  return result;
-}
 
 // TODO: Can be a duplicate with Table.
 Qt::Alignment MakeQtAlignment(aui::TableColumn::Alignment alignment) {
@@ -48,10 +32,6 @@ Qt::Alignment MakeQtAlignment(aui::TableColumn::Alignment alignment) {
 class TableDocumentBuilder {
  public:
   explicit TableDocumentBuilder(int row_count, int column_count);
-
-  void SetColumn(int column,
-                 const std::u16string& title,
-                 ui::TableColumn::Alignment alignment);
 
   void SetColumn(int column,
                  const std::u16string& title,
@@ -96,17 +76,6 @@ TableDocumentBuilder::TableDocumentBuilder(int row_count, int column_count)
 
   header_format_ = row_format_;
   header_format_.setFontWeight(QFont::Bold);
-}
-
-void TableDocumentBuilder::SetColumn(int column,
-                                     const std::u16string& title,
-                                     ui::TableColumn::Alignment alignment) {
-  column_formats_[column].setAlignment(MakeQtAlignment(alignment));
-
-  auto cell = table_->cellAt(0, column);
-  auto cursor = cell.firstCursorPosition();
-  cursor.setBlockFormat(column_formats_[column]);
-  cursor.insertText(QString::fromStdU16String(title), header_format_);
 }
 
 void TableDocumentBuilder::SetColumn(int column,

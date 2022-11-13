@@ -1,7 +1,7 @@
 #pragma once
 
+#include "controls/models/tree_node_model.h"
 #include "node_service/node_ref.h"
-#include "ui/base/models/tree_node_model.h"
 
 #include <map>
 #include <memory>
@@ -12,7 +12,7 @@ struct ModelChangeEvent;
 
 class ConfigurationTreeModel;
 
-class ConfigurationTreeNode : public ui::TreeNode<ConfigurationTreeNode> {
+class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
  public:
   ConfigurationTreeNode(ConfigurationTreeModel& model,
                         scada::NodeId reference_type_id,

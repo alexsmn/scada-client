@@ -3,9 +3,12 @@
 #include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
-#include "ui/base/models/header_model.h"
 
 #include <memory>
+
+namespace aui {
+class ColumnHeaderModel;
+}
 
 class Grid;
 class TransmissionModel;
@@ -24,7 +27,7 @@ class TransmissionView : protected ControllerContext, public Controller {
   void DeleteSelection();
 
   const std::shared_ptr<TransmissionModel> model_;
-  const std::shared_ptr<ui::ColumnHeaderModel> column_model_;
+  const std::shared_ptr<aui::ColumnHeaderModel> column_model_;
 
   Grid* grid_ = nullptr;
 

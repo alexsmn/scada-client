@@ -4,7 +4,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "components/sheet/sheet_cell.h"
 #include "controls/color.h"
-#include "ui/base/models/grid_range.h"
+#include "controls/models/grid_range.h"
 #include "window_definition.h"
 
 // SheetColumnModel -----------------------------------------------------------
@@ -134,7 +134,7 @@ int SheetModel::GetRowCount() {
   return row_count_;
 }
 
-void SheetModel::GetCell(ui::GridCell& cell) {
+void SheetModel::GetCell(aui::GridCell& cell) {
   const SheetCell* c = this->cell(cell.row, cell.column);
   if (!c)
     return;
@@ -142,10 +142,10 @@ void SheetModel::GetCell(ui::GridCell& cell) {
   cell.text = editing_ ? c->formula() : c->text();
 
   if (c->format_ && c->format_->color != aui::ColorCode::Transparent)
-    cell.cell_color = c->format_->color.sk_color();
+    cell.cell_color = c->format_->color;
 
   if (!editing_ && c->is_blinking() && Blinker::GetState())
-    cell.cell_color = SK_ColorYELLOW;
+    cell.cell_color = aui::ColorCode::Yellow;
 }
 
 SheetCell& SheetModel::GetCell(int row, int column) {
@@ -155,10 +155,10 @@ SheetCell& SheetModel::GetCell(int row, int column) {
   return *cell;
 }
 
-void SheetModel::ClearRange(const ui::GridRange& range) {
+void SheetModel::ClearRange(const aui::GridRange& range) {
   assert(!range.empty());
 
-  ui::GridRange update_range;
+  aui::GridRange update_range;
 
   for (int row = range.row(); row <= range.last_row(); ++row) {
     for (int column = range.column(); column <= range.last_column(); ++column) {
@@ -174,7 +174,7 @@ void SheetModel::ClearRange(const ui::GridRange& range) {
 }
 
 void SheetModel::ClearCell(int row, int column) {
-  ClearRange(ui::GridRange::Cell(row, column));
+  ClearRange(aui::GridRange::Cell(row, column));
 }
 
 void SheetModel::OnBlink(bool state) {
@@ -185,8 +185,8 @@ void SheetModel::OnBlink(bool state) {
 
   SheetCell& first_cell = **blinking_cells_.begin();
 
-  ui::GridRange range =
-      ui::GridRange::Cell(first_cell.row(), first_cell.column());
+  aui::GridRange range =
+      aui::GridRange::Cell(first_cell.row(), first_cell.column());
 
   for (auto i = std::next(blinking_cells_.begin()); i != blinking_cells_.end();
        ++i) {
@@ -197,7 +197,7 @@ void SheetModel::OnBlink(bool state) {
   NotifyRangeChanged(range);
 }
 
-aui::Color SheetModel::GetRangeColor(const ui::GridRange& range) const {
+aui::Color SheetModel::GetRangeColor(const aui::GridRange& range) const {
   if (range.empty())
     return aui::ColorCode::Transparent;
 
@@ -208,8 +208,8 @@ aui::Color SheetModel::GetRangeColor(const ui::GridRange& range) const {
   return cell->format_->color;
 }
 
-void SheetModel::SetRangeColor(const ui::GridRange& range, aui::Color color) {
-  ui::GridRange update_range;
+void SheetModel::SetRangeColor(const aui::GridRange& range, aui::Color color) {
+  aui::GridRange update_range;
 
   for (int column = range.column(); column <= range.last_column(); ++column) {
     for (int row = range.row(); row <= range.last_row(); ++row) {

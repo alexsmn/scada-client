@@ -11,16 +11,16 @@ std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
     Wt::WFlags<Wt::ViewItemRenderFlag> flags) const {
   auto edit_data = edit_data_provider_(index);
   switch (edit_data.editor_type) {
-    case ui::EditData::EditorType::NONE:
+    case aui::EditData::EditorType::NONE:
       return nullptr;
 
-    case ui::EditData::EditorType::TEXT: {
+    case aui::EditData::EditorType::TEXT: {
       auto line_edit = std::make_unique<Wt::WLineEdit>();
       // line_edit->setFrame(false);
       return line_edit;
     }
 
-    case ui::EditData::EditorType::BUTTON: {
+    case aui::EditData::EditorType::BUTTON: {
       auto line_edit = std::make_unique<Wt::WLineEdit>();
       // line_edit->setFrame(false);
       // Wt::WIcon icon{":/device.png"};
@@ -37,7 +37,7 @@ std::unique_ptr<Wt::WWidget> ItemDelegate::createEditor(
       return line_edit;
     }
 
-    case ui::EditData::EditorType::DROPDOWN: {
+    case aui::EditData::EditorType::DROPDOWN: {
       auto combo_box = std::make_unique<Wt::WComboBox>();
       // combo_box->setFocusPolicy(Qt::WheelFocus);
       // combo_box->setEditable(true);

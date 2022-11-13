@@ -1,16 +1,14 @@
 #pragma once
 
-#include <set>
-
 #include "components/configuration_tree/configuration_tree_view.h"
 #include "contents_observer.h"
-#include "ui/views/controls/tree/tree_view.h"
+#include "controls/models/tree_model.h"
 
 class ConfigurationTreeNode;
 class ObjectTreeModel;
 
 class ObjectTreeView : public ConfigurationTreeView,
-                       protected ui::TreeModelObserver,
+                       protected aui::TreeModelObserver,
                        private ContentsObserver {
  public:
   explicit ObjectTreeView(const ControllerContext& context);

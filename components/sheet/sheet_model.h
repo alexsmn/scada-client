@@ -2,8 +2,8 @@
 
 #include "base/blinker.h"
 #include "components/sheet/sheet_format.h"
-#include "ui/base/models/fixed_row_model.h"
-#include "ui/base/models/grid_model.h"
+#include "controls/models/fixed_row_model.h"
+#include "controls/models/grid_model.h"
 
 #include <set>
 
@@ -12,9 +12,9 @@ class SheetCell;
 class TimedDataService;
 class WindowDefinition;
 
-class SheetColumnModel : public ui::ColumnHeaderModel {
+class SheetColumnModel : public aui::ColumnHeaderModel {
  public:
-  // ui::HeaderModel
+  // aui::HeaderModel
   virtual std::u16string GetTitle(int index) const override;
 };
 
@@ -24,8 +24,8 @@ struct SheetModelContext {
 };
 
 class SheetModel : private SheetModelContext,
-                   public ui::GridModel,
-                   private views::FixedRowModel::Delegate,
+                   public aui::GridModel,
+                   private aui::FixedRowModel::Delegate,
                    private Blinker {
  public:
   explicit SheetModel(SheetModelContext&& context);
@@ -34,7 +34,7 @@ class SheetModel : private SheetModelContext,
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);
 
-  views::FixedRowModel& row_model() { return row_model_; }
+  aui::FixedRowModel& row_model() { return row_model_; }
   SheetColumnModel& column_model() { return column_model_; }
 
   int column_count() const { return column_count_; }
@@ -50,19 +50,19 @@ class SheetModel : private SheetModelContext,
   // Returns existing cell or creates new one.
   SheetCell& GetCell(int row, int column);
 
-  void ClearRange(const ui::GridRange& range);
+  void ClearRange(const aui::GridRange& range);
   void ClearCell(int row, int col);
 
-  aui::Color GetRangeColor(const ui::GridRange& range) const;
-  void SetRangeColor(const ui::GridRange& range, aui::Color color);
+  aui::Color GetRangeColor(const aui::GridRange& range) const;
+  void SetRangeColor(const aui::GridRange& range, aui::Color color);
 
   SheetFormatPool& formats() { return formats_; }
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
-  // ui::GridModel
+  // aui::GridModel
   virtual int GetRowCount() override;
-  virtual void GetCell(ui::GridCell& cell) override;
+  virtual void GetCell(aui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
                            const std::u16string& text) override;
@@ -83,7 +83,7 @@ class SheetModel : private SheetModelContext,
 
   bool editing_ = false;
 
-  views::FixedRowModel row_model_{*this};
+  aui::FixedRowModel row_model_{*this};
   SheetColumnModel column_model_;
 
   friend class SheetCell;

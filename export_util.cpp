@@ -6,11 +6,11 @@
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
+#include "controls/models/grid_model.h"
+#include "controls/models/header_model.h"
+#include "controls/models/table_column.h"
+#include "controls/models/table_model.h"
 #include "core/variant.h"
-#include "ui/base/models/grid_model.h"
-#include "ui/base/models/header_model.h"
-#include "ui/base/models/table_column.h"
-#include "ui/base/models/table_model.h"
 
 #include <fstream>
 

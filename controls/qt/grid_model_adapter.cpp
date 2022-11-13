@@ -1,20 +1,21 @@
 #include "controls/qt/grid_model_adapter.h"
 
 #include "controls/color.h"
-#include "ui/base/models/grid_range.h"
+#include "controls/models/grid_range.h"
 
 #include <QMimeData>
 #include <QSize>
 
 namespace {
 
-Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
+// TODO: Combine with Table.
+Qt::AlignmentFlag AuiAligmentToQt(aui::TableColumn::Alignment alignment) {
   switch (alignment) {
-    case ui::TableColumn::LEFT:
+    case aui::TableColumn::LEFT:
       return Qt::AlignLeft;
-    case ui::TableColumn::CENTER:
+    case aui::TableColumn::CENTER:
       return Qt::AlignHCenter;
-    case ui::TableColumn::RIGHT:
+    case aui::TableColumn::RIGHT:
       return Qt::AlignRight;
     default:
       return Qt::AlignLeft;
@@ -24,9 +25,9 @@ Qt::AlignmentFlag UiAligmentToQt(ui::TableColumn::Alignment alignment) {
 }  // namespace
 
 GridModelAdapter::GridModelAdapter(
-    std::shared_ptr<ui::GridModel> model,
-    std::shared_ptr<ui::HeaderModel> row_model,
-    std::shared_ptr<ui::HeaderModel> column_model)
+    std::shared_ptr<aui::GridModel> model,
+    std::shared_ptr<aui::HeaderModel> row_model,
+    std::shared_ptr<aui::HeaderModel> column_model)
     : model_{std::move(model)},
       row_model_{std::move(row_model)},
       column_model_{std::move(column_model)} {
@@ -53,7 +54,7 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
       return column_model_->GetAlignment(index.column());
   }
 
-  ui::GridCell cell;
+  aui::GridCell cell;
   cell.row = index.row();
   cell.column = index.column();
   model_->GetCell(cell);
@@ -63,9 +64,9 @@ QVariant GridModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
-      return ToQColor(cell.text_color);
+      return cell.text_color.qcolor();
     case Qt::BackgroundRole:
-      return ToQColor(cell.cell_color);
+      return cell.cell_color.qcolor();
     default:
       return QVariant();
   }
@@ -112,31 +113,31 @@ bool GridModelAdapter::setData(const QModelIndex& index,
                              value.toString().toStdU16String());
 }
 
-void GridModelAdapter::OnGridModelChanged(ui::GridModel& model) {
+void GridModelAdapter::OnGridModelChanged(aui::GridModel& model) {
   resetInternalData();
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRangeChanged(ui::GridModel& model,
-                                          const ui::GridRange& range) {
+void GridModelAdapter::OnGridRangeChanged(aui::GridModel& model,
+                                          const aui::GridRange& range) {
   dataChanged(index(range.row(), range.column()),
               index(range.row() + range.row_count() - 1,
                     range.column() + range.column_count() - 1));
 }
 
-void GridModelAdapter::OnGridRowsAdded(ui::GridModel& model,
+void GridModelAdapter::OnGridRowsAdded(aui::GridModel& model,
                                        int first,
                                        int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnGridRowsRemoved(ui::GridModel& model,
+void GridModelAdapter::OnGridRowsRemoved(aui::GridModel& model,
                                          int first,
                                          int count) {
   layoutChanged();
 }
 
-void GridModelAdapter::OnModelChanged(ui::HeaderModel& model) {
+void GridModelAdapter::OnModelChanged(aui::HeaderModel& model) {
   if (&model == column_model_.get())
     headerDataChanged(Qt::Horizontal, 0, model.GetCount());
   else if (&model == row_model_.get())

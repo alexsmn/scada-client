@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/base/models/edit_data.h"
+#include "controls/models/edit_data.h"
 
 #include <QItemDelegate>
 #include <functional>
@@ -10,7 +10,7 @@ class QComboBox;
 class ItemDelegate final : public QItemDelegate {
  public:
   using EditDataProvider =
-      std::function<ui::EditData(const QModelIndex& index)>;
+      std::function<aui::EditData(const QModelIndex& index)>;
 
   explicit ItemDelegate(EditDataProvider edit_data_provider)
       : edit_data_provider_{std::move(edit_data_provider)} {}
@@ -29,7 +29,7 @@ class ItemDelegate final : public QItemDelegate {
   void CommitAndCloseEditor();
 
   QComboBox* CreateDropDown(QWidget* parent,
-                            const ui::EditData& edit_data) const;
+                            const aui::EditData& edit_data) const;
 
   const EditDataProvider edit_data_provider_;
 };

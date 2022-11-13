@@ -105,8 +105,8 @@ class VisibleNodeModel {
   void SetNode(void* tree_node, std::shared_ptr<VisibleNode> node);
 
   std::u16string GetText(void* tree_node);
-  SkColor GetTextColor(void* tree_node);
-  SkColor GetBackgroundColor(void* tree_node);
+  aui::Color GetTextColor(void* tree_node);
+  aui::Color GetBackgroundColor(void* tree_node);
 
  private:
   const VisibleNode* GetNode(void* tree_node) const;

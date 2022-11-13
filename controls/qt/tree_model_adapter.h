@@ -1,8 +1,8 @@
 #pragma once
 
 #include "controls/handlers.h"
+#include "controls/models/tree_node_model.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
-#include "ui/base/models/tree_node_model.h"
 
 #include <QAbstractitemmodel>
 #include <memory>
@@ -14,9 +14,9 @@ class TreeModel;
 class QIcon;
 
 class TreeModelAdapter : public QAbstractItemModel,
-                         private ui::TreeModelObserver {
+                         private aui::TreeModelObserver {
  public:
-  explicit TreeModelAdapter(std::shared_ptr<ui::TreeModel> model);
+  explicit TreeModelAdapter(std::shared_ptr<aui::TreeModel> model);
   virtual ~TreeModelAdapter();
 
   void SetCheckable(bool checkable) { checkable_ = checkable; }
@@ -86,7 +86,7 @@ class TreeModelAdapter : public QAbstractItemModel,
                            int column,
                            const QModelIndex& parent) const;
 
-  // private ui::TreeModelObserver
+  // private aui::TreeModelObserver
   virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
@@ -95,7 +95,7 @@ class TreeModelAdapter : public QAbstractItemModel,
   virtual void OnTreeModelResetting() override;
   virtual void OnTreeModelReset() override;
 
-  const std::shared_ptr<ui::TreeModel> model_;
+  const std::shared_ptr<aui::TreeModel> model_;
 
   std::vector<QIcon> icons_;
 

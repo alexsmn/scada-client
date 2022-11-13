@@ -1,19 +1,19 @@
 #pragma once
 
 #include "base/cancelation.h"
+#include "controls/models/fixed_row_model.h"
+#include "controls/models/grid_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/property_defs.h"
-#include "ui/base/models/fixed_row_model.h"
-#include "ui/base/models/grid_model.h"
 
 class Executor;
 class NodeService;
 class PropertyDefinition;
 
 class NodeTableModel : private PropertyContext,
-                       public ui::GridModel,
-                       private views::FixedRowModel::Delegate,
+                       public aui::GridModel,
+                       private aui::FixedRowModel::Delegate,
                        public NodeRefObserver {
  public:
   NodeTableModel(std::shared_ptr<Executor> executor, PropertyContext&& context);
@@ -22,8 +22,8 @@ class NodeTableModel : private PropertyContext,
   const NodeRef& parent_node() const { return parent_node_; }
   void SetParentNode(const NodeRef& parent_node);
 
-  views::FixedRowModel& row_model() { return row_model_; }
-  ui::ColumnHeaderModel& column_model() { return column_model_; }
+  aui::FixedRowModel& row_model() { return row_model_; }
+  aui::ColumnHeaderModel& column_model() { return column_model_; }
 
   typedef std::vector<NodeRef> Nodes;
   const Nodes& nodes() const { return nodes_; }
@@ -32,11 +32,11 @@ class NodeTableModel : private PropertyContext,
   void SetSorting(const scada::NodeId& property_id);
 
   // GridModel
-  virtual void GetCell(ui::GridCell& cell) override;
+  virtual void GetCell(aui::GridCell& cell) override;
   virtual bool SetCellText(int row,
                            int column,
                            const std::u16string& text) override;
-  virtual ui::EditData GetEditData(int row, int column) override;
+  virtual aui::EditData GetEditData(int row, int column) override;
 
   bool loading() const { return loading_; }
 
@@ -63,8 +63,8 @@ class NodeTableModel : private PropertyContext,
 
   const std::shared_ptr<Executor> executor_;
 
-  views::FixedRowModel row_model_{*this};
-  ui::ColumnHeaderModel column_model_;
+  aui::FixedRowModel row_model_{*this};
+  aui::ColumnHeaderModel column_model_;
 
   NodeRef parent_node_;
 

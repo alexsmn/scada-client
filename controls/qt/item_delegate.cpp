@@ -1,4 +1,4 @@
-#include "item_delegate.h"
+#include "controls/qt/item_delegate.h"
 
 #include <QAction>
 #include <QComboBox>
@@ -11,16 +11,16 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
                                     const QModelIndex& index) const {
   auto edit_data = edit_data_provider_(index);
   switch (edit_data.editor_type) {
-    case ui::EditData::EditorType::NONE:
+    case aui::EditData::EditorType::NONE:
       return nullptr;
 
-    case ui::EditData::EditorType::TEXT: {
+    case aui::EditData::EditorType::TEXT: {
       auto* line_edit = new QLineEdit{parent};
       line_edit->setFrame(false);
       return line_edit;
     }
 
-    case ui::EditData::EditorType::BUTTON: {
+    case aui::EditData::EditorType::BUTTON: {
       auto* line_edit = new QLineEdit{parent};
       line_edit->setFrame(false);
       QIcon icon{":/device.png"};
@@ -37,7 +37,7 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       return line_edit;
     }
 
-    case ui::EditData::EditorType::DROPDOWN:
+    case aui::EditData::EditorType::DROPDOWN:
       return CreateDropDown(parent, edit_data);
 
     default:
@@ -81,7 +81,7 @@ void ItemDelegate::CommitAndCloseEditor() {
 }
 
 QComboBox* ItemDelegate::CreateDropDown(QWidget* parent,
-                                        const ui::EditData& edit_data) const {
+                                        const aui::EditData& edit_data) const {
   auto* combo_box = new QComboBox{parent};
   combo_box->setFocusPolicy(Qt::WheelFocus);
   combo_box->setEditable(true);

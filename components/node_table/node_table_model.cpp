@@ -59,10 +59,10 @@ std::u16string NodeTableModel::GetRowTitle(int row) {
   return base::UTF8ToUTF16(NodeIdToScadaString(nodes_[row].node_id()));
 }
 
-void NodeTableModel::GetCell(ui::GridCell& cell) {
+void NodeTableModel::GetCell(aui::GridCell& cell) {
   if (loading_) {
     cell.text = kFetching;
-    cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = aui::ToColor(::GetSysColor(COLOR_3DFACE));
     return;
   }
 
@@ -74,14 +74,14 @@ void NodeTableModel::GetCell(ui::GridCell& cell) {
 
   if (column.attr_id == scada::AttributeId::NodeId) {
     cell.text = base::UTF8ToUTF16(NodeIdToScadaString(node.node_id()));
-    cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = aui::ToColor(::GetSysColor(COLOR_3DFACE));
   } else if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::UTF8ToUTF16(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
   else if (column.prop_def->IsReadOnly(node,
                                        column.property_declaration.node_id()))
-    cell.cell_color = skia::COLORREFToSkColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = aui::ToColor(::GetSysColor(COLOR_3DFACE));
   else
     cell.text = column.prop_def->GetText(*this, node,
                                          column.property_declaration.node_id());
@@ -111,17 +111,17 @@ bool NodeTableModel::SetCellText(int row,
   return true;
 }
 
-ui::EditData NodeTableModel::GetEditData(int row, int column) {
+aui::EditData NodeTableModel::GetEditData(int row, int column) {
   const auto& node = nodes_[row];
   assert(node);
 
   auto& c = columns_[column];
   if (c.attr_id == scada::AttributeId::NodeId)
-    return {ui::EditData::EditorType::NONE};
+    return {aui::EditData::EditorType::NONE};
 
   if (c.attr_id == scada::AttributeId::BrowseName ||
       c.attr_id == scada::AttributeId::DisplayName)
-    return {ui::EditData::EditorType::TEXT};
+    return {aui::EditData::EditorType::TEXT};
 
   return c.prop_def->GetPropertyEditor(*this, node,
                                        c.property_declaration.node_id());
@@ -237,7 +237,7 @@ void NodeTableModel::ScheduleSortHelper() {
 void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   columns_.clear();
 
-  std::vector<ui::TableColumn> columns;
+  std::vector<aui::TableColumn> columns;
 
   columns.reserve(property_defs.size() + 1);
 
@@ -245,9 +245,9 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   {
     columns_.push_back({scada::AttributeId::DisplayName});
     columns.emplace_back(
-        ui::TableColumn{static_cast<int>(columns.size()),
-                        std::u16string{kDisplayNameAttributeString}, 75,
-                        ui::TableColumn::LEFT});
+        aui::TableColumn{static_cast<int>(columns.size()),
+                         std::u16string{kDisplayNameAttributeString}, 75,
+                         aui::TableColumn::LEFT});
   }
 
   auto AddProp = [this, &columns](const NodeRef& property_declaration,
@@ -255,8 +255,8 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
     columns_.push_back({scada::AttributeId::Value, property_declaration, &def});
     int width = def.width() ? def.width() : 75;
     auto title = def.GetTitle(*this, property_declaration);
-    columns.emplace_back(ui::TableColumn{static_cast<int>(columns.size()),
-                                         title, width, def.alignment()});
+    columns.emplace_back(aui::TableColumn{static_cast<int>(columns.size()),
+                                          title, width, def.alignment()});
   };
 
   for (auto& prop : property_defs) {

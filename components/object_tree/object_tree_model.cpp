@@ -41,14 +41,14 @@ std::u16string ObjectTreeModel::GetText(void* tree_node, int column_id) {
     return ConfigurationTreeModel::GetText(tree_node, column_id);
 }
 
-SkColor ObjectTreeModel::GetTextColor(void* tree_node, int column_id) {
+aui::Color ObjectTreeModel::GetTextColor(void* tree_node, int column_id) {
   if (column_id == 1)
     return visible_node_model_.GetTextColor(tree_node);
   else
     return ConfigurationTreeModel::GetTextColor(tree_node, column_id);
 }
 
-SkColor ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
+aui::Color ObjectTreeModel::GetBackgroundColor(void* tree_node, int column_id) {
   if (column_id == 1)
     return visible_node_model_.GetBackgroundColor(tree_node);
   else

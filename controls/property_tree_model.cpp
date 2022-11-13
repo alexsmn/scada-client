@@ -33,15 +33,15 @@ std::u16string PropertyGroupTreeNode::GetText(int column_id) const {
   return column_id == 0 ? title : std::u16string{};
 }
 
-SkColor PropertyGroupTreeNode::GetTextColor(int column_id) const {
+aui::Color PropertyGroupTreeNode::GetTextColor(int column_id) const {
   if (type == PropertyGroup::ItemType::Category)
-    return SK_ColorWHITE;
+    return aui::ColorCode::White;
   return PropertyTreeNode::GetTextColor(column_id);
 }
 
-SkColor PropertyGroupTreeNode::GetBackgroundColor(int column_id) const {
+aui::Color PropertyGroupTreeNode::GetBackgroundColor(int column_id) const {
   if (type == PropertyGroup::ItemType::Category)
-    return SK_ColorGRAY;
+    return aui::ColorCode::Gray;
   return PropertyTreeNode::GetBackgroundColor(column_id);
 }
 
@@ -71,7 +71,7 @@ bool PropertyItemTreeNode::IsSelectable(int column_id) const {
   return column_id == 1;
 }
 
-ui::EditData PropertyItemTreeNode::GetEditData(int column_id) {
+aui::EditData PropertyItemTreeNode::GetEditData(int column_id) {
   return property_group.GetEditData(index);
 }
 

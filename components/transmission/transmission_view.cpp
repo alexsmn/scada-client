@@ -3,6 +3,7 @@
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "controls/grid.h"
+#include "controls/models/header_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "remote/session_proxy.h"
@@ -13,7 +14,7 @@ TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_shared<TransmissionModel>(context.node_service_,
                                                  context.task_manager_)},
-      column_model_{std::make_shared<ui::ColumnHeaderModel>()} {}
+      column_model_{std::make_shared<aui::ColumnHeaderModel>()} {}
 
 TransmissionView::~TransmissionView() {}
 
@@ -24,9 +25,9 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
     model_->Init(node_service_.GetNode(device_id));
   }
 
-  const ui::TableColumn columns[] = {
-      {0, u"Объект", 250, ui::TableColumn::LEFT},
-      {1, u"Адрес", 100, ui::TableColumn::RIGHT},
+  const aui::TableColumn columns[] = {
+      {0, u"Объект", 250, aui::TableColumn::LEFT},
+      {1, u"Адрес", 100, aui::TableColumn::RIGHT},
   };
   column_model_->SetColumns(std::size(columns), columns);
 

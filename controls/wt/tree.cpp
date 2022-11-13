@@ -1,6 +1,7 @@
 #include "controls/wt/tree.h"
 
 #include "controls/color.h"
+#include "controls/models/tree_model.h"
 #include "controls/wt/tree_model_adapter.h"
 
 #include <Wt/WPainter.h>
@@ -26,7 +27,7 @@ bool TreeProxyModel::lessThan(const Wt::WModelIndex& source_left,
 
 // Tree
 
-Tree::Tree(std::shared_ptr<ui::TreeModel> model)
+Tree::Tree(std::shared_ptr<aui::TreeModel> model)
     : model_adapter_{std::make_shared<TreeModelAdapter>(model)},
       proxy_model_{std::make_shared<TreeProxyModel>(*this)} {
   setSelectionMode(Wt::SelectionMode::Single);

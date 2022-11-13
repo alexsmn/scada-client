@@ -1,24 +1,24 @@
 #pragma once
 
-#include "base/models/grid_range.h"
 #include "base/values.h"
 #include "controls/handlers.h"
+#include "controls/models/grid_model.h"
+#include "controls/models/grid_range.h"
 #include "controls/wt/grid_model_adapter.h"
-#include "item_delegate.h"
-#include "ui/base/models/grid_model.h"
+#include "controls/wt/item_delegate.h"
 
 #include <Wt/WPen.h>
 #include <Wt/WTableView.h>
 
 class Grid final : public Wt::WTableView {
  public:
-  Grid(std::shared_ptr<ui::GridModel> model,
-       std::shared_ptr<ui::HeaderModel> row_model,
-       std::shared_ptr<ui::HeaderModel> column_model);
+  Grid(std::shared_ptr<aui::GridModel> model,
+       std::shared_ptr<aui::HeaderModel> row_model,
+       std::shared_ptr<aui::HeaderModel> column_model);
   ~Grid();
 
-  ui::HeaderModel& row_model() { return model_adapter_->row_model(); }
-  ui::HeaderModel& column_model() { return model_adapter_->column_model(); }
+  aui::HeaderModel& row_model() { return model_adapter_->row_model(); }
+  aui::HeaderModel& column_model() { return model_adapter_->column_model(); }
 
   Wt::WWidget* CreateParentIfNecessary() { return this; }
 
@@ -31,9 +31,9 @@ class Grid final : public Wt::WTableView {
 
   void SetContextMenuHandler(ContextMenuHandler handler);
 
-  ui::GridModelIndex GetCurrentIndex() const;
+  aui::GridModelIndex GetCurrentIndex() const;
 
-  ui::GridRange GetSelectionRange() const;
+  aui::GridRange GetSelectionRange() const;
 
   auto GetSelectedRows() const {
     std::vector<int> rows;
@@ -61,7 +61,7 @@ class Grid final : public Wt::WTableView {
 
   void SetSelectionChangeHandler(SelectionChangeHandler handler);
 
-  void OpenEditor(const ui::GridModelIndex& index);
+  void OpenEditor(const aui::GridModelIndex& index);
 
   void RequestFocus();
 
@@ -88,7 +88,7 @@ class Grid final : public Wt::WTableView {
 
   ContextMenuHandler context_menu_handler_;
 
-  const std::shared_ptr<ui::GridModel> model_;
+  const std::shared_ptr<aui::GridModel> model_;
 
   // QItemSelectionRange selection_range_;
 

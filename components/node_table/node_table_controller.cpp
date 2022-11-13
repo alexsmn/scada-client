@@ -5,6 +5,7 @@
 #include "components/node_table/node_table_model.h"
 #include "controller_delegate.h"
 #include "controls/grid.h"
+#include "controls/models/header_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -59,8 +60,8 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   model_->SetSorting(profile_.node_table.default_sort_property_id);
 
   grid_ = new Grid{
-      model_, std::shared_ptr<ui::HeaderModel>(model_, &model_->row_model()),
-      std::shared_ptr<ui::HeaderModel>(model_, &model_->column_model())};
+      model_, std::shared_ptr<aui::HeaderModel>(model_, &model_->row_model()),
+      std::shared_ptr<aui::HeaderModel>(model_, &model_->column_model())};
 
   grid_->SetExpandAllowed(true);
   grid_->SetRowHeaderVisible(true);
@@ -111,14 +112,14 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   }));
 
   for (const auto& [command_id, prop_decl_id] : GetSortCommands()) {
-    command_registry_.AddCommand(Command{command_id}
-                                     .set_execute_handler([this, prop_decl_id] {
-                                       SetSorting(prop_decl_id);
-                                     })
-                                     .set_checked_handler([this, prop_decl_id] {
-                                       return model_->sort_property_id() ==
-                                              prop_decl_id;
-                                     }));
+    command_registry_.AddCommand(
+        Command{command_id}
+            .set_execute_handler([this, prop_decl_id = prop_decl_id] {
+              SetSorting(prop_decl_id);
+            })
+            .set_checked_handler([this, prop_decl_id = prop_decl_id] {
+              return model_->sort_property_id() == prop_decl_id;
+            }));
   }
 
   return grid_->CreateParentIfNecessary();

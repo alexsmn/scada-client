@@ -15,7 +15,7 @@ struct ConfigurationTreeModelContext {
 };
 
 class ConfigurationTreeModel : private ConfigurationTreeModelContext,
-                               public ui::TreeNodeModel<ConfigurationTreeNode>,
+                               public aui::TreeNodeModel<ConfigurationTreeNode>,
                                private NodeRefObserver,
                                private NodeServiceTree::Observer {
  public:

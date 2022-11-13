@@ -9,7 +9,7 @@
 #include <Wt/WSortFilterProxyModel.h>
 #include <Wt/WTreeView.h>
 
-namespace ui {
+namespace aui {
 class TreeModel;
 }
 
@@ -33,7 +33,7 @@ class TreeProxyModel : public Wt::WSortFilterProxyModel {
 
 class Tree : public Wt::WTreeView {
  public:
-  explicit Tree(std::shared_ptr<ui::TreeModel> model);
+  explicit Tree(std::shared_ptr<aui::TreeModel> model);
   virtual ~Tree();
 
   void SetRootVisible(bool visible);

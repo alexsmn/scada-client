@@ -1,12 +1,12 @@
 #pragma once
 
-#include "components/portfolio/portfolio_manager.h"
 #include "common/node_state.h"
-#include "ui/base/models/tree_node_model.h"
+#include "components/portfolio/portfolio_manager.h"
+#include "controls/models/tree_node_model.h"
 
 class PortfolioManager;
 
-class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
+class PortfolioTreeNode : public aui::TreeNode<PortfolioTreeNode> {
  public:
   PortfolioTreeNode(PortfolioManager& portfolio_manager,
                     const Portfolio& portfolio)
@@ -39,7 +39,7 @@ class PortfolioTreeNode : public ui::TreeNode<PortfolioTreeNode> {
   int icon_ = -1;
 };
 
-class PortfolioTreeModel : public ui::TreeNodeModel<PortfolioTreeNode>,
+class PortfolioTreeModel : public aui::TreeNodeModel<PortfolioTreeNode>,
                            protected PortfolioEvents {
  public:
   PortfolioTreeModel(NodeService& node_service,

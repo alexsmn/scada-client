@@ -7,7 +7,7 @@
 #include <QTreeView>
 #include <set>
 
-namespace ui {
+namespace aui {
 class TreeModel;
 }
 
@@ -18,7 +18,7 @@ class TreeProxyModel;
 
 class Tree : public QTreeView {
  public:
-  explicit Tree(std::shared_ptr<ui::TreeModel> model);
+  explicit Tree(std::shared_ptr<aui::TreeModel> model);
   ~Tree();
 
   void SetRootVisible(bool visible);

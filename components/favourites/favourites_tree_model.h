@@ -1,12 +1,12 @@
 #pragma once
 
 #include "components/favourites/favourites.h"
-#include "ui/base/models/tree_node_model.h"
+#include "controls/models/tree_node_model.h"
 
 class FavouritesFolderNode;
 class FavouritesWindowNode;
 
-class FavouritesNode : public ui::TreeNode<FavouritesNode> {
+class FavouritesNode : public aui::TreeNode<FavouritesNode> {
  public:
   explicit FavouritesNode(Favourites& favourites) : favourites_{favourites} {}
 
@@ -85,7 +85,7 @@ class FavouritesWindowNode : public FavouritesNode {
   const WindowDefinition& window_;
 };
 
-class FavouritesTreeModel : public ui::TreeNodeModel<FavouritesNode>,
+class FavouritesTreeModel : public aui::TreeNodeModel<FavouritesNode>,
                             protected Favourites::Observer {
  public:
   explicit FavouritesTreeModel(Favourites& favourites);
@@ -93,7 +93,7 @@ class FavouritesTreeModel : public ui::TreeNodeModel<FavouritesNode>,
 
   FavouritesRootNode& root() {
     return *reinterpret_cast<FavouritesRootNode*>(
-        ui::TreeNodeModel<FavouritesNode>::root());
+        aui::TreeNodeModel<FavouritesNode>::root());
   }
 
  protected:

@@ -1,19 +1,19 @@
 #pragma once
 
-#include "ui/base/models/tree_node_model.h"
+#include "controls/models/tree_node_model.h"
 
 #include <Wt/WAbstractItemModel.h>
 #include <Wt/WIcon.h>
 #include <memory>
 
-namespace ui {
+namespace aui {
 class TreeModel;
 }
 
 class TreeModelAdapter : public Wt::WAbstractItemModel,
-                         private ui::TreeModelObserver {
+                         private aui::TreeModelObserver {
  public:
-  explicit TreeModelAdapter(std::shared_ptr<ui::TreeModel> model);
+  explicit TreeModelAdapter(std::shared_ptr<aui::TreeModel> model);
   virtual ~TreeModelAdapter();
 
   void SetCheckable(bool checkable) { checkable_ = checkable; }
@@ -60,7 +60,7 @@ class TreeModelAdapter : public Wt::WAbstractItemModel,
  private:
   int GetIndexOf(void* node) const;
 
-  // private ui::TreeModelObserver
+  // private aui::TreeModelObserver
   virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
@@ -69,7 +69,7 @@ class TreeModelAdapter : public Wt::WAbstractItemModel,
   virtual void OnTreeModelResetting() override;
   virtual void OnTreeModelReset() override;
 
-  const std::shared_ptr<ui::TreeModel> model_;
+  const std::shared_ptr<aui::TreeModel> model_;
 
   std::vector<Wt::WIcon> icons_;
 

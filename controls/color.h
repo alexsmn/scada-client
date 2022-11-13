@@ -26,6 +26,10 @@ struct Rgba {
 #include "controls/wt/color_wt.h"
 #endif
 
+#if defined(OS_WIN)
+#include "controls/color_win.h"
+#endif
+
 #include <SkColor.h>
 
 typedef SkColor UiColor;
@@ -54,6 +58,7 @@ struct ColorCode {
   static inline constexpr Rgba Transparent{0, 0, 0, 0};
   static inline constexpr Rgba Black{0, 0, 0};
   static inline constexpr Rgba White{255, 255, 255};
+  static inline constexpr Rgba Gray{136, 136, 126};
   static inline constexpr Rgba Red{255, 0, 0};
   static inline constexpr Rgba Green{0, 255, 0};
   static inline constexpr Rgba Blue{0, 0, 255};

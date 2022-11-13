@@ -6,6 +6,7 @@
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "components/summary/summary_model_util.h"
+#include "controls/models/grid_range.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_spec.h"
@@ -138,11 +139,11 @@ bool SummaryModel::Column::IsReady(int row) const {
 
 // SummaryModel::RowModel -----------------------------------------------------
 
-class SummaryModel::RowModel : public ui::HeaderModel {
+class SummaryModel::RowModel : public aui::HeaderModel {
  public:
   explicit RowModel(SummaryModel& model);
 
-  // ui::HeaderModel
+  // aui::HeaderModel
   virtual int GetCount() const override { return model_.row_count_; }
   virtual int GetSize(int index) const override { return 18; }
   virtual std::u16string GetTitle(int index) const override;
@@ -165,16 +166,16 @@ std::u16string SummaryModel::RowModel::GetTitle(int index) const {
 
 // SummaryModel::ColumnModel --------------------------------------------------
 
-class SummaryModel::ColumnModel : public ui::HeaderModel {
+class SummaryModel::ColumnModel : public aui::HeaderModel {
  public:
   explicit ColumnModel(SummaryModel& model) : model_(model) {}
 
-  // ui::HeaderModel
+  // aui::HeaderModel
   virtual int GetCount() const override;
   virtual int GetSize(int index) const override;
   virtual void SetSize(int index, int new_size) override;
   virtual std::u16string GetTitle(int index) const override;
-  virtual ui::TableColumn::Alignment GetAlignment(int index) const override;
+  virtual aui::TableColumn::Alignment GetAlignment(int index) const override;
 
  private:
   friend class SummaryModel;
@@ -202,9 +203,9 @@ std::u16string SummaryModel::ColumnModel::GetTitle(int index) const {
   return model_.columns_[index]->GetTitle();
 }
 
-ui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(
+aui::TableColumn::Alignment SummaryModel::ColumnModel::GetAlignment(
     int index) const {
-  return ui::TableColumn::RIGHT;
+  return aui::TableColumn::RIGHT;
 }
 
 // SummaryModel ---------------------------------------------------------------
@@ -216,11 +217,11 @@ SummaryModel::SummaryModel(SummaryModelContext&& context)
 
 SummaryModel::~SummaryModel() = default;
 
-ui::HeaderModel& SummaryModel::row_model() {
+aui::HeaderModel& SummaryModel::row_model() {
   return *row_model_;
 }
 
-ui::HeaderModel& SummaryModel::column_model() {
+aui::HeaderModel& SummaryModel::column_model() {
   return *column_model_;
 }
 
@@ -298,7 +299,7 @@ void SummaryModel::Save(WindowDefinition& definition) {
   definition.Set("AggregateType", aggregate_type());
 }
 
-void SummaryModel::GetCell(ui::GridCell& cell) {
+void SummaryModel::GetCell(aui::GridCell& cell) {
   Column& column = *columns_[cell.column];
 
   const scada::DataValue& data_value = column.GetDataValue(cell.row);
@@ -311,7 +312,7 @@ void SummaryModel::GetCell(ui::GridCell& cell) {
   }
 
   if (!column.IsReady(cell.row))
-    cell.cell_color = SkColorSetRGB(227, 227, 227);
+    cell.cell_color = aui::Rgba{227, 227, 227};
 }
 
 base::Time SummaryModel::GetRowTime(int row) const {
@@ -340,11 +341,11 @@ int SummaryModel::GetRowForTime(base::Time time) const {
 }
 
 void SummaryModel::OnCellChanged(int column, int row) {
-  NotifyRangeChanged(ui::GridRange::Cell(row, column));
+  NotifyRangeChanged(aui::GridRange::Cell(row, column));
 }
 
 void SummaryModel::OnColumnChanged(int column) {
-  NotifyRangeChanged(ui::GridRange::Column(column));
+  NotifyRangeChanged(aui::GridRange::Column(column));
 }
 
 void SummaryModel::OnColumnTitleChanged(int column) {

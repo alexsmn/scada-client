@@ -66,8 +66,8 @@ class SheetController : protected ControllerContext,
  protected:
 #if defined(UI_VIEWS)
   // View
-  virtual bool CanDrop(const ui::OSExchangeData& data) override;
-  virtual int OnPerformDrop(const ui::DropTargetEvent& event) override;
+  virtual bool CanDrop(const aui::OSExchangeData& data) override;
+  virtual int OnPerformDrop(const aui::DropTargetEvent& event) override;
 #endif
 
  private:
@@ -94,7 +94,7 @@ class SheetController : protected ControllerContext,
       int& start,
       std::vector<std::u16string>& list) override;
   virtual bool OnKeyPressed(views::GridView& sender,
-                            ui::KeyboardCode key_code) override;
+                            aui::KeyboardCode key_code) override;
   virtual bool OnDoubleClick() override;
 
   // views::TextfieldController

@@ -2,9 +2,9 @@
 
 #include "base/promise.h"
 #include "common/node_state.h"
+#include "controls/models/grid_model.h"
+#include "controls/models/table_column.h"
 #include "node_service/node_ref.h"
-#include "ui/base/models/grid_model.h"
-#include "ui/base/models/table_column.h"
 
 #include <string>
 #include <unordered_set>
@@ -25,10 +25,10 @@ struct PropertyContext {
 
 class PropertyDefinition {
  public:
-  explicit PropertyDefinition(ui::TableColumn::Alignment alignment,
+  explicit PropertyDefinition(aui::TableColumn::Alignment alignment,
                               int width = 0);
 
-  ui::TableColumn::Alignment alignment() const { return alignment_; }
+  aui::TableColumn::Alignment alignment() const { return alignment_; }
   int width() const { return width_; }
 
   virtual bool IsReadOnly(const NodeRef& node,
@@ -48,13 +48,13 @@ class PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const;
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const;
 
  private:
-  ui::TableColumn::Alignment alignment_;
+  aui::TableColumn::Alignment alignment_;
   int width_;
 };
 
@@ -64,7 +64,7 @@ class HierachicalPropertyDefinition : public PropertyDefinition {
 
   explicit HierachicalPropertyDefinition(Children children)
       : children_(std::move(children)),
-        PropertyDefinition(ui::TableColumn::LEFT) {}
+        PropertyDefinition(aui::TableColumn::LEFT) {}
 
   const Children& children() const { return children_; }
 
@@ -78,7 +78,7 @@ class HierachicalPropertyDefinition : public PropertyDefinition {
 
 class ReferencePropertyDefinition : public PropertyDefinition {
  public:
-  ReferencePropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
+  ReferencePropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
@@ -89,7 +89,7 @@ class ReferencePropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -99,14 +99,14 @@ class ReferencePropertyDefinition : public PropertyDefinition {
 
 class BoolPropertyDefinition : public PropertyDefinition {
  public:
-  BoolPropertyDefinition() : PropertyDefinition(ui::TableColumn::CENTER) {}
+  BoolPropertyDefinition() : PropertyDefinition(aui::TableColumn::CENTER) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -114,7 +114,7 @@ class BoolPropertyDefinition : public PropertyDefinition {
 
 class EnumPropertyDefinition : public PropertyDefinition {
  public:
-  EnumPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
+  EnumPropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
@@ -125,7 +125,7 @@ class EnumPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -134,7 +134,7 @@ class EnumPropertyDefinition : public PropertyDefinition {
 class ChannelPropertyDefinition : public PropertyDefinition {
  public:
   ChannelPropertyDefinition(std::u16string title, bool device)
-      : PropertyDefinition(ui::TableColumn::LEFT),
+      : PropertyDefinition(aui::TableColumn::LEFT),
         title_(std::move(title)),
         device_(device) {}
 
@@ -150,7 +150,7 @@ class ChannelPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -164,10 +164,10 @@ class ChannelPropertyDefinition : public PropertyDefinition {
 
 class TransportPropertyDefinition : public PropertyDefinition {
  public:
-  TransportPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
+  TransportPropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
@@ -175,7 +175,7 @@ class TransportPropertyDefinition : public PropertyDefinition {
 
 class ColorPropertyDefinition : public PropertyDefinition {
  public:
-  ColorPropertyDefinition() : PropertyDefinition(ui::TableColumn::LEFT) {}
+  ColorPropertyDefinition() : PropertyDefinition(aui::TableColumn::LEFT) {}
 
   // PropertyDefinition
   virtual std::u16string GetText(
@@ -186,7 +186,7 @@ class ColorPropertyDefinition : public PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const override;
-  virtual ui::EditData GetPropertyEditor(
+  virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;

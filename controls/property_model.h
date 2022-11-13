@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/base/models/edit_data.h"
+#include "controls/models/edit_data.h"
 
 #include <functional>
 
@@ -18,7 +18,7 @@ class PropertyGroup {
   virtual ItemType GetType(int index) const = 0;
   virtual bool IsInherited(int index) const = 0;
   virtual void SetValue(int index, const std::u16string& value) = 0;
-  virtual ui::EditData GetEditData(int index) const = 0;
+  virtual aui::EditData GetEditData(int index) const = 0;
 };
 
 class PropertyModel {

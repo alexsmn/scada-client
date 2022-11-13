@@ -7,7 +7,7 @@
 #include <boost/signals2/connection.hpp>
 #include <memory>
 
-namespace ui {
+namespace aui {
 class TreeModel;
 }
 
@@ -28,7 +28,7 @@ class NodePropertyController : protected ControllerContext, public Controller {
   SelectionModel selection_{{timed_data_service_}};
 
   std::shared_ptr<NodePropertyModel> property_model_;
-  std::shared_ptr<ui::TreeModel> tree_model_;
+  std::shared_ptr<aui::TreeModel> tree_model_;
 
   Tree* tree_view_ = nullptr;
 

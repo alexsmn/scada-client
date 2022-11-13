@@ -2,13 +2,13 @@
 
 #include "base/boost_log.h"
 #include "base/time/time.h"
-#include "contents_model.h"
-#include "core/aggregate_filter.h"
 #include "common/node_state.h"
+#include "contents_model.h"
+#include "controls/models/grid_model.h"
+#include "core/aggregate_filter.h"
 #include "export_model.h"
 #include "node_service/node_ref.h"
 #include "time_model.h"
-#include "ui/base/models/grid_model.h"
 
 #include <memory>
 
@@ -27,7 +27,7 @@ struct SummaryModelContext {
 };
 
 class SummaryModel : private SummaryModelContext,
-                     public ui::GridModel,
+                     public aui::GridModel,
                      public ContentsModel,
                      public TimeModel,
                      public ExportModel {
@@ -55,8 +55,8 @@ class SummaryModel : private SummaryModelContext,
   void Load(const WindowDefinition& definition);
   void Save(WindowDefinition& definition);
 
-  ui::HeaderModel& row_model();
-  ui::HeaderModel& column_model();
+  aui::HeaderModel& row_model();
+  aui::HeaderModel& column_model();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
 
@@ -66,8 +66,8 @@ class SummaryModel : private SummaryModelContext,
   base::Time GetRowTime(int row) const;
   int GetRowForTime(base::Time time) const;
 
-  // ui::GridModel
-  virtual void GetCell(ui::GridCell& cell) override;
+  // aui::GridModel
+  virtual void GetCell(aui::GridCell& cell) override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,

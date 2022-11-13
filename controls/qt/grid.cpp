@@ -1,8 +1,8 @@
 #include "controls/qt/grid.h"
 
 #include "base/value_util.h"
-#include "ui/base/models/grid_model_util.h"
-#include "ui/base/models/grid_range.h"
+#include "controls/models/grid_model_util.h"
+#include "controls/models/grid_range.h"
 
 #include <QClipboard>
 #include <QGuiApplication>
@@ -18,16 +18,16 @@ const int kSelectionRectWidth = 3;
 const Qt::GlobalColor kExpandRectColor = Qt::blue;
 const int kExpandHandleSize = 5;
 
-ui::GridRange ToUiGridRange(const QItemSelectionRange& range) {
-  return ui::GridRange::Range(range.top(), range.left(), range.height(),
-                              range.width());
+aui::GridRange ToUiGridRange(const QItemSelectionRange& range) {
+  return aui::GridRange::Range(range.top(), range.left(), range.height(),
+                               range.width());
 }
 
 }  // namespace
 
-Grid::Grid(std::shared_ptr<ui::GridModel> model,
-           std::shared_ptr<ui::HeaderModel> row_model,
-           std::shared_ptr<ui::HeaderModel> column_model)
+Grid::Grid(std::shared_ptr<aui::GridModel> model,
+           std::shared_ptr<aui::HeaderModel> row_model,
+           std::shared_ptr<aui::HeaderModel> column_model)
     : model_{model},
       model_adapter_{model, row_model, column_model},
       item_delegate_{[model](const QModelIndex& index) {
@@ -264,23 +264,23 @@ void Grid::Expand(const QItemSelectionRange& range,
     return;
 
   const bool ctrl_pressed = GetAsyncKeyState(VK_CONTROL) < 0;
-  ui::ExpandGridRange(*model_, ToUiGridRange(range),
-                      ToUiGridRange(expand_range), !ctrl_pressed);
+  aui::ExpandGridRange(*model_, ToUiGridRange(range),
+                       ToUiGridRange(expand_range), !ctrl_pressed);
 }
 
-ui::GridModelIndex Grid::GetCurrentIndex() const {
+aui::GridModelIndex Grid::GetCurrentIndex() const {
   auto index = currentIndex();
-  return index.isValid() ? ui::GridModelIndex{index.row(), index.column()}
-                         : ui::GridModelIndex{};
+  return index.isValid() ? aui::GridModelIndex{index.row(), index.column()}
+                         : aui::GridModelIndex{};
 }
 
-ui::GridRange Grid::GetSelectionRange() const {
+aui::GridRange Grid::GetSelectionRange() const {
   if (!selection_range_.isValid() || selection_range_.isEmpty())
     return {};
 
-  return ui::GridRange::Range(selection_range_.top(), selection_range_.left(),
-                              selection_range_.height(),
-                              selection_range_.width());
+  return aui::GridRange::Range(selection_range_.top(), selection_range_.left(),
+                               selection_range_.height(),
+                               selection_range_.width());
 }
 
 void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
@@ -288,7 +288,7 @@ void Grid::SetSelectionChangeHandler(SelectionChangeHandler handler) {
           handler);
 }
 
-void Grid::OpenEditor(const ui::GridModelIndex& index) {
+void Grid::OpenEditor(const aui::GridModelIndex& index) {
   assert(index.is_valid());
   edit(model()->index(index.row, index.column));
 }

@@ -8,14 +8,11 @@
 #include <vector>
 
 namespace aui {
+class GridModel;
+class HeaderModel;
 class TableModel;
 struct TableColumn;
 }  // namespace aui
-
-namespace ui {
-class GridModel;
-class HeaderModel;
-}  // namespace ui
 
 class ExportModel {
  public:
@@ -38,9 +35,9 @@ class ExportModel {
 
   struct GridExportData {
     aui::TableColumn row_title_column;
-    ui::GridModel& model;
-    ui::HeaderModel& rows;
-    ui::HeaderModel& columns;
+    aui::GridModel& model;
+    aui::HeaderModel& rows;
+    aui::HeaderModel& columns;
   };
 
   using ExportData = std::variant<TableExportData, GridExportData>;

@@ -2,7 +2,7 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "controls/color.h"
-#include "ui/base/models/tree_model.h"
+#include "controls/models/tree_model.h"
 
 #include <cassert>
 #include <windows.h>
@@ -19,7 +19,7 @@ void set_flag(Wt::WFlags<T>& flags, T flag, bool value) {
 
 }  // namespace
 
-TreeModelAdapter::TreeModelAdapter(std::shared_ptr<ui::TreeModel> model)
+TreeModelAdapter::TreeModelAdapter(std::shared_ptr<aui::TreeModel> model)
     : model_{std::move(model)} {
   model_->AddObserver(*this);
 }
