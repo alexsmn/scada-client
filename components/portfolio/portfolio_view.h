@@ -9,8 +9,11 @@
 
 #include <memory>
 
-class PortfolioTreeModel;
+namespace aui {
 class Tree;
+}
+
+class PortfolioTreeModel;
 
 class PortfolioView : protected ControllerContext,
                       public Controller,
@@ -43,7 +46,7 @@ class PortfolioView : protected ControllerContext,
 
   SelectionModel selection_{{timed_data_service_}};
 
-  Tree* tree_ = nullptr;
+  aui::Tree* tree_ = nullptr;
 
   CommandRegistry command_registry_;
 };

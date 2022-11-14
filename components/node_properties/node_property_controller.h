@@ -8,11 +8,11 @@
 #include <memory>
 
 namespace aui {
+class Tree;
 class TreeModel;
-}
+}  // namespace aui
 
 class NodePropertyModel;
-class Tree;
 
 class NodePropertyController : protected ControllerContext, public Controller {
  public:
@@ -30,7 +30,7 @@ class NodePropertyController : protected ControllerContext, public Controller {
   std::shared_ptr<NodePropertyModel> property_model_;
   std::shared_ptr<aui::TreeModel> tree_model_;
 
-  Tree* tree_view_ = nullptr;
+  aui::Tree* tree_view_ = nullptr;
 
   boost::signals2::scoped_connection node_deleted_connection_;
 };

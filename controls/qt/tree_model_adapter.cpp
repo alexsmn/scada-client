@@ -15,6 +15,8 @@
 #include <QtWin>
 #endif
 
+namespace aui {
+
 namespace {
 
 std::unique_ptr<QMimeData> CreateMimeData(const DragData& drag_data) {
@@ -69,8 +71,8 @@ TreeModelAdapter::~TreeModelAdapter() {
 
 void TreeModelAdapter::LoadIcons(unsigned resource_id,
                                  int width,
-                                 QColor mask_color) {
-  icons_ = ::LoadIcons(resource_id, width, mask_color);
+                                 Color mask_color) {
+  icons_ = ::LoadIcons(resource_id, width, mask_color.qcolor());
 }
 
 void* TreeModelAdapter::GetNode(const QModelIndex& index) const {
@@ -384,3 +386,5 @@ DropAction TreeModelAdapter::GetDropAction(const QMimeData* data,
 
   return drop_handler(drop_action, drag_data, node);
 }
+
+}  // namespace aui

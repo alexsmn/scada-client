@@ -216,7 +216,7 @@ void SheetController::ChooseSelectionColor() {
 
   const auto& new_color = QColorDialog::getColor(current_color.qcolor(), grid_);
   if (new_color.isValid())
-    model_->SetRangeColor(range, aui::Color::FromQColor(new_color));
+    model_->SetRangeColor(range, new_color);
 #endif
 }
 

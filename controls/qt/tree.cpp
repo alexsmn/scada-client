@@ -10,6 +10,8 @@
 #include <QPainter>
 #include <QSortFilterProxyModel>
 
+namespace aui {
+
 // TreeProxyModel
 
 class TreeProxyModel : public QSortFilterProxyModel {
@@ -47,7 +49,7 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
 
 // Tree
 
-Tree::Tree(std::shared_ptr<aui::TreeModel> model)
+Tree::Tree(std::shared_ptr<TreeModel> model)
     : model_adapter_{std::make_unique<TreeModelAdapter>(model)},
       proxy_model_{std::make_unique<TreeProxyModel>(*this)},
       item_delegate_{std::make_unique<ItemDelegate>(
@@ -94,8 +96,8 @@ void Tree::SetSorted(bool sorted) {
     sortByColumn(0, Qt::SortOrder::AscendingOrder);
 }
 
-void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
-  model_adapter_->LoadIcons(resource_id, width, ToQColor(mask_color));
+void Tree::LoadIcons(unsigned resource_id, int width, Color mask_color) {
+  model_adapter_->LoadIcons(resource_id, width, mask_color);
 }
 
 void Tree::SelectNode(void* node) {
@@ -278,3 +280,5 @@ void Tree::SetDropHandler(DropHandler handler) {
 
   model_adapter_->drop_handler = std::move(handler);
 }
+
+}  // namespace aui

@@ -48,7 +48,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   tree_model_ = std::shared_ptr<aui::PropertyTreeModel>(
       tree_model_holder, &tree_model_holder->tree_model);
 
-  tree_view_ = new Tree{tree_model_};
+  tree_view_ = new aui::Tree{tree_model_};
 
   /*tree_view_->SetColumnWidth(0, 150);
   tree_view_->SetColumnWidth(1, 200);*/

@@ -3,31 +3,15 @@
 #include "controls/color.h"
 #include "controls/models/tree_model.h"
 #include "controls/wt/tree_model_adapter.h"
+#include "controls/wt/tree_proxy_model.h"
 
 #include <Wt/WPainter.h>
 
-// TreeProxyModel
-
-void TreeProxyModel::SetCompareHandler(TreeCompareHandler handler) {
-  compare_handler_ = std::move(handler);
-  invalidate();
-}
-
-bool TreeProxyModel::lessThan(const Wt::WModelIndex& source_left,
-                              const Wt::WModelIndex& source_right) const {
-  assert(source_left.column() == source_right.column());
-
-  if (compare_handler_ && source_left.column() == 0) {
-    return compare_handler_(tree_.model_adapter_->GetNode(source_left),
-                            tree_.model_adapter_->GetNode(source_right)) < 0;
-  }
-
-  return WSortFilterProxyModel::lessThan(source_left, source_right);
-}
+namespace aui {
 
 // Tree
 
-Tree::Tree(std::shared_ptr<aui::TreeModel> model)
+Tree::Tree(std::shared_ptr<TreeModel> model)
     : model_adapter_{std::make_shared<TreeModelAdapter>(model)},
       proxy_model_{std::make_shared<TreeProxyModel>(*this)} {
   setSelectionMode(Wt::SelectionMode::Single);
@@ -72,7 +56,7 @@ void Tree::SetSorted(bool sorted) {
     sortByColumn(0, Wt::SortOrder::Ascending);
 }
 
-void Tree::LoadIcons(unsigned resource_id, int width, UiColor mask_color) {
+void Tree::LoadIcons(unsigned resource_id, int width, Color mask_color) {
   // model_adapter_->LoadIcons(resource_id, width, ToQColor(mask_color));
 }
 
@@ -248,3 +232,5 @@ void Tree::SetDragHandler(std::vector<std::string> mime_types,
                           DragHandler handler) {}
 
 void Tree::SetDropHandler(DropHandler handler) {}
+
+}  // namespace aui

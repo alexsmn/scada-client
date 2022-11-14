@@ -42,8 +42,7 @@ std::optional<aui::Color> GetNodeColor(const NodeRef& node,
   if (color_index >= 0 && color_index < static_cast<int>(aui::GetColorCount()))
     return aui::GetColor(color_index);
 
-  return bool_value ? aui::Color::FromSkColor(SK_ColorRED)
-                    : aui::Color::FromSkColor(SK_ColorBLACK);
+  return bool_value ? aui::ColorCode::Red : aui::ColorCode::Black;
 }
 
 std::u16string FormatCellTime(scada::DateTime time) {

@@ -211,7 +211,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
 bool GraphView::FindColor(aui::Color color) const {
   for (auto* pane : graph_->panes()) {
     for (auto* line : pane->plot().lines())
-      if (aui::Color::FromNativeColor(line->color()) == color)
+      if (aui::Color{line->color()} == color)
         return true;
   }
   return false;
@@ -260,8 +260,7 @@ void GraphView::Save(WindowDefinition& definition) {
       WindowItem& item = definition.AddItem("Item");
       item.SetInt("pane", pane_ix);
       item.SetString("path", line.data_source().GetPath());
-      item.SetString(
-          "clr", aui::ColorToString(aui::Color::FromNativeColor(line.color())));
+      item.SetString("clr", aui::ColorToString(line.color()));
       item.SetInt("dots", line.dots_shown() ? 1 : 0);
       item.SetInt("stepped", line.stepped() ? 1 : 0);
     }
@@ -326,7 +325,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   const auto& lines = pane->plot().lines();
   if (!lines.empty()) {
     // empty selected pane
-    color = aui::Color::FromNativeColor(lines.front()->color());
+    color = lines.front()->color();
     ClearPane(*pane);
   }
 

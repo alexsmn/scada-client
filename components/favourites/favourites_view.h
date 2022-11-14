@@ -7,7 +7,10 @@
 
 #include <memory>
 
+namespace aui {
 class Tree;
+}
+
 class FavouritesTreeModel;
 class WindowDefinition;
 
@@ -31,7 +34,7 @@ class FavouritesView : protected ControllerContext, public Controller {
 
   const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
 
-  Tree* tree_view_ = nullptr;
+  aui::Tree* tree_view_ = nullptr;
 
   CommandRegistry command_registry_;
   Command& open_command_ = command_registry_.AddCommand(ID_OPEN);

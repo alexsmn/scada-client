@@ -3,61 +3,40 @@
 #include "controls/color.h"
 
 #include <QColor>
-#include <SkColor.h>
-
-QColor ToQColor(SkColor color);
-SkColor ToSkColor(QColor qcolor) noexcept;
+#include <QRgb>
 
 namespace aui {
 
-using NativeColor = ::QColor;
+class Color {
+ public:
+  constexpr Color(QColor qcolor) : qcolor_{qcolor} {}
+  Color(const Rgba& rgba) noexcept : qcolor_{rgba.r, rgba.g, rgba.b, rgba.a} {}
 
-struct Color {
-  Color(const Rgba& rgba) noexcept
-      : native_color_{rgba.r, rgba.g, rgba.b, rgba.a} {}
+  QColor qcolor() const noexcept { return qcolor_; }
+  QColor native_color() const noexcept { return qcolor_; }
 
-  static Color FromSkColor(::SkColor sk_color) {
-    return FromQColor(ToQColor(sk_color));
+  Rgba rgba() const noexcept {
+    const QRgb& qrgba = qcolor_.rgba();
+    return Rgba{static_cast<std::uint8_t>(qRed(qrgba)),
+                static_cast<std::uint8_t>(qGreen(qrgba)),
+                static_cast<std::uint8_t>(qRed(qrgba)),
+                static_cast<std::uint8_t>(qAlpha(qrgba))};
   }
-
-  static Color FromQColor(::QColor qcolor) noexcept {
-    return FromNativeColor(qcolor);
-  }
-
-  static Color FromNativeColor(NativeColor native_color) {
-    return Color{native_color};
-  }
-
-  NativeColor native_color() const noexcept { return native_color_; }
-
-  SkColor sk_color() const noexcept { return ToSkColor(native_color_); }
-
-  QColor qcolor() const noexcept { return native_color_; }
 
   bool operator==(const Color& other) const noexcept {
-    return native_color_ == other.native_color_;
+    return qcolor_ == other.qcolor_;
   }
+
   bool operator!=(const Color& other) const noexcept {
-    return native_color_ != other.native_color_;
+    return qcolor_ != other.qcolor_;
   }
+
   bool operator<(const Color& other) const noexcept {
-    return sk_color() < other.sk_color();
+    return rgba() < other.rgba();
   }
 
  private:
-  explicit Color(NativeColor native_color) : native_color_{native_color} {}
-
-  NativeColor native_color_;
+  QColor qcolor_;
 };
 
 }  // namespace aui
-
-inline QColor ToQColor(SkColor color) {
-  return QColor{SkColorGetR(color), SkColorGetG(color), SkColorGetB(color),
-                SkColorGetA(color)};
-}
-
-inline SkColor ToSkColor(QColor qcolor) noexcept {
-  return SkColorSetARGB(qcolor.alpha(), qcolor.red(), qcolor.green(),
-                        qcolor.blue());
-}

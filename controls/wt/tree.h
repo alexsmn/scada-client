@@ -4,32 +4,14 @@
 #include "controls/color.h"
 #include "controls/handlers.h"
 #include "controls/wt/item_delegate.h"
-#include "controls/wt/tree_model_adapter.h"
 
-#include <Wt/WSortFilterProxyModel.h>
 #include <Wt/WTreeView.h>
 
 namespace aui {
+
 class TreeModel;
-}
-
-class Tree;
-
-class TreeProxyModel : public Wt::WSortFilterProxyModel {
- public:
-  explicit TreeProxyModel(Tree& tree) : tree_{tree} {}
-
-  void SetCompareHandler(TreeCompareHandler handler);
-
- protected:
-  // QSortFilterProxyModel
-  virtual bool lessThan(const Wt::WModelIndex& source_left,
-                        const Wt::WModelIndex& source_right) const override;
-
- private:
-  Tree& tree_;
-  TreeCompareHandler compare_handler_;
-};
+class TreeModelAdapter;
+class TreeProxyModel;
 
 class Tree : public Wt::WTreeView {
  public:
@@ -39,7 +21,7 @@ class Tree : public Wt::WTreeView {
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
-  void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
+  void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
@@ -92,3 +74,5 @@ class Tree : public Wt::WTreeView {
 
   friend class TreeProxyModel;
 };
+
+}  // namespace aui

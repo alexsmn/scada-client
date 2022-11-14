@@ -20,9 +20,9 @@ PortfolioView::PortfolioView(const ControllerContext& context)
 PortfolioView::~PortfolioView() {}
 
 UiView* PortfolioView::Init(const WindowDefinition& definition) {
-  tree_ = new Tree{model_};
+  tree_ = new aui::Tree{model_};
   tree_->SetRootVisible(false);
-  tree_->LoadIcons(IDB_ITEMS, 16, UiColorRGB(255, 0, 255));
+  tree_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
 
   tree_->SetDoubleClickHandler([this] {
     PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());

@@ -62,7 +62,7 @@ std::u16string NodeTableModel::GetRowTitle(int row) {
 void NodeTableModel::GetCell(aui::GridCell& cell) {
   if (loading_) {
     cell.text = kFetching;
-    cell.cell_color = aui::ToColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
     return;
   }
 
@@ -74,14 +74,14 @@ void NodeTableModel::GetCell(aui::GridCell& cell) {
 
   if (column.attr_id == scada::AttributeId::NodeId) {
     cell.text = base::UTF8ToUTF16(NodeIdToScadaString(node.node_id()));
-    cell.cell_color = aui::ToColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
   } else if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = base::UTF8ToUTF16(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
   else if (column.prop_def->IsReadOnly(node,
                                        column.property_declaration.node_id()))
-    cell.cell_color = aui::ToColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
   else
     cell.text = column.prop_def->GetText(*this, node,
                                          column.property_declaration.node_id());

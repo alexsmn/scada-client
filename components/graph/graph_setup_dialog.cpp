@@ -56,8 +56,7 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
     RECT crect = rect;
     crect.right = crect.left + crect.bottom - crect.top;
     dc.SelectStockBrush(DC_BRUSH);
-    dc.SetDCBrushColor(
-        skia::SkColorToCOLORREF(aui::GetColor(dis->itemID).sk_color()));
+    dc.SetDCBrushColor(aui::ToCOLORREF(aui::GetColor(dis->itemID)));
     dc.SelectStockPen(BLACK_PEN);
     dc.Rectangle(&crect);
     // draw text

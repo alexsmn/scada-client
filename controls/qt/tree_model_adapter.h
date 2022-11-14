@@ -1,22 +1,22 @@
 #pragma once
 
+#include "controls/color.h"
 #include "controls/handlers.h"
-#include "controls/models/tree_node_model.h"
+#include "controls/models/tree_model.h"
 #include "ui/base/dragdrop/os_exchange_data.h"
 
 #include <QAbstractitemmodel>
 #include <memory>
 
-namespace ui {
-class TreeModel;
-}
-
 class QIcon;
 
-class TreeModelAdapter : public QAbstractItemModel,
-                         private aui::TreeModelObserver {
+namespace aui {
+
+class TreeModel;
+
+class TreeModelAdapter : public QAbstractItemModel, private TreeModelObserver {
  public:
-  explicit TreeModelAdapter(std::shared_ptr<aui::TreeModel> model);
+  explicit TreeModelAdapter(std::shared_ptr<TreeModel> model);
   virtual ~TreeModelAdapter();
 
   void SetCheckable(bool checkable) { checkable_ = checkable; }
@@ -30,7 +30,7 @@ class TreeModelAdapter : public QAbstractItemModel,
   void SetChecked(void* node, bool checked);
   void SetCheckedNodes(std::set<void*> nodes);
 
-  void LoadIcons(unsigned resource_id, int width, QColor mask_color);
+  void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetNodeIndex(void* node, int column) const;
@@ -86,7 +86,7 @@ class TreeModelAdapter : public QAbstractItemModel,
                            int column,
                            const QModelIndex& parent) const;
 
-  // private aui::TreeModelObserver
+  // private TreeModelObserver
   virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
@@ -95,7 +95,7 @@ class TreeModelAdapter : public QAbstractItemModel,
   virtual void OnTreeModelResetting() override;
   virtual void OnTreeModelReset() override;
 
-  const std::shared_ptr<aui::TreeModel> model_;
+  const std::shared_ptr<TreeModel> model_;
 
   std::vector<QIcon> icons_;
 
@@ -106,3 +106,5 @@ class TreeModelAdapter : public QAbstractItemModel,
   QStringList supported_mime_types_;
   DragHandler drag_handler_;
 };
+
+}  // namespace aui

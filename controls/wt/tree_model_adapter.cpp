@@ -7,6 +7,8 @@
 #include <cassert>
 #include <windows.h>
 
+namespace aui {
+
 namespace {
 
 template <class T>
@@ -19,7 +21,7 @@ void set_flag(Wt::WFlags<T>& flags, T flag, bool value) {
 
 }  // namespace
 
-TreeModelAdapter::TreeModelAdapter(std::shared_ptr<aui::TreeModel> model)
+TreeModelAdapter::TreeModelAdapter(std::shared_ptr<TreeModel> model)
     : model_{std::move(model)} {
   model_->AddObserver(*this);
 }
@@ -270,3 +272,5 @@ void TreeModelAdapter::OnTreeModelResetting() {
 void TreeModelAdapter::OnTreeModelReset() {
   // endResetModel();
 }
+
+}  // namespace aui

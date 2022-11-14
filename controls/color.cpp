@@ -65,20 +65,35 @@ int FindColorName(std::u16string_view str) {
   return -1;
 }
 
+unsigned EncodeColor(Color color) {
+  const Rgba& rgba = color.rgba();
+  return (static_cast<unsigned>(rgba.a) << 24) |
+         (static_cast<unsigned>(rgba.r) << 16) |
+         (static_cast<unsigned>(rgba.g) << 8) |
+         (static_cast<unsigned>(rgba.b) << 0);
+}
+
+Color DecodeColor(unsigned value) {
+  return Rgba{static_cast<std::uint8_t>((value >> 16) & 0xFF),
+              static_cast<std::uint8_t>((value >> 8) & 0xFF),
+              static_cast<std::uint8_t>((value >> 0) & 0xFF),
+              static_cast<std::uint8_t>((value >> 24) & 0xFF)};
+}
+
 Color StringToColor(std::string_view str) {
   if (!str.empty() && str[0] == '#') {
     auto hex_string = str.substr(1);
     unsigned color = 0;
     if (!base::HexStringToUInt(AsStringPiece(hex_string), &color))
       return ColorCode::Black;
-    return aui::Color::FromSkColor(color);
+    return DecodeColor(color);
   }
 
   return ColorCode::Black;
 }
 
 std::string ColorToString(Color color) {
-  return base::StringPrintf("#%08X", static_cast<unsigned>(color.sk_color()));
+  return base::StringPrintf("#%08X", EncodeColor(color));
 }
 
 }  // namespace aui

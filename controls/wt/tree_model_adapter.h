@@ -7,13 +7,13 @@
 #include <memory>
 
 namespace aui {
+
 class TreeModel;
-}
 
 class TreeModelAdapter : public Wt::WAbstractItemModel,
-                         private aui::TreeModelObserver {
+                         private TreeModelObserver {
  public:
-  explicit TreeModelAdapter(std::shared_ptr<aui::TreeModel> model);
+  explicit TreeModelAdapter(std::shared_ptr<TreeModel> model);
   virtual ~TreeModelAdapter();
 
   void SetCheckable(bool checkable) { checkable_ = checkable; }
@@ -60,7 +60,7 @@ class TreeModelAdapter : public Wt::WAbstractItemModel,
  private:
   int GetIndexOf(void* node) const;
 
-  // private aui::TreeModelObserver
+  // private TreeModelObserver
   virtual void OnTreeNodesAdding(void* parent, int start, int count) override;
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
@@ -69,7 +69,7 @@ class TreeModelAdapter : public Wt::WAbstractItemModel,
   virtual void OnTreeModelResetting() override;
   virtual void OnTreeModelReset() override;
 
-  const std::shared_ptr<aui::TreeModel> model_;
+  const std::shared_ptr<TreeModel> model_;
 
   std::vector<Wt::WIcon> icons_;
 
@@ -77,3 +77,5 @@ class TreeModelAdapter : public Wt::WAbstractItemModel,
   CheckedHandler checked_handler_;
   std::set<void*> checked_nodes_;
 };
+
+}  // namespace aui

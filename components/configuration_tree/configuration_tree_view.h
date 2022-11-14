@@ -7,9 +7,12 @@
 
 #include <memory>
 
+namespace aui {
+class Tree;
+}
+
 class ConfigurationTreeModel;
 class ConfigurationTreeDropHandler;
-class Tree;
 
 #if defined(UI_VIEWS)
 class ConfigurationTreeDragDropControllerViews;
@@ -36,7 +39,7 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
  protected:
   ConfigurationTreeModel& model() const { return *model_; }
 
-  Tree& tree_view() const { return *tree_view_; }
+  aui::Tree& tree_view() const { return *tree_view_; }
 
   std::vector<scada::NodeId> GetVariableNodeIds(
       const std::vector<void*>& nodes) const;
@@ -57,5 +60,5 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
       drag_drop_controller_;
 #endif
 
-  Tree* tree_view_ = nullptr;
+  aui::Tree* tree_view_ = nullptr;
 };

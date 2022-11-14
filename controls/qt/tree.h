@@ -8,23 +8,22 @@
 #include <set>
 
 namespace aui {
+
 class TreeModel;
-}
 
 class ItemDelegate;
-class Tree;
 class TreeModelAdapter;
 class TreeProxyModel;
 
 class Tree : public QTreeView {
  public:
-  explicit Tree(std::shared_ptr<aui::TreeModel> model);
+  explicit Tree(std::shared_ptr<TreeModel> model);
   ~Tree();
 
   void SetRootVisible(bool visible);
   void SetHeaderVisible(bool visible);
 
-  void LoadIcons(unsigned resource_id, int width, UiColor mask_color);
+  void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
   std::vector<void*> GetOrderedNodes(void* root, bool checked) const;
 
@@ -77,3 +76,5 @@ class Tree : public QTreeView {
 
   friend class TreeProxyModel;
 };
+
+}  // namespace aui

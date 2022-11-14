@@ -7,10 +7,11 @@
 
 class QComboBox;
 
+namespace aui {
+
 class ItemDelegate final : public QItemDelegate {
  public:
-  using EditDataProvider =
-      std::function<aui::EditData(const QModelIndex& index)>;
+  using EditDataProvider = std::function<EditData(const QModelIndex& index)>;
 
   explicit ItemDelegate(EditDataProvider edit_data_provider)
       : edit_data_provider_{std::move(edit_data_provider)} {}
@@ -28,8 +29,9 @@ class ItemDelegate final : public QItemDelegate {
  private:
   void CommitAndCloseEditor();
 
-  QComboBox* CreateDropDown(QWidget* parent,
-                            const aui::EditData& edit_data) const;
+  QComboBox* CreateDropDown(QWidget* parent, const EditData& edit_data) const;
 
   const EditDataProvider edit_data_provider_;
 };
+
+}  // namespace aui

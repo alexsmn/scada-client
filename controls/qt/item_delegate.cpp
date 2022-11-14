@@ -6,21 +6,23 @@
 #include <QPushButton>
 #include <cassert>
 
+namespace aui {
+
 QWidget* ItemDelegate::createEditor(QWidget* parent,
                                     const QStyleOptionViewItem& option,
                                     const QModelIndex& index) const {
   auto edit_data = edit_data_provider_(index);
   switch (edit_data.editor_type) {
-    case aui::EditData::EditorType::NONE:
+    case EditData::EditorType::NONE:
       return nullptr;
 
-    case aui::EditData::EditorType::TEXT: {
+    case EditData::EditorType::TEXT: {
       auto* line_edit = new QLineEdit{parent};
       line_edit->setFrame(false);
       return line_edit;
     }
 
-    case aui::EditData::EditorType::BUTTON: {
+    case EditData::EditorType::BUTTON: {
       auto* line_edit = new QLineEdit{parent};
       line_edit->setFrame(false);
       QIcon icon{":/device.png"};
@@ -37,7 +39,7 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       return line_edit;
     }
 
-    case aui::EditData::EditorType::DROPDOWN:
+    case EditData::EditorType::DROPDOWN:
       return CreateDropDown(parent, edit_data);
 
     default:
@@ -81,7 +83,7 @@ void ItemDelegate::CommitAndCloseEditor() {
 }
 
 QComboBox* ItemDelegate::CreateDropDown(QWidget* parent,
-                                        const aui::EditData& edit_data) const {
+                                        const EditData& edit_data) const {
   auto* combo_box = new QComboBox{parent};
   combo_box->setFocusPolicy(Qt::WheelFocus);
   combo_box->setEditable(true);
@@ -125,3 +127,5 @@ QComboBox* ItemDelegate::CreateDropDown(QWidget* parent,
 
   return combo_box;
 }
+
+}  // namespace aui

@@ -6,13 +6,18 @@
 namespace aui {
 
 struct Rgba {
-  int r = 0;
-  int g = 0;
-  int b = 0;
-  int a = 255;
+  std::uint8_t r = 0;
+  std::uint8_t g = 0;
+  std::uint8_t b = 0;
+  std::uint8_t a = 255;
 
   constexpr bool operator==(const Rgba& other) const noexcept {
     return r == other.r && g == other.g && b == other.b && a == other.a;
+  }
+
+  constexpr bool operator<(const Rgba& other) const noexcept {
+    return std::tuple(r, g, b, a) <
+           std::tuple(other.r, other.g, other.b, other.a);
   }
 };
 
@@ -29,17 +34,6 @@ struct Rgba {
 #if defined(OS_WIN)
 #include "controls/color_win.h"
 #endif
-
-#include <SkColor.h>
-
-typedef SkColor UiColor;
-
-#define UiColorRGB(r, g, b) SkColorSetRGB(r, g, b)
-
-// For convenience.
-inline SkColor ToSkColor(SkColor color) {
-  return color;
-}
 
 namespace aui {
 
