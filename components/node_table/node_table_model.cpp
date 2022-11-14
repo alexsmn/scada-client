@@ -11,7 +11,6 @@
 #include "node_service/node_util.h"
 #include "services/property_defs.h"
 #include "services/task_manager.h"
-#include "skia/ext/skia_utils_win.h"
 #include "string_const.h"
 
 using namespace std::chrono_literals;

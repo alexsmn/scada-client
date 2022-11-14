@@ -2,22 +2,23 @@
 
 #include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "controls/models/menu_model.h"
 #include "translation.h"
-#include "ui/base/models/menu_model.h"
 
 #include <QMenu>
+#include <wtypes.h>
 
-void BuildMenu(QMenu& menu, ui::MenuModel& model) {
+void BuildMenu(QMenu& menu, aui::MenuModel& model) {
   model.MenuWillShow();
 
   for (int i = 0; i < model.GetItemCount(); ++i) {
     auto item_type = model.GetTypeAt(i);
     switch (item_type) {
-      case ui::MenuModel::TYPE_SEPARATOR:
+      case aui::MenuModel::TYPE_SEPARATOR:
         menu.addSeparator();
         break;
 
-      case ui::MenuModel::TYPE_SUBMENU:
+      case aui::MenuModel::TYPE_SUBMENU:
         if (auto* submenu_model = model.GetSubmenuModelAt(i)) {
           auto* submenu =
               menu.addMenu(QString::fromStdU16String(model.GetLabelAt(i)));
@@ -29,7 +30,7 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
         }
         break;
 
-      case ui::MenuModel::TYPE_INPLACE_MENU:
+      case aui::MenuModel::TYPE_INPLACE_MENU:
         if (auto* inplace_model = model.GetSubmenuModelAt(i))
           BuildMenu(menu, *inplace_model);
         break;
@@ -38,8 +39,8 @@ void BuildMenu(QMenu& menu, ui::MenuModel& model) {
         auto* action =
             menu.addAction(QString::fromStdU16String(model.GetLabelAt(i)));
         action->setEnabled(model.IsEnabledAt(i));
-        if (item_type == ui::MenuModel::TYPE_CHECK ||
-            item_type == ui::MenuModel::TYPE_RADIO) {
+        if (item_type == aui::MenuModel::TYPE_CHECK ||
+            item_type == aui::MenuModel::TYPE_RADIO) {
           action->setCheckable(true);
           action->setChecked(model.IsItemCheckedAt(i));
         }

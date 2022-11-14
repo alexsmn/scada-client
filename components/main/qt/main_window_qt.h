@@ -71,7 +71,7 @@ class MainWindowQt final : public QMainWindow,
 
   DialogServiceImplQt dialog_service_;
 
-  std::unique_ptr<ui::MenuModel> main_menu_model_;
+  std::unique_ptr<aui::MenuModel> main_menu_model_;
 
   std::unique_ptr<StatusBarController> status_bar_controller_;
 };

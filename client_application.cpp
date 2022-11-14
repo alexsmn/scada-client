@@ -369,7 +369,7 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
   auto main_menu_factory =
       [this](MainWindow& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& main_commands,
-             ui::MenuModel& context_menu_model) {
+             aui::MenuModel& context_menu_model) {
         return std::make_unique<MainMenuModel>(MainMenuContext{
             executor_, *main_window_manager_, main_window, *action_manager_,
             *favourites_, *file_cache_,

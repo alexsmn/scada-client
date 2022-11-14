@@ -1,13 +1,13 @@
 #pragma once
 
-#include "ui/base/models/simple_menu_model.h"
+#include "controls/models/simple_menu_model.h"
 #include "simple_menu_command_handler.h"
 
 class ActionManager;
 class MainWindow;
 class CommandHandler;
 
-class ContextMenuModel final : public ui::SimpleMenuModel {
+class ContextMenuModel final : public aui::SimpleMenuModel {
  public:
   ContextMenuModel(MainWindow& main_window,
                    ActionManager& action_manager,
@@ -23,5 +23,5 @@ class ContextMenuModel final : public ui::SimpleMenuModel {
   ActionManager& action_manager_;
 
   SimpleMenuCommandHandler command_handler_;
-  std::vector<std::unique_ptr<ui::MenuModel>> submenus_;
+  std::vector<std::unique_ptr<aui::MenuModel>> submenus_;
 };

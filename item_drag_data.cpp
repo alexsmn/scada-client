@@ -6,13 +6,13 @@ namespace {
 const uint16_t kVersion = 0;
 }
 
-void ItemDragData::Save(ui::OSExchangeData& data) const {
+void ItemDragData::Save(aui::OSExchangeData& data) const {
   base::Pickle pickle;
   Save(pickle);
   data.SetPickledData(GetCustomFormat(), pickle);
 }
 
-bool ItemDragData::Load(const ui::OSExchangeData& data) {
+bool ItemDragData::Load(const aui::OSExchangeData& data) {
   base::Pickle pickle;
   if (!data.GetPickledData(GetCustomFormat(), pickle))
     return false;
@@ -96,8 +96,8 @@ bool ItemDragData::Load(const DragData& drag_data) {
 }
 
 // static
-ui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
-  static const ui::OSExchangeData::CustomFormat kFormat =
-      ui::OSExchangeData::RegisterCustomFormat("telecontrol/scada/node");
+aui::OSExchangeData::CustomFormat ItemDragData::GetCustomFormat() {
+  static const aui::OSExchangeData::CustomFormat kFormat =
+      aui::OSExchangeData::RegisterCustomFormat("telecontrol/scada/node");
   return kFormat;
 }

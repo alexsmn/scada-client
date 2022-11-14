@@ -5,8 +5,8 @@
 class DialogServiceImplQt final : public DialogService {
  public:
   // DialogService
-  virtual gfx::NativeView GetDialogOwningWindow() const override;
-  virtual QWidget* GetParentWidget() const override;
+  virtual UiView* GetDialogOwningWindow() const override;
+  virtual UiView* GetParentWidget() const override;
   virtual promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
                                                   std::u16string_view title,
                                                   MessageBoxMode mode) override;

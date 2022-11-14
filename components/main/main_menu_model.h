@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/containers/span.h"
+#include "controls/models/simple_menu_model.h"
 #include "services/file_cache.h"
-#include "ui/base/models/simple_menu_model.h"
 
 #include <filesystem>
 
@@ -31,10 +31,10 @@ struct MainMenuContext {
   ViewManager& view_manager_;
   CommandHandler& command_handler_;
   DialogService& dialog_service_;
-  ui::MenuModel& context_menu_model_;
+  aui::MenuModel& context_menu_model_;
 };
 
-class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
  public:
   explicit DisplayMenuModel(const MainMenuContext& context);
 
@@ -55,7 +55,7 @@ class DisplayMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
 };
 
 class FavouritesMenuModel : private MainMenuContext,
-                            public ui::SimpleMenuModel {
+                            public aui::SimpleMenuModel {
  public:
   FavouritesMenuModel(base::span<const WindowInfo* const> window_infos,
                       const MainMenuContext& context);
@@ -73,7 +73,7 @@ class FavouritesMenuModel : private MainMenuContext,
   std::vector<const WindowDefinition*> windows_;
 };
 
-class PageMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+class PageMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
  public:
   explicit PageMenuModel(const MainMenuContext& context);
 
@@ -91,10 +91,10 @@ class PageMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   base::WeakPtrFactory<PageMenuModel> weak_ptr_factory_{this};
 };
 
-class WindowMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+class WindowMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
  public:
   explicit WindowMenuModel(const MainMenuContext& context)
-      : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
+      : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
 
   // views::MenuModel
   virtual void MenuWillShow() override;
@@ -105,10 +105,10 @@ class WindowMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
   int active_index_ = -1;
 };
 
-class TrashMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
+class TrashMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
  public:
   explicit TrashMenuModel(const MainMenuContext& context)
-      : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
+      : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
 
   // views::MenuModel
   virtual void MenuWillShow() override;
@@ -120,7 +120,7 @@ class TrashMenuModel : private MainMenuContext, public ui::SimpleMenuModel {
 };
 
 #if defined(UI_QT)
-class StyleMenuModel : public ui::SimpleMenuModel {
+class StyleMenuModel : public aui::SimpleMenuModel {
  public:
   StyleMenuModel();
 
@@ -132,36 +132,33 @@ class StyleMenuModel : public ui::SimpleMenuModel {
 #endif  // defined(UI_QT)
 
 class MainMenuModel final : private MainMenuContext,
-                            private ui::SimpleMenuModel::Delegate,
-                            public ui::SimpleMenuModel {
+                            private aui::SimpleMenuModel::Delegate,
+                            public aui::SimpleMenuModel {
  public:
   explicit MainMenuModel(const MainMenuContext& context);
 
  private:
   void Rebuild();
 
-  // ui::SimpleMenuModel::Delegate
+  // aui::SimpleMenuModel::Delegate
   virtual bool IsCommandIdChecked(int command_id) const override;
   virtual bool IsCommandIdEnabled(int command_id) const override;
-  virtual bool GetAcceleratorForCommandId(
-      int command_id,
-      ui::Accelerator* accelerator) override;
   virtual void ExecuteCommand(int command_id) override;
 
   DisplayMenuModel display_menu_model_;
   FavouritesMenuModel table_favourites_;
-  ui::SimpleMenuModel table_submenu_;
+  aui::SimpleMenuModel table_submenu_;
   std::unique_ptr<FavouritesMenuModel> graph_favourites_;
-  ui::SimpleMenuModel graph_submenu_;
-  ui::SimpleMenuModel more_submenu_;
+  aui::SimpleMenuModel graph_submenu_;
+  aui::SimpleMenuModel more_submenu_;
   PageMenuModel page_list_menu_;
-  ui::SimpleMenuModel page_submenu_;
+  aui::SimpleMenuModel page_submenu_;
   WindowMenuModel window_list_menu_;
   TrashMenuModel trash_menu_;
-  ui::SimpleMenuModel window_submenu_;
+  aui::SimpleMenuModel window_submenu_;
 #if defined(UI_QT)
   StyleMenuModel style_submenu_;
 #endif
-  ui::SimpleMenuModel settings_submenu_;
-  ui::SimpleMenuModel help_submenu_;
+  aui::SimpleMenuModel settings_submenu_;
+  aui::SimpleMenuModel help_submenu_;
 };

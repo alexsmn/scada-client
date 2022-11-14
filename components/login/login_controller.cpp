@@ -14,6 +14,7 @@
 #include "services/dialog_service.h"
 
 #include <algorithm>
+#include <windows.h> // for VK_CONTROL
 
 #undef StrCat
 #include "base/strings/strcat.h"

@@ -3,7 +3,6 @@
 #include "components/modus/activex/modus_document.h"
 #include "components/modus/modus_view_wrapper.h"
 #include "common/node_state.h"
-#include "ui/views/controls/activex_control.h"
 
 #include <QAxWidget>
 

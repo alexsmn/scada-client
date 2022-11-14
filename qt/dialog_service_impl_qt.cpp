@@ -91,11 +91,11 @@ promise<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
   return make_resolved_promise(MapQtMesageBoxResult(result));
 }
 
-gfx::NativeView DialogServiceImplQt::GetDialogOwningWindow() const {
+UiView* DialogServiceImplQt::GetDialogOwningWindow() const {
   return nullptr;
 }
 
-QWidget* DialogServiceImplQt::GetParentWidget() const {
+UiView* DialogServiceImplQt::GetParentWidget() const {
   return parent_widget;
 }
 

@@ -7,12 +7,12 @@
 ContextMenuModel::ContextMenuModel(MainWindow& main_window,
                                    ActionManager& action_manager,
                                    CommandHandler& command_handler)
-    : ui::SimpleMenuModel{&command_handler_},
+    : aui::SimpleMenuModel{&command_handler_},
       main_window_{main_window},
       action_manager_{action_manager},
       command_handler_{command_handler} {}
 
-void AddMenuActions(ui::SimpleMenuModel& menu,
+void AddMenuActions(aui::SimpleMenuModel& menu,
                     const ActionList& actions,
                     OpenedView* view) {
   for (ActionList::const_iterator j = actions.begin(); j != actions.end();
@@ -46,7 +46,7 @@ void ContextMenuModel::Rebuild() {
   bool separated = true;
   for (auto& [category, commands] : grouped_commands) {
     if (!separated) {
-      AddSeparator(ui::NORMAL_SEPARATOR);
+      AddSeparator(aui::NORMAL_SEPARATOR);
       separated = true;
     }
 
@@ -57,7 +57,7 @@ void ContextMenuModel::Rebuild() {
       }
 
     } else {
-      auto* submenu = new ui::SimpleMenuModel{&command_handler_};
+      auto* submenu = new aui::SimpleMenuModel{&command_handler_};
       submenus_.emplace_back(submenu);
       AddMenuActions(*submenu, commands, main_window_.active_view());
 

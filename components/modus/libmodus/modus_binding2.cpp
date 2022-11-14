@@ -7,7 +7,6 @@
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
 #include "libmodus/scheme/value.h"
-#include "ui/gfx/canvas.h"
 
 namespace modus {
 

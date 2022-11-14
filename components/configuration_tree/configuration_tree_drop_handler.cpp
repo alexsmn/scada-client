@@ -27,7 +27,7 @@ DropAction MakeMoveDropAction(TaskManager& task_manager,
                                     node_id);
     }
 
-    return ui::DragDropTypes::DRAG_MOVE;
+    return aui::DragDropTypes::DRAG_MOVE;
   };
 }
 
@@ -47,7 +47,7 @@ DropAction MakeCreateDataItemAction(TaskManager& task_manager,
         {}, parent_id, std::move(type_definition_id), std::move(attributes),
         {{std::move(channel_prop_id), std::move(formula)}}, {});
 
-    return ui::DragDropTypes::DRAG_COPY;
+    return aui::DragDropTypes::DRAG_COPY;
   };
 }
 
@@ -61,7 +61,7 @@ DropAction MakeAssignChannelAction(TaskManager& task_manager,
     task_manager.PostUpdateTask(
         node_id, {}, {{std::move(channel_prop_id), std::move(formula)}});
 
-    return ui::DragDropTypes::DRAG_LINK;
+    return aui::DragDropTypes::DRAG_LINK;
   };
 }
 
@@ -76,11 +76,11 @@ int ConfigurationTreeDropHandler::GetDropAction(
     ConfigurationTreeNode* target_node,
     DropAction& action) {
   if (!target_node)
-    return ui::DragDropTypes::DRAG_NONE;
+    return aui::DragDropTypes::DRAG_NONE;
 
   auto dragging_node = node_service_.GetNode(dragging_id);
   if (!dragging_node)
-    return ui::DragDropTypes::DRAG_NONE;
+    return aui::DragDropTypes::DRAG_NONE;
 
   // Dropping of IEC-61850 channel into id::DataGroupType causes
   // creation of new id::DataItemType.
@@ -98,7 +98,7 @@ int ConfigurationTreeDropHandler::GetDropAction(
         task_manager_, target_node->node().node_id(), std::move(attributes),
         std::move(formula),
         IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
-    return ui::DragDropTypes::DRAG_COPY;
+    return aui::DragDropTypes::DRAG_COPY;
   }
 
   // Dropping of IEC-61850 channel on id::DataItem assigns its' channel.
@@ -108,7 +108,7 @@ int ConfigurationTreeDropHandler::GetDropAction(
     action = MakeAssignChannelAction(
         task_manager_, target_node->node().node_id(), std::move(formula),
         IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
-    return ui::DragDropTypes::DRAG_LINK;
+    return aui::DragDropTypes::DRAG_LINK;
   }
 
   // Dropping a node to a node that can contain the node type causes move.
@@ -116,7 +116,7 @@ int ConfigurationTreeDropHandler::GetDropAction(
     auto type_definition = target_node->node().type_definition();
     if (!type_definition ||
         !create_tree_.CanCreate(dragging_node, type_definition))
-      return ui::DragDropTypes::DRAG_NONE;
+      return aui::DragDropTypes::DRAG_NONE;
 
     if (target_node && target_node->node() != dragging_node &&
         target_node->node() != dragging_node.parent()) {
@@ -124,11 +124,11 @@ int ConfigurationTreeDropHandler::GetDropAction(
       auto new_parent_id = target_node->node().node_id();
       action = MakeMoveDropAction(task_manager_, dragging_id, old_parent_id,
                                   new_parent_id);
-      return ui::DragDropTypes::DRAG_MOVE;
+      return aui::DragDropTypes::DRAG_MOVE;
     }
   }
 
-  return ui::DragDropTypes::DRAG_NONE;
+  return aui::DragDropTypes::DRAG_NONE;
 }
 
 int ConfigurationTreeDropHandler::GetDropAction(
@@ -137,6 +137,6 @@ int ConfigurationTreeDropHandler::GetDropAction(
     DropAction& action) {
   ItemDragData item_drag_data;
   if (!item_drag_data.Load(drag_data))
-    return ui::DragDropTypes::DRAG_NONE;
+    return aui::DragDropTypes::DRAG_NONE;
   return GetDropAction(item_drag_data.item_id(), target_node, action);
 }

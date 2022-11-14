@@ -3,7 +3,6 @@
 #include "components/sheet/sheet_format.h"
 #include "timed_data/timed_data_spec.h"
 
-#include <SkColor.h>
 #include <memory>
 
 class SheetModel;

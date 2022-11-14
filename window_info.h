@@ -1,5 +1,7 @@
 #pragma once
 
+#include "controls/size.h"
+
 #include <string_view>
 
 enum WindowFlags {
@@ -16,8 +18,7 @@ struct WindowInfo {
   std::string_view name;
   std::u16string_view title;
   unsigned flags;
-  unsigned cx;
-  unsigned cy;
+  aui::Size size;
   unsigned menu;
 
   bool is_pane() const { return (flags & WIN_SING) != 0; }

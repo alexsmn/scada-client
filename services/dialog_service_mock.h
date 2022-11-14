@@ -6,13 +6,9 @@
 
 class MockDialogService : public DialogService {
  public:
-  MOCK_METHOD(gfx::NativeView, GetDialogOwningWindow, (), (const override));
+  MOCK_METHOD(UiView*, GetDialogOwningWindow, (), (const override));
 
-#if defined(UI_QT)
-  MOCK_METHOD(QWidget*, GetParentWidget, (), (const override));
-#elif defined(UI_WT)
-  MOCK_METHOD(Wt::WWidget*, GetParentWidget, (), (const override));
-#endif
+  MOCK_METHOD(UiView*, GetParentWidget, (), (const override));
 
   MOCK_METHOD(promise<MessageBoxResult>,
               RunMessageBox,

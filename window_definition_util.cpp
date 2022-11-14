@@ -183,8 +183,8 @@ base::Value ToJson(const WindowDefinition& def) {
     SetKey(win, "title", def.title);
   if (!def.path.empty())
     SetKey(win, "path", def.path.u16string());
-  SetKey(win, "width", def.size.width());
-  SetKey(win, "height", def.size.height());
+  SetKey(win, "width", def.size.width);
+  SetKey(win, "height", def.size.height);
   SetKey(win, "locked", def.locked);
 
   win.SetKey("items", ToJson(def.items));
@@ -205,7 +205,7 @@ std::optional<WindowDefinition> FromJson(const base::Value& win) {
     w.visible = GetBool(win, "visible", true);
   w.title = GetString16(win, "title");
   w.path = std::filesystem::path(GetString16(win, "path"));
-  w.size = gfx::Size(GetInt(win, "width"), GetInt(win, "height"));
+  w.size = {GetInt(win, "width"), GetInt(win, "height")};
   if (auto* items = win.FindKey("items"))
     w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});
 

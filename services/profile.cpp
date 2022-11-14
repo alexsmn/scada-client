@@ -68,29 +68,29 @@ Page CreateInitialPage() {
   // objects
   WindowDefinition& objects_def =
       page.AddWindow(WindowDefinition(kObjectTreeWindowInfo));
-  objects_def.size = gfx::Size(200, 450);
+  objects_def.size = {200, 450};
 
   // portfolio
   WindowDefinition& portfolio =
       page.AddWindow(WindowDefinition(kPortfolioWindowInfo));
-  portfolio.size = gfx::Size(200, 450);
+  portfolio.size = {200, 450};
 
   // subsystems
   WindowDefinition& subs_def =
       page.AddWindow(WindowDefinition(kHardwareTreeWindowInfo));
-  subs_def.size = gfx::Size(200, 450);
+  subs_def.size = {200, 450};
 
   // events
   WindowDefinition& events_def =
       page.AddWindow(WindowDefinition(kEventWindowInfo));
-  events_def.size = gfx::Size(800, 600);
+  events_def.size = {800, 600};
   events_def.visible = false;
 
 #if !defined(UI_WT)
   // Graph with server CPU usage.
   WindowDefinition& graph_def =
       page.AddWindow(WindowDefinition(kGraphWindowInfo));
-  graph_def.size = gfx::Size(800, 300);
+  graph_def.size = {800, 300};
   graph_def.AddItem("TimeScale").SetString("span", "0:05:00");
   // TODO: Implement.
   /*for (int i = 1; i <= 2; i++) {
@@ -104,7 +104,7 @@ Page CreateInitialPage() {
   // Table with top 10 tss.
   WindowDefinition& table_def =
       page.AddWindow(WindowDefinition(kTableWindowInfo));
-  table_def.size = gfx::Size(800, 450);
+  table_def.size = {800, 450};
   // TODO: Implement.
   /*for (int i = 1; i <= 10; i++) {
     std::string path = NodeId(NamespaceIndexes::TS, i).ToString();
@@ -147,7 +147,7 @@ void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
   int width = GetInt(data, "width", inval);
   int height = GetInt(data, "height", inval);
   if (left != inval && top != inval && width != inval && height != inval)
-    main_window.bounds = gfx::Rect(left, top, width, height);
+    main_window.bounds = {left, top, width, height};
   main_window.maximized = GetBool(data, "maximized", false);
   main_window.toolbar_position =
       ParseToolbarPosition(GetString(data, "toolbar"));
@@ -317,10 +317,10 @@ base::Value Profile::SaveToValue(const EventFetcher& event_manager,
     for (const auto& [id, main_window] : main_windows) {
       base::Value wine{base::Value::Type::DICTIONARY};
       SetKey(wine, "id", main_window.id);
-      SetKey(wine, "left", main_window.bounds.x());
-      SetKey(wine, "top", main_window.bounds.y());
-      SetKey(wine, "width", main_window.bounds.width());
-      SetKey(wine, "height", main_window.bounds.height());
+      SetKey(wine, "left", main_window.bounds.x);
+      SetKey(wine, "top", main_window.bounds.y);
+      SetKey(wine, "width", main_window.bounds.width);
+      SetKey(wine, "height", main_window.bounds.height);
       SetKey(wine, "maximized", main_window.maximized);
       SetKey(wine, "toolbar",
              FormatToolbarPosition(main_window.toolbar_position));

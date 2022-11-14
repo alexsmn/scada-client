@@ -2,7 +2,6 @@
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
-#include "skia/ext/skia_utils_win.h"
 
 LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
                                        WPARAM /*wParam*/,

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "command_handler.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "controls/models/simple_menu_model.h"
 
-class SimpleMenuCommandHandler : public ui::SimpleMenuModel::Delegate {
+class SimpleMenuCommandHandler : public aui::SimpleMenuModel::Delegate {
  public:
   explicit SimpleMenuCommandHandler(CommandHandler& commands)
       : commands_{commands} {}
@@ -17,12 +17,6 @@ class SimpleMenuCommandHandler : public ui::SimpleMenuModel::Delegate {
   virtual bool IsCommandIdEnabled(int command_id) const override {
     auto* handler = commands_.GetCommandHandler(command_id);
     return handler && handler->IsCommandEnabled(command_id);
-  }
-
-  virtual bool GetAcceleratorForCommandId(
-      int command_id,
-      ui::Accelerator* accelerator) override {
-    return false;
   }
 
   virtual void ExecuteCommand(int command_id) override {

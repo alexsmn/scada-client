@@ -2,7 +2,7 @@
 
 #include "base/containers/span.h"
 #include "base/promise.h"
-#include "gfx/native_widget_types.h"
+#include "controls/types.h"
 
 #include <filesystem>
 #include <string_view>
@@ -29,13 +29,9 @@ class DialogService {
  public:
   virtual ~DialogService() {}
 
-  virtual gfx::NativeView GetDialogOwningWindow() const = 0;
+  virtual UiView* GetDialogOwningWindow() const = 0;
 
-#if defined(UI_QT)
-  virtual QWidget* GetParentWidget() const = 0;
-#elif defined(UI_WT)
-  virtual Wt::WWidget* GetParentWidget() const = 0;
-#endif
+  virtual UiView* GetParentWidget() const = 0;
 
   virtual promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
                                                   std::u16string_view title,

@@ -37,7 +37,6 @@ target_link_libraries(client_wt_lib PUBLIC
   scada_core_remote
   scada_core_vidicon
   timed_data
-  ui_base
 )
 
 target_compile_options(client_wt_lib PUBLIC

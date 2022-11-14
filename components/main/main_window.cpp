@@ -12,22 +12,22 @@
 #include "contents_observer.h"
 #include "controller.h"
 #include "controls/key_codes.h"
+#include "controls/models/menu_model.h"
+#include "controls/models/simple_menu_model.h"
 #include "selection_model.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
-#include "ui/base/models/menu_model.h"
-#include "ui/base/models/simple_menu_model.h"
 #include "window_info.h"
 
 namespace {
 
-class TabPopupMenu : public ui::SimpleMenuModel {
+class TabPopupMenu : public aui::SimpleMenuModel {
  public:
   explicit TabPopupMenu(CommandHandler& commands)
-      : ui::SimpleMenuModel{&handler_}, handler_{commands} {
+      : aui::SimpleMenuModel{&handler_}, handler_{commands} {
     AddItem(ID_VIEW_ADD_TO_FAVOURITES, u"В избранное");
     AddItem(ID_VIEW_CHANGE_TITLE, u"Переименовать");
-    AddSeparator(ui::NORMAL_SEPARATOR);
+    AddSeparator(aui::NORMAL_SEPARATOR);
     AddItem(ID_VIEW_CLOSE, u"Закрыть");
   }
 
@@ -249,10 +249,8 @@ void MainWindow::SavePage() {
 std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
   // Initialize defaults.
   const WindowInfo& window_info = def.window_info();
-  if (def.size == gfx::Size()) {
-    if (window_info.cx && window_info.cy)
-      def.size = gfx::Size(window_info.cx, window_info.cy);
-  }
+  if (def.size.empty() && !window_info.size.empty())
+    def.size = window_info.size;
 
   auto& dialog_service = GetDialogService();
 

@@ -6,11 +6,8 @@
 #include <string>
 
 namespace aui {
-class StatusBarModel;
-}
-
-namespace ui {
 class MenuModel;
+class StatusBarModel;
 }
 
 class ActionManager;
@@ -41,15 +38,15 @@ struct MainWindowContext {
       view_commands_factory_;
   const std::shared_ptr<SelectionCommands> selection_commands_;
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
-  std::function<std::unique_ptr<ui::MenuModel>(MainWindow& main_window,
+  std::function<std::unique_ptr<aui::MenuModel>(MainWindow& main_window,
                                                CommandHandler& main_commands)>
       context_menu_factory_;
-  std::function<std::unique_ptr<ui::MenuModel>(
+  std::function<std::unique_ptr<aui::MenuModel>(
       MainWindow& main_window,
       DialogService& dialog_service,
       ViewManager& view_manager,
       CommandHandler& main_commands,
-      ui::MenuModel& context_menu_model)>
+      aui::MenuModel& context_menu_model)>
       main_menu_factory_;
   std::function<std::string()> connection_info_provider_;
 };

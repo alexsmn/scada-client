@@ -9,11 +9,11 @@ promise<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
   return make_resolved_promise(MessageBoxResult::Ok);
 }
 
-gfx::NativeView DialogServiceImplWt::GetDialogOwningWindow() const {
+UiView* DialogServiceImplWt::GetDialogOwningWindow() const {
   return nullptr;
 }
 
-Wt::WWidget* DialogServiceImplWt::GetParentWidget() const {
+UiView* DialogServiceImplWt::GetParentWidget() const {
   return parent_widget;
 }
 

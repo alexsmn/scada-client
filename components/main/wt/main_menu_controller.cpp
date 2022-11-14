@@ -9,11 +9,11 @@
 
 namespace {
 
-std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(ui::MenuModel& model);
+std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(aui::MenuModel& model);
 
 class TestPopupMenu : public Wt::WPopupMenu {
  public:
-  explicit TestPopupMenu(ui::MenuModel& model) : model_{model} {}
+  explicit TestPopupMenu(aui::MenuModel& model) : model_{model} {}
 
   virtual void render(Wt::WFlags<Wt::RenderFlag> flags) override {
     while (count() != 0)
@@ -29,7 +29,7 @@ class TestPopupMenu : public Wt::WPopupMenu {
       switch (type) {
         default: {
           auto* item = addItem(model_.GetLabelAt(i));
-          item->setCheckable(type == ui::MenuModel::ItemType::TYPE_CHECK);
+          item->setCheckable(type == aui::MenuModel::ItemType::TYPE_CHECK);
           item->setDisabled(!model_.IsEnabledAt(i));
           item->setChecked(model_.IsItemCheckedAt(i));
           item->triggered().connect(
@@ -37,13 +37,13 @@ class TestPopupMenu : public Wt::WPopupMenu {
           break;
         }
 
-        case ui::MenuModel::ItemType::TYPE_SUBMENU: {
+        case aui::MenuModel::ItemType::TYPE_SUBMENU: {
           addMenu(model_.GetLabelAt(i),
                   CreatePopupMenu(*model_.GetSubmenuModelAt(i)));
           break;
         }
 
-        case ui::MenuModel::ItemType::TYPE_SEPARATOR:
+        case aui::MenuModel::ItemType::TYPE_SEPARATOR:
           addSeparator();
           break;
       }
@@ -53,10 +53,10 @@ class TestPopupMenu : public Wt::WPopupMenu {
   }
 
  private:
-  ui::MenuModel& model_;
+  aui::MenuModel& model_;
 };
 
-std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(ui::MenuModel& model) {
+std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(aui::MenuModel& model) {
   auto popup = Wt::cpp14::make_unique<TestPopupMenu>(model);
 
   /*for (int i = 0; i < model.GetItemCount(); ++i) {
@@ -64,11 +64,11 @@ std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(ui::MenuModel& model) {
     switch (type) {
       default: {
         auto* item = popup->addItem(model.GetLabelAt(i));
-        item->setCheckable(type == ui::MenuModel::ItemType::TYPE_CHECK);
+        item->setCheckable(type == aui::MenuModel::ItemType::TYPE_CHECK);
         break;
       }
 
-      case ui::MenuModel::ItemType::TYPE_SEPARATOR:
+      case aui::MenuModel::ItemType::TYPE_SEPARATOR:
         popup->addSeparator();
         break;
     }

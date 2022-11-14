@@ -3,10 +3,10 @@
 #include "base/files/file_path.h"
 #include "base/time/time.h"
 #include "controls/color.h"
+#include "controls/rect.h"
 #include "core/node_id.h"
 #include "export_util.h"
 #include "services/page.h"
-#include "ui/gfx/rect.h"
 
 #include <map>
 
@@ -18,7 +18,7 @@ struct MainWindowDef {
   MainWindowDef();
 
   int id;
-  gfx::Rect bounds;
+  aui::Rect bounds;
   bool maximized;
   UINT toolbar_position;
   int page_id;

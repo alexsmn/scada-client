@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/values.h"
-#include "ui/gfx/size.h"
+#include "controls/size.h"
 
 #include <filesystem>
 #include <optional>
@@ -81,7 +81,7 @@ class WindowDefinition {
   int id = 0;
   std::u16string title;
   std::filesystem::path path;
-  gfx::Size size;
+  aui::Size size;
   bool visible = true;
   bool locked = false;
 

@@ -43,7 +43,7 @@ const WindowInfo* const kGraphWindowInfos[] = {&kGraphWindowInfo};
 // DisplayMenuModel
 
 DisplayMenuModel::DisplayMenuModel(const MainMenuContext& context)
-    : ui::SimpleMenuModel{nullptr}, MainMenuContext{std::move(context)} {}
+    : aui::SimpleMenuModel{nullptr}, MainMenuContext{std::move(context)} {}
 
 void DisplayMenuModel::MenuWillShow() {
   Clear();
@@ -89,7 +89,7 @@ FavouritesMenuModel::FavouritesMenuModel(
     base::span<const WindowInfo* const> window_infos,
     const MainMenuContext& context)
     : MainMenuContext{std::move(context)},
-      ui::SimpleMenuModel{nullptr},
+      aui::SimpleMenuModel{nullptr},
       window_infos_{window_infos} {}
 
 void FavouritesMenuModel::MenuWillShow() {
@@ -129,7 +129,7 @@ bool FavouritesMenuModel::IsMatchingWindow(
 // PageMenuModel
 
 PageMenuModel::PageMenuModel(const MainMenuContext& context)
-    : MainMenuContext{context}, ui::SimpleMenuModel{nullptr} {}
+    : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
 
 void PageMenuModel::MenuWillShow() {
   Clear();
@@ -250,7 +250,7 @@ bool TrashMenuModel::IsEnabledAt(int index) const {
 
 // StyleMenuModel
 
-StyleMenuModel::StyleMenuModel() : ui::SimpleMenuModel{nullptr} {
+StyleMenuModel::StyleMenuModel() : aui::SimpleMenuModel{nullptr} {
   for (const auto& style : QStyleFactory::keys())
     AddRadioItem(0, style.toStdU16String(), 0);
 }
@@ -272,7 +272,7 @@ bool StyleMenuModel::IsItemCheckedAt(int index) const {
 
 MainMenuModel::MainMenuModel(const MainMenuContext& context)
     : MainMenuContext{std::move(context)},
-      ui::SimpleMenuModel{this},
+      aui::SimpleMenuModel{this},
       display_menu_model_{context},
       table_favourites_{base::make_span(kTableWindowInfos), context},
       table_submenu_{this},
@@ -299,14 +299,14 @@ void MainMenuModel::Rebuild() {
   table_submenu_.AddItem(ID_TABLE_VIEW, u"Новая таблица");
   table_submenu_.AddItem(ID_SHEET_VIEW, u"Новая п-таблица");
   table_submenu_.AddItem(ID_TIMED_DATA_VIEW, u"Новая таблица значений");
-  table_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   table_submenu_.AddItem(ID_OPEN_GROUP_TABLE, u"Таблица группы");
-  table_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   table_submenu_.AddInplaceMenu(&table_favourites_);
   AddSubMenu(0, u"Таблица", &table_submenu_);
 
   graph_submenu_.AddItem(ID_GRAPH_VIEW, u"Новый");
-  graph_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  graph_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (graph_favourites_)
     graph_submenu_.AddInplaceMenu(graph_favourites_.get());
   AddSubMenu(0, u"График", &graph_submenu_);
@@ -321,21 +321,21 @@ void MainMenuModel::Rebuild() {
   more_submenu_.AddCheckItem(ID_HARDWARE_VIEW, u"Оборудование");
   more_submenu_.AddCheckItem(ID_EVENT_JOURNAL_VIEW, u"Журнал событий");
   if (admin_) {
-    more_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+    more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
     more_submenu_.AddCheckItem(ID_NODES_VIEW, u"Узлы");
     more_submenu_.AddCheckItem(ID_TS_FORMATS_VIEW, u"Форматы");
     more_submenu_.AddCheckItem(ID_SIMULATION_ITEMS_VIEW,
                                u"Эмулируемые сигналы");
     more_submenu_.AddCheckItem(ID_USERS_VIEW, u"Пользователи");
     more_submenu_.AddCheckItem(ID_HISTORICAL_DB_VIEW, u"Базы данных");
-    more_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+    more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
     more_submenu_.AddItem(ID_EXPORT_CONFIGURATION_TO_EXCEL,
                           u"Экспорт конфигурации в Excel...");
     more_submenu_.AddItem(ID_IMPORT_CONFIGURATION_FROM_EXCEL,
                           u"Импорт конфигурации из Excel...");
   }
 #if !defined(NDEBUG)
-  more_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   more_submenu_.AddItem(ID_LOGIN, u"Подключиться к серверу...");
   more_submenu_.AddItem(ID_LOGOFF, u"Отключиться от сервера");
 #endif
@@ -346,35 +346,35 @@ void MainMenuModel::Rebuild() {
   page_submenu_.AddItem(ID_PAGE_NEW, u"Новый");
   page_submenu_.AddItem(ID_PAGE_DELETE, u"Удалить");
   page_submenu_.AddItem(ID_PAGE_RENAME, u"Переименовать");
-  page_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  page_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   page_submenu_.AddInplaceMenu(&page_list_menu_);
   AddSubMenu(0, u"Лист", &page_submenu_);
 
   window_submenu_.AddItem(ID_WINDOW_NEW, u"Новое");
-  window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddItem(ID_VIEW_CHANGE_TITLE, u"Переименовать");
   window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES, u"В избранное");
   window_submenu_.AddItem(ID_VIEW_CLOSE, u"Закрыть");
 #if defined(UI_QT)
-  window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ, u"Разделить по горизонтали");
   window_submenu_.AddItem(ID_WINDOW_SPLIT_VERT, u"Разделить по вертикали");
 #endif
-  window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&window_list_menu_);
-  window_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&trash_menu_);
   AddSubMenu(0, u"Окно", &window_submenu_);
 
   // TODO:
   settings_submenu_.AddCheckItem(0, u"Панель инструментов");
   settings_submenu_.AddCheckItem(ID_VIEW_STATUS_BAR, u"Строка состояния");
-  settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddCheckItem(ID_WRITE_CONFIRMATION,
                                  u"Подтверждение управления");
   settings_submenu_.AddCheckItem(ID_SHOW_WRITEOK,
                                  u"Сообщение об успешном управлении");
-  settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddCheckItem(ID_SHOW_EVENTS,
                                  u"Показывать события при появлении");
   settings_submenu_.AddCheckItem(ID_HIDE_EVENTS,
@@ -383,23 +383,23 @@ void MainMenuModel::Rebuild() {
                                  u"Мигание основного окна по событию");
   settings_submenu_.AddCheckItem(ID_EVENT_PLAY_SOUND,
                                  u"Звуковая сигнализация по событию");
-  settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Открыть папку схем");
   settings_submenu_.AddCheckItem(ID_MODUS2_MODE,
                                  u"Встроенный визуализатор схем MODUS");
 
 #if defined(UI_QT)
-  settings_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddSubMenu(0, u"Стиль", &style_submenu_);
 #endif
 
   AddSubMenu(0, u"Настройки", &settings_submenu_);
 
   help_submenu_.AddItem(ID_HELP_MANUAL, u"Документация");
-  help_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+  help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (base::CommandLine::ForCurrentProcess()->HasSwitch("debug")) {
     help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, u"Отладочная информация");
-    help_submenu_.AddSeparator(ui::NORMAL_SEPARATOR);
+    help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   }
   help_submenu_.AddItem(ID_APP_ABOUT, u"О программе...");
 #if defined(UI_QT)
@@ -416,11 +416,6 @@ bool MainMenuModel::IsCommandIdChecked(int command_id) const {
 bool MainMenuModel::IsCommandIdEnabled(int command_id) const {
   auto* handler = command_handler_.GetCommandHandler(command_id);
   return handler && handler->IsCommandEnabled(command_id);
-}
-
-bool MainMenuModel::GetAcceleratorForCommandId(int command_id,
-                                               ui::Accelerator* accelerator) {
-  return false;
 }
 
 void MainMenuModel::ExecuteCommand(int command_id) {

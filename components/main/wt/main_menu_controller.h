@@ -1,18 +1,18 @@
 #pragma once
 
-#include "ui/base/models/menu_model.h"
+#include "controls/models/menu_model.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
 #include <wt/WWidget.h>
 #pragma warning(pop)
 
-namespace ui {
+namespace aui {
 class MenuModel;
 }
 
 struct MainMenuControllerContext {
-  std::unique_ptr<ui::MenuModel> main_menu_model_;
+  std::unique_ptr<aui::MenuModel> main_menu_model_;
 };
 
 class MainMenuController : private MainMenuControllerContext {

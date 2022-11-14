@@ -8,6 +8,10 @@
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
 
+namespace aui {
+class MenuModel;
+}
+
 namespace base {
 class FilePath;
 }
@@ -92,9 +96,9 @@ class MainWindow : protected MainWindowContext,
 
   std::unique_ptr<CommandHandler> commands_;
 
-  std::unique_ptr<ui::MenuModel> context_menu_model_;
+  std::unique_ptr<aui::MenuModel> context_menu_model_;
 
-  std::unique_ptr<ui::MenuModel> tab_popup_menu_;
+  std::unique_ptr<aui::MenuModel> tab_popup_menu_;
 
  private:
   void SetActiveView(OpenedView* view);

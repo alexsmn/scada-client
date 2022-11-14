@@ -3,9 +3,9 @@
 #include "base/boost_log.h"
 #include "components/configuration_tree/configuration_tree_node.h"
 #include "components/configuration_tree/node_service_tree.h"
+#include "controls/models/tree_node_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "ui/base/models/tree_node_model.h"
 
 #include <map>
 #include <memory>

@@ -2,9 +2,9 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "controls/color.h"
+#include "controls/drag_drop_types.h"
 #include "controls/models/tree_model.h"
 #include "controls/qt/image_util.h"
-#include "ui/base/dragdrop/drag_drop_types.h"
 
 #include <QMimeData>
 #include <QSize>
@@ -46,13 +46,13 @@ DragData MakeDragData(const QMimeData& mime_data) {
 int ConvertDropAction(Qt::DropAction action) {
   switch (action) {
     case Qt::DropAction::CopyAction:
-      return ui::DragDropTypes::DRAG_COPY;
+      return aui::DragDropTypes::DRAG_COPY;
     case Qt::DropAction::MoveAction:
-      return ui::DragDropTypes::DRAG_MOVE;
+      return aui::DragDropTypes::DRAG_MOVE;
     case Qt::DropAction::LinkAction:
-      return ui::DragDropTypes::DRAG_LINK;
+      return aui::DragDropTypes::DRAG_LINK;
     default:
-      return ui::DragDropTypes::DRAG_NONE;
+      return aui::DragDropTypes::DRAG_NONE;
   }
 }
 
@@ -366,7 +366,7 @@ bool TreeModelAdapter::dropMimeData(const QMimeData* data,
     return false;
 
   int drop_result = drop_action();
-  return drop_result != ui::DragDropTypes::DRAG_NONE;
+  return drop_result != aui::DragDropTypes::DRAG_NONE;
 }
 
 DropAction TreeModelAdapter::GetDropAction(const QMimeData* data,

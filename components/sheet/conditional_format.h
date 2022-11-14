@@ -1,20 +1,20 @@
 #pragma once
 
 #include "base/pool.h"
-#include <SkColor.h>
+#include "controls/color.h"
 
 #include <string>
 
 class ConditionalFormatBase {
  public:
   std::string positive_format;
-  SkColor positive_color;
+  aui::Color positive_color;
 
   std::string negative_format;
-  SkColor negative_color;
+  aui::Color negative_color;
 
   std::string zero_format;
-  SkColor zero_color;
+  aui::Color zero_color;
 
   bool operator<(const ConditionalFormatBase& other) {
     if (positive_format < other.positive_format)

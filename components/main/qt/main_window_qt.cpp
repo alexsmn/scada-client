@@ -12,13 +12,13 @@
 #include "components/main/qt/view_manager_qt.h"
 #include "components/main/selection_commands.h"
 #include "controller.h"
+#include "controls/models/menu_model.h"
+#include "controls/models/simple_menu_model.h"
 #include "qt/client_utils_qt.h"
 #include "selection_model.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
-#include "ui/base/models/menu_model.h"
-#include "ui/base/models/simple_menu_model.h"
 #include "window_info.h"
 
 #include <QAction>
@@ -48,9 +48,9 @@ inline QKeySequence ToQKeySequence(const Shortcut& shortcut) {
 }
 
 void BuildMenuModel(CMenuHandle menu_handle,
-                    ui::MenuModel& context_menu_model,
-                    ui::SimpleMenuModel& menu_model,
-                    std::vector<std::unique_ptr<ui::MenuModel>>& submenus) {
+                    aui::MenuModel& context_menu_model,
+                    aui::SimpleMenuModel& menu_model,
+                    std::vector<std::unique_ptr<aui::MenuModel>>& submenus) {
   for (int i = 0; i < menu_handle.GetMenuItemCount(); ++i) {
     wchar_t title[64] = {};
 
@@ -63,7 +63,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
 
     if (menu_info.hSubMenu) {
       auto submenu_model =
-          std::make_unique<ui::SimpleMenuModel>(menu_model.delegate());
+          std::make_unique<aui::SimpleMenuModel>(menu_model.delegate());
       BuildMenuModel(menu_info.hSubMenu, context_menu_model, *submenu_model,
                      submenus);
       menu_model.AddSubMenu(menu_info.wID, base::AsString16(title),
@@ -71,7 +71,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
       submenus.emplace_back(std::move(submenu_model));
 
     } else if (menu_info.fType & MFT_SEPARATOR) {
-      menu_model.AddSeparator(ui::NORMAL_SEPARATOR);
+      menu_model.AddSeparator(aui::NORMAL_SEPARATOR);
 
     } else if (menu_info.fState & MFS_CHECKED) {
       menu_model.AddCheckItem(menu_info.wID, base::AsString16(title));
@@ -91,14 +91,14 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
   auto& prefs = GetPrefs();
   auto bounds = prefs.bounds;
-  if (bounds.IsEmpty()) {
+  if (bounds.empty()) {
     auto desktop_bounds = QDesktopWidget{}.availableGeometry(this);
     bounds = {desktop_bounds.left() + desktop_bounds.width() / 8,
               desktop_bounds.top() + desktop_bounds.height() / 8,
               desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};
   }
 
-  setGeometry(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+  setGeometry(bounds.x, bounds.y, bounds.width, bounds.height);
 
   view_manager_.reset(new ViewManagerQt{*this, *this});
 
@@ -301,7 +301,7 @@ void MainWindowQt::UpdateMenuActions(QMenu& menu) {
 void MainWindowQt::closeEvent(QCloseEvent* event) {
   auto& prefs = GetPrefs();
   const auto& g = geometry();
-  prefs.bounds = gfx::Rect{g.x(), g.y(), g.width(), g.height()};
+  prefs.bounds = {g.x(), g.y(), g.width(), g.height()};
   prefs.maximized = isMaximized();
 
   // ModusView-s must be destroyed before MainWindowQt destruction, to avoid an
@@ -324,8 +324,8 @@ void MainWindowQt::ShowPopupMenu(unsigned resource_id,
   }
 
   SimpleMenuCommandHandler command_handler{commands()};
-  ui::SimpleMenuModel menu_model{&command_handler};
-  std::vector<std::unique_ptr<ui::MenuModel>> submenus;
+  aui::SimpleMenuModel menu_model{&command_handler};
+  std::vector<std::unique_ptr<aui::MenuModel>> submenus;
 
   {
     CMenu resource_menu;

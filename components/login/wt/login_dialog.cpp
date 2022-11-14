@@ -55,11 +55,9 @@ class TestDialogService : public DialogService {
  public:
   explicit TestDialogService(Wt::WWidget& parent) : parent_{parent} {}
 
-  virtual gfx::NativeView GetDialogOwningWindow() const override {
-    return nullptr;
-  }
+  virtual UiView* GetDialogOwningWindow() const override { return nullptr; }
 
-  virtual Wt::WWidget* GetParentWidget() const override { return nullptr; }
+  virtual UiView* GetParentWidget() const override { return nullptr; }
 
   virtual promise<MessageBoxResult> RunMessageBox(
       std::u16string_view message,

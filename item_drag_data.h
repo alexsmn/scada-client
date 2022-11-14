@@ -1,8 +1,8 @@
 #pragma once
 
-#include "controls/handlers.h"
 #include "common/node_state.h"
-#include "ui/base/dragdrop/os_exchange_data.h"
+#include "controls/handlers.h"
+#include "controls/os_exchange_data.h"
 
 class ItemDragData {
  public:
@@ -14,13 +14,13 @@ class ItemDragData {
   void Save(base::Pickle& pickle) const;
   bool Load(const base::Pickle& pickle);
 
-  void Save(ui::OSExchangeData& data) const;
-  bool Load(const ui::OSExchangeData& data);
+  void Save(aui::OSExchangeData& data) const;
+  bool Load(const aui::OSExchangeData& data);
 
   void Save(DragData& drag_data) const;
   bool Load(const DragData& drag_data);
 
-  static ui::OSExchangeData::CustomFormat GetCustomFormat();
+  static aui::OSExchangeData::CustomFormat GetCustomFormat();
 
   inline static const std::string_view kMimeType =
       "application/telecontrol.scada.nodes";
