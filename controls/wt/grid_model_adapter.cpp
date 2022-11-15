@@ -25,7 +25,10 @@ Wt::AlignmentFlag AuiAligmentToWt(TableColumn::Alignment alignment) {
 
 GridModelAdapter::GridModelAdapter(std::shared_ptr<GridModel> model,
                                    std::shared_ptr<HeaderModel> row_model,
-                                   std::shared_ptr<HeaderModel> column_model) {
+                                   std::shared_ptr<HeaderModel> column_model)
+    : model_{std::move(model)},
+      row_model_{std::move(row_model)},
+      column_model_{std::move(column_model)} {
   model_->observers().AddObserver(this);
   column_model_->observers().AddObserver(this);
 }
@@ -111,8 +114,7 @@ bool GridModelAdapter::setData(const Wt::WModelIndex& index,
 }
 
 void GridModelAdapter::OnGridModelChanged(GridModel& model) {
-  // resetInternalData();
-  layoutChanged();
+  reset();
 }
 
 void GridModelAdapter::OnGridRangeChanged(GridModel& model,
@@ -123,20 +125,21 @@ void GridModelAdapter::OnGridRangeChanged(GridModel& model,
 }
 
 void GridModelAdapter::OnGridRowsAdded(GridModel& model, int first, int count) {
-  layoutChanged();
+  beginInsertColumns({}, first, count);
+  endInsertColumns();
 }
 
 void GridModelAdapter::OnGridRowsRemoved(GridModel& model,
                                          int first,
                                          int count) {
-  layoutChanged();
+  beginRemoveColumns({}, first, count);
+  endRemoveColumns();
 }
 
 void GridModelAdapter::OnModelChanged(HeaderModel& model) {
-  if (&model == column_model_.get())
-    headerDataChanged()(Wt::Orientation::Horizontal, 0, model.GetCount());
-  else if (&model == row_model_.get())
-    headerDataChanged()(Wt::Orientation::Vertical, 0, model.GetCount());
+  // Header model was changed.
+  // This means rows and columns can be added or removed.
+  reset();
 }
 
 }  // namespace aui
