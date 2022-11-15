@@ -22,7 +22,7 @@ class Color {
   }
 
   bool operator==(const Color& other) const noexcept {
-    return wcolor_ != other.wcolor_;
+    return wcolor_ == other.wcolor_;
   }
 
   bool operator!=(const Color& other) const noexcept {

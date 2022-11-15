@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 #include <string_view>
 
@@ -45,6 +46,8 @@ int FindColor(Color color);
 std::u16string_view GetColorName(int index);
 int FindColorName(std::u16string_view name);
 
+std::string_view GetColorDebugName(int index);
+
 Color StringToColor(std::string_view str);
 std::string ColorToString(Color color);
 
@@ -60,5 +63,7 @@ struct ColorCode {
   static inline constexpr Rgba Cyan{0, 0, 255};
   static inline constexpr Rgba Crimson{0, 0, 255};
 };
+
+std::ostream& operator<<(std::ostream& stream, Color color);
 
 }  // namespace aui

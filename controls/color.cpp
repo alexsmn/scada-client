@@ -12,20 +12,21 @@
 namespace aui {
 
 struct ColorEntry {
+  std::string_view debug_name;
   std::u16string_view name;
   Rgba color;
 };
 
 constexpr ColorEntry kColorEntries[] = {
-    {u"Прозрачный", ColorCode::Transparent},
-    {u"Черный", ColorCode::Black},
-    {u"Белый", ColorCode::White},
-    {u"Красный", ColorCode::Red},
-    {u"Зеленый", ColorCode::Green},
-    {u"Синий", ColorCode::Blue},
-    {u"Желтый", ColorCode::Yellow},
-    {u"Голубой", ColorCode::Cyan},
-    {u"Малиновый", ColorCode::Crimson},
+    {"Transparent", u"Прозрачный", ColorCode::Transparent},
+    {"Black", u"Черный", ColorCode::Black},
+    {"White", u"Белый", ColorCode::White},
+    {"Red", u"Красный", ColorCode::Red},
+    {"Green", u"Зеленый", ColorCode::Green},
+    {"Blue", u"Синий", ColorCode::Blue},
+    {"Yellow", u"Желтый", ColorCode::Yellow},
+    {"Cyan", u"Голубой", ColorCode::Cyan},
+    {"Crimson", u"Малиновый", ColorCode::Crimson},
 };
 
 static const ColorEntry* GetColorEntry(int index) {
@@ -54,6 +55,11 @@ int FindColor(Color color) {
 std::u16string_view GetColorName(int index) {
   const ColorEntry* entry = GetColorEntry(index);
   return entry ? entry->name : std::u16string_view{};
+}
+
+std::string_view GetColorDebugName(int index) {
+  const ColorEntry* entry = GetColorEntry(index);
+  return entry ? entry->debug_name : std::string_view{};
 }
 
 int FindColorName(std::u16string_view str) {
@@ -94,6 +100,17 @@ Color StringToColor(std::string_view str) {
 
 std::string ColorToString(Color color) {
   return base::StringPrintf("#%08X", EncodeColor(color));
+}
+
+std::ostream& operator<<(std::ostream& stream, Color color) {
+  if (int index = FindColor(color); index != -1)
+    return stream << GetColorDebugName(index);
+
+  const aui::Rgba& rgba = color.rgba();
+  return stream << "(R: " << static_cast<int>(rgba.r)
+                << ", G: " << static_cast<int>(rgba.g)
+                << ", B: " << static_cast<int>(rgba.b)
+                << ", A: " << static_cast<int>(rgba.a) << ")";
 }
 
 }  // namespace aui
