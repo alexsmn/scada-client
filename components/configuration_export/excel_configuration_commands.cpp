@@ -1,4 +1,6 @@
-﻿#include "components/configuration_export/excel_configuration_commands.h"
+﻿#define _SILENCE_CXX20_CODECVT_FACETS_DEPRECATION_WARNING
+
+#include "components/configuration_export/excel_configuration_commands.h"
 
 #include "base/base_paths.h"
 #include "base/csv_reader.h"

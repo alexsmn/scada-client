@@ -238,7 +238,16 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
 
   std::vector<aui::TableColumn> columns;
 
-  columns.reserve(property_defs.size() + 1);
+  columns.reserve(property_defs.size() + 2);
+
+  // Browse name
+  {
+    columns_.push_back({scada::AttributeId::BrowseName});
+    columns.emplace_back(
+        aui::TableColumn{static_cast<int>(columns.size()),
+                         std::u16string{kBrowseNameAttributeString}, 75,
+                         aui::TableColumn::LEFT});
+  }
 
   // Display name
   {
