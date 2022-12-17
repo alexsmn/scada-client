@@ -59,9 +59,9 @@ struct ColorCode {
   static inline constexpr Rgba Red{255, 0, 0};
   static inline constexpr Rgba Green{0, 255, 0};
   static inline constexpr Rgba Blue{0, 0, 255};
-  static inline constexpr Rgba Yellow{0, 0, 255};
-  static inline constexpr Rgba Cyan{0, 0, 255};
-  static inline constexpr Rgba Crimson{0, 0, 255};
+  static inline constexpr Rgba Yellow{255, 255, 0};
+  static inline constexpr Rgba Cyan{0, 100, 100};
+  static inline constexpr Rgba Crimson{220, 20, 60};
 };
 
 std::ostream& operator<<(std::ostream& stream, Color color);

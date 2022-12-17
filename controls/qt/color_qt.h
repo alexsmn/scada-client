@@ -19,7 +19,7 @@ class Color {
     const QRgb& qrgba = qcolor_.rgba();
     return Rgba{static_cast<std::uint8_t>(qRed(qrgba)),
                 static_cast<std::uint8_t>(qGreen(qrgba)),
-                static_cast<std::uint8_t>(qRed(qrgba)),
+                static_cast<std::uint8_t>(qBlue(qrgba)),
                 static_cast<std::uint8_t>(qAlpha(qrgba))};
   }
 

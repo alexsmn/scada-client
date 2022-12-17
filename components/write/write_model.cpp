@@ -40,7 +40,7 @@ WriteModel::WriteModel(WriteContext&& context)
   if (!manual_) {
     auto condition =
         node[data_items::id::DataItemType_OutputCondition].value().get_or(
-            std::string());
+            scada::String());
     has_condition_ = !condition.empty();
     if (has_condition_)
       condition_.Connect(timed_data_service_, condition);
@@ -67,12 +67,10 @@ std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
 
   const auto node = spec_.GetNode();
   if (auto format = node.target(data_items::id::HasTsFormat)) {
-    close_label = base::UTF8ToUTF16(
-        format[data_items::id::TsFormatType_CloseLabel].value().get_or(
-            std::string()));
-    open_label = base::UTF8ToUTF16(
-        format[data_items::id::TsFormatType_OpenLabel].value().get_or(
-            std::string()));
+    close_label =
+        ToString16(format[data_items::id::TsFormatType_CloseLabel].value());
+    open_label =
+        ToString16(format[data_items::id::TsFormatType_OpenLabel].value());
   }
 
   return {open_label, close_label};
@@ -84,37 +82,31 @@ int WriteModel::GetCurrentDiscreteState() const {
 
 std::u16string WriteModel::GetAnalogUnits() const {
   auto node = spec_.GetNode();
-  auto units =
-      node[data_items::id::AnalogItemType_EngineeringUnits].value().get_or(
-          std::string());
-  return base::UTF8ToUTF16(units);
+  return ToString16(
+      node[data_items::id::AnalogItemType_EngineeringUnits].value());
 }
 
 void WriteModel::Write(double value, bool lock) {
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-
   writing_ = true;
   write_value_ = value;
   write_selecting_ = false;
 
   scada::WriteFlags flags;
   if (manual_) {
-    spec_.Call(data_items::id::DataItemType_WriteManual, {write_value_, lock},
-               {},
-               BindExecutor(executor_, [weak_ptr](const scada::Status& status) {
-                 if (auto* ptr = weak_ptr.get())
-                   ptr->OnWriteComplete(status);
-               }));
+    spec_.Call(
+        data_items::id::DataItemType_WriteManual, {write_value_, lock}, {},
+        BindExecutor(
+            executor_, weak_from_this(),
+            [this](const scada::Status& status) { OnWriteComplete(status); }));
 
   } else if (two_staged_) {
     write_selecting_ = true;
     flags.set_select();
-    spec_.Write(
-        write_value_, {}, flags,
-        BindExecutor(executor_, [weak_ptr](const scada::Status& status) {
-          if (auto* ptr = weak_ptr.get())
-            ptr->OnWriteComplete(status);
-        }));
+    spec_.Write(write_value_, {}, flags,
+                BindExecutor(executor_, weak_from_this(),
+                             [this](const scada::Status& status) {
+                               OnWriteComplete(status);
+                             }));
 
   } else {
     StartWriting(false);
@@ -176,19 +168,17 @@ void WriteModel::StartWriting(bool second_stage) {
   auto message = GetConfirmationMessage(second_stage);
   dialog_service_
       ->RunMessageBox(message, title, MessageBoxMode::QuestionYesNoDefaultNo)
-      .then(BindPromiseExecutor(
-          executor_, [this, weak_ptr = weak_factory_.GetWeakPtr()](
-                         MessageBoxResult message_box_result) {
-            if (!weak_ptr)
-              return;
-            if (message_box_result == MessageBoxResult::Yes) {
-              StartWritingHelper();
-            } else {
-              writing_ = false;
-              completion_handler(false);
-              return;
-            }
-          }));
+      .then(BindPromiseExecutor(executor_, weak_from_this(),
+                                [this](MessageBoxResult message_box_result) {
+                                  if (message_box_result ==
+                                      MessageBoxResult::Yes) {
+                                    StartWritingHelper();
+                                  } else {
+                                    writing_ = false;
+                                    completion_handler(false);
+                                    return;
+                                  }
+                                }));
 }
 
 void WriteModel::StartWritingHelper() {
@@ -196,9 +186,9 @@ void WriteModel::StartWritingHelper() {
   status_change_handler();
 
   // Execute actual Write.
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-  spec_.Write(write_value_, {}, {}, [weak_ptr](const scada::Status& status) {
-    if (auto ptr = weak_ptr.get())
-      ptr->OnWriteComplete(status);
-  });
+  spec_.Write(
+      write_value_, {}, {},
+      BindCancelation(weak_from_this(), [this](const scada::Status& status) {
+        OnWriteComplete(status);
+      }));
 }

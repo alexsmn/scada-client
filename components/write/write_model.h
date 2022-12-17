@@ -1,10 +1,10 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "components/write/write_dialog.h"
 #include "timed_data/timed_data_spec.h"
 
-class WriteModel : private WriteContext {
+class WriteModel : private WriteContext,
+                   public std::enable_shared_from_this<WriteModel> {
  public:
   explicit WriteModel(WriteContext&& context);
 
@@ -56,6 +56,4 @@ class WriteModel : private WriteContext {
   bool has_condition_ = false;
   bool two_staged_ = false;
   TimedDataSpec condition_;
-
-  base::WeakPtrFactory<WriteModel> weak_factory_{this};
 };

@@ -8,7 +8,8 @@ class WriteDialog : public QDialog {
   Q_OBJECT
 
  public:
-  explicit WriteDialog(WriteModel& model, QWidget* parent = nullptr);
+  explicit WriteDialog(std::shared_ptr<WriteModel> model,
+                       QWidget* parent = nullptr);
 
  public Q_SLOTS:
   virtual void accept() override;
@@ -20,53 +21,53 @@ class WriteDialog : public QDialog {
 
   Ui::WriteDialog ui;
 
-  WriteModel& model_;
+  const std::shared_ptr<WriteModel> model_;
   DialogServiceImplQt dialog_service_;
 };
 
 #include "write_dialog.moc"
 
-WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
-    : QDialog{parent}, model_{model} {
+WriteDialog::WriteDialog(std::shared_ptr<WriteModel> model, QWidget* parent)
+    : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
   dialog_service_.parent_widget = this;
-  model_.set_dialog_service(&dialog_service_);
+  model_->set_dialog_service(&dialog_service_);
 
-  setWindowTitle(QString::fromStdU16String(model_.GetWindowTitle()));
+  setWindowTitle(QString::fromStdU16String(model_->GetWindowTitle()));
 
   ui.descriptionLabel->setText(
-      QString::fromStdU16String(model_.GetSourceTitle()));
+      QString::fromStdU16String(model_->GetSourceTitle()));
   ui.currentValueLabel->setText(
-      QString::fromStdU16String(model_.GetCurrentValue(true)));
+      QString::fromStdU16String(model_->GetCurrentValue(true)));
 
-  ui.valueComboBox->setEditable(!model_.discrete());
+  ui.valueComboBox->setEditable(!model_->discrete());
 
   ui.unitLabel->setText({});
   ui.conditionLabel->setText({});
   ui.statusLabel->setText({});
-  ui.lockLabel->setVisible(model_.lock_allowed());
-  ui.lockCheckBox->setVisible(model_.lock_allowed());
-  ui.lockCheckBox->setChecked(model_.locked());
-  ui.conditionHeaderLabel->setVisible(model_.has_condition());
-  ui.conditionLabel->setVisible(model_.has_condition());
+  ui.lockLabel->setVisible(model_->lock_allowed());
+  ui.lockCheckBox->setVisible(model_->lock_allowed());
+  ui.lockCheckBox->setChecked(model_->locked());
+  ui.conditionHeaderLabel->setVisible(model_->has_condition());
+  ui.conditionLabel->setVisible(model_->has_condition());
 
-  if (model_.discrete()) {
-    for (const auto& state : model_.GetDiscreteStates())
+  if (model_->discrete()) {
+    for (const auto& state : model_->GetDiscreteStates())
       ui.valueComboBox->addItem(QString::fromStdU16String(state));
-    ui.valueComboBox->setCurrentIndex(model_.GetCurrentDiscreteState());
+    ui.valueComboBox->setCurrentIndex(model_->GetCurrentDiscreteState());
 
   } else {
     ui.valueComboBox->setCurrentText(
-        QString::fromStdU16String(model_.GetCurrentValue(false)));
-    ui.unitLabel->setText(QString::fromStdU16String(model_.GetAnalogUnits()));
+        QString::fromStdU16String(model_->GetCurrentValue(false)));
+    ui.unitLabel->setText(QString::fromStdU16String(model_->GetAnalogUnits()));
   }
 
-  model_.current_change_handler = [this] { UpdateCurrent(); };
-  model_.condition_change_handler = [this] { UpdateCondition(); };
-  model_.status_change_handler = [this] { UpdateStatus(); };
+  model_->current_change_handler = [this] { UpdateCurrent(); };
+  model_->condition_change_handler = [this] { UpdateCondition(); };
+  model_->status_change_handler = [this] { UpdateStatus(); };
 
-  model_.completion_handler = [this](bool ok) {
+  model_->completion_handler = [this](bool ok) {
     ui.statusLabel->setText({});
     if (ok)
       QDialog::accept();
@@ -79,22 +80,22 @@ WriteDialog::WriteDialog(WriteModel& model, QWidget* parent)
 
 void WriteDialog::UpdateCurrent() {
   ui.currentValueLabel->setText(
-      QString::fromStdU16String(model_.GetCurrentValue(true)));
+      QString::fromStdU16String(model_->GetCurrentValue(true)));
 }
 
 void WriteDialog::UpdateCondition() {
-  ui.conditionLabel->setText(model_.IsConditionOk() ? tr("Satisfied")
-                                                    : tr("Unsatisfied"));
-  ui.okButton->setEnabled(model_.IsConditionOk());
+  ui.conditionLabel->setText(model_->IsConditionOk() ? tr("Satisfied")
+                                                     : tr("Unsatisfied"));
+  ui.okButton->setEnabled(model_->IsConditionOk());
 }
 
 void WriteDialog::UpdateStatus() {
-  ui.statusLabel->setText(QString::fromStdU16String(model_.GetStatusText()));
+  ui.statusLabel->setText(QString::fromStdU16String(model_->GetStatusText()));
 }
 
 void WriteDialog::accept() {
   double value = 0.0;
-  if (model_.discrete()) {
+  if (model_->discrete()) {
     auto index = ui.valueComboBox->currentIndex();
     value = index ? 1.0 : 0.0;
 
@@ -110,14 +111,14 @@ void WriteDialog::accept() {
   }
 
   bool lock = false;
-  if (model_.lock_allowed())
+  if (model_->lock_allowed())
     lock = ui.lockCheckBox->isChecked();
 
-  model_.Write(value, lock);
+  model_->Write(value, lock);
 }
 
 void ExecuteWriteDialog(DialogService& dialog_service, WriteContext&& context) {
-  WriteModel model{std::move(context)};
+  auto model = std::make_shared<WriteModel>(std::move(context));
   WriteDialog dialog{model, dialog_service.GetParentWidget()};
   dialog.exec();
 }

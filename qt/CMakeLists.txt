@@ -63,7 +63,7 @@ if(WIN32)
 endif()
 
 find_package(Qt5LinguistTools REQUIRED)
-file(GLOB TRANSLATIONS "*.ts")
+file(GLOB TRANSLATIONS CONFIGURE_DEPENDS "*.ts")
 qt5_create_translation(TRANSLATIONS_OUT ${SOURCES_QT} ${MAIN_QT} ${TRANSLATIONS})
 qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
 target_sources(client_qt_lib PRIVATE ${TRANSLATIONS} ${TRANSLATIONS_OUT})

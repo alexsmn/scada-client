@@ -183,7 +183,8 @@ const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl) {
     return &kBoolPropDef;
   if (IsSubtypeOf(data_type, scada::id::Double))
     return &kIntPropDef;
-  if (IsSubtypeOf(data_type, scada::id::String))
+  if (IsSubtypeOf(data_type, scada::id::String) ||
+      IsSubtypeOf(data_type, scada::id::LocalizedText))
     return &kStringPropDef;
   if (IsSubtypeOf(data_type, scada::id::Enumeration))
     return &kEnumPropDef;
