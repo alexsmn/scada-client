@@ -23,7 +23,7 @@ class VidiconDisplayView : public Controller {
 
   std::filesystem::path path_;
 
-  std::unique_ptr<QAxWidget> ax_widget_;
+  QAxWidget* ax_widget_ = nullptr;
   Microsoft::WRL::ComPtr<ViewerX::IViewerForm> form_;
 
   base::Timer synchronize_timer_;

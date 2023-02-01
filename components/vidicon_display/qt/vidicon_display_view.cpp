@@ -47,7 +47,7 @@ VidiconDisplayView::~VidiconDisplayView() {}
 UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
 
-  ax_widget_ = std::make_unique<QAxWidget>();
+  auto ax_widget = std::make_unique<QAxWidget>();
 
   LPOLESTR ole_class;
   if (SUCCEEDED(StringFromCLSID(__uuidof(ViewerX::ViewerForm), &ole_class))) {
@@ -86,7 +86,8 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
                                         base::Unretained(this)));*/
   }
 
-  return ax_widget_.get();
+  ax_widget_ = ax_widget.get();
+  return ax_widget.release();
 }
 
 void VidiconDisplayView::Save(WindowDefinition& definition) {
