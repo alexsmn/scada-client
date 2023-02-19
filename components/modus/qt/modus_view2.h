@@ -22,6 +22,7 @@ class Shape;
 class ModusBinding2;
 class TimedDataService;
 
+// Uses libmodus.
 class ModusView2 : public QWidget,
                    public ModusViewWrapper,
                    private modus::RendererDelegate,

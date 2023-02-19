@@ -51,11 +51,11 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
 
   LPOLESTR ole_class;
   if (SUCCEEDED(StringFromCLSID(__uuidof(ViewerX::ViewerForm), &ole_class))) {
-    ax_widget_->setControl(QString::fromWCharArray(ole_class));
+    ax_widget->setControl(QString::fromWCharArray(ole_class));
     CoTaskMemFree(ole_class);
   }
 
-  ax_widget_->queryInterface(IID_PPV_ARGS(&form_));
+  ax_widget->queryInterface(IID_PPV_ARGS(&form_));
   if (form_) {
     // DispEventAdvise(form);
     // form->put_StatusVisible(VARIANT_FALSE);
@@ -65,7 +65,7 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
 
     // TODO: Extract method, log all possible errors.
     Microsoft::WRL::ComPtr<TelecontrolView::ITelecontrolView> view;
-    ax_widget_->queryInterface(IID_PPV_ARGS(&view));
+    ax_widget->queryInterface(IID_PPV_ARGS(&view));
     if (view) {
       VidiconClient::TeleClient* teleclient =
           VidiconClient::GetInstance().GetTeleClient();

@@ -14,6 +14,7 @@
 
 class TimedDataService;
 
+// Use schematic library.
 class ModusView3 : public QGraphicsView,
                    public ModusViewWrapper {
  public:
