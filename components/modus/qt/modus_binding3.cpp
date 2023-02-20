@@ -1,5 +1,7 @@
 ﻿#include "modus_binding3.h"
 
+#include "base/strings/string_util.h"
+
 namespace {
 
 enum class ModusStyle { Disconnected, BadQuality, Alerting };
@@ -51,7 +53,9 @@ void ModusBinding3::Bind(const QString& property_name,
   spec.property_change_handler = [this](const PropertySet& properties) {
     Update();
   };
-  spec.Connect(timed_data_service, formula.toStdString());
+  auto formula_string = formula.toStdString();
+  if (base::IsStringASCII(formula_string))
+    spec.Connect(timed_data_service, formula_string);
 }
 
 void ModusBinding3::Update() {

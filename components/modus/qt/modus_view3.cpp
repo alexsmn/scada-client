@@ -3,9 +3,9 @@
 #include "timed_data/timed_data_spec.h"
 
 #include <QtWinExtras/qwinfunctions.h>
-#include <qevent.h>
-#include <qpaintengine.h>
-#include <qpainter.h>
+#include <QEvent>
+#include <QPaintEngine>
+#include <QPainter>
 
 namespace {
 

@@ -10,6 +10,8 @@ class QComboBox;
 namespace aui {
 
 class ItemDelegate final : public QItemDelegate {
+  Q_OBJECT
+
  public:
   using EditDataProvider = std::function<EditData(const QModelIndex& index)>;
 
