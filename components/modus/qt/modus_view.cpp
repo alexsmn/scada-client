@@ -55,10 +55,6 @@ bool ModusView::ShowContainedItem(const scada::NodeId& item_id) {
   return document_ && document_->ShowContainedItem(item_id);
 }
 
-htsde2::IHTSDEForm2* ModusView::GetSdeForm() {
-  return document_ ? &document_->sde_form() : nullptr;
-}
-
 void ModusView::OnDocClick(IDispatch* disp_doc, IDispatch* disp_info) {
   CComQIPtr<SDECore::IUIEventInfo> ui_event_info(disp_info);
 

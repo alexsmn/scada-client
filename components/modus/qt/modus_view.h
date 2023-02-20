@@ -12,6 +12,7 @@ class FilePath;
 
 class ModusController;
 
+// Native Modus ActiveXeme viewer.
 class ModusView : public QWidget,
                   public ModusViewWrapper,
                   private modus::ModusDocumentContext {
@@ -25,7 +26,6 @@ class ModusView : public QWidget,
   virtual void Open(const std::filesystem::path& path) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
-  virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
  protected slots:
   void OnDocClick(IDispatch*, IDispatch*);

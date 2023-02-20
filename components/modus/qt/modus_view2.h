@@ -55,7 +55,6 @@ class ModusView2 : public QWidget,
   virtual void Open(const std::filesystem::path& path) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
-  virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
   // QWidget
   virtual QSize sizeHint() const override;

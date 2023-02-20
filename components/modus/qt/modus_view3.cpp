@@ -50,10 +50,6 @@ bool ModusView3::ShowContainedItem(const scada::NodeId& item_id) {
   return false;
 }
 
-htsde2::IHTSDEForm2* ModusView3::GetSdeForm() {
-  return nullptr;
-}
-
 void ModusView3::CreateBindings(Schematic::Element& element) {
   QString binding_strings = element["Tech.keyLink"];
   if (binding_strings.isEmpty())

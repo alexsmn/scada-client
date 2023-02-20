@@ -4,10 +4,6 @@
 
 #include <filesystem>
 
-namespace htsde2 {
-struct IHTSDEForm2;
-}
-
 class ModusViewWrapper {
  public:
   virtual ~ModusViewWrapper() {}
@@ -17,7 +13,4 @@ class ModusViewWrapper {
   virtual std::filesystem::path GetPath() const = 0;
 
   virtual bool ShowContainedItem(const scada::NodeId& item_id) = 0;
-
-  // TODO: Factor out.
-  virtual htsde2::IHTSDEForm2* GetSdeForm() = 0;
 };

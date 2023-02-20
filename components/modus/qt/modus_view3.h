@@ -25,7 +25,6 @@ class ModusView3 : public QGraphicsView,
   virtual void Open(const std::filesystem::path& path) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
-  virtual htsde2::IHTSDEForm2* GetSdeForm() override;
 
  private:
   void CreateBindings(Schematic::Element& element);

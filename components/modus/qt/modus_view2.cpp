@@ -260,7 +260,3 @@ void ModusView2::ZoomAtPoint(const QPoint& point, float factor) {
 modus::Shape* ModusView2::GetShapeAt(const modus::Point& point) const {
   return renderer_->GetShapeAt(point, kHitTolerance);
 }
-
-htsde2::IHTSDEForm2* ModusView2::GetSdeForm() {
-  return nullptr;
-}
