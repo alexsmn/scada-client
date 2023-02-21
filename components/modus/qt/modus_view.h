@@ -2,14 +2,14 @@
 
 #include "components/modus/activex/modus_document.h"
 #include "components/modus/modus_view_wrapper.h"
-#include "common/node_state.h"
 
-#include <QAxWidget>
+#include <QWidget>
 
 namespace base {
 class FilePath;
 }
 
+class QAxWidget;
 class ModusController;
 
 // Native Modus ActiveXeme viewer.
@@ -35,6 +35,8 @@ class ModusView : public QWidget,
 
  protected:
   friend class ModusController;
+
+  void OpenPlaceholder();
 
   std::filesystem::path path_;
 

@@ -49,9 +49,19 @@ QWidget* ModusController::CreateModusView() {
     controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
   };
 
+  auto enable_internal_render_callback = [this] {
+    profile_.modus2 = true;
+    dialog_service_.RunMessageBox(
+        u"Встроенная отрисовка схем Модус включена и будет применена для далее "
+        u"открытых схем. Для отключения функции используйте меню Настройки.",
+        u"Встроенная отрисовка", MessageBoxMode::Info);
+    controller_delegate_.Close();
+  };
+
   view_ = new ModusView{modus::ModusDocumentContext{
       alias_resolver_, timed_data_service_, file_cache_, title_callback,
-      navigation_callback, selection_callback, context_menu_handler}};
+      navigation_callback, selection_callback, context_menu_handler,
+      enable_internal_render_callback}};
 
   wrapper_ = view_;
 

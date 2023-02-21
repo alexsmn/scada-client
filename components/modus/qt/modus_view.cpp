@@ -2,7 +2,11 @@
 
 #include "components/modus/activex/modus.h"
 
+#include <QAxWidget>
+#include <QDesktopServices>
 #include <QHBoxLayout>
+#include <QLabel>
+#include <QUrl>
 #include <QUuid>
 #include <atlcomcli.h>
 #include <wrl/client.h>
@@ -29,8 +33,10 @@ void ModusView::Open(const std::filesystem::path& path) {
 
   Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form;
   ax_widget_->queryInterface(IID_PPV_ARGS(&sde_form));
-  if (!sde_form)
+  if (!sde_form) {
+    OpenPlaceholder();
     return;
+  }
 
   document_ = std::make_unique<modus::ModusDocument>(
       ModusDocumentContext{*this}, *sde_form.Get(), path_);
@@ -45,6 +51,34 @@ void ModusView::Open(const std::filesystem::path& path) {
           SLOT(OnDocPopup(IDispatch*, bool&)));
 
   title_callback_(document_->title());
+}
+
+void ModusView::OpenPlaceholder() {
+  delete ax_widget_;
+  ax_widget_ = nullptr;
+
+  QLabel* placeholder = new QLabel{this};
+  placeholder->setTextFormat(Qt::RichText);
+  placeholder->setText(
+      QString::fromWCharArray(LR"(<html><body>
+    <p>Отсутствует компонент Modus ActivesXeme, используемый для отображения схем Модус.</p>
+    <p>Загрузите бесплатную версию компонента
+      с <a href="https://swman.ru">сайта производителя</a> или включите
+      экспериментальную <a href="#internal-render">встроенную отрисовку</a>.</p>
+    </body></html>)"));
+  placeholder->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+  placeholder->setWordWrap(true);
+  placeholder->setTextInteractionFlags(Qt::TextBrowserInteraction);
+  connect(placeholder, &QLabel::linkActivated,
+          [enable_internal_render_callback =
+               enable_internal_render_callback_](const QString& link) {
+            if (link == "#internal-render") {
+              enable_internal_render_callback();
+            } else {
+              QDesktopServices::openUrl(QUrl{link});
+            }
+          });
+  layout()->addWidget(placeholder);
 }
 
 std::filesystem::path ModusView::GetPath() const {

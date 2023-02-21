@@ -386,7 +386,7 @@ void MainMenuModel::Rebuild() {
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Открыть папку схем");
   settings_submenu_.AddCheckItem(ID_MODUS2_MODE,
-                                 u"Встроенный визуализатор схем MODUS");
+                                 u"Встроенная отрисовка схем Модус");
 
 #if defined(UI_QT)
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);

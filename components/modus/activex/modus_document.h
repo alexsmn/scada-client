@@ -36,6 +36,7 @@ struct ModusDocumentContext {
   const std::function<void(std::u16string_view hyperlink)> navigation_callback_;
   const std::function<void(const TimedDataSpec& selection)> selection_callback_;
   const ContextMenuHandler context_menu_callback_;
+  const std::function<void()> enable_internal_render_callback_;
 };
 
 class ModusDocument : private ModusDocumentContext {
