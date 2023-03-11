@@ -66,7 +66,7 @@ class TestDialogService : public DialogService {
     auto promise = make_promise<MessageBoxResult>();
 
     auto actual_title = title.empty() ? u"Title" : std::u16string{title};
-    auto message_box = parent_.addChild(Wt::cpp14::make_unique<Wt::WMessageBox>(
+    auto message_box = parent_.addChild(std::make_unique<Wt::WMessageBox>(
         actual_title, std::u16string{message}, ToWtIcon(mode),
         ToStandardButtons(mode)));
 
@@ -168,7 +168,7 @@ class LoginDialog : public std::enable_shared_from_this<LoginDialog> {
   promise<std::optional<DataServices>> login_promise_;
 
   Wt::WDialog* dialog_ =
-      parent_.addChild(Wt::cpp14::make_unique<Wt::WDialog>("Login"));
+      parent_.addChild(std::make_unique<Wt::WDialog>("Login"));
 
   TestDialogService dialog_service_{*dialog_};
   const std::shared_ptr<LoginController> controller_;

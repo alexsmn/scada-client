@@ -57,7 +57,7 @@ class TestPopupMenu : public Wt::WPopupMenu {
 };
 
 std::unique_ptr<Wt::WPopupMenu> CreatePopupMenu(aui::MenuModel& model) {
-  auto popup = Wt::cpp14::make_unique<TestPopupMenu>(model);
+  auto popup = std::make_unique<TestPopupMenu>(model);
 
   /*for (int i = 0; i < model.GetItemCount(); ++i) {
     auto type = model.GetTypeAt(i);
@@ -92,7 +92,7 @@ std::unique_ptr<Wt::WWidget> MainMenuController::CreateWidget() {
     auto label = main_menu_model_->GetLabelAt(i);
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
     assert(submenu_model);
-    auto item = Wt::cpp14::make_unique<Wt::WMenuItem>(std::move(label));
+    auto item = std::make_unique<Wt::WMenuItem>(std::move(label));
     item->setMenu(CreatePopupMenu(*submenu_model));
     menu->addItem(std::move(item));
   }

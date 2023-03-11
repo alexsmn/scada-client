@@ -393,9 +393,9 @@ std::unique_ptr<ViewManagerWt::Block> ViewManagerWt::OpenLayoutBlock(
       return child1;
 
     auto layout = block.horz ? static_cast<std::unique_ptr<Wt::WBoxLayout>>(
-                                   Wt::cpp14::make_unique<Wt::WHBoxLayout>())
+                                   std::make_unique<Wt::WHBoxLayout>())
                              : static_cast<std::unique_ptr<Wt::WBoxLayout>>(
-                                   Wt::cpp14::make_unique<Wt::WVBoxLayout>());
+                                   std::make_unique<Wt::WVBoxLayout>());
     child1->AddToLayout(*layout);
     child2->AddToLayout(*layout);
     // layout->setResizable(0);
