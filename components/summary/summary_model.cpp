@@ -13,6 +13,8 @@
 #include "window_definition.h"
 #include "window_definition_util.h"
 
+#include <boost/locale/encoding_utf.hpp>
+
 #include "base/debug_util-inl.h"
 
 // SummaryModel::Column -------------------------------------------------------
@@ -159,7 +161,7 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
 
 std::u16string SummaryModel::RowModel::GetTitle(int index) const {
   base::Time time = model_.GetRowTime(index);
-  return base::UTF8ToUTF16(
+  return boost::locale::conv::utf_to_utf<char16_t>(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
 }
 

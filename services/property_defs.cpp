@@ -21,6 +21,7 @@
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <iterator>
@@ -36,7 +37,7 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, node_type_id)) {
       const auto& node_name = GetFullDisplayName(node);
-      if (IsEqualNoCase(node_name, name))
+      if (boost::algorithm::iequals(node_name, name))
         return node;
     }
     if (auto n = FindNodeByNameAndType(node, name, node_type_id))
@@ -418,8 +419,8 @@ std::u16string BoolPropertyDefinition::GetText(
     return std::u16string();
 
   auto bool_value = prop.value().get_or(false);
-  return bool_value ? scada::Variant::kTrueString
-                    : scada::Variant::kFalseString;
+  return bool_value ? std::u16string{scada::Variant::kTrueString}
+                    : std::u16string{scada::Variant::kFalseString};
 }
 
 aui::EditData BoolPropertyDefinition::GetPropertyEditor(
@@ -427,7 +428,8 @@ aui::EditData BoolPropertyDefinition::GetPropertyEditor(
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
   aui::EditData result{aui::EditData::EditorType::DROPDOWN};
-  result.choices = {scada::Variant::kFalseString, scada::Variant::kTrueString};
+  result.choices = {std::u16string{scada::Variant::kFalseString},
+                    std::u16string{scada::Variant::kTrueString}};
   return result;
 }
 

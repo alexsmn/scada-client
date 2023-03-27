@@ -1,11 +1,11 @@
 ﻿#include "controls/color.h"
 
-#include "base/containers/span.h"
 #include "base/string_piece_util.h"
 #include "base/string_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <cassert>
 #include <string.h>
 
@@ -64,7 +64,7 @@ std::string_view GetColorDebugName(int index) {
 
 int FindColorName(std::u16string_view str) {
   for (size_t i = 0; i < std::size(kColorEntries); i++) {
-    if (IsEqualNoCase(str, kColorEntries[i].name)) {
+    if (boost::algorithm::iequals(str, kColorEntries[i].name)) {
       return i;
     }
   }
