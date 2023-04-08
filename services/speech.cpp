@@ -3,8 +3,9 @@
 #include "core/monitored_item_service.h"
 #include "services/profile.h"
 
+// TODO: Reimport the SAPI headers from the Windows SDK.
 #pragma warning(push)
-#pragma warning(disable : 4471)
+#pragma warning(disable : 4471 4121)
 #include "sapi.h"
 #pragma warning(pop)
 

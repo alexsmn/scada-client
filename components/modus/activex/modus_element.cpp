@@ -63,7 +63,8 @@ bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR value) {
 bool SetParamValue(SDECore::IParams& params,
                    std::wstring_view index,
                    BSTR value) {
-  base::win::ScopedVariant index_variant{index.data(), index.size()};
+  base::win::ScopedVariant index_variant{index.data(),
+                                         static_cast<UINT>(index.size())};
   return SetParamValue(params, index_variant, value);
 }
 

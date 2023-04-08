@@ -69,7 +69,7 @@ class TreeNode {
   int IndexOfChild(const NodeType& child) const {
     auto i = std::find_if(children_.begin(), children_.end(),
                           [&](auto& ptr) { return ptr.get() == &child; });
-    return i != children_.end() ? i - children_.begin() : -1;
+    return i != children_.end() ? static_cast<int>(i - children_.begin()) : -1;
   }
 
  private:

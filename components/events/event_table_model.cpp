@@ -139,7 +139,7 @@ int EventTableModel::FindRow(const scada::Event& event) const {
   for (Rows::const_iterator i = rows_.begin(); i != rows_.end(); ++i) {
     if (i->event == &event) {
       assert(i->type == CURRENT_EVENT || i->type == LOCAL_EVENT);
-      return i - rows_.begin();
+      return static_cast<int>(i - rows_.begin());
     }
   }
   return -1;

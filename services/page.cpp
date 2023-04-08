@@ -163,7 +163,7 @@ const WindowDefinition* Page::FindWindowDef(int id) const {
 int Page::FindWindowDef(const WindowDefinition& window) const {
   auto i = std::find_if(windows_.begin(), windows_.end(),
                         [&window](auto& p) { return p.get() == &window; });
-  return i != windows_.end() ? i - windows_.begin() : -1;
+  return i != windows_.end() ? static_cast<int>(i - windows_.begin()) : -1;
 }
 
 void Page::DeleteWindow(int index) {

@@ -473,7 +473,7 @@ void EnumPropertyDefinition::SetText(const PropertyContext& context,
   if (i == enum_strings->end())
     return;
 
-  int int_value = i - enum_strings->begin();
+  int int_value = static_cast<int>(i - enum_strings->begin());
   context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, int_value}});
 }
