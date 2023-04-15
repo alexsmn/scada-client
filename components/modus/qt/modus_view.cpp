@@ -20,11 +20,20 @@ ModusView::ModusView(ModusDocumentContext&& context)
   ax_widget_ = new QAxWidget{this};
   layout->addWidget(ax_widget_);
 
-  if (!ax_widget_->setControl("{001F373C-29D3-5C7E-A000-A0FC803D82EE}"))
-    ax_widget_->setControl("{001F373C-29D3-5F7E-A000-A0FC803D82EE}");
+  const std::string_view kClassIds[] = {
+      "{001F373C-29D3-630E-A0A0-A0FC803D82EE}",
+      "{001F373C-29D3-5C7E-A000-A0FC803D82EE}",
+      "{001F373C-29D3-5F7E-A000-A0FC803D82EE}"};
+
+  for (const auto& class_id : kClassIds) {
+    if (ax_widget_->setControl(QString::fromLocal8Bit(
+            class_id.data(), static_cast<int>(class_id.size())))) {
+      break;
+    }
+  }
 }
 
-ModusView::~ModusView() {}
+ModusView::~ModusView() = default;
 
 void ModusView::Open(const std::filesystem::path& path) {
   assert(!document_);

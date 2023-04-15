@@ -1,9 +1,9 @@
-﻿// Created by Microsoft (R) C/C++ Compiler Version 10.00.40219.01 (65eb5211).
+﻿// Created by Microsoft (R) C/C++ Compiler Version 14.35.32217.1 (a54d6eaf).
 //
-// c:\work\workplace\trunk\build-vs10\debug\objs\client\htsde2.tlh
+// C:\tc\scada\build-windows\client\qt\client_qt_lib.dir\Debug\htsde2.tlh
 //
-// C++ source equivalent of Win32 type library C:\Program Files\modus510\bin\htsde2.ocx
-// compiler-generated file created 10/10/11 at 12:03:22 - DO NOT EDIT!
+// C++ source equivalent of Win32 type library d:\Program Files (x86)\Modus 6.30\bin\htsde2.ocx 
+// compiler-generated file - DO NOT EDIT!
 
 //
 // Cross-referenced type libraries:
@@ -27,9 +27,6 @@ struct __declspec(uuid("3616106f-e967-463f-bc23-04f523a5bf87"))
 /* dual interface */ IHTSDEForm2;
 struct __declspec(uuid("4677cfa4-78eb-43c0-84ae-b5ce30bf0f0d"))
 /* dispinterface */ IHTSDEForm2Events;
-enum TxActiveFormBorderStyle;
-enum TxPrintScale;
-enum TxMouseButton;
 struct __declspec(uuid("cc0e2703-07e4-4ad8-b83c-b371a2131efb"))
 /* dual interface */ IHTSDEForm3;
 struct __declspec(uuid("0351fd0a-91b9-410f-b651-80bb66e36417"))
@@ -47,6 +44,9 @@ struct __declspec(uuid("d828c596-7b2f-472f-9923-7758b3d5d771"))
 /* dual interface */ IBoolVarParam;
 struct /* coclass */ StringVarParam;
 struct /* coclass */ BoolVarParam;
+enum TxActiveFormBorderStyle;
+enum TxPrintScale;
+enum TxMouseButton;
 
 //
 // Smart pointer typedef declarations
@@ -54,12 +54,12 @@ struct /* coclass */ BoolVarParam;
 
 _COM_SMARTPTR_TYPEDEF(IHTSDEForm2Events, __uuidof(IHTSDEForm2Events));
 _COM_SMARTPTR_TYPEDEF(INavigator, __uuidof(INavigator));
-_COM_SMARTPTR_TYPEDEF(IHTSDEForm2, __uuidof(IHTSDEForm2));
-_COM_SMARTPTR_TYPEDEF(IHTSDEForm3, __uuidof(IHTSDEForm3));
 _COM_SMARTPTR_TYPEDEF(IProtection, __uuidof(IProtection));
 _COM_SMARTPTR_TYPEDEF(IAuxiliary, __uuidof(IAuxiliary));
 _COM_SMARTPTR_TYPEDEF(IStringVarParam, __uuidof(IStringVarParam));
 _COM_SMARTPTR_TYPEDEF(IBoolVarParam, __uuidof(IBoolVarParam));
+_COM_SMARTPTR_TYPEDEF(IHTSDEForm2, __uuidof(IHTSDEForm2));
+_COM_SMARTPTR_TYPEDEF(IHTSDEForm3, __uuidof(IHTSDEForm3));
 
 //
 // Type library items
@@ -68,31 +68,6 @@ _COM_SMARTPTR_TYPEDEF(IBoolVarParam, __uuidof(IBoolVarParam));
 struct __declspec(uuid("4677cfa4-78eb-43c0-84ae-b5ce30bf0f0d"))
 IHTSDEForm2Events : IDispatch
 {};
-
-enum __declspec(uuid("91021e35-6222-11d1-a8df-000001325083"))
-TxActiveFormBorderStyle
-{
-    afbNone = 0,
-    afbSingle = 1,
-    afbSunken = 2,
-    afbRaised = 3
-};
-
-enum __declspec(uuid("91021e36-6222-11d1-a8df-000001325083"))
-TxPrintScale
-{
-    poNone = 0,
-    poProportional = 1,
-    poPrintToFit = 2
-};
-
-enum __declspec(uuid("91021e37-6222-11d1-a8df-000001325083"))
-TxMouseButton
-{
-    mbLeft = 0,
-    mbRight = 1,
-    mbMiddle = 2
-};
 
 struct __declspec(uuid("0351fd0a-91b9-410f-b651-80bb66e36417"))
 INavigator : IDispatch
@@ -114,9 +89,91 @@ INavigator : IDispatch
         /*[in]*/ VARIANT_BOOL Value ) = 0;
 };
 
-struct __declspec(uuid("001f373c-29d3-5c7e-a000-a1fc803d82ee"))
+struct __declspec(uuid("001f373c-29d3-630e-a000-a1fc803d82ee"))
 Navigator;
     // [ default ] interface INavigator
+
+struct __declspec(uuid("47f17b73-916d-4be2-a2e2-d1cff64ab9fa"))
+IProtection : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall DropNetKey ( ) = 0;
+};
+
+struct __declspec(uuid("0f766e0a-548e-4a32-ab3d-856e8b1d255f"))
+IAuxiliary : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Protection (
+        /*[out,retval]*/ struct IProtection * * Value ) = 0;
+};
+
+struct __declspec(uuid("75b66b10-2cf8-5bde-a3fa-1d416bd1134c"))
+Protection;
+    // [ default ] interface IProtection
+
+struct __declspec(uuid("001f373c-29d3-630e-a0a0-a0fc803d82ee"))
+HTSDEForm2;
+    // interface IHTSDEForm2
+    // [ default, source ] dispinterface IHTSDEForm2Events
+    // [ default ] interface IHTSDEForm3
+
+struct __declspec(uuid("0618f0ef-20f2-412e-bc3f-a9d7f426ce16"))
+IStringVarParam : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Value (
+        /*[out,retval]*/ BSTR * Value ) = 0;
+      virtual HRESULT __stdcall put_Value (
+        /*[in]*/ BSTR Value ) = 0;
+};
+
+struct __declspec(uuid("d828c596-7b2f-472f-9923-7758b3d5d771"))
+IBoolVarParam : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Value (
+        /*[out,retval]*/ VARIANT_BOOL * Value ) = 0;
+      virtual HRESULT __stdcall put_Value (
+        /*[in]*/ VARIANT_BOOL Value ) = 0;
+};
+
+struct __declspec(uuid("89b62fcc-f31e-4f60-9af9-3dfde3da3ed6"))
+StringVarParam;
+    // [ default ] interface IStringVarParam
+
+struct __declspec(uuid("eb5e50a2-6d1a-40f8-9e44-17ec80dafbf1"))
+BoolVarParam;
+    // [ default ] interface IBoolVarParam
+
+enum __declspec(uuid("91021e35-6222-11d1-a8df-000001325083"))
+TxActiveFormBorderStyle
+{
+    afbNone = 0,
+    afbSingle = 1,
+    afbSunken = 2,
+    afbRaised = 3
+};
+
+enum __declspec(uuid("91021e36-6222-11d1-a8df-000001325083"))
+TxPrintScale
+{
+    poNone = 0,
+    poProportional = 1,
+    poPrintToFit = 2
+};
 
 struct __declspec(uuid("3616106f-e967-463f-bc23-04f523a5bf87"))
 IHTSDEForm2 : IDispatch
@@ -256,72 +313,17 @@ IHTSDEForm3 : IHTSDEForm2
         /*[out,retval]*/ VARIANT_BOOL * Value ) = 0;
       virtual HRESULT __stdcall put_ContextToolbar (
         /*[in]*/ VARIANT_BOOL Value ) = 0;
+      virtual HRESULT __stdcall get_GuardantID (
+        /*[out,retval]*/ long * Value ) = 0;
 };
 
-struct __declspec(uuid("47f17b73-916d-4be2-a2e2-d1cff64ab9fa"))
-IProtection : IDispatch
+enum __declspec(uuid("91021e37-6222-11d1-a8df-000001325083"))
+TxMouseButton
 {
-    //
-    // Raw methods provided by interface
-    //
-
-      virtual HRESULT __stdcall DropNetKey ( ) = 0;
+    mbLeft = 0,
+    mbRight = 1,
+    mbMiddle = 2
 };
-
-struct __declspec(uuid("0f766e0a-548e-4a32-ab3d-856e8b1d255f"))
-IAuxiliary : IDispatch
-{
-    //
-    // Raw methods provided by interface
-    //
-
-      virtual HRESULT __stdcall get_Protection (
-        /*[out,retval]*/ struct IProtection * * Value ) = 0;
-};
-
-struct __declspec(uuid("75b66b10-2cf8-5bde-a3fa-1d416bd1134c"))
-Protection;
-    // [ default ] interface IProtection
-
-struct __declspec(uuid("001f373c-29d3-5c7e-a000-a0fc803d82ee"))
-HTSDEForm2;
-    // interface IHTSDEForm2
-    // [ default, source ] dispinterface IHTSDEForm2Events
-    // [ default ] interface IHTSDEForm3
-
-struct __declspec(uuid("0618f0ef-20f2-412e-bc3f-a9d7f426ce16"))
-IStringVarParam : IDispatch
-{
-    //
-    // Raw methods provided by interface
-    //
-
-      virtual HRESULT __stdcall get_Value (
-        /*[out,retval]*/ BSTR * Value ) = 0;
-      virtual HRESULT __stdcall put_Value (
-        /*[in]*/ BSTR Value ) = 0;
-};
-
-struct __declspec(uuid("d828c596-7b2f-472f-9923-7758b3d5d771"))
-IBoolVarParam : IDispatch
-{
-    //
-    // Raw methods provided by interface
-    //
-
-      virtual HRESULT __stdcall get_Value (
-        /*[out,retval]*/ VARIANT_BOOL * Value ) = 0;
-      virtual HRESULT __stdcall put_Value (
-        /*[in]*/ VARIANT_BOOL Value ) = 0;
-};
-
-struct __declspec(uuid("89b62fcc-f31e-4f60-9af9-3dfde3da3ed6"))
-StringVarParam;
-    // [ default ] interface IStringVarParam
-
-struct __declspec(uuid("eb5e50a2-6d1a-40f8-9e44-17ec80dafbf1"))
-BoolVarParam;
-    // [ default ] interface IBoolVarParam
 
 } // namespace htsde2
 

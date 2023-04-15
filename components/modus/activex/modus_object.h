@@ -17,7 +17,7 @@ class ModusElement;
 
 class ModusObject {
  public:
-  typedef std::vector<std::unique_ptr<ModusElement>> Elements;
+  using Elements = std::vector<std::unique_ptr<ModusElement>>;
 
   explicit ModusObject(SDECore::ISDEObject50& sde_object);
   ~ModusObject();

@@ -19,13 +19,13 @@ namespace modus {
 
 namespace {
 
-std::wstring GetShortPath(SDECore::ISDEObject50& sde_object) {
+std::wstring GetShortPath(ISDEObject& sde_object) {
   base::win::ScopedBstr result;
   sde_object.get_ShortPath(result.Receive());
   return static_cast<const wchar_t*>(result);
 }
 
-std::vector<std::wstring> GetStateStrings(SDECore::IParams& params,
+std::vector<std::wstring> GetStateStrings(ISDEParams& params,
                                           std::wstring_view param_name) {
   SDEParam param = GetParam(
       params, base::win::ScopedVariant(param_name.data(), param_name.size()));
@@ -98,7 +98,7 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
   LOG_INFO(logger_) << "Load completed";
 }
 
-std::wstring GetPropName(SDECore::IParams& params) {
+std::wstring GetPropName(ISDEParams& params) {
   if (HasParam(params, kParameterState))
     return static_cast<const VARIANT&>(kParameterState).bstrVal;
   else if (HasParam(params, kParameterValue))
@@ -110,8 +110,8 @@ std::wstring GetPropName(SDECore::IParams& params) {
 }
 
 void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
-                              SDECore::ISDEObject50& sde_object,
-                              SDECore::IParams& initial_params,
+                              ISDEObject& sde_object,
+                              ISDEParams& initial_params,
                               const std::wstring& binding,
                               long object_tag,
                               long tech_index) {
@@ -196,7 +196,7 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
     cache_updater_->Add(formula, object_tag);
 }
 
-void ModusLoader::LoadObject(SDECore::ISDEObject50& sde_object) {
+void ModusLoader::LoadObject(ISDEObject& sde_object) {
   LOG_INFO(logger_) << "Processing object"
                     << LOG_TAG("ShortPath", GetShortPath(sde_object));
 
@@ -257,11 +257,11 @@ void ModusLoader::LoadObject(SDECore::ISDEObject50& sde_object) {
   LOG_INFO(logger_) << "Processing object completed";
 }
 
-void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
+void ModusLoader::LoadObjects(ISDEObjects& objects) {
   long count = 0;
   objects.get_Count(&count);
   for (int i = 0; i < count; i++) {
-    Microsoft::WRL::ComPtr<SDECore::ISDEObject50> object;
+    Microsoft::WRL::ComPtr<ISDEObject> object;
     objects.get_Item(base::win::ScopedVariant(i), object.GetAddressOf());
     if (!object)
       continue;
@@ -269,7 +269,7 @@ void ModusLoader::LoadObjects(SDECore::ISDEObjects2& objects) {
     LoadObject(*object.Get());
 
     // Process child objects.
-    Microsoft::WRL::ComPtr<SDECore::ISDEObjects2> children;
+    Microsoft::WRL::ComPtr<ISDEObjects> children;
     object->get_Elements(children.GetAddressOf());
     if (children)
       LoadObjects(*children.Get());

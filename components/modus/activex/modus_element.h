@@ -6,15 +6,10 @@
 #include "timed_data/timed_data_spec.h"
 
 #include <string>
-#include <wrl/client.h>
 
 namespace modus {
 
 class ModusObject;
-
-typedef Microsoft::WRL::ComPtr<SDECore::IParam> SDEParam;
-typedef Microsoft::WRL::ComPtr<SDECore::IParams> SDEParams;
-typedef Microsoft::WRL::ComPtr<SDECore::IParamInfo> SDEParamInfo;
 
 enum class Limit { LoLo = 0, Lo, Hi, HiHi, Count };
 
@@ -43,6 +38,9 @@ class ModusElement : private ModusElementContext {
 
   explicit ModusElement(ModusElementContext&& context);
 
+  ModusElement(ModusElement&&) = default;
+  ModusElement& operator=(ModusElement&&) = default;
+
   TimedDataSpec& timed_data() { return data_spec_; }
 
   unsigned style() const { return style_; }
@@ -61,18 +59,14 @@ class ModusElement : private ModusElementContext {
   double value_ = 0;   // for VALUE
 
   unsigned style_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(ModusElement);
 };
 
-SDEParam GetParam(SDECore::IParams& params, const VARIANT& index);
-bool HasParam(SDECore::IParams& params, const VARIANT& index);
-std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index);
-bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR value);
-bool SetParamValue(SDECore::IParams& params,
-                   std::u16string_view index,
-                   BSTR value);
-std::wstring GetHyperlink(SDECore::ISDEObject50& object);
+SDEParam GetParam(ISDEParams& params, const VARIANT& index);
+bool HasParam(ISDEParams& params, const VARIANT& index);
+std::wstring GetParamValue(ISDEParams& params, const VARIANT& index);
+bool SetParamValue(ISDEParams& params, const VARIANT& index, BSTR value);
+bool SetParamValue(ISDEParams& params, std::wstring_view index, BSTR value);
+std::wstring GetHyperlink(ISDEObject& object);
 
 extern const base::win::ScopedVariant kParameterBinding;
 extern const base::win::ScopedVariant kParameterText;

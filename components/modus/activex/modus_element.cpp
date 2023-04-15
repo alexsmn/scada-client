@@ -27,23 +27,23 @@ const wchar_t kStateOpen[] = L"отключен";
 
 const double kNoLimit = std::numeric_limits<double>::max();
 
-SDEParam GetParam(SDECore::IParams& params, const VARIANT& index) {
+SDEParam GetParam(ISDEParams& params, const VARIANT& index) {
   SDEParam param;
   params.get_Item(index, param.GetAddressOf());
   return param;
 }
 
-bool HasParam(SDECore::IParams& params, const VARIANT& index) {
+bool HasParam(ISDEParams& params, const VARIANT& index) {
   SDEParam param = GetParam(params, index);
   if (!param)
     return false;
 
   base::win::ScopedBstr name;
   param->get_Name(name.Receive());
-  return name != NULL;
+  return name != nullptr;
 }
 
-std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index) {
+std::wstring GetParamValue(ISDEParams& params, const VARIANT& index) {
   SDEParam param = GetParam(params, index);
   if (!param)
     return std::wstring();
@@ -55,20 +55,18 @@ std::wstring GetParamValue(SDECore::IParams& params, const VARIANT& index) {
   return static_cast<const wchar_t*>(val);
 }
 
-bool SetParamValue(SDECore::IParams& params, const VARIANT& index, BSTR value) {
+bool SetParamValue(ISDEParams& params, const VARIANT& index, BSTR value) {
   SDEParam param = GetParam(params, index);
   return param ? SUCCEEDED(param->put_Value(value)) : false;
 }
 
-bool SetParamValue(SDECore::IParams& params,
-                   std::wstring_view index,
-                   BSTR value) {
+bool SetParamValue(ISDEParams& params, std::wstring_view index, BSTR value) {
   base::win::ScopedVariant index_variant{index.data(),
                                          static_cast<UINT>(index.size())};
   return SetParamValue(params, index_variant, value);
 }
 
-std::wstring GetHyperlink(SDECore::ISDEObject50& object) {
+std::wstring GetHyperlink(ISDEObject& object) {
   SDEParams params;
   object.get_Params(params.GetAddressOf());
   if (!params)
@@ -79,7 +77,7 @@ std::wstring GetHyperlink(SDECore::ISDEObject50& object) {
     return std::wstring();
 
   long size;
-  if (FAILED(param->get_Dim(&size)) || !size)
+  if (FAILED(param->get_Dim(&size)) || size == 0)
     return std::wstring();
 
   base::win::ScopedBstr value;

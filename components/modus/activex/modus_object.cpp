@@ -12,16 +12,16 @@ ModusObject::ModusObject(SDECore::ISDEObject50& sde_object)
 ModusObject::~ModusObject() {}
 
 void ModusObject::Init() {
-  for (Elements::iterator i = elements_.begin(); i != elements_.end(); ++i)
-    (*i)->Init();
+  for (const auto& element : elements_)
+    element->Init();
 
   UpdateStyle(true);
 }
 
 void ModusObject::UpdateStyle(bool init) {
   unsigned states = 0;
-  for (Elements::iterator i = elements_.begin(); i != elements_.end(); ++i)
-    states |= (*i)->style();
+  for (const auto& element : elements_)
+    states |= element->style();
 
   if (init || current_states_ != states) {
     current_states_ = states;
@@ -51,11 +51,12 @@ void ModusObject::UpdateStyle(bool init) {
     style.insert(style.begin(), L'[');
     style += L']';
 
-    Microsoft::WRL::ComPtr<SDECore::IParams> params;
+    SDEParams params;
     sde_object().get_Params(params.GetAddressOf());
-    if (params)
+    if (params) {
       SetParamValue(*params.Get(), kParameterStyle,
                     base::win::ScopedBstr(style));
+    }
   }
 }
 

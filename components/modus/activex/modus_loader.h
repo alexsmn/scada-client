@@ -2,6 +2,7 @@
 
 #include "base/boost_log.h"
 #include "common/aliases.h"
+#include "components/modus/activex/modus.h"
 #include "services/file_cache.h"
 
 #include <string>
@@ -9,17 +10,6 @@
 class FileCache;
 class FileCacheUpdater;
 class TimedDataService;
-
-namespace base {
-class FilePath;
-}
-
-namespace SDECore {
-struct IParams;
-struct ISDEDocument50;
-struct ISDEObject50;
-struct ISDEObjects2;
-}  // namespace SDECore
 
 namespace modus {
 
@@ -46,15 +36,15 @@ class ModusLoader : private ModusLoaderContext {
 
  private:
   void LoadElement(std::unique_ptr<ModusObject>& object,
-                   SDECore::ISDEObject50& sde_object,
-                   SDECore::IParams& params,
+                   ISDEObject& sde_object,
+                   ISDEParams& params,
                    const std::wstring& binding,
                    long object_tag,
                    long tech_index);
 
-  void LoadObject(SDECore::ISDEObject50& sde_object);
+  void LoadObject(ISDEObject& sde_object);
 
-  void LoadObjects(SDECore::ISDEObjects2& objects);
+  void LoadObjects(ISDEObjects& objects);
 
   BoostLogger logger_{LOG_NAME("ModusLoader")};
 
