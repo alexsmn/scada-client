@@ -175,8 +175,8 @@ const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl) {
     return &kRefPropDef;
 
   static const scada::NumericId kIntDataTypeIds[] = {
-      scada::id::Int16,  scada::id::UInt16, scada::id::Int32,
-      scada::id::UInt32, scada::id::Int64,  scada::id::UInt64};
+      scada::id::Int8,  scada::id::UInt8,  scada::id::Int16, scada::id::UInt16,
+      scada::id::Int32, scada::id::UInt32, scada::id::Int64, scada::id::UInt64};
 
   auto data_type = prop_decl.data_type();
 

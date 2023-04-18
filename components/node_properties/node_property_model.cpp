@@ -7,6 +7,24 @@
 #include "services/property_defs.h"
 #include "string_const.h"
 
+namespace {
+
+void SortPropertiesRecursive(
+    std::vector<NodeGroupModel::Property>& properties) {
+  std::ranges::sort(properties, {},
+                    [](const NodeGroupModel::Property& p) { return p.name; });
+
+  for (auto& p : properties) {
+    if (p.submodel) {
+      SortPropertiesRecursive(p.submodel->properties);
+    }
+  }
+}
+
+}  // namespace
+
+// NodePropertyModel
+
 NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
     : PropertyContext{std::move(context)}, node_{std::move(node)} {
   node_.Subscribe(*this);
@@ -51,31 +69,23 @@ void NodePropertyModel::Update() {
   if (!node_.fetched())
     return;
 
-  std::map<NodeRef /*category*/, std::unique_ptr<NodeGroupModel>> groups;
-  std::vector<NodeRef> ordered_groups;
+  std::unordered_map<std::u16string, std::unique_ptr<NodeGroupModel>> groups;
 
   {
-    auto& group = groups[{}];
+    auto& group = groups[u"Атрибуты"];
     group = std::make_unique<NodeGroupModel>(*this);
-    ordered_groups.emplace_back();
 
 #ifndef NDEBUG
-    group->properties.push_back({
-        aui::PropertyGroup::ItemType::Property,
-        std::u16string{kNodeIdAttributeString},
-        scada::AttributeId::NodeId,
-    });
+    group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
+                                   std::u16string{kNodeIdAttributeString},
+                                   scada::AttributeId::NodeId);
 #endif
-    group->properties.push_back({
-        aui::PropertyGroup::ItemType::Property,
-        std::u16string{kBrowseNameAttributeString},
-        scada::AttributeId::BrowseName,
-    });
-    group->properties.push_back({
-        aui::PropertyGroup::ItemType::Property,
-        std::u16string{kDisplayNameAttributeString},
-        scada::AttributeId::DisplayName,
-    });
+    group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
+                                   std::u16string{kBrowseNameAttributeString},
+                                   scada::AttributeId::BrowseName);
+    group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
+                                   std::u16string{kDisplayNameAttributeString},
+                                   scada::AttributeId::DisplayName);
   }
 
   if (const auto& type_definition = node_.type_definition()) {
@@ -87,10 +97,9 @@ void NodePropertyModel::Update() {
         continue;
 
       const auto& category = prop_decl.target(scada::id::HasPropertyCategory);
-      auto& group = groups[category];
+      auto& group = groups[ToString16(category.display_name())];
       if (!group) {
         group = std::make_unique<NodeGroupModel>(*this);
-        ordered_groups.emplace_back(category);
       }
 
       auto& def = *p.second;
@@ -118,13 +127,14 @@ void NodePropertyModel::Update() {
     }
   }
 
-  for (auto& category : ordered_groups) {
-    auto title = category ? ToString16(category.display_name()) : u"Общие";
-    root_.properties.push_back({aui::PropertyGroup::ItemType::Category,
-                                std::move(title), scada::AttributeId::NodeId,
-                                nullptr, scada::NodeId{},
-                                std::move(groups[category])});
+  for (auto& [title, group] : groups) {
+    auto new_title = title.empty() ? u"Разное" : title;
+    root_.properties.emplace_back(
+        aui::PropertyGroup::ItemType::Category, std::move(new_title),
+        scada::AttributeId::NodeId, nullptr, scada::NodeId{}, std::move(group));
   }
+
+  SortPropertiesRecursive(root_.properties);
 }
 
 int NodePropertyModel::FindProperty(const scada::NodeId& prop_decl_id) const {
