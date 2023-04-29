@@ -1,10 +1,14 @@
 #include "services/telemetry_client.h"
 
+#include <memory>
+
+#pragma warning(push)
+#pragma warning(disable : 4702)
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
-#include <memory>
+#pragma warning(pop)
 
 namespace beast = boost::beast;  // from <boost/beast.hpp>
 namespace http = beast::http;    // from <boost/beast/http.hpp>

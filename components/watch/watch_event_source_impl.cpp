@@ -34,9 +34,12 @@ void WatchEventSourceImpl::SetDeviceId(const scada::NodeId& device_id) {
       [this](const scada::Status& status, const std::any& event) {
         if (!status)
           return delegate_->OnError(status);
-        auto* system_event = std::any_cast<scada::Event>(&event);
-        assert(system_event);
-        if (system_event)
-          delegate_->OnEvent(*system_event);
+
+        if (event.has_value()) {
+          auto* system_event = std::any_cast<scada::Event>(&event);
+          assert(system_event);
+          if (system_event)
+            delegate_->OnEvent(*system_event);
+        }
       });
 }
