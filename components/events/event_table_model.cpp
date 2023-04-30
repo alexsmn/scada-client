@@ -40,9 +40,14 @@ int Compare(base::Time a, base::Time b) {
 
 void EventTableModel::Row::Update(NodeService& node_service) {
   assert(event);
+
   node = node_service.GetNode(event->node_id);
   user = node_service.GetNode(event->user_id);
   acknowledged_user = node_service.GetNode(event->acknowledged_user_id);
+
+  node.Fetch(NodeFetchStatus::NodeOnly());
+  user.Fetch(NodeFetchStatus::NodeOnly());
+  acknowledged_user.Fetch(NodeFetchStatus::NodeOnly());
 }
 
 bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
