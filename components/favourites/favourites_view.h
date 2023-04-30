@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "command_registry.h"
 #include "common_resources.h"
 #include "controller.h"
@@ -29,7 +30,7 @@ class FavouritesView : protected ControllerContext, public Controller {
   void DeleteSelection();
 
 #if !defined(UI_WT)
-  void AddUrl();
+  promise<> AddUrl();
 #endif
 
   const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;

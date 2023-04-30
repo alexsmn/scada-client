@@ -43,6 +43,8 @@ class GridModel {
   virtual bool IsEditable(int row, int column);
   virtual bool SetCellText(int row, int column, const std::u16string& text);
   virtual EditData GetEditData(int row, int column);
+  // Invoked when `EditData.editor_type == BUTTON` and the button is clicked.
+  virtual void HandleEditButton(int row, int column);
 
   base::ObserverList<Observer>& observers() { return observers_; }
 

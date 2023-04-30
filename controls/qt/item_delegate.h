@@ -14,9 +14,15 @@ class ItemDelegate final : public QItemDelegate {
 
  public:
   using EditDataProvider = std::function<EditData(const QModelIndex& index)>;
+  using ButtonHandler = std::function<void(const QModelIndex& index)>;
 
-  explicit ItemDelegate(EditDataProvider edit_data_provider)
-      : edit_data_provider_{std::move(edit_data_provider)} {}
+  void set_edit_data_provider(EditDataProvider edit_data_provider) {
+    edit_data_provider_ = std::move(edit_data_provider);
+  }
+
+  void set_button_handler(ButtonHandler button_handler) {
+    button_handler_ = std::move(button_handler);
+  }
 
   // QItemDelegate
   virtual QWidget* createEditor(QWidget* parent,
@@ -33,7 +39,8 @@ class ItemDelegate final : public QItemDelegate {
 
   QComboBox* CreateDropDown(QWidget* parent, const EditData& edit_data) const;
 
-  const EditDataProvider edit_data_provider_;
+  EditDataProvider edit_data_provider_;
+  ButtonHandler button_handler_;
 };
 
 }  // namespace aui

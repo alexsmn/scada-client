@@ -16,6 +16,8 @@
 #include <QTranslator>
 #include <boost/asio/io_context.hpp>
 
+using namespace std::chrono_literals;
+
 namespace {
 const char kDefaultStyle[] = "Fusion";
 }
@@ -67,21 +69,15 @@ int main(int argc, char* argv[]) {
 
   qapp.setQuitOnLastWindowClosed(false);
 
-  boost::asio::io_context io_context;
-
   // QApplication must be created.
   auto task_runner = base::MakeRefCounted<MessageLoopQt>();
   base::ThreadTaskRunnerHandle message_loop{task_runner};
 
   auto executor = std::make_shared<TaskRunnerExecutor>(task_runner);
 
-  QTimer timer;
-  timer.setInterval(10);
-  QObject::connect(&timer, &QTimer::timeout, [&io_context, task_runner] {
-    task_runner->Run();
-    io_context.poll();
-  });
-  timer.start();
+  boost::asio::io_context io_context;
+  ExecutorTimer io_context_poll{executor};
+  io_context_poll.StartRepeating(10ms, [&io_context] { io_context.poll(); });
 
   ClientApplication app{ClientApplicationContext{
       io_context, executor,

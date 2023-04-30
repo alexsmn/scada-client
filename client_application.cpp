@@ -9,6 +9,7 @@
 #include "base/files/file_util.h"
 #include "base/nested_logger.h"
 #include "base/path_service.h"
+#include "base/promise_executor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/dump.h"
 #include "client_paths.h"
@@ -450,6 +451,8 @@ void ClientApplication::OnEvents(bool has_events) {
 }
 
 promise<bool> ClientApplication::Login() {
+  logger_->Write(LogSeverity::Normal, "Login");
+
   assert(base::CommandLine::ForCurrentProcess());
   auto& command_line = *base::CommandLine::ForCurrentProcess();
 
@@ -476,6 +479,8 @@ promise<bool> ClientApplication::Login() {
 }
 
 void ClientApplication::OnLoginCompleted(DataServices services) {
+  logger_->Write(LogSeverity::Normal, "Login completed");
+
   // |Audit| doesn't own underlying services.
   struct Holder {
     Holder(std::shared_ptr<Executor> executor,
@@ -511,6 +516,8 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
 }
 
 void ClientApplication::Quit() {
+  logger_->Write(LogSeverity::Normal, "Quit");
+
   if (!master_data_services_) {
     quit_handler_();
     return;
@@ -518,6 +525,8 @@ void ClientApplication::Quit() {
 
   local_events_->ReportEvent(LocalEvents::SEV_ERROR,
                              u"Отключение от сервера...");
+
+  logger_->Write(LogSeverity::Normal, "Disconnect");
 
   master_data_services_->Disconnect(
       [this](const scada::Status& status) { quit_handler_(); });

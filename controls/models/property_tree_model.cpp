@@ -73,8 +73,12 @@ bool PropertyItemTreeNode::IsSelectable(int column_id) const {
   return column_id == 1;
 }
 
-aui::EditData PropertyItemTreeNode::GetEditData(int column_id) {
+aui::EditData PropertyItemTreeNode::GetEditData(int column_id) const {
   return property_group.GetEditData(index);
+}
+
+void PropertyItemTreeNode::HandleEditButton(int column_id) const {
+  return property_group.HandleEditButton(index);
 }
 
 // PropertyTreeModel

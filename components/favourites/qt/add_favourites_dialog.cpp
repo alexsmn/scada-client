@@ -1,6 +1,7 @@
 ﻿#include "components/favourites/add_favourites_dialog.h"
 
 #include "components/favourites/favourites.h"
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
 #include "ui_add_favourites_dialog.h"
 
@@ -46,9 +47,9 @@ void AddFavouritesDialog::accept() {
   QDialog::accept();
 }
 
-bool ShowAddFavouritesDialog(DialogService& dialog_service,
-                             AddFavouritesContext&& context) {
-  AddFavouritesDialog dialog{std::move(context),
-                             dialog_service.GetParentWidget()};
-  return dialog.exec() == AddFavouritesDialog::Accepted;
+promise<> ShowAddFavouritesDialog(DialogService& dialog_service,
+                                  AddFavouritesContext&& context) {
+  auto dialog = std::make_unique<AddFavouritesDialog>(
+      std::move(context), dialog_service.GetParentWidget());
+  return ToVoidPromise(StartModalDialog(std::move(dialog)));
 }

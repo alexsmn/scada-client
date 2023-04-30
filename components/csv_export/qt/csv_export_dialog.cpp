@@ -2,7 +2,9 @@
 
 #include "components/csv_export/csv_export.h"
 #include "export_util.h"
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
+#include "services/profile.h"
 
 #include <QMessageBox>
 
@@ -10,7 +12,10 @@ class CsvExportDialog : public QDialog {
   Q_OBJECT
 
  public:
-  explicit CsvExportDialog(CsvExportParams& params, QWidget* parent = nullptr);
+  explicit CsvExportDialog(const CsvExportParams& params,
+                           QWidget* parent = nullptr);
+
+  CsvExportParams params_;
 
  public Q_SLOTS:
   virtual void accept() override;
@@ -18,15 +23,13 @@ class CsvExportDialog : public QDialog {
  private:
   Ui::CsvExportDialog ui;
 
-  CsvExportParams& params_;
-
   static const int kTabIndex = 3;
   static const int kSpaceIndex = 4;
 };
 
 #include "csv_export_dialog.moc"
 
-CsvExportDialog::CsvExportDialog(CsvExportParams& params, QWidget* parent)
+CsvExportDialog::CsvExportDialog(const CsvExportParams& params, QWidget* parent)
     : QDialog{parent}, params_{params} {
   ui.setupUi(this);
 
@@ -77,8 +80,11 @@ void CsvExportDialog::accept() {
   QDialog::accept();
 }
 
-bool ShowCsvExportDialog(DialogService& dialog_service,
-                         CsvExportParams& params) {
-  CsvExportDialog dialog{params, dialog_service.GetParentWidget()};
-  return !!dialog.exec();
+promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
+                                             Profile& profile) {
+  auto dialog = std::make_unique<CsvExportDialog>(
+      profile.csv_export_params, dialog_service.GetParentWidget());
+  return StartModalDialog(std::move(dialog)).then([](CsvExportDialog* dialog) {
+    return dialog->params_;
+  });
 }

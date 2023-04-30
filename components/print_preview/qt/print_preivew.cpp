@@ -1,5 +1,6 @@
 #include "components/print_preview/print_preview.h"
 
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"
 
@@ -8,9 +9,9 @@
 void ShowPrintPreviewDialog(DialogService& dialog_service,
                             PrintService& print_service,
                             const PrintHandler& print_handler) {
-  QPrintPreviewDialog dialog{&print_service.printer,
-                             dialog_service.GetParentWidget()};
-  QObject::connect(&dialog, &QPrintPreviewDialog::paintRequested,
+  auto dialog = std::make_unique<QPrintPreviewDialog>(
+      &print_service.printer, dialog_service.GetParentWidget());
+  QObject::connect(dialog.get(), &QPrintPreviewDialog::paintRequested,
                    print_handler);
-  dialog.exec();
+  StartModalDialog(std::move(dialog));
 }

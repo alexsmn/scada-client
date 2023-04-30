@@ -1,6 +1,7 @@
 ﻿#include "components/main/main_menu_model.h"
 
 #include "base/command_line.h"
+#include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "command_handler.h"
 #include "common_resources.h"

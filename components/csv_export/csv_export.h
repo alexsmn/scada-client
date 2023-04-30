@@ -1,9 +1,12 @@
 #pragma once
 
+#include "base/promise.h"
+#include "export_util.h"
+
 #include <string>
 
 class DialogService;
-struct CsvExportParams;
+class Profile;
 
-bool ShowCsvExportDialog(DialogService& dialog_service,
-                         CsvExportParams& params);
+promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
+                                             Profile& profile);

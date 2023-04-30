@@ -1,10 +1,13 @@
 #pragma once
 
+#include "base/promise.h"
+
 #include <string>
 
 class DialogService;
 
-bool RunPromptDialog(DialogService& dialog_service,
-                     const std::u16string& prompt,
-                     const std::u16string& title,
-                     std::u16string& value);
+promise<std::u16string> RunPromptDialog(
+    DialogService& dialog_service,
+    const std::u16string& prompt,
+    const std::u16string& title,
+    const std::u16string& initial_value = {});

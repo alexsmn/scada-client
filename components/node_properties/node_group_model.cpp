@@ -65,9 +65,18 @@ void NodeGroupModel::SetValue(int index, const std::u16string& value) {
 
 aui::EditData NodeGroupModel::GetEditData(int index) const {
   auto& prop = properties[index];
-  if (prop.def)
-    return prop.def->GetPropertyEditor(property_model_, property_model_.node_,
-                                       prop.prop_decl_id);
-  else
+  if (!prop.def)
     return {};
+
+  return prop.def->GetPropertyEditor(property_model_, property_model_.node_,
+                                     prop.prop_decl_id);
+}
+
+void NodeGroupModel::HandleEditButton(int index) const {
+  auto& prop = properties[index];
+  if (!prop.def)
+    return;
+
+  return prop.def->HandleEditButton(property_model_, property_model_.node_,
+                                    prop.prop_decl_id);
 }

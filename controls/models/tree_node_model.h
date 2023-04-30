@@ -33,7 +33,8 @@ class TreeNode {
   virtual void SetText(int column_id, const std::u16string& title) {}
   virtual bool IsEditable(int column_id) const { return false; }
   virtual bool IsSelectable(int column_id) const { return true; }
-  virtual EditData GetEditData(int column_id) { return {}; };
+  virtual EditData GetEditData(int column_id) const { return {}; };
+  virtual void HandleEditButton(int column_id) const {}
 
   virtual Color GetTextColor(int column_id) const { return ColorCode::Black; }
 
@@ -161,9 +162,12 @@ class TreeNodeModel : public TreeModel {
   virtual bool IsSelectable(void* node, int column_id) const override {
     return AsNode(node)->IsSelectable(column_id);
   }
-  virtual EditData GetEditData(void* node, int column_id) {
+  virtual EditData GetEditData(void* node, int column_id) const override {
     return AsNode(node)->GetEditData(column_id);
   };
+  virtual void HandleEditButton(void* node, int column_id) const override {
+    return AsNode(node)->HandleEditButton(column_id);
+  }
   virtual Color GetTextColor(void* node, int column_id) override {
     return AsNode(node)->GetTextColor(column_id);
   }

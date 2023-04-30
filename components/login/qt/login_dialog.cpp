@@ -39,8 +39,7 @@ LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
   dialog_service_.parent_widget = this;
 
   controller_->completion_handler = [this](DataServices services) {
-    this->services = std::move(services);
-    QDialog::accept();
+    promise.resolve(std::move(services));
   };
 
   controller_->error_handler = [this] {
@@ -81,13 +80,23 @@ LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
   if (controller_->auto_login) {
     ui.passwordLineEdit->setText(
         QString::fromStdU16String(controller_->password));
-    accept();
+    Login();
   }
 }
 
-LoginDialog::~LoginDialog() {}
+LoginDialog::~LoginDialog() {
+  QApplication::instance()->removeEventFilter(this);
+}
 
 void LoginDialog::accept() {
+  Login();
+}
+
+void LoginDialog::reject() {
+  promise.resolve(std::nullopt);
+}
+
+void LoginDialog::Login() {
   EnableControls(false);
 
   controller_->SetServerTypeIndex(controller_->server_type_list.size() >= 2
@@ -132,9 +141,16 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
 promise<std::optional<DataServices>> ExecuteLoginDialog(
     std::shared_ptr<Executor> executor,
     DataServicesContext&& services_context) {
-  LoginDialog login_dialog{std::move(executor), std::move(services_context)};
-  if (login_dialog.exec() == QDialog::Rejected)
-    return make_resolved_promise(std::optional<DataServices>{});
-  return make_resolved_promise(
-      std::optional<DataServices>{std::move(login_dialog.services)});
+  LoginDialog* login_dialog =
+      new LoginDialog{std::move(executor), std::move(services_context)};
+
+  auto promise = login_dialog->promise.then(
+      [login_dialog](const std::optional<DataServices>& services) {
+        login_dialog->deleteLater();
+        return services;
+      });
+
+  login_dialog->setModal(true);
+  login_dialog->show();
+  return promise;
 }

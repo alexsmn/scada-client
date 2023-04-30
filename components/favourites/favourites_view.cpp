@@ -85,30 +85,30 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 }
 
 #if !defined(UI_WT)
-void FavouritesView::AddUrl() {
-  std::u16string url;
-  if (!RunPromptDialog(dialog_service_, u"URL-адрес:", kAddUrl, url))
-    return;
+promise<> FavouritesView::AddUrl() {
+  return RunPromptDialog(dialog_service_, u"URL-адрес:", kAddUrl)
+      .then([this](const std::u16string& url) {
+        if (!IsWebUrl(url)) {
+          return ToRejectedPromise(dialog_service_.RunMessageBox(
+              u"Допустимый URL-адрес должен начинаться с \"http://\" или "
+              u"\"https://\".",
+              kAddUrl, MessageBoxMode::Error));
+        }
 
-  if (!IsWebUrl(url)) {
-    dialog_service_.RunMessageBox(
-        u"Допустимый URL-адрес должен начинаться с \"http://\" или "
-        u"\"https://\".",
-        kAddUrl, MessageBoxMode::Error);
-    return;
-  }
+        const FavouritesNode* node =
+            static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+        if (node && !node->AsFolderNode())
+          node = node->parent();
 
-  const FavouritesNode* node =
-      static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
-  if (node && !node->AsFolderNode())
-    node = node->parent();
+        const Page& folder = node && node->AsFolderNode()
+                                 ? node->AsFolderNode()->folder()
+                                 : favourites_.GetOrAddFolder();
 
-  const Page& folder = node && node->AsFolderNode()
-                           ? node->AsFolderNode()->folder()
-                           : favourites_.GetOrAddFolder();
+        WindowDefinition win{kWebWindowInfo};
+        win.path = url;
+        favourites_.Add(win, folder);
 
-  WindowDefinition win{kWebWindowInfo};
-  win.path = url;
-  favourites_.Add(win, folder);
+        return make_resolved_promise();
+      });
 }
 #endif

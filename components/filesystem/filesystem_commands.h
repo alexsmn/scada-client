@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "controls/key_codes.h"
 
 #include <memory>
@@ -17,10 +18,10 @@ bool ExecuteFileCommand(MainWindow* main_window,
                         const NodeRef& file_node,
                         aui::KeyModifiers key_modifiers);
 
-void AddFile(NodeRef parent_directory,
-             DialogService& dialog_service,
-             TaskManager& task_manager);
+promise<> AddFile(NodeRef parent_directory,
+                  DialogService& dialog_service,
+                  TaskManager& task_manager);
 
-void CreateFileDirectory(NodeRef parent_directory,
-                         DialogService& dialog_service,
-                         TaskManager& task_manager);
+promise<> CreateFileDirectory(NodeRef parent_directory,
+                              DialogService& dialog_service,
+                              TaskManager& task_manager);

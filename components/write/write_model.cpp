@@ -1,6 +1,6 @@
 ﻿#include "components/write/write_model.h"
 
-#include "base/executor.h"
+#include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/formula_util.h"
@@ -133,8 +133,9 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
     writing_ = true;
     auto title = GetWindowTitle();
     std::u16string message = ToString16(status) + u'.';
-    dialog_service_->RunMessageBox(message, title, MessageBoxMode::Error);
-    completion_handler(true);
+    dialog_service_->RunMessageBox(message, title, MessageBoxMode::Error)
+        .then([completion_handler = completion_handler](
+                  MessageBoxResult result) { completion_handler(true); });
     return;
   }
 

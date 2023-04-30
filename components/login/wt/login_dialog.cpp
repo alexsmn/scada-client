@@ -82,12 +82,12 @@ class TestDialogService : public DialogService {
     return promise;
   }
 
-  virtual std::filesystem::path SelectOpenFile(
+  virtual promise<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
     return {};
   }
 
-  virtual std::filesystem::path SelectSaveFile(
+  virtual promise<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
     return {};
   }

@@ -52,12 +52,20 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
 Tree::Tree(std::shared_ptr<TreeModel> model)
     : model_adapter_{std::make_unique<TreeModelAdapter>(model)},
       proxy_model_{std::make_unique<TreeProxyModel>(*this)},
-      item_delegate_{std::make_unique<ItemDelegate>(
-          [this, model](const QModelIndex& index) {
-            auto source_index = proxy_model_->mapToSource(index);
-            return model->GetEditData(source_index.internalPointer(),
-                                      source_index.column());
-          })} {
+      item_delegate_{std::make_unique<ItemDelegate>()} {
+  item_delegate_->set_edit_data_provider(
+      [this, model](const QModelIndex& index) {
+        auto source_index = proxy_model_->mapToSource(index);
+        return model->GetEditData(source_index.internalPointer(),
+                                  source_index.column());
+      });
+
+  item_delegate_->set_button_handler([this, model](const QModelIndex& index) {
+    auto source_index = proxy_model_->mapToSource(index);
+    model->HandleEditButton(source_index.internalPointer(),
+                            source_index.column());
+  });
+
   setHeaderHidden(true);
   setItemDelegate(item_delegate_.get());
 

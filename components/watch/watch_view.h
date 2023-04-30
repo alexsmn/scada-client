@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
@@ -34,7 +35,7 @@ class WatchView : protected ControllerContext,
  private:
   std::u16string MakeTitle() const;
 
-  void SaveLog();
+  promise<> SaveLog();
 
   // aui::TableModelObserver
   virtual void OnItemsAdded(int first, int count) override;

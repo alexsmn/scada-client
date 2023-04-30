@@ -8,8 +8,9 @@ class CreateServiceItemDialog final : public QDialog {
   Q_OBJECT
 
  public:
-  explicit CreateServiceItemDialog(CreateServiceItemModel& model,
-                                   QWidget* parent = nullptr);
+  explicit CreateServiceItemDialog(
+      std::unique_ptr<CreateServiceItemModel> model,
+      QWidget* parent = nullptr);
  public Q_SLOTS:
   virtual void accept() override;
 
@@ -18,25 +19,26 @@ class CreateServiceItemDialog final : public QDialog {
 
   void UpdateComponents();
 
-  CreateServiceItemModel& model_;
+  std::unique_ptr<CreateServiceItemModel> model_;
 };
 
 #include "create_service_item_dialog.moc"
 
-CreateServiceItemDialog::CreateServiceItemDialog(CreateServiceItemModel& model,
-                                                 QWidget* parent)
-    : QDialog{parent}, model_{model} {
+CreateServiceItemDialog::CreateServiceItemDialog(
+    std::unique_ptr<CreateServiceItemModel> model,
+    QWidget* parent)
+    : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
   connect(ui.deviceComboBox, QOverload<int>::of(&QComboBox::activated),
           [this](int index) {
-            model_.SetDeviceIndex(index);
+            model_->SetDeviceIndex(index);
             UpdateComponents();
           });
 
   QStringList devices;
-  devices.reserve(model_.devices().size());
-  for (const auto& p : model_.devices())
+  devices.reserve(model_->devices().size());
+  for (const auto& p : model_->devices())
     devices.push_back(QString::fromStdU16String(p.first));
   ui.deviceComboBox->addItems(devices);
 
@@ -52,15 +54,15 @@ void CreateServiceItemDialog::accept() {
                  std::back_inserter(params.component_indexes),
                  [](const QModelIndex& index) { return index.row(); });
 
-  model_.Run(params);
+  model_->Run(params);
 
   QDialog::accept();
 }
 
 void CreateServiceItemDialog::UpdateComponents() {
   QStringList components;
-  components.reserve(model_.components().size());
-  for (const auto& p : model_.components())
+  components.reserve(model_->components().size());
+  for (const auto& p : model_->components())
     components.push_back(QString::fromStdU16String(p.first));
   ui.componentListWidget->clear();
   ui.componentListWidget->addItems(components);
@@ -68,7 +70,10 @@ void CreateServiceItemDialog::UpdateComponents() {
 
 void ShowCreateServiceItemDialog(DialogService& dialog_service,
                                  CreateServiceItemContext&& context) {
-  CreateServiceItemModel model{std::move(context)};
-  CreateServiceItemDialog dialog{model, dialog_service.GetParentWidget()};
-  dialog.exec();
+  auto model = std::make_unique<CreateServiceItemModel>(std::move(context));
+  CreateServiceItemDialog* dialog = new CreateServiceItemDialog{
+      std::move(model), dialog_service.GetParentWidget()};
+  dialog->setModal(true);
+  QObject::connect(dialog, &QDialog::finished, dialog, &QObject::deleteLater);
+  dialog->show();
 }

@@ -22,15 +22,16 @@ class LoginDialog : public QDialog {
               DataServicesContext&& services_context);
   ~LoginDialog();
 
-  DataServices services;
-
- public Q_SLOTS:
-  virtual void accept() override;
+  promise<std::optional<DataServices>> promise;
 
  protected:
   virtual bool eventFilter(QObject* object, QEvent* event) override;
+  virtual void accept() override;
+  virtual void reject() override;
 
  private:
+  void Login();
+
   void EnableControls(bool enable);
 
   Ui::LoginDialog ui;

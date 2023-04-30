@@ -11,6 +11,9 @@ namespace aui {
 QWidget* ItemDelegate::createEditor(QWidget* parent,
                                     const QStyleOptionViewItem& option,
                                     const QModelIndex& index) const {
+  if (!edit_data_provider_)
+    return nullptr;
+
   auto edit_data = edit_data_provider_(index);
   switch (edit_data.editor_type) {
     case EditData::EditorType::NONE:
@@ -27,15 +30,10 @@ QWidget* ItemDelegate::createEditor(QWidget* parent,
       line_edit->setFrame(false);
       QIcon icon{":/device.png"};
       auto* action = line_edit->addAction(icon, QLineEdit::TrailingPosition);
-      connect(action, &QAction::triggered,
-              [index, line_edit, handler = edit_data.action_handler] {
-                auto text = line_edit->text().toStdU16String();
-                if (handler(text)) {
-                  const_cast<QAbstractItemModel*>(index.model())
-                      ->setData(index, QString::fromStdU16String(text),
-                                Qt::EditRole);
-                }
-              });
+      if (button_handler_) {
+        connect(action, &QAction::triggered,
+                [index, handler = button_handler_] { handler(index); });
+      }
       return line_edit;
     }
 

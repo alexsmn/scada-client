@@ -4,7 +4,8 @@
 #include "net/transport_string.h"
 #include "services/dialog_service.h"
 
-bool ShowTransportDialog(DialogService& dialog_service,
-                         net::TransportString& transport_string) {
-  return false;
+promise<net::TransportString> ShowTransportDialog(
+    DialogService& dialog_service,
+    const net::TransportString& transport_string) {
+  return make_rejected_promise<net::TransportString>(std::exception{});
 }

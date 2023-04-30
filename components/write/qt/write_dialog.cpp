@@ -2,6 +2,7 @@
 
 #include "components/write/write_model.h"
 #include "qt/dialog_service_impl_qt.h"
+#include "qt/dialog_util.h"
 #include "ui_write_dialog.h"
 
 class WriteDialog : public QDialog {
@@ -119,6 +120,7 @@ void WriteDialog::accept() {
 
 void ExecuteWriteDialog(DialogService& dialog_service, WriteContext&& context) {
   auto model = std::make_shared<WriteModel>(std::move(context));
-  WriteDialog dialog{model, dialog_service.GetParentWidget()};
-  dialog.exec();
+  auto dialog =
+      std::make_unique<WriteDialog>(model, dialog_service.GetParentWidget());
+  StartModalDialog(std::move(dialog));
 }

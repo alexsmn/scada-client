@@ -1,6 +1,7 @@
 #include "components/limits/limit_dialog.h"
 
 #include "components/limits/limit_model.h"
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
 #include "ui_limit_dialog.h"
 
@@ -8,7 +9,8 @@ class LimitDialog : public QDialog {
   Q_OBJECT
 
  public:
-  explicit LimitDialog(LimitModel& model, QWidget* parent = nullptr);
+  explicit LimitDialog(std::unique_ptr<LimitModel> model,
+                       QWidget* parent = nullptr);
 
  public Q_SLOTS:
   virtual void accept() override;
@@ -16,19 +18,19 @@ class LimitDialog : public QDialog {
  private:
   Ui::LimitDialog ui;
 
-  LimitModel& model_;
+  std::unique_ptr<LimitModel> model_;
 };
 
 #include "limit_dialog.moc"
 
-LimitDialog::LimitDialog(LimitModel& model, QWidget* parent)
-    : QDialog{parent}, model_{model} {
+LimitDialog::LimitDialog(std::unique_ptr<LimitModel> model, QWidget* parent)
+    : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
   ui.descriptionLabel->setText(
-      QString::fromStdU16String(model_.GetSourceTitle()));
+      QString::fromStdU16String(model_->GetSourceTitle()));
 
-  auto limits = model_.GetLimits();
+  auto limits = model_->GetLimits();
   ui.loEdit->setText(QString::fromStdU16String(limits.lo));
   ui.hiEdit->setText(QString::fromStdU16String(limits.hi));
   ui.loLoEdit->setText(QString::fromStdU16String(limits.lolo));
@@ -41,14 +43,15 @@ void LimitDialog::accept() {
   limits.hi = ui.hiEdit->text().toStdU16String();
   limits.lolo = ui.loLoEdit->text().toStdU16String();
   limits.hihi = ui.hiHiEdit->text().toStdU16String();
-  model_.WriteLimits(limits);
+  model_->WriteLimits(limits);
 
   QDialog::accept();
 }
 
 void ShowLimitsDialog(DialogService& dialog_service,
                       LimitDialogContext&& context) {
-  LimitModel model{std::move(context)};
-  LimitDialog dialog{model, dialog_service.GetParentWidget()};
-  dialog.exec();
+  auto model = std::make_unique<LimitModel>(std::move(context));
+  auto dialog = std::make_unique<LimitDialog>(std::move(model),
+                                              dialog_service.GetParentWidget());
+  StartModalDialog(std::move(dialog));
 }

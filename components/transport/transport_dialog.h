@@ -1,10 +1,11 @@
 #pragma once
 
-namespace net {
-class TransportString;
-}
+#include "base/promise.h"
+
+#include <net/transport_string.h>
 
 class DialogService;
 
-bool ShowTransportDialog(DialogService& dialog_service,
-                         net::TransportString& transport_string);
+promise<net::TransportString> ShowTransportDialog(
+    DialogService& dialog_service,
+    const net::TransportString& transport_string);

@@ -29,11 +29,15 @@ GridRange ToUiGridRange(const QItemSelectionRange& range) {
 Grid::Grid(std::shared_ptr<GridModel> model,
            std::shared_ptr<HeaderModel> row_model,
            std::shared_ptr<HeaderModel> column_model)
-    : model_{model},
-      model_adapter_{model, row_model, column_model},
-      item_delegate_{[model](const QModelIndex& index) {
-        return model->GetEditData(index.row(), index.column());
-      }} {
+    : model_{model}, model_adapter_{model, row_model, column_model} {
+  item_delegate_.set_edit_data_provider([model](const QModelIndex& index) {
+    return model->GetEditData(index.row(), index.column());
+  });
+
+  item_delegate_.set_button_handler([model](const QModelIndex& index) {
+    model->HandleEditButton(index.row(), index.column());
+  });
+
   horizontalHeader()->setHighlightSections(false);
   verticalHeader()->setHighlightSections(false);
   verticalHeader()->setDefaultSectionSize(19);

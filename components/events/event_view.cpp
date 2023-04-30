@@ -249,31 +249,34 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
   controller_delegate_.SetTitle(MakeTitle());
 }
 
-void EventView::SelectSeverity() {
-  unsigned severity = model_->current_events() ? event_fetcher_.severity_min()
-                                               : model_->severity_min();
+promise<> EventView::SelectSeverity() {
+  unsigned initial_severity = model_->current_events()
+                                  ? event_fetcher_.severity_min()
+                                  : model_->severity_min();
   const char16_t prompt[] = u"Минимальный порог важности (0 - все события):";
-  auto value = base::NumberToString16(severity);
-  for (;;) {
-    if (!RunPromptDialog(dialog_service_, prompt, u"Фильтр", value))
-      return;
-    if (!base::StringToUint(value, &severity) ||
-        severity > scada::kSeverityMax) {
-      auto message =
-          base::StringPrintf(u"Введите число от %d до %d.", scada::kSeverityMin,
-                             scada::kSeverityMax);
-      dialog_service_.RunMessageBox(message, u"Фильтр", MessageBoxMode::Error);
-      continue;
-    }
-    break;
-  }
+  return RunPromptDialog(dialog_service_, prompt, u"Фильтр",
+                         base::NumberToString16(initial_severity))
+      .then([this](const std::u16string& input) {
+        unsigned severity = 0;
+        if (!base::StringToUint(input, &severity) ||
+            severity > scada::kSeverityMax) {
+          auto message =
+              base::StringPrintf(u"Введите число от %d до %d.",
+                                 scada::kSeverityMin, scada::kSeverityMax);
+          return ToRejectedPromise<unsigned>(dialog_service_.RunMessageBox(
+              message, u"Фильтр", MessageBoxMode::Error));
+        }
 
-  if (model_->current_events()) {
-    event_fetcher_.SetSeverityMin(severity);
-  } else {
-    model_->SetSeverityMin(severity);
-    controller_delegate_.SetTitle(MakeTitle());
-  }
+        return make_resolved_promise(severity);
+      })
+      .then([this](unsigned severity) {
+        if (model_->current_events()) {
+          event_fetcher_.SetSeverityMin(severity);
+        } else {
+          model_->SetSeverityMin(severity);
+          controller_delegate_.SetTitle(MakeTitle());
+        }
+      });
 }
 
 NodeIdSet EventView::GetSelectedNodeIds() const {

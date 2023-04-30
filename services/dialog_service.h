@@ -37,7 +37,8 @@ class DialogService {
                                                   std::u16string_view title,
                                                   MessageBoxMode mode) = 0;
 
-  virtual std::filesystem::path SelectOpenFile(std::u16string_view title) = 0;
+  virtual promise<std::filesystem::path> SelectOpenFile(
+      std::u16string_view title) = 0;
 
   struct Filter {
     std::u16string_view title;
@@ -50,5 +51,6 @@ class DialogService {
     base::span<const Filter> filters;
   };
 
-  virtual std::filesystem::path SelectSaveFile(const SaveParams& params) = 0;
+  virtual promise<std::filesystem::path> SelectSaveFile(
+      const SaveParams& params) = 0;
 };

@@ -2,7 +2,7 @@
 
 #include "services/dialog_service.h"
 
-bool ShowTimeRangeDialog(DialogService& dialog_service,
-                         TimeRangeContext&& context) {
-  return false;
+promise<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
+                                       TimeRangeContext&& context) {
+  return make_rejected_promise<TimeRange>(std::exception{});
 }

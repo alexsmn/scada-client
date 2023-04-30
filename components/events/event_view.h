@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "command_registry.h"
 #include "contents_model.h"
 #include "controller.h"
@@ -56,7 +57,7 @@ class EventView : protected ControllerContext,
   std::u16string MakeTitle() const;
 
   void ExportToExcel();
-  void SelectSeverity();
+  promise<> SelectSeverity();
 
   NodeIdSet GetSelectedNodeIds() const;
 

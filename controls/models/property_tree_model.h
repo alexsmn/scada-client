@@ -45,7 +45,8 @@ class PropertyItemTreeNode : public PropertyTreeNode {
   virtual void SetText(int column_id, const std::u16string& text) override;
   virtual bool IsEditable(int column_id) const override;
   virtual bool IsSelectable(int column_id) const override;
-  virtual aui::EditData GetEditData(int column_id) override;
+  virtual aui::EditData GetEditData(int column_id) const override;
+  virtual void HandleEditButton(int column_id) const override;
 
   PropertyGroup& property_group;
   const int index;

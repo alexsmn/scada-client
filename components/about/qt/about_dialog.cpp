@@ -6,6 +6,7 @@
 #include "common_resources.h"
 #include "project.h"
 #include "qt/client_utils_qt.h"
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
 #include "ui_about_dialog.h"
 
@@ -43,6 +44,6 @@ class AboutDialog : public QDialog {
 #include "about_dialog.moc"
 
 void ShowAboutDialog(DialogService& dialog_service) {
-  AboutDialog dialog{dialog_service.GetParentWidget()};
-  dialog.exec();
+  auto dialog = std::make_unique<AboutDialog>(dialog_service.GetParentWidget());
+  StartModalDialog(std::move(dialog));
 }

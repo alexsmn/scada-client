@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "window_definition.h"
 
 class DialogService;
@@ -10,5 +11,5 @@ struct AddFavouritesContext {
   WindowDefinition window_def_;
 };
 
-bool ShowAddFavouritesDialog(DialogService& dialog_service,
-                             AddFavouritesContext&& context);
+promise<> ShowAddFavouritesDialog(DialogService& dialog_service,
+                                  AddFavouritesContext&& context);

@@ -8,8 +8,6 @@
 #include "controls/table.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
-#include "node_service/node_util.h"
-#include "remote/session_proxy.h"
 #include "services/dialog_service.h"
 #include "window_definition.h"
 
@@ -97,7 +95,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   return table_->CreateParentIfNecessary();
 }
 
-void WatchView::SaveLog() {
+promise<> WatchView::SaveLog() {
   SYSTEMTIME time;
   GetLocalTime(&time);
 
@@ -105,9 +103,10 @@ void WatchView::SaveLog() {
                                  time.wMonth, time.wDay, time.wHour,
                                  time.wMinute, time.wSecond);
 
-  auto path = dialog_service_.SelectSaveFile({u"Сохранить как", name});
-  if (!path.empty())
-    model_->SaveLog(path);
+  return dialog_service_.SelectSaveFile({u"Сохранить как", name})
+      .then([model = model_](const std::filesystem::path& path) {
+        model->SaveLog(path);
+      });
 }
 
 CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {

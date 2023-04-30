@@ -1,6 +1,7 @@
 #include "components/multi_create/multi_create_dialog.h"
 
 #include "components/multi_create/multi_create_model.h"
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
 #include "ui_multi_create_dialog.h"
 
@@ -8,7 +9,7 @@ class MultiCreateDialog final : public QDialog {
   Q_OBJECT
 
  public:
-  explicit MultiCreateDialog(MultiCreateModel& model,
+  explicit MultiCreateDialog(std::unique_ptr<MultiCreateModel> model,
                              QWidget* parent = nullptr);
  public Q_SLOTS:
   virtual void accept() override;
@@ -18,15 +19,16 @@ class MultiCreateDialog final : public QDialog {
 
   Ui::MultiCreateDialog ui;
 
-  MultiCreateModel& model_;
+  std::unique_ptr<MultiCreateModel> model_;
 
   bool auto_name_ = true;
 };
 
 #include "multi_create_dialog.moc"
 
-MultiCreateDialog::MultiCreateDialog(MultiCreateModel& model, QWidget* parent)
-    : QDialog{parent}, model_{model} {
+MultiCreateDialog::MultiCreateDialog(std::unique_ptr<MultiCreateModel> model,
+                                     QWidget* parent)
+    : QDialog{parent}, model_{std::move(model)} {
   ui.setupUi(this);
 
   SetAutoName();
@@ -36,8 +38,8 @@ MultiCreateDialog::MultiCreateDialog(MultiCreateModel& model, QWidget* parent)
           [this] { SetAutoName(); });
 
   QStringList devices;
-  devices.reserve(model_.devices().size());
-  for (const auto& p : model_.devices())
+  devices.reserve(model_->devices().size());
+  for (const auto& p : model_->devices())
     devices.push_back(QString::fromStdU16String(p.first));
   ui.deviceComboBox->addItems(devices);
 }
@@ -51,7 +53,7 @@ void MultiCreateDialog::accept() {
   params.starting_address = ui.startingAddressSpinBox->value();
   params.name_prefix = ui.namePrefixLineEdit->text().toStdU16String();
   params.path_prefix = ui.addressPrefixLineEdit->text().toStdString();
-  model_.Run(params);
+  model_->Run(params);
 
   QDialog::accept();
 }
@@ -60,13 +62,14 @@ void MultiCreateDialog::SetAutoName() {
   if (auto_name_) {
     bool ts = ui.discreteTypeRadioButton->isChecked();
     ui.namePrefixLineEdit->setText(
-        QString::fromStdU16String(model_.GetAutoName(ts)));
+        QString::fromStdU16String(model_->GetAutoName(ts)));
   }
 }
 
 void ShowMultiCreateDialog(DialogService& dialog_service,
                            MultiCreateContext&& context) {
-  MultiCreateModel model{std::move(context)};
-  MultiCreateDialog dialog{model, dialog_service.GetParentWidget()};
-  dialog.exec();
+  auto model = std::make_unique<MultiCreateModel>(std::move(context));
+  auto dialog = std::make_unique<MultiCreateDialog>(
+      std::move(model), dialog_service.GetParentWidget());
+  StartModalDialog(std::move(dialog));
 }

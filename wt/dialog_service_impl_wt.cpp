@@ -17,12 +17,12 @@ UiView* DialogServiceImplWt::GetParentWidget() const {
   return parent_widget;
 }
 
-std::filesystem::path DialogServiceImplWt::SelectOpenFile(
+promise<std::filesystem::path> DialogServiceImplWt::SelectOpenFile(
     std::u16string_view title) {
-  return {};
+  return MakeRejectedPromise<std::filesystem::path>();
 }
 
-std::filesystem::path DialogServiceImplWt::SelectSaveFile(
+promise<std::filesystem::path> DialogServiceImplWt::SelectSaveFile(
     const SaveParams& params) {
-  return {};
+  return MakeRejectedPromise<std::filesystem::path>();
 }

@@ -48,10 +48,17 @@ class PropertyDefinition {
                        const NodeRef& node,
                        const scada::NodeId& prop_decl_id,
                        const std::u16string& text) const;
+
   virtual aui::EditData GetPropertyEditor(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const;
+
+  // Triggered when `GetPropertyEditor` returns button editor and the button is
+  // clicked.
+  virtual void HandleEditButton(const PropertyContext& context,
+                                const NodeRef& node,
+                                const scada::NodeId& prop_decl_id) const;
 
  private:
   aui::TableColumn::Alignment alignment_;
@@ -168,6 +175,10 @@ class TransportPropertyDefinition : public PropertyDefinition {
 
   // PropertyDefinition
   virtual aui::EditData GetPropertyEditor(
+      const PropertyContext& context,
+      const NodeRef& node,
+      const scada::NodeId& prop_decl_id) const override;
+  virtual void HandleEditButton(
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;

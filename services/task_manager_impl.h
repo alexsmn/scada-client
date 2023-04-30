@@ -37,25 +37,24 @@ class TaskManagerImpl : private TaskManagerImplContext,
   ~TaskManagerImpl();
 
   // TaskManager
-  virtual void PostInsertTask(
+  virtual promise<scada::NodeId> PostInsertTask(
       const scada::NodeId& requested_id,
       const scada::NodeId& parent_id,
       const scada::NodeId& type_id,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties,
-      std::vector<scada::ReferenceDescription> references,
-      InsertCallback callback) override;
-  virtual void PostUpdateTask(const scada::NodeId& node_id,
-                              scada::NodeAttributes attributes,
-                              scada::NodeProperties properties,
-                              UpdateCallback callback) override;
-  virtual void PostDeleteTask(const scada::NodeId& node_id) override;
-  virtual void PostAddReference(const scada::NodeId& reference_type_id,
-                                const scada::NodeId& source_id,
-                                const scada::NodeId& target_id) override;
-  virtual void PostDeleteReference(const scada::NodeId& reference_type_id,
-                                   const scada::NodeId& source_id,
-                                   const scada::NodeId& target_id) override;
+      std::vector<scada::ReferenceDescription> references) override;
+  virtual promise<> PostUpdateTask(const scada::NodeId& node_id,
+                                   scada::NodeAttributes attributes,
+                                   scada::NodeProperties properties) override;
+  virtual promise<> PostDeleteTask(const scada::NodeId& node_id) override;
+  virtual promise<> PostAddReference(const scada::NodeId& reference_type_id,
+                                     const scada::NodeId& source_id,
+                                     const scada::NodeId& target_id) override;
+  virtual promise<> PostDeleteReference(
+      const scada::NodeId& reference_type_id,
+      const scada::NodeId& source_id,
+      const scada::NodeId& target_id) override;
 
  private:
   using TaskMethod = std::function<void()>;

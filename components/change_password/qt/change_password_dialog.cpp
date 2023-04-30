@@ -47,7 +47,9 @@ void ChangePasswordDialog::accept() {
 
 void ShowChangePasswordDialog(DialogService& dialog_service,
                               ChangePasswordContext&& context) {
-  ChangePasswordDialog dialog{std::move(context),
-                              dialog_service.GetParentWidget()};
-  dialog.exec();
+  ChangePasswordDialog* dialog = new ChangePasswordDialog{
+      std::move(context), dialog_service.GetParentWidget()};
+  dialog->setModal(false);
+  QObject::connect(dialog, &QDialog::finished, dialog, &QObject::deleteLater);
+  dialog->show();
 }

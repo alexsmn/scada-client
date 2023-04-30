@@ -18,12 +18,12 @@
         <translation type="vanished">Отмена</translation>
     </message>
     <message>
-        <location filename="../components/about/qt/about_dialog.cpp" line="21"/>
+        <location filename="../components/about/qt/about_dialog.cpp" line="22"/>
         <source>Version %1</source>
         <translation>Версия %1</translation>
     </message>
     <message>
-        <location filename="../components/about/qt/about_dialog.cpp" line="22"/>
+        <location filename="../components/about/qt/about_dialog.cpp" line="23"/>
         <source>Telecontrol</source>
         <translation>Телеконтроль</translation>
     </message>
@@ -31,7 +31,7 @@
 <context>
     <name>AddFavouritesDialog</name>
     <message>
-        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="20"/>
+        <location filename="../components/favourites/qt/add_favourites_dialog.cpp" line="21"/>
         <source>(No Folder)</source>
         <translation>(Нет группы)</translation>
     </message>
@@ -205,12 +205,12 @@
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="59"/>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="62"/>
         <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
         <translation>Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
     </message>
     <message>
-        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="71"/>
+        <location filename="../components/csv_export/qt/csv_export_dialog.cpp" line="74"/>
         <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
         <translation>Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
     </message>
@@ -295,7 +295,7 @@
         <translation>Сервер:</translation>
     </message>
     <message>
-        <location filename="../components/login/qt/login_dialog.cpp" line="77"/>
+        <location filename="../components/login/qt/login_dialog.cpp" line="76"/>
         <source>You can remove the highlighted user from list by pressing Delete.</source>
         <translation>Отмеченного пользователя можно удалить из списка нажатием Delete.</translation>
     </message>
@@ -383,7 +383,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="main.cpp" line="66"/>
+        <location filename="main.cpp" line="68"/>
         <source>Telecontrol SCADA Client</source>
         <translation>Клиент ОИК Телеконтроль</translation>
     </message>
@@ -559,17 +559,17 @@
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="87"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="88"/>
         <source>Satisfied</source>
         <translation>Выполнено</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="88"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="89"/>
         <source>Unsatisfied</source>
         <translation>Нарушено</translation>
     </message>
     <message>
-        <location filename="../components/write/qt/write_dialog.cpp" line="107"/>
+        <location filename="../components/write/qt/write_dialog.cpp" line="108"/>
         <source>Incorrect floating point value.</source>
         <translation>Указано некорректное значение с плавающей точкой.</translation>
     </message>
@@ -577,7 +577,7 @@
 <context>
     <name>aui::ItemDelegate</name>
     <message>
-        <location filename="../controls/qt/item_delegate.cpp" line="100"/>
+        <location filename="../controls/qt/item_delegate.cpp" line="98"/>
         <source>Loading...</source>
         <translation type="unfinished"></translation>
     </message>

@@ -18,9 +18,6 @@ struct EditData {
   using AsyncChoiceHandler =
       std::function<void(const AsyncChoiceCallback& callback)>;
   AsyncChoiceHandler async_choice_handler;
-
-  using ActionHandler = std::function<bool(std::u16string& text)>;
-  ActionHandler action_handler;
 };
 
 }  // namespace aui

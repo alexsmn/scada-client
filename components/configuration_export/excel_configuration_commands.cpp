@@ -91,13 +91,14 @@ void ExportConfigurationToExcel(NodeService& node_service,
   });
 }
 
-void ExportConfigurationToExcel(NodeService& node_service,
-                                DialogService& dialog_service) {
-  auto path = dialog_service.SelectSaveFile({kExportTitle, kDefaultFileName});
-  if (path.empty())
-    return;
-
-  ExportConfigurationToExcel(node_service, dialog_service, path);
+promise<> ExportConfigurationToExcel(NodeService& node_service,
+                                     DialogService& dialog_service) {
+  return dialog_service
+      .SelectSaveFile({.title = kExportTitle, .default_path = kDefaultFileName})
+      .then(
+          [&node_service, &dialog_service](const std::filesystem::path& path) {
+            ExportConfigurationToExcel(node_service, dialog_service, path);
+          });
 }
 
 void ImportConfigurationFromExcel(NodeService& node_service,
@@ -145,13 +146,13 @@ void ImportConfigurationFromExcel(NodeService& node_service,
       });
 }
 
-void ImportConfigurationFromExcel(NodeService& node_service,
-                                  TaskManager& task_manager,
-                                  DialogService& dialog_service) {
-  auto path = dialog_service.SelectOpenFile(kImportTitle);
-  if (path.empty())
-    return;
-
-  ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
-                               path);
+promise<> ImportConfigurationFromExcel(NodeService& node_service,
+                                       TaskManager& task_manager,
+                                       DialogService& dialog_service) {
+  return dialog_service.SelectOpenFile(kImportTitle)
+      .then([&node_service, &task_manager,
+             &dialog_service](const std::filesystem::path& path) {
+        ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
+                                     path);
+      });
 }

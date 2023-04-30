@@ -242,13 +242,9 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       return;
     }
 
-    case ID_PAGE_RENAME: {
-      auto& page = main_window_.current_page();
-      auto title = page.title;
-      if (RunPromptDialog(dialog_service_, u"Имя:", u"Переименование", title))
-        main_window_.SetPageTitle(title);
+    case ID_PAGE_RENAME:
+      RenameCurrentPage();
       return;
-    }
 
     case ID_PAGE_DELETE: {
       auto& page = main_window_.current_page();
@@ -333,32 +329,41 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
   assert(false);
 }
 
-void MainCommands::AddToFavourites() {
+promise<> MainCommands::RenameCurrentPage() {
+  return RunPromptDialog(dialog_service_, u"Имя:", u"Переименование",
+                         main_window_.current_page().title)
+      .then([this](const std::u16string& title) {
+        main_window_.SetPageTitle(title);
+      });
+}
+
+promise<> MainCommands::AddToFavourites() {
   auto* view = main_window_.GetActiveView();
   if (!view)
-    return;
+    return MakeRejectedPromise();
 
   if (view->window_info().is_pane())
-    return;
+    return MakeRejectedPromise();
 
   view->Save();
 
   auto definition = view->window_def();
   definition.title = view->GetWindowTitle();
 
-  ShowAddFavouritesDialog(dialog_service_,
-                          {favourites_, std::move(definition)});
+  return ShowAddFavouritesDialog(dialog_service_,
+                                 {favourites_, std::move(definition)});
 }
 
-void MainCommands::ShowRenameWindowDialog() {
+promise<> MainCommands::ShowRenameWindowDialog() {
   auto* view = main_window_.GetActiveView();
   if (!view)
-    return;
+    return MakeRejectedPromise();
 
   if (view->window_info().is_pane())
-    return;
+    return MakeRejectedPromise();
 
-  auto title = view->GetWindowTitle();
-  if (RunPromptDialog(dialog_service_, u"Имя:", u"Переименовать", title))
-    view->SetUserTitle(title);
+  return RunPromptDialog(dialog_service_, u"Имя:", u"Переименовать",
+                         view->GetWindowTitle())
+      // TODO: Capture weak pointer.
+      .then([view](const std::u16string& title) { view->SetUserTitle(title); });
 }

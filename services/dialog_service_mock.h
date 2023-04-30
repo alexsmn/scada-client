@@ -17,12 +17,12 @@ class MockDialogService : public DialogService {
                MessageBoxMode mode),
               (override));
 
-  MOCK_METHOD(std::filesystem::path,
+  MOCK_METHOD(promise<std::filesystem::path>,
               SelectOpenFile,
               (std::u16string_view title),
               (override));
 
-  MOCK_METHOD(std::filesystem::path,
+  MOCK_METHOD(promise<std::filesystem::path>,
               SelectSaveFile,
               (const SaveParams& params),
               (override));

@@ -71,7 +71,7 @@ static int FindStringPair(const StringPair pairs[],
 }  // namespace
 
 TransportDialogModel::TransportDialogModel(
-    net::TransportString& transport_string)
+    const net::TransportString& transport_string)
     : transport_string_{transport_string} {
   static_assert(_countof(kConnectionTypeStrings) == CONNECTION_TYPE_COUNT,
                 "NotEnoughConnectionTypeStrings");

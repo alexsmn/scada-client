@@ -3,7 +3,7 @@
 #include "Base/strings/string_split.h"
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
-#include "base/executor.h"
+#include "base/promise_executor.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -14,7 +14,7 @@
 #include "services/dialog_service.h"
 
 #include <algorithm>
-#include <windows.h> // for VK_CONTROL
+#include <windows.h>  // for VK_CONTROL
 
 #undef StrCat
 #include "base/strings/strcat.h"
@@ -161,12 +161,17 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
 }
 
 void LoginController::Login() {
+  LOG_INFO(logger_) << "Login";
+
   server_type_ = GetDataServicesInfoList()[server_type_index_].name;
 
   Connect(false);
 }
 
 void LoginController::OnLoginResult(const scada::Status& status) {
+  LOG_INFO(logger_) << "Connect completed"
+                    << LOG_TAG("Status", ToString(status));
+
   Dispatch(*executor_, weak_from_this(), [this, status] {
     if (status)
       OnLoginCompleted();
@@ -176,6 +181,8 @@ void LoginController::OnLoginResult(const scada::Status& status) {
 }
 
 void LoginController::OnLoginCompleted() {
+  LOG_INFO(logger_) << "Login completed";
+
   // save last users
   AppendMruList(user_list, user_name);
 
@@ -193,19 +200,22 @@ void LoginController::OnLoginCompleted() {
   if (auto_login)
     reg_helper.Write("Password", password);
 
-  auto promise = make_resolved_promise(MessageBoxResult::Ok);
+  auto promise = make_resolved_promise();
   if (auto_login && login_message_) {
-    promise = dialog_service_.RunMessageBox(kAutoLoginMessage, {},
-                                            MessageBoxMode::Info);
+    promise = dialog_service_
+                  .RunMessageBox(kAutoLoginMessage, {}, MessageBoxMode::Info)
+                  .then([](MessageBoxResult) {});
   }
 
   promise.then([completion_handler = this->completion_handler,
-                services = std::move(services_)](MessageBoxResult) mutable {
+                services = std::move(services_)]() mutable {
     completion_handler(std::move(services));
   });
 }
 
 void LoginController::OnLoginFailed(const scada::Status& status) {
+  LOG_WARNING(logger_) << "Login failed" << LOG_TAG("Status", ToString(status));
+
   services_ = {};
 
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
@@ -236,9 +246,13 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
 }
 
 void LoginController::Connect(bool allow_remote_logoff) {
+  LOG_INFO(logger_) << "Connect"
+                    << LOG_TAG("AllowRemoteLogoff", allow_remote_logoff);
+
   connecting_ = true;
 
   if (!CreateDataServices(server_type_, services_context_, services_)) {
+    LOG_WARNING(logger_) << "Canot create data services";
     OnLoginResult(scada::StatusCode::Bad_UnsupportedProtocolVersion);
     return;
   }
@@ -250,11 +264,9 @@ void LoginController::Connect(bool allow_remote_logoff) {
 }
 
 void LoginController::DeleteUserName(std::u16string_view user_name) {
-  auto i = std::find(user_list.begin(), user_list.end(), user_name);
+  auto i = std::ranges::find(user_list, user_name);
   if (i == user_list.end())
     return;
-
-  user_list.erase(i);
 
   base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
                         KEY_SET_VALUE | KEY_QUERY_VALUE);

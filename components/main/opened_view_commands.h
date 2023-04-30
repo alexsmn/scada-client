@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/memory/weak_ptr.h"
+#include "base/promise.h"
 #include "base/timer/timer.h"
 #include "command_handler.h"
 #include "common/node_state.h"
@@ -76,12 +77,10 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
 
  private:
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
-  void CreateRecord(const scada::NodeId& type_node_id, int tag);
-  void OnCreateRecordComplete(const scada::LocalizedText& display_name,
-                              const scada::Status& status,
-                              const scada::NodeId& node_id);
+  promise<> CreateRecord(const scada::NodeId& type_node_id, int tag);
+  promise<> OnCreateRecordComplete(const scada::NodeId& node_id);
 
-  void PasteFromClipboard();
+  promise<> PasteFromClipboard();
 
   void ExportToCsv();
   void ExportToExcel();

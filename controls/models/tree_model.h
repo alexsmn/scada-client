@@ -46,9 +46,12 @@ class TreeModel {
   }
 
   virtual void SetText(void* node, int column_id, const std::u16string& text) {}
+  // TODO: Remove. `IsEditable` should be covered by `GetEditData` none editor
+  // type.
   virtual bool IsEditable(void* node, int column_id) const { return false; }
   virtual bool IsSelectable(void* node, int column_id) const { return true; }
-  virtual EditData GetEditData(void* node, int column_id) { return {}; }
+  virtual EditData GetEditData(void* node, int column_id) const { return {}; }
+  virtual void HandleEditButton(void* node, int column_id) const {}
 
   virtual bool HasChildren(void* parent) const { return true; }
 

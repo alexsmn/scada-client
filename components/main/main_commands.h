@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "command_handler.h"
 
 #include <functional>
@@ -48,6 +49,7 @@ class MainCommands : private MainCommandsContext, public CommandHandler {
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-  void AddToFavourites();
-  void ShowRenameWindowDialog();
+  promise<> AddToFavourites();
+  promise<> ShowRenameWindowDialog();
+  promise<> RenameCurrentPage();
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/boost_log.h"
 #include "core/data_services_factory.h"
 #include "core/localized_text.h"
 
@@ -60,4 +61,7 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   };
 
   std::vector<ServerTypeData> server_type_data_;
+
+ private:
+  BoostLogger logger_{LOG_NAME("LoginController")};
 };

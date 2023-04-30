@@ -35,13 +35,13 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
       const scada::NodeId& node_id);
 
  protected:
-  BoostLogger logger_{LOG_NAME("ConfigurationTreeModel")};
-
   // Returns nullptr if node must be skipped.
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(
       const scada::NodeId& reference_type_id,
       bool forward_reference,
       const NodeRef& node);
+
+  BoostLogger logger_{LOG_NAME("ConfigurationTreeModel")};
 
  private:
   std::unique_ptr<ConfigurationTreeNode> CreateTreeNodeIfMatches(

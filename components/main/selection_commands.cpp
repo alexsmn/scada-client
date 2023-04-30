@@ -2,11 +2,13 @@
 
 #include "base/command_line.h"
 #include "base/files/file_util.h"
+#include "base/promise_executor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
+#include "clipboard_util.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"

@@ -76,49 +76,52 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
   });
 }
 
-void PasteNodesFromClipboardHelper(TaskManager& task_manager,
-                                   scada::NodeState&& node_state) {
+promise<> PasteNodesFromClipboardHelper(TaskManager& task_manager,
+                                        scada::NodeState&& node_state) {
   auto forward_references =
       node_state.references |
       boost::adaptors::filtered(
           [](const scada::ReferenceDescription& ref) { return ref.forward; }) |
       to_vector;
 
-  task_manager.PostInsertTask(
-      {}, node_state.parent_id, node_state.type_definition_id,
-      std::move(node_state.attributes), std::move(node_state.properties),
-      std::move(forward_references),
-      [&task_manager, children = std::move(node_state.children)](
-          const scada::Status& status, const scada::NodeId& node_id) mutable {
-        if (!status)
-          return;
-
+  return task_manager
+      .PostInsertTask({}, node_state.parent_id, node_state.type_definition_id,
+                      std::move(node_state.attributes),
+                      std::move(node_state.properties),
+                      std::move(forward_references))
+      .then([&task_manager, children = std::move(node_state.children)](
+                const scada::NodeId& node_id) mutable {
+        std::vector<promise<>> promises;
         for (auto& child : children) {
           assert(child.reference_type_id == scada::id::Organizes);
           child.parent_id = node_id;
-          PasteNodesFromClipboardHelper(task_manager, std::move(child));
+          promises.emplace_back(
+              PasteNodesFromClipboardHelper(task_manager, std::move(child)));
         }
+        return make_all_promise_void(std::move(promises));
       });
 }
 
-bool PasteNodesFromClipboard(TaskManager& task_manager,
-                             const scada::NodeId& new_parent_id) {
+promise<> PasteNodesFromClipboard(TaskManager& task_manager,
+                                  const scada::NodeId& new_parent_id) {
   const auto buffer = ReadClipboard(kNodeTreeFormat);
   if (buffer.empty())
-    return false;
+    return MakeRejectedPromise();
 
   protocol::NodeTree message;
   if (!message.ParseFromString(buffer))
-    return false;
+    return MakeRejectedPromise();
 
+  std::vector<promise<>> promises;
   for (const auto& packed_node : message.node()) {
     auto node_state = ConvertTo<scada::NodeState>(packed_node);
     assert(node_state.reference_type_id == scada::id::Organizes);
     node_state.parent_id = new_parent_id;
-    PasteNodesFromClipboardHelper(task_manager, std::move(node_state));
+    promises.emplace_back(
+        PasteNodesFromClipboardHelper(task_manager, std::move(node_state)));
   }
 
-  return true;
+  return make_all_promise_void(std::move(promises));
 }
 
 NodeRef GetPasteParentNode(NodeService& node_service,

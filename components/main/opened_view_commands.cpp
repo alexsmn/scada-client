@@ -7,6 +7,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
+#include "clipboard_util.h"
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_dialog.h"
 #include "components/csv_export/csv_export.h"
@@ -22,6 +23,7 @@
 #include "controller_registry.h"
 #include "core/node_management_service.h"
 #include "core/session_service.h"
+#include "core/status_promise.h"
 #include "export_model.h"
 #include "export_util.h"
 #include "model/data_items_node_ids.h"
@@ -41,7 +43,9 @@
 
 #if defined(UI_QT)
 #include "components/main/qt/main_window_qt.h"
+#endif
 
+#if defined(UI_QT)
 #include <QMenu>
 #endif
 
@@ -152,11 +156,12 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       ExportToExcel();
       return;
     case ID_PRINT: {
-      PrintService print_service;
-      ShowPrintPreviewDialog(*dialog_service_, print_service,
-                             [opened_view = opened_view_, &print_service] {
-                               opened_view->Print(print_service);
-                             });
+      static PrintService print_service;
+      ShowPrintPreviewDialog(
+          *dialog_service_, print_service,
+          [opened_view = opened_view_, &print_service = print_service] {
+            opened_view->Print(print_service);
+          });
       return;
     }
     case ID_NEW_IEC60870_LINK101:
@@ -188,10 +193,13 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       if (time_range_type == TimeRange::Type::Custom) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
-        if (ShowTimeRangeDialog(*dialog_service_,
-                                {profile_, range, time_required}))
-          model->SetTimeRange(range);
-
+        ShowTimeRangeDialog(*dialog_service_, {profile_, range, time_required})
+            .then([model, weak_ptr = weak_factory_.GetWeakPtr()](
+                      const TimeRange& time_range) {
+              if (weak_ptr.get()) {
+                model->SetTimeRange(time_range);
+              }
+            });
       } else {
         model->SetTimeRange(time_range_type);
       }
@@ -248,23 +256,23 @@ bool OpenedViewCommands::CanCreateRecord(
              node_service_.GetNode(type_node_id)) != nullptr;
 }
 
-void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
-                                      int tag) {
+promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
+                                           int tag) {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-    return;
+    return MakeRejectedPromise();
 
   auto node_type = node_service_.GetNode(type_node_id);
   if (!node_type)
-    return;
+    return MakeRejectedPromise();
 
   auto* selection_model = controller_->GetSelectionModel();
   if (!selection_model)
-    return;
+    return MakeRejectedPromise();
 
   auto parent_node = create_tree_.GetCreateParentNode(
       selection_model->node(), controller_->GetRootNode(), node_type);
   if (!parent_node)
-    return;
+    return MakeRejectedPromise();
 
   scada::NodeAttributes attributes;
   scada::NodeProperties properties;
@@ -299,57 +307,70 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
     properties.emplace_back(devices::id::LinkType_Transport, ts.ToString());
   }
 
-  auto dispay_name = attributes.display_name;
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-  task_manager_.PostInsertTask(
+  // `std::format` doesn't support `u16string`s.
+  auto title =
+      base::StringPrintf(u"Создание \"%ls\"", attributes.display_name.c_str());
+
+  auto insert_promise = task_manager_.PostInsertTask(
       scada::NodeId(), parent_node.node_id(), type_node_id,
-      std::move(attributes), std::move(properties), {},
-      [weak_ptr, dispay_name](const scada::Status& status,
-                              const scada::NodeId& node_id) {
-        if (auto ptr = weak_ptr.get())
-          ptr->OnCreateRecordComplete(dispay_name, status, node_id);
+      std::move(attributes), std::move(properties), {});
+
+  ToVoidPromise(insert_promise)
+      .except([this, weak_ptr = weak_factory_.GetWeakPtr(),
+               title](std::exception_ptr e) {
+        if (weak_ptr.get()) {
+          ReportRequestResult(title, scada::GetExceptionStatus(e),
+                              local_events_, profile_);
+        }
       });
-}
 
-void OpenedViewCommands::OnCreateRecordComplete(
-    const scada::LocalizedText& display_name,
-    const scada::Status& status,
-    const scada::NodeId& node_id) {
-  std::u16string title =
-      base::StringPrintf(u"Создание \"%ls\"", display_name.c_str());
-  ReportRequestResult(title, status, local_events_, profile_);
-
-  if (!status)
-    return;
-
-  auto weak_ptr = weak_factory_.GetWeakPtr();
-  auto node = node_service_.GetNode(node_id);
-  node.Fetch(NodeFetchStatus::NodeOnly(), [weak_ptr,
-                                           node](const NodeRef& node) {
-    if (auto* ptr = weak_ptr.get()) {
-      ptr->controller_->OnViewNodeCreated(node);
-      auto def = MakeWindowDefinition(&kNodePropertyWindowInfo, node, false);
-      ::OpenView(ptr->main_window_, def, true);
+  return insert_promise.then([this, weak_ptr = weak_factory_.GetWeakPtr(),
+                              title](const scada::NodeId& node_id) {
+    if (!weak_ptr.get()) {
+      return MakeRejectedPromise();
     }
+    ReportRequestResult(title, scada::StatusCode::Good, local_events_,
+                        profile_);
+    return OnCreateRecordComplete(node_id);
   });
 }
 
-void OpenedViewCommands::PasteFromClipboard() {
+promise<> OpenedViewCommands::OnCreateRecordComplete(
+    const scada::NodeId& node_id) {
+  auto node = node_service_.GetNode(node_id);
+  promise<> promise;
+  // Capture node so it doesn't release before completion.
+  node.Fetch(NodeFetchStatus::NodeOnly(),
+             [this, weak_ptr = weak_factory_.GetWeakPtr(), node,
+              promise](const NodeRef& node) mutable {
+               if (!weak_ptr.get()) {
+                 promise.reject(std::exception{});
+                 return;
+               }
+               controller_->OnViewNodeCreated(node);
+               auto def =
+                   MakeWindowDefinition(&kNodePropertyWindowInfo, node, false);
+               ::OpenView(main_window_, def, true);
+               promise.resolve();
+             });
+  return promise;
+}
+
+promise<> OpenedViewCommands::PasteFromClipboard() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-    return;
+    return MakeRejectedPromise();
 
   auto* selection_model = controller_->GetSelectionModel();
   if (!selection_model)
-    return;
+    return MakeRejectedPromise();
 
   const auto& parent_node =
       GetPasteParentNode(node_service_, create_tree_, selection_model->node(),
                          controller_->GetRootNode());
   if (!parent_node)
-    return;
+    return MakeRejectedPromise();
 
-  if (!PasteNodesFromClipboard(task_manager_, parent_node.node_id()))
-    LOG(ERROR) << "Paste records error";
+  return PasteNodesFromClipboard(task_manager_, parent_node.node_id());
 }
 
 void OpenedViewCommands::ExportToCsv() {
@@ -365,40 +386,44 @@ void OpenedViewCommands::ExportToCsv() {
   auto file_name = MakeFileName(opened_view_->GetWindowTitle());
   file_name += ".csv";
 
-  DialogService::SaveParams save_params;
-  save_params.title = kExportTitle;
-  save_params.default_path = profile_.csv_export_dir / file_name;
-  save_params.filters = kFilters;
-  auto path = dialog_service_->SelectSaveFile(save_params);
-  if (path.empty())
-    return;
-
-  profile_.csv_export_dir = path.parent_path();
-
-  CsvExportParams& params = profile_.csv_export_params;
-  if (!ShowCsvExportDialog(*dialog_service_, params))
-    return;
-
-  auto export_data = export_model->GetExportData();
-
-  try {
-    std::visit([&](auto& data) { ::ExportToCsv(data, params, path); },
-               export_data);
-
-  } catch (const std::runtime_error&) {
-    dialog_service_->RunMessageBox(u"Ошибка при экспорте.", kExportTitle,
-                                   MessageBoxMode::Error);
-    return;
-  }
-
   dialog_service_
-      ->RunMessageBox(u"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
-                      MessageBoxMode::QuestionYesNo)
-      .then(BindExecutor(executor_, [path = std::move(path)](
-                                        MessageBoxResult message_box_result) {
-        if (message_box_result == MessageBoxResult::Yes)
-          win_util::OpenWithAssociatedProgram(path);
-      }));
+      ->SelectSaveFile({.title = kExportTitle,
+                        .default_path = profile_.csv_export_dir / file_name,
+                        .filters = kFilters})
+      .then([this, export_model, weak_ptr = weak_factory_.GetWeakPtr()](
+                const std::filesystem::path& path) {
+        if (!weak_ptr.get())
+          return;
+
+        profile_.csv_export_dir = path.parent_path();
+
+        ShowCsvExportDialog(*dialog_service_, profile_)
+            .then([this, export_model, path](const CsvExportParams& params) {
+              auto export_data = export_model->GetExportData();
+
+              try {
+                std::visit(
+                    [&](auto& data) { ::ExportToCsv(data, params, path); },
+                    export_data);
+
+              } catch (const std::runtime_error&) {
+                dialog_service_->RunMessageBox(u"Ошибка при экспорте.",
+                                               kExportTitle,
+                                               MessageBoxMode::Error);
+                return;
+              }
+
+              dialog_service_
+                  ->RunMessageBox(u"Экспорт завершен. Открыть файл сейчас?",
+                                  kExportTitle, MessageBoxMode::QuestionYesNo)
+                  .then(BindExecutor(
+                      executor_, [path = std::move(path)](
+                                     MessageBoxResult message_box_result) {
+                        if (message_box_result == MessageBoxResult::Yes)
+                          win_util::OpenWithAssociatedProgram(path);
+                      }));
+            });
+      });
 }
 
 void OpenedViewCommands::ExportToExcel() {

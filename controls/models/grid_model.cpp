@@ -36,6 +36,8 @@ EditData GridModel::GetEditData(int row, int column) {
   return {};
 }
 
+void GridModel::HandleEditButton(int row, int column) {}
+
 void GridModel::NotifyModelChanged() {
   for (auto& o : observers_)
     o.OnGridModelChanged(*this);

@@ -62,9 +62,6 @@ std::u16string FormatHostName(std::string_view host_name);
 
 void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes);
 
-void CopyNodesToClipboard(const std::vector<NodeRef>& nodes);
-bool PasteNodesFromClipboard(TaskManager& task_manager,
-                             const scada::NodeId& new_parent_id);
 NodeRef GetPasteParentNode(NodeService& node_service,
                            CreateTree& create_tree,
                            const NodeRef& selected_node,

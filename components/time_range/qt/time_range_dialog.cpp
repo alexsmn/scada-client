@@ -1,5 +1,6 @@
 #include "components/time_range/time_range_dialog.h"
 
+#include "qt/dialog_util.h"
 #include "services/dialog_service.h"
 #include "ui_time_range_dialog.h"
 
@@ -22,6 +23,8 @@ class TimeRangeDialog final : public QDialog, private TimeRangeContext {
 
  public:
   TimeRangeDialog(TimeRangeContext&& context, QWidget* parent = nullptr);
+
+  const TimeRange& time_range() const { return time_range_; }
 
  public Q_SLOTS:
   virtual void accept() override;
@@ -59,8 +62,11 @@ void TimeRangeDialog::accept() {
   QDialog::accept();
 }
 
-bool ShowTimeRangeDialog(DialogService& dialog_service,
-                         TimeRangeContext&& context) {
-  TimeRangeDialog dialog{std::move(context), dialog_service.GetParentWidget()};
-  return dialog.exec() == TimeRangeDialog::Accepted;
+promise<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
+                                       TimeRangeContext&& context) {
+  auto dialog = std::make_unique<TimeRangeDialog>(
+      std::move(context), dialog_service.GetParentWidget());
+  return StartModalDialog(std::move(dialog)).then([](TimeRangeDialog* dialog) {
+    return dialog->time_range();
+  });
 }

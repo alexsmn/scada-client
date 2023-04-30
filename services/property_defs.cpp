@@ -121,6 +121,22 @@ promise<> GetAllSubtypesProperties(
   });
 }
 
+void SetTextHelper(const PropertyContext& context,
+                   const NodeRef& node,
+                   const scada::NodeId& prop_decl_id,
+                   const std::u16string& text) {
+  const auto& property = node[prop_decl_id];
+  if (!property)
+    return;
+
+  scada::Variant value;
+  if (!StringToValue(text, property.data_type().node_id(), value))
+    return;
+
+  context.task_manager_.PostUpdateTask(node.node_id(), {},
+                                       {{prop_decl_id, std::move(value)}});
+}
+
 const PropertyDefinition kNamePropDef(aui::TableColumn::LEFT, 150);
 const PropertyDefinition kStringPropDef(aui::TableColumn::LEFT);
 const PropertyDefinition kIntPropDef(aui::TableColumn::RIGHT);
@@ -317,16 +333,7 @@ void PropertyDefinition::SetText(const PropertyContext& context,
                                  const NodeRef& node,
                                  const scada::NodeId& prop_decl_id,
                                  const std::u16string& text) const {
-  const auto& property = node[prop_decl_id];
-  if (!property)
-    return;
-
-  scada::Variant value;
-  if (!StringToValue(text, property.data_type().node_id(), value))
-    return;
-
-  context.task_manager_.PostUpdateTask(node.node_id(), {},
-                                       {{prop_decl_id, std::move(value)}});
+  SetTextHelper(context, node, prop_decl_id, text);
 }
 
 aui::EditData PropertyDefinition::GetPropertyEditor(
@@ -341,6 +348,13 @@ aui::EditData PropertyDefinition::GetPropertyEditor(
   assert(property_declaration.node_class() == scada::NodeClass::Variable);
   return aui::EditData{aui::EditData::EditorType::TEXT};
 }
+
+void PropertyDefinition::HandleEditButton(
+    const PropertyContext& context,
+    const NodeRef& node,
+    const scada::NodeId& prop_decl_id) const {}
+
+// ReferencePropertyDefinition
 
 std::u16string ReferencePropertyDefinition::GetText(
     const PropertyContext& context,
@@ -592,7 +606,7 @@ aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
     auto channel_path = node[prop_decl_id].value().get_or(std::string{});
     auto [parent_id, component_name] = ParseChannelPath(channel_path);
     const auto& parent = context.node_service_.GetNode(parent_id);
-    for (auto& component : GetDataVariables(parent)) {
+    for (const auto& component : GetDataVariables(parent)) {
       result.choices.emplace_back(
           scada::ToLocalizedText(component.browse_name().name()));
     }
@@ -605,19 +619,25 @@ aui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {
-  aui::EditData data{aui::EditData::EditorType::BUTTON};
-
-  data.action_handler = [&dialog_service =
-                             context.dialog_service_](std::u16string& text) {
-    net::TransportString transport_string{base::UTF16ToUTF8(text)};
-    if (!ShowTransportDialog(dialog_service, transport_string))
-      return false;
-    text = base::UTF8ToUTF16(transport_string.ToString());
-    return true;
-  };
-
-  return data;
+  return {.editor_type = aui::EditData::EditorType::BUTTON};
 }
+
+void TransportPropertyDefinition::HandleEditButton(
+    const PropertyContext& context,
+    const NodeRef& node,
+    const scada::NodeId& prop_decl_id) const {
+  auto text = GetText(context, node, prop_decl_id);
+
+  net::TransportString transport_string{base::UTF16ToUTF8(text)};
+  ShowTransportDialog(context.dialog_service_, transport_string)
+      .then([context, node,
+             prop_decl_id](const net::TransportString& transport_string) {
+        auto text = base::UTF8ToUTF16(transport_string.ToString());
+        SetTextHelper(context, node, prop_decl_id, text);
+      });
+}
+
+// ColorPropertyDefinition
 
 std::u16string ColorPropertyDefinition::GetText(
     const PropertyContext& context,

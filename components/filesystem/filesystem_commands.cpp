@@ -135,42 +135,40 @@ bool ExecuteFileCommand(MainWindow* main_window,
   return true;
 }
 
-void AddFile(NodeRef parent_directory,
-             DialogService& dialog_service,
-             TaskManager& task_manager) {
-  const auto& path = dialog_service.SelectOpenFile(kAddFileTitle);
-  if (path.empty())
-    return;
+promise<> AddFile(NodeRef parent_directory,
+                  DialogService& dialog_service,
+                  TaskManager& task_manager) {
+  return dialog_service.SelectOpenFile(kAddFileTitle)
+      .then([parent_directory, &dialog_service,
+             &task_manager](const std::filesystem::path& path) {
+        std::string contents_string;
+        if (!base::ReadFileToString(AsFilePath(path), &contents_string)) {
+          return ToRejectedPromise(dialog_service.RunMessageBox(
+              u"Не удалось считать файл.", kAddFileTitle,
+              MessageBoxMode::Error));
+        }
 
-  std::string contents_string;
-  if (!base::ReadFileToString(AsFilePath(path), &contents_string)) {
-    dialog_service.RunMessageBox(u"Не удалось считать файл.", kAddFileTitle,
-                                 MessageBoxMode::Error);
-    return;
-  }
+        scada::LocalizedText new_file_name = path.filename().u16string();
+        scada::ByteString contents{contents_string.begin(),
+                                   contents_string.end()};
 
-  scada::LocalizedText new_file_name = path.filename().u16string();
-  scada::ByteString contents{contents_string.begin(), contents_string.end()};
-
-  task_manager.PostInsertTask({}, parent_directory.node_id(),
-                              filesystem::id::FileType,
-                              scada::NodeAttributes{}
-                                  .set_display_name(std::move(new_file_name))
-                                  .set_value(std::move(contents)),
-                              {}, {});
+        return ToVoidPromise(task_manager.PostInsertTask(
+            {}, parent_directory.node_id(), filesystem::id::FileType,
+            scada::NodeAttributes{.display_name = std::move(new_file_name),
+                                  .value = std::move(contents)},
+            {}, {}));
+      });
 }
 
-void CreateFileDirectory(NodeRef parent_directory,
-                         DialogService& dialog_service,
-                         TaskManager& task_manager) {
-  std::u16string new_directory_name;
-  bool ok = RunPromptDialog(dialog_service, kAddFileDirectoryPrompt,
-                            kAddFileDirectoryTitle, new_directory_name);
-  if (!ok)
-    return;
-
-  task_manager.PostInsertTask(
-      {}, parent_directory.node_id(), filesystem::id::FileDirectoryType,
-      scada::NodeAttributes{}.set_display_name(std::move(new_directory_name)),
-      {}, {});
+promise<> CreateFileDirectory(NodeRef parent_directory,
+                              DialogService& dialog_service,
+                              TaskManager& task_manager) {
+  return RunPromptDialog(dialog_service, kAddFileDirectoryPrompt,
+                         kAddFileDirectoryTitle)
+      .then([parent_directory = std::move(parent_directory),
+             &task_manager](const std::u16string& new_directory_name) {
+        return ToVoidPromise(task_manager.PostInsertTask(
+            {}, parent_directory.node_id(), filesystem::id::FileDirectoryType,
+            {.display_name = new_directory_name}, {}, {}));
+      });
 }

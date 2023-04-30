@@ -21,6 +21,7 @@ class PropertyGroup {
   virtual bool IsInherited(int index) const = 0;
   virtual void SetValue(int index, const std::u16string& value) = 0;
   virtual aui::EditData GetEditData(int index) const = 0;
+  virtual void HandleEditButton(int index) const = 0;
 };
 
 class PropertyModel {
