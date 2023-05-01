@@ -202,9 +202,8 @@ void LoginController::OnLoginCompleted() {
 
   auto promise = make_resolved_promise();
   if (auto_login && login_message_) {
-    promise = dialog_service_
-                  .RunMessageBox(kAutoLoginMessage, {}, MessageBoxMode::Info)
-                  .then([](MessageBoxResult) {});
+    promise = ToVoidPromise(dialog_service_.RunMessageBox(
+        kAutoLoginMessage, {}, MessageBoxMode::Info));
   }
 
   promise.then([completion_handler = this->completion_handler,
@@ -238,7 +237,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
         base::StringPrintf(kLoginFailedMessage, ToString16(status).c_str());
     dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error)
         .then(BindPromiseExecutor(executor_, weak_from_this(),
-                                  [this](MessageBoxResult message_box_result) {
+                                  [this](MessageBoxResult) {
                                     login_message_ = true;
                                     error_handler();
                                   }));
@@ -257,9 +256,10 @@ void LoginController::Connect(bool allow_remote_logoff) {
     return;
   }
 
-  services_.session_service_->Connect(
-      server_host, scada::ToLocalizedText(user_name),
-      scada::ToLocalizedText(password), allow_remote_logoff,
+  scada::BindStatusCallback(
+      services_.session_service_->Connect(
+          server_host, scada::ToLocalizedText(user_name),
+          scada::ToLocalizedText(password), allow_remote_logoff),
       [this](const scada::Status& status) { OnLoginResult(status); });
 }
 

@@ -528,6 +528,5 @@ void ClientApplication::Quit() {
 
   logger_->Write(LogSeverity::Normal, "Disconnect");
 
-  master_data_services_->Disconnect(
-      [this](const scada::Status& status) { quit_handler_(); });
+  master_data_services_->Disconnect().finally(quit_handler_);
 }
