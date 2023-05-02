@@ -2,7 +2,6 @@
 
 #include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
-#include "core/event_service.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 

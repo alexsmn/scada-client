@@ -212,10 +212,12 @@ void ClientApplication::OnStartLoginCompleted() {
                        std::shared_ptr<const Logger> logger,
                        MasterDataServices& master_data_services)
         : event_fetcher_{EventFetcherContext{
-              std::move(executor), master_data_services, master_data_services,
-              master_data_services, master_data_services,
-              std::make_shared<NestedLogger>(std::move(logger),
-                                             "EventFetcher")}},
+              .executor_ = std::move(executor),
+              .monitored_item_service_ = master_data_services,
+              .history_service_ = master_data_services,
+              .method_service_ = master_data_services,
+              .logger_ = std::make_shared<NestedLogger>(std::move(logger),
+                                                        "EventFetcher")}},
           event_fetcher_notifier_{event_fetcher_, master_data_services} {}
 
     EventFetcher event_fetcher_;
@@ -254,17 +256,15 @@ void ClientApplication::OnStartLoginCompleted() {
   ComponentApiImpl component_api;
   filesystem_component_ = std::make_unique<FileSystemComponent>(component_api);
 
-  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
-      executor_,
-      alias_resolver_,
-      *node_service_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *event_fetcher_,
-  });
+  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
+      TimedDataContext{.executor_ = executor_,
+                       .alias_resolver_ = alias_resolver_,
+                       .node_service_ = *node_service_,
+                       .attribute_service_ = *master_data_services_,
+                       .method_service_ = *master_data_services_,
+                       .monitored_item_service_ = *master_data_services_,
+                       .history_service_ = *master_data_services_,
+                       .event_fetcher_ = *event_fetcher_});
 
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
