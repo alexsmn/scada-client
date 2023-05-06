@@ -82,19 +82,13 @@ REGISTER_DATA_SERVICES("Vidicon",
 namespace {
 
 LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
-  SYSTEMTIME time;
-  GetLocalTime(&time);
+  auto name = GetDumpFileName("client");
 
-  base::FilePath path;
-  base::PathService::Get(client::DIR_LOG, &path);
+  base::FilePath base_path;
+  base::PathService::Get(client::DIR_LOG, &base_path);
+  auto path = AsFilesystemPath(base_path) / name;
 
-  // TODO: Take module name.
-  std::wstring name = base::StringPrintf(
-      L"client_%04d%02d%02d_%02d%02d%02d.dmp", time.wYear, time.wMonth,
-      time.wDay, time.wHour, time.wMinute, time.wSecond);
-  path = path.Append(name);
-
-  DumpException(path.value().c_str(), *exception);
+  DumpException(path.c_str(), *exception);
 
   return EXCEPTION_EXECUTE_HANDLER;
 }
