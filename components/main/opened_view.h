@@ -58,8 +58,8 @@ class OpenedView : private OpenedViewContext,
   }
   bool locked() const { return locked_; }
 
-  UiView* view() { return view_; }
-  UiView* ReleaseView() { return std::exchange(view_, nullptr); }
+  UiView* view() { return view_.get(); }
+  UiView* ReleaseView() { return view_.release(); }
 
 #if defined(UI_VIEWS)
   const gfx::Image& image() const { return image_; }
@@ -73,7 +73,7 @@ class OpenedView : private OpenedViewContext,
   void SetUserTitle(std::u16string_view title);
   void Save();
   std::u16string GetWindowTitle() const;
-  void Close();
+  virtual void Close() override;
 
 #if defined(UI_VIEWS)
   // views::DropController
@@ -115,7 +115,7 @@ class OpenedView : private OpenedViewContext,
   bool working_ = false;
   ExecutorTimer update_working_timer_;
 
-  UiView* view_ = nullptr;
+  std::unique_ptr<UiView> view_;
 
 #if defined(UI_VIEWS)
   gfx::Image image_;

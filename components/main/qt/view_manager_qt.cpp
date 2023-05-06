@@ -310,11 +310,16 @@ void ViewManagerQt::ActivateView(OpenedView& opened_view) {
 }
 
 void ViewManagerQt::CloseView(OpenedView& opened_view) {
+  // WARNING: `GetTabWidget` requires `opened_view.view()` to be set.
   if (auto* tabs = GetTabWidget(opened_view)) {
     auto index = tabs->indexOf(opened_view.view());
     assert(index != -1);
     // Doesn't delete |opened_view.view()|.
     tabs->removeTab(index);
+
+    // Must reset the parent, or the view will be deleted by the tab widget.
+    // While the view must be only deleted by the `OpenedView`.
+    opened_view.view()->setParent(nullptr);
 
     // Remove tab widget.
     if (tabs->count() == 0 && tabs != root_widget_)

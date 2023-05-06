@@ -1,6 +1,7 @@
 #include "components/main/qt/view_manager_qt.h"
 
 #include "base/test/test_executor.h"
+#include "components/main/controller_factory_mock.h"
 #include "components/main/view_manager_delegate_mock.h"
 #include "controller_mock.h"
 #include "services/dialog_service_mock.h"
@@ -13,12 +14,44 @@
 
 using namespace testing;
 
+struct ViewState {
+  explicit ViewState(ViewManager& view_manager) : view_manager_{view_manager} {
+    auto* widget = new QWidget;
+
+    QObject::connect(widget, &QObject::destroyed,
+                     widget_destroyed.AsStdFunction());
+
+    EXPECT_CALL(*controller, Init(_)).WillOnce(Return(widget));
+  }
+
+  ~ViewState() {
+    EXPECT_CALL(widget_destroyed, Call());
+
+    view_manager_.CloseView(*opened_view);
+  }
+
+  // Must appear before `window_definition`.
+  inline static const WindowInfo kWindowInfo{123, "name", u"title"};
+
+  ViewManager& view_manager_;
+
+  WindowDefinition window_definition{kWindowInfo};
+
+  NiceMock<MockFunction<void()>> widget_destroyed;
+
+  std::unique_ptr<StrictMock<MockController>> controller =
+      std::make_unique<StrictMock<MockController>>();
+
+  OpenedView* opened_view = nullptr;
+};
+
 class ViewManagerQtTest : public Test {
  public:
-  ViewManagerQtTest();
-  ~ViewManagerQtTest();
+  virtual void TearDown() override;
 
  protected:
+  std::unique_ptr<ViewState> ExpectOpenView();
+
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
 
@@ -26,47 +59,51 @@ class ViewManagerQtTest : public Test {
 
   StrictMock<MockDialogService> dialog_service_;
   StrictMock<MockViewManagerDelegate> view_manager_delegate_;
+  StrictMock<MockControllerFactory> controller_factory_;
 
   ViewManagerQt view_manager_qt_{main_window_, view_manager_delegate_};
 };
 
-ViewManagerQtTest::ViewManagerQtTest() {}
+void ViewManagerQtTest::TearDown() {}
 
-ViewManagerQtTest::~ViewManagerQtTest() {}
+std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
+  auto view_state = std::make_unique<ViewState>(view_manager_qt_);
 
-TEST_F(ViewManagerQtTest, CloseView_DeletesNativeView) {
-  const WindowInfo window_info{123, "name", u"title"};
-  WindowDefinition window_definition{window_info};
+  EXPECT_CALL(controller_factory_,
+              Call(ViewState::kWindowInfo.command_id, _, _))
+      .WillOnce(Return(ByMove(std::move(view_state->controller))));
 
-  auto controller = std::make_unique<StrictMock<MockController>>();
-  auto& controller_ref = *controller;
+  auto new_opened_view = std::make_unique<OpenedView>(OpenedViewContext{
+      .executor_ = executor_,
+      .window_def_ = view_state->window_definition,
+      .dialog_service_ = dialog_service_,
+      .controller_factory_ = controller_factory_.AsStdFunction()});
+  view_state->opened_view = new_opened_view.get();
 
-  ControllerFactory controller_factory =
-      [&](unsigned command_id, ControllerDelegate& delegate,
-          DialogService& dialog_service) -> std::unique_ptr<Controller> {
-    return std::move(controller);
-  };
-
-  auto* widget = new QWidget;
-
-  EXPECT_CALL(controller_ref, Init(_)).WillOnce(Return(widget));
-
-  auto new_opened_view = std::make_unique<OpenedView>(
-      OpenedViewContext{executor_, nullptr, window_definition, dialog_service_,
-                        controller_factory});
-
+  // The call gets a reference  to another `WindowDefinition`.
   EXPECT_CALL(view_manager_delegate_, OnCreateView(_))
       .WillOnce(Return(ByMove(std::move(new_opened_view))));
 
-  auto* opened_view =
-      view_manager_qt_.OpenView(window_definition, true, nullptr);
+  EXPECT_CALL(view_manager_delegate_,
+              OnViewClosed(Ref(*view_state->opened_view)));
 
-  MockFunction<void()> widget_destroyed;
-  QObject::connect(widget, &QObject::destroyed,
-                   widget_destroyed.AsStdFunction());
+  return view_state;
+}
 
-  EXPECT_CALL(widget_destroyed, Call());
-  EXPECT_CALL(view_manager_delegate_, OnViewClosed(_));
+TEST_F(ViewManagerQtTest, CloseView_DeletesNativeView) {
+  auto view_state = ExpectOpenView();
+  view_manager_qt_.OpenView(view_state->window_definition, true, nullptr);
+}
 
-  view_manager_qt_.CloseView(*opened_view);
+TEST_F(ViewManagerQtTest, SplitAndClose) {
+  auto view_state1 = ExpectOpenView();
+  auto* opened_view1 =
+      view_manager_qt_.OpenView(view_state1->window_definition, true, nullptr);
+  opened_view1;
+
+  auto view_state2 = ExpectOpenView();
+  auto* opened_view2 =
+      view_manager_qt_.OpenView(view_state2->window_definition, true, nullptr);
+
+  view_manager_qt_.SplitView(*opened_view2, /*vertically*/ false);
 }

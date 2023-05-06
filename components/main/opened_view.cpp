@@ -30,7 +30,7 @@ OpenedView::OpenedView(OpenedViewContext&& context)
   auto* view = controller_->Init(window_def_);
   if (!view)
     throw std::runtime_error{"Can't create widget"};
-  view_ = view;
+  view_.reset(view);
 
 #if defined(UI_VIEWS)
   view_->set_parent_owned(false);
@@ -43,9 +43,7 @@ OpenedView::OpenedView(OpenedViewContext&& context)
   //  ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
 }
 
-OpenedView::~OpenedView() {
-  delete view_;
-}
+OpenedView::~OpenedView() {}
 
 void OpenedView::Activate() {
   if (main_window_)
