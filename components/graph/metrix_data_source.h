@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "common/node_state.h"
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
@@ -12,6 +10,8 @@
 #include "ui/base/models/graph_data_source.h"
 #include "ui/base/models/graph_types.h"
 #endif
+
+#include <memory>
 
 class MetrixPointEnum;
 

@@ -12,7 +12,7 @@ class BlinkerManager;
 class ControllerDelegate;
 class CreateTree;
 class DialogService;
-class EventFetcher;
+class NodeEventProvider;
 class Executor;
 class ExportModel;
 class Favourites;
@@ -30,7 +30,7 @@ struct ControllerContext {
   const AliasResolver alias_resolver_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
-  EventFetcher& event_fetcher_;
+  NodeEventProvider& node_event_provider_;
   scada::HistoryService& history_service_;
   scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;

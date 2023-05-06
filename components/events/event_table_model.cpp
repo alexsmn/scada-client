@@ -61,7 +61,7 @@ bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
 EventTableModel::EventTableModel(EventTableModelContext&& context)
     : EventTableModelContext(std::move(context)) {
   local_events_.observers().AddObserver(this);
-  event_fetcher_.AddObserver(*this);
+  node_event_provider_.AddObserver(*this);
   node_service_.Subscribe(*this);
 }
 
@@ -69,7 +69,7 @@ EventTableModel::~EventTableModel() {
   CancelRequest();
 
   node_service_.Unsubscribe(*this);
-  event_fetcher_.RemoveObserver(*this);
+  node_event_provider_.RemoveObserver(*this);
   local_events_.observers().RemoveObserver(this);
 }
 
@@ -345,7 +345,7 @@ void EventTableModel::RefilterNow() {
     rows.emplace_back(std::move(row));
   }
 
-  const auto& events = event_fetcher_.unacked_events();
+  const auto& events = node_event_provider_.unacked_events();
   for (auto i = events.begin(); i != events.end(); i++) {
     const scada::Event& event = i->second;
     if (IsEventShown(event)) {
@@ -442,7 +442,7 @@ void EventTableModel::AcknowledgeRow(int row) {
   switch (r.type) {
     case CURRENT_EVENT:
       assert(!r.event->acked);
-      event_fetcher_.AcknowledgeEvent(r.event->acknowledge_id);
+      node_event_provider_.AcknowledgeEvent(r.event->acknowledge_id);
       break;
 
     case HISTORICAL_EVENT:
@@ -501,7 +501,7 @@ std::u16string EventTableModel::MakeTitle() const {
 
 bool EventTableModel::IsWorking() const {
   if (current_events_)
-    return event_fetcher_.is_acking();
+    return node_event_provider_.is_acking();
   else
     return request_running_;
 }

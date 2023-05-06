@@ -23,7 +23,7 @@
 TableView::TableView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_shared<TableModel>(
-          TableModelContext{timed_data_service_, event_fetcher_, profile_,
+          TableModelContext{timed_data_service_, node_event_provider_, profile_,
                             dialog_service_, blinker_manager_})} {
   model_->item_changed_ = [this](const scada::NodeId& item_id, bool added) {
     NotifyContainedItemChanged(item_id, added);

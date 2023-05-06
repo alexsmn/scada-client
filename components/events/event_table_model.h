@@ -16,7 +16,7 @@
 #include <list>
 #include <set>
 
-class EventFetcher;
+class NodeEventProvider;
 class Executor;
 class NodeService;
 
@@ -35,7 +35,7 @@ enum EventColumnId {
 struct EventTableModelContext {
   const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
-  EventFetcher& event_fetcher_;
+  NodeEventProvider& node_event_provider_;
   LocalEvents& local_events_;
   scada::HistoryService& history_service_;
   const bool current_events_;

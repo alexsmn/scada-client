@@ -27,8 +27,9 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
       model_{std::make_shared<EventTableModel>(EventTableModelContext{
-          context.executor_, context.node_service_, context.event_fetcher_,
-          context.local_events_, context.history_service_, is_panel_})} {
+          context.executor_, context.node_service_,
+          context.node_event_provider_, context.local_events_,
+          context.history_service_, is_panel_})} {
   const aui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, u"Время", 150, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},
@@ -251,7 +252,7 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
 
 promise<> EventView::SelectSeverity() {
   unsigned initial_severity = model_->current_events()
-                                  ? event_fetcher_.severity_min()
+                                  ? node_event_provider_.severity_min()
                                   : model_->severity_min();
   const char16_t prompt[] = u"Минимальный порог важности (0 - все события):";
   return RunPromptDialog(dialog_service_, prompt, u"Фильтр",
@@ -271,7 +272,7 @@ promise<> EventView::SelectSeverity() {
       })
       .then([this](unsigned severity) {
         if (model_->current_events()) {
-          event_fetcher_.SetSeverityMin(severity);
+          node_event_provider_.SetSeverityMin(severity);
         } else {
           model_->SetSeverityMin(severity);
           controller_delegate_.SetTitle(MakeTitle());

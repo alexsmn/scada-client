@@ -18,7 +18,7 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
 list(FILTER PATHS EXCLUDE REGEX "components/vidicon_display/tester")
 
 foreach(PATH ${PATHS})
-  IF(${PATH} MATCHES "_unittest")
+  IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")
     IF(${PATH} MATCHES "/qt/")
       LIST(APPEND UNITTESTS_QT ${PATH})
     ELSEIF(${PATH} MATCHES "/wt/")

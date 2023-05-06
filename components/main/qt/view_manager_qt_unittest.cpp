@@ -6,7 +6,6 @@
 #include "services/dialog_service_mock.h"
 #include "window_info.h"
 
-#include <QApplication>
 #include <QMainWindow>
 #include <gmock/gmock.h>
 
@@ -22,10 +21,6 @@ class ViewManagerQtTest : public Test {
  protected:
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
-
-  int argc_ = 0;
-  char* argv_ = nullptr;
-  QApplication application_{argc_, &argv_};
 
   QMainWindow main_window_;
 
