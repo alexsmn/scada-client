@@ -1,19 +1,13 @@
 ﻿#include "components/graph/graph_view.h"
 
-#include "base/string_piece_util.h"
-#include "base/strings/string_util.h"
-#include "base/time_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
+#include "components/graph/graph_view_loader.h"
+#include "components/graph/graph_view_saver.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller_delegate.h"
-#include "controls/color.h"
-#include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "selection_model.h"
-#include "services/profile.h"
-#include "time_range.h"
-#include "window_definition_util.h"
 
 #if defined(UI_VIEWS)
 #include "components/graph/graph_setup_dialog.h"
@@ -21,16 +15,12 @@
 #include <QColorDialog>
 #endif
 
-static const size_t kMaxPanes = 10;
-
 // GraphView
 
 GraphView::GraphView(const ControllerContext& context)
     : ControllerContext{context} {}
 
 UiView* GraphView::Init(const WindowDefinition& definition) {
-  BOOL time_set = FALSE;
-
   graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_});
 
 #if defined(UI_VIEWS)
@@ -38,80 +28,11 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
       new views::ColorBackground(profile_.graph_view.default_color));
 #endif
 
-  typedef std::map<int, views::GraphPane*> PaneMap;
-  PaneMap pane_map;
-
-  for (auto& item : definition.items) {
-    if (item.name_is("GraphPane")) {
-      views::GraphPane* pane = &graph_->NewPane();
-
-      pane->size_percent_ = item.GetInt("size", 100);
-
-      int ix = item.GetInt("ix", -1);
-      if (ix != -1)
-        pane_map.insert(PaneMap::value_type(ix, pane));
-      if (item.GetInt("act", 0))
-        graph_->SelectPane(pane);
-
-    } else if (item.name_is("Item")) {
-      if (graph_->panes().size() >= kMaxPanes)
-        continue;
-      auto path = item.GetString("path");
-      auto stype = item.GetString("type", "GraphLine");
-      auto color_string = item.GetString("clr");
-      bool dots = item.GetInt("dots", 1) != 0;
-      bool stepped = item.GetInt("stepped", 1) != 0;
-      // pane
-      int pane_ix = item.GetInt("pane", -1);
-      PaneMap::iterator i = pane_map.find(pane_ix);
-      MetrixGraph::MetrixPane* pane = NULL;
-      if (i != pane_map.end())
-        pane = static_cast<MetrixGraph::MetrixPane*>(i->second);
-      else
-        pane = &static_cast<MetrixGraph::MetrixPane&>(graph_->NewPane());
-      // make color
-      auto color =
-          color_string.empty() ? NewColor() : aui::StringToColor(color_string);
-      // add line
-      MetrixGraph::MetrixLine& line =
-          graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
-      line.SetColor(color.native_color());
-      line.set_dots_shown(dots);
-      line.set_stepped(stepped);
-
-    } else if (item.name_is("TimeScale")) {
-      auto srange = item.GetString("span");
-      auto stime = item.GetString("time");
-      base::Time from, to;
-      graph_->m_time_fit =
-          base::EqualsCaseInsensitiveASCII(AsStringPiece(stime), "Now");
-      if (graph_->m_time_fit || !Deserialize(stime, to)) {
-        graph_->m_time_fit = true;
-        to = base::Time::Now();
-      }
-      base::TimeDelta span = base::TimeDelta::FromHours(1);
-      Deserialize(srange, span);
-      from = to - span;
-      graph_->horizontal_axis().SetRange(views::GraphRange(
-          from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));
-      time_set = TRUE;
-    }
-  }
-
-  if (!time_set) {
-    if (auto time_range = RestoreTimeRange(definition)) {
-      graph_->m_time_fit = time_range->type != TimeRange::Type::Custom;
-      auto [start, end] = GetTimeRangeBounds(*time_range);
-      graph_->horizontal_axis().SetRange(views::GraphRange(
-          start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME));
-      time_set = TRUE;
-    } else {
-      base::Time now = base::Time::Now();
-      graph_->horizontal_axis().SetRange(views::GraphRange(
-          (now - profile_.graph_view.default_span).ToDoubleT(), now.ToDoubleT(),
-          views::GraphRange::TIME));
-    }
-  }
+  GraphViewLoader{.definition_ = definition,
+                  .profile_ = profile_,
+                  .graph_ = *graph_,
+                  .graph_view_ = *this}
+      .Read();
 
   graph_->horizontal_axis().SetPanningRangeMax(
       graph_->horizontal_axis().range().high());
@@ -119,10 +40,8 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
 
   graph_->UpdateData();
 
-  for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-       i != graph_->panes().end(); i++) {
-    MetrixGraph::MetrixPane& pane = *static_cast<MetrixGraph::MetrixPane*>(*i);
-    pane.ShowLegend(true);
+  for (auto* pane : graph_->panes()) {
+    static_cast<MetrixGraph::MetrixPane*>(pane)->ShowLegend(true);
   }
 
   // Select first item.
@@ -229,46 +148,9 @@ aui::Color GraphView::NewColor() const {
 }
 
 void GraphView::Save(WindowDefinition& definition) {
-  base::Time time =
-      base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
-  base::TimeDelta span =
-      TimeDeltaFromSecondsF(graph_->horizontal_axis().range().delta());
-
-  // time scale
-  {
-    WindowItem& item = definition.AddItem("TimeScale");
-    item.SetString("time", graph_->m_time_fit ? std::string("Now")
-                                              : SerializeToString(time));
-    item.SetString("span", SerializeToString(span));
-  }
-
-  // value scale
-  // WindowItem& item = def.AddItem(_T("ValueScale"));
-  int pane_ix = 1;
-  // panes
-  for (auto* pane : graph_->panes()) {
-    {
-      WindowItem& item = definition.AddItem("GraphPane");
-      item.SetInt("ix", pane_ix);
-      item.SetInt("size", pane->size_percent_);
-    }
-
-    for (auto* graph_line : pane->plot().lines()) {
-      const MetrixGraph::MetrixLine& line =
-          static_cast<const MetrixGraph::MetrixLine&>(*graph_line);
-
-      WindowItem& item = definition.AddItem("Item");
-      item.SetInt("pane", pane_ix);
-      item.SetString("path", line.data_source().GetPath());
-      item.SetString("clr", aui::ColorToString(line.color()));
-      item.SetInt("dots", line.dots_shown() ? 1 : 0);
-      item.SetInt("stepped", line.stepped() ? 1 : 0);
-    }
-
-    pane_ix++;
-  }
-
-  SaveTimeRange(definition, GetTimeRange());
+  GraphViewSaver{
+      .graph_ = *graph_, .graph_view_ = *this, .definition_ = definition}
+      .Save();
 }
 
 void GraphView::DeleteSelectedPane() {
@@ -305,13 +187,12 @@ void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
 void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   auto color = NewColor();
 
-  MetrixGraph::MetrixPane* pane = NULL;
+  MetrixGraph::MetrixPane* pane = nullptr;
 
   // find first empty pane
-  for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-       i != graph_->panes().end(); ++i) {
-    if ((*i)->plot().lines().empty()) {
-      pane = static_cast<MetrixGraph::MetrixPane*>(*i);
+  for (auto* p : graph_->panes()) {
+    if (p->plot().lines().empty()) {
+      pane = static_cast<MetrixGraph::MetrixPane*>(p);
       break;
     }
   }
@@ -355,7 +236,7 @@ std::u16string GraphView::MakeTitle() const {
       !graph_->panes().empty()
           ? static_cast<MetrixGraph::MetrixLine*>(
                 graph_->panes().front()->plot().primary_line())
-          : NULL;
+          : nullptr;
   return line ? line->data_source().title() : u"Нет объекта";
 }
 
@@ -379,7 +260,7 @@ void GraphView::OnGraphSelectPane() {
       graph_->selected_pane()
           ? static_cast<MetrixGraph::MetrixPane*>(graph_->selected_pane())
                 ->primary_line()
-          : NULL;
+          : nullptr;
   if (line)
     selection_.SelectTimedData(line->data_source().timed_data());
   else
@@ -421,7 +302,7 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
     // Delete pane if empty. But don't delete last one.
     if (pane.plot().lines().empty()) {
       if (&pane == graph_->selected_pane())
-        graph_->SelectPane(NULL);
+        graph_->SelectPane(nullptr);
       graph_->DeletePane(pane);
     }
   }
@@ -524,8 +405,7 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
   if (&line == graph_->primary_line())
     controller_delegate_.SetTitle(MakeTitle());
 
-  MetrixGraph::MetrixLine& metrix_line =
-      static_cast<MetrixGraph::MetrixLine&>(line);
+  auto& metrix_line = static_cast<MetrixGraph::MetrixLine&>(line);
   auto node_id = metrix_line.data_source().timed_data().GetNode().node_id();
   NotifyContainedItemChanged(node_id, true);
 }
@@ -535,9 +415,8 @@ void GraphView::UndoZoom() {
   graph_->m_time_fit = true;
   graph_->Fit();
 
-  for (MetrixGraph::Panes::const_iterator i = graph_->panes().begin();
-       i != graph_->panes().end(); ++i) {
-    (*i)->vertical_axis().UpdateRange();
+  for (auto* pane : graph_->panes()) {
+    pane->vertical_axis().UpdateRange();
   }
 }
 

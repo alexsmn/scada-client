@@ -30,9 +30,9 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
   ~StatusBarModelImpl();
 
   // StatusBarModel
-  virtual int GetPaneCount() override;
-  virtual std::u16string GetPaneText(int index) override;
-  virtual int GetPaneSize(int index) override;
+  virtual int GetPaneCount() const override;
+  virtual std::u16string GetPaneText(int index) const override;
+  virtual int GetPaneSize(int index) const override;
   virtual Progress GetProgress() const override;
   virtual void AddObserver(aui::StatusBarModelObserver& observer) override;
   virtual void RemoveObserver(aui::StatusBarModelObserver& observer) override;

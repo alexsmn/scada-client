@@ -28,11 +28,11 @@ StatusBarModelImpl::~StatusBarModelImpl() {
   user_node_.Unsubscribe(*this);
 }
 
-int StatusBarModelImpl::GetPaneCount() {
+int StatusBarModelImpl::GetPaneCount() const {
   return 6;
 }
 
-std::u16string StatusBarModelImpl::GetPaneText(int index) {
+std::u16string StatusBarModelImpl::GetPaneText(int index) const {
   switch (index) {
     case 1: {
       size_t unacked_event_count = event_fetcher_.unacked_events().size();
@@ -67,7 +67,7 @@ std::u16string StatusBarModelImpl::GetPaneText(int index) {
   }
 }
 
-int StatusBarModelImpl::GetPaneSize(int index) {
+int StatusBarModelImpl::GetPaneSize(int index) const {
   const int kSizes[] = {-1, 100, 100, 100, 100, 120};
   return kSizes[index];
 }

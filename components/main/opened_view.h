@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/executor_timer.h"
+#include "command_handler.h"
 #include "components/main/controller_factory.h"
 #include "controller_delegate.h"
 #include "controls/types.h"

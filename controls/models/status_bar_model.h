@@ -6,7 +6,7 @@ namespace aui {
 
 class StatusBarModelObserver {
  public:
-  virtual ~StatusBarModelObserver() {}
+  virtual ~StatusBarModelObserver() = default;
 
   virtual void OnPanesChanged(int index, int count) = 0;
   virtual void OnProgressChanged() = 0;
@@ -14,11 +14,11 @@ class StatusBarModelObserver {
 
 class StatusBarModel {
  public:
-  ~StatusBarModel() {}
+  virtual ~StatusBarModel() = default;
 
-  virtual int GetPaneCount() = 0;
-  virtual std::u16string GetPaneText(int index) = 0;
-  virtual int GetPaneSize(int index) = 0;
+  virtual int GetPaneCount() const = 0;
+  virtual std::u16string GetPaneText(int index) const = 0;
+  virtual int GetPaneSize(int index) const = 0;
 
   struct Progress {
     bool active = false;

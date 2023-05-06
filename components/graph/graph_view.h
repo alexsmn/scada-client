@@ -24,6 +24,9 @@ class GraphView : protected ControllerContext,
  public:
   explicit GraphView(const ControllerContext& context);
 
+  bool FindColor(aui::Color color) const;
+  aui::Color NewColor() const;
+
   // Controller methods
   virtual bool IsWorking() const override;
   virtual bool CanClose() const override;
@@ -56,9 +59,6 @@ class GraphView : protected ControllerContext,
 
   // Delete all pane lines and remove items.
   void ClearPane(MetrixGraph::MetrixPane& pane);
-
-  bool FindColor(aui::Color color) const;
-  aui::Color NewColor() const;
 
   void ScrollToNow();
 
