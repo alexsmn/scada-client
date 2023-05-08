@@ -11,6 +11,11 @@ class TaskManager {
  public:
   virtual ~TaskManager() {}
 
+  using TaskLauncher = std::function<promise<>()>;
+
+  virtual promise<> PostTask(std::u16string_view description,
+                             const TaskLauncher& launcher) = 0;
+
   virtual promise<scada::NodeId> PostInsertTask(
       const scada::NodeId& requested_id,
       const scada::NodeId& parent_id,

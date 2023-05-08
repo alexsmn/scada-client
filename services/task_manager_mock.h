@@ -6,6 +6,11 @@
 
 class MockTaskManager : public TaskManager {
  public:
+  MOCK_METHOD(promise<>,
+              PostTask,
+              (std::u16string_view description, const TaskLauncher& launcher),
+              (override));
+
   MOCK_METHOD(promise<scada::NodeId>,
               PostInsertTask,
               (const scada::NodeId& requested_id,

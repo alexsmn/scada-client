@@ -37,6 +37,8 @@ class TaskManagerImpl : private TaskManagerImplContext,
   ~TaskManagerImpl();
 
   // TaskManager
+  virtual promise<> PostTask(std::u16string_view description,
+                             const TaskLauncher& launcher) override;
   virtual promise<scada::NodeId> PostInsertTask(
       const scada::NodeId& requested_id,
       const scada::NodeId& parent_id,
@@ -64,12 +66,13 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
     std::u16string title;
     std::function<void()> task;
+    promise<> promise;
   };
 
   void Run();
   void CancelProgress();
 
-  void PostTask(std::u16string_view title, TaskMethod task);
+  promise<> PostTask(std::u16string_view title, TaskMethod task);
   void StartTask(Task&& task);
 
   void ReportRequestCompletion(const scada::Status& status,

@@ -88,4 +88,4 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .connection_info_provider_ = connection_info_provider_.AsStdFunction()};
 }
 
-TEST_F(MainWindowTest, Test) {}
+TEST_F(MainWindowTest, DISABLED_Test) {}

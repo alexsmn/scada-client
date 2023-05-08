@@ -47,6 +47,15 @@ void TaskManagerImpl::CancelProgress() {
   running_progress_.reset();
 }
 
+promise<> TaskManagerImpl::PostTask(std::u16string_view description,
+                                    const TaskLauncher& launcher) {
+  return PostTask(description, [this, launcher] {
+    scada::BindStatusCallback(launcher(), [this](const scada::Status& status) {
+      ReportRequestCompletion(status, {});
+    });
+  });
+}
+
 promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
     const scada::NodeId& requested_id,
     const scada::NodeId& parent_id,
@@ -120,59 +129,53 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
 promise<> TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
                                           scada::NodeAttributes attributes,
                                           scada::NodeProperties properties) {
-  promise<> promise;
   std::u16string title = GetDisplayName(node_service_, node_id);
+  return PostTask(
+      base::StringPrintf(u"Изменение %ls", title.c_str()), [=]() mutable {
+        auto node = node_service_.GetNode(node_id);
+        FetchNode(node).then(BindPromiseExecutor(
+            executor_, weak_from_this(),
+            [this, node, node_id, attributes, properties]() mutable {
+              auto inputs = std::make_shared<std::vector<scada::WriteValue>>();
+              inputs->reserve(2 + properties.size());
+              if (!attributes.browse_name.empty()) {
+                inputs->emplace_back(node_id, scada::AttributeId::BrowseName,
+                                     std::move(attributes.browse_name));
+              }
+              if (!attributes.display_name.empty()) {
+                inputs->emplace_back(node_id, scada::AttributeId::DisplayName,
+                                     std::move(attributes.display_name));
+              }
 
-  PostTask(base::StringPrintf(u"Изменение %ls", title.c_str()), [=]() mutable {
-    auto node = node_service_.GetNode(node_id);
-    FetchNode(node).then(BindPromiseExecutor(
-        executor_, weak_from_this(),
-        [this, node, node_id, attributes, properties, promise]() mutable {
-          auto inputs = std::make_shared<std::vector<scada::WriteValue>>();
-          inputs->reserve(2 + properties.size());
-          if (!attributes.browse_name.empty()) {
-            inputs->emplace_back(node_id, scada::AttributeId::BrowseName,
-                                 std::move(attributes.browse_name));
-          }
-          if (!attributes.display_name.empty()) {
-            inputs->emplace_back(node_id, scada::AttributeId::DisplayName,
-                                 std::move(attributes.display_name));
-          }
+              for (auto& [prop_decl_id, value] : properties) {
+                auto prop_id = node[prop_decl_id].node_id();
+                assert(!prop_id.is_null());
+                inputs->emplace_back(std::move(prop_id),
+                                     scada::AttributeId::Value,
+                                     std::move(value));
+              }
 
-          for (auto& [prop_decl_id, value] : properties) {
-            auto prop_id = node[prop_decl_id].node_id();
-            assert(!prop_id.is_null());
-            inputs->emplace_back(std::move(prop_id), scada::AttributeId::Value,
-                                 std::move(value));
-          }
+              attribute_service_.Write(
+                  scada::ServiceContext::default_instance(), inputs,
+                  // TODO: Fix weak capture.
+                  BindExecutor(
+                      executor_, weak_from_this(),
+                      [this](scada::Status status,
+                             std::vector<scada::StatusCode> results) mutable {
+                        if (status) {
+                          // Find any failed status.
+                          auto i = std::ranges::find_if(
+                              results, [](const auto& status) {
+                                return scada::IsBad(status);
+                              });
+                          if (i != results.end())
+                            status = std::move(*i);
+                        }
 
-          attribute_service_.Write(
-              scada::ServiceContext::default_instance(), inputs,
-              // TODO: Fix weak capture.
-              BindExecutor(executor_, weak_from_this(),
-                           [this, promise](
-                               scada::Status status,
-                               std::vector<scada::StatusCode> results) mutable {
-                             if (status) {
-                               // Find any failed status.
-                               auto i =
-                                   std::find_if(results.begin(), results.end(),
-                                                [](const auto& status) {
-                                                  return scada::IsBad(status);
-                                                });
-                               if (i != results.end())
-                                 status = std::move(*i);
-                             }
-
-                             ReportRequestCompletion(status, std::u16string());
-
-                             // TODO: Handle |results|.
-                             ResolveStatusPromise(promise, std::move(status));
-                           }));
-        }));
-  });
-
-  return promise;
+                        ReportRequestCompletion(status, std::u16string());
+                      }));
+            }));
+      });
 }
 
 promise<> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
@@ -197,52 +200,46 @@ promise<> TaskManagerImpl::PostAddReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
-  promise<> promise;
   auto title = FormatReference(node_service_, reference_type_id, source_id,
                                target_id, true);
-  PostTask(title, [=, &node_management_service =
-                          node_management_service_]() mutable {
+  return PostTask(title, [=, &node_management_service =
+                                 node_management_service_]() mutable {
     scada::AddReferencesItem input{
         source_id, reference_type_id, true, {}, target_id};
     node_management_service.AddReferences(
         std::vector<scada::AddReferencesItem>(1, input),
         // TODO: Fix weak capture.
-        BindExecutor(
-            executor_, weak_from_this(),
-            [this, promise](scada::Status status,
+        BindExecutor(executor_, weak_from_this(),
+                     [this](scada::Status status,
                             std::vector<scada::StatusCode> results) mutable {
-              auto result = status ? results.front() : std::move(status);
-              ReportRequestCompletion(result, std::u16string());
-              ResolveStatusPromise(promise, std::move(result));
-            }));
+                       auto result =
+                           status ? results.front() : std::move(status);
+                       ReportRequestCompletion(result, std::u16string());
+                     }));
   });
-  return promise;
 }
 
 promise<> TaskManagerImpl::PostDeleteReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
-  promise<> promise;
   auto title = FormatReference(node_service_, reference_type_id, source_id,
                                target_id, false);
-  PostTask(title, [=, &node_management_service =
-                          node_management_service_]() mutable {
+  return PostTask(title, [=, &node_management_service =
+                                 node_management_service_]() mutable {
     scada::DeleteReferencesItem input{source_id, reference_type_id, true,
                                       target_id, true};
     node_management_service.DeleteReferences(
         std::vector<scada::DeleteReferencesItem>(1, input),
         // TODO: Fix weak capture.
-        BindExecutor(
-            executor_, weak_from_this(),
-            [this, promise](scada::Status status,
+        BindExecutor(executor_, weak_from_this(),
+                     [this](scada::Status status,
                             std::vector<scada::StatusCode> results) mutable {
-              auto result = status ? results.front() : std::move(status);
-              ReportRequestCompletion(result, std::u16string());
-              ResolveStatusPromise(promise, std::move(result));
-            }));
+                       auto result =
+                           status ? results.front() : std::move(status);
+                       ReportRequestCompletion(result, std::u16string());
+                     }));
   });
-  return promise;
 }
 
 void TaskManagerImpl::StartTask(Task&& task) {
@@ -262,16 +259,17 @@ void TaskManagerImpl::ReportRequestCompletion(
   auto task = std::move(running_task_);
   running_task_ = Task();
 
-  if (status && !profile_.show_write_ok)
-    return;
+  if (!status || profile_.show_write_ok) {
+    std::u16string message = base::StringPrintf(
+        u"%ls: %ls.", task.title.c_str(), ToString16(status).c_str());
+    if (!result_text.empty())
+      message += u'\n' + result_text;
 
-  std::u16string message = base::StringPrintf(u"%ls: %ls.", task.title.c_str(),
-                                              ToString16(status).c_str());
-  if (!result_text.empty())
-    message += u'\n' + result_text;
+    auto severity = status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
+    local_events_.ReportEvent(severity, message);
+  }
 
-  auto severity = status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
-  local_events_.ReportEvent(severity, message);
+  scada::ResolveStatusPromise(task.promise, status);
 }
 
 void TaskManagerImpl::Run() {
@@ -315,6 +313,7 @@ void TaskManagerImpl::Run() {
   }
 }
 
-void TaskManagerImpl::PostTask(std::u16string_view title, TaskMethod task) {
-  tasks_.emplace(std::u16string{title}, std::move(task));
+promise<> TaskManagerImpl::PostTask(std::u16string_view title,
+                                    TaskMethod task) {
+  return tasks_.emplace(std::u16string{title}, std::move(task)).promise;
 }

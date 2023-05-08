@@ -453,9 +453,13 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_UNLOCK_ITEM}
           .set_execute_handler([this] {
-            task_manager_.PostUpdateTask(
-                selection_->node().node_id(), {},
-                {{data_items::id::DataItemType_Locked, false}});
+            auto node = selection_->node();
+            task_manager_.PostTask(
+                base::StringPrintf(u"Снятие блокировки с %ls",
+                                   node.display_name().c_str()),
+                [node] {
+                  return node.Call(data_items::id::DataItemType_Unlock);
+                });
           })
           .set_enabled_handler([this] {
             return selection_->node()[data_items::id::DataItemType_Locked]
@@ -506,12 +510,13 @@ void SelectionCommands::CallMethod(
     const NodeRef& node,
     const scada::NodeId& method_id,
     const std::vector<scada::Variant>& arguments) {
-  node.Call(method_id, arguments, {},
-            [node, &local_events = local_events_,
-             &profile = profile_](const scada::Status& status) {
-              auto title = ToString16(node.display_name());
-              ReportRequestResult(title, status, local_events, profile);
-            });
+  auto promise = node.CallPacked(method_id, arguments, {});
+  scada::BindStatusCallback(
+      promise, [node, &local_events = local_events_,
+                &profile = profile_](const scada::Status& status) {
+        auto title = ToString16(node.display_name());
+        ReportRequestResult(title, status, local_events, profile);
+      });
 }
 
 #if !defined(UI_WT)
