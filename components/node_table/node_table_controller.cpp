@@ -86,7 +86,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
       return;
     }
 
-    auto node = model_->nodes()[rows.front()];
+    auto node = model_->node(rows.front());
     assert(node);
 
     selection_.SelectNode(node);
@@ -99,7 +99,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   selection_.multiple_handler = [this] {
     NodeIdSet node_ids;
     for (auto row : grid_->GetSelectedRows())
-      node_ids.emplace(model_->nodes()[row].node_id());
+      node_ids.emplace(model_->node(row).node_id());
     return node_ids;
   };
 

@@ -60,6 +60,10 @@ class PropertyDefinition {
                                 const NodeRef& node,
                                 const scada::NodeId& prop_decl_id) const;
 
+  virtual void GetAdditionalTargets(const NodeRef& node,
+                                    const scada::NodeId& prop_decl_id,
+                                    std::vector<scada::NodeId>& targets) const;
+
  private:
   aui::TableColumn::Alignment alignment_;
   int width_;
@@ -67,11 +71,11 @@ class PropertyDefinition {
 
 class HierachicalPropertyDefinition : public PropertyDefinition {
  public:
-  typedef std::vector<const PropertyDefinition*> Children;
+  using Children = std::vector<const PropertyDefinition*>;
 
   explicit HierachicalPropertyDefinition(Children children)
-      : children_(std::move(children)),
-        PropertyDefinition(aui::TableColumn::LEFT) {}
+      : PropertyDefinition(aui::TableColumn::LEFT),
+        children_(std::move(children)) {}
 
   const Children& children() const { return children_; }
 
@@ -161,10 +165,17 @@ class ChannelPropertyDefinition : public PropertyDefinition {
       const PropertyContext& context,
       const NodeRef& node,
       const scada::NodeId& prop_decl_id) const override;
+  virtual void GetAdditionalTargets(
+      const NodeRef& node,
+      const scada::NodeId& prop_decl_id,
+      std::vector<scada::NodeId>& targets) const override;
 
   static const char16_t kParentGroupDevice[];
 
  private:
+  static scada::NodeId GetDeviceId(const NodeRef& node,
+                                   const scada::NodeId& prop_decl_id);
+
   const std::u16string title_;
   const bool device_;
 };

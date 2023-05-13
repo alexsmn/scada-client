@@ -179,21 +179,17 @@ promise<> TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
 }
 
 promise<> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
-  promise<> promise;
   std::u16string title = GetDisplayName(node_service_, node_id);
-  PostTask(base::StringPrintf(u"Удаление %ls", title.c_str()),
-           [=, &node_management_service = node_management_service_]() mutable {
-             scada::DeleteNode(
-                 node_management_service, {node_id},
-                 // TODO: Fix weak capture.
-                 BindExecutor(executor_, weak_from_this(),
-                              [this, promise](scada::Status status) mutable {
-                                ReportRequestCompletion(status, {});
-                                ResolveStatusPromise(promise,
-                                                     std::move(status));
-                              }));
-           });
-  return promise;
+  return PostTask(
+      base::StringPrintf(u"Удаление %ls", title.c_str()),
+      [=, &node_management_service = node_management_service_]() mutable {
+        scada::DeleteNode(node_management_service, {node_id},
+                          // TODO: Fix weak capture.
+                          BindExecutor(executor_, weak_from_this(),
+                                       [this](scada::Status status) mutable {
+                                         ReportRequestCompletion(status, {});
+                                       }));
+      });
 }
 
 promise<> TaskManagerImpl::PostAddReference(

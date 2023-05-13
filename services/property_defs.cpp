@@ -170,7 +170,7 @@ const HierachicalPropertyDefinition kObjectOutputPropDef(
 
 const TransportPropertyDefinition kLinkTransportPropDef;
 
-std::unordered_map<scada::NodeId, const PropertyDefinition*>
+const std::unordered_map<scada::NodeId, const PropertyDefinition*>
     kPropertyDefinitionMap = {
         {data_items::id::DataItemType_Input1, &kObjectInput1PropDef},
         {data_items::id::DataItemType_Input2, &kObjectInput2PropDef},
@@ -354,6 +354,11 @@ void PropertyDefinition::HandleEditButton(
     const NodeRef& node,
     const scada::NodeId& prop_decl_id) const {}
 
+void PropertyDefinition::GetAdditionalTargets(const NodeRef& node,
+                                    const scada::NodeId& prop_decl_id,
+                                    std::vector<scada::NodeId>& targets) const {
+}
+
 // ReferencePropertyDefinition
 
 std::u16string ReferencePropertyDefinition::GetText(
@@ -523,6 +528,34 @@ std::u16string ChannelPropertyDefinition::GetTitle(
   return title_;
 }
 
+// static
+scada::NodeId ChannelPropertyDefinition::GetDeviceId(
+    const NodeRef& node,
+    const scada::NodeId& prop_decl_id) {
+  if (!IsInstanceOf(node, data_items::id::DataItemType))
+    return {};
+
+  auto channel_path = node[prop_decl_id].value().get_or(std::string{});
+
+  std::string name = GetFormulaSingleName(channel_path);
+  if (name.empty()) {
+    return {};
+  }
+
+  auto node_id = NodeIdFromScadaString(name);
+  if (node_id.is_null()) {
+    return {};
+  }
+
+  scada::NodeId parent_id;
+  std::string_view component_name;
+  if (!IsNestedNodeId(node_id, parent_id, component_name)) {
+    return {};
+  }
+
+  return parent_id;
+}
+
 std::u16string ChannelPropertyDefinition::GetText(
     const PropertyContext& context,
     const NodeRef& node,
@@ -614,6 +647,17 @@ aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
 
   return result;
 }
+
+void ChannelPropertyDefinition::GetAdditionalTargets(
+    const NodeRef& node,
+    const scada::NodeId& prop_decl_id,
+    std::vector<scada::NodeId>& targets) const {
+  if (auto device_id = GetDeviceId(node, prop_decl_id); !device_id.is_null()) {
+    targets.emplace_back(std::move(device_id));
+  }
+}
+
+// TransportPropertyDefinition
 
 aui::EditData TransportPropertyDefinition::GetPropertyEditor(
     const PropertyContext& context,

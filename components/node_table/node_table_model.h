@@ -25,8 +25,7 @@ class NodeTableModel : private PropertyContext,
   aui::FixedRowModel& row_model() { return row_model_; }
   aui::ColumnHeaderModel& column_model() { return column_model_; }
 
-  typedef std::vector<NodeRef> Nodes;
-  const Nodes& nodes() const { return nodes_; }
+  NodeRef node(int index) const { return rows_[index].node; }
 
   const scada::NodeId& sort_property_id() const { return sort_property_id_; }
   void SetSorting(const scada::NodeId& property_id);
@@ -41,13 +40,24 @@ class NodeTableModel : private PropertyContext,
   bool loading() const { return loading_; }
 
  private:
+  struct Row {
+    NodeRef node;
+    std::vector<scada::NodeId> additional_targets;
+  };
+
+  void FetchRow(Row& row) const;
+
   void UpdateColumns(const PropertyDefs& property_defs);
   void UpdateRows();
+  void UpdatedReferencingNodes(const scada::NodeId& node_id);
+  void PrefetchNodes(std::span<const NodeRef> nodes);
 
   bool IsMatchingNode(const NodeRef& node) const;
   void Update(const NodeRef& node);
   void Delete(const scada::NodeId& node_id);
-  int FindRecord(const scada::NodeId& node_id) const;
+  int FindRowIndex(const scada::NodeId& node_id) const;
+  std::vector<std::pair<int, int>> FindUpdatedRanges(
+      const scada::NodeId& node_id) const;
 
   void ScheduleSort();
   void ScheduleSortHelper();
@@ -68,8 +78,6 @@ class NodeTableModel : private PropertyContext,
 
   NodeRef parent_node_;
 
-  Nodes nodes_;
-
   struct Column {
     scada::AttributeId attr_id;
     NodeRef property_declaration;
@@ -77,6 +85,8 @@ class NodeTableModel : private PropertyContext,
   };
 
   std::vector<Column> columns_;
+
+  std::vector<Row> rows_;
 
   bool loading_ = true;
 
