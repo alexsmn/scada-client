@@ -501,7 +501,7 @@ std::u16string EventTableModel::MakeTitle() const {
 
 bool EventTableModel::IsWorking() const {
   if (current_events_)
-    return node_event_provider_.is_acking();
+    return node_event_provider_.IsAcking();
   else
     return request_running_;
 }

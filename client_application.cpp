@@ -258,22 +258,21 @@ void ClientApplication::OnStartLoginCompleted() {
                        .method_service_ = *master_data_services_,
                        .monitored_item_service_ = *master_data_services_,
                        .history_service_ = *master_data_services_,
-                       .event_fetcher_ = *event_fetcher_});
+                       .node_event_provider_ = *event_fetcher_});
 
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
 
   progress_host_ = std::make_unique<ProgressHostImpl>();
 
-  task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
-      executor_,
-      *node_service_,
-      *master_data_services_,
-      *master_data_services_,
-      *local_events_,
-      *profile_,
-      *progress_host_,
-  });
+  task_manager_ = std::make_shared<TaskManagerImpl>(
+      TaskManagerImplContext{.executor_ = executor_,
+                             .node_service_ = *node_service_,
+                             .attribute_service_ = *master_data_services_,
+                             .node_management_service_ = *master_data_services_,
+                             .local_events_ = *local_events_,
+                             .profile_ = *profile_,
+                             .progress_host_ = *progress_host_});
   speech_.reset(new Speech);
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
 
