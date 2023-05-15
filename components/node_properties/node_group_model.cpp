@@ -7,7 +7,7 @@
 NodeGroupModel::NodeGroupModel(NodePropertyModel& property_model)
     : property_model_{property_model} {}
 
-NodeGroupModel::~NodeGroupModel() {}
+NodeGroupModel::~NodeGroupModel() = default;
 
 int NodeGroupModel::GetCount() const {
   return properties.size();

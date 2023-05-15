@@ -29,6 +29,8 @@ class NodePropertyModel : protected PropertyContext,
   void OnNodeFetched();
   void Update();
 
+  void InitProperty(NodeGroupModel::Property& prop);
+
   int FindProperty(const scada::NodeId& prop_decl_id) const;
   int FindProperty(scada::AttributeId attribute_id) const;
 

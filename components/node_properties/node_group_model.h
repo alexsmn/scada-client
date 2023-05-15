@@ -26,9 +26,10 @@ class NodeGroupModel : public aui::PropertyGroup {
     ItemType type;
     std::u16string name;
     scada::AttributeId attribute_id;
-    const PropertyDefinition* def;
+    const PropertyDefinition* def = nullptr;
     scada::NodeId prop_decl_id;
     std::unique_ptr<NodeGroupModel> submodel;
+    std::vector<scada::NodeId> additional_targets;
   };
 
   std::u16string group_title;
