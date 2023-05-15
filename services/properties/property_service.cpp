@@ -1,6 +1,8 @@
 #include "services/properties/property_service.h"
 
 #include "base/range_util.h"
+#include "base/string_piece_util.h"
+#include "base/strings/strcat.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -23,35 +25,28 @@ const ReferencePropertyDefinition kRefPropDef;
 const ColorPropertyDefinition kColorPropDef;
 const EnumPropertyDefinition kEnumPropDef;
 
-const ChannelPropertyDefinition kObjectInput1DevicePropDef(u"Устройство", true);
-const ChannelPropertyDefinition kObjectInput1ChannelPropDef(u"Канал", false);
-const HierachicalPropertyDefinition kObjectInput1PropDef(
-    {&kObjectInput1DevicePropDef, &kObjectInput1ChannelPropDef});
+struct ChannelPropertyTree {
+  explicit ChannelPropertyTree(std::u16string_view suffix)
+      : device{base::StrCat({u"Устройство", AsStringPiece(suffix)}), true},
+        channel{base::StrCat({u"Канал", AsStringPiece(suffix)}), false} {}
 
-const ChannelPropertyDefinition kObjectInput2DevicePropDef(
-    u"Устройство (Резерв)",
-    true);
-const ChannelPropertyDefinition kObjectInput2ChannelPropDef(u"Канал (Резерв)",
-                                                            false);
-const HierachicalPropertyDefinition kObjectInput2PropDef(
-    {&kObjectInput2DevicePropDef, &kObjectInput2ChannelPropDef});
+  ChannelPropertyDefinition device;
+  ChannelPropertyDefinition channel;
 
-const ChannelPropertyDefinition kObjectOutputDevicePropDef(
-    u"Устройство (Управление)",
-    true);
-const ChannelPropertyDefinition kObjectOutputChannelPropDef(
-    u"Канал (Управление)",
-    false);
-const HierachicalPropertyDefinition kObjectOutputPropDef(
-    {&kObjectOutputDevicePropDef, &kObjectOutputChannelPropDef});
+  HierachicalPropertyDefinition root{{&device, &channel}};
+};
+
+const ChannelPropertyTree kObjectInput1PropTree{u""};
+const ChannelPropertyTree kObjectInput2PropTree{u" (Резерв)"};
+const ChannelPropertyTree kObjectOutputPropTree{u" (Управление)"};
 
 const TransportPropertyDefinition kLinkTransportPropDef;
 
 const std::unordered_map<scada::NodeId, const PropertyDefinition*>
     kPropertyDefinitionMap = {
-        {data_items::id::DataItemType_Input1, &kObjectInput1PropDef},
-        {data_items::id::DataItemType_Input2, &kObjectInput2PropDef},
-        {data_items::id::DataItemType_Output, &kObjectOutputPropDef},
+        {data_items::id::DataItemType_Input1, &kObjectInput1PropTree.root},
+        {data_items::id::DataItemType_Input2, &kObjectInput2PropTree.root},
+        {data_items::id::DataItemType_Output, &kObjectOutputPropTree.root},
         {devices::id::LinkType_Transport, &kLinkTransportPropDef},
         {data_items::id::TsFormatType_OpenColor, &kColorPropDef},
         {data_items::id::TsFormatType_CloseColor, &kColorPropDef},
