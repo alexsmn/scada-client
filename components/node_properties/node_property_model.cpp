@@ -4,7 +4,8 @@
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
-#include "services/property_defs.h"
+#include "services/properties/property_definition.h"
+#include "services/properties/property_service.h"
 #include "string_const.h"
 
 namespace {
@@ -25,8 +26,12 @@ void SortPropertiesRecursive(
 
 // NodePropertyModel
 
-NodePropertyModel::NodePropertyModel(PropertyContext&& context, NodeRef node)
-    : PropertyContext{std::move(context)}, node_{std::move(node)} {
+NodePropertyModel::NodePropertyModel(PropertyService& property_service,
+                                     PropertyContext&& context,
+                                     NodeRef node)
+    : PropertyContext{std::move(context)},
+      property_service_{property_service},
+      node_{std::move(node)} {
   node_.Subscribe(*this);
 
   FetchNode(node_).then(cancelation_.Bind([this] { OnNodeFetched(); }));
@@ -91,7 +96,7 @@ void NodePropertyModel::Update() {
   if (const auto& type_definition = node_.type_definition()) {
     assert(type_definition.fetched());
 
-    for (auto& p : GetTypePropertyDefs(type_definition)) {
+    for (auto& p : property_service_.GetTypePropertyDefs(type_definition)) {
       const auto& prop_decl = p.first;
       if (!prop_decl)
         continue;

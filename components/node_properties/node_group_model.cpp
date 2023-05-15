@@ -1,7 +1,7 @@
 #include "components/node_properties/node_group_model.h"
 
 #include "components/node_properties/node_property_model.h"
-#include "services/property_defs.h"
+#include "services/properties/property_definition.h"
 #include "services/task_manager.h"
 
 NodeGroupModel::NodeGroupModel(NodePropertyModel& property_model)
@@ -39,7 +39,7 @@ bool NodeGroupModel::IsInherited(int index) const {
 }
 
 void NodeGroupModel::SetValue(int index, const std::u16string& value) {
-  auto& prop = properties[index];
+  const auto& prop = properties[index];
   if (prop.def)
     prop.def->SetText(property_model_, property_model_.node_, prop.prop_decl_id,
                       value);

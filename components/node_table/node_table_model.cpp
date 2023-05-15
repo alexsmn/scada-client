@@ -10,7 +10,8 @@
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "services/property_defs.h"
+#include "services/properties/property_definition.h"
+#include "services/properties/property_service.h"
 #include "services/task_manager.h"
 #include "string_const.h"
 
@@ -27,8 +28,11 @@ const auto kSortDelay = 300ms;
 }  // namespace
 
 NodeTableModel::NodeTableModel(std::shared_ptr<Executor> executor,
+                               PropertyService& property_service,
                                PropertyContext&& context)
-    : PropertyContext{std::move(context)}, executor_{std::move(executor)} {
+    : PropertyContext{std::move(context)},
+      executor_{std::move(executor)},
+      property_service_{property_service} {
   row_model_.set_row_height(19);
 }
 
@@ -41,7 +45,7 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
 
   parent_node_ = parent_node;
 
-  GetChildPropertyDefs(parent_node_)
+  property_service_.GetChildPropertyDefs(parent_node_)
       .then(cancelation_.Bind([this](const PropertyDefs& property_defs) {
         UpdateColumns(property_defs);
       }))
@@ -97,8 +101,9 @@ bool NodeTableModel::SetCellText(int row,
     return false;
 
   const auto& node = rows_[row].node;
-  const auto& c = columns_[column];
-  if (c.attr_id == scada::AttributeId::BrowseName) {
+
+  if (const auto& c = columns_[column];
+      c.attr_id == scada::AttributeId::BrowseName) {
     task_manager_.PostUpdateTask(node.node_id(),
                                  {.browse_name = base::UTF16ToUTF8(text)}, {});
   } else if (c.attr_id == scada::AttributeId::DisplayName) {
@@ -107,6 +112,7 @@ bool NodeTableModel::SetCellText(int row,
   } else {
     c.prop_def->SetText(*this, node, c.property_declaration.node_id(), text);
   }
+
   return true;
 }
 
@@ -322,9 +328,9 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
                          def.alignment());
   };
 
-  for (auto& prop : property_defs) {
-    if (auto* hier_prop = prop.second->AsHierarchical()) {
-      for (auto& p : hier_prop->children())
+  for (const auto& prop : property_defs) {
+    if (const auto* hier_prop = prop.second->AsHierarchical()) {
+      for (const auto& p : hier_prop->children())
         AddProp(prop.first, *p);
     } else {
       AddProp(prop.first, *prop.second);

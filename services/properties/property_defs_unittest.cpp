@@ -1,4 +1,4 @@
-#include "services/property_defs.h"
+#include "services/properties/property_defs.h"
 
 #include "address_space/address_space_impl3.h"
 #include "address_space/address_space_util.h"
@@ -14,6 +14,10 @@
 #include "node_service/node_util.h"
 #include "node_service/v1/test/test_node_service.h"
 #include "services/dialog_service_mock.h"
+#include "services/properties/channel_property_definition.h"
+#include "services/properties/property_context.h"
+#include "services/properties/property_defs.h"
+#include "services/properties/property_service.h"
 #include "services/task_manager_mock.h"
 
 #include "base/debug_util-inl.h"
@@ -128,7 +132,7 @@ TEST_F(PropertyDefsTest, Enum) {
   ASSERT_TRUE(IsSubtypeOf(mode_data_type, scada::id::Enumeration));
 
   auto link = node_service->GetNode(link_id);
-  auto* prop_def = GetPropertyDef(mode_prop_def);
+  auto* prop_def = PropertyService{}.GetPropertyDef(mode_prop_def);
   ASSERT_TRUE(prop_def);
   EXPECT_EQ(u"Опрос",
             prop_def->GetText(property_context, link, mode_prop_def.node_id()));

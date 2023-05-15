@@ -5,18 +5,21 @@
 #include "controls/models/grid_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "services/property_defs.h"
+#include "services/properties/property_context.h"
 
 class Executor;
 class NodeService;
 class PropertyDefinition;
+class PropertyService;
 
 class NodeTableModel : private PropertyContext,
                        public aui::GridModel,
                        private aui::FixedRowModel::Delegate,
                        public NodeRefObserver {
  public:
-  NodeTableModel(std::shared_ptr<Executor> executor, PropertyContext&& context);
+  NodeTableModel(std::shared_ptr<Executor> executor,
+                 PropertyService& property_service,
+                 PropertyContext&& context);
   virtual ~NodeTableModel() override;
 
   const NodeRef& parent_node() const { return parent_node_; }
@@ -40,6 +43,9 @@ class NodeTableModel : private PropertyContext,
   bool loading() const { return loading_; }
 
  private:
+  using PropertyDefs =
+      std::vector<std::pair<NodeRef /*prop_decl*/, const PropertyDefinition*>>;
+
   struct Row {
     NodeRef node;
     std::vector<scada::NodeId> additional_targets;
@@ -72,6 +78,7 @@ class NodeTableModel : private PropertyContext,
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
   const std::shared_ptr<Executor> executor_;
+  PropertyService& property_service_;
 
   aui::FixedRowModel row_model_{*this};
   aui::ColumnHeaderModel column_model_;

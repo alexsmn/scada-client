@@ -11,7 +11,6 @@
 #include "node_service/node_service.h"
 #include "remote/session_proxy.h"
 #include "services/profile.h"
-#include "services/property_defs.h"
 #include "services/task_manager.h"
 
 #if defined(UI_QT)
@@ -42,13 +41,14 @@ NodeTableController::NodeTableController(const ControllerContext& context,
     : ControllerContext{context},
       model_{std::make_unique<NodeTableModel>(
           executor_,
+          property_service_,
           PropertyContext{context.node_service_, context.task_manager_,
                           context.dialog_service_})} {
   if (parent_node)
     model_->SetParentNode(parent_node);
 }
 
-NodeTableController::~NodeTableController() {}
+NodeTableController::~NodeTableController() = default;
 
 UiView* NodeTableController::Init(const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {

@@ -30,6 +30,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   selection_.SelectNode(node);
 
   property_model_ = std::make_shared<NodePropertyModel>(
+      property_service_,
       PropertyContext{node_service_, task_manager_, dialog_service_},
       std::move(node));
 

@@ -37,6 +37,7 @@ class NodeServiceProgressTracker;
 class PortfolioManager;
 class Profile;
 class ProgressHost;
+class PropertyService;
 class TaskManager;
 class TimedDataService;
 class Speech;
@@ -101,6 +102,7 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;
   std::unique_ptr<CreateTree> create_tree_;
+  std::unique_ptr<PropertyService> property_service_;
 
   std::unique_ptr<FileRegistry> file_registry_;
   std::unique_ptr<FileCache> file_cache_;

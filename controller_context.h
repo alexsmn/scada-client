@@ -21,6 +21,7 @@ class LocalEvents;
 class NodeService;
 class PortfolioManager;
 class Profile;
+class PropertyService;
 class TaskManager;
 class TimedDataService;
 
@@ -43,4 +44,5 @@ struct ControllerContext {
   DialogService& dialog_service_;
   BlinkerManager& blinker_manager_;
   CreateTree& create_tree_;
+  PropertyService& property_service_;
 };

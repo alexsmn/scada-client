@@ -49,6 +49,7 @@
 #include "services/local_events.h"
 #include "services/profile.h"
 #include "services/progress_host_impl.h"
+#include "services/properties/property_service.h"
 #include "services/speech.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_impl.h"
@@ -304,6 +305,8 @@ void ClientApplication::OnStartLoginCompleted() {
 
   create_tree_ = std::make_unique<CreateTree>();
 
+  property_service_ = std::make_unique<PropertyService>();
+
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{
           *profile_,
@@ -341,7 +344,8 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
         *master_data_services_, *event_fetcher_, *master_data_services_,
         *master_data_services_, *timed_data_service_, *node_service_,
         *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
-        *profile_, dialog_service, *blinker_manager_, *create_tree_});
+        *profile_, dialog_service, *blinker_manager_, *create_tree_,
+        *property_service_});
   };
 
   auto login_handler = [this](bool login) {

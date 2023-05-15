@@ -5,17 +5,20 @@
 #include "controls/models/property_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "services/property_defs.h"
+#include "services/properties/property_context.h"
 
 #include <boost/signals2/signal.hpp>
 
+class PropertyService;
 struct PropertyContext;
 
 class NodePropertyModel : protected PropertyContext,
                           private NodeRefObserver,
                           public aui::PropertyModel {
  public:
-  NodePropertyModel(PropertyContext&& context, NodeRef node);
+  NodePropertyModel(PropertyService& property_service,
+                    PropertyContext&& context,
+                    NodeRef node);
   virtual ~NodePropertyModel();
 
   const NodeRef& node() const { return node_; }
@@ -32,11 +35,13 @@ class NodePropertyModel : protected PropertyContext,
   void PropertiesChanged(int first, int count);
 
   // PropertyModel
-  virtual aui::PropertyGroup& GetRootGroup() { return root_; }
+  virtual aui::PropertyGroup& GetRootGroup() override { return root_; }
 
   // scada::NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+
+  PropertyService& property_service_;
 
   NodeGroupModel root_{*this};
 
