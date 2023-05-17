@@ -251,15 +251,15 @@ void ClientApplication::OnStartLoginCompleted() {
   ComponentApiImpl component_api;
   filesystem_component_ = std::make_unique<FileSystemComponent>(component_api);
 
-  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(
-      TimedDataContext{.executor_ = executor_,
-                       .alias_resolver_ = alias_resolver_,
-                       .node_service_ = *node_service_,
-                       .attribute_service_ = *master_data_services_,
-                       .method_service_ = *master_data_services_,
-                       .monitored_item_service_ = *master_data_services_,
-                       .history_service_ = *master_data_services_,
-                       .node_event_provider_ = *event_fetcher_});
+  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
+      .executor_ = executor_,
+      .alias_resolver_ = alias_resolver_,
+      .node_service_ = *node_service_,
+      .services_ = {.attribute_service = master_data_services_.get(),
+                    .monitored_item_service = master_data_services_.get(),
+                    .method_service = master_data_services_.get(),
+                    .history_service = master_data_services_.get()},
+      .node_event_provider_ = *event_fetcher_});
 
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
@@ -274,12 +274,14 @@ void ClientApplication::OnStartLoginCompleted() {
                              .local_events_ = *local_events_,
                              .profile_ = *profile_,
                              .progress_host_ = *progress_host_});
-  speech_.reset(new Speech);
+
+  speech_ = std::make_unique<Speech>();
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
 
-  connection_state_reporter_ =
-      std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{
-          executor_, *master_data_services_, *local_events_});
+  connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(
+      ConnectionStateReporterContext{.executor_ = executor_,
+                                     .session_service_ = *master_data_services_,
+                                     .local_events_ = *local_events_});
 
   file_registry_ = std::make_unique<FileRegistry>();
   RegisterFileType(*file_registry_, ID_MODUS_VIEW, ".sde;.xsde");
