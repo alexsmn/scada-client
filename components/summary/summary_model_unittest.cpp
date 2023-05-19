@@ -27,6 +27,14 @@ class SummaryModelTest : public Test {
   SummaryModelTest();
 
  protected:
+  struct TestColumn {
+    int index = 0;
+    std::shared_ptr<MockTimedData> timed_data;
+  };
+
+  TestColumn AddColumn();
+  aui::GridCell GetCellAt(int column_index, base::Time time);
+
   // The item order must correspond to |SummaryModel::Save()| order.
   const WindowDefinition kWindowDefinition =
       WindowDefinition{kSummaryWindowInfo}
@@ -48,6 +56,11 @@ class SummaryModelTest : public Test {
   inline static const auto kInterval = scada::Duration::FromMinutes(30);
   inline static const auto kAggregateType =
       scada::id::AggregateFunction_Maximum;
+  inline static const std::string_view kFormula = "test-formula";
+  inline static const scada::AggregateFilter kAggregateFilter{
+      .start_time = scada::GetLocalAggregateStartTime(),
+      .interval = kInterval,
+      .aggregate_type = kAggregateType};
 };
 
 SummaryModelTest::SummaryModelTest() {
@@ -64,16 +77,11 @@ SummaryModelTest::SummaryModelTest() {
   summary_model_.Load(kWindowDefinition);
 }
 
-TEST_F(SummaryModelTest, AddColumn) {
-  const std::string_view kFormula = "test-formula";
+SummaryModelTest::TestColumn SummaryModelTest::AddColumn() {
+  auto timed_data = std::make_shared<NiceMock<MockTimedData>>();
 
-  auto timed_data = std::make_shared<StrictMock<MockTimedData>>();
-
-  EXPECT_CALL(
-      timed_data_service_,
-      GetFormulaTimedData(
-          kFormula, scada::AggregateFilter{scada::GetLocalAggregateStartTime(),
-                                           kInterval, kAggregateType}))
+  EXPECT_CALL(timed_data_service_,
+              GetFormulaTimedData(kFormula, kAggregateFilter))
       .WillOnce(Return(timed_data));
 
   // Start time is rounded down, end time is rounded up.
@@ -83,13 +91,26 @@ TEST_F(SummaryModelTest, AddColumn) {
                          TestTimeFromString("15 Nov 2004 12:30:00 UTC"),
                          TestTimeFromString("16 Nov 2004 13:00:00 UTC")}));
 
-  EXPECT_CALL(*timed_data, GetNode());
-
   int index = summary_model_.AddColumn(std::string{kFormula});
 
   EXPECT_EQ(index, 2);
 
   EXPECT_CALL(*timed_data, RemoveObserver(_));
+
+  return TestColumn{index, timed_data};
+}
+
+aui::GridCell SummaryModelTest::GetCellAt(int column_index, base::Time time) {
+  int row_index = summary_model_.GetRowForTime(time);
+
+  aui::GridCell cell{.row = row_index, .column = column_index};
+  summary_model_.GetCell(cell);
+
+  return cell;
+}
+
+TEST_F(SummaryModelTest, AddColumn) {
+  AddColumn();
 }
 
 TEST_F(SummaryModelTest, Load) {
@@ -110,4 +131,35 @@ TEST_F(SummaryModelTest, Save) {
   WindowDefinition window_definition{kSummaryWindowInfo};
   summary_model_.Save(window_definition);
   EXPECT_EQ(kWindowDefinition, window_definition);
+}
+
+TEST_F(SummaryModelTest, CellsAreGreyWhileLoading) {
+  auto test_column = AddColumn();
+
+  std::vector<scada::DateTimeRange> ready_ranges{
+      scada::DateTimeRange{TestTimeFromString("15 Nov 2004 14:00:00 UTC"),
+                           TestTimeFromString("15 Nov 2004 15:00:00 UTC")}};
+
+  ON_CALL(*test_column.timed_data, GetReadyRanges())
+      .WillByDefault(ReturnRef(ready_ranges));
+
+  EXPECT_EQ(aui::ColorCode::DarkGray,
+            GetCellAt(test_column.index,
+                      TestTimeFromString("15 Nov 2004 13:30:00 UTC"))
+                .cell_color);
+
+  EXPECT_EQ(aui::ColorCode::White,
+            GetCellAt(test_column.index,
+                      TestTimeFromString("15 Nov 2004 14:00:00 UTC"))
+                .cell_color);
+
+  EXPECT_EQ(aui::ColorCode::White,
+            GetCellAt(test_column.index,
+                      TestTimeFromString("15 Nov 2004 14:30:00 UTC"))
+                .cell_color);
+
+  EXPECT_EQ(aui::ColorCode::DarkGray,
+            GetCellAt(test_column.index,
+                      TestTimeFromString("15 Nov 2004 15:00:00 UTC"))
+                .cell_color);
 }

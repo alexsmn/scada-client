@@ -130,12 +130,7 @@ scada::DataValue SummaryModel::Column::GetDataValue(int row) const {
 
 bool SummaryModel::Column::IsReady(int row) const {
   auto time = model_.GetRowTime(row);
-#ifdef TIMED_DATA_RANGE_SUPPORT
-  scada::DateTimeRange range{time, time + model_.interval()};
-  return timed_data_.range_ready(range);
-#else
-  return time >= timed_data_.ready_from();
-#endif
+  return timed_data_.range_ready({time, time + model_.interval()});
 }
 
 // SummaryModel::RowModel -----------------------------------------------------
@@ -301,7 +296,7 @@ void SummaryModel::Save(WindowDefinition& definition) {
 }
 
 void SummaryModel::GetCell(aui::GridCell& cell) {
-  Column& column = *columns_[cell.column];
+  const Column& column = *columns_[cell.column];
 
   const scada::DataValue& data_value = column.GetDataValue(cell.row);
 
@@ -312,8 +307,9 @@ void SummaryModel::GetCell(aui::GridCell& cell) {
                                                    data_value.qualifier);
   }
 
-  if (!column.IsReady(cell.row))
-    cell.cell_color = aui::Rgba{227, 227, 227};
+  if (!column.IsReady(cell.row)) {
+    cell.cell_color = aui::ColorCode::DarkGray;
+  }
 }
 
 base::Time SummaryModel::GetRowTime(int row) const {
