@@ -104,9 +104,9 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
   const auto device_id2 = scada::NodeId{2, device_namespace_index};
   const auto device_id3 = scada::NodeId{3, device_namespace_index};
 
-  auto* device1 = CreateDevice(device_id1, u"Device 1");
-  auto* device2 = CreateDevice(device_id2, u"Device 2");
-  auto* device3 = CreateDevice(device_id3, u"Device 3");
+  const auto* device1 = CreateDevice(device_id1, u"Device 1");
+  const auto* device2 = CreateDevice(device_id2, u"Device 2");
+  const auto* device3 = CreateDevice(device_id3, u"Device 3");
 
   const std::u16string title = u"Test title";
   const std::vector devices{
@@ -154,5 +154,13 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
           ElementsAre(CellIs(u"Отправлено байт"),
                       CellIs(u"={IEC_DEV.1!BytesOut}"),
                       CellIs(u"={IEC_DEV.2!BytesOut}"),
-                      CellIs(u"={IEC_DEV.3!BytesOut}"))));
+                      CellIs(u"={IEC_DEV.3!BytesOut}")),
+          ElementsAre(CellIs(u"Число синхронизаций времени"),
+                      CellIs(u"={IEC_DEV.1!SyncClockCount}"),
+                      CellIs(u"={IEC_DEV.2!SyncClockCount}"),
+                      CellIs(u"={IEC_DEV.3!SyncClockCount}")),
+          ElementsAre(CellIs(u"Число полных опросов"),
+                      CellIs(u"={IEC_DEV.1!InterrogateCount}"),
+                      CellIs(u"={IEC_DEV.2!InterrogateCount}"),
+                      CellIs(u"={IEC_DEV.3!InterrogateCount}"))));
 }
