@@ -12,11 +12,11 @@ class MainWindow;
 class NodeRef;
 class TaskManager;
 
-bool ExecuteFileCommand(MainWindow* main_window,
-                        const std::shared_ptr<Executor>& executor,
-                        const FileRegistry& file_registry,
-                        const NodeRef& file_node,
-                        aui::KeyModifiers key_modifiers);
+promise<> ExecuteFileCommand(MainWindow* main_window,
+                             const std::shared_ptr<Executor>& executor,
+                             const FileRegistry& file_registry,
+                             const NodeRef& file_node,
+                             aui::KeyModifiers key_modifiers);
 
 promise<> AddFile(NodeRef parent_directory,
                   DialogService& dialog_service,

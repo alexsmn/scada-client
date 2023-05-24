@@ -1,7 +1,7 @@
 ﻿#include "components/filesystem/filesystem_commands.h"
 
-#include "base/executor.h"
 #include "base/file_path_util.h"
+#include "base/promise_executor.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/filesystem/filesystem_util.h"
@@ -74,65 +74,73 @@ void OpenFile(const std::filesystem::path& path,
   }
 
   WindowDefinition window{*window_info};
-  window.AddItem("Item").SetString("Path", path.u16string());
+  window.path = path;
   OpenView(main_window, window);
 }
 
-using DownloadFileCallback =
-    std::function<void(const std::filesystem::path& path)>;
-
-void DownloadFile(const NodeRef& file_node,
-                  const DownloadFileCallback& callback) {
-  const auto& path = GetFilePath(file_node);
+// Returns a relative path from public path.
+promise<std::filesystem::path> DownloadFile(const NodeRef& file_node) {
+  auto path = GetFilePath(file_node);
   if (path.empty()) {
-    callback({});
-    return;
+    return scada::MakeRejectedStatusPromise<std::filesystem::path>(
+        scada::StatusCode::Bad);
   }
 
+  promise<std::filesystem::path> promise;
+
   file_node.Read(
-      scada::AttributeId::Value, [path, callback](scada::DataValue data_value) {
+      scada::AttributeId::Value,
+      [path = std::move(path), promise](scada::DataValue data_value) mutable {
         if (scada::IsBad(data_value.status_code)) {
-          callback({});
+          scada::RejectStatusPromise(promise, data_value.status_code);
           return;
         }
 
         const auto* contents = data_value.value.get_if<scada::ByteString>();
         if (!contents) {
-          callback({});
+          scada::RejectStatusPromise(promise, scada::StatusCode::Bad);
           return;
         }
 
-        base::WriteFile(AsFilePath(GetPublicFilePath(path)), contents->data(),
-                        contents->size());
+        int written = base::WriteFile(AsFilePath(GetPublicFilePath(path)),
+                                      contents->data(), contents->size());
+        if (written != static_cast<int>(contents->size())) {
+          scada::RejectStatusPromise(promise, scada::StatusCode::Bad);
+          return;
+        }
 
-        callback(path);
+        promise.resolve(std::move(path));
       });
+
+  return promise;
 }
 
-bool ExecuteFileCommand(MainWindow* main_window,
-                        const std::shared_ptr<Executor>& executor,
-                        const FileRegistry& file_registry,
-                        const NodeRef& file_node,
-                        aui::KeyModifiers key_modifiers) {
-  if (!main_window)
-    return false;
+promise<> ExecuteFileCommand(MainWindow* main_window,
+                             const std::shared_ptr<Executor>& executor,
+                             const FileRegistry& file_registry,
+                             const NodeRef& file_node,
+                             aui::KeyModifiers key_modifiers) {
+  if (!main_window) {
+    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
+  }
 
-  // TODO: Weak ptr for main window.
-  DownloadFile(
-      file_node,
-      BindExecutor(executor, [&file_registry, main_window, key_modifiers](
-                                 const std::filesystem::path& path) {
-        if (path.empty()) {
-          main_window->GetDialogService().RunMessageBox(
-              u"Не удалось загрузить файл с сервера.", kOpenFileTitle,
-              MessageBoxMode::Error);
-          return;
-        }
-
-        OpenFile(path, file_registry, main_window, key_modifiers);
+  // TODO: `weak ptr` for main window.
+  return DownloadFile(file_node)
+      .then(BindPromiseExecutor(executor,
+                                [&file_registry, main_window, key_modifiers](
+                                    const std::filesystem::path& path) {
+                                  OpenFile(path, file_registry, main_window,
+                                           key_modifiers);
+                                }))
+      .except(BindPromiseExecutorWithResult(executor, [main_window](
+                                                          std::exception_ptr) {
+        return main_window->GetDialogService()
+            .RunMessageBox(u"Не удалось загрузить файл с сервера.",
+                           kOpenFileTitle, MessageBoxMode::Error)
+            .then([](MessageBoxResult) {
+              return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
+            });
       }));
-
-  return true;
 }
 
 promise<> AddFile(NodeRef parent_directory,

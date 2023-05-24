@@ -64,8 +64,9 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
   assert(main_window);
 
   if (IsInstanceOf(node, filesystem::id::FileType)) {
-    return ExecuteFileCommand(main_window, executor, file_registry, node,
-                              key_modifiers);
+    ExecuteFileCommand(main_window, executor, file_registry, node,
+                       key_modifiers);
+    return true;
   }
 
   const auto& window_info = GetDefaultNodeWindowInfo(node, key_modifiers);
