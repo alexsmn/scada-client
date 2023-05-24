@@ -17,22 +17,16 @@ class Color {
 
   Rgba rgba() const noexcept {
     const QRgb& qrgba = qcolor_.rgba();
-    return Rgba{static_cast<std::uint8_t>(qRed(qrgba)),
-                static_cast<std::uint8_t>(qGreen(qrgba)),
-                static_cast<std::uint8_t>(qBlue(qrgba)),
-                static_cast<std::uint8_t>(qAlpha(qrgba))};
+    return {.r = static_cast<std::uint8_t>(qRed(qrgba)),
+            .g = static_cast<std::uint8_t>(qGreen(qrgba)),
+            .b = static_cast<std::uint8_t>(qBlue(qrgba)),
+            .a = static_cast<std::uint8_t>(qAlpha(qrgba))};
   }
 
-  bool operator==(const Color& other) const noexcept {
-    return qcolor_ == other.qcolor_;
-  }
+  bool operator==(const Color& other) const noexcept = default;
 
-  bool operator!=(const Color& other) const noexcept {
-    return qcolor_ != other.qcolor_;
-  }
-
-  bool operator<(const Color& other) const noexcept {
-    return rgba() < other.rgba();
+  auto operator<=>(const Color& other) const noexcept {
+    return rgba() <=> other.rgba();
   }
 
  private:

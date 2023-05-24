@@ -15,22 +15,16 @@ class Color {
   Wt::WColor native_color() const noexcept { return wcolor_; }
 
   Rgba rgba() const noexcept {
-    return Rgba{static_cast<std::uint8_t>(wcolor_.red()),
-                static_cast<std::uint8_t>(wcolor_.green()),
-                static_cast<std::uint8_t>(wcolor_.blue()),
-                static_cast<std::uint8_t>(wcolor_.alpha())};
+    return {.r = static_cast<std::uint8_t>(wcolor_.red()),
+            .g = static_cast<std::uint8_t>(wcolor_.green()),
+            .b = static_cast<std::uint8_t>(wcolor_.blue()),
+            .a = static_cast<std::uint8_t>(wcolor_.alpha())};
   }
 
-  bool operator==(const Color& other) const noexcept {
-    return wcolor_ == other.wcolor_;
-  }
+  bool operator==(const Color& other) const noexcept = default;
 
-  bool operator!=(const Color& other) const noexcept {
-    return !operator==(other);
-  }
-
-  bool operator<(const Color& other) const noexcept {
-    return rgba() < other.rgba();
+  auto operator<=>(const Color& other) const noexcept {
+    return rgba() <=> other.rgba();
   }
 
  private:

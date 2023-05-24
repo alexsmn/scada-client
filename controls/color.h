@@ -12,14 +12,7 @@ struct Rgba {
   std::uint8_t b = 0;
   std::uint8_t a = 255;
 
-  constexpr bool operator==(const Rgba& other) const noexcept {
-    return r == other.r && g == other.g && b == other.b && a == other.a;
-  }
-
-  constexpr bool operator<(const Rgba& other) const noexcept {
-    return std::tuple(r, g, b, a) <
-           std::tuple(other.r, other.g, other.b, other.a);
-  }
+  constexpr auto operator<=>(const Rgba& other) const noexcept = default;
 };
 
 }  // namespace aui

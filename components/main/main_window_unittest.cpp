@@ -88,4 +88,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .connection_info_provider_ = connection_info_provider_.AsStdFunction()};
 }
 
+// TODO: test -R MainWindowTest.Test
+// error: SEH exception with code 0xc0000005 thrown in the test fixture's
+// constructor.
 TEST_F(MainWindowTest, DISABLED_Test) {}
