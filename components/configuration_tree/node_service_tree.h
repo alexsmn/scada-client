@@ -2,6 +2,8 @@
 
 #include "node_service/node_ref.h"
 
+// The purpose of this class is to map the viewed node subgraph into a tree
+// based on specified filters. It also notifies observers of tree changes.
 class NodeServiceTree {
  public:
   virtual ~NodeServiceTree() = default;

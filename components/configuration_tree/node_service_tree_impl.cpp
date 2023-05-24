@@ -30,8 +30,9 @@ std::vector<NodeServiceTreeImpl::ChildRef> NodeServiceTreeImpl::GetChildren(
     const auto& targets = forward ? node.targets(reference_type_id)
                                   : node.inverse_targets(reference_type_id);
     for (const auto& child_node : targets) {
-      if (IsMatchingNode(child_node))
-        children.emplace_back(ChildRef{reference_type_id, forward, child_node});
+      if (IsMatchingNode(child_node)) {
+        children.emplace_back(reference_type_id, forward, child_node);
+      }
     }
   }
 
@@ -42,14 +43,12 @@ bool NodeServiceTreeImpl::IsMatchingNode(const NodeRef& node) const {
   assert(node);
 
   if (!type_definition_ids_.empty()) {
-    bool matches = false;
-    const auto& type_definition = node.type_definition();
-    for (auto& filter_type_definition_id : type_definition_ids_) {
-      if (IsSubtypeOf(type_definition, filter_type_definition_id)) {
-        matches = true;
-        break;
-      }
-    }
+    bool matches = std::ranges::any_of(
+        type_definition_ids_,
+        [type_definition = node.type_definition()](
+            const scada::NodeId& filter_type_definition_id) {
+          return IsSubtypeOf(type_definition, filter_type_definition_id);
+        });
     if (!matches)
       return false;
   }

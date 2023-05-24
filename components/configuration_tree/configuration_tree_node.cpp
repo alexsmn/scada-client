@@ -13,10 +13,11 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
       reference_type_id_{std::move(reference_type_id)},
       forward_reference_{forward_reference},
       node_{std::move(node)} {
-  assert(&node_);
   model_.tree_node_map_.emplace(node_.node_id(), this);
 
-  // AddChildren();
+  // Must add nodes that are already loaded. This happens e.g. when Objects
+  // panel is closed and re-opened.
+  AddChildren();
 
   node_.Fetch(NodeFetchStatus::NodeOnly());
 }

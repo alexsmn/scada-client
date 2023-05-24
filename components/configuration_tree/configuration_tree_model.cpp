@@ -9,13 +9,12 @@ inline bool DoesChildExist(base::span<const NodeServiceTree::ChildRef> children,
                            const scada::NodeId& reference_type_id,
                            bool forward,
                            const NodeRef& child_node) {
-  return std::any_of(children.begin(), children.end(),
-                     [&](const NodeServiceTree::ChildRef& child_ref) {
-                       return child_ref.reference_type_id ==
-                                  reference_type_id &&
-                              child_ref.forward == forward &&
-                              child_ref.child_node == child_node;
-                     });
+  return std::ranges::any_of(
+      children, [&](const NodeServiceTree::ChildRef& child_ref) {
+        return child_ref.reference_type_id == reference_type_id &&
+               child_ref.forward == forward &&
+               child_ref.child_node == child_node;
+      });
 }
 
 }  // namespace
@@ -33,7 +32,7 @@ ConfigurationTreeModel::ConfigurationTreeModel(
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
-  set_root(NULL);
+  set_root(nullptr);
 }
 
 void ConfigurationTreeModel::UpdateChildTreeNodes(
@@ -79,7 +78,7 @@ void ConfigurationTreeModel::DeleteTreeNodes(const scada::NodeId& node_id) {
                     << LOG_TAG("NodeId", NodeIdToScadaString(node_id));
 
   // Remove tree nodes with missing references.
-  for (auto* tree_node : FindTreeNodes(node_id))
+  for (const auto* tree_node : FindTreeNodes(node_id))
     Remove(*tree_node->parent(), tree_node->parent()->IndexOfChild(*tree_node));
 }
 

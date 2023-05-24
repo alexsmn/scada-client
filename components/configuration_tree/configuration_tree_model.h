@@ -7,7 +7,6 @@
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
-#include <map>
 #include <memory>
 
 struct ConfigurationTreeModelContext {
