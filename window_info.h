@@ -11,6 +11,7 @@ enum WindowFlags {
   WIN_DISALLOW_NEW = 0x0008,    // allow to create new window
   WIN_CAN_PRINT = 0x0010,       // can print contents
   WIN_REQUIRES_ADMIN = 0x0020,  // user must have admin rights to create window
+  WIN_SINGLE_ITEM = 0x0040,     // only single item allowed in window
 };
 
 struct WindowInfo {
@@ -29,6 +30,7 @@ struct WindowInfo {
   bool requires_admin_rights() const {
     return (flags & WIN_REQUIRES_ADMIN) != 0;
   }
+  bool single_item() const { return (flags & WIN_SINGLE_ITEM) != 0; }
 };
 
 const WindowInfo* FindWindowInfo(unsigned command_id);

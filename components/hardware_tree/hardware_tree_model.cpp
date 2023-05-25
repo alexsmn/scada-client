@@ -78,22 +78,18 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
     : ConfigurationTreeModel{::ConfigurationTreeModelContext{
           std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
-              context.executor_,
-              context.node_service_,
-              context.node_service_.GetNode(devices::id::Devices),
-              {
-                  {scada::id::Organizes, true},
-                  {scada::id::HasComponent, true},
-              },
-              {
-                  devices::id::DeviceType,
-                  devices::id::Iec61850LogicalNodeType,
-                  devices::id::Iec61850ConfigurableObjectType,
-                  devices::id::Iec61850DataVariableType,
-                  devices::id::Iec61850ControlObjectType,
-                  devices::id::TransmissionItemType,
-              },
-          }),
+              .executor_ = context.executor_,
+              .node_service_ = context.node_service_,
+              .root_node_ = context.node_service_.GetNode(devices::id::Devices),
+              .reference_filter_ = {{scada::id::Organizes, true},
+                                    {scada::id::HasComponent, true}},
+              .type_definition_ids_ =
+                  {devices::id::DeviceType,
+                   devices::id::Iec61850LogicalNodeType,
+                   devices::id::Iec61850ConfigurableObjectType,
+                   devices::id::Iec61850DataVariableType,
+                   devices::id::Iec61850ControlObjectType,
+                   devices::id::TransmissionItemType}}),
       }},
       timed_data_service_{context.timed_data_service_} {}
 

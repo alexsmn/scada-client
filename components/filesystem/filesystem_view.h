@@ -22,12 +22,12 @@ class FileSystemView : public ConfigurationTreeView {
     return std::make_shared<ConfigurationTreeModel>(
         ConfigurationTreeModelContext{
             std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
-                context.executor_,
-                context.node_service_,
-                context.node_service_.GetNode(filesystem::id::FileSystem),
-                {{scada::id::Organizes, true}},
-                {},
-            })});
+                .executor_ = context.executor_,
+                .node_service_ = context.node_service_,
+                .root_node_ =
+                    context.node_service_.GetNode(filesystem::id::FileSystem),
+                .reference_filter_ = {{scada::id::Organizes, true}},
+                .leaf_type_definition_ids_ = {filesystem::id::FileType}})});
   }
 
   static std::unique_ptr<ConfigurationTreeDropHandler>

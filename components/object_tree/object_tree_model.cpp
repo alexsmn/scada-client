@@ -9,13 +9,11 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
           std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
-              ObjectTreeModelContext::executor_,
-              ObjectTreeModelContext::node_service_,
-              ObjectTreeModelContext::root_,
-              {{scada::id::Organizes, true}},
-              {},
-          }),
-      }},
+              .executor_ = ObjectTreeModelContext::executor_,
+              .node_service_ = ObjectTreeModelContext::node_service_,
+              .root_node_ = ObjectTreeModelContext::root_,
+              .reference_filter_ = {{scada::id::Organizes, true}},
+              .leaf_type_definition_ids_ = {data_items::id::DataItemType}})}},
       visible_node_model_{
           timed_data_service_,
           profile_,

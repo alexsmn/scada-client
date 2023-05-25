@@ -63,17 +63,23 @@ void AddNodeIds(WindowDefinition& window_def, const NodeIdSet& node_ids) {
 }
 
 // TODO: Combine with |MakeSingleWindowDefinition()|.
-promise<WindowDefinition> MakeWindowDefinition(const WindowInfo* window_info,
-                                               const NodeRef& node,
-                                               bool expand_groups) {
-  promise<NodeIdSet> node_ids_promise;
-  if (expand_groups && node && node.node_class() == scada::NodeClass::Object)
-    node_ids_promise = ExpandGroupItemIds(node);
-  else
-    node_ids_promise = make_resolved_promise(MakeNodeIdSet(node.node_id()));
+promise<WindowDefinition> MakeWindowDefinition(
+    const WindowInfo* optional_window_info,
+    const NodeRef& node,
+    bool expand_groups) {
+  const auto& window_info =
+      optional_window_info ? *optional_window_info : kDefaultWindowInfo;
 
-  return node_ids_promise.then([window_info, node](const NodeIdSet& node_ids) {
-    auto window_def = MakeEmptyWindowDefinition(window_info, node);
+  bool expand = expand_groups && node &&
+                node.node_class() == scada::NodeClass::Object &&
+                !window_info.single_item();
+
+  auto node_ids_promise =
+      expand ? ExpandGroupItemIds(node)
+             : make_resolved_promise(MakeNodeIdSet(node.node_id()));
+
+  return node_ids_promise.then([&window_info, node](const NodeIdSet& node_ids) {
+    auto window_def = MakeEmptyWindowDefinition(&window_info, node);
     AddNodeIds(window_def, node_ids);
     return window_def;
   });

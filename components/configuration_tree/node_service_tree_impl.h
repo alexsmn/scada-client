@@ -17,6 +17,8 @@ struct NodeServiceTreeImplContext {
   const NodeRef root_node_;
   const ReferenceFilter reference_filter_;
   const std::vector<scada::NodeId> type_definition_ids_;
+  // Types that cannot be expanded in the tree.
+  const std::vector<scada::NodeId> leaf_type_definition_ids_;
 };
 
 class NodeServiceTreeImpl : public NodeServiceTree,

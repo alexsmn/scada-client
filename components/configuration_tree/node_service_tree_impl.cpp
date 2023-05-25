@@ -1,5 +1,6 @@
 #include "components/configuration_tree/node_service_tree_impl.h"
 
+#include "base/containers/contains.h"
 #include "base/executor.h"
 #include "core/event.h"
 #include "node_service/node_service.h"
@@ -19,11 +20,19 @@ NodeRef NodeServiceTreeImpl::GetRoot() const {
 }
 
 bool NodeServiceTreeImpl::HasChildren(const NodeRef& node) const {
-  return true;
+  return std::ranges::none_of(
+      leaf_type_definition_ids_,
+      [&node](const scada::NodeId& leaf_type_definition_id) {
+        return IsSubtypeOf(node, leaf_type_definition_id);
+      });
 }
 
 std::vector<NodeServiceTreeImpl::ChildRef> NodeServiceTreeImpl::GetChildren(
     const NodeRef& node) const {
+  if (!HasChildren(node)) {
+    return {};
+  }
+
   std::vector<ChildRef> children;
 
   for (const auto& [reference_type_id, forward] : reference_filter_) {
