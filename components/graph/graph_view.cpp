@@ -9,9 +9,7 @@
 #include "node_service/node_service.h"
 #include "selection_model.h"
 
-#if defined(UI_VIEWS)
-#include "components/graph/graph_setup_dialog.h"
-#elif defined(UI_QT)
+#if defined(UI_QT)
 #include <QColorDialog>
 #endif
 
@@ -22,11 +20,6 @@ GraphView::GraphView(const ControllerContext& context)
 
 UiView* GraphView::Init(const WindowDefinition& definition) {
   graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_});
-
-#if defined(UI_VIEWS)
-  graph_->set_background(
-      new views::ColorBackground(profile_.graph_view.default_color));
-#endif
 
   GraphViewLoader{.definition_ = definition,
                   .profile_ = profile_,
@@ -222,11 +215,6 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
 
   pane->ShowLegend(true);
 
-#if defined(UI_VIEWS)
-  pane->SchedulePaint();
-  graph_->Layout();
-#endif
-
   controller_delegate_.SetTitle(MakeTitle());
   controller_delegate_.SetModified(true);
 }
@@ -320,8 +308,6 @@ void GraphView::ScrollToNow() {
 
 #if defined(UI_QT)
   graph_->update();
-#elif defined(UI_VIEWS)
-  graph_->SchedulePaint();
 #endif
 
   controller_delegate_.SetModified(true);
@@ -333,10 +319,6 @@ void GraphView::ToggleLegend() {
     return;
 
   pane->ShowLegend(!pane->show_legend());
-
-#if defined(UI_VIEWS)
-  graph_->SchedulePaint();
-#endif
 
   controller_delegate_.SetModified(true);
 }
@@ -357,10 +339,6 @@ void GraphView::ToggleLineProperty(unsigned command_id) {
       assert(false);
       return;
   }
-
-#if defined(UI_VIEWS)
-  graph_->SchedulePaint();
-#endif
 
   controller_delegate_.SetModified(true);
 }

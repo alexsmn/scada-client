@@ -32,11 +32,6 @@ OpenedView::OpenedView(OpenedViewContext&& context)
     throw std::runtime_error{"Can't create widget"};
   view_.reset(view);
 
-#if defined(UI_VIEWS)
-  view_->set_parent_owned(false);
-  view_->set_drop_controller(this);
-#endif
-
   update_working_timer_.StartRepeating(100ms, [this] { UpdateWorking(); });
 
   //  image_ =

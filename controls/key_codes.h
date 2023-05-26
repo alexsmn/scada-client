@@ -2,8 +2,6 @@
 
 #if defined(UI_QT)
 #include <qnamespace.h>
-#elif defined(UI_VIEWS)
-#include "ui/views/view.h"
 #elif defined(UI_WT)
 #include <Wt/WGlobal.h>
 #endif
@@ -30,30 +28,6 @@ constexpr KeyModifier ControlModifier = Qt::ControlModifier;
 constexpr KeyModifier AltModifier = Qt::AltModifier;
 
 using KeyModifiers = Qt::KeyboardModifiers;
-
-#elif defined(UI_VIEWS)
-enum class KeyCode : unsigned {
-  Escape = ui::KeyboardCode::VKEY_ESCAPE,
-  Enter = ui::KeyboardCode::VKEY_RETURN,
-  Delete = ui::KeyboardCode::VKEY_DELETE,
-  Up = ui::KeyboardCode::VKEY_UP,
-  Down = ui::KeyboardCode::VKEY_DOWN,
-  Shift = ui::KeyboardCode::VKEY_SHIFT,
-  Control = ui::KeyboardCode::VKEY_CONTROL,
-  Alt = ui::KeyboardCode::VKEY_MENU,
-  F2 = ui::KeyboardCode::VKEY_F2,
-  C = ui::KeyboardCode::VKEY_C,
-  V = ui::KeyboardCode::VKEY_V,
-  Unknown = ui::KeyboardCode::VKEY_UNKNOWN,
-};
-
-using KeyModifier = ui::EventFlags;
-
-constexpr KeyModifier ShiftModifier = ui::EF_SHIFT_DOWN;
-constexpr KeyModifier ControlModifier = ui::EF_CONTROL_DOWN;
-constexpr KeyModifier AltModifier = ui::EF_ALT_DOWN;
-
-using KeyModifiers = unsigned;
 
 #elif defined(UI_WT)
 /*enum class KeyCode : int {

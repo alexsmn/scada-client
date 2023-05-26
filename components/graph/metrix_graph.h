@@ -38,10 +38,6 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
     // QWidget
     virtual void paintEvent(QPaintEvent* e) override;
     virtual QSize sizeHint() const override;
-#elif defined(UI_VIEWS)
-    // GraphWidget
-    virtual void OnPaint(gfx::Canvas* canvas);
-    virtual gfx::Size GetPreferredSize() const;
 #endif
 
    private:

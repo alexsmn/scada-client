@@ -14,10 +14,6 @@ class Tree;
 class ConfigurationTreeModel;
 class ConfigurationTreeDropHandler;
 
-#if defined(UI_VIEWS)
-class ConfigurationTreeDragDropControllerViews;
-#endif
-
 class ConfigurationTreeView : protected ControllerContext, public Controller {
  public:
   ConfigurationTreeView(
@@ -32,9 +28,6 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
   virtual void OnViewNodeCreated(const NodeRef& node) override;
   virtual std::optional<OpenContext> GetOpenContext() const override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
-#if defined(UI_VIEWS)
-  virtual views::DropController* GetDropController() override;
-#endif
 
  protected:
   ConfigurationTreeModel& model() const { return *model_; }
@@ -54,11 +47,6 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
   SelectionModel selection_{{timed_data_service_}};
 
   std::unique_ptr<ConfigurationTreeDropHandler> drop_handler_;
-
-#if defined(UI_VIEWS)
-  std::unique_ptr<ConfigurationTreeDragDropControllerViews>
-      drag_drop_controller_;
-#endif
 
   aui::Tree* tree_view_ = nullptr;
 };

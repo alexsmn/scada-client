@@ -7,10 +7,6 @@
 #include "controller_context.h"
 #include "selection_model.h"
 
-#if defined(UI_VIEWS)
-#include "ui/views/controls/grid/grid_controller.h"
-#endif
-
 namespace aui {
 class Grid;
 }
@@ -19,9 +15,6 @@ class NodeTableModel;
 
 class NodeTableController : protected ControllerContext,
                             public Controller,
-#if defined(UI_VIEWS)
-                            private views::GridController,
-#endif
                             public DataObject {
  public:
   NodeTableController(const ControllerContext& context,
@@ -35,15 +28,6 @@ class NodeTableController : protected ControllerContext,
   virtual NodeRef GetRootNode() const override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual bool IsWorking() const override;
-
- protected:
-#if defined(UI_VIEWS)
-  // GridController overrides
-  virtual bool OnKeyPressed(views::GridView& sender,
-                            ui::KeyboardCode key_code) override;
-  virtual void ShowHeaderContextMenu(gfx::Point point) override;
-  virtual void OnGridColumnClicked(views::GridView& sender, int index) override;
-#endif
 
  private:
   void SetSorting(const scada::NodeId& property_id);

@@ -28,34 +28,9 @@
 #include <wt/WLineEdit.h>
 #include <wt/WVBoxLayout.h>
 #pragma warning(pop)
-#elif defined(UI_VIEWS)
-#include "skia/ext/skia_utils_win.h"
-#include "ui/events/event.h"
-#include "ui/events/keycodes/keyboard_codes.h"
-#include "ui/views/controls/textfield/textfield.h"
 #endif
 
 const int kFormulaRowHeight = 20;
-
-// SheetController::ContentsView
-
-#if defined(UI_VIEWS)
-class SheetController::ContentsView : public views::View {
- public:
-  virtual void Layout() {
-    views::View* formula_row = child_at(0);
-    views::View* grid = child_at(1);
-
-    int y = 0;
-    if (formula_row->visible()) {
-      formula_row->SetBounds(0, 0, width(), kFormulaRowHeight);
-      y += kFormulaRowHeight;
-    }
-
-    grid->SetBounds(0, y, width(), std::max(0, height() - y));
-  }
-};
-#endif
 
 // SheetController
 
@@ -101,21 +76,6 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   contents_view_ = new Wt::WContainerWidget;
   contents_view_->setLayout(std::move(layout));
-
-#elif defined(UI_VIEWS)
-  formula_row_ = new views::Textfield;
-  //  formula_row_->set_show_border(false);
-  formula_row_->SetVisible(false);
-  formula_row_->SetController(this);
-
-  grid_->SetAllowDrag(true);
-  grid_->set_controller(this);
-  grid_->set_drop_controller(this);
-
-  contents_view_ = new ContentsView;
-  contents_view_->AddChildView(formula_row_);
-  contents_view_->AddChildView(grid_->CreateParentIfNecessary());
-  contents_view_->set_drop_controller(NULL);
 #endif
 
   grid_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
@@ -128,10 +88,6 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_EDIT}
           .set_execute_handler([this] {
-#if defined(UI_VIEWS)
-            if (model_->is_editing() && !grid_->CloseEditor(true))
-              return;
-#endif
             model_->SetEditing(!model_->is_editing());
             UpdateEditing();
           })
@@ -149,24 +105,6 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   return contents_view_;
 }
-
-#if defined(UI_VIEWS)
-void SheetController::OnGridGetAutocompleteList(
-    views::GridView& sender,
-    const std::u16string& text,
-    int& start,
-    std::vector<std::u16string>& list) {
-  if (text.empty() || text[0] != '=')
-    return;
-
-  // Remove '='.
-  std::u16string text2 = text.substr(1);
-  int start2 = start;
-  CompletePath(text2, start2, list);
-
-  start = start2 + 1;
-}
-#endif
 
 void SheetController::Save(WindowDefinition& definition) {
   model_->Save(definition);
@@ -189,10 +127,6 @@ void SheetController::UpdateEditing() {
   grid_->SetRowHeaderVisible(model_->is_editing());
 
   UpdateFormulaRow();
-
-#if defined(UI_VIEWS)
-  contents_view_->Layout();
-#endif
 }
 
 CommandHandler* SheetController::GetCommandHandler(unsigned command_id) {
@@ -219,8 +153,6 @@ void SheetController::ClearSelection() {
 void SheetController::UpdateFormulaRow() {
 #if defined(UI_QT)
   formula_row_->setVisible(model_->is_editing());
-#elif defined(UI_VIEWS)
-  formula_row_->SetVisible(model_->is_editing());
 #endif
 
   if (!model_->is_editing())
@@ -230,8 +162,6 @@ void SheetController::UpdateFormulaRow() {
 
 #if defined(UI_QT)
   formula_row_->setEnabled(!range.empty());
-#elif defined(UI_VIEWS)
-  formula_row_->SetEnabled(!range.empty());
 #endif
 
   std::u16string text;
@@ -243,8 +173,6 @@ void SheetController::UpdateFormulaRow() {
 
 #if defined(UI_QT)
   formula_row_->setText(QString::fromStdU16String(text));
-#elif defined(UI_VIEWS)
-  formula_row_->SetText(text);
 #endif
 }
 
@@ -255,8 +183,6 @@ void SheetController::OnFormulaEdited() {
 
 #if defined(UI_QT)
   const auto& text = formula_row_->text().toStdU16String();
-#elif defined(UI_VIEWS)
-  const auto& text = formula_row_->GetText();
 #elif defined(UI_WT)
   const auto& text = formula_row_->text();
 #endif
@@ -282,42 +208,6 @@ void SheetController::OnSelectionChanged() {
   }
 }
 
-#if defined(UI_VIEWS)
-bool SheetController::OnKeyPressed(views::GridView& sender,
-                                   aui::KeyboardCode key_code) {
-  switch (key_code) {
-    case aui::VKEY_DELETE:
-      if (!grid_->editing()) {
-        ClearSelection();
-        return true;
-      }
-      break;
-  }
-
-  return __super::OnKeyPressed(sender, key_code);
-}
-
-bool SheetController::OnDoubleClick() {
-  const SheetCell* cell =
-      model_->cell(grid_->selected_row(), grid_->selected_column());
-  if (!cell)
-    return false;
-
-  if (cell->is_blinking()) {
-    cell->timed_data().Acknowledge();
-    return true;
-  }
-
-  auto node = cell->timed_data().GetNode();
-  if (!node)
-    return false;
-
-  controller_delegate_.ExecuteDefaultNodeCommand(node);
-
-  return true;
-}
-#endif
-
 NodeIdSet SheetController::GetSelectedNodeIdList() {
   NodeIdSet result;
 
@@ -338,46 +228,3 @@ NodeIdSet SheetController::GetSelectedNodeIdList() {
 
   return result;
 }
-
-#if defined(UI_VIEWS)
-bool SheetController::CanDrop(const aui::OSExchangeData& data) {
-  if (!model_->is_editing())
-    return false;
-
-  ItemDragData item_data;
-  if (item_data.Load(data))
-    return true;
-
-  return false;
-}
-
-int SheetController::OnPerformDrop(const aui::DropTargetEvent& event) {
-  grid_->SetDropRange(aui::GridRange());
-
-  if (!model_->is_editing())
-    return aui::DragDropTypes::DRAG_NONE;
-
-  ItemDragData item_data;
-  if (item_data.Load(event.data())) {
-    int row = 0, col = 0;
-    if (grid_->GetCellAt(event.location(), row, col)) {
-      SheetCell& cell = model_->GetCell(row, col);
-      cell.SetFormula(
-          u'=' + base::UTF8ToUTF16(MakeNodeIdFormula(item_data.item_id())));
-      return aui::DragDropTypes::DRAG_COPY;
-    }
-  }
-
-  return aui::DragDropTypes::DRAG_NONE;
-}
-
-void SheetController::ContentsChanged(views::Textfield* sender,
-                                      const std::u16string& new_contents) {
-  DCHECK(sender == formula_row_);
-  DCHECK(model_->is_editing());
-  DCHECK(grid_->selected_row() != -1 && grid_->selected_column() != -1);
-
-  model_->GetCell(grid_->selected_row(), grid_->selected_column())
-      .SetFormula(new_contents);
-}
-#endif

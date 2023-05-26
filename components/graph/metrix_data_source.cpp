@@ -6,8 +6,6 @@
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_types.h"
-#elif defined(UI_VIEWS)
-#include "ui/base/models/graph_data_source.h"
 #endif
 
 // MetrixPointEnum
@@ -240,9 +238,5 @@ void MetrixDataSource::OnPropertyChanged(const PropertySet& properties) {
 #if defined(UI_QT)
 QString MetrixDataSource::GetYAxisLabel(double value) const {
   return QString::fromStdU16String(timed_data_.GetValueString(value, {}));
-}
-#elif defined(UI_VIEWS)
-std::u16string MetrixDataSource::GetYAxisLabel(double value) const {
-  return timed_data_.GetValueString(value, {});
 }
 #endif

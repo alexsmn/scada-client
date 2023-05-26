@@ -6,12 +6,6 @@
 #include <cassert>
 #include <optional>
 
-#if defined(UI_VIEWS)
-namespace views {
-class DropController;
-}
-#endif
-
 class CommandHandler;
 class ContentsModel;
 class ExportModel;
@@ -43,10 +37,6 @@ class Controller {
   virtual TimeModel* GetTimeModel() { return nullptr; }
 
   virtual ExportModel* GetExportModel() { return nullptr; }
-
-#if defined(UI_VIEWS)
-  virtual views::DropController* GetDropController() { return nullptr; }
-#endif
 
   // View root node for creation.
   virtual NodeRef GetRootNode() const { return nullptr; }

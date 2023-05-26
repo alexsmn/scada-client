@@ -15,8 +15,6 @@
 
 #if defined(UI_QT)
 #include "controls/qt/grid.h"
-#elif defined(UI_VIEWS)
-#include "ui/views/controls/textfield/combo_textfield.h"
 #endif
 
 namespace {
@@ -67,12 +65,6 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   grid_->SetRowHeaderVisible(true);
   grid_->SetColumnHeaderHeight(19);
   grid_->SetRowHeaderWidth(70);
-
-#if defined(UI_VIEWS)
-  // grid_->set_controller(this);
-  grid_->set_allow_column_select(true);
-  grid_->SelectCell(0, 0, true);
-#endif
 
   grid_->SetSelectionChangeHandler([this] {
     auto rows = grid_->GetSelectedRows();
@@ -141,37 +133,6 @@ CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
 NodeRef NodeTableController::GetRootNode() const {
   return model_->parent_node();
 }
-
-#if defined(UI_VIEWS)
-bool NodeTableController::OnKeyPressed(views::GridView& sender,
-                                       ui::KeyboardCode key_code) {
-  // Clear selection when Delete is pressed.
-  if (key_code == ui::VKEY_DELETE && !grid_->editing()) {
-    ui::GridRange range = grid_->GetSelectionRange();
-    if (!range.empty()) {
-      for (int row = range.row(); row <= range.last_row(); row++)
-        for (int col = range.column(); col <= range.last_column(); col++)
-          model_->SetCellText(row, col, std::u16string());
-      return true;
-    }
-  }
-
-  return false;
-}
-
-void NodeTableController::ShowHeaderContextMenu(gfx::Point point) {
-  __super::ShowHeaderContextMenu(point);
-
-  // TODO: Doesn't work.
-}
-
-void NodeTableController::OnGridColumnClicked(views::GridView& sender,
-                                              int index) {
-  __super::OnGridColumnClicked(sender, index);
-
-  // TODO: Doesn't work.
-}
-#endif
 
 void NodeTableController::SetSorting(const scada::NodeId& property_id) {
   profile_.node_table.default_sort_property_id = property_id;

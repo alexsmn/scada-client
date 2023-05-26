@@ -32,10 +32,6 @@ class MockController : public Controller {
 
   MOCK_METHOD(ExportModel*, GetExportModel, (), (override));
 
-#if defined(UI_VIEWS)
-  MOCK_METHOD(views::DropController*, GetDropController, (), (override));
-#endif
-
   // View root node for creation.
   MOCK_METHOD(NodeRef, GetRootNode, (), (const override));
 

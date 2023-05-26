@@ -6,9 +6,6 @@
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_data_source.h"
-#elif defined(UI_VIEWS)
-#include "ui/base/models/graph_data_source.h"
-#include "ui/base/models/graph_types.h"
 #endif
 
 #include <memory>
@@ -39,8 +36,6 @@ class MetrixDataSource : public views::GraphDataSource {
                                              bool include_right_bound);
 #if defined(UI_QT)
   virtual QString GetYAxisLabel(double value) const;
-#elif defined(UI_VIEWS)
-  virtual std::u16string GetYAxisLabel(double value) const;
 #endif
 
  protected:

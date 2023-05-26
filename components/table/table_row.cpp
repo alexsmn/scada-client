@@ -13,11 +13,7 @@
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
 
-#ifdef UI_VIEWS
-const int kValueFormat = FORMAT_DEFAULT | FORMAT_COLOR;
-#else
 const int kValueFormat = FORMAT_DEFAULT;
-#endif
 
 namespace {
 

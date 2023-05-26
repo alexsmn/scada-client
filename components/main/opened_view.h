@@ -7,11 +7,6 @@
 #include "controls/types.h"
 #include "window_definition.h"
 
-#if defined(UI_VIEWS)
-#include "ui/gfx/image/image.h"
-#include "ui/views/drop_controller.h"
-#endif
-
 #include <memory>
 #include <string>
 
@@ -40,9 +35,6 @@ struct OpenedViewContext {
 };
 
 class OpenedView : private OpenedViewContext,
-#if defined(UI_VIEWS)
-                   public views::DropController,
-#endif
                    private ControllerDelegate {
  public:
   explicit OpenedView(OpenedViewContext&& context);
@@ -61,10 +53,6 @@ class OpenedView : private OpenedViewContext,
   UiView* view() { return view_.get(); }
   UiView* ReleaseView() { return view_.release(); }
 
-#if defined(UI_VIEWS)
-  const gfx::Image& image() const { return image_; }
-#endif
-
   void Print(PrintService& print_service);
 
   void Activate();
@@ -74,15 +62,6 @@ class OpenedView : private OpenedViewContext,
   void Save();
   std::u16string GetWindowTitle() const;
   virtual void Close() override;
-
-#if defined(UI_VIEWS)
-  // views::DropController
-  virtual bool CanDrop(const ui::OSExchangeData& data) override;
-  virtual void OnDragEntered(const ui::DropTargetEvent& event) override;
-  virtual int OnDragUpdated(const ui::DropTargetEvent& event) override;
-  virtual void OnDragDone() override;
-  virtual int OnPerformDrop(const ui::DropTargetEvent& event) override;
-#endif
 
   // ControllerDelegate
   // TODO: Move to private.
@@ -116,10 +95,6 @@ class OpenedView : private OpenedViewContext,
   ExecutorTimer update_working_timer_;
 
   std::unique_ptr<UiView> view_;
-
-#if defined(UI_VIEWS)
-  gfx::Image image_;
-#endif
 
   // TODO: Next members should be out of this class.
 

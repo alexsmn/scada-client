@@ -10,12 +10,6 @@
 #if defined(UI_QT)
 #include "graph_qt/graph_axis.h"
 #include "graph_qt/graph_cursor.h"
-#elif defined(UI_VIEWS)
-#include "skia/ext/skia_utils_win.h"
-#include "ui/gfx/canvas.h"
-#include "ui/gfx/font.h"
-#include "ui/views/controls/graph/graph_axis.h"
-#include "ui/views/controls/graph/graph_cursor.h"
 #endif
 
 #include <algorithm>
@@ -155,11 +149,7 @@ int MetrixGraph::Legend::GetColumnCount() const {
 }
 
 void MetrixGraph::Legend::Update() {
-#if defined(UI_VIEWS)
-  gfx::Size size = GetPreferredSize();
-  SetBoundsRect(gfx::Rect(location(), size));
-
-#elif defined(UI_QT)
+#if defined(UI_QT)
   title_width_ = 0;
   for (auto i = plot().lines().begin(); i != plot().lines().end(); ++i) {
     MetrixLine& line = static_cast<MetrixLine&>(**i);
@@ -196,56 +186,6 @@ void MetrixGraph::Legend::paintEvent(QPaintEvent* e) {
     top += ROW;
   }
 }
-#elif defined(UI_VIEWS)
-void MetrixGraph::Legend::OnPaint(gfx::Canvas* canvas) {
-  MetrixGraph& graph = pane().graph();
-
-  //	dc.Rectangle(rect.left, rect.top, rect.right + 1, rect.bottom + 1);
-
-  int top = MARGY;
-  for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-       i != plot().lines().end(); i++) {
-    MetrixLine& line = static_cast<MetrixLine&>(**i);
-
-    gfx::Rect box(MARGX, top + 3, ROW - 6, ROW - 6);
-
-    //		CBrush brush;
-    //		brush.CreateSolidBrush(line.color);
-    //		dc.FillRect(&box, brush);
-
-    scada::DataValue value;
-    const views::GraphCursor* cursor = graph.selected_cursor();
-    if (cursor && cursor->axis_->is_vertical()) {
-      base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
-      value = line.data_source().timed_data().GetValueAt(cursor_time);
-    } else {
-      value = line.data_source().timed_data().current();
-    }
-
-    // Draw title.
-    const auto& title = line.data_source().title();
-    int p = box.x() + box.width() + 3;
-    gfx::Rect rc(p, top, std::max(0, title_width_ - p), ROW);
-    canvas->DrawString(title, graph.font_, SK_ColorBLACK, rc,
-                       DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-
-    // Draw value.
-    auto text = u"= " + line.data_source().timed_data().GetValueString(
-                            value.value, value.qualifier);
-    rc = gfx::Rect(title_width_, top, 80, ROW);
-    canvas->DrawString(text, graph.font_, SK_ColorBLACK, rc,
-                       DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-
-    // Draw time.
-    std::string time_text = FormatTime(value.source_timestamp);
-    p = title_width_ + 80;
-    rc = gfx::Rect(p, top, std::max(0, width() - MARGX - p), ROW);
-    canvas->DrawString(time_text, graph.font_, SK_ColorBLACK, rc,
-                       DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-
-    top += ROW;
-  }
-}
 #endif
 
 #if defined(UI_QT)
@@ -258,28 +198,6 @@ QSize MetrixGraph::Legend::sizeHint() const {
   int total_height = MARGY * 2 + plot().lines().size() * ROW;
 
   return QSize{total_width, total_height};
-}
-
-#elif defined(UI_VIEWS)
-gfx::Size MetrixGraph::Legend::GetPreferredSize() const {
-  MetrixGraph& graph = pane().graph();
-
-  int width = 30;
-
-  for (views::GraphPlot::Lines::const_iterator i = plot().lines().begin();
-       i != plot().lines().end(); ++i) {
-    MetrixLine& line = static_cast<MetrixLine&>(**i);
-    const auto& title = line.data_source().title();
-    gfx::Size size = gfx::Canvas::GetStringSize(title, graph.font_);
-    if (size.width() > width)
-      width = size.width();
-  }
-  width += MARGX * 2 + ROW - 6 + 5;
-  int height = plot().lines().empty() ? ROW : ROW * plot().lines().size();
-  height += 2 * MARGY;
-
-  const_cast<Legend*>(this)->title_width_ = width;
-  return gfx::Size(width + 80 + 150, height);
 }
 #endif
 
@@ -358,8 +276,6 @@ void MetrixGraph::UpdateCurBox() {
     if (pane.legend_.get()) {
 #if defined(UI_QT)
       pane.legend_->update();
-#elif defined(UI_VIEWS)
-      pane.legend_->SchedulePaint();
 #endif
     }
   }

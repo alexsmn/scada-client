@@ -37,10 +37,6 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   grid_->SetRowHeaderWidth(15);
   grid_->SetExpandAllowed(true);
 
-#if defined(UI_VIEWS)
-  grid_->set_allow_row_select(true);
-#endif
-
   command_registry_.AddCommand(
       Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 

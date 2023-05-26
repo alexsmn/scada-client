@@ -10,13 +10,6 @@
 #include "node_service/node_service.h"
 #include "services/profile.h"
 
-#if defined(UI_VIEWS)
-#include "base/color_string.h"
-#include "skia/ext/skia_utils_win.h"
-#include "ui/base/resource/resource_bundle.h"
-#include "ui/gfx/canvas.h"
-#endif
-
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{
           context,
@@ -67,10 +60,6 @@ ObjectTreeView::~ObjectTreeView() {
   controller_delegate_.RemoveContentsObserver(*this);
 
   model().RemoveObserver(*this);
-
-#if defined(UI_VIEWS)
-  tree_view().set_custom_painter(NULL);
-#endif
 }
 
 ObjectTreeModel& ObjectTreeView::model() {

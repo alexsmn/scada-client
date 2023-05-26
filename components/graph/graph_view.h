@@ -10,10 +10,6 @@
 #include "selection_model.h"
 #include "time_model.h"
 
-#if defined(UI_VIEWS)
-#include "ui/views/context_menu_controller.h"
-#endif
-
 struct TimeRange;
 
 class GraphView : protected ControllerContext,

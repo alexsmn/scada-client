@@ -30,10 +30,6 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(IDR_FAVOR_POPUP, point, true);
   });
 
-#if defined(UI_VIEWS)
-  tree_view_->SetEditable(true);
-#endif
-
   open_command_.enabled_handler = [this] {
     auto* node =
         static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());

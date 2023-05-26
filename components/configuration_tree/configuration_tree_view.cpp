@@ -9,10 +9,6 @@
 #include "node_service/node_util.h"
 #include "window_definition.h"
 
-#if defined(UI_VIEWS)
-#include "components/configuration_tree/views/configuration_tree_drag_drop_controller_views.h"
-#endif
-
 namespace {
 
 int CompareNodes(const NodeRef& a, const NodeRef& b) {
@@ -73,17 +69,6 @@ ConfigurationTreeView::ConfigurationTreeView(
     return action;
   });
 
-#if defined(UI_VIEWS)
-  drag_drop_controller_ =
-      std::make_unique<ConfigurationTreeDragDropControllerViews>(
-          *tree_view_, *drop_handler_, session_service_);
-
-  tree_view_->SetDragHandler(
-      [drop_controller = drag_drop_controller_.get()](void* node) {
-        drop_controller->StartDrag(node);
-      });
-#endif
-
   tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
   });
@@ -97,12 +82,6 @@ UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
 
   return tree_view_;
 }
-
-#if defined(UI_VIEWS)
-views::DropController* ConfigurationTreeView::GetDropController() {
-  return drag_drop_controller_.get();
-}
-#endif
 
 void ConfigurationTreeView::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = tree_view_->SaveState();
