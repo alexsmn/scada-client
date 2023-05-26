@@ -284,8 +284,7 @@ void MainWindow::CloseView(OpenedView& view) {
   if (view_manager_->is_closing_page())
     return;
 
-  if (view.controller().CanClose())
-    view_manager_->CloseView(view);
+  view_manager_->CloseView(view);
 }
 
 void MainWindow::SetPageTitle(const std::u16string& title) {

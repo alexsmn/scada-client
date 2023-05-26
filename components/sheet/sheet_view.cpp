@@ -172,16 +172,6 @@ void SheetController::Save(WindowDefinition& definition) {
   model_->Save(definition);
 }
 
-bool SheetController::CanClose() const {
-  /*if (AtlMessageBox(m_hWnd, _T("Закрытие окна приведет к потере таблицы.
-  Продолжить?"), (LPCTSTR)frame->GetTitle(),
-  MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2) == IDNO) {
-  // cancel close
-  return FALSE;
-  }*/
-  return true;
-}
-
 void SheetController::AddContainedItem(const scada::NodeId& node_id,
                                        unsigned flags) {
   const auto& current_index = grid_->GetCurrentIndex();

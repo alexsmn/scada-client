@@ -27,7 +27,6 @@ class Controller {
 
   virtual UiView* Init(const WindowDefinition& definition) = 0;
 
-  virtual bool CanClose() const { return true; }
   virtual bool IsWorking() const { return false; }
 
   virtual void Save(WindowDefinition& definition) {}

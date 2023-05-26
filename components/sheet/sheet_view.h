@@ -52,7 +52,6 @@ class SheetController : protected ControllerContext,
   explicit SheetController(const ControllerContext& context);
 
   // Controller
-  virtual bool CanClose() const override;
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
@@ -74,8 +73,6 @@ class SheetController : protected ControllerContext,
 #endif
 
  private:
-  friend class SheetCell;
-
   class ContentsView;
 
   void UpdateEditing();
@@ -123,4 +120,6 @@ class SheetController : protected ControllerContext,
   aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
+
+  friend class SheetCell;
 };

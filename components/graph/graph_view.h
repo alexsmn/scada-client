@@ -29,7 +29,6 @@ class GraphView : protected ControllerContext,
 
   // Controller methods
   virtual bool IsWorking() const override;
-  virtual bool CanClose() const override;
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;

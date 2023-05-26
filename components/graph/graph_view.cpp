@@ -240,10 +240,6 @@ std::u16string GraphView::MakeTitle() const {
   return line ? line->data_source().title() : u"Нет объекта";
 }
 
-bool GraphView::CanClose() const {
-  return true;
-}
-
 bool GraphView::IsWorking() const {
   for (auto* pane : graph_->panes()) {
     for (auto* graph_line : pane->plot().lines()) {
