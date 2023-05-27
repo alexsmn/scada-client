@@ -15,16 +15,18 @@ ContextMenuModel::ContextMenuModel(MainWindow& main_window,
 void AddMenuActions(aui::SimpleMenuModel& menu,
                     const ActionList& actions,
                     OpenedView* view) {
-  for (ActionList::const_iterator j = actions.begin(); j != actions.end();
-       ++j) {
-    const Action& action = **j;
+  for (const auto* action : actions) {
     // Item state is updated on WM_INIMENUPOPUP.
     /*    UINT state = 0;
         if (!view.IsCommandEnabled(action.command_id()))
           state |= MFS_DISABLED;
         if (view.IsCommandChecked(action.command_id()))
           state |= MFS_CHECKED;*/
-    menu.AddItem(action.command_id(), action.GetTitle());
+    if (action->checkable()) {
+      menu.AddCheckItem(action->command_id(), action->GetTitle());
+    } else {
+      menu.AddItem(action->command_id(), action->GetTitle());
+    }
   }
 }
 
@@ -33,7 +35,7 @@ void ContextMenuModel::Rebuild() {
   submenus_.clear();
 
   std::vector<unsigned> all_commands;
-  for (auto* action : action_manager_.actions()) {
+  for (const auto* action : action_manager_.actions()) {
     if (main_window_.active_view() &&
         main_window_.active_view()->commands->GetCommandHandler(
             action->command_id())) {
@@ -44,7 +46,7 @@ void ContextMenuModel::Rebuild() {
   auto grouped_commands = GroupCommands(action_manager_, all_commands);
 
   bool separated = true;
-  for (auto& [category, commands] : grouped_commands) {
+  for (const auto& [category, commands] : grouped_commands) {
     if (!separated) {
       AddSeparator(aui::NORMAL_SEPARATOR);
       separated = true;

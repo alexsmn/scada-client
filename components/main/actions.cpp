@@ -151,7 +151,8 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(*new Action(ID_SETUP, CATEGORY_SETUP, u"Опции"));
   action_manager.AddAction(*new Action(ID_PRINT, CATEGORY_SETUP, u"Печать",
                                        std::u16string(), IDB_PRINTER));
-  action_manager.AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, u"Правка"));
+  action_manager.AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, u"Правка"))
+      .set_checkable(true);
 
   action_manager.AddAction(
       *new Action(ID_EXPORT_CSV, CATEGORY_EXPORT, u"Экспорт в CSV"));
