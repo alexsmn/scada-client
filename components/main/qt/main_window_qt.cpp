@@ -100,7 +100,8 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
   setGeometry(bounds.x, bounds.y, bounds.width, bounds.height);
 
-  view_manager_.reset(new ViewManagerQt{*this, *this});
+  view_manager_ = std::make_unique<ViewManagerQt>(
+      *this, *static_cast<ViewManagerDelegate*>(this));
 
   dialog_service_.parent_widget = this;
 

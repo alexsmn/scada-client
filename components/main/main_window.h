@@ -1,9 +1,6 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "base/observer_list.h"
-#include "common/aliases.h"
-#include "components/main/action_manager.h"
 #include "components/main/main_window_context.h"
 #include "components/main/view_manager_delegate.h"
 #include "contents_observer.h"
@@ -12,14 +9,9 @@ namespace aui {
 class MenuModel;
 }
 
-namespace base {
-class FilePath;
-}
-
 class ContentsObserver;
 class DialogService;
 class MainCommands;
-class MainMenuModel;
 class OpenedView;
 class Page;
 class ViewManager;
