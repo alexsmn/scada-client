@@ -61,7 +61,8 @@ set_property(TARGET client_wt PROPERTY OUTPUT_NAME "webserver")
 # UT-s
 
 add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
-target_link_libraries(client_wt_unittests PUBLIC client_wt_lib base_unittest)
+# Uses the custom runner from `test/wt/test_main_wt.cpp`.
+target_link_libraries(client_wt_unittests PUBLIC client_wt_lib base_unittest Wt::Test)
 include(GoogleTest)
 gtest_discover_tests(client_wt_unittests)
 set_property(TARGET client_wt_unittests PROPERTY FOLDER ${client_folder})
