@@ -258,8 +258,10 @@ void LoginController::Connect(bool allow_remote_logoff) {
 
   scada::BindStatusCallback(
       services_.session_service_->Connect(
-          server_host, scada::ToLocalizedText(user_name),
-          scada::ToLocalizedText(password), allow_remote_logoff),
+          {.host = server_host,
+           .user_name = scada::ToLocalizedText(user_name),
+           .password = scada::ToLocalizedText(password),
+           .allow_remote_logoff = allow_remote_logoff}),
       [this](const scada::Status& status) { OnLoginResult(status); });
 }
 

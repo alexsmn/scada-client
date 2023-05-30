@@ -40,6 +40,7 @@
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
 #include "project.h"
+#include "remote/remote_services.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
@@ -62,14 +63,12 @@
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
-extern bool CreateScadaServices(const DataServicesContext& context,
-                                DataServices& services);
 extern bool CreateOpcUaServices(const DataServicesContext& context,
                                 DataServices& services);
 
 REGISTER_DATA_SERVICES("Scada",
                        u"Телеконтроль",
-                       CreateScadaServices,
+                       CreateRemoteServices,
                        "localhost");
 REGISTER_DATA_SERVICES("OpcUa",
                        u"OPC UA",
