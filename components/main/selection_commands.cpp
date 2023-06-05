@@ -209,7 +209,7 @@ void RegisterOpenViewCommand(SelectionCommands& selection_commands,
                              const WindowInfo& window_info) {
   command_registry.AddCommand(
       Command{command_id}
-          .set_execute_handler([&selection_commands, &window_info, command_id] {
+          .set_execute_handler([&selection_commands, &window_info] {
             ::OpenView(
                 selection_commands.main_window(),
                 selection_commands.GetOpenWindowDefinition(&window_info));
@@ -622,8 +622,10 @@ void SelectionCommands::CopyToClipboard() {
 
 promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
     const WindowInfo* window_info) const {
-  if (auto open_context = controller_->GetOpenContext())
-    return MakeWindowDefinition(window_info, *open_context);
+  if (auto open_context = controller_->GetOpenContext();
+      open_context.has_value()) {
+    return MakeWindowDefinition(window_info, open_context.value());
+  }
 
   if (selection_->multiple()) {
     auto title = selection_->GetTitle();
