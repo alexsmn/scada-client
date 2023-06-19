@@ -11,23 +11,8 @@
 #include "services/profile.h"
 
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
-    : ConfigurationTreeView{
-          context,
-          std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
-              context.executor_,
-              context.node_service_,
-              context.node_service_.GetNode(data_items::id::DataItems),
-              context.timed_data_service_,
-              context.profile_,
-              context.blinker_manager_,
-          }),
-          std::make_unique<ConfigurationTreeDropHandler>(
-              ConfigurationTreeDropHandlerContext{
-                  context.node_service_,
-                  context.task_manager_,
-                  context.create_tree_,
-              }),
-      } {
+    : ConfigurationTreeView{context, CreateConfigurationTreeModel(context),
+                            CreateTreeDropHandler(context)} {
   tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);
 
@@ -60,6 +45,29 @@ ObjectTreeView::~ObjectTreeView() {
   controller_delegate_.RemoveContentsObserver(*this);
 
   model().RemoveObserver(*this);
+}
+
+// static
+std::shared_ptr<ConfigurationTreeModel>
+ObjectTreeView::CreateConfigurationTreeModel(const ControllerContext& context) {
+  auto model = std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
+      context.executor_,
+      context.node_service_,
+      context.node_service_.GetNode(data_items::id::DataItems),
+      context.timed_data_service_,
+      context.profile_,
+      context.blinker_manager_,
+  });
+  model->Init();
+  return model;
+}
+
+// static
+std::unique_ptr<ConfigurationTreeDropHandler>
+ObjectTreeView::CreateTreeDropHandler(const ControllerContext& context) {
+  return std::make_unique<ConfigurationTreeDropHandler>(
+      ConfigurationTreeDropHandlerContext{
+          context.node_service_, context.task_manager_, context.create_tree_});
 }
 
 ObjectTreeModel& ObjectTreeView::model() {

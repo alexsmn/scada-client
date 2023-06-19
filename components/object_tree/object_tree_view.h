@@ -29,4 +29,10 @@ class ObjectTreeView : public ConfigurationTreeView,
   virtual void OnContentsChanged(const NodeIdSet& node_ids) override;
   virtual void OnContainedItemChanged(const scada::NodeId& item_id,
                                       bool added) override;
+
+  static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
+      const ControllerContext& context);
+
+  static std::unique_ptr<ConfigurationTreeDropHandler> CreateTreeDropHandler(
+      const ControllerContext& context);
 };

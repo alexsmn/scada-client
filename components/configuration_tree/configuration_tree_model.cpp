@@ -23,7 +23,9 @@ inline bool DoesChildExist(base::span<const NodeServiceTree::ChildRef> children,
 
 ConfigurationTreeModel::ConfigurationTreeModel(
     ConfigurationTreeModelContext&& context)
-    : ConfigurationTreeModelContext{std::move(context)} {
+    : ConfigurationTreeModelContext{std::move(context)} {}
+
+void ConfigurationTreeModel::Init() {
   node_service_tree_->SetObserver(this);
 
   auto root_node = node_service_tree_->GetRoot();

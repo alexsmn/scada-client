@@ -9,24 +9,32 @@
 class NodesView : public ConfigurationTreeView {
  public:
   explicit NodesView(const ControllerContext& context)
-      : ConfigurationTreeView{
-            context,
-            std::make_shared<ConfigurationTreeModel>(
-                ConfigurationTreeModelContext{
-                    std::make_unique<NodeServiceTreeImpl>(
-                        NodeServiceTreeImplContext{
-                            context.executor_,
-                            context.node_service_,
-                            context.node_service_.GetNode(
-                                scada::id::RootFolder),
-                            {{scada::id::HierarchicalReferences, true}},
-                            {}}),
-                }),
-            std::make_unique<ConfigurationTreeDropHandler>(
-                ConfigurationTreeDropHandlerContext{
-                    context.node_service_,
-                    context.task_manager_,
-                    context.create_tree_,
-                }),
-        } {}
+      : ConfigurationTreeView{context, CreateConfigurationTreeModel(context),
+                              CreateConfigurationTreeDropHandler(context)} {}
+
+ private:
+  static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
+      const ControllerContext& context) {
+    auto node_service_tree =
+        std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+            .executor_ = context.executor_,
+            .node_service_ = context.node_service_,
+            .root_node_ = context.node_service_.GetNode(scada::id::RootFolder),
+            .reference_filter_ = {{scada::id::HierarchicalReferences, true}}});
+    auto model =
+        std::make_shared<ConfigurationTreeModel>(ConfigurationTreeModelContext{
+            .node_service_tree_ = std::move(node_service_tree)});
+    model->Init();
+    return model;
+  }
+
+  static std::unique_ptr<ConfigurationTreeDropHandler>
+  CreateConfigurationTreeDropHandler(const ControllerContext& context) {
+    return std::make_unique<ConfigurationTreeDropHandler>(
+        ConfigurationTreeDropHandlerContext{
+            context.node_service_,
+            context.task_manager_,
+            context.create_tree_,
+        });
+  }
 };

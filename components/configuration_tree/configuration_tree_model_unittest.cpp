@@ -46,6 +46,7 @@ void ConfigurationTreeModelTest::InitModel(
 
   model_ = std::make_unique<ConfigurationTreeModel>(
       ConfigurationTreeModelContext{std::move(node_service_tree)});
+  model_->Init();
 
   EXPECT_TRUE(model_->root_node() == root_node_);
 }

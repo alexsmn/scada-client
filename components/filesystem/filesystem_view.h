@@ -19,8 +19,8 @@ class FileSystemView : public ConfigurationTreeView {
  private:
   static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
       const ControllerContext& context) {
-    return std::make_shared<ConfigurationTreeModel>(
-        ConfigurationTreeModelContext{
+    auto model =
+        std::make_shared<ConfigurationTreeModel>(ConfigurationTreeModelContext{
             std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
                 .executor_ = context.executor_,
                 .node_service_ = context.node_service_,
@@ -28,6 +28,8 @@ class FileSystemView : public ConfigurationTreeView {
                     context.node_service_.GetNode(filesystem::id::FileSystem),
                 .reference_filter_ = {{scada::id::Organizes, true}},
                 .leaf_type_definition_ids_ = {filesystem::id::FileType}})});
+    model->Init();
+    return model;
   }
 
   static std::unique_ptr<ConfigurationTreeDropHandler>

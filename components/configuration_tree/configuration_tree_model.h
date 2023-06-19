@@ -21,6 +21,9 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
   explicit ConfigurationTreeModel(ConfigurationTreeModelContext&& context);
   virtual ~ConfigurationTreeModel();
 
+  // Init must be separate from constructor because it calls virtual methods.
+  void Init();
+
   const NodeRef& root_node() const { return root()->node(); }
 
   ConfigurationTreeNode* FindTreeNode(const scada::NodeId& node_id,
