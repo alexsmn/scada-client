@@ -118,6 +118,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
   // Graph
   virtual void UpdateCurBox() override;
+  virtual QString GetXAxisLabel(double val) const override;
 
   bool m_time_fit = true;
 
