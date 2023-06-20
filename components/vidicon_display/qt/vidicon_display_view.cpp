@@ -11,11 +11,11 @@
 #include <QUuid>
 #include <wrl/client.h>
 
-//#import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"
-// raw_interfaces_only #import "c:\Program
-// Files\Telecontrol\Vidicon\Bin\\TeleClient.dll" raw_interfaces_only #import
+// #import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"
+//  raw_interfaces_only #import "c:\Program
+//  Files\Telecontrol\Vidicon\Bin\\TeleClient.dll" raw_interfaces_only #import
 //"c:\Program Files\Telecontrol\Vidicon\Bin\\DisplayViewerX.ocx"
-// raw_interfaces_only
+//  raw_interfaces_only
 
 namespace {
 
@@ -80,9 +80,9 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
     std::filesystem::path full_path = GetPublicFilePath(path_);
     form_->put_FileName(base::win::ScopedBstr(full_path.wstring()));
 
-    /*synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
+    synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),
                              base::Bind(&VidiconDisplayView::SynchronizeView,
-                                        base::Unretained(this)));*/
+                                        base::Unretained(this)));
   }
 
   ax_widget_ = ax_widget.get();
@@ -95,7 +95,7 @@ void VidiconDisplayView::Save(WindowDefinition& definition) {
 
 void VidiconDisplayView::SynchronizeView() {
   // TODO.
-  // HWND form_window = ::GetWindow((HWND)(ax_widget_->winId()), GW_CHILD);
-  // if (::IsWindow(form_window))
-  //  ::PostMessage(form_window, WM_ENTERIDLE, 0, 0);
+  HWND form_window = ::GetWindow((HWND)(ax_widget_->winId()), GW_CHILD);
+  if (::IsWindow(form_window))
+    ::PostMessage(form_window, WM_ENTERIDLE, 0, 0);
 }

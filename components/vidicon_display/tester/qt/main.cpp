@@ -20,10 +20,12 @@ int main(int argc, char* argv[]) {
   VidiconDisplayView vidicon_display_view;
 
   WindowDefinition definition{kVidiconDisplayWindowInfo};
-  definition.path = "pribilov.vds";
+  definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
   auto* widget = vidicon_display_view.Init(definition);
   widget->resize(1000, 500);
   widget->show();
 
-  return qapp.exec();
+  QObject::connect(widget, &QWidget::close, widget, &QWidget::deleteLater);
+
+  return QApplication::exec();
 }
