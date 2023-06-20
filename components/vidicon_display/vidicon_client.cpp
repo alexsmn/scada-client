@@ -1,8 +1,8 @@
 #include "components/vidicon_display/vidicon_client.h"
 
-#include "components/vidicon_display/com_data_point_manager.h"
-#include "components/vidicon_display/com_teleclient_impl.h"
-#include "components/vidicon_display/data_point_manager.h"
+#include "components/vidicon_display/teleclient/com_data_point_manager.h"
+#include "components/vidicon_display/teleclient/com_teleclient_impl.h"
+#include "components/vidicon_display/teleclient/data_point_manager.h"
 
 #include <cassert>
 

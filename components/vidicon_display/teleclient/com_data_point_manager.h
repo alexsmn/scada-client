@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/vidicon_display/com_data_point_impl.h"
+#include "components/vidicon_display/teleclient/com_data_point_impl.h"
 
 #include <functional>
 #include <mutex>

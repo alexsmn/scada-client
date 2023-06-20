@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/vidicon_display/teleclient.h"
+#include "components/vidicon_display/teleclient/teleclient.h"
 
 #include <memory>
 #include <wrl/client.h>

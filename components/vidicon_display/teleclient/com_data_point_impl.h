@@ -1,7 +1,7 @@
 #pragma once
 
-#include "components/vidicon_display/data_point.h"
-#include "components/vidicon_display/teleclient.h"
+#include "components/vidicon_display/teleclient/data_point.h"
+#include "components/vidicon_display/teleclient/teleclient.h"
 
 #include <atlbase.h>
 
