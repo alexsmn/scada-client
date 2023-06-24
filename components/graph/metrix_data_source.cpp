@@ -240,3 +240,13 @@ QString MetrixDataSource::GetYAxisLabel(double value) const {
   return QString::fromStdU16String(timed_data_.GetValueString(value, {}));
 }
 #endif
+
+void MetrixDataSource::SetCurrentValue(double value) {
+  if (current_value_ == value)
+    return;
+
+  current_value_ = value;
+
+  if (observer_)
+    observer_->OnDataSourceCurrentValueChanged();
+}

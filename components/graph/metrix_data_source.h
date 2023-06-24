@@ -29,14 +29,18 @@ class MetrixDataSource : public views::GraphDataSource {
 
   bool XToData(double& x, scada::DataValue& val) const;
 
+  void SetCurrentValue(double value);
+
   // views::GraphDataSource
+  virtual double GetCurrentValue() const override { return current_value_; };
   virtual views::PointEnumerator* EnumPoints(double from,
                                              double to,
                                              bool include_left_bound,
-                                             bool include_right_bound);
+                                             bool include_right_bound) override;
 #if defined(UI_QT)
-  virtual QString GetYAxisLabel(double value) const;
+  virtual QString GetYAxisLabel(double value) const override;
 #endif
+  virtual views::GraphRange GetVerticalRange() const override { return range_; }
 
  protected:
   void OnItemChanged();
@@ -46,6 +50,9 @@ class MetrixDataSource : public views::GraphDataSource {
   void UpdateLimits();
 
   void OnPropertyChanged(const PropertySet& properties);
+
+  views::GraphRange range_;
+  double current_value_ = views::kGraphUnknownValue;
 
   TimedDataSpec timed_data_;
   std::u16string title_;
