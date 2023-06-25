@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/cancelation.h"
 #include "common/node_state.h"
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_spec.h"
@@ -40,6 +41,7 @@ class MetrixDataSource : public views::GraphDataSource {
 #if defined(UI_QT)
   virtual QString GetYAxisLabel(double value) const override;
 #endif
+  virtual views::GraphRange GetHorizontalRange() const override;
   virtual views::GraphRange GetVerticalRange() const override { return range_; }
 
  protected:
@@ -49,6 +51,9 @@ class MetrixDataSource : public views::GraphDataSource {
   void UpdateRange();
   void UpdateLimits();
 
+  void ScheduleUpdateEarliestTimestamp();
+  void SetEarliestTimestamp(scada::DateTime timestamp);
+
   void OnPropertyChanged(const PropertySet& properties);
 
   views::GraphRange range_;
@@ -56,6 +61,9 @@ class MetrixDataSource : public views::GraphDataSource {
 
   TimedDataSpec timed_data_;
   std::u16string title_;
+
+  scada::DateTime earliest_timestamp_;
+  Cancelation update_horizontal_range_cancelation_;
 
   std::unique_ptr<MetrixPointEnum> point_enum_;
 };

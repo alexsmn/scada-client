@@ -8,6 +8,26 @@
 #include "graph_qt/model/graph_types.h"
 #endif
 
+namespace {
+
+std::pair<scada::DateTime, scada::DateTime> GetTimeRange(
+    const TimedDataSpec& spec) {
+  if (!spec.values() || spec.values()->empty()) {
+    return {};
+  }
+
+  return std::make_pair(spec.values()->front().source_timestamp,
+                        spec.values()->back().source_timestamp);
+}
+
+scada::DateTime GetLatestTimestamp(const TimedDataSpec& spec) {
+  return spec.values() && !spec.values()->empty()
+             ? spec.values()->back().source_timestamp
+             : scada::DateTime{};
+}
+
+}  // namespace
+
 // MetrixPointEnum
 
 class MetrixPointEnum : public views::PointEnumerator {
@@ -131,7 +151,7 @@ MetrixDataSource::MetrixDataSource() {
   };
 }
 
-MetrixDataSource::~MetrixDataSource() {}
+MetrixDataSource::~MetrixDataSource() = default;
 
 void MetrixDataSource::SetTimedData(const TimedDataSpec& spec) {
   timed_data_ = spec;
@@ -202,6 +222,9 @@ void MetrixDataSource::OnItemChanged() {
   UpdateRange();
   UpdateLimits();
 
+  SetEarliestTimestamp(GetTimeRange(timed_data_).first);
+  ScheduleUpdateEarliestTimestamp();
+
   if (observer_)
     observer_->OnDataSourceItemChanged();
 
@@ -249,4 +272,42 @@ void MetrixDataSource::SetCurrentValue(double value) {
 
   if (observer_)
     observer_->OnDataSourceCurrentValueChanged();
+}
+
+void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
+  update_horizontal_range_cancelation_.Cancel();
+
+  // TODO: Bind executor.
+  timed_data_.GetNode()
+      .scada_node()
+      .read_value_history({.from = scada::DateTime::Min(),
+                           .to = scada::DateTime::Max(),
+                           .max_count = 1})
+      .then(update_horizontal_range_cancelation_.Bind(
+          [this](const std::vector<scada::DataValue>& values) {
+            SetEarliestTimestamp(values.empty()
+                                     ? scada::DateTime{}
+                                     : values.front().source_timestamp);
+          }));
+}
+
+void MetrixDataSource::SetEarliestTimestamp(scada::DateTime timestamp) {
+  if (earliest_timestamp_ == timestamp) {
+    return;
+  }
+
+  earliest_timestamp_ = timestamp;
+
+  if (observer_)
+    observer_->OnDataSourceHistoryChanged();
+}
+
+views::GraphRange MetrixDataSource::GetHorizontalRange() const {
+  auto latest_timestamp = GetTimeRange(timed_data_).second;
+  if (earliest_timestamp_.is_null() || latest_timestamp.is_null() ||
+      earliest_timestamp_ >= latest_timestamp) {
+    return {};
+  }
+
+  return {earliest_timestamp_.ToDoubleT(), latest_timestamp.ToDoubleT()};
 }

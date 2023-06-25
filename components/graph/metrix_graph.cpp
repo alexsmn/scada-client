@@ -240,8 +240,6 @@ void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
 
   const auto& timed_data = data_source_->timed_data();
 
-  assert(timed_data.historical());
-
   const auto* values = timed_data.values();
   if (!values || values->empty())
     return;

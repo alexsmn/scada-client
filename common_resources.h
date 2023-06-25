@@ -421,6 +421,7 @@
 #define ID_EVENT_PLAY_SOUND             32980
 #define ID_GRAPH_DOTS                   32984
 #define ID_GRAPH_STEPS                  32985
+#define ID_GRAPH_SCROLL_BAR             32986
 #define ID_TOOLBAR_TOP                  32989
 #define ID_TOOLBAR_LEFT                 32990
 #define ID_SORT_NAME                    32991

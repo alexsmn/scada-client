@@ -20,8 +20,10 @@ struct GraphViewLoader {
       }
     }
 
-    if (!time_set) {
+    if (!time_scale_loaded_) {
       FixTimeRange();
+      graph_.SetHorizontalScrollBarVisible(
+          profile_.graph_view.default_scroll_bar);
     }
   }
 
@@ -81,7 +83,9 @@ struct GraphViewLoader {
     from = to - span;
     graph_.horizontal_axis().SetRange(views::GraphRange(
         from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));
-    time_set = true;
+    graph_.SetHorizontalScrollBarVisible(
+        item.GetBool("scrollBar", profile_.graph_view.default_scroll_bar));
+    time_scale_loaded_ = true;
   }
 
   void FixTimeRange() {
@@ -106,7 +110,7 @@ struct GraphViewLoader {
   using PaneMap = std::unordered_map<int, views::GraphPane*>;
   PaneMap pane_map;
 
-  bool time_set = false;
+  bool time_scale_loaded_ = false;
 
   static const size_t kMaxPanes = 10;
 };

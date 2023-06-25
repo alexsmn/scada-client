@@ -15,6 +15,7 @@ struct GraphViewSaver {
       item.SetString("time", graph_.m_time_fit ? std::string("Now")
                                                : SerializeToString(time));
       item.SetString("span", SerializeToString(span));
+      item.SetBool("scrollBar", graph_.horizontal_scroll_bar_visible());
     }
 
     // value scale

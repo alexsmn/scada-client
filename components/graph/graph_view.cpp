@@ -11,6 +11,7 @@
 
 #if defined(UI_QT)
 #include <QColorDialog>
+#include <QScrollBar>
 #endif
 
 // GraphView
@@ -116,6 +117,16 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
           .set_checked_handler([this] {
             return graph_->primary_line() && graph_->primary_line()->stepped();
           }));
+
+  command_registry_.AddCommand(
+      Command{ID_GRAPH_SCROLL_BAR}
+          .set_execute_handler([this] {
+            bool new_visible = !graph_->horizontal_scroll_bar_visible();
+            graph_->SetHorizontalScrollBarVisible(new_visible);
+            profile_.graph_view.default_scroll_bar = new_visible;
+          })
+          .set_checked_handler(
+              [this] { return graph_->horizontal_scroll_bar_visible(); }));
 
   return graph_;
 }

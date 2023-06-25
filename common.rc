@@ -779,6 +779,7 @@ BEGIN
         MENUITEM "Легенда",                     ID_VIEW_LEGEND, CHECKED
         MENUITEM "Узлы",                        ID_GRAPH_DOTS, CHECKED
         MENUITEM "Ступенчатый",                 ID_GRAPH_STEPS, CHECKED
+        MENUITEM "Полоска прокрутки",           ID_GRAPH_SCROLL_BAR, CHECKED
         MENUITEM "Цвет...",                     ID_GRAPH_COLOR
         MENUITEM SEPARATOR
         MENUITEM "Текущее время",               ID_NOW, CHECKED

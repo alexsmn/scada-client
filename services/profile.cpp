@@ -261,6 +261,7 @@ void Profile::Load(const base::Value& data,
   if (auto* graphe = FindDict(data, "graph")) {
     Deserialize(GetString(*graphe, "def_span"), graph_view.default_span);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
+    graph_view.default_scroll_bar = GetBool(*graphe, "def_scroll_bar", 1);
   }
 
   if (auto* node = FindDict(data, "timeRangeDialog")) {
@@ -373,6 +374,7 @@ base::Value Profile::SaveToValue(const EventFetcher& event_manager,
     base::Value graphe{base::Value::Type::DICTIONARY};
     SetKey(graphe, "def_span", SerializeToString(graph_view.default_span));
     SetKey(graphe, "def_weight", graph_view.default_width);
+    SetKey(graphe, "def_scroll_bar", graph_view.default_scroll_bar);
     data.SetKey("graph", std::move(graphe));
   }
 

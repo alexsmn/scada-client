@@ -85,6 +85,7 @@ class Profile {
     base::TimeDelta default_span = base::TimeDelta::FromHours(1);
     aui::Color default_color = aui::ColorCode::White;
     int default_width = 1;
+    bool default_scroll_bar = true;
   };
 
   GraphView graph_view;
