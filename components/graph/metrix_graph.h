@@ -116,6 +116,9 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
   void UpdateData();
 
+  // Forwarded by `GraphView` from the controller event.
+  void OnGraphPannedHorizontally();
+
   // Graph
   virtual void UpdateCurBox() override;
   virtual QString GetXAxisLabel(double val) const override;
@@ -123,5 +126,7 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   bool m_time_fit = true;
 
  private:
+  bool updating_ = false;
+
   base::RepeatingTimer update_data_timer_;
 };

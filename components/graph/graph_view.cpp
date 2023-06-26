@@ -383,7 +383,7 @@ void GraphView::SetTimeRange(const TimeRange& range) {
 }
 
 void GraphView::OnGraphPannedHorizontally() {
-  graph_->m_time_fit = false;
+  graph_->OnGraphPannedHorizontally();
 }
 
 void GraphView::OnLineItemChanged(views::GraphLine& line) {

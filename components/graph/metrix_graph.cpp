@@ -1,5 +1,6 @@
 #include "components/graph/metrix_graph.h"
 
+#include "base/auto_reset.h"
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/strings/stringprintf.h"
@@ -60,7 +61,6 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
 
   return static_cast<int>(ready / total * 100);
 }
-
 
 std::string FormatTime(base::Time time, const char* format_string) {
   if (strcmp(format_string, "ms") == 0) {
@@ -360,6 +360,8 @@ void MetrixGraph::Fit() {
   }
 
   AdjustTimeRange(range);
+
+  base::AutoReset updating{&updating_, true};
   horizontal_axis().SetRange(range);
 }
 
@@ -384,4 +386,12 @@ QString MetrixGraph::GetXAxisLabel(double val) const {
 
   return QString::fromStdString(
       FormatTime(base::Time::FromDoubleT(val), format_string));
+}
+
+void MetrixGraph::OnGraphPannedHorizontally() {
+  if (updating_) {
+    return;
+  }
+
+  m_time_fit = false;
 }
