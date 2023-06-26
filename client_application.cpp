@@ -224,13 +224,20 @@ void ClientApplication::OnStartLoginCompleted() {
       event_fetcher_holder, &event_fetcher_holder->event_fetcher_};
 
   node_service_ = CreateNodeService(NodeServiceContext{
-      executor_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-      *master_data_services_,
-  });
+      .executor = executor_,
+      .session_service_ = *master_data_services_,
+      .attribute_service_ = *master_data_services_,
+      .view_service_ = *master_data_services_,
+      .monitored_item_service_ = *master_data_services_,
+      .method_service_ = *master_data_services_,
+      .scada_client_ =
+          scada::client{{.attribute_service = master_data_services_.get(),
+                         .monitored_item_service = master_data_services_.get(),
+                         .method_service = master_data_services_.get(),
+                         .history_service = master_data_services_.get(),
+                         .view_service = master_data_services_.get(),
+                         .node_management_service = master_data_services_.get(),
+                         .session_service = master_data_services_.get()}}});
 
   auto alias_logger =
       base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
