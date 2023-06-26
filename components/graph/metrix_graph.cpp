@@ -120,7 +120,7 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
     const MetrixDataSource& data_source) const {
   scada::DataValue value;
   const views::GraphCursor* cursor = graph().selected_cursor();
-  if (cursor && cursor->axis_->is_vertical()) {
+  if (cursor && !cursor->axis_->is_vertical()) {
     base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
     return data_source.timed_data().GetValueAt(cursor_time);
   } else {
