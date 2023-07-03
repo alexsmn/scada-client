@@ -66,12 +66,9 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
     Microsoft::WRL::ComPtr<TelecontrolView::ITelecontrolView> view;
     ax_widget->queryInterface(IID_PPV_ARGS(&view));
     if (view) {
-      VidiconClient::TeleClient* teleclient =
-          VidiconClient::GetInstance().GetTeleClient();
-      if (teleclient) {
-        HRESULT res = view->SetClient(teleclient);
-        DCHECK(SUCCEEDED(res));
-      }
+      auto& teleclient = VidiconClient::GetInstance().teleclient();
+      HRESULT res = view->SetClient(&teleclient);
+      DCHECK(SUCCEEDED(res));
     }
 
     form_->put_AutoStartRuntime(VARIANT_TRUE);

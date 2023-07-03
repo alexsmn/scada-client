@@ -10,9 +10,9 @@ class DataPointManager;
 
 class VidiconClient {
  public:
-  typedef TeleClientLib::IClient TeleClient;
+  using TeleClient = TeleClientLib::IClient;
 
-  TeleClient* GetTeleClient() { return teleclient_.Get(); }
+  TeleClient& teleclient() { return *teleclient_.Get(); }
 
   static VidiconClient& GetInstance();
   static void CleanupInstance();

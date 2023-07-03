@@ -16,7 +16,7 @@ DummyAtlModule _Module;
 
 // VidiconClient
 
-VidiconClient* VidiconClient::s_instance = NULL;
+VidiconClient* VidiconClient::s_instance = nullptr;
 
 VidiconClient::VidiconClient()
     : data_point_manager_{std::make_unique<DataPointManagerImpl>()},
@@ -38,7 +38,7 @@ VidiconClient& VidiconClient::GetInstance() {
 // static
 void VidiconClient::CleanupInstance() {
   delete s_instance;
-  s_instance = NULL;
+  s_instance = nullptr;
 }
 
 std::unique_ptr<ComDataPointManager>
