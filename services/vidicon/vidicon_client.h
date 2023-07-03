@@ -1,32 +1,39 @@
 #pragma once
 
-#include "components/vidicon_display/teleclient/teleclient.h"
+#include "services/vidicon/teleclient.h"
 
 #include <memory>
 #include <wrl/client.h>
 
+class Executor;
+class TimedDataService;
+
+namespace vidicon {
+
 class ComDataPointManager;
 class DataPointManager;
 
-class VidiconClient {
+using TeleClient = TeleClientLib::IClient;
+
+struct VidiconClientContext {
+  std::shared_ptr<Executor> executor_;
+  TimedDataService& timed_data_service_;
+};
+
+class VidiconClient : private VidiconClientContext {
  public:
-  using TeleClient = TeleClientLib::IClient;
+  explicit VidiconClient(VidiconClientContext&& context);
+  ~VidiconClient();
 
   TeleClient& teleclient() { return *teleclient_.Get(); }
 
-  static VidiconClient& GetInstance();
-  static void CleanupInstance();
-
  private:
-  VidiconClient();
-  ~VidiconClient();
-
   std::unique_ptr<ComDataPointManager> CreateComDataPointManager();
 
   std::unique_ptr<DataPointManager> data_point_manager_;
   std::unique_ptr<ComDataPointManager> com_data_point_manager_;
 
   Microsoft::WRL::ComPtr<TeleClient> teleclient_;
-
-  static VidiconClient* s_instance;
 };
+
+}  // namespace vidicon

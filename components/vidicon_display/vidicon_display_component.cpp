@@ -1,6 +1,7 @@
 ﻿#include "components/vidicon_display/vidicon_display_component.h"
 
 #include "components/vidicon_display/vidicon_display_view.h"
+#include "controller_context.h"
 #include "controller_registry.h"
 
 const WindowInfo kVidiconDisplayWindowInfo = {
@@ -13,7 +14,7 @@ class VidiconDisplayViewFactory : public ControllerRegistrarBase {
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) override {
-    return std::make_unique<VidiconDisplayView>();
+    return std::make_unique<VidiconDisplayView>(context.vidicon_client_);
   }
 };
 

@@ -2,9 +2,9 @@
 
 #include "base/win/scoped_bstr.h"
 #include "client_utils.h"
-#include "components/vidicon_display/teleclient/teleclient.h"
 #include "components/vidicon_display/telecontrolview.h"
-#include "components/vidicon_display/vidicon_client.h"
+#include "services/vidicon/teleclient.h"
+#include "services/vidicon/vidicon_client.h"
 #include "window_definition.h"
 
 #include <QAxWidget>
@@ -39,7 +39,8 @@ dispatch.GetIDsOfNames(IID_NULL, const_cast<LPOLESTR*>(&name), 1,
 
 }  // namespace
 
-VidiconDisplayView::VidiconDisplayView() : synchronize_timer_(false, true) {}
+VidiconDisplayView::VidiconDisplayView(vidicon::VidiconClient& vidicon_client)
+    : vidicon_client_{vidicon_client}, synchronize_timer_(false, true) {}
 
 VidiconDisplayView::~VidiconDisplayView() {}
 
@@ -66,8 +67,7 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
     Microsoft::WRL::ComPtr<TelecontrolView::ITelecontrolView> view;
     ax_widget->queryInterface(IID_PPV_ARGS(&view));
     if (view) {
-      auto& teleclient = VidiconClient::GetInstance().teleclient();
-      HRESULT res = view->SetClient(&teleclient);
+      HRESULT res = view->SetClient(&vidicon_client_.teleclient());
       DCHECK(SUCCEEDED(res));
     }
 

@@ -7,11 +7,15 @@
 #include <filesystem>
 #include <wrl/client.h>
 
+namespace vidicon {
+class VidiconClient;
+}
+
 class QAxWidget;
 
 class VidiconDisplayView : public Controller {
  public:
-  VidiconDisplayView();
+  explicit VidiconDisplayView(vidicon::VidiconClient& vidicon_client);
   virtual ~VidiconDisplayView();
 
   // Controller
@@ -20,6 +24,8 @@ class VidiconDisplayView : public Controller {
 
  private:
   void SynchronizeView();
+
+  vidicon::VidiconClient& vidicon_client_;
 
   std::filesystem::path path_;
 

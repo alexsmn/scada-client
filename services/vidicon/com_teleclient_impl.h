@@ -1,13 +1,16 @@
 #pragma once
 
-#include "components/vidicon_display/teleclient/com_data_point_manager.h"
-#include "components/vidicon_display/teleclient/teleclient.h"
+#include "services/vidicon/com_data_point_manager.h"
+#include "services/vidicon/teleclient.h"
 
 #include <atlbase.h>
 
 #include <atlcom.h>
+#include <wrl/client.h>
 
-class ComTeleclientImpl
+namespace vidicon {
+
+class ATL_NO_VTABLE ComTeleclientImpl
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,
       public IDispatchImpl<TeleClientLib::IClient,
                            &__uuidof(TeleClientLib::IClient),
@@ -34,6 +37,13 @@ class ComTeleclientImpl
   ComDataPointManager* com_data_point_manager_ = nullptr;
 };
 
+inline Microsoft::WRL::ComPtr<TeleClientLib::IClient> CreateComTeleClient(
+    ComDataPointManager& com_data_point_manager) {
+  auto* com_teleclient = new CComObjectNoLock<ComTeleclientImpl>();
+  com_teleclient->Init(com_data_point_manager);
+  return com_teleclient;
+}
+
 void ComTeleclientImpl::Init(ComDataPointManager& com_data_point_manager) {
   com_data_point_manager_ = &com_data_point_manager;
 }
@@ -45,6 +55,7 @@ STDMETHODIMP ComTeleclientImpl::RequestPoint(
     return E_POINTER;
 
   auto com_data_point = com_data_point_manager_->GetComDataPoint(Name);
+  assert(com_data_point);
   *Point = com_data_point.Detach();
   return S_OK;
 }
@@ -74,3 +85,5 @@ STDMETHODIMP ComTeleclientImpl::Evalute(BSTR Text, BSTR* pVal) {
   *pVal = value.Detach();
   return S_OK;
 }
+
+}  // namespace vidicon

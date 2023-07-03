@@ -34,6 +34,7 @@
 #include "components/main/selection_commands.h"
 #include "components/main/status_bar_model_impl.h"
 #include "components/portfolio/portfolio_manager.h"
+#include "components/vidicon_display/vidicon_client.h"
 #include "controller_context.h"
 #include "net/transport_factory_impl.h"
 #include "node_service/node_service.h"
@@ -159,7 +160,7 @@ ClientApplication::~ClientApplication() {
     // ShutdownOpc();
 
 #if !defined(UI_WT)
-  VidiconClient::CleanupInstance();
+  vidicon_client_.reset();
 
   ModusModule2::SetInstance(nullptr);
   modus_module_.reset();
@@ -296,6 +297,10 @@ void ClientApplication::OnStartLoginCompleted() {
   file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
 #if !defined(UI_WT)
+  vidicon_client_ =
+      std::make_unique<vidicon::VidiconClient>(vidicon::VidiconClientContext{
+          .executor_ = executor_, .timed_data_service_ = *timed_data_service_});
+
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());
 #endif
@@ -347,13 +352,17 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
       return nullptr;
     }
 
-    return registrar->CreateController(ControllerContext{
-        executor_, delegate, alias_resolver_, *task_manager_,
-        *master_data_services_, *event_fetcher_, *master_data_services_,
-        *master_data_services_, *timed_data_service_, *node_service_,
-        *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
-        *profile_, dialog_service, *blinker_manager_, *create_tree_,
-        *property_service_});
+    return registrar->CreateController(ControllerContext {
+      executor_, delegate, alias_resolver_, *task_manager_,
+          *master_data_services_, *event_fetcher_, *master_data_services_,
+          *master_data_services_, *timed_data_service_, *node_service_,
+          *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
+          *profile_, dialog_service, *blinker_manager_, *create_tree_,
+          *property_service_,
+#if !defined(UI_WT)
+          *vidicon_client_,
+#endif
+    });
   };
 
   auto login_handler = [this](bool login) {

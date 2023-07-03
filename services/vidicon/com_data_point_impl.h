@@ -1,15 +1,21 @@
 #pragma once
 
-#include "components/vidicon_display/teleclient/data_point.h"
-#include "components/vidicon_display/teleclient/teleclient.h"
+#include "base/stop_token.h"
+#include "services/vidicon/data_point_manager.h"
+#include "services/vidicon/teleclient.h"
 
 #include <atlbase.h>
 
+#include <array>
 #include <atlcom.h>
+#include <boost/locale/encoding_utf.hpp>
 #include <functional>
 #include <memory>
+#include <mutex>
 
-class ComDataPointConnectionPoints
+namespace vidicon {
+
+class ATL_NO_VTABLE ComDataPointConnectionPoints
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,
       public IConnectionPointContainerImpl<ComDataPointConnectionPoints>,
       public IConnectionPointImpl<ComDataPointConnectionPoints,
@@ -20,7 +26,55 @@ class ComDataPointConnectionPoints
                                   &__uuidof(
                                       TeleClientLib::_IDataPointEventsEx)> {
  public:
-  void NotifyDataChanged() {}
+  void NotifyDataChanged(const DataPointValue& value) {
+    NotifyDataChanged(
+        __uuidof(TeleClientLib::_IDataPointEvents),
+        IConnectionPointImpl<ComDataPointConnectionPoints,
+                             &__uuidof(
+                                 TeleClientLib::_IDataPointEvents)>::m_vec,
+        value);
+
+    NotifyDataChanged(
+        __uuidof(TeleClientLib::_IDataPointEvents3),
+        IConnectionPointImpl<ComDataPointConnectionPoints,
+                             &__uuidof(
+                                 TeleClientLib::_IDataPointEvents3)>::m_vec,
+        value);
+
+    NotifyDataChanged(
+        __uuidof(TeleClientLib::_IDataPointEventsEx),
+        IConnectionPointImpl<ComDataPointConnectionPoints,
+                             &__uuidof(
+                                 TeleClientLib::_IDataPointEventsEx)>::m_vec,
+        value);
+  }
+
+  void NotifyDataChanged(const IID& iid,
+                         CComDynamicUnkArray& vec,
+                         const DataPointValue& value) {
+    if (vec.GetSize() == 0) {
+      return;
+    }
+
+    std::array<VARIANTARG, 3> args;
+    args[0] = value.value;
+    args[1].vt = VT_DATE;
+    args[1].date = value.time;
+    args[2].vt = VT_UI4;
+    args[2].ulVal = value.quality;
+
+    DISPPARAMS params{.rgvarg = args.data(), .cArgs = std::size(args)};
+
+    for (auto* unk : vec) {
+      if (CComQIPtr<IDispatch> disp{unk}) {
+        CComVariant result;
+        EXCEPINFO excep_info = {};
+        UINT arg_err = 0;
+        disp->Invoke(201, iid, 0, DISPATCH_METHOD, &params, &result,
+                     &excep_info, &arg_err);
+      }
+    }
+  }
 
   BEGIN_COM_MAP(ComDataPointConnectionPoints)
   COM_INTERFACE_ENTRY(IConnectionPointContainer)
@@ -33,6 +87,7 @@ class ComDataPointConnectionPoints
   END_CONNECTION_POINT_MAP()
 };
 
+// WARNING: The object is accessed from multiple threads.
 class ComDataPointImpl
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,
       public IDispatchImpl<TeleClientLib::IDataPoint,
@@ -53,7 +108,8 @@ class ComDataPointImpl
  public:
   using ReleaseHandler = std::function<void()>;
 
-  void Init(std::shared_ptr<DataPoint> data_point,
+  void Init(DataPointManager& data_point_manager,
+            const std::wstring& formula,
             ReleaseHandler release_handler);
 
   ULONG InternalRelease();
@@ -97,21 +153,23 @@ class ComDataPointImpl
   const CComPtr<ComDataPointConnectionPoints> connection_points_ =
       new CComObjectNoLock<ComDataPointConnectionPoints>();
 
-  std::shared_ptr<DataPoint> data_point_;
   ReleaseHandler release_handler_;
-  boost::signals2::scoped_connection data_changed_connection_;
+
+  mutable std::mutex mutex_;
+  DataPointValue data_value_;
+
+  const scoped_stop_source stop_source_;
 };
 
-inline void ComDataPointImpl::Init(std::shared_ptr<DataPoint> data_point,
+inline void ComDataPointImpl::Init(DataPointManager& data_point_manager,
+                                   const std::wstring& formula,
                                    ReleaseHandler release_handler) {
-  assert(data_point);
-
-  data_point_ = std::move(data_point);
   release_handler_ = std::move(release_handler);
 
-  data_changed_connection_ = data_point_->data_changed_signal.connect(
-      [connection_points = connection_points_] {
-        connection_points->NotifyDataChanged();
+  data_point_manager.Subscribe(
+      boost::locale::conv::utf_to_utf<char>(formula), stop_source_.get_token(),
+      [connection_points = connection_points_](const DataPointValue& value) {
+        connection_points->NotifyDataChanged(value);
       });
 }
 
@@ -127,8 +185,12 @@ inline STDMETHODIMP ComDataPointImpl::get_OPCServer(IUnknown** pVal) {
 }
 
 inline STDMETHODIMP ComDataPointImpl::get_Value(VARIANT* pVal) {
-  auto value = data_point_->GetValue();
-  return value.Detach(pVal);
+  if (!pVal)
+    return E_POINTER;
+
+  std::lock_guard lock{mutex_};
+  CComVariant value_copy{data_value_.value};
+  return value_copy.Detach(pVal);
 }
 
 inline STDMETHODIMP ComDataPointImpl::put_Value(VARIANT newVal) {
@@ -139,7 +201,8 @@ inline STDMETHODIMP ComDataPointImpl::get_Time(DATE* pVal) {
   if (!pVal)
     return E_POINTER;
 
-  *pVal = data_point_->GetTime();
+  std::lock_guard lock{mutex_};
+  *pVal = data_value_.time;
   return S_OK;
 }
 
@@ -147,7 +210,8 @@ inline STDMETHODIMP ComDataPointImpl::get_Quality(ULONG* pVal) {
   if (!pVal)
     return E_POINTER;
 
-  *pVal = data_point_->GetQuality();
+  std::lock_guard lock{mutex_};
+  *pVal = data_value_.quality;
   return S_OK;
 }
 
@@ -211,3 +275,5 @@ inline STDMETHODIMP ComDataPointImpl::Call(BSTR MethodName,
                                            VARIANT* Result) {
   return E_NOTIMPL;
 }
+
+}  // namespace vidicon
