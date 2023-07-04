@@ -22,16 +22,6 @@ class ATL_NO_VTABLE ComDataPointImpl
                            &__uuidof(IDataPoint),
                            &LIBID_TeleClientLib,
                            /*wMajor =*/1,
-                           /*wMinor =*/0>,
-      public IDispatchImpl<IDataPointServer,
-                           &__uuidof(IDataPointServer),
-                           &LIBID_TeleClientLib,
-                           /*wMajor =*/1,
-                           /*wMinor =*/0>,
-      public IDispatchImpl<IDataPoint3,
-                           &__uuidof(IDataPoint3),
-                           &LIBID_TeleClientLib,
-                           /*wMajor =*/1,
                            /*wMinor =*/0> {
  public:
   using ReleaseHandler = std::function<void()>;
@@ -45,31 +35,30 @@ class ATL_NO_VTABLE ComDataPointImpl
  private:
   BEGIN_COM_MAP(ComDataPointImpl)
   COM_INTERFACE_ENTRY(IDataPoint)
-  COM_INTERFACE_ENTRY(IDataPointServer)
-  COM_INTERFACE_ENTRY(IDataPoint3)
-  COM_INTERFACE_ENTRY2(IDispatch, IDataPoint3)
   COM_INTERFACE_ENTRY_AGGREGATE(IID_IConnectionPointContainer,
                                 connection_points_)
   END_COM_MAP()
 
   // IDataPoint
-  STDMETHOD(get_Value)(VARIANT* pVal);
-  STDMETHOD(put_Value)(VARIANT newVal);
-  STDMETHOD(get_Time)(DATE* pVal);
-  STDMETHOD(get_Quality)(ULONG* pVal);
-  STDMETHOD(get_ValueStr)(BSTR* pVal);
-  STDMETHOD(get_Attrib)(BSTR Name, VARIANT* pVal);
-  STDMETHOD(get_Address)(BSTR* pVal);
-  STDMETHOD(get_Prop)(ULONG ID, VARIANT* pVal);
-  STDMETHOD(put_Prop)(ULONG ID, VARIANT newVal);
-  STDMETHOD(get_XmlNode)(IDispatch** pVal);
-  STDMETHOD(get_Connected)(ULONG* pVal);
-  STDMETHOD(get_ErrorStr)(ULONG Error, BSTR* pVal);
-  STDMETHOD(get_AccessRights)(ULONG* pVal);
+  STDMETHOD(get_Value)(VARIANT* pVal) override;
+  STDMETHOD(put_Value)(VARIANT newVal) override;
+  STDMETHOD(get_Time)(DATE* pVal) override;
+  STDMETHOD(get_Quality)(ULONG* pVal) override;
+  STDMETHOD(get_ValueStr)(BSTR* pVal) override;
+  STDMETHOD(get_Status)(ULONG* pVal) override;
+  STDMETHOD(get_Attrib)(BSTR Name, VARIANT* pVal) override;
+  STDMETHOD(get_Address)(BSTR* pVal) override;
+  STDMETHOD(get_Prop)(ULONG ID, VARIANT* pVal) override;
+  STDMETHOD(put_Prop)(ULONG ID, VARIANT newVal) override;
+  STDMETHOD(get_XmlNode)(IDispatch** pVal) override;
+  STDMETHOD(get_ErrorStr)(ULONG Error, BSTR* pVal) override;
+  STDMETHOD(get_AccessRights)(ULONG* pVal) override;
+  STDMETHOD(Read)
+  (ULONG* status, VARIANT* value, ULONG* quality, DATE* timestamp) override;
   STDMETHOD(Write)(VARIANT Value);
-  STDMETHOD(WriteAsync)(VARIANT Value, ULONG* TransID);
-  STDMETHOD(CancelAsync)(ULONG TransID);
-  STDMETHOD(Ack)(BSTR Acker, BSTR Comment);
+  STDMETHOD(WriteAsync)(VARIANT Value, ULONG* TransID) override;
+  STDMETHOD(CancelAsync)(ULONG TransID) override;
+  STDMETHOD(Ack)(BSTR Acker, BSTR Comment) override;
 
   // IDataPointServer
   STDMETHOD(get_OPCServer)(IUnknown** pVal);
@@ -147,6 +136,10 @@ inline STDMETHODIMP ComDataPointImpl::get_ValueStr(BSTR* pVal) {
   return E_NOTIMPL;
 }
 
+inline STDMETHODIMP ComDataPointImpl::get_Status(ULONG* pVal) {
+  return E_NOTIMPL;
+}
+
 inline STDMETHODIMP ComDataPointImpl::get_Attrib(BSTR Name, VARIANT* pVal) {
   return E_NOTIMPL;
 }
@@ -168,15 +161,18 @@ inline STDMETHODIMP ComDataPointImpl::get_XmlNode(IDispatch** pVal) {
   return E_NOTIMPL;
 }
 
-inline STDMETHODIMP ComDataPointImpl::get_Connected(ULONG* pVal) {
-  return E_NOTIMPL;
-}
-
 inline STDMETHODIMP ComDataPointImpl::get_ErrorStr(ULONG Error, BSTR* pVal) {
   return E_NOTIMPL;
 }
 
 inline STDMETHODIMP ComDataPointImpl::get_AccessRights(ULONG* pVal) {
+  return E_NOTIMPL;
+}
+
+inline STDMETHODIMP ComDataPointImpl::Read(ULONG* status,
+                                           VARIANT* value,
+                                           ULONG* quality,
+                                           DATE* timestamp) {
   return E_NOTIMPL;
 }
 

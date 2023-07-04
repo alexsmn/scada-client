@@ -1,19 +1,18 @@
 #pragma once
 
-#include "services/vidicon/teleclient.h"
-
 #include <memory>
 #include <wrl/client.h>
 
 class Executor;
 class TimedDataService;
 
+interface IClient;
+using TeleClient = IClient;
+
 namespace vidicon {
 
 class ComDataPointManager;
 class DataPointManager;
-
-using TeleClient = IClient;
 
 struct VidiconClientContext {
   std::shared_ptr<Executor> executor_;

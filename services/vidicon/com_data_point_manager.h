@@ -2,6 +2,9 @@
 
 #include "services/vidicon/com_data_point_impl.h"
 
+#include <atlbase.h>
+
+#include <atlcom.h>
 #include <functional>
 #include <mutex>
 #include <string_view>

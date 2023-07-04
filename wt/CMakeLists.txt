@@ -31,6 +31,7 @@ set_property(TARGET client_wt_lib PROPERTY FOLDER ${client_folder})
 
 find_package(wt CONFIG REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
+  client_base
   Wt::Wt
   node_service_v1
   node_service_v2

@@ -29,8 +29,7 @@ class ComEventConnector {
 
     Microsoft::WRL::ComPtr<IConnectionPoint> connection_point;
     hr = connection_point_container->FindConnectionPoint(
-        __uuidof(_IDataPointEvents3),
-        connection_point.ReleaseAndGetAddressOf());
+        __uuidof(_IDataPointEvents), connection_point.ReleaseAndGetAddressOf());
     if (FAILED(hr)) {
       return hr;
     }

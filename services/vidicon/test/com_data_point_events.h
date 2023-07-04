@@ -17,12 +17,12 @@ struct ComDataPointEventHanders {
 
 class ATL_NO_VTABLE ComDataPointEvents
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,
-      public IDispatchImpl<_IDataPointEvents3,
-                           &__uuidof(_IDataPointEvents3),
+      public IDispatchImpl<_IDataPointEvents,
+                           &__uuidof(_IDataPointEvents),
                            &LIBID_TeleClientLib> {
  public:
   BEGIN_COM_MAP(ComDataPointEvents)
-  COM_INTERFACE_ENTRY(_IDataPointEvents3)
+  COM_INTERFACE_ENTRY(_IDataPointEvents)
   COM_INTERFACE_ENTRY(IDispatch)
   END_COM_MAP()
 
@@ -44,7 +44,7 @@ class ATL_NO_VTABLE ComDataPointEvents
   ComDataPointEventHanders handlers_;
 };
 
-inline Microsoft::WRL::ComPtr<_IDataPointEvents3> CreateComDataPointEvents(
+inline Microsoft::WRL::ComPtr<_IDataPointEvents> CreateComDataPointEvents(
     const ComDataPointEventHanders& handlers) {
   auto* com_data_point_events = new CComObjectNoLock<ComDataPointEvents>();
   com_data_point_events->Init(handlers);

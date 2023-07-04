@@ -37,15 +37,6 @@ TEST_F(VidiconClientTest, Test) {
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
 
-  // Check `IDataPoint3` support.
-
-  {
-    Microsoft::WRL::ComPtr<IDataPoint3> data_point3;
-    ASSERT_HRESULT_SUCCEEDED(
-        data_point->QueryInterface(data_point3.ReleaseAndGetAddressOf()));
-    ASSERT_THAT(data_point3, NotNull());
-  }
-
   // Subscribe
 
   {

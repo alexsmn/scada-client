@@ -39,6 +39,7 @@ set_property(TARGET client_qt_lib PROPERTY FOLDER ${client_folder})
 find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt_lib PUBLIC
   base_i18n
+  client_base
   gdiplus
   graph_qt
   modus
