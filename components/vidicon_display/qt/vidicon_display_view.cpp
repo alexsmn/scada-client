@@ -74,7 +74,7 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
     form_->put_AutoStartRuntime(VARIANT_TRUE);
     form_->put_AxBorderStyle(ViewerX::afbNone);
 
-    std::filesystem::path full_path = GetPublicFilePath(path_);
+    auto full_path = GetPublicFilePath(path_);
     form_->put_FileName(base::win::ScopedBstr(full_path.wstring()));
 
     synchronize_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(10),

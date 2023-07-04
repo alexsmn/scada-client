@@ -5,6 +5,7 @@
 
 #include <atlbase.h>
 
+#include <algorithm>
 #include <array>
 #include <atlcom.h>
 
@@ -21,22 +22,30 @@ class ATL_NO_VTABLE ComDataPointConnectionPoints
       return;
     }
 
-    std::array<VARIANTARG, 3> args;
-    args[0] = value.value;
+    // The arguments are in the inverse order.
+    std::array<VARIANTARG, 4> args;
+    args[3].vt = VT_UI4;  // status
+    args[3].date = 0;     // status
+    // No copy for performance sake.
+    args[2] = value.value;
     args[1].vt = VT_DATE;
     args[1].date = value.time;
-    args[2].vt = VT_UI4;
-    args[2].ulVal = value.quality;
+    args[0].vt = VT_UI4;
+    args[0].ulVal = value.quality;
 
     DISPPARAMS params{.rgvarg = args.data(), .cArgs = std::size(args)};
 
-    for (auto* unk : m_vec) {
-      if (CComQIPtr<IDispatch> disp{unk}) {
-        CComVariant result;
-        EXCEPINFO excep_info = {};
-        UINT arg_err = 0;
-        disp->Invoke(201, __uuidof(_IDataPointEvents), 0, DISPATCH_METHOD,
-                     &params, &result, &excep_info, &arg_err);
+    // The approach is copied from MSDN:
+    // https://learn.microsoft.com/en-us/cpp/atl/adding-an-event-atl-tutorial-part-5?view=msvc-170
+    int connection_count = m_vec.GetSize();
+    for (int i = 0; i < connection_count; ++i) {
+      Lock();
+      CComPtr<IUnknown> sp = m_vec.GetAt(i);
+      Unlock();
+
+      if (IDispatch* disp = reinterpret_cast<IDispatch*>(sp.p)) {
+        disp->Invoke(201, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_METHOD,
+                     &params, nullptr, nullptr, nullptr);
       }
     }
   }

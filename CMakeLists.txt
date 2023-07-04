@@ -1,3 +1,5 @@
+include(client_module.cmake)
+
 include_directories(client
   "."
   "${third_party}/modus"

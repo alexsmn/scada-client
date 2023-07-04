@@ -11,6 +11,7 @@
 #include "window_info.h"
 
 #include <QApplication>
+#include <QFileDialog>
 #include <QSplitter>
 #include <QTableWidget>
 #include <QToolBar>
@@ -25,12 +26,14 @@ struct State {
       {.executor_ = executor, .timed_data_service_ = timed_data_service}};
 };
 
-QWidget* CreateVidiconDisplayView(QSplitter& splitter, State& state) {
+QWidget* CreateVidiconDisplayView(QSplitter& splitter,
+                                  State& state,
+                                  const std::filesystem::path& path) {
   VidiconDisplayView* vidicon_display_view =
       new VidiconDisplayView{state.vidicon_client};
   WindowDefinition definition{kVidiconDisplayWindowInfo};
   // definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
-  definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\по-258.vds)";
+  definition.path = path;
   auto* widget = vidicon_display_view->Init(definition);
   widget->setParent(&splitter);
   QObject::connect(widget, &QObject::destroyed,
@@ -38,6 +41,50 @@ QWidget* CreateVidiconDisplayView(QSplitter& splitter, State& state) {
   splitter.addWidget(widget);
   return widget;
 }
+
+class VariableTableController {
+ public:
+  VariableTableController(QTableWidget& table,
+                          VariableStorage& variable_storage)
+      : table_{table}, variable_storage_{variable_storage} {
+    table_.setColumnCount(2);
+    table_.setHorizontalHeaderLabels({"Name", "Value"});
+
+    QObject::connect(
+        &table_, &QTableWidget::itemChanged, [&](QTableWidgetItem* item) {
+          if (!loading_ && item->column() == 1) {
+            auto name = table_.item(item->row(), 0)->text().toStdString();
+            auto new_value = item->text().toInt();
+            variable_storage_.SetVariableValue(name, new_value);
+          }
+        });
+  }
+
+  void Load() {
+    loading_ = true;
+
+    table_.clear();
+
+    int index = 0;
+    for (const auto& [name, data_value] : variable_storage_.variable_values) {
+      table_.insertRow(index);
+      table_.setItem(index, 0,
+                     new QTableWidgetItem{QString::fromStdString(name)});
+      table_.setItem(index, 1,
+                     new QTableWidgetItem{
+                         QString::fromStdString(ToString(data_value.value))});
+      index++;
+    }
+
+    loading_ = false;
+  }
+
+ private:
+  QTableWidget& table_;
+  VariableStorage& variable_storage_;
+
+  bool loading_ = false;
+};
 
 int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
@@ -60,21 +107,20 @@ int main(int argc, char* argv[]) {
   root_widget.layout()->addWidget(splitter);
 
   auto* variable_table = new QTableWidget{&root_widget};
-  variable_table->setColumnCount(2);
-  variable_table->setHorizontalHeaderLabels({"Name", "Value"});
-  QObject::connect(
-      variable_table, &QTableWidget::itemChanged, [&](QTableWidgetItem* item) {
-        if (item->column() == 1) {
-          auto name =
-              variable_table->item(item->row(), 0)->text().toStdString();
-          auto new_value = item->text().toInt();
-          state.variable_storage.SetVariableValue(name, new_value);
-        }
-      });
   splitter->addWidget(variable_table);
 
-  toolbar->addAction("Open", [&] {
-    opened_vidicon_display_view = CreateVidiconDisplayView(*splitter, state);
+  toolbar->addAction("Open Default", [&] {
+    opened_vidicon_display_view = CreateVidiconDisplayView(
+        *splitter, state,
+        R"(c:\ProgramData\Telecontrol\SCADA Client\по-258.vds)");
+  });
+
+  toolbar->addAction("Open...", [&] {
+    if (auto path = QFileDialog::getOpenFileName(&root_widget);
+        !path.isEmpty()) {
+      opened_vidicon_display_view =
+          CreateVidiconDisplayView(*splitter, state, path.toStdWString());
+    }
   });
 
   toolbar->addAction("Close", [&opened_vidicon_display_view] {
@@ -82,21 +128,10 @@ int main(int argc, char* argv[]) {
     opened_vidicon_display_view = nullptr;
   });
 
-  toolbar->addAction("Variables", [&] {
-    variable_table->clear();
+  VariableTableController variable_table_controller{*variable_table,
+                                                    state.variable_storage};
 
-    int index = 0;
-    for (const auto& [name, data_value] :
-         state.variable_storage.variable_values) {
-      variable_table->insertRow(index);
-      variable_table->setItem(
-          index, 0, new QTableWidgetItem{QString::fromStdString(name)});
-      variable_table->setItem(index, 1,
-                              new QTableWidgetItem{QString::fromStdString(
-                                  ToString(data_value.value))});
-      index++;
-    }
-  });
+  toolbar->addAction("Variables", [&] { variable_table_controller.Load(); });
 
   root_widget.resize(1000, 500);
   root_widget.show();
