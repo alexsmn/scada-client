@@ -1,18 +1,12 @@
 #pragma once
 
-#include <atlcomcli.h>
 #include <functional>
-#include <memory>
 #include <stop_token>
 #include <string>
 
 namespace vidicon {
 
-struct DataPointValue {
-  CComVariant value;
-  DATE time = 0;
-  unsigned quality = 0;
-};
+struct DataPointValue;
 
 using DataChangeHandler = std::function<void(const DataPointValue& value)>;
 

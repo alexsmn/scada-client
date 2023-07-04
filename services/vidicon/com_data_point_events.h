@@ -1,6 +1,6 @@
 #pragma once
 
-#include "services/vidicon/data_point_manager.h"
+#include "services/vidicon/vidicon_types.h"
 
 #include <atlbase.h>
 
