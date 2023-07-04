@@ -29,7 +29,7 @@ class VidiconClientTest : public Test {
 TEST_F(VidiconClientTest, Test) {
   const std::wstring_view address = L"address";
 
-  Microsoft::WRL::ComPtr<TeleClientLib::IDataPoint> data_point;
+  Microsoft::WRL::ComPtr<IDataPoint> data_point;
   ASSERT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
       base::win::ScopedBstr{AsStringPiece(address)},
       data_point.ReleaseAndGetAddressOf()));
@@ -40,7 +40,7 @@ TEST_F(VidiconClientTest, Test) {
   // Check `IDataPoint3` support.
 
   {
-    Microsoft::WRL::ComPtr<TeleClientLib::IDataPoint3> data_point3;
+    Microsoft::WRL::ComPtr<IDataPoint3> data_point3;
     ASSERT_HRESULT_SUCCEEDED(
         data_point->QueryInterface(data_point3.ReleaseAndGetAddressOf()));
     ASSERT_THAT(data_point3, NotNull());

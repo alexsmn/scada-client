@@ -15,7 +15,7 @@ class ComDataPointManager {
   explicit ComDataPointManager(DataPointManager& data_point_manager)
       : data_point_manager_{data_point_manager} {}
 
-  Microsoft::WRL::ComPtr<TeleClientLib::IDataPoint> GetComDataPoint(
+  Microsoft::WRL::ComPtr<IDataPoint> GetComDataPoint(
       const std::wstring& address) {
     std::lock_guard lock{mutex_};
 
@@ -37,8 +37,7 @@ class ComDataPointManager {
   DataPointManager& data_point_manager_;
 
   std::mutex mutex_;
-  std::unordered_map<std::wstring,
-                     Microsoft::WRL::ComPtr<TeleClientLib::IDataPoint>>
+  std::unordered_map<std::wstring, Microsoft::WRL::ComPtr<IDataPoint>>
       com_data_points_;
 };
 

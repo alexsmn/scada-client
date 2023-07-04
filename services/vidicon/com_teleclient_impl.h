@@ -6,15 +6,16 @@
 #include <atlbase.h>
 
 #include <atlcom.h>
+#include <cassert>
 #include <wrl/client.h>
 
 namespace vidicon {
 
 class ATL_NO_VTABLE ComTeleclientImpl
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,
-      public IDispatchImpl<TeleClientLib::IClient,
-                           &__uuidof(TeleClientLib::IClient),
-                           &__uuidof(TeleClientLib::__TeleClientLib),
+      public IDispatchImpl<IClient,
+                           &__uuidof(IClient),
+                           &LIBID_TeleClientLib,
                            /*wMajor =*/1,
                            /*wMinor =*/0> {
  public:
@@ -22,12 +23,12 @@ class ATL_NO_VTABLE ComTeleclientImpl
 
  private:
   BEGIN_COM_MAP(ComTeleclientImpl)
-  COM_INTERFACE_ENTRY(TeleClientLib::IClient)
+  COM_INTERFACE_ENTRY(IClient)
   COM_INTERFACE_ENTRY(IDispatch)
   END_COM_MAP()
 
   // IClient
-  STDMETHOD(RequestPoint)(BSTR Name, TeleClientLib::IDataPoint** Point);
+  STDMETHOD(RequestPoint)(BSTR Name, IDataPoint** Point);
   STDMETHOD(get_GlobAttrib)(BSTR Name, VARIANT* pVal);
   STDMETHOD(get_XmlConfig)(BSTR Name, IDispatch** pVal);
   STDMETHOD(get_XmlNode)(BSTR Name, ULONG ID, IDispatch** pVal);
@@ -37,7 +38,7 @@ class ATL_NO_VTABLE ComTeleclientImpl
   ComDataPointManager* com_data_point_manager_ = nullptr;
 };
 
-inline Microsoft::WRL::ComPtr<TeleClientLib::IClient> CreateComTeleClient(
+inline Microsoft::WRL::ComPtr<IClient> CreateComTeleClient(
     ComDataPointManager& com_data_point_manager) {
   auto* com_teleclient = new CComObjectNoLock<ComTeleclientImpl>();
   com_teleclient->Init(com_data_point_manager);
@@ -48,9 +49,7 @@ void ComTeleclientImpl::Init(ComDataPointManager& com_data_point_manager) {
   com_data_point_manager_ = &com_data_point_manager;
 }
 
-STDMETHODIMP ComTeleclientImpl::RequestPoint(
-    BSTR Name,
-    TeleClientLib::IDataPoint** Point) {
+STDMETHODIMP ComTeleclientImpl::RequestPoint(BSTR Name, IDataPoint** Point) {
   if (!Point)
     return E_POINTER;
 

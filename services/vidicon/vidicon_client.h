@@ -13,7 +13,7 @@ namespace vidicon {
 class ComDataPointManager;
 class DataPointManager;
 
-using TeleClient = TeleClientLib::IClient;
+using TeleClient = IClient;
 
 struct VidiconClientContext {
   std::shared_ptr<Executor> executor_;

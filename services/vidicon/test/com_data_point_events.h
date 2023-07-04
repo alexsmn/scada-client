@@ -1,6 +1,6 @@
 #pragma once
 
-#include "services/vidicon/teleclient.h"
+#include "vidicon/teleclient.h"
 
 #include <atlbase.h>
 
@@ -17,12 +17,12 @@ struct ComDataPointEventHanders {
 
 class ATL_NO_VTABLE ComDataPointEvents
     : public CComObjectRootEx<CComMultiThreadModelNoCS>,
-      public IDispatchImpl<TeleClientLib::_IDataPointEvents3,
-                           &__uuidof(TeleClientLib::_IDataPointEvents3),
-                           &__uuidof(TeleClientLib::__TeleClientLib)> {
+      public IDispatchImpl<_IDataPointEvents3,
+                           &__uuidof(_IDataPointEvents3),
+                           &LIBID_TeleClientLib> {
  public:
   BEGIN_COM_MAP(ComDataPointEvents)
-  COM_INTERFACE_ENTRY(TeleClientLib::_IDataPointEvents3)
+  COM_INTERFACE_ENTRY(_IDataPointEvents3)
   COM_INTERFACE_ENTRY(IDispatch)
   END_COM_MAP()
 
@@ -44,8 +44,8 @@ class ATL_NO_VTABLE ComDataPointEvents
   ComDataPointEventHanders handlers_;
 };
 
-inline Microsoft::WRL::ComPtr<TeleClientLib::_IDataPointEvents3>
-CreateComDataPointEvents(const ComDataPointEventHanders& handlers) {
+inline Microsoft::WRL::ComPtr<_IDataPointEvents3> CreateComDataPointEvents(
+    const ComDataPointEventHanders& handlers) {
   auto* com_data_point_events = new CComObjectNoLock<ComDataPointEvents>();
   com_data_point_events->Init(handlers);
   return com_data_point_events;

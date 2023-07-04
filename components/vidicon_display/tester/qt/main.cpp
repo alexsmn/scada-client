@@ -40,7 +40,8 @@ QWidget* CreateVidiconDisplayView(QWidget& root_widget, State& state) {
   VidiconDisplayView* vidicon_display_view =
       new VidiconDisplayView{state.vidicon_client};
   WindowDefinition definition{kVidiconDisplayWindowInfo};
-  definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
+  // definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
+  definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\по-258.vds)";
   auto* widget = vidicon_display_view->Init(definition);
   widget->setParent(&root_widget);
   QObject::connect(widget, &QObject::destroyed,

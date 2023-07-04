@@ -5,6 +5,7 @@ include_directories(client
 )
 
 add_subdirectory("${deps}/modus" modus)
+add_subdirectory(services)
 
 add_definitions(-DMODUS_GDIP)
 
@@ -16,6 +17,7 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
 )
 
 list(FILTER PATHS EXCLUDE REGEX "components/vidicon_display/tester")
+list(FILTER PATHS EXCLUDE REGEX "services/vidicon")
 
 foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")

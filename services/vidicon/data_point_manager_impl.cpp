@@ -56,10 +56,10 @@ inline DataPointValue ToDataPointValue(const scada::DataValue& data_value) {
 }
 
 struct DataPoint : public std::enable_shared_from_this<DataPoint> {
-  DataPoint(TimedDataSpec timed_data_spec,
+  DataPoint(const TimedDataSpec& timed_data_spec,
             std::stop_token cancelation,
             const DataChangeHandler& handler)
-      : timed_data_spec_{std::move(timed_data_spec)},
+      : timed_data_spec_{timed_data_spec},
         stop_callback_{std::move(cancelation), [this] { Stop(); }} {
     timed_data_spec_.property_change_handler =
         [this, handler](const PropertySet& properties) {
@@ -92,7 +92,7 @@ struct DataPointManagerImpl::Backend {
                  const DataChangeHandler& handler) {
     TimedDataSpec timed_data_spec{timed_data_service_, formula};
     auto data_point = std::make_shared<DataPoint>(
-        std::move(timed_data_spec), std::move(cancelation), handler);
+        timed_data_spec, std::move(cancelation), handler);
     data_point->Start();
   }
 

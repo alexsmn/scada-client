@@ -34,7 +34,6 @@
 #include "components/main/selection_commands.h"
 #include "components/main/status_bar_model_impl.h"
 #include "components/portfolio/portfolio_manager.h"
-#include "components/vidicon_display/vidicon_client.h"
 #include "controller_context.h"
 #include "net/transport_factory_impl.h"
 #include "node_service/node_service.h"
@@ -59,7 +58,7 @@
 
 #if !defined(UI_WT)
 #include "components/modus/libmodus/modus_module2.h"
-#include "components/vidicon_display/vidicon_client.h"
+#include "services/vidicon/vidicon_client.h"
 #endif
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
