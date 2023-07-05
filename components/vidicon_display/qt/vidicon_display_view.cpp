@@ -48,6 +48,9 @@ UiView* VidiconDisplayView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
 
   auto ax_widget = std::make_unique<QAxWidget>();
+  ax_widget->disableMetaObject();
+  ax_widget->disableClassInfo();
+  ax_widget->disableEventSink();
 
   LPOLESTR ole_class;
   if (SUCCEEDED(StringFromCLSID(__uuidof(ViewerX::ViewerForm), &ole_class))) {
