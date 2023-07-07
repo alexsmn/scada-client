@@ -5,6 +5,7 @@
 #include "components/vidicon_display/tester/qt/variable_timed_data_service.h"
 #include "components/vidicon_display/vidicon_display_component.h"
 #include "components/vidicon_display/vidicon_display_view.h"
+#include "components/vidicon_display/vidicon_display_view2.h"
 #include "qt/message_loop_qt.h"
 #include "services/vidicon/vidicon_client.h"
 #include "window_definition.h"
@@ -29,8 +30,10 @@ struct State {
 QWidget* CreateVidiconDisplayView(QSplitter& splitter,
                                   State& state,
                                   const std::filesystem::path& path) {
-  VidiconDisplayView* vidicon_display_view =
-      new VidiconDisplayView{state.vidicon_client};
+  /* VidiconDisplayView* vidicon_display_view =
+      new VidiconDisplayView{state.vidicon_client};*/
+  VidiconDisplayView2* vidicon_display_view =
+      new VidiconDisplayView2{state.vidicon_client};
   WindowDefinition definition{kVidiconDisplayWindowInfo};
   // definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
   definition.path = path;

@@ -1,6 +1,7 @@
 ﻿#include "components/vidicon_display/vidicon_display_component.h"
 
 #include "components/vidicon_display/vidicon_display_view.h"
+#include "components/vidicon_display/vidicon_display_view2.h"
 #include "controller_context.h"
 #include "controller_registry.h"
 
@@ -15,6 +16,7 @@ class VidiconDisplayViewFactory : public ControllerRegistrarBase {
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) override {
     return std::make_unique<VidiconDisplayView>(context.vidicon_client_);
+    //return std::make_unique<VidiconDisplayView2>(context.vidicon_client_);
   }
 };
 
