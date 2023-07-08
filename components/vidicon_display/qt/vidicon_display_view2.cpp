@@ -1,8 +1,5 @@
 ﻿#include "components/vidicon_display/qt/vidicon_display_view2.h"
 
-#include "base/win/scoped_gdi_object.h"
-#include "base/win/scoped_hdc.h"
-#include "base/win/scoped_select_object.h"
 #include "components/vidicon_display/qt/gdi_widget.h"
 #include "components/vidicon_display/qt/vidicon_display_lib.h"
 #include "services/vidicon/teleclient.h"
@@ -10,6 +7,13 @@
 #include "window_definition.h"
 
 namespace {
+
+RECT ToRECT(const QRect& rect) {
+  return {.left = rect.left(),
+          .top = rect.top(),
+          .right = rect.right(),
+          .bottom = rect.bottom()};
+}
 
 class DisplayWidget : public GdiWidget {
  public:
@@ -21,23 +25,7 @@ class DisplayWidget : public GdiWidget {
 
  protected:
   virtual void paint(HDC dc, const RECT& rect) override {
-    /*HBRUSH hbrGreen = CreateHatchBrush(HS_BDIAGONAL, RGB(0, 255, 0));
-
-    SetBkMode(dc, TRANSPARENT);
-    SelectObject(dc, hbrGreen);
-    Rectangle(dc, 0, 0, rect.right, rect.bottom);
-
-    SelectObject(dc, GetStockObject(NULL_BRUSH));
-    Ellipse(dc, 50, 50, rect.right - 100, rect.bottom - 100);
-
-    QString text("Test GDI Paint");
-    SetTextAlign(dc, TA_CENTER | TA_BASELINE);
-    TextOutW(dc, (rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2,
-             (LPCWSTR)text.utf16(), text.size());
-
-    DeleteObject(hbrGreen);*/
-
-    display_.draw(dc);
+    display_.draw(dc, ToRECT(viewport()->rect()));
   }
 
  private:

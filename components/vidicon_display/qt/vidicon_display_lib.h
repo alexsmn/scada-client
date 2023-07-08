@@ -19,7 +19,7 @@ struct display_library {
       reinterpret_cast<DestroyDisplayFunc>(
           GetProcAddress(lib, "DestroyDisplay"));
 
-  using DrawDisplayFunc = void(__cdecl*)(int handle, HDC dc);
+  using DrawDisplayFunc = void(__cdecl*)(int handle, HDC dc, const RECT* rect);
   const DrawDisplayFunc draw_display =
       reinterpret_cast<DrawDisplayFunc>(GetProcAddress(lib, "DrawDisplay"));
 
@@ -47,10 +47,10 @@ class display {
     handle_ = handle;
   }
 
-  void draw(HDC dc) const {
+  void draw(HDC dc, const RECT& rect) const {
     check_opened();
 
-    library_.draw_display(handle_, dc);
+    library_.draw_display(handle_, dc, &rect);
   }
 
  private:
