@@ -127,8 +127,10 @@ int main(int argc, char* argv[]) {
   });
 
   toolbar->addAction("Close", [&opened_vidicon_display_view] {
-    opened_vidicon_display_view->deleteLater();
-    opened_vidicon_display_view = nullptr;
+    if (opened_vidicon_display_view) {
+      opened_vidicon_display_view->deleteLater();
+      opened_vidicon_display_view = nullptr;
+    }
   });
 
   VariableTableController variable_table_controller{*variable_table,

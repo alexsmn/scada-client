@@ -8,24 +8,37 @@
 
 namespace {
 
-RECT ToRECT(const QRect& rect) {
+inline RECT ToRECT(const QRect& rect) {
   return {.left = rect.left(),
           .top = rect.top(),
           .right = rect.right(),
           .bottom = rect.bottom()};
 }
 
+inline QRect ToQRect(const RECT& rect) {
+  return QRect{rect.left, rect.top, rect.right - rect.left,
+               rect.bottom - rect.top};
+}
+
 class DisplayWidget : public GdiWidget {
  public:
-  explicit DisplayWidget(QWidget* parent = nullptr) : GdiWidget{parent} {}
+  explicit DisplayWidget(QWidget* parent = nullptr) : GdiWidget{parent} {
+    display_.set_invalidate_handler([this](const vidicon::display_rect& rect) {
+      update(ToQRect(display_.viewport_rect(display_viewport(), rect)));
+    });
+  }
 
   void open(const std::filesystem::path& path, IClient& teleclient) {
     display_.open(path, teleclient);
   }
 
  protected:
+  vidicon::display_viewport display_viewport() const {
+    return {.rect = ToRECT(viewport()->rect())};
+  }
+
   virtual void paint(HDC dc, const RECT& rect) override {
-    display_.draw(dc, ToRECT(viewport()->rect()));
+    display_.draw(dc, display_viewport());
   }
 
  private:
