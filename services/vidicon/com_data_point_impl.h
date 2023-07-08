@@ -149,6 +149,8 @@ inline STDMETHODIMP ComDataPointImpl::get_Address(BSTR* pVal) {
 }
 
 inline STDMETHODIMP ComDataPointImpl::get_Prop(ULONG ID, VARIANT* pVal) {
+  // Display effectively turns an error into an empty value. While it handles
+  // errors badly.
   CComVariant value;
   return value.Detach(pVal);
 }

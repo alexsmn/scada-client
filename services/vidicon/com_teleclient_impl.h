@@ -76,7 +76,10 @@ STDMETHODIMP ComTeleclientImpl::get_XmlNode(BSTR Name,
 STDMETHODIMP ComTeleclientImpl::get_PointProp(BSTR Name,
                                               ULONG ID,
                                               VARIANT* pVal) {
-  return E_NOTIMPL;
+  // Display effectively turns an error into an empty value. While it handles
+  // errors badly.
+  CComVariant value;
+  return value.Detach(pVal);
 }
 
 STDMETHODIMP ComTeleclientImpl::Evalute(BSTR Text, BSTR* pVal) {
