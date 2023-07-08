@@ -1,5 +1,7 @@
 #pragma once
 
+#include "services/vidicon/teleclient.h"
+
 #include <filesystem>
 #include <windows.h>
 
@@ -8,7 +10,7 @@ namespace vidicon {
 struct display_library {
   const HMODULE lib = ::LoadLibraryW(kLibraryPath);
 
-  using CreateDisplayFunc = int(__cdecl*)(LPCWSTR path);
+  using CreateDisplayFunc = int(__cdecl*)(LPCWSTR path, void* teleclient);
   const CreateDisplayFunc create_display =
       reinterpret_cast<CreateDisplayFunc>(GetProcAddress(lib, "CreateDisplay"));
 
@@ -32,12 +34,12 @@ class display {
 
   bool is_opened() const { return handle_ >= 0; }
 
-  void open(const std::filesystem::path& path) {
+  void open(const std::filesystem::path& path, IClient& teleclient) {
     if (is_opened()) {
       throw std::runtime_error{"The display is already opened"};
     }
 
-    auto handle = library_.create_display(path.wstring().c_str());
+    auto handle = library_.create_display(path.wstring().c_str(), &teleclient);
     if (handle < 0) {
       throw std::runtime_error{"Cannot open display"};
     }

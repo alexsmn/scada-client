@@ -15,7 +15,9 @@ class DisplayWidget : public GdiWidget {
  public:
   explicit DisplayWidget(QWidget* parent = nullptr) : GdiWidget{parent} {}
 
-  void open(const std::filesystem::path& path) { display_.open(path); }
+  void open(const std::filesystem::path& path, IClient& teleclient) {
+    display_.open(path, teleclient);
+  }
 
  protected:
   virtual void paint(HDC dc, const RECT& rect) override {
@@ -55,7 +57,7 @@ UiView* VidiconDisplayView2::Init(const WindowDefinition& definition) {
   path_ = definition.path;
 
   auto widget = std::make_unique<DisplayWidget>();
-  widget->open(path_);
+  widget->open(path_, vidicon_client_.teleclient());
 
   widget_ = widget.get();
   return widget.release();
