@@ -19,9 +19,9 @@ class GdiWidget : public QGraphicsView {
 
   virtual bool event(QEvent* event) override {
     if (event->type() == QEvent::Paint) {
-      bool result = QGraphicsView::event(event);
+      //bool result = QGraphicsView::event(event);
       paintOverlay();
-      return result;
+      return true;
     }
     if (event->type() == QEvent::UpdateRequest) {
       bool result = QGraphicsView::event(event);
@@ -29,6 +29,10 @@ class GdiWidget : public QGraphicsView {
       return result;
     }
     return QGraphicsView::event(event);
+  }
+
+  virtual void paintEvent(QPaintEvent* event) override {
+    // Suppress the default handler.
   }
 
   void paintOverlay() {

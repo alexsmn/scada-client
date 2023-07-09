@@ -72,8 +72,8 @@ struct display_library {
       reinterpret_cast<GetViewportRectFunc>(
           GetProcAddress(lib, "GetViewportRect"));
 
-  inline static const wchar_t kLibraryPath[] =
-      LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
+  inline static const wchar_t kLibraryPath[] = L"DisplayLib.dll";
+  // LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
 };
 
 using display_rect = display_library::DisplayRect;
