@@ -1,5 +1,6 @@
 ﻿#include "components/vidicon_display/qt/vidicon_display_view2.h"
 
+#include "client_utils.h"
 #include "components/vidicon_display/qt/gdi_widget.h"
 #include "components/vidicon_display/qt/gdi_widget2.h"
 #include "components/vidicon_display/qt/vidicon_display_lib.h"
@@ -47,7 +48,9 @@ UiView* VidiconDisplayView2::Init(const WindowDefinition& definition) {
   path_ = definition.path;
 
   auto widget = std::make_unique<DisplayWidget>();
-  widget->open(path_, vidicon_client_.teleclient());
+
+  auto full_path = GetPublicFilePath(path_);
+  widget->open(full_path, vidicon_client_.teleclient());
 
   widget_ = widget.get();
   return widget.release();
