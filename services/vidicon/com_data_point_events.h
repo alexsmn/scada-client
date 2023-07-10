@@ -24,8 +24,8 @@ class ATL_NO_VTABLE ComDataPointConnectionPoints
 
     // The arguments are in the inverse order.
     std::array<VARIANTARG, 4> args;
-    args[3].vt = VT_UI4;  // status
-    args[3].date = 0;     // status
+    args[3].vt = VT_UI4;
+    args[3].ulVal = value.status;
     // No copy for performance sake.
     args[2] = value.value;
     args[1].vt = VT_DATE;

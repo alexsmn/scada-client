@@ -5,6 +5,7 @@
 namespace vidicon {
 
 struct DataPointValue {
+  HRESULT status = S_OK;
   CComVariant value;
   DATE time = 0;
   unsigned quality = 0;

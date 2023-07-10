@@ -13,6 +13,8 @@
 #include <atlcomcli.h>
 #include <gmock/gmock.h>
 
+#include "base/debug_util-inl.h"
+
 using namespace testing;
 
 namespace vidicon {
@@ -40,7 +42,8 @@ TEST_F(VidiconClientTest, Test) {
   // Subscribe
 
   {
-    MockFunction<void(const VARIANT& value, DATE time, UINT quality)>
+    MockFunction<void(UINT status, const VARIANT& value, DATE time,
+                      UINT quality)>
         data_change_handler;
 
     ComEventConnector event_connector;
@@ -57,10 +60,11 @@ TEST_F(VidiconClientTest, Test) {
     ON_CALL(*timed_data_service_.default_timed_data_, GetDataValue())
         .WillByDefault(Return(data_value));
 
-    EXPECT_CALL(data_change_handler,
-                Call(/*value*/ AllOf(Field(&VARIANT::vt, VT_I4),
-                                     Field(&VARIANT::intVal, 12345)),
-                     /*time*/ _, /*quality*/ 192 /*OPC_QUALITY_GOOD*/));
+    EXPECT_CALL(
+        data_change_handler,
+        Call(/*status*/ S_OK, /*value*/
+             AllOf(Field(&VARIANT::vt, VT_I4), Field(&VARIANT::intVal, 12345)),
+             /*time*/ _, /*quality*/ 192 /*OPC_QUALITY_GOOD*/));
 
     ASSERT_THAT(timed_data_service_.default_timed_data_->last_observer(),
                 NotNull());

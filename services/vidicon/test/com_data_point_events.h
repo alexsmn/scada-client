@@ -11,7 +11,8 @@
 namespace vidicon {
 
 struct ComDataPointEventHanders {
-  std::function<void(const VARIANT& value, DATE time, UINT quality)>
+  std::function<
+      void(HRESULT status, const VARIANT& value, DATE time, UINT quality)>
       data_changed;
 };
 
@@ -28,7 +29,7 @@ class ATL_NO_VTABLE ComDataPointEvents
 
   void Init(const ComDataPointEventHanders& handlers);
 
-  void DispatchDataChange(DISPPARAMS& disp_params);
+  HRESULT DispatchDataChange(DISPPARAMS& disp_params);
 
   // IDispatch
   STDMETHOD(Invoke)
@@ -63,36 +64,51 @@ inline STDMETHODIMP ComDataPointEvents::Invoke(DISPID dispIdMember,
                                                VARIANT* pVarResult,
                                                EXCEPINFO* pExcepInfo,
                                                UINT* puArgErr) {
-  if (pDispParams == nullptr || pVarResult == nullptr || puArgErr == 0) {
+  if (pDispParams == nullptr) {
     return E_POINTER;
   }
 
-  if (dispIdMember == 201) {
-    DispatchDataChange(*pDispParams);
+  if (pVarResult) {
+    ::VariantInit(pVarResult);
   }
 
-  ::VariantInit(pVarResult);
-  *pExcepInfo = {};
-  *puArgErr = 0;
-  return S_OK;
+  if (pExcepInfo) {
+    *pExcepInfo = {};
+  }
+
+  if (puArgErr) {
+    *puArgErr = 0;
+  }
+
+  switch (dispIdMember) {
+    case 201:
+      return DispatchDataChange(*pDispParams);
+    default:
+      return DISP_E_MEMBERNOTFOUND;
+  }
 }
 
-void ComDataPointEvents::DispatchDataChange(DISPPARAMS& disp_params) {
-  if (disp_params.cArgs != 3) {
-    return;
+HRESULT ComDataPointEvents::DispatchDataChange(DISPPARAMS& disp_params) {
+  if (disp_params.cArgs != 4) {
+    return DISP_E_BADPARAMCOUNT;
   }
 
-  const auto& value = disp_params.rgvarg[0];
+  const auto& status = disp_params.rgvarg[3];
+  const auto& value = disp_params.rgvarg[2];
   const auto& time = disp_params.rgvarg[1];
-  const auto& quality = disp_params.rgvarg[2];
+  const auto& quality = disp_params.rgvarg[0];
 
-  if (time.vt != VT_DATE || quality.vt != VT_UI4) {
-    return;
+  if (status.vt != VT_UI4 || time.vt != VT_DATE || quality.vt != VT_UI4) {
+    // TODO: Set `puArgErr` per
+    // https://learn.microsoft.com/en-us/windows/win32/api/oaidl/nf-oaidl-idispatch-invoke.
+    return DISP_E_BADVARTYPE;
   }
 
   if (handlers_.data_changed) {
-    handlers_.data_changed(value, time.date, quality.ulVal);
+    handlers_.data_changed(status.ulVal, value, time.date, quality.ulVal);
   }
+
+  return S_OK;
 }
 
 }  // namespace vidicon
