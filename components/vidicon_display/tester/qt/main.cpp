@@ -6,6 +6,7 @@
 #include "components/vidicon_display/vidicon_display_component.h"
 #include "components/vidicon_display/vidicon_display_view.h"
 #include "components/vidicon_display/vidicon_display_view2.h"
+#include "controller_delegate.h"
 #include "qt/message_loop_qt.h"
 #include "services/vidicon/vidicon_client.h"
 #include "window_definition.h"
@@ -19,12 +20,29 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+class ControllerDelegateImpl : public ControllerDelegate {
+ public:
+  virtual void SetTitle(std::u16string_view title) override {}
+  virtual void ShowPopupMenu(unsigned resource_id,
+                             const aui::Point& point,
+                             bool right_click) override {}
+  virtual void SetModified(bool modified) override {}
+  virtual void Close() override {}
+  virtual void OpenView(const WindowDefinition& def) override {}
+  virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override {}
+  virtual ContentsModel* GetActiveContentsModel() override { return nullptr; }
+  virtual void AddContentsObserver(ContentsObserver& observer) override {}
+  virtual void RemoveContentsObserver(ContentsObserver& observer) override {}
+  virtual void Focus() override {}
+};
+
 struct State {
   std::shared_ptr<Executor> executor = std::make_shared<TestExecutor>();
   VariableStorage variable_storage;
   VariableTimedDataService timed_data_service{variable_storage};
   vidicon::VidiconClient vidicon_client{
       {.executor_ = executor, .timed_data_service_ = timed_data_service}};
+  ControllerDelegateImpl controller_delegate;
 };
 
 QWidget* CreateVidiconDisplayView(QSplitter& splitter,
@@ -33,7 +51,7 @@ QWidget* CreateVidiconDisplayView(QSplitter& splitter,
   /* VidiconDisplayView* vidicon_display_view =
       new VidiconDisplayView{state.vidicon_client};*/
   VidiconDisplayView2* vidicon_display_view =
-      new VidiconDisplayView2{state.vidicon_client};
+      new VidiconDisplayView2{state.vidicon_client, state.controller_delegate};
   WindowDefinition definition{kVidiconDisplayWindowInfo};
   // definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
   definition.path = path;

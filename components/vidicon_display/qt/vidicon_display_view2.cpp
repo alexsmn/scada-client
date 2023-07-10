@@ -4,6 +4,7 @@
 #include "components/vidicon_display/qt/gdi_widget.h"
 #include "components/vidicon_display/qt/gdi_widget2.h"
 #include "components/vidicon_display/qt/vidicon_display_lib.h"
+#include "controller_delegate.h"
 #include "services/vidicon/teleclient.h"
 #include "services/vidicon/vidicon_client.h"
 #include "window_definition.h"
@@ -39,8 +40,11 @@ class DisplayWidget : public GdiWidget2 {
 
 }  // namespace
 
-VidiconDisplayView2::VidiconDisplayView2(vidicon::VidiconClient& vidicon_client)
-    : vidicon_client_{vidicon_client} {}
+VidiconDisplayView2::VidiconDisplayView2(
+    vidicon::VidiconClient& vidicon_client,
+    ControllerDelegate& controller_delegate)
+    : vidicon_client_{vidicon_client},
+      controller_delegate_{controller_delegate} {}
 
 VidiconDisplayView2::~VidiconDisplayView2() = default;
 
@@ -51,6 +55,8 @@ UiView* VidiconDisplayView2::Init(const WindowDefinition& definition) {
 
   auto full_path = GetPublicFilePath(path_);
   widget->open(full_path, vidicon_client_.teleclient());
+
+  controller_delegate_.SetTitle(full_path.stem().u16string());
 
   widget_ = widget.get();
   return widget.release();

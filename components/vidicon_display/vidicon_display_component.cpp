@@ -15,8 +15,9 @@ class VidiconDisplayViewFactory : public ControllerRegistrarBase {
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) override {
-    //return std::make_unique<VidiconDisplayView>(context.vidicon_client_);
-    return std::make_unique<VidiconDisplayView2>(context.vidicon_client_);
+    // return std::make_unique<VidiconDisplayView>(context.vidicon_client_);
+    return std::make_unique<VidiconDisplayView2>(context.vidicon_client_,
+                                                 context.controller_delegate_);
   }
 };
 

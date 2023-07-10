@@ -4,6 +4,7 @@
 
 #include <filesystem>
 
+class ControllerDelegate;
 class QWidget;
 
 namespace vidicon {
@@ -12,7 +13,8 @@ class VidiconClient;
 
 class VidiconDisplayView2 : public Controller {
  public:
-  explicit VidiconDisplayView2(vidicon::VidiconClient& vidicon_client);
+  VidiconDisplayView2(vidicon::VidiconClient& vidicon_client,
+                      ControllerDelegate& controller_delegate);
   virtual ~VidiconDisplayView2();
 
   // Controller
@@ -21,6 +23,7 @@ class VidiconDisplayView2 : public Controller {
 
  private:
   vidicon::VidiconClient& vidicon_client_;
+  ControllerDelegate& controller_delegate_;
 
   std::filesystem::path path_;
 
