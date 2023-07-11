@@ -21,6 +21,8 @@ namespace vidicon {
 
 class VidiconClientTest : public Test {
  protected:
+  Microsoft::WRL::ComPtr<IDataPoint> CreateDataPoint(std::wstring_view address);
+
   const std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   NiceMock<MockTimedDataService> timed_data_service_;
 
@@ -28,8 +30,30 @@ class VidiconClientTest : public Test {
       {.executor_ = executor_, .timed_data_service_ = timed_data_service_}};
 };
 
-TEST_F(VidiconClientTest, Test) {
+namespace {
+
+std::string ToString(std::wstring_view str) {
+  return boost::locale::conv::utf_to_utf<char>(str.data(),
+                                               str.data() + str.size());
+}
+
+}  // namespace
+
+Microsoft::WRL::ComPtr<IDataPoint> VidiconClientTest::CreateDataPoint(
+    std::wstring_view address) {
+  Microsoft::WRL::ComPtr<IDataPoint> data_point;
+  EXPECT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
+      base::win::ScopedBstr{AsStringPiece(address)},
+      data_point.ReleaseAndGetAddressOf()));
+  EXPECT_THAT(data_point, NotNull());
+  return data_point;
+}
+
+TEST_F(VidiconClientTest, NewDataPoint_ConnectsNewTimedData) {
   const std::wstring_view address = L"address";
+
+  EXPECT_CALL(timed_data_service_,
+              GetFormulaTimedData(Eq(ToString(address)), /*aggregation*/ _));
 
   Microsoft::WRL::ComPtr<IDataPoint> data_point;
   ASSERT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
@@ -38,46 +62,51 @@ TEST_F(VidiconClientTest, Test) {
   ASSERT_THAT(data_point, NotNull());
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
+}
 
-  // Subscribe
-
-  {
-    MockFunction<void(UINT status, const VARIANT& value, DATE time,
-                      UINT quality)>
-        data_change_handler;
-
-    ComEventConnector event_connector;
-    EXPECT_HRESULT_SUCCEEDED(event_connector.Connect(
-        *data_point.Get(),
-        *CreateComDataPointEvents(
-             {.data_changed = data_change_handler.AsStdFunction()})
-             .Get()));
-
-    // Data change.
-
-    auto data_value = scada::MakeReadResult(12345);
-
-    ON_CALL(*timed_data_service_.default_timed_data_, GetDataValue())
-        .WillByDefault(Return(data_value));
-
-    EXPECT_CALL(
-        data_change_handler,
-        Call(/*status*/ S_OK, /*value*/
-             AllOf(Field(&VARIANT::vt, VT_I4), Field(&VARIANT::intVal, 12345)),
-             /*time*/ _, /*quality*/ 192 /*OPC_QUALITY_GOOD*/));
-
-    ASSERT_THAT(timed_data_service_.default_timed_data_->last_observer(),
-                NotNull());
-
-    timed_data_service_.default_timed_data_->last_observer()->OnPropertyChanged(
-        PropertySet{PROPERTY_CURRENT});
-  }
+TEST_F(VidiconClientTest, ReleaseDataPoint_DisconnectsTimedData) {
+  auto data_point = CreateDataPoint(L"address");
+  ASSERT_THAT(data_point, NotNull());
 
   // Disconnect.
 
   data_point.Reset();
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, IsEmpty());
+}
+
+TEST_F(VidiconClientTest, ReceiveDataPointEvents) {
+  auto data_point = CreateDataPoint(L"address");
+  ASSERT_THAT(data_point, NotNull());
+
+  // Connect events.
+
+  MockFunction<void(UINT status, const VARIANT& value, DATE time, UINT quality)>
+      data_change_handler;
+
+  ComEventConnector event_connector;
+  EXPECT_HRESULT_SUCCEEDED(event_connector.Connect(
+      *data_point.Get(),
+      *CreateComDataPointEvents(
+           {.data_changed = data_change_handler.AsStdFunction()})
+           .Get()));
+
+  // Data change.
+
+  ON_CALL(*timed_data_service_.default_timed_data_, GetDataValue())
+      .WillByDefault(Return(scada::MakeReadResult(12345)));
+
+  EXPECT_CALL(
+      data_change_handler,
+      Call(/*status*/ S_OK, /*value*/
+           AllOf(Field(&VARIANT::vt, VT_I4), Field(&VARIANT::intVal, 12345)),
+           /*time*/ _, /*quality*/ 192 /*OPC_QUALITY_GOOD*/));
+
+  ASSERT_THAT(timed_data_service_.default_timed_data_->last_observer(),
+              NotNull());
+
+  timed_data_service_.default_timed_data_->last_observer()->OnPropertyChanged(
+      PropertySet{PROPERTY_CURRENT});
 }
 
 }  // namespace vidicon
