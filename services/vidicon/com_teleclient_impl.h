@@ -54,7 +54,10 @@ STDMETHODIMP ComTeleclientImpl::RequestPoint(BSTR Name, IDataPoint** Point) {
     return E_POINTER;
 
   auto com_data_point = com_data_point_manager_->GetComDataPoint(Name);
-  assert(com_data_point);
+  if (!com_data_point) {
+    return E_FAIL;
+  }
+  
   *Point = com_data_point.Detach();
   return S_OK;
 }

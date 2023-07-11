@@ -8,7 +8,6 @@
 #include <atlbase.h>
 
 #include <atlcom.h>
-#include <boost/locale/encoding_utf.hpp>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -27,7 +26,7 @@ class ATL_NO_VTABLE ComDataPointImpl
   using ReleaseHandler = std::function<void()>;
 
   void Init(DataPointManager& data_point_manager,
-            const std::wstring& formula,
+            const DataPointAddress& address,
             ReleaseHandler release_handler);
 
   ULONG InternalRelease();
@@ -79,12 +78,12 @@ class ATL_NO_VTABLE ComDataPointImpl
 };
 
 inline void ComDataPointImpl::Init(DataPointManager& data_point_manager,
-                                   const std::wstring& formula,
+                                   const DataPointAddress& address,
                                    ReleaseHandler release_handler) {
   release_handler_ = std::move(release_handler);
 
   data_point_manager.Subscribe(
-      boost::locale::conv::utf_to_utf<char>(formula), stop_source_.get_token(),
+      address, stop_source_.get_token(),
       [connection_points = connection_points_](const DataPointValue& value) {
         connection_points->NotifyDataChanged(value);
       });

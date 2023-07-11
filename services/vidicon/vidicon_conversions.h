@@ -1,9 +1,12 @@
 #pragma once
 
+#include "base/strings/string_number_conversions.h"
 #include "core/data_value.h"
 #include "services/vidicon/vidicon_types.h"
 
 #include <ATLComTime.h>
+#include <boost/locale/encoding_utf.hpp>
+#include <optional>
 
 namespace vidicon {
 
@@ -48,6 +51,33 @@ inline DataPointValue ToDataPointValue(const scada::DataValue& data_value) {
   return {.value = ToComVariant(data_value.value),
           .time = ToDATE(data_value.source_timestamp),
           .quality = ToOpcQuality(data_value.qualifier)};
+}
+
+inline std::string ToString(std::wstring_view str) {
+  return boost::locale::conv::utf_to_utf<char>(str.data(),
+                                               str.data() + str.size());
+}
+
+inline std::optional<DataPointAddress> ParseDataPointAddress(
+    std::wstring_view str) {
+  if (str.starts_with(L"AE:")) {
+    return std::nullopt;
+  }
+
+  if (str.starts_with(L"CF:")) {
+    str = str.substr(3);
+    unsigned vidicon_id = 0;
+    if (!base::StringToUint(ToString(str), &vidicon_id)) {
+      return std::nullopt;
+    }
+    return DataPointAddress{.vidicon_id = vidicon_id};
+  }
+
+  if (str.starts_with(L"DA:")) {
+    str = str.substr(3);
+  }
+
+  return DataPointAddress{.opc_address = std::wstring{str}};
 }
 
 }  // namespace vidicon

@@ -3,6 +3,8 @@
 #include "base/string_piece_util.h"
 #include "base/test/test_executor.h"
 #include "base/win/scoped_bstr.h"
+#include "model/node_id_util.h"
+#include "model/opc_node_ids.h"
 #include "services/vidicon/teleclient.h"
 #include "services/vidicon/test/com_data_point_events.h"
 #include "services/vidicon/test/com_event_connector.h"
@@ -49,11 +51,41 @@ Microsoft::WRL::ComPtr<IDataPoint> VidiconClientTest::CreateDataPoint(
   return data_point;
 }
 
-TEST_F(VidiconClientTest, NewDataPoint_ConnectsNewTimedData) {
-  const std::wstring_view address = L"address";
+TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
+  const std::wstring_view address =
+      LR"(VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
+
+  EXPECT_CALL(
+      timed_data_service_,
+      GetNodeTimedData(MakeNestedNodeId(opc::id::OPC, ToString(address)),
+                       /*aggregation*/ _));
+
+  Microsoft::WRL::ComPtr<IDataPoint> data_point;
+  ASSERT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
+      base::win::ScopedBstr{AsStringPiece(address)},
+      data_point.ReleaseAndGetAddressOf()));
+  ASSERT_THAT(data_point, NotNull());
+
+  EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
+}
+
+TEST_F(VidiconClientTest, NewOpcAeDataPoint_FailsConnection) {
+  const std::wstring_view address =
+      LR"(AE:VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
+
+  Microsoft::WRL::ComPtr<IDataPoint> data_point;
+  ASSERT_HRESULT_FAILED(vidicon_client_.teleclient().RequestPoint(
+      base::win::ScopedBstr{AsStringPiece(address)},
+      data_point.ReleaseAndGetAddressOf()));
+  ASSERT_EQ(data_point, nullptr);
+}
+
+TEST_F(VidiconClientTest, NewVidiconDataPoint_ConnectsVidiconNode) {
+  const std::wstring_view address = L"CF:456";
 
   EXPECT_CALL(timed_data_service_,
-              GetFormulaTimedData(Eq(ToString(address)), /*aggregation*/ _));
+              GetNodeTimedData(scada::NodeId{456, NamespaceIndexes::VIDICON},
+                               /*aggregation*/ _));
 
   Microsoft::WRL::ComPtr<IDataPoint> data_point;
   ASSERT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(

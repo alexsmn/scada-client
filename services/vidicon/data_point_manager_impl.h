@@ -16,7 +16,7 @@ class DataPointManagerImpl : public DataPointManager {
                        TimedDataService& timed_data_service);
   ~DataPointManagerImpl();
 
-  virtual void Subscribe(const std::string& formula,
+  virtual void Subscribe(const DataPointAddress& address,
                          std::stop_token cancelation,
                          const DataChangeHandler& handler) override;
 
