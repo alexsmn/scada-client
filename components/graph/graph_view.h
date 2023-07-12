@@ -65,6 +65,7 @@ class GraphView : protected ControllerContext,
   virtual void OnGraphModified() override;
   virtual void OnGraphSelectPane() override;
   virtual void OnLineItemChanged(views::GraphLine& line) override;
+  virtual void OnSelectedCursorChanged() override;
 
   SelectionModel selection_{{timed_data_service_}};
 

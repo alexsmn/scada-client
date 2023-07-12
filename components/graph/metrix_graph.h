@@ -16,7 +16,7 @@ struct MetrixGraphContext {
 
 class MetrixGraph : private MetrixGraphContext, public Graph {
  public:
-  //  typedef std::map<long, Bar> BarMap;
+  void UpdateCurBox();
 
   class MetrixPane;
   class MetrixLine;
@@ -114,7 +114,6 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   void UpdateData();
 
   // Graph
-  virtual void UpdateCurBox() override;
   virtual QString GetXAxisLabel(double val) const override;
 
  private:

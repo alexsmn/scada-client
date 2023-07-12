@@ -421,3 +421,7 @@ void GraphView::ChooseLineColor() {
     line->SetColor(new_color);
 #endif
 }
+
+void GraphView::OnSelectedCursorChanged() {
+  graph_->UpdateCurBox();
+}

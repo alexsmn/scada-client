@@ -267,18 +267,18 @@ MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
 }
 
 void MetrixGraph::UpdateCurBox() {
-  // update box for specified position of cursor line
-  for (Panes::const_iterator i = panes().begin(); i != panes().end(); i++) {
-    MetrixPane& pane = *static_cast<MetrixPane*>(*i);
-    if (pane.plot().lines().empty())
+#if defined(UI_QT)
+  // Update box for specified position of cursor line.
+  for (auto* pane : panes()) {
+    MetrixPane& matrix_pane = *static_cast<MetrixPane*>(pane);
+    if (matrix_pane.plot().lines().empty())
       continue;
 
-    if (pane.legend_.get()) {
-#if defined(UI_QT)
-      pane.legend_->update();
-#endif
+    if (matrix_pane.legend_) {
+      matrix_pane.legend_->update();
     }
   }
+#endif
 }
 
 void MetrixGraph::MetrixLine::UpdateTimeRange() {
