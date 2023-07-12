@@ -93,7 +93,6 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
    protected:
     // MetrixDataSource::Observer
-    virtual void OnDataSourceHistoryChanged() override;
     virtual void OnDataSourceCurrentValueChanged() override;
     virtual void OnDataSourceItemChanged() override;
     virtual void OnDataSourceDeleted() override;
@@ -112,21 +111,12 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   MetrixLine& NewLine(std::string_view path, MetrixPane& pane);
   MetrixPane& NewPane();
 
-  void Fit();
-
   void UpdateData();
-
-  // Forwarded by `GraphView` from the controller event.
-  void OnGraphPannedHorizontally();
 
   // Graph
   virtual void UpdateCurBox() override;
   virtual QString GetXAxisLabel(double val) const override;
 
-  bool m_time_fit = true;
-
  private:
-  bool updating_ = false;
-
   base::RepeatingTimer update_data_timer_;
 };

@@ -54,7 +54,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_NOW}
           .set_execute_handler([this] { ScrollToNow(); })
-          .set_checked_handler([this] { return graph_->m_time_fit; }));
+          .set_checked_handler([this] { return graph_->time_fit(); }));
 
   command_registry_.AddCommand(
       Command{ID_GRAPH_ADD_PANE}.set_execute_handler([this] {
@@ -265,7 +265,7 @@ void GraphView::OnGraphSelectPane() {
 TimeRange GraphView::GetTimeRange() const {
   auto start = base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
   base::Time end;
-  if (!graph_->m_time_fit)
+  if (!graph_->time_fit())
     end = base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
   return TimeRange{start, end};
 }
@@ -311,11 +311,10 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
 }
 
 void GraphView::ScrollToNow() {
-  if (graph_->m_time_fit)
+  if (graph_->time_fit())
     return;
 
-  graph_->m_time_fit = true;
-  graph_->Fit();
+  graph_->SetTimeFit(true);
 
 #if defined(UI_QT)
   graph_->update();
@@ -362,7 +361,7 @@ void GraphView::ToggleZoom() {
       !graph_->selected_pane()->plot().zooming());
 
   if (graph_->selected_pane()->plot().zooming()) {
-    graph_->m_time_fit = false;
+    graph_->SetTimeFit(false);
     prezoom_horizontal_range_ = graph_->horizontal_axis().range();
   } else {
     UndoZoom();
@@ -370,20 +369,16 @@ void GraphView::ToggleZoom() {
 }
 
 void GraphView::SetTimeRange(const TimeRange& range) {
-  graph_->m_time_fit = range.type != TimeRange::Type::Custom;
+  bool time_fit = range.type != TimeRange::Type::Custom;
   auto [start_time, end_time] = GetTimeRangeBounds(range);
   double low = start_time.ToDoubleT();
-  double high = graph_->m_time_fit
-                    ? graph_->horizontal_axis().panning_range_max()
-                    : end_time.ToDoubleT();
+  double high = time_fit ? graph_->horizontal_axis().panning_range_max()
+                         : end_time.ToDoubleT();
   graph_->horizontal_axis().SetRange(
-      views::GraphRange(low, high, views::GraphRange::TIME));
+      views::GraphRange{low, high, views::GraphRange::TIME});
+  graph_->SetTimeFit(time_fit);
 
   controller_delegate_.SetModified(true);
-}
-
-void GraphView::OnGraphPannedHorizontally() {
-  graph_->OnGraphPannedHorizontally();
 }
 
 void GraphView::OnLineItemChanged(views::GraphLine& line) {
@@ -397,8 +392,7 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
 
 void GraphView::UndoZoom() {
   graph_->horizontal_axis().SetRange(prezoom_horizontal_range_);
-  graph_->m_time_fit = true;
-  graph_->Fit();
+  graph_->SetTimeFit(true);
 
   for (auto* pane : graph_->panes()) {
     pane->vertical_axis().UpdateRange();

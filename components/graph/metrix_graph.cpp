@@ -1,6 +1,5 @@
 #include "components/graph/metrix_graph.h"
 
-#include "base/auto_reset.h"
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/strings/stringprintf.h"
@@ -235,26 +234,6 @@ MetrixGraph::MetrixLine::~MetrixLine() {
   SetDataSource(nullptr);
 }
 
-void MetrixGraph::MetrixLine::OnDataSourceHistoryChanged() {
-  views::GraphLine::OnDataSourceHistoryChanged();
-
-  const auto& timed_data = data_source_->timed_data();
-
-  const auto* values = timed_data.values();
-  if (!values || values->empty())
-    return;
-
-  // Scroll to last time.
-  base::Time last_time = timed_data.current().source_timestamp;
-  if (last_time.is_null())
-    return;
-
-  double time = last_time.ToDoubleT();
-  if (graph().horizontal_axis().panning_range_max() < time)
-    graph().horizontal_axis().SetPanningRangeMax(time);
-  graph().Fit();
-}
-
 void MetrixGraph::MetrixLine::OnDataSourceCurrentValueChanged() {
   views::GraphLine::OnDataSourceCurrentValueChanged();
 
@@ -309,7 +288,7 @@ void MetrixGraph::MetrixLine::UpdateTimeRange() {
   auto& graph_range = graph().horizontal_axis().range();
 
   auto from = base::Time::FromDoubleT(graph_range.low());
-  auto to = graph().m_time_fit ? kTimedDataCurrentOnly
+  auto to = graph().time_fit() ? kTimedDataCurrentOnly
                                : base::Time::FromDoubleT(graph_range.high());
 
   data_source().SetRange({from, to});
@@ -350,21 +329,6 @@ MetrixGraph::MetrixPane& MetrixGraph::NewPane() {
   return pane;
 }
 
-void MetrixGraph::Fit() {
-  auto range = horizontal_axis().range();
-
-  auto time_max_limit = horizontal_axis().panning_range_max();
-  if (m_time_fit && time_max_limit != std::numeric_limits<double>::max()) {
-    range = views::GraphRange{time_max_limit - range.delta(), time_max_limit,
-                              range.kind()};
-  }
-
-  AdjustTimeRange(range);
-
-  base::AutoReset updating{&updating_, true};
-  horizontal_axis().SetRange(range);
-}
-
 QString MetrixGraph::GetXAxisLabel(double val) const {
   static const double kSecondStep = 1.0;
   static const double kMinuteStep = 60 * kSecondStep;
@@ -386,12 +350,4 @@ QString MetrixGraph::GetXAxisLabel(double val) const {
 
   return QString::fromStdString(
       FormatTime(base::Time::FromDoubleT(val), format_string));
-}
-
-void MetrixGraph::OnGraphPannedHorizontally() {
-  if (updating_) {
-    return;
-  }
-
-  m_time_fit = false;
 }

@@ -72,10 +72,10 @@ struct GraphViewLoader {
     auto srange = item.GetString("span");
     auto stime = item.GetString("time");
     base::Time from, to;
-    graph_.m_time_fit =
+    bool time_fit =
         base::EqualsCaseInsensitiveASCII(AsStringPiece(stime), "Now");
-    if (graph_.m_time_fit || !Deserialize(stime, to)) {
-      graph_.m_time_fit = true;
+    if (time_fit || !Deserialize(stime, to)) {
+      time_fit = true;
       to = base::Time::Now();
     }
     base::TimeDelta span = base::TimeDelta::FromHours(1);
@@ -85,15 +85,16 @@ struct GraphViewLoader {
         from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));
     graph_.SetHorizontalScrollBarVisible(
         item.GetBool("scrollBar", profile_.graph_view.default_scroll_bar));
+    graph_.SetTimeFit(time_fit);
     time_scale_loaded_ = true;
   }
 
   void FixTimeRange() {
     if (auto time_range = RestoreTimeRange(definition_)) {
-      graph_.m_time_fit = time_range->type != TimeRange::Type::Custom;
       auto [start, end] = GetTimeRangeBounds(*time_range);
-      graph_.horizontal_axis().SetRange(views::GraphRange(
-          start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME));
+      graph_.horizontal_axis().SetRange(views::GraphRange{
+          start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME});
+      graph_.SetTimeFit(time_range->type != TimeRange::Type::Custom);
     } else {
       base::Time now = base::Time::Now();
       graph_.horizontal_axis().SetRange(views::GraphRange(
