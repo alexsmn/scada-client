@@ -85,7 +85,7 @@ struct GraphViewLoader {
         from.ToDoubleT(), to.ToDoubleT(), views::GraphRange::TIME));
     graph_.SetHorizontalScrollBarVisible(
         item.GetBool("scrollBar", profile_.graph_view.default_scroll_bar));
-    graph_.SetTimeFit(time_fit);
+    graph_.horizontal_axis().SetTimeFit(time_fit);
     time_scale_loaded_ = true;
   }
 
@@ -94,7 +94,8 @@ struct GraphViewLoader {
       auto [start, end] = GetTimeRangeBounds(*time_range);
       graph_.horizontal_axis().SetRange(views::GraphRange{
           start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME});
-      graph_.SetTimeFit(time_range->type != TimeRange::Type::Custom);
+      graph_.horizontal_axis().SetTimeFit(time_range->type !=
+                                          TimeRange::Type::Custom);
     } else {
       base::Time now = base::Time::Now();
       graph_.horizontal_axis().SetRange(views::GraphRange(

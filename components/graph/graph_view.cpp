@@ -30,7 +30,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
 
   graph_->horizontal_axis().SetPanningRangeMax(
       graph_->horizontal_axis().range().high());
-  graph_->Fit();
+  graph_->horizontal_axis().Fit();
 
   graph_->UpdateData();
 
@@ -54,7 +54,8 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_NOW}
           .set_execute_handler([this] { ScrollToNow(); })
-          .set_checked_handler([this] { return graph_->time_fit(); }));
+          .set_checked_handler(
+              [this] { return graph_->horizontal_axis().time_fit(); }));
 
   command_registry_.AddCommand(
       Command{ID_GRAPH_ADD_PANE}.set_execute_handler([this] {
@@ -220,7 +221,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
       graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
   line.SetColor(color.native_color());
   line.UpdateTimeRange();
-  graph_->Fit();
+  graph_->horizontal_axis().Fit();
 
   NotifyContainedItemChanged(line.data_source().trid(), true);
 
@@ -265,7 +266,7 @@ void GraphView::OnGraphSelectPane() {
 TimeRange GraphView::GetTimeRange() const {
   auto start = base::Time::FromDoubleT(graph_->horizontal_axis().range().low());
   base::Time end;
-  if (!graph_->time_fit())
+  if (!graph_->horizontal_axis().time_fit())
     end = base::Time::FromDoubleT(graph_->horizontal_axis().range().high());
   return TimeRange{start, end};
 }
@@ -311,10 +312,10 @@ CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
 }
 
 void GraphView::ScrollToNow() {
-  if (graph_->time_fit())
+  if (graph_->horizontal_axis().time_fit())
     return;
 
-  graph_->SetTimeFit(true);
+  graph_->horizontal_axis().SetTimeFit(true);
 
 #if defined(UI_QT)
   graph_->update();
@@ -361,7 +362,7 @@ void GraphView::ToggleZoom() {
       !graph_->selected_pane()->plot().zooming());
 
   if (graph_->selected_pane()->plot().zooming()) {
-    graph_->SetTimeFit(false);
+    graph_->horizontal_axis().SetTimeFit(false);
     prezoom_horizontal_range_ = graph_->horizontal_axis().range();
   } else {
     UndoZoom();
@@ -376,7 +377,7 @@ void GraphView::SetTimeRange(const TimeRange& range) {
                          : end_time.ToDoubleT();
   graph_->horizontal_axis().SetRange(
       views::GraphRange{low, high, views::GraphRange::TIME});
-  graph_->SetTimeFit(time_fit);
+  graph_->horizontal_axis().SetTimeFit(time_fit);
 
   controller_delegate_.SetModified(true);
 }
@@ -392,7 +393,7 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
 
 void GraphView::UndoZoom() {
   graph_->horizontal_axis().SetRange(prezoom_horizontal_range_);
-  graph_->SetTimeFit(true);
+  graph_->horizontal_axis().SetTimeFit(true);
 
   for (auto* pane : graph_->panes()) {
     pane->vertical_axis().UpdateRange();
