@@ -113,9 +113,6 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
 
   void UpdateData();
 
-  // Graph
-  virtual QString GetXAxisLabel(double val) const override;
-
  private:
   base::RepeatingTimer update_data_timer_;
 };

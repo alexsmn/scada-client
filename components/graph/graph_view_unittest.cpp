@@ -24,4 +24,10 @@ void GraphViewTest::SetUp() {
   ui_view_.reset(graph_view_.Init(def));
 }
 
-TEST_F(GraphViewTest, Test) {}
+TEST_F(GraphViewTest, Test) {
+  auto* time_model = graph_view_.GetTimeModel();
+  ASSERT_THAT(time_model, NotNull());
+
+  time_model->SetTimeRange(TimeRange::Type::Day);
+  // EXPECT_THAT(time_model->GetTimeRange(), Eq(TimeRange::Type::Day));
+}

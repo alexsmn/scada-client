@@ -170,15 +170,15 @@ bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
   return !val.is_null();
 }
 
-views::PointEnumerator* MetrixDataSource::EnumPoints(double from,
-                                                     double to,
-                                                     bool include_left_bound,
-                                                     bool include_right_bound) {
-  if (!point_enum_.get())
-    point_enum_.reset(new MetrixPointEnum(timed_data_));
+std::unique_ptr<views::PointEnumerator> MetrixDataSource::EnumPoints(
+    double from,
+    double to,
+    bool include_left_bound,
+    bool include_right_bound) {
+  auto point_enum = std::make_unique<MetrixPointEnum>(timed_data_);
   bool has_data =
-      point_enum_->Reset(from, to, include_left_bound, include_right_bound);
-  return has_data ? point_enum_.get() : NULL;
+      point_enum->Reset(from, to, include_left_bound, include_right_bound);
+  return has_data ? std::move(point_enum) : nullptr;
 }
 
 void MetrixDataSource::UpdateRange() {
@@ -187,7 +187,7 @@ void MetrixDataSource::UpdateRange() {
     return;
   }
 
-  range_ = views::GraphRange();
+  range_ = {};
 
   auto node = timed_data_.GetNode();
   if (IsInstanceOf(node, data_items::id::AnalogItemType)) {
@@ -309,5 +309,6 @@ views::GraphRange MetrixDataSource::GetHorizontalRange() const {
     return {};
   }
 
-  return {earliest_timestamp_.ToDoubleT(), latest_timestamp.ToDoubleT()};
+  return {earliest_timestamp_.ToDoubleT(), latest_timestamp.ToDoubleT(),
+          views::GraphRange::TIME};
 }

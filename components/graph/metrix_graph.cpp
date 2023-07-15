@@ -2,9 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/minute_time.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/win/scoped_handle.h"
 #include "components/graph/metrix_data_source.h"
 
 #if defined(UI_QT)
@@ -59,28 +57,6 @@ int GetPercentReady(const TimedDataSpec& timed_data) {
     return 1000;
 
   return static_cast<int>(ready / total * 100);
-}
-
-std::string FormatTime(base::Time time, const char* format_string) {
-  if (strcmp(format_string, "ms") == 0) {
-    base::Time::Exploded e = {0};
-    time.LocalExplode(&e);
-    return base::StringPrintf("%d:%02d.%03d", e.minute, e.second,
-                              e.millisecond);
-  } else {
-    char buf[128];
-    time_t t = time.ToTimeT();
-#if defined(WIN32)
-    tm ttmv;
-    tm* ttm = localtime_s(&ttmv, &t) == 0 ? &ttmv : nullptr;
-#else
-    tm* ttm = localtime(&t);
-#endif
-    if (!ttm)
-      return std::string();
-    size_t size = strftime(buf, sizeof(buf), format_string, ttm);
-    return std::string(buf, buf + size);
-  }
 }
 
 }  // namespace
@@ -225,7 +201,8 @@ QSize MetrixGraph::Legend::sizeHint() const {
 
 // MetrixGraph::MetrixLine
 
-MetrixGraph::MetrixLine::MetrixLine() : data_source_(new MetrixDataSource) {
+MetrixGraph::MetrixLine::MetrixLine()
+    : data_source_{std::make_unique<MetrixDataSource>()} {
   SetDataSource(data_source_.get());
   set_auto_range(false);
 }
@@ -328,27 +305,4 @@ MetrixGraph::MetrixPane& MetrixGraph::NewPane() {
   SelectPane(&pane);
 
   return pane;
-}
-
-QString MetrixGraph::GetXAxisLabel(double val) const {
-  static const double kSecondStep = 1.0;
-  static const double kMinuteStep = 60 * kSecondStep;
-  static const double kHourStep = 60 * kMinuteStep;
-  static const double kDayStep = 24 * kHourStep;
-
-  // time format
-  const char* format_string;
-  if (horizontal_axis().tick_step() >= kDayStep)
-    format_string = "%#d %b";
-  else if (horizontal_axis().tick_step() >= kHourStep)
-    format_string = "%#d-%#H:%M";
-  else if (horizontal_axis().tick_step() >= kMinuteStep)
-    format_string = "%#H:%M";
-  else if (horizontal_axis().tick_step() >= kSecondStep)
-    format_string = "%#H:%M:%S";
-  else
-    format_string = "ms";  // special msec format
-
-  return QString::fromStdString(
-      FormatTime(base::Time::FromDoubleT(val), format_string));
 }

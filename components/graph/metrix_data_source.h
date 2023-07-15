@@ -11,8 +11,6 @@
 
 #include <memory>
 
-class MetrixPointEnum;
-
 class MetrixDataSource : public views::GraphDataSource {
  public:
   MetrixDataSource();
@@ -34,10 +32,11 @@ class MetrixDataSource : public views::GraphDataSource {
 
   // views::GraphDataSource
   virtual double GetCurrentValue() const override { return current_value_; };
-  virtual views::PointEnumerator* EnumPoints(double from,
-                                             double to,
-                                             bool include_left_bound,
-                                             bool include_right_bound) override;
+  virtual std::unique_ptr<views::PointEnumerator> EnumPoints(
+      double from,
+      double to,
+      bool include_left_bound,
+      bool include_right_bound) override;
 #if defined(UI_QT)
   virtual QString GetYAxisLabel(double value) const override;
 #endif
@@ -64,6 +63,4 @@ class MetrixDataSource : public views::GraphDataSource {
 
   scada::DateTime earliest_timestamp_;
   Cancelation update_horizontal_range_cancelation_;
-
-  std::unique_ptr<MetrixPointEnum> point_enum_;
 };

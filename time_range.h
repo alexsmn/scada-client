@@ -31,6 +31,10 @@ std::string ToString(const TimeRange& time_range);
 
 TimeRange::Type ParseTimeRangeType(std::string_view str);
 
+inline std::ostream& operator<<(std::ostream& stream, TimeRange::Type type) {
+  return stream << ToString(type);
+}
+
 inline std::ostream& operator<<(std::ostream& stream,
                                 const TimeRange& time_range) {
   StructWriter{stream}

@@ -28,10 +28,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
                   .graph_view_ = *this}
       .Read();
 
-  graph_->horizontal_axis().SetPanningRangeMax(
-      graph_->horizontal_axis().range().high());
-  graph_->horizontal_axis().Fit();
-
+  graph_->horizontal_axis().SetScrollRange(graph_->horizontal_axis().range());
   graph_->UpdateData();
 
   for (auto* pane : graph_->panes()) {
@@ -373,7 +370,7 @@ void GraphView::SetTimeRange(const TimeRange& range) {
   bool time_fit = range.type != TimeRange::Type::Custom;
   auto [start_time, end_time] = GetTimeRangeBounds(range);
   double low = start_time.ToDoubleT();
-  double high = time_fit ? graph_->horizontal_axis().panning_range_max()
+  double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : end_time.ToDoubleT();
   graph_->horizontal_axis().SetRange(
       views::GraphRange{low, high, views::GraphRange::TIME});
