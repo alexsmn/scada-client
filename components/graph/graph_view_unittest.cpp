@@ -2,6 +2,9 @@
 
 #include "common_resources.h"
 #include "test/controller_environment.h"
+#include "test/app_environment.h"
+
+#include <boost/asio/io_context.hpp>
 
 #include "base/debug_util-inl.h"
 
@@ -12,6 +15,7 @@ class GraphViewTest : public Test {
   virtual void SetUp() override;
 
  protected:
+  AppEnvironment app_env_;
   ControllerEnvironment env_;
 
   GraphView graph_view_{env_.MakeControllerContext()};

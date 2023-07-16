@@ -9,6 +9,7 @@
 #include "services/file_cache.h"
 #include "services/file_registry.h"
 #include "services/profile.h"
+#include "test/app_environment.h"
 
 #if defined(UI_QT)
 #include "components/main/qt/main_window_qt.h"
@@ -26,6 +27,8 @@ using namespace testing;
 
 class MainWindowTest : public Test {
  protected:
+  AppEnvironment app_env_;
+
   MainWindowContext MakeMainWindowContext();
 
   const std::shared_ptr<TestExecutor> executor_ =

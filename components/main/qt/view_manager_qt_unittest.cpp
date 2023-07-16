@@ -5,6 +5,7 @@
 #include "components/main/view_manager_delegate_mock.h"
 #include "controller_mock.h"
 #include "services/dialog_service_mock.h"
+#include "test/app_environment.h"
 #include "window_info.h"
 
 #include <QMainWindow>
@@ -51,6 +52,8 @@ class ViewManagerQtTest : public Test {
 
  protected:
   std::unique_ptr<ViewState> ExpectOpenView();
+
+  AppEnvironment app_env_;
 
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
