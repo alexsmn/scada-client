@@ -51,7 +51,8 @@ QWidget* CreateVidiconDisplayView(QSplitter& splitter,
   /* VidiconDisplayView* vidicon_display_view =
       new VidiconDisplayView{state.vidicon_client};*/
   VidiconDisplayView2* vidicon_display_view =
-      new VidiconDisplayView2{state.vidicon_client, state.controller_delegate};
+      new VidiconDisplayView2{{state.timed_data_service, state.vidicon_client,
+                               state.controller_delegate}};
   WindowDefinition definition{kVidiconDisplayWindowInfo};
   // definition.path = R"(c:\ProgramData\Telecontrol\SCADA Client\PS-110.vds)";
   definition.path = path;

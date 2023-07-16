@@ -8,12 +8,16 @@
 #include <QGraphicsView>
 #include <QPaintEvent>
 #include <QPainter>
+#include <QTooltip>
 #include <Windows.h>
 #include <qwinfunctions.h>
 
 class GdiWidget2 : public QWidget {
  public:
   explicit GdiWidget2(QWidget* parent = nullptr) : QWidget{parent} {
+    // For tooltips.
+    setMouseTracking(true);
+
     setBackgroundRole(QPalette::Base);
     setAutoFillBackground(true);
   }
@@ -40,6 +44,22 @@ class GdiWidget2 : public QWidget {
     painter.drawPixmap(rect.x(), rect.y(), tile);
   }
 
+  virtual bool event(QEvent* event) override {
+    if (event->type() == QEvent::ToolTip) {
+      const QHelpEvent& help_event = *static_cast<QHelpEvent*>(event);
+      if (auto tooltip = tooltipAt(help_event.pos()); !tooltip.isEmpty()) {
+        QToolTip::showText(help_event.globalPos(), tooltip);
+      } else {
+        QToolTip::hideText();
+        event->ignore();
+      }
+      return true;
+    }
+    return QWidget::event(event);
+  }
+
  protected:
   virtual void paint(HDC dc, const RECT& rect) {}
+
+  virtual QString tooltipAt(const QPoint& p) const { return {}; }
 };

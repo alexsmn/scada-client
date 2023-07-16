@@ -49,6 +49,10 @@ struct display_library {
     void* event_handler_argument;
   };
 
+  struct DisplayShapeMetadata {
+    BSTR data_source;
+  };
+
   using CreateDisplayFunc = int(__cdecl*)(const DisplayContext* context);
   const CreateDisplayFunc create_display =
       reinterpret_cast<CreateDisplayFunc>(GetProcAddress(lib, "CreateDisplay"));
@@ -72,12 +76,24 @@ struct display_library {
       reinterpret_cast<GetViewportRectFunc>(
           GetProcAddress(lib, "GetViewportRect"));
 
-  inline static const wchar_t kLibraryPath[] = L"DisplayLib.dll";
-  // LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
+  using GetShapeMetadataAt = int(__cdecl*)(int handle,
+                                           const Viewport* viewport,
+                                           const POINT* view_point,
+                                           DisplayShapeMetadata* metadata);
+  const GetShapeMetadataAt get_shape_metadata_at =
+      reinterpret_cast<GetShapeMetadataAt>(
+          GetProcAddress(lib, "GetShapeMetadataAt"));
+
+  inline static const wchar_t kLibraryPath[] = // L"DisplayLib.dll";
+   LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
 };
 
 using display_rect = display_library::DisplayRect;
 using display_viewport = display_library::Viewport;
+
+struct display_shape_metadata {
+  std::wstring data_source;
+};
 
 class display {
  public:
@@ -123,6 +139,19 @@ class display {
     RECT viewport_rect = {};
     library_.get_viewport_rect(handle_, &viewport, &rect, &viewport_rect);
     return viewport_rect;
+  }
+
+  std::optional<display_shape_metadata> shape_metadata_at(
+      const display_viewport& viewport,
+      const POINT& point) const {
+    display_library::DisplayShapeMetadata metadata = {};
+    if (!library_.get_shape_metadata_at(handle_, &viewport, &point,
+                                        &metadata)) {
+      return std::nullopt;
+    }
+    display_shape_metadata result{.data_source = metadata.data_source};
+    ::SysFreeString(metadata.data_source);
+    return result;
   }
 
  private:
