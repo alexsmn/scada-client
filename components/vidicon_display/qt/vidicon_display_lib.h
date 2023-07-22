@@ -84,8 +84,8 @@ struct display_library {
       reinterpret_cast<GetShapeMetadataAt>(
           GetProcAddress(lib, "GetShapeMetadataAt"));
 
-  inline static const wchar_t kLibraryPath[] = // L"DisplayLib.dll";
-   LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
+  inline static const wchar_t kLibraryPath[] = L"DisplayLib.dll";
+   // LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
 };
 
 using display_rect = display_library::DisplayRect;

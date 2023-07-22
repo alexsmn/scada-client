@@ -17,6 +17,12 @@ inline POINT MakePOINT(const QPoint& p) {
   return {p.x(), p.y()};
 }
 
+// Lazy initialization.
+inline const vidicon::display_library& GetDisplayLib() {
+  static const vidicon::display_library lib;
+  return lib;
+}
+
 }  // namespace
 
 // DisplayWidget
@@ -70,9 +76,7 @@ class DisplayWidget : public GdiWidget2 {
   }
 
  private:
-  vidicon::display display_{display_library_};
-
-  inline static vidicon::display_library display_library_;
+  vidicon::display display_{GetDisplayLib()};
 };
 
 // VidiconDisplayView2
