@@ -273,8 +273,11 @@ void TaskManagerImpl::Run() {
   if (running_progress_ && running_progress_->IsCanceled()) {
     CancelProgress();
 
-    while (!tasks_.empty())
+    while (!tasks_.empty()) {
+      scada::RejectStatusPromise(tasks_.front().promise,
+                                 scada::StatusCode::Bad);
       tasks_.pop();
+    }
 
     running_task_ = Task();
   }
