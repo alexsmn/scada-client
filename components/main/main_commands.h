@@ -2,6 +2,7 @@
 
 #include "base/promise.h"
 #include "command_handler.h"
+#include "command_registry.h"
 
 #include <functional>
 #include <memory>
@@ -11,6 +12,7 @@ namespace scada {
 class SessionService;
 }
 
+class Debugger;
 class DialogService;
 class EventFetcher;
 class Favourites;
@@ -35,6 +37,7 @@ struct MainCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
+  Debugger& debugger_;
 };
 
 class MainCommands : private MainCommandsContext, public CommandHandler {
@@ -52,4 +55,6 @@ class MainCommands : private MainCommandsContext, public CommandHandler {
   promise<> AddToFavourites();
   promise<> ShowRenameWindowDialog();
   promise<> RenameCurrentPage();
+
+  CommandRegistry command_registry_;
 };

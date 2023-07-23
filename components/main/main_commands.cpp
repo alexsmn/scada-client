@@ -7,6 +7,7 @@
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
 #include "components/configuration_export/excel_configuration_commands.h"
+#include "components/debugger/debugger.h"
 #include "components/favourites//add_favourites_dialog.h"
 #include "components/favourites/favourites.h"
 #include "components/main/main_window.h"
@@ -47,13 +48,13 @@ const Option options[] = {
     {ID_EVENT_FLASH_WINDOW, &Profile::event_flash_window},
     {ID_EVENT_PLAY_SOUND, &Profile::event_play_sound},
     {ID_MODUS2_MODE, &Profile::modus2},
-    {0, NULL}};
+    {0, nullptr}};
 
 static bool Profile::*GetOption(UINT id) {
   for (int i = 0; options[i].id; ++i)
     if (options[i].id == id)
       return options[i].option;
-  return NULL;
+  return nullptr;
 }
 
 void OpenPublicFolder() {
@@ -67,7 +68,9 @@ void OpenPublicFolder() {
 }  // namespace
 
 MainCommands::MainCommands(MainCommandsContext&& context)
-    : MainCommandsContext{std::move(context)} {}
+    : MainCommandsContext{std::move(context)} {
+  debugger_.RegisterCommands(command_registry_);
+}
 
 MainCommands::~MainCommands() {}
 
@@ -100,11 +103,12 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_WINDOW_SPLIT_HORZ:
     case ID_WINDOW_SPLIT_VERT:
 #endif
-      return active_view ? this : NULL;
+      return active_view ? this : nullptr;
 
       /*case ID_PRINT:
         return active_view && active_view->window_info().printable() ? this
-                                                                     : NULL;*/
+                                                                     :
+        nullptr;*/
 
     case ID_TOOLBAR_TOP:
     case ID_TOOLBAR_LEFT:
@@ -143,10 +147,10 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
 
   if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
     if (!win_info->createable())
-      return NULL;
+      return nullptr;
     if (win_info->requires_admin_rights() &&
         !session_service_.HasPrivilege(scada::Privilege::Configure)) {
-      return NULL;
+      return nullptr;
     }
     return this;
   }
@@ -154,7 +158,7 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
   if (GetOption(command_id))
     return this;
 
-  return NULL;
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 bool MainCommands::IsCommandEnabled(unsigned command_id) const {

@@ -20,6 +20,7 @@
 #include "common/event_fetcher_notifier.h"
 #include "common/master_data_services.h"
 #include "component_api_impl.h"
+#include "components/debugger/debugger.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
 #include "components/filesystem/filesystem_component.h"
@@ -371,13 +372,16 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
       master_data_services_->SetServices({});
   };
 
-  auto main_commands_factory = [this, login_handler](
+  auto debugger = std::make_shared<Debugger>(
+      DebuggerContext{.session_service_ = *master_data_services_});
+
+  auto main_commands_factory = [this, login_handler, debugger](
                                    MainWindow& main_window,
                                    DialogService& dialog_service) {
     return std::make_unique<MainCommands>(MainCommandsContext{
         main_window, *task_manager_, dialog_service, *master_data_services_,
         *event_fetcher_, *node_service_, *local_events_, *favourites_, *speech_,
-        *profile_, *main_window_manager_, login_handler});
+        *profile_, *main_window_manager_, login_handler, *debugger});
   };
 
   auto main_menu_factory =

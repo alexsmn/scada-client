@@ -127,6 +127,7 @@
 #define ID_EXPORT_EXCEL                 202
 #define IDR_PAGE_BTN                    203
 #define ID_DUMP_DEBUG_INFO              203
+#define ID_OPEN_DEBUGGER                208
 #define ID_FAVOURITES_ADD_URL           204
 #define ID_FILE_SYSTEM_VIEW             205
 #define ID_ADD_FILE                     328

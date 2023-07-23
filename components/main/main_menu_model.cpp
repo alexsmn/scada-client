@@ -399,6 +399,7 @@ void MainMenuModel::Rebuild() {
   help_submenu_.AddItem(ID_HELP_MANUAL, u"Документация");
   help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (base::CommandLine::ForCurrentProcess()->HasSwitch("debug")) {
+    help_submenu_.AddItem(ID_OPEN_DEBUGGER, u"Отладчик");
     help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, u"Отладочная информация");
     help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   }
