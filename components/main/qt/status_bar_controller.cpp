@@ -1,6 +1,6 @@
 #include "status_bar_controller.h"
 
-#include "controls/models/status_bar_model.h"
+#include "aui/models/status_bar_model.h"
 
 #include <QLabel>
 #include <QProgressBar>

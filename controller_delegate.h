@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/point.h"
+#include "aui/point.h"
 
 #include <string_view>
 

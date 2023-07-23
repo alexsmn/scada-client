@@ -2,7 +2,7 @@
 
 #include "common/node_state.h"
 #include "components/portfolio/portfolio_manager.h"
-#include "controls/models/tree_node_model.h"
+#include "aui/models/tree_node_model.h"
 
 class PortfolioManager;
 

@@ -6,10 +6,10 @@
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
-#include "controls/models/grid_model.h"
-#include "controls/models/header_model.h"
-#include "controls/models/table_column.h"
-#include "controls/models/table_model.h"
+#include "aui/models/grid_model.h"
+#include "aui/models/header_model.h"
+#include "aui/models/table_column.h"
+#include "aui/models/table_model.h"
 #include "scada/variant.h"
 
 #include <fstream>

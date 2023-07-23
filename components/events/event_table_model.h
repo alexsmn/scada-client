@@ -5,7 +5,7 @@
 #include "base/timer/timer.h"
 #include "common/event_observer.h"
 #include "common/node_state.h"
-#include "controls/models/table_model.h"
+#include "aui/models/table_model.h"
 #include "scada/event.h"
 #include "scada/history_service.h"
 #include "node_service/node_observer.h"

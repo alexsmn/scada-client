@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/pool.h"
-#include "controls/color.h"
+#include "aui/color.h"
 
 #include <string>
 

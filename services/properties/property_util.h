@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/models/edit_data.h"
+#include "aui/models/edit_data.h"
 #include "node_service/node_ref.h"
 
 struct PropertyContext;

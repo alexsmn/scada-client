@@ -2,8 +2,8 @@
 
 #include "base/blinker.h"
 #include "components/sheet/sheet_format.h"
-#include "controls/models/fixed_row_model.h"
-#include "controls/models/grid_model.h"
+#include "aui/models/fixed_row_model.h"
+#include "aui/models/grid_model.h"
 
 #include <set>
 

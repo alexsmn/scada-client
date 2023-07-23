@@ -2,7 +2,7 @@
 
 #include "base/pool.h"
 #include "conditional_format.h"
-#include "controls/color.h"
+#include "aui/color.h"
 
 struct SheetFormatBase {
   bool operator<(const SheetFormatBase& other) const {

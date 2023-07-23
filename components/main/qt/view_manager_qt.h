@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/main/view_manager.h"
-#include "controls/qt/dock_tab_widget.h"
+#include "aui/qt/dock_tab_widget.h"
 
 class QMainWindow;
 class QWidget;

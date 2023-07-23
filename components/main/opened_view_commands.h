@@ -7,7 +7,7 @@
 #include "common/node_state.h"
 #include "controller_delegate.h"
 #include "controller_registry.h"
-#include "controls/types.h"
+#include "aui/types.h"
 #include "scada/status.h"
 #include "window_definition.h"
 

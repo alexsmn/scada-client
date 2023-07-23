@@ -8,7 +8,7 @@
 #include "components/table/table_row.h"
 #include "contents_observer.h"
 #include "controller_delegate.h"
-#include "controls/table.h"
+#include "aui/table.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"

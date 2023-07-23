@@ -2,8 +2,8 @@
 
 #include "base/files/file_path.h"
 #include "base/time/time.h"
-#include "controls/color.h"
-#include "controls/rect.h"
+#include "aui/color.h"
+#include "aui/rect.h"
 #include "scada/node_id.h"
 #include "export_util.h"
 #include "services/page.h"

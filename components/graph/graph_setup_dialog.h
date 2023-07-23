@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common_resources.h"
-#include "controls/color.h"
+#include "aui/color.h"
 
 #include <algorithm>
 

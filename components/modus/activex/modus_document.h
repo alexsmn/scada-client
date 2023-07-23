@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/aliases.h"
-#include "controls/handlers.h"
+#include "aui/handlers.h"
 
 #include <unordered_map>
 #include <wrl/client.h>

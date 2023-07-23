@@ -4,7 +4,7 @@
 #include "common_resources.h"
 #include "components/main/action.h"
 #include "components/main/action_manager.h"
-#include "controls/key_codes.h"
+#include "aui/key_codes.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"

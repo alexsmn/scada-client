@@ -3,7 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "common/event_fetcher.h"
 #include "components/sheet/sheet_model.h"
-#include "controls/models/grid_range.h"
+#include "aui/models/grid_range.h"
 
 SheetCell::SheetCell(SheetModel& model, int row, int column)
     : model_(model), row_(row), column_(column), blinking_(false) {

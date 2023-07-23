@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/models/table_model.h"
+#include "aui/models/table_model.h"
 #include "time_model.h"
 #include "timed_data/timed_data_spec.h"
 

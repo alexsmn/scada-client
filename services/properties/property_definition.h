@@ -1,7 +1,7 @@
 #pragma once
 
-#include "controls/models/table_column.h"
-#include "controls/models/edit_data.h"
+#include "aui/models/table_column.h"
+#include "aui/models/edit_data.h"
 
 namespace scada {
 class NodeId;

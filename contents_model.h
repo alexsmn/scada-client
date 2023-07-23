@@ -2,7 +2,7 @@
 
 #include "common/node_state.h"
 #include "contents_observer.h"
-#include "controls/types.h"
+#include "aui/types.h"
 
 class ContentsObserver;
 

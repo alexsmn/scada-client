@@ -3,8 +3,8 @@
 #include "base/stl_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/sheet/sheet_cell.h"
-#include "controls/color.h"
-#include "controls/models/grid_range.h"
+#include "aui/color.h"
+#include "aui/models/grid_range.h"
 #include "window_definition.h"
 
 // SheetColumnModel -----------------------------------------------------------

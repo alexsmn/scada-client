@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/types.h"
+#include "aui/types.h"
 #include "open_context.h"
 
 #include <cassert>

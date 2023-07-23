@@ -2,7 +2,7 @@
 
 #include "controller.h"
 #include "controller_context.h"
-#include "controls/handlers.h"
+#include "aui/handlers.h"
 #include "selection_model.h"
 
 #include <memory>

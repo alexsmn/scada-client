@@ -5,8 +5,8 @@
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
-#include "controls/color.h"
-#include "controls/types.h"
+#include "aui/color.h"
+#include "aui/types.h"
 #include "selection_model.h"
 #include "time_model.h"
 

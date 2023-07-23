@@ -4,7 +4,7 @@
 
 #include "base/timer/timer.h"
 #include "components/graph/metrix_data_source.h"
-#include "controls/graph.h"
+#include "aui/graph.h"
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_delegate.h"
 

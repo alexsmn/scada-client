@@ -1,8 +1,8 @@
 #pragma once
 
 #include "contents_model.h"
-#include "controls/models/fixed_row_model.h"
-#include "controls/models/grid_model.h"
+#include "aui/models/fixed_row_model.h"
+#include "aui/models/grid_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 

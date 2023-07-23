@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "base/observer_list.h"
-#include "controls/models/status_bar_model.h"
+#include "aui/models/status_bar_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/progress_host.h"

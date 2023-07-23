@@ -4,8 +4,8 @@
 #include "common_resources.h"
 #include "components/node_table/node_table_model.h"
 #include "controller_delegate.h"
-#include "controls/grid.h"
-#include "controls/models/header_model.h"
+#include "aui/grid.h"
+#include "aui/models/header_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -14,7 +14,7 @@
 #include "services/task_manager.h"
 
 #if defined(UI_QT)
-#include "controls/qt/grid.h"
+#include "aui/qt/grid.h"
 #endif
 
 namespace {

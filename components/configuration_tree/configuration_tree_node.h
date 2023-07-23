@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/models/tree_node_model.h"
+#include "aui/models/tree_node_model.h"
 #include "node_service/node_ref.h"
 
 #include <map>

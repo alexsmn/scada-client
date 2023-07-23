@@ -2,7 +2,7 @@
 
 #include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "controls/models/menu_model.h"
+#include "aui/models/menu_model.h"
 #include "translation.h"
 
 #include <QMenu>

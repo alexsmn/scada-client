@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/key_codes.h"
+#include "aui/key_codes.h"
 
 #include <optional>
 #include <string>

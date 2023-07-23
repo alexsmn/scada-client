@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/models/status_bar_model.h"
+#include "aui/models/status_bar_model.h"
 
 #include <vector>
 

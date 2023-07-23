@@ -1,7 +1,7 @@
 #pragma once
 
-#include "controls/drag_drop_types.h"
-#include "controls/handlers.h"
+#include "aui/drag_drop_types.h"
+#include "aui/handlers.h"
 
 namespace scada {
 class NodeId;

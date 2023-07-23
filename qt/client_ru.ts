@@ -577,7 +577,7 @@
 <context>
     <name>aui::ItemDelegate</name>
     <message>
-        <location filename="../controls/qt/item_delegate.cpp" line="98"/>
+        <location filename="../aui/qt/item_delegate.cpp" line="98"/>
         <source>Loading...</source>
         <translation type="unfinished"></translation>
     </message>

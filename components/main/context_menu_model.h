@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/models/simple_menu_model.h"
+#include "aui/models/simple_menu_model.h"
 #include "simple_menu_command_handler.h"
 
 class ActionManager;

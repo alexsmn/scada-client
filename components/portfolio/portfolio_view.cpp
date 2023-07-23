@@ -4,7 +4,7 @@
 #include "components/portfolio/portfolio_tree_model.h"
 #include "components/select_item/select_item_dialog.h"
 #include "controller_delegate.h"
-#include "controls/tree.h"
+#include "aui/tree.h"
 #include "node_service/node_service.h"
 #include "selection_model.h"
 

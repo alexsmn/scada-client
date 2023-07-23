@@ -1,7 +1,7 @@
 #pragma once
 
 #include "command_handler.h"
-#include "controls/models/simple_menu_model.h"
+#include "aui/models/simple_menu_model.h"
 
 class SimpleMenuCommandHandler : public aui::SimpleMenuModel::Delegate {
  public:

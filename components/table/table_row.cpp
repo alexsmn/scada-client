@@ -6,7 +6,7 @@
 #include "client_utils.h"
 #include "common/node_event_provider.h"
 #include "components/table/table_model.h"
-#include "controls/color.h"
+#include "aui/color.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
 #include "services/profile.h"

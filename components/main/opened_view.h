@@ -4,7 +4,7 @@
 #include "command_handler.h"
 #include "components/main/controller_factory.h"
 #include "controller_delegate.h"
-#include "controls/types.h"
+#include "aui/types.h"
 #include "window_definition.h"
 
 #include <memory>

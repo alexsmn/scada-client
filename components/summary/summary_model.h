@@ -4,7 +4,7 @@
 #include "base/time/time.h"
 #include "common/node_state.h"
 #include "contents_model.h"
-#include "controls/models/grid_model.h"
+#include "aui/models/grid_model.h"
 #include "scada/aggregate_filter.h"
 #include "export_model.h"
 #include "node_service/node_ref.h"

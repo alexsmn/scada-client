@@ -4,7 +4,7 @@
 #include "command_registry.h"
 #include "controller.h"
 #include "controller_context.h"
-#include "controls/models/table_model_observer.h"
+#include "aui/models/table_model_observer.h"
 #include "export_model.h"
 
 #include <memory>

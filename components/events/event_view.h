@@ -5,7 +5,7 @@
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
-#include "controls/key_codes.h"
+#include "aui/key_codes.h"
 #include "export_model.h"
 #include "selection_model.h"
 #include "time_model.h"

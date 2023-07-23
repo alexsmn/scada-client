@@ -2,8 +2,8 @@
 
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
-#include "controls/grid.h"
-#include "controls/models/header_model.h"
+#include "aui/grid.h"
+#include "aui/models/header_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "remote/session_proxy.h"

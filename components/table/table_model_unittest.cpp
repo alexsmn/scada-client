@@ -3,7 +3,7 @@
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "common/node_event_provider_mock.h"
-#include "controls/models/table_model_observer_mock.h"
+#include "aui/models/table_model_observer_mock.h"
 #include "node_service/test/test_node_model.h"
 #include "services/dialog_service_mock.h"
 #include "services/profile.h"

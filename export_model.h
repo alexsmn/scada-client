@@ -1,7 +1,7 @@
 #pragma once
 
-#include "controls/models/table_column.h"
-#include "controls/models/table_model.h"
+#include "aui/models/table_column.h"
+#include "aui/models/table_model.h"
 
 #include <optional>
 #include <variant>

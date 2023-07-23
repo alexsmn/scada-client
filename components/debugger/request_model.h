@@ -1,5 +1,8 @@
 #pragma once
 
-#include "aui/list_model.h"
+#include "aui/models/table_model.h"
 
-class RequestModel : public aui::ListModel {};
+class RequestTableModel : public aui::TableModel {
+ public:
+  
+};

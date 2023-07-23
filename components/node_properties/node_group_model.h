@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controls/models/property_model.h"
+#include "aui/models/property_model.h"
 #include "scada/attribute_ids.h"
 #include "scada/node_id.h"
 

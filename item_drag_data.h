@@ -1,8 +1,8 @@
 #pragma once
 
 #include "common/node_state.h"
-#include "controls/handlers.h"
-#include "controls/os_exchange_data.h"
+#include "aui/handlers.h"
+#include "aui/os_exchange_data.h"
 
 class ItemDragData {
  public:

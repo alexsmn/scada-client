@@ -5,7 +5,7 @@
 #include "common_resources.h"
 #include "components/device_metrics/node_collector.h"
 #include "components/sheet/sheet_component.h"
-#include "controls/color.h"
+#include "aui/color.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

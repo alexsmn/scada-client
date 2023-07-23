@@ -4,7 +4,7 @@
 #include "contents_model.h"
 #include "controller.h"
 #include "controller_context.h"
-#include "controls/color.h"
+#include "aui/color.h"
 #include "selection_model.h"
 
 #include <memory>

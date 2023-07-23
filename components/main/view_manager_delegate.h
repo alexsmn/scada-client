@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/main/opened_view.h"
-#include "controls/point.h"
+#include "aui/point.h"
 
 #include <memory>
 

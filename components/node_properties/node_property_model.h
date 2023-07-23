@@ -2,7 +2,7 @@
 
 #include "base/cancelation.h"
 #include "components/node_properties/node_group_model.h"
-#include "controls/models/property_model.h"
+#include "aui/models/property_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/properties/property_context.h"
