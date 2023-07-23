@@ -2,7 +2,7 @@
 
 #include "base/struct_writer.h"
 #include "common/aggregation.h"
-#include "core/date_time.h"
+#include "scada/date_time.h"
 #include "time_range.h"
 
 namespace {

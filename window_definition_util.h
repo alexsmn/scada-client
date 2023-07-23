@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/json.h"
-#include "core/node_id.h"
+#include "scada/node_id.h"
 #include "time_range.h"
 #include "window_definition.h"
 

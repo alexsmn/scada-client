@@ -8,7 +8,7 @@
 #include "controller_delegate.h"
 #include "controller_registry.h"
 #include "controls/types.h"
-#include "core/status.h"
+#include "scada/status.h"
 #include "window_definition.h"
 
 #include <memory>

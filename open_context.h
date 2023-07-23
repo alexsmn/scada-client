@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/struct_writer.h"
-#include "core/node_id.h"
+#include "scada/node_id.h"
 #include "node_service/node_ref.h"
 #include "time_range.h"
 

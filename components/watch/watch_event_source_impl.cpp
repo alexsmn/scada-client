@@ -1,6 +1,6 @@
 #include "components/watch/watch_event_source_impl.h"
 
-#include "core/monitored_item_service.h"
+#include "scada/monitored_item_service.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 

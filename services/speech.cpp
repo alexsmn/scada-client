@@ -1,6 +1,6 @@
 #include "speech.h"
 
-#include "core/monitored_item_service.h"
+#include "scada/monitored_item_service.h"
 #include "services/profile.h"
 
 // TODO: Reimport the SAPI headers from the Windows SDK.

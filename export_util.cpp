@@ -10,7 +10,7 @@
 #include "controls/models/header_model.h"
 #include "controls/models/table_column.h"
 #include "controls/models/table_model.h"
-#include "core/variant.h"
+#include "scada/variant.h"
 
 #include <fstream>
 

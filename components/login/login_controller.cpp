@@ -9,8 +9,8 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
-#include "core/session_service.h"
-#include "core/status.h"
+#include "scada/session_service.h"
+#include "scada/status.h"
 #include "services/dialog_service.h"
 
 #include <algorithm>

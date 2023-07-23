@@ -1,8 +1,8 @@
 #include "components/login/qt/login_dialog.h"
 
 #include "components/login/login_controller.h"
-#include "core/session_service.h"
-#include "core/status.h"
+#include "scada/session_service.h"
+#include "scada/status.h"
 
 #include <QAbstractItemView>
 #include <QApplication>

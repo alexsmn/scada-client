@@ -4,7 +4,7 @@
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "components/portfolio/portfolio.h"
-#include "core/event.h"
+#include "scada/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"

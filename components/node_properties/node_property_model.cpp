@@ -1,6 +1,6 @@
 ﻿#include "components/node_properties/node_property_model.h"
 
-#include "core/event.h"
+#include "scada/event.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"

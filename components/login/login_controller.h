@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "core/data_services_factory.h"
-#include "core/localized_text.h"
+#include "scada/data_services_factory.h"
+#include "scada/localized_text.h"
 
 #include <memory>
 

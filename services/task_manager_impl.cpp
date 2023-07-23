@@ -2,9 +2,9 @@
 
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
-#include "core/attribute_service.h"
-#include "core/node_management_service.h"
-#include "core/status_promise.h"
+#include "scada/attribute_service.h"
+#include "scada/node_management_service.h"
+#include "scada/status_promise.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

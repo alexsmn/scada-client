@@ -2,7 +2,7 @@
 
 #include "base/containers/contains.h"
 #include "base/executor.h"
-#include "core/event.h"
+#include "scada/event.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 

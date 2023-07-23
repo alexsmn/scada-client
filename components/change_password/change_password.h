@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/localized_text.h"
+#include "scada/localized_text.h"
 
 struct ChangePasswordContext;
 

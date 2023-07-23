@@ -6,7 +6,7 @@
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
 #include "base/value_util.h"
-#include "core/node_id.h"
+#include "scada/node_id.h"
 #include "model/node_id_util.h"
 #include "time_range.h"
 #include "window_definition.h"

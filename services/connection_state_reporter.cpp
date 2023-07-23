@@ -4,8 +4,8 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
-#include "core/session_service.h"
-#include "core/status.h"
+#include "scada/session_service.h"
+#include "scada/status.h"
 #include "services/local_events.h"
 
 #include <cassert>

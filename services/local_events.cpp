@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include "core/event.h"
+#include "scada/event.h"
 
 LocalEvents::LocalEvents() : next_ack_id_(1) {}
 

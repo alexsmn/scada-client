@@ -15,7 +15,7 @@
 #include "components/main/view_manager.h"
 #include "components/prompt/prompt_dialog.h"
 #include "components/web/web_component.h"
-#include "core/session_service.h"
+#include "scada/session_service.h"
 #include "services/dialog_service.h"
 #include "services/local_events.h"
 #include "services/profile.h"

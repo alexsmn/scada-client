@@ -3,7 +3,7 @@
 #include "base/executor.h"
 #include "base/strings/stringprintf.h"
 #include "common/event_fetcher.h"
-#include "core/session_service.h"
+#include "scada/session_service.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 

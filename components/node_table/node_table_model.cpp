@@ -4,7 +4,7 @@
 #include "base/range_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
-#include "core/event.h"
+#include "scada/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"

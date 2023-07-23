@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/node_state.h"
-#include "core/node_attributes.h"
+#include "scada/node_attributes.h"
 
 struct ImportData {
   struct Reference {

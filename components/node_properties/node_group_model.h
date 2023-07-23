@@ -1,8 +1,8 @@
 #pragma once
 
 #include "controls/models/property_model.h"
-#include "core/attribute_ids.h"
-#include "core/node_id.h"
+#include "scada/attribute_ids.h"
+#include "scada/node_id.h"
 
 class NodePropertyModel;
 class PropertyDefinition;

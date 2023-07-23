@@ -8,7 +8,7 @@
 #include "base/utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
-#include "core/data_value.h"
+#include "scada/data_value.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_format.h"
 #include "node_service/node_service.h"

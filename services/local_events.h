@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/observer_list.h"
-#include "core/event.h"
+#include "scada/event.h"
 
 #include <deque>
 #include <string>

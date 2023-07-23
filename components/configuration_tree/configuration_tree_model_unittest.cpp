@@ -1,7 +1,7 @@
 #include "components/configuration_tree/configuration_tree_model.h"
 
 #include "components/configuration_tree/node_service_tree_mock.h"
-#include "core/standard_node_ids.h"
+#include "scada/standard_node_ids.h"
 #include "node_service/node_model_mock.h"
 
 #include <gmock/gmock.h>

@@ -1,7 +1,7 @@
 #include "services/vidicon/data_point_manager_impl.h"
 
 #include "base/executor.h"
-#include "core/monitored_item.h"
+#include "scada/monitored_item.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "model/opc_node_ids.h"

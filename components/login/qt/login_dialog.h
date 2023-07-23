@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/login/login_dialog.h"
-#include "core/data_services_factory.h"
+#include "scada/data_services_factory.h"
 #include "qt/dialog_service_impl_qt.h"
 #include "ui_login_dialog.h"
 

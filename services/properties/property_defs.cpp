@@ -3,7 +3,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "components/transport/transport_dialog.h"
 #include "controls/color.h"
-#include "core/node_management_service.h"
+#include "scada/node_management_service.h"
 #include "model/data_items_node_ids.h"
 #include "net/transport_string.h"
 #include "node_service/node_service.h"

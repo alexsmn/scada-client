@@ -10,7 +10,7 @@
 #include "controls/color.h"
 #include "controls/grid.h"
 #include "controls/os_exchange_data.h"
-#include "core/session_service.h"
+#include "scada/session_service.h"
 #include "item_drag_data.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"

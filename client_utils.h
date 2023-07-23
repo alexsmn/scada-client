@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
-#include "core/node_id.h"
+#include "scada/node_id.h"
 #include "node_id_set.h"
 #include "node_service/node_ref.h"
 #include "window_definition.h"

@@ -2,8 +2,8 @@
 
 #include "base/promise.h"
 #include "common/node_state.h"
-#include "core/node_attributes.h"
-#include "core/status.h"
+#include "scada/node_attributes.h"
+#include "scada/status.h"
 
 #include <functional>
 

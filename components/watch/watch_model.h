@@ -2,7 +2,7 @@
 
 #include "components/watch/watch_event_source.h"
 #include "controls/models/table_model.h"
-#include "core/event.h"
+#include "scada/event.h"
 #include "node_service/node_ref.h"
 
 #include <deque>

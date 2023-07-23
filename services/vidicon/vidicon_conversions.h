@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/strings/string_number_conversions.h"
-#include "core/data_value.h"
+#include "scada/data_value.h"
 #include "services/vidicon/vidicon_types.h"
 
 #include <ATLComTime.h>
