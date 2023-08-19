@@ -9,6 +9,7 @@ include_directories(client
 add_subdirectory("${deps}/modus" modus)
 add_subdirectory(base)
 add_subdirectory(services)
+add_subdirectory(test)
 
 add_definitions(-DMODUS_GDIP)
 

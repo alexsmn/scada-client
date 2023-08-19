@@ -1,7 +1,7 @@
 #pragma once
 
-#include "components/vidicon_display/tester/qt/variable_timed_data_service.h"
 #include "controller_delegate.h"
+#include "test/display_tester/qt/variable_timed_data_service.h"
 
 class ControllerDelegateImpl : public ControllerDelegate {
  public:
@@ -19,7 +19,7 @@ class ControllerDelegateImpl : public ControllerDelegate {
   virtual void Focus() override {}
 };
 
-struct TesterState {
+struct DisplayTesterState {
   ControllerDelegateImpl controller_delegate;
   VariableStorage variable_storage;
   VariableTimedDataService timed_data_service{variable_storage};

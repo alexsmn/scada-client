@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/range_util.h"
-#include "components/vidicon_display/tester/qt/variable_storage.h"
+#include "test/display_tester/qt/variable_storage.h"
 #include "timed_data/base_timed_data.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_service.h"
