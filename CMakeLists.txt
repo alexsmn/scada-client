@@ -20,6 +20,7 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
 )
 
 list(FILTER PATHS EXCLUDE REGEX "components/vidicon_display/tester")
+list(FILTER PATHS EXCLUDE REGEX "components/modus/tester")
 list(FILTER PATHS EXCLUDE REGEX "base")
 list(FILTER PATHS EXCLUDE REGEX "services/vidicon")
 
