@@ -2,11 +2,11 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "client_paths.h"
 #include "common_resources.h"
-#include "components/vidicon_display/tester/qt/variable_timed_data_service.h"
+#include "components/vidicon_display/tester/qt/tester_state.h"
+#include "components/vidicon_display/tester/qt/tester_window.h"
 #include "components/vidicon_display/vidicon_display_component.h"
 #include "components/vidicon_display/vidicon_display_view.h"
 #include "components/vidicon_display/vidicon_display_view2.h"
-#include "controller_delegate.h"
 #include "qt/message_loop_qt.h"
 #include "services/vidicon/vidicon_client.h"
 #include "window_definition.h"
@@ -14,35 +14,11 @@
 
 #include <QApplication>
 #include <QFileDialog>
-#include <QSplitter>
-#include <QTableWidget>
-#include <QToolBar>
-#include <QVBoxLayout>
-#include <QWidget>
 
-class ControllerDelegateImpl : public ControllerDelegate {
- public:
-  virtual void SetTitle(std::u16string_view title) override {}
-  virtual void ShowPopupMenu(unsigned resource_id,
-                             const aui::Point& point,
-                             bool right_click) override {}
-  virtual void SetModified(bool modified) override {}
-  virtual void Close() override {}
-  virtual void OpenView(const WindowDefinition& def) override {}
-  virtual void ExecuteDefaultNodeCommand(const NodeRef& node) override {}
-  virtual ContentsModel* GetActiveContentsModel() override { return nullptr; }
-  virtual void AddContentsObserver(ContentsObserver& observer) override {}
-  virtual void RemoveContentsObserver(ContentsObserver& observer) override {}
-  virtual void Focus() override {}
-};
-
-struct State {
+struct State : TesterState {
   std::shared_ptr<Executor> executor = std::make_shared<TestExecutor>();
-  VariableStorage variable_storage;
-  VariableTimedDataService timed_data_service{variable_storage};
   vidicon::VidiconClient vidicon_client{
       {.executor_ = executor, .timed_data_service_ = timed_data_service}};
-  ControllerDelegateImpl controller_delegate;
 };
 
 QWidget* CreateVidiconDisplayView(QSplitter& splitter,
@@ -64,50 +40,6 @@ QWidget* CreateVidiconDisplayView(QSplitter& splitter,
   return widget;
 }
 
-class VariableTableController {
- public:
-  VariableTableController(QTableWidget& table,
-                          VariableStorage& variable_storage)
-      : table_{table}, variable_storage_{variable_storage} {
-    table_.setColumnCount(2);
-    table_.setHorizontalHeaderLabels({"Name", "Value"});
-
-    QObject::connect(
-        &table_, &QTableWidget::itemChanged, [&](QTableWidgetItem* item) {
-          if (!loading_ && item->column() == 1) {
-            auto name = table_.item(item->row(), 0)->text().toStdString();
-            auto new_value = item->text().toInt();
-            variable_storage_.SetVariableValue(name, new_value);
-          }
-        });
-  }
-
-  void Load() {
-    loading_ = true;
-
-    table_.clear();
-
-    int index = 0;
-    for (const auto& [name, data_value] : variable_storage_.variable_values) {
-      table_.insertRow(index);
-      table_.setItem(index, 0,
-                     new QTableWidgetItem{QString::fromStdString(name)});
-      table_.setItem(index, 1,
-                     new QTableWidgetItem{
-                         QString::fromStdString(ToString(data_value.value))});
-      index++;
-    }
-
-    loading_ = false;
-  }
-
- private:
-  QTableWidget& table_;
-  VariableStorage& variable_storage_;
-
-  bool loading_ = false;
-};
-
 int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
 
@@ -115,50 +47,32 @@ int main(int argc, char* argv[]) {
   base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};
   State state;
 
-  QWidget root_widget;
-  root_widget.setLayout(new QVBoxLayout);
+  TesterWindow tester_window{state};
 
   QWidget* opened_vidicon_display_view = nullptr;
 
-  QToolBar* toolbar = new QToolBar{&root_widget};
-  toolbar->setMaximumHeight(20);
-  root_widget.layout()->addWidget(toolbar);
-
-  auto* splitter = new QSplitter{&root_widget};
-  splitter->setOrientation(Qt::Horizontal);
-  root_widget.layout()->addWidget(splitter);
-
-  auto* variable_table = new QTableWidget{&root_widget};
-  splitter->addWidget(variable_table);
-
-  toolbar->addAction("Open Default", [&] {
+  tester_window.toolbar->addAction("Open Default", [&] {
     opened_vidicon_display_view = CreateVidiconDisplayView(
-        *splitter, state,
+        *tester_window.splitter, state,
         R"(c:\ProgramData\Telecontrol\SCADA Client\по-258.vds)");
   });
 
-  toolbar->addAction("Open...", [&] {
-    if (auto path = QFileDialog::getOpenFileName(&root_widget);
+  tester_window.toolbar->addAction("Open...", [&] {
+    if (auto path = QFileDialog::getOpenFileName(&tester_window);
         !path.isEmpty()) {
-      opened_vidicon_display_view =
-          CreateVidiconDisplayView(*splitter, state, path.toStdWString());
+      opened_vidicon_display_view = CreateVidiconDisplayView(
+          *tester_window.splitter, state, path.toStdWString());
     }
   });
 
-  toolbar->addAction("Close", [&opened_vidicon_display_view] {
+  tester_window.toolbar->addAction("Close", [&opened_vidicon_display_view] {
     if (opened_vidicon_display_view) {
       opened_vidicon_display_view->deleteLater();
       opened_vidicon_display_view = nullptr;
     }
   });
 
-  VariableTableController variable_table_controller{*variable_table,
-                                                    state.variable_storage};
-
-  toolbar->addAction("Variables", [&] { variable_table_controller.Load(); });
-
-  root_widget.resize(1000, 500);
-  root_widget.show();
+  tester_window.show();
 
   return QApplication::exec();
 }
