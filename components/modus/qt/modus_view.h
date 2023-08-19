@@ -22,6 +22,8 @@ class ModusView : public QWidget,
   explicit ModusView(modus::ModusDocumentContext&& context);
   virtual ~ModusView();
 
+  void ShowSetupDialog();
+
   // ModusViewWrapper
   virtual void Open(const std::filesystem::path& path) override;
   virtual std::filesystem::path GetPath() const override;

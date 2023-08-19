@@ -131,3 +131,9 @@ void ModusView::OnDocPopup(IDispatch* disp_doc, bool& popup) {
   if (document_)
     document_->OnDocPopup(popup);
 }
+
+void ModusView::ShowSetupDialog() {
+  if (document_) {
+    document_->sde_form().ShowOptions();
+  }
+}

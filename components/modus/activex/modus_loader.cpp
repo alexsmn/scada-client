@@ -224,6 +224,10 @@ void ModusLoader::LoadObject(ISDEObject& sde_object) {
   for (int i = 0; i < count; ++i) {
     Microsoft::WRL::ComPtr<SDECore::INamedPB> named_pb;
     techs->get_Item(base::win::ScopedVariant(i), named_pb.GetAddressOf());
+    if (!named_pb) {
+      LOG_WARNING(logger_) << "Cannot get tech item" << LOG_TAG("Index", i);
+      continue;
+    }
 
     SDEParams params;
     named_pb->get_Params(params.GetAddressOf());

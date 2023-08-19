@@ -65,7 +65,8 @@ QWidget* ModusController::CreateModusView() {
 
   wrapper_ = view_;
 
-  command_registry_.AddCommand(Command{ID_SETUP}.set_execute_handler([] {}));
+  command_registry_.AddCommand(Command{ID_SETUP}.set_execute_handler(
+      [this] { view_->ShowSetupDialog(); }));
 
   return view_;
 }
