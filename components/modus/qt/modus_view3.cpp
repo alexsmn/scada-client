@@ -1,11 +1,12 @@
 #include "components/modus/qt/modus_view3.h"
 
+#include "client_utils.h"
 #include "timed_data/timed_data_spec.h"
 
-#include <QtWinExtras/qwinfunctions.h>
 #include <QEvent>
 #include <QPaintEngine>
 #include <QPainter>
+#include <QtWinExtras/qwinfunctions.h>
 
 namespace {
 
@@ -32,8 +33,8 @@ ModusView3::ModusView3(TimedDataService& timed_data_service)
 
 ModusView3::~ModusView3() {}
 
-void ModusView3::Open(const std::filesystem::path& path) {
-  path_ = path;
+void ModusView3::Open(const WindowDefinition& definition) {
+  path_ = GetPublicFilePath(definition.path);
 
   document_.Load(QString::fromStdU16String(path_.u16string()));
 
@@ -44,6 +45,8 @@ void ModusView3::Open(const std::filesystem::path& path) {
 std::filesystem::path ModusView3::GetPath() const {
   return path_;
 }
+
+void ModusView3::Save(WindowDefinition& definition) {}
 
 bool ModusView3::ShowContainedItem(const scada::NodeId& item_id) {
   // TODO:

@@ -1,6 +1,8 @@
 ﻿#include "components/modus/qt/modus_view.h"
 
+#include "client_utils.h"
 #include "components/modus/activex/modus.h"
+#include "window_definition.h"
 
 #include <QAxWidget>
 #include <QDesktopServices>
@@ -35,10 +37,10 @@ ModusView::ModusView(ModusDocumentContext&& context)
 
 ModusView::~ModusView() = default;
 
-void ModusView::Open(const std::filesystem::path& path) {
+void ModusView::Open(const WindowDefinition& definition) {
   assert(!document_);
 
-  path_ = path;
+  path_ = GetPublicFilePath(definition.path);
 
   Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form;
   ax_widget_->queryInterface(IID_PPV_ARGS(&sde_form));
@@ -48,7 +50,13 @@ void ModusView::Open(const std::filesystem::path& path) {
   }
 
   document_ = std::make_unique<modus::ModusDocument>(
-      ModusDocumentContext{*this}, *sde_form.Get(), path_);
+      ModusDocumentContext{*this}, *sde_form.Get());
+
+  if (auto* state = definition.FindItem("State")) {
+    document_->InitFromState(RestoreBlob(state->attributes.GetString()));
+  } else {
+    document_->InitFromFilePath(path_);
+  }
 
   connect(ax_widget_, SIGNAL(OnDocClick(IDispatch*, IDispatch*)), this,
           SLOT(OnDocClick(IDispatch*, IDispatch*)));
@@ -92,6 +100,12 @@ void ModusView::OpenPlaceholder() {
 
 std::filesystem::path ModusView::GetPath() const {
   return path_;
+}
+
+void ModusView::Save(WindowDefinition& definition) {
+  if (document_) {
+    definition.AddItem("State", base::Value{SaveBlob(document_->SaveState())});
+  }
 }
 
 bool ModusView::ShowContainedItem(const scada::NodeId& item_id) {

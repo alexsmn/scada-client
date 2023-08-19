@@ -7,10 +7,10 @@
 #include "libmodus/render/renderer_delegate.h"
 #include "timed_data/timed_data_spec.h"
 
-#include <qwidget.h>
 #include <functional>
 #include <map>
 #include <memory>
+#include <qwidget.h>
 
 namespace modus {
 class Element;
@@ -41,7 +41,8 @@ class ModusView2 : public QWidget,
     selection_signal_ = std::move(signal);
   }
 
-  typedef std::function<void(const std::filesystem::path& path)> NavigationSignal;
+  typedef std::function<void(const std::filesystem::path& path)>
+      NavigationSignal;
   void set_navigation_signal(NavigationSignal signal) {
     navigation_signal_ = std::move(signal);
   }
@@ -52,7 +53,8 @@ class ModusView2 : public QWidget,
   }
 
   // ModusViewWrapper
-  virtual void Open(const std::filesystem::path& path) override;
+  virtual void Open(const WindowDefinition& definition) override;
+  virtual void Save(WindowDefinition& definition) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
 

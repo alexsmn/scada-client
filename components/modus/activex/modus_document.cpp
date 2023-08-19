@@ -1,5 +1,6 @@
 #include "components/modus/activex/modus_document.h"
 
+#include "base/memory_istream.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
@@ -108,18 +109,40 @@ ModusDocument::EventSink::OnDocRightClick(
 // ModusDocument
 
 ModusDocument::ModusDocument(ModusDocumentContext&& context,
-                             htsde2::IHTSDEForm2& sde_form,
-                             const std::filesystem::path& path)
+                             htsde2::IHTSDEForm2& sde_form)
     : ModusDocumentContext{std::move(context)}, sde_form_{&sde_form} {
+  // WARNING: The initialization order is important for Modus.
+
   CreateEventSink();
 
-  event_sink_->DispEventAdvise(sde_form_.Get());
+  if (event_sink_) {
+    event_sink_->DispEventAdvise(sde_form_.Get());
+  }
 
   sde_form_->put_StatusVisible(VARIANT_FALSE);
   sde_form_->put_ToolbarVisible(VARIANT_FALSE);
   // sde_form_->put_PagesVisible(SDECore::txPagesHidden);
   sde_form_->put_AxBorderStyle(htsde2::afbNone);
+}
 
+ModusDocument::~ModusDocument() {
+  object_map_.clear();
+  objects_.clear();
+
+  // WARNING: The cleanup order is important for Modus.
+
+  sde_document_.Reset();
+
+  if (event_sink_) {
+    if (sde_form_)
+      event_sink_->DispEventUnadvise(sde_form_.Get());
+    event_sink_->set_document(nullptr);
+  }
+
+  sde_form_.Reset();
+}
+
+void ModusDocument::InitFromFilePath(const std::filesystem::path& path) {
   sde_form_->Open(base::win::ScopedBstr(path.wstring()));
 
   sde_form_->get_Document(sde_document_.ReleaseAndGetAddressOf());
@@ -137,22 +160,32 @@ ModusDocument::ModusDocument(ModusDocumentContext&& context,
                 });
     title_ = base::WideToUTF16(loader.title());
   }
+
+  PostInit();
 }
 
-ModusDocument::~ModusDocument() {
-  object_map_.clear();
-  objects_.clear();
+void ModusDocument::InitFromState(std::string_view state) {
+  Microsoft::WRL::ComPtr<IPersistStreamInit> psi;
+  sde_form_.As(&psi);
 
-  sde_document_.Reset();
-
-  if (event_sink_) {
-    if (sde_form_)
-      event_sink_->DispEventUnadvise(sde_form_.Get());
-    event_sink_->set_document(nullptr);
+  if (!psi) {
+    return;
   }
 
-  sde_form_.Reset();
+  MemoryIStream stream{reinterpret_cast<BYTE*>(const_cast<char*>(state.data())),
+                       state.size()};
+  if (FAILED(psi->Load(&stream))) {
+    return;
+  }
+
+  sde_form_->get_Document(sde_document_.ReleaseAndGetAddressOf());
+  if (!sde_document_)
+    return;
+
+  PostInit();
 }
+
+void ModusDocument::PostInit() {}
 
 void ModusDocument::CreateEventSink() {
   HRESULT res;
@@ -184,7 +217,7 @@ modus::ModusObject* ModusDocument::FindObject(const scada::NodeId& node_id) {
         return object.get();
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void ModusDocument::OnDocPopup(bool& popup) {
@@ -195,7 +228,7 @@ void ModusDocument::OnDocPopup(bool& popup) {
 }
 
 void ModusDocument::OnDocDblClick(SDECore::IUIEventInfo& ui_event_info) {
-  modus::ModusObject* object = NULL;
+  modus::ModusObject* object = nullptr;
 
   Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
   ui_event_info.get_Touched(sde_object.ReleaseAndGetAddressOf());
@@ -228,7 +261,7 @@ void ModusDocument::OnDocDblClick(SDECore::IUIEventInfo& ui_event_info) {
 
 void ModusDocument::OnDocClick(MouseButton button,
                                SDECore::IUIEventInfo& ui_event_info) {
-  modus::ModusObject* object = NULL;
+  modus::ModusObject* object = nullptr;
 
   Microsoft::WRL::ComPtr<SDECore::ISDEObject50> sde_object;
   ui_event_info.get_Touched(sde_object.ReleaseAndGetAddressOf());
@@ -259,6 +292,24 @@ void ModusDocument::OnDocClick(MouseButton button,
     GetCursorPos(&pt);
     context_menu_callback_(aui::Point{pt.x, pt.y});
   }
+}
+
+std::string ModusDocument::SaveState() const {
+  Microsoft::WRL::ComPtr<IPersistStreamInit> psi;
+  sde_form_.As(&psi);
+
+  if (!psi) {
+    return {};
+  }
+
+  std::string data(1024 * 1024, ' ');
+  MemoryIStream stream{reinterpret_cast<BYTE*>(data.data()), 0, data.size()};
+  if (FAILED(psi->Save(&stream, TRUE))) {
+    return {};
+  }
+
+  data.resize(stream.size());
+  return data;
 }
 
 }  // namespace modus

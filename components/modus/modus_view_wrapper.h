@@ -4,11 +4,15 @@
 
 #include <filesystem>
 
+class WindowDefinition;
+
 class ModusViewWrapper {
  public:
   virtual ~ModusViewWrapper() {}
 
-  virtual void Open(const std::filesystem::path& path) = 0;
+  virtual void Open(const WindowDefinition& definition) = 0;
+
+  virtual void Save(WindowDefinition& definition) = 0;
 
   virtual std::filesystem::path GetPath() const = 0;
 

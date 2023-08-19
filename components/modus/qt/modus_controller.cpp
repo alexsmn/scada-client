@@ -110,13 +110,15 @@ QWidget* ModusController::Init(const WindowDefinition& definition) {
   else
     result = CreateModusView();
 
-  wrapper_->Open(GetPublicFilePath(definition.path));
+  wrapper_->Open(definition);
 
   return result;
 }
 
 void ModusController::Save(WindowDefinition& definition) {
   definition.path = FullFilePathToPublic(wrapper_->GetPath());
+
+  wrapper_->Save(definition);
 }
 
 bool ModusController::ShowContainedItem(const scada::NodeId& item_id) {

@@ -4,6 +4,7 @@
 #include "components/modus/modus_view_wrapper.h"
 
 #include <QWidget>
+#include <filesystem>
 
 namespace base {
 class FilePath;
@@ -25,7 +26,8 @@ class ModusView : public QWidget,
   void ShowSetupDialog();
 
   // ModusViewWrapper
-  virtual void Open(const std::filesystem::path& path) override;
+  virtual void Open(const WindowDefinition& definition) override;
+  virtual void Save(WindowDefinition& definition) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
 
