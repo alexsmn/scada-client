@@ -6,12 +6,7 @@
 #include <QWidget>
 #include <filesystem>
 
-namespace base {
-class FilePath;
-}
-
 class QAxWidget;
-class ModusController;
 
 // Native Modus ActiveXeme viewer.
 class ModusView : public QWidget,
@@ -38,8 +33,6 @@ class ModusView : public QWidget,
   void OnDocPopup(IDispatch*, bool&);
 
  protected:
-  friend class ModusController;
-
   void OpenPlaceholder();
 
   std::filesystem::path path_;
