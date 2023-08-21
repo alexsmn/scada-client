@@ -1,8 +1,9 @@
 #pragma once
 
-#include "common/aliases.h"
 #include "aui/handlers.h"
+#include "common/aliases.h"
 
+#include <string_view>
 #include <unordered_map>
 #include <wrl/client.h>
 
@@ -43,18 +44,23 @@ class ModusDocument : private ModusDocumentContext {
  public:
   enum class MouseButton { Left, Right };
 
-  ModusDocument(ModusDocumentContext&& context,
-                htsde2::IHTSDEForm2& sde_form,
-                const std::filesystem::path& path);
+  ModusDocument(ModusDocumentContext&& context, htsde2::IHTSDEForm2& sde_form);
   ~ModusDocument();
 
   htsde2::IHTSDEForm2& sde_form() { return *sde_form_.Get(); }
+  SDECore::ISDEDocument50* sde_document() { return sde_document_.Get(); }
+
   const std::u16string& title() const { return title_; }
+
+  void InitFromFilePath(const std::filesystem::path& path);
+  void InitFromState(std::string_view state);
 
   // Find entity by TRID. Method has linear complexity.
   ModusObject* FindObject(const scada::NodeId& node_id);
 
   bool ShowContainedItem(const scada::NodeId& node_id);
+
+  std::string SaveState() const;
 
   void OnDocPopup(bool& popup);
   void OnDocClick(MouseButton button, SDECore::IUIEventInfo& ui_event_info);
@@ -62,6 +68,8 @@ class ModusDocument : private ModusDocumentContext {
 
  private:
   class EventSink;
+
+  void PostInit();
 
   void CreateEventSink();
 

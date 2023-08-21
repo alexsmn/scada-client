@@ -2,7 +2,8 @@
 
 #include <Windows.h>
 #include <cassert>
-th class MemoryIStream : public IStream {
+
+class MemoryIStream : public IStream {
  public:
   MemoryIStream(BYTE* data, DWORD size, DWORD capacity = 0) noexcept {
     assert(data);

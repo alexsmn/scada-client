@@ -36,14 +36,14 @@ ModusBinding2* ModusView2::GetBinding(modus::Shape* shape) const {
   return i == bindings_.end() ? nullptr : i->second.get();
 }
 
-void ModusView2::Open(const std::filesystem::path& path) {
-  path_ = path;
+void ModusView2::Open(const WindowDefinition& definition) {
+  path_ = GetPublicFilePath(definition.path);
 
   auto& master_library = ModusModule2::GetInstance()->master_library();
   scheme_ = std::make_unique<modus::Scheme>();
   scheme_->set_master_library(&master_library);
   // TODO: Check result.
-  modus::LoadScheme(*scheme_, path);
+  modus::LoadScheme(*scheme_, path_);
 
   if (scheme_) {
     title_ = scheme_->GetValue(modus::kAttrSchemeTitle).as_string();
@@ -57,6 +57,8 @@ void ModusView2::Open(const std::filesystem::path& path) {
 std::filesystem::path ModusView2::GetPath() const {
   return path_;
 }
+
+void ModusView2::Save(WindowDefinition& definition) {}
 
 bool ModusView2::ShowContainedItem(const scada::NodeId& item_id) {
   // TODO:

@@ -1,6 +1,10 @@
 ﻿#include "components/modus/qt/modus_view.h"
 
+#include "base/bind.h"
+#include "base/threading/sequenced_task_runner_handle.h"
+#include "client_utils.h"
 #include "components/modus/activex/modus.h"
+#include "window_definition.h"
 
 #include <QAxWidget>
 #include <QDesktopServices>
@@ -35,10 +39,24 @@ ModusView::ModusView(ModusDocumentContext&& context)
 
 ModusView::~ModusView() = default;
 
-void ModusView::Open(const std::filesystem::path& path) {
+bool ModusView::IsToolbarVisible() const {
+  VARIANT_BOOL toolbar_visible = 0;
+  if (document_) {
+    document_->sde_form().get_ToolbarVisible(&toolbar_visible);
+  }
+  return toolbar_visible != 0;
+}
+
+void ModusView::SetToolbarVisible(bool visible) {
+  if (document_) {
+    document_->sde_form().put_ToolbarVisible(visible);
+  }
+}
+
+void ModusView::Open(const WindowDefinition& definition) {
   assert(!document_);
 
-  path_ = path;
+  path_ = GetPublicFilePath(definition.path);
 
   Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form;
   ax_widget_->queryInterface(IID_PPV_ARGS(&sde_form));
@@ -48,7 +66,9 @@ void ModusView::Open(const std::filesystem::path& path) {
   }
 
   document_ = std::make_unique<modus::ModusDocument>(
-      ModusDocumentContext{*this}, *sde_form.Get(), path_);
+      ModusDocumentContext{*this}, *sde_form.Get());
+
+  document_->InitFromFilePath(path_);
 
   connect(ax_widget_, SIGNAL(OnDocClick(IDispatch*, IDispatch*)), this,
           SLOT(OnDocClick(IDispatch*, IDispatch*)));
@@ -60,6 +80,33 @@ void ModusView::Open(const std::filesystem::path& path) {
           SLOT(OnDocPopup(IDispatch*, bool&)));
 
   title_callback_(document_->title());
+
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE, base::Bind(&ModusView::DelayedOpen, base::Unretained(this),
+                            definition, cancelation_.get_token()));
+}
+
+void ModusView::DelayedOpen(const WindowDefinition& definition,
+                            const std::stop_token& cancelation) {
+  if (cancelation.stop_requested()) {
+    return;
+  }
+
+  if (auto* sde_document = document_->sde_document()) {
+    Microsoft::WRL::ComPtr<SDECore::ISDEPages> pages;
+    sde_document->get_Pages(pages.ReleaseAndGetAddressOf());
+    for (const auto& item : definition.items) {
+      if (item.name_is("Page")) {
+        auto index = item.GetInt("index");
+        auto scale = item.GetInt("scale") / 100.0;
+        Microsoft::WRL::ComPtr<SDECore::ISDEPage50> page;
+        pages->get_Item(CComVariant{index}, page.ReleaseAndGetAddressOf());
+        if (page) {
+          page->put_Scale(scale);
+        }
+      }
+    }
+  }
 }
 
 void ModusView::OpenPlaceholder() {
@@ -92,6 +139,32 @@ void ModusView::OpenPlaceholder() {
 
 std::filesystem::path ModusView::GetPath() const {
   return path_;
+}
+
+void ModusView::Save(WindowDefinition& definition) {
+  definition.path = FullFilePathToPublic(path_);
+
+  if (document_) {
+    if (auto* sde_document = document_->sde_document()) {
+      Microsoft::WRL::ComPtr<SDECore::ISDEPages> pages;
+      sde_document->get_Pages(pages.ReleaseAndGetAddressOf());
+      if (pages) {
+        long count = 0;
+        pages->get_Count(&count);
+        for (long i = 0; i < count; ++i) {
+          Microsoft::WRL::ComPtr<SDECore::ISDEPage50> page;
+          pages->get_Item(CComVariant{i}, page.ReleaseAndGetAddressOf());
+          if (page) {
+            double scale = 0;
+            page->get_Scale(&scale);
+            definition.AddItem("Page")
+                .SetInt("index", i)
+                .SetInt("scale", scale * 100);
+          }
+        }
+      }
+    }
+  }
 }
 
 bool ModusView::ShowContainedItem(const scada::NodeId& item_id) {

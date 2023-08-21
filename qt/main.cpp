@@ -7,6 +7,7 @@
 #include "components/main/qt/main_window_qt.h"
 #include "project.h"
 #include "qt/message_loop_qt.h"
+#include "services/atl_module.h"
 
 #include <QApplication>
 #include <QLibraryInfo>
@@ -21,6 +22,8 @@ using namespace std::chrono_literals;
 namespace {
 const char kDefaultStyle[] = "Fusion";
 }
+
+DummyAtlModule _Module;
 
 int main(int argc, char* argv[]) {
   base::AtExitManager at_exit;

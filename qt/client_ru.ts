@@ -383,7 +383,7 @@
 <context>
     <name>QObject</name>
     <message>
-        <location filename="main.cpp" line="68"/>
+        <location filename="main.cpp" line="71"/>
         <source>Telecontrol SCADA Client</source>
         <translation>Клиент ОИК Телеконтроль</translation>
     </message>

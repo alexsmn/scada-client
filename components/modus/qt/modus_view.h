@@ -4,13 +4,10 @@
 #include "components/modus/modus_view_wrapper.h"
 
 #include <QWidget>
-
-namespace base {
-class FilePath;
-}
+#include <filesystem>
+#include <stop_token>
 
 class QAxWidget;
-class ModusController;
 
 // Native Modus ActiveXeme viewer.
 class ModusView : public QWidget,
@@ -22,10 +19,14 @@ class ModusView : public QWidget,
   explicit ModusView(modus::ModusDocumentContext&& context);
   virtual ~ModusView();
 
+  bool IsToolbarVisible() const;
+  void SetToolbarVisible(bool visible);
+
   void ShowSetupDialog();
 
   // ModusViewWrapper
-  virtual void Open(const std::filesystem::path& path) override;
+  virtual void Open(const WindowDefinition& definition) override;
+  virtual void Save(WindowDefinition& definition) override;
   virtual std::filesystem::path GetPath() const override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
 
@@ -36,9 +37,10 @@ class ModusView : public QWidget,
   void OnDocPopup(IDispatch*, bool&);
 
  protected:
-  friend class ModusController;
-
   void OpenPlaceholder();
+
+  void DelayedOpen(const WindowDefinition& definition,
+                   const std::stop_token& cancelation);
 
   std::filesystem::path path_;
 
@@ -47,4 +49,6 @@ class ModusView : public QWidget,
   QAxWidget* ax_widget_ = nullptr;
 
   std::unique_ptr<modus::ModusDocument> document_;
+
+  std::stop_source cancelation_;
 };

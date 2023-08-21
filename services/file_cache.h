@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_state.h"
+#include "scada/node_id.h"
 
 #include <filesystem>
 #include <map>

@@ -6,13 +6,12 @@
 
 #include <cassert>
 
+// Must reference ATL module to ensure it is linked in.
+#include "services/atl_module.h"
+
 // #import
 // "c:\TC\vidicon\vidicon2\build-vcpkg\src\TeleClient\teleclient.dir\RelWithDebInfo\TeleClient.tlb"
 // raw_interfaces_only
-
-class DummyAtlModule : public CAtlExeModuleT<DummyAtlModule> {};
-
-DummyAtlModule _Module;
 
 namespace vidicon {
 
