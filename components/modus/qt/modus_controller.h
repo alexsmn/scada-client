@@ -39,7 +39,7 @@ class ModusController : protected ControllerContext, public Controller {
   ModusView* view_ = nullptr;
   ModusView2* view2_ = nullptr;
   ModusView3* view3_ = nullptr;
-  ModusViewWrapper* wrapper_;
+  ModusViewWrapper* wrapper_ = nullptr;
 
   CommandRegistry command_registry_;
 

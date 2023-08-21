@@ -5,6 +5,7 @@
 
 #include <QWidget>
 #include <filesystem>
+#include <stop_token>
 
 class QAxWidget;
 
@@ -17,6 +18,9 @@ class ModusView : public QWidget,
  public:
   explicit ModusView(modus::ModusDocumentContext&& context);
   virtual ~ModusView();
+
+  bool IsToolbarVisible() const;
+  void SetToolbarVisible(bool visible);
 
   void ShowSetupDialog();
 
@@ -35,6 +39,9 @@ class ModusView : public QWidget,
  protected:
   void OpenPlaceholder();
 
+  void DelayedOpen(const WindowDefinition& definition,
+                   const std::stop_token& cancelation);
+
   std::filesystem::path path_;
 
   // WARNING: QAxWidget must be a child of the view widget. Otherwise, it's not
@@ -42,4 +49,6 @@ class ModusView : public QWidget,
   QAxWidget* ax_widget_ = nullptr;
 
   std::unique_ptr<modus::ModusDocument> document_;
+
+  std::stop_source cancelation_;
 };

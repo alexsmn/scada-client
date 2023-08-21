@@ -22,7 +22,7 @@ struct State : DisplayTesterState {
   FileCache file_cache{file_registry};
 };
 
-QWidget* CreateModusView(State& state, const std::filesystem::path& path) {
+QWidget* CreateModusView(State& state, const WindowDefinition& definition) {
   ModusView* modus_view = new ModusView{modus::ModusDocumentContext{
       .alias_resolver_ = state.alias_resolver,
       .timed_data_service_ = state.timed_data_service,
@@ -33,6 +33,13 @@ QWidget* CreateModusView(State& state, const std::filesystem::path& path) {
       .context_menu_callback_ = [](const aui::Point& point) {},
       .enable_internal_render_callback_ = [] {}}};
 
+  modus_view->Open(definition);
+
+  return modus_view;
+}
+
+QWidget* CreateModusViewFromPath(State& state,
+                                 const std::filesystem::path& path) {
   WindowDefinition definition{kModusWindowInfo};
   definition.path =
       !path.empty()
@@ -40,9 +47,7 @@ QWidget* CreateModusView(State& state, const std::filesystem::path& path) {
           : std::filesystem::path{
                 R"(c:\ProgramData\Telecontrol\SCADA Client\main.sde)"};
 
-  modus_view->Open(definition);
-
-  return modus_view;
+  return CreateModusView(state, definition);
 }
 
 DummyAtlModule _Module;
@@ -55,7 +60,35 @@ int main(int argc, char* argv[]) {
   State state;
 
   DisplayTesterWindow tester_window{
-      state, std::bind_front(&CreateModusView, std::ref(state))};
+      state, std::bind_front(&CreateModusViewFromPath, std::ref(state))};
+
+  WindowDefinition definition{kModusWindowInfo};
+
+  tester_window.toolbar->addAction("Setup", [&] {
+    if (tester_window.opened_view) {
+      static_cast<ModusView*>(tester_window.opened_view)->ShowSetupDialog();
+    }
+  });
+
+  tester_window.toolbar->addAction("Toolbar", [&] {
+    if (tester_window.opened_view) {
+      static_cast<ModusView*>(tester_window.opened_view)
+          ->SetToolbarVisible(
+              !static_cast<ModusView*>(tester_window.opened_view)
+                   ->IsToolbarVisible());
+    }
+  });
+
+  tester_window.toolbar->addAction("Save", [&] {
+    if (tester_window.opened_view) {
+      definition = WindowDefinition{kModusWindowInfo};
+      static_cast<ModusView*>(tester_window.opened_view)->Save(definition);
+    }
+  });
+
+  tester_window.toolbar->addAction("Load", [&] {
+    tester_window.AddView(*CreateModusView(state, definition));
+  });
 
   tester_window.show();
 

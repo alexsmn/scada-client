@@ -48,6 +48,8 @@ class ModusDocument : private ModusDocumentContext {
   ~ModusDocument();
 
   htsde2::IHTSDEForm2& sde_form() { return *sde_form_.Get(); }
+  SDECore::ISDEDocument50* sde_document() { return sde_document_.Get(); }
+
   const std::u16string& title() const { return title_; }
 
   void InitFromFilePath(const std::filesystem::path& path);

@@ -24,9 +24,9 @@
 #include <QScrollArea>
 
 ModusController::ModusController(const ControllerContext& context)
-    : ControllerContext{context}, wrapper_(nullptr) {}
+    : ControllerContext{context} {}
 
-ModusController::~ModusController() {}
+ModusController::~ModusController() = default;
 
 QWidget* ModusController::CreateModusView() {
   auto title_callback = [this](const std::u16string& title) {

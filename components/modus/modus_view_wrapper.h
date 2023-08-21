@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_state.h"
+#include "scada/node_id.h"
 
 #include <filesystem>
 
@@ -8,7 +8,7 @@ class WindowDefinition;
 
 class ModusViewWrapper {
  public:
-  virtual ~ModusViewWrapper() {}
+  virtual ~ModusViewWrapper() = default;
 
   virtual void Open(const WindowDefinition& definition) = 0;
 

@@ -29,22 +29,20 @@ class DisplayTesterWindow : public QWidget {
     splitter->addWidget(variable_table);
 
     toolbar->addAction("Open Default", [this] {
-      opened_view_ = view_factory_({});
-      AddView(*opened_view_);
+      opened_view = view_factory_({});
+      AddView(*opened_view);
     });
 
     toolbar->addAction("Open...", [this] {
       if (auto path = QFileDialog::getOpenFileName(this); !path.isEmpty()) {
-        opened_view_ = view_factory_(path.toStdWString());
-        AddView(*opened_view_);
+        opened_view = view_factory_(path.toStdWString());
+        AddView(*opened_view);
       }
     });
 
     toolbar->addAction("Close", [this] {
-      if (opened_view_) {
-        opened_view_->deleteLater();
-        opened_view_ = nullptr;
-      }
+      delete opened_view;
+      opened_view = nullptr;
     });
 
     toolbar->addAction("Variables",
@@ -62,12 +60,12 @@ class DisplayTesterWindow : public QWidget {
   QSplitter* splitter = new QSplitter{this};
   QTableWidget* variable_table = new QTableWidget{this};
 
+  QWidget* opened_view = nullptr;
+
  private:
   DisplayTesterState& state_;
   const ViewFactory view_factory_;
 
   VariableTableController variable_table_controller_{*variable_table,
                                                      state_.variable_storage};
-
-  QWidget* opened_view_ = nullptr;
 };
