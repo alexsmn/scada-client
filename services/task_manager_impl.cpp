@@ -4,7 +4,7 @@
 #include "base/strings/stringprintf.h"
 #include "scada/attribute_service.h"
 #include "scada/node_management_service.h"
-#include "scada/status_promise.h"
+#include "scada/promise.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
