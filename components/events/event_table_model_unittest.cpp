@@ -3,6 +3,7 @@
 #include "base/test/test_executor.h"
 #include "common/node_event_provider_mock.h"
 #include "components/events/current_event_model.h"
+#include "components/events/historical_event_model.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service_mock.h"
@@ -61,11 +62,15 @@ class EventTableModelTest : public Test {
 
   StaticNodeService node_service_;
   LocalEvents local_events_;
-  StrictMock<scada::MockHistoryService> history_service_;
 
-  // TODO: Use an interface instead of `CurrentEventModel` implementation.
+  // TODO: Use an interface instead of the `CurrentEventModel` implementation.
   StrictMock<MockNodeEventProvider> node_event_provider_;
   std::optional<CurrentEventModel> current_event_model_;
+
+  // TODO: Use an interface instead of the `HistoricalEventModel`
+  // implementation.
+  StrictMock<scada::MockHistoryService> history_service_;
+  HistoricalEventModel historical_event_model_{executor_, history_service_};
 
   std::optional<EventTableModel> event_table_model_;
 
@@ -100,8 +105,8 @@ EventTableModelTest::EventTableModelTest() {
       EventTableModelContext{.executor_ = executor_,
                              .node_service_ = node_service_,
                              .current_event_model_ = *current_event_model_,
+                             .historical_event_model_ = historical_event_model_,
                              .local_events_ = local_events_,
-                             .history_service_ = history_service_,
                              .current_events_ = true});
 }
 

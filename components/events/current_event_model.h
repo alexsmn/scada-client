@@ -19,7 +19,7 @@ class CurrentEventModel : private EventObserver {
     return node_event_provider_.unacked_events() | std::views::values;
   }
 
-  bool acking() const { return node_event_provider_.IsAcking(); }
+  bool working() const { return node_event_provider_.IsAcking(); }
 
   void Ack(scada::EventAcknowledgeId ack_id) {
     node_event_provider_.AcknowledgeEvent(ack_id);

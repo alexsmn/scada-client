@@ -9,11 +9,15 @@
 #include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/events/current_event_model.h"
+#include "components/events/historical_event_model.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_format.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/data_value.h"
+
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/indirected.hpp>
 
 using namespace std::chrono_literals;
 
@@ -68,27 +72,31 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
       std::bind_front(&EventTableModel::OnCurrentEvents, this));
   all_acked_connection_ = current_event_model_.on_all_acked.connect(
       [this] { AckRows(0, static_cast<int>(rows_.size())); });
+  refilter_now_connection_ = historical_event_model_.refilter_now.connect(
+      std::bind_front(&EventTableModel::RefilterNow, this));
   node_service_.Subscribe(*this);
 }
 
 EventTableModel::~EventTableModel() {
-  CancelRequest();
-
   node_service_.Unsubscribe(*this);
   local_events_.observers().RemoveObserver(this);
 }
 
 void EventTableModel::Init(const TimeRange& range, ItemIds filter_items) {
-  time_range_ = range;
+  historical_event_model_.Init(range);
   filter_node_ids_ = std::move(filter_items);
   Update();
 }
 
+const TimeRange& EventTableModel::time_range() const {
+  return historical_event_model_.time_range();
+}
+
 void EventTableModel::SetTimeRange(const TimeRange& range) {
-  if (time_range_ == range)
+  if (historical_event_model_.time_range() == range)
     return;
 
-  time_range_ = range;
+  historical_event_model_.SetTimeRange(range);
 
   Update();
 }
@@ -274,9 +282,10 @@ void EventTableModel::AckRows(int first, int count) {
       // Convert to historical.
       Row& row = rows_[first + i];
       if (row.type == CURRENT_EVENT) {
-        historical_events_.push_back(*row.event);
-        scada::Event& historical_event = historical_events_.back();
-        historical_event.acked = true;
+        auto acked_event = *row.event;
+        acked_event.acked = true;
+        const scada::Event& historical_event =
+            historical_event_model_.AddEvent(std::move(acked_event));
         row.type = HISTORICAL_EVENT;
         row.event = &historical_event;
         row.Update(node_service_);
@@ -355,9 +364,7 @@ void EventTableModel::RefilterNow() {
   }
 
   if (!current_events_) {
-    for (auto i = historical_events_.begin(); i != historical_events_.end();
-         ++i) {
-      const scada::Event& event = *i;
+    for (const scada::Event& event : historical_event_model_.events()) {
       if (IsEventShown(event)) {
         Row row(HISTORICAL_EVENT, event);
         row.Update(node_service_);
@@ -382,8 +389,6 @@ void EventTableModel::Update() {
 
   pending_update_ = false;
 
-  CancelRequest();
-
   if (!rows_.empty()) {
     int count = static_cast<int>(rows_.size());
     NotifyItemsRemoving(0, count);
@@ -391,49 +396,15 @@ void EventTableModel::Update() {
     NotifyItemsRemoved(0, count);
   }
 
-  historical_events_.clear();
-
   if (!current_events_) {
-    auto [from, to] = GetTimeRangeBounds(time_range_);
-
-    LOG(INFO) << "Query events from " << FormatTime(from).c_str();
-
-    assert(!request_running_);
-    request_running_ = true;
-
-    auto weak_ptr = weak_factory_.GetWeakPtr();
-    history_service_.HistoryReadEvents(
-        scada::id::Server, from, to,
-        scada::EventFilter{scada::EventFilter::ACKED},
-        BindExecutor(executor_, [this, weak_ptr](
-                                    scada::Status status,
-                                    std::vector<scada::Event> events) {
-          if (weak_ptr.get())
-            OnHistoryReadEventsCompleted(std::move(status), std::move(events));
-        }));
+    historical_event_model_.Update();
   }
 
   RefilterNow();
 }
 
 void EventTableModel::CancelRequest() {
-  weak_factory_.InvalidateWeakPtrs();
-  request_running_ = false;
-}
-
-void EventTableModel::OnHistoryReadEventsCompleted(
-    scada::Status&& status,
-    std::vector<scada::Event>&& events) {
-  assert(request_running_);
-  // Only acked events were requested.
-  assert(std::all_of(events.begin(), events.end(),
-                     [](const scada::Event& event) { return event.acked; }));
-
-  historical_events_.assign(std::make_move_iterator(events.begin()),
-                            std::make_move_iterator(events.end()));
-
-  request_running_ = false;
-  RefilterNow();
+  historical_event_model_.CancelRequest();
 }
 
 void EventTableModel::AcknowledgeRow(int row) {
@@ -475,7 +446,7 @@ std::u16string EventTableModel::MakeTitle() const {
   if (current_events_) {
     title = u"Текущие события";
   } else {
-    switch (time_range_.type) {
+    switch (historical_event_model_.time_range().type) {
       case TimeRange::Type::Day:
         title = u"Журнал событий за день";
         break;
@@ -500,9 +471,9 @@ std::u16string EventTableModel::MakeTitle() const {
 
 bool EventTableModel::IsWorking() const {
   if (current_events_)
-    return current_event_model_.acking();
+    return current_event_model_.working();
   else
-    return request_running_;
+    return historical_event_model_.working();
 }
 
 int EventTableModel::CompareCells(int row1, int row2, int column_id) {

@@ -2,20 +2,17 @@
 
 #include "aui/models/table_model.h"
 #include "base/executor_timer.h"
-#include "base/memory/weak_ptr.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "scada/event.h"
-#include "scada/history_service.h"
 #include "services/local_events.h"
-#include "time_range.h"
 
-#include <list>
 #include <set>
 
 class CurrentEventModel;
 class Executor;
+class HistoricalEventModel;
 class NodeService;
+struct TimeRange;
 
 enum EventColumnId {
   EventColumnSeverity,
@@ -30,13 +27,12 @@ enum EventColumnId {
 };
 
 struct EventTableModelContext {
-  // The executor is the current executor used to sync `history_service_`
-  // responses.
+  // The executor is used for delayed update timer.
   const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   CurrentEventModel& current_event_model_;
+  HistoricalEventModel& historical_event_model_;
   LocalEvents& local_events_;
-  scada::HistoryService& history_service_;
   const bool current_events_ = true;
 };
 
@@ -55,17 +51,18 @@ class EventTableModel : public aui::TableModel,
   void Init(const TimeRange& range, ItemIds filter_items);
 
   bool current_events() const { return current_events_; }
-  const ItemIds& filter_items() const { return filter_node_ids_; }
-  const TimeRange& time_range() const { return time_range_; }
-  unsigned severity_min() const { return severity_min_; }
 
   EventType event_type_at(int row) const { return rows_[row].type; }
   const scada::Event& event_at(int row) const { return *rows_[row].event; }
   bool IsWorking() const;
 
+  const TimeRange& time_range() const;
   void SetTimeRange(const TimeRange& range);
+
+  unsigned severity_min() const { return severity_min_; }
   void SetSeverityMin(unsigned severity);
 
+  const ItemIds& filter_items() const { return filter_node_ids_; }
   bool AddFilteredItem(const scada::NodeId& item);
   bool RemoveFilteredItem(const scada::NodeId& item);
 
@@ -99,9 +96,6 @@ class EventTableModel : public aui::TableModel,
 
   void UpdateAffectedRows(const scada::NodeId& node_id);
 
-  void OnHistoryReadEventsCompleted(scada::Status&& status,
-                                    std::vector<scada::Event>&& events);
-
   void OnCurrentEvents(base::span<const scada::Event* const> events);
 
   // NodeRefObserver
@@ -112,14 +106,8 @@ class EventTableModel : public aui::TableModel,
   virtual void OnLocalEvent(const scada::Event& event) override;
 
   // Filter.
-  TimeRange time_range_;
   unsigned severity_min_ = 0;
   ItemIds filter_node_ids_;
-
-  // Contains only historical events. |rows_| holds pointers on items from
-  // it, so it shall not be vector.
-  using EventContainer = std::list<scada::Event>;
-  EventContainer historical_events_;
 
   // Rows displayed in grid.
   struct Row {
@@ -139,8 +127,6 @@ class EventTableModel : public aui::TableModel,
   using Rows = std::vector<Row>;
   Rows rows_;
 
-  bool request_running_ = false;
-
   bool lock_update_ = false;
   bool pending_update_ = false;
 
@@ -148,6 +134,5 @@ class EventTableModel : public aui::TableModel,
 
   boost::signals2::scoped_connection on_events_connection_;
   boost::signals2::scoped_connection all_acked_connection_;
-
-  base::WeakPtrFactory<EventTableModel> weak_factory_{this};
+  boost::signals2::scoped_connection refilter_now_connection_;
 };

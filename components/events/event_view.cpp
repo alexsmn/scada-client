@@ -11,6 +11,7 @@
 #include "common_resources.h"
 #include "components/events/current_event_model.h"
 #include "components/events/event_table_model.h"
+#include "components/events/historical_event_model.h"
 #include "components/prompt/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
@@ -27,11 +28,13 @@ namespace {
 struct EventTableModelHolder {
   EventTableModelHolder(const ControllerContext& context, bool is_panel)
       : current_event_model{context.node_event_provider_},
+        historical_event_model{context.executor_, context.history_service_},
         event_table_model{{context.executor_, context.node_service_,
-                           current_event_model, context.local_events_,
-                           context.history_service_, is_panel}} {}
+                           current_event_model, historical_event_model,
+                           context.local_events_, is_panel}} {}
 
   CurrentEventModel current_event_model;
+  HistoricalEventModel historical_event_model;
   EventTableModel event_table_model;
 };
 
