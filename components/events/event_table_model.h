@@ -3,9 +3,6 @@
 #include "aui/models/table_model.h"
 #include "base/executor_timer.h"
 #include "base/memory/weak_ptr.h"
-#include "common/event_observer.h"
-#include "common/node_event_provider.h"
-#include "common/node_state.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "scada/event.h"
@@ -14,11 +11,10 @@
 #include "time_range.h"
 
 #include <list>
-#include <ranges>
 #include <set>
 
+class CurrentEventModel;
 class Executor;
-class NodeEventProvider;
 class NodeService;
 
 enum EventColumnId {
@@ -38,30 +34,14 @@ struct EventTableModelContext {
   // responses.
   const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
-  NodeEventProvider& node_event_provider_;
+  CurrentEventModel& current_event_model_;
   LocalEvents& local_events_;
   scada::HistoryService& history_service_;
   const bool current_events_ = true;
 };
 
-class CurrentEventModel {
- public:
-  explicit CurrentEventModel(NodeEventProvider& node_event_provider)
-      : node_event_provider_{node_event_provider} {}
-
-  auto events() const {
-    return node_event_provider_.unacked_events() | std::views::values;
-  }
-
-  bool acking() const { return node_event_provider_.IsAcking(); }
-
- private:
-  NodeEventProvider& node_event_provider_;
-};
-
 class EventTableModel : public aui::TableModel,
                         private NodeRefObserver,
-                        private EventObserver,
                         private LocalEvents::Observer,
                         private EventTableModelContext {
  public:
@@ -122,13 +102,11 @@ class EventTableModel : public aui::TableModel,
   void OnHistoryReadEventsCompleted(scada::Status&& status,
                                     std::vector<scada::Event>&& events);
 
+  void OnCurrentEvents(base::span<const scada::Event* const> events);
+
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-
-  // EventObserver
-  virtual void OnEvents(base::span<const scada::Event* const> events) override;
-  virtual void OnAllEventsAcknowledged() override;
 
   // LocalEvents::Observer
   virtual void OnLocalEvent(const scada::Event& event) override;
@@ -137,8 +115,6 @@ class EventTableModel : public aui::TableModel,
   TimeRange time_range_;
   unsigned severity_min_ = 0;
   ItemIds filter_node_ids_;
-
-  CurrentEventModel current_event_model_{node_event_provider_};
 
   // Contains only historical events. |rows_| holds pointers on items from
   // it, so it shall not be vector.
@@ -169,6 +145,9 @@ class EventTableModel : public aui::TableModel,
   bool pending_update_ = false;
 
   ExecutorTimer refilter_delay_timer_{executor_};
+
+  boost::signals2::scoped_connection on_events_connection_;
+  boost::signals2::scoped_connection all_acked_connection_;
 
   base::WeakPtrFactory<EventTableModel> weak_factory_{this};
 };

@@ -8,6 +8,7 @@
 #include "base/utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
+#include "components/events/current_event_model.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_format.h"
 #include "node_service/node_service.h"
@@ -63,8 +64,10 @@ bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
 EventTableModel::EventTableModel(EventTableModelContext&& context)
     : EventTableModelContext(std::move(context)) {
   local_events_.observers().AddObserver(this);
-  // TODO: Use `current_event_model_`.
-  node_event_provider_.AddObserver(*this);
+  on_events_connection_ = current_event_model_.on_events.connect(
+      std::bind_front(&EventTableModel::OnCurrentEvents, this));
+  all_acked_connection_ = current_event_model_.on_all_acked.connect(
+      [this] { AckRows(0, static_cast<int>(rows_.size())); });
   node_service_.Subscribe(*this);
 }
 
@@ -72,8 +75,6 @@ EventTableModel::~EventTableModel() {
   CancelRequest();
 
   node_service_.Unsubscribe(*this);
-  // TODO: Use `current_event_model_`.
-  node_event_provider_.RemoveObserver(*this);
   local_events_.observers().RemoveObserver(this);
 }
 
@@ -236,7 +237,8 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   UpdateAffectedRows(event.node_id);
 }
 
-void EventTableModel::OnEvents(base::span<const scada::Event* const> events) {
+void EventTableModel::OnCurrentEvents(
+    base::span<const scada::Event* const> events) {
   std::vector<const scada::Event*> partitioned_events(events.begin(),
                                                       events.end());
   auto first_unacked = std::stable_partition(
@@ -261,10 +263,6 @@ void EventTableModel::OnEvents(base::span<const scada::Event* const> events) {
         [this](const scada::Event* event) { return IsEventShown(*event); });
     AddRows(CURRENT_EVENT, filtered_events);
   }
-}
-
-void EventTableModel::OnAllEventsAcknowledged() {
-  AckRows(0, static_cast<int>(rows_.size()));
 }
 
 void EventTableModel::AckRows(int first, int count) {
@@ -443,7 +441,7 @@ void EventTableModel::AcknowledgeRow(int row) {
   switch (r.type) {
     case CURRENT_EVENT:
       assert(!r.event->acked);
-      node_event_provider_.AcknowledgeEvent(r.event->acknowledge_id);
+      current_event_model_.Ack(r.event->acknowledge_id);
       break;
 
     case HISTORICAL_EVENT:

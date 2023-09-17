@@ -1,5 +1,7 @@
 ﻿#include "components/events/event_view.h"
 
+#include "aui/models/table_column.h"
+#include "aui/table.h"
 #include "base/excel.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -7,13 +9,12 @@
 #include "client_utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
+#include "components/events/current_event_model.h"
 #include "components/events/event_table_model.h"
 #include "components/prompt/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
 #include "controller_delegate.h"
-#include "aui/models/table_column.h"
-#include "aui/table.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "selection_model.h"
@@ -21,15 +22,34 @@
 #include "services/profile.h"
 #include "window_definition_util.h"
 
+namespace {
+
+struct EventTableModelHolder {
+  EventTableModelHolder(const ControllerContext& context, bool is_panel)
+      : current_event_model{context.node_event_provider_},
+        event_table_model{{context.executor_, context.node_service_,
+                           current_event_model, context.local_events_,
+                           context.history_service_, is_panel}} {}
+
+  CurrentEventModel current_event_model;
+  EventTableModel event_table_model;
+};
+
+std::shared_ptr<EventTableModel> CreateEventTableModel(
+    const ControllerContext& context,
+    bool is_panel) {
+  auto holder = std::make_shared<EventTableModelHolder>(context, is_panel);
+  return {holder, &holder->event_table_model};
+}
+
+}  // namespace
+
 // EventView
 
 EventView::EventView(const ControllerContext& context, bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
-      model_{std::make_shared<EventTableModel>(EventTableModelContext{
-          context.executor_, context.node_service_,
-          context.node_event_provider_, context.local_events_,
-          context.history_service_, is_panel_})} {
+      model_{CreateEventTableModel(context, is_panel)} {
   const aui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, u"Время", 150, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},
