@@ -1,8 +1,8 @@
 #include "components/watch/watch_event_source_impl.h"
 
-#include "scada/monitored_item_service.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
+#include "scada/monitored_item_service.h"
 
 // WatchEventSourceImpl
 
@@ -17,14 +17,10 @@ void WatchEventSourceImpl::SetDelegate(Delegate* delegate) {
 void WatchEventSourceImpl::SetDeviceId(const scada::NodeId& device_id) {
   monitored_item_.reset();
 
-  monitored_item_ =
-      node_service_.GetNode(scada::id::Server)
-          .CreateMonitoredItem(
-              scada::AttributeId::EventNotifier,
-              scada::MonitoringParameters{}.set_filter(
-                  scada::EventFilter{}
-                      .add_of_type(devices::id::DeviceWatchEventType)
-                      .add_child_of(device_id)));
+  monitored_item_ = node_service_.GetNode(device_id).CreateMonitoredItem(
+      scada::AttributeId::EventNotifier,
+      scada::MonitoringParameters{}.set_filter(
+          scada::EventFilter{}.add_of_type(devices::id::DeviceWatchEventType)));
 
   if (!monitored_item_)
     return delegate_->OnError(scada::StatusCode::Bad);
