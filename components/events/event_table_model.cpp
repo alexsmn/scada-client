@@ -8,11 +8,13 @@
 #include "base/utils.h"
 #include "common/event_fetcher.h"
 #include "common_resources.h"
-#include "scada/data_value.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_format.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/data_value.h"
+
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -61,6 +63,7 @@ bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
 EventTableModel::EventTableModel(EventTableModelContext&& context)
     : EventTableModelContext(std::move(context)) {
   local_events_.observers().AddObserver(this);
+  // TODO: Use `current_event_model_`.
   node_event_provider_.AddObserver(*this);
   node_service_.Subscribe(*this);
 }
@@ -69,6 +72,7 @@ EventTableModel::~EventTableModel() {
   CancelRequest();
 
   node_service_.Unsubscribe(*this);
+  // TODO: Use `current_event_model_`.
   node_event_provider_.RemoveObserver(*this);
   local_events_.observers().RemoveObserver(this);
 }
@@ -233,14 +237,14 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 }
 
 void EventTableModel::OnEvents(base::span<const scada::Event* const> events) {
-  std::vector<const scada::Event*> groupped_events(events.begin(),
-                                                   events.end());
+  std::vector<const scada::Event*> partitioned_events(events.begin(),
+                                                      events.end());
   auto first_unacked = std::stable_partition(
-      groupped_events.begin(), groupped_events.end(),
+      partitioned_events.begin(), partitioned_events.end(),
       [](const scada::Event* event) { return event->acked; });
 
   // Remove acked.
-  for (auto i = groupped_events.begin(); i != first_unacked; ++i) {
+  for (auto i = partitioned_events.begin(); i != first_unacked; ++i) {
     auto& event = **i;
     int index = FindRow(event);
     if (index != -1)
@@ -250,9 +254,9 @@ void EventTableModel::OnEvents(base::span<const scada::Event* const> events) {
   // Filter and add unacked.
   {
     std::vector<const scada::Event*> filtered_events;
-    filtered_events.reserve(groupped_events.end() - first_unacked);
+    filtered_events.reserve(partitioned_events.end() - first_unacked);
     std::copy_if(
-        first_unacked, groupped_events.end(),
+        first_unacked, partitioned_events.end(),
         std::back_inserter(filtered_events),
         [this](const scada::Event* event) { return IsEventShown(*event); });
     AddRows(CURRENT_EVENT, filtered_events);
@@ -312,8 +316,8 @@ bool EventTableModel::RemoveFilteredItem(const scada::NodeId& item) {
 }
 
 void EventTableModel::Refilter() {
-  refilter_delay_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(300),
-                              this, &EventTableModel::RefilterNow);
+  refilter_delay_timer_.StartRepeating(
+      300ms, std::bind_front(&EventTableModel::RefilterNow, this));
 }
 
 void EventTableModel::SetSeverityMin(unsigned severity) {
@@ -337,17 +341,14 @@ void EventTableModel::RefilterNow() {
   std::vector<Row> rows;
 
   const LocalEvents::Events& local_events = local_events_.events();
-  for (LocalEvents::Events::const_iterator i = local_events.begin();
-       i != local_events.end(); ++i) {
+  for (auto i = local_events.begin(); i != local_events.end(); ++i) {
     const scada::Event& event = **i;
     Row row(LOCAL_EVENT, event);
     row.Update(node_service_);
     rows.emplace_back(std::move(row));
   }
 
-  const auto& events = node_event_provider_.unacked_events();
-  for (auto i = events.begin(); i != events.end(); i++) {
-    const scada::Event& event = i->second;
+  for (const scada::Event& event : current_event_model_.events()) {
     if (IsEventShown(event)) {
       Row row(CURRENT_EVENT, event);
       row.Update(node_service_);
@@ -501,7 +502,7 @@ std::u16string EventTableModel::MakeTitle() const {
 
 bool EventTableModel::IsWorking() const {
   if (current_events_)
-    return node_event_provider_.IsAcking();
+    return current_event_model_.acking();
   else
     return request_running_;
 }
