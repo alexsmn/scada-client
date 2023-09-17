@@ -4,13 +4,13 @@
 #include "base/executor_timer.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "services/local_events.h"
 
 #include <set>
 
 class CurrentEventModel;
 class Executor;
 class HistoricalEventModel;
+class LocalEventModel;
 class NodeService;
 struct TimeRange;
 
@@ -32,13 +32,12 @@ struct EventTableModelContext {
   NodeService& node_service_;
   CurrentEventModel& current_event_model_;
   HistoricalEventModel& historical_event_model_;
-  LocalEvents& local_events_;
+  LocalEventModel& local_event_model_;
   const bool current_events_ = true;
 };
 
 class EventTableModel : public aui::TableModel,
                         private NodeRefObserver,
-                        private LocalEvents::Observer,
                         private EventTableModelContext {
  public:
   enum EventType { CURRENT_EVENT, HISTORICAL_EVENT, LOCAL_EVENT };
@@ -97,13 +96,11 @@ class EventTableModel : public aui::TableModel,
   void UpdateAffectedRows(const scada::NodeId& node_id);
 
   void OnCurrentEvents(base::span<const scada::Event* const> events);
+  void OnLocalEvent(const scada::Event& event);
 
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
-
-  // LocalEvents::Observer
-  virtual void OnLocalEvent(const scada::Event& event) override;
 
   // Filter.
   unsigned severity_min_ = 0;
@@ -132,7 +129,5 @@ class EventTableModel : public aui::TableModel,
 
   ExecutorTimer refilter_delay_timer_{executor_};
 
-  boost::signals2::scoped_connection on_events_connection_;
-  boost::signals2::scoped_connection all_acked_connection_;
-  boost::signals2::scoped_connection refilter_now_connection_;
+  std::vector<boost::signals2::scoped_connection> connections_;
 };

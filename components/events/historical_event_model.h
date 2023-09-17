@@ -37,11 +37,13 @@ class HistoricalEventModel {
     request_running_ = false;
   }
 
+  boost::signals2::signal<void()> refilter_now;
+
+ private:
   void OnHistoryReadEventsCompleted(scada::Status&& status,
                                     std::vector<scada::Event>&& events);
 
-  // The executor is the current executor used to sync `history_service_`
-  // responses.
+  // The current executor used to sync `history_service_` responses.
   const std::shared_ptr<Executor> executor_;
 
   scada::HistoryService& history_service_;
@@ -55,8 +57,6 @@ class HistoricalEventModel {
   EventContainer historical_events_;
 
   bool request_running_ = false;
-
-  boost::signals2::signal<void()> refilter_now;
 
   base::WeakPtrFactory<HistoricalEventModel> weak_factory_{this};
 };

@@ -1,23 +1,16 @@
 ﻿#include "components/events/event_table_model.h"
 
 #include "base/excel.h"
-#include "base/executor.h"
 #include "base/format_time.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
-#include "common/event_fetcher.h"
-#include "common_resources.h"
 #include "components/events/current_event_model.h"
 #include "components/events/historical_event_model.h"
-#include "model/scada_node_ids.h"
+#include "components/events/local_event_model.h"
 #include "node_service/node_format.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "scada/data_value.h"
-
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/indirected.hpp>
 
 using namespace std::chrono_literals;
 
@@ -67,19 +60,20 @@ bool EventTableModel::Row::IsAffected(const scada::NodeId& node_id) const {
 
 EventTableModel::EventTableModel(EventTableModelContext&& context)
     : EventTableModelContext(std::move(context)) {
-  local_events_.observers().AddObserver(this);
-  on_events_connection_ = current_event_model_.on_events.connect(
-      std::bind_front(&EventTableModel::OnCurrentEvents, this));
-  all_acked_connection_ = current_event_model_.on_all_acked.connect(
-      [this] { AckRows(0, static_cast<int>(rows_.size())); });
-  refilter_now_connection_ = historical_event_model_.refilter_now.connect(
-      std::bind_front(&EventTableModel::RefilterNow, this));
+  connections_.emplace_back(current_event_model_.on_events.connect(
+      std::bind_front(&EventTableModel::OnCurrentEvents, this)));
+  connections_.emplace_back(current_event_model_.on_all_acked.connect(
+      [this] { AckRows(0, static_cast<int>(rows_.size())); }));
+  connections_.emplace_back(historical_event_model_.refilter_now.connect(
+      std::bind_front(&EventTableModel::RefilterNow, this)));
+  connections_.emplace_back(local_event_model_.on_event.connect(
+      std::bind_front(&EventTableModel::OnLocalEvent, this)));
+
   node_service_.Subscribe(*this);
 }
 
 EventTableModel::~EventTableModel() {
   node_service_.Unsubscribe(*this);
-  local_events_.observers().RemoveObserver(this);
 }
 
 void EventTableModel::Init(const TimeRange& range, ItemIds filter_items) {
@@ -347,9 +341,7 @@ void EventTableModel::RefilterNow() {
 
   std::vector<Row> rows;
 
-  const LocalEvents::Events& local_events = local_events_.events();
-  for (auto i = local_events.begin(); i != local_events.end(); ++i) {
-    const scada::Event& event = **i;
+  for (const scada::Event& event : local_event_model_.events()) {
     Row row(LOCAL_EVENT, event);
     row.Update(node_service_);
     rows.emplace_back(std::move(row));
@@ -420,7 +412,7 @@ void EventTableModel::AcknowledgeRow(int row) {
       break;
 
     case LOCAL_EVENT:
-      local_events_.AcknowledgeEvent(r.event->acknowledge_id);
+      local_event_model_.Ack(r.event->acknowledge_id);
       break;
 
     default:
