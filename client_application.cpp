@@ -16,6 +16,7 @@
 #include "common/audit.h"
 #include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
+#include "common/event_ack_queue.h"
 #include "common/event_fetcher.h"
 #include "common/event_fetcher_notifier.h"
 #include "common/master_data_services.h"
@@ -206,15 +207,22 @@ void ClientApplication::OnStartLoginCompleted() {
     EventFetcherHolder(std::shared_ptr<Executor> executor,
                        std::shared_ptr<const Logger> logger,
                        MasterDataServices& master_data_services)
-        : event_fetcher_{EventFetcherContext{
-              .executor_ = std::move(executor),
+        : logger_{std::make_shared<NestedLogger>(std::move(logger),
+                                                 "EventFetcher")},
+          event_ack_queue_{
+              EventAckQueueContext{.logger_ = logger_,
+                                   .executor_ = executor,
+                                   .method_service_ = master_data_services}},
+          event_fetcher_{EventFetcherContext{
+              .executor_ = executor,
               .monitored_item_service_ = master_data_services,
               .history_service_ = master_data_services,
-              .method_service_ = master_data_services,
-              .logger_ = std::make_shared<NestedLogger>(std::move(logger),
-                                                        "EventFetcher")}},
+              .logger_ = logger_,
+              .event_ack_queue_ = event_ack_queue_}},
           event_fetcher_notifier_{event_fetcher_, master_data_services} {}
 
+    std::shared_ptr<const Logger> logger_;
+    EventAckQueue event_ack_queue_;
     EventFetcher event_fetcher_;
     EventFetcherNotifier event_fetcher_notifier_;
   };
