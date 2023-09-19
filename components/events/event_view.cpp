@@ -7,7 +7,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "client_utils.h"
-#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/events/current_event_model.h"
 #include "components/events/event_table_model.h"

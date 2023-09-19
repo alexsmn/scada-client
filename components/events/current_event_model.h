@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common/event_observer.h"
-#include "common/node_event_provider.h"
+#include "events/event_observer.h"
+#include "events/node_event_provider.h"
 
 #include <boost/signals2/signal.hpp>
 #include <ranges>

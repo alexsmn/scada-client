@@ -3,7 +3,6 @@
 #include "base/path_service.h"
 #include "client_paths.h"
 #include "client_utils.h"
-#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
 #include "components/configuration_export/excel_configuration_commands.h"
@@ -16,6 +15,7 @@
 #include "components/main/view_manager.h"
 #include "components/prompt/prompt_dialog.h"
 #include "components/web/web_component.h"
+#include "events/node_event_provider.h"
 #include "scada/session_service.h"
 #include "services/dialog_service.h"
 #include "services/local_events.h"
@@ -166,7 +166,7 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
 
   switch (command_id) {
     case ID_ACKNOWLEDGE_ALL:
-      return !event_fetcher_.unacked_events().empty() ||
+      return !node_event_provider_.unacked_events().empty() ||
              !local_events_.events().empty();
 
     case ID_OPT_SPEECH:
@@ -222,7 +222,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       return;
 
     case ID_ACKNOWLEDGE_ALL:
-      event_fetcher_.AcknowledgeAll();
+      node_event_provider_.AcknowledgeAllEvents();
       local_events_.AcknowledgeAll();
       return;
 

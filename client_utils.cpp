@@ -11,7 +11,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_paths.h"
-#include "common/event_fetcher.h"
 #include "common/formula_util.h"
 #include "common/node_state.h"
 #include "common_resources.h"

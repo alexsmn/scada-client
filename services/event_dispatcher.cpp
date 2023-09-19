@@ -1,9 +1,9 @@
 #include "services/event_dispatcher.h"
 
 #include "base/executor.h"
-#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/main/action_manager.h"
+#include "events/node_event_provider.h"
 #include "services/profile.h"
 
 #include <MMSystem.h>
@@ -15,7 +15,7 @@ const auto kDelay = 300ms;
 
 EventDispatcher::EventDispatcher(EventDispatcherContext&& context)
     : EventDispatcherContext{std::move(context)} {
-  event_fetcher_.AddObserver(*this);
+  node_event_provider_.AddObserver(*this);
   local_events_.observers().AddObserver(this);
 
   ShowEventsDelayed(true);
@@ -23,7 +23,7 @@ EventDispatcher::EventDispatcher(EventDispatcherContext&& context)
 
 EventDispatcher::~EventDispatcher() {
   local_events_.observers().RemoveObserver(this);
-  event_fetcher_.RemoveObserver(*this);
+  node_event_provider_.RemoveObserver(*this);
 }
 
 void EventDispatcher::OnEvents(base::span<const scada::Event* const> events) {
@@ -52,7 +52,7 @@ void EventDispatcher::ShowEventsDelayed(bool added) {
 void EventDispatcher::ShowEvents(bool added) {
   showing_events_ = false;
 
-  bool has_events = !event_fetcher_.unacked_events().empty() ||
+  bool has_events = !node_event_provider_.unacked_events().empty() ||
                     !local_events_.events().empty();
 
   if (has_events != has_events_) {

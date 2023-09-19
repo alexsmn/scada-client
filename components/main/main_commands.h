@@ -14,11 +14,11 @@ class SessionService;
 
 class Debugger;
 class DialogService;
-class EventFetcher;
 class Favourites;
 class LocalEvents;
 class MainWindow;
 class MainWindowManager;
+class NodeEventProvider;
 class NodeService;
 class Profile;
 class Speech;
@@ -29,7 +29,7 @@ struct MainCommandsContext {
   TaskManager& task_manager_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
-  EventFetcher& event_fetcher_;
+  NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
   LocalEvents& local_events_;
   Favourites& favourites_;

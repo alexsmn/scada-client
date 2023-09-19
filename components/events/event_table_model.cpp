@@ -251,8 +251,9 @@ void EventTableModel::OnCurrentEvents(
   for (auto i = partitioned_events.begin(); i != first_unacked; ++i) {
     auto& event = **i;
     int index = FindRow(event);
-    if (index != -1)
+    if (index != -1) {
       AckRows(index, 1);
+    }
   }
 
   // Filter and add unacked.

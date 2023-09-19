@@ -1,17 +1,17 @@
 #pragma once
 
-#include "base/files/file_path.h"
-#include "base/time/time.h"
 #include "aui/color.h"
 #include "aui/rect.h"
-#include "scada/node_id.h"
+#include "base/files/file_path.h"
+#include "base/time/time.h"
 #include "export_util.h"
+#include "scada/node_id.h"
 #include "services/page.h"
 
 #include <map>
 
-class EventFetcher;
 class Favourites;
+class NodeEventProvider;
 class PortfolioManager;
 
 struct MainWindowDef {
@@ -53,10 +53,11 @@ class Profile {
 
   EventJournal event_journal;
 
-  void Load(EventFetcher& event_manager,
+  // TODO: Remove the dependencies.
+  void Load(NodeEventProvider& node_event_provider,
             PortfolioManager& portfolio_manager,
             Favourites& favourites);
-  void Save(const EventFetcher& event_manager,
+  void Save(const NodeEventProvider& node_event_provider,
             const PortfolioManager& portfolio_manager,
             const Favourites& favourites);
 
@@ -114,10 +115,10 @@ class Profile {
 
  private:
   void Load(const base::Value& data,
-            EventFetcher& event_manager,
+            NodeEventProvider& node_event_provider,
             PortfolioManager& portfolio_manager,
             Favourites& favourites);
-  base::Value SaveToValue(const EventFetcher& event_manager,
+  base::Value SaveToValue(const NodeEventProvider& node_event_provider,
                           const PortfolioManager& portfolio_manager,
                           const Favourites& favourites) const;
 

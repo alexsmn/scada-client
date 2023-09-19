@@ -1,10 +1,10 @@
 #include "components/events/event_table_model.h"
 
 #include "base/test/test_executor.h"
-#include "common/node_event_provider_mock.h"
 #include "components/events/current_event_model.h"
 #include "components/events/historical_event_model.h"
 #include "components/events/local_event_model.h"
+#include "events/node_event_provider_mock.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service_mock.h"

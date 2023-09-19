@@ -1,19 +1,19 @@
 #pragma once
 
 #include "base/memory/weak_ptr.h"
-#include "common/event_observer.h"
+#include "events/event_observer.h"
 #include "services/local_events.h"
 
 #include <functional>
 
 class ActionManager;
-class EventFetcher;
+class NodeEventProvider;
 class Executor;
 class Profile;
 
 struct EventDispatcherContext {
   const std::shared_ptr<Executor> executor_;
-  EventFetcher& event_fetcher_;
+  NodeEventProvider& node_event_provider_;
   LocalEvents& local_events_;
   Profile& profile_;
   const std::function<void(bool has_events)> events_handler_;

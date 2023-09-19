@@ -9,7 +9,6 @@
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "clipboard_util.h"
-#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"
 #include "components/device_metrics/device_metrics_command.h"
@@ -27,6 +26,7 @@
 #include "components/transmission/transmission_component.h"
 #include "components/watch/watch_component.h"
 #include "components/write/write_dialog.h"
+#include "events/node_event_provider.h"
 #include "main_window.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -475,7 +475,8 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_CURRENT}
           .set_execute_handler([this] {
-            event_fetcher_.AcknowledgeItemEvents(selection_->node().node_id());
+            node_event_provider_.AcknowledgeItemEvents(
+                selection_->node().node_id());
           })
           .set_enabled_handler(
               [this] { return selection_->timed_data().alerting(); })

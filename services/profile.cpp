@@ -12,7 +12,6 @@
 #include "base/utils.h"
 #include "base/value_util.h"
 #include "client_paths.h"
-#include "common/event_fetcher.h"
 #include "common_resources.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
@@ -22,8 +21,10 @@
 #include "components/portfolio/portfolio_component.h"
 #include "components/portfolio/portfolio_manager.h"
 #include "components/table/table_component.h"
+#include "events/node_event_provider.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "scada/event.h"
 #include "window_info.h"
 
 #if !defined(UI_WT)
@@ -165,14 +166,14 @@ MainWindowDef::MainWindowDef()
 
 Profile::Profile() {}
 
-void Profile::Load(EventFetcher& event_manager,
+void Profile::Load(NodeEventProvider& node_event_provider,
                    PortfolioManager& portfolio_manager,
                    Favourites& favourites) {
   LOG(INFO) << "Load profile";
 
   std::string error_message;
   if (auto data = LoadJsonFromFile(GetFilePath(), &error_message))
-    Load(*data, event_manager, portfolio_manager, favourites);
+    Load(*data, node_event_provider, portfolio_manager, favourites);
   else
     LOG(ERROR) << "Profile load error " << error_message;
 
@@ -185,7 +186,7 @@ void Profile::Load(EventFetcher& event_manager,
 }
 
 void Profile::Load(const base::Value& data,
-                   EventFetcher& event_manager,
+                   NodeEventProvider& node_event_provider,
                    PortfolioManager& portfolio_manager,
                    Favourites& favourites) {
   // common settings
@@ -198,7 +199,7 @@ void Profile::Load(const base::Value& data,
 
   unsigned severity_min =
       GetInt(data, "severityMin", static_cast<unsigned>(scada::kSeverityMin));
-  event_manager.SetSeverityMin(severity_min);
+  node_event_provider.SetSeverityMin(severity_min);
 
   // window settings
   if (auto* list = GetList(data, "windows")) {
@@ -285,12 +286,12 @@ void Profile::Load(const base::Value& data,
   csv_export_dir = GetString16(data, "csvPath");
 }
 
-void Profile::Save(const EventFetcher& event_manager,
+void Profile::Save(const NodeEventProvider& node_event_provider,
                    const PortfolioManager& portfolio_manager,
                    const Favourites& favourites) {
   LOG(INFO) << "Save profile";
 
-  auto data = SaveToValue(event_manager, portfolio_manager, favourites);
+  auto data = SaveToValue(node_event_provider, portfolio_manager, favourites);
 
   if (SaveJsonToFile(data, GetFilePath()))
     LOG(INFO) << "Profile saved";
@@ -298,7 +299,7 @@ void Profile::Save(const EventFetcher& event_manager,
     LOG(ERROR) << "Profile save error";
 }
 
-base::Value Profile::SaveToValue(const EventFetcher& event_manager,
+base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
                                  const PortfolioManager& portfolio_manager,
                                  const Favourites& favourites) const {
   base::Value data{base::Value::Type::DICTIONARY};
@@ -309,7 +310,8 @@ base::Value Profile::SaveToValue(const EventFetcher& event_manager,
   SetKey(data, "hideEvents", event_auto_hide);
   SetKey(data, "flashOnEvents", event_flash_window);
   SetKey(data, "soundOnEvents", event_play_sound);
-  SetKey(data, "severityMin", static_cast<int>(event_manager.severity_min()));
+  SetKey(data, "severityMin",
+         static_cast<int>(node_event_provider.severity_min()));
   SetKey(data, "modus2", modus2);
 
   // window settings

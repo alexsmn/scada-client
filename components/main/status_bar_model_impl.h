@@ -10,14 +10,14 @@ namespace scada {
 class SessionService;
 }
 
-class EventFetcher;
 class Executor;
+class NodeEventProvider;
 class NodeService;
 
 struct StatusBarModelImplContext {
   const std::shared_ptr<Executor> executor_;
   scada::SessionService& session_service_;
-  EventFetcher& event_fetcher_;
+  NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
   ProgressHost& progress_host_;
 };

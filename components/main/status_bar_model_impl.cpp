@@ -2,10 +2,10 @@
 
 #include "base/executor.h"
 #include "base/strings/stringprintf.h"
-#include "common/event_fetcher.h"
-#include "scada/session_service.h"
+#include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/session_service.h"
 
 // StatusBarModelImpl
 
@@ -35,14 +35,15 @@ int StatusBarModelImpl::GetPaneCount() const {
 std::u16string StatusBarModelImpl::GetPaneText(int index) const {
   switch (index) {
     case 1: {
-      size_t unacked_event_count = event_fetcher_.unacked_events().size();
+      size_t unacked_event_count = node_event_provider_.unacked_events().size();
       return unacked_event_count
                  ? base::StringPrintf(u"Событий: %u", unacked_event_count)
                  : u"Нет событий";
     }
 
     case 2:
-      return base::StringPrintf(u"Важность: %u", event_fetcher_.severity_min());
+      return base::StringPrintf(u"Важность: %u",
+                                node_event_provider_.severity_min());
 
     case 3:
       return user_node_.display_name();
