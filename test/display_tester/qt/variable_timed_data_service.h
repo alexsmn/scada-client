@@ -24,7 +24,7 @@ class VariableTimedData : public BaseTimedData {
 
   void SetDataValue(const scada::DataValue& new_data_value) {
     if (UpdateCurrent(new_data_value)) {
-      NotifyPropertyChanged(PropertySet(PROPERTY_CURRENT));
+      timed_data_view_.NotifyPropertyChanged(PropertySet(PROPERTY_CURRENT));
     }
   }
 

@@ -42,26 +42,31 @@ void TableModel::NotifyModelChanged() {
 }
 
 void TableModel::NotifyItemsAdding(int first, int count) {
+  assert(count > 0);
   for (auto& o : observers_)
     o.OnItemsAdding(first, count);
 }
 
 void TableModel::NotifyItemsAdded(int first, int count) {
+  assert(count > 0);
   for (auto& o : observers_)
     o.OnItemsAdded(first, count);
 }
 
 void TableModel::NotifyItemsRemoving(int first, int count) {
+  assert(count > 0);
   for (auto& o : observers_)
     o.OnItemsRemoving(first, count);
 }
 
 void TableModel::NotifyItemsRemoved(int first, int count) {
+  assert(count > 0);
   for (auto& o : observers_)
     o.OnItemsRemoved(first, count);
 }
 
 void TableModel::NotifyItemsChanged(int first, int count) {
+  assert(count > 0);
   for (auto& o : observers_)
     o.OnItemsChanged(first, count);
 }

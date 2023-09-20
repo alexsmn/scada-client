@@ -129,23 +129,28 @@ void TableModelAdapter::OnModelChanged() {
 }
 
 void TableModelAdapter::OnItemsChanged(int first, int count) {
+  assert(count > 0);
   dataChanged(index(first, 0),
               index(first + count - 1, static_cast<int>(columns_.size()) - 1));
 }
 
 void TableModelAdapter::OnItemsAdding(int first, int count) {
+  assert(count > 0);
   beginInsertRows({}, first, first + count - 1);
 }
 
 void TableModelAdapter::OnItemsAdded(int first, int count) {
+  assert(count > 0);
   endInsertRows();
 }
 
 void TableModelAdapter::OnItemsRemoving(int first, int count) {
+  assert(count > 0);
   beginRemoveRows({}, first, first + count - 1);
 }
 
 void TableModelAdapter::OnItemsRemoved(int first, int count) {
+  assert(count > 0);
   endRemoveRows();
 }
 

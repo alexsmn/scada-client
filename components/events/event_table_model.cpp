@@ -62,10 +62,16 @@ EventTableModel::EventTableModel(EventTableModelContext&& context)
     : EventTableModelContext(std::move(context)) {
   connections_.emplace_back(current_event_model_.on_events.connect(
       std::bind_front(&EventTableModel::OnCurrentEvents, this)));
-  connections_.emplace_back(current_event_model_.on_all_acked.connect(
-      [this] { AckRows(0, static_cast<int>(rows_.size())); }));
+
+  connections_.emplace_back(current_event_model_.on_all_acked.connect([this] {
+    if (!rows_.empty()) {
+      AckRows(0, static_cast<int>(rows_.size()));
+    }
+  }));
+
   connections_.emplace_back(historical_event_model_.refilter_now.connect(
       std::bind_front(&EventTableModel::RefilterNow, this)));
+
   connections_.emplace_back(local_event_model_.on_event.connect(
       std::bind_front(&EventTableModel::OnLocalEvent, this)));
 
@@ -210,6 +216,7 @@ void EventTableModel::AddRows(EventType type,
 }
 
 void EventTableModel::RemoveRows(int first, int count) {
+  assert(count > 0);
   NotifyItemsRemoving(first, count);
   rows_.erase(rows_.begin() + first, rows_.begin() + (first + count));
   NotifyItemsRemoved(first, count);
@@ -269,6 +276,8 @@ void EventTableModel::OnCurrentEvents(
 }
 
 void EventTableModel::AckRows(int first, int count) {
+  assert(count > 0);
+
   if (current_events_) {
     RemoveRows(first, count);
 

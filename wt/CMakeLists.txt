@@ -31,14 +31,8 @@ set_property(TARGET client_wt_lib PROPERTY FOLDER ${client_folder})
 
 find_package(wt CONFIG REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
-  client_base
+  client_common
   Wt::Wt
-  node_service_v1
-  node_service_v2
-  scada_core_opcua
-  scada_core_remote
-  scada_core_vidicon
-  timed_data
 )
 
 target_compile_options(client_wt_lib PUBLIC
