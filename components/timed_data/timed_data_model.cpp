@@ -36,21 +36,23 @@ void TimedDataModel::Update(scada::DateTimeRange range) {
 
   int new_count = 0;
   if (timed_data_.connected() && timed_data_.values()) {
-    base::span<const scada::DataValue> values = *timed_data_.values();
+    std::span<const scada::DataValue> values = *timed_data_.values();
     new_begin = LowerBound(values, timed_data_.from());
     auto new_end = UpperBound(values, end_time_);
     new_count = new_end - new_begin;
   }
 
   if (new_count > count_) {
-    int first = count_, count = new_count - count_;
+    int first = count_;
+    int count = new_count - count_;
     NotifyItemsAdding(first, count);
     begin_iterator_ = new_begin;
     count_ = new_count;
     NotifyItemsAdded(first, count);
 
   } else if (new_count < count_) {
-    int first = new_count, count = count_ - new_count;
+    int first = new_count;
+    int count = count_ - new_count;
     NotifyItemsRemoving(first, count);
     begin_iterator_ = new_begin;
     count_ = new_count;
@@ -58,7 +60,7 @@ void TimedDataModel::Update(scada::DateTimeRange range) {
   }
 
   if (timed_data_.values()) {
-    base::span<const scada::DataValue> values = *timed_data_.values();
+    std::span<const scada::DataValue> values = *timed_data_.values();
     int start = LowerBound(values, timed_data_.from());
     int first = LowerBound(values, range.first);
     int last = UpperBound(values, range.second);
