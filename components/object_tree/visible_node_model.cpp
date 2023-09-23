@@ -151,7 +151,7 @@ void DataItemVisibleNode::OnBlink(bool state) {
 }
 
 std::u16string DataItemVisibleNode::GetText() const {
-  return spec_.GetCurrentString(FORMAT_DEFAULT);
+  return spec_.GetCurrentString(ValueFormat{FORMAT_DEFAULT});
 }
 
 bool DataItemVisibleNode::IsBad() const {

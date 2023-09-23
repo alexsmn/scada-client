@@ -91,7 +91,8 @@ void TimedDataModel::GetCell(aui::TableCell& cell) {
 
     case CID_VALUE:
       // Format without quality.
-      cell.text = timed_data_.GetValueString(tvq.value, tvq.qualifier, 0);
+      cell.text =
+          timed_data_.GetValueString(tvq.value, tvq.qualifier, ValueFormat{0});
       break;
 
     case CID_QUALITY:

@@ -13,7 +13,7 @@
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
 
-const int kValueFormat = FORMAT_DEFAULT;
+const ValueFormat kValueFormat{FORMAT_DEFAULT};
 
 namespace {
 

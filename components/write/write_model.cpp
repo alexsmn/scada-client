@@ -3,9 +3,10 @@
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "common/format.h"
 #include "common/formula_util.h"
-#include "scada/status.h"
 #include "model/data_items_node_ids.h"
+#include "scada/status.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 
@@ -56,7 +57,8 @@ std::u16string WriteModel::GetSourceTitle() const {
 }
 
 std::u16string WriteModel::GetCurrentValue(bool formatted) const {
-  return spec_.GetCurrentString(formatted ? FORMAT_QUALITY | FORMAT_UNITS : 0);
+  return spec_.GetCurrentString(
+      formatted ? ValueFormat{FORMAT_QUALITY | FORMAT_UNITS} : ValueFormat{0});
 }
 
 std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
@@ -149,7 +151,8 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
 }
 
 std::u16string WriteModel::GetConfirmationMessage(bool second_stage) const {
-  auto value_str = spec_.GetValueString(write_value_, {}, FORMAT_UNITS);
+  auto value_str =
+      spec_.GetValueString(write_value_, {}, ValueFormat{FORMAT_UNITS});
   auto message = base::StringPrintf(
       discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
       spec_.GetTitle().c_str(), value_str.c_str());

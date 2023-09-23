@@ -11,6 +11,9 @@ class TableRow : private Blinker {
   TableRow(TableModel& model, int index);
   ~TableRow();
 
+  TableRow(const TableRow&) = delete;
+  TableRow& operator=(const TableRow&) = delete;
+
   int index() const { return index_; }
   void set_index(int index) { index_ = index; }
 
@@ -42,6 +45,4 @@ class TableRow : private Blinker {
   std::string formula_;
   TimedDataSpec timed_data_;
   bool is_blinking_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(TableRow);
 };

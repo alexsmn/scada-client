@@ -1,8 +1,8 @@
 #include "components/sheet/sheet_cell.h"
 
+#include "aui/models/grid_range.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/sheet/sheet_model.h"
-#include "aui/models/grid_range.h"
 
 SheetCell::SheetCell(SheetModel& model, int row, int column)
     : model_(model), row_(row), column_(column), blinking_(false) {
@@ -41,7 +41,7 @@ bool SheetCell::SetFormula(std::u16string formula) {
 }
 
 void SheetCell::UpdateTextFromFormula() {
-  text_ = timed_data_.GetCurrentString(0);
+  text_ = timed_data_.GetCurrentString(ValueFormat{0});
   NotifyChanged();
 }
 
