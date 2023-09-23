@@ -6,6 +6,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
 #include "components/table/table_model.h"
+#include "events/event_set.h"
 #include "events/node_event_provider.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"

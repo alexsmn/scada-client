@@ -55,7 +55,7 @@ void SelectionModel::SelectTimedData(const TimedDataSpec& spec) {
 
   type_ = SPEC;
   timed_data_ = spec;
-  timed_data_.SetFrom(kTimedDataCurrentOnly);
+  timed_data_.SetCurrentOnly();
   node_ = timed_data_.GetNode();
   if (node_)
     node_.Subscribe(*this);

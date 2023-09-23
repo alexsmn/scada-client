@@ -2,6 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
+#include "common/data_value_util.h"
 #include "scada/date_time.h"
 
 // TimedDataModel

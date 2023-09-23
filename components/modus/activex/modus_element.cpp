@@ -8,6 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
 #include "components/modus/activex/modus_object.h"
+#include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 

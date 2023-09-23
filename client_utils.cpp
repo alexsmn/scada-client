@@ -15,6 +15,7 @@
 #include "common/node_state.h"
 #include "common_resources.h"
 #include "contents_model.h"
+#include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/node_id_util.h"
