@@ -1,12 +1,12 @@
 #pragma once
 
-#include <memory>
-
+#include "aui/graph.h"
 #include "base/timer/timer.h"
 #include "components/graph/metrix_data_source.h"
-#include "aui/graph.h"
 #include "timed_data/timed_data.h"
-#include "timed_data/timed_data_delegate.h"
+#include "timed_data/timed_data_observer.h"
+
+#include <memory>
 
 class TimedDataService;
 

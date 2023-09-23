@@ -7,8 +7,8 @@
 #include "node_service/test/test_node_model.h"
 #include "services/dialog_service_mock.h"
 #include "services/profile.h"
-#include "timed_data/timed_data_delegate.h"
 #include "timed_data/timed_data_mock.h"
+#include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -22,7 +22,7 @@ class TableModelTest : public Test {
 
  protected:
   struct RowContext {
-    base::ObserverList<TimedDataDelegate> observers;
+    base::ObserverList<TimedDataObserver> observers;
     StrictMock<MockTimedData> timed_data;
   };
 
@@ -72,13 +72,13 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   ON_CALL(row_context->timed_data, AddObserver(_, _))
       .WillByDefault(Invoke(
           [&observers = row_context->observers](
-              TimedDataDelegate& observer, const scada::DateTimeRange& range) {
+              TimedDataObserver& observer, const scada::DateTimeRange& range) {
             observers.AddObserver(&observer);
           }));
 
   ON_CALL(row_context->timed_data, RemoveObserver(_))
       .WillByDefault(Invoke(
-          [&observers = row_context->observers](TimedDataDelegate& observer) {
+          [&observers = row_context->observers](TimedDataObserver& observer) {
             observers.RemoveObserver(&observer);
           }));
 

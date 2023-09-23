@@ -8,8 +8,8 @@
 #include "services/vidicon/teleclient.h"
 #include "services/vidicon/test/com_data_point_events.h"
 #include "services/vidicon/test/com_event_connector.h"
-#include "timed_data/timed_data_delegate.h"
 #include "timed_data/timed_data_mock.h"
+#include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_service_mock.h"
 
 #include <atlcomcli.h>
