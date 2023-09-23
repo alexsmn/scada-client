@@ -42,13 +42,13 @@ class MetrixPointEnum : public views::PointEnumerator {
              bool include_right_bound);
 
   // PointEnumerator
-  virtual size_t GetCount() const;
-  virtual bool EnumNext(views::GraphPoint& point);
+  virtual size_t GetCount() const override;
+  virtual bool EnumNext(views::GraphPoint& point) override;
 
  private:
   TimedDataSpec& timed_data_;
-  DataValues::const_iterator enum_position_;
-  DataValues::const_iterator last_;
+  size_t current_position_ = 0;
+  size_t last_position_ = 0;
   std::size_t count_ = 0;
   double enum_right_bound_;
   bool enum_include_right_bound_;
@@ -71,15 +71,17 @@ bool MetrixPointEnum::Reset(double x_from,
 
   const auto* values = timed_data_.values();
   if (values) {
-    enum_position_ = LowerBound(*values, base::Time::FromDoubleT(x_from));
-    if (include_left_bound && enum_position_ != values->begin())
-      --enum_position_;
+    current_position_ = LowerBound(*values, base::Time::FromDoubleT(x_from));
+    if (include_left_bound && current_position_ != 0) {
+      --current_position_;
+    }
 
-    last_ = UpperBound(*values, base::Time::FromDoubleT(x_to));
-    if (include_right_bound && last_ != values->end())
-      ++last_;
+    last_position_ = UpperBound(*values, base::Time::FromDoubleT(x_to));
+    if (include_right_bound && last_position_ != values->size()) {
+      ++last_position_;
+    }
 
-    count_ += last_ - enum_position_;
+    count_ += last_position_ - current_position_;
   }
 
   if (!timed_data_.current().is_null()) {
@@ -101,23 +103,27 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
   if (count_ == 0)
     return false;
 
-  if (enum_position_ != last_) {
-    point.x = enum_position_->source_timestamp.ToDoubleT();
-    point.y = enum_position_->value.get_or(0.0);
-    point.good = enum_position_->qualifier.good();
-    last_value_time_ = enum_position_->source_timestamp;
-    ++enum_position_;
+  const auto* values = timed_data_.values();
+  if (values && current_position_ != last_position_) {
+    const auto& data_value = (*values)[current_position_];
+    // TODO: Duplicate code block.
+    point.x = data_value.source_timestamp.ToDoubleT();
+    point.y = data_value.value.get_or(0.0);
+    point.good = data_value.qualifier.good();
+    last_value_time_ = data_value.source_timestamp;
+    ++current_position_;
 
   } else if (!enum_current_passed_) {
     enum_current_passed_ = true;
 
-    const auto& current = timed_data_.current();
+    const scada::DataValue& current = timed_data_.current();
     if (last_value_time_ >= current.source_timestamp)
       return false;
 
+    // TODO: Duplicate code block.
     point.x = current.source_timestamp.ToDoubleT();
     point.y = current.value.get_or(0.0);
-    point.good = timed_data_.current().qualifier.good();
+    point.good = current.qualifier.good();
 
   } else
     return false;
