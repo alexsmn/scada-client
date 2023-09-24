@@ -1,18 +1,18 @@
 #include "services/vidicon/data_point_manager_impl.h"
 
 #include "base/executor.h"
-#include "scada/monitored_item.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "model/opc_node_ids.h"
+#include "scada/monitored_item.h"
 #include "services/vidicon/data_point_manager.h"
 #include "services/vidicon/vidicon_conversions.h"
+#include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
 
 namespace vidicon {
 
 namespace {
-
 
 scada::NodeId MakeAddressNodeId(const DataPointAddress& address) {
   if (address.vidicon_id != 0) {
@@ -25,9 +25,8 @@ scada::NodeId MakeAddressNodeId(const DataPointAddress& address) {
 
 struct DataPoint : public std::enable_shared_from_this<DataPoint> {
   DataPoint(std::stop_token cancelation, const DataChangeHandler& handler)
-      : handler_{handler}, stop_callback_{std::move(cancelation), [this] {
-                                            Stop();
-                                          }} {
+      : handler_{handler},
+        stop_callback_{std::move(cancelation), [this] { Stop(); }} {
     timed_data_spec_.property_change_handler =
         [this](const PropertySet& properties) {
           if (properties.is_current_changed()) {

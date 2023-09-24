@@ -10,6 +10,7 @@
 #include "services/vidicon/test/com_event_connector.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
+#include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_service_mock.h"
 
 #include <atlcomcli.h>

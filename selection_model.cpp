@@ -4,6 +4,7 @@
 #include "controller.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
+#include "timed_data/timed_data_property.h"
 
 SelectionModel::SelectionModel(SelectionModelContext&& context)
     : SelectionModelContext{std::move(context)} {

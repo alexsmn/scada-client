@@ -3,6 +3,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
+#include "timed_data/timed_data_property.h"
 
 #if defined(UI_QT)
 #include "graph_qt/model/graph_types.h"

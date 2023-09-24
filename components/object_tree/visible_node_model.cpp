@@ -4,6 +4,7 @@
 #include "model/data_items_node_ids.h"
 #include "services/device_state_notifier.h"
 #include "services/profile.h"
+#include "timed_data/timed_data_property.h"
 
 VisibleNodeModel::VisibleNodeModel(TimedDataService& timed_data_service,
                                    Profile& profile,

@@ -3,6 +3,7 @@
 #include "aui/models/grid_range.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/sheet/sheet_model.h"
+#include "timed_data/timed_data_property.h"
 
 SheetCell::SheetCell(SheetModel& model, int row, int column)
     : model_(model), row_(row), column_(column), blinking_(false) {

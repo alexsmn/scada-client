@@ -2,12 +2,12 @@
 
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
-#include "scada/attribute_service.h"
-#include "scada/node_management_service.h"
-#include "scada/promise.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/attribute_service.h"
+#include "scada/node_management_service.h"
+#include "scada/status_promise.h"
 #include "services/local_events.h"
 #include "services/profile.h"
 #include "services/progress_host.h"
@@ -70,14 +70,14 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
                                               const NodeRef& type) mutable {
     if (!type) {
       assert(false);
-      promise.reject(scada::StatusException{type.status()});
+      promise.reject(scada::status_exception{type.status()});
       return;
     }
 
     if (type.node_class() != scada::NodeClass::ObjectType &&
         type.node_class() != scada::NodeClass::VariableType) {
       assert(false);
-      promise.reject(scada::StatusException{scada::StatusCode::Bad});
+      promise.reject(scada::status_exception{scada::StatusCode::Bad});
       return;
     }
 
@@ -97,7 +97,7 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
                 ReportRequestCompletion(result.status_code, {});
 
                 if (scada::IsBad(status_code)) {
-                  promise.reject(scada::StatusException{status_code});
+                  promise.reject(scada::status_exception{status_code});
                   return;
                 }
 
