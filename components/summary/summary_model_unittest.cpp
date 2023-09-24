@@ -84,18 +84,21 @@ SummaryModelTest::TestColumn SummaryModelTest::AddColumn() {
               GetFormulaTimedData(kFormula, kAggregateFilter))
       .WillOnce(Return(timed_data));
 
+  EXPECT_CALL(*timed_data, AddObserver(_));
+
   // Start time is rounded down, end time is rounded up.
   EXPECT_CALL(
       *timed_data,
-      AddObserver(_, scada::DateTimeRange{
-                         TestTimeFromString("15 Nov 2004 12:30:00 UTC"),
-                         TestTimeFromString("16 Nov 2004 13:00:00 UTC")}));
+      AddViewObserver(_, scada::DateTimeRange{
+                             TestTimeFromString("15 Nov 2004 12:30:00 UTC"),
+                             TestTimeFromString("16 Nov 2004 13:00:00 UTC")}));
 
   int index = summary_model_.AddColumn(std::string{kFormula});
 
   EXPECT_EQ(index, 2);
 
   EXPECT_CALL(*timed_data, RemoveObserver(_));
+  EXPECT_CALL(*timed_data, RemoveViewObserver(_));
 
   return TestColumn{index, timed_data};
 }

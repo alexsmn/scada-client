@@ -23,6 +23,7 @@ class TableModelTest : public Test {
  protected:
   struct RowContext {
     base::ObserverList<TimedDataObserver> observers;
+    base::ObserverList<TimedDataViewObserver> view_observers;
     StrictMock<MockTimedData> timed_data;
   };
 
@@ -69,18 +70,30 @@ TableModelTest::~TableModelTest() {
 std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   auto row_context = std::make_shared<RowContext>();
 
-  ON_CALL(row_context->timed_data, AddObserver(_, _))
+  ON_CALL(row_context->timed_data, AddObserver(_))
       .WillByDefault(Invoke(
-          [&observers = row_context->observers](
-              TimedDataObserver& observer, const scada::DateTimeRange& range) {
+          [&observers = row_context->observers](TimedDataObserver& observer) {
             observers.AddObserver(&observer);
           }));
+
+  ON_CALL(row_context->timed_data, AddViewObserver(_, _))
+      .WillByDefault(Invoke([&view_observers = row_context->view_observers](
+                                TimedDataViewObserver& observer,
+                                const scada::DateTimeRange& range) {
+        view_observers.AddObserver(&observer);
+      }));
 
   ON_CALL(row_context->timed_data, RemoveObserver(_))
       .WillByDefault(Invoke(
           [&observers = row_context->observers](TimedDataObserver& observer) {
             observers.RemoveObserver(&observer);
           }));
+
+  ON_CALL(row_context->timed_data, RemoveViewObserver(_))
+      .WillByDefault(Invoke([&view_observers = row_context->view_observers](
+                                TimedDataViewObserver& observer) {
+        view_observers.RemoveObserver(&observer);
+      }));
 
   const std::string formula = "formula";
   EXPECT_CALL(
@@ -89,9 +102,11 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
       .WillOnce(Return(
           std::shared_ptr<TimedData>{row_context, &row_context->timed_data}));
 
+  EXPECT_CALL(row_context->timed_data, AddObserver(_));
+
   EXPECT_CALL(row_context->timed_data,
-              AddObserver(_, scada::DateTimeRange{scada::DateTime::Max(),
-                                                  scada::DateTime::Max()}));
+              AddViewObserver(_, scada::DateTimeRange{scada::DateTime::Max(),
+                                                      scada::DateTime::Max()}));
 
   EXPECT_CALL(row_context->timed_data, IsAlerting());
 
@@ -111,6 +126,7 @@ std::shared_ptr<TableModelTest::RowContext> TableModelTest::SetFormula() {
   EXPECT_TRUE(table_model_.SetFormula(row_index, formula));
 
   EXPECT_CALL(row_context->timed_data, RemoveObserver(_));
+  EXPECT_CALL(row_context->timed_data, RemoveViewObserver(_));
 
   return row_context;
 }
