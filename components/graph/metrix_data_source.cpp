@@ -1,6 +1,6 @@
 #include "components/graph/metrix_data_source.h"
 
-#include "base/strings/sys_string_conversions.h"
+#include "common/data_value_util.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_property.h"
@@ -13,18 +13,17 @@ namespace {
 
 std::pair<scada::DateTime, scada::DateTime> GetTimeRange(
     const TimedDataSpec& spec) {
-  if (!spec.values() || spec.values()->empty()) {
-    return {};
-  }
-
-  return std::make_pair(spec.values()->front().source_timestamp,
-                        spec.values()->back().source_timestamp);
+  const auto& values = spec.values();
+  return !values.empty()
+             ? std::pair<scada::DateTime,
+                         scada::DateTime>{values.front().source_timestamp,
+                                          values.back().source_timestamp}
+             : std::pair<scada::DateTime, scada::DateTime>{};
 }
 
 scada::DateTime GetLatestTimestamp(const TimedDataSpec& spec) {
-  return spec.values() && !spec.values()->empty()
-             ? spec.values()->back().source_timestamp
-             : scada::DateTime{};
+  const auto& values = spec.values();
+  return !values.empty() ? values.back().source_timestamp : scada::DateTime{};
 }
 
 }  // namespace
@@ -70,25 +69,23 @@ bool MetrixPointEnum::Reset(double x_from,
   enum_include_right_bound_ = include_right_bound;
   enum_current_passed_ = false;
 
-  const auto* values = timed_data_.values();
-  if (values) {
-    current_position_ = LowerBound(*values, base::Time::FromDoubleT(x_from));
-    if (include_left_bound && current_position_ != 0) {
-      --current_position_;
-    }
+  const auto& values = timed_data_.values();
 
-    last_position_ = UpperBound(*values, base::Time::FromDoubleT(x_to));
-    if (include_right_bound && last_position_ != values->size()) {
-      ++last_position_;
-    }
-
-    count_ += last_position_ - current_position_;
+  current_position_ = LowerBound(values, base::Time::FromDoubleT(x_from));
+  if (include_left_bound && current_position_ != 0) {
+    --current_position_;
   }
 
+  last_position_ = UpperBound(values, base::Time::FromDoubleT(x_to));
+  if (include_right_bound && last_position_ != values.size()) {
+    ++last_position_;
+  }
+
+  count_ += last_position_ - current_position_;
+
   if (!timed_data_.current().is_null()) {
-    if (!values || values->empty() ||
-        values->back().source_timestamp <
-            timed_data_.current().source_timestamp) {
+    if (values.empty() || values.back().source_timestamp <
+                              timed_data_.current().source_timestamp) {
       ++count_;
     }
   }
@@ -104,9 +101,9 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
   if (count_ == 0)
     return false;
 
-  const auto* values = timed_data_.values();
-  if (values && current_position_ != last_position_) {
-    const auto& data_value = (*values)[current_position_];
+  const auto& values = timed_data_.values();
+  if (current_position_ != last_position_) {
+    const auto& data_value = values[current_position_];
     // TODO: Duplicate code block.
     point.x = data_value.source_timestamp.ToDoubleT();
     point.y = data_value.value.get_or(0.0);
