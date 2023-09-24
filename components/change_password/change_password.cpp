@@ -9,8 +9,8 @@
 void ChangePassword(const ChangePasswordContext& context,
                     const scada::LocalizedText& current_password,
                     const scada::LocalizedText& new_password) {
-  auto promise = context.user_.call(security::id::UserType_ChangePassword,
-                                    current_password, new_password);
+  auto promise = context.user_.scada_node().call(
+      security::id::UserType_ChangePassword, current_password, new_password);
   scada::BindStatusCallback(promise, [context](const scada::Status& status) {
     auto title =
         base::StringPrintf(u"Смена пароля пользователя %ls",

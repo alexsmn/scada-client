@@ -1,12 +1,9 @@
 #pragma once
 
 #include "components/watch/watch_event_source.h"
+#include "scada/client_monitored_item.h"
 
 #include <memory>
-
-namespace scada {
-class MonitoredItem;
-}  // namespace scada
 
 class NodeService;
 
@@ -26,5 +23,5 @@ class WatchEventSourceImpl : private WatchEventSourceImplContext,
  private:
   Delegate* delegate_ = nullptr;
 
-  std::shared_ptr<scada::MonitoredItem> monitored_item_;
+  scada::monitored_item monitored_item_;
 };

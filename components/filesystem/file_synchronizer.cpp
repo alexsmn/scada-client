@@ -5,10 +5,10 @@
 #include "base/logger.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/filesystem/filesystem_util.h"
-#include "scada/event.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/event.h"
 
 #if defined(UI_QT)
 #include <QUrl>
@@ -123,29 +123,31 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
   logger_->WriteF(LogSeverity::Normal, "Download outdated '%s'", path.c_str());
 
   // TODO: Weak ptr.
-  node.Read(scada::AttributeId::Value, [this, path, last_update_time](
-                                           scada::DataValue&& value) {
-    if (!scada::IsGood(value.status_code)) {
-      logger_->WriteF(LogSeverity::Warning, "Download '%s' error: %s",
-                      path.c_str(), ToString(value.status_code).c_str());
-      return;
-    }
+  node.scada_node()
+      .read(scada::AttributeId::Value)
+      .then(
+          [this, path, last_update_time](const scada::DataValue& data_value) {
+            auto* data = data_value.value.get_if<scada::ByteString>();
+            if (!data) {
+              logger_->WriteF(LogSeverity::Warning,
+                              "Wrong downloaded data for file '%s'",
+                              path.c_str());
+              return;
+            }
 
-    auto* data = value.value.get_if<scada::ByteString>();
-    if (!data) {
-      logger_->WriteF(LogSeverity::Warning,
-                      "Wrong downloaded data for file '%s'", path.c_str());
-      return;
-    }
+            logger_->WriteF(LogSeverity::Normal, "Download '%s' complete",
+                            path.c_str());
 
-    logger_->WriteF(LogSeverity::Normal, "Download '%s' complete",
-                    path.c_str());
+            base::WriteFile(AsFilePath(path), data->data(), data->size());
 
-    base::WriteFile(AsFilePath(path), data->data(), data->size());
-
-    std::error_code ec;
-    std::filesystem::last_write_time(path, last_update_time, ec);
-  });
+            std::error_code ec;
+            std::filesystem::last_write_time(path, last_update_time, ec);
+          },
+          [this, path](std::exception_ptr e) {
+            logger_->WriteF(LogSeverity::Warning, "Download '%s' error: %s",
+                            path.c_str(),
+                            ToString(scada::GetExceptionStatus(e)).c_str());
+          });
 
   return true;
 }

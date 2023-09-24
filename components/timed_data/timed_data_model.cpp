@@ -37,8 +37,8 @@ void TimedDataModel::Update(scada::DateTimeRange range) {
   auto new_begin = begin_iterator_;
 
   int new_count = 0;
-  if (timed_data_.connected() && timed_data_.values()) {
-    std::span<const scada::DataValue> values = *timed_data_.values();
+  if (timed_data_.connected()) {
+    const auto& values = timed_data_.values();
     new_begin = LowerBound(values, timed_data_.from());
     auto new_end = UpperBound(values, end_time_);
     new_count = new_end - new_begin;
@@ -61,8 +61,8 @@ void TimedDataModel::Update(scada::DateTimeRange range) {
     NotifyItemsRemoved(first, count);
   }
 
-  if (timed_data_.values()) {
-    std::span<const scada::DataValue> values = *timed_data_.values();
+  {
+    const auto& values = timed_data_.values();
     int start = LowerBound(values, timed_data_.from());
     int first = LowerBound(values, range.first);
     int last = UpperBound(values, range.second);
@@ -74,9 +74,7 @@ void TimedDataModel::Update(scada::DateTimeRange range) {
 
 const scada::DataValue& TimedDataModel::value(int row) const {
   assert(row < count_);
-  assert(timed_data_.values());
-  auto& values = *timed_data_.values();
-  return values[begin_iterator_ + row];
+  return timed_data_.values()[begin_iterator_ + row];
 }
 
 int TimedDataModel::GetRowCount() {

@@ -2,7 +2,6 @@
 
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
-#include "scada/monitored_item_service.h"
 
 // WatchEventSourceImpl
 
@@ -15,27 +14,20 @@ void WatchEventSourceImpl::SetDelegate(Delegate* delegate) {
 }
 
 void WatchEventSourceImpl::SetDeviceId(const scada::NodeId& device_id) {
-  monitored_item_.reset();
+  monitored_item_.unsubscribe();
 
-  monitored_item_ = node_service_.GetNode(device_id).CreateMonitoredItem(
-      scada::AttributeId::EventNotifier,
+  monitored_item_.subscribe_system_events(
+      node_service_.GetNode(device_id).scada_node(),
+      // FIXME: MSVC fails with an internal error if named parameters are used
+      // with variants.
       scada::MonitoringParameters{}.set_filter(
-          scada::EventFilter{}.add_of_type(devices::id::DeviceWatchEventType)));
-
-  if (!monitored_item_)
-    return delegate_->OnError(scada::StatusCode::Bad);
-
-  // FIXME: Captures |this|. No sync.
-  monitored_item_->Subscribe(
-      [this](const scada::Status& status, const std::any& event) {
-        if (!status)
-          return delegate_->OnError(status);
-
-        if (event.has_value()) {
-          auto* system_event = std::any_cast<scada::Event>(&event);
-          assert(system_event);
-          if (system_event)
-            delegate_->OnEvent(*system_event);
+          scada::EventFilter{.of_type = {devices::id::DeviceWatchEventType}}),
+      // FIXME: Captures |this|. No sync.
+      [this](const scada::Status& status, const scada::Event& event) {
+        if (status) {
+          delegate_->OnError(status);
+          return;
         }
+        delegate_->OnEvent(event);
       });
 }

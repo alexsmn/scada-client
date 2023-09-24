@@ -458,7 +458,8 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                 base::StringPrintf(u"Снятие блокировки с %ls",
                                    node.display_name().c_str()),
                 [node] {
-                  return node.call(data_items::id::DataItemType_Unlock);
+                  return node.scada_node().call(
+                      data_items::id::DataItemType_Unlock);
                 });
           })
           .set_enabled_handler([this] {
@@ -511,13 +512,13 @@ void SelectionCommands::CallMethod(
     const NodeRef& node,
     const scada::NodeId& method_id,
     const std::vector<scada::Variant>& arguments) {
-  auto promise = node.call_packed(method_id, arguments);
-  scada::BindStatusCallback(
-      promise, [node, &local_events = local_events_,
-                &profile = profile_](const scada::Status& status) {
-        auto title = ToString16(node.display_name());
-        ReportRequestResult(title, status, local_events, profile);
-      });
+  scada::BindStatusCallback(node.scada_node().call_packed(method_id, arguments),
+                            [node, &local_events = local_events_,
+                             &profile = profile_](const scada::Status& status) {
+                              auto title = ToString16(node.display_name());
+                              ReportRequestResult(title, status, local_events,
+                                                  profile);
+                            });
 }
 
 #if !defined(UI_WT)

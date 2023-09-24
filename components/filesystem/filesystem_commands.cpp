@@ -86,33 +86,23 @@ promise<std::filesystem::path> DownloadFile(const NodeRef& file_node) {
         scada::StatusCode::Bad);
   }
 
-  promise<std::filesystem::path> promise;
+  return file_node.scada_node()
+      .read(scada::AttributeId::Value)
+      .then(
+          [path = std::move(path)](const scada::DataValue& data_value) mutable {
+            const auto* contents = data_value.value.get_if<scada::ByteString>();
+            if (!contents) {
+              throw scada::status_exception{scada::StatusCode::Bad};
+            }
 
-  file_node.Read(
-      scada::AttributeId::Value,
-      [path = std::move(path), promise](scada::DataValue data_value) mutable {
-        if (scada::IsBad(data_value.status_code)) {
-          scada::RejectStatusPromise(promise, data_value.status_code);
-          return;
-        }
+            int written = base::WriteFile(AsFilePath(GetPublicFilePath(path)),
+                                          contents->data(), contents->size());
+            if (written != static_cast<int>(contents->size())) {
+              throw scada::status_exception{scada::StatusCode::Bad};
+            }
 
-        const auto* contents = data_value.value.get_if<scada::ByteString>();
-        if (!contents) {
-          scada::RejectStatusPromise(promise, scada::StatusCode::Bad);
-          return;
-        }
-
-        int written = base::WriteFile(AsFilePath(GetPublicFilePath(path)),
-                                      contents->data(), contents->size());
-        if (written != static_cast<int>(contents->size())) {
-          scada::RejectStatusPromise(promise, scada::StatusCode::Bad);
-          return;
-        }
-
-        promise.resolve(std::move(path));
-      });
-
-  return promise;
+            return path;
+          });
 }
 
 promise<> ExecuteFileCommand(MainWindow* main_window,
