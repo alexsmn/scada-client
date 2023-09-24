@@ -81,7 +81,7 @@ std::u16string TableRow::GetTooltip() const {
 }
 
 void TableRow::SetFormula(std::string formula, bool notify_update) {
-  auto old_node_id = timed_data_.GetNode().node_id();
+  auto old_node_id = timed_data_.node_id();
 
   formula_ = std::move(formula);
   if (!formula_.empty() && formula_[0] == '=')
@@ -94,7 +94,7 @@ void TableRow::SetFormula(std::string formula, bool notify_update) {
   if (notify_update)
     NotifyUpdate();
 
-  auto new_node_id = timed_data_.GetNode().node_id();
+  const auto& new_node_id = timed_data_.node_id();
 
   if (old_node_id != new_node_id)
     model_.OnRowNodeChanged(old_node_id, new_node_id);
@@ -123,7 +123,7 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
   cell.text = timed_data_.GetValueString(data_value.value, data_value.qualifier,
                                          kValueFormat);
 
-  const auto& node = timed_data_.GetNode();
+  const auto& node = timed_data_.node();
   if (auto color = GetNodeColor(node, data_value))
     cell.text_color = color.value();
 
@@ -133,12 +133,12 @@ void TableRow::GetValueCell(TableCellEx& cell) const {
 
 void TableRow::GetEventCell(TableCellEx& cell) const {
   // last unacked event
-  const auto& node = timed_data_.GetNode();
-  if (!node)
+  const auto& node_id = timed_data_.node_id();
+  if (node_id.is_null())
     return;
 
   const EventSet* events =
-      model_.node_event_provider_.GetItemUnackedEvents(node.node_id());
+      model_.node_event_provider_.GetItemUnackedEvents(node_id);
   if (!events || events->empty())
     return;
 
@@ -158,7 +158,7 @@ void TableRow::GetCellEx(TableCellEx& cell) const {
   switch (cell.column_id) {
     case TableModel::COLUMN_TITLE:
       cell.text = GetTitle();
-      cell.icon_index = timed_data_.GetNode() ? 1 : -1;
+      cell.icon_index = !timed_data_.node_id().is_null() ? 1 : -1;
       break;
 
     case TableModel::COLUMN_VALUE:

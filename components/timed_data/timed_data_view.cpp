@@ -1,11 +1,11 @@
 ﻿#include "components/timed_data/timed_data_view.h"
 
+#include "aui/models/mirror_table_model.h"
+#include "aui/table.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "controller_delegate.h"
-#include "aui/models/mirror_table_model.h"
-#include "aui/table.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
@@ -108,11 +108,9 @@ void TimedDataView::Save(WindowDefinition& definition) {
 }
 
 std::string GetTimedDataUnits(const TimedDataSpec& spec) {
-  auto node = spec.GetNode();
-  if (!node)
-    return std::string();
-  return node[data_items::id::AnalogItemType_EngineeringUnits].value().get_or(
-      std::string());
+  return spec.node()[data_items::id::AnalogItemType_EngineeringUnits]
+      .value()
+      .get_or(std::string());
 }
 
 void TimedDataView::UpdateColumnTitles() {
@@ -152,7 +150,7 @@ ExportModel::ExportData TimedDataView::GetExportData() {
 }
 
 std::optional<OpenContext> TimedDataView::GetOpenContext() const {
-  const auto& node = model_->timed_data().GetNode();
+  const auto& node = model_->timed_data().node();
   if (!node)
     return std::nullopt;
 

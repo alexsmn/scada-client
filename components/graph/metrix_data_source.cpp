@@ -196,8 +196,8 @@ void MetrixDataSource::UpdateRange() {
 
   range_ = {};
 
-  auto node = timed_data_.GetNode();
-  if (IsInstanceOf(node, data_items::id::AnalogItemType)) {
+  if (auto node = timed_data_.node();
+      IsInstanceOf(node, data_items::id::AnalogItemType)) {
     range_ = views::GraphRange(
         node[data_items::id::AnalogItemType_EuLo].value().get_or(
             views::kGraphUnknownValue),
@@ -207,7 +207,7 @@ void MetrixDataSource::UpdateRange() {
 }
 
 void MetrixDataSource::UpdateLimits() {
-  if (auto node = timed_data_.GetNode()) {
+  if (auto node = timed_data_.node()) {
     limit_lo_ = node[data_items::id::AnalogItemType_LimitLo].value().get_or(
         views::kGraphUnknownValue);
     limit_hi_ = node[data_items::id::AnalogItemType_LimitHi].value().get_or(
@@ -285,7 +285,7 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
   update_horizontal_range_cancelation_.Cancel();
 
   // TODO: Bind executor.
-  timed_data_.GetNode()
+  timed_data_.node()
       .scada_node()
       .read_value_history({.from = scada::DateTime::Min(),
                            .to = scada::DateTime::Max(),

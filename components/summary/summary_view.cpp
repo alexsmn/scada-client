@@ -1,10 +1,10 @@
 ﻿#include "components/summary/summary_view.h"
 
+#include "aui/grid.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller_delegate.h"
-#include "aui/grid.h"
 #include "services/dialog_service.h"
 #include "time_range.h"
 #include "window_definition.h"
@@ -58,8 +58,10 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   selection_.multiple_handler = [this] {
     NodeIdSet node_ids;
     for (int column : grid_->GetSelectedColumns()) {
-      if (auto node = model_->timed_data(column).GetNode())
-        node_ids.emplace(node.node_id());
+      if (auto node_id = model_->timed_data(column).node_id();
+          !node_id.is_null()) {
+        node_ids.emplace(std::move(node_id));
+      }
     }
     return node_ids;
   };
@@ -129,8 +131,9 @@ std::optional<OpenContext> SummaryView::GetOpenContext() const {
 
   for (auto i : selected_columns) {
     const auto& timed_data = model_->timed_data(i);
-    if (const auto& node = timed_data.GetNode())
-      context.node_ids.emplace_back(node.node_id());
+    if (auto node_id = timed_data.node_id(); !node_id.is_null()) {
+      context.node_ids.emplace_back(std::move(node_id));
+    }
   }
 
   if (const auto& rows = grid_->GetSelectedRows(); !rows.empty()) {

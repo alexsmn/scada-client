@@ -181,7 +181,7 @@ void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
     MetrixGraph::MetrixLine& line =
         static_cast<MetrixGraph::MetrixLine&>(*lines.front());
     // TODO: Check if there are still another lines for this item.
-    NotifyContainedItemChanged(line.data_source().trid(), false);
+    NotifyContainedItemChanged(line.data_source().node_id(), false);
     pane.plot().DeleteLine(line);
   }
 }
@@ -220,7 +220,7 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   line.UpdateTimeRange();
   graph_->horizontal_axis().Fit();
 
-  NotifyContainedItemChanged(line.data_source().trid(), true);
+  NotifyContainedItemChanged(line.data_source().node_id(), true);
 
   pane->ShowLegend(true);
 
@@ -273,7 +273,7 @@ NodeIdSet GraphView::GetContainedItems() const {
   for (auto* pane : graph_->panes()) {
     for (auto* graph_line : pane->plot().lines()) {
       auto& line = static_cast<MetrixGraph::MetrixLine&>(*graph_line);
-      const auto& node_id = line.data_source().trid();
+      const auto& node_id = line.data_source().node_id();
       if (!node_id.is_null())
         items.insert(node_id);
     }
@@ -288,7 +288,7 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
     for (auto j = lines.begin(); j != lines.end();) {
       auto& line = static_cast<MetrixGraph::MetrixLine&>(**j++);
 
-      if (line.data_source().trid() == node_id)
+      if (line.data_source().node_id() == node_id)
         pane.plot().DeleteLine(line);
     }
 
@@ -384,7 +384,7 @@ void GraphView::OnLineItemChanged(views::GraphLine& line) {
     controller_delegate_.SetTitle(MakeTitle());
 
   auto& metrix_line = static_cast<MetrixGraph::MetrixLine&>(line);
-  auto node_id = metrix_line.data_source().timed_data().GetNode().node_id();
+  auto node_id = metrix_line.data_source().node_id();
   NotifyContainedItemChanged(node_id, true);
 }
 

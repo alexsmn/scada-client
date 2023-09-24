@@ -28,7 +28,7 @@ class SummaryModel::Column {
   void set_width(int width) { width_ = width; }
 
   std::u16string GetTitle() const;
-  scada::NodeId GetNodeId() const { return timed_data_.GetNode().node_id(); }
+  scada::NodeId GetNodeId() const { return timed_data_.node_id(); }
 
   void UpdateTimes();
 
@@ -70,7 +70,7 @@ SummaryModel::Column::Column(SummaryModel& model,
 
 std::u16string SummaryModel::Column::GetTitle() const {
   if (model_.path_title_) {
-    if (auto node = timed_data_.GetNode()) {
+    if (auto node = timed_data_.node()) {
       auto title = GetFullDisplayName(node);
       if (!title.empty())
         return title;

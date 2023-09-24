@@ -20,7 +20,7 @@ class MetrixDataSource : public views::GraphDataSource {
   void SetRange(const scada::DateTimeRange& range);
 
   bool is_ready() const { return timed_data_.ready(); }
-  scada::NodeId trid() const { return timed_data_.GetNode().node_id(); }
+  scada::NodeId node_id() const { return timed_data_.node_id(); }
   bool connected() const { return timed_data_.connected(); }
   const TimedDataSpec& timed_data() const { return timed_data_; }
   std::string GetPath() const { return timed_data_.formula(); }

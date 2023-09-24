@@ -1,5 +1,8 @@
 ﻿#include "components/sheet/sheet_view.h"
 
+#include "aui/color.h"
+#include "aui/grid.h"
+#include "aui/os_exchange_data.h"
 #include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -7,13 +10,10 @@
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
 #include "controller_delegate.h"
-#include "aui/color.h"
-#include "aui/grid.h"
-#include "aui/os_exchange_data.h"
-#include "scada/session_service.h"
 #include "item_drag_data.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
+#include "scada/session_service.h"
 #include "selection_model.h"
 #include "window_definition.h"
 
@@ -219,9 +219,9 @@ NodeIdSet SheetController::GetSelectedNodeIdList() {
     for (int column = range.column(); column <= range.last_column(); ++column) {
       const SheetCell* cell = model_->cell(row, column);
       if (cell) {
-        auto node_id = cell->timed_data().GetNode().node_id();
-        if (node_id.is_null())
-          result.insert(node_id);
+        if (auto node_id = cell->timed_data().node_id(); node_id.is_null()) {
+          result.emplace(std::move(node_id));
+        }
       }
     }
   }

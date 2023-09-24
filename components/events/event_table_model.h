@@ -5,6 +5,7 @@
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
+#include <boost/signals2/connection.hpp>
 #include <set>
 
 class CurrentEventModel;

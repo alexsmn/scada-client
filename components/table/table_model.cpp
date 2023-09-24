@@ -26,17 +26,19 @@ bool CompareRows(const TableRow* left,
       return HumanCompareText(left->GetTitle(), right->GetTitle()) < 0;
 
     case ID_SORT_CHANNEL: {
-      auto item1 = left->timed_data().GetNode();
-      auto item2 = right->timed_data().GetNode();
-      if (!item1 || !item2)
-        return item2 != nullptr;
-      const auto& type_id1 = item1.type_definition().node_id();
-      const auto& type_id2 = item2.type_definition().node_id();
-      if (type_id1 != type_id2)
+      auto node1 = left->timed_data().node();
+      auto node2 = right->timed_data().node();
+      if (!node1 || !node2) {
+        return node2 != nullptr;
+      }
+      const auto& type_id1 = node1.type_definition().node_id();
+      const auto& type_id2 = node2.type_definition().node_id();
+      if (type_id1 != type_id2) {
         return type_id1 < type_id2;
-      auto channel1 = item1[data_items::id::DataItemType_Input1].value().get_or(
+      }
+      auto channel1 = node1[data_items::id::DataItemType_Input1].value().get_or(
           std::string{});
-      auto channel2 = item2[data_items::id::DataItemType_Input1].value().get_or(
+      auto channel2 = node2[data_items::id::DataItemType_Input1].value().get_or(
           std::string{});
       return channel1 < channel2;
     }
@@ -107,15 +109,15 @@ bool TableModel::DeleteRows(int start, int count) {
   if (count == 0)
     return false;
 
-  NodeIdSet item_ids;
+  NodeIdSet node_ids;
   for (int i = 0; i < count; ++i) {
     auto& row = rows_[start + i];
     if (!row)
       continue;
 
-    auto item_id = row->timed_data().GetNode().node_id();
-    if (!item_id.is_null())
-      item_ids.insert(item_id);
+    if (auto node_id = row->timed_data().node_id(); !node_id.is_null()) {
+      node_ids.emplace(std::move(node_id));
+    }
 
     row.reset();
   }
@@ -130,9 +132,10 @@ bool TableModel::DeleteRows(int start, int count) {
   NotifyItemsRemoved(start, count);
 
   if (item_changed_) {
-    for (auto& item_id : item_ids) {
-      if (FindItem(item_id) == -1)
-        item_changed_(item_id, false);
+    for (auto& node_id : node_ids) {
+      if (FindItem(node_id) == -1) {
+        item_changed_(node_id, false);
+      }
     }
   }
 
@@ -195,7 +198,7 @@ bool TableModel::SetFormula(int row, std::string formula) {
 int TableModel::FindItem(const scada::NodeId& node_id) const {
   for (int i = 0; i < (int)rows_.size(); i++) {
     const TableRow* row = GetRow(i);
-    if (row && row->timed_data().GetNode().node_id() == node_id)
+    if (row && row->timed_data().node_id() == node_id)
       return i;
   }
   return -1;
@@ -224,7 +227,7 @@ std::u16string TableModel::GetTooltip(int row, int column_id) {
 TableRow* TableModel::GetRow(int index) {
   assert(index >= 0 && index <= (int)rows_.size());
   if (index == static_cast<int>(rows_.size()))
-    return NULL;
+    return nullptr;
   return rows_[index].get();
 }
 

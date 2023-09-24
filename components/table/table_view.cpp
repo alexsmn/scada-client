@@ -155,9 +155,9 @@ void TableView::OnDoubleClick() {
     row->timed_data().Acknowledge();
 
   } else {
-    const auto& node = row->timed_data().GetNode();
-    if (node)
+    if (const auto& node = row->timed_data().node()) {
       controller_delegate_.ExecuteDefaultNodeCommand(node);
+    }
   }
 }
 
@@ -203,10 +203,12 @@ void TableView::DeleteSelection() {
 NodeIdSet TableView::GetMultipleSelection() {
   NodeIdSet node_ids;
   for (auto row_index : view_->GetSelectedRows()) {
-    auto* row = model_->GetRow(row_index);
-    const auto& node_id = row->timed_data().GetNode().node_id();
-    if (!node_id.is_null())
-      node_ids.emplace(node_id);
+    const auto* row = model_->GetRow(row_index);
+    if (!row)
+      continue;
+    if (auto node_id = row->timed_data().node_id(); !node_id.is_null()) {
+      node_ids.emplace(std::move(node_id));
+    }
   }
   return node_ids;
 }
@@ -214,12 +216,12 @@ NodeIdSet TableView::GetMultipleSelection() {
 NodeIdSet TableView::GetContainedItems() const {
   NodeIdSet items;
   for (int i = 0; i < model_->row_count(); i++) {
-    const TableRow* row = model_->GetRow(i);
+    const auto* row = model_->GetRow(i);
     if (!row)
       continue;
-    auto node_id = row->timed_data().GetNode().node_id();
-    if (!node_id.is_null())
+    if (auto node_id = row->timed_data().node_id(); !node_id.is_null()) {
       items.emplace(std::move(node_id));
+    }
   }
   return items;
 }
@@ -243,10 +245,11 @@ void TableView::OnSelectionChanged() {
   if (rows.empty()) {
     selection_.Clear();
   } else if (rows.size() == 1) {
-    if (auto* row = model_->GetRow(rows.front()))
+    if (const auto* row = model_->GetRow(rows.front())) {
       selection_.SelectTimedData(row->timed_data());
-    else
+    } else {
       selection_.Clear();
+    }
   } else {
     selection_.SelectMultiple();
   }

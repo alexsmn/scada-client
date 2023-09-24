@@ -33,7 +33,7 @@ WriteModel::WriteModel(WriteContext&& context)
       condition_change_handler();
   };
 
-  const auto node = spec_.GetNode();
+  const auto& node = spec_.node();
   locked_ = node[data_items::id::DataItemType_Locked].value().get_or(false);
   two_staged_ =
       node[data_items::id::DataItemType_OutputTwoStaged].value().get_or(true);
@@ -67,8 +67,7 @@ std::vector<std::u16string> WriteModel::GetDiscreteStates() const {
   std::u16string close_label = kDefaultCloseLabel;
   std::u16string open_label = kDefaultOpenLabel;
 
-  const auto node = spec_.GetNode();
-  if (auto format = node.target(data_items::id::HasTsFormat)) {
+  if (auto format = spec_.node().target(data_items::id::HasTsFormat)) {
     close_label =
         ToString16(format[data_items::id::TsFormatType_CloseLabel].value());
     open_label =
@@ -83,9 +82,8 @@ int WriteModel::GetCurrentDiscreteState() const {
 }
 
 std::u16string WriteModel::GetAnalogUnits() const {
-  auto node = spec_.GetNode();
   return ToString16(
-      node[data_items::id::AnalogItemType_EngineeringUnits].value());
+      spec_.node()[data_items::id::AnalogItemType_EngineeringUnits].value());
 }
 
 void WriteModel::Write(double value, bool lock) {
@@ -93,22 +91,24 @@ void WriteModel::Write(double value, bool lock) {
   write_value_ = value;
   write_selecting_ = false;
 
-  scada::WriteFlags flags;
   if (manual_) {
-    spec_.Call(
-        data_items::id::DataItemType_WriteManual, {write_value_, lock}, {},
+    scada::BindStatusCallback(
+        spec_.scada_node().call(data_items::id::DataItemType_WriteManual,
+                                write_value_, lock),
         BindExecutor(
             executor_, weak_from_this(),
             [this](const scada::Status& status) { OnWriteComplete(status); }));
 
   } else if (two_staged_) {
     write_selecting_ = true;
+    scada::WriteFlags flags;
     flags.set_select();
-    spec_.Write(write_value_, {}, flags,
-                BindExecutor(executor_, weak_from_this(),
-                             [this](const scada::Status& status) {
-                               OnWriteComplete(status);
-                             }));
+    scada::BindStatusCallback(
+        spec_.scada_node().write(scada::AttributeId::Value, write_value_,
+                                 flags),
+        BindExecutor(
+            executor_, weak_from_this(),
+            [this](const scada::Status& status) { OnWriteComplete(status); }));
 
   } else {
     StartWriting(false);
@@ -189,9 +189,9 @@ void WriteModel::StartWritingHelper() {
   write_selecting_ = false;
   status_change_handler();
 
-  // Execute actual Write.
-  spec_.Write(
-      write_value_, {}, {},
+  // Execute actual write.
+  scada::BindStatusCallback(
+      spec_.scada_node().write(scada::AttributeId::Value, write_value_),
       BindCancelation(weak_from_this(), [this](const scada::Status& status) {
         OnWriteComplete(status);
       }));

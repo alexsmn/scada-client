@@ -193,7 +193,7 @@ void ModusElement::UpdateData(bool init) {
 
     // limits
     if (has_limits_) {
-      auto node = data_spec_.GetNode();
+      auto node = data_spec_.node();
       auto limits = node ? GetLimits(node) : Limits{};
       if (init || limits_ != limits) {
         limits_ = limits;
