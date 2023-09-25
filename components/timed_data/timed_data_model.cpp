@@ -15,10 +15,10 @@ TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
       Update({timed_data_.current().source_timestamp, scada::DateTime::Max()});
   };
 
-  timed_data_.correction_handler = [this](size_t count,
-                                          const scada::DataValue* tvqs) {
-    assert(count > 0);
-    Update({tvqs[0].source_timestamp, tvqs[count - 1].source_timestamp});
+  timed_data_.update_handler = [this](
+                                   std::span<const scada::DataValue> values) {
+    assert(!values.empty());
+    Update({values.front().source_timestamp, values.back().source_timestamp});
   };
 
   timed_data_.ready_handler = [this] {

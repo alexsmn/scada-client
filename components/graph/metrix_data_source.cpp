@@ -141,10 +141,8 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
 
 MetrixDataSource::MetrixDataSource() {
   timed_data_.ready_handler = [this] { OnHistoryChanged(); };
-  timed_data_.correction_handler = [this](size_t count,
-                                          const scada::DataValue* tvqs) {
-    OnHistoryChanged();
-  };
+  timed_data_.update_handler =
+      [this](std::span<const scada::DataValue> values) { OnHistoryChanged(); };
   timed_data_.node_modified_handler = [this] { OnItemChanged(); };
   timed_data_.property_change_handler = [this](const PropertySet& properties) {
     OnPropertyChanged(properties);

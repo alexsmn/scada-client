@@ -40,7 +40,7 @@ class SummaryModel::Column {
  private:
   void OnTvq(const scada::DataValue& data_value);
 
-  void OnTimedDataCorrections(size_t count, const scada::DataValue* tvqs);
+  void OnTimedDataUpdates(std::span<const scada::DataValue> values);
   void OnTimedDataReady();
   void OnPropertyChanged(const PropertySet& properties);
 
@@ -57,10 +57,10 @@ SummaryModel::Column::Column(SummaryModel& model,
                              int index,
                              std::string formula)
     : model_(model), index_(index), formula_{std::move(formula)}, width_(100) {
-  timed_data_.correction_handler = [this](size_t count,
-                                          const scada::DataValue* tvqs) {
-    OnTimedDataCorrections(count, tvqs);
-  };
+  timed_data_.update_handler =
+      [this](std::span<const scada::DataValue> values) {
+        OnTimedDataUpdates(values);
+      };
   timed_data_.ready_handler = [this] { OnTimedDataReady(); };
   timed_data_.property_change_handler = [this](const PropertySet& properies) {
     OnPropertyChanged(properies);
@@ -97,11 +97,11 @@ void SummaryModel::Column::OnTvq(const scada::DataValue& data_value) {
     model_.OnCellChanged(index_, row);
 }
 
-void SummaryModel::Column::OnTimedDataCorrections(
-    size_t count,
-    const scada::DataValue* tvqs) {
-  for (size_t i = 0; i < count; ++i)
-    OnTvq(tvqs[i]);
+void SummaryModel::Column::OnTimedDataUpdates(
+    std::span<const scada::DataValue> values) {
+  for (const auto& value : values) {
+    OnTvq(value);
+  }
 }
 
 void SummaryModel::Column::OnTimedDataReady() {
