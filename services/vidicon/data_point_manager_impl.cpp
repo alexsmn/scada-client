@@ -40,6 +40,10 @@ struct DataPoint : public std::enable_shared_from_this<DataPoint> {
 
     auto node_id = MakeAddressNodeId(address);
     timed_data_spec_.Connect(service, node_id);
+
+    if (const auto& current = timed_data_spec_.current(); !current.is_null()) {
+      handler_(ToDataPointValue(current));
+    }
   }
 
   void Stop() { self_ref_.reset(); }

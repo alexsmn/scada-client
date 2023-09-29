@@ -31,6 +31,10 @@ class VidiconClientTest : public Test {
 
   VidiconClient vidicon_client_{
       {.executor_ = executor_, .timed_data_service_ = timed_data_service_}};
+
+  StrictMock<MockFunction<
+      void(UINT status, const VARIANT& value, DATE time, UINT quality)>>
+      data_change_handler_;
 };
 
 namespace {
@@ -61,11 +65,7 @@ TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
       GetNodeTimedData(MakeNestedNodeId(opc::id::OPC, ToString(address)),
                        /*aggregation*/ _));
 
-  Microsoft::WRL::ComPtr<IDataPoint> data_point;
-  ASSERT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
-      base::win::ScopedBstr{AsStringPiece(address)},
-      data_point.ReleaseAndGetAddressOf()));
-  ASSERT_THAT(data_point, NotNull());
+  auto data_point = CreateDataPoint(address);
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
 }
@@ -88,11 +88,7 @@ TEST_F(VidiconClientTest, NewVidiconDataPoint_ConnectsVidiconNode) {
               GetNodeTimedData(scada::NodeId{456, NamespaceIndexes::VIDICON},
                                /*aggregation*/ _));
 
-  Microsoft::WRL::ComPtr<IDataPoint> data_point;
-  ASSERT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
-      base::win::ScopedBstr{AsStringPiece(address)},
-      data_point.ReleaseAndGetAddressOf()));
-  ASSERT_THAT(data_point, NotNull());
+  auto data_point = CreateDataPoint(address);
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
 }
@@ -114,14 +110,11 @@ TEST_F(VidiconClientTest, ReceiveDataPointEvents) {
 
   // Connect events.
 
-  MockFunction<void(UINT status, const VARIANT& value, DATE time, UINT quality)>
-      data_change_handler;
-
   ComEventConnector event_connector;
   EXPECT_HRESULT_SUCCEEDED(event_connector.Connect(
       *data_point.Get(),
       *CreateComDataPointEvents(
-           {.data_changed = data_change_handler.AsStdFunction()})
+           {.data_changed = data_change_handler_.AsStdFunction()})
            .Get()));
 
   // Data change.
@@ -130,7 +123,7 @@ TEST_F(VidiconClientTest, ReceiveDataPointEvents) {
       .WillByDefault(Return(scada::MakeReadResult(12345)));
 
   EXPECT_CALL(
-      data_change_handler,
+      data_change_handler_,
       Call(/*status*/ S_OK, /*value*/
            AllOf(Field(&VARIANT::vt, VT_I4), Field(&VARIANT::intVal, 12345)),
            /*time*/ _, /*quality*/ 192 /*OPC_QUALITY_GOOD*/));
