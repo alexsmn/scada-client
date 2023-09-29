@@ -40,10 +40,8 @@ class DisplayWidget : public GdiWidget2 {
   }
 
   QString dataSourceAt(const QPoint& p) const {
-    auto shape_metadata =
-        display_.shape_metadata_at(display_viewport(), MakePOINT(p));
-    return shape_metadata ? QString::fromStdWString(shape_metadata->data_source)
-                          : QString{};
+    auto shape = display_.shape_at(display_viewport(), MakePOINT(p));
+    return QString::fromStdWString(shape.metadata().data_source);
   }
 
   virtual void mousePressEvent(QMouseEvent* event) override {

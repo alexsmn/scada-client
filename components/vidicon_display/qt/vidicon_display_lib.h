@@ -3,9 +3,12 @@
 #include "services/vidicon/teleclient.h"
 
 #include <filesystem>
+#include <functional>
 #include <windows.h>
 
 namespace vidicon {
+
+class display;
 
 struct display_library {
   display_library() {
@@ -13,9 +16,14 @@ struct display_library {
       throw std::runtime_error("Cannot load display library");
     }
 
-    if (!create_display || !destroy_display || !draw_display ||
-        !get_viewport_rect) {
-      throw std::runtime_error("Cannot find required display functions");
+    if (!get_version || get_version() != 3) {
+      throw std::runtime_error("Unsupported DisplayLib.dll version");
+    }
+
+    if (!open_display || !destroy_display || !draw_display ||
+        !get_viewport_rect || !release_shape || !get_shape_at ||
+        !get_shape_metadata) {
+      throw std::runtime_error("Cannot find required DisplayLib.dll functions");
     }
   }
 
@@ -42,7 +50,7 @@ struct display_library {
                                              const void* event_data,
                                              void* argument);
 
-  struct DisplayContext {
+  struct DisplayOpenContext {
     LPCWSTR path;
     void* teleclient;
     DisplayEventHandler event_handler;
@@ -53,9 +61,13 @@ struct display_library {
     BSTR data_source;
   };
 
-  using CreateDisplayFunc = int(__cdecl*)(const DisplayContext* context);
-  const CreateDisplayFunc create_display =
-      reinterpret_cast<CreateDisplayFunc>(GetProcAddress(lib, "CreateDisplay"));
+  using GetVersionFunc = int(__cdecl*)();
+  const GetVersionFunc get_version =
+      reinterpret_cast<GetVersionFunc>(GetProcAddress(lib, "GetVersion"));
+
+  using OpenDisplayFunc = int(__cdecl*)(const DisplayOpenContext* context);
+  const OpenDisplayFunc open_display =
+      reinterpret_cast<OpenDisplayFunc>(GetProcAddress(lib, "OpenDisplay"));
 
   using DestroyDisplayFunc = void(__cdecl*)(int handle);
   const DestroyDisplayFunc destroy_display =
@@ -76,29 +88,94 @@ struct display_library {
       reinterpret_cast<GetViewportRectFunc>(
           GetProcAddress(lib, "GetViewportRect"));
 
-  using GetShapeMetadataAt = int(__cdecl*)(int handle,
-                                           const Viewport* viewport,
-                                           const POINT* view_point,
-                                           DisplayShapeMetadata* metadata);
-  const GetShapeMetadataAt get_shape_metadata_at =
-      reinterpret_cast<GetShapeMetadataAt>(
-          GetProcAddress(lib, "GetShapeMetadataAt"));
+  using ReleaseShape = void(__cdecl*)(int handle);
+  const ReleaseShape release_shape =
+      reinterpret_cast<ReleaseShape>(GetProcAddress(lib, "ReleaseShape"));
 
+  using GetShapeAt = int(__cdecl*)(int handle,
+                                   const Viewport* viewport,
+                                   const POINT* view_point);
+  const GetShapeAt get_shape_at =
+      reinterpret_cast<GetShapeAt>(GetProcAddress(lib, "GetShapeAt"));
+
+  using GetShapeMetadata = int(__cdecl*)(int handle,
+                                         DisplayShapeMetadata* metadata);
+  const GetShapeMetadata get_shape_metadata =
+      reinterpret_cast<GetShapeMetadata>(
+          GetProcAddress(lib, "GetShapeMetadata"));
+
+#if defined(NDEBUG)
   inline static const wchar_t kLibraryPath[] = L"DisplayLib.dll";
-   // LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
+#else
+  inline static const wchar_t kLibraryPath[] =
+      LR"(c:\tc\vidicon\Vidicon\bin\debug\DisplayLib.dll)";
+#endif
 };
 
 using display_rect = display_library::DisplayRect;
 using display_viewport = display_library::Viewport;
 
-struct display_shape_metadata {
+struct shape_metadata {
   std::wstring data_source;
+};
+
+class shape {
+ public:
+  ~shape() {
+    if (handle_ >= 0) {
+      library_->release_shape(handle_);
+    }
+  }
+
+  shape(const shape&) = delete;
+  shape& operator=(const shape&) = delete;
+
+  shape(shape&& other) noexcept
+      : library_{other.library_}, handle_{other.handle_} {
+    other.handle_ = -1;
+  }
+
+  shape& operator=(shape&& other) noexcept {
+    library_ = other.library_;
+    handle_ = other.handle_;
+    other.handle_ = -1;
+    return *this;
+  }
+
+  bool is_null() const { return handle_ < 0; }
+
+  shape_metadata metadata() const {
+    if (handle_ < 0) {
+      return {};
+    }
+    display_library::DisplayShapeMetadata metadata = {};
+    if (!library_->get_shape_metadata(handle_, &metadata)) {
+      return {};
+    }
+    shape_metadata result{
+        .data_source = metadata.data_source ? std::wstring{metadata.data_source}
+                                            : std::wstring{}};
+    ::SysFreeString(metadata.data_source);
+    return result;
+  }
+
+ private:
+  shape(const display_library& library, int handle)
+      : library_{&library}, handle_{handle} {}
+
+  const display_library* library_ = nullptr;
+  int handle_ = -1;
+
+  friend class display;
 };
 
 class display {
  public:
   explicit display(const display_library& library) : library_{library} {}
   ~display() { library_.destroy_display(handle_); }
+
+  display(const display&) = delete;
+  display& operator=(const display&) = delete;
 
   bool is_opened() const { return handle_ >= 0; }
 
@@ -114,13 +191,13 @@ class display {
 
     auto path_wstr = path.wstring();
 
-    display_library::DisplayContext context{
+    display_library::DisplayOpenContext context{
         .path = path_wstr.c_str(),
         .teleclient = &teleclient,
         .event_handler = &display::event_handler,
         .event_handler_argument = this};
 
-    auto handle = library_.create_display(&context);
+    auto handle = library_.open_display(&context);
     if (handle < 0) {
       throw std::runtime_error{"Cannot open display"};
     }
@@ -141,17 +218,10 @@ class display {
     return viewport_rect;
   }
 
-  std::optional<display_shape_metadata> shape_metadata_at(
-      const display_viewport& viewport,
-      const POINT& point) const {
-    display_library::DisplayShapeMetadata metadata = {};
-    if (!library_.get_shape_metadata_at(handle_, &viewport, &point,
-                                        &metadata)) {
-      return std::nullopt;
-    }
-    display_shape_metadata result{.data_source = metadata.data_source};
-    ::SysFreeString(metadata.data_source);
-    return result;
+  shape shape_at(const display_viewport& viewport, const POINT& point) const {
+    check_opened();
+    auto shape_handle = library_.get_shape_at(handle_, &viewport, &point);
+    return shape{library_, shape_handle};
   }
 
  private:
