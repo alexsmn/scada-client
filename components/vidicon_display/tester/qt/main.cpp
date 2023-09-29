@@ -9,6 +9,7 @@
 #include "test/display_tester/qt/display_tester_state.h"
 #include "test/display_tester/qt/display_tester_window.h"
 #include "window_definition.h"
+#include "services/atl_module.h"
 
 #include <QApplication>
 
@@ -35,6 +36,8 @@ QWidget* CreateVidiconDisplayView(State& state,
 
   return vidicon_display_view->Init(definition);
 }
+
+DummyAtlModule _Module;
 
 int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
