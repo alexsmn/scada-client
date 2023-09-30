@@ -4,6 +4,7 @@
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "model/opc_node_ids.h"
+#include "opc/opc_convertions.h"
 #include "scada/monitored_item.h"
 #include "services/vidicon/data_point_manager.h"
 #include "services/vidicon/vidicon_conversions.h"
@@ -30,7 +31,8 @@ struct DataPoint : public std::enable_shared_from_this<DataPoint> {
     timed_data_spec_.property_change_handler =
         [this](const PropertySet& properties) {
           if (properties.is_current_changed()) {
-            handler_(ToDataPointValue(timed_data_spec_.current()));
+            handler_(opc::OpcDataValueConverter::Convert(
+                timed_data_spec_.current()));
           }
         };
   }
@@ -42,7 +44,7 @@ struct DataPoint : public std::enable_shared_from_this<DataPoint> {
     timed_data_spec_.Connect(service, node_id);
 
     if (const auto& current = timed_data_spec_.current(); !current.is_null()) {
-      handler_(ToDataPointValue(current));
+      handler_(opc::OpcDataValueConverter::Convert(current));
     }
   }
 

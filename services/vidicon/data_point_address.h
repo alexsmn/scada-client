@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atlcomcli.h>
 #include <boost/container_hash/hash.hpp>
 #include <string>
 
@@ -11,13 +10,6 @@ struct DataPointAddress {
   unsigned vidicon_id = 0;
 
   bool operator==(const DataPointAddress& other) const = default;
-};
-
-struct DataPointValue {
-  HRESULT status = S_OK;
-  CComVariant value;
-  DATE time = 0;
-  unsigned quality = 0;
 };
 
 }  // namespace vidicon

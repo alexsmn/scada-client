@@ -1,7 +1,8 @@
 #pragma once
 
+#include "opc/opc_convertions.h"
+#include "opc/opc_types.h"
 #include "services/vidicon/teleclient.h"
-#include "services/vidicon/vidicon_types.h"
 
 #include <atlbase.h>
 
@@ -17,7 +18,7 @@ class ATL_NO_VTABLE ComDataPointConnectionPoints
       public IConnectionPointImpl<ComDataPointConnectionPoints,
                                   &__uuidof(_IDataPointEvents)> {
  public:
-  void NotifyDataChanged(const DataPointValue& value) {
+  void NotifyDataChanged(const opc::OpcDataValue& data_value) {
     if (m_vec.GetSize() == 0) {
       return;
     }
@@ -25,13 +26,13 @@ class ATL_NO_VTABLE ComDataPointConnectionPoints
     // The arguments are in the inverse order.
     std::array<VARIANTARG, 4> args;
     args[3].vt = VT_UI4;
-    args[3].ulVal = value.status;
+    args[3].ulVal = data_value.status;
     // No copy for performance sake.
-    args[2] = value.value;
+    args[2] = data_value.value;
     args[1].vt = VT_DATE;
-    args[1].date = value.time;
+    args[1].date = opc::ToDATE(data_value.timestamp);
     args[0].vt = VT_UI4;
-    args[0].ulVal = value.quality;
+    args[0].ulVal = data_value.quality;
 
     DISPPARAMS params{.rgvarg = args.data(), .cArgs = std::size(args)};
 

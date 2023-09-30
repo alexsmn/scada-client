@@ -6,16 +6,6 @@ using namespace testing;
 
 namespace vidicon {
 
-TEST(VidiconConversions, ToDATE) {
-  EXPECT_EQ(ToDATE(scada::DateTime{}), 0);
-  // TODO: Add more specific times.
-}
-
-TEST(VidiconConversions, ToOpcQuality) {
-  EXPECT_EQ(ToOpcQuality(scada::Qualifier{}), 0xC0 /*OPC_QUALITY_GOOD*/);
-  // TODO: Add `ToOpcQuality` tests.
-}
-
 TEST(VidiconConversions, ParseOpcDaAddress) {
   EXPECT_EQ(
       ParseDataPointAddress(LR"(VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)"),

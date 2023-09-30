@@ -1,14 +1,15 @@
 #pragma once
 
-#include "vidicon_types.h"
+#include "opc/opc_types.h"
+#include "services/vidicon/data_point_address.h"
 
 #include <functional>
 #include <stop_token>
-#include <string>
 
 namespace vidicon {
 
-using DataChangeHandler = std::function<void(const DataPointValue& value)>;
+using DataChangeHandler =
+    std::function<void(const opc::OpcDataValue& data_value)>;
 
 class DataPointManager {
  public:

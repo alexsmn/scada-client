@@ -1,6 +1,8 @@
 #pragma once
 
 #include "base/stop_token.h"
+#include "opc/opc_convertions.h"
+#include "opc/opc_types.h"
 #include "services/vidicon/com_data_point_events.h"
 #include "services/vidicon/data_point_manager.h"
 #include "services/vidicon/teleclient.h"
@@ -72,7 +74,7 @@ class ATL_NO_VTABLE ComDataPointImpl
   ReleaseHandler release_handler_;
 
   mutable std::mutex mutex_;
-  DataPointValue data_value_;
+  opc::OpcDataValue data_value_;
 
   const scoped_stop_source stop_source_;
 };
@@ -84,8 +86,9 @@ inline void ComDataPointImpl::Init(DataPointManager& data_point_manager,
 
   data_point_manager.Subscribe(
       address, stop_source_.get_token(),
-      [connection_points = connection_points_](const DataPointValue& value) {
-        connection_points->NotifyDataChanged(value);
+      [connection_points =
+           connection_points_](const opc::OpcDataValue& data_value) {
+        connection_points->NotifyDataChanged(data_value);
       });
 }
 
@@ -118,7 +121,7 @@ inline STDMETHODIMP ComDataPointImpl::get_Time(DATE* pVal) {
     return E_POINTER;
 
   std::lock_guard lock{mutex_};
-  *pVal = data_value_.time;
+  *pVal = opc::ToDATE(data_value_.timestamp);
   return S_OK;
 }
 
