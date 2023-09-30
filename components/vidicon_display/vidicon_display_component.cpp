@@ -2,8 +2,8 @@
 
 #include "components/vidicon_display/vidicon_display_view.h"
 #include "components/vidicon_display/vidicon_display_view2.h"
-#include "controller_context.h"
-#include "controller_registry.h"
+#include "controller/controller_context.h"
+#include "controller/controller_registry.h"
 
 const WindowInfo kVidiconDisplayWindowInfo = {
     ID_VIDICON_DISPLAY_VIEW, "VidiconDisplay", u"Схема", 0, 0, 0, 0};

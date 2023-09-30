@@ -15,7 +15,7 @@
 #include "components/prompt/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
-#include "controller_delegate.h"
+#include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "selection_model.h"

@@ -1,11 +1,11 @@
 ﻿#include "components/watch/watch_view.h"
 
+#include "aui/table.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
 #include "components/watch/watch_event_source_impl.h"
 #include "components/watch/watch_model.h"
-#include "controller_delegate.h"
-#include "aui/table.h"
+#include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "services/dialog_service.h"

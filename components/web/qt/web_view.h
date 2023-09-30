@@ -1,7 +1,7 @@
 #pragma once
 
-#include "controller.h"
-#include "controller_context.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 
 #include <filesystem>
 

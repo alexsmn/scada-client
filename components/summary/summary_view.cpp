@@ -4,7 +4,7 @@
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
-#include "controller_delegate.h"
+#include "controller/controller_delegate.h"
 #include "services/dialog_service.h"
 #include "time_range.h"
 #include "window_definition.h"

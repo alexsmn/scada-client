@@ -1,13 +1,7 @@
 # Automatically link Qt executables to qtmain target on Windows
 cmake_policy(SET CMP0020 NEW)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 add_subdirectory("${deps}/qt/graph_qt" "graph_qt") 
-add_subdirectory("${deps}/qt/schematic" "schematic") 
 
 file(GLOB MAIN_QT
   "../*.rc"
@@ -40,12 +34,10 @@ find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
   client_common
-  gdiplus
+  client_modus_qt
   graph_qt
-  modus
   Qt5::PrintSupport
   Qt5::Widgets
-  schematic
 )
 
 if(WIN32)

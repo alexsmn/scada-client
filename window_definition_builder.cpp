@@ -7,7 +7,7 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "components/table/table_component.h"
-#include "controller.h"
+#include "controller/controller.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"

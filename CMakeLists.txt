@@ -1,23 +1,30 @@
+find_package(Qt5 COMPONENTS Core REQUIRED)
+# Must be set before Qt targets are created. 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 include(client_module.cmake)
 
 include_directories(client
   "."
-  "${third_party}/modus"
   "${third_party}/opc"
 )
 
-add_subdirectory("${deps}/modus" modus)
 add_subdirectory(base)
+add_subdirectory(clipboard)
+add_subdirectory(controller)
 add_subdirectory(services)
 add_subdirectory(test)
-
-add_definitions(-DMODUS_GDIP)
 
 add_library(client_common INTERFACE)
 
 target_link_libraries(client_common INTERFACE
   base_i18n
   client_base
+  client_clipboard
+  client_controller
   node_service_v1
   node_service_v2
   scada_common_events
@@ -35,11 +42,13 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.ui"
 )
 
-list(FILTER PATHS EXCLUDE REGEX "aui")
-list(FILTER PATHS EXCLUDE REGEX "base")
-list(FILTER PATHS EXCLUDE REGEX "components/vidicon_display/tester")
-list(FILTER PATHS EXCLUDE REGEX "components/modus/tester")
-list(FILTER PATHS EXCLUDE REGEX "services/vidicon")
+list(FILTER PATHS EXCLUDE REGEX "/aui/")
+list(FILTER PATHS EXCLUDE REGEX "/base/")
+list(FILTER PATHS EXCLUDE REGEX "/components/vidicon_display/tester/")
+list(FILTER PATHS EXCLUDE REGEX "/components/modus/")
+list(FILTER PATHS EXCLUDE REGEX "/clipboard/")
+list(FILTER PATHS EXCLUDE REGEX "/controller/")
+list(FILTER PATHS EXCLUDE REGEX "/services/vidicon/")
 
 foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")

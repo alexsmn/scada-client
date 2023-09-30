@@ -1,5 +1,7 @@
 ﻿#include "components/main/qt/main_window_qt.h"
 
+#include "aui/models/menu_model.h"
+#include "aui/models/simple_menu_model.h"
 #include "base/strings/string_util.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
@@ -11,9 +13,7 @@
 #include "components/main/qt/status_bar_controller.h"
 #include "components/main/qt/view_manager_qt.h"
 #include "components/main/selection_commands.h"
-#include "controller.h"
-#include "aui/models/menu_model.h"
-#include "aui/models/simple_menu_model.h"
+#include "controller/controller.h"
 #include "qt/client_utils_qt.h"
 #include "selection_model.h"
 #include "services/file_cache.h"

@@ -1,10 +1,10 @@
 ﻿#include "components/configuration_tree/configuration_tree_view.h"
 
+#include "aui/tree.h"
 #include "common_resources.h"
 #include "components/configuration_tree/configuration_tree_drop_handler.h"
 #include "components/configuration_tree/configuration_tree_model.h"
-#include "controller_delegate.h"
-#include "aui/tree.h"
+#include "controller/controller_delegate.h"
 #include "item_drag_data.h"
 #include "node_service/node_util.h"
 #include "window_definition.h"

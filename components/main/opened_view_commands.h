@@ -1,13 +1,13 @@
 #pragma once
 
+#include "aui/types.h"
 #include "base/memory/weak_ptr.h"
 #include "base/promise.h"
 #include "base/timer/timer.h"
 #include "command_handler.h"
 #include "common/node_state.h"
-#include "controller_delegate.h"
-#include "controller_registry.h"
-#include "aui/types.h"
+#include "controller/controller_delegate.h"
+#include "controller/controller_registry.h"
 #include "scada/status.h"
 #include "window_definition.h"
 

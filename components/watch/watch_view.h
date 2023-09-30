@@ -1,10 +1,10 @@
 #pragma once
 
+#include "aui/models/table_model_observer.h"
 #include "base/promise.h"
 #include "command_registry.h"
-#include "controller.h"
-#include "controller_context.h"
-#include "aui/models/table_model_observer.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 #include "export_model.h"
 
 #include <memory>

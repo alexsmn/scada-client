@@ -3,8 +3,8 @@
 #include "base/promise.h"
 #include "command_registry.h"
 #include "common_resources.h"
-#include "controller.h"
-#include "controller_context.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 
 #include <memory>
 

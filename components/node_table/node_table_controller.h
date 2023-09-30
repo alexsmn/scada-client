@@ -3,8 +3,8 @@
 #include "base/memory/weak_ptr.h"
 #include "base/win/dragdrop.h"
 #include "command_registry.h"
-#include "controller.h"
-#include "controller_context.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 #include "selection_model.h"
 
 namespace aui {

@@ -5,7 +5,7 @@
 #include "common/aliases_mock.h"
 #include "components/favourites/favourites.h"
 #include "components/portfolio/portfolio_manager.h"
-#include "controller_delegate_mock.h"
+#include "controller/controller_delegate_mock.h"
 #include "events/node_event_provider_mock.h"
 #include "node_service/node_service_mock.h"
 #include "scada/history_service_mock.h"

@@ -1,11 +1,11 @@
 #pragma once
 
+#include "aui/key_codes.h"
 #include "base/promise.h"
 #include "command_registry.h"
 #include "contents_model.h"
-#include "controller.h"
-#include "controller_context.h"
-#include "aui/key_codes.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 #include "export_model.h"
 #include "selection_model.h"
 #include "time_model.h"

@@ -26,6 +26,8 @@ if(WIN32)
   )
 endif()
 
+target_compile_definitions(aui_qt PUBLIC "UI_QT")
+
 # WT
 
 target_compile_definitions(aui_wt PUBLIC UI_WT)
@@ -35,3 +37,5 @@ find_package(wt CONFIG REQUIRED)
 target_link_libraries(aui_wt PUBLIC
   Wt::Wt
 )
+
+target_compile_definitions(aui_wt PUBLIC "UI_WT")

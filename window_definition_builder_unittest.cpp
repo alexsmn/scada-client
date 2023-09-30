@@ -3,8 +3,8 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "components/events/events_component.h"
-#include "controller.h"
 #include "node_service/node_model_mock.h"
+#include "open_context.h"
 #include "window_info.h"
 
 #include <gmock/gmock.h>

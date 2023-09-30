@@ -1,12 +1,12 @@
 #pragma once
 
+#include "aui/color.h"
+#include "aui/types.h"
 #include "command_registry.h"
 #include "components/graph/metrix_graph.h"
 #include "contents_model.h"
-#include "controller.h"
-#include "controller_context.h"
-#include "aui/color.h"
-#include "aui/types.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 #include "selection_model.h"
 #include "time_model.h"
 

@@ -1,9 +1,9 @@
-#include "clipboard_util.h"
+#include "clipboard/clipboard_util.h"
 
 #include "base/range_util.h"
 #include "base/win/clipboard.h"
+#include "clipboard/node_serialization.h"
 #include "common/node_state.h"
-#include "node_serialization.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_util.h"
 #include "remote/protocol_utils.h"

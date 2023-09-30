@@ -3,7 +3,7 @@
 #include "command_handler.h"
 #include "common_resources.h"
 #include "components/main/main_window.h"
-#include "controller.h"
+#include "controller/controller.h"
 #include "export_model.h"
 #include "print_util.h"
 #include "window_info.h"

@@ -9,7 +9,7 @@
 #include "common_resources.h"
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
-#include "controller_delegate.h"
+#include "controller/controller_delegate.h"
 #include "item_drag_data.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"

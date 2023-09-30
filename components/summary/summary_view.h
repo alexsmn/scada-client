@@ -1,8 +1,8 @@
 #pragma once
 
 #include "command_registry.h"
-#include "controller.h"
-#include "controller_context.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 #include "export_model.h"
 #include "selection_model.h"
 

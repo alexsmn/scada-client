@@ -1,10 +1,9 @@
-#include "node_serialization.h"
+#include "clipboard/node_serialization.h"
 
 #include "common/node_state.h"
-#include "scada/standard_node_ids.h"
-#include "node_serialization.h"
 #include "node_service/node_util.h"
 #include "remote/protocol_utils.h"
+#include "scada/standard_node_ids.h"
 
 void NodeToData(const NodeRef& source,
                 scada::NodeState& target,

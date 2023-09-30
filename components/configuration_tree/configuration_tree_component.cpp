@@ -1,5 +1,5 @@
 ﻿#include "components/configuration_tree/nodes_view.h"
-#include "controller_registry.h"
+#include "controller/controller_registry.h"
 
 const WindowInfo kWindowInfo = {
     ID_NODES_VIEW, "Nodes", u"Узлы", WIN_SING | WIN_REQUIRES_ADMIN,

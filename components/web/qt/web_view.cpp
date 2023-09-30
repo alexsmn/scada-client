@@ -4,7 +4,7 @@
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "client_utils.h"
-#include "controller_registry.h"
+#include "controller/controller_registry.h"
 #include "services/file_cache.h"
 #include "window_definition.h"
 

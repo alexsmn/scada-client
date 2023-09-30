@@ -4,7 +4,7 @@
 #include "components/vidicon_display/qt/gdi_widget.h"
 #include "components/vidicon_display/qt/gdi_widget2.h"
 #include "components/vidicon_display/qt/vidicon_display_lib.h"
-#include "controller_delegate.h"
+#include "controller/controller_delegate.h"
 #include "selection_model.h"
 #include "services/vidicon/teleclient.h"
 #include "services/vidicon/vidicon_client.h"

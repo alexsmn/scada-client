@@ -1,10 +1,10 @@
 #pragma once
 
+#include "aui/types.h"
 #include "base/executor_timer.h"
 #include "command_handler.h"
 #include "components/main/controller_factory.h"
-#include "controller_delegate.h"
-#include "aui/types.h"
+#include "controller/controller_delegate.h"
 #include "window_definition.h"
 
 #include <memory>
@@ -34,8 +34,7 @@ struct OpenedViewContext {
   const DefaultNodeCommandHandler default_node_command_handler_;
 };
 
-class OpenedView : private OpenedViewContext,
-                   private ControllerDelegate {
+class OpenedView : private OpenedViewContext, private ControllerDelegate {
  public:
   explicit OpenedView(OpenedViewContext&& context);
   virtual ~OpenedView();

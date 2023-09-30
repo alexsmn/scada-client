@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller.h"
+#include "controller/controller.h"
 
 #include <functional>
 #include <memory>

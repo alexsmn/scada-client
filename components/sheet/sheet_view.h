@@ -1,10 +1,10 @@
 #pragma once
 
+#include "aui/color.h"
 #include "command_registry.h"
 #include "contents_model.h"
-#include "controller.h"
-#include "controller_context.h"
-#include "aui/color.h"
+#include "controller/controller.h"
+#include "controller/controller_context.h"
 #include "selection_model.h"
 
 #include <memory>

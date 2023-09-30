@@ -2,7 +2,7 @@
 
 #include "component_api.h"
 #include "components/object_tree/object_tree_view.h"
-#include "controller_registry.h"
+#include "controller/controller_registry.h"
 
 const WindowInfo kObjectTreeWindowInfo = {
     ID_OBJECT_VIEW, "Struct", u"Объекты", WIN_SING, 200, 400, 0};

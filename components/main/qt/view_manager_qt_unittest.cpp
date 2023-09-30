@@ -3,7 +3,7 @@
 #include "base/test/test_executor.h"
 #include "components/main/controller_factory_mock.h"
 #include "components/main/view_manager_delegate_mock.h"
-#include "controller_mock.h"
+#include "controller/controller_mock.h"
 #include "services/dialog_service_mock.h"
 #include "test/app_environment.h"
 #include "window_info.h"

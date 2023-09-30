@@ -8,7 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
-#include "clipboard_util.h"
+#include "clipboard/clipboard_util.h"
 #include "common_resources.h"
 #include "components/change_password/change_password_dialog.h"
 #include "components/device_metrics/device_metrics_command.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller.h"
+#include "controller/controller.h"
 
 #include <functional>
 #include <memory>
@@ -31,7 +31,7 @@ void ComponentApi::RegisterController(const WindowInfo& window_info) {
 }
 
 #define REGISTER_COMPONENT(ComponentClass)                             \
-  static bool k##ComponentClass##Registered = [] {                    \
+  static bool k##ComponentClass##Registered = [] {                     \
     GetComponentRegistry().AddComponentFactory([](ComponentApi& api) { \
       return std::make_unique<ComponentClass>(api)                     \
     });                                                                \

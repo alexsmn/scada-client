@@ -2,7 +2,7 @@
 
 #include "base/timer/timer.h"
 #include "components/vidicon_display/display_viewer_api.h"
-#include "controller.h"
+#include "controller/controller.h"
 
 #include <filesystem>
 #include <wrl/client.h>

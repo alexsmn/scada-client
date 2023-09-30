@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller_delegate.h"
+#include "controller/controller_delegate.h"
 #include "test/display_tester/qt/variable_timed_data_service.h"
 
 class ControllerDelegateImpl : public ControllerDelegate {
