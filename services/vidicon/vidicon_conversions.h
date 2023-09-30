@@ -6,14 +6,15 @@
 
 #include <ATLComTime.h>
 #include <boost/locale/encoding_utf.hpp>
+#include <opcda.h>
 #include <optional>
 
 namespace vidicon {
 
-inline CComVariant ToComVariant(const scada::Variant& value) {
+inline std::optional<CComVariant> ToComVariant(const scada::Variant& value) {
   switch (value.type()) {
     case scada::Variant::EMPTY:
-      return {};
+      return CComVariant{};
     case scada::Variant::BOOL:
       return value.as_bool();
     case scada::Variant::INT8:
@@ -32,7 +33,7 @@ inline CComVariant ToComVariant(const scada::Variant& value) {
       return value.get<scada::Double>();
     default:
       assert(false);
-      return {};
+      return std::nullopt;
   }
 }
 
@@ -43,12 +44,17 @@ inline DATE ToDATE(const scada::DateTime& timestamp) {
 }
 
 inline unsigned ToOpcQuality(scada::Qualifier qualifier) {
-  // TODO: Quality.
-  return 0xC0;  // OPC_QUALITY_GOOD
+  return qualifier.general_bad() ? OPC_QUALITY_BAD : OPC_QUALITY_GOOD;
 }
 
 inline DataPointValue ToDataPointValue(const scada::DataValue& data_value) {
-  return {.value = ToComVariant(data_value.value),
+  auto value = ToComVariant(data_value.value);
+  if (!value) {
+    return {.time = ToDATE(data_value.source_timestamp),
+            .quality = OPC_QUALITY_BAD};
+  }
+
+  return {.value = std::move(*value),
           .time = ToDATE(data_value.source_timestamp),
           .quality = ToOpcQuality(data_value.qualifier)};
 }
