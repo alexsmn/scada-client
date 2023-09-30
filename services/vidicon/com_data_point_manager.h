@@ -1,7 +1,7 @@
 #pragma once
 
 #include "services/vidicon/com_data_point_impl.h"
-#include "vidicon_conversions.h"
+#include "services/vidicon/data_point_address.h"
 
 #include <atlbase.h>
 

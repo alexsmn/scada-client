@@ -5,11 +5,11 @@
 #include "model/node_id_util.h"
 #include "model/opc_node_ids.h"
 #include "opc/opc_convertions.h"
-#include "scada/monitored_item.h"
-#include "services/vidicon/data_point_manager.h"
-#include "services/vidicon/vidicon_conversions.h"
+#include "services/vidicon/data_point_address.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
+
+#include <boost/locale/encoding_utf.hpp>
 
 namespace vidicon {
 
@@ -20,7 +20,8 @@ scada::NodeId MakeAddressNodeId(const DataPointAddress& address) {
     return scada::NodeId{static_cast<scada::NumericId>(address.vidicon_id),
                          NamespaceIndexes::VIDICON};
   } else {
-    return MakeNestedNodeId(opc::id::OPC, ToString(address.opc_address));
+    return MakeNestedNodeId(opc::id::OPC, boost::locale::conv::utf_to_utf<char>(
+                                              address.opc_address));
   }
 }
 

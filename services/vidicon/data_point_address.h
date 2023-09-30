@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/container_hash/hash.hpp>
+#include <optional>
 #include <string>
 
 namespace vidicon {
@@ -11,6 +12,8 @@ struct DataPointAddress {
 
   bool operator==(const DataPointAddress& other) const = default;
 };
+
+std::optional<DataPointAddress> ParseDataPointAddress(std::wstring_view str);
 
 }  // namespace vidicon
 

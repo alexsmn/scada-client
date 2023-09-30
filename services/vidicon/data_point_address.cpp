@@ -1,15 +1,11 @@
-#pragma once
+#include "services/vidicon/data_point_address.h"
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
-#include "scada/data_value.h"
-#include "services/vidicon/data_point_address.h"
-
-#include <optional>
 
 namespace vidicon {
 
-inline std::optional<DataPointAddress> ParseDataPointAddress(
+std::optional<DataPointAddress> ParseDataPointAddress(
     std::wstring_view str) {
   if (str.starts_with(L"AE:")) {
     return std::nullopt;

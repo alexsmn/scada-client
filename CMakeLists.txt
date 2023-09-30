@@ -25,6 +25,7 @@ target_link_libraries(client_common INTERFACE
   scada_core_remote
   scada_core_vidicon
   timed_data
+  Net::net
 )
 
 file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
