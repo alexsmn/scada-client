@@ -35,9 +35,10 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.ui"
 )
 
+list(FILTER PATHS EXCLUDE REGEX "aui")
+list(FILTER PATHS EXCLUDE REGEX "base")
 list(FILTER PATHS EXCLUDE REGEX "components/vidicon_display/tester")
 list(FILTER PATHS EXCLUDE REGEX "components/modus/tester")
-list(FILTER PATHS EXCLUDE REGEX "base")
 list(FILTER PATHS EXCLUDE REGEX "services/vidicon")
 
 foreach(PATH ${PATHS})
@@ -60,7 +61,7 @@ foreach(PATH ${PATHS})
   ENDIF()
 endforeach()
 
-# add_subdirectory(views)
+add_subdirectory(aui)
 add_subdirectory(qt)
 add_subdirectory(wt)
 add_subdirectory(components)

@@ -574,12 +574,4 @@
         <translation>Указано некорректное значение с плавающей точкой.</translation>
     </message>
 </context>
-<context>
-    <name>aui::ItemDelegate</name>
-    <message>
-        <location filename="../aui/qt/item_delegate.cpp" line="98"/>
-        <source>Loading...</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
 </TS>

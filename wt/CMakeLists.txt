@@ -31,8 +31,8 @@ set_property(TARGET client_wt_lib PROPERTY FOLDER ${client_folder})
 
 find_package(wt CONFIG REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
+  aui_wt
   client_common
-  Wt::Wt
 )
 
 target_compile_options(client_wt_lib PUBLIC
