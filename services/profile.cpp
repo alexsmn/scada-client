@@ -1,5 +1,6 @@
 ﻿#include "services/profile.h"
 
+#include "base/client_paths.h"
 #include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
@@ -11,7 +12,6 @@
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "base/value_util.h"
-#include "client_paths.h"
 #include "common_resources.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"

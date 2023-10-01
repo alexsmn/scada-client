@@ -1,7 +1,8 @@
+#include "base/client_paths.h"
+
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
-#include "client_paths.h"
 
 namespace client {
 
@@ -69,4 +70,4 @@ void RegisterPathProvider() {
   base::PathService::RegisterProvider(PathProvider, PATH_START, PATH_END);
 }
 
-} // namespace client
+}  // namespace client

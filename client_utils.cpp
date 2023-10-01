@@ -1,5 +1,6 @@
 ﻿#include "client_utils.h"
 
+#include "base/client_paths.h"
 #include "base/file_path_util.h"
 #include "base/format_time.h"
 #include "base/path_service.h"
@@ -10,7 +11,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
-#include "client_paths.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "contents_model.h"

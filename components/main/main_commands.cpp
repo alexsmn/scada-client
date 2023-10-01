@@ -1,7 +1,7 @@
 ﻿#include "components/main/main_commands.h"
 
+#include "base/client_paths.h"
 #include "base/path_service.h"
-#include "client_paths.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/about/about_dialog.h"

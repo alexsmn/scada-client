@@ -1,6 +1,6 @@
+#include "base/client_paths.h"
 #include "base/test/test_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "client_paths.h"
 #include "components/modus/modus_component.h"
 #include "components/modus/qt/modus_view.h"
 #include "qt/message_loop_qt.h"

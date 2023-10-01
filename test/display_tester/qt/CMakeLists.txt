@@ -1,5 +1,10 @@
 scada_module(display_tester)
 
 target_link_libraries(display_tester PUBLIC
-  client_qt_lib
+  aui_qt
+  timed_data
+)
+
+target_link_libraries(display_tester PRIVATE
+  client_controller
 )
