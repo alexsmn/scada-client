@@ -16,8 +16,8 @@ namespace vidicon {
 namespace {
 
 scada::NodeId MakeAddressNodeId(const DataPointAddress& address) {
-  if (address.vidicon_id != 0) {
-    return scada::NodeId{static_cast<scada::NumericId>(address.vidicon_id),
+  if (address.object_id != 0) {
+    return scada::NodeId{static_cast<scada::NumericId>(address.object_id),
                          NamespaceIndexes::VIDICON};
   } else {
     return MakeNestedNodeId(opc::id::OPC, boost::locale::conv::utf_to_utf<char>(
@@ -32,8 +32,8 @@ struct DataPoint : public std::enable_shared_from_this<DataPoint> {
     timed_data_spec_.property_change_handler =
         [this](const PropertySet& properties) {
           if (properties.is_current_changed()) {
-            handler_(opc::OpcDataValueConverter::Convert(
-                timed_data_spec_.current()));
+            handler_(
+                opc::OpcDataValueConverter::ToOpc(timed_data_spec_.current()));
           }
         };
   }
@@ -45,7 +45,7 @@ struct DataPoint : public std::enable_shared_from_this<DataPoint> {
     timed_data_spec_.Connect(service, node_id);
 
     if (const auto& current = timed_data_spec_.current(); !current.is_null()) {
-      handler_(opc::OpcDataValueConverter::Convert(current));
+      handler_(opc::OpcDataValueConverter::ToOpc(current));
     }
   }
 

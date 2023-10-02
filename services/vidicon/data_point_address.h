@@ -8,7 +8,7 @@ namespace vidicon {
 
 struct DataPointAddress {
   std::wstring opc_address;
-  unsigned vidicon_id = 0;
+  unsigned object_id = 0;
 
   bool operator==(const DataPointAddress& other) const = default;
 };
@@ -25,7 +25,7 @@ struct hash<vidicon::DataPointAddress> {
       const vidicon::DataPointAddress& address) const noexcept {
     std::size_t seed = 0;
     boost::hash_combine(seed, address.opc_address);
-    boost::hash_combine(seed, address.vidicon_id);
+    boost::hash_combine(seed, address.object_id);
     return seed;
   }
 };

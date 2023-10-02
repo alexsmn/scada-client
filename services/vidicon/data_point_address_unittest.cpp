@@ -21,7 +21,7 @@ TEST(DataPointAddress, ParseOpcAeAddress) {
 
 TEST(DataPointAddress, ParseVidiconAddress) {
   EXPECT_EQ(ParseDataPointAddress(L"CF:456"),
-            DataPointAddress{.vidicon_id = 456});
+            DataPointAddress{.object_id = 456});
 }
 
 }  // namespace vidicon

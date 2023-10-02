@@ -5,19 +5,18 @@
 
 namespace vidicon {
 
-std::optional<DataPointAddress> ParseDataPointAddress(
-    std::wstring_view str) {
+std::optional<DataPointAddress> ParseDataPointAddress(std::wstring_view str) {
   if (str.starts_with(L"AE:")) {
     return std::nullopt;
   }
 
   if (str.starts_with(L"CF:")) {
     str = str.substr(3);
-    unsigned vidicon_id = 0;
-    if (!base::StringToUint(AsStringPiece(str), &vidicon_id)) {
+    unsigned object_id = 0;
+    if (!base::StringToUint(AsStringPiece(str), &object_id)) {
       return std::nullopt;
     }
-    return DataPointAddress{.vidicon_id = vidicon_id};
+    return DataPointAddress{.object_id = object_id};
   }
 
   if (str.starts_with(L"DA:")) {
