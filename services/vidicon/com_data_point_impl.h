@@ -129,7 +129,7 @@ inline STDMETHODIMP ComDataPointImpl::get_Quality(ULONG* pVal) {
     return E_POINTER;
 
   std::lock_guard lock{mutex_};
-  *pVal = data_value_.quality;
+  *pVal = data_value_.quality.raw();
   return S_OK;
 }
 

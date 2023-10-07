@@ -32,7 +32,7 @@ class ATL_NO_VTABLE ComDataPointConnectionPoints
     args[1].vt = VT_DATE;
     args[1].date = opc::ToDATE(data_value.timestamp);
     args[0].vt = VT_UI4;
-    args[0].ulVal = data_value.quality;
+    args[0].ulVal = data_value.quality.raw();
 
     DISPPARAMS params{.rgvarg = args.data(), .cArgs = std::size(args)};
 
