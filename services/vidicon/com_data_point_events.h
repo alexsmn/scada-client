@@ -1,7 +1,6 @@
 #pragma once
 
 #include "opc/opc_convertions.h"
-#include "opc/opc_types.h"
 #include "services/vidicon/teleclient.h"
 
 #include <atlbase.h>
@@ -9,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <atlcom.h>
+#include <opc_client/core/data_value.h>
 
 namespace vidicon {
 
@@ -18,7 +18,7 @@ class ATL_NO_VTABLE ComDataPointConnectionPoints
       public IConnectionPointImpl<ComDataPointConnectionPoints,
                                   &__uuidof(_IDataPointEvents)> {
  public:
-  void NotifyDataChanged(const opc::OpcDataValue& data_value) {
+  void NotifyDataChanged(const opc_client::DataValue& data_value) {
     if (m_vec.GetSize() == 0) {
       return;
     }
