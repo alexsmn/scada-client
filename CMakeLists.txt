@@ -14,6 +14,8 @@ include_directories(client
 
 add_subdirectory(base)
 add_subdirectory(clipboard)
+add_subdirectory(filesystem)
+add_subdirectory(web)
 add_subdirectory(controller)
 add_subdirectory(services)
 add_subdirectory(test)
@@ -25,6 +27,8 @@ target_link_libraries(client_common INTERFACE
   client_base
   client_clipboard
   client_controller
+  client_filesystem
+  client_web
   node_service_v1
   node_service_v2
   scada_common_events

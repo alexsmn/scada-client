@@ -1,4 +1,4 @@
-#include "services/file_registry.h"
+#include "filesystem/file_registry.h"
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_split.h"

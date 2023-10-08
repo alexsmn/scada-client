@@ -8,7 +8,7 @@
 #include "base/value_util.h"
 #include "scada/node_id.h"
 #include "model/node_id_util.h"
-#include "time_range.h"
+#include "base/time_range.h"
 #include "window_definition.h"
 #include "window_info.h"
 

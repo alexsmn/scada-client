@@ -6,8 +6,8 @@
 #include "components/modus/qt/modus_view.h"
 #include "controller/window_definition.h"
 #include "services/atl_module.h"
-#include "services/file_cache.h"
-#include "services/file_registry.h"
+#include "filesystem/file_cache.h"
+#include "filesystem/file_registry.h"
 #include "test/display_tester/qt/display_tester_state.h"
 #include "test/display_tester/qt/display_tester_window.h"
 

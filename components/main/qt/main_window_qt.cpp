@@ -16,7 +16,7 @@
 #include "controller/controller.h"
 #include "qt/client_utils_qt.h"
 #include "controller/selection_model.h"
-#include "services/file_cache.h"
+#include "filesystem/file_cache.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
 #include "controller/window_info.h"

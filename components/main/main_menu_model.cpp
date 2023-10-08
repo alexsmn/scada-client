@@ -15,7 +15,7 @@
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
 #include "services/dialog_service.h"
-#include "services/file_cache.h"
+#include "filesystem/file_cache.h"
 #include "services/profile.h"
 #include "controller/window_definition.h"
 #include "controller/window_info.h"

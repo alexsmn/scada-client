@@ -3,7 +3,7 @@
 #include "base/struct_writer.h"
 #include "scada/node_id.h"
 #include "node_service/node_ref.h"
-#include "time_range.h"
+#include "base/time_range.h"
 
 #include <optional>
 #include <ostream>

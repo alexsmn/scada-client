@@ -40,8 +40,8 @@ macro(client_module MODULE_NAME)
 
   # UTs.
 
-  scada_module_unittests(${MODULE_NAME}_qt SOURCES ${${MODULE_NAME}_UNITTESTS} ${${MODULE_NAME}_UNITTESTS_QT})
-  scada_module_unittests(${MODULE_NAME}_wt SOURCES ${${MODULE_NAME}_UNITTESTS} ${${MODULE_NAME}_UNITTESTS_WT})
+  scada_module_unittests(${MODULE_NAME}_qt PRIVATE ${${MODULE_NAME}_UNITTESTS} ${${MODULE_NAME}_UNITTESTS_QT})
+  scada_module_unittests(${MODULE_NAME}_wt PRIVATE ${${MODULE_NAME}_UNITTESTS} ${${MODULE_NAME}_UNITTESTS_WT})
 
 endmacro()
 

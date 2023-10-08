@@ -4,7 +4,6 @@
 #include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "client_utils.h"
 #include "common_resources.h"
 #include "components/modus/modus_component.h"
 #include "components/modus/modus_util.h"
@@ -14,13 +13,14 @@
 #include "components/web/web_component.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
-#include "controller/file_util.h"
 #include "controller/selection_model.h"
 #include "controller/window_definition.h"
 #include "controller/window_info.h"
+#include "filesystem/file_cache.h"
+#include "filesystem/file_util.h"
 #include "services/dialog_service.h"
-#include "services/file_cache.h"
 #include "services/profile.h"
+#include "web/web_util.h"
 
 #include <QScrollArea>
 

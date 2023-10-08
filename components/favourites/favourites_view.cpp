@@ -1,12 +1,12 @@
 ﻿#include "components/favourites/favourites_view.h"
 
 #include "aui/tree.h"
-#include "client_utils.h"
 #include "common_resources.h"
 #include "components/favourites/favourites_tree_model.h"
 #include "components/prompt/prompt_dialog.h"
 #include "controller/controller_delegate.h"
 #include "services/dialog_service.h"
+#include "web/web_util.h"
 
 #if !defined(UI_WT)
 #include "components/web/web_component.h"

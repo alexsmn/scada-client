@@ -2,7 +2,7 @@
 
 #include "base/win/scoped_bstr.h"
 #include "components/vidicon_display/telecontrolview.h"
-#include "controller/file_util.h"
+#include "filesystem/file_util.h"
 #include "controller/window_definition.h"
 #include "services/vidicon/teleclient.h"
 #include "services/vidicon/vidicon_client.h"

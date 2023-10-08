@@ -42,7 +42,7 @@
 #include "controller/selection_model.h"
 #include "services/create_tree.h"
 #include "services/dialog_service.h"
-#include "services/file_cache.h"
+#include "filesystem/file_cache.h"
 #include "services/task_manager.h"
 #include "window_definition_builder.h"
 #include "controller/window_info.h"

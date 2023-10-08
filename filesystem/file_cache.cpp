@@ -1,4 +1,4 @@
-#include "services/file_cache.h"
+#include "filesystem/file_cache.h"
 
 #include "base/client_paths.h"
 #include "base/file_path_util.h"
@@ -13,9 +13,9 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
 #include "base/values.h"
-#include "controller/file_util.h"
+#include "filesystem/file_registry.h"
+#include "filesystem/file_util.h"
 #include "model/node_id_util.h"
-#include "services/file_registry.h"
 
 #include <optional>
 

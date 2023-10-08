@@ -18,20 +18,11 @@
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "services/file_cache.h"
 #include "services/local_events.h"
 #include "services/profile.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
 #include "controller/window_info.h"
-
-namespace {
-
-const char16_t kHttpPrefix[] = u"http://";
-const char16_t kHttpsPrefix[] = u"https://";
-const char16_t kFilePrefix[] = u"file://";
-
-}  // namespace
 
 inline void AppendHint(std::u16string& hint,
                        std::u16string_view title,
@@ -202,15 +193,4 @@ void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes) {
     nodes.emplace_back(node);
     GetNodesRecursive(node, nodes);
   }
-}
-
-bool IsWebUrl(std::u16string_view str) {
-  return base::StartsWith(AsStringPiece(str), kHttpPrefix,
-                          base::CompareCase::SENSITIVE) ||
-         base::StartsWith(AsStringPiece(str), kHttpsPrefix,
-                          base::CompareCase::SENSITIVE);
-}
-
-std::u16string MakeFileUrl(const std::filesystem::path& path) {
-  return kFilePrefix + path.u16string();
 }

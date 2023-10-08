@@ -2,7 +2,7 @@
 
 #include "base/json.h"
 #include "scada/node_id.h"
-#include "time_range.h"
+#include "base/time_range.h"
 #include "window_definition.h"
 
 #include <optional>

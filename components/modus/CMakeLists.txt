@@ -12,6 +12,7 @@ target_include_directories(client_modus_qt PRIVATE
 
 target_link_libraries(client_modus_qt PRIVATE
   client_controller_qt
+  client_web
   gdiplus
   modus
   schematic

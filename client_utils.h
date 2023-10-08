@@ -8,10 +8,6 @@
 
 #include <string>
 
-namespace base {
-class FilePath;
-}
-
 namespace scada {
 class Status;
 }  // namespace scada
@@ -66,6 +62,3 @@ NodeRef GetPasteParentNode(NodeService& node_service,
                            CreateTree& create_tree,
                            const NodeRef& selected_node,
                            const NodeRef& root_node);
-
-bool IsWebUrl(std::u16string_view str);
-std::u16string MakeFileUrl(const std::filesystem::path& path);

@@ -26,7 +26,7 @@ class Controller {
   virtual void Save(WindowDefinition& definition) {}
   virtual void OnViewNodeCreated(const NodeRef& node) {}
 
-  virtual bool ShowContainedItem(const scada::NodeId& item_id) { return false; }
+  virtual bool ShowContainedItem(const scada::NodeId& node_id) { return false; }
 
   virtual CommandHandler* GetCommandHandler(unsigned command_id) {
     return nullptr;

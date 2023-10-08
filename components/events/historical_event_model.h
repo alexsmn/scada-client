@@ -4,7 +4,7 @@
 #include "base/memory/weak_ptr.h"
 #include "scada/event.h"
 #include "scada/history_service.h"
-#include "time_range.h"
+#include "base/time_range.h"
 
 #include <boost/signals2/signal.hpp>
 #include <list>

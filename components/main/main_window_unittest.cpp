@@ -6,8 +6,8 @@
 #include "components/main/main_window_manager.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model_mock.h"
-#include "services/file_cache.h"
-#include "services/file_registry.h"
+#include "filesystem/file_cache.h"
+#include "filesystem/file_registry.h"
 #include "services/profile.h"
 #include "test/app_environment.h"
 

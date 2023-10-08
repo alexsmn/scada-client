@@ -9,9 +9,9 @@
 #include "components/modus/activex/modus_document.h"
 #include "components/modus/activex/modus_element.h"
 #include "components/modus/activex/modus_object.h"
-#include "controller/file_util.h"
+#include "filesystem/file_util.h"
 #include "controller/window_info.h"
-#include "services/file_cache_updater.h"
+#include "filesystem/file_cache_updater.h"
 
 #include "base/debug_util-inl.h"
 
