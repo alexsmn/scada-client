@@ -1,5 +1,10 @@
-add_library(client_modus_qt)
-scada_module_sources(client_modus_qt PRIVATE "." "activex" "libmodus" "qt")
+client_module(client_modus CONFIG qt)
+client_module_sources(client_modus PRIVATE activex libmodus)
+
+client_module_link_libraries(client_modus PRIVATE
+  client_controller
+  client_web
+)
 
 add_subdirectory("${deps}/modus" modus)
 target_compile_definitions(modus PUBLIC MODUS_GDIP)
@@ -11,8 +16,6 @@ target_include_directories(client_modus_qt PRIVATE
 )
 
 target_link_libraries(client_modus_qt PRIVATE
-  client_controller_qt
-  client_web
   gdiplus
   modus
   schematic

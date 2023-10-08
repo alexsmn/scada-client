@@ -6,5 +6,5 @@ target_link_libraries(display_tester PUBLIC
 )
 
 target_link_libraries(display_tester PRIVATE
-  client_controller
+  client_controller_qt
 )

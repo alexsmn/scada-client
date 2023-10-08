@@ -1,23 +1,11 @@
-scada_module(client_controller INTERFACE)
+client_module(client_controller)
 
-target_link_libraries(client_controller INTERFACE node_service)
+client_module_sources(client_controller PUBLIC "models")
 
-target_compile_features(client_controller INTERFACE cxx_std_17)
-
-# QT
-
-add_library(client_controller_qt)
-
-target_link_libraries(client_controller_qt PUBLIC
-  aui_qt
-  client_controller
+client_module_link_libraries(client_controller PUBLIC
+  aui
+  client_base
+  node_service
 )
 
-# WT
-
-add_library(client_controller_wt)
-
-target_link_libraries(client_controller_wt PUBLIC
-  aui_wt
-  client_controller
-)
+add_subdirectory(test)

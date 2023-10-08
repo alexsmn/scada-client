@@ -1,10 +1,10 @@
-#include "components/filesystem/file_synchronizer.h"
+#include "filesystem/file_synchronizer.h"
 
 #include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "base/logger.h"
 #include "base/strings/utf_string_conversions.h"
-#include "components/filesystem/filesystem_util.h"
+#include "filesystem/filesystem_util.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

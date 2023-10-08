@@ -1,9 +1,9 @@
-﻿#include "components/filesystem/filesystem_component.h"
+﻿#include "filesystem/filesystem_component.h"
 
 #include "component_api.h"
-#include "components/filesystem/file_synchronizer.h"
-#include "components/filesystem/filesystem_view.h"
 #include "controller/controller_registry.h"
+#include "filesystem/file_synchronizer.h"
+#include "filesystem/filesystem_view.h"
 
 const WindowInfo kWindowInfo = {
     ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Файлы", WIN_SING, 200, 400};

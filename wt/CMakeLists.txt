@@ -23,16 +23,13 @@ add_library(client_wt_lib
 
 target_sources(client_wt_lib INTERFACE ${COMPONENTS})
 
-target_compile_definitions(client_wt_lib PUBLIC
-  "-DUI_WT"
-)
-
-set_property(TARGET client_wt_lib PROPERTY FOLDER ${client_folder})
-
 find_package(wt CONFIG REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
   aui_wt
   client_common
+  client_controller_wt
+  client_filesystem_wt
+  client_portfolio_wt
 )
 
 target_compile_options(client_wt_lib PUBLIC
@@ -50,7 +47,6 @@ target_link_libraries(client_wt PUBLIC
 
 target_link_libraries(client_wt PUBLIC client_wt_lib)
 
-set_property(TARGET client_wt PROPERTY FOLDER ${client_folder})
 set_property(TARGET client_wt PROPERTY OUTPUT_NAME "webserver")
 
 # UT-s
@@ -60,4 +56,3 @@ add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
 target_link_libraries(client_wt_unittests PUBLIC client_wt_lib base_unittest Wt::Test)
 include(GoogleTest)
 gtest_discover_tests(client_wt_unittests)
-set_property(TARGET client_wt_unittests PROPERTY FOLDER ${client_folder})

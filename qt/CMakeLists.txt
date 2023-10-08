@@ -22,19 +22,15 @@ add_library(client_qt_lib
 
 target_sources(client_qt_lib INTERFACE ${COMPONENTS})
 
-target_compile_definitions(client_qt_lib PUBLIC
-  "-DUI_QT"
-)
-
-set_property(TARGET client_qt_lib PROPERTY FOLDER ${client_folder})
-
 find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
   client_base_qt
   client_common
+  client_controller_qt
   client_graph_qt
   client_modus_qt
+  client_portfolio_qt
   client_vidicon_display_qt
   Qt5::PrintSupport
   Qt5::Widgets
@@ -59,7 +55,6 @@ target_sources(client_qt_lib PRIVATE ${TRANSLATIONS} ${TRANSLATIONS_OUT})
 # Exe
 
 add_executable(client_qt WIN32 ${MAIN_QT})
-set_property(TARGET client_qt PROPERTY FOLDER ${client_folder})
 target_link_libraries(client_qt PUBLIC client_qt_lib)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
 
@@ -76,4 +71,3 @@ add_executable(client_qt_unittests ${UNITTESTS} ${UNITTESTS_QT})
 target_link_libraries(client_qt_unittests PUBLIC client_qt_lib base_unittest)
 include(GoogleTest)
 gtest_discover_tests(client_qt_unittests)
-set_property(TARGET client_qt_unittests PROPERTY FOLDER ${client_folder})

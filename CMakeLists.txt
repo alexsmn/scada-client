@@ -13,10 +13,11 @@ include_directories(client
 )
 
 add_subdirectory(base)
+add_subdirectory(aui)
 add_subdirectory(clipboard)
+add_subdirectory(controller)
 add_subdirectory(filesystem)
 add_subdirectory(web)
-add_subdirectory(controller)
 add_subdirectory(services)
 add_subdirectory(test)
 
@@ -24,13 +25,10 @@ add_library(client_common INTERFACE)
 
 target_link_libraries(client_common INTERFACE
   base_i18n
-  client_base
-  client_clipboard
-  client_controller
-  client_filesystem
-  client_web
   node_service_v1
   node_service_v2
+  client_base
+  client_clipboard
   scada_common_events
   scada_core_opcua
   scada_core_remote
@@ -46,14 +44,16 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.ui"
 )
 
-list(FILTER PATHS EXCLUDE REGEX "/aui/")
-list(FILTER PATHS EXCLUDE REGEX "/base/")
-list(FILTER PATHS EXCLUDE REGEX "/components/graph/")
-list(FILTER PATHS EXCLUDE REGEX "/components/vidicon_display/")
-list(FILTER PATHS EXCLUDE REGEX "/components/modus/")
-list(FILTER PATHS EXCLUDE REGEX "/clipboard/")
-list(FILTER PATHS EXCLUDE REGEX "/controller/")
-list(FILTER PATHS EXCLUDE REGEX "/services/vidicon/")
+list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
+list(FILTER PATHS EXCLUDE REGEX "/client/base/")
+list(FILTER PATHS EXCLUDE REGEX "/client/components/graph/")
+list(FILTER PATHS EXCLUDE REGEX "/client/components/vidicon_display/")
+list(FILTER PATHS EXCLUDE REGEX "/client/components/modus/")
+list(FILTER PATHS EXCLUDE REGEX "/client/components/portfolio/")
+list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
+list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
+list(FILTER PATHS EXCLUDE REGEX "/client/filesystem/")
+list(FILTER PATHS EXCLUDE REGEX "/client/services/vidicon/")
 
 foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")
@@ -75,7 +75,6 @@ foreach(PATH ${PATHS})
   ENDIF()
 endforeach()
 
-add_subdirectory(aui)
 add_subdirectory(qt)
 add_subdirectory(wt)
 add_subdirectory(components)

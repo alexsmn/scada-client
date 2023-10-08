@@ -1,70 +1,83 @@
-macro(client_module MODULE_NAME)
-  cmake_parse_arguments(ARG "" "" "UI" ${ARGN})
-
-  message("client_module(${MODULE_NAME})")
-
-  file(GLOB_RECURSE ${MODULE_NAME}_PATHS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_LIST_DIR}/*.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/*.h"
-    "${CMAKE_CURRENT_LIST_DIR}/*.rc"
-    "${CMAKE_CURRENT_LIST_DIR}/*.ui"
+#[[
+  client_module(name
+    [CONFIG qt wt ...]
   )
+]]
+function(client_module MODULE_NAME)
+  cmake_parse_arguments(ARG "" "" "CONFIG" ${ARGN})
 
-  foreach(PATH ${${MODULE_NAME}_PATHS})
-    IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")
-      IF(${PATH} MATCHES "/qt/")
-        LIST(APPEND ${MODULE_NAME}_UNITTESTS_QT ${PATH})
-      ELSEIF(${PATH} MATCHES "/wt/")
-        LIST(APPEND ${MODULE_NAME}_UNITTESTS_WT ${PATH})
-      ELSE()
-        LIST(APPEND ${MODULE_NAME}_UNITTESTS ${PATH})
-      ENDIF()
-    ELSE()
-      IF(${PATH} MATCHES "/qt/")
-        LIST(APPEND ${MODULE_NAME}_SOURCES_QT ${PATH})
-      ELSEIF(${PATH} MATCHES "/wt/")
-        LIST(APPEND ${MODULE_NAME}_SOURCES_WT ${PATH})
-      ELSE()
-        LIST(APPEND ${MODULE_NAME}_SOURCES ${PATH})
-      ENDIF()
-    ENDIF()
+  if (NOT ARG_CONFIG)
+    set(ARG_CONFIG "qt;wt")
+  endif()
+
+  foreach(CONFIG ${ARG_CONFIG})
+    scada_module(${MODULE_NAME}_${CONFIG})
+    scada_module_sources(${MODULE_NAME}_${CONFIG} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/${CONFIG}")
   endforeach()
+endfunction()
 
-  add_library(${MODULE_NAME}_qt
-    ${${MODULE_NAME}_SOURCES}
-    ${${MODULE_NAME}_SOURCES_QT})
+#[[
+  client_module_sources(my_module PUBLIC a b c)
+]]
+function(client_module_sources MODULE_NAME)
+  set(LINK_TYPES PRIVATE PUBLIC INTERFACE)
+  cmake_parse_arguments(ARG "" "" "${LINK_TYPES}" ${ARGN})
 
-  add_library(${MODULE_NAME}_wt
-    ${${MODULE_NAME}_SOURCES}
-    ${${MODULE_NAME}_SOURCES_WT})
-
-  # UTs.
-
-  scada_module_unittests(${MODULE_NAME}_qt PRIVATE ${${MODULE_NAME}_UNITTESTS} ${${MODULE_NAME}_UNITTESTS_QT})
-  scada_module_unittests(${MODULE_NAME}_wt PRIVATE ${${MODULE_NAME}_UNITTESTS} ${${MODULE_NAME}_UNITTESTS_WT})
-
-endmacro()
-
-macro(client_module_link MODULE_NAME LINK_TYPE)
-  message("client_module_link(${MODULE_NAME} ${LINK_TYPE} ${ARGN})")
-
-  foreach(TARGET ${ARGN})
-    if(TARGET ${TARGET})
-      list(APPEND ${MODULE_NAME}_${LINK_TYPE}_LINK ${TARGET})
-    endif()
-    if(TARGET ${TARGET}_qt)
-      list(APPEND ${MODULE_NAME}_QT_${LINK_TYPE}_LINK ${TARGET}_qt)
-    endif()
-    if(TARGET ${TARGET}_wt)
-      list(APPEND ${MODULE_NAME}_WT_${LINK_TYPE}_LINK ${TARGET}_wt)
+  foreach(CONFIG qt wt)
+    if(TARGET ${MODULE_NAME}_${CONFIG})
+      foreach(LINK_TYPE ${LINK_TYPES})
+        if(ARG_${LINK_TYPE})
+          foreach(DIR ${ARG_${LINK_TYPE}})
+            scada_module_sources(${MODULE_NAME}_${CONFIG} ${LINK_TYPE} ${DIR} "${DIR}/${CONFIG}")
+          endforeach()
+        endif()
+      endforeach()
     endif()
   endforeach()
+endfunction()
 
-  target_link_libraries(${MODULE_NAME}_qt ${LINK_TYPE}
-    ${${MODULE_NAME}_${LINK_TYPE}_LINK}
-    ${${MODULE_NAME}_QT_${LINK_TYPE}_LINK})
+#[[
+  client_module_link_libraries_helper(my_module PUBLIC a b c)
+  client_module_link_libraries_helper(my_module_qt CONFIG qt PUBLIC a b c)
+]]
+function(client_module_link_libraries_helper MODULE_NAME)
+  set(LINK_TYPES PRIVATE PUBLIC INTERFACE)
+  cmake_parse_arguments(ARG "REQUIRED" "CONFIG" "${LINK_TYPES}" ${ARGN})
 
-  target_link_libraries(${MODULE_NAME}_wt ${LINK_TYPE}
-    ${${MODULE_NAME}_${LINK_TYPE}_LINK}
-    ${${MODULE_NAME}_WT_${LINK_TYPE}_LINK})
-endmacro()
+  # Undefined `CONFIG` is handled properly below.
+
+  foreach(LINK_TYPE ${LINK_TYPES})
+    if(ARG_${LINK_TYPE})
+      foreach(LIB ${ARG_${LINK_TYPE}})
+        if(TARGET ${LIB}_${ARG_CONFIG})
+          target_link_libraries(${MODULE_NAME} ${LINK_TYPE} ${LIB}_${ARG_CONFIG})
+        elseif(TARGET ${LIB})
+          target_link_libraries(${MODULE_NAME} ${LINK_TYPE} ${LIB})
+        elseif(REQUIRED)
+          message(FATAL_ERROR "Client module ${MODULE_NAME} cannot link to the required ${LINK_TYPE} library ${LIB}")
+        endif()
+      endforeach()
+    endif()
+  endforeach()
+endfunction()
+
+#[[
+  client_module_link_libraries(my_module PUBLIC a b c)
+]]
+function(client_module_link_libraries MODULE_NAME)
+  if(TARGET ${MODULE_NAME})
+    client_module_link_libraries_helper(${MODULE_NAME} ${ARGN})
+  endif()
+  if(TARGET ${MODULE_NAME}_unittests)
+    client_module_link_libraries_helper(${MODULE_NAME}_unittests ${ARGN})
+  endif()
+
+  foreach(CONFIG qt wt)
+    if(TARGET ${MODULE_NAME}_${CONFIG})
+      client_module_link_libraries_helper(${MODULE_NAME}_${CONFIG} CONFIG ${CONFIG} ${ARGN} REQUIRED)
+    endif()
+    if(TARGET ${MODULE_NAME}_${CONFIG}_unittests)
+      client_module_link_libraries_helper(${MODULE_NAME}_${CONFIG}_unittests CONFIG ${CONFIG} ${ARGN} REQUIRED)
+    endif()
+  endforeach()
+endfunction()

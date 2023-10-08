@@ -1,8 +1,8 @@
 #include "components/main/main_window_util.h"
 
+#include "aui/key_codes.h"
 #include "client_utils.h"
 #include "common_resources.h"
-#include "components/filesystem/filesystem_commands.h"
 #include "components/main/main_window.h"
 #include "components/main/opened_view.h"
 #include "components/node_properties/node_property_component.h"
@@ -10,14 +10,14 @@
 #include "components/table/table_component.h"
 #include "components/watch/watch_component.h"
 #include "contents_model.h"
-#include "aui/key_codes.h"
+#include "controller/window_info.h"
+#include "filesystem/filesystem_commands.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "window_definition_builder.h"
-#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"
