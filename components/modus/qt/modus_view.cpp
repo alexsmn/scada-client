@@ -2,9 +2,9 @@
 
 #include "base/bind.h"
 #include "base/threading/sequenced_task_runner_handle.h"
-#include "client_utils.h"
 #include "components/modus/activex/modus.h"
-#include "window_definition.h"
+#include "controller/file_util.h"
+#include "controller/window_definition.h"
 
 #include <QAxWidget>
 #include <QDesktopServices>

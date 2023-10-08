@@ -2,7 +2,7 @@
 
 #include "common_resources.h"
 #include "controller.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <memory>
 

@@ -15,11 +15,11 @@
 #include "components/main/selection_commands.h"
 #include "controller/controller.h"
 #include "qt/client_utils_qt.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <QAction>
 #include <QApplication>

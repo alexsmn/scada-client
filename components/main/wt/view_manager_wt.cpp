@@ -5,7 +5,7 @@
 #include "components/main/opened_view.h"
 #include "components/main/view_manager_delegate.h"
 #include "services/page.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <wt/WApplication.h>
 #include <wt/WBorderLayout.h>

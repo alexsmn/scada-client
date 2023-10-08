@@ -2,7 +2,6 @@
 
 #include "base/file_path_util.h"
 #include "base/promise_executor.h"
-#include "client_utils.h"
 #include "common_resources.h"
 #include "components/filesystem/filesystem_util.h"
 #include "components/main/main_window.h"
@@ -10,13 +9,14 @@
 #include "components/main/opened_view.h"
 #include "components/prompt/prompt_dialog.h"
 #include "contents_model.h"
+#include "controller/file_util.h"
+#include "controller/window_definition_util.h"
+#include "controller/window_info.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "services/dialog_service.h"
 #include "services/file_registry.h"
 #include "services/task_manager.h"
-#include "window_definition_util.h"
-#include "window_info.h"
 
 #include <cassert>
 #include <filesystem>

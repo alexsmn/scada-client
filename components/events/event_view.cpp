@@ -16,12 +16,12 @@
 #include "components/time_range/time_range_dialog.h"
 #include "contents_observer.h"
 #include "controller/controller_delegate.h"
+#include "controller/window_definition_util.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
-#include "window_definition_util.h"
 
 namespace {
 

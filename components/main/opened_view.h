@@ -5,7 +5,7 @@
 #include "command_handler.h"
 #include "components/main/controller_factory.h"
 #include "controller/controller_delegate.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 #include <memory>
 #include <string>

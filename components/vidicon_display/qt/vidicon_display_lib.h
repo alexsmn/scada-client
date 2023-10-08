@@ -2,9 +2,9 @@
 
 #include "services/vidicon/teleclient.h"
 
+#include <Windows.h>
 #include <filesystem>
 #include <functional>
-#include <windows.h>
 
 namespace vidicon {
 

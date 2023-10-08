@@ -17,7 +17,7 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "window_definition_builder.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"

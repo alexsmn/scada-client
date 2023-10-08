@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controller/controller.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 
 #include <filesystem>
 

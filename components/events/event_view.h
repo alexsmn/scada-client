@@ -7,7 +7,7 @@
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "export_model.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 #include "time_model.h"
 
 #include <memory>

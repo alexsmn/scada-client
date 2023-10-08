@@ -2,7 +2,7 @@
 
 #include "base/files/file_path.h"
 #include "services/page_layout.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 class Page {
  public:

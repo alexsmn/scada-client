@@ -12,8 +12,8 @@
 #include "services/dialog_service.h"
 #include "services/profile.h"
 #include "string_const.h"
-#include "window_definition.h"
-#include "window_definition_util.h"
+#include "controller/window_definition.h"
+#include "controller/window_definition_util.h"
 
 #if defined(UI_QT)
 #include <QHeaderView>

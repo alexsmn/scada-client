@@ -4,7 +4,7 @@
 #include "scada/node_id.h"
 #include "node_id_set.h"
 #include "node_service/node_ref.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 #include <string>
 
@@ -69,6 +69,3 @@ NodeRef GetPasteParentNode(NodeService& node_service,
 
 bool IsWebUrl(std::u16string_view str);
 std::u16string MakeFileUrl(const std::filesystem::path& path);
-
-std::filesystem::path GetPublicFilePath(const std::filesystem::path& path);
-std::filesystem::path FullFilePathToPublic(const std::filesystem::path& path);

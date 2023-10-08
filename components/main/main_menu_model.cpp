@@ -17,8 +17,8 @@
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
-#include "window_definition.h"
-#include "window_info.h"
+#include "controller/window_definition.h"
+#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"

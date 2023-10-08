@@ -21,7 +21,7 @@
 #include "services/local_events.h"
 #include "services/profile.h"
 #include "services/speech.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <windows.h>
 

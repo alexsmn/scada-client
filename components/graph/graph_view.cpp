@@ -7,7 +7,7 @@
 #include "components/time_range/time_range_dialog.h"
 #include "controller/controller_delegate.h"
 #include "node_service/node_service.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>

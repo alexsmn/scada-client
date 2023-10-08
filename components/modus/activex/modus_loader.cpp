@@ -4,14 +4,14 @@
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "client_utils.h"
 #include "common_resources.h"
 #include "components/modus/activex/modus.h"
 #include "components/modus/activex/modus_document.h"
 #include "components/modus/activex/modus_element.h"
 #include "components/modus/activex/modus_object.h"
+#include "controller/file_util.h"
+#include "controller/window_info.h"
 #include "services/file_cache_updater.h"
-#include "window_info.h"
 
 #include "base/debug_util-inl.h"
 

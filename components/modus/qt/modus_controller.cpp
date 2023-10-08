@@ -14,12 +14,13 @@
 #include "components/web/web_component.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
-#include "selection_model.h"
+#include "controller/file_util.h"
+#include "controller/selection_model.h"
+#include "controller/window_definition.h"
+#include "controller/window_info.h"
 #include "services/dialog_service.h"
 #include "services/file_cache.h"
 #include "services/profile.h"
-#include "window_definition.h"
-#include "window_info.h"
 
 #include <QScrollArea>
 

@@ -11,8 +11,8 @@
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
-#include "window_definition.h"
-#include "window_definition_util.h"
+#include "controller/window_definition.h"
+#include "controller/window_definition_util.h"
 
 #include <boost/locale/encoding_utf.hpp>
 

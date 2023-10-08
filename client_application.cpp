@@ -55,7 +55,7 @@
 #include "services/speech.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_impl.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "components/modus/libmodus/modus_module2.h"

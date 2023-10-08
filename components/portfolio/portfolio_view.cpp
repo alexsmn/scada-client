@@ -6,7 +6,7 @@
 #include "components/select_item/select_item_dialog.h"
 #include "controller/controller_delegate.h"
 #include "node_service/node_service.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 
 // PortfolioView
 

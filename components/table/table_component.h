@@ -1,5 +1,5 @@
 #pragma once
 
-#include "window_info.h"
+#include "controller/window_info.h"
 
 extern const WindowInfo kTableWindowInfo;

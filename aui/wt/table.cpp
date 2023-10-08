@@ -3,7 +3,7 @@
 #include "aui/models/table_column.h"
 #include "aui/models/table_model.h"
 #include "aui/wt/table_model_adapter.h"
-#include "window_definition_util.h"
+#include "controller/window_definition_util.h"
 
 #include <Wt/WSortFilterProxyModel.h>
 

@@ -1,15 +1,15 @@
 #include "base/client_paths.h"
+#include "base/qt/message_loop_qt.h"
 #include "base/test/test_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/modus/modus_component.h"
 #include "components/modus/qt/modus_view.h"
-#include "qt/message_loop_qt.h"
+#include "controller/window_definition.h"
 #include "services/atl_module.h"
 #include "services/file_cache.h"
 #include "services/file_registry.h"
 #include "test/display_tester/qt/display_tester_state.h"
 #include "test/display_tester/qt/display_tester_window.h"
-#include "window_definition.h"
 
 #include <QApplication>
 #include <atlbase.h>

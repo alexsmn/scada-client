@@ -9,7 +9,7 @@
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
 #include "scada/status.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 #include <memory>
 #include <string>

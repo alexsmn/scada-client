@@ -1,9 +1,6 @@
 ﻿#include "client_utils.h"
 
-#include "base/client_paths.h"
-#include "base/file_path_util.h"
 #include "base/format_time.h"
-#include "base/path_service.h"
 #include "base/range_util.h"
 #include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
@@ -26,7 +23,7 @@
 #include "services/profile.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 namespace {
 
@@ -216,14 +213,4 @@ bool IsWebUrl(std::u16string_view str) {
 
 std::u16string MakeFileUrl(const std::filesystem::path& path) {
   return kFilePrefix + path.u16string();
-}
-
-std::filesystem::path GetPublicFilePath(const std::filesystem::path& path) {
-  base::FilePath public_path;
-  base::PathService::Get(client::DIR_PUBLIC, &public_path);
-  return AsFilesystemPath(public_path) / path;
-}
-
-std::filesystem::path FullFilePathToPublic(const std::filesystem::path& path) {
-  return path.filename();
 }

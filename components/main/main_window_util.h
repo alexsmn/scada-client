@@ -2,7 +2,7 @@
 
 #include "base/promise.h"
 #include "aui/key_codes.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 class Executor;
 class FileRegistry;

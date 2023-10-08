@@ -12,7 +12,7 @@
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 #include "string_const.h"

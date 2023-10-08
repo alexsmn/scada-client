@@ -3,7 +3,7 @@
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/value_util.h"
-#include "window_definition_util.h"
+#include "controller/window_definition_util.h"
 
 namespace {
 const char* kDockNames[4] = {"bottom", "top", "left", "right"};

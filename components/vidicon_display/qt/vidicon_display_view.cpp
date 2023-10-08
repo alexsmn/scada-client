@@ -1,11 +1,11 @@
 ﻿#include "components/vidicon_display/qt/vidicon_display_view.h"
 
 #include "base/win/scoped_bstr.h"
-#include "client_utils.h"
 #include "components/vidicon_display/telecontrolview.h"
+#include "controller/file_util.h"
+#include "controller/window_definition.h"
 #include "services/vidicon/teleclient.h"
 #include "services/vidicon/vidicon_client.h"
-#include "window_definition.h"
 
 #include <QAxWidget>
 #include <QUuid>

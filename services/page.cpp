@@ -11,8 +11,8 @@
 #include "base/utils.h"
 #include "base/value_util.h"
 #include "services/page_layout.h"
-#include "window_definition_util.h"
-#include "window_info.h"
+#include "controller/window_definition_util.h"
+#include "controller/window_info.h"
 
 #define MAX_TITLE 30
 

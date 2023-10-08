@@ -5,9 +5,9 @@
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller/controller_delegate.h"
+#include "controller/window_definition.h"
 #include "services/dialog_service.h"
 #include "time_range.h"
-#include "window_definition.h"
 
 namespace {
 

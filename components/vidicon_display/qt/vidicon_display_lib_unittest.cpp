@@ -1,4 +1,4 @@
-#include "components\vidicon_display\qt\vidicon_display_lib.h"
+#include "components/vidicon_display/qt/vidicon_display_lib.h"
 
 #include <gmock/gmock.h>
 

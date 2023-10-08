@@ -4,11 +4,11 @@
 #include "common/aggregation.h"
 #include "common_resources.h"
 #include "components/summary/summary_component.h"
+#include "controller/window_definition.h"
 #include "node_service/node_service_mock.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_service_mock.h"
-#include "window_definition.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <gmock/gmock.h>
 

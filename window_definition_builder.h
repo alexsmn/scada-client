@@ -2,7 +2,7 @@
 
 #include "base/promise.h"
 #include "node_id_set.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 class NodeRef;
 struct OpenContext;

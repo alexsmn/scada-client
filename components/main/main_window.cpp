@@ -14,10 +14,10 @@
 #include "contents_model.h"
 #include "contents_observer.h"
 #include "controller/controller.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 #include "services/profile.h"
 #include "simple_menu_command_handler.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 namespace {
 

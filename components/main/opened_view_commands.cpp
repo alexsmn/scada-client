@@ -32,7 +32,7 @@
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
 #include "scada/status_promise.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 #include "services/create_tree.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"

@@ -2,7 +2,7 @@
 
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 
 #include <boost/signals2/connection.hpp>
 #include <memory>

@@ -25,7 +25,7 @@
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "scada/event.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"

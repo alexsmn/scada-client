@@ -33,8 +33,10 @@ set_property(TARGET client_qt_lib PROPERTY FOLDER ${client_folder})
 find_package(Qt5 COMPONENTS Core Widgets PrintSupport REQUIRED)
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
+  client_base_qt
   client_common
   client_modus_qt
+  client_vidicon_display_qt
   graph_qt
   Qt5::PrintSupport
   Qt5::Widgets

@@ -4,7 +4,7 @@
 #include "base/promise.h"
 #include "command_handler.h"
 #include "command_registry.h"
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 #include <vector>
 

@@ -5,8 +5,9 @@
 #include "base/win/scoped_variant.h"
 #include "client_utils.h"
 #include "controller/controller_registry.h"
+#include "controller/file_util.h"
+#include "controller/window_definition.h"
 #include "services/file_cache.h"
-#include "window_definition.h"
 
 #include <atlcomcli.h>
 

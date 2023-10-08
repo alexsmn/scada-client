@@ -1,4 +1,5 @@
 #include "base/at_exit.h"
+#include "base/qt/message_loop_qt.h"
 #include "base/task_runner_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
@@ -6,7 +7,6 @@
 #include "components/login/login_dialog.h"
 #include "components/main/qt/main_window_qt.h"
 #include "project.h"
-#include "qt/message_loop_qt.h"
 #include "services/atl_module.h"
 
 #include <QApplication>

@@ -5,7 +5,7 @@
 #include "command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "selection_model.h"
+#include "controller/selection_model.h"
 
 namespace aui {
 class Grid;

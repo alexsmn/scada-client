@@ -6,7 +6,7 @@
 #include "controller/controller_mock.h"
 #include "services/dialog_service_mock.h"
 #include "test/app_environment.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <QMainWindow>
 #include <gmock/gmock.h>

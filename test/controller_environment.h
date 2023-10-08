@@ -20,8 +20,8 @@
 #include "services/properties/property_service.h"
 #include "services/task_manager_mock.h"
 #include "timed_data/timed_data_service_mock.h"
-#include "window_definition.h"
-#include "window_info.h"
+#include "controller/window_definition.h"
+#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "services/vidicon/vidicon_client.h"

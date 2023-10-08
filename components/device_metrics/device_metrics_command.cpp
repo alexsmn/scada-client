@@ -9,7 +9,7 @@
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     std::u16string title,
