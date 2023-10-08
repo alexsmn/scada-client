@@ -1,8 +1,6 @@
 # Automatically link Qt executables to qtmain target on Windows
 cmake_policy(SET CMP0020 NEW)
 
-add_subdirectory("${deps}/qt/graph_qt" "graph_qt") 
-
 file(GLOB MAIN_QT
   "../*.rc"
   "../res/client.qrc"
@@ -35,9 +33,9 @@ target_link_libraries(client_qt_lib PUBLIC
   aui_qt
   client_base_qt
   client_common
+  client_graph_qt
   client_modus_qt
   client_vidicon_display_qt
-  graph_qt
   Qt5::PrintSupport
   Qt5::Widgets
 )

@@ -48,6 +48,7 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
 
 list(FILTER PATHS EXCLUDE REGEX "/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/base/")
+list(FILTER PATHS EXCLUDE REGEX "/components/graph/")
 list(FILTER PATHS EXCLUDE REGEX "/components/vidicon_display/")
 list(FILTER PATHS EXCLUDE REGEX "/components/modus/")
 list(FILTER PATHS EXCLUDE REGEX "/clipboard/")
