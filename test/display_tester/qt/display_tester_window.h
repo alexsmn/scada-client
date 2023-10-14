@@ -52,8 +52,13 @@ class DisplayTesterWindow : public QWidget {
   }
 
   void AddView(QWidget& widget) {
+    auto sizes = splitter->sizes();
+
     widget.setParent(splitter);
     splitter->addWidget(&widget);
+
+    sizes.append(splitter->width() / (sizes.size() + 1));
+    splitter->setSizes(sizes);
   }
 
   QToolBar* toolbar = new QToolBar{this};
