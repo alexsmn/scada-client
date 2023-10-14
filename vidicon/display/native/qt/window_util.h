@@ -1,7 +1,12 @@
 #pragma once
 
+#include <QPoint>
 #include <QRect>
 #include <Windows.h>
+
+inline POINT ToPOINT(const QPoint& p) {
+  return {p.x(), p.y()};
+}
 
 inline RECT ToRECT(const QRect& rect) {
   return {.left = rect.left(),
