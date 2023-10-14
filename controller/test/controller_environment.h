@@ -24,7 +24,7 @@
 #include "controller/window_info.h"
 
 #if !defined(UI_WT)
-#include "services/vidicon/vidicon_client.h"
+#include "vidicon/teleclient/vidicon_client.h"
 #endif
 
 #include <gmock/gmock.h>

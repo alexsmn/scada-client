@@ -42,7 +42,6 @@ if(WIN32)
     Qt5::AxContainer
     Qt5::WinExtras
     Qt5::WinMain
-    client_vidicon_module
   )
 endif()
 

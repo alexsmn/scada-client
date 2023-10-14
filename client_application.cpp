@@ -59,7 +59,7 @@
 
 #if !defined(UI_WT)
 #include "components/modus/libmodus/modus_module2.h"
-#include "services/vidicon/vidicon_client.h"
+#include "vidicon/teleclient/vidicon_client.h"
 #endif
 
 extern bool CreateVidiconServices(const DataServicesContext& context,

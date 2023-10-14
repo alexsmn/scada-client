@@ -23,7 +23,7 @@
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"
 #include "components/modus/modus_component.h"
-#include "components/vidicon_display/vidicon_display_component.h"
+#include "vidicon/display/vidicon_display_component.h"
 #endif
 
 #include <atlres.h>
