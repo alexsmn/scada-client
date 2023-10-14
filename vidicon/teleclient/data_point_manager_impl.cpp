@@ -1,29 +1,14 @@
 #include "vidicon/teleclient/data_point_manager_impl.h"
 
 #include "base/executor.h"
-#include "model/namespaces.h"
-#include "model/node_id_util.h"
-#include "model/opc_node_ids.h"
 #include "opc/opc_convertions.h"
-#include "vidicon/teleclient/data_point_address.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
-
-#include <boost/locale/encoding_utf.hpp>
+#include "vidicon/teleclient/vidicon_node_id.h"
 
 namespace vidicon {
 
 namespace {
-
-scada::NodeId MakeAddressNodeId(const DataPointAddress& address) {
-  if (address.object_id != 0) {
-    return scada::NodeId{static_cast<scada::NumericId>(address.object_id),
-                         NamespaceIndexes::VIDICON};
-  } else {
-    return MakeNestedNodeId(opc::id::OPC, boost::locale::conv::utf_to_utf<char>(
-                                              address.opc_address));
-  }
-}
 
 struct DataPoint : public std::enable_shared_from_this<DataPoint> {
   DataPoint(std::stop_token cancelation, const DataChangeHandler& handler)
@@ -41,7 +26,7 @@ struct DataPoint : public std::enable_shared_from_this<DataPoint> {
   void Start(TimedDataService& service, const DataPointAddress& address) {
     self_ref_ = shared_from_this();
 
-    auto node_id = MakeAddressNodeId(address);
+    const auto& node_id = ToNodeId(address);
     timed_data_spec_.Connect(service, node_id);
 
     if (const auto& current = timed_data_spec_.current(); !current.is_null()) {
