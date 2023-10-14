@@ -136,9 +136,11 @@ class shape {
   }
 
   shape& operator=(shape&& other) noexcept {
-    library_ = other.library_;
-    handle_ = other.handle_;
-    other.handle_ = -1;
+    if (&other != this) {
+      library_ = other.library_;
+      handle_ = other.handle_;
+      other.handle_ = -1;
+    }
     return *this;
   }
 

@@ -15,12 +15,12 @@ enum WindowFlags {
 };
 
 struct WindowInfo {
-  unsigned command_id;
+  unsigned command_id = 0;
   std::string_view name;
   std::u16string_view title;
-  unsigned flags;
+  unsigned flags = 0;
   aui::Size size;
-  unsigned menu;
+  unsigned menu = 0;
 
   bool is_pane() const { return (flags & WIN_SING) != 0; }
   bool dock_bottom() const { return (flags & WIN_DOCKB) != 0; }

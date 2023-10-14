@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common_resources.h"
-#include "controller.h"
+#include "controller/controller.h"
 #include "controller/window_info.h"
 
 #include <memory>

@@ -1,5 +1,5 @@
 client_module(aui)
-client_module_sources(aui PUBLIC models)
+client_module_sources(aui PRIVATE models)
 client_module_link_libraries(aui PUBLIC scada_base)
 
 # QT

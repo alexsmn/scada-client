@@ -3,6 +3,8 @@
 #include "base/json.h"
 #include "common_resources.h"
 #include "components/object_tree/object_tree_component.h"
+#include "controller/controller_mock.h"
+#include "controller/controller_registry.h"
 #include "window_info.h"
 
 #include <gmock/gmock.h>
@@ -10,6 +12,19 @@
 #include "base/debug_util-inl.h"
 
 using namespace testing;
+
+// Register a controller for the `WindowDefinition` test.
+
+const WindowInfo kTestWindowInfo = {.command_id = 99999,
+                                    .name = "TestWindowInfo",
+                                    .title = u"TestWindowInfo"};
+
+class TestController : public MockController {
+ public:
+  explicit TestController(const ControllerContext&) {}
+};
+
+REGISTER_CONTROLLER(TestController, kTestWindowInfo);
 
 namespace {
 
@@ -34,7 +49,7 @@ base::Value MakeDictValue(
   return base::Value{std::move(dict)};
 }
 
-static const WindowItems kTestWindowItems = {
+const WindowItems kTestWindowItems = {
     {"empty", base::Value{}},
     {"int", base::Value{123}},
     {"int", base::Value{321}},
@@ -44,7 +59,7 @@ static const WindowItems kTestWindowItems = {
     {"dict", MakeDictValue<int>({{"a", 1}, {"b", 2}, {"c", 3}})},
 };
 
-static const std::string_view kTestWindowItemsJson = R"(
+const std::string_view kTestWindowItemsJson = R"(
     [
         { "name": "empty",  "@value": null },
         { "name": "int",    "@value": 123 },
@@ -65,7 +80,7 @@ base::Value ValueOf(base::Value&& value) {
   return std::move(value);
 }
 
-void ListOfHelper(base::Value::ListStorage& storage) {}
+void ListOfHelper(const base::Value::ListStorage&) {}
 
 template <class T, class... Args>
 void ListOfHelper(base::Value::ListStorage& storage, T&& item, Args&&... args) {
@@ -80,7 +95,7 @@ base::Value ListOf(Args&&... args) {
   return base::Value{std::move(storage)};
 }
 
-void DictOfHelper(base::Value::DictStorage& storage) {}
+void DictOfHelper(const base::Value::DictStorage&) {}
 
 template <class Key, class Value, class... Args>
 void DictOfHelper(base::Value::DictStorage& storage,
@@ -100,7 +115,7 @@ base::Value DictOf(Args&&... args) {
 }
 
 WindowDefinition MakeTestWindowDefinition() {
-  WindowDefinition window_definition{kObjectTreeWindowInfo};
+  WindowDefinition window_definition{kTestWindowInfo};
   window_definition.id = 1;
   window_definition.size = {200, 450};
   window_definition.AddItem("State").Set(DictOf(
@@ -109,7 +124,8 @@ WindowDefinition MakeTestWindowDefinition() {
   return window_definition;
 }
 
-static const std::string_view kTestWindowDefinitionJson = R"(
+// The `type` must match `kTestWindowInfo.name`.
+const std::string_view kTestWindowDefinitionJson = R"(
     {
         "data": null,
         "height": 450,
@@ -125,7 +141,7 @@ static const std::string_view kTestWindowDefinitionJson = R"(
           "name": "State"
         } ],
         "locked": false,
-        "type": "Struct",
+        "type": "TestWindowInfo",
         "width": 200
     })";
 
