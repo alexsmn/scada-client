@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vidicon/teleclient/data_point_address.h"
-
 #include <functional>
 #include <stop_token>
 
@@ -10,6 +8,8 @@ struct DataValue;
 }
 
 namespace vidicon {
+
+struct DataPointAddress;
 
 using DataChangeHandler =
     std::function<void(const opc_client::DataValue& data_value)>;

@@ -1,9 +1,8 @@
 #pragma once
 
-#include "vidicon/teleclient.h"
-
 #include <atlbase.h>
 
+#include <TeleClient.h>
 #include <atlcom.h>
 #include <functional>
 #include <wrl/client.h>

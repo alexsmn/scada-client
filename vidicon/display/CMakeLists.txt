@@ -3,10 +3,6 @@ add_subdirectory(native)
 
 client_module(client_vidicon_display CONFIG qt)
 
-client_module_link_libraries(client_vidicon_display PUBLIC
-  client_controller
-)
-
 client_module_link_libraries(client_vidicon_display PRIVATE
   client_vidicon_display_activex
   client_vidicon_display_native

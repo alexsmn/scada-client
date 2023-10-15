@@ -4,11 +4,11 @@
 #include "controller/window_definition.h"
 #include "filesystem/file_util.h"
 #include "vidicon/display/activex/telecontrolview.h"
-#include "vidicon/teleclient/teleclient.h"
 #include "vidicon/teleclient/vidicon_client.h"
 
 #include <QAxWidget>
 #include <QUuid>
+#include <TeleClient.h>
 #include <wrl/client.h>
 
 // #import "c:\Program Files\Telecontrol\Vidicon\Bin\\TelecontrolView.tlb"

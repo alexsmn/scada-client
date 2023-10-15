@@ -4,7 +4,8 @@
 #include "opc/opc_convertions.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
-#include "vidicon/teleclient/vidicon_node_id.h"
+#include "vidicon/data_point_address.h"
+#include "vidicon/vidicon_node_id.h"
 
 namespace vidicon {
 

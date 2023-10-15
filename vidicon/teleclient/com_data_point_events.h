@@ -1,10 +1,10 @@
 #pragma once
 
 #include "opc/opc_convertions.h"
-#include "vidicon/teleclient/teleclient.h"
 
 #include <atlbase.h>
 
+#include <TeleClient.h>
 #include <algorithm>
 #include <array>
 #include <atlcom.h>

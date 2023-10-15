@@ -1,10 +1,10 @@
 #pragma once
 
 #include "vidicon/teleclient/com_data_point_manager.h"
-#include "vidicon/teleclient/teleclient.h"
 
 #include <atlbase.h>
 
+#include <TeleClient.h>
 #include <atlcom.h>
 #include <cassert>
 #include <wrl/client.h>
@@ -57,7 +57,7 @@ STDMETHODIMP ComTeleclientImpl::RequestPoint(BSTR Name, IDataPoint** Point) {
   if (!com_data_point) {
     return E_FAIL;
   }
-  
+
   *Point = com_data_point.Detach();
   return S_OK;
 }

@@ -5,14 +5,14 @@
 #include "base/win/scoped_bstr.h"
 #include "model/node_id_util.h"
 #include "model/opc_node_ids.h"
-#include "vidicon/teleclient/teleclient.h"
-#include "vidicon/teleclient/test/com_data_point_events.h"
-#include "vidicon/teleclient/test/com_event_connector.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_service_mock.h"
+#include "vidicon/teleclient/test/com_data_point_events.h"
+#include "vidicon/teleclient/test/com_event_connector.h"
 
+#include <TeleClient.h>
 #include <atlcomcli.h>
 #include <gmock/gmock.h>
 

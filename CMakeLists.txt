@@ -31,9 +31,9 @@ target_link_libraries(client_common INTERFACE
   client_base
   client_clipboard
   scada_common_events
+  scada_common_vidicon_services
   scada_core_opcua
   scada_core_remote
-  scada_core_vidicon
   timed_data
   Net::net
 )

@@ -4,10 +4,10 @@
 #include "opc/opc_convertions.h"
 #include "vidicon/teleclient/com_data_point_events.h"
 #include "vidicon/teleclient/data_point_manager.h"
-#include "vidicon/teleclient/teleclient.h"
 
 #include <atlbase.h>
 
+#include <TeleClient.h>
 #include <atlcom.h>
 #include <functional>
 #include <memory>

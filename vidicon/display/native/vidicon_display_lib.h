@@ -1,7 +1,6 @@
 #pragma once
 
-#include "vidicon/teleclient/teleclient.h"
-
+#include <TeleClient.h>
 #include <Windows.h>
 #include <filesystem>
 #include <functional>
