@@ -426,14 +426,17 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                              selection_->node().node_id(), profile_, false});
           })
           .set_enabled_handler([this] {
-            return !selection_->node()[data_items::id::DataItemType_Output]
-                        .value()
-                        .is_null();
+            // TODO: Use `scada::AttributeId::UserWriteMask` when available.
+            // Allow writing to all variables. Except for data items: check
+            // an output channel is present.
+            auto node = selection_->node();
+            return !IsInstanceOf(node, data_items::id::DataItemType) ||
+                   !node[data_items::id::DataItemType_Output].value().is_null();
           })
           .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Control) &&
-                   IsInstanceOf(selection_->node(),
-                                data_items::id::DataItemType);
+                   selection_->node().node_class() ==
+                       scada::NodeClass::Variable;
           }));
 
   command_registry_.AddCommand(
