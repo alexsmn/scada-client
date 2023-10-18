@@ -6,7 +6,7 @@
 #include "events/node_event_provider.h"
 #include "services/profile.h"
 
-#include <MMSystem.h>
+#include <mmsystem.h>
 
 using namespace std::chrono_literals;
 namespace {
@@ -26,10 +26,9 @@ EventDispatcher::~EventDispatcher() {
   node_event_provider_.RemoveObserver(*this);
 }
 
-void EventDispatcher::OnEvents(base::span<const scada::Event* const> events) {
-  bool all_acked =
-      std::all_of(events.begin(), events.end(),
-                  [](const scada::Event* event) { return event->acked; });
+void EventDispatcher::OnEvents(std::span<const scada::Event* const> events) {
+  bool all_acked = std::ranges::all_of(
+      events, [](const scada::Event* event) { return event->acked; });
   ShowEventsDelayed(!all_acked);
 }
 

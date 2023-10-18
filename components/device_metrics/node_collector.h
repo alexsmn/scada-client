@@ -17,8 +17,8 @@ promise<std::vector<NodeRef>> CollectNodesRecursive(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id);
 
-std::set<NodeRef> CollectTypeDefinitions(base::span<const NodeRef> devices);
+std::set<NodeRef> CollectTypeDefinitions(std::span<const NodeRef> devices);
 
 std::vector<NodeRef> GetSupertypes(NodeRef type_definition);
 
-std::set<NodeRef> CollectVariables(base::span<const NodeRef> devices);
+std::set<NodeRef> CollectVariables(std::span<const NodeRef> devices);

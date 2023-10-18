@@ -185,7 +185,7 @@ bool EventTableModel::IsEventShown(const scada::Event& event) const {
 }
 
 void EventTableModel::AddRows(EventType type,
-                              base::span<const scada::Event* const> events) {
+                              std::span<const scada::Event* const> events) {
   std::vector<const scada::Event*> added_events;
 
   for (auto* event : events) {
@@ -247,7 +247,7 @@ void EventTableModel::OnModelChanged(const scada::ModelChangeEvent& event) {
 }
 
 void EventTableModel::OnCurrentEvents(
-    base::span<const scada::Event* const> events) {
+    std::span<const scada::Event* const> events) {
   std::vector<const scada::Event*> partitioned_events(events.begin(),
                                                       events.end());
   auto first_unacked = std::stable_partition(

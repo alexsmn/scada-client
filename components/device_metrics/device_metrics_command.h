@@ -1,16 +1,16 @@
 #pragma once
 
-#include "base/containers/span.h"
 #include "base/promise.h"
 #include "controller/window_definition.h"
 
 #include <optional>
+#include <span>
 
 class NodeRef;
 
 WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     std::u16string title,
-    base::span<const NodeRef> devices);
+    std::span<const NodeRef> devices);
 
 promise<WindowDefinition> MakeDeviceMetricsWindowDefinition(
     const NodeRef& device);

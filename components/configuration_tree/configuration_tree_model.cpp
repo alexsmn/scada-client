@@ -5,7 +5,7 @@
 
 namespace {
 
-inline bool DoesChildExist(base::span<const NodeServiceTree::ChildRef> children,
+inline bool DoesChildExist(std::span<const NodeServiceTree::ChildRef> children,
                            const scada::NodeId& reference_type_id,
                            bool forward,
                            const NodeRef& child_node) {

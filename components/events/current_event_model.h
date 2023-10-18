@@ -26,11 +26,11 @@ class CurrentEventModel : private EventObserver {
   }
 
   boost::signals2::signal<void()> on_all_acked;
-  boost::signals2::signal<void(base::span<const scada::Event* const> events)>
+  boost::signals2::signal<void(std::span<const scada::Event* const> events)>
       on_events;
 
  private:
-  virtual void OnEvents(base::span<const scada::Event* const> events) override {
+  virtual void OnEvents(std::span<const scada::Event* const> events) override {
     on_events(events);
   }
 

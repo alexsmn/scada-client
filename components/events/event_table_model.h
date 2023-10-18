@@ -83,7 +83,7 @@ class EventTableModel : public aui::TableModel,
   virtual int CompareCells(int row1, int row2, int column_id) override;
 
  private:
-  void AddRows(EventType type, base::span<const scada::Event* const> events);
+  void AddRows(EventType type, std::span<const scada::Event* const> events);
   void RemoveRows(int first, int count);
   int FindRow(const scada::Event& event) const;
 
@@ -96,7 +96,7 @@ class EventTableModel : public aui::TableModel,
 
   void UpdateAffectedRows(const scada::NodeId& node_id);
 
-  void OnCurrentEvents(base::span<const scada::Event* const> events);
+  void OnCurrentEvents(std::span<const scada::Event* const> events);
   void OnLocalEvent(const scada::Event& event);
 
   // NodeRefObserver

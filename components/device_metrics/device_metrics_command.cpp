@@ -1,19 +1,19 @@
 #include "components/device_metrics/device_metrics_command.h"
 
+#include "aui/color.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "components/device_metrics/node_collector.h"
 #include "components/sheet/sheet_component.h"
-#include "aui/color.h"
+#include "controller/window_info.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "controller/window_info.h"
 
 WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     std::u16string title,
-    base::span<const NodeRef> devices) {
+    std::span<const NodeRef> devices) {
   WindowDefinition win(kSheetWindowInfo);
   win.title = std::move(title);
 

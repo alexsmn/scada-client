@@ -1,5 +1,7 @@
 #include "components/device_metrics/node_collector.h"
 
+#include "base/span_util.h"
+
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -7,7 +9,7 @@ namespace {
 
 std::vector<NodeRef> JoinAll(
     const NodeRef& parent_node,
-    base::span<const std::vector<NodeRef>> recursive_children) {
+    std::span<const std::vector<NodeRef>> recursive_children) {
   std::vector<NodeRef> result;
   result.push_back(parent_node);
   for (auto& part : recursive_children) {
@@ -65,8 +67,8 @@ promise<std::vector<NodeRef>> CollectNodesRecursive(
       });
 }
 
-std::set<NodeRef> CollectTypeDefinitions(base::span<const NodeRef> devices) {
-  return devices |
+std::set<NodeRef> CollectTypeDefinitions(std::span<const NodeRef> devices) {
+  return AsBaseSpan(devices) |
          boost::adaptors::transformed(std::mem_fn(&NodeRef::type_definition)) |
          to_set;
 }
@@ -83,7 +85,7 @@ auto GetDataVariableDecls(const NodeRef& type_defintion) {
          boost::adaptors::transformed(&GetDataVariables) | flattened;
 }
 
-std::set<NodeRef> CollectVariables(base::span<const NodeRef> devices) {
+std::set<NodeRef> CollectVariables(std::span<const NodeRef> devices) {
   return CollectTypeDefinitions(devices) |
          boost::adaptors::transformed(&GetDataVariableDecls) | flattened |
          to_set;
