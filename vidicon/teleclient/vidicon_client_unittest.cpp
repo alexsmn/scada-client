@@ -3,8 +3,9 @@
 #include "base/string_piece_util.h"
 #include "base/test/test_executor.h"
 #include "base/win/scoped_bstr.h"
+#include "model/namespaces.h"
 #include "model/node_id_util.h"
-#include "model/opc_node_ids.h"
+#include "opc/opc_node_ids.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_property.h"
@@ -60,10 +61,8 @@ TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
   const std::wstring_view address =
       LR"(VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
 
-  EXPECT_CALL(
-      timed_data_service_,
-      GetNodeTimedData(MakeNestedNodeId(opc::id::OPC, ToString(address)),
-                       /*aggregation*/ _));
+  EXPECT_CALL(timed_data_service_, GetNodeTimedData(opc::MakeOpcNodeId(address),
+                                                    /*aggregation*/ _));
 
   auto data_point = CreateDataPoint(address);
 

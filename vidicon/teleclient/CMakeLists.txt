@@ -13,6 +13,6 @@ target_link_libraries(client_vidicon_teleclient PRIVATE
 target_include_directories(client_vidicon_teleclient_unittests PRIVATE "..")
 
 target_link_libraries(client_vidicon_teleclient_unittests PRIVATE
+  scada_common_opc
   timed_data
-  OPC::opc
 )
