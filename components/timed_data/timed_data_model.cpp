@@ -2,7 +2,8 @@
 
 #include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
-#include "common/data_value_util.h"
+#include "common/data_value_traits.h"
+#include "common/timed_data_util.h"
 #include "scada/date_time.h"
 #include "timed_data/timed_data_property.h"
 

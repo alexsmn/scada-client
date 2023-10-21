@@ -5,8 +5,8 @@
 #include "contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "export_model.h"
 #include "controller/selection_model.h"
+#include "export_model.h"
 
 #include <memory>
 
@@ -17,12 +17,12 @@ class Table;
 
 class TimedDataModel;
 
-class TimedDataView : protected ControllerContext,
-                      public Controller,
-                      public ContentsModel,
-                      public ExportModel {
+class TimedDataController : protected ControllerContext,
+                            public Controller,
+                            public ContentsModel,
+                            public ExportModel {
  public:
-  explicit TimedDataView(const ControllerContext& context);
+  explicit TimedDataController(const ControllerContext& context);
 
   // Controller
   virtual UiView* Init(const WindowDefinition& definition) override;

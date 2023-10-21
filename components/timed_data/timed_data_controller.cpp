@@ -1,4 +1,4 @@
-﻿#include "components/timed_data/timed_data_view.h"
+﻿#include "components/timed_data/timed_data_controller.h"
 
 #include "aui/models/mirror_table_model.h"
 #include "aui/table.h"
@@ -6,14 +6,14 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "controller/controller_delegate.h"
+#include "controller/window_definition.h"
+#include "controller/window_definition_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "services/dialog_service.h"
 #include "services/profile.h"
 #include "string_const.h"
-#include "controller/window_definition.h"
-#include "controller/window_definition_util.h"
 
 #if defined(UI_QT)
 #include <QHeaderView>
@@ -32,12 +32,12 @@ const aui::TableColumn s_columns[] = {
 
 }  // namespace
 
-// TimedDataView
+// TimedDataController
 
-TimedDataView::TimedDataView(const ControllerContext& context)
+TimedDataController::TimedDataController(const ControllerContext& context)
     : ControllerContext{context} {}
 
-UiView* TimedDataView::Init(const WindowDefinition& definition) {
+UiView* TimedDataController::Init(const WindowDefinition& definition) {
   model_ = std::make_shared<TimedDataModel>(
       TimedDataModelContext{timed_data_service_});
 
@@ -100,7 +100,7 @@ UiView* TimedDataView::Init(const WindowDefinition& definition) {
   return view_->CreateParentIfNecessary();
 }
 
-void TimedDataView::Save(WindowDefinition& definition) {
+void TimedDataController::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
   item.SetString("path", model_->timed_data().formula());
   SaveTimeRange(definition, model_->GetTimeRange());
@@ -113,7 +113,7 @@ std::string GetTimedDataUnits(const TimedDataSpec& spec) {
       .get_or(std::string());
 }
 
-void TimedDataView::UpdateColumnTitles() {
+void TimedDataController::UpdateColumnTitles() {
   /*int index = view_->FindVisibleColumn(CID_VALUE);
   if (index == -1)
     return;
@@ -124,32 +124,32 @@ void TimedDataView::UpdateColumnTitles() {
   units.c_str()); view_->SetVisibleColumnTitle(index, title);*/
 }
 
-std::u16string TimedDataView::MakeTitle() const {
+std::u16string TimedDataController::MakeTitle() const {
   return model_->timed_data().GetTitle();
 }
 
-void TimedDataView::AddContainedItem(const scada::NodeId& node_id,
-                                     unsigned flags) {
+void TimedDataController::AddContainedItem(const scada::NodeId& node_id,
+                                           unsigned flags) {
   model_->SetFormula(MakeNodeIdFormula(node_id));
 }
 
-CommandHandler* TimedDataView::GetCommandHandler(unsigned command_id) {
+CommandHandler* TimedDataController::GetCommandHandler(unsigned command_id) {
   return command_registry_.GetCommandHandler(command_id);
 }
 
-bool TimedDataView::IsWorking() const {
+bool TimedDataController::IsWorking() const {
   return !model_->timed_data().ready();
 }
 
-TimeModel* TimedDataView::GetTimeModel() {
+TimeModel* TimedDataController::GetTimeModel() {
   return model_.get();
 }
 
-ExportModel::ExportData TimedDataView::GetExportData() {
+ExportModel::ExportData TimedDataController::GetExportData() {
   return TableExportData{*mirror_model_, view_->columns()};
 }
 
-std::optional<OpenContext> TimedDataView::GetOpenContext() const {
+std::optional<OpenContext> TimedDataController::GetOpenContext() const {
   const auto& node = model_->timed_data().node();
   if (!node)
     return std::nullopt;

@@ -1,6 +1,7 @@
 #include "components/graph/metrix_data_source.h"
 
-#include "common/data_value_util.h"
+#include "common/data_value_traits.h"
+#include "common/timed_data_util.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_property.h"
@@ -168,8 +169,12 @@ bool MetrixDataSource::XToData(double& x, scada::DataValue& val) const {
   if (!connected())
     return false;
 
-  val = timed_data_.GetValueAt(base::Time::FromDoubleT(x));
-  return !val.is_null();
+  if (const auto* value = timed_data_.GetValueAt(base::Time::FromDoubleT(x))) {
+    val = *value;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 std::unique_ptr<views::PointEnumerator> MetrixDataSource::EnumPoints(

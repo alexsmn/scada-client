@@ -1,6 +1,6 @@
 ﻿#include "components/timed_data/timed_data_component.h"
 
-#include "components/timed_data/timed_data_view.h"
+#include "components/timed_data/timed_data_controller.h"
 #include "controller/controller_registry.h"
 
 const WindowInfo kTimedDataWindowInfo = {
@@ -12,4 +12,4 @@ const WindowInfo kTimedDataWindowInfo = {
     0,
     0};
 
-REGISTER_CONTROLLER(TimedDataView, kTimedDataWindowInfo);
+REGISTER_CONTROLLER(TimedDataController, kTimedDataWindowInfo);

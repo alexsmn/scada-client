@@ -7,12 +7,12 @@
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "components/summary/summary_model_util.h"
+#include "controller/window_definition.h"
+#include "controller/window_definition_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
-#include "controller/window_definition.h"
-#include "controller/window_definition_util.h"
 
 #include <boost/locale/encoding_utf.hpp>
 
@@ -121,12 +121,11 @@ void SummaryModel::Column::OnPropertyChanged(const PropertySet& properties) {
 
 scada::DataValue SummaryModel::Column::GetDataValue(int row) const {
   auto time = model_.GetRowTime(row);
-  auto data_value = timed_data_.GetValueAt(time);
-  if (data_value.is_null())
+  const auto* value = timed_data_.GetValueAt(time);
+  if (!value || value->source_timestamp < time) {
     return {};
-  if (data_value.source_timestamp < time)
-    return {};
-  return data_value;
+  }
+  return *value;
 }
 
 bool SummaryModel::Column::IsReady(int row) const {

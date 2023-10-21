@@ -2,6 +2,7 @@
 
 #include "base/format_time.h"
 #include "base/minute_time.h"
+#include "base/optional_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/graph/metrix_data_source.h"
 
@@ -97,7 +98,8 @@ scada::DataValue MetrixGraph::Legend::GetCurrentValue(
   const views::GraphCursor* cursor = graph().selected_cursor();
   if (cursor && !cursor->axis_->is_vertical()) {
     base::Time cursor_time = base::Time::FromDoubleT(cursor->position_);
-    return data_source.timed_data().GetValueAt(cursor_time);
+    return OptionalFromPtr(data_source.timed_data().GetValueAt(cursor_time))
+        .value_or(scada::DataValue{});
   } else {
     return data_source.timed_data().current();
   }
