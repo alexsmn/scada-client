@@ -34,6 +34,7 @@ struct EventTableModelContext {
   CurrentEventModel& current_event_model_;
   HistoricalEventModel& historical_event_model_;
   LocalEventModel& local_event_model_;
+  // If true, then show only current events. No historical events are shown.
   const bool current_events_ = true;
 };
 
@@ -87,6 +88,7 @@ class EventTableModel : public aui::TableModel,
   void RemoveRows(int first, int count);
   int FindRow(const scada::Event& event) const;
 
+  // TODO: Remove this method. Keep only `OnCurrentEvents()`.
   void AckRows(int first, int count);
 
   bool IsEventShown(const scada::Event& event) const;
