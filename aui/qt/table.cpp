@@ -3,7 +3,7 @@
 #include "aui/models/table_model.h"
 #include "aui/qt/table_model_adapter.h"
 #include "base/value_util.h"
-#include "controller/window_definition_util.h"
+#include "profile/window_definition_util.h"
 
 #include <QClipboard>
 #include <QGuiApplication>

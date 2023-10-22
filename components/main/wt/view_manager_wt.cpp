@@ -4,7 +4,7 @@
 #include "common_resources.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager_delegate.h"
-#include "services/page.h"
+#include "profile/page.h"
 #include "controller/window_info.h"
 
 #include <wt/WApplication.h>

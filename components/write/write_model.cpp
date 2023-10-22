@@ -8,7 +8,7 @@
 #include "model/data_items_node_ids.h"
 #include "scada/status.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 namespace {
 const char16_t kDiscreteConfirmationQuestion[] =

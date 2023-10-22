@@ -8,7 +8,7 @@
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 ObjectTreeView::ObjectTreeView(const ControllerContext& context)
     : ConfigurationTreeView{context, CreateConfigurationTreeModel(context),

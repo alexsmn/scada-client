@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common/node_state.h"
 #include "node_service/node_observer.h"
 
 #include <list>
@@ -27,8 +26,8 @@ struct PortfolioManagerContext {
 class PortfolioManager : private PortfolioManagerContext,
                          private NodeRefObserver {
  public:
-  typedef std::list<Portfolio> Portfolios;
-  typedef std::set<PortfolioEvents*> PortfolioEventsSet;
+  using Portfolios = std::list<Portfolio>;
+  using PortfolioEventsSet = std::set<PortfolioEvents*>;
 
   explicit PortfolioManager(PortfolioManagerContext&& context);
   ~PortfolioManager();

@@ -14,11 +14,11 @@
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"

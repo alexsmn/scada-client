@@ -8,7 +8,7 @@
 #include "node_service/node_service.h"
 #include "remote/session_proxy.h"
 #include "services/task_manager.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},

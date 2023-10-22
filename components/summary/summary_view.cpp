@@ -5,7 +5,7 @@
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller/controller_delegate.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "services/dialog_service.h"
 #include "base/time_range.h"
 

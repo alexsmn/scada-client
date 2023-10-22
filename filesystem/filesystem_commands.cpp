@@ -8,7 +8,7 @@
 #include "components/main/opened_view.h"
 #include "components/prompt/prompt_dialog.h"
 #include "controller/contents_model.h"
-#include "controller/window_definition_util.h"
+#include "profile/window_definition_util.h"
 #include "controller/window_info.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/file_util.h"

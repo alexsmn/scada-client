@@ -5,7 +5,7 @@
 #include "components/sheet/sheet_cell.h"
 #include "aui/color.h"
 #include "aui/models/grid_range.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 // SheetColumnModel -----------------------------------------------------------
 

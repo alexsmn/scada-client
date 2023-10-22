@@ -26,7 +26,7 @@
 #include "components/watch/watch_component.h"
 #include "components/write/write_dialog.h"
 #include "controller/selection_model.h"
-#include "controller/window_definition_util.h"
+#include "profile/window_definition_util.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
 #include "filesystem/file_cache.h"

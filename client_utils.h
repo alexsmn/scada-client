@@ -2,7 +2,7 @@
 
 #include "base/promise.h"
 #include "controller/node_id_set.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "node_service/node_ref.h"
 #include "scada/node_id.h"
 

@@ -1,4 +1,4 @@
-﻿#include "services/page.h"
+﻿#include "profile/page.h"
 
 #include "base/base64.h"
 #include "base/files/file_util.h"
@@ -10,11 +10,13 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/utils.h"
 #include "base/value_util.h"
-#include "services/page_layout.h"
-#include "controller/window_definition_util.h"
 #include "controller/window_info.h"
+#include "profile/page_layout.h"
+#include "profile/window_definition_util.h"
 
-#define MAX_TITLE 30
+namespace {
+const size_t kMaxTitleLength = 30;
+}
 
 // Page
 
@@ -119,12 +121,12 @@ std::u16string Page::GetTitle() const {
     if (!title.empty())
       title += u", ";
     title += win.title;
-    if (title.length() >= MAX_TITLE)
+    if (title.length() >= kMaxTitleLength)
       break;
   }
 
-  if (title.length() > MAX_TITLE) {
-    title.erase(MAX_TITLE, title.length() - MAX_TITLE);
+  if (title.length() > kMaxTitleLength) {
+    title.erase(kMaxTitleLength, title.length() - kMaxTitleLength);
     title += u"...";
   }
 

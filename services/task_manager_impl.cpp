@@ -9,7 +9,7 @@
 #include "scada/node_management_service.h"
 #include "scada/status_promise.h"
 #include "services/local_events.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "services/progress_host.h"
 
 using namespace std::chrono_literals;

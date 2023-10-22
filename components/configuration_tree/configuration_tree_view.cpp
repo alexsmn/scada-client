@@ -7,7 +7,7 @@
 #include "controller/controller_delegate.h"
 #include "item_drag_data.h"
 #include "node_service/node_util.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 namespace {
 

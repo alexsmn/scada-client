@@ -15,7 +15,7 @@
 #include "node_service/node_service.h"
 #include "scada/session_service.h"
 #include "controller/selection_model.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>

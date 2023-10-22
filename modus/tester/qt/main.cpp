@@ -2,7 +2,7 @@
 #include "base/qt/message_loop_qt.h"
 #include "base/test/test_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "modus/modus_component.h"

@@ -50,7 +50,7 @@
 #include "services/create_tree.h"
 #include "services/event_dispatcher.h"
 #include "services/local_events.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "services/progress_host_impl.h"
 #include "services/properties/property_service.h"
 #include "services/speech.h"

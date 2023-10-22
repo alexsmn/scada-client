@@ -14,7 +14,7 @@
 #include "node_service/node_util.h"
 #include "controller/selection_model.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "string_const.h"
 
 // TableView

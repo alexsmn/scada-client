@@ -10,7 +10,7 @@
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "remote/session_proxy.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "services/task_manager.h"
 
 #if defined(UI_QT)

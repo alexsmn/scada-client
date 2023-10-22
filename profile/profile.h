@@ -5,8 +5,8 @@
 #include "base/files/file_path.h"
 #include "base/time/time.h"
 #include "export_util.h"
+#include "profile/page.h"
 #include "scada/node_id.h"
-#include "services/page.h"
 
 #include <map>
 
@@ -112,6 +112,9 @@ class Profile {
 
   CsvExportParams csv_export_params;
   std::filesystem::path csv_export_dir;
+
+  using Writer = std::function<void(base::Value& data)>;
+  Writer writers;
 
  private:
   void Load(const base::Value& data,

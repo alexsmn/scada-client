@@ -4,7 +4,7 @@
 #include "common_resources.h"
 #include "components/main/action_manager.h"
 #include "events/node_event_provider.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 #include <mmsystem.h>
 

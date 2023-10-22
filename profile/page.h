@@ -1,12 +1,12 @@
 #pragma once
 
-#include "base/files/file_path.h"
-#include "services/page_layout.h"
-#include "controller/window_definition.h"
+#include "base/values.h"
+#include "profile/page_layout.h"
+#include "profile/window_definition.h"
 
 class Page {
  public:
-  Page() : id(0) {}
+  Page() = default;
 
   Page(const Page& source);
   Page& operator=(const Page& source);
@@ -26,7 +26,7 @@ class Page {
   void Load(const base::Value& value);
   base::Value Save(bool current) const;
 
-  int id;
+  int id = 0;
   std::u16string title;
 
   PageLayout layout;
@@ -34,6 +34,6 @@ class Page {
  private:
   int NewWindowId();
 
-  typedef std::vector<std::unique_ptr<WindowDefinition>> Windows;
+  using Windows = std::vector<std::unique_ptr<WindowDefinition>>;
   Windows windows_;
 };

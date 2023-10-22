@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/observer_list.h"
-#include "services/page.h"
+#include "profile/page.h"
 
 #include <list>
 

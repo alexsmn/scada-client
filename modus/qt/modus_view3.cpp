@@ -1,6 +1,6 @@
 #include "modus/qt/modus_view3.h"
 
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
 #include "timed_data/timed_data_spec.h"
 

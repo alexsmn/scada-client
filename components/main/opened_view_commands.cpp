@@ -36,7 +36,7 @@
 #include "services/create_tree.h"
 #include "services/dialog_service.h"
 #include "services/print_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "services/task_manager.h"
 #include "controller/time_model.h"
 #include "window_definition_builder.h"

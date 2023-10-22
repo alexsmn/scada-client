@@ -6,7 +6,7 @@
 #include "events/node_event_provider_mock.h"
 #include "node_service/test/test_node_model.h"
 #include "services/dialog_service_mock.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_service_mock.h"

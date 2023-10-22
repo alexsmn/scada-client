@@ -4,7 +4,7 @@
 #include "export_util.h"
 #include "qt/dialog_util.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 #include <QMessageBox>
 

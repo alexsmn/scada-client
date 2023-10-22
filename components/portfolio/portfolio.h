@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/node_state.h"
+#include "scada/node_id.h"
 
 #include <set>
 #include <string>
@@ -9,6 +9,6 @@ class Portfolio {
  public:
   std::u16string name;
 
-  typedef std::set<scada::NodeId> Items;
+  using Items = std::set<scada::NodeId>;
   Items items;
 };

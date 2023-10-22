@@ -1,4 +1,4 @@
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 #include "base/format.h"
 #include "base/string_piece_util.h"

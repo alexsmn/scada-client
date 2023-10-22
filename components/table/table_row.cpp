@@ -10,7 +10,7 @@
 #include "events/node_event_provider.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
 

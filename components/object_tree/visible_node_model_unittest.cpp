@@ -1,7 +1,7 @@
 #include "components/object_tree/visible_node_model.h"
 
 #include "base/test/test_executor.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "timed_data/timed_data_service_mock.h"
 
 #include <gmock/gmock.h>

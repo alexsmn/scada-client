@@ -1,9 +1,9 @@
 #include "modus/modus_util.h"
 
 #include "base/strings/string_util.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 bool IsModus2(const WindowDefinition& definition, Profile& profile) {
   bool modus2 = profile.modus2;

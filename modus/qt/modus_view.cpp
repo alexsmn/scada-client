@@ -4,7 +4,7 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "modus/activex/modus.h"
 #include "filesystem/file_util.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 #include <QAxWidget>
 #include <QDesktopServices>

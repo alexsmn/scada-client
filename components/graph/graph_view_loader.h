@@ -3,8 +3,8 @@
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
-#include "controller/window_definition_util.h"
-#include "services/profile.h"
+#include "profile/window_definition_util.h"
+#include "profile/profile.h"
 
 struct GraphViewLoader {
   void Read() {

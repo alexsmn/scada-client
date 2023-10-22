@@ -2,7 +2,7 @@
 
 #include "aui/color.h"
 
-#include <windows.h>
+#include <Windows.h>
 
 namespace aui {
 

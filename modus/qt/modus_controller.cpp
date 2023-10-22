@@ -9,7 +9,7 @@
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
@@ -19,7 +19,7 @@
 #include "modus/qt/modus_view2.h"
 #include "modus/qt/modus_view3.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "web/web_util.h"
 
 #include <QScrollArea>

@@ -1,9 +1,9 @@
-#include "services/page_layout.h"
+#include "profile/page_layout.h"
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/value_util.h"
-#include "controller/window_definition_util.h"
+#include "profile/window_definition_util.h"
 
 namespace {
 const char* kDockNames[4] = {"bottom", "top", "left", "right"};

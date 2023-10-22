@@ -8,7 +8,7 @@
 #include "aui/models/status_bar_model_mock.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "test/app_environment.h"
 
 #if defined(UI_QT)

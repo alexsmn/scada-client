@@ -6,13 +6,13 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "controller/controller_delegate.h"
-#include "controller/window_definition.h"
-#include "controller/window_definition_util.h"
+#include "profile/window_definition.h"
+#include "profile/window_definition_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "services/dialog_service.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "string_const.h"
 
 #if defined(UI_QT)

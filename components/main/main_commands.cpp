@@ -19,7 +19,7 @@
 #include "scada/session_service.h"
 #include "services/dialog_service.h"
 #include "services/local_events.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "services/speech.h"
 #include "controller/window_info.h"
 

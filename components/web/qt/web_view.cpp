@@ -4,7 +4,7 @@
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "controller/controller_registry.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
 #include "web/web_util.h"

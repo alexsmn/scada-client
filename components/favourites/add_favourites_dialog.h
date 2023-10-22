@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 class DialogService;
 class Favourites;

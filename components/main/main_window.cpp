@@ -15,7 +15,7 @@
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 #include "simple_menu_command_handler.h"
 #include "controller/window_info.h"
 

@@ -4,7 +4,7 @@
 #include "common/aggregation.h"
 #include "common_resources.h"
 #include "components/summary/summary_component.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "node_service/node_service_mock.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_service_mock.h"

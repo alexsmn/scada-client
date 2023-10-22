@@ -15,6 +15,8 @@ include_directories(client
 add_subdirectory(base)
 add_subdirectory(aui)
 add_subdirectory(clipboard)
+add_subdirectory(profile)
+# `controller` depends on `profile`.
 add_subdirectory(controller)
 add_subdirectory(filesystem)
 add_subdirectory(web)
@@ -54,6 +56,7 @@ list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
 list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
 list(FILTER PATHS EXCLUDE REGEX "/client/filesystem/")
 list(FILTER PATHS EXCLUDE REGEX "/client/modus/")
+list(FILTER PATHS EXCLUDE REGEX "/client/profile/")
 list(FILTER PATHS EXCLUDE REGEX "/client/vidicon/")
 list(FILTER PATHS EXCLUDE REGEX "main.cpp")
 

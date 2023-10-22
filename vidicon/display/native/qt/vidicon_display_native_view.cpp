@@ -3,7 +3,7 @@
 #include "common_resources.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
 #include "timed_data/timed_data_spec.h"
 #include "vidicon/display/native/qt/display_widget.h"

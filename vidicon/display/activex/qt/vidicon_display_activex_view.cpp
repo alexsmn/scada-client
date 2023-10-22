@@ -1,7 +1,7 @@
 ﻿#include "vidicon/display/activex/qt/vidicon_display_activex_view.h"
 
 #include "base/win/scoped_bstr.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
 #include "vidicon/display/activex/telecontrolview.h"
 #include "vidicon/teleclient/vidicon_client.h"

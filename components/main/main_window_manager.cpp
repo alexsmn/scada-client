@@ -1,7 +1,7 @@
 #include "components/main/main_window_manager.h"
 
 #include "components/main/main_window.h"
-#include "services/profile.h"
+#include "profile/profile.h"
 
 MainWindowManager::MainWindowManager(MainWindowManagerContext&& context)
     : MainWindowManagerContext{std::move(context)} {}

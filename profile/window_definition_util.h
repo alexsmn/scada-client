@@ -1,9 +1,9 @@
 #pragma once
 
 #include "base/json.h"
-#include "scada/node_id.h"
 #include "base/time_range.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
+#include "scada/node_id.h"
 
 #include <optional>
 #include <string_view>

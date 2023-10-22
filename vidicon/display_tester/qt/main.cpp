@@ -2,7 +2,7 @@
 #include "base/qt/message_loop_qt.h"
 #include "base/test/test_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "services/atl_module.h"
 #include "test/display_tester/qt/display_tester_state.h"
 #include "test/display_tester/qt/display_tester_window.h"

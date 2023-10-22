@@ -7,9 +7,9 @@
 #include "base/time_range.h"
 #include "base/time_utils.h"
 #include "base/value_util.h"
-#include "controller/window_definition.h"
 #include "controller/window_info.h"
 #include "model/node_id_util.h"
+#include "profile/window_definition.h"
 #include "scada/node_id.h"
 
 #include <boost/range/adaptor/transformed.hpp>

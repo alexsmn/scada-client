@@ -2,7 +2,7 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "base/win/scoped_hdc.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
 #include "libmodus/gfx/canvas.h"
 #include "libmodus/render/renderer.h"

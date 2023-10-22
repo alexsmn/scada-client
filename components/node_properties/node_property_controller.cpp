@@ -9,7 +9,7 @@
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
-#include "controller/window_definition.h"
+#include "profile/window_definition.h"
 
 // NodePropertyController
 
