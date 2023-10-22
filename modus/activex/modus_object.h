@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/modus/activex/modus.h"
+#include "modus/activex/modus.h"
 
 #include <memory>
 #include <vector>

@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/files/file_path.h"
-#include "components/modus/libmodus/modus_binding2.h"
-#include "components/modus/modus_view_wrapper.h"
+#include "modus/libmodus/modus_binding2.h"
+#include "modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"
 #include "libmodus/render/renderer_delegate.h"
 #include "timed_data/timed_data_spec.h"

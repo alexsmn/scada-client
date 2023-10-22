@@ -1,7 +1,7 @@
 #pragma once
 
-#include "components/modus/activex/modus_document.h"
-#include "components/modus/modus_view_wrapper.h"
+#include "modus/activex/modus_document.h"
+#include "modus/modus_view_wrapper.h"
 
 #include <QWidget>
 #include <filesystem>

@@ -14,15 +14,15 @@
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
-#include "services/dialog_service.h"
-#include "filesystem/file_cache.h"
-#include "services/profile.h"
 #include "controller/window_definition.h"
 #include "controller/window_info.h"
+#include "filesystem/file_cache.h"
+#include "services/dialog_service.h"
+#include "services/profile.h"
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"
-#include "components/modus/modus_component.h"
+#include "modus/modus_component.h"
 #include "vidicon/display/vidicon_display_component.h"
 #endif
 

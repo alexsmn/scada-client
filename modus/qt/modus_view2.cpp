@@ -1,11 +1,9 @@
-#include "components/modus/qt/modus_view2.h"
+#include "modus/qt/modus_view2.h"
 
 #include "base/win/scoped_gdi_object.h"
 #include "base/win/scoped_hdc.h"
-#include "components/modus/libmodus/modus_binding2.h"
-#include "components/modus/libmodus/modus_module2.h"
-#include "filesystem/file_util.h"
 #include "controller/window_definition.h"
+#include "filesystem/file_util.h"
 #include "libmodus/gfx/canvas.h"
 #include "libmodus/render/renderer.h"
 #include "libmodus/render/shape.h"
@@ -14,6 +12,8 @@
 #include "libmodus/scheme/scheme.h"
 #include "libmodus/scheme/serialization.h"
 #include "libmodus/scheme/value.h"
+#include "modus/libmodus/modus_binding2.h"
+#include "modus/libmodus/modus_module2.h"
 
 #include <QMouseEvent>
 #include <QPaintEngine>

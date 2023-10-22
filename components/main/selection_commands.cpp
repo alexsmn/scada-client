@@ -49,7 +49,7 @@
 
 #if !defined(UI_WT)
 #include "components/graph/graph_component.h"
-#include "components/modus/modus_component.h"
+#include "modus/modus_component.h"
 #endif
 
 namespace {

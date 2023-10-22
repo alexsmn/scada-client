@@ -1,12 +1,12 @@
-#include "components/modus/libmodus/modus_binding2.h"
+#include "modus/libmodus/modus_binding2.h"
 
 #include "base/strings/sys_string_conversions.h"
-#include "components/modus/libmodus/modus_module2.h"
-#include "components/modus/libmodus/modus_style_library2.h"
 #include "common/node_state.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
 #include "libmodus/scheme/value.h"
+#include "modus/libmodus/modus_module2.h"
+#include "modus/libmodus/modus_style_library2.h"
 
 namespace modus {
 
@@ -50,11 +50,10 @@ ModusBinding2::ModusBinding2(Delegate& delegate,
                              const std::wstring& binding,
                              TimedDataService& timed_data_service)
     : delegate_(delegate), shape_(shape), styles_(0) {
-  data_point_.property_change_handler =
-      [this](const PropertySet& properties) {
-        if (Update())
-          delegate_.SchedulePaintShape(shape_);
-      };
+  data_point_.property_change_handler = [this](const PropertySet& properties) {
+    if (Update())
+      delegate_.SchedulePaintShape(shape_);
+  };
 
   data_point_.event_change_handler = [this] {
     if (Update())

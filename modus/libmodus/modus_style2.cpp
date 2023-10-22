@@ -1,4 +1,4 @@
-#include "components/modus/libmodus/modus_style2.h"
+#include "modus/libmodus/modus_style2.h"
 
 #include "libmodus/gfx/gdip.h"
 

@@ -1,7 +1,7 @@
-#include "components/modus/libmodus/modus_style_library2.h"
+#include "modus/libmodus/modus_style_library2.h"
 
 #include "base/memory/singleton.h"
-#include "components/modus/libmodus/modus_style2.h"
+#include "modus/libmodus/modus_style2.h"
 #include "libmodus/gfx/gdip.h"
 
 ModusStyleLibrary2::ModusStyleLibrary2(BlinkerManager& blinker_manager) {

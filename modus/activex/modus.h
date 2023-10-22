@@ -2,11 +2,11 @@
 
 #pragma warning(push, 2)
 
-#include "components/modus/activex/sdecore.h"
+#include "modus/activex/sdecore.h"
 
 using SDECore::ISDEDocument50;
 
-#include "components/modus/activex/htsde2.h"
+#include "modus/activex/htsde2.h"
 
 #pragma warning(pop)
 

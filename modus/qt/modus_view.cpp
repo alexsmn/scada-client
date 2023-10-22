@@ -1,8 +1,8 @@
-﻿#include "components/modus/qt/modus_view.h"
+﻿#include "modus/qt/modus_view.h"
 
 #include "base/bind.h"
 #include "base/threading/sequenced_task_runner_handle.h"
-#include "components/modus/activex/modus.h"
+#include "modus/activex/modus.h"
 #include "filesystem/file_util.h"
 #include "controller/window_definition.h"
 

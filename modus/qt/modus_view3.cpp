@@ -1,7 +1,7 @@
-#include "components/modus/qt/modus_view3.h"
+#include "modus/qt/modus_view3.h"
 
-#include "filesystem/file_util.h"
 #include "controller/window_definition.h"
+#include "filesystem/file_util.h"
 #include "timed_data/timed_data_spec.h"
 
 #include <QEvent>

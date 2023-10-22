@@ -1,13 +1,13 @@
-#include "components/modus/activex/modus_document.h"
+#include "modus/activex/modus_document.h"
 
 #include "base/memory_istream.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
-#include "components/modus/activex/modus.h"
-#include "components/modus/activex/modus_element.h"
-#include "components/modus/activex/modus_loader.h"
-#include "components/modus/activex/modus_object.h"
+#include "modus/activex/modus.h"
+#include "modus/activex/modus_element.h"
+#include "modus/activex/modus_loader.h"
+#include "modus/activex/modus_object.h"
 
 #include <atlbase.h>
 

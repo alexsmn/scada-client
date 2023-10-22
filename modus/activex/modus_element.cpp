@@ -1,4 +1,4 @@
-﻿#include "components/modus/activex/modus_element.h"
+﻿#include "modus/activex/modus_element.h"
 
 #include "base/format.h"
 #include "base/string_piece_util.h"
@@ -7,10 +7,10 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
-#include "components/modus/activex/modus_object.h"
 #include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "modus/activex/modus_object.h"
 
 namespace modus {
 

@@ -2,7 +2,7 @@
 
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
-#include "components/modus/activex/modus.h"
+#include "modus/activex/modus.h"
 #include "timed_data/timed_data_spec.h"
 
 #include <string>

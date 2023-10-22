@@ -2,7 +2,7 @@
 
 #include "base/boost_log.h"
 #include "common/aliases.h"
-#include "components/modus/activex/modus.h"
+#include "modus/activex/modus.h"
 #include "filesystem/file_cache.h"
 
 #include <string>

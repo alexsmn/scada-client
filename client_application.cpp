@@ -58,7 +58,7 @@
 #include "timed_data/timed_data_service_impl.h"
 
 #if !defined(UI_WT)
-#include "components/modus/libmodus/modus_module2.h"
+#include "modus/libmodus/modus_module2.h"
 #include "vidicon/teleclient/vidicon_client.h"
 #endif
 
