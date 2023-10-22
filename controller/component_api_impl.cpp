@@ -1,4 +1,4 @@
-#include "component_api_impl.h"
+#include "controller/component_api_impl.h"
 
 void ComponentApiImpl::RegisterControllerFactory(
     const WindowInfo& window_info,

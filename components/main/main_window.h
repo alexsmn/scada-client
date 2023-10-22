@@ -3,7 +3,7 @@
 #include "base/observer_list.h"
 #include "components/main/main_window_context.h"
 #include "components/main/view_manager_delegate.h"
-#include "contents_observer.h"
+#include "controller/contents_observer.h"
 
 namespace aui {
 class MenuModel;

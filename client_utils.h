@@ -1,10 +1,10 @@
 #pragma once
 
 #include "base/promise.h"
-#include "scada/node_id.h"
-#include "node_id_set.h"
-#include "node_service/node_ref.h"
+#include "controller/node_id_set.h"
 #include "controller/window_definition.h"
+#include "node_service/node_ref.h"
+#include "scada/node_id.h"
 
 #include <string>
 

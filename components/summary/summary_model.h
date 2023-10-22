@@ -3,12 +3,12 @@
 #include "base/boost_log.h"
 #include "base/time/time.h"
 #include "common/node_state.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "aui/models/grid_model.h"
 #include "scada/aggregate_filter.h"
-#include "export_model.h"
+#include "controller/export_model.h"
 #include "node_service/node_ref.h"
-#include "time_model.h"
+#include "controller/time_model.h"
 
 #include <memory>
 

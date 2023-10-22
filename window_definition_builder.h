@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
-#include "node_id_set.h"
+#include "controller/node_id_set.h"
 #include "controller/window_definition.h"
 
 class NodeRef;

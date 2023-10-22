@@ -1,8 +1,8 @@
 #pragma once
 
 #include "aui/color.h"
-#include "command_registry.h"
-#include "contents_model.h"
+#include "controller/command_registry.h"
+#include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"

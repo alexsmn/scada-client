@@ -4,7 +4,7 @@
 #include "base/format.h"
 #include "base/range_util.h"
 #include "base/strings/sys_string_conversions.h"
-#include "contents_observer.h"
+#include "controller/contents_observer.h"
 #include "scada/event.h"
 #include "scada/node_management_service.h"
 #include "model/devices_node_ids.h"

@@ -3,7 +3,7 @@
 #include "base/command_line.h"
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
-#include "command_handler.h"
+#include "controller/command_handler.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
 #include "components/main/context_menu_model.h"

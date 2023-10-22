@@ -1,12 +1,12 @@
 #pragma once
 
 #include "aui/key_codes.h"
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "common_resources.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "export_model.h"
+#include "controller/export_model.h"
 #include "controller/selection_model.h"
 
 namespace aui {

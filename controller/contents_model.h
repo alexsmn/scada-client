@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/node_state.h"
-#include "contents_observer.h"
+#include "controller/contents_observer.h"
 #include "aui/types.h"
 
 class ContentsObserver;

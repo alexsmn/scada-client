@@ -2,7 +2,7 @@
 
 #include "aui/types.h"
 #include "base/executor_timer.h"
-#include "command_handler.h"
+#include "controller/command_handler.h"
 #include "components/main/controller_factory.h"
 #include "controller/controller_delegate.h"
 #include "controller/window_definition.h"

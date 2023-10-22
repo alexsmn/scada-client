@@ -1,7 +1,7 @@
 #include "components/debugger/qt/debugger_qt.h"
 
 #include "aui/table.h"
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "common_resources.h"
 #include "components/debugger/debugger_context.h"
 #include "components/debugger/request_table_model.h"

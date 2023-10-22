@@ -1,4 +1,4 @@
-#include "window_definition.h"
+#include "controller/window_definition.h"
 
 #include "base/format.h"
 #include "base/string_piece_util.h"
@@ -8,7 +8,7 @@
 #include "base/struct_writer.h"
 #include "base/value_util.h"
 #include "base/values.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include "base/debug_util-inl.h"
 

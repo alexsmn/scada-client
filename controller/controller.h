@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/types.h"
-#include "open_context.h"
+#include "controller/open_context.h"
 
 #include <cassert>
 #include <optional>

@@ -5,7 +5,7 @@
 #include "components/object_tree/object_tree_component.h"
 #include "controller/controller_mock.h"
 #include "controller/controller_registry.h"
-#include "window_info.h"
+#include "controller/window_info.h"
 
 #include <gmock/gmock.h>
 

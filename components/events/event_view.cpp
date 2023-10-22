@@ -14,7 +14,7 @@
 #include "components/events/local_event_model.h"
 #include "components/prompt/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
-#include "contents_observer.h"
+#include "controller/contents_observer.h"
 #include "controller/controller_delegate.h"
 #include "controller/window_definition_util.h"
 #include "model/node_id_util.h"

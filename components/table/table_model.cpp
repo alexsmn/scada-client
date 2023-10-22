@@ -5,8 +5,8 @@
 #include "base/utils.h"
 #include "common_resources.h"
 #include "components/table/table_row.h"
+#include "controller/node_id_set.h"
 #include "model/data_items_node_ids.h"
-#include "node_id_set.h"
 #include "services/dialog_service.h"
 
 namespace {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/node_state.h"
-#include "node_id_set.h"
+#include "controller/node_id_set.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "timed_data/timed_data_spec.h"

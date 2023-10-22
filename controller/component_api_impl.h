@@ -1,6 +1,6 @@
 #pragma once
 
-#include "component_api.h"
+#include "controller/component_api.h"
 
 class ComponentApiImpl : public ComponentApi {
  public:

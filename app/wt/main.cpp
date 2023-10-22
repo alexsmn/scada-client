@@ -1,4 +1,4 @@
-#include "client_application.h"
+#include "app/client_application.h"
 
 #include "base/at_exit.h"
 #include "base/bind_util.h"

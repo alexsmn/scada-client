@@ -1,12 +1,12 @@
 #pragma once
 
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "components/timed_data/timed_data_model.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
-#include "export_model.h"
+#include "controller/export_model.h"
 
 #include <memory>
 

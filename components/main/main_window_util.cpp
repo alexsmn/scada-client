@@ -9,7 +9,7 @@
 #include "components/node_table/node_table_component.h"
 #include "components/table/table_component.h"
 #include "components/watch/watch_component.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "controller/window_info.h"
 #include "filesystem/filesystem_commands.h"
 #include "model/data_items_node_ids.h"

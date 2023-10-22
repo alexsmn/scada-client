@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/promise.h"
-#include "command_handler.h"
-#include "command_registry.h"
+#include "controller/command_handler.h"
+#include "controller/command_registry.h"
 
 #include <functional>
 #include <memory>

@@ -21,7 +21,7 @@
 #include "components/time_range/time_range_dialog.h"
 #include "controller/controller.h"
 #include "controller/controller_registry.h"
-#include "export_model.h"
+#include "controller/export_model.h"
 #include "export_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -38,7 +38,7 @@
 #include "services/print_service.h"
 #include "services/profile.h"
 #include "services/task_manager.h"
-#include "time_model.h"
+#include "controller/time_model.h"
 #include "window_definition_builder.h"
 
 #if defined(UI_QT)

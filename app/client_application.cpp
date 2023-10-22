@@ -1,4 +1,4 @@
-﻿#include "client_application.h"
+﻿#include "app/client_application.h"
 
 #include "base/blinker.h"
 #include "base/boost_log.h"
@@ -17,7 +17,6 @@
 #include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
 #include "common/master_data_services.h"
-#include "component_api_impl.h"
 #include "components/debugger/debugger.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
@@ -32,6 +31,7 @@
 #include "components/main/selection_commands.h"
 #include "components/main/status_bar_model_impl.h"
 #include "components/portfolio/portfolio_manager.h"
+#include "controller/component_api_impl.h"
 #include "controller/controller_context.h"
 #include "controller/window_info.h"
 #include "events/event_fetcher.h"

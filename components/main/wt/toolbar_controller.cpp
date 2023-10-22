@@ -1,7 +1,7 @@
 #include "components/main/wt/toolbar_controller.h"
 
 #include "base/executor.h"
-#include "command_handler.h"
+#include "controller/command_handler.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)

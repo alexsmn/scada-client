@@ -4,7 +4,7 @@
 #include "client_utils.h"
 #include "components/configuration_tree/configuration_tree_drop_handler.h"
 #include "components/object_tree/object_tree_model.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_service.h"

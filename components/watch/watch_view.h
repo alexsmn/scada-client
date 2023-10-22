@@ -2,10 +2,10 @@
 
 #include "aui/models/table_model_observer.h"
 #include "base/promise.h"
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "export_model.h"
+#include "controller/export_model.h"
 
 #include <memory>
 

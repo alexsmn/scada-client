@@ -1,7 +1,7 @@
 #pragma once
 
 #include "components/configuration_tree/configuration_tree_view.h"
-#include "contents_observer.h"
+#include "controller/contents_observer.h"
 #include "aui/models/tree_model.h"
 
 class ConfigurationTreeNode;

@@ -3,8 +3,8 @@ cmake_policy(SET CMP0020 NEW)
 
 file(GLOB MAIN_QT
   "../*.rc"
+  "../app/qt/main.cpp"
   "../res/client.qrc"
-  "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 

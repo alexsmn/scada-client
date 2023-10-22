@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/memory/weak_ptr.h"
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"

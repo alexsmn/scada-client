@@ -1,8 +1,8 @@
 #pragma once
 
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "components/portfolio/portfolio.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"

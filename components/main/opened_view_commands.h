@@ -4,7 +4,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/promise.h"
 #include "base/timer/timer.h"
-#include "command_handler.h"
+#include "controller/command_handler.h"
 #include "common/node_state.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"

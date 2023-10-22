@@ -1,10 +1,10 @@
 ﻿#include "components/main/opened_view.h"
 
-#include "command_handler.h"
+#include "controller/command_handler.h"
 #include "common_resources.h"
 #include "components/main/main_window.h"
 #include "controller/controller.h"
-#include "export_model.h"
+#include "controller/export_model.h"
 #include "print_util.h"
 #include "controller/window_info.h"
 

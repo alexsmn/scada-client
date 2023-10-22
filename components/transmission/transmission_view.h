@@ -1,6 +1,6 @@
 #pragma once
 
-#include "command_registry.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 

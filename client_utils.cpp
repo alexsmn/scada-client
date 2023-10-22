@@ -10,7 +10,7 @@
 #include "base/win/clipboard.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
-#include "contents_model.h"
+#include "controller/contents_model.h"
 #include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"

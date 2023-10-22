@@ -1,5 +1,5 @@
 file(GLOB MAIN_WT CONFIGURE_DEPENDS
-  "main.cpp"
+  "../app/wt/main.cpp"
 )
 list(REMOVE_ITEM SOURCES_WT ${MAIN_WT})
 

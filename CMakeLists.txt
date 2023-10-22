@@ -55,6 +55,7 @@ list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
 list(FILTER PATHS EXCLUDE REGEX "/client/filesystem/")
 list(FILTER PATHS EXCLUDE REGEX "/client/modus/")
 list(FILTER PATHS EXCLUDE REGEX "/client/vidicon/")
+list(FILTER PATHS EXCLUDE REGEX "main.cpp")
 
 foreach(PATH ${PATHS})
   IF(${PATH} MATCHES "_unittest" OR ${PATH} MATCHES "/test/")
