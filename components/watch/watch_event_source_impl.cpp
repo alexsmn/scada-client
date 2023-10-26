@@ -24,7 +24,7 @@ void WatchEventSourceImpl::SetDeviceId(const scada::NodeId& device_id) {
           scada::EventFilter{.of_type = {devices::id::DeviceWatchEventType}}),
       // FIXME: Captures |this|. No sync.
       [this](const scada::Status& status, const scada::Event& event) {
-        if (status) {
+        if (!status) {
           delegate_->OnError(status);
           return;
         }
