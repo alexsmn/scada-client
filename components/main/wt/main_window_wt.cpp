@@ -47,6 +47,7 @@ void MainWindowWt::OnSelectionChanged() {
   toolbar_controller_->OnSelectionChanged();
 }
 
-void MainWindowWt::ShowPopupMenu(unsigned resource_id,
+void MainWindowWt::ShowPopupMenu(aui::MenuModel* merge_menu,
+                                 unsigned resource_id,
                                  const aui::Point& point,
                                  bool right_click) {}

@@ -45,7 +45,7 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
   });
 
   tree_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_PFOLIO_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_PFOLIO_POPUP, point, true);
   });
 
   command_registry_.AddCommand(

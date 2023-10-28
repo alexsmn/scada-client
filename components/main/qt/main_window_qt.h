@@ -30,7 +30,8 @@ class MainWindowQt final : public QMainWindow,
   virtual void SetWindowFlashing(bool flashing) override;
   virtual void OnSelectionChanged() override;
   virtual void SetToolbarPosition(unsigned position) override;
-  virtual void ShowPopupMenu(unsigned resource_id,
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) override;
 

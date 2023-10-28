@@ -70,7 +70,7 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 
   tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_ITEM_POPUP, point, true);
   });
 }
 

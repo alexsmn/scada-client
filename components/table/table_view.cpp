@@ -8,13 +8,13 @@
 #include "components/table/table_row.h"
 #include "controller/contents_observer.h"
 #include "controller/controller_delegate.h"
+#include "controller/selection_model.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "controller/selection_model.h"
-#include "services/dialog_service.h"
 #include "profile/profile.h"
+#include "services/dialog_service.h"
 #include "string_const.h"
 
 // TableView
@@ -48,7 +48,7 @@ TableView::TableView(const ControllerContext& context)
   view_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
 
   view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_TABLE_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_TABLE_POPUP, point, true);
   });
 
   view_->SetDoubleClickHandler([this] { OnDoubleClick(); });

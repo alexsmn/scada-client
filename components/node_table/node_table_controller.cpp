@@ -9,8 +9,8 @@
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
-#include "remote/session_proxy.h"
 #include "profile/profile.h"
+#include "remote/session_proxy.h"
 #include "services/task_manager.h"
 
 #if defined(UI_QT)
@@ -85,7 +85,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
   });
 
   grid_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 
   selection_.multiple_handler = [this] {

@@ -6,8 +6,8 @@
 #include "components/graph/graph_view_saver.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller/controller_delegate.h"
-#include "node_service/node_service.h"
 #include "controller/selection_model.h"
+#include "node_service/node_service.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>
@@ -45,7 +45,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
   graph_->set_controller(this);
 
   graph_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 
   command_registry_.AddCommand(

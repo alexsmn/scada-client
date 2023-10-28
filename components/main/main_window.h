@@ -76,7 +76,8 @@ class MainWindow : protected MainWindowContext,
   virtual void UpdateTitle() = 0;
   virtual void SetToolbarPosition(unsigned position) = 0;
 
-  virtual void ShowPopupMenu(unsigned resource_id,
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) = 0;
 

@@ -6,7 +6,8 @@
 class ControllerDelegateImpl : public ControllerDelegate {
  public:
   virtual void SetTitle(std::u16string_view title) override {}
-  virtual void ShowPopupMenu(unsigned resource_id,
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) override {}
   virtual void SetModified(bool modified) override {}

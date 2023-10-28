@@ -10,12 +10,12 @@
 #include "components/sheet/sheet_cell.h"
 #include "components/sheet/sheet_model.h"
 #include "controller/controller_delegate.h"
+#include "controller/selection_model.h"
 #include "item_drag_data.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
-#include "scada/session_service.h"
-#include "controller/selection_model.h"
 #include "profile/window_definition.h"
+#include "scada/session_service.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>
@@ -82,7 +82,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   grid_->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(
-        model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
+        nullptr, model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
   });
 
   command_registry_.AddCommand(

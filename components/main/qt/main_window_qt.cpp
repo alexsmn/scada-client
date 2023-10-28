@@ -14,12 +14,12 @@
 #include "components/main/qt/view_manager_qt.h"
 #include "components/main/selection_commands.h"
 #include "controller/controller.h"
-#include "qt/client_utils_qt.h"
 #include "controller/selection_model.h"
+#include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "profile/profile.h"
+#include "qt/client_utils_qt.h"
 #include "simple_menu_command_handler.h"
-#include "controller/window_info.h"
 
 #include <QAction>
 #include <QApplication>
@@ -314,11 +314,16 @@ void MainWindowQt::closeEvent(QCloseEvent* event) {
   QMainWindow::closeEvent(event);
 }
 
-void MainWindowQt::ShowPopupMenu(unsigned resource_id,
+void MainWindowQt::ShowPopupMenu(aui::MenuModel* merge_menu,
+                                 unsigned resource_id,
                                  const aui::Point& point,
                                  bool right_click) {
   if (resource_id == 0) {
     QMenu menu;
+    if (merge_menu && merge_menu->GetItemCount() != 0) {
+      BuildMenu(menu, *merge_menu);
+      menu.addSeparator();
+    }
     BuildMenu(menu, *context_menu_model_);
     menu.exec(point);
     return;
@@ -336,6 +341,11 @@ void MainWindowQt::ShowPopupMenu(unsigned resource_id,
   }
 
   QMenu menu;
+  // TODO: Combine with the same above.
+  if (merge_menu && merge_menu->GetItemCount() != 0) {
+    BuildMenu(menu, *merge_menu);
+    menu.addSeparator();
+  }
   BuildMenu(menu, menu_model);
   menu.exec(point);
 }

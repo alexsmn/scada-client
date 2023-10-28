@@ -15,9 +15,9 @@
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
+#include "controller/window_info.h"
 #include "profile/profile.h"
 #include "simple_menu_command_handler.h"
-#include "controller/window_info.h"
 
 namespace {
 
@@ -249,24 +249,23 @@ void MainWindow::SavePage() {
 std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
   // Initialize defaults.
   const WindowInfo& window_info = def.window_info();
-  if (def.size.empty() && !window_info.size.empty())
+  if (def.size.empty() && !window_info.size.empty()) {
     def.size = window_info.size;
-
-  auto& dialog_service = GetDialogService();
+  }
 
   auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
-      executor_,
-      this,
-      def,
-      dialog_service,
-      controller_factory_,
-      [this](unsigned resource_id, const aui::Point& point, bool right_click) {
-        ShowPopupMenu(resource_id, point, right_click);
-      },
-      [this](const NodeRef& node_ref) { ExecuteDefaultNodeCommand(node_ref); },
+      .executor_ = executor_,
+      .main_window_ = this,
+      .window_def_ = def,
+      .dialog_service_ = GetDialogService(),
+      .controller_factory_ = controller_factory_,
+      .popup_menu_handler_ = std::bind_front(&MainWindow::ShowPopupMenu, this),
+      .default_node_command_handler_ =
+          std::bind_front(&MainWindow::ExecuteDefaultNodeCommand, this),
   });
 
-  opened_view->commands = view_commands_factory_(*opened_view, dialog_service);
+  opened_view->commands =
+      view_commands_factory_(*opened_view, GetDialogService());
 
   return opened_view;
 }

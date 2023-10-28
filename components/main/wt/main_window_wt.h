@@ -25,7 +25,8 @@ class MainWindowWt final : public MainWindow {
   virtual void SetToolbarPosition(unsigned position) override {}
   virtual void OnShowTabPopupMenu(OpenedView& view,
                                   const aui::Point& point) override {}
-  virtual void ShowPopupMenu(unsigned resource_id,
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) override;
 

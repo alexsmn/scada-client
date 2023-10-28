@@ -8,6 +8,16 @@
 
 struct ControllerContext;
 
+// TODO: Rename to `ControllerFactory`.
+using ControllerRegistryFactory =
+    std::function<std::unique_ptr<Controller>(const ControllerContext&)>;
+
+class ControllerRegistry {
+ public:
+  void AddControllerFactory(const WindowInfo& window_info,
+                            ControllerRegistryFactory controller_factory);
+};
+
 class ControllerRegistrarBase {
  public:
   explicit ControllerRegistrarBase(const WindowInfo& window_info);

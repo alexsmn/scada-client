@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <filesystem>
 #include <functional>
+#include <span>
 
 namespace vidicon {
 
@@ -15,20 +16,20 @@ struct display_library {
       throw std::runtime_error("Cannot load display library");
     }
 
-    if (!get_version || get_version() != 3) {
+    if (!get_version || get_version() != 5) {
       throw std::runtime_error("Unsupported DisplayLib.dll version");
     }
 
     if (!open_display || !destroy_display || !draw_display ||
         !get_viewport_rect || !release_shape || !get_shape_at ||
-        !get_shape_metadata) {
+        !get_shape_metadata || !exec_shape_action) {
       throw std::runtime_error("Cannot find required DisplayLib.dll functions");
     }
   }
 
   const HMODULE lib = ::LoadLibraryW(kLibraryPath);
 
-  enum DisplayEventType { EVENT_INVALIDATE = 9 };
+  enum DisplayEventType { EVENT_INVALIDATE = 9, EVENT_COMMAND = 14 };
 
   struct DisplayRect {
     float left;
@@ -45,6 +46,12 @@ struct display_library {
     DisplayRect rect;
   };
 
+  struct CommandEvent {
+    BSTR command_name;
+    int argument_count;
+    VARIANT* arguments;
+  };
+
   using DisplayEventHandler = void(__cdecl*)(int event_type,
                                              const void* event_data,
                                              void* argument);
@@ -56,8 +63,16 @@ struct display_library {
     void* event_handler_argument;
   };
 
+  struct DisplayShapeAction {
+    BSTR title;
+    int checked;
+    int enabled;
+  };
+
   struct DisplayShapeMetadata {
     BSTR data_source;
+    int action_count;
+    DisplayShapeAction* actions;
   };
 
   using GetVersionFunc = int(__cdecl*)();
@@ -103,6 +118,10 @@ struct display_library {
       reinterpret_cast<GetShapeMetadata>(
           GetProcAddress(lib, "GetShapeMetadata"));
 
+  using ExecShapeAction = int(__cdecl*)(int handle, int action_index);
+  const ExecShapeAction exec_shape_action =
+      reinterpret_cast<ExecShapeAction>(GetProcAddress(lib, "ExecShapeAction"));
+
 #if defined(NDEBUG)
   inline static const wchar_t kLibraryPath[] = L"DisplayLib.dll";
 #else
@@ -114,8 +133,15 @@ struct display_library {
 using display_rect = display_library::DisplayRect;
 using display_viewport = display_library::Viewport;
 
+struct shape_action {
+  std::wstring title;
+  bool checked = false;
+  bool enabled = true;
+};
+
 struct shape_metadata {
   std::wstring data_source;
+  std::vector<shape_action> actions;
 };
 
 class shape {
@@ -149,20 +175,59 @@ class shape {
     if (handle_ < 0) {
       return {};
     }
+
     display_library::DisplayShapeMetadata metadata = {};
     if (!library_->get_shape_metadata(handle_, &metadata)) {
       return {};
     }
+
+    std::span metadata_actions{metadata.actions,
+                               metadata.actions + metadata.action_count};
+
     shape_metadata result{
         .data_source = metadata.data_source ? std::wstring{metadata.data_source}
-                                            : std::wstring{}};
+                                            : std::wstring{},
+        .actions = convert_shape_actions(metadata_actions)};
+
     ::SysFreeString(metadata.data_source);
+    std::ranges::for_each(metadata_actions,
+                          [](display_library::DisplayShapeAction& action) {
+                            ::SysFreeString(action.title);
+                          });
+    ::CoTaskMemFree(metadata.actions);
+
     return result;
+  }
+
+  bool exec_action(int action_index) const {
+    if (handle_ < 0) {
+      return false;
+    }
+
+    return !!library_->exec_shape_action(handle_, action_index);
   }
 
  private:
   shape(const display_library& library, int handle)
       : library_{&library}, handle_{handle} {}
+
+  void release() { handle_ = -1; }
+
+  static shape_action convert_shape_action(
+      const display_library::DisplayShapeAction& action) {
+    return {.title = action.title,
+            .checked = !!action.checked,
+            .enabled = !!action.enabled};
+  }
+
+  static std::vector<shape_action> convert_shape_actions(
+      std::span<const display_library::DisplayShapeAction> actions) {
+    std::vector<shape_action> result;
+    result.reserve(actions.size());
+    std::ranges::transform(actions, std::back_inserter(result),
+                           &convert_shape_action);
+    return result;
+  }
 
   const display_library* library_ = nullptr;
   int handle_ = -1;
@@ -181,8 +246,17 @@ class display {
   bool is_opened() const { return handle_ >= 0; }
 
   using invalidate_handler = std::function<void(const display_rect& rect)>;
+
   void set_invalidate_handler(invalidate_handler handler) {
     invalidate_ = std::move(handler);
+  }
+
+  using exec_command_handler =
+      std::function<void(std::wstring_view command_name,
+                         std::span<const VARIANT> arguments)>;
+
+  void set_exec_command_handler(exec_command_handler handler) {
+    exec_command_ = std::move(handler);
   }
 
   void open(const std::filesystem::path& path, IClient& teleclient) {
@@ -238,10 +312,22 @@ class display {
     auto* disp = static_cast<display*>(argument);
     switch (event_type) {
       case display_library::EVENT_INVALIDATE:
-        disp->invalidate_(
-            static_cast<const display_library::InvalidateEvent*>(event_data)
-                ->rect);
+        if (disp->invalidate_) {
+          const auto* invalidate_event =
+              static_cast<const display_library::InvalidateEvent*>(event_data);
+          disp->invalidate_(invalidate_event->rect);
+        }
         break;
+      case display_library::EVENT_COMMAND:
+        if (disp->exec_command_) {
+          const auto* command_event =
+              static_cast<const display_library::CommandEvent*>(event_data);
+          disp->exec_command_(
+              command_event->command_name,
+              std::span{command_event->arguments,
+                        static_cast<size_t>(command_event->argument_count)});
+          break;
+        }
     }
   }
 
@@ -249,6 +335,7 @@ class display {
   int handle_ = -1;
 
   invalidate_handler invalidate_;
+  exec_command_handler exec_command_;
 };
 
 }  // namespace vidicon

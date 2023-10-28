@@ -24,6 +24,7 @@ class VidiconClient;
 class ActionManager;
 class BlinkerManager;
 class ConnectionStateReporter;
+class ControllerRegistry;
 class CreateTree;
 class EventDispatcher;
 class EventFetcher;
@@ -85,6 +86,10 @@ class ClientApplication : private ClientApplicationContext {
   std::shared_ptr<Logger> logger_;
 
   std::unique_ptr<net::TransportFactory> transport_factory_;
+
+  std::unique_ptr<ControllerRegistry> controller_registry_;
+
+  std::vector<std::shared_ptr<void>> singletons_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
 

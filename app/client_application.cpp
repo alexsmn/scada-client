@@ -33,6 +33,7 @@
 #include "components/portfolio/portfolio_manager.h"
 #include "controller/component_api_impl.h"
 #include "controller/controller_context.h"
+#include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
@@ -43,6 +44,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
+#include "profile/profile.h"
 #include "project.h"
 #include "remote/remote_services.h"
 #include "services/alias_service.h"
@@ -50,7 +52,6 @@
 #include "services/create_tree.h"
 #include "services/event_dispatcher.h"
 #include "services/local_events.h"
-#include "profile/profile.h"
 #include "services/progress_host_impl.h"
 #include "services/properties/property_service.h"
 #include "services/speech.h"
@@ -59,6 +60,7 @@
 
 #if !defined(UI_WT)
 #include "modus/libmodus/modus_module2.h"
+#include "vidicon/display/vidicon_display_module.h"
 #include "vidicon/teleclient/vidicon_client.h"
 #endif
 
@@ -109,6 +111,7 @@ void RegisterFileType(FileRegistry& file_registry,
 
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
+      controller_registry_{std::make_unique<ControllerRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>()} {
   if (!base::CommandLine::Init(0, nullptr))
     throw std::runtime_error{"Can't parse command line."};
@@ -287,6 +290,10 @@ void ClientApplication::OnStartLoginCompleted() {
   vidicon_client_ =
       std::make_unique<vidicon::VidiconClient>(vidicon::VidiconClientContext{
           .executor_ = executor_, .timed_data_service_ = *timed_data_service_});
+
+  singletons_.emplace_back(
+      std::make_shared<VidiconDisplayModule>(VidiconDisplayModuleContext{
+          .controller_registry_ = *controller_registry_}));
 
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());

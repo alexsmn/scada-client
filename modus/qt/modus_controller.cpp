@@ -47,7 +47,7 @@ QWidget* ModusController::CreateModusView() {
 
   // TODO: Change on ContextMenu.
   auto context_menu_handler = [this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_MODUS_POPUP, point, false);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_MODUS_POPUP, point, false);
   };
 
   auto enable_internal_render_callback = [this] {

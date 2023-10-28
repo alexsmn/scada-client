@@ -82,7 +82,7 @@ EventView::EventView(const ControllerContext& context, bool is_panel)
 #endif
 
   table_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_EVENT_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_EVENT_POPUP, point, true);
   });
 
   table_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });

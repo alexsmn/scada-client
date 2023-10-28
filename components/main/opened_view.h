@@ -2,8 +2,8 @@
 
 #include "aui/types.h"
 #include "base/executor_timer.h"
-#include "controller/command_handler.h"
 #include "components/main/controller_factory.h"
+#include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "profile/window_definition.h"
 
@@ -19,14 +19,16 @@ class WindowDefinition;
 class PrintService;
 struct WindowInfo;
 
-using PopupMenuHandler = std::function<
-    void(unsigned resource_id, const aui::Point& point, bool right_click)>;
+using PopupMenuHandler = std::function<void(aui::MenuModel* merge_menu,
+                                            unsigned resource_id,
+                                            const aui::Point& point,
+                                            bool right_click)>;
 
 using DefaultNodeCommandHandler = std::function<void(const NodeRef& node)>;
 
 struct OpenedViewContext {
   const std::shared_ptr<Executor> executor_;
-  MainWindow* main_window_;
+  MainWindow* main_window_ = nullptr;
   WindowDefinition& window_def_;
   DialogService& dialog_service_;
   const ControllerFactory controller_factory_;
@@ -74,7 +76,8 @@ class OpenedView : private OpenedViewContext, private ControllerDelegate {
 
   // ControllerDelegate
   virtual void SetTitle(std::u16string_view) override;
-  virtual void ShowPopupMenu(unsigned resource_id,
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) override;
   virtual void OpenView(const WindowDefinition& def) override;

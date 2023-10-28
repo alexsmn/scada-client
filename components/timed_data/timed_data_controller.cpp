@@ -6,13 +6,13 @@
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "controller/controller_delegate.h"
-#include "profile/window_definition.h"
-#include "profile/window_definition_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
-#include "services/dialog_service.h"
 #include "profile/profile.h"
+#include "profile/window_definition.h"
+#include "profile/window_definition_util.h"
+#include "services/dialog_service.h"
 #include "string_const.h"
 
 #if defined(UI_QT)
@@ -73,7 +73,7 @@ UiView* TimedDataController::Init(const WindowDefinition& definition) {
   view_->SetShowGrid(true);
 
   view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_ITEM_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_ITEM_POPUP, point, true);
   });
 
 #if defined(UI_QT)

@@ -1,12 +1,12 @@
 ﻿#include "components/main/opened_view.h"
 
-#include "controller/command_handler.h"
 #include "common_resources.h"
 #include "components/main/main_window.h"
+#include "controller/command_handler.h"
 #include "controller/controller.h"
 #include "controller/export_model.h"
-#include "print_util.h"
 #include "controller/window_info.h"
+#include "print_util.h"
 
 #if defined(UI_QT)
 #include <QWidget>
@@ -154,7 +154,8 @@ void OpenedView::Focus() {
   main_window_->SetActiveView(this);
 }
 
-void OpenedView::ShowPopupMenu(unsigned resource_id,
+void OpenedView::ShowPopupMenu(aui::MenuModel* merge_menu,
+                               unsigned resource_id,
                                const aui::Point& point,
                                bool right_click) {
   if (resource_id == 0)
@@ -163,5 +164,5 @@ void OpenedView::ShowPopupMenu(unsigned resource_id,
   if (resource_id == 0)
     resource_id = IDR_ITEM_POPUP;
 
-  popup_menu_handler_(resource_id, point, right_click);
+  popup_menu_handler_(merge_menu, resource_id, point, right_click);
 }

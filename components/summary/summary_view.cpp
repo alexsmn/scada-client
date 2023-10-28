@@ -1,13 +1,13 @@
 ﻿#include "components/summary/summary_view.h"
 
 #include "aui/grid.h"
+#include "base/time_range.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/summary/summary_model.h"
 #include "controller/controller_delegate.h"
 #include "profile/window_definition.h"
 #include "services/dialog_service.h"
-#include "base/time_range.h"
 
 namespace {
 
@@ -67,7 +67,7 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
   };
 
   grid_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(0, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 
   grid_->SetRowHeaderWidth(150);

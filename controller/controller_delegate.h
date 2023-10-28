@@ -4,7 +4,7 @@
 
 #include <string_view>
 
-namespace ui {
+namespace aui {
 class MenuModel;
 }
 
@@ -17,9 +17,12 @@ class ControllerDelegate {
  public:
   virtual void SetTitle(std::u16string_view title) = 0;
 
-  // |point| is in _screen_ coordinates.
-  // |right_click| should be set if popup is initated by right-click.
-  virtual void ShowPopupMenu(unsigned resource_id,
+  // * `merge_menu` is an additional menu to prepend the result menu. It can be
+  // null.
+  // * `point` is in _screen_ coordinates.
+  // * `right_click` should be set if popup is initated by right-click.
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) = 0;
 

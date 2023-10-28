@@ -8,8 +8,8 @@
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
-#include "services/dialog_service.h"
 #include "profile/window_definition.h"
+#include "services/dialog_service.h"
 
 namespace {
 
@@ -72,7 +72,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   });
 
   table_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_LOG_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_LOG_POPUP, point, true);
   });
 
   // Must be after |table_| is bound.

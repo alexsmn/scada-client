@@ -1,5 +1,6 @@
 #pragma once
 
+#include "qt/qt_conversions.h"
 #include "vidicon/display/native/qt/gdi_widget2.h"
 #include "vidicon/display/native/vidicon_display_lib.h"
 
@@ -7,7 +8,21 @@ class DisplayWidget : public GdiWidget2 {
  public:
   explicit DisplayWidget(QWidget* parent = nullptr) : GdiWidget2{parent} {
     display_.set_invalidate_handler([this](const vidicon::display_rect& rect) {
-      update(ToQRect(display_.viewport_rect(display_viewport(), rect)));
+      update(ToQRect(display_.viewport_rect(viewport(), rect)));
+    });
+
+    display_.set_exec_command_handler([this](std::wstring_view command_name,
+                                             std::span<const VARIANT> args) {
+      if (command_handler) {
+        if (auto qargs = ToQVariantList(args)) {
+          command_handler(
+              QString::fromWCharArray(command_name.data(), command_name.size()),
+              *qargs);
+        } else {
+          // TODO: Log.
+          assert(false);
+        }
+      }
     });
   }
 
@@ -15,8 +30,12 @@ class DisplayWidget : public GdiWidget2 {
     display_.open(path, teleclient);
   }
 
+  vidicon::shape shapeAt(const QPoint& p) const {
+    return display_.shape_at(viewport(), ToPOINT(p));
+  }
+
   QString dataSourceAt(const QPoint& p) const {
-    auto shape = display_.shape_at(display_viewport(), ToPOINT(p));
+    auto shape = shapeAt(p);
     return QString::fromStdWString(shape.metadata().data_source);
   }
 
@@ -34,10 +53,17 @@ class DisplayWidget : public GdiWidget2 {
   }
 
   using ShapeClickHandler = std::function<void(const QString& data_source)>;
+
   ShapeClickHandler shape_click_handler;
 
+  // TODO: Should pass `QVariantList` instead of `std::span<const VARIANT>`.
+  using CommandHandler = std::function<void(const QString& command_name,
+                                            const QVariantList& arguments)>;
+
+  CommandHandler command_handler;
+
  protected:
-  vidicon::display_viewport display_viewport() const {
+  vidicon::display_viewport viewport() const {
     return {.rect = {.right = width(), .bottom = height()}};
   }
 

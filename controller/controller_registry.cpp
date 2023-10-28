@@ -13,7 +13,34 @@ typedef std::map<unsigned /*command_id*/, ControllerRegistrarBase*>
 base::LazyInstance<ControllerRegistrarMap>::Leaky g_controller_registrar_map =
     LAZY_INSTANCE_INITIALIZER;
 
+class ControllerFactoryRegistrar final : public ControllerRegistrarBase {
+ public:
+  ControllerFactoryRegistrar(const WindowInfo& window_info,
+                             ControllerRegistryFactory controller_factory)
+      : ControllerRegistrarBase{window_info},
+        controller_factory_{std::move(controller_factory)} {}
+
+  virtual std::unique_ptr<Controller> CreateController(
+      const ControllerContext& context) override {
+    return controller_factory_(context);
+  }
+
+ private:
+  const ControllerRegistryFactory controller_factory_;
+};
+
 }  // namespace
+
+// ControllerRegistry
+
+void ControllerRegistry::AddControllerFactory(
+    const WindowInfo& window_info,
+    ControllerRegistryFactory controller_factory) {
+  // Intentionally leaked.
+  new ControllerFactoryRegistrar(window_info, controller_factory);
+}
+
+// ControllerRegistrarBase
 
 ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info)
     : window_info_{window_info} {

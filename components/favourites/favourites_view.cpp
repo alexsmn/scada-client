@@ -27,7 +27,7 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   tree_view_->LoadIcons(IDB_WIN_TYPES, 16, aui::Rgba{255, 0, 255});
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
   tree_view_->SetContextMenuHandler([this](const aui::Point& point) {
-    controller_delegate_.ShowPopupMenu(IDR_FAVOR_POPUP, point, true);
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_FAVOR_POPUP, point, true);
   });
 
   open_command_.enabled_handler = [this] {
