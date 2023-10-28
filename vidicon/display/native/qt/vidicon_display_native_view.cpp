@@ -3,14 +3,36 @@
 #include "common_resources.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
-#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
+#include "profile/window_definition.h"
 #include "timed_data/timed_data_spec.h"
 #include "vidicon/display/native/qt/display_widget.h"
 #include "vidicon/teleclient/vidicon_client.h"
 #include "vidicon/vidicon_node_id.h"
 
+#include <QLabel>
 #include <TeleClient.h>
+
+namespace {
+
+// TODO: Combine with `ModusView::OpenPlaceholder`.
+QWidget* CreateErrorPlaceholderWidget(QWidget* parent_widget,
+                                      std::string_view error_message) {
+  QLabel* placeholder = new QLabel{parent_widget};
+  placeholder->setTextFormat(Qt::RichText);
+  placeholder->setText(QString::fromWCharArray(LR"(<html><body>
+    <p>Не удалось загрузить библиотеку графических схем Видикон.</p>
+    <p>Ошибка: %1.</p>
+    </body></html>)")
+                           .arg(QString::fromLatin1(error_message.data(),
+                                                    error_message.size())));
+  placeholder->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+  placeholder->setWordWrap(true);
+  placeholder->setTextInteractionFlags(Qt::TextBrowserInteraction);
+  return placeholder;
+}
+
+}  // namespace
 
 // VidiconDisplayNativeView
 
@@ -24,7 +46,14 @@ VidiconDisplayNativeView::~VidiconDisplayNativeView() = default;
 UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
   path_ = definition.path;
 
-  auto widget = std::make_unique<DisplayWidget>();
+  std::unique_ptr<DisplayWidget> widget;
+  try {
+    widget = std::make_unique<DisplayWidget>();
+  } catch (const std::runtime_error& e) {
+    auto* error_widget = CreateErrorPlaceholderWidget(nullptr, e.what());
+    widget_ = error_widget;
+    return error_widget;
+  }
 
   auto full_path = GetPublicFilePath(path_);
   widget->open(full_path, vidicon_client_.teleclient());
