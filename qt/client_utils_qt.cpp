@@ -3,7 +3,6 @@
 #include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "aui/models/menu_model.h"
-#include "translation.h"
 
 #include <QMenu>
 #include <wtypes.h>
@@ -50,10 +49,6 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
       }
     }
   }
-}
-
-std::u16string Translate(std::string_view text) {
-  return QObject::tr(std::string(text).c_str()).toStdU16String();
 }
 
 std::u16string FormatHostName(std::string_view host_name) {

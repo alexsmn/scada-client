@@ -1,14 +1,14 @@
 #include "components/about/about_dialog.h"
 
-#include <QApplication>
-#include <QMessageBox>
-
+#include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
 #include "common_resources.h"
 #include "project.h"
 #include "qt/client_utils_qt.h"
-#include "aui/qt/dialog_util.h"
-#include "aui/dialog_service.h"
 #include "ui_about_dialog.h"
+
+#include <QApplication>
+#include <QMessageBox>
 
 class AboutDialog : public QDialog {
   Q_OBJECT

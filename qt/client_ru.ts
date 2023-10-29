@@ -388,7 +388,7 @@
         <translation>Клиент ОИК Телеконтроль</translation>
     </message>
     <message>
-        <location filename="client_utils_qt.cpp" line="61"/>
+        <location filename="client_utils_qt.cpp" line="56"/>
         <source>Local</source>
         <translation>Локальный</translation>
     </message>
