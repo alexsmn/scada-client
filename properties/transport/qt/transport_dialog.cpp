@@ -1,10 +1,11 @@
-#include "components/transport/transport_dialog.h"
+#include "properties/transport/transport_dialog.h"
 
-#include "components/transport/transport_dialog_model.h"
-#include "net/transport_string.h"
-#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
+#include "properties/transport/transport_dialog_model.h"
 #include "ui_transport_dialog.h"
+
+#include <net/transport_string.h>
 
 class TransportDialog : public QDialog {
   Q_OBJECT

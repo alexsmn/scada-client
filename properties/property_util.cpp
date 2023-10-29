@@ -1,11 +1,11 @@
-#include "services/properties/property_util.h"
+#include "properties/property_util.h"
 
 #include "base/range_util.h"
 #include "common/format.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "services/properties/property_context.h"
+#include "properties/property_context.h"
 #include "services/task_manager.h"
 
 #include <boost/algorithm/string/predicate.hpp>

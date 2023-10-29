@@ -22,6 +22,12 @@ add_library(client_qt_lib
 
 target_sources(client_qt_lib INTERFACE ${COMPONENTS})
 
+set_target_properties(client_qt_lib PROPERTIES
+  AUTOMOC ON
+  AUTOUIC ON
+  AUTORCC ON
+)
+
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
   client_common
@@ -32,6 +38,7 @@ target_link_libraries(client_qt_lib PUBLIC
   client_portfolio_qt
   client_print_preview_qt
   client_print_service_qt
+  client_properties_qt
   client_vidicon_qt
 )
 

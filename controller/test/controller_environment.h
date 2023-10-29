@@ -19,7 +19,7 @@
 #include "scada/session_service_mock.h"
 #include "services/create_tree.h"
 #include "services/local_events.h"
-#include "services/properties/property_service.h"
+#include "properties/property_service.h"
 #include "services/task_manager_mock.h"
 #include "timed_data/timed_data_service_mock.h"
 

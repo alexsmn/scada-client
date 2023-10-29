@@ -1,4 +1,4 @@
-#include "services/properties/channel_property_definition.h"
+#include "properties/channel_property_definition.h"
 
 #include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -8,8 +8,8 @@
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "services/properties/property_context.h"
-#include "services/properties/property_util.h"
+#include "properties/property_context.h"
+#include "properties/property_util.h"
 #include "services/task_manager.h"
 
 namespace {

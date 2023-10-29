@@ -13,6 +13,14 @@ function(client_module MODULE_NAME)
   foreach(CONFIG ${ARG_CONFIG})
     scada_module(${MODULE_NAME}_${CONFIG})
     scada_module_sources(${MODULE_NAME}_${CONFIG} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/${CONFIG}")
+
+    if(CONFIG STREQUAL "qt")
+      set_target_properties(${MODULE_NAME}_${CONFIG} PROPERTIES
+        AUTOMOC ON
+        AUTOUIC ON
+        AUTORCC ON
+      )
+    endif()
   endforeach()
 endfunction()
 

@@ -4,8 +4,8 @@
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
-#include "services/properties/property_definition.h"
-#include "services/properties/property_service.h"
+#include "properties/property_definition.h"
+#include "properties/property_service.h"
 #include "string_const.h"
 
 namespace {

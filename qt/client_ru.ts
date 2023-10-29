@@ -438,60 +438,48 @@
 <context>
     <name>TransportDialog</name>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="14"/>
         <source>Transport</source>
-        <translation>Транспорт</translation>
+        <translation type="vanished">Транспорт</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="25"/>
         <source>Type:</source>
-        <translation>Тип:</translation>
+        <translation type="vanished">Тип:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="44"/>
         <source>Host:</source>
-        <translation>Хост:</translation>
+        <translation type="vanished">Хост:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="57"/>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="121"/>
         <source>Port:</source>
-        <translation>Порт:</translation>
+        <translation type="vanished">Порт:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="84"/>
         <source>Flow Control:</source>
-        <translation>Управление потоком:</translation>
+        <translation type="vanished">Управление потоком:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="91"/>
         <source>Stop Bits:</source>
-        <translation>Стоповые биты:</translation>
+        <translation type="vanished">Стоповые биты:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="98"/>
         <source>Bit Count:</source>
-        <translation>Биты данных:</translation>
+        <translation type="vanished">Биты данных:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="105"/>
         <source>Parity:</source>
-        <translation>Четность:</translation>
+        <translation type="vanished">Четность:</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="128"/>
         <source>Baud Rate:</source>
-        <translation>Скорость (бод):</translation>
+        <translation type="vanished">Скорость (бод):</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="188"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="vanished">ОК</translation>
     </message>
     <message>
-        <location filename="../components/transport/qt/transport_dialog.ui" line="195"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="vanished">Отмена</translation>
     </message>
 </context>
 <context>

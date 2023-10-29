@@ -1,7 +1,7 @@
 #include "components/node_properties/node_group_model.h"
 
 #include "components/node_properties/node_property_model.h"
-#include "services/properties/property_definition.h"
+#include "properties/property_definition.h"
 #include "services/task_manager.h"
 
 NodeGroupModel::NodeGroupModel(NodePropertyModel& property_model)

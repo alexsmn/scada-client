@@ -5,9 +5,9 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "net/transport_string.h"
 
 #include <algorithm>
+#include <net/transport_string.h>
 
 namespace {
 

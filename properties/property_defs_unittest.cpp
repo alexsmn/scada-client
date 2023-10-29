@@ -1,4 +1,4 @@
-#include "services/properties/property_defs.h"
+#include "properties/property_defs.h"
 
 #include "address_space/address_space_impl3.h"
 #include "address_space/address_space_util.h"
@@ -14,10 +14,10 @@
 #include "model/node_id_util.h"
 #include "node_service/node_util.h"
 #include "node_service/v1/test/test_node_service.h"
-#include "services/properties/channel_property_definition.h"
-#include "services/properties/property_context.h"
-#include "services/properties/property_defs.h"
-#include "services/properties/property_service.h"
+#include "properties/channel_property_definition.h"
+#include "properties/property_context.h"
+#include "properties/property_defs.h"
+#include "properties/property_service.h"
 #include "services/task_manager_mock.h"
 
 #include "base/debug_util-inl.h"

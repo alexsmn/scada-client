@@ -1,6 +1,6 @@
-#include "components/transport/transport_dialog.h"
+#include "properties/transport/transport_dialog.h"
 
-#include "components/transport/transport_dialog_model.h"
+#include "properties/transport/transport_dialog_model.h"
 #include "net/transport_string.h"
 #include "aui/dialog_service.h"
 

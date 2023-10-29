@@ -1,4 +1,4 @@
-#include "services/properties/property_service.h"
+#include "properties/property_service.h"
 
 #include "base/range_util.h"
 #include "base/string_piece_util.h"
@@ -8,8 +8,8 @@
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_util.h"
-#include "services/properties/channel_property_definition.h"
-#include "services/properties/property_defs.h"
+#include "properties/channel_property_definition.h"
+#include "properties/property_defs.h"
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>

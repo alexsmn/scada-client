@@ -1,9 +1,6 @@
-find_package(Qt5 COMPONENTS Core REQUIRED)
-# Must be set before Qt targets are created. 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+# Required for `AUTOMOC`, `AUTOUIC`, and `AUTORCC` added to all
+# `client_module` targets.
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 include(client_module.cmake)
 
@@ -22,6 +19,7 @@ add_subdirectory(filesystem)
 add_subdirectory(web)
 add_subdirectory(print)
 add_subdirectory(services)
+add_subdirectory(properties)
 add_subdirectory(modus)
 add_subdirectory(vidicon)
 add_subdirectory(test)
@@ -53,14 +51,15 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
 list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/client/base/")
 list(FILTER PATHS EXCLUDE REGEX "/client/components/graph/")
-list(FILTER PATHS EXCLUDE REGEX "/client/components/portfolio/")
 list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
 list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
 list(FILTER PATHS EXCLUDE REGEX "/client/filesystem/")
 list(FILTER PATHS EXCLUDE REGEX "/client/main_window/")
 list(FILTER PATHS EXCLUDE REGEX "/client/modus/")
+list(FILTER PATHS EXCLUDE REGEX "/client/portfolio/")
 list(FILTER PATHS EXCLUDE REGEX "/client/print/")
 list(FILTER PATHS EXCLUDE REGEX "/client/profile/")
+list(FILTER PATHS EXCLUDE REGEX "/client/properties/")
 list(FILTER PATHS EXCLUDE REGEX "/client/vidicon/")
 # Exclude `main.cpp` from all executables: apps and tests.
 list(FILTER PATHS EXCLUDE REGEX "main.cpp")

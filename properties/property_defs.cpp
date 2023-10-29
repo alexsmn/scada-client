@@ -1,15 +1,16 @@
-﻿#include "services/properties/property_defs.h"
+﻿#include "properties/property_defs.h"
 
-#include "base/strings/utf_string_conversions.h"
-#include "components/transport/transport_dialog.h"
 #include "aui/color.h"
-#include "scada/node_management_service.h"
+#include "base/strings/utf_string_conversions.h"
+#include "properties/transport/transport_dialog.h"
 #include "model/data_items_node_ids.h"
-#include "net/transport_string.h"
 #include "node_service/node_service.h"
-#include "services/properties/property_context.h"
-#include "services/properties/property_util.h"
+#include "properties/property_context.h"
+#include "properties/property_util.h"
+#include "scada/node_management_service.h"
 #include "services/task_manager.h"
+
+#include <net/transport_string.h>
 
 namespace {
 

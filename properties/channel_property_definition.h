@@ -1,7 +1,7 @@
 #pragma once
 
 #include "scada/node_id.h"
-#include "services/properties/property_definition.h"
+#include "properties/property_definition.h"
 
 class ChannelPropertyDefinition : public PropertyDefinition {
  public:

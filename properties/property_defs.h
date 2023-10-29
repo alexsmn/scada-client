@@ -1,6 +1,6 @@
 #pragma once
 
-#include "services/properties/property_definition.h"
+#include "properties/property_definition.h"
 
 using PropertyValue = std::pair<std::u16string, bool /*read_only*/>;
 

@@ -1,7 +1,7 @@
-#include "services/properties/property_definition.h"
+#include "properties/property_definition.h"
 
 #include "node_service/node_service.h"
-#include "services/properties/property_util.h"
+#include "properties/property_util.h"
 
 // PropertyDefinition
 

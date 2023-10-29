@@ -32,6 +32,7 @@ target_link_libraries(client_wt_lib PUBLIC
   client_main_window_wt
   client_portfolio_wt
   client_print_preview_wt
+  client_properties_wt
 )
 
 target_compile_options(client_wt_lib PUBLIC

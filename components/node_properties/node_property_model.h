@@ -5,7 +5,7 @@
 #include "aui/models/property_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
-#include "services/properties/property_context.h"
+#include "properties/property_context.h"
 
 #include <boost/signals2/signal.hpp>
 
