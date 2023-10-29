@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/qt/message_loop_qt.h"
+#include "aui/qt/message_loop_qt.h"
 #include "base/threading/thread_task_runner_handle.h"
 
 #include <QApplication>

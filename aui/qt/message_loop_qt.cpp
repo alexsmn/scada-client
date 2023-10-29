@@ -1,4 +1,4 @@
-#include "base/qt/message_loop_qt.h"
+#include "aui/qt/message_loop_qt.h"
 
 MessageLoopQt::MessageLoopQt() {
   QObject::connect(&timer_, &QTimer::timeout, [this] { Run(); });

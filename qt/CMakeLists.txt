@@ -24,7 +24,6 @@ target_sources(client_qt_lib INTERFACE ${COMPONENTS})
 
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
-  client_base_qt
   client_common
   client_controller_qt
   client_graph_qt
