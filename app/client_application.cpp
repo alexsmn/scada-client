@@ -17,13 +17,11 @@
 #include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
 #include "common/master_data_services.h"
-#include "components/debugger/debugger.h"
-#include "components/events/events_component.h"
+#include "common_resources.h"
 #include "components/favourites/favourites.h"
 #include "components/portfolio/portfolio_manager.h"
 #include "components/write/write_service_impl.h"
 #include "controller/component_api_impl.h"
-#include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "events/event_fetcher.h"
@@ -31,18 +29,7 @@
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/filesystem_component.h"
-#include "main_window/action_manager.h"
-#include "main_window/actions.h"
-#include "main_window/context_menu_model.h"
-#include "main_window/main_commands.h"
-#include "main_window/main_menu_model.h"
-#include "main_window/main_window.h"
-#include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
-#include "main_window/opened_view_commands.h"
-#include "main_window/selection_commands.h"
-#include "main_window/status_bar_model_impl.h"
-#include "net/transport_factory_impl.h"
 #include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
@@ -52,7 +39,6 @@
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
-#include "services/event_dispatcher.h"
 #include "services/local_events.h"
 #include "services/progress_host_impl.h"
 #include "services/properties/property_service.h"
@@ -64,6 +50,8 @@
 #include "modus/libmodus/modus_module2.h"
 #include "vidicon/vidicon_module.h"
 #endif
+
+#include <net/transport_factory_impl.h>
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
@@ -153,8 +141,6 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 
 ClientApplication::~ClientApplication() {
   node_service_progress_tracker_.reset();
-  event_dispatcher_.reset();
-  main_window_manager_.reset();
   main_window_module_.reset();
 
   if (profile_ && profile_loaded_)
@@ -164,7 +150,9 @@ ClientApplication::~ClientApplication() {
   // extern void ShutdownOpc();
   // ShutdownOpc();
 
-  singletons_.clear();
+  while (!singletons_.empty()) {
+    singletons_.pop();
+  }
 
 #if !defined(UI_WT)
   ModusModule2::SetInstance(nullptr);
@@ -176,7 +164,6 @@ ClientApplication::~ClientApplication() {
 
   blinker_manager_.reset();
   speech_.reset();
-  action_manager_.reset();
   favourites_.reset();
   portfolio_manager_.reset();
   task_manager_.reset();
@@ -184,6 +171,7 @@ ClientApplication::~ClientApplication() {
 
   profile_.reset();
 
+  create_tree_.reset();
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
   filesystem_component_.reset();
@@ -294,7 +282,7 @@ void ClientApplication::OnStartLoginCompleted() {
                               .profile_ = *profile_});
 
 #if !defined(UI_WT)
-  singletons_.emplace_back(std::make_shared<VidiconModule>(
+  singletons_.emplace(std::make_shared<VidiconModule>(
       VidiconModuleContext{.executor_ = executor_,
                            .timed_data_service_ = *timed_data_service_,
                            .controller_registry_ = *controller_registry_,
@@ -303,9 +291,6 @@ void ClientApplication::OnStartLoginCompleted() {
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());
 #endif
-
-  action_manager_ = std::make_unique<ActionManager>();
-  AddGlobalActions(*action_manager_, *node_service_);
 
   favourites_ = std::make_unique<Favourites>();
 
@@ -320,149 +305,31 @@ void ClientApplication::OnStartLoginCompleted() {
   property_service_ = std::make_unique<PropertyService>();
 
   main_window_module_ =
-      std::make_unique<MainWindowModule>(MainWindowModuleContext{});
+      std::make_unique<MainWindowModule>(MainWindowModuleContext{
+          .executor_ = executor_,
+          .profile_ = *profile_,
+          .main_window_factory_ = main_window_factory_,
+          .quit_handler_ = std::bind_front(&ClientApplication::Quit, this),
+          .master_data_services_ = *master_data_services_,
+          .alias_resolver_ = alias_resolver_,
+          .login_handler_ = std::bind_front(&ClientApplication::Login, this),
+          .task_manager_ = *task_manager_,
+          .event_fetcher_ = *event_fetcher_,
+          .timed_data_service_ = *timed_data_service_,
+          .node_service_ = *node_service_,
+          .portfolio_manager_ = *portfolio_manager_,
+          .local_events_ = *local_events_,
+          .favourites_ = *favourites_,
+          .file_cache_ = *file_cache_,
+          .blinker_manager_ = *blinker_manager_,
+          .speech_ = *speech_,
+          .file_registry_ = *file_registry_,
+          .progress_host_ = *progress_host_,
+          .property_service_ = *property_service_,
+          .create_tree_ = *create_tree_});
 
-  main_window_manager_ =
-      std::make_unique<MainWindowManager>(MainWindowManagerContext{
-          *profile_,
-          [this](int window_id) {
-            return main_window_factory_(MakeMainWindowContext(window_id));
-          },
-          [this] { Quit(); }});
-
-  // |main_window_manager_| must be assigned.
-  main_window_manager_->Init();
-
-  event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
-      executor_, *event_fetcher_, *local_events_, *profile_,
-      [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
-
-  node_service_progress_tracker_ = std::make_unique<NodeServiceProgressTracker>(
-      executor_, *node_service_, *progress_host_);
-}
-
-MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
-  auto controller_factory =
-      [this](unsigned command_id, ControllerDelegate& delegate,
-             DialogService& dialog_service) -> std::unique_ptr<Controller> {
-    auto* registrar = GetControllerRegistrar(command_id);
-    if (!registrar)
-      return nullptr;
-
-    if (registrar->window_info().requires_admin_rights() &&
-        !master_data_services_->HasPrivilege(scada::Privilege::Configure)) {
-      return nullptr;
-    }
-
-    return registrar->CreateController(ControllerContext{
-        executor_, delegate, alias_resolver_, *task_manager_,
-        *master_data_services_, *event_fetcher_, *master_data_services_,
-        *master_data_services_, *timed_data_service_, *node_service_,
-        *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
-        *profile_, dialog_service, *blinker_manager_, *create_tree_,
-        *property_service_});
-  };
-
-  auto login_handler = [this](bool login) {
-    if (login)
-      Login();
-    else
-      master_data_services_->SetServices({});
-  };
-
-  auto debugger = std::make_shared<Debugger>(
-      DebuggerContext{.session_service_ = *master_data_services_});
-
-  auto main_commands_factory = [this, login_handler, debugger](
-                                   MainWindow& main_window,
-                                   DialogService& dialog_service) {
-    return std::make_unique<MainCommands>(MainCommandsContext{
-        main_window, *task_manager_, dialog_service, *master_data_services_,
-        *event_fetcher_, *node_service_, *local_events_, *favourites_, *speech_,
-        *profile_, *main_window_manager_, login_handler, *debugger});
-  };
-
-  auto main_menu_factory =
-      [this](MainWindow& main_window, DialogService& dialog_service,
-             ViewManager& view_manager, CommandHandler& main_commands,
-             aui::MenuModel& context_menu_model) {
-        return std::make_unique<MainMenuModel>(MainMenuContext{
-            executor_, *main_window_manager_, main_window, *action_manager_,
-            *favourites_, *file_cache_,
-            master_data_services_->HasPrivilege(scada::Privilege::Configure),
-            *profile_, view_manager, main_commands, dialog_service,
-            context_menu_model});
-      };
-
-  auto context_menu_factory = [this](MainWindow& main_window,
-                                     CommandHandler& main_commands) {
-    return std::make_unique<ContextMenuModel>(main_window, *action_manager_,
-                                              main_commands);
-  };
-
-  auto selection_commands =
-      std::make_shared<SelectionCommands>(SelectionCommandsContext{
-          executor_, *task_manager_, *master_data_services_,
-          *master_data_services_, *event_fetcher_, *timed_data_service_,
-          *local_events_, *file_cache_, *profile_, *main_window_manager_,
-          *node_service_, *create_tree_});
-
-  auto view_commands_factory = [this, selection_commands](
-                                   OpenedView& opened_view,
-                                   DialogService& dialog_service) {
-    auto opened_view_commands =
-        std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
-            executor_, selection_commands, *task_manager_,
-            *master_data_services_, *master_data_services_, *event_fetcher_,
-            *master_data_services_, *timed_data_service_, *node_service_,
-            *portfolio_manager_, *action_manager_, *local_events_, *favourites_,
-            *file_cache_, *profile_, *main_window_manager_, *create_tree_});
-
-    opened_view_commands->SetContext(&opened_view, &dialog_service);
-
-    return opened_view_commands;
-  };
-
-  auto status_bar_model =
-      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
-          executor_, *master_data_services_, *event_fetcher_, *node_service_,
-          *progress_host_});
-
-  auto connection_info_provider = [this] {
-    return master_data_services_->GetHostName();
-  };
-
-  return MainWindowContext{executor_,
-                           *action_manager_,
-                           window_id,
-                           *file_registry_,
-                           *file_cache_,
-                           *main_window_manager_,
-                           *profile_,
-                           controller_factory,
-                           main_commands_factory,
-                           view_commands_factory,
-                           selection_commands,
-                           std::move(status_bar_model),
-                           context_menu_factory,
-                           main_menu_factory,
-                           connection_info_provider};
-}
-
-void ClientApplication::OnEvents(bool has_events) {
-  for (auto& p : main_window_manager_->main_windows()) {
-    auto& main_window = *p.second;
-    bool events_shown =
-        main_window.FindOpenedViewByType(kEventWindowInfo) != nullptr;
-    if (has_events != events_shown) {
-      if (has_events && profile_->event_auto_show)
-        main_window.OpenPane(kEventWindowInfo, false);
-      else if (!has_events && profile_->event_auto_hide)
-        main_window.ClosePane(kEventWindowInfo);
-    }
-
-    main_window.SetWindowFlashing(has_events && profile_->event_flash_window);
-  }
+  singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
+      executor_, *node_service_, *progress_host_));
 }
 
 promise<bool> ClientApplication::Login() {

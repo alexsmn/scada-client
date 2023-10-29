@@ -6,6 +6,7 @@
 #include "scada/data_services_factory.h"
 
 #include <memory>
+#include <stack>
 
 namespace boost {
 namespace asio {
@@ -22,7 +23,6 @@ class BlinkerManager;
 class ConnectionStateReporter;
 class ControllerRegistry;
 class CreateTree;
-class EventDispatcher;
 class EventFetcher;
 class Executor;
 class Favourites;
@@ -31,7 +31,6 @@ class FileRegistry;
 class FileSystemComponent;
 class Logger;
 class LocalEvents;
-class MainWindowManager;
 class MainWindowModule;
 class MasterDataServices;
 class NodeService;
@@ -71,13 +70,9 @@ class ClientApplication : private ClientApplicationContext {
   void Start();
 
  private:
-  MainWindowContext MakeMainWindowContext(int window_id);
-
   promise<bool> Login();
   void OnLoginCompleted(DataServices services);
   void OnStartLoginCompleted();
-
-  void OnEvents(bool has_events);
 
   void Quit();
 
@@ -86,8 +81,6 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<net::TransportFactory> transport_factory_;
 
   std::unique_ptr<ControllerRegistry> controller_registry_;
-
-  std::vector<std::shared_ptr<void>> singletons_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
 
@@ -103,7 +96,6 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<LocalEvents> local_events_;
   std::unique_ptr<ProgressHost> progress_host_;
   std::shared_ptr<TaskManager> task_manager_;
-  std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<PortfolioManager> portfolio_manager_;
   std::unique_ptr<Favourites> favourites_;
   std::unique_ptr<Speech> speech_;
@@ -123,11 +115,10 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
 
   std::unique_ptr<MainWindowModule> main_window_module_;
-  std::unique_ptr<MainWindowManager> main_window_manager_;
-
-  std::unique_ptr<EventDispatcher> event_dispatcher_;
 
   std::unique_ptr<NodeServiceProgressTracker> node_service_progress_tracker_;
+
+  std::stack<std::shared_ptr<void>> singletons_;
 
   bool profile_loaded_ = false;
 };
