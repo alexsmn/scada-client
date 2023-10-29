@@ -1,6 +1,6 @@
 #include "aui/prompt_dialog.h"
 
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 
 #include <QInputDialog>

@@ -2,7 +2,7 @@
 
 #include "components/csv_export/csv_export.h"
 #include "export_util.h"
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 #include "profile/profile.h"
 

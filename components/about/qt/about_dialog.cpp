@@ -6,7 +6,7 @@
 #include "common_resources.h"
 #include "project.h"
 #include "qt/client_utils_qt.h"
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 #include "ui_about_dialog.h"
 

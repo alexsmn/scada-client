@@ -1,6 +1,8 @@
 ﻿#include "components/events/event_view.h"
 
+#include "aui/dialog_service.h"
 #include "aui/models/table_column.h"
+#include "aui/prompt_dialog.h"
 #include "aui/table.h"
 #include "base/excel.h"
 #include "base/strings/string_number_conversions.h"
@@ -12,16 +14,14 @@
 #include "components/events/event_table_model.h"
 #include "components/events/historical_event_model.h"
 #include "components/events/local_event_model.h"
-#include "aui/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller/contents_observer.h"
 #include "controller/controller_delegate.h"
-#include "profile/window_definition_util.h"
+#include "controller/selection_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
-#include "controller/selection_model.h"
-#include "aui/dialog_service.h"
 #include "profile/profile.h"
+#include "profile/window_definition_util.h"
 
 namespace {
 

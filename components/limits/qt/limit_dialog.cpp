@@ -1,7 +1,7 @@
 #include "components/limits/limit_dialog.h"
 
 #include "components/limits/limit_model.h"
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 #include "ui_limit_dialog.h"
 

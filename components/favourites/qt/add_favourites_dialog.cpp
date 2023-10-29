@@ -1,7 +1,7 @@
 ﻿#include "components/favourites/add_favourites_dialog.h"
 
 #include "components/favourites/favourites.h"
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 #include "ui_add_favourites_dialog.h"
 

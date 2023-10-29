@@ -2,7 +2,7 @@
 
 #include "components/transport/transport_dialog_model.h"
 #include "net/transport_string.h"
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 #include "ui_transport_dialog.h"
 

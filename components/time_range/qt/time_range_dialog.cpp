@@ -1,6 +1,6 @@
 #include "components/time_range/time_range_dialog.h"
 
-#include "qt/dialog_util.h"
+#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
 #include "ui_time_range_dialog.h"
 
