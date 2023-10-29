@@ -16,7 +16,7 @@
 #include "components/configuration_export/import_data_report.h"
 #include "components/configuration_export/importer.h"
 #include "components/configuration_export/resource_error.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 #include <algorithm>
 #include <fstream>

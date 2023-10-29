@@ -9,7 +9,7 @@
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 namespace {
 

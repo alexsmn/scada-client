@@ -1,4 +1,4 @@
-#include "qt/dialog_service_impl_qt.h"
+#include "aui/qt/dialog_service_impl_qt.h"
 
 #include "base/strings/string_util.h"
 #include "qt/dialog_util.h"

@@ -22,7 +22,7 @@ QWidget* CreateVidiconDisplayView(State& state,
                                   const std::filesystem::path& path) {
   auto* vidicon_display_view = new VidiconDisplayNativeView{
       {state.timed_data_service, state.vidicon_client,
-       state.controller_delegate}};
+       state.controller_delegate, state.dialog_service, state.write_service}};
 
   WindowDefinition definition{kVidiconDisplayWindowInfo};
   // TODO: Store the display is resources.

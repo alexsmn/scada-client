@@ -1,7 +1,7 @@
 #include "components/change_password/change_password_dialog.h"
 
 #include "components/change_password/change_password.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "ui_change_password_dialog.h"
 
 #include <QMessageBox>

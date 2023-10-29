@@ -18,7 +18,7 @@
 #include "modus/qt/modus_view.h"
 #include "modus/qt/modus_view2.h"
 #include "modus/qt/modus_view3.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "profile/profile.h"
 #include "web/web_util.h"
 

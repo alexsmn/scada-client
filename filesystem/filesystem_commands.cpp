@@ -15,7 +15,7 @@
 #include "filesystem/filesystem_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "services/task_manager.h"
 
 #include <cassert>

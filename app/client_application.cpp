@@ -31,6 +31,7 @@
 #include "components/main/selection_commands.h"
 #include "components/main/status_bar_model_impl.h"
 #include "components/portfolio/portfolio_manager.h"
+#include "components/write/write_service_impl.h"
 #include "controller/component_api_impl.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
@@ -286,14 +287,19 @@ void ClientApplication::OnStartLoginCompleted() {
 
   file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
+  write_service_ = std::make_unique<WriteServiceImpl>(
+      WriteServiceImplContext{.executor_ = executor_,
+                              .timed_data_service_ = *timed_data_service_,
+                              .profile_ = *profile_});
+
 #if !defined(UI_WT)
   vidicon_client_ =
       std::make_unique<vidicon::VidiconClient>(vidicon::VidiconClientContext{
           .executor_ = executor_, .timed_data_service_ = *timed_data_service_});
 
-  singletons_.emplace_back(
-      std::make_shared<VidiconDisplayModule>(VidiconDisplayModuleContext{
-          .controller_registry_ = *controller_registry_}));
+  singletons_.emplace_back(std::make_shared<VidiconDisplayModule>(
+      VidiconDisplayModuleContext{.controller_registry_ = *controller_registry_,
+                                  .write_service_ = *write_service_}));
 
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());

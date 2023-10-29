@@ -9,11 +9,13 @@ VidiconDisplayModule::VidiconDisplayModule(
     VidiconDisplayModuleContext&& context)
     : VidiconDisplayModuleContext{std::move(context)} {
   controller_registry_.AddControllerFactory(
-      kVidiconDisplayWindowInfo, [](const ControllerContext& context) {
+      kVidiconDisplayWindowInfo, [this](const ControllerContext& context) {
         return std::make_unique<VidiconDisplayNativeView>(
             VidiconDisplayNativeViewContext{
                 .timed_data_service_ = context.timed_data_service_,
                 .vidicon_client_ = context.vidicon_client_,
-                .controller_delegate_ = context.controller_delegate_});
+                .controller_delegate_ = context.controller_delegate_,
+                .dialog_service_ = context.dialog_service_,
+                .write_service_ = write_service_});
       });
 }

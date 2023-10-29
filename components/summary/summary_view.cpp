@@ -7,7 +7,7 @@
 #include "components/summary/summary_model.h"
 #include "controller/controller_delegate.h"
 #include "profile/window_definition.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 namespace {
 

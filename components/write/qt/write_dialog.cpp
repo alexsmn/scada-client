@@ -1,7 +1,7 @@
 #include "components/write/write_dialog.h"
 
 #include "components/write/write_model.h"
-#include "qt/dialog_service_impl_qt.h"
+#include "aui/qt/dialog_service_impl_qt.h"
 #include "qt/dialog_util.h"
 #include "ui_write_dialog.h"
 

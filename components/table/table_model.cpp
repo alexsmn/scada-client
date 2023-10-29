@@ -7,7 +7,7 @@
 #include "components/table/table_row.h"
 #include "controller/node_id_set.h"
 #include "model/data_items_node_ids.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 namespace {
 

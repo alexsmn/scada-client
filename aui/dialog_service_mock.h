@@ -1,8 +1,8 @@
 #pragma once
 
-#include <gmock/gmock.h>
+#include "aui/dialog_service.h"
 
-#include "services/dialog_service.h"
+#include <gmock/gmock.h>
 
 class MockDialogService : public DialogService {
  public:

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "aui/wt/dialog_service_impl_wt.h"
 #include "components/main/main_window.h"
-#include "wt/dialog_service_impl_wt.h"
 
 namespace Wt {
 class WContainerWidget;

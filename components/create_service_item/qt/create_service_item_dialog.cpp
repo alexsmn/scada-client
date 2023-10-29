@@ -1,7 +1,7 @@
 #include "components/create_service_item/create_service_item_dialog.h"
 
 #include "components/create_service_item/create_service_item_model.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "ui_create_service_item.h"
 
 class CreateServiceItemDialog final : public QDialog {

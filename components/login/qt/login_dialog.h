@@ -2,7 +2,7 @@
 
 #include "components/login/login_dialog.h"
 #include "scada/data_services_factory.h"
-#include "qt/dialog_service_impl_qt.h"
+#include "aui/qt/dialog_service_impl_qt.h"
 #include "ui_login_dialog.h"
 
 #include <QDialog>

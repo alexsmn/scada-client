@@ -1,6 +1,6 @@
 #pragma once
 
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 class DialogServiceImplWt final : public DialogService {
  public:

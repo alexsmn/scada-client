@@ -2,7 +2,7 @@
 
 #include "components/main/action_manager.h"
 #include "components/main/main_window.h"
-#include "qt/dialog_service_impl_qt.h"
+#include "aui/qt/dialog_service_impl_qt.h"
 
 #include <QMainWindow>
 

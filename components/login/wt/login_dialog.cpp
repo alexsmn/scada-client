@@ -1,7 +1,7 @@
 #include "components/login/wt/login_dialog.h"
 
 #include "components/login/login_controller.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 #include <Wt/WDialog.h>
 #include <Wt/WLabel.h>

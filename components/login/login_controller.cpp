@@ -11,7 +11,7 @@
 #include "base/win/registry.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 #include <algorithm>
 #include <windows.h>  // for VK_CONTROL

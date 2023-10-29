@@ -1,6 +1,6 @@
 #include "components/print_preview/print_preview.h"
 
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "services/print_service.h"
 
 void ShowPrintPreviewDialog(DialogService& dialog_service,

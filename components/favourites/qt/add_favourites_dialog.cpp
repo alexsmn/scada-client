@@ -2,7 +2,7 @@
 
 #include "components/favourites/favourites.h"
 #include "qt/dialog_util.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "ui_add_favourites_dialog.h"
 
 class AddFavouritesDialog : public QDialog, private AddFavouritesContext {

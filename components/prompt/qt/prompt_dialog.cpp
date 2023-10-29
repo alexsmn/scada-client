@@ -1,7 +1,7 @@
 #include "components/prompt/prompt_dialog.h"
 
 #include "qt/dialog_util.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 
 #include <QInputDialog>
 

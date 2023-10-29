@@ -14,7 +14,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "string_const.h"
 
 // TableView

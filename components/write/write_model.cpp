@@ -7,7 +7,7 @@
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "scada/status.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "profile/profile.h"
 
 namespace {

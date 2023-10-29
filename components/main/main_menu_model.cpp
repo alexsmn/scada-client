@@ -17,7 +17,7 @@
 #include "profile/window_definition.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "profile/profile.h"
 
 #if !defined(UI_WT)

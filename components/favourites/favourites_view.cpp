@@ -5,7 +5,7 @@
 #include "components/favourites/favourites_tree_model.h"
 #include "components/prompt/prompt_dialog.h"
 #include "controller/controller_delegate.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "web/web_util.h"
 
 #if !defined(UI_WT)

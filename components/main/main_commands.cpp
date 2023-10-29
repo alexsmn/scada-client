@@ -17,7 +17,7 @@
 #include "components/web/web_component.h"
 #include "events/node_event_provider.h"
 #include "scada/session_service.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "services/local_events.h"
 #include "profile/profile.h"
 #include "services/speech.h"

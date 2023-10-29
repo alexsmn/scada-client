@@ -12,7 +12,7 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "profile/window_definition_util.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "string_const.h"
 
 #if defined(UI_QT)

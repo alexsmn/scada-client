@@ -6,8 +6,10 @@
 #include <filesystem>
 
 class ControllerDelegate;
+class DialogService;
 class QWidget;
 class TimedDataService;
+class WriteService;
 
 namespace vidicon {
 class VidiconClient;
@@ -17,6 +19,8 @@ struct VidiconDisplayNativeViewContext {
   TimedDataService& timed_data_service_;
   vidicon::VidiconClient& vidicon_client_;
   ControllerDelegate& controller_delegate_;
+  DialogService& dialog_service_;
+  WriteService& write_service_;
 };
 
 class VidiconDisplayNativeView : private VidiconDisplayNativeViewContext,

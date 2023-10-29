@@ -34,7 +34,7 @@
 #include "scada/status_promise.h"
 #include "controller/selection_model.h"
 #include "services/create_tree.h"
-#include "services/dialog_service.h"
+#include "aui/dialog_service.h"
 #include "services/print_service.h"
 #include "profile/profile.h"
 #include "services/task_manager.h"

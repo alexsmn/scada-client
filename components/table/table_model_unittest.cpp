@@ -1,11 +1,11 @@
 #include "table_model.h"
 
+#include "aui/dialog_service_mock.h"
 #include "aui/models/table_model_observer_mock.h"
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "events/node_event_provider_mock.h"
 #include "node_service/test/test_node_model.h"
-#include "services/dialog_service_mock.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"

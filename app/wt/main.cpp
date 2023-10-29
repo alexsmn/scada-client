@@ -1,5 +1,6 @@
 #include "app/client_application.h"
 
+#include "aui/wt/message_loop_wt.h"
 #include "base/at_exit.h"
 #include "base/bind_util.h"
 #include "base/executor.h"
@@ -7,7 +8,6 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/login/wt/login_dialog.h"
 #include "components/main/wt/main_window_wt.h"
-#include "wt/message_loop_wt.h"
 
 #include <wt/WApplication.h>
 #include <wt/WBootstrapTheme.h>

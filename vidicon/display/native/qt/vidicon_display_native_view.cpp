@@ -1,6 +1,7 @@
 ﻿#include "vidicon/display/native/qt/vidicon_display_native_view.h"
 
 #include "common_resources.h"
+#include "components/write/write_service.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "filesystem/file_util.h"
@@ -93,7 +94,8 @@ UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
       }
 
       QString data_source = arguments[0].toString();
-      // controller_delegate_.ExecCommand("Write", data_source);
+      write_service_.ExecuteWriteDialog(dialog_service_, node_id,
+                                        /*manual*/ false);
     }
   };
 

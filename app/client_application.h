@@ -46,6 +46,7 @@ class PropertyService;
 class TaskManager;
 class TimedDataService;
 class Speech;
+class WriteService;
 
 #if !defined(UI_WT)
 class ModusModule2;
@@ -115,6 +116,8 @@ class ClientApplication : private ClientApplicationContext {
 
   std::unique_ptr<FileRegistry> file_registry_;
   std::unique_ptr<FileCache> file_cache_;
+
+  std::unique_ptr<WriteService> write_service_;
 
 #if !defined(UI_WT)
   std::unique_ptr<vidicon::VidiconClient> vidicon_client_;
