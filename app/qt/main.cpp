@@ -5,7 +5,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
-#include "components/main/qt/main_window_qt.h"
+#include "main_window/qt/main_window_qt.h"
 #include "project.h"
 #include "services/atl_module.h"
 

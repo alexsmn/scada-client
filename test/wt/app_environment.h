@@ -1,7 +1,7 @@
 #pragma once
 
+#include "aui/wt/message_loop_wt.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "wt/message_loop_wt.h"
 
 #include <Wt/Test/WTestEnvironment.h>
 #include <Wt/WApplication.h>

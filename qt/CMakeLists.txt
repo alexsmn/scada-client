@@ -29,6 +29,7 @@ target_link_libraries(client_qt_lib PUBLIC
   client_common
   client_controller_qt
   client_graph_qt
+  client_main_window_qt
   client_modus_qt
   client_portfolio_qt
   client_print_preview_qt

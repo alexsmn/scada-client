@@ -2,7 +2,7 @@
 
 #include "base/executor.h"
 #include "common_resources.h"
-#include "components/main/action_manager.h"
+#include "main_window/action_manager.h"
 #include "events/node_event_provider.h"
 #include "profile/profile.h"
 

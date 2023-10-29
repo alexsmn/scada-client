@@ -16,6 +16,21 @@ function(client_module MODULE_NAME)
   endforeach()
 endfunction()
 
+function(client_module_include_directories MODULE_NAME)
+  set(LINK_TYPES PRIVATE PUBLIC INTERFACE)
+  cmake_parse_arguments(ARG "" "" "${LINK_TYPES}" ${ARGN})
+
+  foreach(CONFIG qt wt)
+    if(TARGET ${MODULE_NAME}_${CONFIG})
+      foreach(LINK_TYPE ${LINK_TYPES})
+        if(ARG_${LINK_TYPE})
+          target_include_directories(${MODULE_NAME}_${CONFIG} ${LINK_TYPE} ${ARG_${LINK_TYPE}})
+        endif()
+      endforeach()
+    endif()
+  endforeach()
+endfunction()
+
 #[[
   client_module_sources(my_module PUBLIC a b c)
 ]]

@@ -2,7 +2,7 @@
 
 #include "base/promise.h"
 #include "common/aliases.h"
-#include "components/main/main_window_context.h"
+#include "main_window/main_window_context.h"
 #include "scada/data_services_factory.h"
 
 #include <memory>
