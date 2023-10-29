@@ -86,18 +86,8 @@ UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
     }
   };
 
-  widget->command_handler = [this](const QString& command_name,
-                                   const QVariantList& arguments) {
-    if (command_name == "OpenWriteWin") {
-      if (arguments.size() != 1) {
-        // TODO: Log error.
-        assert(false);
-        return;
-      }
-
-      OpenWriteWin(arguments[0].toString());
-    }
-  };
+  widget->command_handler =
+      std::bind_front(&VidiconDisplayNativeView::ExecCommand, this);
 
   widget_ = widget.get();
   return widget.release();
@@ -107,18 +97,41 @@ void VidiconDisplayNativeView::Save(WindowDefinition& definition) {
   definition.path = path_;
 }
 
-void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source) {
+void VidiconDisplayNativeView::ExecCommand(const QString& command_name,
+                                           const QVariantList& arguments) {
+  // TODO: Introduce constants.
+  if (command_name == "OpenWriteWin") {
+    if (arguments.size() != 1) {
+      // TODO: Log error.
+      assert(false);
+      return;
+    }
+
+    OpenWriteWin(arguments[0].toString(), /*manual*/ false);
+
+  } else if (command_name == "OpenWriteManWin") {
+    if (arguments.size() != 1) {
+      // TODO: Log error.
+      assert(false);
+      return;
+    }
+
+    OpenWriteWin(arguments[0].toString(), /*manual*/ true);
+  }
+}
+
+void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source,
+                                            bool manual) {
   auto node_id = vidicon::ToNodeId(data_source.toStdWString());
 
   if (node_id.is_null()) {
     dialog_service_.RunMessageBox(
-        QString::fromWCharArray(L"Неверный адрес объекта управления: %1.")
+        QString::fromWCharArray(L"Неверный адрес объекта Видикона: %1.")
             .arg(data_source)
             .toStdU16String(),
         /*title*/ {}, MessageBoxMode::Error);
     return;
   }
 
-  write_service_.ExecuteWriteDialog(dialog_service_, node_id,
-                                    /*manual*/ false);
+  write_service_.ExecuteWriteDialog(dialog_service_, node_id, manual);
 }
