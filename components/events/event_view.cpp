@@ -12,7 +12,7 @@
 #include "components/events/event_table_model.h"
 #include "components/events/historical_event_model.h"
 #include "components/events/local_event_model.h"
-#include "components/prompt/prompt_dialog.h"
+#include "aui/prompt_dialog.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller/contents_observer.h"
 #include "controller/controller_delegate.h"

@@ -1,4 +1,4 @@
-#include "components/prompt/prompt_dialog.h"
+#include "aui/prompt_dialog.h"
 
 promise<std::u16string> RunPromptDialog(DialogService& dialog_service,
                                         const std::u16string& prompt,

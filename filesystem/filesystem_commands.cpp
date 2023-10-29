@@ -6,7 +6,7 @@
 #include "components/main/main_window.h"
 #include "components/main/main_window_util.h"
 #include "components/main/opened_view.h"
-#include "components/prompt/prompt_dialog.h"
+#include "aui/prompt_dialog.h"
 #include "controller/contents_model.h"
 #include "profile/window_definition_util.h"
 #include "controller/window_info.h"

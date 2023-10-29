@@ -13,7 +13,7 @@
 #include "components/main/main_window_manager.h"
 #include "components/main/opened_view.h"
 #include "components/main/view_manager.h"
-#include "components/prompt/prompt_dialog.h"
+#include "aui/prompt_dialog.h"
 #include "components/web/web_component.h"
 #include "events/node_event_provider.h"
 #include "scada/session_service.h"

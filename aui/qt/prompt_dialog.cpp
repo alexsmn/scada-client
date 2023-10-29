@@ -1,4 +1,4 @@
-#include "components/prompt/prompt_dialog.h"
+#include "aui/prompt_dialog.h"
 
 #include "qt/dialog_util.h"
 #include "aui/dialog_service.h"
