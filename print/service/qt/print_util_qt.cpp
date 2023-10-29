@@ -1,8 +1,8 @@
-#include "print_util.h"
+#include "print/service/print_util.h"
 
 #include "aui/models/grid_model.h"
 #include "aui/models/table_model.h"
-#include "services/print_service.h"
+#include "print/service/print_service.h"
 
 #include <QTextCursor>
 #include <QTextDocument>

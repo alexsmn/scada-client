@@ -1,12 +1,12 @@
 #include "components/main/qt/view_manager_qt.h"
 
+#include "aui/dialog_service_mock.h"
 #include "base/test/test_executor.h"
 #include "components/main/controller_factory_mock.h"
 #include "components/main/view_manager_delegate_mock.h"
 #include "controller/controller_mock.h"
-#include "services/dialog_service_mock.h"
-#include "test/app_environment.h"
 #include "controller/window_info.h"
+#include "test/app_environment.h"
 
 #include <QMainWindow>
 #include <gmock/gmock.h>

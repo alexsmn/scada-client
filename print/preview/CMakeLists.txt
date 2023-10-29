@@ -1,0 +1,5 @@
+client_module(client_print_preview)
+
+client_module_link_libraries(client_print_preview PUBLIC aui)
+
+client_module_link_libraries(client_print_preview PRIVATE client_print_service)

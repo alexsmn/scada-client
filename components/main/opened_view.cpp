@@ -6,7 +6,7 @@
 #include "controller/controller.h"
 #include "controller/export_model.h"
 #include "controller/window_info.h"
-#include "print_util.h"
+#include "print/service/print_util.h"
 
 #if defined(UI_QT)
 #include <QWidget>
