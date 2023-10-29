@@ -36,3 +36,7 @@ target_link_libraries(aui_wt PUBLIC
 )
 
 target_compile_definitions(aui_wt PUBLIC UI_WT)
+
+# Subs.
+
+add_subdirectory(test)

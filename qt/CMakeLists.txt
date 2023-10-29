@@ -22,7 +22,6 @@ add_library(client_qt_lib
 
 target_sources(client_qt_lib INTERFACE ${COMPONENTS})
 
-find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
   client_base_qt
@@ -35,16 +34,7 @@ target_link_libraries(client_qt_lib PUBLIC
   client_print_preview_qt
   client_print_service_qt
   client_vidicon_display_qt
-  Qt5::Widgets
 )
-
-if(WIN32)
-  find_package(Qt5 COMPONENTS WinExtras REQUIRED)
-  target_link_libraries(client_qt_lib PUBLIC
-    Qt5::WinExtras
-    Qt5::WinMain
-  )
-endif()
 
 find_package(Qt5LinguistTools REQUIRED)
 file(GLOB TRANSLATIONS CONFIGURE_DEPENDS "*.ts")

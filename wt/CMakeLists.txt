@@ -6,7 +6,7 @@ list(REMOVE_ITEM SOURCES_WT ${MAIN_WT})
 list(FILTER SOURCES EXCLUDE REGEX "/graph/")
 list(FILTER UNITTESTS EXCLUDE REGEX "/graph/")
 list(FILTER SOURCES EXCLUDE REGEX "/modus/")
-list(FILTER SOURCES EXCLUDE REGEX "/vidicon_display/")
+list(FILTER SOURCES EXCLUDE REGEX "/vidicon/")
 list(FILTER SOURCES EXCLUDE REGEX "/web/")
 
 # Lib
@@ -23,7 +23,7 @@ add_library(client_wt_lib
 
 target_sources(client_wt_lib INTERFACE ${COMPONENTS})
 
-find_package(wt CONFIG REQUIRED)
+find_package(wt REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
   aui_wt
   client_common

@@ -24,8 +24,8 @@ add_subdirectory(print)
 add_subdirectory(services)
 add_subdirectory(modus)
 add_subdirectory(vidicon)
-add_subdirectory(main_window)
 add_subdirectory(test)
+add_subdirectory(main_window)
 
 add_library(client_common INTERFACE)
 

@@ -1,8 +1,8 @@
 #include "components/graph/graph_view.h"
 
+#include "aui/test/app_environment.h"
 #include "common_resources.h"
 #include "controller/test/controller_environment.h"
-#include "test/app_environment.h"
 
 #include <boost/asio/io_context.hpp>
 

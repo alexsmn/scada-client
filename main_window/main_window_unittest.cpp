@@ -1,15 +1,15 @@
 #include "main_window/main_window.h"
 
+#include "aui/models/simple_menu_model.h"
+#include "aui/models/status_bar_model_mock.h"
+#include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
+#include "filesystem/file_cache.h"
+#include "filesystem/file_registry.h"
 #include "main_window/action_manager.h"
 #include "main_window/controller_factory_mock.h"
 #include "main_window/main_window_manager.h"
-#include "aui/models/simple_menu_model.h"
-#include "aui/models/status_bar_model_mock.h"
-#include "filesystem/file_cache.h"
-#include "filesystem/file_registry.h"
 #include "profile/profile.h"
-#include "test/app_environment.h"
 
 #if defined(UI_QT)
 #include "main_window/qt/main_window_qt.h"
