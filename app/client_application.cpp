@@ -61,8 +61,7 @@
 
 #if !defined(UI_WT)
 #include "modus/libmodus/modus_module2.h"
-#include "vidicon/display/vidicon_display_module.h"
-#include "vidicon/teleclient/vidicon_client.h"
+#include "vidicon/vidicon_module.h"
 #endif
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
@@ -159,13 +158,13 @@ ClientApplication::~ClientApplication() {
   if (profile_ && profile_loaded_)
     profile_->Save(*event_fetcher_, *portfolio_manager_, *favourites_);
 
-    // Shutdown OPC.
-    // extern void ShutdownOpc();
-    // ShutdownOpc();
+  // Shutdown OPC.
+  // extern void ShutdownOpc();
+  // ShutdownOpc();
+
+  singletons_.clear();
 
 #if !defined(UI_WT)
-  vidicon_client_.reset();
-
   ModusModule2::SetInstance(nullptr);
   modus_module_.reset();
 #endif
@@ -293,13 +292,11 @@ void ClientApplication::OnStartLoginCompleted() {
                               .profile_ = *profile_});
 
 #if !defined(UI_WT)
-  vidicon_client_ =
-      std::make_unique<vidicon::VidiconClient>(vidicon::VidiconClientContext{
-          .executor_ = executor_, .timed_data_service_ = *timed_data_service_});
-
-  singletons_.emplace_back(std::make_shared<VidiconDisplayModule>(
-      VidiconDisplayModuleContext{.controller_registry_ = *controller_registry_,
-                                  .write_service_ = *write_service_}));
+  singletons_.emplace_back(std::make_shared<VidiconModule>(
+      VidiconModuleContext{.executor_ = executor_,
+                           .timed_data_service_ = *timed_data_service_,
+                           .controller_registry_ = *controller_registry_,
+                           .write_service_ = *write_service_}));
 
   modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
   ModusModule2::SetInstance(modus_module_.get());
@@ -352,17 +349,13 @@ MainWindowContext ClientApplication::MakeMainWindowContext(int window_id) {
       return nullptr;
     }
 
-    return registrar->CreateController(ControllerContext {
-      executor_, delegate, alias_resolver_, *task_manager_,
-          *master_data_services_, *event_fetcher_, *master_data_services_,
-          *master_data_services_, *timed_data_service_, *node_service_,
-          *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
-          *profile_, dialog_service, *blinker_manager_, *create_tree_,
-          *property_service_,
-#if !defined(UI_WT)
-          *vidicon_client_,
-#endif
-    });
+    return registrar->CreateController(ControllerContext{
+        executor_, delegate, alias_resolver_, *task_manager_,
+        *master_data_services_, *event_fetcher_, *master_data_services_,
+        *master_data_services_, *timed_data_service_, *node_service_,
+        *portfolio_manager_, *local_events_, *favourites_, *file_cache_,
+        *profile_, dialog_service, *blinker_manager_, *create_tree_,
+        *property_service_});
   };
 
   auto login_handler = [this](bool login) {

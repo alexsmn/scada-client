@@ -17,10 +17,6 @@ namespace net {
 class TransportFactory;
 }
 
-namespace vidicon {
-class VidiconClient;
-}
-
 class ActionManager;
 class BlinkerManager;
 class ConnectionStateReporter;
@@ -120,7 +116,6 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<WriteService> write_service_;
 
 #if !defined(UI_WT)
-  std::unique_ptr<vidicon::VidiconClient> vidicon_client_;
   std::unique_ptr<ModusModule2> modus_module_;
 #endif
 

@@ -32,7 +32,7 @@ target_link_libraries(client_qt_lib PUBLIC
   client_portfolio_qt
   client_print_preview_qt
   client_print_service_qt
-  client_vidicon_display_qt
+  client_vidicon_qt
 )
 
 find_package(Qt5LinguistTools REQUIRED)

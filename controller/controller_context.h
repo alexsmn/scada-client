@@ -8,10 +8,6 @@ class HistoryService;
 class SessionService;
 }  // namespace scada
 
-namespace vidicon {
-class VidiconClient;
-}
-
 class BlinkerManager;
 class ControllerDelegate;
 class CreateTree;
@@ -49,7 +45,4 @@ struct ControllerContext {
   BlinkerManager& blinker_manager_;
   CreateTree& create_tree_;
   PropertyService& property_service_;
-#if !defined(UI_WT)
-  vidicon::VidiconClient& vidicon_client_;
-#endif
 };
