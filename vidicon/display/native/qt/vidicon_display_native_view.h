@@ -3,6 +3,7 @@
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 
+#include <QString>
 #include <filesystem>
 
 class ControllerDelegate;
@@ -35,6 +36,8 @@ class VidiconDisplayNativeView : private VidiconDisplayNativeViewContext,
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  private:
+  void OpenWriteWin(const QString& data_source);
+
   std::filesystem::path path_;
 
   QWidget* widget_ = nullptr;

@@ -1,5 +1,6 @@
 ﻿#include "vidicon/display/native/qt/vidicon_display_native_view.h"
 
+#include "aui/dialog_service.h"
 #include "common_resources.h"
 #include "components/write/write_service.h"
 #include "controller/controller_delegate.h"
@@ -14,6 +15,7 @@
 
 #include <QLabel>
 #include <TeleClient.h>
+#include <format>
 
 namespace {
 
@@ -93,9 +95,7 @@ UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
         return;
       }
 
-      QString data_source = arguments[0].toString();
-      write_service_.ExecuteWriteDialog(dialog_service_, node_id,
-                                        /*manual*/ false);
+      OpenWriteWin(arguments[0].toString());
     }
   };
 
@@ -105,4 +105,20 @@ UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
 
 void VidiconDisplayNativeView::Save(WindowDefinition& definition) {
   definition.path = path_;
+}
+
+void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source) {
+  auto node_id = vidicon::ToNodeId(data_source.toStdWString());
+
+  if (node_id.is_null()) {
+    dialog_service_.RunMessageBox(
+        QString::fromWCharArray(L"Неверный адрес объекта управления: %1.")
+            .arg(data_source)
+            .toStdU16String(),
+        /*title*/ {}, MessageBoxMode::Error);
+    return;
+  }
+
+  write_service_.ExecuteWriteDialog(dialog_service_, node_id,
+                                    /*manual*/ false);
 }
