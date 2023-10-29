@@ -38,6 +38,7 @@
 #include "main_window/main_menu_model.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
+#include "main_window/main_window_module.h"
 #include "main_window/opened_view_commands.h"
 #include "main_window/selection_commands.h"
 #include "main_window/status_bar_model_impl.h"
@@ -154,6 +155,7 @@ ClientApplication::~ClientApplication() {
   node_service_progress_tracker_.reset();
   event_dispatcher_.reset();
   main_window_manager_.reset();
+  main_window_module_.reset();
 
   if (profile_ && profile_loaded_)
     profile_->Save(*event_fetcher_, *portfolio_manager_, *favourites_);
@@ -316,6 +318,9 @@ void ClientApplication::OnStartLoginCompleted() {
   create_tree_ = std::make_unique<CreateTree>();
 
   property_service_ = std::make_unique<PropertyService>();
+
+  main_window_module_ =
+      std::make_unique<MainWindowModule>(MainWindowModuleContext{});
 
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{

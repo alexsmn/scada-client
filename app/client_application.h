@@ -32,6 +32,7 @@ class FileSystemComponent;
 class Logger;
 class LocalEvents;
 class MainWindowManager;
+class MainWindowModule;
 class MasterDataServices;
 class NodeService;
 class NodeServiceProgressTracker;
@@ -121,6 +122,7 @@ class ClientApplication : private ClientApplicationContext {
 
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
 
+  std::unique_ptr<MainWindowModule> main_window_module_;
   std::unique_ptr<MainWindowManager> main_window_manager_;
 
   std::unique_ptr<EventDispatcher> event_dispatcher_;
