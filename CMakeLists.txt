@@ -1,6 +1,7 @@
 # Required for `AUTOMOC`, `AUTOUIC`, and `AUTORCC` added to all
 # `client_module` targets.
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt5LinguistTools REQUIRED)
 
 include(client_module.cmake)
 

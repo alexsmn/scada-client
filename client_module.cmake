@@ -20,6 +20,15 @@ function(client_module MODULE_NAME)
         AUTOUIC ON
         AUTORCC ON
       )
+
+      file(GLOB TRANSLATIONS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${CONFIG}/*.ts")
+      if(TRANSLATIONS)
+        message("client_module(${MODULE_NAME}_${CONFIG}): translations = ${TRANSLATIONS}")
+        get_target_property(SOURCES ${MODULE_NAME}_${CONFIG} SOURCES)
+        qt5_create_translation(TRANSLATIONS_OUT ${SOURCES} ${TRANSLATIONS})
+        qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
+        target_sources(${MODULE_NAME}_${CONFIG} PRIVATE ${TRANSLATIONS})
+      endif()
     endif()
   endforeach()
 endfunction()

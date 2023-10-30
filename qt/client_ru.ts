@@ -301,21 +301,6 @@
     </message>
 </context>
 <context>
-    <name>MainWindowQt</name>
-    <message>
-        <source>Local</source>
-        <translation type="vanished">Локальный</translation>
-    </message>
-    <message>
-        <source>%1 (Server: %2)</source>
-        <translation type="vanished">%1 (Сервер: %2)</translation>
-    </message>
-    <message>
-        <source>Toolbar</source>
-        <translation type="vanished">Панель инструментов</translation>
-    </message>
-</context>
-<context>
     <name>MultiCreateDialog</name>
     <message>
         <location filename="../components/multi_create/qt/multi_create_dialog.ui" line="20"/>
@@ -433,53 +418,6 @@
         <location filename="../components/time_range/qt/time_range_dialog.ui" line="139"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
-    </message>
-</context>
-<context>
-    <name>TransportDialog</name>
-    <message>
-        <source>Transport</source>
-        <translation type="vanished">Транспорт</translation>
-    </message>
-    <message>
-        <source>Type:</source>
-        <translation type="vanished">Тип:</translation>
-    </message>
-    <message>
-        <source>Host:</source>
-        <translation type="vanished">Хост:</translation>
-    </message>
-    <message>
-        <source>Port:</source>
-        <translation type="vanished">Порт:</translation>
-    </message>
-    <message>
-        <source>Flow Control:</source>
-        <translation type="vanished">Управление потоком:</translation>
-    </message>
-    <message>
-        <source>Stop Bits:</source>
-        <translation type="vanished">Стоповые биты:</translation>
-    </message>
-    <message>
-        <source>Bit Count:</source>
-        <translation type="vanished">Биты данных:</translation>
-    </message>
-    <message>
-        <source>Parity:</source>
-        <translation type="vanished">Четность:</translation>
-    </message>
-    <message>
-        <source>Baud Rate:</source>
-        <translation type="vanished">Скорость (бод):</translation>
-    </message>
-    <message>
-        <source>OK</source>
-        <translation type="vanished">ОК</translation>
-    </message>
-    <message>
-        <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
     </message>
 </context>
 <context>
