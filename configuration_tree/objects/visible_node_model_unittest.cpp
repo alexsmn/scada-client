@@ -1,4 +1,4 @@
-#include "components/object_tree/visible_node_model.h"
+#include "configuration_tree/objects/visible_node_model.h"
 
 #include "base/test/test_executor.h"
 #include "profile/profile.h"

@@ -1,6 +1,6 @@
 #include "hardware_tree_model.h"
 
-#include "components/configuration_tree/node_service_tree_impl.h"
+#include "configuration_tree/lib/node_service_tree_impl.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_service.h"

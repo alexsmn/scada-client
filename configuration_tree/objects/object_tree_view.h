@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/configuration_tree/configuration_tree_view.h"
+#include "configuration_tree/lib/configuration_tree_view.h"
 #include "controller/contents_observer.h"
 #include "aui/models/tree_model.h"
 

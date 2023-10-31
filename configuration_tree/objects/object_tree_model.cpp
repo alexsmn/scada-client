@@ -1,6 +1,6 @@
-﻿#include "components/object_tree/object_tree_model.h"
+﻿#include "configuration_tree/objects/object_tree_model.h"
 
-#include "components/configuration_tree/node_service_tree_impl.h"
+#include "configuration_tree/lib/node_service_tree_impl.h"
 #include "scada/standard_node_ids.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"

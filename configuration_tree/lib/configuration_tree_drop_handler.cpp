@@ -1,7 +1,7 @@
-#include "components/configuration_tree/configuration_tree_drop_handler.h"
+#include "configuration_tree/lib/configuration_tree_drop_handler.h"
 
 #include "common/formula_util.h"
-#include "components/configuration_tree/configuration_tree_node.h"
+#include "configuration_tree/lib/configuration_tree_node.h"
 #include "item_drag_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"

@@ -31,6 +31,7 @@ set_target_properties(client_qt_lib PROPERTIES
 target_link_libraries(client_qt_lib PUBLIC
   aui_qt
   client_common
+  client_configuration_tree_qt
   client_controller_qt
   client_graph_qt
   client_main_window_qt

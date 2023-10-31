@@ -1,9 +1,9 @@
 #pragma once
 
-#include "components/configuration_tree/configuration_tree_drop_handler.h"
-#include "components/configuration_tree/configuration_tree_model.h"
-#include "components/configuration_tree/configuration_tree_view.h"
-#include "components/configuration_tree/node_service_tree_impl.h"
+#include "configuration_tree/lib/configuration_tree_drop_handler.h"
+#include "configuration_tree/lib/configuration_tree_model.h"
+#include "configuration_tree/lib/configuration_tree_view.h"
+#include "configuration_tree/lib/node_service_tree_impl.h"
 #include "node_service/node_service.h"
 
 class NodesView : public ConfigurationTreeView {

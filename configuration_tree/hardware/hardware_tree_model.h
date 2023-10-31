@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/configuration_tree/configuration_tree_model.h"
+#include "configuration_tree/lib/configuration_tree_model.h"
 
 #include <memory>
 

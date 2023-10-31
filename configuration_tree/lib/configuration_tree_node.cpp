@@ -1,6 +1,6 @@
-#include "components/configuration_tree/configuration_tree_node.h"
+#include "configuration_tree/lib/configuration_tree_node.h"
 
-#include "components/configuration_tree/configuration_tree_model.h"
+#include "configuration_tree/lib/configuration_tree_model.h"
 #include "model/node_id_util.h"
 
 // ConfigurationTreeNode

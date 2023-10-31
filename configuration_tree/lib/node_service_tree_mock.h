@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/configuration_tree/node_service_tree.h"
+#include "configuration_tree/lib/node_service_tree.h"
 
 #include <gmock/gmock.h>
 

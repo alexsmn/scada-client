@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/boost_log.h"
-#include "components/configuration_tree/configuration_tree_node.h"
-#include "components/configuration_tree/node_service_tree.h"
+#include "configuration_tree/lib/configuration_tree_node.h"
+#include "configuration_tree/lib/node_service_tree.h"
 #include "aui/models/tree_node_model.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"

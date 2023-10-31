@@ -1,6 +1,6 @@
-#include "components/object_tree/visible_node_model.h"
+#include "configuration_tree/objects/visible_node_model.h"
 
-#include "components/configuration_tree/configuration_tree_model.h"
+#include "configuration_tree/lib/configuration_tree_model.h"
 #include "model/data_items_node_ids.h"
 #include "services/device_state_notifier.h"
 #include "profile/profile.h"

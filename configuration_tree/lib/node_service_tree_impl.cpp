@@ -1,4 +1,4 @@
-#include "components/configuration_tree/node_service_tree_impl.h"
+#include "configuration_tree/lib/node_service_tree_impl.h"
 
 #include "base/containers/contains.h"
 #include "base/executor.h"

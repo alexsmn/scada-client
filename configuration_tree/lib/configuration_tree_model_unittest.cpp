@@ -1,6 +1,6 @@
-#include "components/configuration_tree/configuration_tree_model.h"
+#include "configuration_tree/lib/configuration_tree_model.h"
 
-#include "components/configuration_tree/node_service_tree_mock.h"
+#include "configuration_tree/lib/node_service_tree_mock.h"
 #include "scada/standard_node_ids.h"
 #include "node_service/node_model_mock.h"
 

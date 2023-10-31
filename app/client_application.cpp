@@ -21,6 +21,7 @@
 #include "components/favourites/favourites.h"
 #include "components/portfolio/portfolio_manager.h"
 #include "components/write/write_service_impl.h"
+#include "configuration_tree/configuration_tree_module.h"
 #include "controller/component_api_impl.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
@@ -280,6 +281,11 @@ void ClientApplication::OnStartLoginCompleted() {
       WriteServiceImplContext{.executor_ = executor_,
                               .timed_data_service_ = *timed_data_service_,
                               .profile_ = *profile_});
+
+  singletons_.emplace(
+      std::make_shared<ConfigurationTreeModule>(ConfigurationTreeModuleContext{
+          .controller_registry_ = *controller_registry_,
+          .profile_ = *profile_}));
 
 #if !defined(UI_WT)
   singletons_.emplace(std::make_shared<VidiconModule>(

@@ -27,6 +27,7 @@ find_package(wt REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
   aui_wt
   client_common
+  client_configuration_tree_wt
   client_controller_wt
   client_filesystem_wt
   client_main_window_wt
