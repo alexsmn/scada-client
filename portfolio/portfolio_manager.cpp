@@ -1,9 +1,9 @@
-﻿#include "components/portfolio/portfolio_manager.h"
+﻿#include "portfolio/portfolio_manager.h"
 
 #include "base/logging.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
-#include "components/portfolio/portfolio.h"
+#include "portfolio/portfolio.h"
 #include "scada/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"

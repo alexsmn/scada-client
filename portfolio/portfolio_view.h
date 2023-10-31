@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controller/command_registry.h"
-#include "components/portfolio/portfolio.h"
+#include "portfolio/portfolio.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"

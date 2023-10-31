@@ -19,7 +19,7 @@
 #include "common/master_data_services.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
-#include "components/portfolio/portfolio_manager.h"
+#include "portfolio/portfolio_manager.h"
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
 #include "controller/component_api_impl.h"

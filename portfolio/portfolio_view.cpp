@@ -1,8 +1,8 @@
-﻿#include "components/portfolio/portfolio_view.h"
+﻿#include "portfolio/portfolio_view.h"
 
 #include "aui/tree.h"
 #include "common_resources.h"
-#include "components/portfolio/portfolio_tree_model.h"
+#include "portfolio/portfolio_tree_model.h"
 #include "components/select_item/select_item_dialog.h"
 #include "controller/controller_delegate.h"
 #include "node_service/node_service.h"

@@ -17,6 +17,7 @@ add_subdirectory(profile)
 # `controller` depends on `profile`.
 add_subdirectory(controller)
 add_subdirectory(services)
+add_subdirectory(portfolio)
 add_subdirectory(filesystem)
 add_subdirectory(web)
 add_subdirectory(print)

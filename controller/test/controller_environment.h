@@ -5,7 +5,7 @@
 #include "base/test/test_executor.h"
 #include "common/aliases_mock.h"
 #include "components/favourites/favourites.h"
-#include "components/portfolio/portfolio_manager.h"
+#include "portfolio/portfolio_manager.h"
 #include "controller/controller_delegate_mock.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider_mock.h"

@@ -15,15 +15,15 @@
 #include "common_resources.h"
 #include "components/events/events_component.h"
 #include "components/favourites/favourites.h"
-#include "components/portfolio/portfolio.h"
-#include "components/portfolio/portfolio_component.h"
-#include "components/portfolio/portfolio_manager.h"
 #include "components/table/table_component.h"
 #include "configuration_tree/configuration_tree_component.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
+#include "portfolio/portfolio.h"
+#include "portfolio/portfolio_component.h"
+#include "portfolio/portfolio_manager.h"
 #include "scada/event.h"
 
 #if !defined(UI_WT)

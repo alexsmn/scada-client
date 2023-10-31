@@ -1,6 +1,6 @@
-﻿#include "components/portfolio/portfolio_component.h"
+﻿#include "portfolio/portfolio_component.h"
 
-#include "components/portfolio/portfolio_view.h"
+#include "portfolio/portfolio_view.h"
 #include "controller/controller_registry.h"
 
 const WindowInfo kPortfolioWindowInfo = {ID_PORTFOLIO_VIEW,
