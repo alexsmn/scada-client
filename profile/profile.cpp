@@ -290,6 +290,10 @@ void Profile::Save(const NodeEventProvider& node_event_provider,
                    const Favourites& favourites) {
   LOG(INFO) << "Save profile";
 
+  for (const auto& writer : writers_) {
+    writer(*this);
+  }
+
   auto data = SaveToValue(node_event_provider, portfolio_manager, favourites);
 
   if (SaveJsonToFile(data, GetFilePath()))

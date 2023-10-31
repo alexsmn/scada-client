@@ -113,8 +113,9 @@ class Profile {
   CsvExportParams csv_export_params;
   std::filesystem::path csv_export_dir;
 
-  using Writer = std::function<void(base::Value& data)>;
-  Writer writers;
+  using Writer = std::function<void(Profile& profile)>;
+
+  void RegisterWriter(const Writer& writer) { writers_.emplace_back(writer); }
 
  private:
   void Load(const base::Value& data,
@@ -126,4 +127,6 @@ class Profile {
                           const Favourites& favourites) const;
 
   std::filesystem::path GetFilePath();
+
+  std::vector<Writer> writers_;
 };

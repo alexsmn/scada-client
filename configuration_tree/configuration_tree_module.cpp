@@ -5,6 +5,7 @@
 #include "configuration_tree/nodes/nodes_view.h"
 #include "configuration_tree/objects/object_tree_view.h"
 #include "controller/controller_registry.h"
+#include "profile/profile.h"
 
 ConfigurationTreeModule::ConfigurationTreeModule(
     ConfigurationTreeModuleContext&& context)
@@ -23,4 +24,8 @@ ConfigurationTreeModule::ConfigurationTreeModule(
       kNodesWindowInfo, [this](const ControllerContext& context) {
         return std::make_unique<NodesView>(context);
       });
+
+  profile_.RegisterWriter([this](Profile& profile) {
+    // TODO: Add writers.
+  });
 }
