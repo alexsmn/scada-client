@@ -1,4 +1,4 @@
-#include "components/graph/graph_view.h"
+#include "graph/graph_view.h"
 
 #include "aui/test/app_environment.h"
 #include "common_resources.h"

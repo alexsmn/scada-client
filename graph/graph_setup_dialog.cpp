@@ -1,4 +1,4 @@
-#include "components/graph/graph_setup_dialog.h"
+#include "graph/graph_setup_dialog.h"
 
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"

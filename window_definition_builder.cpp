@@ -15,7 +15,7 @@
 #include "controller/window_info.h"
 
 #if !defined(UI_WT)
-#include "components/graph/graph_component.h"
+#include "graph/graph_component.h"
 #endif
 
 namespace {

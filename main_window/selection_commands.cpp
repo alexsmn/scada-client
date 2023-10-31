@@ -48,7 +48,7 @@
 #include "window_definition_builder.h"
 
 #if !defined(UI_WT)
-#include "components/graph/graph_component.h"
+#include "graph/graph_component.h"
 #include "modus/modus_component.h"
 #endif
 

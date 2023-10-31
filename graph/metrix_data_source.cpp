@@ -1,4 +1,4 @@
-#include "components/graph/metrix_data_source.h"
+#include "graph/metrix_data_source.h"
 
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"

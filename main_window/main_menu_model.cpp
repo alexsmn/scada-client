@@ -21,7 +21,7 @@
 #include "profile/profile.h"
 
 #if !defined(UI_WT)
-#include "components/graph/graph_component.h"
+#include "graph/graph_component.h"
 #include "modus/modus_component.h"
 #include "vidicon/display/vidicon_display_component.h"
 #endif

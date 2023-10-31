@@ -27,7 +27,7 @@
 #include "scada/event.h"
 
 #if !defined(UI_WT)
-#include "components/graph/graph_component.h"
+#include "graph/graph_component.h"
 #endif
 
 #include <ATLComTime.h>

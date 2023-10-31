@@ -3,7 +3,7 @@
 #include "aui/color.h"
 #include "aui/types.h"
 #include "controller/command_registry.h"
-#include "components/graph/metrix_graph.h"
+#include "graph/metrix_graph.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"

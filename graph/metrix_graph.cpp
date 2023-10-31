@@ -1,10 +1,10 @@
-#include "components/graph/metrix_graph.h"
+#include "graph/metrix_graph.h"
 
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/optional_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "components/graph/metrix_data_source.h"
+#include "graph/metrix_data_source.h"
 
 #if defined(UI_QT)
 #include "graph_qt/graph_axis.h"
