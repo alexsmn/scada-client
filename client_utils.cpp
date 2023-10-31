@@ -10,7 +10,6 @@
 #include "base/win/clipboard.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
-#include "controller/contents_model.h"
 #include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -22,7 +21,6 @@
 #include "profile/profile.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
-#include "controller/window_info.h"
 
 inline void AppendHint(std::u16string& hint,
                        std::u16string_view title,

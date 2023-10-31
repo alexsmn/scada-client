@@ -40,6 +40,7 @@ target_link_libraries(client_qt_lib PUBLIC
   client_print_preview_qt
   client_print_service_qt
   client_properties_qt
+  client_services_qt
   client_vidicon_qt
 )
 

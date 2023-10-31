@@ -6,4 +6,6 @@ client_module_link_libraries(client_configuration_tree_objects PUBLIC
 
 client_module_link_libraries(client_configuration_tree_objects PRIVATE
   client_configuration_tree_lib
+  client_services
+  timed_data
 )
