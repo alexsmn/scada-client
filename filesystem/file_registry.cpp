@@ -7,13 +7,13 @@
 #include <cassert>
 
 void FileRegistry::RegisterType(int id,
-                                std::string name,
+                                std::string_view name,
                                 std::string_view extensions) {
   assert(type_map_.find(id) == type_map_.end());
 
   TypeEntry& entry = type_map_[id];
   entry.type_id = id;
-  entry.name = std::move(name);
+  entry.name = name;
   entry.extensions =
       base::SplitString(AsStringPiece(extensions), ";", base::TRIM_WHITESPACE,
                         base::SPLIT_WANT_NONEMPTY);

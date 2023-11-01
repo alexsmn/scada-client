@@ -44,10 +44,6 @@ class TimedDataService;
 class Speech;
 class WriteService;
 
-#if !defined(UI_WT)
-class ModusModule2;
-#endif
-
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;
   const std::shared_ptr<Executor> executor_;
@@ -107,10 +103,6 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<FileCache> file_cache_;
 
   std::unique_ptr<WriteService> write_service_;
-
-#if !defined(UI_WT)
-  std::unique_ptr<ModusModule2> modus_module_;
-#endif
 
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
 

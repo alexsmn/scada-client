@@ -19,7 +19,6 @@
 #include "common/master_data_services.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
-#include "portfolio/portfolio_manager.h"
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
 #include "controller/component_api_impl.h"
@@ -34,6 +33,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
+#include "portfolio/portfolio_manager.h"
 #include "profile/profile.h"
 #include "project.h"
 #include "properties/property_service.h"
@@ -48,7 +48,7 @@
 #include "timed_data/timed_data_service_impl.h"
 
 #if !defined(UI_WT)
-#include "modus/libmodus/modus_module2.h"
+#include "modus/modus_module.h"
 #include "vidicon/vidicon_module.h"
 #endif
 
@@ -154,11 +154,6 @@ ClientApplication::~ClientApplication() {
   while (!singletons_.empty()) {
     singletons_.pop();
   }
-
-#if !defined(UI_WT)
-  ModusModule2::SetInstance(nullptr);
-  modus_module_.reset();
-#endif
 
   file_cache_.reset();
   connection_state_reporter_.reset();
@@ -272,9 +267,6 @@ void ClientApplication::OnStartLoginCompleted() {
                                      .local_events_ = *local_events_});
 
   file_registry_ = std::make_unique<FileRegistry>();
-  RegisterFileType(*file_registry_, ID_MODUS_VIEW, ".sde;.xsde");
-  RegisterFileType(*file_registry_, ID_VIDICON_DISPLAY_VIEW, ".vds");
-
   file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
   write_service_ = std::make_unique<WriteServiceImpl>(
@@ -288,14 +280,17 @@ void ClientApplication::OnStartLoginCompleted() {
           .profile_ = *profile_}));
 
 #if !defined(UI_WT)
+  singletons_.emplace(std::make_shared<ModusModule>(
+      ModusModuleContext{.controller_registry_ = *controller_registry_,
+                         .blinker_manager_ = *blinker_manager_,
+                         .file_registry_ = *file_registry_}));
+
   singletons_.emplace(std::make_shared<VidiconModule>(
       VidiconModuleContext{.executor_ = executor_,
                            .timed_data_service_ = *timed_data_service_,
                            .controller_registry_ = *controller_registry_,
-                           .write_service_ = *write_service_}));
-
-  modus_module_ = std::make_unique<ModusModule2>(*blinker_manager_);
-  ModusModule2::SetInstance(modus_module_.get());
+                           .write_service_ = *write_service_,
+                           .file_registry_ = *file_registry_}));
 #endif
 
   favourites_ = std::make_unique<Favourites>();
@@ -336,6 +331,8 @@ void ClientApplication::OnStartLoginCompleted() {
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host_));
+
+  file_cache_->Init();
 }
 
 promise<bool> ClientApplication::Login() {

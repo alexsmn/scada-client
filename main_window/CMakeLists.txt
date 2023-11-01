@@ -22,6 +22,14 @@ target_link_libraries(client_main_window_wt PRIVATE client_wt_lib)
 
 # UTs.
 
-target_link_libraries(client_main_window_qt_unittests PRIVATE aui_test_qt)
+target_link_libraries(client_main_window_qt_unittests PRIVATE
+  aui_test_qt
+  # TODO: Remove dependency on `client_qt_lib`.
+  client_qt_lib
+)
 
-target_link_libraries(client_main_window_wt_unittests PRIVATE aui_test_wt)
+target_link_libraries(client_main_window_wt_unittests PRIVATE
+  aui_test_wt
+  # TODO: Remove dependency on `client_wt_lib`.
+  client_wt_lib
+)

@@ -21,11 +21,4 @@ target_link_libraries(client_modus_qt PRIVATE
   schematic
 )
 
-# Expose component publicly to link it correctly.
-
-target_sources(client_modus_qt INTERFACE
-  "modus_component.cpp"
-  "modus_component.h"
-)
-
 add_subdirectory(tester)

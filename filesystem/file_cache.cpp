@@ -69,13 +69,15 @@ base::Value SaveFileEntry(const FileCache::FileEntry& entry,
 }  // namespace
 
 FileCache::FileCache(const FileRegistry& file_registry)
-    : file_registry_{file_registry} {
-  Load();
-  Refresh();
-}
+    : file_registry_{file_registry} {}
 
 FileCache::~FileCache() {
   Save();
+}
+
+void FileCache::Init() {
+  Load();
+  Refresh();
 }
 
 int FileCache::FileList::Find(const std::filesystem::path& path) const {

@@ -11,9 +11,8 @@ class FileRegistry;
 
 class FileCache {
  public:
-  typedef int ItemTag;
-  typedef std::map<scada::NodeId, ItemTag> ItemMap;
-
+  using ItemTag = int;
+  using ItemMap = std::map<scada::NodeId, ItemTag>;
   using DisplayItem = std::pair<std::filesystem::path, ItemTag>;
 
   explicit FileCache(const FileRegistry& file_registry);
@@ -21,6 +20,10 @@ class FileCache {
 
   FileCache(const FileCache&) = delete;
   FileCache& operator=(const FileCache&) = delete;
+
+  // Must be called after all modules registered their types in the
+  // `FileRegistry`.
+  void Init();
 
   struct FileEntry {
     std::filesystem::path path;

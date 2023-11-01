@@ -2,6 +2,7 @@
 
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
+#include "filesystem/file_registry.h"
 #include "vidicon/display/native/vidicon_display_native_view.h"
 #include "vidicon/display/vidicon_display_component.h"
 #include "vidicon/teleclient/vidicon_client.h"
@@ -22,6 +23,9 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
                 .dialog_service_ = context.dialog_service_,
                 .write_service_ = write_service_});
       });
+
+  file_registry_.RegisterType(kVidiconDisplayWindowInfo.command_id,
+                              kVidiconDisplayWindowInfo.name, ".vds");
 }
 
 VidiconModule::~VidiconModule() = default;

@@ -5,7 +5,7 @@
 
 class FileRegistry {
  public:
-  void RegisterType(int id, std::string name, std::string_view extensions);
+  void RegisterType(int id, std::string_view name, std::string_view extensions);
 
   struct TypeEntry {
     int type_id;
