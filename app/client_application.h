@@ -33,6 +33,7 @@ class Logger;
 class LocalEvents;
 class MainWindowModule;
 class MasterDataServices;
+class MetricService;
 class NodeService;
 class NodeServiceProgressTracker;
 class PortfolioManager;
@@ -73,6 +74,7 @@ class ClientApplication : private ClientApplicationContext {
   void Quit();
 
   std::shared_ptr<Logger> logger_;
+  std::unique_ptr<MetricService> metric_service_;
 
   std::unique_ptr<net::TransportFactory> transport_factory_;
 

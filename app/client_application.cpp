@@ -14,7 +14,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/dump.h"
 #include "common/audit.h"
-#include "common/audit_logger_impl.h"
 #include "common/common_paths.h"
 #include "common/master_data_services.h"
 #include "common_resources.h"
@@ -30,6 +29,8 @@
 #include "filesystem/file_registry.h"
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_module.h"
+#include "metrics/boost_log_metric_reporter.h"
+#include "metrics/metric_service_impl.h"
 #include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
@@ -53,6 +54,8 @@
 #endif
 
 #include <net/transport_factory_impl.h>
+
+using namespace std::chrono_literals;
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
@@ -101,6 +104,9 @@ void RegisterFileType(FileRegistry& file_registry,
 
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
+      metric_service_{
+          std::make_unique<MetricServiceImpl>(executor_,
+                                              /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>()} {
   if (!base::CommandLine::Init(0, nullptr))
@@ -117,12 +123,12 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
 
     {
       auto path = log_path.Append(FILE_PATH_LITERAL("client.log"));
-      logging::LoggingSettings log;
-      log.logging_dest = logging::LOG_TO_FILE;
-      log.log_file_path = path.value().c_str();
-      log.lock_log = logging::LOCK_LOG_FILE;
-      log.delete_old = logging::APPEND_TO_OLD_LOG_FILE;
-      logging::InitLogging(log);
+      logging::InitLogging(logging::LoggingSettings{
+          .logging_dest = logging::LOG_TO_FILE,
+          .log_file_path = path.value().c_str(),
+          .lock_log = logging::LOCK_LOG_FILE,
+          .delete_old = logging::APPEND_TO_OLD_LOG_FILE,
+      });
     }
 
     {
@@ -136,6 +142,11 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   SetUnhandledExceptionFilter(ProcessUnhandledException);
 
   logger_ = std::make_shared<BoostLogAdapter>("client");
+
+  metric_service_->RegisterSink(
+      [reporter = BoostLogMetricReporter{}](const Metrics& metrics) mutable {
+        reporter.Report(metrics);
+      });
 
   transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
 }
@@ -369,28 +380,22 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
   // |Audit| doesn't own underlying services.
   struct Holder {
     Holder(std::shared_ptr<Executor> executor,
-           std::shared_ptr<AuditLogger> audit_logger,
+           MetricService& metric_service,
            DataServices data_services)
         : executor_{std::move(executor)},
-          audit_logger_{std::move(audit_logger)},
+          metric_service_{metric_service},
           data_services_{std::move(data_services)} {}
 
     const std::shared_ptr<Executor> executor_;
-    const std::shared_ptr<AuditLogger> audit_logger_;
+    MetricService& metric_service_;
     const DataServices data_services_;
 
-    const std::shared_ptr<Audit> audit_ =
-        std::make_shared<Audit>(executor_,
-                                audit_logger_,
-                                *data_services_.attribute_service_,
-                                *data_services_.view_service_);
+    const std::shared_ptr<Audit> audit_ = Audit::Create(AuditContext{
+        executor_, metric_service_, *data_services_.attribute_service_,
+        *data_services_.view_service_});
   };
 
-  auto audit_logger = std::make_shared<AuditLoggerImpl>(
-      std::make_shared<NestedLogger>(logger_, "Audit"));
-
-  auto holder =
-      std::make_shared<Holder>(executor_, std::move(audit_logger), services);
+  auto holder = std::make_shared<Holder>(executor_, *metric_service_, services);
 
   std::shared_ptr<Audit> audit{holder, holder->audit_.get()};
 
