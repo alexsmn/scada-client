@@ -1,19 +1,19 @@
-#include "components/watch/watch_event_source_impl.h"
+#include "components/watch/watch_current_event_source.h"
 
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 
-// WatchEventSourceImpl
+// WatchCurrentEventSource
 
-WatchEventSourceImpl::WatchEventSourceImpl(
-    WatchEventSourceImplContext&& context)
-    : WatchEventSourceImplContext{std::move(context)} {}
+WatchCurrentEventSource::WatchCurrentEventSource(
+    WatchEventSourceContext&& context)
+    : WatchEventSourceContext{std::move(context)} {}
 
-void WatchEventSourceImpl::SetDelegate(Delegate* delegate) {
+void WatchCurrentEventSource::SetDelegate(Delegate* delegate) {
   delegate_ = delegate;
 }
 
-void WatchEventSourceImpl::SetDeviceId(const scada::NodeId& device_id) {
+void WatchCurrentEventSource::SetDeviceId(const scada::NodeId& device_id) {
   monitored_item_.unsubscribe();
 
   monitored_item_.subscribe_system_events(

@@ -1,15 +1,15 @@
 ﻿#include "components/watch/watch_view.h"
 
+#include "aui/dialog_service.h"
 #include "aui/table.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
-#include "components/watch/watch_event_source_impl.h"
+#include "components/watch/watch_current_event_source.h"
 #include "components/watch/watch_model.h"
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
-#include "aui/dialog_service.h"
 
 namespace {
 
@@ -18,7 +18,7 @@ struct WatchModelHolder {
       : node_service{node_service} {}
 
   NodeService& node_service;
-  WatchEventSourceImpl event_source{WatchEventSourceImplContext{node_service}};
+  WatchCurrentEventSource event_source{WatchEventSourceContext{node_service}};
   WatchModel model{WatchModelContext{node_service, event_source}};
 };
 

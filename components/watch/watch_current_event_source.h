@@ -7,14 +7,14 @@
 
 class NodeService;
 
-struct WatchEventSourceImplContext {
+struct WatchEventSourceContext {
   NodeService& node_service_;
 };
 
-class WatchEventSourceImpl : private WatchEventSourceImplContext,
-                             public WatchEventSource {
+class WatchCurrentEventSource : private WatchEventSourceContext,
+                                public WatchEventSource {
  public:
-  explicit WatchEventSourceImpl(WatchEventSourceImplContext&& context);
+  explicit WatchCurrentEventSource(WatchEventSourceContext&& context);
 
   // WatchEventSource
   virtual void SetDelegate(Delegate* delegate) override;
