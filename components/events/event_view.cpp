@@ -293,9 +293,11 @@ promise<> EventView::SelectSeverity() {
               message, u"Фильтр", MessageBoxMode::Error));
         }
 
-        return make_resolved_promise(severity);
+        // TODO: Checked cast.
+        return make_resolved_promise(
+            static_cast<scada::EventSeverity>(severity));
       })
-      .then([this](unsigned severity) {
+      .then([this](scada::EventSeverity severity) {
         if (model_->current_events()) {
           node_event_provider_.SetSeverityMin(severity);
         } else {

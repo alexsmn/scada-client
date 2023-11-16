@@ -8,6 +8,7 @@
 
 class LocalEvents {
  public:
+  // TODO: Use `scada::EventSeverity` instead of `Severity`.
   enum Severity { SEV_INFO, SEV_WARNING, SEV_ERROR };
 
   class Observer {
@@ -21,12 +22,12 @@ class LocalEvents {
   LocalEvents(const LocalEvents&) = delete;
   LocalEvents& operator=(const LocalEvents&) = delete;
 
-  typedef std::vector<scada::Event*> Events;
+  using Events = std::vector<scada::Event*>;
   const Events& events() const { return events_; }
 
   void ReportEvent(Severity severity, const scada::LocalizedText& message);
 
-  void AcknowledgeEvent(unsigned ack_id);
+  void AcknowledgeEvent(scada::EventAcknowledgeId ack_id);
   void AcknowledgeAll();
 
   base::ObserverList<Observer>& observers() { return observers_; }

@@ -29,8 +29,8 @@ void LocalEvents::ReportEvent(Severity severity,
     o.OnLocalEvent(e);
 }
 
-void LocalEvents::AcknowledgeEvent(unsigned ack_id) {
-  Events::iterator i = FindAckId(ack_id);
+void LocalEvents::AcknowledgeEvent(scada::EventAcknowledgeId ack_id) {
+  auto i = FindAckId(ack_id);
   assert(i != events_.end());
 
   scada::Event& event = **i;

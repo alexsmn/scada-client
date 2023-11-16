@@ -196,8 +196,9 @@ void Profile::Load(const base::Value& data,
   event_play_sound = GetBool(data, "soundOnEvents", event_play_sound);
   modus2 = GetBool(data, "modus2", modus2);
 
-  unsigned severity_min =
-      GetInt(data, "severityMin", static_cast<unsigned>(scada::kSeverityMin));
+  // TODO: Checked cast.
+  scada::EventSeverity severity_min = static_cast<scada::EventSeverity>(
+      GetInt(data, "severityMin", static_cast<unsigned>(scada::kSeverityMin)));
   node_event_provider.SetSeverityMin(severity_min);
 
   // window settings
@@ -205,7 +206,7 @@ void Profile::Load(const base::Value& data,
     for (const auto& wine : *list) {
       MainWindowDef def;
       LoadMainWindowDef(def, wine);
-      if (def.id == 0 || main_windows.find(def.id) != main_windows.end())
+      if (def.id == 0 || main_windows.contains(def.id))
         def.id = CreateWindowId();
       main_windows[def.id] = def;
     }
