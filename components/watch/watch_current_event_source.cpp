@@ -6,14 +6,16 @@
 // WatchCurrentEventSource
 
 WatchCurrentEventSource::WatchCurrentEventSource(
-    WatchEventSourceContext&& context)
-    : WatchEventSourceContext{std::move(context)} {}
+    WatchCurrentEventSourceContext&& context)
+    : WatchCurrentEventSourceContext{std::move(context)} {}
 
 void WatchCurrentEventSource::SetDelegate(Delegate* delegate) {
   delegate_ = delegate;
 }
 
 void WatchCurrentEventSource::SetDeviceId(const scada::NodeId& device_id) {
+  assert(delegate_);
+
   monitored_item_.unsubscribe();
 
   monitored_item_.subscribe_system_events(

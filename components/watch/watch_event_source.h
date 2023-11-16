@@ -16,6 +16,8 @@ class WatchEventSource {
     virtual void OnError(const scada::Status& status) = 0;
   };
 
+  virtual ~WatchEventSource() = default;
+
   virtual void SetDelegate(Delegate* delegate) = 0;
 
   virtual void SetDeviceId(const scada::NodeId& device_id) = 0;

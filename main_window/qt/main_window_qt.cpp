@@ -2,6 +2,7 @@
 
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
+#include "aui/qt/client_utils_qt.h"
 #include "base/strings/string_util.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
@@ -17,9 +18,8 @@
 #include "main_window/qt/status_bar_controller.h"
 #include "main_window/qt/view_manager_qt.h"
 #include "main_window/selection_commands.h"
+#include "main_window/simple_menu_command_handler.h"
 #include "profile/profile.h"
-#include "qt/client_utils_qt.h"
-#include "simple_menu_command_handler.h"
 
 #include <QAction>
 #include <QApplication>

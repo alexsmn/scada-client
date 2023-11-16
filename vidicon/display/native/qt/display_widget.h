@@ -1,6 +1,6 @@
 #pragma once
 
-#include "qt/qt_conversions.h"
+#include "aui/qt/qt_conversions.h"
 #include "vidicon/display/native/qt/gdi_widget2.h"
 #include "vidicon/display/native/vidicon_display_lib.h"
 

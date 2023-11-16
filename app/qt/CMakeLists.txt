@@ -1,10 +1,11 @@
 # Automatically link Qt executables to qtmain target on Windows
 cmake_policy(SET CMP0020 NEW)
 
-file(GLOB MAIN_QT
-  "../*.rc"
-  "../app/qt/main.cpp"
-  "../res/client.qrc"
+file(GLOB MAIN_QT CONFIGURE_DEPENDS
+  "../../*.rc"
+  "../../res/client.qrc"
+  "../client_application.cpp"
+  "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 

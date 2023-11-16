@@ -7,14 +7,14 @@
 
 class NodeService;
 
-struct WatchCurrentEventSourceContext {
+struct WatchHistorySourceContext {
   NodeService& node_service_;
 };
 
-class WatchCurrentEventSource : private WatchCurrentEventSourceContext,
+class WatchHistoryEventSource : private WatchHistorySourceContext,
                                 public WatchEventSource {
  public:
-  explicit WatchCurrentEventSource(WatchCurrentEventSourceContext&& context);
+  explicit WatchHistoryEventSource(WatchHistorySourceContext&& context);
 
   // WatchEventSource
   virtual void SetDelegate(Delegate* delegate) override;
@@ -22,6 +22,4 @@ class WatchCurrentEventSource : private WatchCurrentEventSourceContext,
 
  private:
   Delegate* delegate_ = nullptr;
-
-  scada::monitored_item monitored_item_;
 };

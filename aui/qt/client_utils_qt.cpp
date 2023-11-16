@@ -51,14 +51,6 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
   }
 }
 
-std::u16string FormatHostName(std::string_view host_name) {
-  if (host_name.empty()) {
-    return QObject::tr("Local").toStdU16String();
-  } else {
-    return base::UTF8ToUTF16(AsStringPiece(host_name));
-  }
-}
-
 QPixmap LoadPixmap(unsigned resource_id) {
   HRSRC hres = FindResource(NULL, MAKEINTRESOURCE(resource_id), L"PNG");
   DWORD size = SizeofResource(NULL, hres);

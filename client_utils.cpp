@@ -1,5 +1,6 @@
 ﻿#include "client_utils.h"
 
+#include "aui/translation.h"
 #include "base/format_time.h"
 #include "base/range_util.h"
 #include "base/string_piece_util.h"
@@ -8,6 +9,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
+#include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
 #include "events/event_set.h"
@@ -17,10 +19,18 @@
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "services/local_events.h"
 #include "profile/profile.h"
+#include "services/local_events.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
+
+std::u16string FormatHostName(std::string_view host_name) {
+  if (host_name.empty()) {
+    return Translate("Local");
+  } else {
+    return base::UTF8ToUTF16(AsStringPiece(host_name));
+  }
+}
 
 inline void AppendHint(std::u16string& hint,
                        std::u16string_view title,

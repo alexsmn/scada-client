@@ -52,6 +52,7 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.ui"
 )
 
+list(FILTER PATHS EXCLUDE REGEX "/client/app/")
 list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/client/base/")
 list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
@@ -90,6 +91,5 @@ foreach(PATH ${PATHS})
   ENDIF()
 endforeach()
 
-add_subdirectory(qt)
-add_subdirectory(wt)
 add_subdirectory(components)
+add_subdirectory(app)

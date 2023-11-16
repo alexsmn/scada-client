@@ -4,7 +4,9 @@
 #include "aui/table.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
+#include "components/watch/watch_combined_event_source.h"
 #include "components/watch/watch_current_event_source.h"
+#include "components/watch/watch_history_event_source.h"
 #include "components/watch/watch_model.h"
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
@@ -18,8 +20,14 @@ struct WatchModelHolder {
       : node_service{node_service} {}
 
   NodeService& node_service;
-  WatchCurrentEventSource event_source{WatchEventSourceContext{node_service}};
-  WatchModel model{WatchModelContext{node_service, event_source}};
+
+  WatchCombinedEventSource combined_event_source{
+      {std::make_shared<WatchCurrentEventSource>(
+           WatchCurrentEventSourceContext{node_service}),
+       std::make_shared<WatchHistoryEventSource>(
+           WatchHistorySourceContext{node_service})}};
+
+  WatchModel model{WatchModelContext{node_service, combined_event_source}};
 };
 
 std::shared_ptr<WatchModel> CreateWatchModel(NodeService& node_service) {

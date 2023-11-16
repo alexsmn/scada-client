@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/models/simple_menu_model.h"
-#include "simple_menu_command_handler.h"
+#include "main_window/simple_menu_command_handler.h"
 
 class ActionManager;
 class MainWindow;
