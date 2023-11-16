@@ -19,7 +19,7 @@ class LocalEventModel : private LocalEvents::Observer {
     return local_events_.events() | boost::adaptors::indirected;
   }
 
-  void Ack(scada::EventAcknowledgeId acknowledge_id) {
+  void Ack(scada::EventId acknowledge_id) {
     local_events_.AcknowledgeEvent(acknowledge_id);
   }
 

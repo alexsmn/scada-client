@@ -21,7 +21,7 @@ class CurrentEventModel : private EventObserver {
 
   bool working() const { return node_event_provider_.IsAcking(); }
 
-  void Ack(scada::EventAcknowledgeId ack_id) {
+  void Ack(scada::EventId ack_id) {
     node_event_provider_.AcknowledgeEvent(ack_id);
   }
 

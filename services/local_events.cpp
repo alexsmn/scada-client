@@ -13,7 +13,7 @@ LocalEvents::~LocalEvents() {
 
 void LocalEvents::ReportEvent(Severity severity,
                               const scada::LocalizedText& message) {
-  scada::EventAcknowledgeId ack_id = next_ack_id_++;
+  scada::EventId ack_id = next_ack_id_++;
   while ((ack_id != 0) && (FindAckId(ack_id) != events_.end()))
     ack_id = next_ack_id_++;
 
@@ -29,7 +29,7 @@ void LocalEvents::ReportEvent(Severity severity,
     o.OnLocalEvent(e);
 }
 
-void LocalEvents::AcknowledgeEvent(scada::EventAcknowledgeId ack_id) {
+void LocalEvents::AcknowledgeEvent(scada::EventId ack_id) {
   auto i = FindAckId(ack_id);
   assert(i != events_.end());
 
@@ -57,7 +57,7 @@ void LocalEvents::AcknowledgeAll() {
 }
 
 LocalEvents::Events::iterator LocalEvents::FindAckId(
-    scada::EventAcknowledgeId ack_id) {
+    scada::EventId ack_id) {
   for (auto i = events_.begin(); i != events_.end(); ++i) {
     if ((*i)->acknowledge_id == ack_id)
       return i;

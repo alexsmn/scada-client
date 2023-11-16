@@ -8,7 +8,7 @@ class PolymorphicEventModel final {
  public:
   std::vector<scada::Event> GetEvents() const { return concept_->GetEvent(); }
 
-  void Ack(scada::EventAcknowledgeId ack_id) { concept_->Ack(ack_id); }
+  void Ack(scada::EventId ack_id) { concept_->Ack(ack_id); }
 
   bool IsWorking() const { return concept_->IsWorking(); }
 
@@ -17,7 +17,7 @@ class PolymorphicEventModel final {
     virtual ~Concept() = default;
 
     virtual std::vector<scada::Event> GetEvents() const = 0;
-    virtual void Ack(scada::EventAcknowledgeId ack_id) = 0;
+    virtual void Ack(scada::EventId ack_id) = 0;
     virtual bool IsWorking() const = 0;
   };
 
@@ -27,7 +27,7 @@ class PolymorphicEventModel final {
       return impl_->GetEvents();
     }
 
-    virtual void Ack(scada::EventAcknowledgeId ack_id) override {
+    virtual void Ack(scada::EventId ack_id) override {
       return impl_->Ack(ack_id);
     }
 
