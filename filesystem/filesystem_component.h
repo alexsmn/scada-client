@@ -2,14 +2,14 @@
 
 #include <memory>
 
-class ComponentApi;
 class FileSynchronizer;
 
+// TODO: Rename to `FilesystemModule`.
 class FileSystemComponent {
  public:
-  FileSystemComponent(ComponentApi& api);
-~FileSystemComponent();
+  FileSystemComponent();
+  ~FileSystemComponent();
 
-private:
+ private:
   std::unique_ptr<FileSynchronizer> file_synchronizer_;
 };

@@ -1,6 +1,5 @@
 ﻿#include "filesystem/filesystem_component.h"
 
-#include "controller/component_api.h"
 #include "controller/controller_registry.h"
 #include "filesystem/file_synchronizer.h"
 #include "filesystem/filesystem_view.h"
@@ -10,7 +9,7 @@ const WindowInfo kWindowInfo = {
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 
-FileSystemComponent::FileSystemComponent(ComponentApi& api) {
+FileSystemComponent::FileSystemComponent() {
   /*std::filesystem::path public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
     file_synchronizer_ =

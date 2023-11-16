@@ -20,7 +20,6 @@
 #include "components/favourites/favourites.h"
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
-#include "controller/component_api_impl.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "events/event_fetcher.h"
@@ -242,8 +241,7 @@ void ClientApplication::OnStartLoginCompleted() {
     alias_service->Resolve(alias, callback);
   };
 
-  ComponentApiImpl component_api;
-  filesystem_component_ = std::make_unique<FileSystemComponent>(component_api);
+  filesystem_component_ = std::make_unique<FileSystemComponent>();
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       .executor_ = executor_,
@@ -350,7 +348,7 @@ promise<bool> ClientApplication::Login() {
   logger_->Write(LogSeverity::Normal, "Login");
 
   assert(base::CommandLine::ForCurrentProcess());
-  auto& command_line = *base::CommandLine::ForCurrentProcess();
+  const auto& command_line = *base::CommandLine::ForCurrentProcess();
 
   scada::ServiceLogParams service_log_params{
       command_line.HasSwitch("log-service-read"),
@@ -413,6 +411,7 @@ void ClientApplication::Quit() {
     return;
   }
 
+  // TODO: Localize.
   local_events_->ReportEvent(LocalEvents::SEV_ERROR,
                              u"Отключение от сервера...");
 

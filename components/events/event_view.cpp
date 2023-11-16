@@ -289,8 +289,9 @@ promise<> EventView::SelectSeverity() {
           auto message =
               base::StringPrintf(u"Введите число от %d до %d.",
                                  scada::kSeverityMin, scada::kSeverityMax);
-          return ToRejectedPromise<unsigned>(dialog_service_.RunMessageBox(
-              message, u"Фильтр", MessageBoxMode::Error));
+          return ToRejectedPromise<scada::EventSeverity>(
+              dialog_service_.RunMessageBox(message, u"Фильтр",
+                                            MessageBoxMode::Error));
         }
 
         // TODO: Checked cast.

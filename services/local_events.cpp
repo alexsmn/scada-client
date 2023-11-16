@@ -4,7 +4,7 @@
 
 #include "scada/event.h"
 
-LocalEvents::LocalEvents() : next_ack_id_(1) {}
+LocalEvents::LocalEvents() = default;
 
 LocalEvents::~LocalEvents() {
   for (Events::iterator i = events_.begin(); i != events_.end(); ++i)
@@ -13,7 +13,7 @@ LocalEvents::~LocalEvents() {
 
 void LocalEvents::ReportEvent(Severity severity,
                               const scada::LocalizedText& message) {
-  unsigned ack_id = next_ack_id_++;
+  scada::EventAcknowledgeId ack_id = next_ack_id_++;
   while ((ack_id != 0) && (FindAckId(ack_id) != events_.end()))
     ack_id = next_ack_id_++;
 
@@ -47,7 +47,7 @@ void LocalEvents::AcknowledgeAll() {
   Events events;
   events_.swap(events);
 
-  for (Events::iterator i = events.begin(); i != events.end(); ++i) {
+  for (auto i = events.begin(); i != events.end(); ++i) {
     scada::Event& event = **i;
     event.acked = true;
     for (auto& o : observers_)
@@ -56,8 +56,9 @@ void LocalEvents::AcknowledgeAll() {
   }
 }
 
-LocalEvents::Events::iterator LocalEvents::FindAckId(unsigned ack_id) {
-  for (Events::iterator i = events_.begin(); i != events_.end(); ++i) {
+LocalEvents::Events::iterator LocalEvents::FindAckId(
+    scada::EventAcknowledgeId ack_id) {
+  for (auto i = events_.begin(); i != events_.end(); ++i) {
     if ((*i)->acknowledge_id == ack_id)
       return i;
   }

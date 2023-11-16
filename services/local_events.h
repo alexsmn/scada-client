@@ -3,8 +3,8 @@
 #include "base/observer_list.h"
 #include "scada/event.h"
 
-#include <deque>
 #include <string>
+#include <vector>
 
 class LocalEvents {
  public:
@@ -33,11 +33,11 @@ class LocalEvents {
   base::ObserverList<Observer>& observers() { return observers_; }
 
  private:
-  Events::iterator FindAckId(unsigned ack_id);
+  Events::iterator FindAckId(scada::EventAcknowledgeId ack_id);
 
   static scada::EventSeverity SeverityToEvent(Severity severity);
 
-  unsigned next_ack_id_;
+  scada::EventAcknowledgeId next_ack_id_ = 1;
 
   Events events_;
 
