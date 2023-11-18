@@ -7,21 +7,22 @@
 LocalEvents::LocalEvents() = default;
 
 LocalEvents::~LocalEvents() {
-  for (Events::iterator i = events_.begin(); i != events_.end(); ++i)
-    delete *i;
+  for (scada::Event* event : events_) {
+    delete event;
+  }
 }
 
 void LocalEvents::ReportEvent(Severity severity,
                               const scada::LocalizedText& message) {
-  scada::EventId ack_id = next_ack_id_++;
-  while ((ack_id != 0) && (FindAckId(ack_id) != events_.end()))
-    ack_id = next_ack_id_++;
+  scada::EventId event_id = next_event_id_++;
+  while ((event_id != 0) && (FindEvent(event_id) != events_.end()))
+    event_id = next_event_id_++;
 
   scada::Event& event = *new scada::Event;
   event.time = base::Time::Now();
   event.message = message;
   event.severity = SeverityToEvent(severity);
-  event.acknowledge_id = ack_id;
+  event.event_id = event_id;
   events_.push_back(&event);
 
   const scada::Event& e = *events_.back();
@@ -29,8 +30,8 @@ void LocalEvents::ReportEvent(Severity severity,
     o.OnLocalEvent(e);
 }
 
-void LocalEvents::AcknowledgeEvent(scada::EventId ack_id) {
-  auto i = FindAckId(ack_id);
+void LocalEvents::AcknowledgeEvent(scada::EventId event_id) {
+  auto i = FindEvent(event_id);
   assert(i != events_.end());
 
   scada::Event& event = **i;
@@ -47,19 +48,17 @@ void LocalEvents::AcknowledgeAll() {
   Events events;
   events_.swap(events);
 
-  for (auto i = events.begin(); i != events.end(); ++i) {
-    scada::Event& event = **i;
-    event.acked = true;
+  for (scada::Event* event : events) {
+    event->acked = true;
     for (auto& o : observers_)
-      o.OnLocalEvent(event);
-    delete &event;
+      o.OnLocalEvent(*event);
+    delete event;
   }
 }
 
-LocalEvents::Events::iterator LocalEvents::FindAckId(
-    scada::EventId ack_id) {
+LocalEvents::Events::iterator LocalEvents::FindEvent(scada::EventId event_id) {
   for (auto i = events_.begin(); i != events_.end(); ++i) {
-    if ((*i)->acknowledge_id == ack_id)
+    if ((*i)->event_id == event_id)
       return i;
   }
   return events_.end();

@@ -414,7 +414,7 @@ void EventTableModel::AcknowledgeRow(int row) {
   switch (r.type) {
     case CURRENT_EVENT:
       assert(!r.event->acked);
-      current_event_model_.Ack(r.event->acknowledge_id);
+      current_event_model_.Ack(r.event->event_id);
       break;
 
     case HISTORICAL_EVENT:
@@ -422,7 +422,7 @@ void EventTableModel::AcknowledgeRow(int row) {
       break;
 
     case LOCAL_EVENT:
-      local_event_model_.Ack(r.event->acknowledge_id);
+      local_event_model_.Ack(r.event->event_id);
       break;
 
     default:

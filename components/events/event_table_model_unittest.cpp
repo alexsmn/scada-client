@@ -38,12 +38,12 @@ NodeEventProvider::EventContainer GenerateEvents(const TestNodeGenerator& nodes,
   NodeEventProvider::EventContainer events;
   for (int i = 0; i < count; ++i) {
     int index = i + start;
-    scada::Event event{
-        .node_id = nodes.node_id(index % nodes.count),
-        .message = boost::locale::conv::utf_to_utf<char16_t>(
-            std::format("Event {}", index + 1)),
-        .acknowledge_id = static_cast<scada::EventId>(index + 1)};
-    events.try_emplace(event.acknowledge_id, std::move(event));
+    scada::EventId event_id = static_cast<scada::EventId>(index + 1);
+    scada::Event event{.event_id = event_id,
+                       .node_id = nodes.node_id(index % nodes.count),
+                       .message = boost::locale::conv::utf_to_utf<char16_t>(
+                           std::format("Event {}", index + 1))};
+    events.try_emplace(event_id, std::move(event));
   }
   return events;
 }

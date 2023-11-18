@@ -27,17 +27,17 @@ class LocalEvents {
 
   void ReportEvent(Severity severity, const scada::LocalizedText& message);
 
-  void AcknowledgeEvent(scada::EventId ack_id);
+  void AcknowledgeEvent(scada::EventId event_id);
   void AcknowledgeAll();
 
   base::ObserverList<Observer>& observers() { return observers_; }
 
  private:
-  Events::iterator FindAckId(scada::EventId ack_id);
+  Events::iterator FindEvent(scada::EventId event_id);
 
   static scada::EventSeverity SeverityToEvent(Severity severity);
 
-  scada::EventId next_ack_id_ = 1;
+  scada::EventId next_event_id_ = 1;
 
   Events events_;
 
