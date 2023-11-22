@@ -1,13 +1,14 @@
 #pragma once
 
-#include "components/watch/watch_event_source.h"
+#include "timed_data/timed_data_view.h"
 #include "aui/models/table_model.h"
-#include "scada/event.h"
+#include "components/watch/watch_event_source.h"
 #include "node_service/node_ref.h"
+#include "scada/event.h"
 
-#include <deque>
 #include <filesystem>
 #include <memory>
+#include <vector>
 
 class NodeService;
 
@@ -46,7 +47,8 @@ class WatchModel : private WatchModelContext,
 
   NodeRef device_;
 
-  std::deque<scada::Event> events_;
+  // Sorted by `scada::Event::time`.
+  std::vector<scada::Event> events_;
 
   bool paused_ = false;
 };

@@ -7,7 +7,8 @@
 
 #include <fstream>
 
-static const int kMaxLines = 10000;
+static const int kHighWaterMarkLines = 10000;
+static const int kLowWaterMarkLines = 9000;
 
 // WatchModel
 
@@ -28,13 +29,31 @@ void WatchModel::OnError(const scada::Status& status) {
 }
 
 void WatchModel::AddLine(const scada::Event& event) {
+  assert(!event.time.is_null());
+
+  auto same_time_events =
+      std::ranges::equal_range(events_, event.time, std::less{},
+                               [](const scada::Event& e) { return e.time; });
+
+  for (scada::Event& e : same_time_events) {
+    if (e.event_id == event.event_id) {
+      if (e.receive_time < event.receive_time ||
+          (e.receive_time == event.receive_time && e != event)) {
+        e = event;
+        int index = static_cast<int>(&e - events_.data());
+        NotifyItemsChanged(index, 1);
+      }
+      return;
+    }
+  }
+
   int index = static_cast<int>(events_.size());
   NotifyItemsAdding(index, 1);
   events_.push_back(event);
   NotifyItemsAdded(index, 1);
 
-  if (events_.size() > kMaxLines) {
-    int delete_count = static_cast<int>(events_.size()) - kMaxLines;
+  if (events_.size() > kHighWaterMarkLines) {
+    int delete_count = static_cast<int>(events_.size()) - kLowWaterMarkLines;
     NotifyItemsRemoving(0, delete_count);
     events_.erase(events_.begin(), events_.begin() + delete_count);
     NotifyItemsRemoved(0, delete_count);
