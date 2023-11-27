@@ -1,10 +1,10 @@
 ﻿#include "main_window/actions.h"
 
+#include "aui/key_codes.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common_resources.h"
 #include "main_window/action.h"
 #include "main_window/action_manager.h"
-#include "aui/key_codes.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
@@ -192,6 +192,13 @@ void AddGlobalActions(ActionManager& action_manager,
 
   action_manager
       .AddAction(*new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, u"Текущие"))
+      .set_checkable(true);
+
+  action_manager
+      .AddAction(*new Action(ID_TIME_RANGE_15M, CATEGORY_PERIOD, u"15 минут"))
+      .set_checkable(true);
+  action_manager
+      .AddAction(*new Action(ID_TIME_RANGE_HOUR, CATEGORY_PERIOD, u"Час"))
       .set_checkable(true);
   action_manager
       .AddAction(*new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, u"День"))

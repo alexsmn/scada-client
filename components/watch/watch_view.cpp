@@ -25,6 +25,7 @@ WatchView::~WatchView() {
 void WatchView::Save(WindowDefinition& definition) {
   WindowItem& item = definition.AddItem("Item");
   item.SetString("path", NodeIdToScadaString(model_->device().node_id()));
+  SaveTimeRange(definition, model_->time_range());
 }
 
 std::u16string WatchView::MakeTitle() const {
@@ -46,6 +47,10 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
     auto path = item->GetString("path");
     auto device_id = NodeIdFromScadaString(path);
     model_->SetDevice(node_service_.GetNode(device_id));
+  }
+
+  if (auto time_range = RestoreTimeRange(definition)) {
+    model_->SetTimeRange(*time_range);
   }
 
   table_ = new aui::Table(model_, {columns, columns + _countof(columns)});
@@ -106,4 +111,12 @@ void WatchView::OnItemsAdded(int first, int count) {
 
 ExportModel::ExportData WatchView::GetExportData() {
   return TableExportData{*model_, table_->columns()};
+}
+
+TimeRange WatchView::GetTimeRange() const {
+  return model_->time_range();
+}
+
+void WatchView::SetTimeRange(const TimeRange& time_range) {
+  model_->SetTimeRange(time_range);
 }

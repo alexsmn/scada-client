@@ -1,5 +1,6 @@
 ﻿#include "opened_view_commands.h"
 
+#include "aui/dialog_service.h"
 #include "base/command_line.h"
 #include "base/excel.h"
 #include "base/string_piece_util.h"
@@ -11,34 +12,33 @@
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_dialog.h"
 #include "components/csv_export/csv_export.h"
-#include "main_window/actions.h"
-#include "main_window/main_window_util.h"
-#include "main_window/opened_view.h"
-#include "main_window/selection_commands.h"
 #include "components/multi_create/multi_create_dialog.h"
 #include "components/node_properties/node_property_component.h"
-#include "print/preview/print_preview.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller/controller.h"
 #include "controller/controller_registry.h"
 #include "controller/export_model.h"
+#include "controller/selection_model.h"
+#include "controller/time_model.h"
 #include "export_util.h"
+#include "main_window/actions.h"
+#include "main_window/main_window_util.h"
+#include "main_window/opened_view.h"
+#include "main_window/selection_commands.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
 #include "net/transport_string.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "print/preview/print_preview.h"
+#include "print/service/print_service.h"
+#include "profile/profile.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
 #include "scada/status_promise.h"
-#include "controller/selection_model.h"
 #include "services/create_tree.h"
-#include "aui/dialog_service.h"
-#include "print/service/print_service.h"
-#include "profile/profile.h"
 #include "services/task_manager.h"
-#include "controller/time_model.h"
 #include "window_definition_builder.h"
 
 #if defined(UI_QT)
@@ -59,8 +59,12 @@ std::filesystem::path MakeFileName(std::u16string_view text) {
   return result;
 }
 
-TimeRange::Type GetTimeRangeCommand(unsigned command_id) {
+std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
   switch (command_id) {
+    case ID_TIME_RANGE_15M:
+      return base::TimeDelta::FromMinutes(15);
+    case ID_TIME_RANGE_HOUR:
+      return base::TimeDelta::FromHours(1);
     case ID_TIME_RANGE_DAY:
       return TimeRange::Type::Day;
     case ID_TIME_RANGE_WEEK:
@@ -68,9 +72,9 @@ TimeRange::Type GetTimeRangeCommand(unsigned command_id) {
     case ID_TIME_RANGE_MONTH:
       return TimeRange::Type::Month;
     case ID_TIME_RANGE_CUSTOM:
-      return TimeRange::Type::Custom;
+      return TimeRange{/*start=*/base::Time{}, /*end=*/base::Time{}};
     default:
-      return TimeRange::Type::Count;
+      return std::nullopt;
   }
 }
 
@@ -124,17 +128,15 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
       return CanCreateRecord(devices::id::Iec60870LinkType) ? this : nullptr;
-
-    case ID_TIME_RANGE_DAY:
-    case ID_TIME_RANGE_WEEK:
-    case ID_TIME_RANGE_MONTH:
-    case ID_TIME_RANGE_CUSTOM:
-      return controller_->GetTimeModel() != nullptr ? this : nullptr;
   }
 
-  auto node_id = GetNewCommandTypeId(command_id);
-  if (!node_id.is_null())
+  if (GetTimeRangeCommand(command_id)) {
+    return controller_->GetTimeModel() != nullptr ? this : nullptr;
+  }
+
+  if (auto node_id = GetNewCommandTypeId(command_id); !node_id.is_null()) {
     return CanCreateRecord(node_id) ? this : nullptr;
+  }
 
   return nullptr;
 }
@@ -187,10 +189,10 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       return;
   }
 
-  if (auto time_range_type = GetTimeRangeCommand(command_id);
-      time_range_type != TimeRange::Type::Count) {
+  // TODO: Extract `TimeModelCommands`.
+  if (auto time_range = GetTimeRangeCommand(command_id)) {
     if (auto* model = controller_->GetTimeModel()) {
-      if (time_range_type == TimeRange::Type::Custom) {
+      if (time_range->type == TimeRange::Type::Custom) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
         ShowTimeRangeDialog(*dialog_service_, {profile_, range, time_required})
@@ -201,7 +203,7 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
               }
             });
       } else {
-        model->SetTimeRange(time_range_type);
+        model->SetTimeRange(*time_range);
       }
     }
     return;
@@ -217,10 +219,13 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
 }
 
 bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
-  if (auto time_range_type = GetTimeRangeCommand(command_id);
-      time_range_type != TimeRange::Type::Count) {
-    if (auto* model = controller_->GetTimeModel())
-      return model->GetTimeRange().type == GetTimeRangeCommand(command_id);
+  if (auto time_range = GetTimeRangeCommand(command_id)) {
+    if (auto* model = controller_->GetTimeModel()) {
+      auto current_time_range = model->GetTimeRange();
+      return time_range->is_custom()
+                 ? current_time_range.type == time_range->type
+                 : current_time_range == *time_range;
+    }
     return false;
   }
 

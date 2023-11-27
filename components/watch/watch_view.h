@@ -6,6 +6,7 @@
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/export_model.h"
+#include "controller/time_model.h"
 
 #include <memory>
 
@@ -18,6 +19,7 @@ class WatchModel;
 class WatchView : protected ControllerContext,
                   public Controller,
                   private aui::TableModelObserver,
+                  public TimeModel,
                   public ExportModel {
  public:
   explicit WatchView(const ControllerContext& context);
@@ -27,7 +29,12 @@ class WatchView : protected ControllerContext,
   virtual UiView* Init(const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+  virtual TimeModel* GetTimeModel() override { return this; }
   virtual ExportModel* GetExportModel() override { return this; }
+
+  // TimeModel
+  virtual TimeRange GetTimeRange() const override;
+  virtual void SetTimeRange(const TimeRange& time_range) override;
 
   // ExportModel
   virtual ExportData GetExportData() override;

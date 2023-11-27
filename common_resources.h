@@ -85,6 +85,8 @@
 #define ID_TIME_RANGE_DAY               157
 #define ID_TIME_RANGE_WEEK              158
 #define ID_TIME_RANGE_MONTH             159
+#define ID_TIME_RANGE_HOUR              160
+#define ID_TIME_RANGE_15M               170
 #define ID_EDIT                         161
 #define ID_PRINT_PREVIEW                162
 #define ID_VIEW_CHANGE_TITLE            164

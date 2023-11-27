@@ -1,14 +1,13 @@
-#include "time_range.h"
+#include "base/time_range.h"
+
+#include "base/struct_writer.h"
 
 #include <string_view>
 
 namespace {
 
 const std::string_view kTimeRangeStrings[] = {
-    "Custom",
-    "Day",
-    "Week",
-    "Month",
+    "Custom", "Interval", "Day", "Week", "Month",
 };
 
 static_assert(std::size(kTimeRangeStrings) ==
@@ -21,18 +20,13 @@ inline bool CompareBounds(base::Time a, base::Time b, bool dates) {
     return a == b;
 }
 
-}  // namespace
-
-bool operator==(const TimeRange& a, const TimeRange& b) {
-  if (a.type != b.type)
-    return false;
-
-  if (a.dates != b.dates)
-    return false;
-
-  return CompareBounds(a.start, b.start, a.dates) &&
-         CompareBounds(a.end, b.end, b.dates);
+// WARNING: The function operates with UTC time unlikely to `TimeRange` types
+// using local time.
+base::Time AlignTime(base::Time time, base::TimeDelta interval) {
+  return time - (time - base::Time::UnixEpoch()) % interval;
 }
+
+}  // namespace
 
 scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range) {
   auto now = base::Time::Now();
@@ -60,6 +54,10 @@ scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range) {
       base::Time::FromLocalExploded(ts, &from);
       break;
     }
+
+    case TimeRange::Type::Interval:
+      from = AlignTime(now, time_range.interval);
+      break;
 
     case TimeRange::Type::Custom:
       from = time_range.start;
@@ -103,9 +101,18 @@ std::string ToString(const TimeRange& time_range) {
 }
 
 TimeRange::Type ParseTimeRangeType(std::string_view str) {
-  auto i = std::find(std::begin(kTimeRangeStrings), std::end(kTimeRangeStrings),
-                     str);
+  auto i = std::ranges::find(kTimeRangeStrings, str);
   return i != std::end(kTimeRangeStrings)
              ? static_cast<TimeRange::Type>(i - std::begin(kTimeRangeStrings))
              : TimeRange::Type::Count;
+}
+
+std::ostream& operator<<(std::ostream& stream, const TimeRange& time_range) {
+  StructWriter{stream}
+      .AddField("type", time_range.type)
+      .AddField("start", time_range.start)
+      .AddField("end", time_range.end)
+      .AddField("dates", time_range.dates)
+      .AddField("interval", time_range.interval);
+  return stream;
 }

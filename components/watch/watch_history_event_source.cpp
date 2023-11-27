@@ -34,9 +34,11 @@ void WatchHistoryEventSource::FetchEvents() {
     return;
   }
 
+  auto time_range = ToDateTimeRange(time_range_);
+
   node_service_.GetNode(device_id_)
       .scada_node()
-      .read_event_history()
+      .read_event_history({.from = time_range.first})
       .then(BindExecutor(executor_, cancelation_,
                          [this](const std::vector<scada::Event>& events) {
                            for (const auto& event : events) {

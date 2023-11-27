@@ -31,7 +31,7 @@ class WatchHistoryEventSource : private WatchHistorySourceContext,
   Delegate* delegate_ = nullptr;
 
   scada::NodeId device_id_;
-  TimeRange time_range_;
+  TimeRange time_range_ = base::TimeDelta::FromMinutes(15);
 
   Cancelation cancelation_;
 };

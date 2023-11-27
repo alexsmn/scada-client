@@ -198,3 +198,13 @@ TEST(ToJson, WindowDefinition) {
 
   EXPECT_EQ(*expected_json, json);
 }
+
+TEST(FromToJson, TimeRange_Day) {
+  TimeRange time_range{TimeRange::Type::Day};
+  EXPECT_EQ(time_range, FromJson<TimeRange>(ToJson(time_range)));
+}
+
+TEST(FromToJson, TimeRange_Interval) {
+  TimeRange time_range{base::TimeDelta::FromHours(3)};
+  EXPECT_EQ(time_range, FromJson<TimeRange>(ToJson(time_range)));
+}

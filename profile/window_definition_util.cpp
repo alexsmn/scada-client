@@ -67,9 +67,20 @@ std::optional<TimeRange> FromJson(const base::Value& value) {
     auto type = ParseTimeRangeType(type_string->GetString());
     if (type == TimeRange::Type::Count)
       return std::nullopt;
+
     if (type != TimeRange::Type::Custom)
       return type;
   }
+
+  if (auto* interval_value = value.FindKey("interval")) {
+    auto interval = FromJson<base::TimeDelta>(*interval_value);
+    if (!interval.has_value() || interval->is_zero())
+      return std::nullopt;
+
+    return TimeRange{*interval};
+  }
+
+  // Custom time range.
 
   auto* start_value = value.FindKey("start");
   auto* end_value = value.FindKey("end");
@@ -102,7 +113,9 @@ base::Value ToJson(base::Time time) {
 
 base::Value ToJson(const TimeRange& time_range) {
   base::Value result{base::Value::Type::DICTIONARY};
-  if (time_range.type == TimeRange::Type::Custom) {
+  if (time_range.type == TimeRange::Type::Interval) {
+    result.SetKey("interval", ToJson(time_range.interval));
+  } else if (time_range.type == TimeRange::Type::Custom) {
     result.SetKey("start", ToJson(time_range.start));
     result.SetKey("end", ToJson(time_range.end));
     SetKey(result, "dates", time_range.dates);

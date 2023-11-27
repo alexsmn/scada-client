@@ -7,8 +7,16 @@
 
 #include <fstream>
 
+namespace {
+
 static const int kHighWaterMarkLines = 10000;
 static const int kLowWaterMarkLines = 9000;
+
+scada::DateTime GetEventTime(const scada::Event& event) {
+  return event.time;
+}
+
+}  // namespace
 
 // WatchModel
 
@@ -33,8 +41,7 @@ void WatchModel::AddLine(const scada::Event& event) {
 
   // Event time never changes.
   auto same_time_events =
-      std::ranges::equal_range(events_, event.time, std::less{},
-                               [](const scada::Event& e) { return e.time; });
+      std::ranges::equal_range(events_, event.time, std::less{}, &GetEventTime);
 
   for (scada::Event& e : same_time_events) {
     if (e.event_id == event.event_id) {
@@ -48,9 +55,11 @@ void WatchModel::AddLine(const scada::Event& event) {
     }
   }
 
-  int index = static_cast<int>(events_.size());
+  int index = std::ranges::upper_bound(events_, event.time, std::less{},
+                                       &GetEventTime) -
+              events_.begin();
   NotifyItemsAdding(index, 1);
-  events_.push_back(event);
+  events_.emplace(events_.begin() + index, event);
   NotifyItemsAdded(index, 1);
 
   if (events_.size() > kHighWaterMarkLines) {
@@ -67,6 +76,8 @@ void WatchModel::SetDevice(NodeRef device) {
 
   device_ = std::move(device);
 
+  Clear();
+
   event_source_.SetDeviceId(device_.node_id());
 }
 
@@ -75,6 +86,8 @@ void WatchModel::SetTimeRange(const TimeRange& time_range) {
     return;
 
   time_range_ = time_range;
+
+  Clear();
 
   event_source_.SetTimeRange(time_range_);
 }
@@ -128,6 +141,10 @@ void WatchModel::GetCell(aui::TableCell& cell) {
 
 void WatchModel::Clear() {
   int row_count = GetRowCount();
+  if (row_count == 0) {
+    return;
+  }
+
   NotifyItemsRemoving(0, row_count);
   events_.clear();
   NotifyItemsRemoved(0, row_count);
