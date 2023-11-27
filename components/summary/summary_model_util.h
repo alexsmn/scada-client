@@ -21,7 +21,7 @@ inline SummaryModelParams CalculateSummaryModelParams(
     scada::Duration interval) {
   assert(!interval.is_zero());
 
-  auto [start_time, end_time] = GetTimeRangeBounds(time_range);
+  auto [start_time, end_time] = ToDateTimeRange(time_range);
 
   // Align bounds to the aggregation interval.
   auto origin_time = scada::GetLocalAggregateStartTime();

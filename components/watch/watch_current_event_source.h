@@ -11,14 +11,15 @@ struct WatchCurrentEventSourceContext {
   NodeService& node_service_;
 };
 
-class WatchCurrentEventSource : private WatchCurrentEventSourceContext,
-                                public WatchEventSource {
+class WatchCurrentEventSource final : private WatchCurrentEventSourceContext,
+                                      public WatchEventSource {
  public:
   explicit WatchCurrentEventSource(WatchCurrentEventSourceContext&& context);
 
   // WatchEventSource
   virtual void SetDelegate(Delegate* delegate) override;
   virtual void SetDeviceId(const scada::NodeId& device_id) override;
+  virtual void SetTimeRange(const TimeRange& time_range) override;
 
  private:
   Delegate* delegate_ = nullptr;

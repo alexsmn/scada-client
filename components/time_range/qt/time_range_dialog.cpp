@@ -1,7 +1,7 @@
 #include "components/time_range/time_range_dialog.h"
 
-#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
 #include "ui_time_range_dialog.h"
 
 namespace {
@@ -41,7 +41,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 
   ui.timeGroupBox->setChecked(!time_range_.dates);
 
-  auto bounds = GetTimeRangeBounds(time_range_);
+  auto bounds = ToDateTimeRange(time_range_);
   auto start = ToQDateTime(bounds.first);
   auto end = ToQDateTime(bounds.second);
 

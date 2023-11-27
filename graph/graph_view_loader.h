@@ -91,7 +91,7 @@ struct GraphViewLoader {
 
   void FixTimeRange() {
     if (auto time_range = RestoreTimeRange(definition_)) {
-      auto [start, end] = GetTimeRangeBounds(*time_range);
+      auto [start, end] = ToDateTimeRange(*time_range);
       graph_.horizontal_axis().SetRange(views::GraphRange{
           start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME});
       graph_.horizontal_axis().SetTimeFit(time_range->type !=

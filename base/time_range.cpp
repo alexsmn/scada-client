@@ -34,8 +34,7 @@ bool operator==(const TimeRange& a, const TimeRange& b) {
          CompareBounds(a.end, b.end, b.dates);
 }
 
-std::pair<base::Time, base::Time> GetTimeRangeBounds(
-    const TimeRange& time_range) {
+scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range) {
   auto now = base::Time::Now();
   base::Time from, to;
 

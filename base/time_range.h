@@ -2,9 +2,11 @@
 
 #include "base/struct_writer.h"
 #include "base/time/time.h"
+#include "scada/date_time_range.h"
 
 #include <cassert>
 
+// TODO: Rename.
 struct TimeRange {
   enum class Type { Custom, Day, Week, Month, Count };
 
@@ -23,8 +25,7 @@ struct TimeRange {
 
 bool operator==(const TimeRange& a, const TimeRange& b);
 
-std::pair<base::Time, base::Time> GetTimeRangeBounds(
-    const TimeRange& time_range);
+scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range);
 
 std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);

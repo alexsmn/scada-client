@@ -1,10 +1,11 @@
 #pragma once
 
-#include "timed_data/timed_data_view.h"
 #include "aui/models/table_model.h"
+#include "base/time_range.h"
 #include "components/watch/watch_event_source.h"
 #include "node_service/node_ref.h"
 #include "scada/event.h"
+#include "timed_data/timed_data_view.h"
 
 #include <filesystem>
 #include <memory>
@@ -26,6 +27,9 @@ class WatchModel : private WatchModelContext,
   const NodeRef& device() const { return device_; }
   void SetDevice(NodeRef device);
 
+  const TimeRange& time_range() const { return time_range_; }
+  void SetTimeRange(const TimeRange& time_range);
+
   bool paused() const { return paused_; }
   void set_paused(bool paused) { paused_ = paused; }
 
@@ -46,6 +50,8 @@ class WatchModel : private WatchModelContext,
   void AddLine(const scada::Event& event);
 
   NodeRef device_;
+
+  TimeRange time_range_;
 
   // Sorted by `scada::Event::time`.
   std::vector<scada::Event> events_;

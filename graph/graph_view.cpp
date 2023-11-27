@@ -368,7 +368,7 @@ void GraphView::ToggleZoom() {
 
 void GraphView::SetTimeRange(const TimeRange& range) {
   bool time_fit = range.type != TimeRange::Type::Custom;
-  auto [start_time, end_time] = GetTimeRangeBounds(range);
+  auto [start_time, end_time] = ToDateTimeRange(range);
   double low = start_time.ToDoubleT();
   double high = time_fit ? graph_->horizontal_axis().scroll_range().high()
                          : end_time.ToDoubleT();

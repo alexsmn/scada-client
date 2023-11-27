@@ -31,6 +31,7 @@ void WatchModel::OnError(const scada::Status& status) {
 void WatchModel::AddLine(const scada::Event& event) {
   assert(!event.time.is_null());
 
+  // Event time never changes.
   auto same_time_events =
       std::ranges::equal_range(events_, event.time, std::less{},
                                [](const scada::Event& e) { return e.time; });
@@ -67,6 +68,15 @@ void WatchModel::SetDevice(NodeRef device) {
   device_ = std::move(device);
 
   event_source_.SetDeviceId(device_.node_id());
+}
+
+void WatchModel::SetTimeRange(const TimeRange& time_range) {
+  if (time_range_ == time_range)
+    return;
+
+  time_range_ = time_range;
+
+  event_source_.SetTimeRange(time_range_);
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {

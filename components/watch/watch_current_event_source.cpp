@@ -33,3 +33,7 @@ void WatchCurrentEventSource::SetDeviceId(const scada::NodeId& device_id) {
         delegate_->OnEvent(event);
       });
 }
+
+void WatchCurrentEventSource::SetTimeRange(const TimeRange& time_range) {
+  // TODO: Disable current events is time range is not infinite.
+}

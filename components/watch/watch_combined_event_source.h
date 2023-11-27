@@ -26,6 +26,12 @@ class WatchCombinedEventSource : public WatchEventSource {
     }
   }
 
+  virtual void SetTimeRange(const TimeRange& time_range) override {
+    for (auto& event_source : event_sources_) {
+      event_source->SetTimeRange(time_range);
+    }
+  }
+
  private:
   EventSources event_sources_;
 };

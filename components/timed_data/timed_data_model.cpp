@@ -130,7 +130,7 @@ TimeRange TimedDataModel::GetTimeRange() const {
 
 void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   time_range_ = time_range;
-  auto [start, end] = GetTimeRangeBounds(time_range_);
+  auto [start, end] = ToDateTimeRange(time_range_);
 
   if (!timed_data_.connected())
     return;

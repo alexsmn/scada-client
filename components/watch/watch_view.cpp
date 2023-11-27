@@ -4,44 +4,19 @@
 #include "aui/table.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
-#include "components/watch/watch_combined_event_source.h"
-#include "components/watch/watch_current_event_source.h"
-#include "components/watch/watch_history_event_source.h"
 #include "components/watch/watch_model.h"
+#include "components/watch/watch_model_builder.h"
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
 
-namespace {
-
-struct WatchModelHolder {
-  explicit WatchModelHolder(NodeService& node_service)
-      : node_service{node_service} {}
-
-  NodeService& node_service;
-
-  WatchCombinedEventSource combined_event_source{
-      {std::make_shared<WatchCurrentEventSource>(
-           WatchCurrentEventSourceContext{node_service}),
-       std::make_shared<WatchHistoryEventSource>(
-           WatchHistorySourceContext{node_service})}};
-
-  WatchModel model{WatchModelContext{node_service, combined_event_source}};
-};
-
-std::shared_ptr<WatchModel> CreateWatchModel(NodeService& node_service) {
-  auto holder = std::make_shared<WatchModelHolder>(node_service);
-  return std::shared_ptr<WatchModel>(holder, &holder->model);
-}
-
-}  // namespace
-
 // WatchView
 
 WatchView::WatchView(const ControllerContext& context)
     : ControllerContext{context},
-      model_{CreateWatchModel(context.node_service_)} {}
+      model_{WatchModelBuilder{executor_, context.node_service_}
+                 .CreateWatchModel()} {}
 
 WatchView::~WatchView() {
   model_->observers().RemoveObserver(this);
