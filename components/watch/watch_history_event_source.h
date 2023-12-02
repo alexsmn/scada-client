@@ -21,17 +21,10 @@ class WatchHistoryEventSource : private WatchHistorySourceContext,
   explicit WatchHistoryEventSource(WatchHistorySourceContext&& context);
 
   // WatchEventSource
-  virtual void SetDelegate(Delegate* delegate) override;
-  virtual void SetDeviceId(const scada::NodeId& device_id) override;
-  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual void Start(const scada::NodeId& device_id,
+                     const scada::DateTimeRange& time_range,
+                     Delegate& delegate) override;
 
  private:
-  void FetchEvents();
-
-  Delegate* delegate_ = nullptr;
-
-  scada::NodeId device_id_;
-  TimeRange time_range_ = base::TimeDelta::FromMinutes(15);
-
   Cancelation cancelation_;
 };

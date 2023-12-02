@@ -21,9 +21,7 @@ scada::DateTime GetEventTime(const scada::Event& event) {
 // WatchModel
 
 WatchModel::WatchModel(WatchModelContext&& context)
-    : WatchModelContext{std::move(context)} {
-  event_source_.SetDelegate(this);
-}
+    : WatchModelContext{std::move(context)} {}
 
 void WatchModel::OnEvent(const scada::Event& event) {
   if (!paused_)
@@ -71,25 +69,31 @@ void WatchModel::AddLine(const scada::Event& event) {
 }
 
 void WatchModel::SetDevice(NodeRef device) {
-  if (device_ == device)
+  if (device_ == device) {
     return;
+  }
 
   device_ = std::move(device);
 
   Clear();
 
-  event_source_.SetDeviceId(device_.node_id());
+  event_source_.Start(device_.node_id(),
+                      ToDateTimeRangeWithOpenRange(time_range_),
+                      /*delegate=*/*this);
 }
 
 void WatchModel::SetTimeRange(const TimeRange& time_range) {
-  if (time_range_ == time_range)
+  if (time_range_ == time_range) {
     return;
+  }
 
   time_range_ = time_range;
 
   Clear();
 
-  event_source_.SetTimeRange(time_range_);
+  event_source_.Start(device_.node_id(),
+                      ToDateTimeRangeWithOpenRange(time_range_),
+                      /*delegate=*/*this);
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {

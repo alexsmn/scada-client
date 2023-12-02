@@ -5,9 +5,11 @@
 
 #include <memory>
 
+class Executor;
 class NodeService;
 
 struct WatchCurrentEventSourceContext {
+  std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
 };
 
@@ -17,12 +19,10 @@ class WatchCurrentEventSource final : private WatchCurrentEventSourceContext,
   explicit WatchCurrentEventSource(WatchCurrentEventSourceContext&& context);
 
   // WatchEventSource
-  virtual void SetDelegate(Delegate* delegate) override;
-  virtual void SetDeviceId(const scada::NodeId& device_id) override;
-  virtual void SetTimeRange(const TimeRange& time_range) override;
+  virtual void Start(const scada::NodeId& device_id,
+                     const scada::DateTimeRange& time_range,
+                     Delegate& delegate) override;
 
  private:
-  Delegate* delegate_ = nullptr;
-
   scada::monitored_item monitored_item_;
 };

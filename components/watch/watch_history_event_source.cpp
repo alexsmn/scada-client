@@ -3,46 +3,37 @@
 #include "base/executor.h"
 #include "node_service/node_service.h"
 
+namespace {
+
+scada::DateTime SanitizeTimeBound(scada::DateTime time) {
+  return time.is_min() || time.is_max() ? scada::DateTime{} : time;
+}
+
+}  // namespace
+
 // WatchHistoryEventSource
 
 WatchHistoryEventSource::WatchHistoryEventSource(
     WatchHistorySourceContext&& context)
     : WatchHistorySourceContext{std::move(context)} {}
 
-void WatchHistoryEventSource::SetDelegate(Delegate* delegate) {
-  delegate_ = delegate;
-}
-
-void WatchHistoryEventSource::SetDeviceId(const scada::NodeId& device_id) {
-  device_id_ = device_id;
-
-  FetchEvents();
-}
-
-void WatchHistoryEventSource::SetTimeRange(const TimeRange& time_range) {
-  time_range_ = time_range;
-
-  FetchEvents();
-}
-
-void WatchHistoryEventSource::FetchEvents() {
-  assert(delegate_);
-
+void WatchHistoryEventSource::Start(const scada::NodeId& device_id,
+                                    const scada::DateTimeRange& time_range,
+                                    Delegate& delegate) {
   cancelation_.Cancel();
 
-  if (device_id_.is_null()) {
+  if (device_id.is_null() || time_range.first.is_max()) {
     return;
   }
 
-  auto time_range = ToDateTimeRange(time_range_);
-
-  node_service_.GetNode(device_id_)
+  node_service_.GetNode(device_id)
       .scada_node()
-      .read_event_history({.from = time_range.first})
+      .read_event_history({.from = SanitizeTimeBound(time_range.first),
+                           .to = SanitizeTimeBound(time_range.second)})
       .then(BindExecutor(executor_, cancelation_,
-                         [this](const std::vector<scada::Event>& events) {
+                         [&delegate](const std::vector<scada::Event>& events) {
                            for (const auto& event : events) {
-                             delegate_->OnEvent(event);
+                             delegate.OnEvent(event);
                            }
                          }));
 }

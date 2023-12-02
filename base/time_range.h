@@ -43,6 +43,7 @@ struct TimeRange {
 };
 
 scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range);
+scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range);
 
 std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);

@@ -1,5 +1,6 @@
 #include "components/watch/watch_current_event_source.h"
 
+#include "base/executor.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 
@@ -9,14 +10,14 @@ WatchCurrentEventSource::WatchCurrentEventSource(
     WatchCurrentEventSourceContext&& context)
     : WatchCurrentEventSourceContext{std::move(context)} {}
 
-void WatchCurrentEventSource::SetDelegate(Delegate* delegate) {
-  delegate_ = delegate;
-}
-
-void WatchCurrentEventSource::SetDeviceId(const scada::NodeId& device_id) {
-  assert(delegate_);
-
+void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
+                                    const scada::DateTimeRange& time_range,
+                                    Delegate& delegate) {
   monitored_item_.unsubscribe();
+
+  if (!time_range.second.is_max()) {
+    return;
+  }
 
   monitored_item_.subscribe_system_events(
       node_service_.GetNode(device_id).scada_node(),
@@ -25,15 +26,12 @@ void WatchCurrentEventSource::SetDeviceId(const scada::NodeId& device_id) {
       scada::MonitoringParameters{}.set_filter(
           scada::EventFilter{.of_type = {devices::id::DeviceWatchEventType}}),
       // FIXME: Captures |this|. No sync.
-      [this](const scada::Status& status, const scada::Event& event) {
+      BindExecutor(executor_, [&delegate](const scada::Status& status,
+                                          const scada::Event& event) {
         if (!status) {
-          delegate_->OnError(status);
+          delegate.OnError(status);
           return;
         }
-        delegate_->OnEvent(event);
-      });
-}
-
-void WatchCurrentEventSource::SetTimeRange(const TimeRange& time_range) {
-  // TODO: Disable current events is time range is not infinite.
+        delegate.OnEvent(event);
+      }));
 }

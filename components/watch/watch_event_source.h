@@ -1,5 +1,7 @@
 #pragma once
 
+#include "scada/date_time_range.h"
+
 namespace scada {
 class Event;
 class NodeId;
@@ -20,9 +22,9 @@ class WatchEventSource {
 
   virtual ~WatchEventSource() = default;
 
-  virtual void SetDelegate(Delegate* delegate) = 0;
-
-  virtual void SetDeviceId(const scada::NodeId& device_id) = 0;
-
-  virtual void SetTimeRange(const TimeRange& time_range) = 0;
+  // If `time_range.first == max`, then show only current events.
+  // If `time_range.second != max`, then show only historical events.
+  virtual void Start(const scada::NodeId& device_id,
+                     const scada::DateTimeRange& time_range,
+                     Delegate& delegate) = 0;
 };

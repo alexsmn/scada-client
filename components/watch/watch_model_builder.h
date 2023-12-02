@@ -17,7 +17,7 @@ struct WatchModelHolder {
 
   WatchCombinedEventSource combined_event_source{
       {std::make_shared<WatchCurrentEventSource>(
-           WatchCurrentEventSourceContext{node_service}),
+           WatchCurrentEventSourceContext{executor_, node_service}),
        std::make_shared<WatchHistoryEventSource>(
            WatchHistorySourceContext{executor_, node_service})}};
 
