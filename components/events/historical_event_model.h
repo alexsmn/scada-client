@@ -2,9 +2,9 @@
 
 #include "base/format_time.h"
 #include "base/memory/weak_ptr.h"
+#include "base/time_range.h"
 #include "scada/event.h"
 #include "scada/history_service.h"
-#include "base/time_range.h"
 
 #include <boost/signals2/signal.hpp>
 #include <list>
@@ -40,8 +40,7 @@ class HistoricalEventModel {
   boost::signals2::signal<void()> refilter_now;
 
  private:
-  void OnHistoryReadEventsCompleted(scada::Status&& status,
-                                    std::vector<scada::Event>&& events);
+  void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
   // The current executor used to sync `history_service_` responses.
   const std::shared_ptr<Executor> executor_;
@@ -75,24 +74,22 @@ inline void HistoricalEventModel::Update() {
   history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED},
-      BindExecutor(executor_, [this, weak_ptr](
-                                  scada::Status status,
-                                  std::vector<scada::Event> events) {
-        if (weak_ptr.get())
-          OnHistoryReadEventsCompleted(std::move(status), std::move(events));
-      }));
+      BindExecutor(executor_,
+                   [this, weak_ptr](scada::HistoryReadEventsResult result) {
+                     if (weak_ptr.get())
+                       OnHistoryReadEventsCompleted(std::move(result));
+                   }));
 }
 
 inline void HistoricalEventModel::OnHistoryReadEventsCompleted(
-    scada::Status&& status,
-    std::vector<scada::Event>&& events) {
+    scada::HistoryReadEventsResult&& result) {
   assert(request_running_);
   // Only acked events were requested.
-  assert(std::all_of(events.begin(), events.end(),
-                     [](const scada::Event& event) { return event.acked; }));
+  assert(std::ranges::all_of(
+      result.events, [](const scada::Event& event) { return event.acked; }));
 
-  historical_events_.assign(std::make_move_iterator(events.begin()),
-                            std::make_move_iterator(events.end()));
+  historical_events_.assign(std::make_move_iterator(result.events.begin()),
+                            std::make_move_iterator(result.events.end()));
 
   request_running_ = false;
 
