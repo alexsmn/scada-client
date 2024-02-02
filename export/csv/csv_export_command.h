@@ -1,7 +1,8 @@
 #pragma once
 
-#include <memory>
-#include <string_view>
+#include "base/promise.h"
+
+#include <string>
 
 class DialogService;
 class Executor;
@@ -16,4 +17,4 @@ struct CsvExportContext {
   std::u16string window_title_;
 };
 
-void RunCsvExport(CsvExportContext&& context);
+promise<void> RunCsvExport(CsvExportContext&& context);

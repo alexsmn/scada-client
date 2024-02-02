@@ -26,7 +26,7 @@ class CsvExportCommandRun
   explicit CsvExportCommandRun(CsvExportContext&& context)
       : CsvExportContext{std::move(context)} {}
 
-  void Run() {
+  promise<void> Run() {
     const std::string_view kCsvExt[] = {"*.csv"};
     const DialogService::Filter kFilters[] = {
         {u"‘айлы CSV", kCsvExt},
@@ -35,46 +35,57 @@ class CsvExportCommandRun
     auto file_name = MakeFileName(window_title_);
     file_name += ".csv";
 
-    dialog_service_
+    auto ref = shared_from_this();
+
+    return dialog_service_
         .SelectSaveFile({.title = kExportTitle,
                          .default_path = profile_.csv_export_dir / file_name,
                          .filters = kFilters})
-        .then([this,
-               ref = shared_from_this()](const std::filesystem::path& path) {
+        .then([this, ref](const std::filesystem::path& path) {
+          path_ = path;
           profile_.csv_export_dir = path.parent_path();
-
-          ShowCsvExportDialog(dialog_service_, profile_)
-              .then([this, ref, path](const CsvExportParams& params) {
-                auto export_data = export_model_.GetExportData();
-
-                try {
-                  std::visit(
-                      [&](auto& data) { ::ExportToCsv(data, params, path); },
-                      export_data);
-
-                } catch (const std::runtime_error&) {
-                  dialog_service_.RunMessageBox(u"ќшибка при экспорте.",
-                                                kExportTitle,
-                                                MessageBoxMode::Error);
-                  return;
-                }
-
-                dialog_service_
-                    .RunMessageBox(u"Ёкспорт завершен. ќткрыть файл сейчас?",
-                                   kExportTitle, MessageBoxMode::QuestionYesNo)
-                    .then(BindExecutor(
-                        executor_, [path = std::move(path)](
-                                       MessageBoxResult message_box_result) {
-                          if (message_box_result == MessageBoxResult::Yes)
-                            win_util::OpenWithAssociatedProgram(path);
-                        }));
-              });
+        })
+        .then([this, ref] {
+          return ShowCsvExportDialog(dialog_service_, profile_);
+        })
+        .then(std::bind_front(&CsvExportCommandRun::Export, ref))
+        .then([this, ref] {
+          return dialog_service_.RunMessageBox(
+              u"Ёкспорт завершен. ќткрыть файл сейчас?", kExportTitle,
+              MessageBoxMode::QuestionYesNo);
+        })
+        .then([this, ref](MessageBoxResult open_prompt_result) {
+          if (open_prompt_result == MessageBoxResult::Yes) {
+            win_util::OpenWithAssociatedProgram(path_);
+          }
         });
   }
+
+ private:
+  promise<void> Export(const CsvExportParams& params) {
+    try {
+      auto export_data = export_model_.GetExportData();
+
+      std::visit([&](auto& data) { ::ExportToCsv(data, params, path_); },
+                 export_data);
+
+    } catch (const std::runtime_error&) {
+      return dialog_service_
+          .RunMessageBox(u"ќшибка при экспорте.", kExportTitle,
+                         MessageBoxMode::Error)
+          .then([e = std::current_exception()](MessageBoxResult) {
+            return make_rejected_promise(e);
+          });
+    }
+
+    return make_resolved_promise();
+  }
+
+  std::filesystem::path path_;
 };
 
 }  // namespace
 
-void RunCsvExport(CsvExportContext&& context) {
-  std::make_shared<CsvExportCommandRun>(std::move(context))->Run();
+promise<void> RunCsvExport(CsvExportContext&& context) {
+  return std::make_shared<CsvExportCommandRun>(std::move(context))->Run();
 }
