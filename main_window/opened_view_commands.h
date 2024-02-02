@@ -82,7 +82,6 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
 
   promise<> PasteFromClipboard();
 
-  void ExportToCsv();
   void ExportToExcel();
 
   const bool excel_enabled_;

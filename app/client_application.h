@@ -88,7 +88,6 @@ class ClientApplication : private ClientApplicationContext {
 
   std::shared_ptr<EventFetcher> event_fetcher_;
   AliasResolver alias_resolver_;
-  std::unique_ptr<FileSystemComponent> filesystem_component_;
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;

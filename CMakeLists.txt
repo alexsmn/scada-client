@@ -26,24 +26,9 @@ add_subdirectory(modus)
 add_subdirectory(vidicon)
 add_subdirectory(configuration_tree)
 add_subdirectory(graph)
+add_subdirectory(export)
 add_subdirectory(test)
 add_subdirectory(main_window)
-
-add_library(client_common INTERFACE)
-
-target_link_libraries(client_common INTERFACE
-  base_i18n
-  node_service_v1
-  node_service_v2
-  client_base
-  client_clipboard
-  scada_common_events
-  scada_common_vidicon_services
-  scada_core_opcua
-  scada_core_remote
-  timed_data
-  Net::net
-)
 
 file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.cpp"
@@ -58,6 +43,7 @@ list(FILTER PATHS EXCLUDE REGEX "/client/base/")
 list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
 list(FILTER PATHS EXCLUDE REGEX "/client/configuration_tree/")
 list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
+list(FILTER PATHS EXCLUDE REGEX "/client/export/")
 list(FILTER PATHS EXCLUDE REGEX "/client/filesystem/")
 list(FILTER PATHS EXCLUDE REGEX "/client/graph/")
 list(FILTER PATHS EXCLUDE REGEX "/client/main_window/")

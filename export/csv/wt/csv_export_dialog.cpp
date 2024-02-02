@@ -1,4 +1,4 @@
-#include "components/csv_export/csv_export.h"
+#include "export/csv/csv_export.h"
 
 promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
                                              Profile& profile) {

@@ -3,7 +3,6 @@
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "controller/export_model.h"
 #include "controller/selection_model.h"
 
 #include <memory>
@@ -12,6 +11,7 @@ namespace aui {
 class Grid;
 }
 
+class ExportModel;
 class SummaryModel;
 
 class SummaryView : protected ControllerContext, public Controller {

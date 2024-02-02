@@ -30,6 +30,7 @@ target_link_libraries(client_wt_lib PUBLIC
   client_common
   client_configuration_tree_wt
   client_controller_wt
+  client_export_csv_wt
   client_filesystem_wt
   client_main_window_wt
   client_portfolio_wt

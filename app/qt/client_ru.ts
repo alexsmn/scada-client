@@ -145,74 +145,52 @@
         <translation type="obsolete">Повтор:</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="14"/>
         <source>CSV parameters</source>
-        <translation>Параметры CSV</translation>
+        <translation type="vanished">Параметры CSV</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="25"/>
         <source>Encoding:</source>
-        <translation>Кодировка:</translation>
+        <translation type="vanished">Кодировка:</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="32"/>
         <source>Delimiter:</source>
-        <translation>Разделитель:</translation>
+        <translation type="vanished">Разделитель:</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="39"/>
         <source>Quote:</source>
-        <translation>Кавычки:</translation>
+        <translation type="vanished">Кавычки:</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="47"/>
         <source>System</source>
-        <translation>Системная</translation>
+        <translation type="vanished">Системная</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="52"/>
         <source>Unicode (UTF-8)</source>
-        <translation>Юникод (UTF-8)</translation>
+        <translation type="vanished">Юникод (UTF-8)</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="63"/>
-        <source>,</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="85"/>
         <source>Tab</source>
-        <translation>Табуляция</translation>
+        <translation type="vanished">Табуляция</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="90"/>
         <source>Space</source>
-        <translation>Пробел</translation>
+        <translation type="vanished">Пробел</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="101"/>
-        <source>&quot;</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="153"/>
         <source>OK</source>
-        <translation>ОК</translation>
+        <translation type="vanished">ОК</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.ui" line="160"/>
         <source>Cancel</source>
-        <translation>Отмена</translation>
+        <translation type="vanished">Отмена</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.cpp" line="62"/>
         <source>Please enter a symbol for the delimiter or choose one from the drop-down list.</source>
-        <translation>Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
+        <translation type="vanished">Пожалуйста, укажите одиночный символ разделителя или выберите из списка.</translation>
     </message>
     <message>
-        <location filename="../../components/csv_export/qt/csv_export_dialog.cpp" line="74"/>
         <source>Please enter a symbol for the quote or choose one from the drop-down list.</source>
-        <translation>Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
+        <translation type="vanished">Пожалуйста, укажите одиночный символ кавычки или выберите из списка.</translation>
     </message>
 </context>
 <context>

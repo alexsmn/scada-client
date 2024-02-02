@@ -1,9 +1,9 @@
 #include "ui_csv_export_dialog.h"
 
-#include "components/csv_export/csv_export.h"
-#include "export_util.h"
-#include "aui/qt/dialog_util.h"
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_util.h"
+#include "export/csv/csv_export.h"
+#include "export/csv/csv_export_util.h"
 #include "profile/profile.h"
 
 #include <QMessageBox>

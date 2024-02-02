@@ -6,9 +6,9 @@
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "controller/export_model.h"
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
+#include "export/export_model.h"
 
 #include <memory>
 

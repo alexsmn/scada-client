@@ -24,6 +24,7 @@
 #include "controller/window_info.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
+#include "export/csv/csv_export_module.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/filesystem_component.h"
@@ -180,7 +181,6 @@ ClientApplication::~ClientApplication() {
   create_tree_.reset();
   timed_data_service_.reset();
   alias_resolver_ = nullptr;
-  filesystem_component_.reset();
   event_fetcher_.reset();
   node_service_.reset();
 
@@ -241,7 +241,8 @@ void ClientApplication::OnStartLoginCompleted() {
     alias_service->Resolve(alias, callback);
   };
 
-  filesystem_component_ = std::make_unique<FileSystemComponent>();
+  singletons_.emplace(std::make_shared<FileSystemComponent>());
+  singletons_.emplace(std::make_shared<CsvExportModule>());
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       .executor_ = executor_,

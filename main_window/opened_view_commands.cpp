@@ -11,16 +11,16 @@
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
 #include "components/create_service_item/create_service_item_dialog.h"
-#include "components/csv_export/csv_export.h"
 #include "components/multi_create/multi_create_dialog.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller/controller.h"
 #include "controller/controller_registry.h"
-#include "controller/export_model.h"
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
-#include "export_util.h"
+#include "export/csv/csv_export_command.h"
+#include "export/csv/csv_export_util.h"
+#include "export/export_model.h"
 #include "main_window/actions.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view.h"
@@ -50,14 +50,6 @@
 #endif
 
 namespace {
-
-const char16_t kExportTitle[] = u"Экспорт";
-
-std::filesystem::path MakeFileName(std::u16string_view text) {
-  std::u16string result;
-  base::ReplaceChars(AsStringPiece(text), u":", u"-", &result);
-  return result;
-}
 
 std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
   switch (command_id) {
@@ -152,7 +144,11 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       opened_view_->Close();
       return;
     case ID_EXPORT_CSV:
-      ExportToCsv();
+      assert(dialog_service_);
+      if (auto* export_model = controller_->GetExportModel()) {
+        RunCsvExport({executor_, *dialog_service_, profile_, *export_model,
+                      /*window_title=*/opened_view_->GetWindowTitle()});
+      }
       return;
     case ID_EXPORT_EXCEL:
       ExportToExcel();
@@ -376,59 +372,6 @@ promise<> OpenedViewCommands::PasteFromClipboard() {
     return MakeRejectedPromise();
 
   return PasteNodesFromClipboard(task_manager_, parent_node.node_id());
-}
-
-void OpenedViewCommands::ExportToCsv() {
-  auto* export_model = controller_->GetExportModel();
-  if (!export_model)
-    return;
-
-  const std::string_view kCsvExt[] = {"*.csv"};
-  const DialogService::Filter kFilters[] = {
-      {u"Файлы CSV", kCsvExt},
-  };
-
-  auto file_name = MakeFileName(opened_view_->GetWindowTitle());
-  file_name += ".csv";
-
-  dialog_service_
-      ->SelectSaveFile({.title = kExportTitle,
-                        .default_path = profile_.csv_export_dir / file_name,
-                        .filters = kFilters})
-      .then([this, export_model, weak_ptr = weak_factory_.GetWeakPtr()](
-                const std::filesystem::path& path) {
-        if (!weak_ptr.get())
-          return;
-
-        profile_.csv_export_dir = path.parent_path();
-
-        ShowCsvExportDialog(*dialog_service_, profile_)
-            .then([this, export_model, path](const CsvExportParams& params) {
-              auto export_data = export_model->GetExportData();
-
-              try {
-                std::visit(
-                    [&](auto& data) { ::ExportToCsv(data, params, path); },
-                    export_data);
-
-              } catch (const std::runtime_error&) {
-                dialog_service_->RunMessageBox(u"Ошибка при экспорте.",
-                                               kExportTitle,
-                                               MessageBoxMode::Error);
-                return;
-              }
-
-              dialog_service_
-                  ->RunMessageBox(u"Экспорт завершен. Открыть файл сейчас?",
-                                  kExportTitle, MessageBoxMode::QuestionYesNo)
-                  .then(BindExecutor(
-                      executor_, [path = std::move(path)](
-                                     MessageBoxResult message_box_result) {
-                        if (message_box_result == MessageBoxResult::Yes)
-                          win_util::OpenWithAssociatedProgram(path);
-                      }));
-            });
-      });
 }
 
 void OpenedViewCommands::ExportToExcel() {

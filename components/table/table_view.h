@@ -1,13 +1,13 @@
 #pragma once
 
 #include "aui/key_codes.h"
-#include "controller/command_registry.h"
 #include "common_resources.h"
+#include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
-#include "controller/export_model.h"
 #include "controller/selection_model.h"
+#include "export/export_model.h"
 
 namespace aui {
 class Table;
