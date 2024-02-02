@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/configuration_export/import_data.h"
+#include "export/configuration/import_data.h"
 
 class NodeService;
 struct ExportData;

@@ -2,8 +2,8 @@
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "components/configuration_export/export_data.h"
-#include "components/configuration_export/resource_error.h"
+#include "export/configuration/export_data.h"
+#include "export/configuration/resource_error.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"

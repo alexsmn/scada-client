@@ -1,6 +1,6 @@
 #pragma once
 
-#include "components/configuration_export/export_data.h"
+#include "export/configuration/export_data.h"
 
 #include <optional>
 #include <string>

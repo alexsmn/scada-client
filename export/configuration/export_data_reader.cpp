@@ -1,11 +1,11 @@
-#include "components/configuration_export/export_data_reader.h"
+#include "export/configuration/export_data_reader.h"
 
 #include "base/csv_reader.h"
 #include "base/string_piece_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
-#include "components/configuration_export/resource_error.h"
+#include "export/configuration/resource_error.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

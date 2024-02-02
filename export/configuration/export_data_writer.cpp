@@ -1,9 +1,9 @@
-﻿#include "components/configuration_export/export_data_writer.h"
+﻿#include "export/configuration/export_data_writer.h"
 
 #include "base/csv_writer.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "components/configuration_export/export_data.h"
+#include "export/configuration/export_data.h"
 #include "model/node_id_util.h"
 
 namespace {

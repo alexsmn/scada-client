@@ -1,6 +1,6 @@
-#include "components/configuration_export/importer.h"
+#include "export/configuration/importer.h"
 
-#include "components/configuration_export/import_data.h"
+#include "export/configuration/import_data.h"
 #include "services/task_manager.h"
 
 void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {

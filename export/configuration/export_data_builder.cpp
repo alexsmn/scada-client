@@ -1,7 +1,7 @@
-#include "components/configuration_export/export_data_builder.h"
+#include "export/configuration/export_data_builder.h"
 
 #include "base/range_util.h"
-#include "components/configuration_export/export_data.h"
+#include "export/configuration/export_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_promises.h"

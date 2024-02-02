@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
-#include "components/configuration_export/export_data.h"
+#include "export/configuration/export_data.h"
 
 class NodeService;
 

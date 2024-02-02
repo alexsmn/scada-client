@@ -1,7 +1,8 @@
 ﻿#define _SILENCE_CXX20_CODECVT_FACETS_DEPRECATION_WARNING
 
-#include "components/configuration_export/excel_configuration_commands.h"
+#include "export/configuration/excel_configuration_commands.h"
 
+#include "aui/dialog_service.h"
 #include "base/base_paths.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
@@ -9,14 +10,13 @@
 #include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
-#include "components/configuration_export/export_data_builder.h"
-#include "components/configuration_export/export_data_reader.h"
-#include "components/configuration_export/export_data_writer.h"
-#include "components/configuration_export/import_data_builder.h"
-#include "components/configuration_export/import_data_report.h"
-#include "components/configuration_export/importer.h"
-#include "components/configuration_export/resource_error.h"
-#include "aui/dialog_service.h"
+#include "export/configuration/export_data_builder.h"
+#include "export/configuration/export_data_reader.h"
+#include "export/configuration/export_data_writer.h"
+#include "export/configuration/import_data_builder.h"
+#include "export/configuration/import_data_report.h"
+#include "export/configuration/importer.h"
+#include "export/configuration/resource_error.h"
 
 #include <algorithm>
 #include <fstream>
