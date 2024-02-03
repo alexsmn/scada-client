@@ -10,8 +10,10 @@ class ExportDataBuilder {
   explicit ExportDataBuilder(NodeService& node_service)
       : node_service_{node_service} {}
 
-  promise<ExportData> Build();
+  promise<ExportData> Build() const;
 
  private:
+  std::vector<ExportData::Property> CollectProps() const;
+
   NodeService& node_service_;
 };

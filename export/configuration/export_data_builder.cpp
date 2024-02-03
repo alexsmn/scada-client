@@ -51,8 +51,11 @@ promise<std::vector<ExportData::Node>> CollectNodeHierarchy(
     node_list_promises.emplace_back(CollectNodeHierarchy(node, props));
   }
 
+  node_list_promises.emplace_back(make_all_promise(std::move(node_promises)));
+
   return make_all_promise(std::move(node_list_promises))
       .then(
+          // Cannot use `&Join` because it cannot pick the proper overload.
           [](const std::vector<std::vector<ExportData::Node>>& node_list_list) {
             return Join(node_list_list);
           });
@@ -70,30 +73,39 @@ void CollectProperties(const NodeRef& type,
                        std::vector<ExportData::Property>& properties,
                        bool recursive) {
   if (recursive) {
-    if (auto supertype = type.supertype())
+    if (const auto& supertype = type.supertype()) {
       CollectProperties(supertype, properties, true);
+    }
   }
 
-  for (auto p : type.targets(scada::id::HasProperty))
-    properties.emplace_back(MakeExportProperty(p));
-  for (auto r : type.references(scada::id::NonHierarchicalReferences))
-    properties.emplace_back(MakeExportProperty(r.reference_type));
+  for (const auto& prop : type.targets(scada::id::HasProperty)) {
+    properties.emplace_back(MakeExportProperty(prop));
+  }
+
+  for (const auto& ref :
+       type.references(scada::id::NonHierarchicalReferences)) {
+    properties.emplace_back(MakeExportProperty(ref.reference_type));
+  }
 }
 
 }  // namespace
 
-promise<ExportData> ExportDataBuilder::Build() {
+promise<ExportData> ExportDataBuilder::Build() const {
+  auto props = CollectProps();
+  auto root_node = node_service_.GetNode(data_items::id::DataItems);
+  return FetchNode(root_node)
+      .then(std::bind_front(&CollectNodeHierarchy, root_node, props))
+      .then([props](const std::vector<ExportData::Node>& nodes) {
+        // TODO: Avoid copying nodes.
+        return ExportData{props, nodes};
+      });
+}
+
+std::vector<ExportData::Property> ExportDataBuilder::CollectProps() const {
   std::vector<ExportData::Property> props;
   CollectProperties(node_service_.GetNode(data_items::id::DiscreteItemType),
                     props, true);
   CollectProperties(node_service_.GetNode(data_items::id::AnalogItemType),
                     props, false);
-
-  auto data_items = node_service_.GetNode(data_items::id::DataItems);
-  return FetchNode(data_items).then([data_items, props] {
-    return CollectNodeHierarchy(data_items, props)
-        .then([props](const std::vector<ExportData::Node>& nodes) {
-          return ExportData{std::move(props), std::move(nodes)};
-        });
-  });
+  return props;
 }
