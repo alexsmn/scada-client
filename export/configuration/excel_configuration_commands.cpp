@@ -44,115 +44,129 @@ void ShowImportReport(const ImportData& import_data,
   PROCESS_INFORMATION process_info = {};
   if (!CreateProcess(nullptr, const_cast<LPTSTR>(command_line.c_str()), nullptr,
                      nullptr, FALSE, 0, nullptr, nullptr, &startup_info,
-                     &process_info))
-    throw ResourceError{u"Не удалось запустить Блокнот"};
+                     &process_info)) {
+    throw ResourceError{u"Не удалось открыть блокнот"};
+  }
   ::WaitForSingleObject(process_info.hProcess, INFINITE);
   CloseHandle(process_info.hProcess);
   CloseHandle(process_info.hThread);
 }
 
-template <class Func>
-void CatchExportException(DialogService& dialog_service, Func&& func) {
-  try {
-    func();
-  } catch (const ResourceError& e) {
-    dialog_service.RunMessageBox((e.message() + u".").c_str(), kExportTitle,
-                                 MessageBoxMode::Error);
-  } catch (const std::runtime_error&) {
-    dialog_service.RunMessageBox(u"Ошибка при экспорте.", kExportTitle,
-                                 MessageBoxMode::Error);
+template <typename T>
+promise<T> ShowResourceError(DialogService& dialog_service,
+                             std::u16string_view title,
+                             std::exception_ptr e) {
+  auto message = GetResourceErrorMessage(e) + u".";
+  return dialog_service.RunMessageBox(message, title, MessageBoxMode::Error)
+      .then([e](MessageBoxResult) { return make_rejected_promise<T>(e); });
+}
+
+template <typename F>
+auto CatchResourceError(DialogService& dialog_service,
+                        std::u16string_view title,
+                        F&& func) {
+  return [&dialog_service, title = std::u16string{title},
+          func = std::forward<decltype(func)>(func)](auto&&... args) {
+    using Promise = std::invoke_result_t<decltype(func), decltype(args)...>;
+    using Result = promise_result_t<Promise>;
+    try {
+      auto p = func(std::forward<decltype(args)>(args)...);
+      return p.except([&dialog_service, title](std::exception_ptr e) {
+        return ShowResourceError<Result>(dialog_service, title, e);
+      });
+    } catch (...) {
+      return ShowResourceError<Result>(dialog_service, title,
+                                       std::current_exception());
+    }
+  };
+}
+
+promise<ExportData> ExportConfigurationCommand::CollectExportData() const {
+  return ExportDataBuilder{node_service_}.Build();
+}
+
+void ExportConfigurationCommand::SaveExportData(const ExportData& export_data,
+                                                std::ostream& stream) const {
+  CsvWriter writer{stream};
+  WriteExportData(export_data, writer);
+}
+
+promise<void> ExportConfigurationCommand::ExportTo(
+    const std::filesystem::path& path) const {
+  std::ofstream stream{path};
+  if (!stream) {
+    throw ResourceError{u"Не удалось открыть файл."};
   }
+
+  return CollectExportData()
+      .then([this, stream = std::make_shared<std::ofstream>(std::move(stream))](
+                const ExportData& export_data) {
+        SaveExportData(export_data, *stream);
+      })
+      .then([this] {
+        return dialog_service_.RunMessageBox(
+            u"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+            MessageBoxMode::QuestionYesNo);
+      })
+      .then([path](MessageBoxResult open_prompt) {
+        if (open_prompt == MessageBoxResult::Yes) {
+          win_util::OpenWithAssociatedProgram(path);
+        }
+      });
 }
 
-void ExportConfigurationToExcel(NodeService& node_service,
-                                DialogService& dialog_service,
-                                const std::filesystem::path& path) {
-  CatchExportException(dialog_service, [&] {
-    std::ofstream stream{path};
-    if (!stream)
-      throw ResourceError{u"Не удалось открыть файл."};
-
-    ExportDataBuilder{node_service}.Build().then(
-        [stream = std::make_shared<std::ofstream>(std::move(stream)),
-         &dialog_service, path](const ExportData& export_data) {
-          CatchExportException(dialog_service, [&] {
-            CsvWriter writer{*stream};
-            WriteExportData(export_data, writer);
-
-            dialog_service
-                .RunMessageBox(u"Экспорт завершен. Открыть файл сейчас?",
-                               kExportTitle, MessageBoxMode::QuestionYesNo)
-                .then([path](MessageBoxResult message_box_result) {
-                  if (message_box_result == MessageBoxResult::Yes)
-                    win_util::OpenWithAssociatedProgram(path);
-                });
-          });
-        });
-  });
-}
-
-promise<> ExportConfigurationToExcel(NodeService& node_service,
-                                     DialogService& dialog_service) {
-  return dialog_service
+promise<> ExportConfigurationCommand::Execute() const {
+  auto shared_copy = std::make_shared<ExportConfigurationCommand>(*this);
+  return dialog_service_
       .SelectSaveFile({.title = kExportTitle, .default_path = kDefaultFileName})
-      .then(
-          [&node_service, &dialog_service](const std::filesystem::path& path) {
-            ExportConfigurationToExcel(node_service, dialog_service, path);
-          });
+      .then(CatchResourceError(
+          dialog_service_, kExportTitle,
+          std::bind_front(&ExportConfigurationCommand::ExportTo, shared_copy)));
 }
 
-void ImportConfigurationFromExcel(NodeService& node_service,
-                                  TaskManager& task_manager,
-                                  DialogService& dialog_service,
-                                  const std::filesystem::path& path) {
+promise<void> ImportConfigurationCommand::ImportFrom(
+    const std::filesystem::path& path) const {
   std::ifstream stream{path};
   if (!stream) {
-    dialog_service.RunMessageBox(u"Не удалось открыть файл.", kImportTitle,
-                                 MessageBoxMode::Error);
-    return;
+    throw ResourceError{u"Не удалось открыть файл."};
   }
 
   CsvReader reader{stream, kNodeIdTitle};
   ImportData import_data;
   try {
-    auto export_data = ExportDataReader{node_service, reader}.Read();
+    auto export_data = ExportDataReader{node_service_, reader}.Read();
 
-    import_data = BuildImportData(node_service, export_data);
+    import_data = BuildImportData(node_service_, export_data);
 
   } catch (const ResourceError& e) {
-    auto message = base::StringPrintf(
+    throw ResourceError{base::StringPrintf(
         u"Ошибка при импорте строки %d, столбца %d: %ls.", reader.row_index(),
-        reader.cell_index(), e.message().c_str());
-    dialog_service.RunMessageBox(message.c_str(), kImportTitle,
-                                 MessageBoxMode::Error);
-    return;
+        reader.cell_index(), e.message().c_str())};
   }
 
   if (import_data.IsEmpty()) {
-    dialog_service.RunMessageBox(u"Изменений не найдено.", kImportTitle,
-                                 MessageBoxMode::Info);
-    return;
+    return ToVoidPromise(dialog_service_.RunMessageBox(
+        u"Изменений не найдено.", kImportTitle, MessageBoxMode::Info));
   }
 
-  ShowImportReport(import_data, node_service);
+  ShowImportReport(import_data, node_service_);
 
-  dialog_service
+  return dialog_service_
       .RunMessageBox(u"Применить изменения?", kImportTitle,
                      MessageBoxMode::QuestionYesNoDefaultNo)
       .then([import_data = std::move(import_data),
-             &task_manager](MessageBoxResult message_box_result) {
-        if (message_box_result == MessageBoxResult::Yes)
-          ApplyImportData(import_data, task_manager);
+             this](MessageBoxResult apply_prompt) {
+        if (apply_prompt == MessageBoxResult::Yes) {
+          ApplyImportData(import_data, task_manager_);
+        }
       });
 }
 
-promise<> ImportConfigurationFromExcel(NodeService& node_service,
-                                       TaskManager& task_manager,
-                                       DialogService& dialog_service) {
-  return dialog_service.SelectOpenFile(kImportTitle)
-      .then([&node_service, &task_manager,
-             &dialog_service](const std::filesystem::path& path) {
-        ImportConfigurationFromExcel(node_service, task_manager, dialog_service,
-                                     path);
-      });
+promise<> ImportConfigurationCommand::Execute() const {
+  auto shared_copy = std::make_shared<ImportConfigurationCommand>(*this);
+  return dialog_service_.SelectOpenFile(kImportTitle)
+      .then(CatchResourceError(
+          dialog_service_, kImportTitle,
+          std::bind_front(&ImportConfigurationCommand::ImportFrom,
+                          shared_copy)));
 }

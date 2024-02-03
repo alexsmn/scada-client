@@ -11,13 +11,15 @@ ExportConfigurationModule::ExportConfigurationModule(
   main_commands_.AddCommand(
       BasicCommand<MainCommandContext>{ID_EXPORT_CONFIGURATION_TO_EXCEL}
           .set_execute_handler([this](const MainCommandContext& context) {
-            ExportConfigurationToExcel(node_service_, context.dialog_service);
+            ExportConfigurationCommand{node_service_, context.dialog_service}
+                .Execute();
           }));
 
   main_commands_.AddCommand(
       BasicCommand<MainCommandContext>{ID_IMPORT_CONFIGURATION_FROM_EXCEL}
           .set_execute_handler([this](const MainCommandContext& context) {
-            ImportConfigurationFromExcel(node_service_, task_manager_,
-                                         context.dialog_service);
+            ImportConfigurationCommand{node_service_, task_manager_,
+                                       context.dialog_service}
+                .Execute();
           }));
 }

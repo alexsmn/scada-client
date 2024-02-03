@@ -13,7 +13,6 @@
 #include "components/web/web_component.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
-#include "export/configuration/excel_configuration_commands.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
@@ -85,8 +84,6 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_APP_ABOUT:
     case ID_HELP_MANUAL:
     case ID_ACKNOWLEDGE_ALL:
-    case ID_EXPORT_CONFIGURATION_TO_EXCEL:
-    case ID_IMPORT_CONFIGURATION_FROM_EXCEL:
     case ID_VIEW_PUBLIC_FOLDER:
     case ID_WINDOW_NEW:
     case ID_PAGE_NEW:
@@ -237,15 +234,6 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     case ID_ACKNOWLEDGE_ALL:
       node_event_provider_.AcknowledgeAllEvents();
       local_events_.AcknowledgeAll();
-      return;
-
-    case ID_EXPORT_CONFIGURATION_TO_EXCEL:
-      ExportConfigurationToExcel(node_service_, dialog_service_);
-      return;
-
-    case ID_IMPORT_CONFIGURATION_FROM_EXCEL:
-      ImportConfigurationFromExcel(node_service_, task_manager_,
-                                   dialog_service_);
       return;
 
     case ID_WINDOW_NEW:
