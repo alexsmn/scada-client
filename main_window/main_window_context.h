@@ -30,17 +30,22 @@ struct MainWindowContext {
   MainWindowManager& main_window_manager_;
   Profile& profile_;
   ControllerFactory controller_factory_;
+
   std::function<std::unique_ptr<CommandHandler>(MainWindow& main_window,
                                                 DialogService& dialog_service)>
       main_commands_factory_;
+
   std::function<std::unique_ptr<CommandHandler>(OpenedView& opened_view,
                                                 DialogService& dialog_service)>
       view_commands_factory_;
+
   const std::shared_ptr<SelectionCommands> selection_commands_;
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
+
   std::function<std::unique_ptr<aui::MenuModel>(MainWindow& main_window,
                                                CommandHandler& main_commands)>
       context_menu_factory_;
+
   std::function<std::unique_ptr<aui::MenuModel>(
       MainWindow& main_window,
       DialogService& dialog_service,
@@ -48,5 +53,6 @@ struct MainWindowContext {
       CommandHandler& main_commands,
       aui::MenuModel& context_menu_model)>
       main_menu_factory_;
+
   std::function<std::string()> connection_info_provider_;
 };

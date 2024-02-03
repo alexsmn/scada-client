@@ -24,10 +24,12 @@
 #include "controller/window_info.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
+#include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/filesystem_component.h"
+#include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "metrics/boost_log_metric_reporter.h"
 #include "metrics/metric_service_impl.h"
@@ -243,6 +245,10 @@ void ClientApplication::OnStartLoginCompleted() {
 
   singletons_.emplace(std::make_shared<FileSystemComponent>());
   singletons_.emplace(std::make_shared<CsvExportModule>());
+
+  singletons_.emplace(std::make_shared<ExportConfigurationModule>(
+      ExportConfigurationModuleContext{.node_service_ = *node_service_,
+                                       .task_manager_ = *task_manager_}));
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       .executor_ = executor_,
