@@ -5,31 +5,49 @@
 #include <functional>
 #include <unordered_map>
 
-class Command {
+template <typename R, typename A>
+struct UnaryFunctionImpl {
+  using Type = std::function<R(const A&)>;
+};
+
+template <typename R>
+struct UnaryFunctionImpl<R, void> {
+  using Type = std::function<R()>;
+};
+
+// Provides a zero-parameter function when the argument is void.
+template <typename R, typename A>
+using UnaryFunction = typename UnaryFunctionImpl<R, A>::Type;
+
+// `C` represents the context type.
+template <typename C>
+class BasicCommand {
  public:
-  using ExecuteHandler = std::function<void()>;
-  using EnabledHandler = std::function<bool()>;
-  using CheckedHandler = std::function<bool()>;
-  using AvailableHandler = std::function<bool()>;
+  using ExecuteHandler = UnaryFunction<void, C>;
+  using EnabledHandler = UnaryFunction<bool, C>;
+  using CheckedHandler = UnaryFunction<bool, C>;
+  using AvailableHandler = UnaryFunction<bool, C>;
 
-  Command(unsigned command_id) : command_id{command_id} {}
+  // Allow implicit conversion from `unsigned` to support
+  // `registry.AddCommand(ID_XXX)`.
+  BasicCommand(unsigned command_id) : command_id{command_id} {}
 
-  Command& set_execute_handler(ExecuteHandler handler) {
+  BasicCommand& set_execute_handler(ExecuteHandler handler) {
     execute_handler = std::move(handler);
     return *this;
   }
 
-  Command& set_enabled_handler(EnabledHandler handler) {
+  BasicCommand& set_enabled_handler(EnabledHandler handler) {
     enabled_handler = std::move(handler);
     return *this;
   }
 
-  Command& set_checked_handler(CheckedHandler handler) {
+  BasicCommand& set_checked_handler(CheckedHandler handler) {
     checked_handler = std::move(handler);
     return *this;
   }
 
-  Command& set_available_handler(AvailableHandler handler) {
+  BasicCommand& set_available_handler(AvailableHandler handler) {
     available_handler = std::move(handler);
     return *this;
   }
@@ -42,31 +60,42 @@ class Command {
   AvailableHandler available_handler;
 };
 
-class CommandRegistry : private CommandHandler {
+using Command = BasicCommand<void>;
+
+// `C` represents the context type.
+template <typename C>
+class BasicCommandRegistry {
  public:
-  Command& AddCommand(Command command);
+  BasicCommand<C>& AddCommand(BasicCommand<C> command);
 
-  Command* FindCommand(unsigned command_id);
-  const Command* FindCommand(unsigned command_id) const;
+  BasicCommand<C>* FindCommand(unsigned command_id);
+  const BasicCommand<C>* FindCommand(unsigned command_id) const;
 
+ protected:
+  std::unordered_map<unsigned /*command_id*/, BasicCommand<C>> command_map_;
+};
+
+// Introduce a separate class to allow forward declaration.
+class CommandRegistry : public CommandHandler,
+                        public BasicCommandRegistry<void> {
+ public:
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-
- private:
-  // CommandHandler
   virtual bool IsCommandEnabled(unsigned command_id) const override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
-
-  std::unordered_map<unsigned /*command_id*/, Command> command_map_;
 };
 
-inline Command& CommandRegistry::AddCommand(Command command) {
+template <typename C>
+inline BasicCommand<C>& BasicCommandRegistry<C>::AddCommand(
+    BasicCommand<C> command) {
   auto command_id = command.command_id;
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 
-inline const Command* CommandRegistry::FindCommand(unsigned command_id) const {
+template <typename C>
+inline const BasicCommand<C>* BasicCommandRegistry<C>::FindCommand(
+    unsigned command_id) const {
   auto i = command_map_.find(command_id);
   return i != command_map_.end() ? &i->second : nullptr;
 }
@@ -100,7 +129,9 @@ inline void CommandRegistry::ExecuteCommand(unsigned command_id) {
     command->execute_handler();
 }
 
-inline Command* CommandRegistry::FindCommand(unsigned command_id) {
+template <typename C>
+inline BasicCommand<C>* BasicCommandRegistry<C>::FindCommand(
+    unsigned command_id) {
   auto i = command_map_.find(command_id);
   return i != command_map_.end() ? &i->second : nullptr;
 }

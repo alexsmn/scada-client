@@ -68,9 +68,7 @@ void OpenPublicFolder() {
 }  // namespace
 
 MainCommands::MainCommands(MainCommandsContext&& context)
-    : MainCommandsContext{std::move(context)} {
-  debugger_.RegisterCommands(command_registry_);
-}
+    : MainCommandsContext{std::move(context)} {}
 
 MainCommands::~MainCommands() {}
 
@@ -155,10 +153,15 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     return this;
   }
 
-  if (GetOption(command_id))
+  if (GetOption(command_id)) {
     return this;
+  }
 
-  return command_registry_.GetCommandHandler(command_id);
+  if (const auto* command = command_registry_.FindCommand(command_id)) {
+    return this;
+  }
+
+  return nullptr;
 }
 
 bool MainCommands::IsCommandEnabled(unsigned command_id) const {
@@ -182,6 +185,11 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
       return session_service_.IsConnected();
   }
 
+  if (auto* command = command_registry_.FindCommand(command_id)) {
+    return !command->enabled_handler ||
+           command->enabled_handler(command_context_);
+  }
+
   return true;
 }
 
@@ -200,6 +208,11 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
 
   if (bool Profile::*option = GetOption(command_id))
     return profile_.*option;
+
+  if (const auto* command = command_registry_.FindCommand(command_id)) {
+    return command->checked_handler &&
+           command->checked_handler(command_context_);
+  }
 
   return false;
 }
@@ -330,6 +343,13 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     return;
   }
 
+  if (const auto* command = command_registry_.FindCommand(command_id)) {
+    if (command->execute_handler) {
+      command->execute_handler(command_context_);
+    }
+    return;
+  }
+
   assert(false);
 }
 
@@ -369,5 +389,5 @@ promise<> MainCommands::ShowRenameWindowDialog() {
   return RunPromptDialog(dialog_service_, u"Имя:", u"Переименовать",
                          view->GetWindowTitle())
       // TODO: Capture weak pointer.
-      .then([view](const std::u16string& title) { view->SetUserTitle(title); });
+      .then(std::bind_front(&OpenedView::SetUserTitle, view));
 }

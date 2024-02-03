@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common/aliases.h"
+#include "controller/command_registry.h"
+#include "main_window/main_command_context.h"
 #include "main_window/main_window_context.h"
 
 #include <functional>
@@ -65,10 +67,14 @@ class MainWindowModule : private MainWindowModuleContext {
   explicit MainWindowModule(MainWindowModuleContext&& context);
   ~MainWindowModule();
 
+  BasicCommandRegistry<MainCommandContext>& commands() { return commands_; }
+
  private:
   MainWindowContext MakeMainWindowContext(int window_id);
 
   void OnEvents(bool has_events);
+
+  BasicCommandRegistry<MainCommandContext> commands_;
 
   std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<MainWindowManager> main_window_manager_;

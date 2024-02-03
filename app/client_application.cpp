@@ -246,10 +246,6 @@ void ClientApplication::OnStartLoginCompleted() {
   singletons_.emplace(std::make_shared<FileSystemComponent>());
   singletons_.emplace(std::make_shared<CsvExportModule>());
 
-  singletons_.emplace(std::make_shared<ExportConfigurationModule>(
-      ExportConfigurationModuleContext{.node_service_ = *node_service_,
-                                       .task_manager_ = *task_manager_}));
-
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       .executor_ = executor_,
       .alias_resolver_ = alias_resolver_,
@@ -344,6 +340,12 @@ void ClientApplication::OnStartLoginCompleted() {
           .progress_host_ = *progress_host_,
           .property_service_ = *property_service_,
           .create_tree_ = *create_tree_});
+
+  singletons_.emplace(std::make_shared<ExportConfigurationModule>(
+      ExportConfigurationModuleContext{
+          .node_service_ = *node_service_,
+          .task_manager_ = *task_manager_,
+          .main_commands_ = main_window_module_->commands()}));
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host_));

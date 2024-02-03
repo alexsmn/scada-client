@@ -80,7 +80,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     return std::make_unique<MainCommands>(MainCommandsContext{
         main_window, task_manager_, dialog_service, master_data_services_,
         event_fetcher_, node_service_, local_events_, favourites_, speech_,
-        profile_, *main_window_manager_, login_handler, *debugger});
+        profile_, *main_window_manager_, login_handler, *debugger, commands_});
   };
 
   auto main_menu_factory =

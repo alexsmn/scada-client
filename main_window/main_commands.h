@@ -3,6 +3,7 @@
 #include "base/promise.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
+#include "main_window/main_command_context.h"
 
 #include <functional>
 #include <memory>
@@ -38,6 +39,7 @@ struct MainCommandsContext {
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
   Debugger& debugger_;
+  BasicCommandRegistry<MainCommandContext>& command_registry_;
 };
 
 class MainCommands : private MainCommandsContext, public CommandHandler {
@@ -56,5 +58,5 @@ class MainCommands : private MainCommandsContext, public CommandHandler {
   promise<> ShowRenameWindowDialog();
   promise<> RenameCurrentPage();
 
-  CommandRegistry command_registry_;
+  MainCommandContext command_context_{dialog_service_};
 };
