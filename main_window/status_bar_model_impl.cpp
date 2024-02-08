@@ -45,11 +45,11 @@ std::u16string StatusBarModelImpl::GetPaneText(int index) const {
                  : u"Нет событий";
     }
 
-    case 2:
+    case kSeverityPaneIndex:
       return base::StringPrintf(u"Важность: %u",
                                 node_event_provider_.severity_min());
 
-    case 3:
+    case kUserPaneIndex:
       return user_node_.display_name();
 
     case 4: {

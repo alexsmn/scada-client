@@ -57,6 +57,6 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
 
   std::vector<boost::signals2::scoped_connection> connections_;
 
+  static const int kSeverityPaneIndex = 2;
   static const int kUserPaneIndex = 3;
-  static const int kSeverityPaneIndex = 3;
 };
