@@ -1,6 +1,7 @@
 #include "main_window/status_bar_model_impl.h"
 
 #include "base/executor.h"
+#include "base/executor_task_runner.h"
 #include "base/strings/stringprintf.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
@@ -8,10 +9,13 @@
 #include "profile/profile.h"
 #include "scada/session_service.h"
 
+using namespace std::chrono_literals;
+
 // StatusBarModelImpl
 
 StatusBarModelImpl::StatusBarModelImpl(StatusBarModelImplContext&& context)
-    : StatusBarModelImplContext{std::move(context)} {
+    : StatusBarModelImplContext{std::move(context)},
+      session_poll_timer_{executor_} {
   connections_.emplace_back(progress_host_.Subscribe(
       [this](const ProgressStatus& status) { OnProgressStatus(status); }));
 
@@ -26,6 +30,10 @@ StatusBarModelImpl::StatusBarModelImpl(StatusBarModelImplContext&& context)
       [this] { NotifyPanelsChanged(kSeverityPaneIndex); }));
 
   UpdateUser();
+
+  session_poll_timer_.StartRepeating(1s, [this] {
+    NotifyPanelsChanged(kSessionFirstPaneIndex, kSessionPaneCount);
+  });
 }
 
 StatusBarModelImpl::~StatusBarModelImpl() {
@@ -33,17 +41,35 @@ StatusBarModelImpl::~StatusBarModelImpl() {
 }
 
 int StatusBarModelImpl::GetPaneCount() const {
-  return 6;
+  return kPaneCount;
+}
+
+std::u16string StatusBarModelImpl::GetEventPaneText() const {
+  size_t unacked_event_count = node_event_provider_.unacked_events().size();
+  return unacked_event_count
+             ? base::StringPrintf(u"Событий: %u", unacked_event_count)
+             : u"Нет событий";
+}
+
+std::u16string StatusBarModelImpl::GetSessionPaneText() const {
+  base::TimeDelta ping_delay;
+  auto connected = session_service_.IsConnected(&ping_delay);
+  return connected ? u"Подключен" : u"Отключен";
+}
+
+std::u16string StatusBarModelImpl::GetPingPaneText() const {
+  base::TimeDelta ping_delay;
+  auto connected = session_service_.IsConnected(&ping_delay);
+  return connected ? base::StringPrintf(
+                         u"Отклик: %u мс",
+                         static_cast<unsigned>(ping_delay.InMilliseconds()))
+                   : u"Нет отклика";
 }
 
 std::u16string StatusBarModelImpl::GetPaneText(int index) const {
   switch (index) {
-    case 1: {
-      size_t unacked_event_count = node_event_provider_.unacked_events().size();
-      return unacked_event_count
-                 ? base::StringPrintf(u"Событий: %u", unacked_event_count)
-                 : u"Нет событий";
-    }
+    case kEventPaneIndex:
+      return GetEventPaneText();
 
     case kSeverityPaneIndex:
       return base::StringPrintf(u"Важность: %u",
@@ -52,20 +78,11 @@ std::u16string StatusBarModelImpl::GetPaneText(int index) const {
     case kUserPaneIndex:
       return user_node_.display_name();
 
-    case 4: {
-      base::TimeDelta ping_delay;
-      auto connected = session_service_.IsConnected(&ping_delay);
-      return connected ? u"Подключен" : u"Отключен";
-    }
+    case kSessionFirstPaneIndex:
+      return GetSessionPaneText();
 
-    case 5: {
-      base::TimeDelta ping_delay;
-      auto connected = session_service_.IsConnected(&ping_delay);
-      return connected ? base::StringPrintf(
-                             u"Отклик: %u мс",
-                             static_cast<unsigned>(ping_delay.InMilliseconds()))
-                       : u"Нет отклика";
-    }
+    case kSessionFirstPaneIndex + 1:
+      return GetPingPaneText();
 
     default:
       return {};
@@ -74,6 +91,7 @@ std::u16string StatusBarModelImpl::GetPaneText(int index) const {
 
 int StatusBarModelImpl::GetPaneSize(int index) const {
   const int kSizes[] = {-1, 100, 100, 100, 100, 120};
+  static_assert(arraysize(kSizes) == kPaneCount, "Invalid kSizes size");
   return kSizes[index];
 }
 
@@ -114,7 +132,8 @@ void StatusBarModelImpl::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   NotifyPanelsChanged(kUserPaneIndex);
 }
 
-void StatusBarModelImpl::NotifyPanelsChanged(int index) {
-  for (auto& o : observers_)
-    o.OnPanesChanged(index, 1);
+void StatusBarModelImpl::NotifyPanelsChanged(int index, int count) {
+  for (auto& o : observers_) {
+    o.OnPanesChanged(index, count);
+  }
 }
