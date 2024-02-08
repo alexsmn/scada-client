@@ -5,21 +5,25 @@
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "profile/profile.h"
 #include "scada/session_service.h"
 
 // StatusBarModelImpl
 
 StatusBarModelImpl::StatusBarModelImpl(StatusBarModelImplContext&& context)
     : StatusBarModelImplContext{std::move(context)} {
-  progress_host_connection_ = progress_host_.Subscribe(
-      [this](const ProgressStatus& status) { OnProgressStatus(status); });
+  connections_.emplace_back(progress_host_.Subscribe(
+      [this](const ProgressStatus& status) { OnProgressStatus(status); }));
 
   // TODO: weak_ptr.
-  session_state_changed_connection_ =
+  connections_.emplace_back(
       session_service_.SubscribeSessionStateChanged(BindExecutor(
           executor_, [this](bool connected, const scada::Status& status) {
             UpdateUser();
-          }));
+          })));
+
+  connections_.emplace_back(profile_.AddChangeObserver(
+      [this] { NotifyPanelsChanged(kSeverityPaneIndex); }));
 
   UpdateUser();
 }
@@ -103,11 +107,14 @@ void StatusBarModelImpl::UpdateUser() {
   user_node_.Fetch(NodeFetchStatus::NodeOnly());
   user_node_.Subscribe(*this);
 
-  for (auto& o : observers_)
-    o.OnPanesChanged(kUserPaneIndex, 1);
+  NotifyPanelsChanged(kUserPaneIndex);
 }
 
 void StatusBarModelImpl::OnNodeSemanticChanged(const scada::NodeId& node_id) {
+  NotifyPanelsChanged(kUserPaneIndex);
+}
+
+void StatusBarModelImpl::NotifyPanelsChanged(int index) {
   for (auto& o : observers_)
-    o.OnPanesChanged(kUserPaneIndex, 1);
+    o.OnPanesChanged(index, 1);
 }

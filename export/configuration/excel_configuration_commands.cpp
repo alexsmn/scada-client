@@ -3,6 +3,7 @@
 #include "export/configuration/excel_configuration_commands.h"
 
 #include "aui/dialog_service.h"
+#include "aui/resource_error.h"
 #include "base/base_paths.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
@@ -16,7 +17,6 @@
 #include "export/configuration/import_data_builder.h"
 #include "export/configuration/import_data_report.h"
 #include "export/configuration/importer.h"
-#include "export/configuration/resource_error.h"
 
 #include <algorithm>
 #include <fstream>
@@ -50,35 +50,6 @@ void ShowImportReport(const ImportData& import_data,
   ::WaitForSingleObject(process_info.hProcess, INFINITE);
   CloseHandle(process_info.hProcess);
   CloseHandle(process_info.hThread);
-}
-
-template <typename T>
-promise<T> ShowResourceError(DialogService& dialog_service,
-                             std::u16string_view title,
-                             std::exception_ptr e) {
-  auto message = GetResourceErrorMessage(e) + u".";
-  return dialog_service.RunMessageBox(message, title, MessageBoxMode::Error)
-      .then([e](MessageBoxResult) { return make_rejected_promise<T>(e); });
-}
-
-template <typename F>
-auto CatchResourceError(DialogService& dialog_service,
-                        std::u16string_view title,
-                        F&& func) {
-  return [&dialog_service, title = std::u16string{title},
-          func = std::forward<decltype(func)>(func)](auto&&... args) {
-    using Promise = std::invoke_result_t<decltype(func), decltype(args)...>;
-    using Result = promise_result_t<Promise>;
-    try {
-      auto p = func(std::forward<decltype(args)>(args)...);
-      return p.except([&dialog_service, title](std::exception_ptr e) {
-        return ShowResourceError<Result>(dialog_service, title, e);
-      });
-    } catch (...) {
-      return ShowResourceError<Result>(dialog_service, title,
-                                       std::current_exception());
-    }
-  };
 }
 
 promise<ExportData> ExportConfigurationCommand::CollectExportData() const {

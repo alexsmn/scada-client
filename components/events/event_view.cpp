@@ -3,8 +3,10 @@
 #include "aui/dialog_service.h"
 #include "aui/models/table_column.h"
 #include "aui/prompt_dialog.h"
+#include "aui/resource_error.h"
 #include "aui/table.h"
 #include "base/excel.h"
+#include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -24,6 +26,8 @@
 #include "profile/window_definition_util.h"
 
 namespace {
+
+const char16_t kFilter[] = u"Фильтр";
 
 struct EventTableModelHolder {
   EventTableModelHolder(const ControllerContext& context, bool is_panel)
@@ -45,6 +49,19 @@ std::shared_ptr<EventTableModel> CreateEventTableModel(
     bool is_panel) {
   auto holder = std::make_shared<EventTableModelHolder>(context, is_panel);
   return {holder, &holder->event_table_model};
+}
+
+scada::EventSeverity ParseSeverity(std::u16string_view str) {
+  unsigned severity = 0;
+  if (!base::StringToUint(AsStringPiece(str), &severity) ||
+      severity > scada::kSeverityMax) {
+    throw ResourceError{base::StringPrintf(u"Введите число от %d до %d.",
+                                           scada::kSeverityMin,
+                                           scada::kSeverityMax)};
+  }
+
+  // TODO: Checked cast.
+  return static_cast<scada::EventSeverity>(severity);
 }
 
 }  // namespace
@@ -280,32 +297,21 @@ promise<> EventView::SelectSeverity() {
                                   ? node_event_provider_.severity_min()
                                   : model_->severity_min();
   const char16_t prompt[] = u"Минимальный порог важности (0 - все события):";
-  return RunPromptDialog(dialog_service_, prompt, u"Фильтр",
+  return RunPromptDialog(dialog_service_, prompt, /*title=*/kFilter,
                          base::NumberToString16(initial_severity))
-      .then([this](const std::u16string& input) {
-        unsigned severity = 0;
-        if (!base::StringToUint(input, &severity) ||
-            severity > scada::kSeverityMax) {
-          auto message =
-              base::StringPrintf(u"Введите число от %d до %d.",
-                                 scada::kSeverityMin, scada::kSeverityMax);
-          return ToRejectedPromise<scada::EventSeverity>(
-              dialog_service_.RunMessageBox(message, u"Фильтр",
-                                            MessageBoxMode::Error));
-        }
+      .then(CatchResourceError(dialog_service_, /*title=*/kFilter,
+                               &ParseSeverity))
+      .then(std::bind_front(&EventView::SetSeverityMin, this));
+}
 
-        // TODO: Checked cast.
-        return make_resolved_promise(
-            static_cast<scada::EventSeverity>(severity));
-      })
-      .then([this](scada::EventSeverity severity) {
-        if (model_->current_events()) {
-          node_event_provider_.SetSeverityMin(severity);
-        } else {
-          model_->SetSeverityMin(severity);
-          controller_delegate_.SetTitle(MakeTitle());
-        }
-      });
+void EventView::SetSeverityMin(scada::EventSeverity severity) {
+  if (model_->current_events()) {
+    node_event_provider_.SetSeverityMin(severity);
+    profile_.NotifyChange();
+  } else {
+    model_->SetSeverityMin(severity);
+    controller_delegate_.SetTitle(MakeTitle());
+  }
 }
 
 NodeIdSet EventView::GetSelectedNodeIds() const {

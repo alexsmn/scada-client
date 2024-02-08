@@ -8,6 +8,7 @@
 #include "profile/page.h"
 #include "scada/node_id.h"
 
+#include <boost/signals2/signal.hpp>
 #include <map>
 
 class Favourites;
@@ -117,6 +118,13 @@ class Profile {
 
   void RegisterWriter(const Writer& writer) { writers_.emplace_back(writer); }
 
+  boost::signals2::scoped_connection AddChangeObserver(
+      std::function<void()> observer) {
+    return profile_change_signal_.connect(std::move(observer));
+  }
+
+  void NotifyChange() { profile_change_signal_(); }
+
  private:
   void Load(const base::Value& data,
             NodeEventProvider& node_event_provider,
@@ -129,4 +137,6 @@ class Profile {
   std::filesystem::path GetFilePath();
 
   std::vector<Writer> writers_;
+
+  boost::signals2::signal<void()> profile_change_signal_;
 };

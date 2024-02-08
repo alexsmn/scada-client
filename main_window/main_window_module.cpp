@@ -124,9 +124,10 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     return opened_view_commands;
   };
 
-  auto status_bar_model = std::make_shared<StatusBarModelImpl>(
-      StatusBarModelImplContext{executor_, master_data_services_,
-                                event_fetcher_, node_service_, progress_host_});
+  auto status_bar_model =
+      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
+          executor_, master_data_services_, event_fetcher_, node_service_,
+          progress_host_, profile_});
 
   auto connection_info_provider = [this] {
     return master_data_services_.GetHostName();

@@ -57,7 +57,9 @@ class EventView : protected ControllerContext,
   std::u16string MakeTitle() const;
 
   void ExportToExcel();
+
   promise<> SelectSeverity();
+  void SetSeverityMin(scada::EventSeverity severity);
 
   NodeIdSet GetSelectedNodeIds() const;
 

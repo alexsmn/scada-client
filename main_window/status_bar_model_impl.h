@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "base/observer_list.h"
 #include "aui/models/status_bar_model.h"
+#include "base/observer_list.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "services/progress_host.h"
@@ -13,6 +13,7 @@ class SessionService;
 class Executor;
 class NodeEventProvider;
 class NodeService;
+class Profile;
 
 struct StatusBarModelImplContext {
   const std::shared_ptr<Executor> executor_;
@@ -20,6 +21,7 @@ struct StatusBarModelImplContext {
   NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
   ProgressHost& progress_host_;
+  Profile& profile_;
 };
 
 class StatusBarModelImpl final : private StatusBarModelImplContext,
@@ -42,6 +44,8 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
 
   void UpdateUser();
 
+  void NotifyPanelsChanged(int index);
+
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
@@ -51,8 +55,8 @@ class StatusBarModelImpl final : private StatusBarModelImplContext,
 
   NodeRef user_node_;
 
-  boost::signals2::scoped_connection progress_host_connection_;
-  boost::signals2::scoped_connection session_state_changed_connection_;
+  std::vector<boost::signals2::scoped_connection> connections_;
 
   static const int kUserPaneIndex = 3;
+  static const int kSeverityPaneIndex = 3;
 };
