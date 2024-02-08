@@ -4,6 +4,7 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt5LinguistTools REQUIRED)
 
 include(client_module.cmake)
+include(translation.cmake)
 
 include_directories(client
   "."

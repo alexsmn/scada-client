@@ -47,17 +47,17 @@ target_link_libraries(client_qt_lib PUBLIC
   client_vidicon_qt
 )
 
-find_package(Qt5LinguistTools REQUIRED)
-file(GLOB TRANSLATIONS CONFIGURE_DEPENDS "*.ts")
-qt5_create_translation(TRANSLATIONS_OUT ${SOURCES_QT} ${MAIN_QT} ${TRANSLATIONS})
-qt5_add_translation(TRANSLATIONS_OUT ${TRANSLATIONS})
-target_sources(client_qt_lib PRIVATE ${TRANSLATIONS} ${TRANSLATIONS_OUT})
+client_qt_translations(client_qt_lib
+  "client_ru.ts"
+)
 
 # Exe
 
 add_executable(client_qt WIN32 ${MAIN_QT})
 target_link_libraries(client_qt PUBLIC client_qt_lib)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
+
+client_qt_translations(client_qt "main_ru.ts")
 
 install(FILES ${TRANSLATIONS_OUT} DESTINATION "bin/translations" COMPONENT Client)
 

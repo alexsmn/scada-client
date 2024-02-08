@@ -5,47 +5,47 @@
     <name>TransportDialog</name>
     <message>
         <source>Transport</source>
-        <translation type="vanished">Транспорт</translation>
+        <translation>Транспорт</translation>
     </message>
     <message>
         <source>Type:</source>
-        <translation type="vanished">Тип:</translation>
+        <translation>Тип:</translation>
     </message>
     <message>
         <source>Host:</source>
-        <translation type="vanished">Хост:</translation>
+        <translation>Хост:</translation>
     </message>
     <message>
         <source>Port:</source>
-        <translation type="vanished">Порт:</translation>
+        <translation>Порт:</translation>
     </message>
     <message>
         <source>Flow Control:</source>
-        <translation type="vanished">Управление потоком:</translation>
+        <translation>Управление потоком:</translation>
     </message>
     <message>
         <source>Stop Bits:</source>
-        <translation type="vanished">Стоповые биты:</translation>
+        <translation>Стоповые биты:</translation>
     </message>
     <message>
         <source>Bit Count:</source>
-        <translation type="vanished">Биты данных:</translation>
+        <translation>Биты данных:</translation>
     </message>
     <message>
         <source>Parity:</source>
-        <translation type="vanished">Четность:</translation>
+        <translation>Четность:</translation>
     </message>
     <message>
         <source>Baud Rate:</source>
-        <translation type="vanished">Скорость (бод):</translation>
+        <translation>Скорость (бод):</translation>
     </message>
     <message>
         <source>OK</source>
-        <translation type="vanished">ОК</translation>
+        <translation>ОК</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="vanished">Отмена</translation>
+        <translation>Отмена</translation>
     </message>
 </context>
 </TS>

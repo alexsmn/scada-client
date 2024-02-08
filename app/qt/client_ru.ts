@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name></name>
+    <message>
+        <source>Local</source>
+        <translation type="vanished">Локальный</translation>
+    </message>
+    <message>
+        <source>About</source>
+        <translation type="vanished">О программе</translation>
+    </message>
+</context>
+<context>
     <name>AboutDialog</name>
     <message>
         <location filename="../../components/about/qt/about_dialog.ui" line="14"/>
@@ -207,11 +218,6 @@
 <context>
     <name>LimitDialog</name>
     <message>
-        <location filename="../../components/limits/qt/limit_dialog.ui" line="23"/>
-        <source>(Description)</source>
-        <translation></translation>
-    </message>
-    <message>
         <location filename="../../components/limits/qt/limit_dialog.ui" line="33"/>
         <source>Critical Limits</source>
         <translation>Аварийные уставки</translation>
@@ -233,6 +239,11 @@
         <location filename="../../components/limits/qt/limit_dialog.ui" line="74"/>
         <source>Limits</source>
         <translation>Уставки</translation>
+    </message>
+    <message>
+        <location filename="../../components/limits/qt/limit_dialog.ui" line="23"/>
+        <source>(Description)</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/limits/qt/limit_dialog.ui" line="145"/>
@@ -342,22 +353,6 @@
     </message>
 </context>
 <context>
-    <name>QObject</name>
-    <message>
-        <location filename="main.cpp" line="71"/>
-        <source>Telecontrol SCADA Client</source>
-        <translation>Клиент ОИК Телеконтроль</translation>
-    </message>
-    <message>
-        <source>Local</source>
-        <translation type="vanished">Локальный</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">О программе</translation>
-    </message>
-</context>
-<context>
     <name>TimeRangeDialog</name>
     <message>
         <location filename="../../components/time_range/qt/time_range_dialog.ui" line="20"/>
@@ -402,12 +397,12 @@
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="20"/>
         <source>Dialog</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="32"/>
         <source>(Description)</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="44"/>
@@ -422,7 +417,7 @@
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="76"/>
         <source>units</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="86"/>
@@ -437,17 +432,17 @@
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="103"/>
         <source>(Condition)</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="110"/>
         <source>(Value)</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="136"/>
         <source>(Status)</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../components/write/qt/write_dialog.ui" line="156"/>
