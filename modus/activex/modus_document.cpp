@@ -294,6 +294,13 @@ void ModusDocument::OnDocClick(MouseButton button,
   }
 }
 
+void ModusDocument::OnDocNavigate(const QString& file_name,
+                                  const QString& page_name,
+                                  const QString& view_ident,
+                                  bool& perform) {
+  file_name;
+}
+
 std::string ModusDocument::SaveState() const {
   Microsoft::WRL::ComPtr<IPersistStreamInit> psi;
   sde_form_.As(&psi);

@@ -15,6 +15,14 @@ target_include_directories(client_modus_qt PRIVATE
   "${third_party}/modus"
 )
 
+file(GLOB_RECURSE MODUS_IDLS "." CONFIGURE_DEPENDS
+  "*.idl"
+)
+
+# target_sources(client_modus_qt PRIVATE ${MODUS_IDLS})
+# find_package(MIDL)
+# build_idls(TARGET client_modus_qt)
+
 target_link_libraries(client_modus_qt PRIVATE
   gdiplus
   modus

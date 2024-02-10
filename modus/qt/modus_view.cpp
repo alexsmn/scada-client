@@ -2,8 +2,8 @@
 
 #include "base/bind.h"
 #include "base/threading/sequenced_task_runner_handle.h"
-#include "modus/activex/modus.h"
 #include "filesystem/file_util.h"
+#include "modus/activex/modus.h"
 #include "profile/window_definition.h"
 
 #include <QAxWidget>
@@ -208,5 +208,15 @@ void ModusView::OnDocPopup(IDispatch* disp_doc, bool& popup) {
 void ModusView::ShowSetupDialog() {
   if (document_) {
     document_->sde_form().ShowOptions();
+  }
+}
+
+void ModusView::OnDocNavigate(IDispatch*,
+                              const QString& file_name,
+                              const QString& page_name,
+                              const QString& view_ident,
+                              bool& perform) {
+  if (document_) {
+    document_->OnDocNavigate(file_name, page_name, view_ident, perform);
   }
 }

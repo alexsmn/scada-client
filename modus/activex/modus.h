@@ -1,22 +1,11 @@
 #pragma once
 
-#pragma warning(push, 2)
-
-#include "modus/activex/sdecore.h"
+#import "modus/activex/typelibs/sdecore.tlb " raw_interfaces_only
+#import "modus/activex/typelibs/htsde2.tlb" raw_interfaces_only
 
 using SDECore::ISDEDocument50;
 
-#include "modus/activex/htsde2.h"
-
-#pragma warning(pop)
-
 #include <wrl/client.h>
-
-// #import "d:\Program Files (x86)\Modus 6.30\bin\sdecore.tlb "
-// raw_interfaces_only
-//  using SDECore::ISDEDocument50;
-// #import "d:\Program Files (x86)\Modus 6.30\bin\htsde2.ocx "
-// raw_interfaces_only
 
 // {E486BCEA-1FB5-42ce-9F89-4938F238D6CE}
 // DEFINE_GUID(DIID_Events,

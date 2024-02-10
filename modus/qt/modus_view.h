@@ -36,6 +36,13 @@ class ModusView : public QWidget,
   void OnDocDblClick(IDispatch*, IDispatch*);
   void OnDocPopup(IDispatch*, bool&);
 
+  // `perform` means if the navigation should be performed.
+  void OnDocNavigate(IDispatch*,
+                     const QString& file_name,
+                     const QString& page_name,
+                     const QString& view_ident,
+                     bool& perform);
+
  protected:
   void OpenPlaceholder();
 

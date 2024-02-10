@@ -65,6 +65,10 @@ class ModusDocument : private ModusDocumentContext {
   void OnDocPopup(bool& popup);
   void OnDocClick(MouseButton button, SDECore::IUIEventInfo& ui_event_info);
   void OnDocDblClick(SDECore::IUIEventInfo& ui_event_info);
+  void OnDocNavigate(const QString& file_name,
+                     const QString& page_name,
+                     const QString& view_ident,
+                     bool& perform);
 
  private:
   class EventSink;
