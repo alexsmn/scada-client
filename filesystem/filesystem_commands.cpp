@@ -78,8 +78,10 @@ void OpenFile(const std::filesystem::path& path,
   OpenView(main_window, window);
 }
 
-// Returns a relative path from public path.
-promise<std::filesystem::path> DownloadFile(const NodeRef& file_node) {
+// Downloads file from server and saves it to public path. May use cached file
+// if it's already downloaded. Returns a relative path from public path.
+scada::status_promise<std::filesystem::path> DownloadServerFile(
+    const NodeRef& file_node) {
   auto path = GetFilePath(file_node);
   if (path.empty()) {
     return scada::MakeRejectedStatusPromise<std::filesystem::path>(
@@ -105,17 +107,18 @@ promise<std::filesystem::path> DownloadFile(const NodeRef& file_node) {
           });
 }
 
-promise<> ExecuteFileCommand(MainWindow* main_window,
-                             const std::shared_ptr<Executor>& executor,
-                             const FileRegistry& file_registry,
-                             const NodeRef& file_node,
-                             aui::KeyModifiers key_modifiers) {
+scada::status_promise<void> ExecuteFileCommand(
+    MainWindow* main_window,
+    const std::shared_ptr<Executor>& executor,
+    const FileRegistry& file_registry,
+    const NodeRef& file_node,
+    aui::KeyModifiers key_modifiers) {
   if (!main_window) {
     return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
   }
 
   // TODO: `weak ptr` for main window.
-  return DownloadFile(file_node)
+  return DownloadServerFile(file_node)
       .then(BindPromiseExecutor(executor,
                                 [&file_registry, main_window, key_modifiers](
                                     const std::filesystem::path& path) {
