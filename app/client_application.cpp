@@ -243,7 +243,6 @@ void ClientApplication::OnStartLoginCompleted() {
     alias_service->Resolve(alias, callback);
   };
 
-  singletons_.emplace(std::make_shared<FileSystemComponent>());
   singletons_.emplace(std::make_shared<CsvExportModule>());
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
@@ -341,11 +340,18 @@ void ClientApplication::OnStartLoginCompleted() {
           .property_service_ = *property_service_,
           .create_tree_ = *create_tree_});
 
+  singletons_.emplace(
+      std::make_shared<FileSystemComponent>(FileSystemComponentContext{
+          .selection_commands_ = main_window_module_->selection_commands(),
+          .node_service_ = *node_service_,
+          .task_manager_ = *task_manager_,
+          .create_tree_ = *create_tree_}));
+
   singletons_.emplace(std::make_shared<ExportConfigurationModule>(
       ExportConfigurationModuleContext{
           .node_service_ = *node_service_,
           .task_manager_ = *task_manager_,
-          .main_commands_ = main_window_module_->commands()}));
+          .main_commands_ = main_window_module_->main_commands()}));
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host_));

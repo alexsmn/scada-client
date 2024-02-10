@@ -80,7 +80,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     return std::make_unique<MainCommands>(MainCommandsContext{
         main_window, task_manager_, dialog_service, master_data_services_,
         event_fetcher_, node_service_, local_events_, favourites_, speech_,
-        profile_, *main_window_manager_, login_handler, *debugger, commands_});
+        profile_, *main_window_manager_, login_handler, *debugger,
+        main_commands_});
   };
 
   auto main_menu_factory =
@@ -106,7 +107,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
           executor_, task_manager_, master_data_services_,
           master_data_services_, event_fetcher_, timed_data_service_,
           local_events_, file_cache_, profile_, *main_window_manager_,
-          node_service_, create_tree_});
+          node_service_, selection_commands_});
 
   auto view_commands_factory = [this, selection_commands](
                                    OpenedView& opened_view,

@@ -1,15 +1,21 @@
 ﻿#include "filesystem/filesystem_component.h"
 
+#include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "filesystem/file_synchronizer.h"
+#include "filesystem/filesystem_commands.h"
 #include "filesystem/filesystem_view.h"
+#include "main_window/selection_command_context.h"
+#include "node_service/node_service.h"
+#include "services/create_tree.h"
 
 const WindowInfo kWindowInfo = {
     ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Файлы", WIN_SING, 200, 400};
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 
-FileSystemComponent::FileSystemComponent() {
+FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
+    : FileSystemComponentContext{std::move(context)} {
   /*std::filesystem::path public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
     file_synchronizer_ =
@@ -19,6 +25,36 @@ FileSystemComponent::FileSystemComponent() {
             public_dir.value(),
         });
   }*/
+
+  const auto& file_type = node_service_.GetNode(filesystem::id::FileType);
+  file_type.Fetch(NodeFetchStatus::NodeOnly());
+
+  selection_commands_.AddCommand(
+      BasicCommand<SelectionCommandContext>{ID_ADD_FILE}
+          .set_execute_handler([this](const SelectionCommandContext& context) {
+            return AddFile(context.selection.node(), context.dialog_service,
+                           task_manager_);
+          })
+          .set_available_handler([this, file_type](
+                                     const SelectionCommandContext& context) {
+            return create_tree_.CanCreate(context.selection.node(), file_type);
+          }));
+
+  const auto& file_directory_type =
+      node_service_.GetNode(filesystem::id::FileType);
+  file_directory_type.Fetch(NodeFetchStatus::NodeOnly());
+
+  selection_commands_.AddCommand(
+      BasicCommand<SelectionCommandContext>{ID_CREATE_FILE_DIRECTORY}
+          .set_execute_handler([this](const SelectionCommandContext& context) {
+            return CreateFileDirectory(context.selection.node(),
+                                       context.dialog_service, task_manager_);
+          })
+          .set_available_handler([this, file_directory_type](
+                                     const SelectionCommandContext& context) {
+            return create_tree_.CanCreate(context.selection.node(),
+                                          file_directory_type);
+          }));
 }
 
 FileSystemComponent::~FileSystemComponent() {}

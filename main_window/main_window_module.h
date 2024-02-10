@@ -4,6 +4,7 @@
 #include "controller/command_registry.h"
 #include "main_window/main_command_context.h"
 #include "main_window/main_window_context.h"
+#include "main_window/selection_command_context.h"
 
 #include <functional>
 #include <memory>
@@ -35,7 +36,6 @@ using MainWindowFactory =
     std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>;
 
 using LoginHandler = std::function<void()>;
-
 using QuitHandler = std::function<void()>;
 
 struct MainWindowModuleContext {
@@ -67,14 +67,21 @@ class MainWindowModule : private MainWindowModuleContext {
   explicit MainWindowModule(MainWindowModuleContext&& context);
   ~MainWindowModule();
 
-  BasicCommandRegistry<MainCommandContext>& commands() { return commands_; }
+  BasicCommandRegistry<MainCommandContext>& main_commands() {
+    return main_commands_;
+  }
+
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands() {
+    return selection_commands_;
+  }
 
  private:
   MainWindowContext MakeMainWindowContext(int window_id);
 
   void OnEvents(bool has_events);
 
-  BasicCommandRegistry<MainCommandContext> commands_;
+  BasicCommandRegistry<MainCommandContext> main_commands_;
+  BasicCommandRegistry<SelectionCommandContext> selection_commands_;
 
   std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<MainWindowManager> main_window_manager_;

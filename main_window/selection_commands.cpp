@@ -1,5 +1,6 @@
 ﻿#include "main_window/selection_commands.h"
 
+#include "aui/dialog_service.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/promise_executor.h"
@@ -14,9 +15,6 @@
 #include "components/device_metrics/device_metrics_command.h"
 #include "components/events/events_component.h"
 #include "components/limits/limit_dialog.h"
-#include "main_window/main_window_manager.h"
-#include "main_window/main_window_util.h"
-#include "main_window/opened_view.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/summary/summary_component.h"
@@ -26,12 +24,13 @@
 #include "components/watch/watch_component.h"
 #include "components/write/write_dialog.h"
 #include "controller/selection_model.h"
-#include "profile/window_definition_util.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
 #include "filesystem/file_cache.h"
-#include "filesystem/filesystem_commands.h"
 #include "main_window.h"
+#include "main_window/main_window_manager.h"
+#include "main_window/main_window_util.h"
+#include "main_window/opened_view.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
@@ -40,10 +39,9 @@
 #include "model/security_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "profile/window_definition_util.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
-#include "services/create_tree.h"
-#include "aui/dialog_service.h"
 #include "services/task_manager.h"
 #include "window_definition_builder.h"
 
@@ -117,47 +115,6 @@ std::string GetNodeDebugInfo(const NodeRef& node) {
   stream << std::endl;
 
   return stream.str();
-}
-
-// TODO: Revise ownership. Should be probably captured by a shared pointer.
-void RegisterFileSystemCommands(SelectionCommands& selection_commands,
-                                CommandRegistry& command_registry,
-                                NodeService& node_service,
-                                TaskManager& task_manager,
-                                CreateTree& create_tree) {
-  // |selection_| and |dialog_service_| are never null in command handlers.
-
-  const auto& file_type = node_service.GetNode(filesystem::id::FileType);
-  file_type.Fetch(NodeFetchStatus::NodeOnly());
-
-  command_registry.AddCommand(
-      Command{ID_ADD_FILE}
-          .set_execute_handler([&selection_commands, &task_manager] {
-            AddFile(selection_commands.selection()->node(),
-                    *selection_commands.dialog_service(), task_manager);
-          })
-          .set_available_handler(
-              [&create_tree, &selection_commands, file_type] {
-                return create_tree.CanCreate(
-                    selection_commands.selection()->node(), file_type);
-              }));
-
-  const auto& file_directory_type =
-      node_service.GetNode(filesystem::id::FileType);
-  file_directory_type.Fetch(NodeFetchStatus::NodeOnly());
-
-  command_registry.AddCommand(
-      Command{ID_CREATE_FILE_DIRECTORY}
-          .set_execute_handler([&selection_commands, &task_manager] {
-            CreateFileDirectory(selection_commands.selection()->node(),
-                                *selection_commands.dialog_service(),
-                                task_manager);
-          })
-          .set_available_handler([&create_tree, &selection_commands,
-                                  file_directory_type] {
-            return create_tree.CanCreate(selection_commands.selection()->node(),
-                                         file_directory_type);
-          }));
 }
 
 void RegisterDeviceEnableCommand(SelectionCommands& selection_commands,
@@ -249,9 +206,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           .set_available_handler([this] {
             return IsInstanceOf(selection()->node(), devices::id::DeviceType);
           }));
-
-  RegisterFileSystemCommands(*this, command_registry_, node_service_,
-                             task_manager_, create_tree_);
 
   RegisterDeviceEnableCommand(*this, command_registry_, session_service_,
                               task_manager_, ID_ITEM_ENABLE, true);
@@ -505,10 +459,22 @@ void SelectionCommands::OpenWindow(const WindowDefinition& window_definition) {
 }
 
 CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
-  if (!selection_ || !dialog_service_)
+  if (!selection_ || !dialog_service_) {
     return nullptr;
+  }
 
-  return command_registry_.GetCommandHandler(command_id);
+  if (auto* handler = command_registry_.GetCommandHandler(command_id)) {
+    return handler;
+  }
+
+  if (const auto* command = selection_commands_.FindCommand(command_id)) {
+    if (!command->available_handler ||
+        command->available_handler(command_context())) {
+      return this;
+    }
+  }
+
+  return nullptr;
 }
 
 void SelectionCommands::CallMethod(
@@ -667,4 +633,32 @@ void SelectionCommands::DumpDebugInfo() {
   dialog_service_->RunMessageBox(
       u"Отладочная информация скопирована в буфер обмена.", {},
       MessageBoxMode::Info);
+}
+
+bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
+  const auto* command = selection_commands_.FindCommand(command_id);
+  return command && (!command->enabled_handler ||
+                     command->enabled_handler(command_context()));
+}
+
+bool SelectionCommands::IsCommandChecked(unsigned command_id) const {
+  const auto* command = selection_commands_.FindCommand(command_id);
+  return command && command->checked_handler &&
+         command->checked_handler(command_context());
+}
+
+void SelectionCommands::ExecuteCommand(unsigned command_id) {
+  if (const auto* command = selection_commands_.FindCommand(command_id)) {
+    if (command->execute_handler) {
+      command->execute_handler(command_context());
+    }
+  }
+}
+
+SelectionCommandContext SelectionCommands::command_context() const {
+  // |selection_| and |dialog_service_| are never null in command handlers.
+  assert(selection_);
+  assert(dialog_service_);
+
+  return {.selection = *selection_, .dialog_service = *dialog_service_};
 }

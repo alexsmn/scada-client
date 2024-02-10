@@ -4,6 +4,7 @@
 #include "base/promise.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
+#include "main_window/selection_command_context.h"
 #include "profile/window_definition.h"
 
 #include <vector>
@@ -15,8 +16,10 @@ class SessionService;
 class Variant;
 }  // namespace scada
 
+template <typename T>
+class BasicCommandRegistry;
+
 class Controller;
-class CreateTree;
 class DialogService;
 class Executor;
 class FileCache;
@@ -43,7 +46,7 @@ struct SelectionCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   NodeService& node_service_;
-  CreateTree& create_tree_;
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
 };
 
 // A singleton shared between |OpenedView|s. Once an |OpenView| is focused, it
@@ -74,8 +77,13 @@ class SelectionCommands : private SelectionCommandsContext,
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
+  virtual bool IsCommandEnabled(unsigned command_id) const override;
+  virtual bool IsCommandChecked(unsigned command_id) const override;
+  virtual void ExecuteCommand(unsigned command_id) override;
 
  private:
+  SelectionCommandContext command_context() const;
+
   void DeleteSelection();
   void CopyToClipboard();
 
@@ -90,6 +98,7 @@ class SelectionCommands : private SelectionCommandsContext,
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
 
+  // TODO: Replace with |selection_commands_|.
   CommandRegistry command_registry_;
 
   base::WeakPtrFactory<SelectionCommands> weak_ptr_factory_{this};
