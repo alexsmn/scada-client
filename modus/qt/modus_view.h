@@ -1,11 +1,11 @@
 #pragma once
 
+#include "base/cancelation.h"
 #include "modus/activex/modus_document.h"
 #include "modus/modus_view_wrapper.h"
 
 #include <QWidget>
 #include <filesystem>
-#include <stop_token>
 
 class QAxWidget;
 
@@ -46,8 +46,7 @@ class ModusView : public QWidget,
  protected:
   void OpenPlaceholder();
 
-  void DelayedOpen(const WindowDefinition& definition,
-                   const std::stop_token& cancelation);
+  void DelayedOpen(const WindowDefinition& definition);
 
   std::filesystem::path path_;
 
@@ -57,5 +56,5 @@ class ModusView : public QWidget,
 
   std::unique_ptr<modus::ModusDocument> document_;
 
-  std::stop_source cancelation_;
+  Cancelation cancelation_;
 };

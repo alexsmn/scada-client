@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <wrl/client.h>
 
+class Executor;
 class FileCache;
 class TimedDataService;
 class TimedDataSpec;
@@ -26,9 +27,11 @@ struct IHTSDEForm2;
 
 namespace modus {
 
+class ModusEventSink;
 class ModusObject;
 
 struct ModusDocumentContext {
+  const std::shared_ptr<Executor> executor_;
   const AliasResolver alias_resolver_;
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
@@ -71,13 +74,9 @@ class ModusDocument : private ModusDocumentContext {
                      bool& perform);
 
  private:
-  class EventSink;
-
   void PostInit();
 
-  void CreateEventSink();
-
-  Microsoft::WRL::ComPtr<EventSink> event_sink_;
+  Microsoft::WRL::ComPtr<ModusEventSink> event_sink_;
 
   Microsoft::WRL::ComPtr<htsde2::IHTSDEForm2> sde_form_;
   Microsoft::WRL::ComPtr<SDECore::ISDEDocument50> sde_document_;

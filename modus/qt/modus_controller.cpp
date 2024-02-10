@@ -1,15 +1,13 @@
 ﻿#include "modus/qt/modus_controller.h"
 
-#include "base/bind.h"
+#include "aui/dialog_service.h"
 #include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "common_resources.h"
 #include "components/web/web_component.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
-#include "profile/window_definition.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_util.h"
@@ -18,8 +16,8 @@
 #include "modus/qt/modus_view.h"
 #include "modus/qt/modus_view2.h"
 #include "modus/qt/modus_view3.h"
-#include "aui/dialog_service.h"
 #include "profile/profile.h"
+#include "profile/window_definition.h"
 #include "web/web_util.h"
 
 #include <QScrollArea>
@@ -34,12 +32,16 @@ QWidget* ModusController::CreateModusView() {
     controller_delegate_.SetTitle(title);
   };
 
-  auto navigation_callback = [this](std::u16string_view hyperlink) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE,
-        base::Bind(&ModusController::OpenHyperlink, weak_factory_.GetWeakPtr(),
-                   std::u16string{hyperlink}));
-  };
+  auto navigation_callback =
+      [executor = executor_,
+       weak_ptr = weak_factory_.GetWeakPtr()](std::u16string_view hyperlink) {
+        // Intentionally delay open to exit from the Modus handler.
+        executor->PostTask([weak_ptr, hyperlink = std::u16string{hyperlink}] {
+          if (auto* ptr = weak_ptr.get()) {
+            ptr->OpenHyperlink(hyperlink);
+          }
+        });
+      };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
     selection_.SelectTimedData(spec);
@@ -60,9 +62,9 @@ QWidget* ModusController::CreateModusView() {
   };
 
   view_ = new ModusView{modus::ModusDocumentContext{
-      alias_resolver_, timed_data_service_, file_cache_, title_callback,
-      navigation_callback, selection_callback, context_menu_handler,
-      enable_internal_render_callback}};
+      executor_, alias_resolver_, timed_data_service_, file_cache_,
+      title_callback, navigation_callback, selection_callback,
+      context_menu_handler, enable_internal_render_callback}};
 
   wrapper_ = view_;
 
@@ -78,11 +80,16 @@ QWidget* ModusController::CreateModusView2() {
   view2_->set_selection_signal(
       [this](const TimedDataSpec& spec) { selection_.SelectTimedData(spec); });
 
-  view2_->set_navigation_signal([this](const std::filesystem::path& path) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::Bind(&ModusController::OpenPath,
-                              weak_factory_.GetWeakPtr(), path));
-  });
+  view2_->set_navigation_signal(
+      [executor = executor_, weak_ptr = weak_factory_.GetWeakPtr()](
+          const std::filesystem::path& path) {
+        // Intentionally delay open to exit from the Modus handler.
+        executor->PostTask([weak_ptr, path] {
+          if (auto* ptr = weak_ptr.get()) {
+            ptr->OpenPath(path);
+          }
+        });
+      });
 
   view2_->set_double_click_signal(
       [this] { selection_.timed_data().Acknowledge(); });

@@ -1,7 +1,6 @@
 ﻿#include "modus/qt/modus_view.h"
 
-#include "base/bind.h"
-#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/executor.h"
 #include "filesystem/file_util.h"
 #include "modus/activex/modus.h"
 #include "profile/window_definition.h"
@@ -78,20 +77,23 @@ void ModusView::Open(const WindowDefinition& definition) {
           SLOT(OnDocDblClick(IDispatch*, IDispatch*)));
   connect(ax_widget_, SIGNAL(OnDocPopup(IDispatch*, bool&)), this,
           SLOT(OnDocPopup(IDispatch*, bool&)));
+  connect(ax_widget_,
+          SIGNAL(OnDocNavigate(IDispatch*, const QString& file_name,
+                               const QString& page_name,
+                               const QString& view_ident, bool& perform)),
+          this,
+          SLOT(OnDocNavigate(IDispatch*, const QString& file_name,
+                             const QString& page_name,
+                             const QString& view_ident, bool& perform)));
 
   title_callback_(document_->title());
 
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(&ModusView::DelayedOpen, base::Unretained(this),
-                            definition, cancelation_.get_token()));
+  // TODO: Describe why the delay is needed.
+  executor_->PostTask(cancelation_.Bind(
+      std::bind_front(&ModusView::DelayedOpen, this, definition)));
 }
 
-void ModusView::DelayedOpen(const WindowDefinition& definition,
-                            const std::stop_token& cancelation) {
-  if (cancelation.stop_requested()) {
-    return;
-  }
-
+void ModusView::DelayedOpen(const WindowDefinition& definition) {
   if (auto* sde_document = document_->sde_document()) {
     Microsoft::WRL::ComPtr<SDECore::ISDEPages> pages;
     sde_document->get_Pages(pages.ReleaseAndGetAddressOf());

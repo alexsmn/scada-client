@@ -4,119 +4,28 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
-#include "modus/activex/modus.h"
 #include "modus/activex/modus_element.h"
+#include "modus/activex/modus_event_sink.h"
 #include "modus/activex/modus_loader.h"
 #include "modus/activex/modus_object.h"
 
-#include <atlbase.h>
-
-#include <atlcom.h>
-#include <filesystem>
-#include <functional>
-
 namespace modus {
-
-// ModusDocument::EventSink
-
-class ModusDocument::EventSink
-    : public CComObjectRootEx<CComSingleThreadModel>,
-      public ATL::IDispEventImpl<1,
-                                 EventSink,
-                                 &__uuidof(htsde2::IHTSDEForm2Events),
-                                 &__uuidof(htsde2::__htsde2),
-                                 0xFFFF,
-                                 0xFFFF> {
- public:
-  void set_document(ModusDocument* document) { document_ = document; }
-
-  BEGIN_COM_MAP(EventSink)
-  END_COM_MAP()
-
-  BEGIN_SINK_MAP(EventSink)
-  SINK_ENTRY_EX(1, __uuidof(htsde2::IHTSDEForm2Events), 0x0000000b, OnDocPopup)
-  SINK_ENTRY_EX(1,
-                __uuidof(htsde2::IHTSDEForm2Events),
-                0x0000001a,
-                OnDocClick)  // click
-  SINK_ENTRY_EX(1,
-                __uuidof(htsde2::IHTSDEForm2Events),
-                0x00000012,
-                OnDocDblClick)  // double-click
-  SINK_ENTRY_EX(1,
-                __uuidof(htsde2::IHTSDEForm2Events),
-                0x00000019,
-                OnDocRightClick)  // right-click
-  END_SINK_MAP()
-
-  STDMETHOD_(void, OnDocPopup)(ISDEDocument50* doc, VARIANT_BOOL* popup);
-  STDMETHOD_(void, OnDocClick)
-  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
-  STDMETHOD_(void, OnDocRightClick)
-  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
-  STDMETHOD_(void, OnDocDblClick)
-  (ISDEDocument50* doc, SDECore::IUIEventInfo* info);
-
- private:
-  ModusDocument* document_ = nullptr;
-};
-
-STDMETHODIMP_(void)
-ModusDocument::EventSink::OnDocPopup(ISDEDocument50* sde_document,
-                                     VARIANT_BOOL* popup) {
-  assert(popup);
-
-  *popup = FALSE;
-
-  if (!document_)
-    return;
-
-  bool bool_popup = *popup != VARIANT_FALSE;
-  document_->OnDocPopup(bool_popup);
-  *popup = bool_popup ? VARIANT_TRUE : VARIANT_FALSE;
-}
-
-STDMETHODIMP_(void)
-ModusDocument::EventSink::OnDocDblClick(ISDEDocument50* sde_document,
-                                        SDECore::IUIEventInfo* ui_event_info) {
-  assert(ui_event_info);
-
-  if (document_)
-    document_->OnDocDblClick(*ui_event_info);
-}
-
-STDMETHODIMP_(void)
-ModusDocument::EventSink::OnDocClick(ISDEDocument50* sde_document,
-                                     SDECore::IUIEventInfo* ui_event_info) {
-  assert(ui_event_info);
-
-  // WARNING: |info->get_Button()| doesn't always give the right button.
-
-  if (document_)
-    document_->OnDocClick(ModusDocument::MouseButton::Left, *ui_event_info);
-}
-
-STDMETHODIMP_(void)
-ModusDocument::EventSink::OnDocRightClick(
-    ISDEDocument50* sde_document,
-    SDECore::IUIEventInfo* ui_event_info) {
-  assert(ui_event_info);
-
-  if (document_)
-    document_->OnDocClick(ModusDocument::MouseButton::Right, *ui_event_info);
-}
-
-// ModusDocument
 
 ModusDocument::ModusDocument(ModusDocumentContext&& context,
                              htsde2::IHTSDEForm2& sde_form)
     : ModusDocumentContext{std::move(context)}, sde_form_{&sde_form} {
   // WARNING: The initialization order is important for Modus.
 
-  CreateEventSink();
+  // TODO: Event sink is not working. Instead, Qt signals are used. Investigate.
+  // event_sink_ = ModusEventSink::Create(*this);
 
   if (event_sink_) {
-    event_sink_->DispEventAdvise(sde_form_.Get());
+    if (HRESULT hr = event_sink_->DispEventAdvise(sde_form_.Get());
+        FAILED(hr)) {
+      // TODO: Print `HRESULT`.
+      throw std::runtime_error(
+          std::format("Cannot connect Modus events. Error 0x{:x}", hr));
+    }
   }
 
   sde_form_->put_StatusVisible(VARIANT_FALSE);
@@ -134,9 +43,11 @@ ModusDocument::~ModusDocument() {
   sde_document_.Reset();
 
   if (event_sink_) {
-    if (sde_form_)
+    if (sde_form_) {
       event_sink_->DispEventUnadvise(sde_form_.Get());
-    event_sink_->set_document(nullptr);
+    }
+
+    event_sink_->DetachDocument();
   }
 
   sde_form_.Reset();
@@ -186,16 +97,6 @@ void ModusDocument::InitFromState(std::string_view state) {
 }
 
 void ModusDocument::PostInit() {}
-
-void ModusDocument::CreateEventSink() {
-  HRESULT res;
-  CComObject<EventSink>* event_sink = nullptr;
-  if (FAILED(res = CComObject<EventSink>::CreateInstance(&event_sink)))
-    throw std::runtime_error("Cannot create event sink");
-
-  event_sink_ = event_sink;
-  event_sink_->set_document(this);
-}
 
 bool ModusDocument::ShowContainedItem(const scada::NodeId& node_id) {
   auto* object = FindObject(node_id);
@@ -254,8 +155,9 @@ void ModusDocument::OnDocDblClick(SDECore::IUIEventInfo& ui_event_info) {
 
   if (sde_object && !acked) {
     auto hyperlink = modus::GetHyperlink(*sde_object.Get());
-    if (!hyperlink.empty())
+    if (!hyperlink.empty()) {
       navigation_callback_(base::AsString16(hyperlink));
+    }
   }
 }
 
