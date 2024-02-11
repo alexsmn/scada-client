@@ -124,7 +124,10 @@ void MainWindowTest::ExpectOpenView(unsigned command_id) {
                                         /*delegate=*/_, /*dialog_service=*/_))
       .WillOnce(Return(std::unique_ptr<MockController>{controller}));
 
+// TODO: Generalize this test for all UIs.
+#if defined(UI_QT)
   EXPECT_CALL(*controller, Init(_)).WillOnce(Return(new QWidget));
+#endif
 }
 
 TEST_F(MainWindowTest, Close_InvokesQuiteHandler) {

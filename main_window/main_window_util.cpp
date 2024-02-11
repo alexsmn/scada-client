@@ -25,20 +25,22 @@
 
 #include <cassert>
 
-void OpenView(MainWindow* main_window,
-              promise<WindowDefinition> window_def_promise,
-              bool activate) {
+scada::status_promise<void> OpenView(
+    MainWindow* main_window,
+    promise<WindowDefinition> window_def_promise,
+    bool activate) {
   // TODO: Pass |main_window| by weak pointer.
-  window_def_promise.then([main_window, activate](const WindowDefinition& def) {
-    OpenView(main_window, def, activate);
-  });
+  return window_def_promise.then(
+      [main_window, activate](const WindowDefinition& def) {
+        return OpenView(main_window, def, activate);
+      });
 }
 
-void OpenView(MainWindow* main_window,
-              const WindowDefinition& window_def,
-              bool activate) {
+scada::status_promise<void> OpenView(MainWindow* main_window,
+                                     const WindowDefinition& window_def,
+                                     bool activate) {
   assert(main_window);
-  main_window->OpenView(window_def, activate);
+  return ToVoidPromise(main_window->OpenView(window_def, activate));
 }
 
 const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,

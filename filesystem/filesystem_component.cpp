@@ -24,12 +24,12 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
   file_registry_ = std::make_unique<FileRegistry>();
   file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
+  file_manager_ =
+      std::make_unique<FileManagerImpl>(FileManagerContext{scada_client_});
+
   open_file_command_ = std::bind_front(
       &OpenFileCommandImpl::Execute,
       std::make_shared<OpenFileCommandImpl>(*file_registry_, *file_manager_));
-
-  file_manager_ =
-      std::make_unique<FileManagerImpl>(FileManagerContext{scada_client_});
 
   /*std::filesystem::path public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {

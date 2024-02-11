@@ -31,6 +31,10 @@ class OpenFileCommandImpl {
 
   const FileRegistry& file_registry;
   FileManager& file_manager;
+
+ private:
+  scada::status_promise<void> OpenFile(
+      const OpenFileCommandContext& context) const;
 };
 
 promise<> AddFile(NodeRef parent_directory,

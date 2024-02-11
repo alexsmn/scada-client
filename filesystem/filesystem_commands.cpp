@@ -31,55 +31,30 @@ const char16_t kAddFileDirectoryTitle[] = u"Создать папку";
 
 }  // namespace
 
-void OpenJsonFile(const std::filesystem::path& path,
-                  MainWindow* main_window,
-                  aui::KeyModifiers key_modifiers) {
-  if (!main_window)
-    return;
-
-  std::optional<WindowDefinition> window;
+scada::status_promise<void> OpenJsonFile(const std::filesystem::path& path,
+                                         MainWindow* main_window,
+                                         aui::KeyModifiers key_modifiers) {
+  if (!main_window) {
+    return make_resolved_promise();
+  }
 
   std::string error_string;
   auto json = LoadJsonFromFile(path, &error_string);
-  if (json)
-    window = FromJson<WindowDefinition>(*json);
 
-  if (!window) {
-    main_window->GetDialogService().RunMessageBox(
-        u"Файл имеет неверный формат.", kOpenFileTitle, MessageBoxMode::Error);
-    return;
+  std::optional<WindowDefinition> window_def;
+  if (json) {
+    window_def = FromJson<WindowDefinition>(*json);
   }
 
-  OpenView(main_window, *window);
+  if (!window_def) {
+    return ToVoidPromise(main_window->GetDialogService().RunMessageBox(
+        u"Файл имеет неверный формат.", kOpenFileTitle, MessageBoxMode::Error));
+  }
+
+  return OpenView(main_window, *window_def);
 }
 
-void OpenFile(const std::filesystem::path& path,
-              const FileRegistry& file_registry,
-              MainWindow* main_window,
-              aui::KeyModifiers key_modifiers) {
-  if (!main_window)
-    return;
-
-  if (path.extension() == ".workplace") {
-    OpenJsonFile(path, main_window, key_modifiers);
-    return;
-  }
-
-  auto* file_type =
-      file_registry.FindTypeByExtension(path.extension().string());
-  auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
-  if (!window_info) {
-    main_window->GetDialogService().RunMessageBox(
-        u"Неизвестный тип файла.", kOpenFileTitle, MessageBoxMode::Error);
-    return;
-  }
-
-  WindowDefinition window{*window_info};
-  window.path = path;
-  OpenView(main_window, window);
-}
-
-scada::status_promise<void> OpenFileCommandImpl::Execute(
+scada::status_promise<void> OpenFileCommandImpl::OpenFile(
     const OpenFileCommandContext& context) const {
   if (!context.main_window) {
     return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
@@ -90,26 +65,36 @@ scada::status_promise<void> OpenFileCommandImpl::Execute(
     return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
   }
 
-  return file_manager.DownloadFileFromServer(path)
-      .then(BindPromiseExecutor(context.executor,
-                                // TODO: `weak ptr` for main window.
-                                [this, path, main_window = context.main_window,
-                                 key_modifiers = context.key_modifiers] {
-                                  OpenFile(path, file_registry, main_window,
-                                           key_modifiers);
-                                }))
-      .except(BindPromiseExecutorWithResult(
-          context.executor,
-          // TODO: `weak ptr` for main window.
-          [main_window = context.main_window](std::exception_ptr) {
-            return main_window->GetDialogService()
-                .RunMessageBox(u"Не удалось загрузить файл с сервера.",
-                               kOpenFileTitle, MessageBoxMode::Error)
-                .then([](MessageBoxResult) {
-                  return scada::MakeRejectedStatusPromise(
-                      scada::StatusCode::Bad);
-                });
-          }));
+  if (path.extension() == ".workplace") {
+    return OpenJsonFile(path, context.main_window, context.key_modifiers);
+  }
+
+  auto* file_type =
+      file_registry.FindTypeByExtension(path.extension().string());
+  auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
+  if (!window_info) {
+    return ToVoidPromise(context.main_window->GetDialogService().RunMessageBox(
+        u"Неизвестный тип файла.", kOpenFileTitle, MessageBoxMode::Error));
+  }
+
+  auto window_def = WindowDefinition{*window_info}.set_path(path);
+
+  return OpenView(context.main_window, std::move(window_def));
+}
+
+scada::status_promise<void> OpenFileCommandImpl::Execute(
+    const OpenFileCommandContext& context) const {
+  return OpenFile(context).except(BindPromiseExecutorWithResult(
+      context.executor,
+      // TODO: `weak ptr` for main window.
+      [main_window = context.main_window](std::exception_ptr) {
+        return main_window->GetDialogService()
+            .RunMessageBox(u"Не удалось загрузить файл с сервера.",
+                           kOpenFileTitle, MessageBoxMode::Error)
+            .then([](MessageBoxResult) {
+              return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
+            });
+      }));
 }
 
 promise<> AddFile(NodeRef parent_directory,
