@@ -1,9 +1,9 @@
 #pragma once
 
 #include "base/observer_list.h"
+#include "controller/contents_observer.h"
 #include "main_window/main_window_context.h"
 #include "main_window/view_manager_delegate.h"
-#include "controller/contents_observer.h"
 
 namespace aui {
 class MenuModel;
@@ -56,8 +56,7 @@ class MainWindow : protected MainWindowContext,
   void SetPageTitle(const std::u16string& title);
   OpenedView* GetActiveView();
   OpenedView* GetActiveDataView();
-  OpenedView* OpenView(const WindowDefinition& window_definition,
-                       bool make_active);
+  void OpenView(const WindowDefinition& window_definition, bool make_active);
   OpenedView* FindOpenedViewByFilePath(const std::filesystem::path& path);
   OpenedView* FindOpenedViewByType(const WindowInfo& window_info);
   void OpenPane(const WindowInfo& window_info, bool activate);

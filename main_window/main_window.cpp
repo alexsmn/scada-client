@@ -1,11 +1,7 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
-#include "aui/models/menu_model.h"
-#include "aui/models/simple_menu_model.h"
 #include "base/string_piece_util.h"
-#include "client_utils.h"
-#include "common_resources.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
@@ -15,27 +11,9 @@
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view.h"
 #include "main_window/selection_commands.h"
-#include "main_window/simple_menu_command_handler.h"
+#include "main_window/tab_popup_menu.h"
 #include "main_window/view_manager.h"
 #include "profile/profile.h"
-
-namespace {
-
-class TabPopupMenu : public aui::SimpleMenuModel {
- public:
-  explicit TabPopupMenu(CommandHandler& commands)
-      : aui::SimpleMenuModel{&handler_}, handler_{commands} {
-    AddItem(ID_VIEW_ADD_TO_FAVOURITES, u"В избранное");
-    AddItem(ID_VIEW_CHANGE_TITLE, u"Переименовать");
-    AddSeparator(aui::NORMAL_SEPARATOR);
-    AddItem(ID_VIEW_CLOSE, u"Закрыть");
-  }
-
- private:
-  SimpleMenuCommandHandler handler_;
-};
-
-}  // namespace
 
 MainWindow::MainWindow(MainWindowContext&& context,
                        DialogService& dialog_service)
@@ -164,11 +142,10 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
   return nullptr;
 }
 
-OpenedView* MainWindow::OpenView(const WindowDefinition& def,
-                                 bool make_active) {
+void MainWindow::OpenView(const WindowDefinition& def, bool make_active) {
   OpenedView* after_view =
       !def.window_info().is_pane() ? active_data_view() : nullptr;
-  return view_manager_->OpenView(def, make_active, after_view);
+  view_manager_->OpenView(def, make_active, after_view);
 }
 
 void MainWindow::OnViewClosed(OpenedView& view) {
