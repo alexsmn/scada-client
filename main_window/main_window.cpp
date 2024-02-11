@@ -43,6 +43,13 @@ void MainWindow::Init(ViewManager& view_manager) {
 
 MainWindow::~MainWindow() {}
 
+void MainWindow::CleanupForTesting() {
+  active_view_ = nullptr;
+  active_data_view_ = nullptr;
+
+  view_manager_->ClosePage();
+}
+
 void MainWindow::BeforeClose() {
   SavePage();
 

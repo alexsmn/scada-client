@@ -30,7 +30,7 @@ class MainWindowManager : private MainWindowManagerContext {
 
   void OnMainWindowClosed(int window_id);
 
-  typedef std::map<int /*window_id*/, std::unique_ptr<MainWindow>> MainWindows;
+  using MainWindows = std::map<int /*window_id*/, std::unique_ptr<MainWindow>>;
   const MainWindows& main_windows() const { return main_windows_; }
 
   bool IsPageOpened(int page_id) const;

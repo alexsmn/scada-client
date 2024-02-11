@@ -4,6 +4,7 @@
 #include "aui/models/status_bar_model_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
+#include "controller/controller_mock.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_mock.h"
 #include "filesystem/file_registry.h"
@@ -11,6 +12,7 @@
 #include "main_window/action_manager.h"
 #include "main_window/controller_factory_mock.h"
 #include "main_window/main_window_manager.h"
+#include "modus/modus_component.h"
 #include "profile/profile.h"
 
 #if defined(UI_QT)
@@ -28,7 +30,12 @@
 using namespace testing;
 
 class MainWindowTest : public Test {
+ public:
+  ~MainWindowTest();
+
  protected:
+  void ExpectOpenView(unsigned command_id);
+
   AppEnvironment app_env_;
 
   MainWindowContext MakeMainWindowContext();
@@ -50,7 +57,7 @@ class MainWindowTest : public Test {
       main_window_factory_;
 
   StrictMock<MockFunction<void()>> quit_handler_;
-  MockControllerFactory controller_factory_;
+  StrictMock<MockControllerFactory> controller_factory_;
 
   MainWindowManager main_window_manager_{
       {.profile_ = profile_,
@@ -106,8 +113,50 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .connection_info_provider_ = connection_info_provider_.AsStdFunction()};
 }
 
-TEST_F(MainWindowTest, Test) {
+MainWindowTest::~MainWindowTest() {
+  main_window_.CleanupForTesting();
+}
+
+void MainWindowTest::ExpectOpenView(unsigned command_id) {
+  MockController* controller = new StrictMock<MockController>{};
+
+  EXPECT_CALL(controller_factory_, Call(command_id,
+                                        /*delegate=*/_, /*dialog_service=*/_))
+      .WillOnce(Return(std::unique_ptr<MockController>{controller}));
+
+  EXPECT_CALL(*controller, Init(_)).WillOnce(Return(new QWidget));
+}
+
+TEST_F(MainWindowTest, Close_InvokesQuiteHandler) {
   EXPECT_CALL(quit_handler_, Call());
 
   main_window_.Close();
 }
+
+// TODO: Generalize this test for all UIs.
+#if defined(UI_QT)
+TEST_F(MainWindowTest, OpenView_DowloadSucceeds_OpensViewNormally) {
+  auto window_def = WindowDefinition{kModusWindowInfo}.set_path("some/path");
+
+  EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path));
+
+  ExpectOpenView(window_def.window_info().command_id);
+
+  main_window_.OpenView(window_def, /*make_active=*/true).get();
+}
+#endif
+
+// TODO: Generalize this test for all UIs.
+#if defined(UI_QT)
+TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
+  auto window_def = WindowDefinition{kModusWindowInfo}.set_path("some/path");
+
+  EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path))
+      .WillOnce(
+          Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
+
+  ExpectOpenView(window_def.window_info().command_id);
+
+  main_window_.OpenView(window_def, /*make_active=*/true).get();
+}
+#endif

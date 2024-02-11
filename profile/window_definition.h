@@ -1,7 +1,7 @@
 #pragma once
 
-#include "base/values.h"
 #include "aui/size.h"
+#include "base/values.h"
 
 #include <filesystem>
 #include <optional>
@@ -91,6 +91,11 @@ class WindowDefinition {
 
   WindowDefinition& set_title(std::u16string_view title) {
     this->title = std::u16string{title};
+    return *this;
+  }
+
+  WindowDefinition& set_path(std::filesystem::path path) {
+    this->path = std::move(path);
     return *this;
   }
 

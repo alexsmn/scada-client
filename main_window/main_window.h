@@ -68,6 +68,8 @@ class MainWindow : protected MainWindowContext,
 
   CommandHandler& commands() { return *commands_; }
 
+  void CleanupForTesting();
+
  protected:
   void Init(ViewManager& view_manager);
   void BeforeClose();
