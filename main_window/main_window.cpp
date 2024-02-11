@@ -1,12 +1,14 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
+#include "base/promise_executor.h"
 #include "base/string_piece_util.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
+#include "filesystem/file_manager.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view.h"
@@ -145,10 +147,18 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
 scada::status_promise<OpenedView*> MainWindow::OpenView(
     const WindowDefinition& def,
     bool make_active) {
-  OpenedView* after_view =
-      !def.window_info().is_pane() ? active_data_view() : nullptr;
-  return make_resolved_promise(
-      view_manager_->OpenView(def, make_active, after_view));
+  promise<void> download_promise =
+      def.path.empty()
+          ? make_resolved_promise()
+          : IgnoreResult(file_manager_.DownloadFileFromServer(def.path));
+
+  return download_promise
+      // TODO: Fix captured `this` and run under the local executor.
+      .then([this, def, make_active] {
+        OpenedView* after_view =
+            !def.window_info().is_pane() ? active_data_view() : nullptr;
+        return view_manager_->OpenView(def, make_active, after_view);
+      });
 }
 
 void MainWindow::OnViewClosed(OpenedView& view) {

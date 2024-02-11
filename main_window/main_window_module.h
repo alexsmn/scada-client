@@ -18,6 +18,7 @@ class EventDispatcher;
 class Executor;
 class Favourites;
 class FileCache;
+class FileManager;
 class LocalEvents;
 class MainWindow;
 class MainWindowManager;
@@ -54,6 +55,7 @@ struct MainWindowModuleContext {
   LocalEvents& local_events_;
   Favourites& favourites_;
   FileCache& file_cache_;
+  FileManager& file_manager_;
   BlinkerManager& blinker_manager_;
   Speech& speech_;
   OpenFileCommand open_file_command_;

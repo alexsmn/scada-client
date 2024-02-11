@@ -5,6 +5,7 @@
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
 #include "filesystem/file_cache.h"
+#include "filesystem/file_manager_mock.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/filesystem_commands.h"
 #include "main_window/action_manager.h"
@@ -42,6 +43,7 @@ class MainWindowTest : public Test {
       open_file_command_;
 
   FileCache file_cache_{file_registry_};
+  StrictMock<MockFileManager> file_manager_;
   Profile profile_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
@@ -78,6 +80,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .window_id_ = kWindowId,
       .open_file_command_ = open_file_command_.AsStdFunction(),
       .file_cache_ = file_cache_,
+      .file_manager_ = file_manager_,
       .main_window_manager_ = main_window_manager_,
       .profile_ = profile_,
       .controller_factory_ = controller_factory_.AsStdFunction(),

@@ -188,6 +188,9 @@ void ClientApplication::Start() {
 }
 
 void ClientApplication::OnStartLoginCompleted() {
+  scada::client scada_client{
+      scada::GetServices(master_data_services_->data_services())};
+
   event_fetcher_ =
       EventFetcherBuilder{.executor_ = executor_,
                           .logger_ = logger_,
@@ -197,21 +200,14 @@ void ClientApplication::OnStartLoginCompleted() {
                           .session_service_ = *master_data_services_}
           .Build();
 
-  node_service_ = CreateNodeService(NodeServiceContext{
-      .executor = executor_,
-      .session_service_ = *master_data_services_,
-      .attribute_service_ = *master_data_services_,
-      .view_service_ = *master_data_services_,
-      .monitored_item_service_ = *master_data_services_,
-      .method_service_ = *master_data_services_,
-      .scada_client_ =
-          scada::client{{.attribute_service = master_data_services_.get(),
-                         .monitored_item_service = master_data_services_.get(),
-                         .method_service = master_data_services_.get(),
-                         .history_service = master_data_services_.get(),
-                         .view_service = master_data_services_.get(),
-                         .node_management_service = master_data_services_.get(),
-                         .session_service = master_data_services_.get()}}});
+  node_service_ = CreateNodeService(
+      NodeServiceContext{.executor = executor_,
+                         .session_service_ = *master_data_services_,
+                         .attribute_service_ = *master_data_services_,
+                         .view_service_ = *master_data_services_,
+                         .monitored_item_service_ = *master_data_services_,
+                         .method_service_ = *master_data_services_,
+                         .scada_client_ = scada_client});
 
   auto alias_logger =
       base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
@@ -276,8 +272,7 @@ void ClientApplication::OnStartLoginCompleted() {
       FileSystemComponentContext{.node_service_ = *node_service_,
                                  .task_manager_ = *task_manager_,
                                  .create_tree_ = *create_tree_,
-                                 .attribute_service_ = *master_data_services_,
-                                 .view_service_ = *master_data_services_});
+                                 .scada_client_ = scada_client});
 
 #if !defined(UI_WT)
   singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
@@ -322,6 +317,7 @@ void ClientApplication::OnStartLoginCompleted() {
           .local_events_ = *local_events_,
           .favourites_ = *favourites_,
           .file_cache_ = filesystem_component_->file_cache(),
+          .file_manager_ = filesystem_component_->file_manager(),
           .blinker_manager_ = *blinker_manager_,
           .speech_ = *speech_,
           .open_file_command_ = filesystem_component_->file_command(),

@@ -3,7 +3,7 @@
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "filesystem/file_cache.h"
-#include "filesystem/file_manager.h"
+#include "filesystem/file_manager_impl.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/file_synchronizer.h"
 #include "filesystem/filesystem_commands.h"
@@ -28,8 +28,8 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
       &OpenFileCommandImpl::Execute,
       std::make_shared<OpenFileCommandImpl>(*file_registry_, *file_manager_));
 
-  file_manager_ = std::make_unique<FileManager>(
-      FileManagerContext{attribute_service_, view_service_});
+  file_manager_ =
+      std::make_unique<FileManagerImpl>(FileManagerContext{scada_client_});
 
   /*std::filesystem::path public_dir;
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {

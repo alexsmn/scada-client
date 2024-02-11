@@ -1,22 +1,32 @@
-#include "filesystem/file_manager.h"
+#include "filesystem/file_manager_impl.h"
 
 #include "base/file_path_util.h"
 #include "base/files/file_util.h"
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
-#include "scada/attribute_service_promises.h"
-#include "scada/view_service_promises.h"
+#include "scada/client.h"
 
 #include <boost/locale/encoding_utf.hpp>
 
-scada::status_promise<void> FileManager::DownloadFileFromServer(
+namespace {
+
+scada::NodeId GetOnlyTargetId(
+    std::span<const scada::BrowsePathTarget> targets) {
+  if (targets.size() != 1) {
+    throw scada::status_exception{scada::StatusCode::Bad};
+  }
+
+  return targets[0].target_id.node_id();
+}
+
+}  // namespace
+
+scada::status_promise<void> FileManagerImpl::DownloadFileFromServer(
     const std::filesystem::path& path) const {
   return GetFileNode(path)
-      .then([this](const scada::NodeId& node_id) {
+      .then([this](const scada::NodeId& file_node_id) {
         // TODO: Check cache.
-        return scada::Read(attribute_service_,
-                           scada::ServiceContext::default_instance(),
-                           {node_id});
+        return scada_client_.node(file_node_id).read_value();
       })
       .then([](const scada::DataValue& file_value) {
         const auto* contents = file_value.value.get_if<scada::ByteString>();
@@ -34,8 +44,13 @@ scada::status_promise<void> FileManager::DownloadFileFromServer(
       });
 }
 
-scada::status_promise<scada::NodeId> FileManager::GetFileNode(
+scada::status_promise<scada::NodeId> FileManagerImpl::GetFileNode(
     const std::filesystem::path& path) const {
+  if (path.empty()) {
+    return scada::MakeRejectedStatusPromise<scada::NodeId>(
+        scada::StatusCode::Bad);
+  }
+
   scada::RelativePath relative_path;
   for (const auto& c : path) {
     relative_path.emplace_back(scada::RelativePathElement{
@@ -43,6 +58,7 @@ scada::status_promise<scada::NodeId> FileManager::GetFileNode(
         .target_name = boost::locale::conv::utf_to_utf<char>(c.wstring())});
   }
 
-  return TranslateBrowsePathToOneTarget(
-      view_service_, {filesystem::id::FileSystem, std::move(relative_path)});
+  return scada_client_.node(filesystem::id::FileSystem)
+      .translate_browse_path(relative_path)
+      .then(&GetOnlyTargetId);
 }

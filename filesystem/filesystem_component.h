@@ -1,6 +1,7 @@
 #pragma once
 
 #include "filesystem/filesystem_commands.h"
+#include "scada/client.h"
 
 #include <memory>
 
@@ -26,8 +27,7 @@ struct FileSystemComponentContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;
-  scada::AttributeService& attribute_service_;
-  scada::ViewService& view_service_;
+  scada::client scada_client_;
 };
 
 // TODO: Rename to `FilesystemModule`.

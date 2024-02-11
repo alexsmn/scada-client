@@ -139,6 +139,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                            window_id,
                            open_file_command_,
                            file_cache_,
+                           file_manager_,
                            *main_window_manager_,
                            profile_,
                            controller_factory,

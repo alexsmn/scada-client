@@ -13,6 +13,7 @@ class StatusBarModel;
 
 class ActionManager;
 class FileCache;
+class FileManager;
 class Executor;
 class MainWindow;
 class MainWindowManager;
@@ -27,6 +28,7 @@ struct MainWindowContext {
   int window_id_;
   const OpenFileCommand& open_file_command_;
   FileCache& file_cache_;
+  FileManager& file_manager_;
   MainWindowManager& main_window_manager_;
   Profile& profile_;
   ControllerFactory controller_factory_;
