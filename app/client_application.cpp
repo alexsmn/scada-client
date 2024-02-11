@@ -345,7 +345,9 @@ void ClientApplication::OnStartLoginCompleted() {
           .selection_commands_ = main_window_module_->selection_commands(),
           .node_service_ = *node_service_,
           .task_manager_ = *task_manager_,
-          .create_tree_ = *create_tree_}));
+          .create_tree_ = *create_tree_,
+          .attribute_service_ = *master_data_services_,
+          .view_service_ = *master_data_services_}));
 
   singletons_.emplace(std::make_shared<ExportConfigurationModule>(
       ExportConfigurationModuleContext{

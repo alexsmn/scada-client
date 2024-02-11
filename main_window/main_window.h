@@ -56,7 +56,9 @@ class MainWindow : protected MainWindowContext,
   void SetPageTitle(const std::u16string& title);
   OpenedView* GetActiveView();
   OpenedView* GetActiveDataView();
-  void OpenView(const WindowDefinition& window_definition, bool make_active);
+  scada::status_promise<OpenedView*> OpenView(
+      const WindowDefinition& window_definition,
+      bool make_active);
   OpenedView* FindOpenedViewByFilePath(const std::filesystem::path& path);
   OpenedView* FindOpenedViewByType(const WindowInfo& window_info);
   void OpenPane(const WindowInfo& window_info, bool activate);

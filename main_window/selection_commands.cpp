@@ -509,17 +509,22 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
   const FileCache::DisplayItem& cached_item = cached_items.front();
   const std::filesystem::path& path = cached_item.first;
 
+  scada::status_promise<OpenedView*> open_promise;
+
   auto* view = main_window_manager_.FindOpenedViewByFilePath(path);
   if (view) {
     view->Activate();
+    open_promise = make_resolved_promise(view);
   } else {
     WindowDefinition win(kModusWindowInfo);
     win.path = path;
-    view = main_window_->OpenView(win, true);
+    open_promise = main_window_->OpenView(win, true);
   }
 
-  if (view)
-    view->SetSelection(node.node_id());
+  open_promise.then(
+    [node_id = node.node_id()](OpenedView* opened_view) {
+    opened_view->SetSelection(node_id);
+  });
 }
 #endif
 

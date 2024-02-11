@@ -142,10 +142,13 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
   return nullptr;
 }
 
-void MainWindow::OpenView(const WindowDefinition& def, bool make_active) {
+scada::status_promise<OpenedView*> MainWindow::OpenView(
+    const WindowDefinition& def,
+    bool make_active) {
   OpenedView* after_view =
       !def.window_info().is_pane() ? active_data_view() : nullptr;
-  view_manager_->OpenView(def, make_active, after_view);
+  return make_resolved_promise(
+      view_manager_->OpenView(def, make_active, after_view));
 }
 
 void MainWindow::OnViewClosed(OpenedView& view) {
