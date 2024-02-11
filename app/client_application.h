@@ -26,8 +26,6 @@ class CreateTree;
 class EventFetcher;
 class Executor;
 class Favourites;
-class FileCache;
-class FileRegistry;
 class FileSystemComponent;
 class Logger;
 class LocalEvents;
@@ -100,9 +98,6 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<CreateTree> create_tree_;
   std::unique_ptr<PropertyService> property_service_;
 
-  std::unique_ptr<FileRegistry> file_registry_;
-  std::unique_ptr<FileCache> file_cache_;
-
   std::unique_ptr<WriteService> write_service_;
 
   std::unique_ptr<ConnectionStateReporter> connection_state_reporter_;
@@ -110,6 +105,8 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<MainWindowModule> main_window_module_;
 
   std::unique_ptr<NodeServiceProgressTracker> node_service_progress_tracker_;
+
+  std::unique_ptr <FileSystemComponent> filesystem_component_;
 
   std::stack<std::shared_ptr<void>> singletons_;
 

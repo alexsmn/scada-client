@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/promise.h"
 #include "aui/key_codes.h"
+#include "base/promise.h"
+#include "filesystem/filesystem_commands.h"
 #include "profile/window_definition.h"
 
 class Executor;
-class FileRegistry;
 class MainWindow;
 class NodeRef;
 
@@ -19,6 +19,6 @@ void OpenView(MainWindow* main_window,
 
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const std::shared_ptr<Executor>& executor,
-                               const FileRegistry& file_registry,
+                               const OpenFileCommand& file_command,
                                const NodeRef& node,
                                aui::KeyModifiers key_modifiers);

@@ -301,6 +301,6 @@ void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
   if (::GetAsyncKeyState(VK_CONTROL))
     key_modifiers |= aui::ControlModifier;
 
-  ::ExecuteDefaultNodeCommand(this, executor_, file_registry_, node,
+  ::ExecuteDefaultNodeCommand(this, executor_, open_file_command_, node,
                               key_modifiers);
 }

@@ -26,8 +26,6 @@
 #include "events/event_fetcher_builder.h"
 #include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
-#include "filesystem/file_cache.h"
-#include "filesystem/file_registry.h"
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
@@ -89,17 +87,6 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   DumpException(path.c_str(), *exception);
 
   return EXCEPTION_EXECUTE_HANDLER;
-}
-
-void RegisterFileType(FileRegistry& file_registry,
-                      unsigned command_id,
-                      std::string_view extensions) {
-  auto* window_info = FindWindowInfo(command_id);
-  if (!window_info)
-    return;
-
-  file_registry.RegisterType(command_id, std::string{window_info->name},
-                             extensions);
 }
 
 }  // namespace
@@ -168,9 +155,7 @@ ClientApplication::~ClientApplication() {
     singletons_.pop();
   }
 
-  file_cache_.reset();
   connection_state_reporter_.reset();
-
   blinker_manager_.reset();
   speech_.reset();
   favourites_.reset();
@@ -277,9 +262,6 @@ void ClientApplication::OnStartLoginCompleted() {
                                      .session_service_ = *master_data_services_,
                                      .local_events_ = *local_events_});
 
-  file_registry_ = std::make_unique<FileRegistry>();
-  file_cache_ = std::make_unique<FileCache>(*file_registry_);
-
   write_service_ = std::make_unique<WriteServiceImpl>(
       WriteServiceImplContext{.executor_ = executor_,
                               .timed_data_service_ = *timed_data_service_,
@@ -290,18 +272,25 @@ void ClientApplication::OnStartLoginCompleted() {
           .controller_registry_ = *controller_registry_,
           .profile_ = *profile_}));
 
-#if !defined(UI_WT)
-  singletons_.emplace(std::make_shared<ModusModule>(
-      ModusModuleContext{.controller_registry_ = *controller_registry_,
-                         .blinker_manager_ = *blinker_manager_,
-                         .file_registry_ = *file_registry_}));
+  filesystem_component_ = std::make_unique<FileSystemComponent>(
+      FileSystemComponentContext{.node_service_ = *node_service_,
+                                 .task_manager_ = *task_manager_,
+                                 .create_tree_ = *create_tree_,
+                                 .attribute_service_ = *master_data_services_,
+                                 .view_service_ = *master_data_services_});
 
-  singletons_.emplace(std::make_shared<VidiconModule>(
-      VidiconModuleContext{.executor_ = executor_,
-                           .timed_data_service_ = *timed_data_service_,
-                           .controller_registry_ = *controller_registry_,
-                           .write_service_ = *write_service_,
-                           .file_registry_ = *file_registry_}));
+#if !defined(UI_WT)
+  singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
+      .controller_registry_ = *controller_registry_,
+      .blinker_manager_ = *blinker_manager_,
+      .file_registry_ = filesystem_component_->file_registry()}));
+
+  singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
+      .executor_ = executor_,
+      .timed_data_service_ = *timed_data_service_,
+      .controller_registry_ = *controller_registry_,
+      .write_service_ = *write_service_,
+      .file_registry_ = filesystem_component_->file_registry()}));
 #endif
 
   favourites_ = std::make_unique<Favourites>();
@@ -332,22 +321,13 @@ void ClientApplication::OnStartLoginCompleted() {
           .portfolio_manager_ = *portfolio_manager_,
           .local_events_ = *local_events_,
           .favourites_ = *favourites_,
-          .file_cache_ = *file_cache_,
+          .file_cache_ = filesystem_component_->file_cache(),
           .blinker_manager_ = *blinker_manager_,
           .speech_ = *speech_,
-          .file_registry_ = *file_registry_,
+          .open_file_command_ = filesystem_component_->file_command(),
           .progress_host_ = *progress_host_,
           .property_service_ = *property_service_,
           .create_tree_ = *create_tree_});
-
-  singletons_.emplace(
-      std::make_shared<FileSystemComponent>(FileSystemComponentContext{
-          .selection_commands_ = main_window_module_->selection_commands(),
-          .node_service_ = *node_service_,
-          .task_manager_ = *task_manager_,
-          .create_tree_ = *create_tree_,
-          .attribute_service_ = *master_data_services_,
-          .view_service_ = *master_data_services_}));
 
   singletons_.emplace(std::make_shared<ExportConfigurationModule>(
       ExportConfigurationModuleContext{
@@ -358,7 +338,11 @@ void ClientApplication::OnStartLoginCompleted() {
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host_));
 
-  file_cache_->Init();
+  // TODO: Move selection command registry out of `MainWindowModule`.
+  filesystem_component_->set_selection_commands(
+      &main_window_module_->selection_commands());
+
+  filesystem_component_->StartUp();
 }
 
 promise<bool> ClientApplication::Login() {

@@ -7,6 +7,7 @@
 #include "common_resources.h"
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
+#include "filesystem/file_manager.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/file_util.h"
 #include "filesystem/filesystem_util.h"
@@ -78,62 +79,37 @@ void OpenFile(const std::filesystem::path& path,
   OpenView(main_window, window);
 }
 
-// Downloads file from server and saves it to public path. May use cached file
-// if it's already downloaded. Returns a relative path from public path.
-scada::status_promise<std::filesystem::path> DownloadServerFile(
-    const NodeRef& file_node) {
-  auto path = GetFilePath(file_node);
-  if (path.empty()) {
-    return scada::MakeRejectedStatusPromise<std::filesystem::path>(
-        scada::StatusCode::Bad);
-  }
-
-  return file_node.scada_node()
-      .read(scada::AttributeId::Value)
-      .then(
-          [path = std::move(path)](const scada::DataValue& data_value) mutable {
-            const auto* contents = data_value.value.get_if<scada::ByteString>();
-            if (!contents) {
-              throw scada::status_exception{scada::StatusCode::Bad};
-            }
-
-            int written = base::WriteFile(AsFilePath(GetPublicFilePath(path)),
-                                          contents->data(), contents->size());
-            if (written != static_cast<int>(contents->size())) {
-              throw scada::status_exception{scada::StatusCode::Bad};
-            }
-
-            return path;
-          });
-}
-
-scada::status_promise<void> ExecuteFileCommand(
-    MainWindow* main_window,
-    const std::shared_ptr<Executor>& executor,
-    const FileRegistry& file_registry,
-    const NodeRef& file_node,
-    aui::KeyModifiers key_modifiers) {
-  if (!main_window) {
+scada::status_promise<void> OpenFileCommandImpl::Execute(
+    const OpenFileCommandContext& context) const {
+  if (!context.main_window) {
     return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
   }
 
-  // TODO: `weak ptr` for main window.
-  return DownloadServerFile(file_node)
-      .then(BindPromiseExecutor(executor,
-                                [&file_registry, main_window, key_modifiers](
-                                    const std::filesystem::path& path) {
+  auto path = GetFilePath(context.file_node);
+  if (path.empty()) {
+    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
+  }
+
+  return file_manager.DownloadFileFromServer(path)
+      .then(BindPromiseExecutor(context.executor,
+                                // TODO: `weak ptr` for main window.
+                                [this, path, main_window = context.main_window,
+                                 key_modifiers = context.key_modifiers] {
                                   OpenFile(path, file_registry, main_window,
                                            key_modifiers);
                                 }))
-      .except(BindPromiseExecutorWithResult(executor, [main_window](
-                                                          std::exception_ptr) {
-        return main_window->GetDialogService()
-            .RunMessageBox(u"Не удалось загрузить файл с сервера.",
-                           kOpenFileTitle, MessageBoxMode::Error)
-            .then([](MessageBoxResult) {
-              return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-            });
-      }));
+      .except(BindPromiseExecutorWithResult(
+          context.executor,
+          // TODO: `weak ptr` for main window.
+          [main_window = context.main_window](std::exception_ptr) {
+            return main_window->GetDialogService()
+                .RunMessageBox(u"Не удалось загрузить файл с сервера.",
+                               kOpenFileTitle, MessageBoxMode::Error)
+                .then([](MessageBoxResult) {
+                  return scada::MakeRejectedStatusPromise(
+                      scada::StatusCode::Bad);
+                });
+          }));
 }
 
 promise<> AddFile(NodeRef parent_directory,

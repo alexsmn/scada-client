@@ -6,6 +6,7 @@
 #include "base/test/test_executor.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
+#include "filesystem/filesystem_commands.h"
 #include "main_window/action_manager.h"
 #include "main_window/controller_factory_mock.h"
 #include "main_window/main_window_manager.h"
@@ -33,24 +34,35 @@ class MainWindowTest : public Test {
 
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
+
   ActionManager action_manager_;
   FileRegistry file_registry_;
+
+  StrictMock<MockFunction<void(const OpenFileCommandContext& context)>>
+      open_file_command_;
+
   FileCache file_cache_{file_registry_};
   Profile profile_;
+
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
       main_window_factory_;
+
   StrictMock<MockFunction<void()>> quit_handler_;
   MockControllerFactory controller_factory_;
+
   MainWindowManager main_window_manager_{
       {.profile_ = profile_,
        .main_window_factory_ = main_window_factory_.AsStdFunction(),
        .quit_handler_ = quit_handler_.AsStdFunction()}};
+
   std::shared_ptr<aui::MockStatusBarModel> status_bar_model_ =
       std::make_shared<NiceMock<aui::MockStatusBarModel>>();
+
   NiceMock<MockFunction<std::string()>> connection_info_provider_;
 
 #if defined(UI_QT)
   MainWindowQt main_window_{MakeMainWindowContext()};
+
 #elif defined(UI_WT)
   Wt::WContainerWidget container_;
   MainWindowWt main_window_{container_, MakeMainWindowContext()};
@@ -64,7 +76,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .executor_ = executor_,
       .action_manager_ = action_manager_,
       .window_id_ = kWindowId,
-      .file_registry_ = file_registry_,
+      .open_file_command_ = open_file_command_.AsStdFunction(),
       .file_cache_ = file_cache_,
       .main_window_manager_ = main_window_manager_,
       .profile_ = profile_,

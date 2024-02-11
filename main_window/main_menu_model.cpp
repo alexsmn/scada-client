@@ -1,24 +1,24 @@
 ﻿#include "main_window/main_menu_model.h"
 
+#include "aui/dialog_service.h"
 #include "base/command_line.h"
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
-#include "controller/command_handler.h"
 #include "common_resources.h"
 #include "components/favourites/favourites.h"
+#include "components/sheet/sheet_component.h"
+#include "components/table/table_component.h"
+#include "components/timed_data/timed_data_component.h"
+#include "controller/command_handler.h"
+#include "controller/window_info.h"
+#include "filesystem/file_cache.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager.h"
-#include "components/sheet/sheet_component.h"
-#include "components/table/table_component.h"
-#include "components/timed_data/timed_data_component.h"
-#include "profile/window_definition.h"
-#include "controller/window_info.h"
-#include "filesystem/file_cache.h"
-#include "aui/dialog_service.h"
 #include "profile/profile.h"
+#include "profile/window_definition.h"
 
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
@@ -44,7 +44,7 @@ const WindowInfo* const kGraphWindowInfos[] = {&kGraphWindowInfo};
 // DisplayMenuModel
 
 DisplayMenuModel::DisplayMenuModel(const MainMenuContext& context)
-    : aui::SimpleMenuModel{nullptr}, MainMenuContext{std::move(context)} {}
+    : MainMenuContext{std::move(context)}, aui::SimpleMenuModel{nullptr} {}
 
 void DisplayMenuModel::MenuWillShow() {
   Clear();
@@ -77,7 +77,7 @@ bool DisplayMenuModel::IsEnabledAt(int index) const {
 void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
   for (auto& entry : file_cache_.GetList(window_info.command_id)) {
     AddItem(0, entry.title);
-    items_.push_back(Item{&window_info, entry.path});
+    items_.emplace_back(&window_info, entry.path);
   }
 
   if (items_.empty())
@@ -121,10 +121,10 @@ bool FavouritesMenuModel::IsEnabledAt(int index) const {
 
 bool FavouritesMenuModel::IsMatchingWindow(
     const WindowDefinition& window) const {
-  return std::any_of(window_infos_.begin(), window_infos_.end(),
-                     [&window](const WindowInfo* window_info) {
-                       return &window.window_info() == window_info;
-                     });
+  return std::ranges::any_of(window_infos_,
+                             [&window](const WindowInfo* window_info) {
+                               return &window.window_info() == window_info;
+                             });
 }
 
 // PageMenuModel

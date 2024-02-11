@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 
+// TODO: Rename to `FileTypeRegistry` or `FileExtensionRegistry`.
 class FileRegistry {
  public:
   void RegisterType(int id, std::string_view name, std::string_view extensions);

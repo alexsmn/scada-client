@@ -2,6 +2,7 @@
 
 #include "common/aliases.h"
 #include "controller/command_registry.h"
+#include "filesystem/filesystem_commands.h"
 #include "main_window/main_command_context.h"
 #include "main_window/main_window_context.h"
 #include "main_window/selection_command_context.h"
@@ -17,7 +18,6 @@ class EventDispatcher;
 class Executor;
 class Favourites;
 class FileCache;
-class FileRegistry;
 class LocalEvents;
 class MainWindow;
 class MainWindowManager;
@@ -56,7 +56,7 @@ struct MainWindowModuleContext {
   FileCache& file_cache_;
   BlinkerManager& blinker_manager_;
   Speech& speech_;
-  FileRegistry& file_registry_;
+  OpenFileCommand open_file_command_;
   ProgressHost& progress_host_;
   PropertyService& property_service_;
   CreateTree& create_tree_;

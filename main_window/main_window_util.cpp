@@ -3,8 +3,6 @@
 #include "aui/key_codes.h"
 #include "client_utils.h"
 #include "common_resources.h"
-#include "main_window/main_window.h"
-#include "main_window/opened_view.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/table/table_component.h"
@@ -12,6 +10,8 @@
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
 #include "filesystem/filesystem_commands.h"
+#include "main_window/main_window.h"
+#include "main_window/opened_view.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
@@ -58,14 +58,14 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
 
 bool ExecuteDefaultNodeCommand(MainWindow* main_window,
                                const std::shared_ptr<Executor>& executor,
-                               const FileRegistry& file_registry,
+                               const OpenFileCommand& file_command,
                                const NodeRef& node,
                                aui::KeyModifiers key_modifiers) {
   assert(main_window);
 
   if (IsInstanceOf(node, filesystem::id::FileType)) {
-    ExecuteFileCommand(main_window, executor, file_registry, node,
-                       key_modifiers);
+    file_command(
+        OpenFileCommandContext{main_window, executor, node, key_modifiers});
     return true;
   }
 

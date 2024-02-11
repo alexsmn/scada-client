@@ -1,5 +1,6 @@
 #pragma once
 
+#include "filesystem/filesystem_commands.h"
 #include "main_window/controller_factory.h"
 
 #include <memory>
@@ -8,11 +9,10 @@
 namespace aui {
 class MenuModel;
 class StatusBarModel;
-}
+}  // namespace aui
 
 class ActionManager;
 class FileCache;
-class FileRegistry;
 class Executor;
 class MainWindow;
 class MainWindowManager;
@@ -25,7 +25,7 @@ struct MainWindowContext {
   const std::shared_ptr<Executor> executor_;
   ActionManager& action_manager_;
   int window_id_;
-  const FileRegistry& file_registry_;
+  const OpenFileCommand& open_file_command_;
   FileCache& file_cache_;
   MainWindowManager& main_window_manager_;
   Profile& profile_;
@@ -43,7 +43,7 @@ struct MainWindowContext {
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
 
   std::function<std::unique_ptr<aui::MenuModel>(MainWindow& main_window,
-                                               CommandHandler& main_commands)>
+                                                CommandHandler& main_commands)>
       context_menu_factory_;
 
   std::function<std::unique_ptr<aui::MenuModel>(

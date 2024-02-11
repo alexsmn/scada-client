@@ -2,7 +2,9 @@
 
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
+#include "filesystem/file_cache.h"
 #include "filesystem/file_manager.h"
+#include "filesystem/file_registry.h"
 #include "filesystem/file_synchronizer.h"
 #include "filesystem/filesystem_commands.h"
 #include "filesystem/filesystem_view.h"
@@ -15,8 +17,17 @@ const WindowInfo kWindowInfo = {
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 
+// FileSystemComponent
+
 FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
     : FileSystemComponentContext{std::move(context)} {
+  file_registry_ = std::make_unique<FileRegistry>();
+  file_cache_ = std::make_unique<FileCache>(*file_registry_);
+
+  open_file_command_ = std::bind_front(
+      &OpenFileCommandImpl::Execute,
+      std::make_shared<OpenFileCommandImpl>(*file_registry_, *file_manager_));
+
   file_manager_ = std::make_unique<FileManager>(
       FileManagerContext{attribute_service_, view_service_});
 
@@ -29,20 +40,26 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
             public_dir.value(),
         });
   }*/
-
-  AddFileCommand(ID_ADD_FILE, filesystem::id::FileType);
-  AddFileCommand(ID_CREATE_FILE_DIRECTORY, filesystem::id::FileDirectoryType);
 }
 
 FileSystemComponent::~FileSystemComponent() {}
 
+void FileSystemComponent::StartUp() {
+  AddFileCommand(ID_ADD_FILE, filesystem::id::FileType);
+  AddFileCommand(ID_CREATE_FILE_DIRECTORY, filesystem::id::FileDirectoryType);
+
+  file_cache_->Init();
+}
+
 void FileSystemComponent::AddFileCommand(
     unsigned command_id,
     const scada::NodeId& type_definition_id) {
+  assert(selection_commands_);
+
   const auto& file_type = node_service_.GetNode(type_definition_id);
   file_type.Fetch(NodeFetchStatus::NodeOnly());
 
-  selection_commands_.AddCommand(
+  selection_commands_->AddCommand(
       BasicCommand<SelectionCommandContext>{command_id}
           .set_execute_handler([this](const SelectionCommandContext& context) {
             return AddFile(context.selection.node(), context.dialog_service,
