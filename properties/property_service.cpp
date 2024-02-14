@@ -80,7 +80,7 @@ std::unordered_set<NodeRef> GetChildTypeDefinitions(
 
 // PropertyService
 
-promise<> PropertyService::GetAllSubtypesProperties(
+scada::status_promise<void> PropertyService::GetAllSubtypesProperties(
     const NodeRef& type_definition,
     const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
   return FetchNode(type_definition).then([=] {
@@ -167,7 +167,7 @@ PropertyDefs PropertyService::GetTypePropertyDefs(
   return properties;
 }
 
-promise<PropertyDefs> PropertyService::GetChildPropertyDefs(
+scada::status_promise<PropertyDefs> PropertyService::GetChildPropertyDefs(
     const NodeRef& parent_node) {
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
   return FetchNode(parent_node)

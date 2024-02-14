@@ -14,7 +14,7 @@
 
 namespace {
 
-promise<> FetchNodeNamesRecursive(
+scada::status_promise<void> FetchNodeNamesRecursive(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id,
     const aui::EditData::AsyncChoiceCallback& callback) {

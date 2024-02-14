@@ -4,7 +4,6 @@
 #include "base/files/file_util.h"
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
-#include "scada/client.h"
 
 #include <boost/locale/encoding_utf.hpp>
 
@@ -36,8 +35,11 @@ scada::status_promise<void> FileManagerImpl::DownloadFileFromServer(
         return *contents;
       })
       .then([path](const scada::ByteString& contents) {
-        int written = base::WriteFile(AsFilePath(GetPublicFilePath(path)),
-                                      contents.data(), contents.size());
+        auto public_path = GetPublicFilePath(path);
+        std::error_code ec;
+        std::filesystem::create_directories(public_path.parent_path(), ec);
+        int written = base::WriteFile(AsFilePath(public_path), contents.data(),
+                                      contents.size());
         if (written != static_cast<int>(contents.size())) {
           throw scada::status_exception{scada::StatusCode::Bad};
         }

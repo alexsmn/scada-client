@@ -39,7 +39,7 @@ class FileSystemComponent : private FileSystemComponentContext {
   FileRegistry& file_registry() { return *file_registry_; }
   FileCache& file_cache() { return *file_cache_; }
   FileManager& file_manager() { return *file_manager_; }
-  const OpenFileCommand& file_command() { return open_file_command_; }
+  const OpenFileCommand& file_command() const { return open_file_command_; }
 
   void set_selection_commands(
       BasicCommandRegistry<SelectionCommandContext>* selection_commands) {

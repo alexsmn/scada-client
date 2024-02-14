@@ -37,8 +37,9 @@ class TaskManagerImpl : private TaskManagerImplContext,
   ~TaskManagerImpl();
 
   // TaskManager
-  virtual promise<> PostTask(std::u16string_view description,
-                             const TaskLauncher& launcher) override;
+  virtual scada::status_promise<void> PostTask(
+      std::u16string_view description,
+      const TaskLauncher& launcher) override;
   virtual promise<scada::NodeId> PostInsertTask(
       const scada::NodeId& requested_id,
       const scada::NodeId& parent_id,
@@ -46,14 +47,17 @@ class TaskManagerImpl : private TaskManagerImplContext,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties,
       std::vector<scada::ReferenceDescription> references) override;
-  virtual promise<> PostUpdateTask(const scada::NodeId& node_id,
-                                   scada::NodeAttributes attributes,
-                                   scada::NodeProperties properties) override;
-  virtual promise<> PostDeleteTask(const scada::NodeId& node_id) override;
-  virtual promise<> PostAddReference(const scada::NodeId& reference_type_id,
-                                     const scada::NodeId& source_id,
-                                     const scada::NodeId& target_id) override;
-  virtual promise<> PostDeleteReference(
+  virtual scada::status_promise<void> PostUpdateTask(
+      const scada::NodeId& node_id,
+      scada::NodeAttributes attributes,
+      scada::NodeProperties properties) override;
+  virtual scada::status_promise<void> PostDeleteTask(
+      const scada::NodeId& node_id) override;
+  virtual scada::status_promise<void> PostAddReference(
+      const scada::NodeId& reference_type_id,
+      const scada::NodeId& source_id,
+      const scada::NodeId& target_id) override;
+  virtual scada::status_promise<void> PostDeleteReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
@@ -66,13 +70,14 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
     std::u16string title;
     std::function<void()> task;
-    promise<> promise;
+    scada::status_promise<void> promise;
   };
 
   void Run();
   void CancelProgress();
 
-  promise<> PostTask(std::u16string_view title, TaskMethod task);
+  scada::status_promise<void> PostTask(std::u16string_view title,
+                                       TaskMethod task);
   void StartTask(Task&& task);
 
   void ReportRequestCompletion(const scada::Status& status,

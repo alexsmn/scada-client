@@ -27,6 +27,8 @@
 #include <wt/WContainerWidget.h>
 #endif
 
+#include "base/debug_util-inl.h"
+
 using namespace testing;
 
 class MainWindowTest : public Test {

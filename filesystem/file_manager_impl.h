@@ -1,14 +1,11 @@
 #pragma once
 
 #include "filesystem/file_manager.h"
+#include "scada/client.h"
 #include "scada/node_id.h"
 
-namespace scada {
-class client;
-}
-
 struct FileManagerContext {
-  scada::client& scada_client_;
+  scada::client scada_client_;
 };
 
 // TODO: Combine with `FileSynchronizer`.

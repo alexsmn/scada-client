@@ -5,11 +5,11 @@
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "profile/profile.h"
 #include "scada/attribute_service.h"
 #include "scada/node_management_service.h"
 #include "scada/status_promise.h"
 #include "services/local_events.h"
-#include "profile/profile.h"
 #include "services/progress_host.h"
 
 using namespace std::chrono_literals;
@@ -47,8 +47,9 @@ void TaskManagerImpl::CancelProgress() {
   running_progress_.reset();
 }
 
-promise<> TaskManagerImpl::PostTask(std::u16string_view description,
-                                    const TaskLauncher& launcher) {
+scada::status_promise<void> TaskManagerImpl::PostTask(
+    std::u16string_view description,
+    const TaskLauncher& launcher) {
   return PostTask(description, [this, launcher] {
     scada::BindStatusCallback(launcher(), [this](const scada::Status& status) {
       ReportRequestCompletion(status, {});
@@ -126,9 +127,10 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
   return promise;
 }
 
-promise<> TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
-                                          scada::NodeAttributes attributes,
-                                          scada::NodeProperties properties) {
+scada::status_promise<void> TaskManagerImpl::PostUpdateTask(
+    const scada::NodeId& node_id,
+    scada::NodeAttributes attributes,
+    scada::NodeProperties properties) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
       base::StringPrintf(u"Изменение %ls", title.c_str()), [=]() mutable {
@@ -178,7 +180,8 @@ promise<> TaskManagerImpl::PostUpdateTask(const scada::NodeId& node_id,
       });
 }
 
-promise<> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
+scada::status_promise<void> TaskManagerImpl::PostDeleteTask(
+    const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
       base::StringPrintf(u"Удаление %ls", title.c_str()),
@@ -192,7 +195,7 @@ promise<> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
       });
 }
 
-promise<> TaskManagerImpl::PostAddReference(
+scada::status_promise<void> TaskManagerImpl::PostAddReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
@@ -215,7 +218,7 @@ promise<> TaskManagerImpl::PostAddReference(
   });
 }
 
-promise<> TaskManagerImpl::PostDeleteReference(
+scada::status_promise<void> TaskManagerImpl::PostDeleteReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
@@ -312,7 +315,7 @@ void TaskManagerImpl::Run() {
   }
 }
 
-promise<> TaskManagerImpl::PostTask(std::u16string_view title,
-                                    TaskMethod task) {
+scada::status_promise<void> TaskManagerImpl::PostTask(std::u16string_view title,
+                                                      TaskMethod task) {
   return tasks_.emplace(std::u16string{title}, std::move(task)).promise;
 }

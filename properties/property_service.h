@@ -15,14 +15,16 @@ class PropertyService {
   const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl);
 
   PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition);
-  promise<PropertyDefs> GetChildPropertyDefs(const NodeRef& parent_node);
+
+  scada::status_promise<PropertyDefs> GetChildPropertyDefs(
+      const NodeRef& parent_node);
 
   // Returns property declarations and forward reference types.
   void GetTypeProperties(const NodeRef& type_definition,
                          std::unordered_set<NodeRef>& property_declarations);
 
  private:
-  promise<> GetAllSubtypesProperties(
+  scada::status_promise<void> GetAllSubtypesProperties(
       const NodeRef& type_definition,
       const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
 

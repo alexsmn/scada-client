@@ -1,9 +1,9 @@
 #include "import_data_builder.h"
 
+#include "aui/resource_error.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "export/configuration/export_data.h"
-#include "export/configuration/resource_error.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -19,9 +19,8 @@ void ScanDeleteNodes(const NodeRef& parent_node,
                      const std::set<scada::NodeId>& exclude_ids,
                      std::vector<scada::NodeId>& results) {
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(node, type_id)) {
-      if (exclude_ids.find(node.node_id()) == exclude_ids.end())
-        results.emplace_back(node.node_id());
+    if (IsInstanceOf(node, type_id) && !exclude_ids.contains(node.node_id())) {
+      results.emplace_back(node.node_id());
     }
     ScanDeleteNodes(node, type_id, exclude_ids, results);
   }
@@ -59,8 +58,8 @@ ImportData BuildImportData(NodeService& node_service,
       if (export_value.reference) {
         auto old_target_id = node.target(export_value.node_id).node_id();
         if (old_target_id != export_value.target_id) {
-          refs.push_back(
-              {export_value.node_id, old_target_id, export_value.target_id});
+          refs.emplace_back(export_value.node_id, old_target_id,
+                            export_value.target_id);
         }
       } else {
         if (node) {
@@ -75,16 +74,15 @@ ImportData BuildImportData(NodeService& node_service,
 
     if (node) {
       if (!attrs.empty() || !props.empty() || !refs.empty()) {
-        import_data.modify_nodes.push_back(
-            {export_node.node_id, type_definition.node_id(),
-             export_node.parent_id, std::move(attrs), std::move(props),
-             std::move(refs)});
+        import_data.modify_nodes.emplace_back(
+            export_node.node_id, type_definition.node_id(),
+            export_node.parent_id, std::move(attrs), std::move(props),
+            std::move(refs));
       }
     } else {
-      import_data.create_nodes.push_back(
-          {export_node.node_id, type_definition.node_id(),
-           export_node.parent_id, std::move(attrs), std::move(props),
-           std::move(refs)});
+      import_data.create_nodes.emplace_back(
+          export_node.node_id, type_definition.node_id(), export_node.parent_id,
+          std::move(attrs), std::move(props), std::move(refs));
     }
   }
 
