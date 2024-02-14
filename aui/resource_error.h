@@ -48,7 +48,7 @@ inline auto CatchResourceError(DialogService& dialog_service,
       auto p = func(std::forward<decltype(args)>(args)...);
       if constexpr (is_promise_v<FuncResult>) {
         return p.except([&dialog_service, title](std::exception_ptr e) {
-          return ShowResourceError<promise_result_t<FuncResult>>(dialog_service,
+          return ShowResourceError<remove_promise_t<FuncResult>>(dialog_service,
                                                                  title, e);
         });
       } else {
@@ -57,7 +57,7 @@ inline auto CatchResourceError(DialogService& dialog_service,
     } catch (...) {
       using Result =
           std::conditional_t<is_promise_v<FuncResult>,
-                             promise_result_t<FuncResult>, FuncResult>;
+                             remove_promise_t<FuncResult>, FuncResult>;
       return ShowResourceError<Result>(dialog_service, title,
                                        std::current_exception());
     }
