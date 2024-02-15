@@ -84,7 +84,7 @@ scada::status_promise<void> OpenFileCommandImpl::OpenFile(
 
 scada::status_promise<void> OpenFileCommandImpl::Execute(
     const OpenFileCommandContext& context) const {
-  return OpenFile(context).except(BindPromiseExecutorWithResult(
+  return OpenFile(context).except(BindPromiseExecutor(
       context.executor,
       // TODO: `weak ptr` for main window.
       [main_window = context.main_window](std::exception_ptr) {
