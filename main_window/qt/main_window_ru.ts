@@ -4,10 +4,6 @@
 <context>
     <name>MainWindowQt</name>
     <message>
-        <source>Local</source>
-        <translation type="vanished">Локальный</translation>
-    </message>
-    <message>
         <source>%1 (Server: %2)</source>
         <translation>%1 (Сервер: %2)</translation>
     </message>
