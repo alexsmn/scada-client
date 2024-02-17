@@ -21,7 +21,6 @@
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
 #include "controller/controller_registry.h"
-#include "controller/window_info.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "export/configuration/export_configuration_module.h"

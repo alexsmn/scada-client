@@ -46,11 +46,14 @@ class WriteService;
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;
   const std::shared_ptr<Executor> executor_;
+
   const std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>
       main_window_factory_;
+
   const std::function<promise<std::optional<DataServices>>(
       DataServicesContext&& services_context)>
       login_handler_;
+
   const std::function<void()> quit_handler_;
 };
 

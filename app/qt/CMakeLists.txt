@@ -57,7 +57,7 @@ add_executable(client_qt WIN32 ${MAIN_QT})
 target_link_libraries(client_qt PUBLIC client_qt_lib)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
 
-client_qt_translations(client_qt "main_ru.ts")
+client_qt_translations(client_qt "app_ru.ts")
 
 install(FILES ${TRANSLATIONS_OUT} DESTINATION "bin/translations" COMPONENT Client)
 
