@@ -75,6 +75,7 @@ class ModusDocument : private ModusDocumentContext {
 
  private:
   void PostInit();
+  void EnableTopology();
 
   Microsoft::WRL::ComPtr<ModusEventSink> event_sink_;
 

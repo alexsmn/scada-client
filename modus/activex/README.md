@@ -1,3 +1,6 @@
+Typelibs under `typelib/` are imported by VC++ `#import` instructions in `modus.h`.
+
+
 # OleView
 
 Use OleView to import libraries.

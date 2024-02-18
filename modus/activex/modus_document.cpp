@@ -96,7 +96,42 @@ void ModusDocument::InitFromState(std::string_view state) {
   PostInit();
 }
 
-void ModusDocument::PostInit() {}
+void ModusDocument::PostInit() {
+}
+
+void ModusDocument::EnableTopology() {
+  {
+    Microsoft::WRL::ComPtr<SDECore::ISDEPages> pages;
+    sde_document_->get_Pages(pages.ReleaseAndGetAddressOf());
+
+    if (pages) {
+      Microsoft::WRL::ComPtr<SDECore::ISDEPage50> page;
+      pages->get_Item(base::win::ScopedVariant{0},
+                      page.ReleaseAndGetAddressOf());
+
+      if (page) {
+        page->put_UseTopology(VARIANT_TRUE);
+      }
+    }
+  }
+
+  {
+    Microsoft::WRL::ComPtr<IDispatch> electric_model_dispatch;
+    sde_form_->get_ElectricModel(
+        electric_model_dispatch.ReleaseAndGetAddressOf());
+
+    if (electric_model_dispatch) {
+      Microsoft::WRL::ComPtr<sde_electric::IElectricModel2> electric_model;
+      electric_model_dispatch->QueryInterface(
+          electric_model.ReleaseAndGetAddressOf());
+
+      if (electric_model) {
+        electric_model->put_Active(VARIANT_TRUE);
+        electric_model->put_Mode(sde_electric::emOnUpdate);
+      }
+    }
+  }
+}
 
 bool ModusDocument::ShowContainedItem(const scada::NodeId& node_id) {
   auto* object = FindObject(node_id);
@@ -105,8 +140,9 @@ bool ModusDocument::ShowContainedItem(const scada::NodeId& node_id) {
 
   sde_document_->DocHighLight(&object->sde_object(), RGB(0, 255, 0), false);
 
-  if (!object->elements().empty())
+  if (!object->elements().empty()) {
     selection_callback_(object->elements()[0]->timed_data());
+  }
 
   return true;
 }
