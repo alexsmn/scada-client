@@ -59,7 +59,23 @@ set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
 
 client_qt_translations(client_qt "app_ru.ts")
 
-install(FILES ${TRANSLATIONS_OUT} DESTINATION "bin/translations" COMPONENT Client)
+# Translations
+
+add_custom_command(
+  OUTPUT "client_ru.ts"
+  DEPENDS ${CLIENT_QT_TRANSLATIONS}
+  COMMAND "lconvert -i ${CLIENT_QT_TRANSLATIONS} -o client_ru.ts"
+  COMMENT "Combine ${CLIENT_QT_TRANSLATIONS} into client_ru.ts")
+
+find_package(Qt5LinguistTools REQUIRED)
+qt5_add_translation(TRANSLATIONS_OUT "client_ru.ts")
+
+file(COPY ${TRANSLATIONS_OUT}
+  DESTINATION "${CMAKE_BINARY_DIR}/bin/Debug/translations")
+
+install(FILES ${TRANSLATIONS_OUT}
+  DESTINATION "bin/translations"
+  COMPONENT Client)
 
 install(TARGETS client_qt
   RUNTIME DESTINATION "bin"
