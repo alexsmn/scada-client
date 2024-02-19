@@ -1,8 +1,11 @@
 #pragma once
 
-#include "command_handler.h"
+#include "controller/command_handler.h"
 
 #include <functional>
+#include <optional>
+#include <ranges>
+#include <string_view>
 #include <unordered_map>
 
 template <typename R, typename A>
@@ -19,6 +22,8 @@ struct UnaryFunctionImpl<R, void> {
 template <typename R, typename A>
 using UnaryFunction = typename UnaryFunctionImpl<R, A>::Type;
 
+enum class MenuGroup { DISPLAY_SETTINGS };
+
 // `C` represents the context type.
 template <typename C>
 class BasicCommand {
@@ -28,9 +33,21 @@ class BasicCommand {
   using CheckedHandler = UnaryFunction<bool, C>;
   using AvailableHandler = UnaryFunction<bool, C>;
 
+  BasicCommand() {}
+
   // Allow implicit conversion from `unsigned` to support
   // `registry.AddCommand(ID_XXX)`.
   BasicCommand(unsigned command_id) : command_id{command_id} {}
+
+  BasicCommand& set_title(std::u16string_view title) {
+    this->title = title;
+    return *this;
+  }
+
+  BasicCommand& set_menu_group(MenuGroup group) {
+    this->menu_group = group;
+    return *this;
+  }
 
   BasicCommand& set_execute_handler(ExecuteHandler handler) {
     execute_handler = std::move(handler);
@@ -52,7 +69,10 @@ class BasicCommand {
     return *this;
   }
 
-  const unsigned command_id;
+  const unsigned command_id = 0;
+
+  std::u16string title;
+  std::optional<MenuGroup> menu_group;
 
   ExecuteHandler execute_handler;
   EnabledHandler enabled_handler;
@@ -71,6 +91,8 @@ class BasicCommandRegistry {
   BasicCommand<C>* FindCommand(unsigned command_id);
   const BasicCommand<C>* FindCommand(unsigned command_id) const;
 
+  auto commands() { return command_map_ | std::views::values; }
+
  protected:
   std::unordered_map<unsigned /*command_id*/, BasicCommand<C>> command_map_;
 };
@@ -86,10 +108,16 @@ class CommandRegistry : public CommandHandler,
   virtual void ExecuteCommand(unsigned command_id) override;
 };
 
+inline unsigned CreateUniqueCommandId() {
+  static unsigned next_command_id = 0xFFFF;
+  return next_command_id++;
+}
+
 template <typename C>
 inline BasicCommand<C>& BasicCommandRegistry<C>::AddCommand(
     BasicCommand<C> command) {
-  auto command_id = command.command_id;
+  auto command_id =
+      command.command_id ? command.command_id : CreateUniqueCommandId();
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "base/containers/span.h"
 #include "aui/models/simple_menu_model.h"
+#include "base/containers/span.h"
+#include "controller/command_registry.h"
 #include "filesystem/file_cache.h"
 
 #include <filesystem>
@@ -17,6 +18,7 @@ class Page;
 class Profile;
 class ViewManager;
 class WindowDefinition;
+struct MainCommandContext;
 struct WindowInfo;
 
 struct MainMenuContext {
@@ -32,6 +34,7 @@ struct MainMenuContext {
   CommandHandler& command_handler_;
   DialogService& dialog_service_;
   aui::MenuModel& context_menu_model_;
+  BasicCommandRegistry<MainCommandContext> commands_;
 };
 
 class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {

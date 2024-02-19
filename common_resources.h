@@ -386,7 +386,6 @@
 #define IDC_POLL16                      2016
 #define ID_HISTORICAL_DB_VIEW           2017
 #define ID_GRAPH_ZOOM                   4001
-#define ID_MODUS2_MODE                  4021
 #define ID_EXPORT_CONFIGURATION_TO_EXCEL 4022
 #define ID_IMPORT_CONFIGURATION_FROM_EXCEL 4023
 #define ID_LOGIN                        4024

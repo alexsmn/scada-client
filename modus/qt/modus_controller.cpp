@@ -53,7 +53,9 @@ QWidget* ModusController::CreateModusView() {
   };
 
   auto enable_internal_render_callback = [this] {
-    profile_.modus2 = true;
+    profile_.modus.modus2 = true;
+    profile_.NotifyChange();
+
     dialog_service_.RunMessageBox(
         u"Встроенная отрисовка схем Модус включена и будет применена для далее "
         u"открытых схем. Для отключения функции используйте меню Настройки.",
@@ -62,7 +64,7 @@ QWidget* ModusController::CreateModusView() {
   };
 
   view_ = new ModusView{modus::ModusDocumentContext{
-      executor_, alias_resolver_, timed_data_service_, file_cache_,
+      executor_, alias_resolver_, timed_data_service_, file_cache_, profile_,
       title_callback, navigation_callback, selection_callback,
       context_menu_handler, enable_internal_render_callback}};
 

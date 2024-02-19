@@ -34,7 +34,7 @@ class MasterDataServices;
 class MetricService;
 class NodeService;
 class NodeServiceProgressTracker;
-class PortfolioManager;
+class PortfolioModule;
 class Profile;
 class ProgressHost;
 class PropertyService;
@@ -94,7 +94,7 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<LocalEvents> local_events_;
   std::unique_ptr<ProgressHost> progress_host_;
   std::shared_ptr<TaskManager> task_manager_;
-  std::unique_ptr<PortfolioManager> portfolio_manager_;
+  std::unique_ptr<PortfolioModule> portfolio_module_;
   std::unique_ptr<Favourites> favourites_;
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;
@@ -109,7 +109,7 @@ class ClientApplication : private ClientApplicationContext {
 
   std::unique_ptr<NodeServiceProgressTracker> node_service_progress_tracker_;
 
-  std::unique_ptr <FileSystemComponent> filesystem_component_;
+  std::unique_ptr<FileSystemComponent> filesystem_component_;
 
   std::stack<std::shared_ptr<void>> singletons_;
 

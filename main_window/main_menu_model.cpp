@@ -10,6 +10,7 @@
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
 #include "controller/command_handler.h"
+#include "controller/command_registry.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "main_window/context_menu_model.h"
@@ -367,7 +368,6 @@ void MainMenuModel::Rebuild() {
   window_submenu_.AddInplaceMenu(&trash_menu_);
   AddSubMenu(0, u"Окно", &window_submenu_);
 
-  // TODO:
   settings_submenu_.AddCheckItem(0, u"Панель инструментов");
   settings_submenu_.AddCheckItem(ID_VIEW_STATUS_BAR, u"Строка состояния");
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
@@ -386,8 +386,16 @@ void MainMenuModel::Rebuild() {
                                  u"Звуковая сигнализация по событию");
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Открыть папку схем");
-  settings_submenu_.AddCheckItem(ID_MODUS2_MODE,
-                                 u"Встроенная отрисовка схем Модус");
+
+  for (const auto& command : commands_.commands()) {
+    if (command.menu_group == MenuGroup::DISPLAY_SETTINGS) {
+      if (command.checked_handler) {
+        settings_submenu_.AddCheckItem(command.command_id, command.title);
+      } else {
+        settings_submenu_.AddItem(command.command_id, command.title);
+      }
+    }
+  }
 
 #if defined(UI_QT)
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);

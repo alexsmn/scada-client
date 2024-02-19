@@ -3,12 +3,14 @@
 #include "aui/handlers.h"
 #include "common/aliases.h"
 
+#include <boost/signals2/connection.hpp>
 #include <string_view>
 #include <unordered_map>
 #include <wrl/client.h>
 
 class Executor;
 class FileCache;
+class Profile;
 class TimedDataService;
 class TimedDataSpec;
 
@@ -35,6 +37,7 @@ struct ModusDocumentContext {
   const AliasResolver alias_resolver_;
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;
+  Profile& profile_;
 
   const std::function<void(const std::u16string& title)> title_callback_;
   const std::function<void(std::u16string_view hyperlink)> navigation_callback_;
@@ -75,7 +78,7 @@ class ModusDocument : private ModusDocumentContext {
 
  private:
   void PostInit();
-  void EnableTopology();
+  void EnableTopology(bool enable);
 
   Microsoft::WRL::ComPtr<ModusEventSink> event_sink_;
 
@@ -88,6 +91,8 @@ class ModusDocument : private ModusDocumentContext {
   std::unordered_map<ObjectId, modus::ModusObject*> object_map_;
 
   std::u16string title_;
+
+  std::vector<boost::signals2::scoped_connection> connections_;
 };
 
 }  // namespace modus

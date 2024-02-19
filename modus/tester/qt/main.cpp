@@ -6,6 +6,7 @@
 #include "filesystem/file_registry.h"
 #include "modus/modus_component.h"
 #include "modus/qt/modus_view.h"
+#include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "services/atl_module.h"
 #include "test/display_tester/qt/display_tester_state.h"
@@ -20,6 +21,7 @@ struct State : DisplayTesterState {
                                     const AliasResolveCallback& callback) {};
   FileRegistry file_registry;
   FileCache file_cache{file_registry};
+  Profile profile;
 };
 
 QWidget* CreateModusView(State& state, const WindowDefinition& definition) {
@@ -27,6 +29,7 @@ QWidget* CreateModusView(State& state, const WindowDefinition& definition) {
       .alias_resolver_ = state.alias_resolver,
       .timed_data_service_ = state.timed_data_service,
       .file_cache_ = state.file_cache,
+      .profile_ = state.profile,
       .title_callback_ = [](const std::u16string& title) {},
       .navigation_callback_ = [](std::u16string_view hyperlink) {},
       .selection_callback_ = [](const TimedDataSpec& selection) {},

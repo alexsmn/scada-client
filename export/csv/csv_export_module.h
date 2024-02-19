@@ -2,8 +2,11 @@
 
 #include <memory>
 
-class CsvExportModule {
+struct CsvExportModuleContext {
+};
+
+class CsvExportModule : private CsvExportModuleContext {
  public:
-  CsvExportModule();
+  explicit CsvExportModule(CsvExportModuleContext&& context);
   ~CsvExportModule();
 };

@@ -21,9 +21,7 @@
 #include "events/node_event_provider.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
-#include "portfolio/portfolio.h"
 #include "portfolio/portfolio_component.h"
-#include "portfolio/portfolio_manager.h"
 #include "scada/event.h"
 
 #if !defined(UI_WT)
@@ -166,13 +164,12 @@ MainWindowDef::MainWindowDef()
 Profile::Profile() {}
 
 void Profile::Load(NodeEventProvider& node_event_provider,
-                   PortfolioManager& portfolio_manager,
                    Favourites& favourites) {
   LOG(INFO) << "Load profile";
 
   std::string error_message;
   if (auto data = LoadJsonFromFile(GetFilePath(), &error_message))
-    Load(*data, node_event_provider, portfolio_manager, favourites);
+    Load(*data, node_event_provider, favourites);
   else
     LOG(ERROR) << "Profile load error " << error_message;
 
@@ -186,15 +183,18 @@ void Profile::Load(NodeEventProvider& node_event_provider,
 
 void Profile::Load(const base::Value& data,
                    NodeEventProvider& node_event_provider,
-                   PortfolioManager& portfolio_manager,
                    Favourites& favourites) {
+  data_ = data.Clone();
+
   // common settings
   show_write_ok = GetBool(data, "showWriteOk", show_write_ok);
   event_auto_show = GetBool(data, "showEvents", event_auto_show);
   event_auto_hide = GetBool(data, "hideEvents", event_auto_hide);
   event_flash_window = GetBool(data, "flashOnEvents", event_flash_window);
   event_play_sound = GetBool(data, "soundOnEvents", event_play_sound);
-  modus2 = GetBool(data, "modus2", modus2);
+
+  modus.topology = GetBool(data, "topology", modus.topology);
+  modus.modus2 = GetBool(data, "modus2", modus.modus2);
 
   // TODO: Checked cast.
   scada::EventSeverity severity_min = static_cast<scada::EventSeverity>(
@@ -236,24 +236,6 @@ void Profile::Load(const base::Value& data,
   if (auto* favourites_root = data.FindKey("favorites"))
     favourites.Load(*favourites_root);
 
-  // portfolios
-  if (auto* pfoliose = GetList(data, "portfolios")) {
-    auto& portfolios = portfolio_manager.portfolios;
-    for (auto& pfolioe : *pfoliose) {
-      Portfolio& portfolio = portfolios.emplace_back();
-      portfolio.name = GetString16(pfolioe, "name");
-      // items
-      if (auto* itemse = GetList(pfolioe, "items")) {
-        for (auto& iteme : *itemse) {
-          auto path = GetString(iteme, "path");
-          auto node_id = NodeIdFromScadaString(path);
-          if (!node_id.is_null())
-            portfolio.items.insert(node_id);
-        }
-      }
-    }
-  }
-
   if (auto* event_journal = FindDict(data, "eventJournal")) {
     if (auto* state = FindDict(*event_journal, "defaultState"))
       this->event_journal.default_state = state->Clone();
@@ -277,17 +259,9 @@ void Profile::Load(const base::Value& data,
 
   if (auto* node = FindDict(data, "timedData"))
     timed_data.mirrored = GetBool(*node, "mirrored");
-
-  if (auto* node = FindDict(data, "csv")) {
-    if (auto params = FromJson<CsvExportParams>(*node))
-      csv_export_params = std::move(*params);
-  }
-
-  csv_export_dir = GetString16(data, "csvPath");
 }
 
 void Profile::Save(const NodeEventProvider& node_event_provider,
-                   const PortfolioManager& portfolio_manager,
                    const Favourites& favourites) {
   LOG(INFO) << "Save profile";
 
@@ -295,7 +269,7 @@ void Profile::Save(const NodeEventProvider& node_event_provider,
     writer(*this);
   }
 
-  auto data = SaveToValue(node_event_provider, portfolio_manager, favourites);
+  auto data = SaveToValue(node_event_provider, favourites);
 
   if (SaveJsonToFile(data, GetFilePath()))
     LOG(INFO) << "Profile saved";
@@ -304,9 +278,8 @@ void Profile::Save(const NodeEventProvider& node_event_provider,
 }
 
 base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
-                                 const PortfolioManager& portfolio_manager,
                                  const Favourites& favourites) const {
-  base::Value data{base::Value::Type::DICTIONARY};
+  base::Value data = data_.Clone();
 
   // common settings
   SetKey(data, "showWriteOk", show_write_ok);
@@ -316,7 +289,9 @@ base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
   SetKey(data, "soundOnEvents", event_play_sound);
   SetKey(data, "severityMin",
          static_cast<int>(node_event_provider.severity_min()));
-  SetKey(data, "modus2", modus2);
+
+  SetKey(data, "topology", modus.topology);
+  SetKey(data, "modus2", modus.modus2);
 
   // window settings
   {
@@ -340,8 +315,9 @@ base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
   // pages root
   {
     base::Value::ListStorage list;
-    for (const auto& [id, page] : pages)
+    for (const auto& [id, page] : pages) {
       list.emplace_back(page.Save(false));
+    }
     data.SetKey("pages", base::Value{std::move(list)});
   }
 
@@ -350,23 +326,6 @@ base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
 
   // favorites
   data.SetKey("favorites", favourites.Save());
-
-  // portfolios
-  {
-    base::Value::ListStorage portfolio_storage;
-    for (auto& portfolio : portfolio_manager.portfolios) {
-      base::Value pfolioe{base::Value::Type::DICTIONARY};
-      SetKey(pfolioe, "name", portfolio.name);
-      {
-        base::Value::ListStorage item_storage;
-        for (const auto& node_id : portfolio.items)
-          item_storage.emplace_back(NodeIdToScadaString(node_id));
-        pfolioe.SetKey("items", base::Value{std::move(item_storage)});
-      }
-      portfolio_storage.emplace_back(std::move(pfolioe));
-    }
-    data.SetKey("portfolios", base::Value{std::move(portfolio_storage)});
-  }
 
   // Event Journal
   {
@@ -409,8 +368,9 @@ base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
     data.SetKey("timedData", std::move(node));
   }
 
-  data.SetKey("csv", ToJson(csv_export_params));
-  SetKey(data, "csvPath", csv_export_dir.u16string());
+  for (const auto& serializer : serializers_) {
+    serializer(data);
+  }
 
   return data;
 }

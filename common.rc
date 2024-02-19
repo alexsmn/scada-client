@@ -949,7 +949,6 @@ BEGIN
         MENUITEM "Звуковая сигнализация по событию", ID_EVENT_PLAY_SOUND,MFT_STRING,MFS_ENABLED
         MENUITEM MFT_SEPARATOR
         MENUITEM "Открыть папку схем",          ID_VIEW_PUBLIC_FOLDER,MFT_STRING,MFS_ENABLED
-        MENUITEM "Встроенный визуализатор схем MODUS", ID_MODUS2_MODE,MFT_STRING,MFS_ENABLED
     END
     POPUP "Справка",                        65535,MFT_STRING,MFS_ENABLED
     BEGIN
@@ -1035,7 +1034,6 @@ BEGIN
         MENUITEM "Звуковая сигнализация по событию", ID_EVENT_PLAY_SOUND,MFT_STRING,MFS_ENABLED
         MENUITEM MFT_SEPARATOR
         MENUITEM "Открыть папку схем",          ID_VIEW_PUBLIC_FOLDER,MFT_STRING,MFS_ENABLED
-        MENUITEM "Встроенный визуализатор схем MODUS", ID_MODUS2_MODE,MFT_STRING,MFS_ENABLED
     END
     POPUP "Справка",                        65535,MFT_STRING,MFS_ENABLED
     BEGIN

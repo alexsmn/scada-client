@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
+#include "base/value_util.h"
 #include "base/win/win_util2.h"
 #include "export/csv/csv_export.h"
 #include "export/export_model.h"
@@ -35,15 +36,17 @@ class CsvExportCommandRun
     auto file_name = MakeFileName(window_title_);
     file_name += ".csv";
 
+    auto csv_export_dir = GetString16(profile_.data(), "csvPath");
+
     auto ref = shared_from_this();
 
     return dialog_service_
         .SelectSaveFile({.title = kExportTitle,
-                         .default_path = profile_.csv_export_dir / file_name,
+                         .default_path = csv_export_dir / file_name,
                          .filters = kFilters})
         .then([this, ref](const std::filesystem::path& path) {
           path_ = path;
-          profile_.csv_export_dir = path.parent_path();
+          SetKey(profile_.data(), "csvPath", path.u16string());
         })
         .then([this, ref] {
           return ShowCsvExportDialog(dialog_service_, profile_);

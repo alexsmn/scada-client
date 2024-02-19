@@ -4,10 +4,12 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
+#include "base/win/variant_util.h"
 #include "modus/activex/modus_element.h"
 #include "modus/activex/modus_event_sink.h"
 #include "modus/activex/modus_loader.h"
 #include "modus/activex/modus_object.h"
+#include "profile/profile.h"
 
 namespace modus {
 
@@ -32,6 +34,9 @@ ModusDocument::ModusDocument(ModusDocumentContext&& context,
   sde_form_->put_ToolbarVisible(VARIANT_FALSE);
   // sde_form_->put_PagesVisible(SDECore::txPagesHidden);
   sde_form_->put_AxBorderStyle(htsde2::afbNone);
+
+  connections_.emplace_back(profile_.AddChangeObserver(
+      [this] { EnableTopology(profile_.modus.topology); }));
 }
 
 ModusDocument::~ModusDocument() {
@@ -97,9 +102,10 @@ void ModusDocument::InitFromState(std::string_view state) {
 }
 
 void ModusDocument::PostInit() {
+  EnableTopology(profile_.modus.topology);
 }
 
-void ModusDocument::EnableTopology() {
+void ModusDocument::EnableTopology(bool enable) {
   {
     Microsoft::WRL::ComPtr<SDECore::ISDEPages> pages;
     sde_document_->get_Pages(pages.ReleaseAndGetAddressOf());
@@ -110,7 +116,7 @@ void ModusDocument::EnableTopology() {
                       page.ReleaseAndGetAddressOf());
 
       if (page) {
-        page->put_UseTopology(VARIANT_TRUE);
+        page->put_UseTopology(AsVariantBool(enable));
       }
     }
   }
@@ -126,8 +132,9 @@ void ModusDocument::EnableTopology() {
           electric_model.ReleaseAndGetAddressOf());
 
       if (electric_model) {
-        electric_model->put_Active(VARIANT_TRUE);
-        electric_model->put_Mode(sde_electric::emOnUpdate);
+        electric_model->put_Active(AsVariantBool(enable));
+        electric_model->put_Mode(enable ? sde_electric::emOnUpdate
+                                        : sde_electric::emNone);
       }
     }
   }

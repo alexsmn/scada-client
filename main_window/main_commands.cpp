@@ -46,7 +46,6 @@ const Option options[] = {
     {ID_OPT_SPEECH, &Profile::speech_enabled},
     {ID_EVENT_FLASH_WINDOW, &Profile::event_flash_window},
     {ID_EVENT_PLAY_SOUND, &Profile::event_play_sound},
-    {ID_MODUS2_MODE, &Profile::modus2},
     {0, nullptr}};
 
 static bool Profile::*GetOption(UINT id) {

@@ -15,7 +15,8 @@ target_include_directories(client_modus_qt PRIVATE
   "${third_party}/modus"
 )
 
-file(GLOB_RECURSE MODUS_IDLS "." CONFIGURE_DEPENDS
+file(GLOB_RECURSE MODUS_IDLS CONFIGURE_DEPENDS
+  "."
   "*.idl"
 )
 

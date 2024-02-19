@@ -33,7 +33,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
-#include "portfolio/portfolio_manager.h"
+#include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
 #include "project.h"
 #include "properties/property_service.h"
@@ -143,8 +143,10 @@ ClientApplication::~ClientApplication() {
   node_service_progress_tracker_.reset();
   main_window_module_.reset();
 
-  if (profile_ && profile_loaded_)
-    profile_->Save(*event_fetcher_, *portfolio_manager_, *favourites_);
+  if (profile_ && profile_loaded_) {
+    profile_->Save(*event_fetcher_, portfolio_module_->portfolio_manager(),
+                   *favourites_);
+  }
 
   // Shutdown OPC.
   // extern void ShutdownOpc();
@@ -158,7 +160,7 @@ ClientApplication::~ClientApplication() {
   blinker_manager_.reset();
   speech_.reset();
   favourites_.reset();
-  portfolio_manager_.reset();
+  portfolio_module_.reset();
   task_manager_.reset();
   local_events_.reset();
 
@@ -223,7 +225,8 @@ void ClientApplication::OnStartLoginCompleted() {
     alias_service->Resolve(alias, callback);
   };
 
-  singletons_.emplace(std::make_shared<CsvExportModule>());
+  singletons_.emplace(
+      std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       .executor_ = executor_,
@@ -273,26 +276,13 @@ void ClientApplication::OnStartLoginCompleted() {
                                  .create_tree_ = *create_tree_,
                                  .scada_client_ = scada_client});
 
-#if !defined(UI_WT)
-  singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
-      .controller_registry_ = *controller_registry_,
-      .blinker_manager_ = *blinker_manager_,
-      .file_registry_ = filesystem_component_->file_registry()}));
-
-  singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
-      .executor_ = executor_,
-      .timed_data_service_ = *timed_data_service_,
-      .controller_registry_ = *controller_registry_,
-      .write_service_ = *write_service_,
-      .file_registry_ = filesystem_component_->file_registry()}));
-#endif
-
   favourites_ = std::make_unique<Favourites>();
 
-  portfolio_manager_ = std::make_unique<PortfolioManager>(
-      PortfolioManagerContext{*node_service_});
+  portfolio_module_ =
+      std::make_unique<PortfolioModule>(PortfolioModuleContext{*node_service_});
 
-  profile_->Load(*event_fetcher_, *portfolio_manager_, *favourites_);
+  profile_->Load(*event_fetcher_, portfolio_module_->portfolio_manager(),
+                 *favourites_);
   profile_loaded_ = true;
 
   create_tree_ = std::make_unique<CreateTree>();
@@ -312,7 +302,7 @@ void ClientApplication::OnStartLoginCompleted() {
           .event_fetcher_ = *event_fetcher_,
           .timed_data_service_ = *timed_data_service_,
           .node_service_ = *node_service_,
-          .portfolio_manager_ = *portfolio_manager_,
+          .portfolio_manager_ = portfolio_module_->portfolio_manager(),
           .local_events_ = *local_events_,
           .favourites_ = *favourites_,
           .file_cache_ = filesystem_component_->file_cache(),
@@ -323,6 +313,22 @@ void ClientApplication::OnStartLoginCompleted() {
           .progress_host_ = *progress_host_,
           .property_service_ = *property_service_,
           .create_tree_ = *create_tree_});
+
+#if !defined(UI_WT)
+  singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
+      .controller_registry_ = *controller_registry_,
+      .blinker_manager_ = *blinker_manager_,
+      .file_registry_ = filesystem_component_->file_registry(),
+      .main_commands_ = main_window_module_->main_commands(),
+      .profile_ = *profile_}));
+
+  singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
+      .executor_ = executor_,
+      .timed_data_service_ = *timed_data_service_,
+      .controller_registry_ = *controller_registry_,
+      .write_service_ = *write_service_,
+      .file_registry_ = filesystem_component_->file_registry()}));
+#endif
 
   singletons_.emplace(std::make_shared<ExportConfigurationModule>(
       ExportConfigurationModuleContext{

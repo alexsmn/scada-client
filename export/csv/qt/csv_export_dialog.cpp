@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/qt/dialog_util.h"
+#include "base/value_util.h"
 #include "export/csv/csv_export.h"
 #include "export/csv/csv_export_util.h"
 #include "profile/profile.h"
@@ -82,9 +83,16 @@ void CsvExportDialog::accept() {
 
 promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
                                              Profile& profile) {
+  auto csv_export_params =
+      FromJson<CsvExportParams>(GetKey(profile.data(), "csv"))
+          .value_or(CsvExportParams{});
+
   auto dialog = std::make_unique<CsvExportDialog>(
-      profile.csv_export_params, dialog_service.GetParentWidget());
-  return StartModalDialog(std::move(dialog)).then([](CsvExportDialog* dialog) {
-    return dialog->params_;
-  });
+      csv_export_params, dialog_service.GetParentWidget());
+
+  return StartModalDialog(std::move(dialog))
+      .then([&profile](CsvExportDialog* dialog) {
+        profile.data().SetKey("csv", ToJson(dialog->params_));
+        return dialog->params_;
+      });
 }

@@ -4,7 +4,6 @@
 #include "aui/rect.h"
 #include "base/files/file_path.h"
 #include "base/time/time.h"
-#include "export/csv/csv_export_util.h"
 #include "profile/page.h"
 #include "scada/node_id.h"
 
@@ -13,7 +12,6 @@
 
 class Favourites;
 class NodeEventProvider;
-class PortfolioManager;
 
 struct MainWindowDef {
   MainWindowDef();
@@ -27,7 +25,7 @@ struct MainWindowDef {
 
 class Profile {
  public:
-  typedef std::map<int, Page> PageMap;
+  using PageMap = std::map<int, Page>;
 
   Profile();
 
@@ -55,11 +53,8 @@ class Profile {
   EventJournal event_journal;
 
   // TODO: Remove the dependencies.
-  void Load(NodeEventProvider& node_event_provider,
-            PortfolioManager& portfolio_manager,
-            Favourites& favourites);
+  void Load(NodeEventProvider& node_event_provider, Favourites& favourites);
   void Save(const NodeEventProvider& node_event_provider,
-            const PortfolioManager& portfolio_manager,
             const Favourites& favourites);
 
   typedef std::map<int, MainWindowDef> MainWindows;
@@ -80,8 +75,14 @@ class Profile {
 
   bool control_confirmation = true;
 
-  // Use internal Modus rendered instead of ActiveXeme.
-  bool modus2 = false;
+  struct Modus {
+    bool topology = true;
+
+    // Use internal Modus rendered instead of ActiveXeme.
+    bool modus2 = false;
+  };
+
+  Modus modus;
 
   struct GraphView {
     base::TimeDelta default_span = base::TimeDelta::FromHours(1);
@@ -111,14 +112,20 @@ class Profile {
 
   TimedData timed_data;
 
-  CsvExportParams csv_export_params;
-  std::filesystem::path csv_export_dir;
+  const base::Value& data() const { return data_; }
+  base::Value& data() { return data_; }
 
   using Writer = std::function<void(Profile& profile)>;
 
   void RegisterWriter(const Writer& writer) { writers_.emplace_back(writer); }
 
-  boost::signals2::scoped_connection AddChangeObserver(
+  using Serializer = std::function<void(base::Value& data)>;
+
+  void RegisterSerializer(const Serializer& serializer) {
+    serializers_.emplace_back(serializer);
+  }
+
+  [[nodiscard]] boost::signals2::scoped_connection AddChangeObserver(
       std::function<void()> observer) {
     return profile_change_signal_.connect(std::move(observer));
   }
@@ -128,15 +135,17 @@ class Profile {
  private:
   void Load(const base::Value& data,
             NodeEventProvider& node_event_provider,
-            PortfolioManager& portfolio_manager,
             Favourites& favourites);
+
   base::Value SaveToValue(const NodeEventProvider& node_event_provider,
-                          const PortfolioManager& portfolio_manager,
                           const Favourites& favourites) const;
 
   std::filesystem::path GetFilePath();
 
+  base::Value data_;
+
   std::vector<Writer> writers_;
+  std::vector<Serializer> serializers_;
 
   boost::signals2::signal<void()> profile_change_signal_;
 };
