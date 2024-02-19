@@ -14,11 +14,11 @@
 #include "base/value_util.h"
 #include "common_resources.h"
 #include "components/events/events_component.h"
-#include "components/favourites/favourites.h"
 #include "components/table/table_component.h"
 #include "configuration_tree/configuration_tree_component.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
+#include "favorites/favourites.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "portfolio/portfolio_component.h"
@@ -163,15 +163,15 @@ MainWindowDef::MainWindowDef()
 
 Profile::Profile() {}
 
-void Profile::Load(NodeEventProvider& node_event_provider,
-                   Favourites& favourites) {
+void Profile::Load(NodeEventProvider& node_event_provider) {
   LOG(INFO) << "Load profile";
 
   std::string error_message;
-  if (auto data = LoadJsonFromFile(GetFilePath(), &error_message))
-    Load(*data, node_event_provider, favourites);
-  else
+  if (auto data = LoadJsonFromFile(GetFilePath(), &error_message)) {
+    Load(*data, node_event_provider);
+  } else {
     LOG(ERROR) << "Profile load error " << error_message;
+  }
 
   if (pages.empty()) {
     Page page = CreateInitialPage();
@@ -182,8 +182,7 @@ void Profile::Load(NodeEventProvider& node_event_provider,
 }
 
 void Profile::Load(const base::Value& data,
-                   NodeEventProvider& node_event_provider,
-                   Favourites& favourites) {
+                   NodeEventProvider& node_event_provider) {
   data_ = data.Clone();
 
   // common settings
@@ -232,10 +231,6 @@ void Profile::Load(const base::Value& data,
   if (auto* out_pagese = data.FindKey("floatingWindows"))
     out_wins.Load(*out_pagese);
 
-  // favorites
-  if (auto* favourites_root = data.FindKey("favorites"))
-    favourites.Load(*favourites_root);
-
   if (auto* event_journal = FindDict(data, "eventJournal")) {
     if (auto* state = FindDict(*event_journal, "defaultState"))
       this->event_journal.default_state = state->Clone();
@@ -261,15 +256,14 @@ void Profile::Load(const base::Value& data,
     timed_data.mirrored = GetBool(*node, "mirrored");
 }
 
-void Profile::Save(const NodeEventProvider& node_event_provider,
-                   const Favourites& favourites) {
+void Profile::Save(const NodeEventProvider& node_event_provider) {
   LOG(INFO) << "Save profile";
 
   for (const auto& writer : writers_) {
     writer(*this);
   }
 
-  auto data = SaveToValue(node_event_provider, favourites);
+  auto data = SaveToValue(node_event_provider);
 
   if (SaveJsonToFile(data, GetFilePath()))
     LOG(INFO) << "Profile saved";
@@ -277,8 +271,8 @@ void Profile::Save(const NodeEventProvider& node_event_provider,
     LOG(ERROR) << "Profile save error";
 }
 
-base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
-                                 const Favourites& favourites) const {
+base::Value Profile::SaveToValue(
+    const NodeEventProvider& node_event_provider) const {
   base::Value data = data_.Clone();
 
   // common settings
@@ -323,9 +317,6 @@ base::Value Profile::SaveToValue(const NodeEventProvider& node_event_provider,
 
   // out-of-page
   data.SetKey("floatingWindows", out_wins.Save(true));
-
-  // favorites
-  data.SetKey("favorites", favourites.Save());
 
   // Event Journal
   {

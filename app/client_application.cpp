@@ -17,7 +17,6 @@
 #include "common/common_paths.h"
 #include "common/master_data_services.h"
 #include "common_resources.h"
-#include "components/favourites/favourites.h"
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
 #include "controller/controller_registry.h"
@@ -25,6 +24,7 @@
 #include "events/event_fetcher_builder.h"
 #include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
+#include "favorites/favorites_module.h"
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
@@ -144,8 +144,7 @@ ClientApplication::~ClientApplication() {
   main_window_module_.reset();
 
   if (profile_ && profile_loaded_) {
-    profile_->Save(*event_fetcher_, portfolio_module_->portfolio_manager(),
-                   *favourites_);
+    profile_->Save(*event_fetcher_);
   }
 
   // Shutdown OPC.
@@ -159,7 +158,7 @@ ClientApplication::~ClientApplication() {
   connection_state_reporter_.reset();
   blinker_manager_.reset();
   speech_.reset();
-  favourites_.reset();
+  favorites_module_.reset();
   portfolio_module_.reset();
   task_manager_.reset();
   local_events_.reset();
@@ -276,14 +275,13 @@ void ClientApplication::OnStartLoginCompleted() {
                                  .create_tree_ = *create_tree_,
                                  .scada_client_ = scada_client});
 
-  favourites_ = std::make_unique<Favourites>();
+  profile_->Load(*event_fetcher_);
+  profile_loaded_ = true;
+
+  favorites_module_ = std::make_unique<FavoritesModule>();
 
   portfolio_module_ =
-      std::make_unique<PortfolioModule>(PortfolioModuleContext{*node_service_});
-
-  profile_->Load(*event_fetcher_, portfolio_module_->portfolio_manager(),
-                 *favourites_);
-  profile_loaded_ = true;
+      std::make_unique<PortfolioModule>(PortfolioModuleContext{*node_service_, *profile_});
 
   create_tree_ = std::make_unique<CreateTree>();
 
@@ -304,7 +302,7 @@ void ClientApplication::OnStartLoginCompleted() {
           .node_service_ = *node_service_,
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
           .local_events_ = *local_events_,
-          .favourites_ = *favourites_,
+          .favourites_ = favorites_module_->favourites(),
           .file_cache_ = filesystem_component_->file_cache(),
           .file_manager_ = filesystem_component_->file_manager(),
           .blinker_manager_ = *blinker_manager_,

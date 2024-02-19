@@ -5,7 +5,7 @@
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
-#include "components/favourites/favourites.h"
+#include "favorites/favourites.h"
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"

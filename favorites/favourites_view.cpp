@@ -1,8 +1,8 @@
-﻿#include "components/favourites/favourites_view.h"
+﻿#include "favorites/favourites_view.h"
 
 #include "aui/tree.h"
 #include "common_resources.h"
-#include "components/favourites/favourites_tree_model.h"
+#include "favorites/favourites_tree_model.h"
 #include "aui/prompt_dialog.h"
 #include "controller/controller_delegate.h"
 #include "aui/dialog_service.h"

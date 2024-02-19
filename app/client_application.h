@@ -25,7 +25,7 @@ class ControllerRegistry;
 class CreateTree;
 class EventFetcher;
 class Executor;
-class Favourites;
+class FavoritesModule;
 class FileSystemComponent;
 class Logger;
 class LocalEvents;
@@ -95,7 +95,7 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<ProgressHost> progress_host_;
   std::shared_ptr<TaskManager> task_manager_;
   std::unique_ptr<PortfolioModule> portfolio_module_;
-  std::unique_ptr<Favourites> favourites_;
+  std::unique_ptr<FavoritesModule> favorites_module_;
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;
   std::unique_ptr<CreateTree> create_tree_;

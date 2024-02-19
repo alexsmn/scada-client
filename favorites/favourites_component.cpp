@@ -1,4 +1,4 @@
-﻿#include "components/favourites/favourites_view.h"
+﻿#include "favorites/favourites_view.h"
 #include "controller/controller_registry.h"
 
 const WindowInfo kWindowInfo = {ID_FAVOURITES_VIEW, "Favorites", u"Избранное",

@@ -10,7 +10,6 @@
 #include <boost/signals2/signal.hpp>
 #include <map>
 
-class Favourites;
 class NodeEventProvider;
 
 struct MainWindowDef {
@@ -53,9 +52,8 @@ class Profile {
   EventJournal event_journal;
 
   // TODO: Remove the dependencies.
-  void Load(NodeEventProvider& node_event_provider, Favourites& favourites);
-  void Save(const NodeEventProvider& node_event_provider,
-            const Favourites& favourites);
+  void Load(NodeEventProvider& node_event_provider);
+  void Save(const NodeEventProvider& node_event_provider);
 
   typedef std::map<int, MainWindowDef> MainWindows;
   MainWindows main_windows;
@@ -133,12 +131,9 @@ class Profile {
   void NotifyChange() { profile_change_signal_(); }
 
  private:
-  void Load(const base::Value& data,
-            NodeEventProvider& node_event_provider,
-            Favourites& favourites);
+  void Load(const base::Value& data, NodeEventProvider& node_event_provider);
 
-  base::Value SaveToValue(const NodeEventProvider& node_event_provider,
-                          const Favourites& favourites) const;
+  base::Value SaveToValue(const NodeEventProvider& node_event_provider) const;
 
   std::filesystem::path GetFilePath();
 
