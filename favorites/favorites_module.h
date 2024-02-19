@@ -2,11 +2,16 @@
 
 #include <memory>
 
+template <class T>
+class BasicCommandRegistry;
+
 class Favourites;
 class Profile;
+struct MainCommandContext;
 
 struct FavoritesModuleContext {
   Profile& profile_;
+  BasicCommandRegistry<MainCommandContext>& main_commands_;
 };
 
 class FavoritesModule : private FavoritesModuleContext {

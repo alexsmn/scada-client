@@ -6,7 +6,7 @@
 #include "profile/profile.h"
 
 bool IsModus2(const WindowDefinition& definition, Profile& profile) {
-  bool modus2 = profile.modus2;
+  bool modus2 = profile.modus.modus2;
   if (auto* options = definition.FindItem("Options")) {
     auto version = options->GetInt("version", 0);
     if (version != 0)

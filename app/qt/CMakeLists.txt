@@ -36,12 +36,14 @@ target_link_libraries(client_qt_lib PUBLIC
   client_controller_qt
   client_export_configuration_qt
   client_export_csv_qt
+  client_favorites_qt
   client_graph_qt
   client_main_window_qt
   client_modus_qt
   client_portfolio_qt
   client_print_preview_qt
   client_print_service_qt
+  client_profile_qt
   client_properties_qt
   client_services_qt
   client_vidicon_qt

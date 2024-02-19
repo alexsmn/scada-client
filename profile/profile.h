@@ -4,6 +4,7 @@
 #include "aui/rect.h"
 #include "base/files/file_path.h"
 #include "base/time/time.h"
+#include "common_resources.h"
 #include "profile/page.h"
 #include "scada/node_id.h"
 
@@ -15,11 +16,11 @@ class NodeEventProvider;
 struct MainWindowDef {
   MainWindowDef();
 
-  int id;
+  int id = 0;
   aui::Rect bounds;
-  bool maximized;
-  UINT toolbar_position;
-  int page_id;
+  bool maximized = false;
+  UINT toolbar_position = ID_TOOLBAR_TOP;
+  int page_id = 0;
 };
 
 class Profile {

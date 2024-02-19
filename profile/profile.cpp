@@ -12,21 +12,10 @@
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "base/value_util.h"
-#include "common_resources.h"
-#include "components/events/events_component.h"
-#include "components/table/table_component.h"
-#include "configuration_tree/configuration_tree_component.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
-#include "favorites/favourites.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
-#include "portfolio/portfolio_component.h"
-#include "scada/event.h"
-
-#if !defined(UI_WT)
-#include "graph/graph_component.h"
-#endif
 
 #include <ATLComTime.h>
 
@@ -64,30 +53,30 @@ Page CreateInitialPage() {
   def.type = WinTypeWeb;*/
 
   // objects
-  WindowDefinition& objects_def =
-      page.AddWindow(WindowDefinition(kObjectTreeWindowInfo));
+  WindowDefinition& objects_def = page.AddWindow(WindowDefinition(
+      /*kObjectTreeWindowInfo*/ GetWindowInfo(ID_OBJECT_VIEW)));
   objects_def.size = {200, 450};
 
   // portfolio
-  WindowDefinition& portfolio =
-      page.AddWindow(WindowDefinition(kPortfolioWindowInfo));
+  WindowDefinition& portfolio = page.AddWindow(WindowDefinition(
+      /*kPortfolioWindowInfo*/ GetWindowInfo(ID_PORTFOLIO_VIEW)));
   portfolio.size = {200, 450};
 
   // subsystems
-  WindowDefinition& subs_def =
-      page.AddWindow(WindowDefinition(kHardwareTreeWindowInfo));
+  WindowDefinition& subs_def = page.AddWindow(WindowDefinition(
+      /*kHardwareTreeWindowInfo*/ GetWindowInfo(ID_HARDWARE_VIEW)));
   subs_def.size = {200, 450};
 
   // events
-  WindowDefinition& events_def =
-      page.AddWindow(WindowDefinition(kEventWindowInfo));
+  WindowDefinition& events_def = page.AddWindow(
+      WindowDefinition(/*kEventWindowInfo*/ GetWindowInfo(ID_EVENT_VIEW)));
   events_def.size = {800, 600};
   events_def.visible = false;
 
 #if !defined(UI_WT)
   // Graph with server CPU usage.
-  WindowDefinition& graph_def =
-      page.AddWindow(WindowDefinition(kGraphWindowInfo));
+  WindowDefinition& graph_def = page.AddWindow(
+      WindowDefinition(/*kGraphWindowInfo*/ GetWindowInfo(ID_GRAPH_VIEW)));
   graph_def.size = {800, 300};
   graph_def.AddItem("TimeScale").SetString("span", "0:05:00");
   // TODO: Implement.
@@ -100,8 +89,8 @@ Page CreateInitialPage() {
 #endif
 
   // Table with top 10 tss.
-  WindowDefinition& table_def =
-      page.AddWindow(WindowDefinition(kTableWindowInfo));
+  WindowDefinition& table_def = page.AddWindow(
+      WindowDefinition(/*kTableWindowInfo*/ GetWindowInfo(ID_TABLE_VIEW)));
   table_def.size = {800, 450};
   // TODO: Implement.
   /*for (int i = 1; i <= 10; i++) {
@@ -156,8 +145,7 @@ void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
 
 // MainWindowDef
 
-MainWindowDef::MainWindowDef()
-    : id(0), maximized(false), toolbar_position(ID_TOOLBAR_TOP), page_id(0) {}
+MainWindowDef::MainWindowDef() {}
 
 // Profile
 

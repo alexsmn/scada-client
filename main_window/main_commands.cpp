@@ -8,8 +8,6 @@
 #include "common_resources.h"
 #include "components/about/about_dialog.h"
 #include "components/debugger/debugger.h"
-#include "favorites//add_favourites_dialog.h"
-#include "favorites/favourites.h"
 #include "components/web/web_component.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
@@ -261,9 +259,6 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       return;
     }
 
-    case ID_VIEW_ADD_TO_FAVOURITES:
-      AddToFavourites();
-      return;
     case ID_VIEW_CHANGE_TITLE:
       ShowRenameWindowDialog();
       return;
@@ -346,23 +341,6 @@ promise<> MainCommands::RenameCurrentPage() {
       .then([this](const std::u16string& title) {
         main_window_.SetPageTitle(title);
       });
-}
-
-promise<> MainCommands::AddToFavourites() {
-  auto* view = main_window_.GetActiveView();
-  if (!view)
-    return MakeRejectedPromise();
-
-  if (view->window_info().is_pane())
-    return MakeRejectedPromise();
-
-  view->Save();
-
-  auto definition = view->window_def();
-  definition.title = view->GetWindowTitle();
-
-  return ShowAddFavouritesDialog(dialog_service_,
-                                 {favourites_, std::move(definition)});
 }
 
 promise<> MainCommands::ShowRenameWindowDialog() {

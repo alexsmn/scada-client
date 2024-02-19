@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controller/command_registry.h"
-#include "main_window/main_command_context.h"
+#include "core/main_command_context.h"
 
 #include <memory>
 

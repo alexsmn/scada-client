@@ -2,8 +2,8 @@
 
 #include "common_resources.h"
 #include "controller/command_registry.h"
+#include "core/main_command_context.h"
 #include "export/configuration/excel_configuration_commands.h"
-#include "main_window/main_command_context.h"
 
 ExportConfigurationModule::ExportConfigurationModule(
     ExportConfigurationModuleContext&& context)

@@ -8,7 +8,7 @@
 #include "filesystem/file_synchronizer.h"
 #include "filesystem/filesystem_commands.h"
 #include "filesystem/filesystem_view.h"
-#include "main_window/selection_command_context.h"
+#include "core/selection_command_context.h"
 #include "node_service/node_service.h"
 #include "services/create_tree.h"
 

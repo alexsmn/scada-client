@@ -3,7 +3,7 @@
 #include "base/promise.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
-#include "main_window/main_command_context.h"
+#include "core/main_command_context.h"
 
 #include <functional>
 #include <memory>
@@ -54,9 +54,8 @@ class MainCommands : private MainCommandsContext, public CommandHandler {
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-  promise<> AddToFavourites();
   promise<> ShowRenameWindowDialog();
   promise<> RenameCurrentPage();
 
-  MainCommandContext command_context_{dialog_service_};
+  MainCommandContext command_context_{main_window_, dialog_service_};
 };

@@ -20,6 +20,7 @@
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
 #include "controller/controller_registry.h"
+#include "core/core_module.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "export/configuration/export_configuration_module.h"
@@ -191,6 +192,8 @@ void ClientApplication::OnStartLoginCompleted() {
   scada::client scada_client{
       scada::GetServices(master_data_services_->data_services())};
 
+  core_module_ = std::make_unique<CoreModule>();
+
   event_fetcher_ =
       EventFetcherBuilder{.executor_ = executor_,
                           .logger_ = logger_,
@@ -278,10 +281,11 @@ void ClientApplication::OnStartLoginCompleted() {
   profile_->Load(*event_fetcher_);
   profile_loaded_ = true;
 
-  favorites_module_ = std::make_unique<FavoritesModule>();
+  favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
+      .profile_ = *profile_, .main_commands_ = core_module_->main_commands()});
 
-  portfolio_module_ =
-      std::make_unique<PortfolioModule>(PortfolioModuleContext{*node_service_, *profile_});
+  portfolio_module_ = std::make_unique<PortfolioModule>(
+      PortfolioModuleContext{*node_service_, *profile_});
 
   create_tree_ = std::make_unique<CreateTree>();
 
@@ -310,14 +314,16 @@ void ClientApplication::OnStartLoginCompleted() {
           .open_file_command_ = filesystem_component_->file_command(),
           .progress_host_ = *progress_host_,
           .property_service_ = *property_service_,
-          .create_tree_ = *create_tree_});
+          .create_tree_ = *create_tree_,
+          .main_commands_ = core_module_->main_commands(),
+          .selection_commands_ = core_module_->selection_commands()});
 
 #if !defined(UI_WT)
   singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
       .controller_registry_ = *controller_registry_,
       .blinker_manager_ = *blinker_manager_,
       .file_registry_ = filesystem_component_->file_registry(),
-      .main_commands_ = main_window_module_->main_commands(),
+      .main_commands_ = core_module_->main_commands(),
       .profile_ = *profile_}));
 
   singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
@@ -332,14 +338,14 @@ void ClientApplication::OnStartLoginCompleted() {
       ExportConfigurationModuleContext{
           .node_service_ = *node_service_,
           .task_manager_ = *task_manager_,
-          .main_commands_ = main_window_module_->main_commands()}));
+          .main_commands_ = core_module_->main_commands()}));
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host_));
 
   // TODO: Move selection command registry out of `MainWindowModule`.
   filesystem_component_->set_selection_commands(
-      &main_window_module_->selection_commands());
+      &core_module_->selection_commands());
 
   filesystem_component_->StartUp();
 }

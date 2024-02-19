@@ -22,6 +22,7 @@ class ActionManager;
 class BlinkerManager;
 class ConnectionStateReporter;
 class ControllerRegistry;
+class CoreModule;
 class CreateTree;
 class EventFetcher;
 class Executor;
@@ -73,6 +74,8 @@ class ClientApplication : private ClientApplicationContext {
   void OnStartLoginCompleted();
 
   void Quit();
+
+  std::unique_ptr<CoreModule> core_module_;
 
   std::shared_ptr<Logger> logger_;
   std::unique_ptr<MetricService> metric_service_;
