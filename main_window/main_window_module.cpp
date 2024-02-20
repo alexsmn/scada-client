@@ -89,11 +89,20 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
              ViewManager& view_manager, CommandHandler& main_commands,
              aui::MenuModel& context_menu_model) {
         return std::make_unique<MainMenuModel>(MainMenuContext{
-            executor_, *main_window_manager_, main_window, *action_manager_,
-            favourites_, file_cache_,
-            master_data_services_.HasPrivilege(scada::Privilege::Configure),
-            profile_, view_manager, main_commands, dialog_service,
-            context_menu_model});
+            .executor_ = executor_,
+            .main_window_manager_ = *main_window_manager_,
+            .main_window_ = main_window,
+            .action_manager_ = *action_manager_,
+            .favourites_ = favourites_,
+            .file_cache_ = file_cache_,
+            .admin_ =
+                master_data_services_.HasPrivilege(scada::Privilege::Configure),
+            .profile_ = profile_,
+            .view_manager_ = view_manager,
+            .command_handler_ = main_commands,
+            .dialog_service_ = dialog_service,
+            .context_menu_model_ = context_menu_model,
+            .commands_ = main_commands_});
       };
 
   auto context_menu_factory = [this](MainWindow& main_window,

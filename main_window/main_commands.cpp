@@ -151,7 +151,7 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     return this;
   }
 
-  if (const auto* command = command_registry_.FindCommand(command_id)) {
+  if (const auto* command = main_commands_.FindCommand(command_id)) {
     return this;
   }
 
@@ -179,7 +179,7 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
       return session_service_.IsConnected();
   }
 
-  if (auto* command = command_registry_.FindCommand(command_id)) {
+  if (auto* command = main_commands_.FindCommand(command_id)) {
     return !command->enabled_handler ||
            command->enabled_handler(command_context_);
   }
@@ -203,7 +203,7 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
   if (bool Profile::*option = GetOption(command_id))
     return profile_.*option;
 
-  if (const auto* command = command_registry_.FindCommand(command_id)) {
+  if (const auto* command = main_commands_.FindCommand(command_id)) {
     return command->checked_handler &&
            command->checked_handler(command_context_);
   }
@@ -325,7 +325,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  if (const auto* command = command_registry_.FindCommand(command_id)) {
+  if (const auto* command = main_commands_.FindCommand(command_id)) {
     if (command->execute_handler) {
       command->execute_handler(command_context_);
     }

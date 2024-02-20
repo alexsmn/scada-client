@@ -34,7 +34,7 @@ struct MainMenuContext {
   CommandHandler& command_handler_;
   DialogService& dialog_service_;
   aui::MenuModel& context_menu_model_;
-  BasicCommandRegistry<MainCommandContext> commands_;
+  BasicCommandRegistry<MainCommandContext>& commands_;
 };
 
 class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {

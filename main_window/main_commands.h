@@ -39,7 +39,7 @@ struct MainCommandsContext {
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
   Debugger& debugger_;
-  BasicCommandRegistry<MainCommandContext>& command_registry_;
+  const BasicCommandRegistry<MainCommandContext>& main_commands_;
 };
 
 class MainCommands : private MainCommandsContext, public CommandHandler {

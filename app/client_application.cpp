@@ -291,6 +291,31 @@ void ClientApplication::OnStartLoginCompleted() {
 
   property_service_ = std::make_unique<PropertyService>();
 
+#if !defined(UI_WT)
+  singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
+      .controller_registry_ = *controller_registry_,
+      .blinker_manager_ = *blinker_manager_,
+      .file_registry_ = filesystem_component_->file_registry(),
+      .main_commands_ = core_module_->main_commands(),
+      .profile_ = *profile_}));
+
+  singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
+      .executor_ = executor_,
+      .timed_data_service_ = *timed_data_service_,
+      .controller_registry_ = *controller_registry_,
+      .write_service_ = *write_service_,
+      .file_registry_ = filesystem_component_->file_registry()}));
+#endif
+
+  singletons_.emplace(std::make_shared<ExportConfigurationModule>(
+      ExportConfigurationModuleContext{
+          .node_service_ = *node_service_,
+          .task_manager_ = *task_manager_,
+          .main_commands_ = core_module_->main_commands()}));
+
+  singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
+      executor_, *node_service_, *progress_host_));
+
   main_window_module_ =
       std::make_unique<MainWindowModule>(MainWindowModuleContext{
           .executor_ = executor_,
@@ -317,31 +342,6 @@ void ClientApplication::OnStartLoginCompleted() {
           .create_tree_ = *create_tree_,
           .main_commands_ = core_module_->main_commands(),
           .selection_commands_ = core_module_->selection_commands()});
-
-#if !defined(UI_WT)
-  singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
-      .controller_registry_ = *controller_registry_,
-      .blinker_manager_ = *blinker_manager_,
-      .file_registry_ = filesystem_component_->file_registry(),
-      .main_commands_ = core_module_->main_commands(),
-      .profile_ = *profile_}));
-
-  singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
-      .executor_ = executor_,
-      .timed_data_service_ = *timed_data_service_,
-      .controller_registry_ = *controller_registry_,
-      .write_service_ = *write_service_,
-      .file_registry_ = filesystem_component_->file_registry()}));
-#endif
-
-  singletons_.emplace(std::make_shared<ExportConfigurationModule>(
-      ExportConfigurationModuleContext{
-          .node_service_ = *node_service_,
-          .task_manager_ = *task_manager_,
-          .main_commands_ = core_module_->main_commands()}));
-
-  singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
-      executor_, *node_service_, *progress_host_));
 
   // TODO: Move selection command registry out of `MainWindowModule`.
   filesystem_component_->set_selection_commands(

@@ -5,13 +5,13 @@
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
-#include "favorites/favourites.h"
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
 #include "controller/window_info.h"
+#include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/main_window.h"
@@ -273,7 +273,7 @@ bool StyleMenuModel::IsItemCheckedAt(int index) const {
 // MainMenuModel
 
 MainMenuModel::MainMenuModel(const MainMenuContext& context)
-    : MainMenuContext{std::move(context)},
+    : MainMenuContext{context},
       aui::SimpleMenuModel{this},
       display_menu_model_{context},
       table_favourites_{base::make_span(kTableWindowInfos), context},
@@ -429,6 +429,7 @@ bool MainMenuModel::IsCommandIdEnabled(int command_id) const {
 }
 
 void MainMenuModel::ExecuteCommand(int command_id) {
-  if (auto* handler = command_handler_.GetCommandHandler(command_id))
+  if (auto* handler = command_handler_.GetCommandHandler(command_id)) {
     handler->ExecuteCommand(command_id);
+  }
 }

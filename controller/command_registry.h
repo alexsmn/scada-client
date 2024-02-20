@@ -44,8 +44,8 @@ class BasicCommand {
     return *this;
   }
 
-  BasicCommand& set_menu_group(MenuGroup group) {
-    this->menu_group = group;
+  BasicCommand& set_menu_group(MenuGroup menu_group) {
+    this->menu_group = menu_group;
     return *this;
   }
 
@@ -69,7 +69,7 @@ class BasicCommand {
     return *this;
   }
 
-  const unsigned command_id = 0;
+  unsigned command_id = 0;
 
   std::u16string title;
   std::optional<MenuGroup> menu_group;
@@ -86,6 +86,11 @@ using Command = BasicCommand<void>;
 template <typename C>
 class BasicCommandRegistry {
  public:
+  BasicCommandRegistry() = default;
+
+  BasicCommandRegistry(const BasicCommandRegistry&) = delete;
+  BasicCommandRegistry& operator=(const BasicCommandRegistry&) = delete;
+
   BasicCommand<C>& AddCommand(BasicCommand<C> command);
 
   BasicCommand<C>* FindCommand(unsigned command_id);
@@ -101,6 +106,11 @@ class BasicCommandRegistry {
 class CommandRegistry : public CommandHandler,
                         public BasicCommandRegistry<void> {
  public:
+  CommandRegistry() = default;
+
+  CommandRegistry(const CommandRegistry&) = delete;
+  CommandRegistry& operator=(const CommandRegistry&) = delete;
+
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandEnabled(unsigned command_id) const override;
@@ -109,15 +119,19 @@ class CommandRegistry : public CommandHandler,
 };
 
 inline unsigned CreateUniqueCommandId() {
-  static unsigned next_command_id = 0xFFFF;
+  static unsigned next_command_id = 10000;
   return next_command_id++;
 }
 
 template <typename C>
 inline BasicCommand<C>& BasicCommandRegistry<C>::AddCommand(
     BasicCommand<C> command) {
-  auto command_id =
-      command.command_id ? command.command_id : CreateUniqueCommandId();
+  if (command.command_id == 0) {
+    command.command_id = CreateUniqueCommandId();
+  }
+
+  auto command_id = command.command_id;
+  assert(!command_map_.contains(command_id));
   return command_map_.try_emplace(command_id, std::move(command)).first->second;
 }
 

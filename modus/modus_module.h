@@ -15,7 +15,7 @@ struct ModusModuleContext {
   ControllerRegistry& controller_registry_;
   BlinkerManager& blinker_manager_;
   FileRegistry& file_registry_;
-  BasicCommandRegistry<MainCommandContext> main_commands_;
+  BasicCommandRegistry<MainCommandContext>& main_commands_;
   Profile& profile_;
 };
 
