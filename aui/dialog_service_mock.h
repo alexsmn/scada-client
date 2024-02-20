@@ -6,6 +6,14 @@
 
 class MockDialogService : public DialogService {
  public:
+  MockDialogService() {
+    using namespace testing;
+
+    ON_CALL(*this, SelectOpenFile(/*title=*/_))
+        .WillByDefault(Return(
+            make_rejected_promise<std::filesystem::path>(std::exception{})));
+  }
+
   MOCK_METHOD(UiView*, GetDialogOwningWindow, (), (const override));
 
   MOCK_METHOD(UiView*, GetParentWidget, (), (const override));

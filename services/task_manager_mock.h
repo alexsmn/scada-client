@@ -6,6 +6,17 @@
 
 class MockTaskManager : public TaskManager {
  public:
+  MockTaskManager() {
+    using namespace testing;
+
+    ON_CALL(*this, PostInsertTask(/*requested_id=*/_, /*parent_id=*/_,
+                                  /*type_id=*/_, /*attributes=*/_,
+                                  /*properties=*/_,
+                                  /*references=*/_))
+        .WillByDefault(
+            Return(make_rejected_promise<scada::NodeId>(std::exception{})));
+  }
+
   MOCK_METHOD(promise<>,
               PostTask,
               (std::u16string_view description, const TaskLauncher& launcher),

@@ -3,6 +3,7 @@
 #include "base/observer_list.h"
 #include "controller/contents_observer.h"
 #include "main_window/main_window_context.h"
+#include "main_window/main_window_interface.h"
 #include "main_window/view_manager_delegate.h"
 
 namespace aui {
@@ -21,7 +22,8 @@ struct WindowInfo;
 
 class MainWindow : protected MainWindowContext,
                    protected ViewManagerDelegate,
-                   private ContentsObserver {
+                   private ContentsObserver,
+                   public MainWindowInterface {
  public:
   MainWindow(MainWindowContext&& context, DialogService& dialog_service);
   virtual ~MainWindow();
@@ -54,8 +56,8 @@ class MainWindow : protected MainWindowContext,
   void OpenPage(const Page& page);
   void SavePage();
   void SetPageTitle(const std::u16string& title);
-  OpenedView* GetActiveView();
-  OpenedView* GetActiveDataView();
+  virtual OpenedView* GetActiveView() override;
+  virtual OpenedView* GetActiveDataView() override;
   scada::status_promise<OpenedView*> OpenView(
       const WindowDefinition& window_definition,
       bool make_active);

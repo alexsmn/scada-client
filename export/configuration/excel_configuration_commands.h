@@ -8,29 +8,32 @@ class NodeService;
 class DialogService;
 class TaskManager;
 struct ExportData;
+struct ImportData;
 
 class ExportConfigurationCommand {
  public:
-  promise<> Execute() const;
+  promise<void> Execute(DialogService& dialog_service) const;
 
   NodeService& node_service_;
-  DialogService& dialog_service_;
 
  private:
   promise<ExportData> CollectExportData() const;
+
   void SaveExportData(const ExportData& export_data,
                       std::ostream& stream) const;
-  promise<void> ExportTo(const std::filesystem::path& path) const;
+
+  promise<void> ExportTo(const std::filesystem::path& path,
+                         DialogService& dialog_service) const;
 };
 
 class ImportConfigurationCommand {
  public:
-  promise<void> Execute() const;
+  promise<void> Execute(DialogService& dialog_service) const;
 
   NodeService& node_service_;
   TaskManager& task_manager_;
-  DialogService& dialog_service_;
 
  private:
-  promise<void> ImportFrom(const std::filesystem::path& path) const;
+  promise<void> ImportFrom(const std::filesystem::path& path,
+                           DialogService& dialog_service) const;
 };

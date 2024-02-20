@@ -1,9 +1,9 @@
 #pragma once
 
 class DialogService;
-class MainWindow;
+class MainWindowInterface;
 
 struct MainCommandContext {
-  MainWindow& main_window;
+  MainWindowInterface& main_window;
   DialogService& dialog_service;
 };

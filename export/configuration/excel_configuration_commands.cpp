@@ -29,29 +29,6 @@ const char kDefaultFileName[] = "configuration.csv";
 
 }  // namespace
 
-void ShowImportReport(const ImportData& import_data,
-                      NodeService& node_service) {
-  std::basic_ofstream<char16_t> report("report.txt");
-  PrintImportReport(report, import_data, node_service);
-
-  base::FilePath system_path;
-  base::PathService::Get(base::DIR_WINDOWS, &system_path);
-
-  auto command_line = L"\"" + system_path.AsEndingWithSeparator().value() +
-                      L"notepad.exe\" report.txt";
-
-  STARTUPINFO startup_info = {sizeof(startup_info)};
-  PROCESS_INFORMATION process_info = {};
-  if (!CreateProcess(nullptr, const_cast<LPTSTR>(command_line.c_str()), nullptr,
-                     nullptr, FALSE, 0, nullptr, nullptr, &startup_info,
-                     &process_info)) {
-    throw ResourceError{u"Не удалось открыть блокнот"};
-  }
-  ::WaitForSingleObject(process_info.hProcess, INFINITE);
-  CloseHandle(process_info.hProcess);
-  CloseHandle(process_info.hThread);
-}
-
 promise<ExportData> ExportConfigurationCommand::CollectExportData() const {
   return ExportDataBuilder{node_service_}.Build();
 }
@@ -63,7 +40,8 @@ void ExportConfigurationCommand::SaveExportData(const ExportData& export_data,
 }
 
 promise<void> ExportConfigurationCommand::ExportTo(
-    const std::filesystem::path& path) const {
+    const std::filesystem::path& path,
+    DialogService& dialog_service) const {
   std::ofstream stream{path};
   if (!stream) {
     throw ResourceError{u"Не удалось открыть файл."};
@@ -74,8 +52,8 @@ promise<void> ExportConfigurationCommand::ExportTo(
                 const ExportData& export_data) {
         SaveExportData(export_data, *stream);
       })
-      .then([this] {
-        return dialog_service_.RunMessageBox(
+      .then([&dialog_service] {
+        return dialog_service.RunMessageBox(
             u"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
             MessageBoxMode::QuestionYesNo);
       })
@@ -86,17 +64,20 @@ promise<void> ExportConfigurationCommand::ExportTo(
       });
 }
 
-promise<> ExportConfigurationCommand::Execute() const {
-  auto shared_copy = std::make_shared<ExportConfigurationCommand>(*this);
-  return dialog_service_
+promise<void> ExportConfigurationCommand::Execute(
+    DialogService& dialog_service) const {
+  return dialog_service
       .SelectSaveFile({.title = kExportTitle, .default_path = kDefaultFileName})
       .then(CatchResourceError(
-          dialog_service_, kExportTitle,
-          std::bind_front(&ExportConfigurationCommand::ExportTo, shared_copy)));
+          dialog_service, kExportTitle,
+          [this, &dialog_service](const std::filesystem::path& path) {
+            return ExportTo(path, dialog_service);
+          }));
 }
 
 promise<void> ImportConfigurationCommand::ImportFrom(
-    const std::filesystem::path& path) const {
+    const std::filesystem::path& path,
+    DialogService& dialog_service) const {
   std::ifstream stream{path};
   if (!stream) {
     throw ResourceError{u"Не удалось открыть файл."};
@@ -116,13 +97,13 @@ promise<void> ImportConfigurationCommand::ImportFrom(
   }
 
   if (import_data.IsEmpty()) {
-    return ToVoidPromise(dialog_service_.RunMessageBox(
+    return ToVoidPromise(dialog_service.RunMessageBox(
         u"Изменений не найдено.", kImportTitle, MessageBoxMode::Info));
   }
 
   ShowImportReport(import_data, node_service_);
 
-  return dialog_service_
+  return dialog_service
       .RunMessageBox(u"Применить изменения?", kImportTitle,
                      MessageBoxMode::QuestionYesNoDefaultNo)
       .then([import_data = std::move(import_data),
@@ -133,11 +114,12 @@ promise<void> ImportConfigurationCommand::ImportFrom(
       });
 }
 
-promise<> ImportConfigurationCommand::Execute() const {
-  auto shared_copy = std::make_shared<ImportConfigurationCommand>(*this);
-  return dialog_service_.SelectOpenFile(kImportTitle)
+promise<> ImportConfigurationCommand::Execute(
+    DialogService& dialog_service) const {
+  return dialog_service.SelectOpenFile(kImportTitle)
       .then(CatchResourceError(
-          dialog_service_, kImportTitle,
-          std::bind_front(&ImportConfigurationCommand::ImportFrom,
-                          shared_copy)));
+          dialog_service, kImportTitle,
+          [this, &dialog_service](const std::filesystem::path& path) {
+            return ImportFrom(path, dialog_service);
+          }));
 }

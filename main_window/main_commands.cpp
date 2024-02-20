@@ -64,17 +64,17 @@ void OpenPublicFolder() {
 }  // namespace
 
 MainCommands::MainCommands(MainCommandsContext&& context)
-    : MainCommandsContext{std::move(context)} {}
+    : MainCommandsContext{std::move(context)},
+      command_context_{main_window_, dialog_service_} {}
 
 MainCommands::~MainCommands() {}
 
 CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
   auto* active_view = main_window_.GetActiveView();
   if (active_view) {
-    CommandHandler* handler =
-        active_view->commands->GetCommandHandler(command_id);
-    if (handler)
+    if (auto* handler = active_view->commands->GetCommandHandler(command_id)) {
       return handler;
+    }
   }
 
   switch (command_id) {
@@ -138,8 +138,9 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
   }
 
   if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
-    if (!win_info->createable())
+    if (!win_info->createable()) {
       return nullptr;
+    }
     if (win_info->requires_admin_rights() &&
         !session_service_.HasPrivilege(scada::Privilege::Configure)) {
       return nullptr;

@@ -57,5 +57,5 @@ class MainCommands : private MainCommandsContext, public CommandHandler {
   promise<> ShowRenameWindowDialog();
   promise<> RenameCurrentPage();
 
-  MainCommandContext command_context_{main_window_, dialog_service_};
+  MainCommandContext command_context_;
 };

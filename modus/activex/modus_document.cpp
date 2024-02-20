@@ -34,9 +34,6 @@ ModusDocument::ModusDocument(ModusDocumentContext&& context,
   sde_form_->put_ToolbarVisible(VARIANT_FALSE);
   // sde_form_->put_PagesVisible(SDECore::txPagesHidden);
   sde_form_->put_AxBorderStyle(htsde2::afbNone);
-
-  connections_.emplace_back(profile_.AddChangeObserver(
-      [this] { EnableTopology(profile_.modus.topology); }));
 }
 
 ModusDocument::~ModusDocument() {
@@ -103,6 +100,9 @@ void ModusDocument::InitFromState(std::string_view state) {
 
 void ModusDocument::PostInit() {
   EnableTopology(profile_.modus.topology);
+
+  connections_.emplace_back(profile_.AddChangeObserver(
+      [this] { EnableTopology(profile_.modus.topology); }));
 }
 
 void ModusDocument::EnableTopology(bool enable) {
@@ -111,12 +111,17 @@ void ModusDocument::EnableTopology(bool enable) {
     sde_document_->get_Pages(pages.ReleaseAndGetAddressOf());
 
     if (pages) {
-      Microsoft::WRL::ComPtr<SDECore::ISDEPage50> page;
-      pages->get_Item(base::win::ScopedVariant{0},
-                      page.ReleaseAndGetAddressOf());
+      long page_count = 0;
+      pages->get_Count(&page_count);
 
-      if (page) {
-        page->put_UseTopology(AsVariantBool(enable));
+      for (long i = 0; i < page_count; ++i) {
+        Microsoft::WRL::ComPtr<SDECore::ISDEPage50> page;
+        pages->get_Item(base::win::ScopedVariant{i},
+                        page.ReleaseAndGetAddressOf());
+
+        if (page) {
+          page->put_UseTopology(AsVariantBool(enable));
+        }
       }
     }
   }

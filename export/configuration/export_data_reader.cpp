@@ -118,21 +118,26 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
     }
 
   } else {
-    if (auto property_declaration = type_definition[prop.node_id]) {
-      scada::Variant new_value;
-      auto built_in_data_type_id =
-          GetBuiltInDataTypeId(property_declaration.data_type());
-      if (!StringToValue(string_value, built_in_data_type_id, new_value)) {
-        auto data_type = node_service_.GetNode(built_in_data_type_id);
-        auto data_type_name =
-            data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
-        throw ResourceError{base::StringPrintf(
-            u"Невозможно распознать значение '%ls' как '%ls'",
-            string_value.c_str(), data_type_name.c_str())};
-      }
-
-      return ExportData::PropertyValue{prop.node_id, std::move(new_value)};
+    auto property_declaration = type_definition[prop.node_id];
+    if (!property_declaration) {
+      throw ResourceError{base::StringPrintf(
+          u"Свойство %ls не найдено",
+          base::ASCIIToUTF16(NodeIdToScadaString(prop.node_id)).c_str())};
     }
+
+    scada::Variant new_value;
+    auto built_in_data_type_id =
+        GetBuiltInDataTypeId(property_declaration.data_type());
+    if (!StringToValue(string_value, built_in_data_type_id, new_value)) {
+      auto data_type = node_service_.GetNode(built_in_data_type_id);
+      auto data_type_name =
+          data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
+      throw ResourceError{
+          base::StringPrintf(u"Невозможно распознать значение '%ls' как '%ls'",
+                             string_value.c_str(), data_type_name.c_str())};
+    }
+
+    return ExportData::PropertyValue{prop.node_id, std::move(new_value)};
   }
 
   return std::nullopt;
