@@ -10,45 +10,36 @@
 #include "node_service/node_util.h"
 
 #include <algorithm>
-#include <set>
+#include <unordered_set>
 
-namespace {
+class ImportDataBuilder {
+ public:
+  explicit ImportDataBuilder(NodeService& node_service)
+      : node_service_{node_service} {}
 
-void ScanDeleteNodes(const NodeRef& parent_node,
-                     const scada::NodeId& type_id,
-                     const std::set<scada::NodeId>& exclude_ids,
-                     std::vector<scada::NodeId>& results) {
-  for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    if (IsInstanceOf(node, type_id) && !exclude_ids.contains(node.node_id())) {
-      results.emplace_back(node.node_id());
+  ImportData Run(const ExportData& export_data) && {
+    for (const auto& export_node : export_data.nodes) {
+      ProcessNode(export_node);
     }
-    ScanDeleteNodes(node, type_id, exclude_ids, results);
+
+    ScanDeleteNodes(node_service_.GetNode(data_items::id::DataItems),
+                    data_items::id::DataItemType);
+
+    return std::move(import_data);
   }
-}
 
-}  // namespace
-
-ImportData BuildImportData(NodeService& node_service,
-                           const ExportData& export_data) {
-  ImportData import_data;
-
-  std::set<scada::NodeId> listed_nodes;
-
-  for (const auto& export_node : export_data.nodes) {
-    auto node = node_service.GetNode(export_node.node_id);
-    if (node)
+ private:
+  void ProcessNode(const ExportData::Node& export_node) {
+    auto node = node_service_.GetNode(export_node.node_id);
+    assert(node.fetched());
+    if (node) {
       listed_nodes.emplace(node.node_id());
-
-    auto type_definition = node_service.GetNode(export_node.type_id);
-    if (!type_definition) {
-      throw ResourceError{base::StringPrintf(
-          u"“ип %ls не найден",
-          base::UTF8ToUTF16(NodeIdToScadaString(export_node.type_id)).c_str())};
     }
 
     scada::NodeAttributes attrs;
-    if (!node || node.display_name() != export_node.display_name)
-      attrs.set_display_name(std::move(export_node.display_name));
+    if (!node || node.display_name() != export_node.display_name) {
+      attrs.set_display_name(export_node.display_name);
+    }
 
     // Props & refs.
     scada::NodeProperties props;
@@ -64,8 +55,9 @@ ImportData BuildImportData(NodeService& node_service,
       } else {
         if (node) {
           auto value = node[export_value.prop_decl_id].value();
-          if (value == export_value.value)
+          if (value == export_value.value) {
             continue;
+          }
         }
 
         props.emplace_back(export_value.prop_decl_id, export_value.value);
@@ -75,20 +67,37 @@ ImportData BuildImportData(NodeService& node_service,
     if (node) {
       if (!attrs.empty() || !props.empty() || !refs.empty()) {
         import_data.modify_nodes.emplace_back(
-            export_node.node_id, type_definition.node_id(),
-            export_node.parent_id, std::move(attrs), std::move(props),
-            std::move(refs));
+            export_node.node_id, export_node.type_id, export_node.parent_id,
+            std::move(attrs), std::move(props), std::move(refs));
       }
     } else {
       import_data.create_nodes.emplace_back(
-          export_node.node_id, type_definition.node_id(), export_node.parent_id,
+          export_node.node_id, export_node.type_id, export_node.parent_id,
           std::move(attrs), std::move(props), std::move(refs));
     }
   }
 
-  ScanDeleteNodes(node_service.GetNode(data_items::id::DataItems),
-                  data_items::id::DataItemType, listed_nodes,
-                  import_data.delete_nodes);
+  void ScanDeleteNodes(const NodeRef& parent_node,
+                       const scada::NodeId& type_id) {
+    for (const auto& node : parent_node.targets(scada::id::Organizes)) {
+      if (IsInstanceOf(node, type_id) &&
+          !listed_nodes.contains(node.node_id())) {
+        import_data.delete_nodes.emplace_back(node.node_id());
+      }
+      ScanDeleteNodes(node, type_id);
+    }
+  }
 
-  return import_data;
+  // The node service is used to compare the new configuration snapshot with the
+  // existing nodes.
+  NodeService& node_service_;
+
+  std::unordered_set<scada::NodeId> listed_nodes;
+
+  ImportData import_data;
+};
+
+ImportData BuildImportData(NodeService& node_service,
+                           const ExportData& export_data) {
+  return ImportDataBuilder{node_service}.Run(export_data);
 }

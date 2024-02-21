@@ -33,6 +33,8 @@ scada::StatusCodeOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
     const NodeRef& node,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
+  assert(node.fetched());
+
   std::vector<scada::WriteValue> inputs;
   inputs.reserve(2 + properties.size());
 
@@ -166,6 +168,8 @@ scada::status_promise<void> TaskManagerImpl::PostUpdateTask(
         return FetchNode(node)
             .then([&attribute_service = attribute_service_, node, attributes,
                    properties]() mutable {
+              assert(node.fetched());
+
               auto inputs = PrepareUpdateInputs(node, std::move(attributes),
                                                 std::move(properties));
               if (!inputs.ok()) {

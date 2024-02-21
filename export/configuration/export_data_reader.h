@@ -37,6 +37,7 @@ class ExportDataReader {
 
   void SkipCell() { ReadCell(); }
 
+  // The node service is used to read the type system.
   NodeService& node_service_;
   CsvReader& reader_;
 
