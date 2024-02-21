@@ -5,6 +5,7 @@
 #include "clipboard/node_serialization.h"
 #include "common/node_state.h"
 #include "node_service/node_promises.h"
+#include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "remote/protocol_utils.h"
 #include "services/create_tree.h"

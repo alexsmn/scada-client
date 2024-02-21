@@ -5,7 +5,7 @@
 
 struct ExportData {
   struct Property {
-    // For references reprresents the reference type ID.
+    // For references represents the reference type ID.
     scada::NodeId prop_decl_id;
     scada::LocalizedText display_name;
     bool reference = false;

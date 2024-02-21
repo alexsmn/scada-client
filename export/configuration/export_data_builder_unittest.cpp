@@ -73,7 +73,7 @@ TEST(ExportDataBuilder, Test) {
                   /*prop_decl_id=*/data_items::id::AnalogItemType_DisplayFormat,
                   /*value=*/"#####",
                   /*target_id=*/_, /*target_display_name=*/_,
-                  /*reference=*/_))),
+                  /*reference=*/false))),
           FieldsAre(
               /*node_id=*/scada::NodeId{22, 2},
               /*parent_id=*/scada::NodeId{},
@@ -85,7 +85,7 @@ TEST(ExportDataBuilder, Test) {
                   /*prop_decl_id=*/data_items::id::DiscreteItemType_Inversion,
                   /*value=*/true, /*target_id=*/_,
                   /*target_display_name=*/_,
-                  /*reference=*/_))),
+                  /*reference=*/false))),
           FieldsAre(
               /*node_id=*/scada::NodeId{33, 3},
               /*parent_id=*/scada::NodeId{},
@@ -97,7 +97,7 @@ TEST(ExportDataBuilder, Test) {
                   /*prop_decl_id=*/data_items::id::AnalogItemType_DisplayFormat,
                   /*value=*/"000",
                   /*target_id=*/_, /*target_display_name=*/_,
-                  /*reference=*/_)))));
+                  /*reference=*/false)))));
 
   EXPECT_THAT(export_data.props,
               Contains(FieldsAre(

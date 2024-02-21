@@ -4,11 +4,8 @@
 
 #include "aui/dialog_service.h"
 #include "aui/resource_error.h"
-#include "base/base_paths.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
-#include "base/files/file_path.h"
-#include "base/path_service.h"
 #include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
 #include "export/configuration/export_data_builder.h"
@@ -17,6 +14,8 @@
 #include "export/configuration/import_data_builder.h"
 #include "export/configuration/import_data_report.h"
 #include "export/configuration/importer.h"
+#include "node_service/node_promises.h"
+#include "node_service/node_service.h"
 
 #include <algorithm>
 #include <fstream>
@@ -66,8 +65,11 @@ promise<void> ExportConfigurationCommand::ExportTo(
 
 promise<void> ExportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
-  return dialog_service
-      .SelectSaveFile({.title = kExportTitle, .default_path = kDefaultFileName})
+  return FetchTypeSystem(node_service_)
+      .then([&dialog_service] {
+        return dialog_service.SelectSaveFile(
+            {.title = kExportTitle, .default_path = kDefaultFileName});
+      })
       .then(CatchResourceError(
           dialog_service, kExportTitle,
           [this, &dialog_service](const std::filesystem::path& path) {
@@ -78,24 +80,9 @@ promise<void> ExportConfigurationCommand::Execute(
 promise<void> ImportConfigurationCommand::ImportFrom(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
-  std::ifstream stream{path};
-  if (!stream) {
-    throw ResourceError{u"Не удалось открыть файл."};
-  }
+  ExportData export_data = LoadExportData(path);
 
-  CsvReader reader{stream, kNodeIdTitle};
-  ImportData import_data;
-  try {
-    auto export_data = ExportDataReader{node_service_, reader}.Read();
-
-    import_data = BuildImportData(node_service_, export_data);
-
-  } catch (const ResourceError& e) {
-    throw ResourceError{base::StringPrintf(
-        u"Ошибка при импорте строки %d, столбца %d: %ls.", reader.row_index(),
-        reader.cell_index(), e.message().c_str())};
-  }
-
+  ImportData import_data = BuildImportData(node_service_, export_data);
   if (import_data.IsEmpty()) {
     return ToVoidPromise(dialog_service.RunMessageBox(
         u"Изменений не найдено.", kImportTitle, MessageBoxMode::Info));
@@ -114,9 +101,31 @@ promise<void> ImportConfigurationCommand::ImportFrom(
       });
 }
 
+ExportData ImportConfigurationCommand::LoadExportData(
+    const std::filesystem::path& path) const {
+  std::ifstream stream{path};
+  if (!stream) {
+    throw ResourceError{u"Не удалось открыть файл."};
+  }
+
+  CsvReader csv_reader{stream, kNodeIdTitle};
+  try {
+    ExportDataReader reader{node_service_, csv_reader};
+    return reader.Read();
+
+  } catch (const ResourceError& e) {
+    throw ResourceError{base::StringPrintf(
+        u"Ошибка при импорте строки %d, столбца %d: %ls.",
+        csv_reader.row_index(), csv_reader.cell_index(), e.message().c_str())};
+  }
+}
+
 promise<> ImportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
-  return dialog_service.SelectOpenFile(kImportTitle)
+  return FetchTypeSystem(node_service_)
+      .then([&dialog_service] {
+        return dialog_service.SelectOpenFile(kImportTitle);
+      })
       .then(CatchResourceError(
           dialog_service, kImportTitle,
           [this, &dialog_service](const std::filesystem::path& path) {

@@ -21,12 +21,12 @@ scada::NodeId ParseReferenceCell(std::u16string_view s) {
 }
 
 scada::NodeId GetBuiltInDataTypeId(const NodeRef& data_type) {
-  for (int i = scada::Variant::EMPTY + 1; i < scada::Variant::COUNT; ++i) {
+  for (int i = 0; i < scada::Variant::COUNT; ++i) {
     auto built_in_data_type_id =
         scada::ToNodeId(static_cast<scada::Variant::Type>(i));
-    assert(!built_in_data_type_id.is_null());
-    if (IsSubtypeOf(data_type, built_in_data_type_id))
+    if (IsSubtypeOf(data_type, built_in_data_type_id)) {
       return built_in_data_type_id;
+    }
   }
   return data_type.node_id();
 }
@@ -43,30 +43,39 @@ ExportData ExportDataReader::Read() {
     throw ResourceError{u"Нет строки заголовка"};
 
   // Skip Id, Parent, Type, Name.
-  for (int i = 0; i < 4; ++i)
-    ReadCell();
+  for (int i = 0; i < 4; ++i) {
+    SkipCell();
+  }
 
   std::vector<ExportData::Property> props;
-  while (auto cell = TryReadCell())
-    props.emplace_back(ReadProperty(*cell));
+  while (auto cell = TryReadCell()) {
+    props.emplace_back(ParseProperty(*cell));
+  }
 
   std::vector<ExportData::Node> nodes;
-  while (reader_.NextRow())
+  while (reader_.NextRow()) {
     nodes.push_back(ReadNode(props));
+  }
 
   return {std::move(props), std::move(nodes)};
 }
 
-ExportData::Property ExportDataReader::ReadProperty(std::u16string_view cell) {
-  auto prop_type_id = ParseReferenceCell(cell);
-  if (prop_type_id.is_null())
+ExportData::Property ExportDataReader::ParseProperty(
+    std::u16string_view cell) const {
+  auto prop_decl_id = ParseReferenceCell(cell);
+  if (prop_decl_id.is_null()) {
     throw ResourceError{u"Неверный формат имени столбца"};
+  }
 
-  auto prop_decl = node_service_.GetNode(prop_type_id);
+  auto prop_decl = node_service_.GetNode(prop_decl_id);
+
+  // The type system must be prefeteched before import starts.
+  assert(prop_decl.fetched());
+
   bool reference = prop_decl.node_class() == scada::NodeClass::ReferenceType;
 
-  // TODO: Read display name.
-  return {std::move(prop_type_id), {}, reference};
+  // TODO: Read display name. It can be used on error reporting.
+  return {.prop_decl_id = std::move(prop_decl_id), .reference = reference};
 }
 
 ExportData::Node ExportDataReader::ReadNode(
@@ -76,20 +85,22 @@ ExportData::Node ExportDataReader::ReadNode(
 
   // Parent.
   auto parent_id = NodeIdFromScadaString(base::UTF16ToUTF8(ReadCell()));
-  if (parent_id.is_null())
+  if (parent_id.is_null()) {
     throw ResourceError{u"Группа не найдена"};
+  }
 
   // Type.
   auto type_definition = node_service_.GetNode(ParseReferenceCell(ReadCell()));
-  if (!type_definition)
+  if (!type_definition) {
     throw ResourceError{u"Тип не найден"};
+  }
 
   scada::LocalizedText display_name = ReadCell();
 
   // Props & refs.
   std::vector<ExportData::PropertyValue> prop_values;
   for (const auto& prop : props) {
-    if (auto prop_value = ReadPropertyValue(prop, type_definition)) {
+    if (auto prop_value = ReadProperty(prop.prop_decl_id)) {
       prop_values.emplace_back(std::move(*prop_value));
     }
   }
@@ -102,56 +113,66 @@ ExportData::Node ExportDataReader::ReadNode(
                           .property_values = std::move(prop_values)};
 }
 
-std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
-    const ExportData::Property& prop,
-    const NodeRef& type_definition) {
-  auto string_value = ReadCell();
+std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
+    const scada::NodeId& prop_decl_id) {
+  auto prop_decl = node_service_.GetNode(prop_decl_id);
+  if (!prop_decl) {
+    throw ResourceError{base::StringPrintf(
+        u"Свойство %ls не найдено",
+        base::ASCIIToUTF16(NodeIdToScadaString(prop_decl_id)).c_str())};
+  }
 
-  if (string_value.empty()) {
+  // The type system must be prefeteched before import starts.
+  assert(prop_decl.fetched());
+
+  auto string_value = ReadCell();
+  if (!string_value.empty()) {
     return std::nullopt;
   }
 
-  if (prop.reference) {
-    if (type_definition.target(prop.prop_decl_id)) {
-      auto target_id = ParseReferenceCell(string_value);
-      if (target_id.is_null()) {
-        return std::nullopt;
-      }
+  return prop_decl.node_class() == scada::NodeClass::ReferenceType
+             ? ParseReferenceValue(prop_decl, string_value)
+             : ParsePropertyValue(prop_decl, string_value);
+}
 
-      // TODO: Read display name.
-      return ExportData::PropertyValue{.prop_decl_id = prop.prop_decl_id,
-                                       .target_id = std::move(target_id),
-                                       .reference = true};
-    }
+std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
+    const NodeRef& prop_decl,
+    std::u16string_view string_value) const {
+  assert(prop_decl.fetched());
 
-  } else {
-    auto property_declaration = type_definition[prop.prop_decl_id];
-    if (!property_declaration) {
-      throw ResourceError{base::StringPrintf(
-          u"Свойство %ls не найдено",
-          base::ASCIIToUTF16(NodeIdToScadaString(prop.prop_decl_id)).c_str())};
-    }
-
-    scada::Variant new_value;
-    auto built_in_data_type_id =
-        GetBuiltInDataTypeId(property_declaration.data_type());
-    if (!StringToValue(string_value, built_in_data_type_id, new_value)) {
-      auto data_type = node_service_.GetNode(built_in_data_type_id);
-      auto data_type_name =
-          data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
-      throw ResourceError{base::StringPrintf(
-          u"Невозможно преобразовать значение '%ls' как тип '%ls'",
-          string_value.c_str(), data_type_name.c_str())};
-    }
-
-    if (new_value.is_null()) {
-      return std::nullopt;
-    }
-
-    return ExportData::PropertyValue{prop.prop_decl_id, std::move(new_value)};
+  scada::Variant new_value;
+  auto built_in_data_type_id = GetBuiltInDataTypeId(prop_decl.data_type());
+  if (!StringToValue(string_value, built_in_data_type_id, new_value)) {
+    auto data_type = node_service_.GetNode(built_in_data_type_id);
+    auto data_type_name =
+        data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
+    throw ResourceError{base::StringPrintf(
+        u"Невозможно преобразовать значение '%ls' как тип '%ls'",
+        std::u16string{string_value}.c_str(), data_type_name.c_str())};
   }
 
-  return std::nullopt;
+  if (new_value.is_null()) {
+    return std::nullopt;
+  }
+
+  return ExportData::PropertyValue{prop_decl.node_id(), std::move(new_value)};
+}
+
+std::optional<ExportData::PropertyValue> ExportDataReader::ParseReferenceValue(
+    const NodeRef& ref_type,
+    std::u16string_view string_value) const {
+  assert(ref_type.fetched());
+  assert(ref_type.node_class() == scada::NodeClass::ReferenceType);
+
+  auto target_id = ParseReferenceCell(string_value);
+  if (target_id.is_null()) {
+    return std::nullopt;
+  }
+
+  // TODO: Read display name.
+  return ExportData::PropertyValue{.prop_decl_id = ref_type.node_id(),
+                                   .target_id = std::move(target_id),
+                                   .reference = true};
 }
 
 std::u16string& ExportDataReader::ReadCell() {

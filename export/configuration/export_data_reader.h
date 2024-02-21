@@ -16,17 +16,26 @@ class ExportDataReader {
   ExportData Read();
 
  private:
-  ExportData::Property ReadProperty(std::u16string_view cell);
-
   ExportData::Node ReadNode(const std::vector<ExportData::Property>& props);
 
-  std::optional<ExportData::PropertyValue> ReadPropertyValue(
-      const ExportData::Property& prop,
-      const NodeRef& type_definition);
+  std::optional<ExportData::PropertyValue> ReadProperty(
+      const scada::NodeId& prop_decl_id);
+
+  ExportData::Property ParseProperty(std::u16string_view cell) const;
+
+  std::optional<ExportData::PropertyValue> ParsePropertyValue(
+      const NodeRef& prop_decl,
+      std::u16string_view string_value) const;
+
+  std::optional<ExportData::PropertyValue> ParseReferenceValue(
+      const NodeRef& ref_type,
+      std::u16string_view string_value) const;
 
   std::u16string& ReadCell();
 
   std::u16string* TryReadCell();
+
+  void SkipCell() { ReadCell(); }
 
   NodeService& node_service_;
   CsvReader& reader_;
