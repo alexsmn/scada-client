@@ -52,8 +52,10 @@ void SetTextHelper(const PropertyContext& context,
     return;
 
   scada::Variant value;
-  if (!StringToValue(text, property.data_type().node_id(), value))
+  if (!StringToValue(text, ToBuiltInDataType(property.data_type().node_id()),
+                     value)) {
     return;
+  }
 
   context.task_manager_.PostUpdateTask(node.node_id(), {},
                                        {{prop_decl_id, std::move(value)}});

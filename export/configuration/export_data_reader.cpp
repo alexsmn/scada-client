@@ -20,15 +20,20 @@ scada::NodeId ParseReferenceCell(std::u16string_view s) {
   return NodeIdFromScadaString(base::UTF16ToUTF8(AsStringPiece(n)));
 }
 
-scada::NodeId GetBuiltInDataTypeId(const NodeRef& data_type) {
+scada::Variant::Type GetBuiltInDataType(const NodeRef& data_type) {
+  if (IsSubtypeOf(data_type, scada::id::Enumeration)) {
+    return scada::Variant::INT32;
+  }
+
   for (int i = 0; i < scada::Variant::COUNT; ++i) {
     auto built_in_data_type_id =
         scada::ToNodeId(static_cast<scada::Variant::Type>(i));
     if (IsSubtypeOf(data_type, built_in_data_type_id)) {
-      return built_in_data_type_id;
+      return static_cast<scada::Variant::Type>(i);
     }
   }
-  return data_type.node_id();
+
+  throw ResourceError{u"Неизвестный тип данных"};
 }
 
 }  // namespace
@@ -126,7 +131,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
   assert(prop_decl.fetched());
 
   auto string_value = ReadCell();
-  if (!string_value.empty()) {
+  if (string_value.empty()) {
     return std::nullopt;
   }
 
@@ -141,14 +146,11 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
   assert(prop_decl.fetched());
 
   scada::Variant new_value;
-  auto built_in_data_type_id = GetBuiltInDataTypeId(prop_decl.data_type());
-  if (!StringToValue(string_value, built_in_data_type_id, new_value)) {
-    auto data_type = node_service_.GetNode(built_in_data_type_id);
-    auto data_type_name =
-        data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
+  auto data_type = GetBuiltInDataType(prop_decl.data_type());
+  if (!StringToValue(string_value, data_type, new_value)) {
     throw ResourceError{base::StringPrintf(
         u"Невозможно преобразовать значение '%ls' как тип '%ls'",
-        std::u16string{string_value}.c_str(), data_type_name.c_str())};
+        std::u16string{string_value}.c_str(), ToString(data_type).c_str())};
   }
 
   if (new_value.is_null()) {
