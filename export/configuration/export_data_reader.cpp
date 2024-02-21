@@ -89,19 +89,17 @@ ExportData::Node ExportDataReader::ReadNode(
   // Props & refs.
   std::vector<ExportData::PropertyValue> prop_values;
   for (const auto& prop : props) {
-    if (auto prop_value = ReadPropertyValue(prop, type_definition))
+    if (auto prop_value = ReadPropertyValue(prop, type_definition)) {
       prop_values.emplace_back(std::move(*prop_value));
+    }
   }
 
   // TODO: Read display name.
-  return {
-      std::move(node_id),
-      std::move(parent_id),
-      {},
-      type_definition.node_id(),
-      std::move(display_name),
-      std::move(prop_values),
-  };
+  return ExportData::Node{.node_id = std::move(node_id),
+                          .parent_id = std::move(parent_id),
+                          .type_id = type_definition.node_id(),
+                          .display_name = std::move(display_name),
+                          .property_values = std::move(prop_values)};
 }
 
 std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
@@ -109,20 +107,29 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
     const NodeRef& type_definition) {
   auto string_value = ReadCell();
 
+  if (string_value.empty()) {
+    return std::nullopt;
+  }
+
   if (prop.reference) {
-    if (type_definition.target(prop.node_id)) {
+    if (type_definition.target(prop.prop_decl_id)) {
       auto target_id = ParseReferenceCell(string_value);
+      if (target_id.is_null()) {
+        return std::nullopt;
+      }
+
       // TODO: Read display name.
-      return ExportData::PropertyValue{
-          prop.node_id, {}, std::move(target_id), {}, true};
+      return ExportData::PropertyValue{.prop_decl_id = prop.prop_decl_id,
+                                       .target_id = std::move(target_id),
+                                       .reference = true};
     }
 
   } else {
-    auto property_declaration = type_definition[prop.node_id];
+    auto property_declaration = type_definition[prop.prop_decl_id];
     if (!property_declaration) {
       throw ResourceError{base::StringPrintf(
           u"Свойство %ls не найдено",
-          base::ASCIIToUTF16(NodeIdToScadaString(prop.node_id)).c_str())};
+          base::ASCIIToUTF16(NodeIdToScadaString(prop.prop_decl_id)).c_str())};
     }
 
     scada::Variant new_value;
@@ -132,12 +139,16 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadPropertyValue(
       auto data_type = node_service_.GetNode(built_in_data_type_id);
       auto data_type_name =
           data_type ? ToString16(data_type.display_name()) : u"(Неизвестный)";
-      throw ResourceError{
-          base::StringPrintf(u"Невозможно распознать значение '%ls' как '%ls'",
-                             string_value.c_str(), data_type_name.c_str())};
+      throw ResourceError{base::StringPrintf(
+          u"Невозможно преобразовать значение '%ls' как тип '%ls'",
+          string_value.c_str(), data_type_name.c_str())};
     }
 
-    return ExportData::PropertyValue{prop.node_id, std::move(new_value)};
+    if (new_value.is_null()) {
+      return std::nullopt;
+    }
+
+    return ExportData::PropertyValue{prop.prop_decl_id, std::move(new_value)};
   }
 
   return std::nullopt;

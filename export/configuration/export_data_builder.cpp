@@ -16,27 +16,32 @@ ExportData::Node MakeExportNode(
     const std::vector<ExportData::Property>& props) {
   auto type = node.type_definition();
 
-  std::vector<ExportData::PropertyValue> property_values;
+  std::vector<ExportData::PropertyValue> prop_values;
   for (const auto& prop : props) {
     if (prop.reference) {
-      auto target = node.target(prop.node_id);
-      property_values.push_back(
-          {prop.node_id, {}, target.node_id(), target.display_name(), true});
+      if (auto target = node.target(prop.prop_decl_id)) {
+        prop_values.push_back(ExportData::PropertyValue{
+            .prop_decl_id = prop.prop_decl_id,
+            .target_id = target.node_id(),
+            .target_display_name = target.display_name(),
+            .reference = true});
+      }
     } else {
-      auto value = node[prop.node_id].value();
-      property_values.push_back(
-          {prop.node_id, std::move(value), {}, {}, false});
+      if (auto prop_value = node[prop.prop_decl_id].value();
+          !prop_value.is_null()) {
+        prop_values.emplace_back(ExportData::PropertyValue{
+            .prop_decl_id = prop.prop_decl_id, .value = std::move(prop_value)});
+      }
     }
   }
 
   return ExportData::Node{
-      node.node_id(),
-      node.parent().node_id(),
-      type ? type.display_name() : scada::LocalizedText{},
-      type ? type.node_id() : scada::NodeId{},
-      node.display_name(),
-      std::move(property_values),
-  };
+      .node_id = node.node_id(),
+      .parent_id = node.parent().node_id(),
+      .type_display_name = type ? type.display_name() : scada::LocalizedText{},
+      .type_id = type ? type.node_id() : scada::NodeId{},
+      .display_name = node.display_name(),
+      .property_values = std::move(prop_values)};
 }
 
 promise<std::vector<ExportData::Node>> CollectNodeHierarchy(

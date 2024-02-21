@@ -62,16 +62,27 @@ TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
 
 TEST_F(ExportConfigurationModuleTest, ImportCommand) {
   ExportData export_data{
-      .props = {{.node_id = data_items::id::DataItemType_Alias,
-                 .display_name = u"Alias"}},
+      .props = {{.prop_decl_id = data_items::id::DiscreteItemType_Inversion,
+                 .display_name = u"Inversion"},
+                {.prop_decl_id = data_items::id::AnalogItemType_DisplayFormat,
+                 .display_name = u"Display Format"}},
       .nodes = {
+          {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
+           .parent_id = data_items::id::DataItems,
+           .type_display_name = u"DiscreteItemType",
+           .type_id = data_items::id::DiscreteItemType,
+           .display_name = u"TS 1",
+           .property_values = {{.prop_decl_id =
+                                    data_items::id::DiscreteItemType_Inversion,
+                                .value = true}}},
           {.node_id = scada::NodeId{1, NamespaceIndexes::TIT},
            .parent_id = data_items::id::DataItems,
            .type_display_name = u"AnalogItemType",
            .type_id = data_items::id::AnalogItemType,
-           .display_name = u"Data Item 1",
-           .property_values = {{.node_id = data_items::id::DataItemType_Alias,
-                                .value = "Alias1"}}}}};
+           .display_name = u"TIT 1",
+           .property_values = {
+               {.prop_decl_id = data_items::id::AnalogItemType_DisplayFormat,
+                .value = "#####"}}}}};
 
   std::filesystem::path export_file_path =
       WriteExportDataToTempFile(export_data);
@@ -88,17 +99,31 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
                             MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce(Return(make_resolved_promise(MessageBoxResult::Yes)));
 
-  EXPECT_CALL(
-      task_manager_,
-      PostInsertTask(
-          /*requested_id=*/scada::NodeId{1, NamespaceIndexes::TIT},
-          /*parent_id=*/data_items::id::DataItems,
-          /*type_id=*/data_items::id::AnalogItemType,
-          /*attributes=*/
-          Field(&scada::NodeAttributes::display_name, u"Data Item 1"),
-          /*properties=*/
-          ElementsAre(FieldsAre(data_items::id::DataItemType_Alias, "Alias1")),
-          /*references=*/IsEmpty()))
+  EXPECT_CALL(task_manager_,
+              PostInsertTask(
+                  /*requested_id=*/scada::NodeId{1, NamespaceIndexes::TS},
+                  /*parent_id=*/data_items::id::DataItems,
+                  /*type_id=*/data_items::id::DiscreteItemType,
+                  /*attributes=*/
+                  Field(&scada::NodeAttributes::display_name, u"TS 1"),
+                  /*properties=*/
+                  ElementsAre(FieldsAre(
+                      data_items::id::DiscreteItemType_Inversion, true)),
+                  /*references=*/IsEmpty()))
+      .WillOnce(Return(
+          make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TS})));
+
+  EXPECT_CALL(task_manager_,
+              PostInsertTask(
+                  /*requested_id=*/scada::NodeId{1, NamespaceIndexes::TIT},
+                  /*parent_id=*/data_items::id::DataItems,
+                  /*type_id=*/data_items::id::AnalogItemType,
+                  /*attributes=*/
+                  Field(&scada::NodeAttributes::display_name, u"TIT 1"),
+                  /*properties=*/
+                  ElementsAre(FieldsAre(
+                      data_items::id::AnalogItemType_DisplayFormat, "#####")),
+                  /*references=*/IsEmpty()))
       .WillOnce(Return(
           make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TIT})));
 

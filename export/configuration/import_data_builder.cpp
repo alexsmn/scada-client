@@ -56,19 +56,19 @@ ImportData BuildImportData(NodeService& node_service,
 
     for (const auto& export_value : export_node.property_values) {
       if (export_value.reference) {
-        auto old_target_id = node.target(export_value.node_id).node_id();
+        auto old_target_id = node.target(export_value.prop_decl_id).node_id();
         if (old_target_id != export_value.target_id) {
-          refs.emplace_back(export_value.node_id, old_target_id,
+          refs.emplace_back(export_value.prop_decl_id, old_target_id,
                             export_value.target_id);
         }
       } else {
         if (node) {
-          auto value = node[export_value.node_id].value();
+          auto value = node[export_value.prop_decl_id].value();
           if (value == export_value.value)
             continue;
         }
 
-        props.emplace_back(export_value.node_id, export_value.value);
+        props.emplace_back(export_value.prop_decl_id, export_value.value);
       }
     }
 

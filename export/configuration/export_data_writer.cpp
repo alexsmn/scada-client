@@ -9,10 +9,10 @@
 namespace {
 
 std::u16string FormatReferenceCell(const std::u16string& title,
-                                   const scada::NodeId& prop_type_id) {
+                                   const scada::NodeId& prop_decl_id) {
   return base::StringPrintf(
       u"%ls @%ls", title.c_str(),
-      base::UTF8ToUTF16(NodeIdToScadaString(prop_type_id)).c_str());
+      base::UTF8ToUTF16(NodeIdToScadaString(prop_decl_id)).c_str());
 }
 
 }  // namespace
@@ -25,7 +25,7 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
   writer.WriteCell(u"Тип");
   writer.WriteCell(u"Имя");
   for (const auto& prop : data.props)
-    writer.WriteCell(FormatReferenceCell(prop.display_name, prop.node_id));
+    writer.WriteCell(FormatReferenceCell(prop.display_name, prop.prop_decl_id));
 
   // Rows
   for (const auto& node : data.nodes) {
@@ -37,15 +37,23 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
             ? FormatReferenceCell(node.type_display_name, node.type_id)
             : std::u16string{});
     writer.WriteCell(node.display_name);
-    assert(node.property_values.size() == data.props.size());
-    for (const auto& prop_value : node.property_values) {
+
+    for (const ExportData::Property& prop : data.props) {
+      auto i = std::ranges::find(node.property_values, prop.prop_decl_id,
+                                 &ExportData::PropertyValue::prop_decl_id);
+      if (i == node.property_values.end()) {
+        writer.SkipCell();
+        continue;
+      }
+
+      const ExportData::PropertyValue& prop_value = *i;
+
       if (prop_value.reference) {
-        writer.WriteCell(
-            !prop_value.target_id.is_null()
-                ? FormatReferenceCell(prop_value.target_display_name,
-                                      prop_value.target_id)
-                : std::u16string{});
+        assert(!prop_value.target_id.is_null());
+        writer.WriteCell(FormatReferenceCell(prop_value.target_display_name,
+                                             prop_value.target_id));
       } else {
+        assert(!prop_value.value.is_null());
         auto str = prop_value.value.get_or(std::string());
         writer.WriteCell(str);
       }

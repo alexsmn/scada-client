@@ -5,7 +5,8 @@
 
 struct ExportData {
   struct Property {
-    scada::NodeId node_id;
+    // For references reprresents the reference type ID.
+    scada::NodeId prop_decl_id;
     scada::LocalizedText display_name;
     bool reference = false;
 
@@ -14,7 +15,7 @@ struct ExportData {
 
   // TODO: Remove |node_id| and |reference|.
   struct PropertyValue {
-    scada::NodeId node_id;
+    scada::NodeId prop_decl_id;
     scada::Variant value;
     scada::NodeId target_id;
     scada::LocalizedText target_display_name;
@@ -51,7 +52,7 @@ inline std::ostream& operator<<(std::ostream& os,
 inline std::ostream& operator<<(std::ostream& os,
                                 const ExportData::Property& prop) {
   StructWriter{os}
-      .AddField("node_id", prop.node_id)
+      .AddField("prop_decl_id", prop.prop_decl_id)
       .AddField("display_name", prop.display_name)
       .AddField("reference", prop.reference);
   return os;
@@ -60,7 +61,7 @@ inline std::ostream& operator<<(std::ostream& os,
 inline std::ostream& operator<<(std::ostream& os,
                                 const ExportData::PropertyValue& value) {
   StructWriter{os}
-      .AddField("node_id", value.node_id)
+      .AddField("prop_decl_id", value.prop_decl_id)
       .AddField("value", value.value)
       .AddField("target_id", value.target_id)
       .AddField("target_display_name", value.target_display_name)
