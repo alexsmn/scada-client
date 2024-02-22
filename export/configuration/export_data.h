@@ -32,6 +32,29 @@ struct ExportData {
     scada::LocalizedText display_name;
     std::vector<PropertyValue> property_values;
 
+    const PropertyValue* FindPropValue(
+        const scada::NodeId& prop_decl_id) const {
+      auto i = std::ranges::find(property_values, prop_decl_id,
+                                 &PropertyValue::prop_decl_id);
+      return i != property_values.end() ? std::to_address(i) : nullptr;
+    }
+
+    // Return an empty variant when not found.
+    scada::Variant GetPropValue(const scada::NodeId& prop_decl_id) const {
+      if (auto* value = FindPropValue(prop_decl_id)) {
+        return value->value;
+      }
+      return {};
+    }
+
+    // Returns the null node ID when not found.
+    scada::NodeId GetTargetId(const scada::NodeId& ref_type_id) const {
+      if (auto* value = FindPropValue(ref_type_id)) {
+        return value->target_id;
+      }
+      return {};
+    }
+
     bool operator==(const Node&) const = default;
   };
 
