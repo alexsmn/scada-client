@@ -36,6 +36,9 @@ class TaskManagerImpl : private TaskManagerImplContext,
   explicit TaskManagerImpl(TaskManagerImplContext&& context);
   ~TaskManagerImpl();
 
+  // For testing.
+  bool IsRunning() const;
+
   // TaskManager
   virtual scada::status_promise<void> PostTask(
       std::u16string_view description,

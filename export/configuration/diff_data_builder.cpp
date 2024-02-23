@@ -40,7 +40,9 @@ class DiffDataBuilder {
 
     for (const auto& export_value : new_node.property_values) {
       if (export_value.reference) {
-        auto old_target_id = old_node->GetTargetId(export_value.prop_decl_id);
+        auto old_target_id =
+            old_node ? old_node->GetTargetId(export_value.prop_decl_id)
+                     : scada::NodeId{};
         if (old_target_id != export_value.target_id) {
           refs.emplace_back(export_value.prop_decl_id, old_target_id,
                             export_value.target_id);
@@ -82,7 +84,7 @@ class DiffDataBuilder {
   DiffData diff_data_;
 };
 
-DiffData BuildImportData(const ExportData& old_export_data,
-                         const ExportData& new_export_data) {
+DiffData BuildDiffData(const ExportData& old_export_data,
+                       const ExportData& new_export_data) {
   return DiffDataBuilder{}.Run(old_export_data, new_export_data);
 }

@@ -37,5 +37,8 @@ class ImportConfigurationCommand {
   promise<void> ImportFrom(const std::filesystem::path& path,
                            DialogService& dialog_service) const;
 
+  promise<void> ImportFrom2(const std::filesystem::path& path,
+                            DialogService& dialog_service) const;
+
   ExportData LoadExportData(const std::filesystem::path& path) const;
 };

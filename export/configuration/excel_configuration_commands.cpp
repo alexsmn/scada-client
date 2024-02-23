@@ -8,6 +8,7 @@
 #include "base/csv_writer.h"
 #include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
+#include "export/configuration/diff_data_builder.h"
 #include "export/configuration/export_data_builder.h"
 #include "export/configuration/export_data_reader.h"
 #include "export/configuration/export_data_writer.h"
@@ -101,6 +102,33 @@ promise<void> ImportConfigurationCommand::ImportFrom(
       });
 }
 
+promise<void> ImportConfigurationCommand::ImportFrom2(
+    const std::filesystem::path& path,
+    DialogService& dialog_service) const {
+  auto diff_promise = ExportDataBuilder{node_service_}.Build().then(
+      [this, path](const ExportData& old_export_data) {
+        ExportData new_export_data = LoadExportData(path);
+        DiffData diff = BuildDiffData(old_export_data, new_export_data);
+        if (diff.IsEmpty()) {
+          throw ResourceError{u"Изменений не найдено."};
+        }
+        ShowDiffReport(diff, node_service_);
+        return diff;
+      });
+
+  return diff_promise
+      .then([&dialog_service](const DiffData& diff) {
+        return dialog_service.RunMessageBox(
+            u"Применить изменения?", kImportTitle,
+            MessageBoxMode::QuestionYesNoDefaultNo);
+      })
+      .then([this, diff_promise](MessageBoxResult apply_prompt) {
+        if (apply_prompt == MessageBoxResult::Yes) {
+          ApplyDiffData(diff_promise.get(), task_manager_);
+        }
+      });
+}
+
 ExportData ImportConfigurationCommand::LoadExportData(
     const std::filesystem::path& path) const {
   std::ifstream stream{path};
@@ -129,6 +157,6 @@ promise<> ImportConfigurationCommand::Execute(
       .then(CatchResourceError(
           dialog_service, kImportTitle,
           [this, &dialog_service](const std::filesystem::path& path) {
-            return ImportFrom(path, dialog_service);
+            return ImportFrom2(path, dialog_service);
           }));
 }

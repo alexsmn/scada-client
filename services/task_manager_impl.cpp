@@ -95,66 +95,78 @@ scada::status_promise<void> TaskManagerImpl::PostTask(
 scada::status_promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
     const scada::NodeId& requested_id,
     const scada::NodeId& parent_id,
-    const scada::NodeId& type_id,
+    const scada::NodeId& type_def_id,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties,
     std::vector<scada::ReferenceDescription> references) {
-  scada::status_promise<scada::NodeId> promise;
-  auto node = node_service_.GetNode(type_id);
-  // Capture node so it's not released before callback.
-  node.Fetch(NodeFetchStatus::NodeOnly(), [=, ref = shared_from_this()](
-                                              const NodeRef& type) mutable {
-    if (!type) {
-      assert(false);
-      promise.reject(scada::status_exception{type.status()});
-      return;
-    }
+  scada::status_promise<scada::NodeId> final_promise;
 
-    if (type.node_class() != scada::NodeClass::ObjectType &&
-        type.node_class() != scada::NodeClass::VariableType) {
-      assert(false);
-      promise.reject(scada::status_exception{scada::StatusCode::Bad});
-      return;
-    }
+  auto ref = shared_from_this();
 
-    auto node_class = type.node_class() == scada::NodeClass::ObjectType
-                          ? scada::NodeClass::Object
-                          : scada::NodeClass::Variable;
+  auto node_state = scada::NodeState{.node_id = requested_id,
+                                     .type_definition_id = type_def_id,
+                                     .parent_id = parent_id,
+                                     .attributes = std::move(attributes),
+                                     .properties = std::move(properties),
+                                     .references = std::move(references)};
 
-    // Cannot use `PostTask` because it only accepts void promises.
-    PostTaskMethod(u"Вставка", [=, ref = shared_from_this()]() mutable {
-      ForwardPromise(
-          scada::AddNode(
+  // Cannot use `PostTask` because it only accepts void promises.
+  PostTaskMethod(u"Вставка", [this, ref, node_state = std::move(node_state),
+                              final_promise] {
+    auto type_def = node_service_.GetNode(node_state.type_definition_id);
+
+    auto add_node_promise =
+        FetchNode(type_def).then([this, ref, type_def, node_state] {
+          if (type_def.node_class() != scada::NodeClass::ObjectType &&
+              type_def.node_class() != scada::NodeClass::VariableType) {
+            throw scada::status_exception{scada::StatusCode::Bad_WrongTypeId};
+          }
+
+          auto node_class =
+              type_def.node_class() == scada::NodeClass::ObjectType
+                  ? scada::NodeClass::Object
+                  : scada::NodeClass::Variable;
+
+          return scada::AddNode(
               node_management_service_,
-              {requested_id, parent_id, node_class, type_id, attributes})
-              .then(BindPromiseExecutor(
-                  executor_, weak_from_this(),
-                  [this, properties,
-                   references](const scada::NodeId& added_node_id) mutable {
-                    // TODO: Combine with properties.
+              {node_state.node_id, node_state.parent_id, node_class,
+               node_state.type_definition_id, node_state.attributes});
+        });
 
-                    for (const auto& reference : references) {
-                      if (reference.forward)
-                        PostAddReference(reference.reference_type_id,
-                                         added_node_id, reference.node_id);
-                      else
-                        PostAddReference(reference.reference_type_id,
-                                         reference.node_id, added_node_id);
-                    }
+    scada::ToExplicitStatusCodePromise(add_node_promise)
+        .then(BindExecutor(executor_, weak_from_this(),
+                           [this](scada::StatusCode status_code) {
+                             ReportRequestCompletion(status_code,
+                                                     /*result_text=*/{});
+                           }));
 
-                    if (properties.empty()) {
-                      return scada::MakeResolvedStatusPromise(added_node_id);
-                    }
+    auto add_props_and_refs_promise = add_node_promise.then(BindPromiseExecutor(
+        executor_, weak_from_this(),
+        [this, node_state](const scada::NodeId& added_node_id) {
+          // TODO: Combine with properties.
 
-                    return ToValuePromise(
-                        PostUpdateTask(added_node_id, /*attributes=*/{},
-                                       std::move(properties)),
-                        added_node_id);
-                  })),
-          promise);
-    });
+          for (const auto& reference : node_state.references) {
+            if (reference.forward)
+              PostAddReference(reference.reference_type_id, added_node_id,
+                               reference.node_id);
+            else
+              PostAddReference(reference.reference_type_id, reference.node_id,
+                               added_node_id);
+          }
+
+          if (node_state.properties.empty()) {
+            return scada::MakeResolvedStatusPromise(added_node_id);
+          }
+
+          return ToValuePromise(PostUpdateTask(added_node_id, /*attributes=*/{},
+                                               node_state.properties),
+                                added_node_id);
+        }));
+
+    ForwardPromise(add_props_and_refs_promise, final_promise);
   });
-  return promise;
+
+  return final_promise;
 }
 
 scada::status_promise<void> TaskManagerImpl::PostUpdateTask(
@@ -193,15 +205,11 @@ scada::status_promise<void> TaskManagerImpl::PostUpdateTask(
 scada::status_promise<void> TaskManagerImpl::PostDeleteTask(
     const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
-  return PostTaskMethod(
+  return PostTask(
       base::StringPrintf(u"Удаление %ls", title.c_str()),
       [this, node_id,
        &node_management_service = node_management_service_]() mutable {
-        scada::DeleteNode(node_management_service, {node_id},
-                          BindExecutor(executor_, weak_from_this(),
-                                       [this](scada::Status status) mutable {
-                                         ReportRequestCompletion(status, {});
-                                       }));
+        return scada::DeleteNode(node_management_service, {node_id});
       });
 }
 
@@ -257,7 +265,13 @@ void TaskManagerImpl::StartTask(Task&& task) {
   if (running_progress_)
     running_progress_->SetStatus((running_task_.title + u"...").c_str());
 
-  running_task_.task();
+  // The running task keeps captured variables and must be alive until it's
+  // entirely completed. It cannot be deleted immediately from
+  // `ReportRequestCompletion`, since `ReportRequestCompletion` might be called
+  // from within the task.
+  auto captured_task = running_task_;
+
+  captured_task.task();
 }
 
 void TaskManagerImpl::ReportRequestCompletion(
@@ -279,6 +293,10 @@ void TaskManagerImpl::ReportRequestCompletion(
   scada::ResolveStatusPromise(task.promise, status);
 }
 
+bool TaskManagerImpl::IsRunning() const {
+  return !running_task_.IsNull();
+}
+
 void TaskManagerImpl::Run() {
   // Handle dialog Cancel button. Allow complete current request.
   if (running_progress_ && running_progress_->IsCanceled()) {
@@ -293,8 +311,9 @@ void TaskManagerImpl::Run() {
     running_task_ = Task();
   }
 
-  if (count_ < static_cast<int>(tasks_.size()))
+  if (count_ < static_cast<int>(tasks_.size())) {
     count_ = tasks_.size();
+  }
 
   // show or hide dialog
   if (!running_task_.IsNull() || !tasks_.empty()) {
@@ -326,5 +345,9 @@ void TaskManagerImpl::Run() {
 scada::status_promise<void> TaskManagerImpl::PostTaskMethod(
     std::u16string_view title,
     TaskMethod task) {
-  return tasks_.emplace(std::u16string{title}, std::move(task)).promise;
+  auto promise = tasks_.emplace(std::u16string{title}, std::move(task)).promise;
+
+  Run();
+
+  return promise;
 }

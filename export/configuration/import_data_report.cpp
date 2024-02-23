@@ -8,6 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util2.h"
 #include "common/node_state.h"
+#include "export/configuration/diff_data.h"
 #include "export/configuration/import_data.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -27,18 +28,20 @@ ScopedImportReportSuppressor ::~ScopedImportReportSuppressor() {
   s_import_report_enabled = true;
 }
 
+template <class T>
 void PrintProps(NodeService& node_service,
-                const scada::NodeProperties& props,
+                const std::vector<T>& props,
                 u16ostream& report) {
-  for (const auto& v : props) {
-    const auto& prop = node_service.GetNode(v.first);
+  for (const auto& [prop_decl_id, value] : props) {
+    const auto& prop = node_service.GetNode(prop_decl_id);
     report << u"  " << ToString16(prop.display_name()) << u" = "
-           << ToString16(v.second) << std::endl;
+           << ToString16(value) << std::endl;
   }
 }
 
+template <class T>
 void PrintRefs(NodeService& node_service,
-               const std::vector<ImportData::Reference>& refs,
+               const std::vector<T>& refs,
                u16ostream& report) {
   for (const auto& r : refs) {
     auto target_name = r.add_target_id.is_null()
@@ -49,23 +52,19 @@ void PrintRefs(NodeService& node_service,
   }
 }
 
+const char16_t kDiffReportHeader[] =
+    uR"(Пожалуйста, убедитесь в правильности производимых изменений. Если перечисленные
+изменения не соответствуют ожидаемым, ответьте Нет на вопрос, который появится
+после закрытия данного окна.
+
+ВНИМАНИЕ: При некорректном использовании данная операция может привести к
+потере конфигурации.)";
+
+template <class T>
 void PrintImportReport(u16ostream& report,
-                       const ImportData& import_data,
+                       const T& import_data,
                        NodeService& node_service) {
-  report
-      << u"Пожалуйста, убедитесь в правильности производимых изменений. Если "
-         u"перечисленные"
-      << std::endl
-      << u"изменения не соответствуют ожидаемым, ответьте Нет на вопрос, "
-         u"который появится"
-      << std::endl
-      << u"после закрытия данного окна." << std::endl
-      << std::endl
-      << u"ВНИМАНИЕ: При некорректном использовании данная операция может "
-         u"привести к"
-      << std::endl
-      << u"потере конфигурации." << std::endl
-      << std::endl;
+  report << kDiffReportHeader << std::endl << std::endl;
 
   for (auto& p : import_data.create_nodes) {
     auto type_definition = node_service.GetNode(p.type_id);
@@ -96,20 +95,12 @@ void PrintImportReport(u16ostream& report,
   }
 }
 
-void ShowImportReport(const ImportData& import_data,
-                      NodeService& node_service) {
-  if (!s_import_report_enabled) {
-    return;
-  }
-
-  std::basic_ofstream<char16_t> report("report.txt");
-  PrintImportReport(report, import_data, node_service);
-
+void OpenNotepad(const std::filesystem::path& path) {
   base::FilePath system_path;
   base::PathService::Get(base::DIR_WINDOWS, &system_path);
 
   auto command_line = L"\"" + system_path.AsEndingWithSeparator().value() +
-                      L"notepad.exe\" report.txt";
+                      L"notepad.exe\" " + path.wstring();
 
   STARTUPINFO startup_info = {sizeof(startup_info)};
   PROCESS_INFORMATION process_info = {};
@@ -121,4 +112,27 @@ void ShowImportReport(const ImportData& import_data,
   ::WaitForSingleObject(process_info.hProcess, INFINITE);
   CloseHandle(process_info.hProcess);
   CloseHandle(process_info.hThread);
+}
+
+void ShowImportReport(const ImportData& import_data,
+                      NodeService& node_service) {
+  if (!s_import_report_enabled) {
+    return;
+  }
+
+  std::basic_ofstream<char16_t> report("report.txt");
+  PrintImportReport(report, import_data, node_service);
+
+  OpenNotepad("report.txt");
+}
+
+void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
+  if (!s_import_report_enabled) {
+    return;
+  }
+
+  std::basic_ofstream<char16_t> report("report.txt");
+  PrintImportReport(report, diff, node_service);
+
+  OpenNotepad("report.txt");
 }
