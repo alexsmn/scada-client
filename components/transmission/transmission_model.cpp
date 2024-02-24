@@ -5,12 +5,12 @@
 #include "base/range_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "controller/contents_observer.h"
-#include "scada/event.h"
-#include "scada/node_management_service.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "scada/event.h"
+#include "scada/node_management_service.h"
 #include "services/task_manager.h"
 
 #include <boost/range/adaptor/filtered.hpp>
@@ -229,20 +229,24 @@ void TransmissionModel::AddContainedItem(const scada::NodeId& node_id,
     return;
 
   auto transmission_item_type_id = GetTransmissionItemTypeId(device_);
+
   task_manager_.PostInsertTask(
-      scada::NodeId(), device_.node_id(), transmission_item_type_id, {}, {},
-      {{devices::id::HasTransmissionSource, true, node_id}});
+      {.type_definition_id = transmission_item_type_id,
+       .parent_id = device_.node_id(),
+       .references = {{devices::id::HasTransmissionSource, true, node_id}}});
 }
 
 void TransmissionModel::RemoveContainedItem(const scada::NodeId& node_id) {
   std::vector<scada::NodeId> transmission_ids;
   for (auto& row : rows()) {
-    if (row.source_id == node_id)
+    if (row.source_id == node_id) {
       transmission_ids.emplace_back(row.transmission.node_id());
+    }
   }
 
-  for (const auto& transmission_id : transmission_ids)
+  for (const auto& transmission_id : transmission_ids) {
     task_manager_.PostDeleteTask(transmission_id);
+  }
 }
 
 // static

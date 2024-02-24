@@ -27,9 +27,8 @@ ScopedImportReportSuppressor ::~ScopedImportReportSuppressor() {
   s_import_report_enabled = true;
 }
 
-template <class T>
 void PrintProps(NodeService& node_service,
-                const std::vector<T>& props,
+                std::span<const scada::NodeProperty> props,
                 u16ostream& report) {
   for (const auto& [prop_decl_id, value] : props) {
     const auto& prop = node_service.GetNode(prop_decl_id);
@@ -38,9 +37,8 @@ void PrintProps(NodeService& node_service,
   }
 }
 
-template <class T>
 void PrintRefs(NodeService& node_service,
-               const std::vector<T>& refs,
+               std::span<const DiffData::Reference> refs,
                u16ostream& report) {
   for (const auto& r : refs) {
     auto target_name = r.add_target_id.is_null()
@@ -48,6 +46,19 @@ void PrintRefs(NodeService& node_service,
                            : GetDisplayName(node_service, r.add_target_id);
     report << ToString16(GetDisplayName(node_service, r.reference_type_id))
            << u" = " << ToString16(target_name) << std::endl;
+  }
+}
+
+void PrintRefs(NodeService& node_service,
+               std::span<const scada::ReferenceDescription> refs,
+               u16ostream& report) {
+  for (const auto& r : refs) {
+    assert(!r.reference_type_id.is_null());
+    assert(!r.node_id.is_null());
+    auto ref_name = GetDisplayName(node_service, r.reference_type_id);
+    auto target_name = GetDisplayName(node_service, r.node_id);
+    report << ToString16(ref_name) << u" = " << ToString16(target_name)
+           << std::endl;
   }
 }
 
@@ -64,18 +75,22 @@ void PrintDiffReport(u16ostream& report,
                      NodeService& node_service) {
   report << kDiffReportHeader << std::endl << std::endl;
 
-  for (auto& p : diff.create_nodes) {
-    auto type_definition = node_service.GetNode(p.type_id);
+  for (auto& node_state : diff.create_nodes) {
+    auto type_definition = node_service.GetNode(node_state.type_definition_id);
     report << u"Создать: " << ToString16(type_definition.display_name())
            << std::endl;
-    if (!p.id.is_null())
-      report << u"  Ид = " << base::UTF8ToUTF16(NodeIdToScadaString(p.id))
+    if (!node_state.node_id.is_null()) {
+      report << u"  Ид = "
+             << base::UTF8ToUTF16(NodeIdToScadaString(node_state.node_id))
              << std::endl;
+    }
     report << u"  Родитель = "
-           << base::UTF8ToUTF16(NodeIdToScadaString(p.parent_id)) << std::endl;
-    report << u"  Имя = " << ToString16(p.attrs.display_name) << std::endl;
-    PrintProps(node_service, p.props, report);
-    PrintRefs(node_service, p.refs, report);
+           << base::UTF8ToUTF16(NodeIdToScadaString(node_state.parent_id))
+           << std::endl;
+    report << u"  Имя = " << ToString16(node_state.attributes.display_name)
+           << std::endl;
+    PrintProps(node_service, node_state.properties, report);
+    PrintRefs(node_service, node_state.references, report);
   }
 
   for (auto& p : diff.modify_nodes) {

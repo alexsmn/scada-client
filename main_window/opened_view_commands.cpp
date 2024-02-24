@@ -266,7 +266,7 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   if (!node_type)
     return MakeRejectedPromise();
 
-  auto* selection_model = controller_->GetSelectionModel();
+  const auto* selection_model = controller_->GetSelectionModel();
   if (!selection_model)
     return MakeRejectedPromise();
 
@@ -312,9 +312,11 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   auto title =
       base::StringPrintf(u"Создание \"%ls\"", attributes.display_name.c_str());
 
-  auto insert_promise = task_manager_.PostInsertTask(
-      scada::NodeId(), parent_node.node_id(), type_node_id,
-      std::move(attributes), std::move(properties), {});
+  auto insert_promise =
+      task_manager_.PostInsertTask({.type_definition_id = type_node_id,
+                                    .parent_id = parent_node.node_id(),
+                                    .attributes = std::move(attributes),
+                                    .properties = std::move(properties)});
 
   ToVoidPromise(insert_promise)
       .except([this, weak_ptr = weak_factory_.GetWeakPtr(),
@@ -361,7 +363,7 @@ promise<> OpenedViewCommands::PasteFromClipboard() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
     return MakeRejectedPromise();
 
-  auto* selection_model = controller_->GetSelectionModel();
+  const auto* selection_model = controller_->GetSelectionModel();
   if (!selection_model)
     return MakeRejectedPromise();
 

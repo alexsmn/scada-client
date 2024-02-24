@@ -9,10 +9,7 @@ class MockTaskManager : public TaskManager {
   MockTaskManager() {
     using namespace testing;
 
-    ON_CALL(*this, PostInsertTask(/*requested_id=*/_, /*parent_id=*/_,
-                                  /*type_id=*/_, /*attributes=*/_,
-                                  /*properties=*/_,
-                                  /*references=*/_))
+    ON_CALL(*this, PostInsertTask(/*new_node_state=*/_))
         .WillByDefault(
             Return(make_rejected_promise<scada::NodeId>(std::exception{})));
   }
@@ -24,12 +21,7 @@ class MockTaskManager : public TaskManager {
 
   MOCK_METHOD(promise<scada::NodeId>,
               PostInsertTask,
-              (const scada::NodeId& requested_id,
-               const scada::NodeId& parent_id,
-               const scada::NodeId& type_id,
-               scada::NodeAttributes attributes,
-               scada::NodeProperties properties,
-               std::vector<scada::ReferenceDescription> references),
+              (const scada::NodeState& new_node_state),
               (override));
 
   MOCK_METHOD(promise<>,

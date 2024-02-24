@@ -115,10 +115,10 @@ promise<> AddFile(NodeRef parent_directory,
                                    contents_string.end()};
 
         return ToVoidPromise(task_manager.PostInsertTask(
-            {}, parent_directory.node_id(), filesystem::id::FileType,
-            scada::NodeAttributes{.display_name = std::move(new_file_name),
-                                  .value = std::move(contents)},
-            {}, {}));
+            {.type_definition_id = filesystem::id::FileType,
+             .parent_id = parent_directory.node_id(),
+             .attributes = {.display_name = std::move(new_file_name),
+                            .value = std::move(contents)}}));
       });
 }
 
@@ -130,7 +130,8 @@ promise<> CreateFileDirectory(NodeRef parent_directory,
       .then([parent_directory = std::move(parent_directory),
              &task_manager](const std::u16string& new_directory_name) {
         return ToVoidPromise(task_manager.PostInsertTask(
-            {}, parent_directory.node_id(), filesystem::id::FileDirectoryType,
-            {.display_name = new_directory_name}, {}, {}));
+            {.parent_id = parent_directory.node_id(),
+             .reference_type_id = filesystem::id::FileDirectoryType,
+             .attributes = {.display_name = new_directory_name}}));
       });
 }

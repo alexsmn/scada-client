@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common/node_state.h"
-#include "scada/node_attributes.h"
 #include "scada/status_promise.h"
 
 #include <functional>
@@ -16,13 +15,9 @@ class TaskManager {
       std::u16string_view description,
       const TaskLauncher& launcher) = 0;
 
-  virtual promise<scada::NodeId> PostInsertTask(
-      const scada::NodeId& requested_id,
-      const scada::NodeId& parent_id,
-      const scada::NodeId& type_id,
-      scada::NodeAttributes attributes,
-      scada::NodeProperties properties,
-      std::vector<scada::ReferenceDescription> references) = 0;
+  // Those fields must be unset: node_class, reference_type_id.
+  virtual scada::status_promise<scada::NodeId> PostInsertTask(
+      const scada::NodeState& new_node_state) = 0;
 
   virtual scada::status_promise<void> PostUpdateTask(
       const scada::NodeId& node_id,

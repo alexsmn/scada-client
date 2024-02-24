@@ -41,11 +41,15 @@ DropAction MakeCreateDataItemAction(TaskManager& task_manager,
         (control_item || attributes.data_type == scada::id::Boolean)
             ? data_items::id::DiscreteItemType
             : data_items::id::AnalogItemType;
+
     auto channel_prop_id = control_item ? data_items::id::DataItemType_Output
                                         : data_items::id::DataItemType_Input1;
+
     task_manager.PostInsertTask(
-        {}, parent_id, std::move(type_definition_id), std::move(attributes),
-        {{std::move(channel_prop_id), std::move(formula)}}, {});
+        {.type_definition_id = std::move(type_definition_id),
+         .parent_id = parent_id,
+         .attributes = std::move(attributes),
+         .properties = {{std::move(channel_prop_id), std::move(formula)}}});
 
     return aui::DragDropTypes::DRAG_COPY;
   };
@@ -55,11 +59,13 @@ DropAction MakeAssignChannelAction(TaskManager& task_manager,
                                    const scada::NodeId& node_id,
                                    std::string formula,
                                    bool control_item) {
-  return [=, &task_manager] {
+  return [=, &task_manager]() mutable {
     auto channel_prop_id = control_item ? data_items::id::DataItemType_Output
                                         : data_items::id::DataItemType_Input1;
+
     task_manager.PostUpdateTask(
-        node_id, {}, {{std::move(channel_prop_id), std::move(formula)}});
+        node_id, /*attributes=*/{},
+        /*properties=*/{{std::move(channel_prop_id), std::move(formula)}});
 
     return aui::DragDropTypes::DRAG_LINK;
   };
@@ -73,7 +79,7 @@ ConfigurationTreeDropHandler::ConfigurationTreeDropHandler(
 
 int ConfigurationTreeDropHandler::GetDropAction(
     const scada::NodeId& dragging_id,
-    ConfigurationTreeNode* target_node,
+    const ConfigurationTreeNode* target_node,
     DropAction& action) {
   if (!target_node)
     return aui::DragDropTypes::DRAG_NONE;
@@ -87,17 +93,19 @@ int ConfigurationTreeDropHandler::GetDropAction(
   bool is_iec61850_channel =
       IsInstanceOf(dragging_node, devices::id::Iec61850DataVariableType) ||
       IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType);
+
   if (is_iec61850_channel && IsSubtypeOf(target_node->node().type_definition(),
                                          data_items::id::DataGroupType)) {
-    scada::NodeAttributes attributes;
-    attributes.browse_name = dragging_node.browse_name();
-    attributes.display_name = dragging_node.display_name();
-    attributes.data_type = dragging_node.data_type().node_id();
-    auto formula = MakeNodeIdFormula(dragging_node.node_id());
     action = MakeCreateDataItemAction(
-        task_manager_, target_node->node().node_id(), std::move(attributes),
-        std::move(formula),
+        task_manager_, /*parent_id=*/target_node->node().node_id(),
+        /*attributes=*/
+        {.browse_name = dragging_node.browse_name(),
+         .display_name = dragging_node.display_name(),
+         .data_type = dragging_node.data_type().node_id()},
+        /*formula=*/MakeNodeIdFormula(dragging_node.node_id()),
+        /*control_item=*/
         IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
+
     return aui::DragDropTypes::DRAG_COPY;
   }
 
@@ -105,6 +113,7 @@ int ConfigurationTreeDropHandler::GetDropAction(
   if (is_iec61850_channel &&
       IsInstanceOf(target_node->node(), data_items::id::DataItemType)) {
     auto formula = MakeNodeIdFormula(dragging_node.node_id());
+
     action = MakeAssignChannelAction(
         task_manager_, target_node->node().node_id(), std::move(formula),
         IsInstanceOf(dragging_node, devices::id::Iec61850ControlObjectType));
@@ -115,15 +124,18 @@ int ConfigurationTreeDropHandler::GetDropAction(
   {
     auto type_definition = target_node->node().type_definition();
     if (!type_definition ||
-        !create_tree_.CanCreate(dragging_node, type_definition))
+        !create_tree_.CanCreate(dragging_node, type_definition)) {
       return aui::DragDropTypes::DRAG_NONE;
+    }
 
     if (target_node && target_node->node() != dragging_node &&
         target_node->node() != dragging_node.parent()) {
       auto old_parent_id = dragging_node.parent().node_id();
       auto new_parent_id = target_node->node().node_id();
+
       action = MakeMoveDropAction(task_manager_, dragging_id, old_parent_id,
                                   new_parent_id);
+
       return aui::DragDropTypes::DRAG_MOVE;
     }
   }
@@ -133,10 +145,12 @@ int ConfigurationTreeDropHandler::GetDropAction(
 
 int ConfigurationTreeDropHandler::GetDropAction(
     const DragData& drag_data,
-    ConfigurationTreeNode* target_node,
+    const ConfigurationTreeNode* target_node,
     DropAction& action) {
   ItemDragData item_drag_data;
-  if (!item_drag_data.Load(drag_data))
+  if (!item_drag_data.Load(drag_data)) {
     return aui::DragDropTypes::DRAG_NONE;
+  }
+
   return GetDropAction(item_drag_data.item_id(), target_node, action);
 }

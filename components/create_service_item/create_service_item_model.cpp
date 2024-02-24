@@ -38,12 +38,14 @@ void CreateServiceItemModel::SetDeviceIndex(int index) {
 }
 
 void CreateServiceItemModel::Run(const RunParams& params) {
-  if (device_index_ == -1)
+  if (device_index_ == -1) {
     return;
+  }
 
   auto device = devices_[device_index_].second;
-  if (!device)
+  if (!device) {
     return;
+  }
 
   for (int component_index : params.component_indexes) {
     const auto& component = components_[component_index].second;
@@ -51,8 +53,10 @@ void CreateServiceItemModel::Run(const RunParams& params) {
       continue;
 
     auto display_name = component.display_name();
+
     auto formula = MakeNodeIdFormula(
         MakeNestedNodeId(device.node_id(), component.browse_name().name()));
+
     auto type_definition_id =
         IsSubtypeOf(component.data_type(), scada::id::Boolean)
             ? data_items::id::DiscreteItemType
@@ -61,13 +65,15 @@ void CreateServiceItemModel::Run(const RunParams& params) {
     scada::NodeProperties properties;
     properties.emplace_back(data_items::id::DataItemType_Input1,
                             std::move(formula));
-    if (type_definition_id == data_items::id::AnalogItemType)
+    if (type_definition_id == data_items::id::AnalogItemType) {
       properties.emplace_back(data_items::id::AnalogItemType_DisplayFormat,
                               "0.");
+    }
 
     task_manager_.PostInsertTask(
-        scada::NodeId{}, parent_id_, type_definition_id,
-        scada::NodeAttributes{}.set_display_name(std::move(display_name)),
-        std::move(properties), {});
+        {.type_definition_id = type_definition_id,
+         .parent_id = parent_id_,
+         .attributes = {.display_name = std::move(display_name)},
+         .properties = std::move(properties)});
   }
 }

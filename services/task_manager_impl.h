@@ -44,12 +44,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
       std::u16string_view description,
       const TaskLauncher& launcher) override;
   virtual scada::status_promise<scada::NodeId> PostInsertTask(
-      const scada::NodeId& requested_id,
-      const scada::NodeId& parent_id,
-      const scada::NodeId& type_id,
-      scada::NodeAttributes attributes,
-      scada::NodeProperties properties,
-      std::vector<scada::ReferenceDescription> references) override;
+      const scada::NodeState& node_state) override;
   virtual scada::status_promise<void> PostUpdateTask(
       const scada::NodeId& node_id,
       scada::NodeAttributes attributes,

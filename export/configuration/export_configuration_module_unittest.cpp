@@ -99,31 +99,25 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
                             MessageBoxMode::QuestionYesNoDefaultNo))
       .WillOnce(Return(make_resolved_promise(MessageBoxResult::Yes)));
 
-  EXPECT_CALL(task_manager_,
-              PostInsertTask(
-                  /*requested_id=*/scada::NodeId{1, NamespaceIndexes::TS},
-                  /*parent_id=*/data_items::id::DataItems,
-                  /*type_id=*/data_items::id::DiscreteItemType,
-                  /*attributes=*/
-                  Field(&scada::NodeAttributes::display_name, u"TS 1"),
-                  /*properties=*/
-                  ElementsAre(FieldsAre(
-                      data_items::id::DiscreteItemType_Inversion, true)),
-                  /*references=*/IsEmpty()))
+  EXPECT_CALL(
+      task_manager_,
+      PostInsertTask(scada::NodeState{
+          .node_id = {1, NamespaceIndexes::TS},
+          .type_definition_id = data_items::id::DiscreteItemType,
+          .parent_id = data_items::id::DataItems,
+          .attributes = {.display_name = u"TS 1"},
+          .properties = {{data_items::id::DiscreteItemType_Inversion, true}}}))
       .WillOnce(Return(
           make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TS})));
 
   EXPECT_CALL(task_manager_,
-              PostInsertTask(
-                  /*requested_id=*/scada::NodeId{1, NamespaceIndexes::TIT},
-                  /*parent_id=*/data_items::id::DataItems,
-                  /*type_id=*/data_items::id::AnalogItemType,
-                  /*attributes=*/
-                  Field(&scada::NodeAttributes::display_name, u"TIT 1"),
-                  /*properties=*/
-                  ElementsAre(FieldsAre(
-                      data_items::id::AnalogItemType_DisplayFormat, "#####")),
-                  /*references=*/IsEmpty()))
+              PostInsertTask(scada::NodeState{
+                  .node_id = {1, NamespaceIndexes::TIT},
+                  .type_definition_id = data_items::id::AnalogItemType,
+                  .parent_id = data_items::id::DataItems,
+                  .attributes = {.display_name = u"TIT 1"},
+                  .properties = {{data_items::id::AnalogItemType_DisplayFormat,
+                                  "#####"}}}))
       .WillOnce(Return(
           make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TIT})));
 

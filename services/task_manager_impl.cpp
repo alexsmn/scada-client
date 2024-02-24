@@ -93,26 +93,17 @@ scada::status_promise<void> TaskManagerImpl::PostTask(
 }
 
 scada::status_promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
-    const scada::NodeId& requested_id,
-    const scada::NodeId& parent_id,
-    const scada::NodeId& type_def_id,
-    scada::NodeAttributes attributes,
-    scada::NodeProperties properties,
-    std::vector<scada::ReferenceDescription> references) {
+    const scada::NodeState& node_state) {
+  // Those fields must be unset:
+  assert(node_state.node_class == scada::NodeClass::Object);
+  assert(node_state.reference_type_id.is_null());
+
   scada::status_promise<scada::NodeId> final_promise;
 
   auto ref = shared_from_this();
 
-  auto node_state = scada::NodeState{.node_id = requested_id,
-                                     .type_definition_id = type_def_id,
-                                     .parent_id = parent_id,
-                                     .attributes = std::move(attributes),
-                                     .properties = std::move(properties),
-                                     .references = std::move(references)};
-
   // Cannot use `PostTask` because it only accepts void promises.
-  PostTaskMethod(u"Вставка", [this, ref, node_state = std::move(node_state),
-                              final_promise] {
+  PostTaskMethod(u"Вставка", [this, ref, node_state, final_promise] {
     auto type_def = node_service_.GetNode(node_state.type_definition_id);
 
     auto add_node_promise =

@@ -23,7 +23,7 @@ struct DiffData {
     return create_nodes.empty() && modify_nodes.empty() && delete_nodes.empty();
   }
 
-  std::vector<Node> create_nodes;
+  std::vector<scada::NodeState> create_nodes;
   std::vector<Node> modify_nodes;
   std::vector<scada::NodeId> delete_nodes;
 };

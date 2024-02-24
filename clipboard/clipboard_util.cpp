@@ -84,17 +84,11 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
 
 promise<> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
                                            scada::NodeState&& node_state) {
-  auto forward_references =
-      node_state.references |
-      boost::adaptors::filtered(
-          [](const scada::ReferenceDescription& ref) { return ref.forward; }) |
-      to_vector;
+  std::erase_if(
+      node_state.references,
+      [](const scada::ReferenceDescription& ref) { return !ref.forward; });
 
-  return task_manager
-      .PostInsertTask({}, node_state.parent_id, node_state.type_definition_id,
-                      std::move(node_state.attributes),
-                      std::move(node_state.properties),
-                      std::move(forward_references))
+  return task_manager.PostInsertTask(node_state)
       .then([&task_manager, children = std::move(node_state.children)](
                 const scada::NodeId& node_id) mutable {
         std::vector<promise<>> promises;

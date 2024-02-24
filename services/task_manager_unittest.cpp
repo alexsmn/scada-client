@@ -59,17 +59,17 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
                                   std::vector<scada::AddNodesResult>{
                                       {.added_node_id = added_node_id}}));
 
-  auto node_id =
-      task_manager_
-          ->PostInsertTask(/*requested_id=*/{}, parent_id, type_def_id,
-                           /*attributes=*/{}, /*properties=*/{},
-                           /*references=*/{})
-          .get();
+  auto node_id = task_manager_
+                     ->PostInsertTask({.type_definition_id = type_def_id,
+                                       .parent_id = parent_id})
+                     .get();
 
   EXPECT_EQ(node_id, added_node_id);
+
   EXPECT_THAT(
       local_events_.events(),
       ElementsAre(Field(&scada::Event::severity, scada::kSeverityNormal)));
+
   EXPECT_FALSE(task_manager_->IsRunning());
 }
 
@@ -88,32 +88,31 @@ TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
                                   std::vector<scada::AddNodesResult>{}));
 
   EXPECT_THROW(task_manager_
-                   ->PostInsertTask(/*requested_id=*/{}, parent_id, type_def_id,
-                                    /*attributes=*/{}, /*properties=*/{},
-                                    /*references=*/{})
+                   ->PostInsertTask({.type_definition_id = type_def_id,
+                                     .parent_id = parent_id})
                    .get(),
                scada::status_exception);
 
   EXPECT_THAT(
       local_events_.events(),
       ElementsAre(Field(&scada::Event::severity, scada::kSeverityCritical)));
+
   EXPECT_FALSE(task_manager_->IsRunning());
 }
 
 TEST_F(TaskManagerTest, PostInsertTask_BadTypeDefId) {
   // Intentionally specify wrong type definition ID, so add node fails.
-  EXPECT_THROW(task_manager_
-                   ->PostInsertTask(/*requested_id=*/{},
-                                    /*parent_id=*/data_items::id::DataItems,
-                                    /*type_def_id=*/scada::id::References,
-                                    /*attributes=*/{}, /*properties=*/{},
-                                    /*references=*/{})
-                   .get(),
-               scada::status_exception);
+  EXPECT_THROW(
+      task_manager_
+          ->PostInsertTask({.type_definition_id = scada::id::References,
+                            .parent_id = data_items::id::DataItems})
+          .get(),
+      scada::status_exception);
 
   EXPECT_THAT(
       local_events_.events(),
       ElementsAre(Field(&scada::Event::severity, scada::kSeverityCritical)));
+
   EXPECT_FALSE(task_manager_->IsRunning());
 }
 
@@ -133,5 +132,6 @@ TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {
   EXPECT_THAT(
       local_events_.events(),
       ElementsAre(Field(&scada::Event::severity, scada::kSeverityCritical)));
+
   EXPECT_FALSE(task_manager_->IsRunning());
 }

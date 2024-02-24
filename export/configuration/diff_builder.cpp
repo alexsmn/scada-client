@@ -2,6 +2,7 @@
 
 #include "export/configuration/export_data.h"
 
+#include <algorithm>
 #include <unordered_set>
 
 class DiffDataBuilder {
@@ -66,9 +67,24 @@ class DiffDataBuilder {
             std::move(attrs), std::move(props), std::move(refs));
       }
     } else {
-      diff_data_.create_nodes.emplace_back(new_node.node_id, new_node.type_id,
-                                           new_node.parent_id, std::move(attrs),
-                                           std::move(props), std::move(refs));
+      std::vector<scada::ReferenceDescription> node_state_refs;
+      // `std::ranges::transform` doesn't work with `std::back_inserter`.
+      std::transform(refs.begin(), refs.end(),
+                     std::back_inserter(node_state_refs),
+                     [](const DiffData::Reference& ref) {
+                       return scada::ReferenceDescription{
+                           .reference_type_id = ref.reference_type_id,
+                           .forward = true,
+                           .node_id = ref.add_target_id};
+                     });
+
+      diff_data_.create_nodes.emplace_back(
+          scada::NodeState{.node_id = new_node.node_id,
+                           .type_definition_id = new_node.type_id,
+                           .parent_id = new_node.parent_id,
+                           .attributes = std::move(attrs),
+                           .properties = std::move(props),
+                           .references = std::move(node_state_refs)});
     }
   }
 

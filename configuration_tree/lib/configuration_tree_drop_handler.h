@@ -25,10 +25,10 @@ class ConfigurationTreeDropHandler
       ConfigurationTreeDropHandlerContext&& context);
 
   int GetDropAction(const DragData& drag_data,
-                    ConfigurationTreeNode* target_node,
+                    const ConfigurationTreeNode* target_node,
                     DropAction& action);
 
   int GetDropAction(const scada::NodeId& dragging_id,
-                    ConfigurationTreeNode* target_node,
+                    const ConfigurationTreeNode* target_node,
                     DropAction& action);
 };
