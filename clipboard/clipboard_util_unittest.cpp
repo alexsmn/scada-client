@@ -3,6 +3,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "services/task_manager_mock.h"
+#include "services/test/test_task_manager.h"
 
 #include <gmock/gmock.h>
 
@@ -11,100 +12,6 @@
 using namespace testing;
 
 namespace {
-
-class TestStorage {
- public:
-  explicit TestStorage(scada::NodeId root_node_id)
-      : root_node_{.node_id = root_node_id} {}
-
-  scada::NodeId Insert(scada::NodeState&& node_state) {
-    assert(node_state.node_id.is_null());
-
-    // TODO: Set namespace based on the node type definition.
-    scada::NodeId node_id{next_node_id_++, NamespaceIndexes::GROUP};
-
-    auto* parent_node = FindNode(node_state.parent_id);
-    if (!parent_node) {
-      throw std::runtime_error{"Unknown parent node ID"};
-    }
-
-    node_parent_ids_.try_emplace(node_id, node_state.parent_id);
-
-    node_state.node_id = node_id;
-    parent_node->children.emplace_back(std::move(node_state));
-
-    return node_id;
-  }
-
-  scada::NodeState* FindNode(const scada::NodeId& node_id) {
-    if (node_id == root_node_.node_id) {
-      return &root_node_;
-    }
-
-    auto i = node_parent_ids_.find(node_id);
-    if (i == node_parent_ids_.end()) {
-      return nullptr;
-    }
-
-    auto* parent_node = FindNode(i->second);
-    if (!parent_node) {
-      return nullptr;
-    }
-
-    auto j = std::ranges::find(parent_node->children, node_id,
-                               [](auto& x) { return x.node_id; });
-    return j != parent_node->children.end() ? std::to_address(j) : nullptr;
-  }
-
-  scada::NodeState root_node_;
-
-  std::unordered_map<scada::NodeId, scada::NodeId /*parent_id*/>
-      node_parent_ids_;
-
-  scada::NumericId next_node_id_ = 1000;
-};
-
-class TestTaskManager : public TaskManager {
- public:
-  explicit TestTaskManager(TestStorage& storage) : storage_{storage} {}
-
-  virtual promise<> PostTask(std::u16string_view description,
-                             const TaskLauncher& launcher) override {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-  }
-
-  virtual promise<scada::NodeId> PostInsertTask(
-      const scada::NodeState& node_state) override {
-    auto node_state_copy = node_state;
-    auto node_id = storage_.Insert(std::move(node_state_copy));
-    return make_resolved_promise(std::move(node_id));
-  }
-
-  virtual promise<> PostUpdateTask(const scada::NodeId& node_id,
-                                   scada::NodeAttributes attributes,
-                                   scada::NodeProperties properties) override {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-  }
-
-  virtual promise<> PostDeleteTask(const scada::NodeId& node_id) override {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-  }
-
-  virtual promise<> PostAddReference(const scada::NodeId& reference_type_id,
-                                     const scada::NodeId& source_id,
-                                     const scada::NodeId& target_id) override {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-  }
-
-  virtual promise<> PostDeleteReference(
-      const scada::NodeId& reference_type_id,
-      const scada::NodeId& source_id,
-      const scada::NodeId& target_id) override {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-  }
-
-  TestStorage& storage_;
-};
 
 void CompareRecursive(const scada::NodeState& a, const scada::NodeState& b) {
   EXPECT_EQ(a.type_definition_id, b.type_definition_id);

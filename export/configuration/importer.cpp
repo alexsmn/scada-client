@@ -5,7 +5,10 @@
 #include "services/task_manager.h"
 
 void ApplyDiffData(const DiffData& diff, TaskManager& task_manager) {
-  for (const auto& node_state : diff.create_nodes) {
+  auto node_states = diff.create_nodes;
+  scada::SortNodesHierarchically(node_states);
+
+  for (const auto& node_state : node_states) {
     task_manager.PostInsertTask(node_state);
   }
 
