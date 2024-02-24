@@ -8,12 +8,11 @@
 #include "base/csv_writer.h"
 #include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
-#include "export/configuration/diff_data_builder.h"
+#include "export/configuration/diff_builder.h"
+#include "export/configuration/diff_report.h"
 #include "export/configuration/export_data_builder.h"
 #include "export/configuration/export_data_reader.h"
 #include "export/configuration/export_data_writer.h"
-#include "export/configuration/import_data_builder.h"
-#include "export/configuration/import_data_report.h"
 #include "export/configuration/importer.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
@@ -81,30 +80,6 @@ promise<void> ExportConfigurationCommand::Execute(
 promise<void> ImportConfigurationCommand::ImportFrom(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
-  ExportData export_data = LoadExportData(path);
-
-  ImportData import_data = BuildImportData(node_service_, export_data);
-  if (import_data.IsEmpty()) {
-    return ToVoidPromise(dialog_service.RunMessageBox(
-        u"Изменений не найдено.", kImportTitle, MessageBoxMode::Info));
-  }
-
-  ShowImportReport(import_data, node_service_);
-
-  return dialog_service
-      .RunMessageBox(u"Применить изменения?", kImportTitle,
-                     MessageBoxMode::QuestionYesNoDefaultNo)
-      .then([import_data = std::move(import_data),
-             this](MessageBoxResult apply_prompt) {
-        if (apply_prompt == MessageBoxResult::Yes) {
-          ApplyImportData(import_data, task_manager_);
-        }
-      });
-}
-
-promise<void> ImportConfigurationCommand::ImportFrom2(
-    const std::filesystem::path& path,
-    DialogService& dialog_service) const {
   auto diff_promise = ExportDataBuilder{node_service_}.Build().then(
       [this, path](const ExportData& old_export_data) {
         ExportData new_export_data = LoadExportData(path);
@@ -157,6 +132,6 @@ promise<> ImportConfigurationCommand::Execute(
       .then(CatchResourceError(
           dialog_service, kImportTitle,
           [this, &dialog_service](const std::filesystem::path& path) {
-            return ImportFrom2(path, dialog_service);
+            return ImportFrom(path, dialog_service);
           }));
 }

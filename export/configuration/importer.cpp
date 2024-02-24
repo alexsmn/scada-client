@@ -1,12 +1,10 @@
 #include "export/configuration/importer.h"
 
 #include "export/configuration/diff_data.h"
-#include "export/configuration/import_data.h"
 #include "services/task_manager.h"
 
-template <class T>
-void ApplyImportDataT(const T& import_data, TaskManager& task_manager) {
-  for (const auto& p : import_data.create_nodes) {
+void ApplyDiffData(const DiffData& diff, TaskManager& task_manager) {
+  for (const auto& p : diff.create_nodes) {
     task_manager.PostInsertTask(p.id, p.parent_id, p.type_id, p.attrs, p.props,
                                 /*references=*/{});
 
@@ -18,7 +16,7 @@ void ApplyImportDataT(const T& import_data, TaskManager& task_manager) {
     }
   }
 
-  for (const auto& p : import_data.modify_nodes) {
+  for (const auto& p : diff.modify_nodes) {
     if (!p.attrs.empty() || !p.props.empty()) {
       task_manager.PostUpdateTask(p.id, p.attrs, p.props);
     }
@@ -36,15 +34,7 @@ void ApplyImportDataT(const T& import_data, TaskManager& task_manager) {
     }
   }
 
-  for (auto& p : import_data.delete_nodes) {
+  for (auto& p : diff.delete_nodes) {
     task_manager.PostDeleteTask(p);
   }
-}
-
-void ApplyImportData(const ImportData& import_data, TaskManager& task_manager) {
-  ApplyImportDataT(import_data, task_manager);
-}
-
-void ApplyDiffData(const DiffData& diff, TaskManager& task_manager) {
-  ApplyImportDataT(diff, task_manager);
 }

@@ -11,3 +11,8 @@ target_link_libraries(client_services_qt_unittests PRIVATE
   # TODO: Remove this dependency.
   client_qt_lib
 )
+
+target_link_libraries(client_services_wt_unittests PRIVATE
+  # TODO: Remove this dependency.
+  client_wt_lib
+)

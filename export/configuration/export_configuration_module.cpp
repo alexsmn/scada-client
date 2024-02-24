@@ -3,8 +3,8 @@
 #include "common_resources.h"
 #include "controller/command_registry.h"
 #include "core/main_command_context.h"
+#include "export/configuration/diff_report.h"
 #include "export/configuration/excel_configuration_commands.h"
-#include "export/configuration/import_data_report.h"
 
 ExportConfigurationModule::ExportConfigurationModule(
     ExportConfigurationModuleContext&& context)

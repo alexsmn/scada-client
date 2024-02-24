@@ -1,6 +1,6 @@
 #define _SILENCE_CXX20_CODECVT_FACETS_DEPRECATION_WARNING
 
-#include "export/configuration/import_data_report.h"
+#include "export/configuration/diff_report.h"
 
 #include "aui/resource_error.h"
 #include "base/files/file_path.h"
@@ -9,7 +9,6 @@
 #include "base/win/win_util2.h"
 #include "common/node_state.h"
 #include "export/configuration/diff_data.h"
-#include "export/configuration/import_data.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -60,13 +59,12 @@ const char16_t kDiffReportHeader[] =
 ВНИМАНИЕ: При некорректном использовании данная операция может привести к
 потере конфигурации.)";
 
-template <class T>
-void PrintImportReport(u16ostream& report,
-                       const T& import_data,
-                       NodeService& node_service) {
+void PrintDiffReport(u16ostream& report,
+                     const DiffData& diff,
+                     NodeService& node_service) {
   report << kDiffReportHeader << std::endl << std::endl;
 
-  for (auto& p : import_data.create_nodes) {
+  for (auto& p : diff.create_nodes) {
     auto type_definition = node_service.GetNode(p.type_id);
     report << u"Создать: " << ToString16(type_definition.display_name())
            << std::endl;
@@ -80,7 +78,7 @@ void PrintImportReport(u16ostream& report,
     PrintRefs(node_service, p.refs, report);
   }
 
-  for (auto& p : import_data.modify_nodes) {
+  for (auto& p : diff.modify_nodes) {
     auto node = node_service.GetNode(p.id);
     report << u"Изменить: " << ToString16(node.display_name()) << std::endl;
     if (!p.attrs.browse_name.empty())
@@ -89,7 +87,7 @@ void PrintImportReport(u16ostream& report,
     PrintRefs(node_service, p.refs, report);
   }
 
-  for (auto& p : import_data.delete_nodes) {
+  for (auto& p : diff.delete_nodes) {
     auto node = node_service.GetNode(p);
     report << u"Удалить: " << ToString16(node.display_name()) << std::endl;
   }
@@ -114,25 +112,13 @@ void OpenNotepad(const std::filesystem::path& path) {
   CloseHandle(process_info.hThread);
 }
 
-void ShowImportReport(const ImportData& import_data,
-                      NodeService& node_service) {
-  if (!s_import_report_enabled) {
-    return;
-  }
-
-  std::basic_ofstream<char16_t> report("report.txt");
-  PrintImportReport(report, import_data, node_service);
-
-  OpenNotepad("report.txt");
-}
-
 void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
   if (!s_import_report_enabled) {
     return;
   }
 
   std::basic_ofstream<char16_t> report("report.txt");
-  PrintImportReport(report, diff, node_service);
+  PrintDiffReport(report, diff, node_service);
 
   OpenNotepad("report.txt");
 }
