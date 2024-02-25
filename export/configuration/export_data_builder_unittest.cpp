@@ -32,19 +32,25 @@ TEST(ExportDataBuilder, Test) {
 
   const std::vector<scada::NodeState> nodes{
       MakeNodeState(
-          /*node_id=*/{11, 1},
+          /*node_id=*/{11, NamespaceIndexes::TS},
           /*type_definition_id=*/data_items::id::AnalogItemType,
           /*display_name=*/u"ТИТ 11",
           /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "#####"}}),
       MakeNodeState(
-          /*node_id=*/{22, 2},
+          /*node_id=*/{22, NamespaceIndexes::TS},
           /*type_definition_id=*/data_items::id::DiscreteItemType,
           /*display_name=*/u"ТС 22",
           /*props=*/{{data_items::id::DiscreteItemType_Inversion, true}}),
       MakeNodeState(
-          /*node_id=*/{33, 3},
+          /*node_id=*/{33, NamespaceIndexes::TS},
           /*type_definition_id=*/data_items::id::AnalogItemType,
           /*display_name=*/u"ТИТ 33",
+          /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "000"}}),
+      // Not exported because of the namespace.
+      MakeNodeState(
+          /*node_id=*/{44, NamespaceIndexes::VIDICON},
+          /*type_definition_id=*/data_items::id::AnalogItemType,
+          /*display_name=*/u"VIDICON 44",
           /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "000"}})};
 
   StaticNodeService node_service;

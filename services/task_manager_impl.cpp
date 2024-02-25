@@ -274,14 +274,15 @@ void TaskManagerImpl::ReportRequestCompletion(
   if (!status || profile_.show_write_ok) {
     std::u16string message = base::StringPrintf(
         u"%ls: %ls.", task.title.c_str(), ToString16(status).c_str());
-    if (!result_text.empty())
+    if (!result_text.empty()) {
       message += u'\n' + result_text;
+    }
 
     auto severity = status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
     local_events_.ReportEvent(severity, message);
   }
 
-  scada::ResolveStatusPromise(task.promise, status);
+  scada::CompleteStatusPromise(task.promise, status);
 }
 
 bool TaskManagerImpl::IsRunning() const {
@@ -308,16 +309,18 @@ void TaskManagerImpl::Run() {
 
   // show or hide dialog
   if (!running_task_.IsNull() || !tasks_.empty()) {
-    if (!start_time_.has_value())
+    if (!start_time_.has_value()) {
       start_time_ = std::chrono::steady_clock::now();
+    }
 
     if (!running_progress_ &&
         std::chrono::steady_clock::now() - *start_time_ >= 300ms) {
       running_progress_ = progress_host_.Start();
     }
 
-    if (running_progress_)
+    if (running_progress_) {
       running_progress_->SetProgress(count_, count_ - tasks_.size());
+    }
 
   } else {
     CancelProgress();

@@ -1,5 +1,6 @@
 #include "export/configuration/export_data_builder.h"
 
+#include "base/containers/contains.h"
 #include "base/range_util.h"
 #include "export/configuration/export_data.h"
 #include "model/data_items_node_ids.h"
@@ -10,6 +11,9 @@
 #include <boost/range/combine.hpp>
 
 namespace {
+
+const scada::NamespaceIndex kExportedNamespaceIndexes[] = {
+    NamespaceIndexes::GROUP, NamespaceIndexes::TS, NamespaceIndexes::TIT};
 
 ExportData::Node MakeExportNode(
     const NodeRef& node,
@@ -62,7 +66,12 @@ promise<std::vector<ExportData::Node>> CollectNodeHierarchy(
       .then(
           // Cannot use `&Join` because it cannot pick the proper overload.
           [](const std::vector<std::vector<ExportData::Node>>& node_list_list) {
-            return Join(node_list_list);
+            std::vector<ExportData::Node> nodes = Join(node_list_list);
+            std::erase_if(nodes, [](const ExportData::Node& node) {
+              return !base::Contains(kExportedNamespaceIndexes,
+                                     node.node_id.namespace_index());
+            });
+            return nodes;
           });
 }
 

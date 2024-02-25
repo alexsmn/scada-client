@@ -85,7 +85,7 @@ promise<void> ImportConfigurationCommand::ImportFrom(
         ExportData new_export_data = LoadExportData(path);
         DiffData diff = BuildDiffData(old_export_data, new_export_data);
         if (diff.IsEmpty()) {
-          throw ResourceError{u"Изменений не найдено."};
+          throw ResourceError{u"Изменений не найдено"};
         }
         ShowDiffReport(diff, node_service_);
         return diff;

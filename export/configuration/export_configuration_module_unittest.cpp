@@ -5,6 +5,7 @@
 #include "base/csv_writer.h"
 #include "base/file_path_util.h"
 #include "base/files/scoped_temp_dir.h"
+#include "common/test/node_state_matcher.h"
 #include "common_resources.h"
 #include "controller/command_registry.h"
 #include "core/main_command_context.h"
@@ -67,7 +68,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
                 {.prop_decl_id = data_items::id::AnalogItemType_DisplayFormat,
                  .display_name = u"Display Format"}},
       .nodes = {
-          {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
+          {.node_id = {1, NamespaceIndexes::TS},
            .parent_id = data_items::id::DataItems,
            .type_display_name = u"DiscreteItemType",
            .type_id = data_items::id::DiscreteItemType,
@@ -75,7 +76,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
            .property_values = {{.prop_decl_id =
                                     data_items::id::DiscreteItemType_Inversion,
                                 .value = true}}},
-          {.node_id = scada::NodeId{1, NamespaceIndexes::TIT},
+          {.node_id = {1, NamespaceIndexes::TIT},
            .parent_id = data_items::id::DataItems,
            .type_display_name = u"AnalogItemType",
            .type_id = data_items::id::AnalogItemType,
@@ -101,23 +102,23 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
 
   EXPECT_CALL(
       task_manager_,
-      PostInsertTask(scada::NodeState{
+      PostInsertTask(NodeStateIs(scada::NodeState{
           .node_id = {1, NamespaceIndexes::TS},
           .type_definition_id = data_items::id::DiscreteItemType,
           .parent_id = data_items::id::DataItems,
           .attributes = {.display_name = u"TS 1"},
-          .properties = {{data_items::id::DiscreteItemType_Inversion, true}}}))
+          .properties = {{data_items::id::DiscreteItemType_Inversion, true}}})))
       .WillOnce(Return(
           make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TS})));
 
   EXPECT_CALL(task_manager_,
-              PostInsertTask(scada::NodeState{
+              PostInsertTask(NodeStateIs(scada::NodeState{
                   .node_id = {1, NamespaceIndexes::TIT},
                   .type_definition_id = data_items::id::AnalogItemType,
                   .parent_id = data_items::id::DataItems,
                   .attributes = {.display_name = u"TIT 1"},
                   .properties = {{data_items::id::AnalogItemType_DisplayFormat,
-                                  "#####"}}}))
+                                  "#####"}}})))
       .WillOnce(Return(
           make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TIT})));
 

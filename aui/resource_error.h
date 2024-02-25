@@ -24,7 +24,7 @@ inline std::u16string GetResourceErrorMessage(std::exception_ptr e) {
     return e.message();
   } catch (...) {
     assert(false);
-    return u"Ошибка.";
+    return u"Ошибка";
   }
 }
 
