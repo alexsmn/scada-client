@@ -88,8 +88,11 @@ promise<> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
       node_state.references,
       [](const scada::ReferenceDescription& ref) { return !ref.forward; });
 
+  auto children = std::exchange(node_state.children, {});
+
+  // `PostInsertTask` must take a node state with no children.
   return task_manager.PostInsertTask(node_state)
-      .then([&task_manager, children = std::move(node_state.children)](
+      .then([&task_manager, children = std::move(children)](
                 const scada::NodeId& node_id) mutable {
         std::vector<promise<>> promises;
         for (auto& child : children) {

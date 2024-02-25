@@ -18,8 +18,6 @@ const scada::NamespaceIndex kExportedNamespaceIndexes[] = {
 ExportData::Node MakeExportNode(
     const NodeRef& node,
     const std::vector<ExportData::Property>& props) {
-  auto type = node.type_definition();
-
   std::vector<ExportData::PropertyValue> prop_values;
   for (const auto& prop : props) {
     if (prop.reference) {
@@ -39,11 +37,14 @@ ExportData::Node MakeExportNode(
     }
   }
 
+  const NodeRef& type_def = node.type_definition();
+
   return ExportData::Node{
       .node_id = node.node_id(),
       .parent_id = node.parent().node_id(),
-      .type_display_name = type ? type.display_name() : scada::LocalizedText{},
-      .type_id = type ? type.node_id() : scada::NodeId{},
+      .type_display_name =
+          type_def ? type_def.display_name() : scada::LocalizedText{},
+      .type_id = type_def ? type_def.node_id() : scada::NodeId{},
       .display_name = node.display_name(),
       .property_values = std::move(prop_values)};
 }

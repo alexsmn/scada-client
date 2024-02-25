@@ -33,7 +33,7 @@ TEST(PasteNodesFromNodeStateRecursive, Test) {
   TestTaskManager task_manager{storage};
 
   // Have to specify parent IDs for children to be able to compare them.
-  const scada::NodeState top_node{
+  const auto& top_node = scada::NodeState{
       .node_id = {1, NamespaceIndexes::GROUP},
       .type_definition_id = data_items::id::DataGroupType,
       .parent_id = data_items::id::DataItems,
@@ -52,7 +52,7 @@ TEST(PasteNodesFromNodeStateRecursive, Test) {
                          .attributes = {.browse_name = "DataItem1",
                                         .display_name = u"DataItem1"}}}}}};
 
-  PasteNodesFromNodeStateRecursive(task_manager, scada::NodeState(top_node))
+  PasteNodesFromNodeStateRecursive(task_manager, scada::NodeState{top_node})
       .get();
 
   auto* storage_root_node = storage.FindNode(data_items::id::DataItems);

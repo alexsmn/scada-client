@@ -15,7 +15,7 @@ class TaskManager {
       std::u16string_view description,
       const TaskLauncher& launcher) = 0;
 
-  // Those fields must be unset: node_class, reference_type_id.
+  // Those fields must be unset: node_class, reference_type_id, children.
   virtual scada::status_promise<scada::NodeId> PostInsertTask(
       const scada::NodeState& new_node_state) = 0;
 

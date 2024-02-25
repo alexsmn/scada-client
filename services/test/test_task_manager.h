@@ -14,6 +14,8 @@ class TestTaskManager : public TaskManager {
 
   virtual promise<scada::NodeId> PostInsertTask(
       const scada::NodeState& node_state) override {
+    assert(node_state.children.empty());
+
     auto node_state_copy = node_state;
     auto node_id = storage_.Insert(std::move(node_state_copy));
     return make_resolved_promise(std::move(node_id));

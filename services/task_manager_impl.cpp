@@ -97,6 +97,7 @@ scada::status_promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
   // Those fields must be unset:
   assert(node_state.node_class == scada::NodeClass::Object);
   assert(node_state.reference_type_id.is_null());
+  assert(node_state.children.empty());
 
   scada::status_promise<scada::NodeId> final_promise;
 

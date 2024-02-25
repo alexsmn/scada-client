@@ -44,7 +44,7 @@ class TestStorage {
     }
 
     auto j = std::ranges::find(parent_node->children, node_id,
-                               [](auto& x) { return x.node_id; });
+                               &scada::NodeState::node_id);
     return j != parent_node->children.end() ? std::to_address(j) : nullptr;
   }
 

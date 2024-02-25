@@ -32,7 +32,7 @@ TEST(ExportDataBuilder, Test) {
 
   const std::vector<scada::NodeState> nodes{
       MakeNodeState(
-          /*node_id=*/{11, NamespaceIndexes::TS},
+          /*node_id=*/{11, NamespaceIndexes::TIT},
           /*type_definition_id=*/data_items::id::AnalogItemType,
           /*display_name=*/u"ТИТ 11",
           /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "#####"}}),
@@ -42,7 +42,7 @@ TEST(ExportDataBuilder, Test) {
           /*display_name=*/u"ТС 22",
           /*props=*/{{data_items::id::DiscreteItemType_Inversion, true}}),
       MakeNodeState(
-          /*node_id=*/{33, NamespaceIndexes::TS},
+          /*node_id=*/{33, NamespaceIndexes::TIT},
           /*type_definition_id=*/data_items::id::AnalogItemType,
           /*display_name=*/u"ТИТ 33",
           /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "000"}}),
@@ -69,7 +69,7 @@ TEST(ExportDataBuilder, Test) {
       export_data.nodes,
       UnorderedElementsAre(
           FieldsAre(
-              /*node_id=*/scada::NodeId{11, 1},
+              /*node_id=*/scada::NodeId{11, NamespaceIndexes::TIT},
               /*parent_id=*/scada::NodeId{},
               /*type_display_name=*/u"Объект ТИТ",
               /*type_id=*/data_items::id::AnalogItemType,
@@ -81,7 +81,7 @@ TEST(ExportDataBuilder, Test) {
                   /*target_id=*/_, /*target_display_name=*/_,
                   /*reference=*/false))),
           FieldsAre(
-              /*node_id=*/scada::NodeId{22, 2},
+              /*node_id=*/scada::NodeId{22, NamespaceIndexes::TS},
               /*parent_id=*/scada::NodeId{},
               /*type_display_name=*/u"Объект ТС",
               /*type_id=*/data_items::id::DiscreteItemType,
@@ -93,7 +93,7 @@ TEST(ExportDataBuilder, Test) {
                   /*target_display_name=*/_,
                   /*reference=*/false))),
           FieldsAre(
-              /*node_id=*/scada::NodeId{33, 3},
+              /*node_id=*/scada::NodeId{33, NamespaceIndexes::TIT},
               /*parent_id=*/scada::NodeId{},
               /*type_display_name=*/u"Объект ТИТ",
               /*type_id=*/data_items::id::AnalogItemType,

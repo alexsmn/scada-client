@@ -6,6 +6,8 @@
 
 #include <gmock/gmock.h>
 
+#include "base/debug_util-inl.h"
+
 using namespace testing;
 
 // Pass child node before parent node. Ensure nodes are created correctly.
