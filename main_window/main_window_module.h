@@ -4,6 +4,7 @@
 #include "filesystem/filesystem_commands.h"
 #include "main_window/main_window_context.h"
 
+#include <stack>
 #include <functional>
 #include <memory>
 
@@ -81,4 +82,6 @@ class MainWindowModule : private MainWindowModuleContext {
   std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<MainWindowManager> main_window_manager_;
   std::unique_ptr<EventDispatcher> event_dispatcher_;
+
+  std::stack<std::shared_ptr<void>> singletons_;
 };

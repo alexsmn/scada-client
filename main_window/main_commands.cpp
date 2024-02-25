@@ -14,7 +14,6 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
-#include "main_window/view_manager.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
 #include "services/local_events.h"
@@ -83,10 +82,6 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_ACKNOWLEDGE_ALL:
     case ID_VIEW_PUBLIC_FOLDER:
     case ID_WINDOW_NEW:
-    case ID_PAGE_NEW:
-    case ID_PAGE_RENAME:
-    case ID_PAGE_DELETE:
-      return this;
 
     case ID_VIEW_ADD_TO_FAVOURITES:
     case ID_VIEW_CHANGE_TITLE:
@@ -238,28 +233,6 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
       main_window_manager_.CreateMainWindow();
       return;
 
-    case ID_PAGE_NEW: {
-      main_window_.SavePage();
-      Page& page = profile_.CreatePage();
-      main_window_.OpenPage(page);
-      return;
-    }
-
-    case ID_PAGE_RENAME:
-      RenameCurrentPage();
-      return;
-
-    case ID_PAGE_DELETE: {
-      auto& page = main_window_.current_page();
-      profile_.pages.erase(page.id);
-      // Select first not opened page.
-      Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
-      if (!select_page)
-        select_page = &profile_.CreatePage();
-      main_window_.OpenPage(*select_page);
-      return;
-    }
-
     case ID_VIEW_CHANGE_TITLE:
       ShowRenameWindowDialog();
       return;
@@ -340,7 +313,7 @@ promise<> MainCommands::RenameCurrentPage() {
   return RunPromptDialog(dialog_service_, u"Имя:", u"Переименование",
                          main_window_.current_page().title)
       .then([this](const std::u16string& title) {
-        main_window_.SetPageTitle(title);
+        main_window_.SetCurrentPageTitle(title);
       });
 }
 

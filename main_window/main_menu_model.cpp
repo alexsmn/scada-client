@@ -181,8 +181,9 @@ void PageMenuModel::OpenPageHelper(Page& page, bool revert) {
     return;
   }
 
-  if (!revert)
-    main_window_.SavePage();
+  if (!revert) {
+    main_window_.SaveCurrentPage();
+  }
 
   main_window_.OpenPage(page);
 }

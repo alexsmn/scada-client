@@ -51,7 +51,7 @@ void MainWindow::CleanupForTesting() {
 }
 
 void MainWindow::BeforeClose() {
-  SavePage();
+  SaveCurrentPage();
 
   SetActiveView(nullptr);
   SetActiveDataView(nullptr);
@@ -209,6 +209,19 @@ void MainWindow::OpenPage(const Page& page) {
   OnSelectionChanged();
 }
 
+void MainWindow::DeleteCurrentPage() {
+  auto& page = current_page();
+  profile_.pages.erase(page.id);
+
+  // Select first not opened page.
+  Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
+  if (!select_page) {
+    select_page = &profile_.CreatePage();
+  }
+
+  OpenPage(*select_page);
+}
+
 const Page& MainWindow::current_page() const {
   return view_manager_->current_page();
 }
@@ -234,7 +247,7 @@ OpenedView* MainWindow::FindOpenedViewByType(const WindowInfo& window_info) {
   return view_manager_->FindViewByType(window_info);
 }
 
-void MainWindow::SavePage() {
+void MainWindow::SaveCurrentPage() {
   LOG(INFO) << "Save page " << view_manager_->current_page().id;
 
   view_manager_->SavePage();
@@ -283,7 +296,7 @@ void MainWindow::CloseView(OpenedView& view) {
   view_manager_->CloseView(view);
 }
 
-void MainWindow::SetPageTitle(const std::u16string& title) {
+void MainWindow::SetCurrentPageTitle(std::u16string_view title) {
   const_cast<Page&>(current_page()).title = title;
   UpdateTitle();
 }

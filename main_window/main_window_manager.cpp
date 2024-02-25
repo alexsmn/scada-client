@@ -42,11 +42,10 @@ void MainWindowManager::CloseMainWindow(int window_id) {
 }
 
 bool MainWindowManager::IsPageOpened(int page_id) const {
-  return std::ranges::any_of(main_windows_ | std::views::values,
-                             [page_id](const auto& main_window) {
-                               const auto* page = main_window->GetCurrentPage();
-                               return page && page->id == page_id;
-                             });
+  return std::ranges::any_of(
+      main_windows_ | std::views::values, [page_id](const auto& main_window) {
+        return main_window->GetCurrentPage().id == page_id;
+      });
 }
 
 Page* MainWindowManager::FindFirstNotOpenedPage() {

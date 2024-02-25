@@ -15,6 +15,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "main_window/opened_view_commands.h"
+#include "main_window/page_commands.h"
 #include "main_window/selection_commands.h"
 #include "main_window/status_bar_model_impl.h"
 #include "profile/profile.h"
@@ -27,11 +28,12 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{
-          profile_,
-          [this](int window_id) {
-            return main_window_factory_(MakeMainWindowContext(window_id));
-          },
-          quit_handler_});
+          .profile_ = profile_,
+          .main_window_factory_ =
+              [this](int window_id) {
+                return main_window_factory_(MakeMainWindowContext(window_id));
+              },
+          .quit_handler_ = quit_handler_});
 
   // |main_window_manager_| must be assigned.
   main_window_manager_->Init();
@@ -39,6 +41,9 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
       executor_, event_fetcher_, local_events_, profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
+
+  singletons_.emplace(std::make_shared<PageCommands>(
+      PageCommandsContext{main_commands_, profile_, *main_window_manager_}));
 }
 
 MainWindowModule ::~MainWindowModule() = default;

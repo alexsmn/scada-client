@@ -33,11 +33,7 @@ class BasicCommand {
   using CheckedHandler = UnaryFunction<bool, C>;
   using AvailableHandler = UnaryFunction<bool, C>;
 
-  BasicCommand() {}
-
-  // Allow implicit conversion from `unsigned` to support
-  // `registry.AddCommand(ID_XXX)`.
-  BasicCommand(unsigned command_id) : command_id{command_id} {}
+  // TODO: Remove settings and use designated initializers.
 
   BasicCommand& set_title(std::u16string_view title) {
     this->title = title;
@@ -92,6 +88,10 @@ class BasicCommandRegistry {
   BasicCommandRegistry& operator=(const BasicCommandRegistry&) = delete;
 
   BasicCommand<C>& AddCommand(BasicCommand<C> command);
+
+  BasicCommand<C>& AddCommand(unsigned command_id) {
+    return AddCommand({.command_id = command_id});
+  }
 
   BasicCommand<C>* FindCommand(unsigned command_id);
   const BasicCommand<C>* FindCommand(unsigned command_id) const;

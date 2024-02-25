@@ -52,10 +52,11 @@ class MainWindow : protected MainWindowContext,
   virtual void SetWindowFlashing(bool flashing) = 0;
 
   // MainWindow
-  const Page* GetCurrentPage() const { return &current_page(); }
-  void OpenPage(const Page& page);
-  void SavePage();
-  void SetPageTitle(const std::u16string& title);
+  virtual const Page& GetCurrentPage() const override { return current_page(); }
+  virtual void OpenPage(const Page& page) override;
+  virtual void SetCurrentPageTitle(std::u16string_view title) override;
+  virtual void SaveCurrentPage() override;
+  virtual void DeleteCurrentPage() override;
   virtual OpenedView* GetActiveView() override;
   virtual OpenedView* GetActiveDataView() override;
   scada::status_promise<OpenedView*> OpenView(
