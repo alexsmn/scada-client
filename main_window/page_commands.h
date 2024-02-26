@@ -5,8 +5,6 @@
 template <class T>
 class BasicCommandRegistry;
 
-class DialogService;
-class MainWindowInterface;
 class MainWindowManager;
 class Profile;
 struct MainCommandContext;

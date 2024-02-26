@@ -139,10 +139,11 @@ void PageMenuModel::MenuWillShow() {
   active_index_ = -1;
 
   int index = 0;
-  for (auto& p : profile_.pages) {
-    AddRadioItem(0, p.second.title, 0);
-    if (main_window_.current_page().id == p.first)
+  for (const auto& [page_id, page] : profile_.pages) {
+    AddRadioItem(0, page.title, 0);
+    if (main_window_.current_page().id == page_id) {
       active_index_ = index;
+    }
     ++index;
   }
 }

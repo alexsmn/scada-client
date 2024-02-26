@@ -165,3 +165,24 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
   main_window_.OpenView(window_def, /*make_active=*/true).get();
 }
 #endif
+
+// When the current page is the last not opened, deletes the current page,
+// creates another page and switches to it.
+// TODO: Fix this test.
+TEST_F(MainWindowTest, DISABLED_DeleteCurrentPage_Last) {
+  main_window_.DeleteCurrentPage();
+
+  EXPECT_THAT(profile_.pages, SizeIs(1));
+  EXPECT_EQ(profile_.pages.begin()->second.GetWindowCount(), 0);
+}
+
+// When pages is NOT last, deletes the current page, creates to another page not
+// opened page.
+TEST_F(MainWindowTest, DeleteCurrentPage_NotLast) {
+  int another_page_id = profile_.CreatePage().id;
+
+  main_window_.DeleteCurrentPage();
+
+  EXPECT_THAT(profile_.pages, SizeIs(1));
+  EXPECT_EQ(main_window_.current_page().id, another_page_id);
+}

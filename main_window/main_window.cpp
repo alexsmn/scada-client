@@ -214,7 +214,7 @@ void MainWindow::DeleteCurrentPage() {
   profile_.pages.erase(page.id);
 
   // Select first not opened page.
-  Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
+  const Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
   if (!select_page) {
     select_page = &profile_.CreatePage();
   }

@@ -51,7 +51,7 @@ bool MainWindowManager::IsPageOpened(int page_id) const {
 Page* MainWindowManager::FindFirstNotOpenedPage() {
   const auto& pages = profile_.pages | std::views::values;
   auto i = std::ranges::find_if(
-      pages, [this](const Page& page) { return IsPageOpened(page.id); });
+      pages, [this](const Page& page) { return !IsPageOpened(page.id); });
   return i != pages.end() ? &*i : nullptr;
 }
 
