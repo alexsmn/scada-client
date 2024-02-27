@@ -1,12 +1,12 @@
 #pragma once
 
 #include "common/aliases.h"
-#include "filesystem/filesystem_commands.h"
+#include "core/node_command_context.h"
 #include "main_window/main_window_context.h"
 
-#include <stack>
 #include <functional>
 #include <memory>
+#include <stack>
 
 template <class T>
 class BasicCommandRegistry;
@@ -61,7 +61,7 @@ struct MainWindowModuleContext {
   FileManager& file_manager_;
   BlinkerManager& blinker_manager_;
   Speech& speech_;
-  OpenFileCommand open_file_command_;
+  const NodeCommandHandler node_command_handler_;
   ProgressHost& progress_host_;
   PropertyService& property_service_;
   CreateTree& create_tree_;

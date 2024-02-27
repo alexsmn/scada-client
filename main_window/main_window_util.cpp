@@ -58,34 +58,34 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
                                                   : kNodePropertyWindowInfo;
 }
 
-bool ExecuteDefaultNodeCommand(MainWindow* main_window,
-                               const std::shared_ptr<Executor>& executor,
+bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
                                const OpenFileCommand& file_command,
-                               const NodeRef& node,
-                               aui::KeyModifiers key_modifiers) {
-  assert(main_window);
+                               const NodeCommandContext& context) {
+  assert(context.main_window);
 
-  if (IsInstanceOf(node, filesystem::id::FileType)) {
-    file_command(
-        OpenFileCommandContext{main_window, executor, node, key_modifiers});
+  if (IsInstanceOf(context.node, filesystem::id::FileType)) {
+    file_command(OpenFileCommandContext{context.main_window, executor,
+                                        context.node, context.key_modifiers});
     return true;
   }
 
-  const auto& window_info = GetDefaultNodeWindowInfo(node, key_modifiers);
+  const auto& window_info =
+      GetDefaultNodeWindowInfo(context.node, context.key_modifiers);
 
-  auto* view = main_window->GetActiveDataView();
+  auto* view = context.main_window->GetActiveDataView();
   auto* contents = view ? view->GetContentsModel() : nullptr;
   if (view && contents && view->window_info().can_insert_item()) {
     if ((&view->window_info() == &window_info) ||
-        (key_modifiers & aui::ControlModifier)) {
+        (context.key_modifiers & aui::ControlModifier)) {
       // insert items into active frame
       promise<NodeIdSet> node_ids_promise =
-          IsInstanceOf(node, data_items::id::DataGroupType)
-              ? ExpandGroupItemIds(node)
-              : make_resolved_promise(MakeNodeIdSet(node.node_id()));
+          IsInstanceOf(context.node, data_items::id::DataGroupType)
+              ? ExpandGroupItemIds(context.node)
+              : make_resolved_promise(MakeNodeIdSet(context.node.node_id()));
+
       // TODO: Capture weak pointer.
-      node_ids_promise.then([contents,
-                             key_modifiers](const NodeIdSet& node_ids) {
+      node_ids_promise.then([contents, key_modifiers = context.key_modifiers](
+                                const NodeIdSet& node_ids) {
         unsigned flags =
             (key_modifiers & aui::ControlModifier) ? ContentsModel::APPEND : 0;
         for (const auto& node_id : node_ids) {
@@ -97,10 +97,11 @@ bool ExecuteDefaultNodeCommand(MainWindow* main_window,
     }
   }
 
-  auto window_definition = MakeWindowDefinition(&window_info, node, true);
+  auto window_definition =
+      MakeWindowDefinition(&window_info, context.node, true);
 
   // TODO: Capture |main_window| by weak pointer.
 
-  OpenView(main_window, window_definition);
+  OpenView(context.main_window, window_definition);
   return true;
 }

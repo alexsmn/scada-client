@@ -8,9 +8,9 @@
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
+#include "core/node_command_context.h"
 #include "filesystem/file_manager.h"
 #include "main_window/main_window_manager.h"
-#include "main_window/main_window_util.h"
 #include "main_window/opened_view.h"
 #include "main_window/selection_commands.h"
 #include "main_window/tab_popup_menu.h"
@@ -326,11 +326,12 @@ void MainWindow::SplitView(OpenedView& view, bool vertically) {
 
 void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
   aui::KeyModifiers key_modifiers{};
-  if (::GetAsyncKeyState(VK_SHIFT))
+  if (::GetAsyncKeyState(VK_SHIFT)) {
     key_modifiers |= aui::ShiftModifier;
-  if (::GetAsyncKeyState(VK_CONTROL))
+  }
+  if (::GetAsyncKeyState(VK_CONTROL)) {
     key_modifiers |= aui::ControlModifier;
+  }
 
-  ::ExecuteDefaultNodeCommand(this, executor_, open_file_command_, node,
-                              key_modifiers);
+  node_command_handler_(NodeCommandContext{this, node, key_modifiers});
 }

@@ -8,7 +8,6 @@
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_mock.h"
 #include "filesystem/file_registry.h"
-#include "filesystem/filesystem_commands.h"
 #include "main_window/action_manager.h"
 #include "main_window/controller_factory_mock.h"
 #include "main_window/main_window_manager.h"
@@ -48,8 +47,8 @@ class MainWindowTest : public Test {
   ActionManager action_manager_;
   FileRegistry file_registry_;
 
-  StrictMock<MockFunction<void(const OpenFileCommandContext& context)>>
-      open_file_command_;
+  StrictMock<MockFunction<void(const NodeCommandContext& context)>>
+      node_command_handler_;
 
   FileCache file_cache_{file_registry_};
   StrictMock<MockFileManager> file_manager_;
@@ -87,7 +86,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .executor_ = executor_,
       .action_manager_ = action_manager_,
       .window_id_ = kWindowId,
-      .open_file_command_ = open_file_command_.AsStdFunction(),
+      .node_command_handler_ = node_command_handler_.AsStdFunction(),
       .file_cache_ = file_cache_,
       .file_manager_ = file_manager_,
       .main_window_manager_ = main_window_manager_,

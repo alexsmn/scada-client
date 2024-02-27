@@ -151,7 +151,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   return MainWindowContext{executor_,
                            *action_manager_,
                            window_id,
-                           open_file_command_,
+                           node_command_handler_,
                            file_cache_,
                            file_manager_,
                            *main_window_manager_,

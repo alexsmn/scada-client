@@ -1,6 +1,6 @@
 #pragma once
 
-#include "filesystem/filesystem_commands.h"
+#include "core/node_command_context.h"
 #include "main_window/controller_factory.h"
 
 #include <memory>
@@ -26,7 +26,7 @@ struct MainWindowContext {
   const std::shared_ptr<Executor> executor_;
   ActionManager& action_manager_;
   int window_id_;
-  const OpenFileCommand& open_file_command_;
+  const NodeCommandHandler node_command_handler_;
   FileCache& file_cache_;
   FileManager& file_manager_;
   MainWindowManager& main_window_manager_;

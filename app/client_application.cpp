@@ -29,6 +29,7 @@
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
+#include "main_window/main_window_util.h"
 #include "metrics/boost_log_metric_reporter.h"
 #include "metrics/metric_service_impl.h"
 #include "node_service/node_service.h"
@@ -336,7 +337,9 @@ void ClientApplication::OnStartLoginCompleted() {
           .file_manager_ = filesystem_component_->file_manager(),
           .blinker_manager_ = *blinker_manager_,
           .speech_ = *speech_,
-          .open_file_command_ = filesystem_component_->file_command(),
+          .node_command_handler_ =
+              std::bind_front(&::ExecuteDefaultNodeCommand, executor_,
+                              filesystem_component_->file_command()),
           .progress_host_ = *progress_host_,
           .property_service_ = *property_service_,
           .create_tree_ = *create_tree_,
