@@ -12,7 +12,6 @@ class StatusBarModel;
 }  // namespace aui
 
 class ActionManager;
-class FileCache;
 class FileManager;
 class Executor;
 class MainWindow;
@@ -23,11 +22,10 @@ class SelectionCommands;
 class ViewManager;
 
 struct MainWindowContext {
-  const std::shared_ptr<Executor> executor_;
+   std::shared_ptr<Executor> executor_;
   ActionManager& action_manager_;
   int window_id_;
-  const NodeCommandHandler node_command_handler_;
-  FileCache& file_cache_;
+   NodeCommandHandler node_command_handler_;
   FileManager& file_manager_;
   MainWindowManager& main_window_manager_;
   Profile& profile_;
@@ -41,7 +39,7 @@ struct MainWindowContext {
                                                 DialogService& dialog_service)>
       view_commands_factory_;
 
-  const std::shared_ptr<SelectionCommands> selection_commands_;
+  std::shared_ptr<SelectionCommands> selection_commands_;
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
 
   std::function<std::unique_ptr<aui::MenuModel>(MainWindow& main_window,

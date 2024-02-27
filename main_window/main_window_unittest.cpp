@@ -87,7 +87,6 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .action_manager_ = action_manager_,
       .window_id_ = kWindowId,
       .node_command_handler_ = node_command_handler_.AsStdFunction(),
-      .file_cache_ = file_cache_,
       .file_manager_ = file_manager_,
       .main_window_manager_ = main_window_manager_,
       .profile_ = profile_,

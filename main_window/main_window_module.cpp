@@ -133,7 +133,6 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                            *action_manager_,
                            window_id,
                            node_command_handler_,
-                           file_cache_,
                            file_manager_,
                            *main_window_manager_,
                            profile_,
