@@ -1,7 +1,7 @@
 #pragma once
 
+#include "controller/controller_factory.h"
 #include "core/node_command_context.h"
-#include "main_window/controller_factory.h"
 
 #include <memory>
 #include <string>

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "common/aliases.h"
+#include "controller/controller_factory.h"
 #include "core/node_command_context.h"
-#include "main_window/main_window_context.h"
 
 #include <functional>
 #include <memory>
@@ -12,7 +11,6 @@ template <class T>
 class BasicCommandRegistry;
 
 class ActionManager;
-class BlinkerManager;
 class CreateTree;
 class EventFetcher;
 class EventDispatcher;
@@ -28,7 +26,6 @@ class NodeService;
 class PortfolioManager;
 class Profile;
 class ProgressHost;
-class PropertyService;
 class Speech;
 class TaskManager;
 class TimedDataService;
@@ -48,7 +45,6 @@ struct MainWindowModuleContext {
   MainWindowFactory main_window_factory_;
   QuitHandler quit_handler_;
   MasterDataServices& master_data_services_;
-  AliasResolver alias_resolver_;
   LoginHandler login_handler_;
   TaskManager& task_manager_;
   EventFetcher& event_fetcher_;
@@ -59,14 +55,13 @@ struct MainWindowModuleContext {
   Favourites& favourites_;
   FileCache& file_cache_;
   FileManager& file_manager_;
-  BlinkerManager& blinker_manager_;
   Speech& speech_;
   const NodeCommandHandler node_command_handler_;
   ProgressHost& progress_host_;
-  PropertyService& property_service_;
   CreateTree& create_tree_;
   BasicCommandRegistry<MainCommandContext>& main_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  ControllerFactory controller_factory_;
 };
 
 class MainWindowModule : private MainWindowModuleContext {

@@ -49,31 +49,12 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 MainWindowModule ::~MainWindowModule() = default;
 
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
-  auto controller_factory =
-      [this](unsigned command_id, ControllerDelegate& delegate,
-             DialogService& dialog_service) -> std::unique_ptr<Controller> {
-    auto* registrar = GetControllerRegistrar(command_id);
-    if (!registrar)
-      return nullptr;
-
-    if (registrar->window_info().requires_admin_rights() &&
-        !master_data_services_.HasPrivilege(scada::Privilege::Configure)) {
-      return nullptr;
-    }
-
-    return registrar->CreateController(ControllerContext{
-        executor_, delegate, alias_resolver_, task_manager_,
-        master_data_services_, event_fetcher_, master_data_services_,
-        master_data_services_, timed_data_service_, node_service_,
-        portfolio_manager_, local_events_, favourites_, file_cache_, profile_,
-        dialog_service, blinker_manager_, create_tree_, property_service_});
-  };
-
   auto login_handler = [this](bool login) {
-    if (login)
+    if (login) {
       login_handler_();
-    else
+    } else {
       master_data_services_.SetServices({});
+    }
   };
 
   auto debugger = std::make_shared<Debugger>(
@@ -156,7 +137,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                            file_manager_,
                            *main_window_manager_,
                            profile_,
-                           controller_factory,
+                           controller_factory_,
                            main_commands_factory,
                            view_commands_factory,
                            selection_commands,

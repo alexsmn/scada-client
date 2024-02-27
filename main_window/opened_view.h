@@ -2,9 +2,9 @@
 
 #include "aui/types.h"
 #include "base/executor_timer.h"
-#include "main_window/controller_factory.h"
 #include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
+#include "controller/controller_factory.h"
 #include "profile/window_definition.h"
 
 #include <memory>

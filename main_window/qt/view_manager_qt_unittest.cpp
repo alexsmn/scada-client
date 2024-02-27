@@ -3,9 +3,9 @@
 #include "aui/dialog_service_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
+#include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
 #include "controller/window_info.h"
-#include "main_window/controller_factory_mock.h"
 #include "main_window/view_manager_delegate_mock.h"
 
 #include <QMainWindow>

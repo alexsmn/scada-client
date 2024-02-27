@@ -19,6 +19,7 @@
 #include "common_resources.h"
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
+#include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
 #include "core/core_module.h"
 #include "events/event_fetcher.h"
@@ -317,6 +318,24 @@ void ClientApplication::OnStartLoginCompleted() {
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host_));
 
+  auto controller_factory =
+      std::make_shared<ControllerFactoryImpl>(ControllerFactoryImpl{
+          .executor_ = executor_,
+          .profile_ = *profile_,
+          .master_data_services_ = *master_data_services_,
+          .alias_resolver_ = alias_resolver_,
+          .task_manager_ = *task_manager_,
+          .node_event_provider_ = *event_fetcher_,
+          .timed_data_service_ = *timed_data_service_,
+          .node_service_ = *node_service_,
+          .portfolio_manager_ = portfolio_module_->portfolio_manager(),
+          .local_events_ = *local_events_,
+          .favourites_ = favorites_module_->favourites(),
+          .file_cache_ = filesystem_component_->file_cache(),
+          .blinker_manager_ = *blinker_manager_,
+          .property_service_ = *property_service_,
+          .create_tree_ = *create_tree_});
+
   main_window_module_ =
       std::make_unique<MainWindowModule>(MainWindowModuleContext{
           .executor_ = executor_,
@@ -324,7 +343,6 @@ void ClientApplication::OnStartLoginCompleted() {
           .main_window_factory_ = main_window_factory_,
           .quit_handler_ = std::bind_front(&ClientApplication::Quit, this),
           .master_data_services_ = *master_data_services_,
-          .alias_resolver_ = alias_resolver_,
           .login_handler_ = std::bind_front(&ClientApplication::Login, this),
           .task_manager_ = *task_manager_,
           .event_fetcher_ = *event_fetcher_,
@@ -335,16 +353,16 @@ void ClientApplication::OnStartLoginCompleted() {
           .favourites_ = favorites_module_->favourites(),
           .file_cache_ = filesystem_component_->file_cache(),
           .file_manager_ = filesystem_component_->file_manager(),
-          .blinker_manager_ = *blinker_manager_,
           .speech_ = *speech_,
           .node_command_handler_ =
               std::bind_front(&::ExecuteDefaultNodeCommand, executor_,
                               filesystem_component_->file_command()),
           .progress_host_ = *progress_host_,
-          .property_service_ = *property_service_,
           .create_tree_ = *create_tree_,
           .main_commands_ = core_module_->main_commands(),
-          .selection_commands_ = core_module_->selection_commands()});
+          .selection_commands_ = core_module_->selection_commands(),
+          .controller_factory_ = std::bind_front(
+              &ControllerFactoryImpl::CreateController, controller_factory)});
 
   // TODO: Move selection command registry out of `MainWindowModule`.
   filesystem_component_->set_selection_commands(

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main_window/controller_factory.h"
+#include "controller/controller_factory.h"
 
 #include <gmock/gmock.h>
 
