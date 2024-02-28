@@ -17,11 +17,6 @@
 Debugger::Debugger(DebuggerContext&& context)
     : DebuggerContext{std::move(context)} {}
 
-void Debugger::RegisterCommands(CommandRegistry& main_commands) {
-  main_commands.AddCommand(
-      Command{ID_OPEN_DEBUGGER}.set_execute_handler([this] { Open(); }));
-}
-
 void Debugger::Open() {
   QTabWidget* window = new QTabWidget;
   window->setWindowTitle("Debugger");

@@ -7,7 +7,6 @@
 
 #include <filesystem>
 
-class ActionManager;
 class CommandHandler;
 class DialogService;
 class Executor;
@@ -25,7 +24,6 @@ struct MainMenuContext {
   const std::shared_ptr<Executor> executor_;
   MainWindowManager& main_window_manager_;
   MainWindow& main_window_;
-  ActionManager& action_manager_;
   Favourites& favourites_;
   FileCache& file_cache_;
   const bool admin_;

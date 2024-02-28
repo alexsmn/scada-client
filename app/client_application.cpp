@@ -17,6 +17,7 @@
 #include "common/common_paths.h"
 #include "common/master_data_services.h"
 #include "common_resources.h"
+#include "components/debugger/debugger_module.h"
 #include "components/write/write_service_impl.h"
 #include "configuration_tree/configuration_tree_module.h"
 #include "controller/controller_factory_impl.h"
@@ -170,7 +171,6 @@ ClientApplication::~ClientApplication() {
 
   create_tree_.reset();
   timed_data_service_.reset();
-  alias_resolver_ = nullptr;
   event_fetcher_.reset();
   node_service_.reset();
 
@@ -220,21 +220,19 @@ void ClientApplication::OnStartLoginCompleted() {
                 std::make_shared<NestedLogger>(logger_, "AliasService"))
           : static_cast<std::shared_ptr<Logger>>(
                 std::make_shared<NullLogger>());
-  auto alias_service = std::make_shared<AliasService>(AliasServiceContext{
-      alias_logger,
-      *node_service_,
-  });
-  alias_resolver_ = [alias_service](std::string_view alias,
-                                    const AliasResolveCallback& callback) {
-    alias_service->Resolve(alias, callback);
-  };
+
+  auto alias_service = std::make_shared<AliasService>(
+      AliasServiceContext{alias_logger, *node_service_});
+
+  AliasResolver alias_resolver =
+      std::bind_front(&AliasService::Resolve, alias_service);
 
   singletons_.emplace(
       std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
 
   timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
       .executor_ = executor_,
-      .alias_resolver_ = alias_resolver_,
+      .alias_resolver_ = alias_resolver,
       .node_service_ = *node_service_,
       .services_ = {.attribute_service = master_data_services_.get(),
                     .monitored_item_service = master_data_services_.get(),
@@ -245,7 +243,8 @@ void ClientApplication::OnStartLoginCompleted() {
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
 
-  progress_host_ = std::make_unique<ProgressHostImpl>();
+  auto progress_host = std::make_shared<ProgressHostImpl>();
+  singletons_.emplace(progress_host);
 
   task_manager_ = std::make_shared<TaskManagerImpl>(
       TaskManagerImplContext{.executor_ = executor_,
@@ -254,7 +253,7 @@ void ClientApplication::OnStartLoginCompleted() {
                              .node_management_service_ = *master_data_services_,
                              .local_events_ = *local_events_,
                              .profile_ = *profile_,
-                             .progress_host_ = *progress_host_});
+                             .progress_host_ = *progress_host});
 
   speech_ = std::make_unique<Speech>();
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
@@ -273,6 +272,10 @@ void ClientApplication::OnStartLoginCompleted() {
       std::make_shared<ConfigurationTreeModule>(ConfigurationTreeModuleContext{
           .controller_registry_ = *controller_registry_,
           .profile_ = *profile_}));
+
+  singletons_.emplace(std::make_shared<DebuggerModule>(
+      DebuggerModuleContext{.session_service_ = *master_data_services_,
+                            .main_commands_ = core_module_->main_commands()}));
 
   filesystem_component_ = std::make_unique<FileSystemComponent>(
       FileSystemComponentContext{.node_service_ = *node_service_,
@@ -316,14 +319,14 @@ void ClientApplication::OnStartLoginCompleted() {
           .main_commands_ = core_module_->main_commands()}));
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
-      executor_, *node_service_, *progress_host_));
+      executor_, *node_service_, *progress_host));
 
   auto controller_factory =
       std::make_shared<ControllerFactoryImpl>(ControllerFactoryImpl{
           .executor_ = executor_,
           .profile_ = *profile_,
           .master_data_services_ = *master_data_services_,
-          .alias_resolver_ = alias_resolver_,
+          .alias_resolver_ = alias_resolver,
           .task_manager_ = *task_manager_,
           .node_event_provider_ = *event_fetcher_,
           .timed_data_service_ = *timed_data_service_,
@@ -357,7 +360,7 @@ void ClientApplication::OnStartLoginCompleted() {
           .node_command_handler_ =
               std::bind_front(&::ExecuteDefaultNodeCommand, executor_,
                               filesystem_component_->file_command()),
-          .progress_host_ = *progress_host_,
+          .progress_host_ = *progress_host,
           .create_tree_ = *create_tree_,
           .main_commands_ = core_module_->main_commands(),
           .selection_commands_ = core_module_->selection_commands(),

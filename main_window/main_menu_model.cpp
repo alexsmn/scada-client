@@ -35,6 +35,27 @@
 #include <QStyleFactory>
 #endif
 
+namespace {
+
+void AddMenuCommands(aui::SimpleMenuModel& menu,
+                     const BasicCommandRegistry<MainCommandContext>& commands,
+                     MenuGroup menu_group) {
+  for (const auto& command : commands.commands()) {
+    if (command.menu_group == menu_group) {
+      assert(command.command_id != 0);
+      assert(!command.title.empty());
+
+      if (command.checked_handler) {
+        menu.AddCheckItem(command.command_id, command.title);
+      } else {
+        menu.AddItem(command.command_id, command.title);
+      }
+    }
+  }
+}
+
+}  // namespace
+
 const WindowInfo* const kTableWindowInfos[] = {
     &kTableWindowInfo, &kSheetWindowInfo, &kTimedDataWindowInfo};
 
@@ -389,15 +410,7 @@ void MainMenuModel::Rebuild() {
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Открыть папку схем");
 
-  for (const auto& command : commands_.commands()) {
-    if (command.menu_group == MenuGroup::DISPLAY_SETTINGS) {
-      if (command.checked_handler) {
-        settings_submenu_.AddCheckItem(command.command_id, command.title);
-      } else {
-        settings_submenu_.AddItem(command.command_id, command.title);
-      }
-    }
-  }
+  AddMenuCommands(settings_submenu_, commands_, MenuGroup::DISPLAY_SETTINGS);
 
 #if defined(UI_QT)
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
@@ -409,7 +422,7 @@ void MainMenuModel::Rebuild() {
   help_submenu_.AddItem(ID_HELP_MANUAL, u"Документация");
   help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (base::CommandLine::ForCurrentProcess()->HasSwitch("debug")) {
-    help_submenu_.AddItem(ID_OPEN_DEBUGGER, u"Отладчик");
+    AddMenuCommands(help_submenu_, commands_, MenuGroup::DEBUG);
     help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, u"Отладочная информация");
     help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/promise.h"
-#include "common/aliases.h"
 #include "main_window/main_window_context.h"
 #include "scada/data_services_factory.h"
 
@@ -37,7 +36,6 @@ class NodeService;
 class NodeServiceProgressTracker;
 class PortfolioModule;
 class Profile;
-class ProgressHost;
 class PropertyService;
 class TaskManager;
 class TimedDataService;
@@ -91,11 +89,9 @@ class ClientApplication : private ClientApplicationContext {
   std::shared_ptr<NodeService> node_service_;
 
   std::shared_ptr<EventFetcher> event_fetcher_;
-  AliasResolver alias_resolver_;
   std::unique_ptr<TimedDataService> timed_data_service_;
 
   std::unique_ptr<LocalEvents> local_events_;
-  std::unique_ptr<ProgressHost> progress_host_;
   std::shared_ptr<TaskManager> task_manager_;
   std::unique_ptr<PortfolioModule> portfolio_module_;
   std::unique_ptr<FavoritesModule> favorites_module_;

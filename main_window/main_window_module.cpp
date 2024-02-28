@@ -1,7 +1,6 @@
 #include "main_window/main_window_module.h"
 
 #include "common/master_data_services.h"
-#include "components/debugger/debugger.h"
 #include "components/events/events_component.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
@@ -46,7 +45,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       PageCommandsContext{main_commands_, profile_, *main_window_manager_}));
 }
 
-MainWindowModule ::~MainWindowModule() = default;
+MainWindowModule ::~MainWindowModule() {}
 
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto login_handler = [this](bool login) {
@@ -57,17 +56,13 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     }
   };
 
-  auto debugger = std::make_shared<Debugger>(
-      DebuggerContext{.session_service_ = master_data_services_});
-
-  auto main_commands_factory = [this, login_handler, debugger](
+  auto main_commands_factory = [this, login_handler](
                                    MainWindow& main_window,
                                    DialogService& dialog_service) {
     return std::make_unique<MainCommands>(MainCommandsContext{
         main_window, task_manager_, dialog_service, master_data_services_,
         event_fetcher_, node_service_, local_events_, favourites_, speech_,
-        profile_, *main_window_manager_, login_handler, *debugger,
-        main_commands_});
+        profile_, *main_window_manager_, login_handler, main_commands_});
   };
 
   auto main_menu_factory =
@@ -78,7 +73,6 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
             .executor_ = executor_,
             .main_window_manager_ = *main_window_manager_,
             .main_window_ = main_window,
-            .action_manager_ = *action_manager_,
             .favourites_ = favourites_,
             .file_cache_ = file_cache_,
             .admin_ =

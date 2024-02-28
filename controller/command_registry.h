@@ -22,7 +22,7 @@ struct UnaryFunctionImpl<R, void> {
 template <typename R, typename A>
 using UnaryFunction = typename UnaryFunctionImpl<R, A>::Type;
 
-enum class MenuGroup { DISPLAY_SETTINGS };
+enum class MenuGroup { DEBUG, DISPLAY_SETTINGS };
 
 // `C` represents the context type.
 template <typename C>
@@ -96,7 +96,7 @@ class BasicCommandRegistry {
   BasicCommand<C>* FindCommand(unsigned command_id);
   const BasicCommand<C>* FindCommand(unsigned command_id) const;
 
-  auto commands() { return command_map_ | std::views::values; }
+  auto commands() const { return command_map_ | std::views::values; }
 
  protected:
   std::unordered_map<unsigned /*command_id*/, BasicCommand<C>> command_map_;

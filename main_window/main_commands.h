@@ -2,7 +2,6 @@
 
 #include "base/promise.h"
 #include "controller/command_handler.h"
-#include "controller/command_registry.h"
 #include "core/main_command_context.h"
 
 #include <functional>
@@ -13,7 +12,9 @@ namespace scada {
 class SessionService;
 }
 
-class Debugger;
+template<class T>
+class BasicCommandRegistry;
+
 class DialogService;
 class Favourites;
 class LocalEvents;
@@ -24,6 +25,7 @@ class NodeService;
 class Profile;
 class Speech;
 class TaskManager;
+struct MainCommandContext;
 
 struct MainCommandsContext {
   MainWindow& main_window_;
@@ -38,7 +40,6 @@ struct MainCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
-  Debugger& debugger_;
   const BasicCommandRegistry<MainCommandContext>& main_commands_;
 };
 
