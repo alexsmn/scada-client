@@ -415,9 +415,9 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
     MetricService& metric_service_;
     const DataServices data_services_;
 
-    const std::shared_ptr<Audit> audit_ = Audit::Create(AuditContext{
-        executor_, metric_service_, *data_services_.attribute_service_,
-        *data_services_.view_service_});
+    const std::shared_ptr<Audit> audit_ = Audit::Create(
+        AuditContext{metric_service_, *data_services_.attribute_service_,
+                     *data_services_.view_service_});
   };
 
   auto holder = std::make_shared<Holder>(executor_, *metric_service_, services);
