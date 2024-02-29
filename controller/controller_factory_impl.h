@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common/aliases.h"
 #include "common/master_data_services.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -34,7 +33,6 @@ struct ControllerFactoryImpl {
   std::shared_ptr<Executor> executor_;
   Profile& profile_;
   MasterDataServices& master_data_services_;
-  AliasResolver alias_resolver_;
   TaskManager& task_manager_;
   NodeEventProvider& node_event_provider_;
   TimedDataService& timed_data_service_;
@@ -63,7 +61,7 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
   }
 
   return registrar->CreateController(ControllerContext{
-      executor_, delegate, alias_resolver_, task_manager_,
+      executor_, delegate, task_manager_,
       master_data_services_, node_event_provider_, master_data_services_,
       master_data_services_, timed_data_service_, node_service_,
       portfolio_manager_, local_events_, favourites_, file_cache_, profile_,

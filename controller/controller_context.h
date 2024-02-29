@@ -1,7 +1,5 @@
 #pragma once
 
-#include "common/aliases.h"
-
 namespace scada {
 class MonitoredItemService;
 class HistoryService;
@@ -28,7 +26,6 @@ class TimedDataService;
 struct ControllerContext {
   const std::shared_ptr<Executor> executor_;
   ControllerDelegate& controller_delegate_;
-  const AliasResolver alias_resolver_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   NodeEventProvider& node_event_provider_;

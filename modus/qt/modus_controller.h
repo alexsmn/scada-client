@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/memory/weak_ptr.h"
+#include "common/aliases.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -16,7 +17,8 @@ class ModusViewWrapper;
 
 class ModusController : protected ControllerContext, public Controller {
  public:
-  explicit ModusController(const ControllerContext& context);
+  ModusController(const ControllerContext& context,
+                  AliasResolver alias_resolver);
   virtual ~ModusController();
 
   // Controller overrides
@@ -33,6 +35,8 @@ class ModusController : protected ControllerContext, public Controller {
 
   void OpenPath(const std::filesystem::path& path);
   void OpenHyperlink(std::u16string_view hyperlink);
+
+  const AliasResolver alias_resolver_;
 
   SelectionModel selection_{{timed_data_service_}};
 

@@ -302,7 +302,8 @@ void ClientApplication::OnStartLoginCompleted() {
       .blinker_manager_ = *blinker_manager_,
       .file_registry_ = filesystem_component_->file_registry(),
       .main_commands_ = core_module_->main_commands(),
-      .profile_ = *profile_}));
+      .profile_ = *profile_,
+      .alias_resolver_ = alias_resolver}));
 
   singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
       .executor_ = executor_,
@@ -326,7 +327,6 @@ void ClientApplication::OnStartLoginCompleted() {
           .executor_ = executor_,
           .profile_ = *profile_,
           .master_data_services_ = *master_data_services_,
-          .alias_resolver_ = alias_resolver,
           .task_manager_ = *task_manager_,
           .node_event_provider_ = *event_fetcher_,
           .timed_data_service_ = *timed_data_service_,

@@ -3,23 +3,23 @@
 #include "aui/dialog_service_mock.h"
 #include "base/blinker_mock.h"
 #include "base/test/test_executor.h"
-#include "common/aliases_mock.h"
-#include "favorites/favourites.h"
-#include "portfolio/portfolio_manager.h"
+#include "controller/controller_context.h"
 #include "controller/controller_delegate_mock.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider_mock.h"
+#include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "node_service/node_service_mock.h"
+#include "portfolio/portfolio_manager.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
+#include "properties/property_service.h"
 #include "scada/history_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
 #include "scada/session_service_mock.h"
 #include "services/create_tree.h"
 #include "services/local_events.h"
-#include "properties/property_service.h"
 #include "services/task_manager_mock.h"
 #include "timed_data/timed_data_service_mock.h"
 
@@ -29,7 +29,6 @@ struct ControllerEnvironment {
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
   testing::NiceMock<MockControllerDelegate> controller_delegate_;
-  testing::NiceMock<MockAliasResolver> alias_resolver_;
   testing::NiceMock<MockTaskManager> task_manager_;
   testing::NiceMock<scada::MockSessionService> session_service_;
   testing::NiceMock<MockNodeEventProvider> node_event_provider_;
@@ -51,7 +50,6 @@ struct ControllerEnvironment {
   ControllerContext MakeControllerContext() {
     return {.executor_ = executor_,
             .controller_delegate_ = controller_delegate_,
-            .alias_resolver_ = alias_resolver_.AsStdFunction(),
             .task_manager_ = task_manager_,
             .session_service_ = session_service_,
             .node_event_provider_ = node_event_provider_,

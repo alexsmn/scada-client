@@ -13,8 +13,8 @@ ModusModule::ModusModule(ModusModuleContext&& context)
   ModusModule2::SetInstance(modus_module_.get());
 
   controller_registry_.AddControllerFactory(
-      kModusWindowInfo, [](const ControllerContext& context) {
-        return std::make_unique<ModusController>(context);
+      kModusWindowInfo, [this](const ControllerContext& context) {
+        return std::make_unique<ModusController>(context, alias_resolver_);
       });
 
   file_registry_.RegisterType(kModusWindowInfo.command_id,
