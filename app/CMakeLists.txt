@@ -6,6 +6,7 @@ target_link_libraries(client_common INTERFACE
   node_service_v2
   client_base
   client_clipboard
+  client_core
   scada_common_events
   scada_common_vidicon_services
   scada_core_opcua

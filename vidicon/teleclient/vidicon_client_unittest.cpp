@@ -6,6 +6,7 @@
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "opc/opc_node_ids.h"
+#include "scada/attribute_service.h"
 #include "timed_data/timed_data_mock.h"
 #include "timed_data/timed_data_observer.h"
 #include "timed_data/timed_data_property.h"

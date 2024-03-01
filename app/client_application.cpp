@@ -141,6 +141,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
       });
 
   transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
+
+  core_module_ = std::make_unique<CoreModule>(executor_);
 }
 
 ClientApplication::~ClientApplication() {
@@ -176,6 +178,7 @@ ClientApplication::~ClientApplication() {
 
   master_data_services_ = nullptr;
 
+  core_module_.reset();
   transport_factory_.reset();
 
   ShutdownBoostLogging();
@@ -193,8 +196,6 @@ void ClientApplication::Start() {
 void ClientApplication::OnStartLoginCompleted() {
   scada::client scada_client{
       scada::GetServices(master_data_services_->data_services())};
-
-  core_module_ = std::make_unique<CoreModule>();
 
   event_fetcher_ =
       EventFetcherBuilder{.executor_ = executor_,
@@ -407,23 +408,22 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
 
   // |Audit| doesn't own underlying services.
   struct Holder {
-    Holder(std::shared_ptr<Executor> executor,
-           MetricService& metric_service,
-           DataServices data_services)
-        : executor_{std::move(executor)},
-          metric_service_{metric_service},
-          data_services_{std::move(data_services)} {}
+    Holder(MetricService& metric_service,
+           DataServices data_services,
+           Tracer& tracer)
+        : data_services_{std::move(data_services)},
+          audit_{Audit::Create(
+              AuditContext{metric_service, *data_services_.attribute_service_,
+                           *data_services_.view_service_, tracer})} {}
 
-    const std::shared_ptr<Executor> executor_;
-    MetricService& metric_service_;
-    const DataServices data_services_;
-
-    const std::shared_ptr<Audit> audit_ = Audit::Create(
-        AuditContext{metric_service_, *data_services_.attribute_service_,
-                     *data_services_.view_service_});
+    DataServices data_services_;
+    std::shared_ptr<Audit> audit_;
   };
 
-  auto holder = std::make_shared<Holder>(executor_, *metric_service_, services);
+  assert(core_module_);
+
+  auto holder = std::make_shared<Holder>(*metric_service_, services,
+                                         core_module_->tracer());
 
   std::shared_ptr<Audit> audit{holder, holder->audit_.get()};
 

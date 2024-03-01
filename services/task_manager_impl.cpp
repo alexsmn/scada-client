@@ -8,6 +8,7 @@
 #include "profile/profile.h"
 #include "scada/attribute_service_promises.h"
 #include "scada/node_management_service_promises.h"
+#include "scada/service_context.h"
 #include "scada/status_or.h"
 #include "scada/status_promise.h"
 #include "services/local_events.h"

@@ -3,6 +3,7 @@
 #include "base/executor.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
+#include "scada/monitoring_parameters.h"
 
 // WatchCurrentEventSource
 
@@ -21,10 +22,10 @@ void WatchCurrentEventSource::Start(const scada::NodeId& device_id,
 
   monitored_item_.subscribe_system_events(
       node_service_.GetNode(device_id).scada_node(),
-      // FIXME: MSVC fails with an internal error if named parameters are used
-      // with variants.
-      scada::MonitoringParameters{}.set_filter(
-          scada::EventFilter{.of_type = {devices::id::DeviceWatchEventType}}),
+      scada::MonitoringParameters{
+          .filter =
+              scada::EventFilter{
+                  .of_type = {devices::id::DeviceWatchEventType}}},
       // FIXME: Captures |this|. No sync.
       BindExecutor(executor_, [&delegate](const scada::Status& status,
                                           const scada::Event& event) {

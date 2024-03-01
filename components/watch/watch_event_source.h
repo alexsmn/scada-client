@@ -3,9 +3,9 @@
 #include "scada/date_time_range.h"
 
 namespace scada {
-class Event;
 class NodeId;
 class Status;
+struct Event;
 }  // namespace scada
 
 struct TimeRange;
