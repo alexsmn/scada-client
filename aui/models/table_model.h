@@ -1,7 +1,7 @@
 #pragma once
 
-#include "base/observer_list.h"
 #include "aui/models/table_column.h"
+#include "base/observer_list.h"
 
 namespace aui {
 
@@ -40,6 +40,32 @@ class TableModel {
   base::ObserverList<TableModelObserver>& observers() { return observers_; }
 
  protected:
+  struct ScopedItemsAdding {
+    ScopedItemsAdding(TableModel& model, int first, int count)
+        : model_{model}, first_{first}, count_{count} {
+      model_.NotifyItemsAdding(first_, count_);
+    }
+
+    ~ScopedItemsAdding() { model_.NotifyItemsAdded(first_, count_); }
+
+    TableModel& model_;
+    int first_;
+    int count_;
+  };
+
+  struct ScopedItemsRemoving {
+    ScopedItemsRemoving(TableModel& model, int first, int count)
+        : model_{model}, first_{first}, count_{count} {
+      model_.NotifyItemsRemoving(first_, count_);
+    }
+
+    ~ScopedItemsRemoving() { model_.NotifyItemsRemoved(first_, count_); }
+
+    TableModel& model_;
+    int first_;
+    int count_;
+  };
+
   void NotifyModelChanged();
   void NotifyItemsChanged(int first, int count);
   void NotifyItemsAdding(int first, int count);

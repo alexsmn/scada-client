@@ -42,6 +42,7 @@
 #include "project.h"
 #include "properties/property_service.h"
 #include "remote/remote_services.h"
+#include "scada/service_context.h"
 #include "services/alias_service.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
@@ -206,14 +207,15 @@ void ClientApplication::OnStartLoginCompleted() {
                           .session_service_ = *master_data_services_}
           .Build();
 
-  node_service_ = CreateNodeService(
-      NodeServiceContext{.executor = executor_,
-                         .session_service_ = *master_data_services_,
-                         .attribute_service_ = *master_data_services_,
-                         .view_service_ = *master_data_services_,
-                         .monitored_item_service_ = *master_data_services_,
-                         .method_service_ = *master_data_services_,
-                         .scada_client_ = scada_client});
+  node_service_ = CreateNodeService(NodeServiceContext{
+      .executor_ = executor_,
+      .service_context_ = scada::ServiceContext::default_instance(),
+      .session_service_ = *master_data_services_,
+      .attribute_service_ = *master_data_services_,
+      .view_service_ = *master_data_services_,
+      .monitored_item_service_ = *master_data_services_,
+      .method_service_ = *master_data_services_,
+      .scada_client_ = scada_client});
 
   auto alias_logger =
       base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
@@ -410,11 +412,11 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
   struct Holder {
     Holder(MetricService& metric_service,
            DataServices data_services,
-           Tracer& tracer)
+           const TraceSpan& trace_span)
         : data_services_{std::move(data_services)},
           audit_{Audit::Create(
               AuditContext{metric_service, *data_services_.attribute_service_,
-                           *data_services_.view_service_, tracer})} {}
+                           *data_services_.view_service_, trace_span})} {}
 
     DataServices data_services_;
     std::shared_ptr<Audit> audit_;
@@ -423,7 +425,7 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
   assert(core_module_);
 
   auto holder = std::make_shared<Holder>(*metric_service_, services,
-                                         core_module_->tracer());
+                                         core_module_->root_trace_span());
 
   std::shared_ptr<Audit> audit{holder, holder->audit_.get()};
 

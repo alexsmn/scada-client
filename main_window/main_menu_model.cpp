@@ -5,6 +5,7 @@
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "common_resources.h"
+#include "components/debugger/debug_switch.h"
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"
 #include "components/timed_data/timed_data_component.h"
@@ -421,7 +422,7 @@ void MainMenuModel::Rebuild() {
 
   help_submenu_.AddItem(ID_HELP_MANUAL, u"Документация");
   help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch("debug")) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(kDebugSwitch)) {
     AddMenuCommands(help_submenu_, commands_, MenuGroup::DEBUG);
     help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, u"Отладочная информация");
     help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
