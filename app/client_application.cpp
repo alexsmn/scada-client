@@ -209,7 +209,6 @@ void ClientApplication::OnStartLoginCompleted() {
 
   node_service_ = CreateNodeService(NodeServiceContext{
       .executor_ = executor_,
-      .service_context_ = scada::ServiceContext::default_instance(),
       .session_service_ = *master_data_services_,
       .attribute_service_ = *master_data_services_,
       .view_service_ = *master_data_services_,

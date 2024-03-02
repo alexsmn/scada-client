@@ -181,8 +181,7 @@ scada::status_promise<void> TaskManagerImpl::PostUpdateTask(
                 throw scada::status_exception{inputs.status_code()};
               }
 
-              return scada::Write(attribute_service,
-                                  scada::ServiceContext::default_instance(),
+              return scada::Write(attribute_service, scada::ServiceContext{},
                                   std::move(*inputs));
             })
             .then([](const std::vector<scada::StatusCode>& results) {
