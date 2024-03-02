@@ -6,6 +6,7 @@
 #include "model/filesystem_node_ids.h"
 
 #include <boost/locale/encoding_utf.hpp>
+#include <span>
 
 namespace {
 

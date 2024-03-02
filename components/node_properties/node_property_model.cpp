@@ -1,12 +1,14 @@
 ﻿#include "components/node_properties/node_property_model.h"
 
-#include "scada/event.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "properties/property_definition.h"
 #include "properties/property_service.h"
+#include "scada/event.h"
 #include "string_const.h"
+
+#include <span>
 
 namespace {
 

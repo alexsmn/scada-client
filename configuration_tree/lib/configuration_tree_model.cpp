@@ -3,6 +3,8 @@
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
 
+#include <span>
+
 namespace {
 
 inline bool DoesChildExist(std::span<const NodeServiceTree::ChildRef> children,

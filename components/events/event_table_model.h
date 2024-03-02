@@ -7,6 +7,7 @@
 
 #include <boost/signals2/connection.hpp>
 #include <set>
+#include <span>
 
 class CurrentEventModel;
 class Executor;

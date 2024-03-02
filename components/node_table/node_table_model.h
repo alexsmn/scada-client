@@ -1,11 +1,13 @@
 #pragma once
 
-#include "base/cancelation.h"
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
+#include "base/cancelation.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 #include "properties/property_context.h"
+
+#include <span>
 
 class Executor;
 class NodeService;

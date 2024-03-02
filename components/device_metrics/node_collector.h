@@ -6,6 +6,8 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 
+#include <span>
+
 inline promise<NodeRef> FetchNode(const NodeRef& node,
                                   const NodeFetchStatus& requested_status);
 
