@@ -207,14 +207,14 @@ void ClientApplication::OnStartLoginCompleted() {
                           .session_service_ = *master_data_services_}
           .Build();
 
-  node_service_ = CreateNodeService(NodeServiceContext{
-      .executor_ = executor_,
-      .session_service_ = *master_data_services_,
-      .attribute_service_ = *master_data_services_,
-      .view_service_ = *master_data_services_,
-      .monitored_item_service_ = *master_data_services_,
-      .method_service_ = *master_data_services_,
-      .scada_client_ = scada_client});
+  node_service_ = CreateNodeService(
+      NodeServiceContext{.executor_ = executor_,
+                         .session_service_ = *master_data_services_,
+                         .attribute_service_ = *master_data_services_,
+                         .view_service_ = *master_data_services_,
+                         .monitored_item_service_ = *master_data_services_,
+                         .method_service_ = *master_data_services_,
+                         .scada_client_ = scada_client});
 
   auto alias_logger =
       base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
@@ -411,11 +411,11 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
   struct Holder {
     Holder(MetricService& metric_service,
            DataServices data_services,
-           const TraceSpan& trace_span)
+           Tracer& tracer)
         : data_services_{std::move(data_services)},
           audit_{Audit::Create(
               AuditContext{metric_service, *data_services_.attribute_service_,
-                           *data_services_.view_service_, trace_span})} {}
+                           *data_services_.view_service_, tracer})} {}
 
     DataServices data_services_;
     std::shared_ptr<Audit> audit_;
@@ -424,7 +424,7 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
   assert(core_module_);
 
   auto holder = std::make_shared<Holder>(*metric_service_, services,
-                                         core_module_->root_trace_span());
+                                         core_module_->tracer());
 
   std::shared_ptr<Audit> audit{holder, holder->audit_.get()};
 

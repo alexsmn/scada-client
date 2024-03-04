@@ -8,14 +8,14 @@
 #include <stack>
 
 class Executor;
-class TraceSpan;
+class Tracer;
 
 class CoreModule {
  public:
   explicit CoreModule(std::shared_ptr<Executor> executor);
   ~CoreModule();
 
-  const TraceSpan& root_trace_span() { return *root_trace_span_; }
+  Tracer& tracer() { return *tracer_; }
 
   BasicCommandRegistry<MainCommandContext>& main_commands() {
     return main_commands_;
@@ -28,7 +28,7 @@ class CoreModule {
  private:
   std::stack<std::shared_ptr<void>> singletons_;
 
-  std::unique_ptr<TraceSpan> root_trace_span_;
+  std::unique_ptr<Tracer> tracer_;
 
   BasicCommandRegistry<MainCommandContext> main_commands_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;
