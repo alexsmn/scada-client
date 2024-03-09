@@ -11,8 +11,8 @@ std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
 
   // Event count and min severity.
 
-  auto event_status_provider =
-      std::make_shared<EventStatusProvider>(node_event_provider_, profile_);
+  auto event_status_provider = std::make_shared<EventStatusProvider>(
+      node_event_provider_, local_events_, profile_);
 
   int event_count_pane_index = model->AddPane(
       {.text_provider = std::bind_front(&EventStatusProvider::GetEventCountText,

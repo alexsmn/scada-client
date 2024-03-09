@@ -1,8 +1,8 @@
 #pragma once
 
-#include "base/observer_list.h"
 #include "scada/event.h"
 
+#include <boost/signals2/signal.hpp>
 #include <string>
 #include <vector>
 
@@ -10,11 +10,6 @@ class LocalEvents {
  public:
   // TODO: Use `scada::EventSeverity` instead of `Severity`.
   enum Severity { SEV_INFO, SEV_WARNING, SEV_ERROR };
-
-  class Observer {
-   public:
-    virtual void OnLocalEvent(const scada::Event& event) = 0;
-  };
 
   LocalEvents();
   ~LocalEvents();
@@ -30,7 +25,9 @@ class LocalEvents {
   void AcknowledgeEvent(scada::EventId event_id);
   void AcknowledgeAll();
 
-  base::ObserverList<Observer>& observers() { return observers_; }
+  using EventSignal = boost::signals2::signal<void(const scada::Event&)>;
+
+  EventSignal& event_signal() { return event_signal_; }
 
  private:
   Events::iterator FindEvent(scada::EventId event_id);
@@ -41,5 +38,5 @@ class LocalEvents {
 
   Events events_;
 
-  base::ObserverList<Observer> observers_;
+  boost::signals2::signal<void(const scada::Event&)> event_signal_;
 };

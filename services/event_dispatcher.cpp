@@ -2,9 +2,10 @@
 
 #include "base/executor.h"
 #include "common_resources.h"
-#include "main_window/action_manager.h"
 #include "events/node_event_provider.h"
+#include "main_window/action_manager.h"
 #include "profile/profile.h"
+#include "services/local_events.h"
 
 #include <mmsystem.h>
 
@@ -16,13 +17,14 @@ const auto kDelay = 300ms;
 EventDispatcher::EventDispatcher(EventDispatcherContext&& context)
     : EventDispatcherContext{std::move(context)} {
   node_event_provider_.AddObserver(*this);
-  local_events_.observers().AddObserver(this);
+
+  local_event_connection_ = local_events_.event_signal().connect(
+      [this](const scada::Event& event) { ShowEventsDelayed(!event.acked); });
 
   ShowEventsDelayed(true);
 }
 
 EventDispatcher::~EventDispatcher() {
-  local_events_.observers().RemoveObserver(this);
   node_event_provider_.RemoveObserver(*this);
 }
 
@@ -41,8 +43,9 @@ void EventDispatcher::ShowEventsDelayed(bool added) {
     showing_events_ = true;
     executor_->PostDelayedTask(kDelay,
                                [this, weak_ptr = weak_factory_.GetWeakPtr()] {
-                                 if (weak_ptr.get())
+                                 if (weak_ptr.get()) {
                                    ShowEvents(showing_events_added_);
+                                 }
                                });
   }
   showing_events_added_ = added;
@@ -75,8 +78,4 @@ void EventDispatcher::ShowEvents(bool added) {
     else
       PlaySound(nullptr, nullptr, 0);
   }
-}
-
-void EventDispatcher::OnLocalEvent(const scada::Event& event) {
-  ShowEventsDelayed(!event.acked);
 }

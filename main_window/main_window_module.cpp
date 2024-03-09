@@ -115,8 +115,9 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   auto status_bar_model =
-      StatusBarModelBuilder{executor_, master_data_services_, event_fetcher_,
-                            node_service_, profile_}
+      StatusBarModelBuilder{executor_,      master_data_services_,
+                            event_fetcher_, local_events_,
+                            node_service_,  profile_}
           .Build();
 
   auto connection_info_provider = [this] {

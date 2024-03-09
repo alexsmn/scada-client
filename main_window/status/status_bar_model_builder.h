@@ -11,6 +11,7 @@ class SessionService;
 }
 
 class Executor;
+class LocalEvents;
 class NodeEventProvider;
 class NodeService;
 class Profile;
@@ -22,6 +23,7 @@ struct StatusBarModelBuilder {
   std::shared_ptr<Executor> executor_;
   scada::SessionService& session_service_;
   NodeEventProvider& node_event_provider_;
+  LocalEvents& local_events_;
   NodeService& node_service_;
   Profile& profile_;
 };

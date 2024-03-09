@@ -25,9 +25,7 @@ void LocalEvents::ReportEvent(Severity severity,
   event.event_id = event_id;
   events_.push_back(&event);
 
-  const scada::Event& e = *events_.back();
-  for (auto& o : observers_)
-    o.OnLocalEvent(e);
+  event_signal_(*events_.back());
 }
 
 void LocalEvents::AcknowledgeEvent(scada::EventId event_id) {
@@ -38,8 +36,7 @@ void LocalEvents::AcknowledgeEvent(scada::EventId event_id) {
   event.acked = true;
   events_.erase(i);
 
-  for (auto& o : observers_)
-    o.OnLocalEvent(event);
+  event_signal_(event);
 
   delete &event;
 }
@@ -50,18 +47,15 @@ void LocalEvents::AcknowledgeAll() {
 
   for (scada::Event* event : events) {
     event->acked = true;
-    for (auto& o : observers_)
-      o.OnLocalEvent(*event);
+    event_signal_(*event);
     delete event;
   }
 }
 
 LocalEvents::Events::iterator LocalEvents::FindEvent(scada::EventId event_id) {
-  for (auto i = events_.begin(); i != events_.end(); ++i) {
-    if ((*i)->event_id == event_id)
-      return i;
-  }
-  return events_.end();
+  return std::ranges::find(events_, event_id, [](const scada::Event* event) {
+    return event->event_id;
+  });
 }
 
 // static

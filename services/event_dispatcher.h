@@ -2,13 +2,14 @@
 
 #include "base/memory/weak_ptr.h"
 #include "events/event_observer.h"
-#include "services/local_events.h"
 
+#include <boost/signals2/connection.hpp>
 #include <functional>
 
 class ActionManager;
-class NodeEventProvider;
 class Executor;
+class LocalEvents;
+class NodeEventProvider;
 class Profile;
 
 struct EventDispatcherContext {
@@ -21,8 +22,7 @@ struct EventDispatcherContext {
 };
 
 class EventDispatcher final : private EventDispatcherContext,
-                              private EventObserver,
-                              private LocalEvents::Observer {
+                              private EventObserver {
  public:
   explicit EventDispatcher(EventDispatcherContext&& context);
   ~EventDispatcher();
@@ -35,14 +35,13 @@ class EventDispatcher final : private EventDispatcherContext,
   virtual void OnEvents(std::span<const scada::Event* const> events) override;
   virtual void OnAllEventsAcknowledged() override;
 
-  // LocalEvents::Observer
-  virtual void OnLocalEvent(const scada::Event& event) override;
-
   bool playing_alarm_sound_ = false;
 
   bool has_events_ = false;
   bool showing_events_ = false;
   bool showing_events_added_ = false;
+
+  boost::signals2::scoped_connection local_event_connection_;
 
   base::WeakPtrFactory<EventDispatcher> weak_factory_{this};
 };

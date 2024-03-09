@@ -6,14 +6,13 @@
 #include <boost/range/adaptor/indirected.hpp>
 #include <boost/signals2/signal.hpp>
 
-class LocalEventModel : private LocalEvents::Observer {
+class LocalEventModel {
  public:
   explicit LocalEventModel(LocalEvents& local_events)
       : local_events_{local_events} {
-    local_events_.observers().AddObserver(this);
+    local_event_connection_ = local_events_.event_signal().connect(
+        [this](const scada::Event& event) { on_event(event); });
   }
-
-  ~LocalEventModel() { local_events_.observers().RemoveObserver(this); }
 
   auto events() const {
     return local_events_.events() | boost::adaptors::indirected;
@@ -26,12 +25,7 @@ class LocalEventModel : private LocalEvents::Observer {
   boost::signals2::signal<void(const scada::Event& event)> on_event;
 
  private:
-  // LocalEvents::Observer
-  virtual void OnLocalEvent(const scada::Event& event) override;
-
   LocalEvents& local_events_;
-};
 
-inline void LocalEventModel::OnLocalEvent(const scada::Event& event) {
-  on_event(event);
-}
+  boost::signals2::scoped_connection local_event_connection_;
+};
