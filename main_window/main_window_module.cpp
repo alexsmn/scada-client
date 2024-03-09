@@ -16,7 +16,7 @@
 #include "main_window/opened_view_commands.h"
 #include "main_window/page_commands.h"
 #include "main_window/selection_commands.h"
-#include "main_window/status_bar_model_impl.h"
+#include "main_window/status/status_bar_model_builder.h"
 #include "profile/profile.h"
 #include "services/event_dispatcher.h"
 
@@ -115,9 +115,10 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   auto status_bar_model =
-      std::make_shared<StatusBarModelImpl>(StatusBarModelImplContext{
-          executor_, master_data_services_, event_fetcher_, node_service_,
-          progress_host_, profile_});
+      StatusBarModelBuilder{executor_,      master_data_services_,
+                            event_fetcher_, node_service_,
+                            progress_host_, profile_}
+          .Build();
 
   auto connection_info_provider = [this] {
     return master_data_services_.GetHostName();

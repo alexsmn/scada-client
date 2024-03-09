@@ -1,5 +1,7 @@
 client_module(client_main_window)
 
+client_module_sources(client_main_window PRIVATE status)
+
 client_module_include_directories(client_main_window PUBLIC "..")
 
 client_module_link_libraries(client_main_window PUBLIC aui)

@@ -26,6 +26,7 @@ class StatusBarModel {
     int current = 0;
   };
 
+  // TODO: Move to `ProgressHost`.
   virtual Progress GetProgress() const = 0;
 
   virtual void AddObserver(StatusBarModelObserver& observer) = 0;
