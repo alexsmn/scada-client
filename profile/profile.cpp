@@ -21,26 +21,6 @@
 
 namespace {
 
-UINT ParseToolbarPosition(std::string_view str) {
-  if (base::EqualsCaseInsensitiveASCII(AsStringPiece(str), "top"))
-    return ID_TOOLBAR_TOP;
-  else if (base::EqualsCaseInsensitiveASCII(AsStringPiece(str), "hidden"))
-    return ID_TOOLBAR_HIDDEN;
-  else
-    return ID_TOOLBAR_LEFT;
-}
-
-std::string_view FormatToolbarPosition(UINT position) {
-  switch (position) {
-    case ID_TOOLBAR_HIDDEN:
-      return "hidden";
-    case ID_TOOLBAR_TOP:
-      return "top";
-    default:
-      return "left";
-  }
-}
-
 Page CreateInitialPage() {
   Page page;
 
@@ -137,8 +117,7 @@ void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
     main_window.bounds = {left, top, width, height};
   }
   main_window.maximized = GetBool(data, "maximized", false);
-  main_window.toolbar_position =
-      ParseToolbarPosition(GetString(data, "toolbar"));
+  main_window.toolbar = GetBool(data, "toolbar", true);
   main_window.status_bar = GetBool(data, "statusBar", true);
   main_window.page_id = GetInt(data, "page", 0);
 }
@@ -288,8 +267,7 @@ base::Value Profile::SaveToValue(
       SetKey(wine, "width", main_window.bounds.width());
       SetKey(wine, "height", main_window.bounds.height());
       SetKey(wine, "maximized", main_window.maximized);
-      SetKey(wine, "toolbar",
-             FormatToolbarPosition(main_window.toolbar_position));
+      SetKey(wine, "toolbar", main_window.toolbar);
       SetKey(wine, "statusBar", main_window.status_bar);
       SetKey(wine, "page", main_window.page_id);
       list.emplace_back(std::move(wine));

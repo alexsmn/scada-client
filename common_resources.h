@@ -168,7 +168,6 @@
 #define IDD_SIMULATION_ITEM             251
 #define IDC_TITLE                       252
 #define IDD_BASE_EDITOR                 252
-#define ID_TOOLBAR_HIDDEN               253
 #define IDD_INTERVAL                    253
 #define IDD_TIME_RANGE                  253
 #define IDD_NEW_SERVICE_ITEMS1          254
@@ -423,8 +422,6 @@
 #define ID_GRAPH_DOTS                   32984
 #define ID_GRAPH_STEPS                  32985
 #define ID_GRAPH_SCROLL_BAR             32986
-#define ID_TOOLBAR_TOP                  32989
-#define ID_TOOLBAR_LEFT                 32990
 #define ID_SORT_NAME                    32991
 #define ID_SORT_CHANNEL                 32992
 #define ID_CLEAR_ALL                    32993

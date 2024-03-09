@@ -932,12 +932,7 @@ BEGIN
     END
     POPUP "Настройки",                      65535,MFT_STRING,MFS_ENABLED
     BEGIN
-        POPUP "Панель инструментов",            65535,MFT_STRING,MFS_ENABLED
-        BEGIN
-            MENUITEM "Сверху",                      ID_TOOLBAR_TOP,MFT_STRING,MFS_ENABLED
-            MENUITEM "Слева",                       ID_TOOLBAR_LEFT,MFT_STRING,MFS_ENABLED
-            MENUITEM "Скрыта",                      ID_TOOLBAR_HIDDEN,MFT_STRING,MFS_ENABLED
-        END
+        MENUITEM "Панель инструментов",         ID_VIEW_TOOLBAR,MFT_STRING,MFS_ENABLED
         MENUITEM "&Строка состояния",           ID_VIEW_STATUS_BAR,MFT_STRING,MFS_ENABLED
         MENUITEM MFT_SEPARATOR
         MENUITEM "Подтверждение управления",    ID_WRITE_CONFIRMATION,MFT_STRING,MFS_ENABLED
@@ -1017,12 +1012,7 @@ BEGIN
     END
     POPUP "Настройки",                      65535,MFT_STRING,MFS_ENABLED
     BEGIN
-        POPUP "Панель инструментов",            65535,MFT_STRING,MFS_ENABLED
-        BEGIN
-            MENUITEM "Сверху",                      ID_TOOLBAR_TOP,MFT_STRING,MFS_ENABLED
-            MENUITEM "Слева",                       ID_TOOLBAR_LEFT,MFT_STRING,MFS_ENABLED
-            MENUITEM "Скрыта",                      ID_TOOLBAR_HIDDEN,MFT_STRING,MFS_ENABLED
-        END
+        MENUITEM "Панель инструментов",         ID_VIEW_TOOLBAR,MFT_STRING,MFS_ENABLED
         MENUITEM "&Строка состояния",           ID_VIEW_STATUS_BAR,MFT_STRING,MFS_ENABLED
         MENUITEM MFT_SEPARATOR
         MENUITEM "Подтверждение управления",    ID_WRITE_CONFIRMATION,MFT_STRING,MFS_ENABLED

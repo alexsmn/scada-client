@@ -1,8 +1,8 @@
 #pragma once
 
+#include "aui/qt/dialog_service_impl_qt.h"
 #include "main_window/action_manager.h"
 #include "main_window/main_window.h"
-#include "aui/qt/dialog_service_impl_qt.h"
 
 #include <QMainWindow>
 #include <boost/signals2/connection.hpp>
@@ -44,7 +44,9 @@ class MainWindowQt final : public QMainWindow,
   virtual void closeEvent(QCloseEvent* event) override;
 
  private:
+  void CreateMenuBar();
   void CreateToolbar();
+  void CreateStatusBar();
 
   QAction* FindAction(unsigned command_id);
 

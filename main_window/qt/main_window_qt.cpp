@@ -85,7 +85,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
   }
 }
 
-QRect GetDefaultBounds(QWidget* window) {
+QRect GetDefaultBounds(const QWidget* window) {
   auto desktop_bounds = QDesktopWidget{}.availableGeometry(window);
   return {desktop_bounds.left() + desktop_bounds.width() / 8,
           desktop_bounds.top() + desktop_bounds.height() / 8,
@@ -105,9 +105,9 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
   dialog_service_.parent_widget = this;
 
+  CreateMenuBar();
   CreateToolbar();
-
-  statusBar()->setVisible(prefs.status_bar);
+  CreateStatusBar();
 
   // Must show window before loading layout to let |restoreState()| work
   // correctly.
@@ -120,8 +120,11 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
   action_manager_.Subscribe(*this);
 
-  change_profile_connection_ = profile_.AddChangeObserver(
-      [this] { statusBar()->setVisible(GetPrefs().status_bar); });
+  change_profile_connection_ = profile_.AddChangeObserver([this] {
+    const MainWindowDef& prefs = GetPrefs();
+    statusBar()->setVisible(prefs.status_bar);
+    toolbar_->setVisible(prefs.toolbar);
+  });
 }
 
 MainWindowQt::~MainWindowQt() {
@@ -138,7 +141,7 @@ void MainWindowQt::UpdateTitle() {
   setWindowTitle(title);
 }
 
-void MainWindowQt::CreateToolbar() {
+void MainWindowQt::CreateMenuBar() {
   /*auto* settings_menu = new QMenu(tr("Settings"), this);
   auto* style_menu = new QMenu(tr("Style"), this);
   for (auto& style : QStyleFactory::keys())
@@ -163,11 +166,17 @@ void MainWindowQt::CreateToolbar() {
                        BuildMenu(*submenu, *submenu_model);
                      });
   }
+}
 
+void MainWindowQt::CreateStatusBar() {
   setStatusBar(new QStatusBar(this));
+  statusBar()->setVisible(GetPrefs().status_bar);
+
   status_bar_controller_ = std::make_unique<StatusBarController>(
       *statusBar(), *status_bar_model_, progress_host_);
+}
 
+void MainWindowQt::CreateToolbar() {
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
     auto* action = new QAction(
@@ -192,6 +201,7 @@ void MainWindowQt::CreateToolbar() {
   }
 
   toolbar_ = new QToolBar(this);
+  toolbar_->setVisible(GetPrefs().toolbar);
   toolbar_->setWindowTitle(tr("Toolbar"));
 
   {
@@ -231,27 +241,23 @@ void MainWindowQt::CreateToolbar() {
 void MainWindowQt::SetWindowFlashing(bool flashing) {}
 
 void MainWindowQt::OnSelectionChanged() {
-  for (auto& p : action_map_)
-    UpdateAction(*p.second, p.first, ActionChangeMask::AllButTitle);
-
-  for (auto& p : category_actions_) {
-    bool visible = false;
-    for (auto* action : p.second.menu->actions()) {
-      if (action->isVisible()) {
-        visible = true;
-        break;
-      }
-    }
-    p.second.toolbar_action->setVisible(visible);
+  for (const auto& [command_id, action] : action_map_) {
+    UpdateAction(*action, command_id, ActionChangeMask::AllButTitle);
   }
 
-  bool adjucent_separator = false;
+  for (const auto& [_, category] : category_actions_) {
+    bool has_visible_actions =
+        std::ranges::any_of(category.menu->actions(), &QAction::isVisible);
+    category.toolbar_action->setVisible(has_visible_actions);
+  }
+
+  bool adjacent_separator = false;
   for (auto* toolbar_action : toolbar_->actions()) {
     if (toolbar_action->isSeparator()) {
-      toolbar_action->setVisible(!adjucent_separator);
-      adjucent_separator = true;
+      toolbar_action->setVisible(!adjacent_separator);
+      adjacent_separator = true;
     } else if (toolbar_action->isVisible()) {
-      adjucent_separator = false;
+      adjacent_separator = false;
     }
   }
 }
@@ -282,11 +288,12 @@ void MainWindowQt::UpdateAction(QAction& action,
                                 ActionChangeMask change_mask) {
   if (static_cast<unsigned>(change_mask) &
       static_cast<unsigned>(ActionChangeMask::Title)) {
-    if (auto* a = action_manager_.FindAction(command_id))
+    if (const auto* a = action_manager_.FindAction(command_id)) {
       action.setText(QString::fromStdU16String(a->GetTitle()));
+    }
   }
 
-  auto* handler = commands_->GetCommandHandler(command_id);
+  const CommandHandler* handler = commands_->GetCommandHandler(command_id);
   action.setVisible(!!handler);
   if (handler) {
     bool enabled = handler->IsCommandEnabled(command_id);
@@ -305,7 +312,7 @@ void MainWindowQt::UpdateMenuActions(QMenu& menu) {
 }
 
 void MainWindowQt::closeEvent(QCloseEvent* event) {
-  auto& prefs = GetPrefs();
+  MainWindowDef& prefs = GetPrefs();
   const auto& g = geometry();
   prefs.bounds = {g.x(), g.y(), g.width(), g.height()};
   prefs.maximized = isMaximized();

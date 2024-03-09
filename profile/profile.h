@@ -19,8 +19,8 @@ struct MainWindowDef {
   int id = 0;
   aui::Rect bounds;
   bool maximized = false;
-  UINT toolbar_position = ID_TOOLBAR_TOP;
   int page_id = 0;
+  bool toolbar = true;
   bool status_bar = true;
 };
 

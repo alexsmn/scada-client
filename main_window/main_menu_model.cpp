@@ -67,7 +67,7 @@ const WindowInfo* const kGraphWindowInfos[] = {&kGraphWindowInfo};
 // DisplayMenuModel
 
 DisplayMenuModel::DisplayMenuModel(const MainMenuContext& context)
-    : MainMenuContext{std::move(context)}, aui::SimpleMenuModel{nullptr} {}
+    : MainMenuContext{context}, aui::SimpleMenuModel{nullptr} {}
 
 void DisplayMenuModel::MenuWillShow() {
   Clear();
@@ -98,13 +98,15 @@ bool DisplayMenuModel::IsEnabledAt(int index) const {
 }
 
 void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
-  for (auto& entry : file_cache_.GetList(window_info.command_id)) {
+  for (const FileCache::FileEntry& entry :
+       file_cache_.GetList(window_info.command_id)) {
     AddItem(0, entry.title);
     items_.emplace_back(&window_info, entry.path);
   }
 
-  if (items_.empty())
+  if (items_.empty()) {
     AddItem(0, u"<Нет схем>");
+  }
 }
 
 // FavouritesMenuModel
@@ -112,7 +114,7 @@ void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
 FavouritesMenuModel::FavouritesMenuModel(
     base::span<const WindowInfo* const> window_infos,
     const MainMenuContext& context)
-    : MainMenuContext{std::move(context)},
+    : MainMenuContext{context},
       aui::SimpleMenuModel{nullptr},
       window_infos_{window_infos} {}
 
@@ -176,7 +178,7 @@ void PageMenuModel::ActivatedAt(int index) {
   OpenPage(p->second);
 }
 
-void PageMenuModel::OpenPage(Page& page) {
+void PageMenuModel::OpenPage(const Page& page) {
   // check revert page
   bool revert = page.id == main_window_.current_page().id;
   if (!revert) {
@@ -196,7 +198,7 @@ void PageMenuModel::OpenPage(Page& page) {
           }));
 }
 
-void PageMenuModel::OpenPageHelper(Page& page, bool revert) {
+void PageMenuModel::OpenPageHelper(const Page& page, bool revert) {
   // Don't allow to open same page in different windows.
   if (!revert && main_window_manager_.IsPageOpened(page.id)) {
     dialog_service_.RunMessageBox(u"Указанный лист открыт в другом окне.", {},
@@ -223,20 +225,21 @@ void WindowMenuModel::MenuWillShow() {
   active_index_ = -1;
 
   int index = 0;
-  for (auto* opened_view : view_manager_.views()) {
+  for (const OpenedView* opened_view : view_manager_.views()) {
     AddRadioItem(0, opened_view->GetWindowTitle(), 0);
-    if (opened_view == main_window_.active_view())
+    if (opened_view == main_window_.active_view()) {
       active_index_ = index;
+    }
     ++index;
   }
 }
 
 void WindowMenuModel::ActivatedAt(int index) {
-  auto& views = view_manager_.views();
+  const auto& views = view_manager_.views();
   assert(index < static_cast<int>(views.size()));
   auto i = views.begin();
   std::advance(i, index);
-  auto& opened_view = **i;
+  OpenedView& opened_view = **i;
   main_window_.ActivateView(opened_view);
 }
 
@@ -251,7 +254,7 @@ void TrashMenuModel::MenuWillShow() {
 
   const auto& trash = profile_.trash;
   for (int i = 0; i < trash.GetWindowCount(); ++i) {
-    auto& win = trash.GetWindow(i);
+    const WindowDefinition& win = trash.GetWindow(i);
     std::u16string label = u"Восстановить " + win.GetTitle();
     AddItem(0, label);
   }
@@ -392,8 +395,9 @@ void MainMenuModel::Rebuild() {
   window_submenu_.AddInplaceMenu(&trash_menu_);
   AddSubMenu(0, u"Окно", &window_submenu_);
 
-  settings_submenu_.AddCheckItem(0, u"Панель инструментов");
-  settings_submenu_.AddCheckItem(ID_VIEW_STATUS_BAR, u"Строка состояния");
+  AddMenuCommands(settings_submenu_, commands_,
+                  MenuGroup::MAIN_WINDOW_SETTINGS);
+
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddCheckItem(ID_WRITE_CONFIRMATION,
                                  u"Подтверждение управления");
@@ -435,12 +439,12 @@ void MainMenuModel::Rebuild() {
 }
 
 bool MainMenuModel::IsCommandIdChecked(int command_id) const {
-  auto* handler = command_handler_.GetCommandHandler(command_id);
+  const auto* handler = command_handler_.GetCommandHandler(command_id);
   return handler && handler->IsCommandChecked(command_id);
 }
 
 bool MainMenuModel::IsCommandIdEnabled(int command_id) const {
-  auto* handler = command_handler_.GetCommandHandler(command_id);
+  const auto* handler = command_handler_.GetCommandHandler(command_id);
   return handler && handler->IsCommandEnabled(command_id);
 }
 

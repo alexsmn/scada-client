@@ -22,7 +22,7 @@ struct UnaryFunctionImpl<R, void> {
 template <typename R, typename A>
 using UnaryFunction = typename UnaryFunctionImpl<R, A>::Type;
 
-enum class MenuGroup { DEBUG, DISPLAY_SETTINGS };
+enum class MenuGroup { DEBUG, MAIN_WINDOW_SETTINGS, DISPLAY_SETTINGS };
 
 // `C` represents the context type.
 template <typename C>

@@ -66,26 +66,41 @@ void OpenPublicFolder() {
                 /*nShowCmd=*/SW_SHOWNORMAL);
 }
 
+BasicCommand<MainCommandContext> MakeOptionCommand(
+    unsigned command_id,
+    std::u16string_view title,
+    Profile& profile,
+    bool MainWindowDef::*option) {
+  return {
+      .command_id = command_id,
+      .title = std::u16string{title},
+      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
+      .execute_handler =
+          [&profile, option](const MainCommandContext& context) {
+            MainWindowDef& prefs =
+                profile.GetMainWindow(context.main_window.GetMainWindowId());
+            prefs.*option = !(prefs.*option);
+            profile.NotifyChange();
+          },
+      .checked_handler =
+          [&profile, option](const MainCommandContext& context) {
+            const MainWindowDef* prefs =
+                profile.FindMainWindow(context.main_window.GetMainWindowId());
+            return prefs && prefs->*option;
+          }};
+}
+
 }  // namespace
 
 MainCommands::MainCommands(MainCommandsContext&& context)
     : MainCommandsContext{std::move(context)},
       command_context_{main_window_, dialog_service_} {
-  main_commands_.AddCommand(
-      {.command_id = ID_VIEW_STATUS_BAR,
-       .execute_handler =
-           [this](const MainCommandContext& context) {
-             MainWindowDef& prefs =
-                 profile_.GetMainWindow(context.main_window.GetMainWindowId());
-             prefs.status_bar = !prefs.status_bar;
-             profile_.NotifyChange();
-           },
-       .checked_handler =
-           [this](const MainCommandContext& context) {
-             const MainWindowDef* prefs =
-                 profile_.FindMainWindow(context.main_window.GetMainWindowId());
-             return prefs && prefs->status_bar;
-           }});
+  main_commands_.AddCommand(MakeOptionCommand(ID_VIEW_TOOLBAR,
+                                              u"Панель инструментов", profile_,
+                                              &MainWindowDef::toolbar));
+  main_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
+                                              u"Строка состояния", profile_,
+                                              &MainWindowDef::status_bar));
 }
 
 MainCommands::~MainCommands() {}
@@ -118,10 +133,6 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
         return active_view && active_view->window_info().printable() ? this
                                                                      :
         nullptr;*/
-
-    case ID_TOOLBAR_TOP:
-    case ID_TOOLBAR_LEFT:
-    case ID_TOOLBAR_HIDDEN:
 
     case ID_LOGIN:
     case ID_LOGOFF:
@@ -204,13 +215,6 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
 }
 
 bool MainCommands::IsCommandChecked(unsigned command_id) const {
-  switch (command_id) {
-    case ID_TOOLBAR_LEFT:
-    case ID_TOOLBAR_TOP:
-    case ID_TOOLBAR_HIDDEN:
-      return main_window_.GetPrefs().toolbar_position == command_id;
-  }
-
   if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
     return (window_info->flags & WIN_SING) &&
            main_window_.FindOpenedViewByType(*window_info);
@@ -255,13 +259,6 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
 
     case ID_VIEW_CHANGE_TITLE:
       ShowRenameWindowDialog();
-      return;
-
-    case ID_TOOLBAR_TOP:
-    case ID_TOOLBAR_LEFT:
-    case ID_TOOLBAR_HIDDEN:
-      main_window_.GetPrefs().toolbar_position = command_id;
-      main_window_.SetToolbarPosition(command_id);
       return;
 
     case ID_VIEW_PUBLIC_FOLDER:

@@ -84,8 +84,8 @@ class PageMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
   virtual bool IsItemCheckedAt(int index) const override;
 
  private:
-  void OpenPage(Page& page);
-  void OpenPageHelper(Page& page, bool revert);
+  void OpenPage(const Page& page);
+  void OpenPageHelper(const Page& page, bool revert);
 
   int active_index_ = -1;
 
