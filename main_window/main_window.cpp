@@ -27,16 +27,17 @@ MainWindow::MainWindow(MainWindowContext&& context,
 void MainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
 
-  Page* page = nullptr;
-  auto& pages = profile_.pages;
-  auto i = pages.find(GetPrefs().page_id);
-  if (i != pages.end())
+  const Page* page = nullptr;
+  const auto& pages = profile_.pages;
+  if (auto i = profile_.pages.find(GetPrefs().page_id); i != pages.end()) {
     page = &i->second;
-  else if (!pages.empty())
+  } else if (!pages.empty()) {
     page = main_window_manager_.FindFirstNotOpenedPage();
+  }
 
-  if (!page)
+  if (!page) {
     page = &profile_.CreatePage();
+  }
 
   OpenPage(*page);
 }
@@ -127,9 +128,9 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
 
   {
     bool set = false;
-    auto* contents = active_data_view_
-                         ? active_data_view_->controller().GetContentsModel()
-                         : nullptr;
+    ContentsModel* contents =
+        active_data_view_ ? active_data_view_->controller().GetContentsModel()
+                          : nullptr;
     if (contents) {
       contents->contents_observer = this;
       if (!view_manager_->is_closing_page()) {
@@ -137,18 +138,22 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
         set = true;
       }
     }
-    if (!set)
+    if (!set) {
       OnContentsChanged({});
+    }
   }
 }
 
 OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
-  for (auto* opened_view : view_manager_->views()) {
-    if (opened_view->window_info().command_id == type &&
-        opened_view->window_info().can_insert_item() && !opened_view->locked())
-      return opened_view;
-  }
-  return nullptr;
+  const auto& views = view_manager_->views();
+
+  auto i = std::ranges::find_if(views, [type](OpenedView* opened_view) {
+    return opened_view->window_info().command_id == type &&
+           opened_view->window_info().can_insert_item() &&
+           !opened_view->locked();
+  });
+
+  return i != views.end() ? *i: nullptr;
 }
 
 scada::status_promise<OpenedView*> MainWindow::OpenView(
@@ -169,14 +174,16 @@ scada::status_promise<OpenedView*> MainWindow::OpenView(
 }
 
 void MainWindow::OnViewClosed(OpenedView& view) {
-  if (&view == active_data_view_)
+  if (&view == active_data_view_) {
     SetActiveDataView(nullptr);
+  }
 
   LOG(INFO) << "Window " << AsStringPiece(view.window_info().title)
             << " closed.";
 
-  if (view_manager_->is_closing_page())
+  if (view_manager_->is_closing_page()) {
     return;
+  }
 
   view.Save();
 

@@ -7,6 +7,8 @@ class MainWindowInterface {
  public:
   virtual ~MainWindowInterface() = default;
 
+  virtual int GetMainWindowId() const = 0;
+
   virtual const Page& GetCurrentPage() const = 0;
   virtual void OpenPage(const Page& page) = 0;
   virtual void SetCurrentPageTitle(std::u16string_view title) = 0;

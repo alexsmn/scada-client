@@ -85,20 +85,20 @@ void BuildMenuModel(CMenuHandle menu_handle,
   }
 }
 
+QRect GetDefaultBounds(QWidget* window) {
+  auto desktop_bounds = QDesktopWidget{}.availableGeometry(window);
+  return {desktop_bounds.left() + desktop_bounds.width() / 8,
+          desktop_bounds.top() + desktop_bounds.height() / 8,
+          desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};
+}
+
 }  // namespace
 
 MainWindowQt::MainWindowQt(MainWindowContext&& context)
     : MainWindow{std::move(context), dialog_service_} {
-  auto& prefs = GetPrefs();
-  auto bounds = prefs.bounds;
-  if (bounds.empty()) {
-    auto desktop_bounds = QDesktopWidget{}.availableGeometry(this);
-    bounds = {desktop_bounds.left() + desktop_bounds.width() / 8,
-              desktop_bounds.top() + desktop_bounds.height() / 8,
-              desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};
-  }
+  const MainWindowDef& prefs = GetPrefs();
 
-  setGeometry(bounds.x, bounds.y, bounds.width, bounds.height);
+  setGeometry(prefs.bounds.isNull() ? GetDefaultBounds(this) : prefs.bounds);
 
   view_manager_ = std::make_unique<ViewManagerQt>(
       *this, *static_cast<ViewManagerDelegate*>(this));
@@ -106,6 +106,8 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   dialog_service_.parent_widget = this;
 
   CreateToolbar();
+
+  statusBar()->setVisible(prefs.status_bar);
 
   // Must show window before loading layout to let |restoreState()| work
   // correctly.
@@ -117,6 +119,9 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   Init(*view_manager_);
 
   action_manager_.Subscribe(*this);
+
+  change_profile_connection_ = profile_.AddChangeObserver(
+      [this] { statusBar()->setVisible(GetPrefs().status_bar); });
 }
 
 MainWindowQt::~MainWindowQt() {

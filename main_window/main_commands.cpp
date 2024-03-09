@@ -46,25 +46,47 @@ const Option options[] = {
     {0, nullptr}};
 
 static bool Profile::*GetOption(UINT id) {
-  for (int i = 0; options[i].id; ++i)
-    if (options[i].id == id)
-      return options[i].option;
+  for (const auto& opt : options) {
+    if (opt.id == id) {
+      return opt.option;
+    }
+  }
   return nullptr;
 }
 
 void OpenPublicFolder() {
   base::FilePath path;
-  if (!base::PathService::Get(client::DIR_PUBLIC, &path))
+  if (!base::PathService::Get(client::DIR_PUBLIC, &path)) {
     return;
-  ShellExecuteW(nullptr, L"open", path.value().c_str(), nullptr, nullptr,
-                SW_SHOWNORMAL);
+  }
+
+  ShellExecuteW(/*hwnd=*/nullptr, /*lpOperation=*/L"open",
+                /*lpFile=*/path.value().c_str(), /*lpParameters=*/nullptr,
+                /*lpDirectory=*/nullptr,
+                /*nShowCmd=*/SW_SHOWNORMAL);
 }
 
 }  // namespace
 
 MainCommands::MainCommands(MainCommandsContext&& context)
     : MainCommandsContext{std::move(context)},
-      command_context_{main_window_, dialog_service_} {}
+      command_context_{main_window_, dialog_service_} {
+  main_commands_.AddCommand(
+      {.command_id = ID_VIEW_STATUS_BAR,
+       .execute_handler =
+           [this](const MainCommandContext& context) {
+             MainWindowDef& prefs =
+                 profile_.GetMainWindow(context.main_window.GetMainWindowId());
+             prefs.status_bar = !prefs.status_bar;
+             profile_.NotifyChange();
+           },
+       .checked_handler =
+           [this](const MainCommandContext& context) {
+             const MainWindowDef* prefs =
+                 profile_.FindMainWindow(context.main_window.GetMainWindowId());
+             return prefs && prefs->status_bar;
+           }});
+}
 
 MainCommands::~MainCommands() {}
 
@@ -100,8 +122,6 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     case ID_TOOLBAR_TOP:
     case ID_TOOLBAR_LEFT:
     case ID_TOOLBAR_HIDDEN:
-    case ID_VIEW_STATUS_BAR:
-      return this;
 
     case ID_LOGIN:
     case ID_LOGOFF:

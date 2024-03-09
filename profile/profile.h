@@ -21,6 +21,7 @@ struct MainWindowDef {
   bool maximized = false;
   UINT toolbar_position = ID_TOOLBAR_TOP;
   int page_id = 0;
+  bool status_bar = true;
 };
 
 class Profile {
@@ -35,7 +36,8 @@ class Profile {
   Page& CreatePage();
 
   int CreateWindowId();
-  MainWindowDef& GetMainWindow(int id);
+  MainWindowDef& GetMainWindow(int main_window_id);
+  MainWindowDef* FindMainWindow(int main_window_id);
 
   PageMap pages;
 

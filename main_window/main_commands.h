@@ -12,7 +12,7 @@ namespace scada {
 class SessionService;
 }
 
-template<class T>
+template <class T>
 class BasicCommandRegistry;
 
 class DialogService;
@@ -40,7 +40,7 @@ struct MainCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
-  const BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<MainCommandContext>& main_commands_;
 };
 
 class MainCommands : private MainCommandsContext, public CommandHandler {

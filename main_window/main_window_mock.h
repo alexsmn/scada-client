@@ -6,6 +6,8 @@
 
 class MockMainWindow : public MainWindowInterface {
  public:
+  MOCK_METHOD(int, GetMainWindowId, (), (const override));
+
   MOCK_METHOD(const Page&, GetCurrentPage, (), (const override));
   MOCK_METHOD(void, OpenPage, (const Page& page), (override));
 

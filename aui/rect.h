@@ -1,14 +1,17 @@
 #pragma once
 
+#if defined(UI_QT)
+#include <QRect>
+#elif defined(UI_WT)
+#include "aui/rect_internal.h"
+#endif
+
 namespace aui {
 
-struct Rect {
-  int x = 0;
-  int y = 0;
-  int width = 0;
-  int height = 0;
-
-  constexpr bool empty() const noexcept { return width == 0 || height == 0; }
-};
+#if defined(UI_QT)
+using Rect = QRect;
+#elif defined(UI_WT)
+using Rect = internal::Rect;
+#endif
 
 }  // namespace aui

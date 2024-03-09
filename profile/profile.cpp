@@ -133,11 +133,13 @@ void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
   int top = GetInt(data, "top", inval);
   int width = GetInt(data, "width", inval);
   int height = GetInt(data, "height", inval);
-  if (left != inval && top != inval && width != inval && height != inval)
+  if (left != inval && top != inval && width != inval && height != inval) {
     main_window.bounds = {left, top, width, height};
+  }
   main_window.maximized = GetBool(data, "maximized", false);
   main_window.toolbar_position =
       ParseToolbarPosition(GetString(data, "toolbar"));
+  main_window.status_bar = GetBool(data, "statusBar", true);
   main_window.page_id = GetInt(data, "page", 0);
 }
 
@@ -281,13 +283,14 @@ base::Value Profile::SaveToValue(
     for (const auto& [id, main_window] : main_windows) {
       base::Value wine{base::Value::Type::DICTIONARY};
       SetKey(wine, "id", main_window.id);
-      SetKey(wine, "left", main_window.bounds.x);
-      SetKey(wine, "top", main_window.bounds.y);
-      SetKey(wine, "width", main_window.bounds.width);
-      SetKey(wine, "height", main_window.bounds.height);
+      SetKey(wine, "left", main_window.bounds.x());
+      SetKey(wine, "top", main_window.bounds.y());
+      SetKey(wine, "width", main_window.bounds.width());
+      SetKey(wine, "height", main_window.bounds.height());
       SetKey(wine, "maximized", main_window.maximized);
       SetKey(wine, "toolbar",
              FormatToolbarPosition(main_window.toolbar_position));
+      SetKey(wine, "statusBar", main_window.status_bar);
       SetKey(wine, "page", main_window.page_id);
       list.emplace_back(std::move(wine));
     }
@@ -372,14 +375,20 @@ Page& Profile::CreatePage() {
 }
 
 int Profile::CreateWindowId() {
-  int id = 1;
-  while (main_windows.find(id) != main_windows.end())
-    ++id;
-  return id;
+  int new_id = 1;
+  while (main_windows.contains(new_id)) {
+    ++new_id;
+  }
+  return new_id;
 }
 
-MainWindowDef& Profile::GetMainWindow(int id) {
-  MainWindowDef& window = main_windows[id];
-  window.id = id;
+MainWindowDef& Profile::GetMainWindow(int main_window_id) {
+  MainWindowDef& window = main_windows[main_window_id];
+  window.id = main_window_id;
   return window;
+}
+
+MainWindowDef* Profile::FindMainWindow(int main_window_id) {
+  auto i = main_windows.find(main_window_id);
+  return i != main_windows.end() ? &i->second : nullptr;
 }

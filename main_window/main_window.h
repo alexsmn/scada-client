@@ -52,6 +52,7 @@ class MainWindow : protected MainWindowContext,
   virtual void SetWindowFlashing(bool flashing) = 0;
 
   // MainWindow
+  virtual int GetMainWindowId() const { return window_id(); }
   virtual const Page& GetCurrentPage() const override { return current_page(); }
   virtual void OpenPage(const Page& page) override;
   virtual void SetCurrentPageTitle(std::u16string_view title) override;

@@ -5,6 +5,7 @@
 #include "aui/qt/dialog_service_impl_qt.h"
 
 #include <QMainWindow>
+#include <boost/signals2/connection.hpp>
 
 class QAction;
 class QMenu;
@@ -75,4 +76,6 @@ class MainWindowQt final : public QMainWindow,
   std::unique_ptr<aui::MenuModel> main_menu_model_;
 
   std::unique_ptr<StatusBarController> status_bar_controller_;
+
+  boost::signals2::scoped_connection change_profile_connection_;
 };
