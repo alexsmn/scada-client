@@ -1,12 +1,7 @@
 #include "main_window/status/status_bar_model_impl.h"
 
-// StatusBarModelImpl
-
-StatusBarModelImpl::StatusBarModelImpl(ProgressHost& progress_host) {
+StatusBarModelImpl::StatusBarModelImpl() {
   panes_.emplace_back();
-
-  connections_.emplace_back(progress_host.Subscribe(
-      [this](const ProgressStatus& status) { OnProgressStatus(status); }));
 }
 
 int StatusBarModelImpl::AddPane(const StatusPane& pane) {
@@ -27,10 +22,6 @@ int StatusBarModelImpl::GetPaneSize(int index) const {
   return panes_[index].size;
 }
 
-aui::StatusBarModel::Progress StatusBarModelImpl::GetProgress() const {
-  return progress_;
-}
-
 void StatusBarModelImpl::AddObserver(aui::StatusBarModelObserver& observer) {
   observers_.AddObserver(&observer);
 }
@@ -38,14 +29,6 @@ void StatusBarModelImpl::AddObserver(aui::StatusBarModelObserver& observer) {
 void StatusBarModelImpl::RemoveObserver(aui::StatusBarModelObserver& observer) {
   observers_.RemoveObserver(&observer);
 }
-
-void StatusBarModelImpl::OnProgressStatus(const ProgressStatus& status) {
-  progress_ = {status.active, status.range, status.current};
-
-  for (auto& o : observers_)
-    o.OnProgressChanged();
-}
-
 void StatusBarModelImpl::NotifyPanesChanged(int index, int count) {
   for (auto& o : observers_) {
     o.OnPanesChanged(index, count);

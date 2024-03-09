@@ -14,7 +14,6 @@ class Executor;
 class NodeEventProvider;
 class NodeService;
 class Profile;
-class ProgressHost;
 class StatusProvider;
 
 struct StatusBarModelBuilder {
@@ -24,6 +23,5 @@ struct StatusBarModelBuilder {
   scada::SessionService& session_service_;
   NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
-  ProgressHost& progress_host_;
   Profile& profile_;
 };

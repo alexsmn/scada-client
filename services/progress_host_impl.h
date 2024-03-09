@@ -8,6 +8,7 @@ class ProgressHostImpl : public ProgressHost {
  public:
   // ProgressHost
   virtual std::unique_ptr<RunningProgress> Start() override;
+  virtual ProgressStatus GetStatus() const override;
   virtual boost::signals2::scoped_connection Subscribe(
       const ProgressCallback& callback) override;
 
@@ -21,6 +22,8 @@ class ProgressHostImpl : public ProgressHost {
   ProgressStatus progress_status_;
 
   std::vector<RunningProgressImpl*> running_progress_impls_;
+
+  ProgressStatus status_;
 
   boost::signals2::signal<void(const ProgressStatus& status)> signal_;
 };

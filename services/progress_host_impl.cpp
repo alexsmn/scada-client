@@ -50,6 +50,10 @@ std::unique_ptr<RunningProgress> ProgressHostImpl::Start() {
   return running_progress_impl;
 }
 
+ProgressStatus ProgressHostImpl::GetStatus() const {
+  return progress_status_;
+}
+
 boost::signals2::scoped_connection ProgressHostImpl::Subscribe(
     const ProgressCallback& callback) {
   return signal_.connect(callback);
@@ -57,8 +61,7 @@ boost::signals2::scoped_connection ProgressHostImpl::Subscribe(
 
 void ProgressHostImpl::RemoveRunningProgressImpl(
     RunningProgressImpl& running_progress_impl) {
-  auto i = std::find(running_progress_impls_.begin(),
-                     running_progress_impls_.end(), &running_progress_impl);
+  auto i = std::ranges::find(running_progress_impls_, &running_progress_impl);
   assert(i != running_progress_impls_.end());
   if (i != running_progress_impls_.end())
     running_progress_impls_.erase(i);
@@ -68,11 +71,13 @@ void ProgressHostImpl::RemoveRunningProgressImpl(
 
 void ProgressHostImpl::UpdateProgressStatus() {
   ProgressStatus progress_status;
-  for (auto* running_progress_impl : running_progress_impls_)
+  for (const auto* running_progress_impl : running_progress_impls_) {
     Merge(running_progress_impl->progress_status(), progress_status);
+  }
 
-  if (progress_status_ == progress_status)
+  if (progress_status_ == progress_status) {
     return;
+  }
 
   progress_status_ = progress_status;
   signal_(progress_status_);

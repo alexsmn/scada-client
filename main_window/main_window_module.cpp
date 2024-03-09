@@ -115,9 +115,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   auto status_bar_model =
-      StatusBarModelBuilder{executor_,      master_data_services_,
-                            event_fetcher_, node_service_,
-                            progress_host_, profile_}
+      StatusBarModelBuilder{executor_, master_data_services_, event_fetcher_,
+                            node_service_, profile_}
           .Build();
 
   auto connection_info_provider = [this] {
@@ -138,7 +137,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                            std::move(status_bar_model),
                            context_menu_factory,
                            main_menu_factory,
-                           connection_info_provider};
+                           connection_info_provider,
+                           progress_host_};
 }
 
 void MainWindowModule::OnEvents(bool has_events) {

@@ -7,7 +7,7 @@
 #include "main_window/status/user_status_provider.h"
 
 std::shared_ptr<aui::StatusBarModel> StatusBarModelBuilder::Build() {
-  auto model = std::make_shared<StatusBarModelImpl>(progress_host_);
+  auto model = std::make_shared<StatusBarModelImpl>();
 
   // Event count and min severity.
 

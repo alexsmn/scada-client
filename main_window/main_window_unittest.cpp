@@ -13,6 +13,7 @@
 #include "main_window/main_window_manager.h"
 #include "modus/modus_component.h"
 #include "profile/profile.h"
+#include "services/progress_host_impl.h"
 
 #if defined(UI_QT)
 #include "main_window/qt/main_window_qt.h"
@@ -70,6 +71,8 @@ class MainWindowTest : public Test {
 
   NiceMock<MockFunction<std::string()>> connection_info_provider_;
 
+  ProgressHostImpl progress_host_;
+
 #if defined(UI_QT)
   MainWindowQt main_window_{MakeMainWindowContext()};
 
@@ -110,7 +113,8 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
              aui::MenuModel& context_menu_model) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
           },
-      .connection_info_provider_ = connection_info_provider_.AsStdFunction()};
+      .connection_info_provider_ = connection_info_provider_.AsStdFunction(),
+      .progress_host_ = progress_host_};
 }
 
 MainWindowTest::~MainWindowTest() {

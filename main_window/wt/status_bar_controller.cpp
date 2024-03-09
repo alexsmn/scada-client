@@ -5,8 +5,9 @@
 #include <Wt/WLabel.h>
 #include <Wt/WProgressBar.h>
 
-StatusBarController::StatusBarController(aui::StatusBarModel& model)
-    : model_{model} {
+StatusBarController::StatusBarController(aui::StatusBarModel& model,
+                                         ProgressHost& progress_host)
+    : model_{model}, progress_host_{progress_host} {
   /*progress_bar_ = new QProgressBar{&status_bar_};
   progress_bar_->setAlignment(Qt::AlignRight);
   progress_bar_->setRange(0, 0);
@@ -40,8 +41,4 @@ void StatusBarController::UpdateProgressBar() {
   progress_bar_->setRange(0, progress.range);
   progress_bar_->setValue(progress.current);
   progress_bar_->setVisible(progress.active);*/
-}
-
-void StatusBarController::OnProgressChanged() {
-  UpdateProgressBar();
 }

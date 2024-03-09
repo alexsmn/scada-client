@@ -160,8 +160,8 @@ void MainWindowQt::CreateToolbar() {
   }
 
   setStatusBar(new QStatusBar(this));
-  status_bar_controller_ =
-      std::make_unique<StatusBarController>(*statusBar(), *status_bar_model_);
+  status_bar_controller_ = std::make_unique<StatusBarController>(
+      *statusBar(), *status_bar_model_, progress_host_);
 
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);

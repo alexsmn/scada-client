@@ -1,14 +1,16 @@
 #include "status_bar_controller.h"
 
 #include "aui/models/status_bar_model.h"
+#include "services/progress_host.h"
 
 #include <QLabel>
 #include <QProgressBar>
 #include <QStatusBar>
 
 StatusBarController::StatusBarController(QStatusBar& status_bar,
-                                         aui::StatusBarModel& model)
-    : status_bar_{status_bar}, model_{model} {
+                                         aui::StatusBarModel& model,
+                                         ProgressHost& progress_host)
+    : status_bar_{status_bar}, model_{model}, progress_host_{progress_host} {
   progress_bar_ = new QProgressBar{&status_bar_};
   progress_bar_->setAlignment(Qt::AlignRight);
   progress_bar_->setRange(0, 0);
@@ -26,6 +28,9 @@ StatusBarController::StatusBarController(QStatusBar& status_bar,
   }
 
   model_.AddObserver(*this);
+
+  progress_connection_ = progress_host.Subscribe(
+      [this](const ProgressStatus&) { UpdateProgressBar(); });
 }
 
 StatusBarController::~StatusBarController() {
@@ -40,12 +45,8 @@ void StatusBarController::OnPanesChanged(int index, int count) {
 }
 
 void StatusBarController::UpdateProgressBar() {
-  auto progress = model_.GetProgress();
+  auto progress = progress_host_.GetStatus();
   progress_bar_->setRange(0, progress.range);
   progress_bar_->setValue(progress.current);
   progress_bar_->setVisible(progress.active);
-}
-
-void StatusBarController::OnProgressChanged() {
-  UpdateProgressBar();
 }

@@ -8,12 +8,13 @@ namespace aui {
 class StatusBarModel;
 }
 
+class ProgressHost;
 class WLabel;
 class WProgressBar;
 
 class StatusBarController : private aui::StatusBarModelObserver {
  public:
-  explicit StatusBarController(aui::StatusBarModel& model);
+  StatusBarController(aui::StatusBarModel& model, ProgressHost& progress_host);
   ~StatusBarController();
 
  private:
@@ -21,9 +22,9 @@ class StatusBarController : private aui::StatusBarModelObserver {
 
   // aui::StatusBarModelObserver
   virtual void OnPanesChanged(int index, int count) override;
-  virtual void OnProgressChanged() override;
 
   aui::StatusBarModel& model_;
+  ProgressHost& progress_host_;
 
   std::vector<WLabel*> panes_;
 

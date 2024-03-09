@@ -18,14 +18,15 @@ class MainWindow;
 class MainWindowManager;
 class OpenedView;
 class Profile;
+class ProgressHost;
 class SelectionCommands;
 class ViewManager;
 
 struct MainWindowContext {
-   std::shared_ptr<Executor> executor_;
+  std::shared_ptr<Executor> executor_;
   ActionManager& action_manager_;
   int window_id_;
-   NodeCommandHandler node_command_handler_;
+  NodeCommandHandler node_command_handler_;
   FileManager& file_manager_;
   MainWindowManager& main_window_manager_;
   Profile& profile_;
@@ -55,4 +56,6 @@ struct MainWindowContext {
       main_menu_factory_;
 
   std::function<std::string()> connection_info_provider_;
+
+  ProgressHost& progress_host_;
 };
