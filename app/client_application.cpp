@@ -49,6 +49,24 @@
 
 using namespace std::chrono_literals;
 
+namespace {
+
+scada::ServiceLogParams ReadServiceLogParamsFromCommandLine() {
+  assert(base::CommandLine::ForCurrentProcess());
+  const auto& command_line = *base::CommandLine::ForCurrentProcess();
+
+  return {.log_read = command_line.HasSwitch("log-service-read"),
+          .log_browse = command_line.HasSwitch("log-service-browse"),
+          .log_history = command_line.HasSwitch("log-service-history"),
+          .log_event = command_line.HasSwitch("log-service-event"),
+          .log_model_change_event =
+              command_line.HasSwitch("log-service-model-change-event"),
+          .log_node_semantics_change_event = command_line.HasSwitch(
+              "log-service-node-semantics-change-event")};
+}
+
+}  // namespace
+
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
 extern bool CreateOpcUaServices(const DataServicesContext& context,
@@ -301,20 +319,8 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
 promise<void> ClientApplication::Login() {
   logger_->Write(LogSeverity::Normal, "Login");
 
-  assert(base::CommandLine::ForCurrentProcess());
-  const auto& command_line = *base::CommandLine::ForCurrentProcess();
-
-  scada::ServiceLogParams service_log_params{
-      command_line.HasSwitch("log-service-read"),
-      command_line.HasSwitch("log-service-browse"),
-      command_line.HasSwitch("log-service-history"),
-      command_line.HasSwitch("log-service-event"),
-      command_line.HasSwitch("log-service-model-change-event"),
-      command_line.HasSwitch("log-service-node-semantics-change-event"),
-  };
-
   DataServicesContext services_context{logger_, executor_, *transport_factory_,
-                                       service_log_params};
+                                       ReadServiceLogParamsFromCommandLine()};
 
   return login_handler_(std::move(services_context))
       .then(BindPromiseExecutor(executor_,
