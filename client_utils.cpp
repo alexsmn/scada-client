@@ -96,37 +96,6 @@ void ReportRequestResult(const std::u16string& title,
   local_events.ReportEvent(severity, message);
 }
 
-/*promise<void> ExpandGroupItemIdsHelper(
-    const NodeRef& node,
-    size_t max_count,
-    const std::shared_ptr<NodeIdSet>& node_ids) {
-  return FetchChildren(node).then([node, max_count, node_ids] {
-    std::vector<promise<void>> promises;
-
-    if (node.node_class() == scada::NodeClass::Variable)
-      node_ids->emplace(node.node_id());
-
-    for (const auto& child : node.targets(scada::id::Organizes)) {
-      promises.emplace_back(
-          ExpandGroupItemIdsHelper(child, max_count, node_ids));
-    }
-
-    for (const auto& child : node.targets(scada::id::HasComponent)) {
-      promises.emplace_back(
-          ExpandGroupItemIdsHelper(child, max_count, node_ids));
-    }
-
-    return make_all_promise_void(std::move(promises));
-  });
-}
-
-promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
-  auto node_ids = std::make_shared<NodeIdSet>();
-  return ExpandGroupItemIdsHelper(node, max_count, node_ids).then([node_ids] {
-    return std::move(*node_ids);
-  });
-}*/
-
 promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
   return FetchChildren(node).then([node, max_count] {
     std::vector<promise<NodeIdSet>> promises;
@@ -149,26 +118,12 @@ promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
   });
 }
 
-bool ExecuteDisableItem(TaskManager& task_manager,
-                        const NodeRef& node,
-                        bool disable) {
-  if (!node[devices::id::DeviceType_Disabled])
-    return false;
-
-  task_manager.PostUpdateTask(node.node_id(), {},
-                              {{devices::id::DeviceType_Disabled, disable}});
-  return true;
-}
-
 void CompletePath(const std::u16string& text,
                   int& start,
                   std::vector<std::u16string>& list) {}
 
 void DeleteTreeRecordsRecursive(TaskManager& task_manager,
                                 const NodeRef& node) {
-  /*for (auto* child : scada::GetComponents(node))
-    DeleteTreeRecordsRecursive(*child);*/
-
   task_manager.PostDeleteTask(node.node_id());
 }
 

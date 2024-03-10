@@ -10,14 +10,8 @@
 #include <vector>
 
 namespace scada {
-class NodeId;
-class NodeManagementService;
 class SessionService;
-class Variant;
 }  // namespace scada
-
-template <typename T>
-class BasicCommandRegistry;
 
 class Controller;
 class DialogService;
@@ -32,15 +26,12 @@ class NodeService;
 class Profile;
 class SelectionModel;
 class TaskManager;
-class TimedDataService;
 
 struct SelectionCommandsContext {
   const std::shared_ptr<Executor> executor_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
-  scada::NodeManagementService& node_management_service_;
   NodeEventProvider& node_event_provider_;
-  TimedDataService& timed_data_service_;
   LocalEvents& local_events_;
   FileCache& file_cache_;
   Profile& profile_;
@@ -70,10 +61,6 @@ class SelectionCommands : private SelectionCommandsContext,
 
   promise<WindowDefinition> GetOpenWindowDefinition(
       const WindowInfo* window_info) const;
-
-  void CallMethod(const NodeRef& node,
-                  const scada::NodeId& method_id,
-                  const std::vector<scada::Variant>& arguments);
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);

@@ -32,10 +32,6 @@ void ReportRequestResult(const std::u16string& title,
                          LocalEvents& local_events,
                          Profile& profile);
 
-bool ExecuteDisableItem(TaskManager& task_manager,
-                        const NodeRef& node,
-                        bool disable);
-
 const size_t kTableLimitation = 1000;
 
 promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node,

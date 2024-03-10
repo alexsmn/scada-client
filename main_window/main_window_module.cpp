@@ -7,6 +7,7 @@
 #include "events/event_fetcher.h"
 #include "main_window/action_manager.h"
 #include "main_window/actions.h"
+#include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/main_commands.h"
 #include "main_window/main_menu_model.h"
@@ -91,10 +92,16 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                                               main_commands);
   };
 
+  auto configuration_commands = std::make_shared<ConfigurationCommands>(
+      selection_commands_, executor_, timed_data_service_,
+      master_data_services_, profile_, local_events_, task_manager_);
+
+  singletons_.emplace(configuration_commands);
+  configuration_commands->Register();
+
   auto selection_commands =
       std::make_shared<SelectionCommands>(SelectionCommandsContext{
-          executor_, task_manager_, master_data_services_,
-          master_data_services_, event_fetcher_, timed_data_service_,
+          executor_, task_manager_, master_data_services_, event_fetcher_,
           local_events_, file_cache_, profile_, *main_window_manager_,
           node_service_, selection_commands_});
 

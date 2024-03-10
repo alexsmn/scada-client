@@ -14,7 +14,6 @@
 #include "components/change_password/change_password_dialog.h"
 #include "components/device_metrics/device_metrics_command.h"
 #include "components/events/events_component.h"
-#include "components/limits/limit_dialog.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/summary/summary_component.h"
@@ -22,7 +21,6 @@
 #include "components/timed_data/timed_data_component.h"
 #include "components/transmission/transmission_component.h"
 #include "components/watch/watch_component.h"
-#include "components/write/write_dialog.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "events/node_event_provider.h"
@@ -117,49 +115,6 @@ std::string GetNodeDebugInfo(const NodeRef& node) {
   return stream.str();
 }
 
-void RegisterDeviceEnableCommand(SelectionCommands& selection_commands,
-                                 CommandRegistry& command_registry,
-                                 const scada::SessionService& session_service,
-                                 TaskManager& task_manager,
-                                 unsigned command_id,
-                                 bool enable) {
-  command_registry.AddCommand(
-      Command{command_id}
-          .set_execute_handler([&selection_commands, &task_manager, enable] {
-            ExecuteDisableItem(task_manager,
-                               selection_commands.selection()->node(), !enable);
-          })
-          .set_enabled_handler([&selection_commands, enable] {
-            return selection_commands.selection()
-                       ->node()[devices::id::DeviceType_Disabled]
-                       .value()
-                       .get_or(false) == enable;
-          })
-          .set_available_handler([&selection_commands, &session_service] {
-            return session_service.HasPrivilege(scada::Privilege::Configure) &&
-                   selection_commands.selection()
-                       ->node()[devices::id::DeviceType_Disabled];
-          }));
-}
-
-void RegisterMethodCommand(SelectionCommands& selection_commands,
-                           CommandRegistry& command_registry,
-                           const scada::SessionService& session_service,
-                           unsigned command_id,
-                           const scada::NodeId& method_id) {
-  command_registry.AddCommand(
-      Command{command_id}
-          .set_execute_handler([&selection_commands, method_id] {
-            selection_commands.CallMethod(
-                selection_commands.selection()->node(), method_id, {});
-          })
-          .set_available_handler([&selection_commands, &session_service] {
-            return session_service.HasPrivilege(scada::Privilege::Control) &&
-                   IsInstanceOf(selection_commands.selection()->node(),
-                                data_items::id::DataItemType);
-          }));
-}
-
 void RegisterOpenViewCommand(SelectionCommands& selection_commands,
                              CommandRegistry& command_registry,
                              unsigned command_id,
@@ -207,16 +162,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             return IsInstanceOf(selection()->node(), devices::id::DeviceType);
           }));
 
-  RegisterDeviceEnableCommand(*this, command_registry_, session_service_,
-                              task_manager_, ID_ITEM_ENABLE, true);
-  RegisterDeviceEnableCommand(*this, command_registry_, session_service_,
-                              task_manager_, ID_ITEM_DISABLE, false);
-
-  RegisterMethodCommand(*this, command_registry_, session_service_,
-                        ID_DEV1_REFR, devices::id::DeviceType_Interrogate);
-  RegisterMethodCommand(*this, command_registry_, session_service_,
-                        ID_DEV1_SYNC, devices::id::DeviceType_SyncClock);
-
   command_registry_.AddCommand(
       Command{ID_OPEN_EVENTS}
           .set_execute_handler([this] {
@@ -228,7 +173,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                                  "mode", "Current");
                              return new_window_def;
                            }),
-                       true);
+                       /*activate=*/true);
           })
           .set_available_handler([this] { return !selection_->empty(); }));
 
@@ -258,18 +203,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
-
-  command_registry_.AddCommand(
-      Command{ID_EDIT_LIMITS}
-          .set_execute_handler([this] {
-            ShowLimitsDialog(*dialog_service_,
-                             {selection_->node(), task_manager_});
-          })
-          .set_available_handler([this] {
-            return session_service_.HasPrivilege(scada::Privilege::Control) &&
-                   IsInstanceOf(selection_->node(),
-                                data_items::id::AnalogItemType);
-          }));
 
   command_registry_.AddCommand(
       Command{ID_OPEN_GROUP_TABLE}
@@ -372,65 +305,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           }));
 
   command_registry_.AddCommand(
-      Command{ID_WRITE}
-          .set_execute_handler([this] {
-            ExecuteWriteDialog(
-                *dialog_service_,
-                WriteContext{executor_, timed_data_service_,
-                             selection_->node().node_id(), profile_, false});
-          })
-          .set_enabled_handler([this] {
-            // TODO: Use `scada::AttributeId::UserWriteMask` when available.
-            // Allow writing to all variables. Except for data items: check
-            // an output channel is present.
-            auto node = selection_->node();
-            return !IsInstanceOf(node, data_items::id::DataItemType) ||
-                   !node[data_items::id::DataItemType_Output].value().is_null();
-          })
-          .set_available_handler([this] {
-            return session_service_.HasPrivilege(scada::Privilege::Control) &&
-                   selection_->node().node_class() ==
-                       scada::NodeClass::Variable;
-          }));
-
-  command_registry_.AddCommand(
-      Command{ID_WRITE_MANUAL}
-          .set_execute_handler([this] {
-            ExecuteWriteDialog(
-                *dialog_service_,
-                WriteContext{executor_, timed_data_service_,
-                             selection_->node().node_id(), profile_, true});
-          })
-          .set_available_handler([this] {
-            return session_service_.HasPrivilege(scada::Privilege::Control) &&
-                   IsInstanceOf(selection_->node(),
-                                data_items::id::DataItemType);
-          }));
-
-  command_registry_.AddCommand(
-      Command{ID_UNLOCK_ITEM}
-          .set_execute_handler([this] {
-            auto node = selection_->node();
-            task_manager_.PostTask(
-                base::StringPrintf(u"Снятие блокировки с %ls",
-                                   node.display_name().c_str()),
-                [node] {
-                  return node.scada_node().call(
-                      data_items::id::DataItemType_Unlock);
-                });
-          })
-          .set_enabled_handler([this] {
-            return selection_->node()[data_items::id::DataItemType_Locked]
-                .value()
-                .get_or(false);
-          })
-          .set_available_handler([this] {
-            return session_service_.HasPrivilege(scada::Privilege::Control) &&
-                   IsInstanceOf(selection_->node(),
-                                data_items::id::DataItemType);
-          }));
-
-  command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_CURRENT}
           .set_execute_handler([this] {
             node_event_provider_.AcknowledgeItemEvents(
@@ -475,19 +349,6 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
   }
 
   return nullptr;
-}
-
-void SelectionCommands::CallMethod(
-    const NodeRef& node,
-    const scada::NodeId& method_id,
-    const std::vector<scada::Variant>& arguments) {
-  scada::BindStatusCallback(node.scada_node().call_packed(method_id, arguments),
-                            [node, &local_events = local_events_,
-                             &profile = profile_](const scada::Status& status) {
-                              auto title = ToString16(node.display_name());
-                              ReportRequestResult(title, status, local_events,
-                                                  profile);
-                            });
 }
 
 void SelectionCommands::OpenViewContainingNode(int view_type_id,
@@ -544,8 +405,8 @@ void SelectionCommands::DeleteSelection() {
   if (selection_->multiple()) {
     auto node_ids = selection_->GetMultipleNodeIds();
     nodes.reserve(node_ids.size());
-    std::transform(
-        node_ids.begin(), node_ids.end(), std::back_inserter(nodes),
+    std::ranges::transform(
+        node_ids, std::back_inserter(nodes),
         [&node_service = node_service_](const scada::NodeId& node_id) {
           return node_service.GetNode(node_id);
         });
