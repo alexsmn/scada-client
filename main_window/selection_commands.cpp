@@ -4,9 +4,7 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/promise_executor.h"
-#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "clipboard/clipboard_util.h"
@@ -32,7 +30,6 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
-#include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_service.h"
@@ -40,12 +37,10 @@
 #include "profile/window_definition_util.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
-#include "services/task_manager.h"
 #include "window_definition_builder.h"
 
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
-#include "modus/modus_component.h"
 #endif
 
 namespace {
@@ -60,59 +55,6 @@ bool CanCreateSomething(const NodeRef& node) {
   }
 
   return false;
-}
-
-#if defined(UI_QT)
-std::string EncodeUri(std::string_view str) {
-  return QByteArray{str.data(), static_cast<int>(str.size())}
-      .toPercentEncoding()
-      .toStdString();
-}
-#else
-std::string EncodeUri(std::string_view str) {
-  return std::string{str};
-}
-#endif
-
-void PrintReferences(std::ostream& stream,
-                     base::span<const NodeRef::Reference> references) {
-  for (const auto& r : references) {
-    stream << "{";
-    stream << "forward: " << r.forward;
-    stream << ", ";
-    stream << "type: " << r.reference_type.browse_name();
-    stream << ", ";
-    stream << "target: " << NodeIdToScadaString(r.target.node_id());
-    stream << "}";
-    stream << std::endl;
-  }
-}
-
-std::string GetNodeDebugInfo(const NodeRef& node) {
-  std::ostringstream stream;
-  stream << NodeIdToScadaString(node.node_id()) << std::endl;
-
-  stream << "Fetched: " << node.fetched() << std::endl;
-  stream << "Children fetched: " << node.children_fetched() << std::endl;
-  stream << std::endl;
-
-  stream << "Attributes:" << std::endl;
-  stream << "BrowseName: " << node.browse_name() << std::endl;
-  stream << "DisplayName: " << node.display_name() << std::endl;
-  stream << "TypeDefinition: " << node.type_definition().browse_name()
-         << std::endl;
-  stream << "Supertype: " << node.supertype().browse_name() << std::endl;
-  stream << std::endl;
-
-  stream << "References:" << std::endl;
-  PrintReferences(stream, node.references());
-  stream << std::endl;
-
-  stream << "Inverse references:" << std::endl;
-  PrintReferences(stream, node.inverse_references());
-  stream << std::endl;
-
-  return stream.str();
 }
 
 void RegisterOpenViewCommand(SelectionCommands& selection_commands,
@@ -265,12 +207,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
                    IsInstanceOf(selection_->node(), security::id::UserType);
           }));
-
-  command_registry_.AddCommand(
-      Command{ID_DUMP_DEBUG_INFO}
-          .set_execute_handler([this] { DumpDebugInfo(); })
-          .set_available_handler(
-              [this] { return selection_->timed_data().connected(); }));
 
   // ID_TRANSMISSION_VIEW
   command_registry_.AddCommand(
@@ -475,27 +411,6 @@ promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
   }
 
   return MakeWindowDefinition(window_info, selection_->node(), true);
-}
-
-void SelectionCommands::DumpDebugInfo() {
-  std::vector<std::string> debug_info;
-
-  if (auto node = selection_->node())
-    debug_info.push_back(GetNodeDebugInfo(node));
-
-  debug_info.push_back(selection_->timed_data().DumpDebugInfo());
-
-  auto debug_text = base::JoinString(debug_info, "\n\n");
-
-  Clipboard clipboard;
-  if (!clipboard.SetText(debug_text))
-    LOG(WARNING) << "Can't set clipboard data";
-  if (!clipboard.SetText(base::UTF8ToWide(debug_text)))
-    LOG(WARNING) << "Can't set clipboard data";
-
-  dialog_service_->RunMessageBox(
-      u"Отладочная информация скопирована в буфер обмена.", {},
-      MessageBoxMode::Info);
 }
 
 bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {

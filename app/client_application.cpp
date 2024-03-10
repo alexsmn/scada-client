@@ -275,9 +275,10 @@ void ClientApplication::OnStartLoginCompleted() {
           .controller_registry_ = *controller_registry_,
           .profile_ = *profile_}));
 
-  singletons_.emplace(std::make_shared<DebuggerModule>(
-      DebuggerModuleContext{.session_service_ = *master_data_services_,
-                            .main_commands_ = core_module_->main_commands()}));
+  singletons_.emplace(std::make_shared<DebuggerModule>(DebuggerModuleContext{
+      .session_service_ = *master_data_services_,
+      .main_commands_ = core_module_->main_commands(),
+      .selection_commands_ = core_module_->selection_commands()}));
 
   filesystem_component_ = std::make_unique<FileSystemComponent>(
       FileSystemComponentContext{.node_service_ = *node_service_,

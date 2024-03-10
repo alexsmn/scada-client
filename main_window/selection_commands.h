@@ -76,8 +76,6 @@ class SelectionCommands : private SelectionCommandsContext,
 
   void OpenViewContainingNode(int view_type_id, const NodeRef& node);
 
-  void DumpDebugInfo();
-
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;
