@@ -104,6 +104,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             return IsInstanceOf(selection()->node(), devices::id::DeviceType);
           }));
 
+  // TODO: Move to the event module.
   command_registry_.AddCommand(
       Command{ID_OPEN_EVENTS}
           .set_execute_handler([this] {
@@ -119,6 +120,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           })
           .set_available_handler([this] { return !selection_->empty(); }));
 
+  // TODO: Move to the event module.
   command_registry_.AddCommand(
       Command{ID_HISTORICAL_EVENTS}
           .set_execute_handler([this] {
@@ -240,6 +242,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                    !selection_->empty();
           }));
 
+  // TODO: Move to the event module.
   command_registry_.AddCommand(
       Command{ID_ACKNOWLEDGE_CURRENT}
           .set_execute_handler([this] {

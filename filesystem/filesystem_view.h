@@ -1,9 +1,9 @@
-﻿#include "configuration_tree/lib/configuration_tree_view.h"
+﻿#include "configuration/tree/configuration_tree_view.h"
 
 #include "common_resources.h"
-#include "configuration_tree/lib/configuration_tree_drop_handler.h"
-#include "configuration_tree/lib/configuration_tree_model.h"
-#include "configuration_tree/lib/node_service_tree_impl.h"
+#include "configuration/tree/configuration_tree_drop_handler.h"
+#include "configuration/tree/configuration_tree_model.h"
+#include "configuration/tree/node_service_tree_impl.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/node_service.h"
 

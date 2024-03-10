@@ -19,7 +19,7 @@
 #include "common_resources.h"
 #include "components/debugger/debugger_module.h"
 #include "components/write/write_service_impl.h"
-#include "configuration_tree/configuration_tree_module.h"
+#include "configuration/configuration_module.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
 #include "core/core_module.h"
@@ -271,7 +271,7 @@ void ClientApplication::OnStartLoginCompleted() {
                               .profile_ = *profile_});
 
   singletons_.emplace(
-      std::make_shared<ConfigurationTreeModule>(ConfigurationTreeModuleContext{
+      std::make_shared<ConfigurationModule>(ConfigurationModuleContext{
           .controller_registry_ = *controller_registry_,
           .profile_ = *profile_}));
 

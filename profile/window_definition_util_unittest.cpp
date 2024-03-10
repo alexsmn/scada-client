@@ -2,7 +2,7 @@
 
 #include "base/json.h"
 #include "common_resources.h"
-#include "configuration_tree/configuration_tree_component.h"
+#include "configuration/configuration_tree_component.h"
 #include "controller/controller_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
