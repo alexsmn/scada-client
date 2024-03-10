@@ -8,7 +8,6 @@
 #include "client_utils.h"
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
-#include "components/change_password/change_password_dialog.h"
 #include "components/device_metrics/device_metrics_command.h"
 #include "components/events/events_component.h"
 #include "components/node_properties/node_property_component.h"
@@ -31,7 +30,6 @@
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
 #include "model/scada_node_ids.h"
-#include "model/security_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition_util.h"
@@ -195,19 +193,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           })
           .set_available_handler([this] {
             return IsInstanceOf(selection_->node(), devices::id::DeviceType);
-          }));
-
-  command_registry_.AddCommand(
-      Command{ID_CHANGE_PASSWORD}
-          .set_execute_handler([this] {
-            ShowChangePasswordDialog(
-                *dialog_service_,
-                ChangePasswordContext{selection_->node(), local_events_,
-                                      profile_});
-          })
-          .set_available_handler([this] {
-            return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-                   IsInstanceOf(selection_->node(), security::id::UserType);
           }));
 
   // ID_TRANSMISSION_VIEW

@@ -1,6 +1,7 @@
 #include "main_window/main_window_module.h"
 
 #include "common/master_data_services.h"
+#include "components/change_password/change_password_command_builder.h"
 #include "components/events/events_component.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
@@ -98,6 +99,12 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
 
   singletons_.emplace(configuration_commands);
   configuration_commands->Register();
+
+  selection_commands_.AddCommand(
+      ChangePasswordCommandBuilder{.local_events_ = local_events_,
+                                   .profile_ = profile_,
+                                   .session_service_ = master_data_services_}
+          .Build());
 
   auto selection_commands =
       std::make_shared<SelectionCommands>(SelectionCommandsContext{
