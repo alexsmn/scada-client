@@ -109,8 +109,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto selection_commands =
       std::make_shared<SelectionCommands>(SelectionCommandsContext{
           executor_, task_manager_, master_data_services_, event_fetcher_,
-          local_events_, file_cache_, profile_, *main_window_manager_,
-          node_service_, selection_commands_});
+          file_cache_, profile_, *main_window_manager_, node_service_,
+          selection_commands_});
 
   auto view_commands_factory = [this, selection_commands](
                                    OpenedView& opened_view,

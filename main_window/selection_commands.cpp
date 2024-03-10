@@ -94,8 +94,9 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             MakeDeviceMetricsWindowDefinition(selection_->node())
                 .then([weak_ptr = weak_ptr_factory_.GetWeakPtr()](
                           const WindowDefinition& window_definition) {
-                  if (auto* ptr = weak_ptr.get())
+                  if (auto* ptr = weak_ptr.get()) {
                     ptr->OpenWindow(window_definition);
+                  }
                 });
           })
           .set_available_handler([this] {
@@ -153,8 +154,9 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             MakeGroupWindowDefinition(&kTableWindowInfo, selection_->node())
                 .then([main_window = main_window_](
                           const std::optional<WindowDefinition>& window_def) {
-                  if (window_def.has_value())
+                  if (window_def.has_value()) {
                     ::OpenView(main_window, *window_def);
+                  }
                 });
           })
           .set_available_handler(
@@ -246,8 +248,9 @@ void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
     MakeWindowDefinition(window_info, selection_->node(), true)
         .then([weak_ptr = weak_ptr_factory_.GetWeakPtr()](
                   const WindowDefinition& window_definition) {
-          if (auto ptr = weak_ptr.get())
+          if (auto ptr = weak_ptr.get()) {
             ptr->OpenWindow(window_definition);
+          }
         });
   }
 }
