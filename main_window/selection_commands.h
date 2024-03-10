@@ -4,7 +4,6 @@
 #include "base/promise.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
-#include "core/selection_command_context.h"
 #include "profile/window_definition.h"
 
 #include <vector>
@@ -23,9 +22,11 @@ class MainWindowManager;
 class NodeEventProvider;
 class NodeRef;
 class NodeService;
+class OpenedView;
 class Profile;
 class SelectionModel;
 class TaskManager;
+struct SelectionCommandContext;
 
 struct SelectionCommandsContext {
   const std::shared_ptr<Executor> executor_;
@@ -74,7 +75,8 @@ class SelectionCommands : private SelectionCommandsContext,
   void DeleteSelection();
   void CopyToClipboard();
 
-  void OpenViewContainingNode(int view_type_id, const NodeRef& node);
+  promise<OpenedView*> OpenViewContainingNode(int view_type_id,
+                                              const NodeRef& node);
 
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;

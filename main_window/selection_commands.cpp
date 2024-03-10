@@ -5,7 +5,6 @@
 #include "base/files/file_util.h"
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
-#include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
@@ -21,6 +20,7 @@
 #include "components/watch/watch_component.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
+#include "core/selection_command_context.h"
 #include "events/node_event_provider.h"
 #include "filesystem/file_cache.h"
 #include "main_window.h"
@@ -287,8 +287,9 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
   return nullptr;
 }
 
-void SelectionCommands::OpenViewContainingNode(int view_type_id,
-                                               const NodeRef& node) {
+promise<OpenedView*> SelectionCommands::OpenViewContainingNode(
+    int view_type_id,
+    const NodeRef& node) {
   assert(main_window_);
   assert(dialog_service_);
 
@@ -298,8 +299,8 @@ void SelectionCommands::OpenViewContainingNode(int view_type_id,
   if (cached_items.empty()) {
     auto msg = base::StringPrintf(u"Схема для объекта \"%ls\" не найдена.",
                                   ToString16(node.display_name()).c_str());
-    dialog_service_->RunMessageBox(msg, u"Схема", MessageBoxMode::Info);
-    return;
+    return ToRejectedPromise<OpenedView*>(
+        dialog_service_->RunMessageBox(msg, u"Схема", MessageBoxMode::Info));
   }
 
   // TODO: Let user select scheme from list.
@@ -317,8 +318,9 @@ void SelectionCommands::OpenViewContainingNode(int view_type_id,
     open_promise = main_window_->OpenView(win, true);
   }
 
-  open_promise.then([node_id = node.node_id()](OpenedView* opened_view) {
+  return open_promise.then([node_id = node.node_id()](OpenedView* opened_view) {
     opened_view->SetSelection(node_id);
+    return opened_view;
   });
 }
 
