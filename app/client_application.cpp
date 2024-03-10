@@ -4,7 +4,6 @@
 #include "base/boost_log_adapter.h"
 #include "base/command_line.h"
 #include "base/promise_executor.h"
-#include "base/strings/utf_string_conversions.h"
 #include "common/audit.h"
 #include "common/master_data_services.h"
 #include "common_resources.h"
@@ -20,7 +19,6 @@
 #include "export/csv/csv_export_module.h"
 #include "favorites/favorites_module.h"
 #include "filesystem/filesystem_component.h"
-#include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
 #include "metrics/boost_log_metric_reporter.h"
@@ -125,16 +123,12 @@ ClientApplication::~ClientApplication() {
   transport_factory_.reset();
 }
 
-void ClientApplication::Start() {
-  Login().then(BindExecutor(executor_, [this](bool ok) {
-    if (ok)
-      OnStartLoginCompleted();
-    else
-      quit_handler_();
-  }));
+promise<void> ClientApplication::Run() {
+  return IgnoreResult(Login().then(BindPromiseExecutor(
+      executor_, [this] { return RunAfterLoginCompleted(); })));
 }
 
-void ClientApplication::OnStartLoginCompleted() {
+promise<void> ClientApplication::RunAfterLoginCompleted() {
   scada::client scada_client{
       master_data_services_->data_services().as_services()};
 
@@ -300,9 +294,11 @@ void ClientApplication::OnStartLoginCompleted() {
       &core_module_->selection_commands());
 
   filesystem_component_->StartUp();
+
+  return quit_promise_;
 }
 
-promise<bool> ClientApplication::Login() {
+promise<void> ClientApplication::Login() {
   logger_->Write(LogSeverity::Normal, "Login");
 
   assert(base::CommandLine::ForCurrentProcess());
@@ -323,10 +319,10 @@ promise<bool> ClientApplication::Login() {
   return login_handler_(std::move(services_context))
       .then(BindPromiseExecutor(executor_,
                                 [this](std::optional<DataServices> services) {
-                                  if (!services)
-                                    return false;
+                                  if (!services) {
+                                    throw std::runtime_error{"Login failed"};
+                                  }
                                   OnLoginCompleted(std::move(*services));
-                                  return true;
                                 }));
 }
 
@@ -364,7 +360,7 @@ void ClientApplication::Quit() {
   logger_->Write(LogSeverity::Normal, "Quit");
 
   if (!master_data_services_) {
-    quit_handler_();
+    quit_promise_.resolve();
     return;
   }
 
@@ -374,5 +370,6 @@ void ClientApplication::Quit() {
 
   logger_->Write(LogSeverity::Normal, "Disconnect");
 
-  master_data_services_->Disconnect().finally(quit_handler_);
+  ForwardPromise(IgnoreResult(master_data_services_->Disconnect()),
+                 quit_promise_);
 }

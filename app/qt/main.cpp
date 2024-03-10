@@ -57,10 +57,9 @@ int main(int argc, char* argv[]) {
       .login_handler_ =
           [executor](DataServicesContext&& services_context) {
             return ExecuteLoginDialog(executor, std::move(services_context));
-          },
-      .quit_handler_ = &QApplication::quit}};
+          }}};
 
-  Dispatch(*executor, [&app] { app.Start(); });
+  executor->PostTask([&app] { app.Run().then(&QApplication::quit); });
 
   return qapp.exec();
 }

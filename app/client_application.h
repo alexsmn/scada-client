@@ -52,8 +52,6 @@ struct ClientApplicationContext {
   const std::function<promise<std::optional<DataServices>>(
       DataServicesContext&& services_context)>
       login_handler_;
-
-  const std::function<void()> quit_handler_;
 };
 
 class ClientApplication : private ClientApplicationContext {
@@ -64,12 +62,12 @@ class ClientApplication : private ClientApplicationContext {
   ClientApplication(const ClientApplication&) = delete;
   ClientApplication& operator=(const ClientApplication&) = delete;
 
-  void Start();
+  promise<void> Run();
 
  private:
-  promise<bool> Login();
+  promise<void> Login();
   void OnLoginCompleted(DataServices services);
-  void OnStartLoginCompleted();
+  promise<void> RunAfterLoginCompleted();
 
   void Quit();
 
@@ -113,4 +111,6 @@ class ClientApplication : private ClientApplicationContext {
   std::stack<std::shared_ptr<void>> singletons_;
 
   bool profile_loaded_ = false;
+
+  promise<void> quit_promise_;
 };
