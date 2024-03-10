@@ -10,6 +10,5 @@ client_module_link_libraries(client_graph PRIVATE
 )
 
 target_link_libraries(client_graph_qt_unittests PRIVATE
-  # TODO: Remove this dependency.
-  client_qt_lib
+  client_controller_test_qt
 )
