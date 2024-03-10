@@ -8,11 +8,13 @@ client_module_link_libraries(client_services PUBLIC
 # UTs.
 
 target_link_libraries(client_services_qt_unittests PRIVATE
-  # TODO: Remove this dependency.
-  client_qt_lib
+  address_space
+  client_profile_qt
+  node_service
 )
 
 target_link_libraries(client_services_wt_unittests PRIVATE
-  # TODO: Remove this dependency.
-  client_wt_lib
+  address_space
+  client_profile_wt
+  node_service
 )
