@@ -1,8 +1,8 @@
+#include "app/app_init.h"
 #include "app/client_application.h"
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
 #include "aui/qt/message_loop_qt.h"
-#include "base/at_exit.h"
 #include "base/task_runner_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
@@ -21,7 +21,7 @@ using namespace std::chrono_literals;
 DummyAtlModule _Module;
 
 int main(int argc, char* argv[]) {
-  base::AtExitManager at_exit;
+  AppInit app_init;
 
   GdiplusInitializer gdiplus;
 

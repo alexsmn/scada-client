@@ -1,7 +1,7 @@
 #include "app/client_application.h"
 
+#include "app/app_init.h"
 #include "aui/wt/message_loop_wt.h"
-#include "base/at_exit.h"
 #include "base/bind_util.h"
 #include "base/executor.h"
 #include "base/task_runner_executor.h"
@@ -60,7 +60,7 @@ HelloApplication::~HelloApplication() {
 }
 
 int main(int argc, char** argv) {
-  base::AtExitManager at_exit;
+  AppInit app_init;
 
   Wt::WIOService io_context;
   io_context.setThreadCount(1);

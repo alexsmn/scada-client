@@ -1,20 +1,11 @@
 ﻿#include "app/client_application.h"
 
 #include "base/blinker.h"
-#include "base/boost_log.h"
 #include "base/boost_log_adapter.h"
-#include "base/boost_log_init.h"
-#include "base/client_paths.h"
 #include "base/command_line.h"
-#include "base/file_path_util.h"
-#include "base/files/file_util.h"
-#include "base/nested_logger.h"
-#include "base/path_service.h"
 #include "base/promise_executor.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/win/dump.h"
 #include "common/audit.h"
-#include "common/common_paths.h"
 #include "common/master_data_services.h"
 #include "common_resources.h"
 #include "components/debugger/debugger_module.h"
@@ -34,7 +25,6 @@
 #include "main_window/main_window_util.h"
 #include "metrics/boost_log_metric_reporter.h"
 #include "metrics/metric_service_impl.h"
-#include "node_service/node_service.h"
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
 #include "portfolio/portfolio_module.h"
@@ -43,14 +33,14 @@
 #include "properties/property_service.h"
 #include "remote/remote_services.h"
 #include "scada/service_context.h"
-#include "services/alias_service.h"
+#include "services/alias_resolver_factory.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
 #include "services/local_events.h"
 #include "services/progress_host_impl.h"
 #include "services/speech.h"
 #include "services/task_manager_impl.h"
-#include "timed_data/timed_data_service_impl.h"
+#include "timed_data/timed_data_service_factory.h"
 
 #if !defined(UI_WT)
 #include "modus/modus_module.h"
@@ -79,22 +69,6 @@ REGISTER_DATA_SERVICES("Vidicon",
                        CreateVidiconServices,
                        "localhost");
 
-namespace {
-
-LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
-  auto name = GetDumpFileName("client");
-
-  base::FilePath base_path;
-  base::PathService::Get(client::DIR_LOG, &base_path);
-  auto path = AsFilesystemPath(base_path) / name;
-
-  DumpException(path.c_str(), *exception);
-
-  return EXCEPTION_EXECUTE_HANDLER;
-}
-
-}  // namespace
-
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
       metric_service_{
@@ -102,38 +76,6 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
                                               /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>()} {
-  if (!base::CommandLine::Init(0, nullptr))
-    throw std::runtime_error{"Can't parse command line."};
-
-  scada::RegisterPathProvider();
-  client::RegisterPathProvider();
-
-  // Initialize logging.
-  {
-    base::FilePath log_path;
-    base::PathService::Get(client::DIR_LOG, &log_path);
-    base::CreateDirectory(log_path);
-
-    {
-      auto path = log_path.Append(FILE_PATH_LITERAL("client.log"));
-      logging::InitLogging(logging::LoggingSettings{
-          .logging_dest = logging::LOG_TO_FILE,
-          .log_file_path = path.value().c_str(),
-          .lock_log = logging::LOCK_LOG_FILE,
-          .delete_old = logging::APPEND_TO_OLD_LOG_FILE,
-      });
-    }
-
-    {
-      BoostLogParams params;
-      params.path =
-          log_path.Append(FILE_PATH_LITERAL("components.log")).value();
-      InitBoostLogging(params);
-    }
-  }
-
-  SetUnhandledExceptionFilter(ProcessUnhandledException);
-
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
   metric_service_->RegisterSink(
@@ -181,8 +123,6 @@ ClientApplication::~ClientApplication() {
 
   core_module_.reset();
   transport_factory_.reset();
-
-  ShutdownBoostLogging();
 }
 
 void ClientApplication::Start() {
@@ -196,7 +136,7 @@ void ClientApplication::Start() {
 
 void ClientApplication::OnStartLoginCompleted() {
   scada::client scada_client{
-      scada::GetServices(master_data_services_->data_services())};
+      master_data_services_->data_services().as_services()};
 
   event_fetcher_ =
       EventFetcherBuilder{.executor_ = executor_,
@@ -216,31 +156,17 @@ void ClientApplication::OnStartLoginCompleted() {
                          .method_service_ = *master_data_services_,
                          .scada_client_ = scada_client});
 
-  auto alias_logger =
-      base::CommandLine::ForCurrentProcess()->HasSwitch("log-alias-service")
-          ? static_cast<std::shared_ptr<Logger>>(
-                std::make_shared<NestedLogger>(logger_, "AliasService"))
-          : static_cast<std::shared_ptr<Logger>>(
-                std::make_shared<NullLogger>());
-
-  auto alias_service = std::make_shared<AliasService>(
-      AliasServiceContext{alias_logger, *node_service_});
-
-  AliasResolver alias_resolver =
-      std::bind_front(&AliasService::Resolve, alias_service);
+  AliasResolver alias_resolver = CreateAliasResolver(*node_service_, logger_);
 
   singletons_.emplace(
       std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
 
-  timed_data_service_ = std::make_unique<TimedDataServiceImpl>(TimedDataContext{
-      .executor_ = executor_,
-      .alias_resolver_ = alias_resolver,
-      .node_service_ = *node_service_,
-      .services_ = {.attribute_service = master_data_services_.get(),
-                    .monitored_item_service = master_data_services_.get(),
-                    .method_service = master_data_services_.get(),
-                    .history_service = master_data_services_.get()},
-      .node_event_provider_ = *event_fetcher_});
+  timed_data_service_ = CreateTimedDataService(
+      {.executor_ = executor_,
+       .alias_resolver_ = alias_resolver,
+       .node_service_ = *node_service_,
+       .services_ = master_data_services_->data_services().as_services(),
+       .node_event_provider_ = *event_fetcher_});
 
   profile_ = std::make_unique<Profile>();
   local_events_ = std::make_unique<LocalEvents>();
@@ -270,10 +196,9 @@ void ClientApplication::OnStartLoginCompleted() {
                               .timed_data_service_ = *timed_data_service_,
                               .profile_ = *profile_});
 
-  singletons_.emplace(
-      std::make_shared<ConfigurationModule>(ConfigurationModuleContext{
-          .controller_registry_ = *controller_registry_,
-          .profile_ = *profile_}));
+  singletons_.emplace(std::make_shared<ConfigurationModule>(
+      ConfigurationModuleContext{.controller_registry_ = *controller_registry_,
+                                 .profile_ = *profile_}));
 
   singletons_.emplace(std::make_shared<DebuggerModule>(DebuggerModuleContext{
       .session_service_ = *master_data_services_,

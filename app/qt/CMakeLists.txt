@@ -5,6 +5,9 @@ file(GLOB MAIN_QT CONFIGURE_DEPENDS
   "../../*.rc"
   "../../res/client.qrc"
   "../client_application.cpp"
+  "../client_application.h"
+  "../app_init.cpp"
+  "../app_init.h"
   "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
