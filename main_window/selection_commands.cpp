@@ -230,8 +230,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                            }),
                        true);
           })
-          .set_available_handler(
-              [this] { return !selection_->empty() ? this : nullptr; }));
+          .set_available_handler([this] { return !selection_->empty(); }));
 
   command_registry_.AddCommand(
       Command{ID_HISTORICAL_EVENTS}
@@ -239,13 +238,14 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             ::OpenView(main_window_,
                        GetOpenWindowDefinition(&kEventJournalWindowInfo), true);
           })
-          .set_available_handler(
-              [this] { return !selection_->empty() ? this : nullptr; }));
+          .set_available_handler([this] { return !selection_->empty(); }));
 
 #if !defined(UI_WT)
   command_registry_.AddCommand(
       Command{ID_OPEN_DISPLAY}
-          .set_execute_handler([this] { OpenModusView(selection_->node()); })
+          .set_execute_handler([this] {
+            OpenViewContainingNode(ID_MODUS_VIEW, selection_->node());
+          })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
 #endif
@@ -490,13 +490,13 @@ void SelectionCommands::CallMethod(
                             });
 }
 
-#if !defined(UI_WT)
-void SelectionCommands::OpenModusView(const NodeRef& node) {
+void SelectionCommands::OpenViewContainingNode(int view_type_id,
+                                               const NodeRef& node) {
   assert(main_window_);
   assert(dialog_service_);
 
   auto cached_items =
-      file_cache_.GetList(ID_MODUS_VIEW).GetFilesContainingItem(node.node_id());
+      file_cache_.GetList(view_type_id).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
     auto msg = base::StringPrintf(u"Схема для объекта \"%ls\" не найдена.",
@@ -511,22 +511,19 @@ void SelectionCommands::OpenModusView(const NodeRef& node) {
 
   scada::status_promise<OpenedView*> open_promise;
 
-  auto* view = main_window_manager_.FindOpenedViewByFilePath(path);
-  if (view) {
+  if (auto* view = main_window_manager_.FindOpenedViewByFilePath(path); view) {
     view->Activate();
     open_promise = make_resolved_promise(view);
   } else {
-    WindowDefinition win(kModusWindowInfo);
+    WindowDefinition win(GetWindowInfo(view_type_id));
     win.path = path;
     open_promise = main_window_->OpenView(win, true);
   }
 
-  open_promise.then(
-    [node_id = node.node_id()](OpenedView* opened_view) {
+  open_promise.then([node_id = node.node_id()](OpenedView* opened_view) {
     opened_view->SetSelection(node_id);
   });
 }
-#endif
 
 void SelectionCommands::SetContext(MainWindow* main_window,
                                    DialogService* dialog_service,
