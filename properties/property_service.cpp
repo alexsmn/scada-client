@@ -1,7 +1,6 @@
 #include "properties/property_service.h"
 
 #include "base/range_util.h"
-#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -27,8 +26,8 @@ const EnumPropertyDefinition kEnumPropDef;
 
 struct ChannelPropertyTree {
   explicit ChannelPropertyTree(std::u16string_view suffix)
-      : device{base::StrCat({u"Устройство", AsStringPiece(suffix)}), true},
-        channel{base::StrCat({u"Канал", AsStringPiece(suffix)}), false} {}
+      : device{base::StrCat({u"Устройство", suffix}), true},
+        channel{base::StrCat({u"Канал", suffix}), false} {}
 
   ChannelPropertyDefinition device;
   ChannelPropertyDefinition channel;

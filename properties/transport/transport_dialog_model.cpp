@@ -1,6 +1,5 @@
 ﻿#include "transport_dialog_model.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -48,8 +47,7 @@ static int FindString(const std::string_view strs[],
                       int count,
                       std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(AsStringPiece(strs[i]),
-                                         AsStringPiece(value))) {
+    if (base::EqualsCaseInsensitiveASCII(strs[i], value)) {
       return i;
     }
   }
@@ -60,8 +58,7 @@ static int FindStringPair(const StringPair pairs[],
                           int count,
                           std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(AsStringPiece(pairs[i].second),
-                                         AsStringPiece(value))) {
+    if (base::EqualsCaseInsensitiveASCII(pairs[i].second, value)) {
       return i;
     }
   }
@@ -118,8 +115,7 @@ TransportDialogModel::TransportDialogModel(
 
   stop_bits_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kStopBitsStrings); ++i) {
-    stop_bits_items.emplace_back(
-        base::UTF8ToUTF16(AsStringPiece(kStopBitsStrings[i])));
+    stop_bits_items.emplace_back(base::UTF8ToUTF16(kStopBitsStrings[i]));
   }
 
   flow_control_items.emplace_back(kDefaultString);
@@ -127,8 +123,8 @@ TransportDialogModel::TransportDialogModel(
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
-    network_host = base::UTF8ToUTF16(AsStringPiece(
-        transport_string_.GetParamStr(net::TransportString::kParamHost)));
+    network_host = base::UTF8ToUTF16(
+        transport_string_.GetParamStr(net::TransportString::kParamHost));
     network_port =
         transport_string_.GetParamInt(net::TransportString::kParamPort);
 

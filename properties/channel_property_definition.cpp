@@ -1,6 +1,5 @@
 #include "properties/channel_property_definition.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
@@ -84,10 +83,9 @@ std::u16string ChannelPropertyDefinition::GetText(
         IsNestedNodeId(node_id, parent_id, component_name)) {
       return device_
                  ? GetFullDisplayName(context.node_service_.GetNode(parent_id))
-                 : base::UTF8ToUTF16(AsStringPiece(component_name));
+                 : base::UTF8ToUTF16(component_name);
     } else if (auto path = GetParentGroupChannelPath(name); !path.empty()) {
-      return device_ ? kParentGroupDevice
-                     : base::UTF8ToUTF16(AsStringPiece(path));
+      return device_ ? kParentGroupDevice : base::UTF8ToUTF16(path);
     }
   }
 

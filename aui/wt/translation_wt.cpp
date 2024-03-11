@@ -1,8 +1,7 @@
 #include "aui/translation.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
 
 std::u16string Translate(std::string_view text) {
-  return base::UTF8ToUTF16(AsStringPiece(text));
+  return base::UTF8ToUTF16(text);
 }

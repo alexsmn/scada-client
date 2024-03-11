@@ -1,10 +1,9 @@
 #pragma once
 
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_utils.h"
-#include "profile/window_definition_util.h"
 #include "profile/profile.h"
+#include "profile/window_definition_util.h"
 
 struct GraphViewLoader {
   void Read() {
@@ -72,8 +71,7 @@ struct GraphViewLoader {
     auto srange = item.GetString("span");
     auto stime = item.GetString("time");
     base::Time from, to;
-    bool time_fit =
-        base::EqualsCaseInsensitiveASCII(AsStringPiece(stime), "Now");
+    bool time_fit = base::EqualsCaseInsensitiveASCII(stime, "Now");
     if (time_fit || !Deserialize(stime, to)) {
       time_fit = true;
       to = base::Time::Now();

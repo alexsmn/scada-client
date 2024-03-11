@@ -1,6 +1,5 @@
 #include "graph/graph_setup_dialog.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 
 LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
@@ -59,7 +58,7 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
     dc.SelectStockPen(BLACK_PEN);
     dc.Rectangle(&crect);
     // draw text
-    text = base::AsWString(AsStringPiece(aui::GetColorName(dis->itemID)));
+    text = base::AsWString(aui::GetColorName(dis->itemID));
     rect.left = crect.right + 3;
   }
 

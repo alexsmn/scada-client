@@ -1,7 +1,6 @@
 ﻿#include "modus/qt/modus_controller.h"
 
 #include "aui/dialog_service.h"
-#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "common_resources.h"
 #include "components/web/web_component.h"
@@ -151,8 +150,8 @@ void ModusController::OpenHyperlink(std::u16string_view hyperlink) {
   auto path = MakeModusFilePath(hyperlink, wrapper_->GetPath());
   if (!path.has_value()) {
     dialog_service_.RunMessageBox(
-        base::StrCat({u"Файл ", AsStringPiece(hyperlink),
-                      u" не найден или находится вне папки схем."}),
+        base::StrCat(
+            {u"Файл ", hyperlink, u" не найден или находится вне папки схем."}),
         {}, MessageBoxMode::Error);
     return;
   }

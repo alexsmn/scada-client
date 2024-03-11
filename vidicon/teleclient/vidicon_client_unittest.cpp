@@ -1,6 +1,5 @@
 #include "vidicon/teleclient/vidicon_client.h"
 
-#include "base/string_piece_util.h"
 #include "base/test/test_executor.h"
 #include "base/win/scoped_bstr.h"
 #include "model/namespaces.h"
@@ -52,8 +51,7 @@ Microsoft::WRL::ComPtr<IDataPoint> VidiconClientTest::CreateDataPoint(
     std::wstring_view address) {
   Microsoft::WRL::ComPtr<IDataPoint> data_point;
   EXPECT_HRESULT_SUCCEEDED(vidicon_client_.teleclient().RequestPoint(
-      base::win::ScopedBstr{AsStringPiece(address)},
-      data_point.ReleaseAndGetAddressOf()));
+      base::win::ScopedBstr{address}, data_point.ReleaseAndGetAddressOf()));
   EXPECT_THAT(data_point, NotNull());
   return data_point;
 }
@@ -76,8 +74,7 @@ TEST_F(VidiconClientTest, NewOpcAeDataPoint_FailsConnection) {
 
   Microsoft::WRL::ComPtr<IDataPoint> data_point;
   ASSERT_HRESULT_FAILED(vidicon_client_.teleclient().RequestPoint(
-      base::win::ScopedBstr{AsStringPiece(address)},
-      data_point.ReleaseAndGetAddressOf()));
+      base::win::ScopedBstr{address}, data_point.ReleaseAndGetAddressOf()));
   ASSERT_EQ(data_point, nullptr);
 }
 

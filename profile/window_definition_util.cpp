@@ -144,13 +144,13 @@ base::Value ToJson(base::TimeDelta duration) {
 
 std::string SaveBlob(std::string_view blob) {
   std::string text;
-  base::Base64Encode(AsStringPiece(blob), &text);
+  base::Base64Encode(blob, &text);
   return text;
 }
 
 std::string RestoreBlob(std::string_view text) {
-  auto trimmed_text = base::TrimString(AsStringPiece(text),
-                                       base::kWhitespaceASCII, base::TRIM_ALL);
+  auto trimmed_text =
+      base::TrimString(text, base::kWhitespaceASCII, base::TRIM_ALL);
   std::string blob;
   base::Base64Decode(trimmed_text, &blob);
   return blob;

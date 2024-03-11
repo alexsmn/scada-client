@@ -4,7 +4,6 @@
 #include "base/json/json_file_value_serializer.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_string_value_serializer.h"
-#include "base/string_piece_util.h"
 #include "base/strings/utf_string_conversions.h"
 
 bool SaveJsonToFile(const base::Value& data,
@@ -31,7 +30,7 @@ std::optional<base::Value> LoadJsonFromFile(const std::filesystem::path& path,
 
 std::optional<base::Value> LoadJsonFromString(std::string_view contents,
                                               std::string* error_message) {
-  JSONStringValueDeserializer deserializer{AsStringPiece(contents),
+  JSONStringValueDeserializer deserializer{contents,
                                            base::JSON_ALLOW_TRAILING_COMMAS};
   auto value_ptr = deserializer.Deserialize(nullptr, error_message);
   return value_ptr ? std::make_optional(std::move(*value_ptr)) : std::nullopt;

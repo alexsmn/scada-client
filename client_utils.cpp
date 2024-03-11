@@ -3,7 +3,6 @@
 #include "aui/translation.h"
 #include "base/format_time.h"
 #include "base/range_util.h"
-#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -28,7 +27,7 @@ std::u16string FormatHostName(std::string_view host_name) {
   if (host_name.empty()) {
     return Translate("Local");
   } else {
-    return base::UTF8ToUTF16(AsStringPiece(host_name));
+    return base::UTF8ToUTF16(host_name);
   }
 }
 
@@ -37,8 +36,7 @@ inline void AppendHint(std::u16string& hint,
                        std::u16string_view value) {
   if (value.empty())
     return;
-  hint +=
-      base::StrCat({u"\n", AsStringPiece(title), u": ", AsStringPiece(value)});
+  hint += base::StrCat({u"\n", title, u": ", value});
 }
 
 std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {

@@ -1,7 +1,6 @@
 #include "base/utils.h"
 
 #include "base/format.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 
 #ifdef OS_WIN
@@ -43,15 +42,14 @@ int HumanCompareTextT(std::basic_string_view<T> left,
   int right_value = ScanEndingNumber(right, right_len);
 
   if (left_len != right_len) {
-    return base::CompareCaseInsensitiveASCII(AsStringPiece(left),
-                                             AsStringPiece(right));
+    return base::CompareCaseInsensitiveASCII(left, right);
   }
 
-  int res = base::CompareCaseInsensitiveASCII(
-      AsStringPiece(left.substr(0, left_len)),
-      AsStringPiece(right.substr(0, right_len)));
-  if (res != 0)
+  int res = base::CompareCaseInsensitiveASCII(left.substr(0, left_len),
+                                              right.substr(0, right_len));
+  if (res != 0) {
     return res;
+  }
 
   return left_value - right_value;
 }

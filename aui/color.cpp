@@ -1,6 +1,5 @@
 ﻿#include "aui/color.h"
 
-#include "base/string_piece_util.h"
 #include "base/string_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
@@ -90,8 +89,9 @@ Color StringToColor(std::string_view str) {
   if (!str.empty() && str[0] == '#') {
     auto hex_string = str.substr(1);
     unsigned color = 0;
-    if (!base::HexStringToUInt(AsStringPiece(hex_string), &color))
+    if (!base::HexStringToUInt(hex_string, &color)) {
       return ColorCode::Black;
+    }
     return DecodeColor(color);
   }
 

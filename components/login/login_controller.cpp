@@ -1,17 +1,16 @@
 ﻿#include "components/login/login_controller.h"
 
 #include "Base/strings/string_split.h"
+#include "aui/dialog_service.h"
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
 #include "base/promise_executor.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
-#include "aui/dialog_service.h"
 
 #include <algorithm>
 #include <windows.h>  // for VK_CONTROL
@@ -36,39 +35,37 @@ const char16_t kAutoLoginMessage[] =
 struct RegHelper {
   bool ReadBool(std::string_view name) {
     DWORD value = 0;
-    key_.ReadValueDW(base::ASCIIToWide(AsStringPiece(name)).c_str(), &value);
+    key_.ReadValueDW(base::ASCIIToWide(name).c_str(), &value);
     return value != 0;
   }
 
   std::string ReadString(std::string_view name) {
     std::wstring value;
-    key_.ReadValue(base::ASCIIToWide(AsStringPiece(name)).c_str(), &value);
+    key_.ReadValue(base::ASCIIToWide(name).c_str(), &value);
     return base::WideToASCII(value);
   }
 
   std::u16string ReadString16(std::string_view name) {
     std::wstring value;
-    key_.ReadValue(base::ASCIIToWide(AsStringPiece(name)).c_str(), &value);
+    key_.ReadValue(base::ASCIIToWide(name).c_str(), &value);
     return base::WideToUTF16(value);
   }
 
   bool Write(std::string_view name, bool bool_value) {
     DWORD dword_value = bool_value ? 1 : 0;
-    return key_.WriteValue(base::ASCIIToWide(AsStringPiece(name)).c_str(),
-                           dword_value) == ERROR_SUCCESS;
+    return key_.WriteValue(base::ASCIIToWide(name).c_str(), dword_value) ==
+           ERROR_SUCCESS;
   }
 
   bool Write(std::string_view name, std::string_view string_value) {
-    return key_.WriteValue(
-               base::ASCIIToWide(AsStringPiece(name)).c_str(),
-               base::ASCIIToWide(AsStringPiece(string_value)).c_str()) ==
+    return key_.WriteValue(base::ASCIIToWide(name).c_str(),
+                           base::ASCIIToWide(string_value).c_str()) ==
            ERROR_SUCCESS;
   }
 
   bool Write(std::string_view name, std::u16string_view string16_value) {
-    return key_.WriteValue(
-               base::ASCIIToWide(AsStringPiece(name)).c_str(),
-               base::UTF16ToWide(AsStringPiece(string16_value)).c_str()) ==
+    return key_.WriteValue(base::ASCIIToWide(name).c_str(),
+                           base::UTF16ToWide(string16_value).c_str()) ==
            ERROR_SUCCESS;
   }
 
@@ -76,16 +73,16 @@ struct RegHelper {
 };
 
 std::string GetServerHostTypeKey(std::string_view server_type_name) {
-  return base::StrCat({kServerHostKeyPrefix, AsStringPiece(server_type_name)});
+  return base::StrCat({kServerHostKeyPrefix, server_type_name});
 }
 
 std::vector<std::string> ParseListString(std::string_view users) {
-  return base::SplitString(AsStringPiece(users), ",", base::TRIM_WHITESPACE,
+  return base::SplitString(users, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
 std::vector<std::u16string> ParseListString(std::u16string_view users) {
-  return base::SplitString(AsStringPiece(users), u",", base::TRIM_WHITESPACE,
+  return base::SplitString(users, u",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
 }
 

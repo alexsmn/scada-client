@@ -1,7 +1,6 @@
 #include "profile/window_definition.h"
 
 #include "base/format.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -54,7 +53,7 @@ WindowItem& WindowItem::operator=(const WindowItem& source) {
 }
 
 bool WindowItem::name_is(std::string_view n) const {
-  return base::EqualsCaseInsensitiveASCII(name, AsStringPiece(n));
+  return base::EqualsCaseInsensitiveASCII(name, n);
 }
 
 bool WindowItem::GetBool(std::string_view attr, bool default_value) const {

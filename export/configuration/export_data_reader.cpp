@@ -2,7 +2,6 @@
 
 #include "aui/resource_error.h"
 #include "base/csv_reader.h"
-#include "base/string_piece_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
@@ -17,7 +16,7 @@ scada::NodeId ParseReferenceCell(std::u16string_view s) {
   if (p == s.npos)
     return scada::NodeId();
   auto n = s.substr(p + 1);
-  return NodeIdFromScadaString(base::UTF16ToUTF8(AsStringPiece(n)));
+  return NodeIdFromScadaString(base::UTF16ToUTF8(n));
 }
 
 scada::Variant::Type GetBuiltInDataType(const NodeRef& data_type) {

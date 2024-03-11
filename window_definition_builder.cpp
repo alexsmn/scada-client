@@ -1,6 +1,5 @@
 #include "window_definition_builder.h"
 
-#include "base/string_piece_util.h"
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
@@ -8,11 +7,11 @@
 #include "common_resources.h"
 #include "components/table/table_component.h"
 #include "controller/controller.h"
+#include "controller/window_info.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
-#include "controller/window_info.h"
 
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
@@ -29,8 +28,8 @@ static const WindowInfo& kDefaultWindowInfo = kGraphWindowInfo;
 static const WindowInfo& kDefaultMultiWindowInfo = kTableWindowInfo;
 
 std::u16string MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
-  return base::StrCat({AsStringPiece(window_info.title), u": ",
-                       ToString16(node.display_name())});
+  return base::StrCat(
+      {window_info.title, u": ", ToString16(node.display_name())});
 }
 
 }  // namespace

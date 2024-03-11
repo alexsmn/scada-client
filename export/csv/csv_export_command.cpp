@@ -1,7 +1,6 @@
 #include "export/csv/csv_export_command.h"
 
 #include "aui/dialog_service.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/value_util.h"
 #include "base/win/win_util2.h"
@@ -16,7 +15,7 @@ const char16_t kExportTitle[] = u"Ёкспорт";
 
 std::filesystem::path MakeFileName(std::u16string_view text) {
   std::u16string result;
-  base::ReplaceChars(AsStringPiece(text), u":", u"-", &result);
+  base::ReplaceChars(text, u":", u"-", &result);
   return result;
 }
 

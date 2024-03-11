@@ -2,7 +2,6 @@
 
 #include "aui/key_codes.h"
 #include "base/promise_executor.h"
-#include "base/string_piece_util.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
@@ -153,7 +152,7 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
            !opened_view->locked();
   });
 
-  return i != views.end() ? *i: nullptr;
+  return i != views.end() ? *i : nullptr;
 }
 
 scada::status_promise<OpenedView*> MainWindow::OpenView(
@@ -178,8 +177,7 @@ void MainWindow::OnViewClosed(OpenedView& view) {
     SetActiveDataView(nullptr);
   }
 
-  LOG(INFO) << "Window " << AsStringPiece(view.window_info().title)
-            << " closed.";
+  LOG(INFO) << "Window " << view.window_info().title << " closed.";
 
   if (view_manager_->is_closing_page()) {
     return;
