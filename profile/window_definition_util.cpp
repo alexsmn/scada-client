@@ -48,7 +48,7 @@ base::Value SaveWindowItem(const WindowItem& item) {
 
 template <>
 std::optional<base::Time> FromJson(const base::Value& value) {
-  base::StringPiece str;
+  std::string_view str;
   if (!value.GetAsString(&str))
     return std::nullopt;
 

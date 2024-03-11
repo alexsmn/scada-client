@@ -1,8 +1,9 @@
 ﻿#include "modus/activex/modus_object.h"
 
 #include "base/stl_util.h"
-#include "base/strings/string_piece.h"
 #include "modus/activex/modus_element.h"
+
+#include <string_view>
 
 namespace modus {
 
