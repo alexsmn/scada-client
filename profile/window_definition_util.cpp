@@ -2,7 +2,6 @@
 
 #include "base/base64.h"
 #include "base/range_util.h"
-#include "base/string_piece_util.h"
 #include "base/strings/string_util.h"
 #include "base/time_range.h"
 #include "base/time_utils.h"
@@ -54,7 +53,7 @@ std::optional<base::Time> FromJson(const base::Value& value) {
     return std::nullopt;
 
   base::Time time;
-  if (!Deserialize(AsStringView(str), time))
+  if (!Deserialize(str, time))
     return std::nullopt;
 
   return time;
