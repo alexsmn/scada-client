@@ -26,12 +26,14 @@ int main(int argc, char* argv[]) {
   GdiplusInitializer gdiplus;
 
   QApplication qapp(argc, argv);
-  qapp.setApplicationName("Telecontrol SCADA Client");
-  qapp.setOrganizationName("Telecontrol");
-  qapp.setOrganizationDomain("telecontrol.ru");
-  qapp.setApplicationVersion(PROJECT_VERSION_DOTTED_STRING);
-  qapp.setApplicationDisplayName(QObject::tr("Telecontrol SCADA Client"));
-  qapp.setQuitOnLastWindowClosed(false);
+
+  QApplication::setApplicationName("Telecontrol SCADA Client");
+  QApplication::setOrganizationName("Telecontrol");
+  QApplication::setOrganizationDomain("telecontrol.ru");
+  QApplication::setApplicationVersion(PROJECT_VERSION_DOTTED_STRING);
+  QApplication::setApplicationDisplayName(
+      QObject::tr("Telecontrol SCADA Client"));
+  QApplication::setQuitOnLastWindowClosed(false);
 
   QSettings settings;
   InstalledTranslation installed_translation{settings};
@@ -61,5 +63,5 @@ int main(int argc, char* argv[]) {
 
   executor->PostTask([&app] { app.Run().then(&QApplication::quit); });
 
-  return qapp.exec();
+  return QApplication::exec();
 }

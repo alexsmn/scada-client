@@ -9,7 +9,7 @@
 
 class InstalledTranslation {
  public:
-  InstalledTranslation(QSettings& settings) : settings_{settings} {
+  explicit InstalledTranslation(QSettings& settings) : settings_{settings} {
     auto locale_name = GetLocaleName();
 
     const auto local_translation_dir =
@@ -44,7 +44,7 @@ class InstalledTranslation {
       return QString::fromStdString(locale_name);
     }
 
-    return QLocale::system().name();
+    return QLocale::system().bcp47Name();
   }
 
   QSettings& settings_;
