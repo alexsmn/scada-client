@@ -10,13 +10,13 @@
 #include "components/web/web_component.h"
 #include "controller/command_registry.h"
 #include "controller/window_info.h"
+#include "events/local_events.h"
 #include "events/node_event_provider.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
-#include "events/local_events.h"
 #include "services/speech.h"
 
 #include <windows.h>
@@ -98,9 +98,36 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
   global_commands_.AddCommand(
       MakeOptionCommand(ID_VIEW_TOOLBAR, u"Панель инструментов", profile_,
                         &MainWindowDef::toolbar));
+
   global_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
                                                 u"Строка состояния", profile_,
                                                 &MainWindowDef::status_bar));
+
+  global_commands_.AddCommand(
+      {.command_id = ID_APP_ABOUT,
+       .execute_handler = [](const GlobalCommandContext& context) {
+         ShowAboutDialog(context.dialog_service);
+       }});
+
+#if defined(UI_QT)
+  global_commands_.AddCommand(
+      {.command_id = ID_ABOUT_QT,
+       .execute_handler = [](const GlobalCommandContext& context) {
+         QMessageBox::aboutQt(context.dialog_service.GetParentWidget());
+       }});
+#endif
+
+#if !defined(UI_WT)
+  global_commands_.AddCommand(
+      {.command_id = ID_HELP_MANUAL,
+       .execute_handler = [](const GlobalCommandContext& context) {
+         WindowDefinition def(kWebWindowInfo);
+         def.title = u"Документация";
+         def.path = std::filesystem::path(
+             FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));
+         context.main_window.OpenView(def, true);
+       }});
+#endif
 }
 
 MainWindowCommands::~MainWindowCommands() {}
@@ -114,8 +141,6 @@ CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
   }
 
   switch (command_id) {
-    case ID_APP_ABOUT:
-    case ID_HELP_MANUAL:
     case ID_ACKNOWLEDGE_ALL:
     case ID_VIEW_PUBLIC_FOLDER:
     case ID_WINDOW_NEW:
@@ -142,11 +167,6 @@ CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
     case ID_NODES_VIEW:
       // Hide NodeView for Release build.
       return nullptr;
-#endif
-
-#if defined(ID_ABOUT_QT)
-    case ID_ABOUT_QT:
-      return this;
 #endif
 
     case ID_OPEN_TABLE:
@@ -233,21 +253,6 @@ bool MainWindowCommands::IsCommandChecked(unsigned command_id) const {
 
 void MainWindowCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
-#if !defined(UI_WT)
-    case ID_HELP_MANUAL: {
-      WindowDefinition def(kWebWindowInfo);
-      def.title = u"Документация";
-      def.path = std::filesystem::path(
-          FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));
-      main_window_.OpenView(def, true);
-      return;
-    }
-#endif
-
-    case ID_APP_ABOUT:
-      ShowAboutDialog(dialog_service_);
-      return;
-
     case ID_ACKNOWLEDGE_ALL:
       node_event_provider_.AcknowledgeAllEvents();
       local_events_.AcknowledgeAll();
@@ -277,9 +282,6 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
         main_window_.SplitView(*active_view,
                                command_id == ID_WINDOW_SPLIT_HORZ);
       return;
-
-    case ID_ABOUT_QT:
-      return QMessageBox::aboutQt(dialog_service_.GetParentWidget());
 #endif
 
     case ID_OPEN_TABLE:

@@ -8,6 +8,8 @@ class MockMainWindow : public MainWindowInterface {
  public:
   MOCK_METHOD(int, GetMainWindowId, (), (const override));
 
+  // Pages.
+
   MOCK_METHOD(const Page&, GetCurrentPage, (), (const override));
   MOCK_METHOD(void, OpenPage, (const Page& page), (override));
 
@@ -19,6 +21,13 @@ class MockMainWindow : public MainWindowInterface {
   MOCK_METHOD(void, SaveCurrentPage, (), (override));
   MOCK_METHOD(void, DeleteCurrentPage, (), (override));
 
+  // Views.
+
   MOCK_METHOD(OpenedView*, GetActiveView, (), (override));
   MOCK_METHOD(OpenedView*, GetActiveDataView, (), (override));
+
+  MOCK_METHOD(scada::status_promise<OpenedView*>,
+              OpenView,
+              (const WindowDefinition& window_definition, bool make_active),
+              (override));
 };

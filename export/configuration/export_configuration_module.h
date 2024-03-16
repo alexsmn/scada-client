@@ -5,7 +5,6 @@ class BasicCommandRegistry;
 
 class CommandRegistry;
 class DialogService;
-class MainWindowCommands;
 class NodeService;
 class TaskManager;
 struct GlobalCommandContext;
