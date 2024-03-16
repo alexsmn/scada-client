@@ -3,9 +3,12 @@
 #include "export/configuration/diff_report.h"
 
 #include "aui/resource_error.h"
+#include "base/file_path_util.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/scoped_process_information.h"
 #include "base/win/win_util2.h"
 #include "common/node_state.h"
 #include "export/configuration/diff_data.h"
@@ -110,21 +113,28 @@ void PrintDiffReport(u16ostream& report,
 
 void OpenNotepad(const std::filesystem::path& path) {
   base::FilePath system_path;
-  base::PathService::Get(base::DIR_WINDOWS, &system_path);
+  if (!base::PathService::Get(base::DIR_WINDOWS, &system_path)) {
+    return;
+  }
 
-  auto command_line = L"\"" + system_path.AsEndingWithSeparator().value() +
-                      L"notepad.exe\" " + path.wstring();
+  std::wstring command_line =
+      std::format(L"\"{}notepad.exe\" {}",
+                  system_path.AsEndingWithSeparator().value(), path.wstring());
 
   STARTUPINFO startup_info = {sizeof(startup_info)};
-  PROCESS_INFORMATION process_info = {};
-  if (!CreateProcess(nullptr, const_cast<LPTSTR>(command_line.c_str()), nullptr,
-                     nullptr, FALSE, 0, nullptr, nullptr, &startup_info,
-                     &process_info)) {
+  PROCESS_INFORMATION raw_process_info = {};
+
+  if (!CreateProcess(/*app_name=*/nullptr,
+                     const_cast<LPTSTR>(command_line.c_str()),
+                     /*proc_attrs=*/nullptr,
+                     /*thread_attrs=*/nullptr, /*inherit_handles=*/FALSE,
+                     /*create_flags=*/0, /*env=*/nullptr, /*cur_dir=*/nullptr,
+                     &startup_info, &raw_process_info)) {
     throw ResourceError{u"Не удалось открыть блокнот"};
   }
-  ::WaitForSingleObject(process_info.hProcess, INFINITE);
-  CloseHandle(process_info.hProcess);
-  CloseHandle(process_info.hThread);
+
+  base::win::ScopedProcessInformation proc_info{raw_process_info};
+  ::WaitForSingleObject(proc_info.process_handle(), INFINITE);
 }
 
 void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
@@ -132,8 +142,15 @@ void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
     return;
   }
 
-  std::basic_ofstream<char16_t> report("report.txt");
+  base::FilePath temp_dir;
+  if (!base::GetTempDir(&temp_dir)) {
+    return;
+  }
+
+  auto report_path = AsFilesystemPath(temp_dir.AppendASCII("report.txt"));
+
+  std::basic_ofstream<char16_t> report{report_path};
   PrintDiffReport(report, diff, node_service);
 
-  OpenNotepad("report.txt");
+  OpenNotepad(report_path);
 }
