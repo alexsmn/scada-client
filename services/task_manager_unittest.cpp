@@ -7,7 +7,7 @@
 #include "profile/profile.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/node_management_service_mock.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 #include "services/progress_host_impl.h"
 
 #include <gmock/gmock.h>

@@ -6,6 +6,7 @@
 #include "controller/controller_context.h"
 #include "controller/controller_delegate_mock.h"
 #include "controller/window_info.h"
+#include "events/local_events.h"
 #include "events/node_event_provider_mock.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
@@ -19,7 +20,6 @@
 #include "scada/monitored_item_service_mock.h"
 #include "scada/session_service_mock.h"
 #include "services/create_tree.h"
-#include "services/local_events.h"
 #include "services/task_manager_mock.h"
 #include "timed_data/timed_data_service_mock.h"
 

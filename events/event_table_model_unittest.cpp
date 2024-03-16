@@ -1,16 +1,16 @@
-#include "components/events/event_table_model.h"
+#include "events/event_table_model.h"
 
 #include "base/test/test_executor.h"
-#include "components/events/current_event_model.h"
-#include "components/events/historical_event_model.h"
-#include "components/events/local_event_model.h"
+#include "events/current_event_model.h"
+#include "events/historical_event_model.h"
+#include "events/local_event_model.h"
 #include "events/node_event_provider_mock.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/static/static_node_service.h"
 #include "scada/history_service_mock.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 
 #include <boost/locale/encoding_utf.hpp>
 #include <gmock/gmock.h>

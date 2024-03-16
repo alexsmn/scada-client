@@ -1,7 +1,7 @@
 #pragma once
 
 #include "scada/event.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 
 #include <boost/range/adaptor/indirected.hpp>
 #include <boost/signals2/signal.hpp>

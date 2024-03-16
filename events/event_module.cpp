@@ -1,10 +1,10 @@
-#include "components/events/event_module.h"
+#include "events/event_module.h"
 
 #include "base/value_util.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
+#include "events/local_events.h"
 #include "profile/profile.h"
-#include "services/local_events.h"
 
 EventModule::EventModule(EventModuleContext&& context)
     : EventModuleContext(std::move(context)) {

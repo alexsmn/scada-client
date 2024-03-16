@@ -9,7 +9,7 @@
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
 #include "components/device_metrics/device_metrics_command.h"
-#include "components/events/events_component.h"
+#include "events/events_component.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/summary/summary_component.h"

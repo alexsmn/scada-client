@@ -2,7 +2,7 @@
 
 #include "common/master_data_services.h"
 #include "components/change_password/change_password_command_builder.h"
-#include "components/events/events_component.h"
+#include "events/events_component.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 #include "events/event_fetcher.h"

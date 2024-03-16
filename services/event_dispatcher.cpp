@@ -5,7 +5,7 @@
 #include "events/node_event_provider.h"
 #include "main_window/action_manager.h"
 #include "profile/profile.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 
 #include <mmsystem.h>
 

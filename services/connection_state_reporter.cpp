@@ -6,7 +6,7 @@
 #include "client_utils.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 
 #include <cassert>
 

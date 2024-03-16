@@ -37,6 +37,7 @@ target_link_libraries(client_qt_lib PUBLIC
   client_common
   client_configuration_qt
   client_controller_qt
+  client_events_qt
   client_export_configuration_qt
   client_export_csv_qt
   client_favorites_qt

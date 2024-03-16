@@ -11,7 +11,7 @@
 #include "scada/service_context.h"
 #include "scada/status_or.h"
 #include "scada/status_promise.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 #include "services/progress_host.h"
 
 using namespace std::chrono_literals;

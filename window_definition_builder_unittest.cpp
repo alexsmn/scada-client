@@ -2,7 +2,7 @@
 
 #include "common/formula_util.h"
 #include "common_resources.h"
-#include "components/events/events_component.h"
+#include "events/events_component.h"
 #include "node_service/node_model_mock.h"
 #include "controller/open_context.h"
 #include "controller/window_info.h"

@@ -3,7 +3,7 @@
 #include "base/strings/stringprintf.h"
 #include "events/node_event_provider.h"
 #include "profile/profile.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 
 void EventStatusProvider::Init(const ChangeNotifier& change_notifier) {
   change_notifier_ = change_notifier;

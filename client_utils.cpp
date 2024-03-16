@@ -19,7 +19,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_spec.h"
 

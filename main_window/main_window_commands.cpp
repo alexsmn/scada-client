@@ -16,7 +16,7 @@
 #include "main_window/opened_view.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
-#include "services/local_events.h"
+#include "events/local_events.h"
 #include "services/speech.h"
 
 #include <windows.h>

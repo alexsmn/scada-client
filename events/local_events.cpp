@@ -1,8 +1,8 @@
-#include "services/local_events.h"
-
-#include <cassert>
+#include "events/local_events.h"
 
 #include "scada/event.h"
+
+#include <cassert>
 
 LocalEvents::LocalEvents() = default;
 

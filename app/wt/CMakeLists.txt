@@ -33,6 +33,7 @@ target_link_libraries(client_wt_lib PUBLIC
   client_common
   client_configuration_wt
   client_controller_wt
+  client_events_wt
   client_export_configuration_wt
   client_export_csv_wt
   client_favorites_wt
