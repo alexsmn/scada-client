@@ -23,12 +23,11 @@ class ConnectionStateReporter;
 class ControllerRegistry;
 class CoreModule;
 class CreateTree;
-class EventFetcher;
+class EventModule;
 class Executor;
 class FavoritesModule;
 class FileSystemComponent;
 class Logger;
-class LocalEvents;
 class MainWindowModule;
 class MasterDataServices;
 class MetricService;
@@ -86,10 +85,9 @@ class ClientApplication : private ClientApplicationContext {
 
   std::shared_ptr<NodeService> node_service_;
 
-  std::shared_ptr<EventFetcher> event_fetcher_;
+  std::unique_ptr<EventModule> event_module_;
   std::unique_ptr<TimedDataService> timed_data_service_;
 
-  std::unique_ptr<LocalEvents> local_events_;
   std::shared_ptr<TaskManager> task_manager_;
   std::unique_ptr<PortfolioModule> portfolio_module_;
   std::unique_ptr<FavoritesModule> favorites_module_;

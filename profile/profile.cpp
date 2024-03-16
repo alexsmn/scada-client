@@ -12,7 +12,6 @@
 #include "base/utils.h"
 #include "base/value_util.h"
 #include "controller/window_info.h"
-#include "events/node_event_provider.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 
@@ -131,12 +130,12 @@ MainWindowDef::MainWindowDef() {}
 
 Profile::Profile() {}
 
-void Profile::Load(NodeEventProvider& node_event_provider) {
+void Profile::Load() {
   LOG(INFO) << "Load profile";
 
   std::string error_message;
   if (auto data = LoadJsonFromFile(GetFilePath(), &error_message)) {
-    Load(*data, node_event_provider);
+    Load(*data);
   } else {
     LOG(ERROR) << "Profile load error " << error_message;
   }
@@ -149,8 +148,7 @@ void Profile::Load(NodeEventProvider& node_event_provider) {
   LOG(INFO) << "Profile loaded";
 }
 
-void Profile::Load(const base::Value& data,
-                   NodeEventProvider& node_event_provider) {
+void Profile::Load(const base::Value& data) {
   data_ = data.Clone();
 
   // common settings
@@ -162,11 +160,6 @@ void Profile::Load(const base::Value& data,
 
   modus.topology = GetBool(data, "topology", modus.topology);
   modus.modus2 = GetBool(data, "modus2", modus.modus2);
-
-  // TODO: Checked cast.
-  scada::EventSeverity severity_min = static_cast<scada::EventSeverity>(
-      GetInt(data, "severityMin", static_cast<unsigned>(scada::kSeverityMin)));
-  node_event_provider.SetSeverityMin(severity_min);
 
   // window settings
   if (auto* list = GetList(data, "windows")) {
@@ -224,14 +217,14 @@ void Profile::Load(const base::Value& data,
     timed_data.mirrored = GetBool(*node, "mirrored");
 }
 
-void Profile::Save(const NodeEventProvider& node_event_provider) {
+void Profile::Save() {
   LOG(INFO) << "Save profile";
 
   for (const auto& writer : writers_) {
     writer(*this);
   }
 
-  auto data = SaveToValue(node_event_provider);
+  auto data = SaveToValue();
 
   if (SaveJsonToFile(data, GetFilePath()))
     LOG(INFO) << "Profile saved";
@@ -239,8 +232,7 @@ void Profile::Save(const NodeEventProvider& node_event_provider) {
     LOG(ERROR) << "Profile save error";
 }
 
-base::Value Profile::SaveToValue(
-    const NodeEventProvider& node_event_provider) const {
+base::Value Profile::SaveToValue() const {
   base::Value data = data_.Clone();
 
   // common settings
@@ -249,8 +241,6 @@ base::Value Profile::SaveToValue(
   SetKey(data, "hideEvents", event_auto_hide);
   SetKey(data, "flashOnEvents", event_flash_window);
   SetKey(data, "soundOnEvents", event_play_sound);
-  SetKey(data, "severityMin",
-         static_cast<int>(node_event_provider.severity_min()));
 
   SetKey(data, "topology", modus.topology);
   SetKey(data, "modus2", modus.modus2);

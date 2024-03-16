@@ -8,13 +8,12 @@
 #include "common/master_data_services.h"
 #include "common_resources.h"
 #include "components/debugger/debugger_module.h"
+#include "components/events/event_module.h"
 #include "components/write/write_service_impl.h"
 #include "configuration/configuration_module.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
 #include "core/core_module.h"
-#include "events/event_fetcher.h"
-#include "events/event_fetcher_builder.h"
 #include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
 #include "favorites/favorites_module.h"
@@ -109,7 +108,7 @@ ClientApplication::~ClientApplication() {
   main_window_module_.reset();
 
   if (profile_ && profile_loaded_) {
-    profile_->Save(*event_fetcher_);
+    profile_->Save();
   }
 
   // Shutdown OPC.
@@ -126,13 +125,11 @@ ClientApplication::~ClientApplication() {
   favorites_module_.reset();
   portfolio_module_.reset();
   task_manager_.reset();
-  local_events_.reset();
 
   profile_.reset();
 
   create_tree_.reset();
   timed_data_service_.reset();
-  event_fetcher_.reset();
   node_service_.reset();
 
   master_data_services_ = nullptr;
@@ -150,15 +147,6 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
   scada::client scada_client{
       master_data_services_->data_services().as_services()};
 
-  event_fetcher_ =
-      EventFetcherBuilder{.executor_ = executor_,
-                          .logger_ = logger_,
-                          .monitored_item_service_ = *master_data_services_,
-                          .history_service_ = *master_data_services_,
-                          .method_service_ = *master_data_services_,
-                          .session_service_ = *master_data_services_}
-          .Build();
-
   node_service_ = CreateNodeService(
       NodeServiceContext{.executor_ = executor_,
                          .session_service_ = *master_data_services_,
@@ -173,15 +161,22 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
   singletons_.emplace(
       std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
 
+  profile_ = std::make_unique<Profile>();
+  profile_->Load();
+  profile_loaded_ = true;
+
+  event_module_ = std::make_unique<EventModule>(EventModuleContext{
+      .executor_ = executor_,
+      .logger_ = logger_,
+      .profile_ = *profile_,
+      .services_ = master_data_services_->data_services().as_services()});
+
   timed_data_service_ = CreateTimedDataService(
       {.executor_ = executor_,
        .alias_resolver_ = alias_resolver,
        .node_service_ = *node_service_,
        .services_ = master_data_services_->data_services().as_services(),
-       .node_event_provider_ = *event_fetcher_});
-
-  profile_ = std::make_unique<Profile>();
-  local_events_ = std::make_unique<LocalEvents>();
+       .node_event_provider_ = event_module_->node_event_provider()});
 
   auto progress_host = std::make_shared<ProgressHostImpl>();
   singletons_.emplace(progress_host);
@@ -191,17 +186,18 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
                              .node_service_ = *node_service_,
                              .attribute_service_ = *master_data_services_,
                              .node_management_service_ = *master_data_services_,
-                             .local_events_ = *local_events_,
+                             .local_events_ = event_module_->local_events(),
                              .profile_ = *profile_,
                              .progress_host_ = *progress_host});
 
   speech_ = std::make_unique<Speech>();
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
 
-  connection_state_reporter_ = std::make_unique<ConnectionStateReporter>(
-      ConnectionStateReporterContext{.executor_ = executor_,
-                                     .session_service_ = *master_data_services_,
-                                     .local_events_ = *local_events_});
+  connection_state_reporter_ =
+      std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{
+          .executor_ = executor_,
+          .session_service_ = *master_data_services_,
+          .local_events_ = event_module_->local_events()});
 
   write_service_ = std::make_unique<WriteServiceImpl>(
       WriteServiceImplContext{.executor_ = executor_,
@@ -222,9 +218,6 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
                                  .task_manager_ = *task_manager_,
                                  .create_tree_ = *create_tree_,
                                  .scada_client_ = scada_client});
-
-  profile_->Load(*event_fetcher_);
-  profile_loaded_ = true;
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,
@@ -269,11 +262,11 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
           .profile_ = *profile_,
           .master_data_services_ = *master_data_services_,
           .task_manager_ = *task_manager_,
-          .node_event_provider_ = *event_fetcher_,
+          .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
           .node_service_ = *node_service_,
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
-          .local_events_ = *local_events_,
+          .local_events_ = event_module_->local_events(),
           .favourites_ = favorites_module_->favourites(),
           .file_cache_ = filesystem_component_->file_cache(),
           .blinker_manager_ = *blinker_manager_,
@@ -289,11 +282,11 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
           .master_data_services_ = *master_data_services_,
           .login_handler_ = std::bind_front(&ClientApplication::Login, this),
           .task_manager_ = *task_manager_,
-          .event_fetcher_ = *event_fetcher_,
+          .event_fetcher_ = event_module_->event_fetcher(),
           .timed_data_service_ = *timed_data_service_,
           .node_service_ = *node_service_,
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
-          .local_events_ = *local_events_,
+          .local_events_ = event_module_->local_events(),
           .favourites_ = favorites_module_->favourites(),
           .file_cache_ = filesystem_component_->file_cache(),
           .file_manager_ = filesystem_component_->file_manager(),
@@ -372,8 +365,8 @@ void ClientApplication::Quit() {
   }
 
   // TODO: Localize.
-  local_events_->ReportEvent(LocalEvents::SEV_ERROR,
-                             u"Отключение от сервера...");
+  event_module_->local_events().ReportEvent(LocalEvents::SEV_ERROR,
+                                            u"Отключение от сервера...");
 
   logger_->Write(LogSeverity::Normal, "Disconnect");
 
