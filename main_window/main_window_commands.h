@@ -2,7 +2,7 @@
 
 #include "base/promise.h"
 #include "controller/command_handler.h"
-#include "core/main_command_context.h"
+#include "core/global_command_context.h"
 
 #include <functional>
 #include <memory>
@@ -25,9 +25,9 @@ class NodeService;
 class Profile;
 class Speech;
 class TaskManager;
-struct MainCommandContext;
+struct GlobalCommandContext;
 
-struct MainCommandsContext {
+struct MainWindowCommandsContext {
   MainWindow& main_window_;
   TaskManager& task_manager_;
   DialogService& dialog_service_;
@@ -40,13 +40,14 @@ struct MainCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
-  BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
 };
 
-class MainCommands : private MainCommandsContext, public CommandHandler {
+class MainWindowCommands : private MainWindowCommandsContext,
+                           public CommandHandler {
  public:
-  explicit MainCommands(MainCommandsContext&& context);
-  ~MainCommands();
+  explicit MainWindowCommands(MainWindowCommandsContext&& context);
+  ~MainWindowCommands();
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
@@ -58,5 +59,5 @@ class MainCommands : private MainCommandsContext, public CommandHandler {
   promise<> ShowRenameWindowDialog();
   promise<> RenameCurrentPage();
 
-  MainCommandContext command_context_;
+  GlobalCommandContext command_context_;
 };

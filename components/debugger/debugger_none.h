@@ -10,5 +10,5 @@ class Debugger {
 
   void Open() {}
 
-  void RegisterCommands(CommandRegistry& main_commands) {}
+  void RegisterCommands(CommandRegistry& global_commands) {}
 };

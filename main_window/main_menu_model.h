@@ -17,7 +17,7 @@ class Page;
 class Profile;
 class ViewManager;
 class WindowDefinition;
-struct MainCommandContext;
+struct GlobalCommandContext;
 struct WindowInfo;
 
 struct MainMenuContext {
@@ -32,7 +32,7 @@ struct MainMenuContext {
   CommandHandler& command_handler_;
   DialogService& dialog_service_;
   aui::MenuModel& context_menu_model_;
-  BasicCommandRegistry<MainCommandContext>& commands_;
+  BasicCommandRegistry<GlobalCommandContext>& commands_;
 };
 
 class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {

@@ -39,7 +39,7 @@
 namespace {
 
 void AddMenuCommands(aui::SimpleMenuModel& menu,
-                     const BasicCommandRegistry<MainCommandContext>& commands,
+                     const BasicCommandRegistry<GlobalCommandContext>& commands,
                      MenuGroup menu_group) {
   for (const auto& command : commands.commands()) {
     if (command.menu_group == menu_group) {

@@ -104,12 +104,12 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
           },
       .status_bar_model_ = status_bar_model_,
       .context_menu_factory_ =
-          [](MainWindow& main_window, CommandHandler& main_commands) {
+          [](MainWindow& main_window, CommandHandler& global_commands) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
           },
       .main_menu_factory_ =
           [](MainWindow& main_window, DialogService& dialog_service,
-             ViewManager& view_manager, CommandHandler& main_commands,
+             ViewManager& view_manager, CommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
           },

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controller/command_registry.h"
-#include "core/main_command_context.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 
 #include <memory>
@@ -17,8 +17,8 @@ class CoreModule {
 
   Tracer& tracer() { return *tracer_; }
 
-  BasicCommandRegistry<MainCommandContext>& main_commands() {
-    return main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands() {
+    return global_commands_;
   }
 
   BasicCommandRegistry<SelectionCommandContext>& selection_commands() {
@@ -30,6 +30,6 @@ class CoreModule {
 
   std::unique_ptr<Tracer> tracer_;
 
-  BasicCommandRegistry<MainCommandContext> main_commands_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;
 };

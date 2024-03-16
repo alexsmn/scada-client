@@ -3,7 +3,7 @@
 class DialogService;
 class MainWindowInterface;
 
-struct MainCommandContext {
+struct GlobalCommandContext {
   MainWindowInterface& main_window;
   DialogService& dialog_service;
 };

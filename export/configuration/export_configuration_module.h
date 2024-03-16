@@ -5,15 +5,15 @@ class BasicCommandRegistry;
 
 class CommandRegistry;
 class DialogService;
-class MainCommands;
+class MainWindowCommands;
 class NodeService;
 class TaskManager;
-struct MainCommandContext;
+struct GlobalCommandContext;
 
 struct ExportConfigurationModuleContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
-  BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
 };
 
 class ExportConfigurationModule : private ExportConfigurationModuleContext {

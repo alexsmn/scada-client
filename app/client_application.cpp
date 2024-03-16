@@ -214,7 +214,7 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
 
   singletons_.emplace(std::make_shared<DebuggerModule>(DebuggerModuleContext{
       .session_service_ = *master_data_services_,
-      .main_commands_ = core_module_->main_commands(),
+      .global_commands_ = core_module_->global_commands(),
       .selection_commands_ = core_module_->selection_commands()}));
 
   filesystem_component_ = std::make_unique<FileSystemComponent>(
@@ -227,7 +227,8 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
   profile_loaded_ = true;
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
-      .profile_ = *profile_, .main_commands_ = core_module_->main_commands()});
+      .profile_ = *profile_,
+      .global_commands_ = core_module_->global_commands()});
 
   portfolio_module_ = std::make_unique<PortfolioModule>(
       PortfolioModuleContext{*node_service_, *profile_});
@@ -241,7 +242,7 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
       .controller_registry_ = *controller_registry_,
       .blinker_manager_ = *blinker_manager_,
       .file_registry_ = filesystem_component_->file_registry(),
-      .main_commands_ = core_module_->main_commands(),
+      .global_commands_ = core_module_->global_commands(),
       .profile_ = *profile_,
       .alias_resolver_ = alias_resolver}));
 
@@ -257,7 +258,7 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
       ExportConfigurationModuleContext{
           .node_service_ = *node_service_,
           .task_manager_ = *task_manager_,
-          .main_commands_ = core_module_->main_commands()}));
+          .global_commands_ = core_module_->global_commands()}));
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
       executor_, *node_service_, *progress_host));
@@ -302,7 +303,7 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
                               filesystem_component_->file_command()),
           .progress_host_ = *progress_host,
           .create_tree_ = *create_tree_,
-          .main_commands_ = core_module_->main_commands(),
+          .global_commands_ = core_module_->global_commands(),
           .selection_commands_ = core_module_->selection_commands(),
           .controller_factory_ = std::bind_front(
               &ControllerFactoryImpl::CreateController, controller_factory)});

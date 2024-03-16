@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service_mock.h"
 #include "controller/command_registry.h"
-#include "core/main_command_context.h"
+#include "core/global_command_context.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_mock.h"
@@ -14,7 +14,7 @@ using namespace testing;
 
 class PageCommandsTest : public Test {
  protected:
-  BasicCommandRegistry<MainCommandContext> commands_;
+  BasicCommandRegistry<GlobalCommandContext> commands_;
   Profile profile_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
@@ -29,7 +29,7 @@ class PageCommandsTest : public Test {
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
 
-  MainCommandContext command_context_{.main_window = main_window_,
+  GlobalCommandContext command_context_{.main_window = main_window_,
                                       .dialog_service = dialog_service_};
 
   PageCommands page_commands_{{commands_, profile_, main_window_manager_}};

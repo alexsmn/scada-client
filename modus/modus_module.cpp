@@ -20,33 +20,31 @@ ModusModule::ModusModule(ModusModuleContext&& context)
   file_registry_.RegisterType(kModusWindowInfo.command_id,
                               kModusWindowInfo.name, ".sde;.xsde");
 
-  main_commands_.AddCommand(
-      BasicCommand<MainCommandContext>{}
-          .set_title(u"Отображать топологию на схемах Modus")
-          .set_menu_group(MenuGroup::DISPLAY_SETTINGS)
-          .set_execute_handler(
-              [&profile = profile_](const MainCommandContext& context) {
-                profile.modus.topology = !profile.modus.topology;
-                profile.NotifyChange();
-              })
-          .set_checked_handler(
-              [&profile = profile_](const MainCommandContext& context) {
-                return profile.modus.topology;
-              }));
+  global_commands_.AddCommand(
+      {.title = u"Отображать топологию на схемах Modus",
+       .menu_group = MenuGroup::DISPLAY_SETTINGS,
+       .execute_handler =
+           [&profile = profile_](const GlobalCommandContext& context) {
+             profile.modus.topology = !profile.modus.topology;
+             profile.NotifyChange();
+           },
+       .checked_handler =
+           [&profile = profile_](const GlobalCommandContext& context) {
+             return profile.modus.topology;
+           }});
 
-  main_commands_.AddCommand(
-      BasicCommand<MainCommandContext>{}
-          .set_title(u"Встроенный визуализатор схем Modus")
-          .set_menu_group(MenuGroup::DISPLAY_SETTINGS)
-          .set_execute_handler(
-              [&profile = profile_](const MainCommandContext& context) {
-                profile.modus.modus2 = !profile.modus.modus2;
-                profile.NotifyChange();
-              })
-          .set_checked_handler(
-              [&profile = profile_](const MainCommandContext& context) {
-                return profile.modus.modus2;
-              }));
+  global_commands_.AddCommand(
+      {.title = u"Встроенный визуализатор схем Modus",
+       .menu_group = MenuGroup::DISPLAY_SETTINGS,
+       .execute_handler =
+           [&profile = profile_](const GlobalCommandContext& context) {
+             profile.modus.modus2 = !profile.modus.modus2;
+             profile.NotifyChange();
+           },
+       .checked_handler =
+           [&profile = profile_](const GlobalCommandContext& context) {
+             return profile.modus.modus2;
+           }});
 }
 
 ModusModule::~ModusModule() {

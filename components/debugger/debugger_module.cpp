@@ -21,10 +21,10 @@ DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
     auto debugger = std::make_shared<Debugger>(
         DebuggerContext{.session_service_ = session_service_});
 
-    main_commands_.AddCommand(
+    global_commands_.AddCommand(
         {.title = u"Отладчик",
          .menu_group = MenuGroup::DEBUG,
-         .execute_handler = [debugger](const MainCommandContext& context) {
+         .execute_handler = [debugger](const GlobalCommandContext& context) {
            debugger->Open();
          }});
 

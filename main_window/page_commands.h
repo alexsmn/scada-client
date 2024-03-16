@@ -7,10 +7,10 @@ class BasicCommandRegistry;
 
 class MainWindowManager;
 class Profile;
-struct MainCommandContext;
+struct GlobalCommandContext;
 
 struct PageCommandsContext {
-  BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
 };
@@ -20,5 +20,5 @@ class PageCommands : private PageCommandsContext {
   explicit PageCommands(PageCommandsContext&& context);
 
  private:
-  promise<void> RenameCurrentPage(const MainCommandContext& context);
+  promise<void> RenameCurrentPage(const GlobalCommandContext& context);
 };

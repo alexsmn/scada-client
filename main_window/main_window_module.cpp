@@ -10,9 +10,9 @@
 #include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
-#include "main_window/main_commands.h"
 #include "main_window/main_menu_model.h"
 #include "main_window/main_window.h"
+#include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "main_window/opened_view_commands.h"
@@ -44,7 +44,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 
   singletons_.emplace(std::make_shared<PageCommands>(
-      PageCommandsContext{main_commands_, profile_, *main_window_manager_}));
+      PageCommandsContext{global_commands_, profile_, *main_window_manager_}));
 }
 
 MainWindowModule ::~MainWindowModule() {}
@@ -61,15 +61,15 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto main_commands_factory = [this, login_handler](
                                    MainWindow& main_window,
                                    DialogService& dialog_service) {
-    return std::make_unique<MainCommands>(MainCommandsContext{
+    return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
         main_window, task_manager_, dialog_service, master_data_services_,
         event_fetcher_, node_service_, local_events_, favourites_, speech_,
-        profile_, *main_window_manager_, login_handler, main_commands_});
+        profile_, *main_window_manager_, login_handler, global_commands_});
   };
 
   auto main_menu_factory =
       [this](MainWindow& main_window, DialogService& dialog_service,
-             ViewManager& view_manager, CommandHandler& main_commands,
+             ViewManager& view_manager, CommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
         return std::make_unique<MainMenuModel>(MainMenuContext{
             .executor_ = executor_,
@@ -81,16 +81,16 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                 master_data_services_.HasPrivilege(scada::Privilege::Configure),
             .profile_ = profile_,
             .view_manager_ = view_manager,
-            .command_handler_ = main_commands,
+            .command_handler_ = global_commands,
             .dialog_service_ = dialog_service,
             .context_menu_model_ = context_menu_model,
-            .commands_ = main_commands_});
+            .commands_ = global_commands_});
       };
 
   auto context_menu_factory = [this](MainWindow& main_window,
-                                     CommandHandler& main_commands) {
+                                     CommandHandler& command_handler) {
     return std::make_unique<ContextMenuModel>(main_window, *action_manager_,
-                                              main_commands);
+                                              command_handler);
   };
 
   auto configuration_commands = std::make_shared<ConfigurationCommands>(

@@ -2,7 +2,7 @@
 
 #include "common/aliases.h"
 #include "controller/command_registry.h"
-#include "core/main_command_context.h"
+#include "core/global_command_context.h"
 
 #include <memory>
 
@@ -16,7 +16,7 @@ struct ModusModuleContext {
   ControllerRegistry& controller_registry_;
   BlinkerManager& blinker_manager_;
   FileRegistry& file_registry_;
-  BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   Profile& profile_;
   AliasResolver alias_resolver_;
 };

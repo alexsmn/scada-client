@@ -29,7 +29,7 @@ class ProgressHost;
 class Speech;
 class TaskManager;
 class TimedDataService;
-struct MainCommandContext;
+struct GlobalCommandContext;
 struct MainWindowContext;
 struct SelectionCommandContext;
 
@@ -59,7 +59,7 @@ struct MainWindowModuleContext {
   const NodeCommandHandler node_command_handler_;
   ProgressHost& progress_host_;
   CreateTree& create_tree_;
-  BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   ControllerFactory controller_factory_;
 };

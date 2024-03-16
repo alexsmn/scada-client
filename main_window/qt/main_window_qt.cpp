@@ -12,7 +12,7 @@
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "main_window/action_manager.h"
-#include "main_window/main_commands.h"
+#include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "main_window/qt/status_bar_controller.h"

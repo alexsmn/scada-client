@@ -7,11 +7,11 @@ class BasicCommandRegistry;
 
 class Favourites;
 class Profile;
-struct MainCommandContext;
+struct GlobalCommandContext;
 
 struct FavoritesModuleContext {
   Profile& profile_;
-  BasicCommandRegistry<MainCommandContext>& main_commands_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
 };
 
 class FavoritesModule : private FavoritesModuleContext {

@@ -43,15 +43,16 @@ struct MainWindowContext {
   std::shared_ptr<SelectionCommands> selection_commands_;
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
 
-  std::function<std::unique_ptr<aui::MenuModel>(MainWindow& main_window,
-                                                CommandHandler& main_commands)>
+  std::function<std::unique_ptr<aui::MenuModel>(
+      MainWindow& main_window,
+      CommandHandler& command_handler)>
       context_menu_factory_;
 
   std::function<std::unique_ptr<aui::MenuModel>(
       MainWindow& main_window,
       DialogService& dialog_service,
       ViewManager& view_manager,
-      CommandHandler& main_commands,
+      CommandHandler& command_handler,
       aui::MenuModel& context_menu_model)>
       main_menu_factory_;
 

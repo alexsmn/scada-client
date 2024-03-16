@@ -8,7 +8,7 @@
 #include "common/test/node_state_matcher.h"
 #include "common_resources.h"
 #include "controller/command_registry.h"
-#include "core/main_command_context.h"
+#include "core/global_command_context.h"
 #include "diff_data.h"
 #include "diff_report.h"
 #include "export_data.h"
@@ -35,17 +35,17 @@ class ExportConfigurationModuleTest : public Test {
 
   StaticNodeService node_service_;
   StrictMock<MockTaskManager> task_manager_;
-  BasicCommandRegistry<MainCommandContext> main_commands_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
 
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
 
-  MainCommandContext main_command_context_{.main_window = main_window_,
-                                           .dialog_service = dialog_service_};
+  GlobalCommandContext main_command_context_{.main_window = main_window_,
+                                             .dialog_service = dialog_service_};
 
   ExportConfigurationModule module_{{.node_service_ = node_service_,
                                      .task_manager_ = task_manager_,
-                                     .main_commands_ = main_commands_}};
+                                     .global_commands_ = global_commands_}};
 
   base::ScopedTempDir temp_dir_;
 };
@@ -57,8 +57,8 @@ void ExportConfigurationModuleTest::SetUp() {
 }
 
 TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
-  EXPECT_TRUE(main_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL));
-  EXPECT_TRUE(main_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL));
+  EXPECT_TRUE(global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL));
+  EXPECT_TRUE(global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL));
 }
 
 TEST_F(ExportConfigurationModuleTest, ImportCommand) {
@@ -89,7 +89,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
       WriteExportDataToTempFile(export_data);
 
   auto* command =
-      main_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
+      global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))

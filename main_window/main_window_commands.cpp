@@ -1,4 +1,4 @@
-﻿#include "main_window/main_commands.h"
+﻿#include "main_window/main_window_commands.h"
 
 #include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
@@ -66,7 +66,7 @@ void OpenPublicFolder() {
                 /*nShowCmd=*/SW_SHOWNORMAL);
 }
 
-BasicCommand<MainCommandContext> MakeOptionCommand(
+BasicCommand<GlobalCommandContext> MakeOptionCommand(
     unsigned command_id,
     std::u16string_view title,
     Profile& profile,
@@ -76,14 +76,14 @@ BasicCommand<MainCommandContext> MakeOptionCommand(
       .title = std::u16string{title},
       .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
       .execute_handler =
-          [&profile, option](const MainCommandContext& context) {
+          [&profile, option](const GlobalCommandContext& context) {
             MainWindowDef& prefs =
                 profile.GetMainWindow(context.main_window.GetMainWindowId());
             prefs.*option = !(prefs.*option);
             profile.NotifyChange();
           },
       .checked_handler =
-          [&profile, option](const MainCommandContext& context) {
+          [&profile, option](const GlobalCommandContext& context) {
             const MainWindowDef* prefs =
                 profile.FindMainWindow(context.main_window.GetMainWindowId());
             return prefs && prefs->*option;
@@ -92,20 +92,20 @@ BasicCommand<MainCommandContext> MakeOptionCommand(
 
 }  // namespace
 
-MainCommands::MainCommands(MainCommandsContext&& context)
-    : MainCommandsContext{std::move(context)},
+MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
+    : MainWindowCommandsContext{std::move(context)},
       command_context_{main_window_, dialog_service_} {
-  main_commands_.AddCommand(MakeOptionCommand(ID_VIEW_TOOLBAR,
-                                              u"Панель инструментов", profile_,
-                                              &MainWindowDef::toolbar));
-  main_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
-                                              u"Строка состояния", profile_,
-                                              &MainWindowDef::status_bar));
+  global_commands_.AddCommand(
+      MakeOptionCommand(ID_VIEW_TOOLBAR, u"Панель инструментов", profile_,
+                        &MainWindowDef::toolbar));
+  global_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
+                                                u"Строка состояния", profile_,
+                                                &MainWindowDef::status_bar));
 }
 
-MainCommands::~MainCommands() {}
+MainWindowCommands::~MainWindowCommands() {}
 
-CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
+CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
   auto* active_view = main_window_.GetActiveView();
   if (active_view) {
     if (auto* handler = active_view->commands->GetCommandHandler(command_id)) {
@@ -178,14 +178,14 @@ CommandHandler* MainCommands::GetCommandHandler(unsigned command_id) {
     return this;
   }
 
-  if (const auto* command = main_commands_.FindCommand(command_id)) {
+  if (const auto* command = global_commands_.FindCommand(command_id)) {
     return this;
   }
 
   return nullptr;
 }
 
-bool MainCommands::IsCommandEnabled(unsigned command_id) const {
+bool MainWindowCommands::IsCommandEnabled(unsigned command_id) const {
   auto* active_view = main_window_.GetActiveView();
 
   switch (command_id) {
@@ -206,7 +206,7 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
       return session_service_.IsConnected();
   }
 
-  if (auto* command = main_commands_.FindCommand(command_id)) {
+  if (const auto* command = global_commands_.FindCommand(command_id)) {
     return !command->enabled_handler ||
            command->enabled_handler(command_context_);
   }
@@ -214,7 +214,7 @@ bool MainCommands::IsCommandEnabled(unsigned command_id) const {
   return true;
 }
 
-bool MainCommands::IsCommandChecked(unsigned command_id) const {
+bool MainWindowCommands::IsCommandChecked(unsigned command_id) const {
   if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
     return (window_info->flags & WIN_SING) &&
            main_window_.FindOpenedViewByType(*window_info);
@@ -223,7 +223,7 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
   if (bool Profile::*option = GetOption(command_id))
     return profile_.*option;
 
-  if (const auto* command = main_commands_.FindCommand(command_id)) {
+  if (const auto* command = global_commands_.FindCommand(command_id)) {
     return command->checked_handler &&
            command->checked_handler(command_context_);
   }
@@ -231,7 +231,7 @@ bool MainCommands::IsCommandChecked(unsigned command_id) const {
   return false;
 }
 
-void MainCommands::ExecuteCommand(unsigned command_id) {
+void MainWindowCommands::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
 #if !defined(UI_WT)
     case ID_HELP_MANUAL: {
@@ -316,7 +316,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  if (const auto* command = main_commands_.FindCommand(command_id)) {
+  if (const auto* command = global_commands_.FindCommand(command_id)) {
     if (command->execute_handler) {
       command->execute_handler(command_context_);
     }
@@ -326,7 +326,7 @@ void MainCommands::ExecuteCommand(unsigned command_id) {
   assert(false);
 }
 
-promise<> MainCommands::RenameCurrentPage() {
+promise<> MainWindowCommands::RenameCurrentPage() {
   return RunPromptDialog(dialog_service_, u"Имя:", u"Переименование",
                          main_window_.current_page().title)
       .then([this](const std::u16string& title) {
@@ -334,7 +334,7 @@ promise<> MainCommands::RenameCurrentPage() {
       });
 }
 
-promise<> MainCommands::ShowRenameWindowDialog() {
+promise<> MainWindowCommands::ShowRenameWindowDialog() {
   auto* view = main_window_.GetActiveView();
   if (!view)
     return MakeRejectedPromise();
