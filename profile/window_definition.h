@@ -49,20 +49,19 @@ class WindowItem {
 
 typedef std::vector<WindowItem> WindowItems;
 
+// TODO: Remove the dependency from `WindowInfo`.
+// TODO: Change to a struct.
 class WindowDefinition {
  public:
+  WindowDefinition() = default;
+  // TOOD: Remove the constructor.
   explicit WindowDefinition(const WindowInfo& window_info);
   WindowDefinition(const WindowDefinition& other);
   ~WindowDefinition();
 
   WindowDefinition& operator=(const WindowDefinition& other);
 
-  const WindowInfo& window_info() const {
-    assert(window_info_);
-    return *window_info_;
-  }
-
-  std::u16string GetTitle() const;
+  std::u16string GetTitle(const WindowInfo& window_info) const;
 
   WindowDefinition& AddItem(WindowItem&& window_item);
   template <class T>
@@ -79,6 +78,7 @@ class WindowDefinition {
   void Set(const char* name, const T& value);
 
   int id = 0;
+  std::string type;
   std::u16string title;
   std::filesystem::path path;
   aui::Size size;
@@ -99,10 +99,7 @@ class WindowDefinition {
     return *this;
   }
 
-  bool operator==(const WindowDefinition& other) const;
-
- private:
-  const WindowInfo* window_info_ = nullptr;
+  bool operator==(const WindowDefinition& other) const = default;
 };
 
 std::ostream& operator<<(std::ostream& stream, const WindowItem& window_item);

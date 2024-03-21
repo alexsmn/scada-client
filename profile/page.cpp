@@ -52,21 +52,6 @@ void Page::Load(const base::Value& data) {
       if (!w.has_value())
         continue;
 
-      // check single window
-      bool found = false;
-      if (w->window_info().is_pane()) {
-        for (int i = 0; i < GetWindowCount(); ++i)
-          if (&GetWindow(i).window_info() == &w->window_info()) {
-            found = true;
-            break;
-          }
-      }
-      if (found) {
-        assert(false);
-        // don't load window
-        continue;
-      }
-
       windows_.emplace_back(std::make_unique<WindowDefinition>(std::move(*w)));
     }
   }

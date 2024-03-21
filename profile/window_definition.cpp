@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& stream, const WindowItem& window_item) {
 std::ostream& operator<<(std::ostream& stream,
                          const WindowDefinition& window_definition) {
   StructWriter{stream}
-      .AddField("window_info.name", window_definition.window_info().name)
+      .AddField("type", window_definition.type)
       .AddField("id", window_definition.id)
       .AddField("title", window_definition.title)
       .AddField("path", window_definition.path)
@@ -104,11 +104,11 @@ bool WindowItem::operator==(const WindowItem& other) const {
 // WindowDefinition
 
 WindowDefinition::WindowDefinition(const WindowInfo& window_info)
-    : window_info_(&window_info) {}
+    : type{window_info.name} {}
 
 WindowDefinition::WindowDefinition(const WindowDefinition& other)
-    : window_info_(other.window_info_),
-      id(other.id),
+    : id(other.id),
+      type(other.type),
       title(other.title),
       path(other.path),
       size(other.size),
@@ -120,8 +120,8 @@ WindowDefinition::WindowDefinition(const WindowDefinition& other)
 WindowDefinition::~WindowDefinition() {}
 
 WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
-  window_info_ = other.window_info_;
   id = other.id;
+  type = other.type;
   title = other.title;
   path = other.path;
   size = other.size;
@@ -132,11 +132,11 @@ WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
   return *this;
 }
 
-std::u16string WindowDefinition::GetTitle() const {
+std::u16string WindowDefinition::GetTitle(const WindowInfo& window_info) const {
   if (!title.empty())
     return title;
 
-  std::u16string title{window_info().title};
+  std::u16string title{window_info.title};
   if (!path.empty())
     title += u": " + path.u16string();
   return title;
@@ -159,7 +159,7 @@ WindowItem* WindowDefinition::FindItem(const char* name) {
     if (item.name_is(name))
       return &item;
   }
-  return NULL;
+  return nullptr;
 }
 
 const WindowItem* WindowDefinition::FindItem(const char* name) const {
@@ -168,16 +168,9 @@ const WindowItem* WindowDefinition::FindItem(const char* name) const {
     if (item.name_is(name))
       return &item;
   }
-  return NULL;
+  return nullptr;
 }
 
 void WindowDefinition::Clear() {
   items.clear();
-}
-
-bool WindowDefinition::operator==(const WindowDefinition& other) const {
-  return window_info_ == other.window_info_ && id == other.id &&
-         title == other.title && path == other.path && size == other.size &&
-         visible == other.visible && locked == other.locked &&
-         items == other.items && storage == other.storage;
 }

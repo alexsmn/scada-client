@@ -69,12 +69,15 @@ void MainWindow::Close() {
 }
 
 void MainWindow::SetActiveView(OpenedView* view) {
-  if (active_view_ == view)
+  if (active_view_ == view) {
     return;
+  }
 
   if (active_view_) {
-    if (auto* selection_model = active_view_->controller().GetSelectionModel())
+    if (auto* selection_model =
+            active_view_->controller().GetSelectionModel()) {
       selection_model->change_handler = nullptr;
+    }
     selection_commands_->SetContext(nullptr, nullptr, nullptr, nullptr);
   }
 
@@ -85,16 +88,14 @@ void MainWindow::SetActiveView(OpenedView* view) {
     selection_commands_->SetContext(this, &GetDialogService(),
                                     &active_view_->controller(),
                                     selection_model);
-    if (selection_model)
+    if (selection_model) {
       selection_model->change_handler = [this] { OnSelectionChanged(); };
+    }
   }
 
-  const WindowInfo* window_info = nullptr;
-  if (view)
-    window_info = &view->window_info();
-
-  if (view && !view->window_info().is_pane())
+  if (view && !view->window_info().is_pane()) {
     SetActiveDataView(view);
+  }
 
   OnSelectionChanged();
 }
@@ -156,19 +157,21 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
 }
 
 scada::status_promise<OpenedView*> MainWindow::OpenView(
-    const WindowDefinition& def,
+    const WindowDefinition& window_def,
     bool make_active) {
   promise<void> download_promise =
-      def.path.empty()
+      window_def.path.empty()
           ? make_resolved_promise()
-          : IgnoreResult(file_manager_.DownloadFileFromServer(def.path));
+          : IgnoreResult(file_manager_.DownloadFileFromServer(window_def.path));
 
   return download_promise
       // TODO: Fix captured `this` and run under the local executor.
-      .then([this, def, make_active] {
-        OpenedView* after_view =
-            !def.window_info().is_pane() ? active_data_view() : nullptr;
-        return view_manager_->OpenView(def, make_active, after_view);
+      .then([this, window_def, make_active] {
+        const auto* window_info = FindWindowInfoByName(window_def.type);
+        OpenedView* after_view = window_info && !window_info->is_pane()
+                                     ? active_data_view()
+                                     : nullptr;
+        return view_manager_->OpenView(window_def, make_active, after_view);
       });
 }
 
@@ -261,28 +264,9 @@ void MainWindow::SaveCurrentPage() {
   pages[view_manager_->current_page().id] = view_manager_->current_page();
 }
 
-std::unique_ptr<OpenedView> MainWindow::OnCreateView(WindowDefinition& def) {
-  // Initialize defaults.
-  const WindowInfo& window_info = def.window_info();
-  if (def.size.empty() && !window_info.size.empty()) {
-    def.size = window_info.size;
-  }
-
-  auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
-      .executor_ = executor_,
-      .main_window_ = this,
-      .window_def_ = def,
-      .dialog_service_ = GetDialogService(),
-      .controller_factory_ = controller_factory_,
-      .popup_menu_handler_ = std::bind_front(&MainWindow::ShowPopupMenu, this),
-      .default_node_command_handler_ =
-          std::bind_front(&MainWindow::ExecuteDefaultNodeCommand, this),
-  });
-
-  opened_view->commands =
-      view_commands_factory_(*opened_view, GetDialogService());
-
-  return opened_view;
+std::unique_ptr<OpenedView> MainWindow::OnCreateView(
+    WindowDefinition& window_def) {
+  return opened_view_factory_(*this, window_def);
 }
 
 void MainWindow::OnViewTitleUpdated(OpenedView& view,

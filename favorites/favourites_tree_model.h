@@ -1,7 +1,7 @@
 #pragma once
 
-#include "favorites/favourites.h"
 #include "aui/models/tree_node_model.h"
+#include "favorites/favourites.h"
 
 class FavouritesFolderNode;
 class FavouritesWindowNode;
@@ -62,14 +62,19 @@ class FavouritesWindowNode : public FavouritesNode {
  public:
   FavouritesWindowNode(Favourites& favourites,
                        const Page& folder,
-                       const WindowDefinition& window)
-      : FavouritesNode{favourites}, folder_{folder}, window_{window} {}
+                       const WindowInfo& window_info,
+                       const WindowDefinition& window_def)
+      : FavouritesNode{favourites},
+        folder_{folder},
+        window_info_{window_info},
+        window_def_{window_def} {}
 
-  const WindowDefinition& window() const { return window_; }
+  const WindowInfo& window_info() const { return window_info_; }
+  const WindowDefinition& window_def() const { return window_def_; }
 
   // FavouritesNode
   virtual std::u16string GetText(int column_id) const override {
-    return window_.GetTitle();
+    return window_def_.GetTitle(window_info_);
   }
   virtual int GetIcon() const override;
   virtual void SetText(int column_id, const std::u16string& title) override;
@@ -82,7 +87,8 @@ class FavouritesWindowNode : public FavouritesNode {
 
  private:
   const Page& folder_;
-  const WindowDefinition& window_;
+  const WindowInfo& window_info_;
+  const WindowDefinition& window_def_;
 };
 
 class FavouritesTreeModel : public aui::TreeNodeModel<FavouritesNode>,

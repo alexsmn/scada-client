@@ -15,11 +15,12 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
+#include "main_window/opened_view_commands.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
 #include "services/speech.h"
 
-#include <windows.h>
+#include <Windows.h>
 
 #include <atlres.h>
 #include <shellapi.h>

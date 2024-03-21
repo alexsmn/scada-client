@@ -4,6 +4,7 @@
 #include "aui/models/status_bar_model_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
+#include "components/web/web_component.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
 #include "filesystem/file_cache.h"
@@ -11,7 +12,7 @@
 #include "filesystem/file_registry.h"
 #include "main_window/action_manager.h"
 #include "main_window/main_window_manager.h"
-#include "modus/modus_component.h"
+#include "main_window/opened_view.h"
 #include "profile/profile.h"
 #include "services/progress_host_impl.h"
 
@@ -36,7 +37,10 @@ class MainWindowTest : public Test {
   ~MainWindowTest();
 
  protected:
-  void ExpectOpenView(unsigned command_id);
+  void ExpectOpenView(WindowDefinition& window_def);
+
+  // `window_def` must outlive the created `OpenedView`.
+  std::unique_ptr<OpenedView> CreateOpenedView(WindowDefinition& window_def);
 
   AppEnvironment app_env_;
 
@@ -59,7 +63,10 @@ class MainWindowTest : public Test {
       main_window_factory_;
 
   StrictMock<MockFunction<void()>> quit_handler_;
-  StrictMock<MockControllerFactory> controller_factory_;
+
+  StrictMock<MockFunction<std::unique_ptr<
+      OpenedView>(MainWindow& main_window, WindowDefinition& window_def)>>
+      opened_view_factory_;
 
   MainWindowManager main_window_manager_{
       {.profile_ = profile_,
@@ -82,6 +89,7 @@ class MainWindowTest : public Test {
 #endif
 
   static const int kWindowId = 111;
+  inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
 
 MainWindowContext MainWindowTest::MakeMainWindowContext() {
@@ -93,13 +101,9 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .file_manager_ = file_manager_,
       .main_window_manager_ = main_window_manager_,
       .profile_ = profile_,
-      .controller_factory_ = controller_factory_.AsStdFunction(),
+      .opened_view_factory_ = opened_view_factory_.AsStdFunction(),
       .main_commands_factory_ =
           [](MainWindow& main_window, DialogService& dialog_service) {
-            return std::make_unique<CommandHandler>();
-          },
-      .view_commands_factory_ =
-          [](OpenedView& opened_view, DialogService& dialog_service) {
             return std::make_unique<CommandHandler>();
           },
       .status_bar_model_ = status_bar_model_,
@@ -121,20 +125,23 @@ MainWindowTest::~MainWindowTest() {
   main_window_.CleanupForTesting();
 }
 
-void MainWindowTest::ExpectOpenView(unsigned command_id) {
-  MockController* controller = new StrictMock<MockController>{};
-
-  EXPECT_CALL(controller_factory_, Call(command_id,
-                                        /*delegate=*/_, /*dialog_service=*/_))
-      .WillOnce(Return(std::unique_ptr<MockController>{controller}));
-
-// TODO: Generalize this test for all UIs.
-#if defined(UI_QT)
-  EXPECT_CALL(*controller, Init(_)).WillOnce(Return(new QWidget));
-#endif
+std::unique_ptr<OpenedView> MainWindowTest::CreateOpenedView(
+    WindowDefinition& window_def) {
+  // Initentionally don't trigger `Init`.
+  return std::make_unique<OpenedView>(
+      OpenedViewContext{.executor_ = executor_,
+                        .window_info_ = kWindowInfo,
+                        .window_def_ = window_def,
+                        .dialog_service_ = main_window_.GetDialogService()});
 }
 
-TEST_F(MainWindowTest, Close_InvokesQuiteHandler) {
+void MainWindowTest::ExpectOpenView(WindowDefinition& window_def) {
+  EXPECT_CALL(opened_view_factory_, Call(/*main_window=*/_,
+                                         /*window_definition=*/Ref(window_def)))
+      .WillOnce(Return(CreateOpenedView(window_def)));
+}
+
+TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
   EXPECT_CALL(quit_handler_, Call());
 
   main_window_.Close();
@@ -143,11 +150,11 @@ TEST_F(MainWindowTest, Close_InvokesQuiteHandler) {
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
 TEST_F(MainWindowTest, OpenView_DowloadSucceeds_OpensViewNormally) {
-  auto window_def = WindowDefinition{kModusWindowInfo}.set_path("some/path");
+  auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
 
   EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path));
 
-  ExpectOpenView(window_def.window_info().command_id);
+  ExpectOpenView(window_def);
 
   main_window_.OpenView(window_def, /*make_active=*/true).get();
 }
@@ -156,13 +163,13 @@ TEST_F(MainWindowTest, OpenView_DowloadSucceeds_OpensViewNormally) {
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
 TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
-  auto window_def = WindowDefinition{kModusWindowInfo}.set_path("some/path");
+  auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
 
   EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path))
       .WillOnce(
           Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
 
-  ExpectOpenView(window_def.window_info().command_id);
+  ExpectOpenView(window_def);
 
   main_window_.OpenView(window_def, /*make_active=*/true).get();
 }

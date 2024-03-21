@@ -124,10 +124,12 @@ void FavouritesMenuModel::MenuWillShow() {
 
   if (const Page* favourites_folder = favourites_.GetFolder()) {
     for (int i = 0; i != favourites_folder->GetWindowCount(); ++i) {
-      const auto& win = favourites_folder->GetWindow(i);
-      if (IsMatchingWindow(win)) {
-        AddItem(0, win.GetTitle());
-        windows_.push_back(&win);
+      const auto& window_def = favourites_folder->GetWindow(i);
+      if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
+        if (base::Contains(window_infos_, window_info)) {
+          AddItem(0, window_def.GetTitle(*window_info));
+          windows_.push_back(&window_def);
+        }
       }
     }
   }
@@ -142,14 +144,6 @@ void FavouritesMenuModel::ActivatedAt(int index) {
 
 bool FavouritesMenuModel::IsEnabledAt(int index) const {
   return !windows_.empty();
-}
-
-bool FavouritesMenuModel::IsMatchingWindow(
-    const WindowDefinition& window) const {
-  return std::ranges::any_of(window_infos_,
-                             [&window](const WindowInfo* window_info) {
-                               return &window.window_info() == window_info;
-                             });
 }
 
 // PageMenuModel
@@ -252,11 +246,14 @@ bool WindowMenuModel::IsItemCheckedAt(int index) const {
 void TrashMenuModel::MenuWillShow() {
   Clear();
 
-  const auto& trash = profile_.trash;
+  const Page& trash = profile_.trash;
   for (int i = 0; i < trash.GetWindowCount(); ++i) {
-    const WindowDefinition& win = trash.GetWindow(i);
-    std::u16string label = u"Восстановить " + win.GetTitle();
-    AddItem(0, label);
+    const WindowDefinition& window_def = trash.GetWindow(i);
+    if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
+      std::u16string label =
+          u"Восстановить " + window_def.GetTitle(*window_info);
+      AddItem(0, label);
+    }
   }
 
   empty_ = GetItemCount() == 0;

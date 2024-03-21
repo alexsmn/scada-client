@@ -23,9 +23,11 @@ class MainWindow;
 class MainWindowManager;
 class MasterDataServices;
 class NodeService;
+class OpenedView;
 class PortfolioManager;
 class Profile;
 class ProgressHost;
+class SelectionCommands;
 class Speech;
 class TaskManager;
 class TimedDataService;
@@ -72,11 +74,15 @@ class MainWindowModule : private MainWindowModuleContext {
  private:
   MainWindowContext MakeMainWindowContext(int window_id);
 
+  std::unique_ptr<OpenedView> CreateOpenedView(MainWindow& main_window,
+                                               WindowDefinition& window_def);
+
   void OnEvents(bool has_events);
 
   std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<MainWindowManager> main_window_manager_;
   std::unique_ptr<EventDispatcher> event_dispatcher_;
+  std::shared_ptr<SelectionCommands> selection_commands_object_;
 
   std::stack<std::shared_ptr<void>> singletons_;
 };

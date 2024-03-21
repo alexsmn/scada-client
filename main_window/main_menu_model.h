@@ -67,8 +67,6 @@ class FavouritesMenuModel : private MainMenuContext,
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  bool IsMatchingWindow(const WindowDefinition& window) const;
-
   const base::span<const WindowInfo* const> window_infos_;
 
   std::vector<const WindowDefinition*> windows_;

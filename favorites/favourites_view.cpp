@@ -72,8 +72,9 @@ void FavouritesView::OpenSelection() {
   const FavouritesNode* node =
       static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
   const FavouritesWindowNode* window_node = node ? node->AsWindowNode() : NULL;
-  if (window_node)
-    controller_delegate_.OpenView(window_node->window());
+  if (window_node) {
+    controller_delegate_.OpenView(window_node->window_def());
+  }
 }
 
 CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {

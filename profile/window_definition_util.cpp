@@ -182,19 +182,21 @@ base::Value ToJson(const WindowItems& items) {
 }
 
 base::Value ToJson(const WindowDefinition& def) {
-  const WindowInfo& window_info = def.window_info();
-
   base::Value win{base::Value::Type::DICTIONARY};
-  SetKey(win, "type", window_info.name);
+  SetKey(win, "type", def.type);
   SetKey(win, "id", def.id);
+
   if (!def.visible) {
-    assert(window_info.flags & WIN_SING);
     SetKey(win, "visible", def.visible);
   }
+
   if (!def.title.empty())
     SetKey(win, "title", def.title);
-  if (!def.path.empty())
+
+  if (!def.path.empty()) {
     SetKey(win, "path", def.path.u16string());
+  }
+
   SetKey(win, "width", def.size.width);
   SetKey(win, "height", def.size.height);
   SetKey(win, "locked", def.locked);
@@ -206,23 +208,22 @@ base::Value ToJson(const WindowDefinition& def) {
 }
 
 template <>
-std::optional<WindowDefinition> FromJson(const base::Value& win) {
-  const WindowInfo* info = FindWindowInfoByName(GetString(win, "type"));
-  if (!info)
-    return std::nullopt;
+std::optional<WindowDefinition> FromJson(const base::Value& json) {
+  WindowDefinition w;
+  w.id = GetInt(json, "id", 0);
+  w.type = GetString(json, "type");
+  w.visible = GetBool(json, "visible", true);
+  w.title = GetString16(json, "title");
+  w.path = std::filesystem::path(GetString16(json, "path"));
+  w.size = {GetInt(json, "width"), GetInt(json, "height")};
 
-  WindowDefinition w{*info};
-  w.id = GetInt(win, "id", 0);
-  if (info->flags & WIN_SING)
-    w.visible = GetBool(win, "visible", true);
-  w.title = GetString16(win, "title");
-  w.path = std::filesystem::path(GetString16(win, "path"));
-  w.size = {GetInt(win, "width"), GetInt(win, "height")};
-  if (auto* items = win.FindKey("items"))
+  if (auto* items = json.FindKey("items")) {
     w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});
+  }
 
-  if (auto* data = FindDict(win, "data"))
+  if (auto* data = FindDict(json, "data")) {
     w.storage = data->Clone();
+  }
 
   return w;
 }

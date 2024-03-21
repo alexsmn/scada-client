@@ -6,6 +6,8 @@
 #include "main_window/main_window_interface.h"
 #include "main_window/view_manager_delegate.h"
 
+#include <filesystem>
+
 namespace aui {
 class MenuModel;
 }
@@ -74,6 +76,15 @@ class MainWindow : protected MainWindowContext,
 
   void CleanupForTesting();
 
+  // TODO: Move to a separate class.
+  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
+                             unsigned resource_id,
+                             const aui::Point& point,
+                             bool right_click) = 0;
+
+  // TODO: Move to a separate class.
+  void ExecuteDefaultNodeCommand(const NodeRef& node);
+
  protected:
   void Init(ViewManager& view_manager);
   void BeforeClose();
@@ -82,11 +93,6 @@ class MainWindow : protected MainWindowContext,
 
   virtual void UpdateTitle() = 0;
   virtual void SetToolbarPosition(unsigned position) = 0;
-
-  virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
-                             unsigned resource_id,
-                             const aui::Point& point,
-                             bool right_click) = 0;
 
   // ViewManagerDelegate
   virtual std::unique_ptr<OpenedView> OnCreateView(
@@ -105,8 +111,6 @@ class MainWindow : protected MainWindowContext,
   void SetActiveDataView(OpenedView* view);
 
   OpenedView* FindViewToRecycle(unsigned type);
-
-  void ExecuteDefaultNodeCommand(const NodeRef& node);
 
   // ContentsObserver
   virtual void OnContentsChanged(

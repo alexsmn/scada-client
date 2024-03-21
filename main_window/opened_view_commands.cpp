@@ -80,6 +80,9 @@ OpenedViewCommands::~OpenedViewCommands() {}
 
 void OpenedViewCommands::SetContext(OpenedView* opened_view,
                                     DialogService* dialog_service) {
+  // Ensure the controller is initialized.
+  assert(!opened_view || &opened_view->controller());
+
   opened_view_ = opened_view;
   main_window_ = opened_view ? &opened_view->main_window() : nullptr;
   dialog_service_ = dialog_service;
@@ -89,11 +92,13 @@ void OpenedViewCommands::SetContext(OpenedView* opened_view,
 CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
   assert(controller_);
 
-  if (auto* handler = controller_->GetCommandHandler(command_id))
+  if (auto* handler = controller_->GetCommandHandler(command_id)) {
     return handler;
+  }
 
-  if (auto* handler = selection_commands_->GetCommandHandler(command_id))
+  if (auto* handler = selection_commands_->GetCommandHandler(command_id)) {
     return handler;
+  }
 
   switch (command_id) {
     case ID_PASTE:

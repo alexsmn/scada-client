@@ -18,27 +18,30 @@ using namespace std::chrono_literals;
 
 OpenedView::OpenedView(OpenedViewContext&& context)
     : OpenedViewContext{std::move(context)},
-      update_working_timer_{context.executor_} {
+      update_working_timer_{context.executor_} {}
+
+OpenedView::~OpenedView() {}
+
+void OpenedView::Init() {
   assert(controller_factory_);
-  controller_ = controller_factory_(window_def_.window_info().command_id, *this,
-                                    dialog_service_);
-  if (!controller_)
+  controller_ =
+      controller_factory_(window_info_.command_id, *this, dialog_service_);
+  if (!controller_) {
     throw std::runtime_error{"View type not found"};
+  }
 
   title_ = user_title_ = window_def_.title;
 
-  auto* view = controller_->Init(window_def_);
-  if (!view)
+  view_.reset(controller_->Init(window_def_));
+  if (!view_) {
     throw std::runtime_error{"Can't create widget"};
-  view_.reset(view);
+  }
 
   update_working_timer_.StartRepeating(100ms, [this] { UpdateWorking(); });
 
   //  image_ =
   //  ui::ResourceBundle::GetSharedInstance().GetNamedImage(window_info_.type);
 }
-
-OpenedView::~OpenedView() {}
 
 void OpenedView::Activate() {
   if (main_window_)

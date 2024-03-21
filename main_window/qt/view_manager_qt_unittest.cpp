@@ -78,9 +78,11 @@ std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
 
   auto new_opened_view = std::make_unique<OpenedView>(OpenedViewContext{
       .executor_ = executor_,
+      .window_info_ = ViewState::kWindowInfo,
       .window_def_ = view_state->window_definition,
       .dialog_service_ = dialog_service_,
       .controller_factory_ = controller_factory_.AsStdFunction()});
+
   view_state->opened_view = new_opened_view.get();
 
   // The call gets a reference  to another `WindowDefinition`.

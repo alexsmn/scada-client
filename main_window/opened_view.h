@@ -29,6 +29,7 @@ using DefaultNodeCommandHandler = std::function<void(const NodeRef& node)>;
 struct OpenedViewContext {
   const std::shared_ptr<Executor> executor_;
   MainWindow* main_window_ = nullptr;
+  const WindowInfo& window_info_;
   WindowDefinition& window_def_;
   DialogService& dialog_service_;
   const ControllerFactory controller_factory_;
@@ -41,8 +42,10 @@ class OpenedView : private OpenedViewContext, private ControllerDelegate {
   explicit OpenedView(OpenedViewContext&& context);
   virtual ~OpenedView();
 
+  void Init();
+
   Controller& controller() { return *controller_; }
-  const WindowInfo& window_info() const { return window_def_.window_info(); }
+  const WindowInfo& window_info() const { return window_info_; }
   WindowDefinition& window_def() { return window_def_; }
   int window_id() const { return window_def_.id; }
   MainWindow& main_window() const {

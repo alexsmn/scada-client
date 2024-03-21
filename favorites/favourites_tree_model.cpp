@@ -29,15 +29,18 @@ FavouritesFolderNode::FavouritesFolderNode(Favourites& favourites,
                                            const Page& folder)
     : FavouritesNode{favourites}, folder_(folder) {
   for (int i = 0; i != folder.GetWindowCount(); ++i) {
-    const WindowDefinition& window = folder.GetWindow(i);
-    Add(i, std::make_unique<FavouritesWindowNode>(favourites_, folder, window));
+    const WindowDefinition& window_def = folder.GetWindow(i);
+    if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
+      Add(i, std::make_unique<FavouritesWindowNode>(favourites_, folder,
+                                                    *window_info, window_def));
+    }
   }
 }
 
 int FavouritesFolderNode::FindWindowNode(const WindowDefinition& window) const {
   for (int i = 0; i < GetChildCount(); ++i) {
     const FavouritesWindowNode* node = GetChild(i).AsWindowNode();
-    if (node && &node->window() == &window)
+    if (node && &node->window_def() == &window)
       return i;
   }
   return -1;
@@ -54,12 +57,12 @@ void FavouritesFolderNode::Delete() {
 }
 
 void FavouritesWindowNode::SetText(int column_id, const std::u16string& title) {
-  const_cast<WindowDefinition&>(window_).title = title;
-  favourites_.NotifyWindowChanged(folder_, window_);
+  const_cast<WindowDefinition&>(window_def_).title = title;
+  favourites_.NotifyWindowChanged(folder_, window_def_);
 }
 
 int FavouritesWindowNode::GetIcon() const {
-  switch (window_.window_info().command_id) {
+  switch (window_info_.command_id) {
     case ID_GRAPH_VIEW:
       return 1;
     case ID_TABLE_VIEW:
@@ -70,7 +73,7 @@ int FavouritesWindowNode::GetIcon() const {
 }
 
 void FavouritesWindowNode::Delete() {
-  favourites_.Delete(window_, folder_);
+  favourites_.Delete(window_def_, folder_);
 }
 
 // FavouritesTreeModel
@@ -87,25 +90,32 @@ FavouritesTreeModel::~FavouritesTreeModel() {
 }
 
 void FavouritesTreeModel::OnFavouriteAdded(const Page& folder,
-                                           const WindowDefinition& window) {
+                                           const WindowDefinition& window_def) {
   int i = root().FindFolderNode(folder);
-  if (i == -1)
+  if (i == -1) {
     return;
+  }
 
-  FavouritesFolderNode& folder_node =
-      reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
+  const auto* window_info = FindWindowInfoByName(window_def.type);
+  if (!window_info) {
+    return;
+  }
+
+  auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
+
   Add(folder_node, folder_node.GetChildCount(),
-      std::make_unique<FavouritesWindowNode>(favourites_, folder, window));
+      std::make_unique<FavouritesWindowNode>(favourites_, folder, *window_info,
+                                             window_def));
 }
 
 void FavouritesTreeModel::OnFavouriteDeleted(const Page& folder,
                                              const WindowDefinition& window) {
   int i = root().FindFolderNode(folder);
-  if (i == -1)
+  if (i == -1) {
     return;
+  }
 
-  FavouritesFolderNode& folder_node =
-      reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
+  auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
 
   int index = folder_node.FindWindowNode(window);
   assert(index != -1);
@@ -114,11 +124,11 @@ void FavouritesTreeModel::OnFavouriteDeleted(const Page& folder,
 
 void FavouritesTreeModel::OnFolderChanged(const Page& folder) {
   int i = root().FindFolderNode(folder);
-  if (i == -1)
+  if (i == -1) {
     return;
+  }
 
-  FavouritesFolderNode& folder_node =
-      reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
+  auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
   TreeNodeChanged(&folder_node);
 }
 
@@ -129,8 +139,9 @@ void FavouritesTreeModel::OnFolderAdded(const Page& folder) {
 
 void FavouritesTreeModel::OnFolderDeleted(const Page& folder) {
   int i = root().FindFolderNode(folder);
-  if (i == -1)
+  if (i == -1) {
     return;
+  }
 
   Remove(root(), i);
 }
@@ -141,13 +152,12 @@ void FavouritesTreeModel::OnWindowChanged(const Page& folder,
   if (i == -1)
     return;
 
-  FavouritesFolderNode& folder_node =
-      reinterpret_cast<FavouritesFolderNode&>(root().GetChild(i));
+  auto& folder_node = static_cast<FavouritesFolderNode&>(root().GetChild(i));
 
   int index = folder_node.FindWindowNode(window);
   assert(index != -1);
 
-  FavouritesWindowNode& window_node =
-      reinterpret_cast<FavouritesWindowNode&>(folder_node.GetChild(index));
+  auto& window_node =
+      static_cast<FavouritesWindowNode&>(folder_node.GetChild(index));
   TreeNodeChanged(&window_node);
 }

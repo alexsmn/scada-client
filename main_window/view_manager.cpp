@@ -1,11 +1,11 @@
 #include "main_window/view_manager.h"
 
 #include "base/auto_reset.h"
+#include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"
 #include "profile/page.h"
 #include "profile/window_definition.h"
-#include "controller/window_info.h"
 
 #include <algorithm>
 
@@ -134,11 +134,16 @@ void ViewManager::ClosePage() {
 OpenedView* ViewManager::OpenView(const WindowDefinition& def,
                                   bool make_active,
                                   OpenedView* after_view) {
+  const auto* window_info = FindWindowInfoByName(def.type);
+  if (!window_info) {
+    LOG(ERROR) << "Window type not found: " << def.type;
+    return nullptr;
+  }
+
   WindowDefinition* window_def = nullptr;
 
-  const WindowInfo& window_info = def.window_info();
-  if (window_info.is_pane()) {
-    if (auto* opened_view = FindViewByType(window_info)) {
+  if (window_info->is_pane()) {
+    if (auto* opened_view = FindViewByType(*window_info)) {
       if (make_active)
         ActivateView(*opened_view);
       return opened_view;
@@ -149,7 +154,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     Page& page = current_page();
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
-      if (&win.window_info() == &window_info) {
+      if (win.type == def.type) {
         assert(!win.visible);
         win.visible = true;
         window_def = &win;
@@ -158,21 +163,24 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     }
   }
 
-  LOG(INFO) << "Open window " << std::u16string{window_info.title};
+  LOG(INFO) << "Open window " << std::u16string{window_info->title};
 
-  if (!window_def)
+  if (!window_def) {
     window_def = &current_page().AddWindow(def);
+  }
 
   // add win
 
   auto* opened_view = CreateView(*window_def, after_view);
-  if (!opened_view)
+  if (!opened_view) {
     return nullptr;
+  }
 
   opened_view->SetModified(true);
 
-  if (make_active)
+  if (make_active) {
     ActivateView(*opened_view);
+  }
 
   return opened_view;
 }
