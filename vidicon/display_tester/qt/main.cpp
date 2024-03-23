@@ -18,8 +18,10 @@ struct State : DisplayTesterState {
       {.executor_ = executor, .timed_data_service_ = timed_data_service}};
 };
 
-QWidget* CreateVidiconDisplayView(State& state,
-                                  const std::filesystem::path& path) {
+std::unique_ptr<QWidget> CreateVidiconDisplayView(
+    State& state,
+    const std::filesystem::path& path) {
+  // TODO: Leaking pointer.
   auto* vidicon_display_view = new VidiconDisplayNativeView{
       {state.timed_data_service, state.vidicon_client,
        state.controller_delegate, state.dialog_service, state.write_service}};

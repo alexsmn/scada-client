@@ -1,5 +1,6 @@
 ﻿#include "components/summary/summary_view.h"
 
+#include "aui/dialog_service.h"
 #include "aui/grid.h"
 #include "base/time_range.h"
 #include "client_utils.h"
@@ -7,7 +8,6 @@
 #include "components/summary/summary_model.h"
 #include "controller/controller_delegate.h"
 #include "profile/window_definition.h"
-#include "aui/dialog_service.h"
 
 namespace {
 
@@ -38,7 +38,7 @@ SummaryView::SummaryView(const ControllerContext& context)
       model_{std::make_shared<SummaryModel>(
           SummaryModelContext{node_service_, timed_data_service_})} {}
 
-UiView* SummaryView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);
 
   grid_ = new aui::Grid{
@@ -97,7 +97,7 @@ UiView* SummaryView::Init(const WindowDefinition& definition) {
             }));
   }
 
-  return grid_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
 }
 
 void SummaryView::Save(WindowDefinition& definition) {

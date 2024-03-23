@@ -1,5 +1,6 @@
 ﻿#include "components/timed_data/timed_data_controller.h"
 
+#include "aui/dialog_service.h"
 #include "aui/models/mirror_table_model.h"
 #include "aui/table.h"
 #include "base/win/win_util2.h"
@@ -12,7 +13,6 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "profile/window_definition_util.h"
-#include "aui/dialog_service.h"
 #include "string_const.h"
 
 #if defined(UI_QT)
@@ -37,7 +37,8 @@ const aui::TableColumn s_columns[] = {
 TimedDataController::TimedDataController(const ControllerContext& context)
     : ControllerContext{context} {}
 
-UiView* TimedDataController::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> TimedDataController::Init(
+    const WindowDefinition& definition) {
   model_ = std::make_shared<TimedDataModel>(
       TimedDataModelContext{timed_data_service_});
 
@@ -97,7 +98,7 @@ UiView* TimedDataController::Init(const WindowDefinition& definition) {
 
   selection_.SelectTimedData(model_->timed_data());
 
-  return view_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{view_->CreateParentIfNecessary()};
 }
 
 void TimedDataController::Save(WindowDefinition& definition) {

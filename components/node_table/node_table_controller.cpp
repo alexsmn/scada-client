@@ -48,7 +48,8 @@ NodeTableController::NodeTableController(const ControllerContext& context,
 
 NodeTableController::~NodeTableController() = default;
 
-UiView* NodeTableController::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> NodeTableController::Init(
+    const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
     auto path = item->GetString("path");
     auto node_id = NodeIdFromScadaString(path);
@@ -114,7 +115,7 @@ UiView* NodeTableController::Init(const WindowDefinition& definition) {
             }));
   }
 
-  return grid_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
 }
 
 void NodeTableController::Save(WindowDefinition& definition) {

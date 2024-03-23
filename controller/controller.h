@@ -19,7 +19,7 @@ class Controller {
 
   virtual SelectionModel* GetSelectionModel() { return nullptr; }
 
-  virtual UiView* Init(const WindowDefinition& definition) = 0;
+  virtual std::unique_ptr<UiView> Init(const WindowDefinition& definition) = 0;
 
   virtual bool IsWorking() const { return false; }
 

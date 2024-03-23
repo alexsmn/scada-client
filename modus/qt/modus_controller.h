@@ -22,7 +22,8 @@ class ModusController : protected ControllerContext, public Controller {
   virtual ~ModusController();
 
   // Controller overrides
-  virtual QWidget* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;

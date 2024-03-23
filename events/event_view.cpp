@@ -162,7 +162,7 @@ bool EventView::CanAcknowledgeSelection() const {
   return false;
 }
 
-UiView* EventView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
   model_->LockUpdate();
   model_->Update();
 
@@ -190,7 +190,7 @@ UiView* EventView::Init(const WindowDefinition& definition) {
   if (!is_panel_)
     controller_delegate_.SetTitle(MakeTitle());
 
-  return table_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
 }
 
 bool EventView::OnKeyPressed(aui::KeyCode key_code) {

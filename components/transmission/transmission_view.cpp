@@ -1,14 +1,14 @@
 ﻿#include "components/transmission/transmission_view.h"
 
-#include "common_resources.h"
-#include "components/transmission/transmission_model.h"
 #include "aui/grid.h"
 #include "aui/models/header_model.h"
+#include "common_resources.h"
+#include "components/transmission/transmission_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
+#include "profile/window_definition.h"
 #include "remote/session_proxy.h"
 #include "services/task_manager.h"
-#include "profile/window_definition.h"
 
 TransmissionView::TransmissionView(const ControllerContext& context)
     : ControllerContext{context},
@@ -18,7 +18,8 @@ TransmissionView::TransmissionView(const ControllerContext& context)
 
 TransmissionView::~TransmissionView() {}
 
-UiView* TransmissionView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> TransmissionView::Init(
+    const WindowDefinition& definition) {
   if (const WindowItem* item = definition.FindItem("Item")) {
     auto path = item->GetString("path");
     auto device_id = NodeIdFromScadaString(path);
@@ -40,7 +41,7 @@ UiView* TransmissionView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 
-  return grid_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
 }
 
 void TransmissionView::DeleteSelection() {

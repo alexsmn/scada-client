@@ -1,11 +1,11 @@
 #pragma once
 
 #include "controller/command_registry.h"
-#include "portfolio/portfolio.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
+#include "portfolio/portfolio.h"
 
 #include <memory>
 
@@ -23,7 +23,8 @@ class PortfolioView : protected ControllerContext,
   virtual ~PortfolioView();
 
   // Controller
-  virtual UiView* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }

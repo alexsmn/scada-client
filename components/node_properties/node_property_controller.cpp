@@ -18,7 +18,8 @@ NodePropertyController::NodePropertyController(const ControllerContext& context)
 
 NodePropertyController::~NodePropertyController() {}
 
-UiView* NodePropertyController::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> NodePropertyController::Init(
+    const WindowDefinition& definition) {
   NodeRef node;
 
   if (const WindowItem* window_item = definition.FindItem("Item")) {
@@ -85,7 +86,7 @@ UiView* NodePropertyController::Init(const WindowDefinition& definition) {
   node_deleted_connection_ = property_model_->node_deleted.connect(
       [this] { controller_delegate_.Close(); });
 
-  return tree_view_;
+  return std::unique_ptr<UiView>{tree_view_};
 }
 
 void NodePropertyController::Save(WindowDefinition& definition) {

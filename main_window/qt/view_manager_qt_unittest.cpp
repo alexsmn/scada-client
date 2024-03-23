@@ -18,12 +18,13 @@ using namespace testing;
 
 struct ViewState {
   explicit ViewState(ViewManager& view_manager) : view_manager_{view_manager} {
-    auto* widget = new QWidget;
+    auto widget = std::make_unique<QWidget>();
 
-    QObject::connect(widget, &QObject::destroyed,
+    QObject::connect(widget.get(), &QObject::destroyed,
                      widget_destroyed.AsStdFunction());
 
-    EXPECT_CALL(*controller, Init(_)).WillOnce(Return(widget));
+    EXPECT_CALL(*controller, Init(_))
+        .WillOnce(Return(ByMove(std::move(widget))));
   }
 
   ~ViewState() {

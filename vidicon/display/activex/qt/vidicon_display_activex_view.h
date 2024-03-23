@@ -19,7 +19,8 @@ class VidiconDisplayActiveXView : public Controller {
   virtual ~VidiconDisplayActiveXView();
 
   // Controller
-  virtual QWidget* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
 
  private:

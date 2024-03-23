@@ -22,7 +22,8 @@ class NodeTableController : protected ControllerContext,
   virtual ~NodeTableController();
 
   // Controller events
-  virtual UiView* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual NodeRef GetRootNode() const override;

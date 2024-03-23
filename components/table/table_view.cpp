@@ -1,5 +1,6 @@
 ﻿#include "components/table/table_view.h"
 
+#include "aui/dialog_service.h"
 #include "aui/table.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -14,7 +15,6 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "aui/dialog_service.h"
 #include "string_const.h"
 
 // TableView
@@ -78,7 +78,7 @@ TableView::TableView(const ControllerContext& context)
 
 TableView::~TableView() {}
 
-UiView* TableView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> TableView::Init(const WindowDefinition& definition) {
   for (auto& item : definition.items) {
     if (item.name_is("State")) {
       view_->RestoreState(item.attributes);
@@ -92,7 +92,7 @@ UiView* TableView::Init(const WindowDefinition& definition) {
     }
   }
 
-  return view_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{view_->CreateParentIfNecessary()};
 }
 
 void TableView::Save(WindowDefinition& definition) {

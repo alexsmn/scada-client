@@ -1,8 +1,8 @@
 ﻿#include "vidicon/display/activex/qt/vidicon_display_activex_view.h"
 
 #include "base/win/scoped_bstr.h"
-#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
+#include "profile/window_definition.h"
 #include "vidicon/display/activex/telecontrolview.h"
 #include "vidicon/teleclient/vidicon_client.h"
 
@@ -45,7 +45,8 @@ VidiconDisplayActiveXView::VidiconDisplayActiveXView(
 
 VidiconDisplayActiveXView::~VidiconDisplayActiveXView() {}
 
-UiView* VidiconDisplayActiveXView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> VidiconDisplayActiveXView::Init(
+    const WindowDefinition& definition) {
   path_ = definition.path;
 
   auto ax_widget = std::make_unique<QAxWidget>();
@@ -88,7 +89,7 @@ UiView* VidiconDisplayActiveXView::Init(const WindowDefinition& definition) {
   }
 
   ax_widget_ = ax_widget.get();
-  return ax_widget.release();
+  return ax_widget;
 }
 
 void VidiconDisplayActiveXView::Save(WindowDefinition& definition) {

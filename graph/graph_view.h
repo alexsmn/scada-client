@@ -3,12 +3,12 @@
 #include "aui/color.h"
 #include "aui/types.h"
 #include "controller/command_registry.h"
-#include "graph/metrix_graph.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
+#include "graph/metrix_graph.h"
 
 struct TimeRange;
 
@@ -25,7 +25,8 @@ class GraphView : protected ControllerContext,
 
   // Controller methods
   virtual bool IsWorking() const override;
-  virtual UiView* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }

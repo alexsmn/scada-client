@@ -76,11 +76,12 @@ ConfigurationTreeView::ConfigurationTreeView(
 
 ConfigurationTreeView::~ConfigurationTreeView() = default;
 
-UiView* ConfigurationTreeView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> ConfigurationTreeView::Init(
+    const WindowDefinition& definition) {
   if (auto* state = definition.FindItem("State"))
     tree_view_->RestoreState(state->attributes);
 
-  return tree_view_;
+  return std::unique_ptr<UiView>{tree_view_};
 }
 
 void ConfigurationTreeView::Save(WindowDefinition& definition) {

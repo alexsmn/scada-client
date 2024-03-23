@@ -13,8 +13,8 @@
 class DisplayTesterWindow : public QWidget {
  public:
   // An empty path is passed for a default view.
-  using ViewFactory =
-      std::function<QWidget*(const std::filesystem::path& path)>;
+  using ViewFactory = std::function<std::unique_ptr<QWidget>(
+      const std::filesystem::path& path)>;
 
   DisplayTesterWindow(DisplayTesterState& state, ViewFactory view_factory)
       : state_{state}, view_factory_{std::move(view_factory)} {
@@ -29,13 +29,13 @@ class DisplayTesterWindow : public QWidget {
     splitter->addWidget(variable_table);
 
     toolbar->addAction("Open Default", [this] {
-      opened_view = view_factory_({});
+      opened_view = view_factory_({}).release();
       AddView(*opened_view);
     });
 
     toolbar->addAction("Open...", [this] {
       if (auto path = QFileDialog::getOpenFileName(this); !path.isEmpty()) {
-        opened_view = view_factory_(path.toStdWString());
+        opened_view = view_factory_(path.toStdWString()).release();
         AddView(*opened_view);
       }
     });

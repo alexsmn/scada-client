@@ -19,7 +19,7 @@
 GraphView::GraphView(const ControllerContext& context)
     : ControllerContext{context} {}
 
-UiView* GraphView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_ = new MetrixGraph(MetrixGraphContext{timed_data_service_});
 
   GraphViewLoader{.definition_ = definition,
@@ -126,7 +126,7 @@ UiView* GraphView::Init(const WindowDefinition& definition) {
           .set_checked_handler(
               [this] { return graph_->horizontal_scroll_bar_visible(); }));
 
-  return graph_;
+  return std::unique_ptr<UiView>{graph_};
 }
 
 bool GraphView::FindColor(aui::Color color) const {

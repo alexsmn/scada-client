@@ -23,7 +23,8 @@ class ConfigurationTreeView : protected ControllerContext, public Controller {
   virtual ~ConfigurationTreeView();
 
   // View
-  virtual UiView* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual void OnViewNodeCreated(const NodeRef& node) override;
   virtual std::optional<OpenContext> GetOpenContext() const override;

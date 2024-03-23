@@ -24,8 +24,9 @@ struct State : DisplayTesterState {
   Profile profile;
 };
 
-QWidget* CreateModusView(State& state, const WindowDefinition& definition) {
-  ModusView* modus_view = new ModusView{modus::ModusDocumentContext{
+std::unique_ptr<QWidget> CreateModusView(State& state,
+                                         const WindowDefinition& definition) {
+  auto modus_view = std::make_unique<ModusView>(modus::ModusDocumentContext{
       .alias_resolver_ = state.alias_resolver,
       .timed_data_service_ = state.timed_data_service,
       .file_cache_ = state.file_cache,
@@ -34,15 +35,16 @@ QWidget* CreateModusView(State& state, const WindowDefinition& definition) {
       .navigation_callback_ = [](std::u16string_view hyperlink) {},
       .selection_callback_ = [](const TimedDataSpec& selection) {},
       .context_menu_callback_ = [](const aui::Point& point) {},
-      .enable_internal_render_callback_ = [] {}}};
+      .enable_internal_render_callback_ = [] {}});
 
   modus_view->Open(definition);
 
   return modus_view;
 }
 
-QWidget* CreateModusViewFromPath(State& state,
-                                 const std::filesystem::path& path) {
+std::unique_ptr<QWidget> CreateModusViewFromPath(
+    State& state,
+    const std::filesystem::path& path) {
   WindowDefinition definition{kModusWindowInfo};
   definition.path =
       !path.empty()

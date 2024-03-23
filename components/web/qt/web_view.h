@@ -13,7 +13,8 @@ class WebView : protected ControllerContext, public Controller {
   ~WebView();
 
   // Controller
-  virtual UiView* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
 
  private:

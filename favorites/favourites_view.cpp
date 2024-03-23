@@ -1,11 +1,11 @@
 ﻿#include "favorites/favourites_view.h"
 
+#include "aui/dialog_service.h"
+#include "aui/prompt_dialog.h"
 #include "aui/tree.h"
 #include "common_resources.h"
-#include "favorites/favourites_tree_model.h"
-#include "aui/prompt_dialog.h"
 #include "controller/controller_delegate.h"
-#include "aui/dialog_service.h"
+#include "favorites/favourites_tree_model.h"
 #include "web/web_util.h"
 
 #if !defined(UI_WT)
@@ -22,7 +22,8 @@ FavouritesView::FavouritesView(const ControllerContext& context)
 
 FavouritesView::~FavouritesView() {}
 
-UiView* FavouritesView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> FavouritesView::Init(
+    const WindowDefinition& definition) {
   tree_view_ = new aui::Tree{favourites_tree_model_};
   tree_view_->LoadIcons(IDB_WIN_TYPES, 16, aui::Rgba{255, 0, 255});
   tree_view_->SetDoubleClickHandler([this] { OpenSelection(); });
@@ -54,7 +55,7 @@ UiView* FavouritesView::Init(const WindowDefinition& definition) {
   add_url_command_.execute_handler = [this] { AddUrl(); };
 #endif
 
-  return tree_view_;
+  return std::unique_ptr<UiView>{tree_view_};
 }
 
 void FavouritesView::Save(WindowDefinition& definition) {

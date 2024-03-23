@@ -129,7 +129,7 @@ void MainWindowTest::ExpectOpenView() {
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
   EXPECT_CALL(*controller, Init(/*window_def=*/_))
-      .WillOnce(Return(new QWidget));
+      .WillOnce(Return(ByMove(std::make_unique<QWidget>())));
 #endif
 
   EXPECT_CALL(controller_factory_,

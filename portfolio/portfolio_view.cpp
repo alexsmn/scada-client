@@ -2,11 +2,11 @@
 
 #include "aui/tree.h"
 #include "common_resources.h"
-#include "portfolio/portfolio_tree_model.h"
 #include "components/select_item/select_item_dialog.h"
 #include "controller/controller_delegate.h"
-#include "node_service/node_service.h"
 #include "controller/selection_model.h"
+#include "node_service/node_service.h"
+#include "portfolio/portfolio_tree_model.h"
 
 // PortfolioView
 
@@ -19,7 +19,8 @@ PortfolioView::PortfolioView(const ControllerContext& context)
 
 PortfolioView::~PortfolioView() {}
 
-UiView* PortfolioView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> PortfolioView::Init(
+    const WindowDefinition& definition) {
   tree_ = new aui::Tree{model_};
   tree_->SetRootVisible(false);
   tree_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
@@ -73,7 +74,7 @@ UiView* PortfolioView::Init(const WindowDefinition& definition) {
           .set_execute_handler([this] { AddItemsToPortfolio(); })
           .set_enabled_handler([this] { return !!GetSelectedPortfolio(); }));
 
-  return tree_;
+  return std::unique_ptr<UiView>{tree_};
 }
 
 void PortfolioView::DeleteSelection() {

@@ -23,7 +23,7 @@ class GraphViewTest : public Test {
 
 void GraphViewTest::SetUp() {
   WindowDefinition def;
-  ui_view_.reset(graph_view_.Init(def));
+  ui_view_ = graph_view_.Init(def);
 }
 
 TEST_F(GraphViewTest, Test) {

@@ -1,14 +1,23 @@
 #pragma once
 
+#include "controller/controller.h"
+
 #include <gmock/gmock.h>
 
-#include "controller.h"
+#if defined(UI_QT)
+#include <QWidget>
+#elif defined(UI_WT)
+#include <Wt/WWidget.h>
+#endif
 
 class MockController : public Controller {
  public:
   MOCK_METHOD(SelectionModel*, GetSelectionModel, (), (override));
 
-  MOCK_METHOD(UiView*, Init, (const WindowDefinition& definition), (override));
+  MOCK_METHOD(std::unique_ptr<UiView>,
+              Init,
+              (const WindowDefinition& definition),
+              (override));
 
   MOCK_METHOD(bool, CanClose, (), (const override));
   MOCK_METHOD(bool, IsWorking, (), (const override));

@@ -41,7 +41,8 @@ SheetController::SheetController(const ControllerContext& context)
   selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
-UiView* SheetController::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> SheetController::Init(
+    const WindowDefinition& definition) {
   model_->SetSizes(100, 100);
   model_->column_model().SetColumnCount(model_->column_count(), 65);
 
@@ -103,7 +104,7 @@ UiView* SheetController::Init(const WindowDefinition& definition) {
 
   UpdateEditing();
 
-  return contents_view_;
+  return std::unique_ptr<UiView>{contents_view_};
 }
 
 void SheetController::Save(WindowDefinition& definition) {

@@ -35,7 +35,7 @@ std::u16string WatchView::MakeTitle() const {
   return title;
 }
 
-UiView* WatchView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   const aui::TableColumn columns[] = {
       {0, u"Время", 100, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},
@@ -80,7 +80,7 @@ UiView* WatchView::Init(const WindowDefinition& definition) {
   command_registry_.AddCommand(
       Command{ID_CLEAR_ALL}.set_execute_handler([this] { model_->Clear(); }));
 
-  return table_->CreateParentIfNecessary();
+  return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
 }
 
 promise<> WatchView::SaveLog() {

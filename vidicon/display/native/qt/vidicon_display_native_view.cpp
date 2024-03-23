@@ -20,9 +20,10 @@
 namespace {
 
 // TODO: Combine with `ModusView::OpenPlaceholder`.
-QWidget* CreateErrorPlaceholderWidget(QWidget* parent_widget,
-                                      std::string_view error_message) {
-  QLabel* placeholder = new QLabel{parent_widget};
+std::unique_ptr<UiView> CreateErrorPlaceholderWidget(
+    QWidget* parent_widget,
+    std::string_view error_message) {
+  auto placeholder = std::make_unique<QLabel>(parent_widget);
   placeholder->setTextFormat(Qt::RichText);
   placeholder->setText(QString::fromWCharArray(LR"(<html><body>
     <p>Не удалось загрузить библиотеку графических схем Видикон.</p>
@@ -47,15 +48,16 @@ VidiconDisplayNativeView::VidiconDisplayNativeView(
 
 VidiconDisplayNativeView::~VidiconDisplayNativeView() = default;
 
-UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
+std::unique_ptr<UiView> VidiconDisplayNativeView::Init(
+    const WindowDefinition& definition) {
   path_ = definition.path;
 
   std::unique_ptr<DisplayWidget> widget;
   try {
     widget = std::make_unique<DisplayWidget>();
   } catch (const std::runtime_error& e) {
-    auto* error_widget = CreateErrorPlaceholderWidget(nullptr, e.what());
-    widget_ = error_widget;
+    auto error_widget = CreateErrorPlaceholderWidget(nullptr, e.what());
+    widget_ = error_widget.get();
     return error_widget;
   }
 
@@ -90,7 +92,7 @@ UiView* VidiconDisplayNativeView::Init(const WindowDefinition& definition) {
       std::bind_front(&VidiconDisplayNativeView::ExecCommand, this);
 
   widget_ = widget.get();
-  return widget.release();
+  return widget;
 }
 
 void VidiconDisplayNativeView::Save(WindowDefinition& definition) {

@@ -32,7 +32,7 @@ void OpenedView::Init() {
 
   title_ = user_title_ = window_def_.title;
 
-  view_.reset(controller_->Init(window_def_));
+  view_ = controller_->Init(window_def_);
   if (!view_) {
     throw std::runtime_error{"Can't create widget"};
   }

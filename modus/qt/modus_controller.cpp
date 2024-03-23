@@ -113,12 +113,13 @@ QWidget* ModusController::CreateModusView3() {
   return view3_;
 }
 
-QWidget* ModusController::Init(const WindowDefinition& definition) {
-  QWidget* result = nullptr;
+std::unique_ptr<UiView> ModusController::Init(
+    const WindowDefinition& definition) {
+  std::unique_ptr<QWidget> result;
   if (IsModus2(definition, profile_))
-    result = CreateModusView3();
+    result.reset(CreateModusView3());
   else
-    result = CreateModusView();
+    result.reset(CreateModusView());
 
   wrapper_->Open(definition);
 

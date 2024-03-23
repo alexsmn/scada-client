@@ -32,7 +32,8 @@ class VidiconDisplayNativeView : private VidiconDisplayNativeViewContext,
   virtual ~VidiconDisplayNativeView();
 
   // Controller
-  virtual QWidget* Init(const WindowDefinition& definition) override;
+  virtual std::unique_ptr<UiView> Init(
+      const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
