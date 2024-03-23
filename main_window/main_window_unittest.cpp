@@ -37,10 +37,7 @@ class MainWindowTest : public Test {
   ~MainWindowTest();
 
  protected:
-  void ExpectOpenView(WindowDefinition& window_def);
-
-  // `window_def` must outlive the created `OpenedView`.
-  std::unique_ptr<OpenedView> CreateOpenedView(WindowDefinition& window_def);
+  void ExpectOpenView();
 
   AppEnvironment app_env_;
 
@@ -58,6 +55,7 @@ class MainWindowTest : public Test {
   FileCache file_cache_{file_registry_};
   StrictMock<MockFileManager> file_manager_;
   Profile profile_;
+  StrictMock<MockControllerFactory> controller_factory_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
       main_window_factory_;
@@ -125,20 +123,34 @@ MainWindowTest::~MainWindowTest() {
   main_window_.CleanupForTesting();
 }
 
-std::unique_ptr<OpenedView> MainWindowTest::CreateOpenedView(
-    WindowDefinition& window_def) {
-  // Initentionally don't trigger `Init`.
-  return std::make_unique<OpenedView>(
-      OpenedViewContext{.executor_ = executor_,
-                        .window_info_ = kWindowInfo,
-                        .window_def_ = window_def,
-                        .dialog_service_ = main_window_.GetDialogService()});
-}
+void MainWindowTest::ExpectOpenView() {
+  auto controller = std::make_unique<StrictMock<MockController>>();
 
-void MainWindowTest::ExpectOpenView(WindowDefinition& window_def) {
+// TODO: Generalize this test for all UIs.
+#if defined(UI_QT)
+  EXPECT_CALL(*controller, Init(/*window_def=*/_))
+      .WillOnce(Return(new QWidget));
+#endif
+
+  EXPECT_CALL(controller_factory_,
+              Call(/*command_id=*/_,
+                   /*controller_delegate=*/_, /*dialog_service=*/_))
+      .WillOnce(Return(ByMove(std::move(controller))));
+
+  // The passed window definition is copied into the page.
   EXPECT_CALL(opened_view_factory_, Call(/*main_window=*/_,
-                                         /*window_definition=*/Ref(window_def)))
-      .WillOnce(Return(CreateOpenedView(window_def)));
+                                         /*window_def=*/_))
+      .WillOnce(
+          Invoke([this](MainWindow& main_window, WindowDefinition& window_def) {
+            auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
+                .executor_ = executor_,
+                .window_info_ = kWindowInfo,
+                .window_def_ = window_def,
+                .dialog_service_ = main_window.GetDialogService(),
+                .controller_factory_ = controller_factory_.AsStdFunction()});
+            opened_view->Init();
+            return opened_view;
+          }));
 }
 
 TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
@@ -149,12 +161,12 @@ TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
 
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
-TEST_F(MainWindowTest, OpenView_DowloadSucceeds_OpensViewNormally) {
+TEST_F(MainWindowTest, OpenView_DownloadSucceeds_OpensViewNormally) {
   auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
 
   EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path));
 
-  ExpectOpenView(window_def);
+  ExpectOpenView();
 
   main_window_.OpenView(window_def, /*make_active=*/true).get();
 }
@@ -169,7 +181,7 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
       .WillOnce(
           Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
 
-  ExpectOpenView(window_def);
+  ExpectOpenView();
 
   main_window_.OpenView(window_def, /*make_active=*/true).get();
 }

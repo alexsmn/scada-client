@@ -18,11 +18,11 @@ class GraphViewTest : public Test {
 
   GraphView graph_view_{env_.MakeControllerContext()};
 
-  std::shared_ptr<UiView> ui_view_;
+  std::unique_ptr<UiView> ui_view_;
 };
 
 void GraphViewTest::SetUp() {
-  WindowDefinition def{GetWindowInfo(ID_GRAPH_VIEW)};
+  WindowDefinition def;
   ui_view_.reset(graph_view_.Init(def));
 }
 

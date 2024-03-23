@@ -3,6 +3,7 @@
 #include "aui/dialog_service_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
+#include "components/web/web_component.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
 #include "controller/window_info.h"
@@ -31,9 +32,6 @@ struct ViewState {
     view_manager_.CloseView(*opened_view);
   }
 
-  // Must appear before `window_definition`.
-  inline static const WindowInfo kWindowInfo{123, "name", u"title"};
-
   ViewManager& view_manager_;
 
   WindowDefinition window_definition{kWindowInfo};
@@ -44,6 +42,8 @@ struct ViewState {
       std::make_unique<StrictMock<MockController>>();
 
   OpenedView* opened_view = nullptr;
+
+  inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
 
 class ViewManagerQtTest : public Test {
@@ -72,10 +72,6 @@ void ViewManagerQtTest::TearDown() {}
 std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
   auto view_state = std::make_unique<ViewState>(view_manager_qt_);
 
-  EXPECT_CALL(controller_factory_,
-              Call(ViewState::kWindowInfo.command_id, _, _))
-      .WillOnce(Return(ByMove(std::move(view_state->controller))));
-
   auto new_opened_view = std::make_unique<OpenedView>(OpenedViewContext{
       .executor_ = executor_,
       .window_info_ = ViewState::kWindowInfo,
@@ -83,10 +79,16 @@ std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
       .dialog_service_ = dialog_service_,
       .controller_factory_ = controller_factory_.AsStdFunction()});
 
+  EXPECT_CALL(controller_factory_,
+              Call(ViewState::kWindowInfo.command_id, _, _))
+      .WillOnce(Return(ByMove(std::move(view_state->controller))));
+
+  new_opened_view->Init();
+
   view_state->opened_view = new_opened_view.get();
 
   // The call gets a reference  to another `WindowDefinition`.
-  EXPECT_CALL(view_manager_delegate_, OnCreateView(_))
+  EXPECT_CALL(view_manager_delegate_, OnCreateView(/*window_def=*/_))
       .WillOnce(Return(ByMove(std::move(new_opened_view))));
 
   EXPECT_CALL(view_manager_delegate_,
@@ -97,18 +99,21 @@ std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
 
 TEST_F(ViewManagerQtTest, CloseView_DeletesNativeView) {
   auto view_state = ExpectOpenView();
-  view_manager_qt_.OpenView(view_state->window_definition, true, nullptr);
+  view_manager_qt_.OpenView(view_state->window_definition, /*make_active=*/true,
+                            /*after_view=*/nullptr);
 }
 
 TEST_F(ViewManagerQtTest, SplitAndClose) {
   auto view_state1 = ExpectOpenView();
   auto* opened_view1 =
-      view_manager_qt_.OpenView(view_state1->window_definition, true, nullptr);
+      view_manager_qt_.OpenView(view_state1->window_definition,
+                                /*make_active=*/true, /*after_view=*/nullptr);
   opened_view1;
 
   auto view_state2 = ExpectOpenView();
   auto* opened_view2 =
-      view_manager_qt_.OpenView(view_state2->window_definition, true, nullptr);
+      view_manager_qt_.OpenView(view_state2->window_definition,
+                                /*make_active=*/true, /*after_view=*/nullptr);
 
-  view_manager_qt_.SplitView(*opened_view2, /*vertically*/ false);
+  view_manager_qt_.SplitView(*opened_view2, /*vertically=*/false);
 }
