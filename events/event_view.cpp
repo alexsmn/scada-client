@@ -29,10 +29,12 @@ namespace {
 const char16_t kFilter[] = u"Фильтр";
 
 struct EventTableModelHolder {
-  EventTableModelHolder(const ControllerContext& context, bool is_panel)
+  EventTableModelHolder(const ControllerContext& context,
+                        LocalEvents& local_events,
+                        bool is_panel)
       : current_event_model{context.node_event_provider_},
         historical_event_model{context.executor_, context.history_service_},
-        local_event_model{context.local_events_},
+        local_event_model{local_events},
         event_table_model{{context.executor_, context.node_service_,
                            current_event_model, historical_event_model,
                            local_event_model, is_panel}} {}
@@ -66,7 +68,9 @@ scada::EventSeverity ParseSeverity(std::u16string_view str) {
 
 // EventView
 
-EventView::EventView(const ControllerContext& context, bool is_panel)
+EventView::EventView(const ControllerContext& context,
+                     LocalEvents& local_events,
+                     bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
       model_{CreateEventTableModel(context, is_panel)} {

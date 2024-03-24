@@ -14,7 +14,6 @@ class NodeEventProvider;
 class Executor;
 class ExportModel;
 class FileCache;
-class LocalEvents;
 class NodeService;
 class Profile;
 class PropertyService;
@@ -31,7 +30,6 @@ struct ControllerContext {
   scada::MonitoredItemService& monitored_item_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
-  LocalEvents& local_events_;
   FileCache& file_cache_;
   Profile& profile_;
   DialogService& dialog_service_;

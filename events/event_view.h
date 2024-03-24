@@ -17,6 +17,7 @@ class Table;
 }
 
 class EventTableModel;
+class LocalEvents;
 
 class EventView : protected ControllerContext,
                   public Controller,
@@ -24,7 +25,9 @@ class EventView : protected ControllerContext,
                   public TimeModel,
                   public ExportModel {
  public:
-  EventView(const ControllerContext& context, bool is_panel);
+  EventView(const ControllerContext& context,
+            LocalEvents& local_events,
+            bool is_panel);
   virtual ~EventView();
 
   bool CanAcknowledgeSelection() const;

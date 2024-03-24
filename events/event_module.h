@@ -4,6 +4,7 @@
 
 #include <memory>
 
+class ControllerRegistry;
 class Executor;
 class EventFetcher;
 class LocalEvents;
@@ -16,6 +17,7 @@ struct EventModuleContext {
   std::shared_ptr<const Logger> logger_;
   Profile& profile_;
   scada::services services_;
+  ControllerRegistry& controller_registry_;
 };
 
 class EventModule : private EventModuleContext {
