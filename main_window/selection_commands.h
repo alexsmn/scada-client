@@ -52,6 +52,7 @@ class SelectionCommands : private SelectionCommandsContext,
 
   void SetContext(MainWindow* main_window,
                   DialogService* dialog_service,
+                  OpenedView* opened_view,
                   Controller* controller,
                   SelectionModel* selection);
 
@@ -78,6 +79,7 @@ class SelectionCommands : private SelectionCommandsContext,
 
   SelectionModel* selection_ = nullptr;
   MainWindow* main_window_ = nullptr;
+  OpenedView* opened_view_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
 

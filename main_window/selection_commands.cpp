@@ -9,7 +9,6 @@
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
 #include "components/device_metrics/device_metrics_command.h"
-#include "events/events_component.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/summary/summary_component.h"
@@ -102,31 +101,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           .set_available_handler([this] {
             return IsInstanceOf(selection()->node(), devices::id::DeviceType);
           }));
-
-  // TODO: Move to the event module.
-  command_registry_.AddCommand(
-      Command{ID_OPEN_EVENTS}
-          .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       GetOpenWindowDefinition(&kEventJournalWindowInfo)
-                           .then([](const WindowDefinition& window_def) {
-                             auto new_window_def = window_def;
-                             new_window_def.AddItem("Window").SetString(
-                                 "mode", "Current");
-                             return new_window_def;
-                           }),
-                       /*activate=*/true);
-          })
-          .set_available_handler([this] { return !selection_->empty(); }));
-
-  // TODO: Move to the event module.
-  command_registry_.AddCommand(
-      Command{ID_HISTORICAL_EVENTS}
-          .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       GetOpenWindowDefinition(&kEventJournalWindowInfo), true);
-          })
-          .set_available_handler([this] { return !selection_->empty(); }));
 
 #if !defined(UI_WT)
   command_registry_.AddCommand(
@@ -317,10 +291,12 @@ promise<OpenedView*> SelectionCommands::OpenViewContainingNode(
 
 void SelectionCommands::SetContext(MainWindow* main_window,
                                    DialogService* dialog_service,
+                                   OpenedView* opened_view,
                                    Controller* controller,
                                    SelectionModel* selection) {
   main_window_ = main_window;
   dialog_service_ = dialog_service;
+  opened_view_ = opened_view;
   controller_ = controller;
   selection_ = selection;
 }
@@ -430,6 +406,11 @@ SelectionCommandContext SelectionCommands::command_context() const {
   // |selection_| and |dialog_service_| are never null in command handlers.
   assert(selection_);
   assert(dialog_service_);
+  assert(main_window_);
+  assert(opened_view_);
 
-  return {.selection = *selection_, .dialog_service = *dialog_service_};
+  return {.selection = *selection_,
+          .dialog_service = *dialog_service_,
+          .main_window = *main_window_,
+          .opened_view = *opened_view_};
 }

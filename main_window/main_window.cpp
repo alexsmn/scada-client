@@ -78,16 +78,19 @@ void MainWindow::SetActiveView(OpenedView* view) {
             active_view_->controller().GetSelectionModel()) {
       selection_model->change_handler = nullptr;
     }
-    selection_commands_->SetContext(nullptr, nullptr, nullptr, nullptr);
+    selection_commands_->SetContext(nullptr, nullptr, nullptr, nullptr,
+                                    nullptr);
   }
 
   active_view_ = view;
 
   if (active_view_) {
     auto* selection_model = active_view_->controller().GetSelectionModel();
-    selection_commands_->SetContext(this, &GetDialogService(),
+
+    selection_commands_->SetContext(this, &GetDialogService(), active_view_,
                                     &active_view_->controller(),
                                     selection_model);
+
     if (selection_model) {
       selection_model->change_handler = [this] { OnSelectionChanged(); };
     }

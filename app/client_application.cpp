@@ -169,7 +169,9 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
       .executor_ = executor_,
       .logger_ = logger_,
       .profile_ = *profile_,
-      .services_ = master_data_services_->data_services().as_services()});
+      .services_ = master_data_services_->data_services().as_services(),
+      .controller_registry_ = *controller_registry_,
+      .selection_commands_ = core_module_->selection_commands()});
 
   timed_data_service_ = CreateTimedDataService(
       {.executor_ = executor_,
@@ -266,7 +268,6 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
           .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
           .node_service_ = *node_service_,
-          .local_events_ = event_module_->local_events(),
           .file_cache_ = filesystem_component_->file_cache(),
           .blinker_manager_ = *blinker_manager_,
           .property_service_ = *property_service_,

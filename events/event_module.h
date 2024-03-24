@@ -4,6 +4,9 @@
 
 #include <memory>
 
+template <class T>
+class BasicCommandRegistry;
+
 class ControllerRegistry;
 class Executor;
 class EventFetcher;
@@ -11,6 +14,7 @@ class LocalEvents;
 class Logger;
 class NodeEventProvider;
 class Profile;
+struct SelectionCommandContext;
 
 struct EventModuleContext {
   std::shared_ptr<Executor> executor_;
@@ -18,6 +22,7 @@ struct EventModuleContext {
   Profile& profile_;
   scada::services services_;
   ControllerRegistry& controller_registry_;
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
 };
 
 class EventModule : private EventModuleContext {

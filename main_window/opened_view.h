@@ -5,6 +5,7 @@
 #include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_factory.h"
+#include "main_window/opened_view_interface.h"
 #include "profile/window_definition.h"
 
 #include <memory>
@@ -37,7 +38,9 @@ struct OpenedViewContext {
   const DefaultNodeCommandHandler default_node_command_handler_;
 };
 
-class OpenedView : private OpenedViewContext, private ControllerDelegate {
+class OpenedView final : private OpenedViewContext,
+                         private ControllerDelegate,
+                         public OpenedViewInterface {
  public:
   explicit OpenedView(OpenedViewContext&& context);
   virtual ~OpenedView();

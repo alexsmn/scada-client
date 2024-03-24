@@ -5,7 +5,6 @@
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 #include "events/event_fetcher.h"
-#include "events/events_component.h"
 #include "main_window/action_manager.h"
 #include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
@@ -138,10 +137,11 @@ void MainWindowModule::OnEvents(bool has_events) {
     bool events_shown =
         main_window.FindOpenedViewByType(kEventWindowInfo) != nullptr;
     if (has_events != events_shown) {
-      if (has_events && profile_.event_auto_show)
-        main_window.OpenPane(kEventWindowInfo, false);
-      else if (!has_events && profile_.event_auto_hide)
+      if (has_events && profile_.event_auto_show) {
+        main_window.OpenPane(kEventWindowInfo, /*activate=*/false);
+      } else if (!has_events && profile_.event_auto_hide) {
         main_window.ClosePane(kEventWindowInfo);
+      }
     }
 
     main_window.SetWindowFlashing(has_events && profile_.event_flash_window);

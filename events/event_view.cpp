@@ -47,8 +47,10 @@ struct EventTableModelHolder {
 
 std::shared_ptr<EventTableModel> CreateEventTableModel(
     const ControllerContext& context,
+    LocalEvents& local_events,
     bool is_panel) {
-  auto holder = std::make_shared<EventTableModelHolder>(context, is_panel);
+  auto holder =
+      std::make_shared<EventTableModelHolder>(context, local_events, is_panel);
   return {holder, &holder->event_table_model};
 }
 
@@ -73,7 +75,7 @@ EventView::EventView(const ControllerContext& context,
                      bool is_panel)
     : ControllerContext{context},
       is_panel_{is_panel},
-      model_{CreateEventTableModel(context, is_panel)} {
+      model_{CreateEventTableModel(context, local_events, is_panel)} {
   const aui::TableColumn kEventViewColumns[] = {
       {EventColumnTime, u"Время", 150, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},

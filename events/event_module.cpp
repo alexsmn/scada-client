@@ -1,11 +1,15 @@
 #include "events/event_module.h"
 
 #include "base/value_util.h"
+#include "controller/command_registry.h"
 #include "controller/controller_registry.h"
+#include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "events/event_view.h"
 #include "events/local_events.h"
+#include "main_window/main_window_interface.h"
+#include "main_window/opened_view_interface.h"
 #include "profile/profile.h"
 
 namespace {
@@ -33,11 +37,9 @@ EventModule::EventModule(EventModuleContext&& context)
           .Build();
 
   // TODO: Checked cast.
-  scada::EventSeverity severity_min = static_cast<scada::EventSeverity>(
+  event_fetcher_->SetSeverityMin(static_cast<scada::EventSeverity>(
       GetInt(profile_.data(), "severityMin",
-             static_cast<unsigned>(scada::kSeverityMin)));
-
-  event_fetcher_->SetSeverityMin(severity_min);
+             static_cast<unsigned>(scada::kSeverityMin))));
 
   controller_registry_.AddControllerFactory(
       kEventWindowInfo,
@@ -59,6 +61,40 @@ EventModule::EventModule(EventModuleContext&& context)
   });
 
   local_events_ = std::make_unique<LocalEvents>();
+
+  // TODO: Move to the event module.
+  selection_commands_.AddCommand(
+      {.command_id = ID_OPEN_EVENTS,
+       .execute_handler =
+           [this](const SelectionCommandContext& context) {
+             context.main_window.OpenView(
+                 context.opened_view
+                     .GetOpenWindowDefinition(&kEventJournalWindowInfo)
+                     .then([](const WindowDefinition& window_def) {
+                       auto new_window_def = window_def;
+                       new_window_def.AddItem("Window").SetString("mode",
+                                                                  "Current");
+                       return new_window_def;
+                     }));
+           },
+       .available_handler =
+           [](const SelectionCommandContext& context) {
+             return !context.selection.empty();
+           }});
+
+  // TODO: Move to the event module.
+  selection_commands_.AddCommand(
+      {.command_id = ID_HISTORICAL_EVENTS,
+       .execute_handler =
+           [this](const SelectionCommandContext& context) {
+             context.main_window.OpenView(
+                 context.opened_view.GetOpenWindowDefinition(
+                     &kEventJournalWindowInfo));
+           },
+       .available_handler =
+           [](const SelectionCommandContext& context) {
+             return !context.selection.empty();
+           }});
 }
 
 EventModule::~EventModule() {}
