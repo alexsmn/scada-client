@@ -2,6 +2,7 @@
 
 #include <memory>
 
+class ControllerRegistry;
 class NodeService;
 class PortfolioManager;
 class Profile;
@@ -9,6 +10,7 @@ class Profile;
 struct PortfolioModuleContext {
   NodeService& node_service_;
   Profile& profile_;
+  ControllerRegistry& controller_registry_;
 };
 
 class PortfolioModule : private PortfolioModuleContext {

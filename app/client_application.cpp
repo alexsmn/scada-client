@@ -224,7 +224,7 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
       .global_commands_ = core_module_->global_commands()});
 
   portfolio_module_ = std::make_unique<PortfolioModule>(
-      PortfolioModuleContext{*node_service_, *profile_});
+      PortfolioModuleContext{*node_service_, *profile_, *controller_registry_});
 
   create_tree_ = std::make_unique<CreateTree>();
 
