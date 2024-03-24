@@ -5,6 +5,7 @@
 #include "aui/tree.h"
 #include "common_resources.h"
 #include "controller/controller_delegate.h"
+#include "favorites/favourites.h"
 #include "favorites/favourites_tree_model.h"
 #include "web/web_util.h"
 
@@ -16,9 +17,12 @@ namespace {
 const char16_t kAddUrl[] = u"Добавить Web-страницу";
 }
 
-FavouritesView::FavouritesView(const ControllerContext& context)
+FavouritesView::FavouritesView(const ControllerContext& context,
+                               Favourites& favorites)
     : ControllerContext{context},
-      favourites_tree_model_{new FavouritesTreeModel(favourites_)} {}
+      favourites_{favorites},
+      favourites_tree_model_{std::make_shared<FavouritesTreeModel>(favorites)} {
+}
 
 FavouritesView::~FavouritesView() {}
 

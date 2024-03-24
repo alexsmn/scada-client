@@ -24,8 +24,9 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
       PortfolioManagerContext{node_service_});
 
   controller_registry_.AddControllerFactory(
-      kPortfolioWindowInfo, [](const ControllerContext& context) {
-        return std::make_unique<PortfolioView>(context);
+      kPortfolioWindowInfo, [&portfolio_manager = *portfolio_manager_](
+                                const ControllerContext& context) {
+        return std::make_unique<PortfolioView>(context, portfolio_manager);
       });
 
   // portfolios

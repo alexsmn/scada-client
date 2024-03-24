@@ -183,8 +183,8 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
           executor_, selection_commands_object_, task_manager_,
           master_data_services_, master_data_services_, event_fetcher_,
           master_data_services_, timed_data_service_, node_service_,
-          portfolio_manager_, *action_manager_, local_events_, favourites_,
-          file_cache_, profile_, *main_window_manager_, create_tree_});
+          *action_manager_, local_events_, file_cache_, profile_,
+          *main_window_manager_, create_tree_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the
   // controller.

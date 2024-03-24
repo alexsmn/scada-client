@@ -26,8 +26,9 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
   favourites_ = std::make_unique<Favourites>();
 
   controller_registry_.AddControllerFactory(
-      kFavoritesWindowInfo, [](const ControllerContext& context) {
-        return std::make_unique<FavouritesView>(context);
+      kFavoritesWindowInfo,
+      [&favorites = *favourites_](const ControllerContext& context) {
+        return std::make_unique<FavouritesView>(context, favorites);
       });
 
   if (const auto* key = profile_.data().FindKey("favorites")) {

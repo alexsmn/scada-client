@@ -13,13 +13,15 @@ namespace aui {
 class Tree;
 }
 
+class PortfolioManager;
 class PortfolioTreeModel;
 
-class PortfolioView : protected ControllerContext,
-                      public Controller,
-                      public ContentsModel {
+class PortfolioView final : protected ControllerContext,
+                            public Controller,
+                            public ContentsModel {
  public:
-  explicit PortfolioView(const ControllerContext& context);
+  PortfolioView(const ControllerContext& context,
+                PortfolioManager& portfolio_manager);
   virtual ~PortfolioView();
 
   // Controller
@@ -42,6 +44,8 @@ class PortfolioView : protected ControllerContext,
   void DeleteSelection();
   void NewPortfolio();
   void AddItemsToPortfolio();
+
+  PortfolioManager& portfolio_manager_;
 
   const std::shared_ptr<PortfolioTreeModel> model_;
 

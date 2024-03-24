@@ -8,11 +8,9 @@
 #include "controller/window_info.h"
 #include "events/local_events.h"
 #include "events/node_event_provider_mock.h"
-#include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "node_service/node_service_mock.h"
-#include "portfolio/portfolio_manager.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "properties/property_service.h"
@@ -36,9 +34,7 @@ struct ControllerEnvironment {
   testing::NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
   testing::NiceMock<MockTimedDataService> timed_data_service_;
   testing::NiceMock<MockNodeService> node_service_;
-  PortfolioManager portfolio_manager_{{.node_service_ = node_service_}};
   LocalEvents local_events_;
-  Favourites favourites_;
   FileRegistry file_registry_;
   FileCache file_cache_{file_registry_};
   Profile profile_;
@@ -57,9 +53,7 @@ struct ControllerEnvironment {
             .monitored_item_service_ = monitored_item_service_,
             .timed_data_service_ = timed_data_service_,
             .node_service_ = node_service_,
-            .portfolio_manager_ = portfolio_manager_,
             .local_events_ = local_events_,
-            .favourites_ = favourites_,
             .file_cache_ = file_cache_,
             .profile_ = profile_,
             .dialog_service_ = dialog_service_,

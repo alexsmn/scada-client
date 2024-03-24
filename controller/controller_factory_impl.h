@@ -13,13 +13,11 @@ class Controller;
 class ControllerDelegate;
 class DialogService;
 class Executor;
-class Favourites;
 class FileCache;
 class LocalEvents;
 class MasterDataServices;
 class NodeEventProvider;
 class NodeService;
-class PortfolioManager;
 class Profile;
 class PropertyService;
 class TaskManager;
@@ -37,9 +35,7 @@ struct ControllerFactoryImpl {
   NodeEventProvider& node_event_provider_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
-  PortfolioManager& portfolio_manager_;
   LocalEvents& local_events_;
-  Favourites& favourites_;
   FileCache& file_cache_;
   BlinkerManager& blinker_manager_;
   PropertyService& property_service_;
@@ -61,9 +57,8 @@ inline std::unique_ptr<Controller> ControllerFactoryImpl::CreateController(
   }
 
   return registrar->CreateController(ControllerContext{
-      executor_, delegate, task_manager_,
-      master_data_services_, node_event_provider_, master_data_services_,
-      master_data_services_, timed_data_service_, node_service_,
-      portfolio_manager_, local_events_, favourites_, file_cache_, profile_,
+      executor_, delegate, task_manager_, master_data_services_,
+      node_event_provider_, master_data_services_, master_data_services_,
+      timed_data_service_, node_service_, local_events_, file_cache_, profile_,
       dialog_service, blinker_manager_, create_tree_, property_service_});
 }

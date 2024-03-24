@@ -6,14 +6,17 @@
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "node_service/node_service.h"
+#include "portfolio/portfolio_manager.h"
 #include "portfolio/portfolio_tree_model.h"
 
 // PortfolioView
 
-PortfolioView::PortfolioView(const ControllerContext& context)
+PortfolioView::PortfolioView(const ControllerContext& context,
+                             PortfolioManager& portfolio_manager)
     : ControllerContext{context},
+      portfolio_manager_{portfolio_manager},
       model_{std::make_shared<PortfolioTreeModel>(context.node_service_,
-                                                  context.portfolio_manager_)} {
+                                                  portfolio_manager)} {
   selection_.multiple_handler = [this] { return GetSelectedNodeIdList(); };
 }
 
@@ -34,7 +37,7 @@ std::unique_ptr<UiView> PortfolioView::Init(
   });
 
   tree_->SetSelectionChangedHandler([this] {
-    PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
+    const PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
     // |node| may be either portfolio or item. For portfolio |item_id()| has
     // value of |TRID_INVAL|.
     if (!node)
@@ -57,7 +60,8 @@ std::unique_ptr<UiView> PortfolioView::Init(
               tree_->StartEditing(node);
           })
           .set_enabled_handler([this] {
-            PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
+            const PortfolioTreeNode* node =
+                model_->AsNode(tree_->GetSelectedNode());
             return node && node->is_portfolio();
           }));
 
@@ -78,7 +82,7 @@ std::unique_ptr<UiView> PortfolioView::Init(
 }
 
 void PortfolioView::DeleteSelection() {
-  PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
+  const PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
   if (node) {
     if (node->is_portfolio())
       portfolio_manager_.Delete(node->portfolio());
@@ -88,7 +92,7 @@ void PortfolioView::DeleteSelection() {
 }
 
 const Portfolio* PortfolioView::GetSelectedPortfolio() const {
-  PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
+  const PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
   if (!node)
     return NULL;
   if (!node->is_portfolio())
@@ -133,7 +137,7 @@ std::u16string PortfolioView::GetSelectionTitle() {
 NodeIdSet PortfolioView::GetSelectedNodeIdList() {
   NodeIdSet node_ids;
 
-  PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
+  const PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
   if (!node)
     return node_ids;
 
@@ -146,7 +150,7 @@ NodeIdSet PortfolioView::GetSelectedNodeIdList() {
 }
 
 void PortfolioView::NewPortfolio() {
-  Portfolio& portfolio = portfolio_manager_.New();
+  const Portfolio& portfolio = portfolio_manager_.New();
 
   PortfolioTreeNode* node = model_->FindPortfolioNode(portfolio);
   assert(node);

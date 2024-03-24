@@ -12,12 +12,13 @@ namespace aui {
 class Tree;
 }
 
+class Favourites;
 class FavouritesTreeModel;
 class WindowDefinition;
 
-class FavouritesView : protected ControllerContext, public Controller {
+class FavouritesView final : protected ControllerContext, public Controller {
  public:
-  explicit FavouritesView(const ControllerContext& context);
+  FavouritesView(const ControllerContext& context, Favourites& favorites);
   ~FavouritesView();
 
   // Controller events
@@ -33,6 +34,8 @@ class FavouritesView : protected ControllerContext, public Controller {
 #if !defined(UI_WT)
   promise<> AddUrl();
 #endif
+
+  Favourites& favourites_;
 
   const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
 
