@@ -221,7 +221,8 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,
-      .global_commands_ = core_module_->global_commands()});
+      .global_commands_ = core_module_->global_commands(),
+      .controller_registry_ = *controller_registry_});
 
   portfolio_module_ = std::make_unique<PortfolioModule>(
       PortfolioModuleContext{*node_service_, *profile_, *controller_registry_});

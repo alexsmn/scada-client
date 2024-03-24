@@ -5,6 +5,7 @@
 template <class T>
 class BasicCommandRegistry;
 
+class ControllerRegistry;
 class Favourites;
 class Profile;
 struct GlobalCommandContext;
@@ -12,6 +13,7 @@ struct GlobalCommandContext;
 struct FavoritesModuleContext {
   Profile& profile_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  ControllerRegistry& controller_registry_;
 };
 
 class FavoritesModule : private FavoritesModuleContext {
