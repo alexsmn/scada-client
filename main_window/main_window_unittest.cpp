@@ -200,7 +200,7 @@ TEST_F(MainWindowTest, DISABLED_DeleteCurrentPage_Last) {
 // When pages is NOT last, deletes the current page, creates to another page not
 // opened page.
 TEST_F(MainWindowTest, DeleteCurrentPage_NotLast) {
-  int another_page_id = profile_.CreatePage().id;
+  int another_page_id = profile_.AddPage(Page{}).id;
 
   main_window_.DeleteCurrentPage();
 

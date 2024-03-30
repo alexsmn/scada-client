@@ -7,7 +7,6 @@
 #include "base/task_runner_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "components/login/wt/login_dialog.h"
-#include "main_window/wt/main_window_wt.h"
 
 #include <wt/WApplication.h>
 #include <wt/WBootstrapTheme.h>
@@ -35,15 +34,10 @@ class HelloApplication : public Wt::WApplication {
   ClientApplication client_application_{ClientApplicationContext{
       .io_context_ = io_context_,
       .executor_ = executor_,
-      .main_window_factory_ =
-          [this](MainWindowContext&& context) {
-            return std::make_unique<MainWindowWt>(*root(), std::move(context));
-          },
-      .login_handler_ =
-          [this](DataServicesContext&& services_context) {
-            return ExecuteLoginDialog(executor_, *root(),
-                                      std::move(services_context));
-          }}};
+      .login_handler_ = [this](DataServicesContext&& services_context) {
+        return ExecuteLoginDialog(executor_, *root(),
+                                  std::move(services_context));
+      }}};
 };
 
 HelloApplication::HelloApplication(const Wt::WEnvironment& env,
@@ -53,7 +47,7 @@ HelloApplication::HelloApplication(const Wt::WEnvironment& env,
 
   LOG(INFO) << "Connect";
   // TODO: Handle quit request when the returned promise is resolved.
-  client_application_.Run();
+  client_application_.Start();
 }
 
 HelloApplication::~HelloApplication() {

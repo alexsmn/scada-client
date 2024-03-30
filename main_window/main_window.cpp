@@ -1,5 +1,6 @@
 ﻿#include "main_window/main_window.h"
 
+#include "main_window/initial_page.h"
 #include "aui/key_codes.h"
 #include "base/promise_executor.h"
 #include "controller/contents_model.h"
@@ -35,7 +36,7 @@ void MainWindow::Init(ViewManager& view_manager) {
   }
 
   if (!page) {
-    page = &profile_.CreatePage();
+    page = &profile_.AddPage(CreateInitialPage());
   }
 
   OpenPage(*page);
@@ -227,7 +228,7 @@ void MainWindow::DeleteCurrentPage() {
   // Select first not opened page.
   const Page* select_page = main_window_manager_.FindFirstNotOpenedPage();
   if (!select_page) {
-    select_page = &profile_.CreatePage();
+    select_page = &profile_.AddPage(CreateInitialPage());
   }
 
   OpenPage(*select_page);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/promise.h"
-#include "main_window/main_window_context.h"
 #include "scada/data_services_factory.h"
 
 #include <memory>
@@ -45,9 +44,7 @@ struct ClientApplicationContext {
   boost::asio::io_context& io_context_;
   const std::shared_ptr<Executor> executor_;
 
-  const std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>
-      main_window_factory_;
-
+  // TODO: Remove the `DataServicesContext` parameter.
   const std::function<promise<std::optional<DataServices>>(
       DataServicesContext&& services_context)>
       login_handler_;
@@ -61,14 +58,14 @@ class ClientApplication : private ClientApplicationContext {
   ClientApplication(const ClientApplication&) = delete;
   ClientApplication& operator=(const ClientApplication&) = delete;
 
-  promise<void> Run();
+  [[nodiscard]] promise<void> Start();
+  [[nodiscard]] promise<void> Run() { return quit_promise_; }
+  [[nodiscard]] promise<void> Quit();
 
  private:
   promise<void> Login();
   void OnLoginCompleted(DataServices services);
-  promise<void> RunAfterLoginCompleted();
-
-  void Quit();
+  void StartAfterLoginCompleted();
 
   std::unique_ptr<CoreModule> core_module_;
 

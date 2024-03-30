@@ -75,10 +75,12 @@ REGISTER_DATA_SERVICES("Scada",
                        u"Телеконтроль",
                        CreateRemoteServices,
                        "localhost");
+
 REGISTER_DATA_SERVICES("OpcUa",
                        u"OPC UA",
                        CreateOpcUaServices,
                        "opc.tcp://localhost:4840");
+
 REGISTER_DATA_SERVICES("Vidicon",
                        u"Видикон",
                        CreateVidiconServices,
@@ -138,12 +140,12 @@ ClientApplication::~ClientApplication() {
   transport_factory_.reset();
 }
 
-promise<void> ClientApplication::Run() {
-  return IgnoreResult(Login().then(BindPromiseExecutor(
-      executor_, [this] { return RunAfterLoginCompleted(); })));
+promise<void> ClientApplication::Start() {
+  return Login().then(
+      BindPromiseExecutor(executor_, [this] { StartAfterLoginCompleted(); }));
 }
 
-promise<void> ClientApplication::RunAfterLoginCompleted() {
+void ClientApplication::StartAfterLoginCompleted() {
   scada::client scada_client{
       master_data_services_->data_services().as_services()};
 
@@ -277,7 +279,6 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
       std::make_unique<MainWindowModule>(MainWindowModuleContext{
           .executor_ = executor_,
           .profile_ = *profile_,
-          .main_window_factory_ = main_window_factory_,
           .quit_handler_ = std::bind_front(&ClientApplication::Quit, this),
           .master_data_services_ = *master_data_services_,
           .login_handler_ = std::bind_front(&ClientApplication::Login, this),
@@ -306,8 +307,6 @@ promise<void> ClientApplication::RunAfterLoginCompleted() {
       &core_module_->selection_commands());
 
   filesystem_component_->StartUp();
-
-  return quit_promise_;
 }
 
 promise<void> ClientApplication::Login() {
@@ -356,12 +355,12 @@ void ClientApplication::OnLoginCompleted(DataServices services) {
   master_data_services_->SetServices(std::move(services));
 }
 
-void ClientApplication::Quit() {
+promise<void> ClientApplication::Quit() {
   logger_->Write(LogSeverity::Normal, "Quit");
 
   if (!master_data_services_) {
     quit_promise_.resolve();
-    return;
+    return quit_promise_;
   }
 
   // TODO: Localize.
@@ -372,4 +371,5 @@ void ClientApplication::Quit() {
 
   ForwardPromise(IgnoreResult(master_data_services_->Disconnect()),
                  quit_promise_);
+  return quit_promise_;
 }

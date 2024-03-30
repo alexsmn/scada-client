@@ -4,6 +4,7 @@
 #include "common_resources.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
+#include "main_window/initial_page.h"
 #include "main_window/main_window_interface.h"
 #include "main_window/main_window_manager.h"
 #include "profile/profile.h"
@@ -14,7 +15,7 @@ PageCommands::PageCommands(PageCommandsContext&& context)
       {.command_id = ID_PAGE_NEW,
        .execute_handler = [this](const GlobalCommandContext& context) {
          context.main_window.SaveCurrentPage();
-         auto& page = profile_.CreatePage();
+         auto& page = profile_.AddPage(CreateInitialPage());
          context.main_window.OpenPage(page);
        }});
 

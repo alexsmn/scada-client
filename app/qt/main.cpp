@@ -3,11 +3,11 @@
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
 #include "aui/qt/message_loop_qt.h"
+#include "base/executor_timer.h"
 #include "base/task_runner_executor.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
-#include "main_window/qt/main_window_qt.h"
 #include "project.h"
 #include "services/atl_module.h"
 
@@ -52,16 +52,15 @@ int main(int argc, char* argv[]) {
   ClientApplication app{ClientApplicationContext{
       .io_context_ = io_context,
       .executor_ = executor,
-      .main_window_factory_ =
-          [](MainWindowContext&& context) {
-            return std::make_unique<MainWindowQt>(std::move(context));
-          },
-      .login_handler_ =
-          [executor](DataServicesContext&& services_context) {
-            return ExecuteLoginDialog(executor, std::move(services_context));
-          }}};
+      .login_handler_ = [executor](DataServicesContext&& services_context) {
+        return ExecuteLoginDialog(executor, std::move(services_context));
+      }}};
 
-  executor->PostTask([&app] { app.Run().then(&QApplication::quit); });
+  executor->PostTask([&app] {
+    IgnoreResult(app.Start().then([&app] {
+      return app.Run();
+    })).then(&QApplication::quit);
+  });
 
   return QApplication::exec();
 }

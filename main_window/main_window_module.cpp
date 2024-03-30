@@ -21,6 +21,26 @@
 #include "profile/profile.h"
 #include "services/event_dispatcher.h"
 
+#if defined(UI_QT)
+#include "main_window/qt/main_window_qt.h"
+#elif defined(UI_WT)
+#include "main_window/wt/main_window_wt.h"
+#endif
+
+namespace {
+
+#if defined(UI_QT)
+std::unique_ptr<MainWindowQt> CreateMainWindow(MainWindowContext&& context) {
+  return std::make_unique<MainWindowQt>(std::move(context));
+}
+#elif defined(UI_WT)
+std::unique_ptr<MainWindowWt> CreateMainWindow(MainWindowContext&& context) {
+  return std::make_unique<MainWindowWt>(*root(), std::move(context));
+}
+#endif
+
+}  // namespace
+
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)},
       action_manager_{std::make_unique<ActionManager>()} {
@@ -31,11 +51,10 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
           .profile_ = profile_,
           .main_window_factory_ =
               [this](int window_id) {
-                return main_window_factory_(MakeMainWindowContext(window_id));
+                return CreateMainWindow(MakeMainWindowContext(window_id));
               },
           .quit_handler_ = quit_handler_});
 
-  // |main_window_manager_| must be assigned.
   main_window_manager_->Init();
 
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
@@ -46,7 +65,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       PageCommandsContext{global_commands_, profile_, *main_window_manager_}));
 }
 
-MainWindowModule ::~MainWindowModule() {}
+MainWindowModule::~MainWindowModule() {}
 
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto login_handler = [this](bool login) {

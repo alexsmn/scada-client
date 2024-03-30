@@ -129,6 +129,9 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
 
 MainWindowQt::~MainWindowQt() {
   action_manager_.Unsubscribe(*this);
+
+  view_manager_->ClosePage();
+  // TODO: Comment why explicit reset is needed.
   view_manager_.reset();
 }
 
@@ -161,7 +164,7 @@ void MainWindowQt::CreateMenuBar() {
     auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
     assert(submenu_model);
     QObject::connect(submenu, &QMenu::aboutToShow, this,
-                     [this, submenu, submenu_model] {
+                     [submenu, submenu_model] {
                        submenu->clear();
                        BuildMenu(*submenu, *submenu_model);
                      });

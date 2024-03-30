@@ -15,10 +15,10 @@ list(FILTER SOURCES EXCLUDE REGEX "/web/")
 
 # Lib
 
-set(COMPONENTS ${SOURCES} ${SOURCES_QT})
+set(COMPONENTS ${SOURCES} ${SOURCES_WT})
 list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
 list(REMOVE_ITEM SOURCES ${COMPONENTS})
-list(REMOVE_ITEM SOURCES_QT ${COMPONENTS})
+list(REMOVE_ITEM SOURCES_WT ${COMPONENTS})
 
 add_library(client_wt_lib
   ${SOURCES}
@@ -67,6 +67,6 @@ set_property(TARGET client_wt PROPERTY OUTPUT_NAME "webserver")
 
 add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
 # Uses the custom runner from `test/wt/test_main_wt.cpp`.
-target_link_libraries(client_wt_unittests PUBLIC client_wt_lib base_unittest Wt::Test)
+target_link_libraries(client_wt_unittests PRIVATE client_wt_lib base_unittest Wt::Test)
 include(GoogleTest)
 gtest_discover_tests(client_wt_unittests)

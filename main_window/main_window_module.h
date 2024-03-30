@@ -44,7 +44,6 @@ using QuitHandler = std::function<void()>;
 struct MainWindowModuleContext {
   std::shared_ptr<Executor> executor_;
   Profile& profile_;
-  MainWindowFactory main_window_factory_;
   QuitHandler quit_handler_;
   MasterDataServices& master_data_services_;
   LoginHandler login_handler_;

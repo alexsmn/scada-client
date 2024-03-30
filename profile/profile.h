@@ -31,7 +31,7 @@ class Profile {
   Profile(const Profile&) = delete;
   Profile& operator=(const Profile&) = delete;
 
-  Page& CreatePage();
+  Page& AddPage(const Page& page);
 
   int CreateWindowId();
   MainWindowDef& GetMainWindow(int main_window_id);
@@ -55,7 +55,7 @@ class Profile {
   void Load();
   void Save();
 
-  typedef std::map<int, MainWindowDef> MainWindows;
+  using MainWindows = std::map<int, MainWindowDef>;
   MainWindows main_windows;
 
   // display message box also in case if telecontrol is succeeded
@@ -123,9 +123,10 @@ class Profile {
     serializers_.emplace_back(serializer);
   }
 
+  template <class O>
   [[nodiscard]] boost::signals2::scoped_connection AddChangeObserver(
-      std::function<void()> observer) {
-    return profile_change_signal_.connect(std::move(observer));
+      O&& observer) {
+    return profile_change_signal_.connect(std::forward<O>(observer));
   }
 
   void NotifyChange() { profile_change_signal_(); }
@@ -136,7 +137,7 @@ class Profile {
 
   std::filesystem::path GetFilePath();
 
-  base::Value data_;
+  base::Value data_{base::Value::Type::DICTIONARY};
 
   std::vector<Writer> writers_;
   std::vector<Serializer> serializers_;
