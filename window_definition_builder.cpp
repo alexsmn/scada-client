@@ -94,8 +94,11 @@ promise<WindowDefinition> MakeWindowDefinition(
 
   return promise.then([open_context](const WindowDefinition& window_def) {
     auto new_window_def = window_def;
-    if (open_context.time_range.has_value())
+
+    if (open_context.time_range.has_value()) {
       SaveTimeRange(new_window_def, *open_context.time_range);
+    }
+
     return new_window_def;
   });
 }

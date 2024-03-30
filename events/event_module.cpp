@@ -62,43 +62,37 @@ EventModule::EventModule(EventModuleContext&& context)
 
   local_events_ = std::make_unique<LocalEvents>();
 
-  // TODO: Move to the event module.
-  selection_commands_.AddCommand(
-      {.command_id = ID_OPEN_EVENTS,
-       .execute_handler =
-           [this](const SelectionCommandContext& context) {
-             context.main_window.OpenView(
-                 context.opened_view
-                     .GetOpenWindowDefinition(&kEventJournalWindowInfo)
-                     .then([](const WindowDefinition& window_def) {
-                       auto new_window_def = window_def;
-                       new_window_def.AddItem("Window").SetString("mode",
-                                                                  "Current");
-                       return new_window_def;
-                     }));
-           },
-       .available_handler =
-           [](const SelectionCommandContext& context) {
-             return !context.selection.empty();
-           }});
-
-  // TODO: Move to the event module.
-  selection_commands_.AddCommand(
-      {.command_id = ID_HISTORICAL_EVENTS,
-       .execute_handler =
-           [this](const SelectionCommandContext& context) {
-             context.main_window.OpenView(
-                 context.opened_view.GetOpenWindowDefinition(
-                     &kEventJournalWindowInfo));
-           },
-       .available_handler =
-           [](const SelectionCommandContext& context) {
-             return !context.selection.empty();
-           }});
+  AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
+  AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
 }
 
 EventModule::~EventModule() {}
 
 NodeEventProvider& EventModule::node_event_provider() {
   return *event_fetcher_;
+}
+
+void EventModule::AddOpenCommand(unsigned command_id,
+                                 const WindowInfo& window_info,
+                                 const std::string_view& mode) {
+  selection_commands_.AddCommand(
+      {.command_id = command_id,
+       .execute_handler =
+           [&window_info, mode](const SelectionCommandContext& context) {
+             context.opened_view
+                 .GetOpenWindowDefinition(&window_info)
+                 // TODO: `main_window` must be a weak pointer.
+                 .then([&main_window = context.main_window,
+                        mode](const WindowDefinition& window_def) {
+                   auto new_window_def = window_def;
+                   if (!mode.empty()) {
+                     new_window_def.AddItem("mode", mode);
+                   }
+                   main_window.OpenView(new_window_def);
+                 });
+           },
+       .available_handler =
+           [](const SelectionCommandContext& context) {
+             return !context.selection.empty();
+           }});
 }

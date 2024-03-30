@@ -74,6 +74,9 @@ class OpenedView final : private OpenedViewContext,
   // TODO: Move to private.
   virtual void SetModified(bool modified) override;
 
+  promise<WindowDefinition> GetOpenWindowDefinition(
+      const WindowInfo* window_info) const override;
+
   std::unique_ptr<CommandHandler> commands;
 
  private:

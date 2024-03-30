@@ -59,9 +59,6 @@ class SelectionCommands : private SelectionCommandsContext,
   void OpenWindow(const WindowInfo* window_info);
   void OpenWindow(const WindowDefinition& window_definition);
 
-  promise<WindowDefinition> GetOpenWindowDefinition(
-      const WindowInfo* window_info) const;
-
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
   virtual bool IsCommandEnabled(unsigned command_id) const override;

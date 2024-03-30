@@ -26,7 +26,7 @@
 #include <cassert>
 
 scada::status_promise<void> OpenView(
-    MainWindow* main_window,
+    MainWindowInterface* main_window,
     promise<WindowDefinition> window_def_promise,
     bool activate) {
   // TODO: Pass |main_window| by weak pointer.
@@ -36,7 +36,7 @@ scada::status_promise<void> OpenView(
       });
 }
 
-scada::status_promise<void> OpenView(MainWindow* main_window,
+scada::status_promise<void> OpenView(MainWindowInterface* main_window,
                                      const WindowDefinition& window_def,
                                      bool activate) {
   assert(main_window);

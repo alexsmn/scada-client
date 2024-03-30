@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/size.h"
+#include "base/json.h"
 #include "base/values.h"
 
 #include <filesystem>
@@ -37,8 +38,10 @@ class WindowItem {
 
   template <class T>
   std::optional<T> Get() const;
+
   template <class T>
   WindowItem& Set(const T& value);
+
   WindowItem& Set(base::Value&& value);
 
   bool operator==(const WindowItem& other) const;
@@ -64,8 +67,10 @@ class WindowDefinition {
   std::u16string GetTitle(const WindowInfo& window_info) const;
 
   WindowDefinition& AddItem(WindowItem&& window_item);
+
   template <class T>
   WindowDefinition& AddItem(std::string&& name, T&& value);
+
   WindowItem& AddItem(std::string name);
 
   WindowItem* FindItem(const char* name);

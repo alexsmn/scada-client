@@ -13,8 +13,11 @@ std::optional<base::Time> FromJson(const base::Value& value);
 
 template <>
 std::optional<TimeRange> FromJson(const base::Value& value);
+
 template <>
 std::optional<base::TimeDelta> FromJson(const base::Value& value);
+
+base::Value ToJson(std::string_view str);
 
 base::Value ToJson(base::Time time);
 

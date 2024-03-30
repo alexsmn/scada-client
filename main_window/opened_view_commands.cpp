@@ -21,6 +21,7 @@
 #include "export/csv/csv_export_util.h"
 #include "export/export_model.h"
 #include "main_window/actions.h"
+#include "main_window/main_window.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view.h"
 #include "main_window/selection_commands.h"

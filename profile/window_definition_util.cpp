@@ -106,6 +106,10 @@ std::optional<base::TimeDelta> FromJson(const base::Value& value) {
          base::TimeDelta::FromDays(GetKey<int>(value, "days").value_or(0));
 }
 
+base::Value ToJson(std::string_view str) {
+  return base::Value{str};
+}
+
 base::Value ToJson(base::Time time) {
   return base::Value{SerializeToString(time)};
 }

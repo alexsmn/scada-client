@@ -31,23 +31,23 @@ Page CreateInitialPage() {
   def.type = WinTypeWeb;*/
 
   // objects
-  WindowDefinition& objects_def = page.AddWindow(WindowDefinition(
-      /*kObjectTreeWindowInfo*/ GetWindowInfo(ID_OBJECT_VIEW)));
+  WindowDefinition& objects_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_OBJECT_VIEW)));
   objects_def.size = {200, 450};
 
   // portfolio
-  WindowDefinition& portfolio = page.AddWindow(WindowDefinition(
-      /*kPortfolioWindowInfo*/ GetWindowInfo(ID_PORTFOLIO_VIEW)));
+  WindowDefinition& portfolio =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_PORTFOLIO_VIEW)));
   portfolio.size = {200, 450};
 
   // subsystems
-  WindowDefinition& subs_def = page.AddWindow(WindowDefinition(
-      /*kHardwareTreeWindowInfo*/ GetWindowInfo(ID_HARDWARE_VIEW)));
+  WindowDefinition& subs_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_HARDWARE_VIEW)));
   subs_def.size = {200, 450};
 
   // events
-  WindowDefinition& events_def = page.AddWindow(
-      WindowDefinition(/*kEventWindowInfo*/ GetWindowInfo(ID_EVENT_VIEW)));
+  WindowDefinition& events_def =
+      page.AddWindow(WindowDefinition(GetWindowInfo(ID_EVENT_VIEW)));
   events_def.size = {800, 600};
   events_def.visible = false;
 

@@ -5,15 +5,15 @@
 #include "profile/window_definition.h"
 
 class Executor;
-class MainWindow;
+class MainWindowInterface;
 struct NodeCommandContext;
 
 scada::status_promise<void> OpenView(
-    MainWindow* main_window,
+    MainWindowInterface* main_window,
     promise<WindowDefinition> window_def_promise,
     bool activate = true);
 
-scada::status_promise<void> OpenView(MainWindow* main_window,
+scada::status_promise<void> OpenView(MainWindowInterface* main_window,
                                      const WindowDefinition& window_def,
                                      bool activate = true);
 

@@ -132,19 +132,19 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
 }
 
 void MainWindowModule::OnEvents(bool has_events) {
-  for (auto& p : main_window_manager_->main_windows()) {
-    auto& main_window = *p.second;
+  const auto& window_info = GetWindowInfo(ID_EVENT_VIEW);
+  for (auto& [_, main_window] : main_window_manager_->main_windows()) {
     bool events_shown =
-        main_window.FindOpenedViewByType(kEventWindowInfo) != nullptr;
+        main_window->FindOpenedViewByType(window_info) != nullptr;
     if (has_events != events_shown) {
       if (has_events && profile_.event_auto_show) {
-        main_window.OpenPane(kEventWindowInfo, /*activate=*/false);
+        main_window->OpenPane(window_info, /*activate=*/false);
       } else if (!has_events && profile_.event_auto_hide) {
-        main_window.ClosePane(kEventWindowInfo);
+        main_window->ClosePane(window_info);
       }
     }
 
-    main_window.SetWindowFlashing(has_events && profile_.event_flash_window);
+    main_window->SetWindowFlashing(has_events && profile_.event_flash_window);
   }
 }
 

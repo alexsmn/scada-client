@@ -54,20 +54,25 @@ bool CanCreateSomething(const NodeRef& node) {
   return false;
 }
 
-void RegisterOpenViewCommand(SelectionCommands& selection_commands,
-                             CommandRegistry& command_registry,
-                             unsigned command_id,
-                             const WindowInfo& window_info) {
-  command_registry.AddCommand(
-      Command{command_id}
-          .set_execute_handler([&selection_commands, &window_info] {
-            ::OpenView(
-                selection_commands.main_window(),
-                selection_commands.GetOpenWindowDefinition(&window_info));
-          })
-          .set_available_handler([&selection_commands] {
-            return !selection_commands.selection()->empty();
-          }));
+BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
+    unsigned command_id,
+    const WindowInfo& window_info) {
+  return BasicCommand<SelectionCommandContext>{
+      .command_id = command_id,
+      .execute_handler =
+          [&window_info](const SelectionCommandContext& context) {
+            context.opened_view
+                .GetOpenWindowDefinition(&window_info)
+                // TODO: Capture `main_window` as a weak_ptr.
+                .then([&main_window = context.main_window](
+                          const WindowDefinition& window_def) {
+                  return main_window.OpenView(window_def);
+                });
+          },
+      .available_handler =
+          [](const SelectionCommandContext& context) {
+            return !context.selection.empty();
+          }};
 }
 
 }  // namespace
@@ -78,14 +83,19 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
     : SelectionCommandsContext{std::move(context)} {
   // |selection_| and |dialog_service_| are never null in command handlers.
 
-  RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_TABLE,
-                          kTableWindowInfo);
+  selection_commands_.AddCommand(
+      MakeOpenViewCommand(ID_OPEN_TABLE, kTableWindowInfo));
+
+  selection_commands_.AddCommand(
+      MakeOpenViewCommand(ID_OPEN_SUMMARY, kSummaryWindowInfo));
+
+  selection_commands_.AddCommand(
+      MakeOpenViewCommand(ID_TIMED_DATA_VIEW, kTimedDataWindowInfo));
+
 #if !defined(UI_WT)
-  RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_GRAPH,
-                          kGraphWindowInfo);
+  selection_commands_.AddCommand(
+      MakeOpenViewCommand(ID_OPEN_GRAPH, kGraphWindowInfo));
 #endif
-  RegisterOpenViewCommand(*this, command_registry_, ID_OPEN_SUMMARY,
-                          kSummaryWindowInfo);
 
   command_registry_.AddCommand(
       Command{ID_OPEN_DEVICE_METRICS}
@@ -111,15 +121,6 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
 #endif
-
-  command_registry_.AddCommand(
-      Command{ID_TIMED_DATA_VIEW}
-          .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       GetOpenWindowDefinition(&kTimedDataWindowInfo));
-          })
-          .set_available_handler(
-              [this] { return selection_->timed_data().connected(); }));
 
   command_registry_.AddCommand(
       Command{ID_OPEN_GROUP_TABLE}
@@ -357,29 +358,6 @@ void SelectionCommands::CopyToClipboard() {
 
   if (!nodes.empty())
     CopyNodesToClipboard(nodes);
-}
-
-promise<WindowDefinition> SelectionCommands::GetOpenWindowDefinition(
-    const WindowInfo* window_info) const {
-  if (auto open_context = controller_->GetOpenContext();
-      open_context.has_value()) {
-    return MakeWindowDefinition(window_info, open_context.value());
-  }
-
-  if (selection_->multiple()) {
-    auto title = selection_->GetTitle();
-    auto node_ids = selection_->GetMultipleNodeIds();
-    return make_resolved_promise(MakeWindowDefinition(
-        window_info, {node_ids.begin(), node_ids.end()}, title));
-  }
-
-  const auto& node_id = selection_->node().node_id();
-  if (node_id.is_null() && selection_->timed_data().connected()) {
-    const std::string& formula = selection_->timed_data().formula();
-    return make_resolved_promise(MakeWindowDefinition(window_info, formula));
-  }
-
-  return MakeWindowDefinition(window_info, selection_->node(), true);
 }
 
 bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
