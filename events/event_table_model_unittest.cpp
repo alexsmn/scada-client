@@ -4,13 +4,14 @@
 #include "events/current_event_model.h"
 #include "events/historical_event_model.h"
 #include "events/local_event_model.h"
+#include "events/local_events.h"
 #include "events/node_event_provider_mock.h"
+#include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service_mock.h"
 #include "node_service/static/static_node_service.h"
 #include "scada/history_service_mock.h"
-#include "events/local_events.h"
 
 #include <boost/locale/encoding_utf.hpp>
 #include <gmock/gmock.h>
@@ -22,6 +23,10 @@ namespace {
 struct TestNodeGenerator {
   scada::NodeId node_id(int index) const {
     return {static_cast<scada::NumericId>(index), NamespaceIndexes::TIT};
+  }
+
+  scada::NodeId type_definition_id() const {
+    return data_items::id::AnalogItemType;
   }
 
   scada::LocalizedText display_name(int index) const {
@@ -93,6 +98,7 @@ EventTableModelTest::EventTableModelTest() {
   for (int i = 0; i < test_nodes_.count; ++i) {
     node_service_.Add(
         {.node_id = test_nodes_.node_id(i),
+         .type_definition_id = test_nodes_.type_definition_id(),
          .attributes = {
              .browse_name = NodeIdToScadaString(test_nodes_.node_id(i)),
              .display_name = test_nodes_.display_name(i)}});

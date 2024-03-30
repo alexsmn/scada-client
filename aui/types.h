@@ -1,17 +1,9 @@
 #pragma once
 
+#include "aui/types_fwd.h"
+
 #if defined(UI_QT)
-
-class QWidget;
-
-using UiView = QWidget;
-
+#include <QWidget>
 #elif defined(UI_WT)
-
-namespace Wt {
-class WWidget;
-}
-
-using UiView = Wt::WWidget;
-
+#include <Wt/WWidget.h>
 #endif

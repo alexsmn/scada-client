@@ -16,6 +16,8 @@ class ControllerRegistry {
  public:
   void AddControllerFactory(const WindowInfo& window_info,
                             ControllerRegistryFactory controller_factory);
+
+  ControllerRegistryFactory GetControllerFactory(unsigned command_id) const;
 };
 
 class ControllerRegistrarBase {

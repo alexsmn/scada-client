@@ -40,6 +40,15 @@ void ControllerRegistry::AddControllerFactory(
   new ControllerFactoryRegistrar(window_info, controller_factory);
 }
 
+ControllerRegistryFactory ControllerRegistry::GetControllerFactory(
+    unsigned command_id) const {
+  ControllerRegistrarBase* registrar = GetControllerRegistrar(command_id);
+  if (!registrar) {
+    return nullptr;
+  }
+  return std::bind_front(&ControllerRegistrarBase::CreateController, registrar);
+}
+
 // ControllerRegistrarBase
 
 ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info)
@@ -57,10 +66,10 @@ ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id) {
 }
 
 ControllerRegistrarBase* FindControllerRegistrar(std::string_view name) {
-  for (const auto& p : g_controller_registrar_map.Get()) {
-    auto& registrar = *p.second;
-    if (registrar.window_info().name == name)
-      return &registrar;
+  for (const auto& [_, registrar] : g_controller_registrar_map.Get()) {
+    if (registrar->window_info().name == name) {
+      return registrar;
+    }
   }
   return nullptr;
 }

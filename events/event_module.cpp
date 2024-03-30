@@ -41,6 +41,8 @@ EventModule::EventModule(EventModuleContext&& context)
       GetInt(profile_.data(), "severityMin",
              static_cast<unsigned>(scada::kSeverityMin))));
 
+  local_events_ = std::make_unique<LocalEvents>();
+
   controller_registry_.AddControllerFactory(
       kEventWindowInfo,
       [&local_events = *local_events_](const ControllerContext& context) {
@@ -59,8 +61,6 @@ EventModule::EventModule(EventModuleContext&& context)
     SetKey(data, "severityMin",
            static_cast<int>(event_fetcher_->severity_min()));
   });
-
-  local_events_ = std::make_unique<LocalEvents>();
 
   AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
