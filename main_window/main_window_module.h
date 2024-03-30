@@ -70,6 +70,8 @@ class MainWindowModule : private MainWindowModuleContext {
   explicit MainWindowModule(MainWindowModuleContext&& context);
   ~MainWindowModule();
 
+  MainWindowManager& main_window_manager() { return *main_window_manager_; }
+
  private:
   MainWindowContext MakeMainWindowContext(int window_id);
 

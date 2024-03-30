@@ -140,14 +140,17 @@ ClientApplication::~ClientApplication() {
   transport_factory_.reset();
 }
 
+MainWindowManager& ClientApplication::main_window_manager() {
+  return main_window_module_->main_window_manager();
+}
+
 promise<void> ClientApplication::Start() {
   return Login().then(
       BindPromiseExecutor(executor_, [this] { StartAfterLoginCompleted(); }));
 }
 
 void ClientApplication::StartAfterLoginCompleted() {
-  scada::client scada_client{
-      master_data_services_->data_services().as_services()};
+  scada::client scada_client{master_data_services_->as_services()};
 
   node_service_ = CreateNodeService(
       NodeServiceContext{.executor_ = executor_,
@@ -171,7 +174,7 @@ void ClientApplication::StartAfterLoginCompleted() {
       .executor_ = executor_,
       .logger_ = logger_,
       .profile_ = *profile_,
-      .services_ = master_data_services_->data_services().as_services(),
+      .services_ = master_data_services_->as_services(),
       .controller_registry_ = *controller_registry_,
       .selection_commands_ = core_module_->selection_commands()});
 
@@ -179,7 +182,7 @@ void ClientApplication::StartAfterLoginCompleted() {
       {.executor_ = executor_,
        .alias_resolver_ = alias_resolver,
        .node_service_ = *node_service_,
-       .services_ = master_data_services_->data_services().as_services(),
+       .services_ = master_data_services_->as_services(),
        .node_event_provider_ = event_module_->node_event_provider()});
 
   auto progress_host = std::make_shared<ProgressHostImpl>();

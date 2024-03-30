@@ -5,6 +5,7 @@
 #include "controller/window_info.h"
 
 #include <memory>
+#include <unordered_map>
 
 struct ControllerContext;
 
@@ -12,17 +13,9 @@ struct ControllerContext;
 using ControllerRegistryFactory =
     std::function<std::unique_ptr<Controller>(const ControllerContext&)>;
 
-class ControllerRegistry {
- public:
-  void AddControllerFactory(const WindowInfo& window_info,
-                            ControllerRegistryFactory controller_factory);
-
-  ControllerRegistryFactory GetControllerFactory(unsigned command_id) const;
-};
-
 class ControllerRegistrarBase {
  public:
-  explicit ControllerRegistrarBase(const WindowInfo& window_info);
+  ControllerRegistrarBase(const WindowInfo& window_info, bool is_static);
 
   const WindowInfo& window_info() const { return window_info_; }
 
@@ -37,7 +30,7 @@ template <class ControllerClass>
 class ControllerRegistrar final : public ControllerRegistrarBase {
  public:
   explicit ControllerRegistrar(const WindowInfo& window_info)
-      : ControllerRegistrarBase{window_info} {}
+      : ControllerRegistrarBase{window_info, /*is_static=*/true} {}
 
   virtual std::unique_ptr<Controller> CreateController(
       const ControllerContext& context) override {
@@ -47,6 +40,26 @@ class ControllerRegistrar final : public ControllerRegistrarBase {
 
 ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id);
 ControllerRegistrarBase* FindControllerRegistrar(std::string_view name);
+
+class ControllerRegistry {
+ public:
+  ControllerRegistry();
+  ~ControllerRegistry();
+
+  void AddControllerFactory(const WindowInfo& window_info,
+                            ControllerRegistryFactory controller_factory);
+
+  ControllerRegistryFactory GetControllerFactory(unsigned command_id) const;
+
+ private:
+  std::unordered_map<unsigned /*command_id*/, ControllerRegistrarBase*>
+      registrars_;
+
+  friend class ControllerRegistrarBase;
+  friend ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id);
+  friend ControllerRegistrarBase* FindControllerRegistrar(
+      std::string_view name);
+};
 
 #define COMBINE1(X, Y) X##Y  // helper macro
 #define COMBINE(X, Y) COMBINE1(X, Y)

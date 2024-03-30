@@ -4,12 +4,23 @@
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
+#include "profile/profile.h"
 #include "scada/services_mock.h"
 
 #include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
 
 using namespace ::testing;
+
+namespace {
+
+Page MakeAllWindowsPage(ControllerRegistry& controller_registry) {
+  Page page;
+
+  return page;
+}
+
+}  // namespace
 
 class ClientApplicationTest : public Test {
  public:
@@ -49,6 +60,20 @@ TEST_F(ClientApplicationTest, LoginFailed) {
 // Ensure that the initial page is created and all windows are defined.
 TEST_F(ClientApplicationTest, RunWithNewProfile) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
+
+  app_.Start().get();
+  app_.Quit().get();
+}
+
+// Ensure that the initial page is created and all windows are defined.
+TEST_F(ClientApplicationTest, OpenAllWindows) {
+  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
+
+  {
+    Profile profile;
+    profile.AddPage(MakeAllWindowsPage(app_.controller_registry()));
+    profile.Save();
+  }
 
   app_.Start().get();
   app_.Quit().get();
