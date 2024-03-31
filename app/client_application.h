@@ -68,9 +68,10 @@ class ClientApplication : private ClientApplicationContext {
   [[nodiscard]] promise<void> Quit();
 
  private:
+  void Init();
+
   promise<void> Login();
-  void OnLoginCompleted(DataServices services);
-  void StartAfterLoginCompleted();
+  void OnLoginCompleted(const DataServices& services);
 
   std::unique_ptr<CoreModule> core_module_;
 

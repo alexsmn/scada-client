@@ -21,7 +21,6 @@ class FileManager;
 class LocalEvents;
 class MainWindow;
 class MainWindowManager;
-class MasterDataServices;
 class NodeService;
 class OpenedView;
 class PortfolioManager;
@@ -45,7 +44,7 @@ struct MainWindowModuleContext {
   std::shared_ptr<Executor> executor_;
   Profile& profile_;
   QuitHandler quit_handler_;
-  MasterDataServices& master_data_services_;
+  scada::services scada_services_;
   LoginHandler login_handler_;
   TaskManager& task_manager_;
   EventFetcher& event_fetcher_;

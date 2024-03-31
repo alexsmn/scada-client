@@ -103,6 +103,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
 
   core_module_ = std::make_unique<CoreModule>(executor_);
+
+  Init();
 }
 
 ClientApplication::~ClientApplication() {
@@ -145,21 +147,23 @@ MainWindowManager& ClientApplication::main_window_manager() {
 }
 
 promise<void> ClientApplication::Start() {
-  return Login().then(
-      BindPromiseExecutor(executor_, [this] { StartAfterLoginCompleted(); }));
+  return Login();
 }
 
-void ClientApplication::StartAfterLoginCompleted() {
-  scada::client scada_client{master_data_services_->as_services()};
+void ClientApplication::Init() {
+  const scada::services& audited_scada_services =
+      master_data_services_->as_services();
 
-  node_service_ = CreateNodeService(
-      NodeServiceContext{.executor_ = executor_,
-                         .session_service_ = *master_data_services_,
-                         .attribute_service_ = *master_data_services_,
-                         .view_service_ = *master_data_services_,
-                         .monitored_item_service_ = *master_data_services_,
-                         .method_service_ = *master_data_services_,
-                         .scada_client_ = scada_client});
+  scada::client scada_client{audited_scada_services};
+
+  node_service_ = CreateNodeService(NodeServiceContext{
+      .executor_ = executor_,
+      .session_service_ = *audited_scada_services.session_service,
+      .attribute_service_ = *audited_scada_services.attribute_service,
+      .view_service_ = *audited_scada_services.view_service,
+      .monitored_item_service_ = *audited_scada_services.monitored_item_service,
+      .method_service_ = *audited_scada_services.method_service,
+      .scada_client_ = scada_client});
 
   AliasResolver alias_resolver = CreateAliasResolver(*node_service_, logger_);
 
@@ -174,7 +178,7 @@ void ClientApplication::StartAfterLoginCompleted() {
       .executor_ = executor_,
       .logger_ = logger_,
       .profile_ = *profile_,
-      .services_ = master_data_services_->as_services(),
+      .services_ = audited_scada_services,
       .controller_registry_ = *controller_registry_,
       .selection_commands_ = core_module_->selection_commands()});
 
@@ -182,20 +186,21 @@ void ClientApplication::StartAfterLoginCompleted() {
       {.executor_ = executor_,
        .alias_resolver_ = alias_resolver,
        .node_service_ = *node_service_,
-       .services_ = master_data_services_->as_services(),
+       .services_ = audited_scada_services,
        .node_event_provider_ = event_module_->node_event_provider()});
 
   auto progress_host = std::make_shared<ProgressHostImpl>();
   singletons_.emplace(progress_host);
 
-  task_manager_ = std::make_shared<TaskManagerImpl>(
-      TaskManagerImplContext{.executor_ = executor_,
-                             .node_service_ = *node_service_,
-                             .attribute_service_ = *master_data_services_,
-                             .node_management_service_ = *master_data_services_,
-                             .local_events_ = event_module_->local_events(),
-                             .profile_ = *profile_,
-                             .progress_host_ = *progress_host});
+  task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
+      .executor_ = executor_,
+      .node_service_ = *node_service_,
+      .attribute_service_ = *audited_scada_services.attribute_service,
+      .node_management_service_ =
+          *audited_scada_services.node_management_service,
+      .local_events_ = event_module_->local_events(),
+      .profile_ = *profile_,
+      .progress_host_ = *progress_host});
 
   speech_ = std::make_unique<Speech>();
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
@@ -203,7 +208,7 @@ void ClientApplication::StartAfterLoginCompleted() {
   connection_state_reporter_ =
       std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{
           .executor_ = executor_,
-          .session_service_ = *master_data_services_,
+          .session_service_ = *audited_scada_services.session_service,
           .local_events_ = event_module_->local_events()});
 
   write_service_ = std::make_unique<WriteServiceImpl>(
@@ -216,7 +221,7 @@ void ClientApplication::StartAfterLoginCompleted() {
                                  .profile_ = *profile_}));
 
   singletons_.emplace(std::make_shared<DebuggerModule>(DebuggerModuleContext{
-      .session_service_ = *master_data_services_,
+      .session_service_ = *audited_scada_services.session_service,
       .global_commands_ = core_module_->global_commands(),
       .selection_commands_ = core_module_->selection_commands()}));
 
@@ -268,7 +273,7 @@ void ClientApplication::StartAfterLoginCompleted() {
       std::make_shared<ControllerFactoryImpl>(ControllerFactoryImpl{
           .executor_ = executor_,
           .profile_ = *profile_,
-          .master_data_services_ = *master_data_services_,
+          .scada_services_ = audited_scada_services,
           .task_manager_ = *task_manager_,
           .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
@@ -283,7 +288,7 @@ void ClientApplication::StartAfterLoginCompleted() {
           .executor_ = executor_,
           .profile_ = *profile_,
           .quit_handler_ = std::bind_front(&ClientApplication::Quit, this),
-          .master_data_services_ = *master_data_services_,
+          .scada_services_ = audited_scada_services,
           .login_handler_ = std::bind_front(&ClientApplication::Login, this),
           .task_manager_ = *task_manager_,
           .event_fetcher_ = event_module_->event_fetcher(),
@@ -328,34 +333,15 @@ promise<void> ClientApplication::Login() {
                                 }));
 }
 
-void ClientApplication::OnLoginCompleted(DataServices services) {
+void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
   logger_->Write(LogSeverity::Normal, "Login completed");
 
-  // |Audit| doesn't own underlying services.
-  struct Holder {
-    Holder(MetricService& metric_service,
-           DataServices data_services,
-           Tracer& tracer)
-        : data_services_{std::move(data_services)},
-          audit_{Audit::Create(
-              AuditContext{metric_service, *data_services_.attribute_service_,
-                           *data_services_.view_service_, tracer})} {}
+  auto audited_services =
+      AuditScadaServices(data_services.CreateSharedServices(), *metric_service_,
+                         core_module_->tracer());
 
-    DataServices data_services_;
-    std::shared_ptr<Audit> audit_;
-  };
-
-  assert(core_module_);
-
-  auto holder = std::make_shared<Holder>(*metric_service_, services,
-                                         core_module_->tracer());
-
-  std::shared_ptr<Audit> audit{holder, holder->audit_.get()};
-
-  services.attribute_service_ = audit;
-  services.view_service_ = audit;
-
-  master_data_services_->SetServices(std::move(services));
+  master_data_services_->SetServices(
+      DataServices::FromSharedServices(audited_services));
 }
 
 promise<void> ClientApplication::Quit() {

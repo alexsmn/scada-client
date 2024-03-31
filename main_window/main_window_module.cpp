@@ -72,31 +72,35 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     if (login) {
       login_handler_();
     } else {
-      master_data_services_.SetServices({});
+      // TODO: Logoff.
     }
   };
 
   auto main_commands_factory = [this, login_handler](
                                    MainWindow& main_window,
                                    DialogService& dialog_service) {
+    assert(scada_services_.session_service);
     return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
-        main_window, task_manager_, dialog_service, master_data_services_,
-        event_fetcher_, node_service_, local_events_, favourites_, speech_,
-        profile_, *main_window_manager_, login_handler, global_commands_});
+        main_window, task_manager_, dialog_service,
+        *scada_services_.session_service, event_fetcher_, node_service_,
+        local_events_, favourites_, speech_, profile_, *main_window_manager_,
+        login_handler, global_commands_});
   };
 
   auto main_menu_factory =
       [this](MainWindow& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
+        assert(scada_services_.session_service);
+
         return std::make_unique<MainMenuModel>(MainMenuContext{
             .executor_ = executor_,
             .main_window_manager_ = *main_window_manager_,
             .main_window_ = main_window,
             .favourites_ = favourites_,
             .file_cache_ = file_cache_,
-            .admin_ =
-                master_data_services_.HasPrivilege(scada::Privilege::Configure),
+            .admin_ = scada_services_.session_service->HasPrivilege(
+                scada::Privilege::Configure),
             .profile_ = profile_,
             .view_manager_ = view_manager,
             .command_handler_ = global_commands,
@@ -111,33 +115,38 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                                               command_handler);
   };
 
+  assert(scada_services_.session_service);
+
   auto configuration_commands = std::make_shared<ConfigurationCommands>(
       selection_commands_, executor_, timed_data_service_,
-      master_data_services_, profile_, local_events_, task_manager_);
+      *scada_services_.session_service, profile_, local_events_, task_manager_);
 
   singletons_.emplace(configuration_commands);
   configuration_commands->Register();
 
-  selection_commands_.AddCommand(
-      ChangePasswordCommandBuilder{.local_events_ = local_events_,
-                                   .profile_ = profile_,
-                                   .session_service_ = master_data_services_}
-          .Build());
+  selection_commands_.AddCommand(ChangePasswordCommandBuilder{
+      .local_events_ = local_events_,
+      .profile_ = profile_,
+      .session_service_ = *scada_services_.session_service}
+                                     .Build());
+
+  assert(scada_services_.session_service);
 
   selection_commands_object_ =
       std::make_shared<SelectionCommands>(SelectionCommandsContext{
-          executor_, task_manager_, master_data_services_, event_fetcher_,
-          file_cache_, profile_, *main_window_manager_, node_service_,
-          selection_commands_});
+          executor_, task_manager_, *scada_services_.session_service,
+          event_fetcher_, file_cache_, profile_, *main_window_manager_,
+          node_service_, selection_commands_});
 
   auto status_bar_model =
-      StatusBarModelBuilder{executor_,      master_data_services_,
+      StatusBarModelBuilder{executor_,      *scada_services_.session_service,
                             event_fetcher_, local_events_,
                             node_service_,  profile_}
           .Build();
 
   auto connection_info_provider = [this] {
-    return master_data_services_.GetHostName();
+    assert(scada_services_.session_service);
+    return scada_services_.session_service->GetHostName();
   };
 
   return MainWindowContext{
@@ -197,11 +206,16 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   opened_view->Init();
 
+  assert(scada_services_.session_service);
+  assert(scada_services_.node_management_service);
+  assert(scada_services_.history_service);
+
   auto opened_view_commands =
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
           executor_, selection_commands_object_, task_manager_,
-          master_data_services_, master_data_services_, event_fetcher_,
-          master_data_services_, timed_data_service_, node_service_,
+          *scada_services_.session_service,
+          *scada_services_.node_management_service, event_fetcher_,
+          *scada_services_.history_service, timed_data_service_, node_service_,
           *action_manager_, local_events_, file_cache_, profile_,
           *main_window_manager_, create_tree_});
 
