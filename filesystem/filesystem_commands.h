@@ -10,12 +10,13 @@ class DialogService;
 class Executor;
 class FileManager;
 class FileRegistry;
-class MainWindow;
+class MainWindowInterface;
 class NodeRef;
 class TaskManager;
 
 struct OpenFileCommandContext {
-  MainWindow* main_window;
+  MainWindowInterface* main_window;
+  DialogService& dialog_service;
   std::shared_ptr<Executor> executor;
   NodeRef file_node;
   aui::KeyModifiers key_modifiers;

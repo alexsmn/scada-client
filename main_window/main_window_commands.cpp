@@ -136,7 +136,9 @@ MainWindowCommands::~MainWindowCommands() {}
 CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
   auto* active_view = main_window_.GetActiveView();
   if (active_view) {
-    if (auto* handler = active_view->commands->GetCommandHandler(command_id)) {
+    // TODO: Refactor to remove the static cast.
+    if (auto* handler = static_cast<OpenedView*>(active_view)
+                            ->commands->GetCommandHandler(command_id)) {
       return handler;
     }
   }
@@ -219,7 +221,7 @@ bool MainWindowCommands::IsCommandEnabled(unsigned command_id) const {
 
     case ID_VIEW_ADD_TO_FAVOURITES:
     case ID_VIEW_CHANGE_TITLE:
-      return active_view && !active_view->window_info().is_pane();
+      return active_view && !active_view->GetWindowInfo().is_pane();
 
     case ID_LOGIN:
       return !session_service_.IsConnected();
@@ -238,7 +240,7 @@ bool MainWindowCommands::IsCommandEnabled(unsigned command_id) const {
 bool MainWindowCommands::IsCommandChecked(unsigned command_id) const {
   if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
     return (window_info->flags & WIN_SING) &&
-           main_window_.FindOpenedViewByType(*window_info);
+           main_window_.FindViewByType(window_info->name);
   }
 
   if (bool Profile::*option = GetOption(command_id))
@@ -279,9 +281,10 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
 #if defined(UI_QT)
     case ID_WINDOW_SPLIT_HORZ:
     case ID_WINDOW_SPLIT_VERT:
-      if (auto* active_view = main_window_.GetActiveView())
+      if (auto* active_view = main_window_.GetActiveView()) {
         main_window_.SplitView(*active_view,
                                command_id == ID_WINDOW_SPLIT_HORZ);
+      }
       return;
 #endif
 
@@ -330,8 +333,11 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
 }
 
 promise<> MainWindowCommands::RenameCurrentPage() {
+  const std::u16string& current_page_title =
+      main_window_.GetCurrentPage().title;
+
   return RunPromptDialog(dialog_service_, u"Имя:", u"Переименование",
-                         main_window_.current_page().title)
+                         current_page_title)
       .then([this](const std::u16string& title) {
         main_window_.SetCurrentPageTitle(title);
       });
@@ -339,14 +345,12 @@ promise<> MainWindowCommands::RenameCurrentPage() {
 
 promise<> MainWindowCommands::ShowRenameWindowDialog() {
   auto* view = main_window_.GetActiveView();
-  if (!view)
+  if (!view || view->GetWindowInfo().is_pane()) {
     return MakeRejectedPromise();
-
-  if (view->window_info().is_pane())
-    return MakeRejectedPromise();
+  }
 
   return RunPromptDialog(dialog_service_, u"Имя:", u"Переименовать",
                          view->GetWindowTitle())
       // TODO: Capture weak pointer.
-      .then(std::bind_front(&OpenedView::SetUserTitle, view));
+      .then(std::bind_front(&OpenedViewInterface::SetWindowTitle, view));
 }

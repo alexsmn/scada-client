@@ -18,22 +18,20 @@ ViewManager::~ViewManager() {
 }
 
 OpenedView* ViewManager::FindViewByID(int id) const {
-  auto i = std::find_if(
-      views_.begin(), views_.end(),
-      [id](OpenedView* opened_view) { return opened_view->window_id() == id; });
+  auto i = std::ranges::find(
+      views_, id, [](const OpenedView* view) { return view->window_id(); });
   return i == views_.end() ? nullptr : *i;
 }
 
 bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
-  auto i = std::find(added_views_.begin(), added_views_.end(), &opened_view);
+  auto i = std::ranges::find(added_views_, &opened_view);
   return i != added_views_.end();
 }
 
-OpenedView* ViewManager::FindViewByType(const WindowInfo& window_info) const {
-  auto i = std::find_if(views_.begin(), views_.end(),
-                        [&window_info](OpenedView* opened_view) {
-                          return &opened_view->window_info() == &window_info;
-                        });
+OpenedView* ViewManager::FindViewByType(std::string_view window_type) const {
+  auto i = std::ranges::find(views_, window_type, [](const OpenedView* view) {
+    return view->window_info().name;
+  });
   return i == views_.end() ? nullptr : *i;
 }
 
@@ -47,19 +45,19 @@ void ViewManager::SetActiveView(OpenedView* view) {
 }
 
 void ViewManager::DestroyView(OpenedView& view) {
-  if (&view == active_view_)
+  if (&view == active_view_) {
     SetActiveView(nullptr);
+  }
 
   {
-    auto i = std::find(views_.begin(), views_.end(), &view);
+    auto i = std::ranges::find(views_, &view);
     assert(i != views_.end());
     views_.erase(i);
   }
 
-  {
-    auto i = std::find(added_views_.begin(), added_views_.end(), &view);
-    if (i != added_views_.end())
-      added_views_.erase(i);
+  if (auto i = std::ranges::find(added_views_, &view);
+      i != added_views_.end()) {
+    added_views_.erase(i);
   }
 
   delegate_.OnViewClosed(view);
@@ -68,7 +66,7 @@ void ViewManager::DestroyView(OpenedView& view) {
 }
 
 OpenedView* ViewManager::CreateView(WindowDefinition& def,
-                                    OpenedView* after_view) {
+                                    const OpenedView* after_view) {
   std::unique_ptr<OpenedView> opened_view;
   try {
     opened_view = delegate_.OnCreateView(def);
@@ -76,15 +74,17 @@ OpenedView* ViewManager::CreateView(WindowDefinition& def,
     return nullptr;
   }
 
-  if (!opened_view)
+  if (!opened_view) {
     return nullptr;
+  }
 
   auto& opened_view_ref = *views_.emplace_back(opened_view.release());
 
   // TODO: Process |after_view|.
 
-  if (!opening_layout_)
+  if (!opening_layout_) {
     AddView(opened_view_ref);
+  }
 
   return &opened_view_ref;
 }
@@ -132,8 +132,8 @@ void ViewManager::ClosePage() {
 }
 
 OpenedView* ViewManager::OpenView(const WindowDefinition& def,
-                                  bool make_active,
-                                  OpenedView* after_view) {
+                                  bool activate,
+                                  const OpenedView* after_view) {
   const auto* window_info = FindWindowInfoByName(def.type);
   if (!window_info) {
     LOG(ERROR) << "Window type not found: " << def.type;
@@ -143,15 +143,16 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
   WindowDefinition* window_def = nullptr;
 
   if (window_info->is_pane()) {
-    if (auto* opened_view = FindViewByType(*window_info)) {
-      if (make_active)
+    if (auto* opened_view = FindViewByType(window_info->name)) {
+      if (activate) {
         ActivateView(*opened_view);
+      }
       return opened_view;
     }
 
     // If window is not found try to find stored invisible definition for
     // this window type.
-    Page& page = current_page();
+    const Page& page = current_page();
     for (int i = 0; i < page.GetWindowCount(); ++i) {
       WindowDefinition& win = page.GetWindow(i);
       if (win.type == def.type) {
@@ -178,7 +179,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
 
   opened_view->SetModified(true);
 
-  if (make_active) {
+  if (activate) {
     ActivateView(*opened_view);
   }
 

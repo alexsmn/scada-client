@@ -79,16 +79,22 @@ ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info,
 }
 
 ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id) {
-  assert(g_static_controllers.Pointer());
-  const auto& map = g_static_controllers.Get();
-  if (auto i = map.find(command_id); i != map.end()) {
-    return i->second;
+  if (const ControllerRegistrarMap* static_map =
+          g_static_controllers.Pointer()) {
+    if (auto i = static_map->find(command_id); i != static_map->end()) {
+      return i->second;
+    }
   }
 
-  assert(g_controller_registry);
-  const auto& registrars = g_controller_registry->registrars_;
-  auto i = registrars.find(command_id);
-  return i == registrars.end() ? nullptr : i->second;
+  // Can be null in tests.
+  if (g_controller_registry) {
+    const auto& registrars = g_controller_registry->registrars_;
+    if (auto i = registrars.find(command_id); i != registrars.end()) {
+      return i->second;
+    }
+  }
+
+  return nullptr;
 }
 
 ControllerRegistrarBase* FindControllerRegistrar(std::string_view name) {

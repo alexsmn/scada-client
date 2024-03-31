@@ -159,7 +159,7 @@ void PageMenuModel::MenuWillShow() {
   int index = 0;
   for (const auto& [page_id, page] : profile_.pages) {
     AddRadioItem(0, page.title, 0);
-    if (main_window_.current_page().id == page_id) {
+    if (main_window_.GetCurrentPage().id == page_id) {
       active_index_ = index;
     }
     ++index;
@@ -173,14 +173,16 @@ void PageMenuModel::ActivatedAt(int index) {
 }
 
 void PageMenuModel::OpenPage(const Page& page) {
+  const Page& current_page = main_window_.GetCurrentPage();
+
   // check revert page
-  bool revert = page.id == main_window_.current_page().id;
+  bool revert = page.id == current_page.id;
   if (!revert) {
     OpenPageHelper(page, false);
     return;
   }
 
-  std::u16string title = main_window_.current_page().GetTitle();
+  std::u16string title = current_page.GetTitle();
   std::u16string message =
       base::StringPrintf(u"Вернуться к сохраненному листу %ls?", title.c_str());
   dialog_service_.RunMessageBox(message, {}, MessageBoxMode::QuestionYesNo)
@@ -221,7 +223,7 @@ void WindowMenuModel::MenuWillShow() {
   int index = 0;
   for (const OpenedView* opened_view : view_manager_.views()) {
     AddRadioItem(0, opened_view->GetWindowTitle(), 0);
-    if (opened_view == main_window_.active_view()) {
+    if (opened_view == main_window_.GetActiveView()) {
       active_index_ = index;
     }
     ++index;

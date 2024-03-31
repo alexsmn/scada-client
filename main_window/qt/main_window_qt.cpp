@@ -94,8 +94,8 @@ QRect GetDefaultBounds(const QWidget* window) {
 
 }  // namespace
 
-MainWindowQt::MainWindowQt(MainWindowContext&& context)
-    : MainWindow{std::move(context), dialog_service_} {
+MainWindow::MainWindow(MainWindowContext&& context)
+    : BaseMainWindow{std::move(context), dialog_service_} {
   const MainWindowDef& prefs = GetPrefs();
 
   setGeometry(prefs.bounds.isNull() ? GetDefaultBounds(this) : prefs.bounds);
@@ -109,7 +109,7 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   CreateToolbar();
   CreateStatusBar();
 
-  if (!IsHideForTesting()) {
+  if (!g_hide_for_testing) {
     // Must show window before loading layout to let |restoreState()| work
     // correctly.
     switch (prefs.state) {
@@ -136,7 +136,7 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   });
 }
 
-MainWindowQt::~MainWindowQt() {
+MainWindow::~MainWindow() {
   action_manager_.Unsubscribe(*this);
 
   view_manager_->ClosePage();
@@ -144,7 +144,7 @@ MainWindowQt::~MainWindowQt() {
   view_manager_.reset();
 }
 
-void MainWindowQt::UpdateTitle() {
+void MainWindow::UpdateTitle() {
   QString server =
       QString::fromStdU16String(FormatHostName(connection_info_provider_()));
   QString page =
@@ -153,7 +153,7 @@ void MainWindowQt::UpdateTitle() {
   setWindowTitle(title);
 }
 
-void MainWindowQt::CreateMenuBar() {
+void MainWindow::CreateMenuBar() {
   /*auto* settings_menu = new QMenu(tr("Settings"), this);
   auto* style_menu = new QMenu(tr("Style"), this);
   for (auto& style : QStyleFactory::keys())
@@ -180,7 +180,7 @@ void MainWindowQt::CreateMenuBar() {
   }
 }
 
-void MainWindowQt::CreateStatusBar() {
+void MainWindow::CreateStatusBar() {
   setStatusBar(new QStatusBar(this));
   statusBar()->setVisible(GetPrefs().status_bar);
 
@@ -188,7 +188,7 @@ void MainWindowQt::CreateStatusBar() {
       *statusBar(), *status_bar_model_, progress_host_);
 }
 
-void MainWindowQt::CreateToolbar() {
+void MainWindow::CreateToolbar() {
   for (auto* action_info : action_manager_.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
     auto* action = new QAction(
@@ -250,9 +250,9 @@ void MainWindowQt::CreateToolbar() {
   addToolBar(Qt::TopToolBarArea, toolbar_);
 }
 
-void MainWindowQt::SetWindowFlashing(bool flashing) {}
+void MainWindow::SetWindowFlashing(bool flashing) {}
 
-void MainWindowQt::OnSelectionChanged() {
+void MainWindow::OnSelectionChanged() {
   for (const auto& [command_id, action] : action_map_) {
     UpdateAction(*action, command_id, ActionChangeMask::AllButTitle);
   }
@@ -274,30 +274,28 @@ void MainWindowQt::OnSelectionChanged() {
   }
 }
 
-void MainWindowQt::SetToolbarPosition(unsigned position) {}
+void MainWindow::SetToolbarPosition(unsigned position) {}
 
-void MainWindowQt::OnShowTabPopupMenu(OpenedView& view,
-                                      const aui::Point& point) {
+void MainWindow::OnShowTabPopupMenu(OpenedView& view, const aui::Point& point) {
   QMenu menu;
   BuildMenu(menu, *tab_popup_menu_);
   menu.exec(point);
 }
 
-QAction* MainWindowQt::FindAction(unsigned command_id) {
+QAction* MainWindow::FindAction(unsigned command_id) {
   auto i = action_map_.find(command_id);
   return i == action_map_.end() ? nullptr : i->second;
 }
 
-void MainWindowQt::OnActionChanged(Action& action,
-                                   ActionChangeMask change_mask) {
+void MainWindow::OnActionChanged(Action& action, ActionChangeMask change_mask) {
   auto i = action_map_.find(action.command_id());
   if (i != action_map_.end())
     UpdateAction(*i->second, i->first, change_mask);
 }
 
-void MainWindowQt::UpdateAction(QAction& action,
-                                unsigned command_id,
-                                ActionChangeMask change_mask) {
+void MainWindow::UpdateAction(QAction& action,
+                              unsigned command_id,
+                              ActionChangeMask change_mask) {
   if (static_cast<unsigned>(change_mask) &
       static_cast<unsigned>(ActionChangeMask::Title)) {
     if (const auto* a = action_manager_.FindAction(command_id)) {
@@ -315,7 +313,7 @@ void MainWindowQt::UpdateAction(QAction& action,
   }
 }
 
-void MainWindowQt::UpdateMenuActions(QMenu& menu) {
+void MainWindow::UpdateMenuActions(QMenu& menu) {
   for (QAction* action : menu.actions()) {
     auto i = action_command_ids_.find(action);
     if (i != action_command_ids_.end())
@@ -323,13 +321,13 @@ void MainWindowQt::UpdateMenuActions(QMenu& menu) {
   }
 }
 
-void MainWindowQt::closeEvent(QCloseEvent* event) {
+void MainWindow::closeEvent(QCloseEvent* event) {
   MainWindowDef& prefs = GetPrefs();
   prefs.bounds = geometry();
   prefs.state = isMaximized() ? MainWindowDef::State::kMaximized
                               : MainWindowDef::State::kNormal;
 
-  // ModusView-s must be destroyed before MainWindowQt destruction, to avoid an
+  // ModusView-s must be destroyed before MainWindow destruction, to avoid an
   // exception of unknown nature.
   BeforeClose();
 
@@ -338,10 +336,10 @@ void MainWindowQt::closeEvent(QCloseEvent* event) {
   QMainWindow::closeEvent(event);
 }
 
-void MainWindowQt::ShowPopupMenu(aui::MenuModel* merge_menu,
-                                 unsigned resource_id,
-                                 const aui::Point& point,
-                                 bool right_click) {
+void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
+                               unsigned resource_id,
+                               const aui::Point& point,
+                               bool right_click) {
   if (resource_id == 0) {
     QMenu menu;
     if (merge_menu && merge_menu->GetItemCount() != 0) {
@@ -372,4 +370,10 @@ void MainWindowQt::ShowPopupMenu(aui::MenuModel* merge_menu,
   }
   BuildMenu(menu, menu_model);
   menu.exec(point);
+}
+
+std::unique_ptr<OpenedView> MainWindow::OnCreateView(
+    WindowDefinition& window_def) {
+  ++g_open_window_count_for_testing;
+  return opened_view_factory_(*this, window_def);
 }

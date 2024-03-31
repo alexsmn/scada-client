@@ -2,10 +2,10 @@
 
 #include "base/auto_reset.h"
 #include "common_resources.h"
+#include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"
 #include "profile/page.h"
-#include "controller/window_info.h"
 
 #include <wt/WApplication.h>
 #include <wt/WBorderLayout.h>
@@ -117,7 +117,7 @@ OpenedView* ViewManagerWt::FindViewByWidget(const Wt::WWidget* widget) {
   return i != views_.end() ? *i : nullptr;
 }
 
-void ViewManagerWt::ActivateView(OpenedView& opened_view) {}
+void ViewManagerWt::ActivateView(const OpenedView& opened_view) {}
 
 void ViewManagerWt::CloseView(OpenedView& opened_view) {
   root_pane_.RemoveView(opened_view);

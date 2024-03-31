@@ -20,14 +20,16 @@ class ViewManager {
   ViewManager& operator=(const ViewManager&) = delete;
 
   // WARNING: List is required for deletion during iterator.
-  typedef std::list<OpenedView*> Views;
+  using Views = std::list<OpenedView*>;
   const Views& views() const { return views_; }
-  OpenedView* FindViewByType(const WindowInfo& window_info) const;
 
-  OpenedView* CreateView(WindowDefinition& def, OpenedView* after_view);
+  OpenedView* FindViewByType(std::string_view window_type) const;
+
+  OpenedView* CreateView(WindowDefinition& def, const OpenedView* after_view);
+
   OpenedView* OpenView(const WindowDefinition& def,
-                       bool make_active,
-                       OpenedView* after_view);
+                       bool activate,
+                       const OpenedView* after_view);
 
   Page& current_page() const { return *current_page_; }
   bool is_closing_page() const { return closing_page_; }
@@ -36,7 +38,7 @@ class ViewManager {
   void ClosePage();
 
   virtual OpenedView* GetActiveView() = 0;
-  virtual void ActivateView(OpenedView& view) = 0;
+  virtual void ActivateView(const OpenedView& view) = 0;
   virtual void CloseView(OpenedView& view) = 0;
 
   virtual void SetViewTitle(OpenedView& view, const std::u16string& title) = 0;

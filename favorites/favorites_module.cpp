@@ -43,13 +43,11 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
       BasicCommand<GlobalCommandContext>{ID_VIEW_ADD_TO_FAVOURITES}
           .set_execute_handler([this](const GlobalCommandContext& context) {
             auto* view = context.main_window.GetActiveView();
-            if (!view || view->window_info().is_pane()) {
+            if (!view || view->GetWindowInfo().is_pane()) {
               return;
             }
 
-            view->Save();
-
-            auto definition = view->window_def();
+            auto definition = view->Save();
             definition.title = view->GetWindowTitle();
 
             ShowAddFavouritesDialog(context.dialog_service,

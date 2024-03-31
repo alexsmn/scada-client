@@ -21,7 +21,7 @@
 #include "core/selection_command_context.h"
 #include "events/node_event_provider.h"
 #include "filesystem/file_cache.h"
-#include "main_window.h"
+#include "main_window/main_window_interface.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view.h"
@@ -253,7 +253,7 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
   return nullptr;
 }
 
-promise<OpenedView*> SelectionCommands::OpenViewContainingNode(
+promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
     int view_type_id,
     const NodeRef& node) {
   assert(main_window_);
@@ -265,7 +265,7 @@ promise<OpenedView*> SelectionCommands::OpenViewContainingNode(
   if (cached_items.empty()) {
     auto msg = base::StringPrintf(u"Схема для объекта \"%ls\" не найдена.",
                                   ToString16(node.display_name()).c_str());
-    return ToRejectedPromise<OpenedView*>(
+    return ToRejectedPromise<OpenedViewInterface*>(
         dialog_service_->RunMessageBox(msg, u"Схема", MessageBoxMode::Info));
   }
 
@@ -273,26 +273,27 @@ promise<OpenedView*> SelectionCommands::OpenViewContainingNode(
   const FileCache::DisplayItem& cached_item = cached_items.front();
   const std::filesystem::path& path = cached_item.first;
 
-  scada::status_promise<OpenedView*> open_promise;
+  scada::status_promise<OpenedViewInterface*> open_promise;
 
   if (auto* view = main_window_manager_.FindOpenedViewByFilePath(path); view) {
     view->Activate();
-    open_promise = make_resolved_promise(view);
+    open_promise = make_resolved_promise<OpenedViewInterface*>(view);
   } else {
     WindowDefinition win(GetWindowInfo(view_type_id));
     win.path = path;
-    open_promise = main_window_->OpenView(win, true);
+    open_promise = main_window_->OpenView(win);
   }
 
-  return open_promise.then([node_id = node.node_id()](OpenedView* opened_view) {
-    opened_view->SetSelection(node_id);
-    return opened_view;
-  });
+  return open_promise.then(
+      [node_id = node.node_id()](OpenedViewInterface* opened_view) {
+        opened_view->Select(node_id);
+        return opened_view;
+      });
 }
 
-void SelectionCommands::SetContext(MainWindow* main_window,
+void SelectionCommands::SetContext(MainWindowInterface* main_window,
                                    DialogService* dialog_service,
-                                   OpenedView* opened_view,
+                                   OpenedViewInterface* opened_view,
                                    Controller* controller,
                                    SelectionModel* selection) {
   main_window_ = main_window;
@@ -303,8 +304,9 @@ void SelectionCommands::SetContext(MainWindow* main_window,
 }
 
 void SelectionCommands::DeleteSelection() {
-  if (!session_service_.HasPrivilege(scada::Privilege::Configure))
+  if (!session_service_.HasPrivilege(scada::Privilege::Configure)) {
     return;
+  }
 
   std::vector<NodeRef> nodes;
 
@@ -316,12 +318,14 @@ void SelectionCommands::DeleteSelection() {
         [&node_service = node_service_](const scada::NodeId& node_id) {
           return node_service.GetNode(node_id);
         });
+
   } else if (auto node = selection_->node()) {
     nodes.emplace_back(std::move(node));
   }
 
-  if (nodes.empty())
+  if (nodes.empty()) {
     return;
+  }
 
   auto message =
       nodes.size() == 1
@@ -335,10 +339,13 @@ void SelectionCommands::DeleteSelection() {
       .then(BindPromiseExecutor(
           executor_, [&task_manager = task_manager_,
                       nodes = std::move(nodes)](MessageBoxResult result) {
-            if (result != MessageBoxResult::Yes)
+            if (result != MessageBoxResult::Yes) {
               return;
-            for (auto& node : nodes)
+            }
+
+            for (const NodeRef& node : nodes) {
               DeleteTreeRecordsRecursive(task_manager, node);
+            }
           }));
 }
 

@@ -2,10 +2,10 @@
 
 #include "base/auto_reset.h"
 #include "common_resources.h"
+#include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"
 #include "profile/page.h"
-#include "controller/window_info.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
@@ -98,7 +98,7 @@ OpenedView* ViewManager2Wt::FindViewByWidget(const Wt::WWidget* widget) {
   return i != views_.end() ? *i : nullptr;
 }
 
-void ViewManager2Wt::ActivateView(OpenedView& opened_view) {}
+void ViewManager2Wt::ActivateView(const OpenedView& opened_view) {}
 
 void ViewManager2Wt::CloseView(OpenedView& opened_view) {
   // TODO:
@@ -114,8 +114,9 @@ void ViewManager2Wt::SetViewTitle(OpenedView& opened_view,
 void ViewManager2Wt::SaveLayout(PageLayout& layout) {}
 
 void ViewManager2Wt::SplitView(OpenedView& view, bool vertically) {
-  if (view.window_info().is_pane())
+  if (view.window_info().is_pane()) {
     return;
+  }
 }
 
 void ViewManager2Wt::AddView(OpenedView& view) {}

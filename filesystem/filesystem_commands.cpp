@@ -32,7 +32,8 @@ const char16_t kAddFileDirectoryTitle[] = u"Создать папку";
 }  // namespace
 
 scada::status_promise<void> OpenJsonFile(const std::filesystem::path& path,
-                                         MainWindow* main_window,
+                                         MainWindowInterface* main_window,
+                                         DialogService& dialog_service,
                                          aui::KeyModifiers key_modifiers) {
   if (!main_window) {
     return make_resolved_promise();
@@ -47,7 +48,7 @@ scada::status_promise<void> OpenJsonFile(const std::filesystem::path& path,
   }
 
   if (!window_def) {
-    return ToVoidPromise(main_window->GetDialogService().RunMessageBox(
+    return ToVoidPromise(dialog_service.RunMessageBox(
         u"Файл имеет неверный формат.", kOpenFileTitle, MessageBoxMode::Error));
   }
 
@@ -66,14 +67,15 @@ scada::status_promise<void> OpenFileCommandImpl::OpenFile(
   }
 
   if (path.extension() == ".workplace") {
-    return OpenJsonFile(path, context.main_window, context.key_modifiers);
+    return OpenJsonFile(path, context.main_window, context.dialog_service,
+                        context.key_modifiers);
   }
 
   auto* file_type =
       file_registry.FindTypeByExtension(path.extension().string());
   auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
   if (!window_info) {
-    return ToVoidPromise(context.main_window->GetDialogService().RunMessageBox(
+    return ToVoidPromise(context.dialog_service.RunMessageBox(
         u"Неизвестный тип файла.", kOpenFileTitle, MessageBoxMode::Error));
   }
 
@@ -87,8 +89,8 @@ scada::status_promise<void> OpenFileCommandImpl::Execute(
   return OpenFile(context).except(BindPromiseExecutor(
       context.executor,
       // TODO: `weak ptr` for main window.
-      [main_window = context.main_window](std::exception_ptr) {
-        return main_window->GetDialogService()
+      [&dialog_service = context.dialog_service](std::exception_ptr) {
+        return dialog_service
             .RunMessageBox(u"Не удалось загрузить файл с сервера.",
                            kOpenFileTitle, MessageBoxMode::Error)
             .then([](MessageBoxResult) {

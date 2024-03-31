@@ -49,6 +49,7 @@ class OpenedView final : private OpenedViewContext,
 
   Controller& controller() { return *controller_; }
   const WindowInfo& window_info() const { return window_info_; }
+  const WindowInfo& GetWindowInfo() const override { return window_info_; }
   WindowDefinition& window_def() { return window_def_; }
   int window_id() const { return window_def_.id; }
   MainWindow& main_window() const {
@@ -57,17 +58,17 @@ class OpenedView final : private OpenedViewContext,
   }
   bool locked() const { return locked_; }
 
-  UiView* view() { return view_.get(); }
+  UiView* view() const { return view_.get(); }
   UiView* ReleaseView() { return view_.release(); }
 
   void Print(PrintService& print_service);
 
   void Activate();
-  void SetSelection(const scada::NodeId& item_id);
-  ContentsModel* GetContentsModel();
-  void SetUserTitle(std::u16string_view title);
-  void Save();
-  std::u16string GetWindowTitle() const;
+  void Select(const scada::NodeId& node_id) override;
+  ContentsModel* GetContents() override;
+  void SetWindowTitle(std::u16string_view title) override;
+  WindowDefinition Save() override;
+  std::u16string GetWindowTitle() const override;
   virtual void Close() override;
 
   // ControllerDelegate

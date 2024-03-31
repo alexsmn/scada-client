@@ -16,30 +16,30 @@ using namespace ::testing;
 
 namespace {
 
+// Intentionally skip "Modus" and "Web", since they opens an ActiveX.
+static constexpr std::string_view kKnownWindowTypes[] = {
+    "CusTable",
+    "Event",
+    "EventJournal",
+    "Favorites",
+    "FileSystemView",
+    "Graph"
+    "Log",
+    "NewProps",
+    "Nodes",
+    "Params",
+    "Struct",
+    "Subsystems",
+    "Summ",
+    "Table",
+    "TableEditor",
+    "TimeVal",
+    "Transmission",
+    "Users",
+};
+
 Page MakeAllWindowsPage() {
   Page page;
-
-  // Intentionally skip "Modus" and "Web", since they opens an ActiveX.
-  constexpr std::string_view kKnownWindowTypes[] = {
-      "CusTable",
-      "Event",
-      "EventJournal",
-      "Favorites",
-      "FileSystemView",
-      "Graph"
-      "Log",
-      "NewProps",
-      "Nodes",
-      "Params",
-      "Struct",
-      "Subsystems",
-      "Summ",
-      "Table",
-      "TableEditor",
-      "TimeVal",
-      "Transmission",
-      "Users",
-  };
 
   for (std::string_view type : kKnownWindowTypes) {
     page.AddWindow(WindowDefinition{type});
@@ -109,4 +109,7 @@ TEST_F(ClientApplicationTest, OpenAllWindows) {
 
   app_.Start().get();
   app_.Quit().get();
+
+  EXPECT_EQ(MainWindow::GetOpenWindowCountForTesting(),
+            std::size(kKnownWindowTypes));
 }

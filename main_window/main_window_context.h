@@ -16,7 +16,7 @@ class CommandHandler;
 class DialogService;
 class Executor;
 class FileManager;
-class MainWindow;
+class MainWindowInterface;
 class MainWindowManager;
 class Profile;
 class ProgressHost;
@@ -33,20 +33,21 @@ struct MainWindowContext {
   Profile& profile_;
   OpenedViewFactory opened_view_factory_;
 
-  std::function<std::unique_ptr<CommandHandler>(MainWindow& main_window,
-                                                DialogService& dialog_service)>
+  std::function<std::unique_ptr<CommandHandler>(
+      MainWindowInterface& main_window,
+      DialogService& dialog_service)>
       main_commands_factory_;
 
   std::shared_ptr<SelectionCommands> selection_commands_;
   std::shared_ptr<aui::StatusBarModel> status_bar_model_;
 
   std::function<std::unique_ptr<aui::MenuModel>(
-      MainWindow& main_window,
+      MainWindowInterface& main_window,
       CommandHandler& command_handler)>
       context_menu_factory_;
 
   std::function<std::unique_ptr<aui::MenuModel>(
-      MainWindow& main_window,
+      MainWindowInterface& main_window,
       DialogService& dialog_service,
       ViewManager& view_manager,
       CommandHandler& command_handler,

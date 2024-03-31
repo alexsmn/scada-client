@@ -17,18 +17,17 @@
 #include "main_window/view_manager.h"
 #include "profile/profile.h"
 
-namespace {
-static bool g_hide_for_testing = false;
-}
+bool BaseMainWindow::g_hide_for_testing = false;
+int BaseMainWindow::g_open_window_count_for_testing = 0;
 
-MainWindow::MainWindow(MainWindowContext&& context,
-                       DialogService& dialog_service)
+BaseMainWindow::BaseMainWindow(MainWindowContext&& context,
+                               DialogService& dialog_service)
     : MainWindowContext{std::move(context)},
       commands_{main_commands_factory_(*this, dialog_service)},
       context_menu_model_{context_menu_factory_(*this, *commands_)},
       tab_popup_menu_{std::make_unique<TabPopupMenu>(*commands_)} {}
 
-void MainWindow::Init(ViewManager& view_manager) {
+void BaseMainWindow::Init(ViewManager& view_manager) {
   view_manager_ = &view_manager;
 
   const Page* page = nullptr;
@@ -46,16 +45,16 @@ void MainWindow::Init(ViewManager& view_manager) {
   OpenPage(*page);
 }
 
-MainWindow::~MainWindow() {}
+BaseMainWindow::~BaseMainWindow() {}
 
-void MainWindow::CleanupForTesting() {
+void BaseMainWindow::CleanupForTesting() {
   active_view_ = nullptr;
   active_data_view_ = nullptr;
 
   view_manager_->ClosePage();
 }
 
-void MainWindow::BeforeClose() {
+void BaseMainWindow::BeforeClose() {
   SaveCurrentPage();
 
   SetActiveView(nullptr);
@@ -64,16 +63,16 @@ void MainWindow::BeforeClose() {
   view_manager_->ClosePage();
 }
 
-MainWindowDef& MainWindow::GetPrefs() const {
+MainWindowDef& BaseMainWindow::GetPrefs() const {
   assert(window_id_ != 0);
   return profile_.GetMainWindow(window_id_);
 }
 
-void MainWindow::Close() {
+void BaseMainWindow::Close() {
   main_window_manager_.CloseMainWindow(window_id_);
 }
 
-void MainWindow::SetActiveView(OpenedView* view) {
+void BaseMainWindow::SetActiveView(OpenedView* view) {
   if (active_view_ == view) {
     return;
   }
@@ -108,21 +107,22 @@ void MainWindow::SetActiveView(OpenedView* view) {
   OnSelectionChanged();
 }
 
-void MainWindow::OpenPane(const WindowInfo& window_info, bool make_active) {
-  OpenView(WindowDefinition(window_info), make_active);
+void BaseMainWindow::OpenPane(const WindowInfo& window_info, bool activate) {
+  OpenView(WindowDefinition(window_info), activate);
 }
 
-void MainWindow::ClosePane(const WindowInfo& window_info) {
-  auto* opened_view = view_manager_->FindViewByType(window_info);
-  if (opened_view)
+void BaseMainWindow::ClosePane(const WindowInfo& window_info) {
+  auto* opened_view = view_manager_->FindViewByType(window_info.name);
+  if (opened_view) {
     CloseView(*opened_view);
+  }
 }
 
-void MainWindow::OnActiveViewChanged(OpenedView* opened_view) {
+void BaseMainWindow::OnActiveViewChanged(OpenedView* opened_view) {
   SetActiveView(opened_view);
 }
 
-void MainWindow::SetActiveDataView(OpenedView* view) {
+void BaseMainWindow::SetActiveDataView(OpenedView* view) {
   if (view == active_data_view_)
     return;
 
@@ -152,7 +152,7 @@ void MainWindow::SetActiveDataView(OpenedView* view) {
   }
 }
 
-OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
+OpenedView* BaseMainWindow::FindViewToRecycle(unsigned type) {
   const auto& views = view_manager_->views();
 
   auto i = std::ranges::find_if(views, [type](OpenedView* opened_view) {
@@ -164,7 +164,7 @@ OpenedView* MainWindow::FindViewToRecycle(unsigned type) {
   return i != views.end() ? *i : nullptr;
 }
 
-scada::status_promise<OpenedView*> MainWindow::OpenView(
+scada::status_promise<OpenedViewInterface*> BaseMainWindow::OpenView(
     const WindowDefinition& window_def,
     bool make_active) {
   promise<void> download_promise =
@@ -174,7 +174,7 @@ scada::status_promise<OpenedView*> MainWindow::OpenView(
 
   return download_promise
       // TODO: Fix captured `this` and run under the local executor.
-      .then([this, window_def, make_active] {
+      .then([this, window_def, make_active]() -> OpenedViewInterface* {
         const auto* window_info = FindWindowInfoByName(window_def.type);
         OpenedView* after_view = window_info && !window_info->is_pane()
                                      ? active_data_view()
@@ -183,7 +183,7 @@ scada::status_promise<OpenedView*> MainWindow::OpenView(
       });
 }
 
-void MainWindow::OnViewClosed(OpenedView& view) {
+void BaseMainWindow::OnViewClosed(OpenedView& view) {
   if (&view == active_data_view_) {
     SetActiveDataView(nullptr);
   }
@@ -213,7 +213,7 @@ void MainWindow::OnViewClosed(OpenedView& view) {
   }
 }
 
-void MainWindow::OpenPage(const Page& page) {
+void BaseMainWindow::OpenPage(const Page& page) {
   LOG(INFO) << "Open page " << page.id;
 
   view_manager_->OpenPage(page);
@@ -225,7 +225,7 @@ void MainWindow::OpenPage(const Page& page) {
   OnSelectionChanged();
 }
 
-void MainWindow::DeleteCurrentPage() {
+void BaseMainWindow::DeleteCurrentPage() {
   auto& page = current_page();
   profile_.pages.erase(page.id);
 
@@ -238,19 +238,19 @@ void MainWindow::DeleteCurrentPage() {
   OpenPage(*select_page);
 }
 
-const Page& MainWindow::current_page() const {
+const Page& BaseMainWindow::current_page() const {
   return view_manager_->current_page();
 }
 
-OpenedView* MainWindow::GetActiveView() {
+OpenedView* BaseMainWindow::GetActiveView() const {
   return active_view_;
 }
 
-OpenedView* MainWindow::GetActiveDataView() {
+OpenedView* BaseMainWindow::GetActiveDataView() const {
   return active_data_view_;
 }
 
-OpenedView* MainWindow::FindOpenedViewByFilePath(
+OpenedView* BaseMainWindow::FindOpenedViewByFilePath(
     const std::filesystem::path& path) {
   for (auto* opened_view : view_manager_->views()) {
     if (opened_view->window_def().path == path)
@@ -259,11 +259,12 @@ OpenedView* MainWindow::FindOpenedViewByFilePath(
   return nullptr;
 }
 
-OpenedView* MainWindow::FindOpenedViewByType(const WindowInfo& window_info) {
-  return view_manager_->FindViewByType(window_info);
+OpenedViewInterface* BaseMainWindow::FindViewByType(
+    std::string_view window_type) const {
+  return view_manager_->FindViewByType(window_type);
 }
 
-void MainWindow::SaveCurrentPage() {
+void BaseMainWindow::SaveCurrentPage() {
   LOG(INFO) << "Save page " << view_manager_->current_page().id;
 
   view_manager_->SavePage();
@@ -272,56 +273,54 @@ void MainWindow::SaveCurrentPage() {
   pages[view_manager_->current_page().id] = view_manager_->current_page();
 }
 
-std::unique_ptr<OpenedView> MainWindow::OnCreateView(
-    WindowDefinition& window_def) {
-  return opened_view_factory_(*this, window_def);
-}
-
-void MainWindow::OnViewTitleUpdated(OpenedView& view,
-                                    const std::u16string& title) {
+void BaseMainWindow::OnViewTitleUpdated(OpenedView& view,
+                                        const std::u16string& title) {
   view_manager_->SetViewTitle(view, title);
 }
 
-void MainWindow::ActivateView(OpenedView& view) {
-  view_manager_->ActivateView(view);
+void BaseMainWindow::ActivateView(const OpenedViewInterface& view) {
+  // TODO: Remove the static cast.
+  view_manager_->ActivateView(static_cast<const OpenedView&>(view));
 }
 
-void MainWindow::CloseView(OpenedView& view) {
+void BaseMainWindow::CloseView(OpenedView& view) {
   if (view_manager_->is_closing_page())
     return;
 
   view_manager_->CloseView(view);
 }
 
-void MainWindow::SetCurrentPageTitle(std::u16string_view title) {
+void BaseMainWindow::SetCurrentPageTitle(std::u16string_view title) {
   const_cast<Page&>(current_page()).title = title;
   UpdateTitle();
 }
 
-void MainWindow::AddContentsObserver(ContentsObserver& observer) {
+void BaseMainWindow::AddContentsObserver(ContentsObserver& observer) {
   contents_observers_.AddObserver(&observer);
 }
 
-void MainWindow::RemoveContentsObserver(ContentsObserver& observer) {
+void BaseMainWindow::RemoveContentsObserver(ContentsObserver& observer) {
   contents_observers_.RemoveObserver(&observer);
 }
 
-void MainWindow::OnContentsChanged(const std::set<scada::NodeId>& item_ids) {
+void BaseMainWindow::OnContentsChanged(
+    const std::set<scada::NodeId>& item_ids) {
   for (auto& o : contents_observers_)
     o.OnContentsChanged(item_ids);
 }
 
-void MainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
-                                        bool added) {
+void BaseMainWindow::OnContainedItemChanged(const scada::NodeId& item_id,
+                                            bool added) {
   for (auto& o : contents_observers_)
     o.OnContainedItemChanged(item_id, added);
 }
 
-void MainWindow::SplitView(OpenedView& view, bool vertically) {
-  view_manager_->SplitView(view, vertically);
+void BaseMainWindow::SplitView(OpenedViewInterface& view, bool vertically) {
+  // TODO: Remove the static cast.
+  view_manager_->SplitView(static_cast<OpenedView&>(view), vertically);
 }
 
-void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
+void BaseMainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
   aui::KeyModifiers key_modifiers{};
   if (::GetAsyncKeyState(VK_SHIFT)) {
     key_modifiers |= aui::ShiftModifier;
@@ -330,15 +329,6 @@ void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
     key_modifiers |= aui::ControlModifier;
   }
 
-  node_command_handler_(NodeCommandContext{this, node, key_modifiers});
-}
-
-// static
-bool MainWindow::IsHideForTesting() {
-  return g_hide_for_testing;
-}
-
-// static
-void MainWindow::SetHideForTesting() {
-  g_hide_for_testing = true;
+  node_command_handler_(
+      NodeCommandContext{this, GetDialogService(), node, key_modifiers});
 }

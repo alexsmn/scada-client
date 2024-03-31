@@ -18,7 +18,7 @@ class BasicCommandRegistry;
 class DialogService;
 class Favourites;
 class LocalEvents;
-class MainWindow;
+class MainWindowInterface;
 class MainWindowManager;
 class NodeEventProvider;
 class NodeService;
@@ -28,7 +28,7 @@ class TaskManager;
 struct GlobalCommandContext;
 
 struct MainWindowCommandsContext {
-  MainWindow& main_window_;
+  MainWindowInterface& main_window_;
   TaskManager& task_manager_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;

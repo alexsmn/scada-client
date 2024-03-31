@@ -64,7 +64,8 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
   assert(context.main_window);
 
   if (IsInstanceOf(context.node, filesystem::id::FileType)) {
-    file_command(OpenFileCommandContext{context.main_window, executor,
+    file_command(OpenFileCommandContext{context.main_window,
+                                        context.dialog_service, executor,
                                         context.node, context.key_modifiers});
     return true;
   }
@@ -73,9 +74,9 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
       GetDefaultNodeWindowInfo(context.node, context.key_modifiers);
 
   auto* view = context.main_window->GetActiveDataView();
-  auto* contents = view ? view->GetContentsModel() : nullptr;
-  if (view && contents && view->window_info().can_insert_item()) {
-    if ((&view->window_info() == &window_info) ||
+  ContentsModel* contents = view ? view->GetContents() : nullptr;
+  if (view && contents && view->GetWindowInfo().can_insert_item()) {
+    if ((&view->GetWindowInfo() == &window_info) ||
         (context.key_modifiers & aui::ControlModifier)) {
       // insert items into active frame
       promise<NodeIdSet> node_ids_promise =

@@ -50,7 +50,7 @@ void OpenedView::Activate() {
     main_window_->ActivateView(*this);
 }
 
-void OpenedView::SetUserTitle(std::u16string_view title) {
+void OpenedView::SetWindowTitle(std::u16string_view title) {
   assert(!window_info().is_pane());
 
   if (user_title_ != title) {
@@ -91,12 +91,12 @@ void OpenedView::SetModified(bool modified) {
   modified_ = modified;
 }
 
-ContentsModel* OpenedView::GetContentsModel() {
+ContentsModel* OpenedView::GetContents() {
   return controller_->GetContentsModel();
 }
 
-void OpenedView::SetSelection(const scada::NodeId& item_id) {
-  controller_->ShowContainedItem(item_id);
+void OpenedView::Select(const scada::NodeId& node_id) {
+  controller_->ShowContainedItem(node_id);
 }
 
 void OpenedView::UpdateWorking() {
@@ -115,12 +115,14 @@ void OpenedView::SetTitle(std::u16string_view title) {
   }
 }
 
-void OpenedView::Save() {
+WindowDefinition OpenedView::Save() {
   window_def_.Clear();
   window_def_.title = user_title_;
   controller_->Save(window_def_);
 
   SetModified(false);
+
+  return window_def_;
 }
 
 void OpenedView::OpenView(const WindowDefinition& def) {

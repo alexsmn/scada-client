@@ -27,15 +27,22 @@
 #include "main_window/wt/main_window_wt.h"
 #endif
 
+#if defined(UI_WT)
+#include <wt/WApplication.h>
+#endif
+
 namespace {
 
 #if defined(UI_QT)
-std::unique_ptr<MainWindowQt> CreateMainWindow(MainWindowContext&& context) {
-  return std::make_unique<MainWindowQt>(std::move(context));
+std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
+  return std::make_unique<MainWindow>(std::move(context));
 }
 #elif defined(UI_WT)
-std::unique_ptr<MainWindowWt> CreateMainWindow(MainWindowContext&& context) {
-  return std::make_unique<MainWindowWt>(*root(), std::move(context));
+std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
+  assert(Wt::WApplication::instance());
+  assert(Wt::WApplication::instance()->root());
+  return std::make_unique<MainWindow>(*Wt::WApplication::instance()->root(),
+                                      std::move(context));
 }
 #endif
 
@@ -77,7 +84,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   auto main_commands_factory = [this, login_handler](
-                                   MainWindow& main_window,
+                                   MainWindowInterface& main_window,
                                    DialogService& dialog_service) {
     assert(scada_services_.session_service);
     return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
@@ -88,7 +95,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   auto main_menu_factory =
-      [this](MainWindow& main_window, DialogService& dialog_service,
+      [this](MainWindowInterface& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
         assert(scada_services_.session_service);
@@ -109,7 +116,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
             .commands_ = global_commands_});
       };
 
-  auto context_menu_factory = [this](MainWindow& main_window,
+  auto context_menu_factory = [this](MainWindowInterface& main_window,
                                      CommandHandler& command_handler) {
     return std::make_unique<ContextMenuModel>(main_window, *action_manager_,
                                               command_handler);
@@ -163,7 +170,7 @@ void MainWindowModule::OnEvents(bool has_events) {
   const auto& window_info = GetWindowInfo(ID_EVENT_VIEW);
   for (auto& [_, main_window] : main_window_manager_->main_windows()) {
     bool events_shown =
-        main_window->FindOpenedViewByType(window_info) != nullptr;
+        main_window->FindViewByType(window_info.name) != nullptr;
     if (has_events != events_shown) {
       if (has_events && profile_.event_auto_show) {
         main_window->OpenPane(window_info, /*activate=*/false);

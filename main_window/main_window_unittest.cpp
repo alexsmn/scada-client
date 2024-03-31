@@ -34,6 +34,7 @@ using namespace testing;
 
 class MainWindowTest : public Test {
  public:
+  MainWindowTest();
   ~MainWindowTest();
 
  protected:
@@ -78,17 +79,27 @@ class MainWindowTest : public Test {
 
   ProgressHostImpl progress_host_;
 
-#if defined(UI_QT)
-  MainWindowQt main_window_{MakeMainWindowContext()};
-
-#elif defined(UI_WT)
+#if defined(UI_WT)
   Wt::WContainerWidget container_;
-  MainWindowWt main_window_{container_, MakeMainWindowContext()};
 #endif
+
+  std::optional<MainWindow> main_window_;
 
   static const int kWindowId = 111;
   inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
+
+MainWindowTest::MainWindowTest() {
+  // Add an empty page so the main window won't try to call `CreateInitialPage`.
+  // There are no registered controllers.
+  profile_.AddPage({});
+
+#if defined(UI_QT)
+  main_window_.emplace(MakeMainWindowContext());
+#elif defined(UI_WT)
+  main_window_.emplace(container_, MakeMainWindowContext());
+#endif
+}
 
 MainWindowContext MainWindowTest::MakeMainWindowContext() {
   return {
@@ -101,16 +112,17 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .profile_ = profile_,
       .opened_view_factory_ = opened_view_factory_.AsStdFunction(),
       .main_commands_factory_ =
-          [](MainWindow& main_window, DialogService& dialog_service) {
+          [](MainWindowInterface& main_window, DialogService& dialog_service) {
             return std::make_unique<CommandHandler>();
           },
       .status_bar_model_ = status_bar_model_,
       .context_menu_factory_ =
-          [](MainWindow& main_window, CommandHandler& global_commands) {
+          [](MainWindowInterface& main_window,
+             CommandHandler& global_commands) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
           },
       .main_menu_factory_ =
-          [](MainWindow& main_window, DialogService& dialog_service,
+          [](MainWindowInterface& main_window, DialogService& dialog_service,
              ViewManager& view_manager, CommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
@@ -120,7 +132,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
 }
 
 MainWindowTest::~MainWindowTest() {
-  main_window_.CleanupForTesting();
+  main_window_->CleanupForTesting();
 }
 
 void MainWindowTest::ExpectOpenView() {
@@ -156,7 +168,7 @@ void MainWindowTest::ExpectOpenView() {
 TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
   EXPECT_CALL(quit_handler_, Call());
 
-  main_window_.Close();
+  main_window_->Close();
 }
 
 // TODO: Generalize this test for all UIs.
@@ -168,7 +180,7 @@ TEST_F(MainWindowTest, OpenView_DownloadSucceeds_OpensViewNormally) {
 
   ExpectOpenView();
 
-  main_window_.OpenView(window_def, /*make_active=*/true).get();
+  main_window_->OpenView(window_def, /*make_active=*/true).get();
 }
 #endif
 
@@ -183,7 +195,7 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
 
   ExpectOpenView();
 
-  main_window_.OpenView(window_def, /*make_active=*/true).get();
+  main_window_->OpenView(window_def, /*make_active=*/true).get();
 }
 #endif
 
@@ -191,7 +203,7 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
 // creates another page and switches to it.
 // TODO: Fix this test.
 TEST_F(MainWindowTest, DISABLED_DeleteCurrentPage_Last) {
-  main_window_.DeleteCurrentPage();
+  main_window_->DeleteCurrentPage();
 
   EXPECT_THAT(profile_.pages, SizeIs(1));
   EXPECT_EQ(profile_.pages.begin()->second.GetWindowCount(), 0);
@@ -202,8 +214,8 @@ TEST_F(MainWindowTest, DISABLED_DeleteCurrentPage_Last) {
 TEST_F(MainWindowTest, DeleteCurrentPage_NotLast) {
   int another_page_id = profile_.AddPage(Page{}).id;
 
-  main_window_.DeleteCurrentPage();
+  main_window_->DeleteCurrentPage();
 
   EXPECT_THAT(profile_.pages, SizeIs(1));
-  EXPECT_EQ(main_window_.current_page().id, another_page_id);
+  EXPECT_EQ(main_window_->current_page().id, another_page_id);
 }

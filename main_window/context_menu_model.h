@@ -4,12 +4,12 @@
 #include "main_window/simple_menu_command_handler.h"
 
 class ActionManager;
-class MainWindow;
+class MainWindowInterface;
 class CommandHandler;
 
 class ContextMenuModel final : public aui::SimpleMenuModel {
  public:
-  ContextMenuModel(MainWindow& main_window,
+  ContextMenuModel(MainWindowInterface& main_window,
                    ActionManager& action_manager,
                    CommandHandler& command_handler);
 
@@ -19,7 +19,7 @@ class ContextMenuModel final : public aui::SimpleMenuModel {
  private:
   void Rebuild();
 
-  MainWindow& main_window_;
+  MainWindowInterface& main_window_;
   ActionManager& action_manager_;
 
   SimpleMenuCommandHandler command_handler_;

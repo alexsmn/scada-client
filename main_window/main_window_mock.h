@@ -23,11 +23,28 @@ class MockMainWindow : public MainWindowInterface {
 
   // Views.
 
-  MOCK_METHOD(OpenedView*, GetActiveView, (), (override));
-  MOCK_METHOD(OpenedView*, GetActiveDataView, (), (override));
+  MOCK_METHOD(OpenedViewInterface*, GetActiveView, (), (const override));
+  MOCK_METHOD(OpenedViewInterface*, GetActiveDataView, (), (const override));
 
-  MOCK_METHOD(scada::status_promise<OpenedView*>,
+  MOCK_METHOD(void,
+              ActivateView,
+              (const OpenedViewInterface& view),
+              (override));
+
+  MOCK_METHOD(scada::status_promise<OpenedViewInterface*>,
               OpenView,
               (const WindowDefinition& window_definition, bool make_active),
+              (override));
+
+  MOCK_METHOD(OpenedViewInterface*,
+              FindViewByType,
+              (std::string_view window_type),
+              (const override));
+
+  // Layout.
+
+  MOCK_METHOD(void,
+              SplitView,
+              (OpenedViewInterface & view, bool vertically),
               (override));
 };

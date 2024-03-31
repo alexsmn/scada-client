@@ -41,20 +41,22 @@ const char sc_layoutWidgetTypeProp[] = "LayoutWidgetType";
 
 enum class LayoutWidgetType { Splitter, Tabs, Window, Panel };
 
-QDockWidget* GetDockWidget(OpenedView& opened_view) {
-  return opened_view.window_info().is_pane()
-             ? static_cast<QDockWidget*>(opened_view.view()->parentWidget())
+QDockWidget* GetDockWidget(const OpenedView& view) {
+  return view.window_info().is_pane()
+             ? static_cast<QDockWidget*>(view.view()->parentWidget())
              : nullptr;
 }
 
-DockTabWidget* GetTabWidget(OpenedView& opened_view) {
-  if (opened_view.window_info().is_pane())
+DockTabWidget* GetTabWidget(const OpenedView& view) {
+  if (view.window_info().is_pane() || !view.view()) {
     return nullptr;
-  if (!opened_view.view())
+  }
+
+  QWidget* parent = view.view()->parentWidget();
+  if (!parent) {
     return nullptr;
-  auto* parent = opened_view.view()->parentWidget();
-  if (!parent)
-    return nullptr;
+  }
+
   return static_cast<DockTabWidget*>(parent->parentWidget());
 }
 
@@ -284,10 +286,9 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
 }
 
 OpenedView* ViewManagerQt::FindViewByWidget(const QWidget* widget) {
-  auto i = std::find_if(
-      views_.begin(), views_.end(), [widget](OpenedView* opened_view) {
-        return opened_view->view() && opened_view->view()->isAncestorOf(widget);
-      });
+  auto i = std::ranges::find_if(views_, [widget](const OpenedView* view) {
+    return view->view() && view->view()->isAncestorOf(widget);
+  });
   return i != views_.end() ? *i : nullptr;
 }
 
@@ -296,42 +297,43 @@ void ViewManagerQt::OnFocusChanged(QObject* focus_object) {
     SetActiveView(view);
 }
 
-void ViewManagerQt::ActivateView(OpenedView& opened_view) {
-  if (auto* tabs = GetTabWidget(opened_view)) {
-    auto index = tabs->indexOf(opened_view.view());
+void ViewManagerQt::ActivateView(const OpenedView& view) {
+  if (auto* tabs = GetTabWidget(view)) {
+    auto index = tabs->indexOf(view.view());
     assert(index != -1);
     tabs->setCurrentIndex(index);
 
-  } else if (auto* dock = GetDockWidget(opened_view)) {
+  } else if (auto* dock = GetDockWidget(view)) {
     // Detach from parent to avoid deletion by dock.
   }
 
-  opened_view.view()->setFocus(Qt::ActiveWindowFocusReason);
+  view.view()->setFocus(Qt::ActiveWindowFocusReason);
 }
 
-void ViewManagerQt::CloseView(OpenedView& opened_view) {
+void ViewManagerQt::CloseView(OpenedView& view) {
   // WARNING: `GetTabWidget` requires `opened_view.view()` to be set.
-  if (auto* tabs = GetTabWidget(opened_view)) {
-    auto index = tabs->indexOf(opened_view.view());
+  if (auto* tabs = GetTabWidget(view)) {
+    auto index = tabs->indexOf(view.view());
     assert(index != -1);
-    // Doesn't delete |opened_view.view()|.
+    // Doesn't delete |view.view()|.
     tabs->removeTab(index);
 
     // Must reset the parent, or the view will be deleted by the tab widget.
     // While the view must be only deleted by the `OpenedView`.
-    opened_view.view()->setParent(nullptr);
+    view.view()->setParent(nullptr);
 
     // Remove tab widget.
-    if (tabs->count() == 0 && tabs != root_widget_)
+    if (tabs->count() == 0 && tabs != root_widget_) {
       DeleteTabBlock(*tabs, false);
+    }
 
-  } else if (auto* dock = GetDockWidget(opened_view)) {
+  } else if (auto* dock = GetDockWidget(view)) {
     // Can't delete immediately, since it's called by close event handler that
     // expects the widget to exist after the handler is processed.
     dock->deleteLater();
   }
 
-  DestroyView(opened_view);
+  DestroyView(view);
 }
 
 OpenedView* ViewManagerQt::GetActiveView() {
@@ -340,14 +342,14 @@ OpenedView* ViewManagerQt::GetActiveView() {
   return FindViewByWidget(qobject_cast<QWidget*>(QApplication::focusObject()));
 }
 
-void ViewManagerQt::SetViewTitle(OpenedView& opened_view,
+void ViewManagerQt::SetViewTitle(OpenedView& view,
                                  const std::u16string& title) {
-  if (auto* tabs = GetTabWidget(opened_view)) {
-    auto index = tabs->indexOf(opened_view.view());
-    if (index != -1)
+  if (auto* tabs = GetTabWidget(view)) {
+    if (auto index = tabs->indexOf(view.view()); index != -1) {
       tabs->setTabText(index, QString::fromStdU16String(title));
+    }
 
-  } else if (auto* dock = GetDockWidget(opened_view)) {
+  } else if (auto* dock = GetDockWidget(view)) {
     dock->setWindowTitle(QString::fromStdU16String(title));
   }
 }
@@ -444,12 +446,14 @@ void ViewManagerQt::AddTabView(OpenedView& view) {
 }
 
 void ViewManagerQt::SplitView(OpenedView& view, bool vertically) {
-  if (view.window_info().is_pane())
+  if (view.window_info().is_pane()) {
     return;
+  }
 
   auto* tabs = GetTabWidget(view);
-  if (!tabs || tabs->count() < 2)
+  if (!tabs || tabs->count() < 2) {
     return;
+  }
 
   // Doesn't delete the view.
   auto tab_index = tabs->indexOf(view.view());

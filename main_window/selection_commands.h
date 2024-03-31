@@ -16,12 +16,12 @@ class Controller;
 class DialogService;
 class Executor;
 class FileCache;
-class MainWindow;
+class MainWindowInterface;
 class MainWindowManager;
 class NodeEventProvider;
 class NodeRef;
 class NodeService;
-class OpenedView;
+class OpenedViewInterface;
 class Profile;
 class SelectionModel;
 class TaskManager;
@@ -48,11 +48,11 @@ class SelectionCommands : private SelectionCommandsContext,
 
   SelectionModel* selection() { return selection_; }
   DialogService* dialog_service() { return dialog_service_; }
-  MainWindow* main_window() { return main_window_; }
+  MainWindowInterface* main_window() { return main_window_; }
 
-  void SetContext(MainWindow* main_window,
+  void SetContext(MainWindowInterface* main_window,
                   DialogService* dialog_service,
-                  OpenedView* opened_view,
+                  OpenedViewInterface* opened_view,
                   Controller* controller,
                   SelectionModel* selection);
 
@@ -71,12 +71,12 @@ class SelectionCommands : private SelectionCommandsContext,
   void DeleteSelection();
   void CopyToClipboard();
 
-  promise<OpenedView*> OpenViewContainingNode(int view_type_id,
-                                              const NodeRef& node);
+  promise<OpenedViewInterface*> OpenViewContainingNode(int view_type_id,
+                                                       const NodeRef& node);
 
   SelectionModel* selection_ = nullptr;
-  MainWindow* main_window_ = nullptr;
-  OpenedView* opened_view_ = nullptr;
+  MainWindowInterface* main_window_ = nullptr;
+  OpenedViewInterface* opened_view_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
 

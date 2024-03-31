@@ -10,11 +10,11 @@
 #include <wt/WVBoxLayout.h>
 #pragma warning(pop)
 
-// MainWindowWt
+// MainWindow
 
-MainWindowWt::MainWindowWt(Wt::WContainerWidget& parent,
-                           MainWindowContext&& context)
-    : MainWindow{std::move(context), dialog_service_}, parent_{parent} {
+MainWindow::MainWindow(Wt::WContainerWidget& parent,
+                       MainWindowContext&& context)
+    : BaseMainWindow{std::move(context), dialog_service_}, parent_{parent} {
   auto* root_layout = parent.setLayout(std::make_unique<Wt::WVBoxLayout>());
 
   auto main_menu_model = main_menu_factory_(
@@ -37,17 +37,23 @@ MainWindowWt::MainWindowWt(Wt::WContainerWidget& parent,
   Init(*view_manager_);
 }
 
-MainWindowWt::~MainWindowWt() {}
+MainWindow::~MainWindow() {}
 
-DialogService& MainWindowWt::GetDialogService() {
+DialogService& MainWindow::GetDialogService() {
   return dialog_service_;
 }
 
-void MainWindowWt::OnSelectionChanged() {
+void MainWindow::OnSelectionChanged() {
   toolbar_controller_->OnSelectionChanged();
 }
 
-void MainWindowWt::ShowPopupMenu(aui::MenuModel* merge_menu,
-                                 unsigned resource_id,
-                                 const aui::Point& point,
-                                 bool right_click) {}
+void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
+                               unsigned resource_id,
+                               const aui::Point& point,
+                               bool right_click) {}
+
+std::unique_ptr<OpenedView> MainWindow::OnCreateView(
+    WindowDefinition& window_def) {
+  ++g_open_window_count_for_testing;
+  return opened_view_factory_(*this, window_def);
+}

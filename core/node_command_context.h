@@ -6,11 +6,13 @@
 #include <memory>
 
 class Executor;
+class DialogService;
 class NodeRef;
-class MainWindow;
+class MainWindowInterface;
 
 struct NodeCommandContext {
-  MainWindow* main_window;
+  MainWindowInterface* main_window;
+  DialogService& dialog_service;
   const NodeRef& node;
   aui::KeyModifiers key_modifiers;
 };

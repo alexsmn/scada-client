@@ -1,7 +1,7 @@
 #pragma once
 
-#include "main_window/view_manager.h"
 #include "aui/qt/dock_tab_widget.h"
+#include "main_window/view_manager.h"
 
 class QMainWindow;
 class QWidget;
@@ -17,7 +17,7 @@ class ViewManagerQt final : public QObject, public ViewManager {
   virtual OpenedView* GetActiveView() override;
   virtual void SetViewTitle(OpenedView& view,
                             const std::u16string& title) override;
-  virtual void ActivateView(OpenedView& view) override;
+  virtual void ActivateView(const OpenedView& view) override;
   virtual void CloseView(OpenedView& view) override;
   virtual void SplitView(OpenedView& view, bool vertically) override;
 

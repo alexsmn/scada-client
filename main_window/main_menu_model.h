@@ -11,7 +11,7 @@ class CommandHandler;
 class DialogService;
 class Executor;
 class Favourites;
-class MainWindow;
+class MainWindowInterface;
 class MainWindowManager;
 class Page;
 class Profile;
@@ -23,7 +23,7 @@ struct WindowInfo;
 struct MainMenuContext {
   const std::shared_ptr<Executor> executor_;
   MainWindowManager& main_window_manager_;
-  MainWindow& main_window_;
+  MainWindowInterface& main_window_;
   Favourites& favourites_;
   FileCache& file_cache_;
   const bool admin_;

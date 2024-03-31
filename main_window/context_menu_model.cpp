@@ -4,7 +4,7 @@
 #include "main_window/main_window.h"
 #include "main_window/opened_view.h"
 
-ContextMenuModel::ContextMenuModel(MainWindow& main_window,
+ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
                                    ActionManager& action_manager,
                                    CommandHandler& command_handler)
     : aui::SimpleMenuModel{&command_handler_},
@@ -34,11 +34,15 @@ void ContextMenuModel::Rebuild() {
   Clear();
   submenus_.clear();
 
+  auto* active_view = static_cast<OpenedView*>(main_window_.GetActiveView());
+  if (!active_view) {
+    return;
+  }
+
   std::vector<unsigned> all_commands;
-  for (const auto* action : action_manager_.actions()) {
-    if (main_window_.active_view() &&
-        main_window_.active_view()->commands->GetCommandHandler(
-            action->command_id())) {
+  for (const Action* action : action_manager_.actions()) {
+    // TODO: Remove the static cast.
+    if (active_view->commands->GetCommandHandler(action->command_id())) {
       all_commands.push_back(action->command_id());
     }
   }
@@ -54,14 +58,14 @@ void ContextMenuModel::Rebuild() {
 
     if (CanExpandCommandCategory(category)) {
       if (!commands.empty()) {
-        AddMenuActions(*this, commands, main_window_.active_view());
+        AddMenuActions(*this, commands, active_view);
         separated = false;
       }
 
     } else {
       auto* submenu = new aui::SimpleMenuModel{&command_handler_};
       submenus_.emplace_back(submenu);
-      AddMenuActions(*submenu, commands, main_window_.active_view());
+      AddMenuActions(*submenu, commands, active_view);
 
       auto category_title = GetCommandCategoryTitle(category);
       AddSubMenu(0, std::u16string{category_title}, submenu);

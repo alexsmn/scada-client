@@ -47,7 +47,7 @@ HelloApplication::HelloApplication(const Wt::WEnvironment& env,
 
   LOG(INFO) << "Connect";
   // TODO: Handle quit request when the returned promise is resolved.
-  client_application_.Start();
+  auto _ = client_application_.Start();
 }
 
 HelloApplication::~HelloApplication() {

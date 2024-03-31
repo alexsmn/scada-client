@@ -2,7 +2,7 @@
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "main_window/action_manager.h"
-#include "main_window/main_window.h"
+#include "main_window/base_main_window.h"
 
 #include <QMainWindow>
 #include <boost/signals2/connection.hpp>
@@ -13,28 +13,30 @@ class QWidget;
 class StatusBarController;
 class ViewManagerQt;
 
-class MainWindowQt final : public QMainWindow,
-                           public MainWindow,
-                           private ActionObserver {
+class MainWindow final : public QMainWindow,
+                         public BaseMainWindow,
+                         private ActionObserver {
   Q_OBJECT
 
  public:
-  explicit MainWindowQt(MainWindowContext&& context);
-  ~MainWindowQt();
+  explicit MainWindow(MainWindowContext&& context);
+  ~MainWindow();
 
-  // MainWindow
+  // BaseMainWindow
   virtual DialogService& GetDialogService() override { return dialog_service_; }
-
- protected:
-  // MainWindow
-  virtual void UpdateTitle() override;
   virtual void SetWindowFlashing(bool flashing) override;
-  virtual void OnSelectionChanged() override;
-  virtual void SetToolbarPosition(unsigned position) override;
   virtual void ShowPopupMenu(aui::MenuModel* merge_menu,
                              unsigned resource_id,
                              const aui::Point& point,
                              bool right_click) override;
+
+ protected:
+  // BaseMainWindow
+  virtual void UpdateTitle() override;
+  virtual void OnSelectionChanged() override;
+  virtual void SetToolbarPosition(unsigned position) override;
+  virtual std::unique_ptr<OpenedView> OnCreateView(
+      WindowDefinition& def) override;
 
   // ViewManagerDelegate
   virtual void OnShowTabPopupMenu(OpenedView& view,
