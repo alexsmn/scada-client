@@ -14,9 +14,11 @@
 struct MainWindowDef {
   MainWindowDef();
 
+  enum class State { kNormal, kMaximized, kMinimized };
+
   int id = 0;
   aui::Rect bounds;
-  bool maximized = false;
+  State state = State::kNormal;
   int page_id = 0;
   bool toolbar = true;
   bool status_bar = true;

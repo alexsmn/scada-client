@@ -109,12 +109,21 @@ MainWindowQt::MainWindowQt(MainWindowContext&& context)
   CreateToolbar();
   CreateStatusBar();
 
-  // Must show window before loading layout to let |restoreState()| work
-  // correctly.
-  if (prefs.maximized)
-    showMaximized();
-  else
-    show();
+  if (!IsHideForTesting()) {
+    // Must show window before loading layout to let |restoreState()| work
+    // correctly.
+    switch (prefs.state) {
+      case MainWindowDef::State::kMaximized:
+        showMaximized();
+        break;
+      case MainWindowDef::State::kMinimized:
+        showMinimized();
+        break;
+      default:
+        show();
+        break;
+    }
+  }
 
   Init(*view_manager_);
 
@@ -307,7 +316,7 @@ void MainWindowQt::UpdateAction(QAction& action,
 }
 
 void MainWindowQt::UpdateMenuActions(QMenu& menu) {
-  for (auto* action : menu.actions()) {
+  for (QAction* action : menu.actions()) {
     auto i = action_command_ids_.find(action);
     if (i != action_command_ids_.end())
       UpdateAction(*action, i->second, ActionChangeMask::All);
@@ -316,9 +325,9 @@ void MainWindowQt::UpdateMenuActions(QMenu& menu) {
 
 void MainWindowQt::closeEvent(QCloseEvent* event) {
   MainWindowDef& prefs = GetPrefs();
-  const auto& g = geometry();
-  prefs.bounds = {g.x(), g.y(), g.width(), g.height()};
-  prefs.maximized = isMaximized();
+  prefs.bounds = geometry();
+  prefs.state = isMaximized() ? MainWindowDef::State::kMaximized
+                              : MainWindowDef::State::kNormal;
 
   // ModusView-s must be destroyed before MainWindowQt destruction, to avoid an
   // exception of unknown nature.

@@ -1,6 +1,5 @@
 ﻿#include "main_window/main_window.h"
 
-#include "main_window/initial_page.h"
 #include "aui/key_codes.h"
 #include "base/promise_executor.h"
 #include "controller/contents_model.h"
@@ -10,12 +9,17 @@
 #include "controller/window_info.h"
 #include "core/node_command_context.h"
 #include "filesystem/file_manager.h"
+#include "main_window/initial_page.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "main_window/selection_commands.h"
 #include "main_window/tab_popup_menu.h"
 #include "main_window/view_manager.h"
 #include "profile/profile.h"
+
+namespace {
+static bool g_hide_for_testing = false;
+}
 
 MainWindow::MainWindow(MainWindowContext&& context,
                        DialogService& dialog_service)
@@ -327,4 +331,14 @@ void MainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
   }
 
   node_command_handler_(NodeCommandContext{this, node, key_modifiers});
+}
+
+// static
+bool MainWindow::IsHideForTesting() {
+  return g_hide_for_testing;
+}
+
+// static
+void MainWindow::SetHideForTesting() {
+  g_hide_for_testing = true;
 }

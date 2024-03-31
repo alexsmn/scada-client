@@ -5,6 +5,7 @@
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
 #include "controller/controller_registry.h"
+#include "main_window/main_window.h"
 #include "profile/profile.h"
 #include "scada/services_mock.h"
 
@@ -74,6 +75,8 @@ class ClientApplicationTest : public Test {
 };
 
 ClientApplicationTest::ClientApplicationTest() {
+  MainWindow::SetHideForTesting();
+
   ON_CALL(login_handler_, Call(/*services_context=*/_))
       .WillByDefault(Return(make_resolved_promise(std::optional{
           DataServices::FromUnownedServices(services_.services())})));

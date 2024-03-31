@@ -23,7 +23,9 @@ void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
   if (left != inval && top != inval && width != inval && height != inval) {
     main_window.bounds = {left, top, width, height};
   }
-  main_window.maximized = GetBool(data, "maximized", false);
+  if (GetBool(data, "maximized", false)) {
+    main_window.state = MainWindowDef::State::kMaximized;
+  }
   main_window.toolbar = GetBool(data, "toolbar", true);
   main_window.status_bar = GetBool(data, "statusBar", true);
   main_window.page_id = GetInt(data, "page", 0);
@@ -124,7 +126,7 @@ void Profile::Load(const base::Value& data) {
 void Profile::Save() {
   LOG(INFO) << "Save profile";
 
-  for (const auto& writer : writers_) {
+  for (const Writer& writer : writers_) {
     writer(*this);
   }
 
@@ -159,7 +161,9 @@ base::Value Profile::SaveToValue() const {
       SetKey(wine, "top", main_window.bounds.y());
       SetKey(wine, "width", main_window.bounds.width());
       SetKey(wine, "height", main_window.bounds.height());
-      SetKey(wine, "maximized", main_window.maximized);
+      if (main_window.state == MainWindowDef::State::kMaximized) {
+        SetKey(wine, "maximized", true);
+      }
       SetKey(wine, "toolbar", main_window.toolbar);
       SetKey(wine, "statusBar", main_window.status_bar);
       SetKey(wine, "page", main_window.page_id);
@@ -171,7 +175,7 @@ base::Value Profile::SaveToValue() const {
   // pages root
   {
     base::Value::ListStorage list;
-    for (const auto& [id, page] : pages) {
+    for (const auto& [_, page] : pages) {
       list.emplace_back(page.Save(false));
     }
     data.SetKey("pages", base::Value{std::move(list)});
