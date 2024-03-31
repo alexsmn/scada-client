@@ -103,8 +103,6 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
 
   core_module_ = std::make_unique<CoreModule>(executor_);
-
-  Init();
 }
 
 ClientApplication::~ClientApplication() {
@@ -147,7 +145,7 @@ MainWindowManager& ClientApplication::main_window_manager() {
 }
 
 promise<void> ClientApplication::Start() {
-  return Login();
+  return Login().then(BindPromiseExecutor(executor_, [this] { Init(); }));
 }
 
 void ClientApplication::Init() {

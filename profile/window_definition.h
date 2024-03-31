@@ -57,6 +57,7 @@ typedef std::vector<WindowItem> WindowItems;
 class WindowDefinition {
  public:
   WindowDefinition() = default;
+  explicit WindowDefinition(std::string_view type) : type{type} {}
   // TOOD: Remove the constructor.
   explicit WindowDefinition(const WindowInfo& window_info);
   WindowDefinition(const WindowDefinition& other);

@@ -63,7 +63,9 @@ class ClientApplication : private ClientApplicationContext {
   Profile& profile() { return *profile_; }
   MainWindowManager& main_window_manager();
 
+  // Load profile and start.
   [[nodiscard]] promise<void> Start();
+  // Enter the main loop.
   [[nodiscard]] promise<void> Run() { return quit_promise_; }
   [[nodiscard]] promise<void> Quit();
 

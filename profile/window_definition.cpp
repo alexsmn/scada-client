@@ -104,7 +104,7 @@ bool WindowItem::operator==(const WindowItem& other) const {
 // WindowDefinition
 
 WindowDefinition::WindowDefinition(const WindowInfo& window_info)
-    : type{window_info.name} {}
+    : WindowDefinition{window_info.name} {}
 
 WindowDefinition::WindowDefinition(const WindowDefinition& other)
     : id(other.id),

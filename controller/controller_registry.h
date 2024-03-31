@@ -5,6 +5,7 @@
 #include "controller/window_info.h"
 
 #include <memory>
+#include <ranges>
 #include <unordered_map>
 
 struct ControllerContext;
@@ -50,6 +51,11 @@ class ControllerRegistry {
                             ControllerRegistryFactory controller_factory);
 
   ControllerRegistryFactory GetControllerFactory(unsigned command_id) const;
+
+  auto window_infos() const {
+    return registrars_ | std::views::values |
+           std::views::transform(&ControllerRegistrarBase::window_info);
+  }
 
  private:
   std::unordered_map<unsigned /*command_id*/, ControllerRegistrarBase*>

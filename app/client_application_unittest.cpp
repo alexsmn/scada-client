@@ -4,6 +4,7 @@
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
+#include "controller/controller_registry.h"
 #include "profile/profile.h"
 #include "scada/services_mock.h"
 
@@ -14,8 +15,34 @@ using namespace ::testing;
 
 namespace {
 
-Page MakeAllWindowsPage(ControllerRegistry& controller_registry) {
+Page MakeAllWindowsPage() {
   Page page;
+
+  // Intentionally skip "Modus" and "Web", since they opens an ActiveX.
+  constexpr std::string_view kKnownWindowTypes[] = {
+      "CusTable",
+      "Event",
+      "EventJournal",
+      "Favorites",
+      "FileSystemView",
+      "Graph"
+      "Log",
+      "NewProps",
+      "Nodes",
+      "Params",
+      "Struct",
+      "Subsystems",
+      "Summ",
+      "Table",
+      "TableEditor",
+      "TimeVal",
+      "Transmission",
+      "Users",
+  };
+
+  for (std::string_view type : kKnownWindowTypes) {
+    page.AddWindow(WindowDefinition{type});
+  }
 
   return page;
 }
@@ -27,6 +54,8 @@ class ClientApplicationTest : public Test {
   ClientApplicationTest();
 
  protected:
+  void InitApp();
+
   boost::asio::io_context io_context_;
   std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
@@ -67,13 +96,13 @@ TEST_F(ClientApplicationTest, RunWithNewProfile) {
 
 // Ensure that the initial page is created and all windows are defined.
 TEST_F(ClientApplicationTest, OpenAllWindows) {
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
-
   {
     Profile profile;
-    profile.AddPage(MakeAllWindowsPage(app_.controller_registry()));
+    profile.AddPage(MakeAllWindowsPage());
     profile.Save();
   }
+
+  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
 
   app_.Start().get();
   app_.Quit().get();
