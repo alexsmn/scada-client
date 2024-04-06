@@ -7,7 +7,10 @@
 #include "controller/controller_registry.h"
 #include "main_window/main_window.h"
 #include "profile/profile.h"
+#include "scada/monitoring_parameters.h"
+#include "scada/read_value_id.h"
 #include "scada/services_mock.h"
+#include "timed_data/timed_data_spec.h"
 
 #include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
@@ -55,6 +58,8 @@ class ClientApplicationTest : public Test {
   ClientApplicationTest();
 
  protected:
+  void StartApp();
+
   boost::asio::io_context io_context_;
   std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
@@ -78,6 +83,12 @@ ClientApplicationTest::ClientApplicationTest() {
   ON_CALL(login_handler_, Call(/*services_context=*/_))
       .WillByDefault(Return(make_resolved_promise(std::optional{
           DataServices::FromUnownedServices(services_.services())})));
+}
+
+void ClientApplicationTest::StartApp() {
+  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
+
+  app_.Start().get();
 }
 
 TEST_F(ClientApplicationTest, LoginFailed) {
@@ -110,4 +121,41 @@ TEST_F(ClientApplicationTest, OpenAllWindows) {
 
   EXPECT_EQ(MainWindow::GetOpenWindowCountForTesting(),
             std::size(kKnownWindowTypes));
+}
+
+// Ensures that Modus displays show the actual server data when the application
+// starts.
+TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
+  StartApp();
+
+  // ACT
+
+  auto node_id = scada::NodeId{1, 1};
+  auto initial_timestamp = scada::DateTime::Now();
+  auto initial_data_value =
+      scada::DataValue{"initial-value", /*qualifier=*/{},
+                       /*source_timestamp=*/initial_timestamp,
+                       /*server_timestamp=*/initial_timestamp};
+
+  auto monitored_item =
+      std::make_shared<StrictMock<scada::MockMonitoredItem>>();
+
+  EXPECT_CALL(
+      services_.monitored_item_service,
+      CreateMonitoredItem(
+          /*read_value_id=*/FieldsAre(node_id, scada::AttributeId::Value),
+          /*monitoring_params=*/Property(&scada::MonitoringParameters::is_null,
+                                         IsTrue())))
+      .WillOnce(Return(monitored_item));
+
+  EXPECT_CALL(*monitored_item, Subscribe(/*handler=*/_))
+      .WillOnce(
+          [initial_data_value](const scada::MonitoredItemHandler& handler) {
+            // Set the initial value upon subscription.
+            std::get<scada::DataChangeHandler>(handler)(initial_data_value);
+          });
+
+  TimedDataSpec timed_data;
+  timed_data.Connect(app_.timed_data_service(), node_id);
+  EXPECT_EQ(timed_data.current(), initial_data_value);
 }
