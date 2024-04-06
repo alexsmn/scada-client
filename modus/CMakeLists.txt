@@ -30,4 +30,12 @@ target_link_libraries(client_modus_qt PRIVATE
   schematic
 )
 
+# UTs
+
+target_link_libraries(client_modus_qt_unittests PRIVATE
+  client_filesystem_qt
+)
+
+# Tester
+
 add_subdirectory(tester)

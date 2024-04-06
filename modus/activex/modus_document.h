@@ -4,6 +4,7 @@
 #include "common/aliases.h"
 
 #include <boost/signals2/connection.hpp>
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <wrl/client.h>
@@ -58,8 +59,8 @@ class ModusDocument : private ModusDocumentContext {
 
   const std::u16string& title() const { return title_; }
 
-  void InitFromFilePath(const std::filesystem::path& path);
-  void InitFromState(std::string_view state);
+  void Init(const std::filesystem::path& path,
+            std::optional<std::string_view> state);
 
   // Find entity by TRID. Method has linear complexity.
   ModusObject* FindObject(const scada::NodeId& node_id);
@@ -77,7 +78,7 @@ class ModusDocument : private ModusDocumentContext {
                      bool& perform);
 
  private:
-  void PostInit();
+  bool LoadState(std::string_view state);
   void EnableTopology(bool enable);
 
   Microsoft::WRL::ComPtr<ModusEventSink> event_sink_;

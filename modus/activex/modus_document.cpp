@@ -55,54 +55,50 @@ ModusDocument::~ModusDocument() {
   sde_form_.Reset();
 }
 
-void ModusDocument::InitFromFilePath(const std::filesystem::path& path) {
-  sde_form_->Open(base::win::ScopedBstr(path.wstring()));
-
-  sde_form_->get_Document(sde_document_.ReleaseAndGetAddressOf());
-  if (!sde_document_)
-    return;
-
-  {
-    modus::ModusLoader loader{modus::ModusLoaderContext{
-        alias_resolver_, timed_data_service_, file_cache_}};
-    loader.Load(*sde_document_.Get(), path,
-                [this](long object_id, std::unique_ptr<ModusObject> object) {
-                  auto& added_object = objects_.emplace_back(std::move(object));
-                  if (object_id != -1)
-                    object_map_[object_id] = added_object.get();
-                });
-    title_ = base::WideToUTF16(loader.title());
+void ModusDocument::Init(const std::filesystem::path& path,
+                         std::optional<std::string_view> state) {
+  if (!state.has_value() || !LoadState(*state)) {
+    sde_form_->Open(base::win::ScopedBstr(path.wstring()));
   }
 
-  PostInit();
+  sde_form_->get_Document(sde_document_.ReleaseAndGetAddressOf());
+  if (!sde_document_) {
+    return;
+  }
+
+  ModusLoader loader{
+      ModusLoaderContext{alias_resolver_, timed_data_service_, file_cache_}};
+
+  loader.Load(*sde_document_.Get(), path,
+              [this](long object_id, std::unique_ptr<ModusObject> object) {
+                auto& added_object = objects_.emplace_back(std::move(object));
+                if (object_id != -1)
+                  object_map_[object_id] = added_object.get();
+              });
+
+  title_ = base::WideToUTF16(loader.title());
+
+  EnableTopology(profile_.modus.topology);
+
+  connections_.emplace_back(profile_.AddChangeObserver(
+      [this] { EnableTopology(profile_.modus.topology); }));
 }
 
-void ModusDocument::InitFromState(std::string_view state) {
+bool ModusDocument::LoadState(std::string_view state) {
   Microsoft::WRL::ComPtr<IPersistStreamInit> psi;
   sde_form_.As(&psi);
 
   if (!psi) {
-    return;
+    return false;
   }
 
   MemoryIStream stream{reinterpret_cast<BYTE*>(const_cast<char*>(state.data())),
                        state.size()};
   if (FAILED(psi->Load(&stream))) {
-    return;
+    return false;
   }
 
-  sde_form_->get_Document(sde_document_.ReleaseAndGetAddressOf());
-  if (!sde_document_)
-    return;
-
-  PostInit();
-}
-
-void ModusDocument::PostInit() {
-  EnableTopology(profile_.modus.topology);
-
-  connections_.emplace_back(profile_.AddChangeObserver(
-      [this] { EnableTopology(profile_.modus.topology); }));
+  return true;
 }
 
 void ModusDocument::EnableTopology(bool enable) {

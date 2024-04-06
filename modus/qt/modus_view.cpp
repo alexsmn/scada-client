@@ -67,7 +67,8 @@ void ModusView::Open(const WindowDefinition& definition) {
   document_ = std::make_unique<modus::ModusDocument>(
       ModusDocumentContext{*this}, *sde_form.Get());
 
-  document_->InitFromFilePath(path_);
+  // TODO: Save and load state.
+  document_->Init(path_, /*state=*/std::nullopt);
 
   connect(ax_widget_, SIGNAL(OnDocClick(IDispatch*, IDispatch*)), this,
           SLOT(OnDocClick(IDispatch*, IDispatch*)));
@@ -212,7 +213,6 @@ void ModusView::ShowSetupDialog() {
     document_->sde_form().ShowOptions();
   }
 }
-
 void ModusView::OnDocNavigate(IDispatch*,
                               const QString& file_name,
                               const QString& page_name,

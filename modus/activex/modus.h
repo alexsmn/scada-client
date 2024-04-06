@@ -1,6 +1,6 @@
 #pragma once
 
-#import "modus/activex/typelibs/sdecore.tlb " raw_interfaces_only
+#import "modus/activex/typelibs/sdecore.tlb" raw_interfaces_only
 
 // These two libs depend on `SDECore`.
 #import "modus/activex/typelibs/htsde2.tlb" raw_interfaces_only
@@ -18,7 +18,7 @@ using SDECore::ISDEDocument50;
 
 namespace modus {
 
-using ISDEParams = SDECore::IParams52;
+using ISDEParams = SDECore::IParams;
 using ISDEObject = SDECore::ISDEObject50;
 using ISDEObjects = SDECore::ISDEObjects2;
 

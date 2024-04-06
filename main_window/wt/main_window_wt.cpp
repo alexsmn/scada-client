@@ -54,6 +54,5 @@ void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
 
 std::unique_ptr<OpenedView> MainWindow::OnCreateView(
     WindowDefinition& window_def) {
-  ++g_open_window_count_for_testing;
   return opened_view_factory_(*this, window_def);
 }

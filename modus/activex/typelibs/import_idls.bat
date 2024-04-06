@@ -1,4 +1,4 @@
-set DIR=d:\Program Files (x86)\Modus 6.30\bin
+set DIR=c:\Program Files (x86)\Modus520\bin
 
 rem tlibimp is a part of Delphi distributive.
 rem tlibimp -P- -Ic+ -XM+ "%DIR%\htsde2.ocx"
@@ -14,4 +14,6 @@ rem regasm htsde2.dll /tlb:htsde2.tlb /codebase
 rem tlbexp htsde2.dll /out:htsde2.idl
 
 
+copy /b /y "%DIR%\sdecore.tlb" .
+copy /b /y "%DIR%\sde_electric.tlb" .
 "d:\Utils\ResourcesExtract.exe" "%DIR%\htsde2.ocx"
