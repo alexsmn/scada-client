@@ -27,6 +27,7 @@ struct State : DisplayTesterState {
 std::unique_ptr<QWidget> CreateModusView(State& state,
                                          const WindowDefinition& definition) {
   auto modus_view = std::make_unique<ModusView>(modus::ModusDocumentContext{
+      .executor_ = state.executor,
       .alias_resolver_ = state.alias_resolver,
       .timed_data_service_ = state.timed_data_service,
       .file_cache_ = state.file_cache,
