@@ -55,8 +55,6 @@ class ClientApplicationTest : public Test {
   ClientApplicationTest();
 
  protected:
-  void InitApp();
-
   boost::asio::io_context io_context_;
   std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
