@@ -31,6 +31,11 @@ class MockMainWindow : public MainWindowInterface {
               (const OpenedViewInterface& view),
               (override));
 
+  MOCK_METHOD(std::vector<OpenedViewInterface*>,
+              GetOpenedViews,
+              (),
+              (const override));
+
   MOCK_METHOD(scada::status_promise<OpenedViewInterface*>,
               OpenView,
               (const WindowDefinition& window_definition, bool make_active),

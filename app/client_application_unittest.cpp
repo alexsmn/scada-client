@@ -6,6 +6,8 @@
 #include "base/test/test_executor.h"
 #include "controller/controller_registry.h"
 #include "main_window/main_window.h"
+#include "main_window/main_window_manager.h"
+#include "main_window/opened_view.h"
 #include "profile/profile.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
@@ -19,27 +21,12 @@ using namespace ::testing;
 
 namespace {
 
-// Intentionally skip "Modus" and "Web", since they opens an ActiveX.
+// Intentionally skip "Modus" and "Web", since they create an ActiveX control.
 static constexpr std::string_view kKnownWindowTypes[] = {
-    "CusTable",
-    "Event",
-    "EventJournal",
-    "Favorites",
-    "FileSystemView",
-    "Graph"
-    "Log",
-    "NewProps",
-    "Nodes",
-    "Params",
-    "Struct",
-    "Subsystems",
-    "Summ",
-    "Table",
-    "TableEditor",
-    "TimeVal",
-    "Transmission",
-    "Users",
-};
+    "CusTable", "Event",        "EventJournal", "Favorites", "FileSystemView",
+    "Graph",    "Log",          "NewProps",     "Nodes",     "Params",
+    "Struct",   "Subsystems",   "Summ",         "Table",     "TableEditor",
+    "TimeVal",  "Transmission", "Users"};
 
 Page MakeAllWindowsPage() {
   Page page;
@@ -107,7 +94,7 @@ TEST_F(ClientApplicationTest, RunWithNewProfile) {
 }
 
 // Ensure that the initial page is created and all windows are defined.
-TEST_F(ClientApplicationTest, OpenAllWindows) {
+TEST_F(ClientApplicationTest, OpenKnownWindows) {
   {
     Profile profile;
     profile.AddPage(MakeAllWindowsPage());
@@ -117,10 +104,17 @@ TEST_F(ClientApplicationTest, OpenAllWindows) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
 
   app_.Start().get();
-  app_.Quit().get();
 
-  EXPECT_EQ(MainWindow::GetOpenWindowCountForTesting(),
-            std::size(kKnownWindowTypes));
+  const auto& main_windows = app_.main_window_manager().main_windows();
+  ASSERT_THAT(main_windows, SizeIs(1));
+  const MainWindow& main_window = *main_windows.begin()->second;
+  std::vector<std::string_view> opened_view_types;
+  for (const OpenedView* opened_view : main_window.opened_views()) {
+    opened_view_types.emplace_back(opened_view->window_info().name);
+  }
+  EXPECT_THAT(opened_view_types, UnorderedElementsAreArray(kKnownWindowTypes));
+
+  app_.Quit().get();
 }
 
 // Ensures that Modus displays show the actual server data when the application

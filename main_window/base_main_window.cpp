@@ -18,7 +18,6 @@
 #include "profile/profile.h"
 
 bool BaseMainWindow::g_hide_for_testing = false;
-int BaseMainWindow::g_open_window_count_for_testing = 0;
 
 BaseMainWindow::BaseMainWindow(MainWindowContext&& context,
                                DialogService& dialog_service)
@@ -331,4 +330,13 @@ void BaseMainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
 
   node_command_handler_(
       NodeCommandContext{this, GetDialogService(), node, key_modifiers});
+}
+
+const std::list<OpenedView*>& BaseMainWindow::opened_views() const {
+  return view_manager_->views();
+}
+
+std::vector<OpenedViewInterface*> BaseMainWindow::GetOpenedViews() const {
+  const auto& views = opened_views();
+  return {views.begin(), views.end()};
 }

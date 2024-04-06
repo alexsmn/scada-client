@@ -37,7 +37,13 @@ class BaseMainWindow : protected MainWindowContext,
   MainWindowDef& GetPrefs() const;
 
   // Pages.
+
   const Page& current_page() const;
+
+  // Views.
+
+  const std::list<OpenedView*>& opened_views() const;
+  std::vector<OpenedViewInterface*> GetOpenedViews() const override;
 
   OpenedView* active_view() const { return active_view_; }
   OpenedView* active_data_view() const { return active_data_view_; }
@@ -50,8 +56,6 @@ class BaseMainWindow : protected MainWindowContext,
 
   void AddContentsObserver(ContentsObserver& observer);
   void RemoveContentsObserver(ContentsObserver& observer);
-
-  virtual void SetWindowFlashing(bool flashing) = 0;
 
   // MainWindow
   virtual int GetMainWindowId() const { return window_id(); }
@@ -73,6 +77,8 @@ class BaseMainWindow : protected MainWindowContext,
 
   virtual DialogService& GetDialogService() = 0;
 
+  virtual void SetWindowFlashing(bool flashing) = 0;
+
   CommandHandler& commands() { return *commands_; }
 
   void CleanupForTesting();
@@ -85,10 +91,6 @@ class BaseMainWindow : protected MainWindowContext,
 
   // TODO: Move to a separate class.
   void ExecuteDefaultNodeCommand(const NodeRef& node);
-
-  static int GetOpenWindowCountForTesting() {
-    return g_open_window_count_for_testing;
-  }
 
   static void SetHideForTesting() { g_hide_for_testing = true; }
 
@@ -112,7 +114,6 @@ class BaseMainWindow : protected MainWindowContext,
   std::unique_ptr<aui::MenuModel> tab_popup_menu_;
 
   static bool g_hide_for_testing;
-  static int g_open_window_count_for_testing;
 
  private:
   void SetActiveView(OpenedView* view);

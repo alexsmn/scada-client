@@ -24,6 +24,9 @@ class MainWindowInterface {
   [[nodiscard]] virtual OpenedViewInterface* GetActiveDataView() const = 0;
   virtual void ActivateView(const OpenedViewInterface& view) = 0;
 
+  [[nodiscard]] virtual std::vector<OpenedViewInterface*> GetOpenedViews()
+      const = 0;
+
   virtual scada::status_promise<OpenedViewInterface*> OpenView(
       const WindowDefinition& window_definition,
       bool activate = true) = 0;
