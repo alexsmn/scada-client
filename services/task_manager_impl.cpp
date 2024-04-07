@@ -2,6 +2,7 @@
 
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
+#include "events/local_events.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -11,7 +12,6 @@
 #include "scada/service_context.h"
 #include "scada/status_or.h"
 #include "scada/status_promise.h"
-#include "events/local_events.h"
 #include "services/progress_host.h"
 
 using namespace std::chrono_literals;
@@ -30,7 +30,7 @@ std::u16string FormatReference(NodeService& node_service,
       GetDisplayName(node_service, target_id).c_str());
 }
 
-scada::StatusCodeOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
+scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
     const NodeRef& node,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
@@ -178,7 +178,7 @@ scada::status_promise<void> TaskManagerImpl::PostUpdateTask(
               auto inputs = PrepareUpdateInputs(node, std::move(attributes),
                                                 std::move(properties));
               if (!inputs.ok()) {
-                throw scada::status_exception{inputs.status_code()};
+                throw scada::status_exception{inputs.status()};
               }
 
               return scada::Write(attribute_service, scada::ServiceContext{},
