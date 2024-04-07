@@ -22,7 +22,9 @@ namespace {
 std::wstring GetShortPath(ISDEObject& sde_object) {
   base::win::ScopedBstr result;
   sde_object.get_ShortPath(result.Receive());
-  return static_cast<const wchar_t*>(result);
+  return result ? std::wstring{static_cast<const wchar_t*>(result),
+                               result.Length()}
+                : std::wstring{};
 }
 
 std::vector<std::wstring> GetStateStrings(ISDEParams& params,
