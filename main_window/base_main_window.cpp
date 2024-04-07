@@ -7,7 +7,6 @@
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
-#include "core/node_command_context.h"
 #include "filesystem/file_manager.h"
 #include "main_window/initial_page.h"
 #include "main_window/main_window_manager.h"
