@@ -2,7 +2,7 @@
 
 #include "aui/key_codes.h"
 #include "node_service/node_ref.h"
-#include "scada/status_promise.h"
+#include "base/promise.h"
 
 #include <memory>
 
@@ -27,14 +27,14 @@ using OpenFileCommand =
 
 class OpenFileCommandImpl {
  public:
-  scada::status_promise<void> Execute(
+  promise<void> Execute(
       const OpenFileCommandContext& context) const;
 
   const FileRegistry& file_registry;
   FileManager& file_manager;
 
  private:
-  scada::status_promise<void> OpenFile(
+  promise<void> OpenFile(
       const OpenFileCommandContext& context) const;
 };
 

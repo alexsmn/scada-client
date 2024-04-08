@@ -273,7 +273,7 @@ promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
   const FileCache::DisplayItem& cached_item = cached_items.front();
   const std::filesystem::path& path = cached_item.first;
 
-  scada::status_promise<OpenedViewInterface*> open_promise;
+  promise<OpenedViewInterface*> open_promise;
 
   if (auto* view = main_window_manager_.FindOpenedViewByFilePath(path); view) {
     view->Activate();

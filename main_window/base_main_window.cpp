@@ -162,7 +162,7 @@ OpenedView* BaseMainWindow::FindViewToRecycle(unsigned type) {
   return i != views.end() ? *i : nullptr;
 }
 
-scada::status_promise<OpenedViewInterface*> BaseMainWindow::OpenView(
+promise<OpenedViewInterface*> BaseMainWindow::OpenView(
     const WindowDefinition& window_def,
     bool make_active) {
   promise<void> download_promise =

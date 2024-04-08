@@ -66,7 +66,7 @@ class BaseMainWindow : protected MainWindowContext,
   virtual void DeleteCurrentPage() override;
   virtual OpenedView* GetActiveView() const override;
   virtual OpenedView* GetActiveDataView() const override;
-  virtual scada::status_promise<OpenedViewInterface*> OpenView(
+  virtual promise<OpenedViewInterface*> OpenView(
       const WindowDefinition& window_definition,
       bool activate = true) override;
   OpenedView* FindOpenedViewByFilePath(const std::filesystem::path& path);

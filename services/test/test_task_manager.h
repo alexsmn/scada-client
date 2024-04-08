@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scada/status_promise.h"
 #include "services/task_manager.h"
 #include "services/test/test_storage.h"
 

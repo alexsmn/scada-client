@@ -15,11 +15,11 @@ class FileManagerImpl : private FileManagerContext, public FileManager {
       : FileManagerContext{std::move(context)} {}
 
   // FileManager
-  virtual scada::status_promise<void> DownloadFileFromServer(
+  virtual promise<void> DownloadFileFromServer(
       const std::filesystem::path& path) const override;
 
  private:
   // `path` is a relative path from public path.
-  scada::status_promise<scada::NodeId> GetFileNode(
+  promise<scada::NodeId> GetFileNode(
       const std::filesystem::path& path) const;
 };

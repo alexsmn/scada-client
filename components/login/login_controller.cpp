@@ -10,7 +10,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "scada/session_service.h"
-#include "scada/status.h"
+#include "scada/status_promise.h"
 
 #include <algorithm>
 #include <windows.h>  // for VK_CONTROL

@@ -25,7 +25,7 @@
 
 #include <cassert>
 
-scada::status_promise<void> OpenView(
+promise<void> OpenView(
     MainWindowInterface* main_window,
     promise<WindowDefinition> window_def_promise,
     bool activate) {
@@ -36,7 +36,7 @@ scada::status_promise<void> OpenView(
       });
 }
 
-scada::status_promise<void> OpenView(MainWindowInterface* main_window,
+promise<void> OpenView(MainWindowInterface* main_window,
                                      const WindowDefinition& window_def,
                                      bool activate) {
   assert(main_window);

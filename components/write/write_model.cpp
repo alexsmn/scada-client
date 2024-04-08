@@ -1,14 +1,14 @@
 ﻿#include "components/write/write_model.h"
 
+#include "aui/dialog_service.h"
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
-#include "scada/status.h"
-#include "aui/dialog_service.h"
 #include "profile/profile.h"
+#include "scada/status_promise.h"
 
 namespace {
 const char16_t kDiscreteConfirmationQuestion[] =

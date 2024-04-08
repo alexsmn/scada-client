@@ -5,6 +5,7 @@
 #include "components/change_password/change_password_dialog.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_ref.h"
+#include "scada/status_promise.h"
 
 void ChangePassword(const ChangePasswordContext& context,
                     const scada::LocalizedText& current_password,

@@ -9,6 +9,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/event.h"
+#include "scada/status_exception.h"
 
 #if defined(UI_QT)
 #include <QUrl>

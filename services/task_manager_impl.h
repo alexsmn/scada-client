@@ -40,22 +40,22 @@ class TaskManagerImpl : private TaskManagerImplContext,
   bool IsRunning() const;
 
   // TaskManager
-  virtual scada::status_promise<void> PostTask(
+  virtual promise<void> PostTask(
       std::u16string_view description,
       const TaskLauncher& launcher) override;
-  virtual scada::status_promise<scada::NodeId> PostInsertTask(
+  virtual promise<scada::NodeId> PostInsertTask(
       const scada::NodeState& node_state) override;
-  virtual scada::status_promise<void> PostUpdateTask(
+  virtual promise<void> PostUpdateTask(
       const scada::NodeId& node_id,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties) override;
-  virtual scada::status_promise<void> PostDeleteTask(
+  virtual promise<void> PostDeleteTask(
       const scada::NodeId& node_id) override;
-  virtual scada::status_promise<void> PostAddReference(
+  virtual promise<void> PostAddReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
-  virtual scada::status_promise<void> PostDeleteReference(
+  virtual promise<void> PostDeleteReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
@@ -68,13 +68,13 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
     std::u16string title;
     std::function<void()> task;
-    scada::status_promise<void> promise;
+    promise<void> promise;
   };
 
   void Run();
   void CancelProgress();
 
-  scada::status_promise<void> PostTaskMethod(std::u16string_view title,
+  promise<void> PostTaskMethod(std::u16string_view title,
                                              TaskMethod task);
   void StartTask(Task&& task);
 

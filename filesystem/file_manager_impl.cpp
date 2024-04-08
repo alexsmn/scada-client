@@ -4,6 +4,7 @@
 #include "base/files/file_util.h"
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
+#include "scada/status_promise.h"
 
 #include <boost/locale/encoding_utf.hpp>
 #include <span>
@@ -21,7 +22,7 @@ scada::NodeId GetOnlyTargetId(
 
 }  // namespace
 
-scada::status_promise<void> FileManagerImpl::DownloadFileFromServer(
+promise<void> FileManagerImpl::DownloadFileFromServer(
     const std::filesystem::path& path) const {
   return GetFileNode(path)
       .then([this](const scada::NodeId& file_node_id) {
@@ -47,7 +48,7 @@ scada::status_promise<void> FileManagerImpl::DownloadFileFromServer(
       });
 }
 
-scada::status_promise<scada::NodeId> FileManagerImpl::GetFileNode(
+promise<scada::NodeId> FileManagerImpl::GetFileNode(
     const std::filesystem::path& path) const {
   if (path.empty()) {
     return scada::MakeRejectedStatusPromise<scada::NodeId>(

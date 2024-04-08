@@ -17,6 +17,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "profile/window_definition_util.h"
+#include "scada/status_promise.h"
 #include "services/task_manager.h"
 
 #include <cassert>
@@ -31,10 +32,10 @@ const char16_t kAddFileDirectoryTitle[] = u"Создать папку";
 
 }  // namespace
 
-scada::status_promise<void> OpenJsonFile(const std::filesystem::path& path,
-                                         MainWindowInterface* main_window,
-                                         DialogService& dialog_service,
-                                         aui::KeyModifiers key_modifiers) {
+promise<void> OpenJsonFile(const std::filesystem::path& path,
+                           MainWindowInterface* main_window,
+                           DialogService& dialog_service,
+                           aui::KeyModifiers key_modifiers) {
   if (!main_window) {
     return make_resolved_promise();
   }
@@ -55,7 +56,7 @@ scada::status_promise<void> OpenJsonFile(const std::filesystem::path& path,
   return OpenView(main_window, *window_def);
 }
 
-scada::status_promise<void> OpenFileCommandImpl::OpenFile(
+promise<void> OpenFileCommandImpl::OpenFile(
     const OpenFileCommandContext& context) const {
   if (!context.main_window) {
     return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
@@ -84,7 +85,7 @@ scada::status_promise<void> OpenFileCommandImpl::OpenFile(
   return OpenView(context.main_window, std::move(window_def));
 }
 
-scada::status_promise<void> OpenFileCommandImpl::Execute(
+promise<void> OpenFileCommandImpl::Execute(
     const OpenFileCommandContext& context) const {
   return OpenFile(context).except(BindPromiseExecutor(
       context.executor,

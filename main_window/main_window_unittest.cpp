@@ -14,6 +14,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "profile/profile.h"
+#include "scada/status_promise.h"
 #include "services/progress_host_impl.h"
 
 #if defined(UI_QT)

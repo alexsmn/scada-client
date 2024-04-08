@@ -13,6 +13,7 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "scada/session_service.h"
+#include "scada/status_promise.h"
 #include "services/task_manager.h"
 
 void ConfigurationCommands::Register() {

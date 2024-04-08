@@ -13,7 +13,7 @@ class MockFileManager : public FileManager {
         .WillByDefault(Return(make_resolved_promise()));
   }
 
-  MOCK_METHOD(scada::status_promise<void>,
+  MOCK_METHOD(promise<void>,
               DownloadFileFromServer,
               (const std::filesystem::path& path),
               (const override));

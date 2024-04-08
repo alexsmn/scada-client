@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scada/status_promise.h"
+#include "base/promise.h"
 
 class OpenedViewInterface;
 class Page;
@@ -27,7 +27,7 @@ class MainWindowInterface {
   [[nodiscard]] virtual std::vector<OpenedViewInterface*> GetOpenedViews()
       const = 0;
 
-  virtual scada::status_promise<OpenedViewInterface*> OpenView(
+  virtual promise<OpenedViewInterface*> OpenView(
       const WindowDefinition& window_definition,
       bool activate = true) = 0;
 

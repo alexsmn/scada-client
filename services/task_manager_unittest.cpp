@@ -2,12 +2,13 @@
 
 #include "address_space/test/test_scada_node_states.h"
 #include "base/test/test_executor.h"
+#include "events/local_events.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/static/static_node_service.h"
 #include "profile/profile.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/node_management_service_mock.h"
-#include "events/local_events.h"
+#include "scada/status_exception.h"
 #include "services/progress_host_impl.h"
 
 #include <gmock/gmock.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "scada/status_promise.h"
+#include "base/promise.h"
 
 #include <filesystem>
 
@@ -9,6 +9,6 @@ class FileManager {
  public:
   // Downloads file from server and saves it to public path. May use cached file
   // if it's already downloaded.
-  virtual scada::status_promise<void> DownloadFileFromServer(
+  virtual promise<void> DownloadFileFromServer(
       const std::filesystem::path& path) const = 0;
 };
