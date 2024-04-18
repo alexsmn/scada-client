@@ -107,7 +107,7 @@ TEST_F(ClientApplicationTest, OpenKnownWindows) {
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_THAT(main_windows, SizeIs(1));
-  const MainWindow& main_window = *main_windows.begin()->second;
+  const MainWindow& main_window = main_windows.front();
   std::vector<std::string_view> opened_view_types;
   for (const OpenedView* opened_view : main_window.opened_views()) {
     opened_view_types.emplace_back(opened_view->window_info().name);

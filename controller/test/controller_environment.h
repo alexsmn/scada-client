@@ -9,9 +9,11 @@
 #include "controller/controller_delegate_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
+#include "core/global_command_context.h"
 #include "core/selection_command_context.h"
 #include "events/node_event_provider_mock.h"
 #include "filesystem/file_cache.h"
+#include "filesystem/file_manager_mock.h"
 #include "filesystem/file_registry.h"
 #include "node_service/node_service_mock.h"
 #include "profile/profile.h"
@@ -28,11 +30,9 @@
 
 struct ControllerEnvironment {
   scada::services services() {
-    return {
-        .monitored_item_service = &monitored_item_service_,
-        .history_service = &history_service_,
-        .session_service = &session_service_,
-    };
+    return {.monitored_item_service = &monitored_item_service_,
+            .history_service = &history_service_,
+            .session_service = &session_service_};
   }
 
   ControllerContext MakeControllerContext() {
@@ -64,6 +64,7 @@ struct ControllerEnvironment {
   testing::NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
 
   ControllerRegistry controller_registry_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;
   testing::NiceMock<MockControllerDelegate> controller_delegate_;
   testing::NiceMock<MockTaskManager> task_manager_;
@@ -72,6 +73,7 @@ struct ControllerEnvironment {
   testing::NiceMock<MockNodeService> node_service_;
   FileRegistry file_registry_;
   FileCache file_cache_{file_registry_};
+  testing::NiceMock<MockFileManager> file_manager_;
   Profile profile_;
   testing::NiceMock<MockDialogService> dialog_service_;
   testing::NiceMock<MockBlinkerManager> blinker_manager_;

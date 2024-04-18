@@ -22,14 +22,17 @@ void MainWindowManager::Init() {
 
 MainWindowManager::~MainWindowManager() {}
 
-void MainWindowManager::OpenMainWindow(int window_id) {
-  if (main_windows_.contains(window_id)) {
-    return;
+MainWindow* MainWindowManager::OpenMainWindow(int window_id) {
+  if (auto i = main_windows_.find(window_id); i != main_windows_.end()) {
+    return i->second.get();
   }
 
   if (auto window = main_window_factory_(window_id)) {
-    main_windows_.try_emplace(window_id, std::move(window));
+    auto [it, ok] = main_windows_.try_emplace(window_id, std::move(window));
+    return it->second.get();
   }
+
+  return nullptr;
 }
 
 void MainWindowManager::CloseMainWindow(int window_id) {
@@ -65,9 +68,9 @@ OpenedView* MainWindowManager::FindOpenedViewByFilePath(
   return nullptr;
 }
 
-void MainWindowManager::CreateMainWindow() {
+MainWindow* MainWindowManager::CreateMainWindow() {
   int window_id = profile_.CreateWindowId();
-  OpenMainWindow(window_id);
+  return OpenMainWindow(window_id);
 }
 
 void MainWindowManager::OnMainWindowClosed(int window_id) {

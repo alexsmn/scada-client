@@ -4,29 +4,24 @@
 #include "base/memory/weak_ptr.h"
 #include "base/promise.h"
 #include "base/timer/timer.h"
-#include "controller/command_handler.h"
 #include "common/node_state.h"
+#include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
-#include "scada/status.h"
 #include "profile/window_definition.h"
+#include "scada/status.h"
 
 #include <memory>
 #include <string>
 
 namespace scada {
-class HistoryService;
-class MonitoredItemService;
-class NodeManagementService;
 class SessionService;
-}  // namespace scada
+}
 
 class ActionManager;
-class ContentsModel;
 class Controller;
 class CreateTree;
 class DialogService;
-class EventFetcher;
 class Executor;
 class FileCache;
 class LocalEvents;
@@ -44,9 +39,6 @@ struct OpenedViewCommandsContext {
   const std::shared_ptr<SelectionCommands> selection_commands_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
-  scada::NodeManagementService& node_management_service_;
-  EventFetcher& event_fetcher_;
-  scada::HistoryService& history_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
   ActionManager& action_manager_;

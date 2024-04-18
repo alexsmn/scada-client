@@ -12,7 +12,6 @@ class BasicCommandRegistry;
 
 class ActionManager;
 class CreateTree;
-class EventFetcher;
 class EventDispatcher;
 class Executor;
 class Favourites;
@@ -21,21 +20,19 @@ class FileManager;
 class LocalEvents;
 class MainWindow;
 class MainWindowManager;
+class NodeEventProvider;
 class NodeService;
 class OpenedView;
 class PortfolioManager;
 class Profile;
 class ProgressHost;
 class SelectionCommands;
-class Speech;
+class SpeechService;
 class TaskManager;
 class TimedDataService;
 struct GlobalCommandContext;
 struct MainWindowContext;
 struct SelectionCommandContext;
-
-using MainWindowFactory =
-    std::function<std::unique_ptr<MainWindow>(MainWindowContext&& context)>;
 
 using LoginHandler = std::function<void()>;
 using QuitHandler = std::function<void()>;
@@ -47,7 +44,7 @@ struct MainWindowModuleContext {
   scada::services scada_services_;
   LoginHandler login_handler_;
   TaskManager& task_manager_;
-  EventFetcher& event_fetcher_;
+  NodeEventProvider& node_event_provider_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
   PortfolioManager& portfolio_manager_;
@@ -55,8 +52,8 @@ struct MainWindowModuleContext {
   Favourites& favourites_;
   FileCache& file_cache_;
   FileManager& file_manager_;
-  Speech& speech_;
-  const NodeCommandHandler node_command_handler_;
+  SpeechService& speech_service_;
+  NodeCommandHandler node_command_handler_;
   ProgressHost& progress_host_;
   CreateTree& create_tree_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;

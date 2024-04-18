@@ -35,7 +35,7 @@
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
 #include "services/progress_host_impl.h"
-#include "services/speech.h"
+#include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
 
@@ -289,7 +289,7 @@ void ClientApplication::Init() {
           .scada_services_ = audited_scada_services,
           .login_handler_ = std::bind_front(&ClientApplication::Login, this),
           .task_manager_ = *task_manager_,
-          .event_fetcher_ = event_module_->event_fetcher(),
+          .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
           .node_service_ = *node_service_,
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
@@ -297,7 +297,7 @@ void ClientApplication::Init() {
           .favourites_ = favorites_module_->favourites(),
           .file_cache_ = filesystem_component_->file_cache(),
           .file_manager_ = filesystem_component_->file_manager(),
-          .speech_ = *speech_,
+          .speech_service_ = *speech_,
           .node_command_handler_ =
               std::bind_front(&::ExecuteDefaultNodeCommand, executor_,
                               filesystem_component_->file_command()),

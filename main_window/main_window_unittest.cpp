@@ -91,6 +91,8 @@ class MainWindowTest : public Test {
 };
 
 MainWindowTest::MainWindowTest() {
+  MainWindow::SetHideForTesting();
+
   // Add an empty page so the main window won't try to call `CreateInitialPage`.
   // There are no registered controllers.
   profile_.AddPage({});

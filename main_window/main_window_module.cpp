@@ -65,7 +65,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
   main_window_manager_->Init();
 
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
-      executor_, event_fetcher_, local_events_, profile_,
+      executor_, node_event_provider_, local_events_, profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 
   singletons_.emplace(std::make_shared<PageCommands>(
@@ -89,9 +89,9 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     assert(scada_services_.session_service);
     return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
         main_window, task_manager_, dialog_service,
-        *scada_services_.session_service, event_fetcher_, node_service_,
-        local_events_, favourites_, speech_, profile_, *main_window_manager_,
-        login_handler, global_commands_});
+        *scada_services_.session_service, node_event_provider_, node_service_,
+        local_events_, favourites_, speech_service_, profile_,
+        *main_window_manager_, login_handler, global_commands_});
   };
 
   auto main_menu_factory =
@@ -142,13 +142,16 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   selection_commands_object_ =
       std::make_shared<SelectionCommands>(SelectionCommandsContext{
           executor_, task_manager_, *scada_services_.session_service,
-          event_fetcher_, file_cache_, profile_, *main_window_manager_,
+          node_event_provider_, file_cache_, profile_, *main_window_manager_,
           node_service_, selection_commands_});
 
   auto status_bar_model =
-      StatusBarModelBuilder{executor_,      *scada_services_.session_service,
-                            event_fetcher_, local_events_,
-                            node_service_,  profile_}
+      StatusBarModelBuilder{executor_,
+                            *scada_services_.session_service,
+                            node_event_provider_,
+                            local_events_,
+                            node_service_,
+                            profile_}
           .Build();
 
   auto connection_info_provider = [this] {
@@ -168,18 +171,17 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
 
 void MainWindowModule::OnEvents(bool has_events) {
   const auto& window_info = GetWindowInfo(ID_EVENT_VIEW);
-  for (auto& [_, main_window] : main_window_manager_->main_windows()) {
-    bool events_shown =
-        main_window->FindViewByType(window_info.name) != nullptr;
+  for (MainWindow& main_window : main_window_manager_->main_windows()) {
+    bool events_shown = main_window.FindViewByType(window_info.name) != nullptr;
     if (has_events != events_shown) {
       if (has_events && profile_.event_auto_show) {
-        main_window->OpenPane(window_info, /*activate=*/false);
+        main_window.OpenPane(window_info, /*activate=*/false);
       } else if (!has_events && profile_.event_auto_hide) {
-        main_window->ClosePane(window_info);
+        main_window.ClosePane(window_info);
       }
     }
 
-    main_window->SetWindowFlashing(has_events && profile_.event_flash_window);
+    main_window.SetWindowFlashing(has_events && profile_.event_flash_window);
   }
 }
 
@@ -214,15 +216,11 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
   opened_view->Init();
 
   assert(scada_services_.session_service);
-  assert(scada_services_.node_management_service);
-  assert(scada_services_.history_service);
 
   auto opened_view_commands =
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
           executor_, selection_commands_object_, task_manager_,
-          *scada_services_.session_service,
-          *scada_services_.node_management_service, event_fetcher_,
-          *scada_services_.history_service, timed_data_service_, node_service_,
+          *scada_services_.session_service, timed_data_service_, node_service_,
           *action_manager_, local_events_, file_cache_, profile_,
           *main_window_manager_, create_tree_});
 

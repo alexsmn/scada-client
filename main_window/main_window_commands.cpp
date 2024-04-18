@@ -18,7 +18,7 @@
 #include "main_window/opened_view_commands.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
-#include "services/speech.h"
+#include "services/speech_service.h"
 
 #include <Windows.h>
 
@@ -217,7 +217,7 @@ bool MainWindowCommands::IsCommandEnabled(unsigned command_id) const {
              !local_events_.events().empty();
 
     case ID_OPT_SPEECH:
-      return speech_.is_ok();
+      return speech_service_.is_ok();
 
     case ID_VIEW_ADD_TO_FAVOURITES:
     case ID_VIEW_CHANGE_TITLE:

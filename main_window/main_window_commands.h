@@ -23,7 +23,7 @@ class MainWindowManager;
 class NodeEventProvider;
 class NodeService;
 class Profile;
-class Speech;
+class SpeechService;
 class TaskManager;
 struct GlobalCommandContext;
 
@@ -36,7 +36,7 @@ struct MainWindowCommandsContext {
   NodeService& node_service_;
   LocalEvents& local_events_;
   Favourites& favourites_;
-  Speech& speech_;
+  SpeechService& speech_service_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
