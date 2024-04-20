@@ -14,12 +14,14 @@ class QLabel;
 class QProgressBar;
 class QStatusBar;
 
-class StatusBarController : private aui::StatusBarModelObserver {
+class StatusBarController final : private aui::StatusBarModelObserver {
  public:
   StatusBarController(QStatusBar& status_bar,
                       aui::StatusBarModel& model,
                       ProgressHost& progress_host);
   ~StatusBarController();
+
+  std::u16string GetPaneText(int index) const;
 
  private:
   void UpdateProgressBar();

@@ -1,4 +1,4 @@
-#include "main_window/main_window.h"
+﻿#include "main_window/main_window.h"
 
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model_mock.h"
@@ -13,6 +13,7 @@
 #include "main_window/action_manager.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
+#include "main_window/status/status_bar_model_impl.h"
 #include "profile/profile.h"
 #include "scada/status_promise.h"
 #include "services/progress_host_impl.h"
@@ -25,7 +26,9 @@
 
 #include <gmock/gmock.h>
 
-#if defined(UI_WT)
+#if defined(UI_QT)
+#include <QLabel>
+#elif defined(UI_WT)
 #include <wt/WContainerWidget.h>
 #endif
 
@@ -73,9 +76,6 @@ class MainWindowTest : public Test {
        .main_window_factory_ = main_window_factory_.AsStdFunction(),
        .quit_handler_ = quit_handler_.AsStdFunction()}};
 
-  std::shared_ptr<aui::MockStatusBarModel> status_bar_model_ =
-      std::make_shared<NiceMock<aui::MockStatusBarModel>>();
-
   NiceMock<MockFunction<std::string()>> connection_info_provider_;
 
   ProgressHostImpl progress_host_;
@@ -118,7 +118,7 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
           [](MainWindowInterface& main_window, DialogService& dialog_service) {
             return std::make_unique<CommandHandler>();
           },
-      .status_bar_model_ = status_bar_model_,
+      .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
       .context_menu_factory_ =
           [](MainWindowInterface& main_window,
              CommandHandler& global_commands) {

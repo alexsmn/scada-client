@@ -50,3 +50,7 @@ void StatusBarController::UpdateProgressBar() {
   progress_bar_->setValue(progress.current);
   progress_bar_->setVisible(progress.active);
 }
+
+std::u16string StatusBarController::GetPaneText(int index) const {
+  return panes_[index]->text().toStdU16String();
+}

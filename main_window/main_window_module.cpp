@@ -53,6 +53,21 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       action_manager_{std::make_unique<ActionManager>()} {
   AddGlobalActions(*action_manager_, node_service_);
 
+  assert(scada_services_.session_service);
+
+  auto configuration_commands = std::make_shared<ConfigurationCommands>(
+      selection_commands_, executor_, timed_data_service_,
+      *scada_services_.session_service, profile_, local_events_, task_manager_);
+
+  singletons_.emplace(configuration_commands);
+  configuration_commands->Register();
+
+  selection_commands_.AddCommand(ChangePasswordCommandBuilder{
+      .local_events_ = local_events_,
+      .profile_ = profile_,
+      .session_service_ = *scada_services_.session_service}
+                                     .Build());
+
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{
           .profile_ = profile_,
@@ -62,6 +77,13 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
               },
           .quit_handler_ = quit_handler_});
 
+  selection_commands_object_ =
+      std::make_shared<SelectionCommands>(SelectionCommandsContext{
+          executor_, task_manager_, *scada_services_.session_service,
+          node_event_provider_, file_cache_, profile_, *main_window_manager_,
+          node_service_, selection_commands_});
+
+  // Opens windows.
   main_window_manager_->Init();
 
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
@@ -123,27 +145,6 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   assert(scada_services_.session_service);
-
-  auto configuration_commands = std::make_shared<ConfigurationCommands>(
-      selection_commands_, executor_, timed_data_service_,
-      *scada_services_.session_service, profile_, local_events_, task_manager_);
-
-  singletons_.emplace(configuration_commands);
-  configuration_commands->Register();
-
-  selection_commands_.AddCommand(ChangePasswordCommandBuilder{
-      .local_events_ = local_events_,
-      .profile_ = profile_,
-      .session_service_ = *scada_services_.session_service}
-                                     .Build());
-
-  assert(scada_services_.session_service);
-
-  selection_commands_object_ =
-      std::make_shared<SelectionCommands>(SelectionCommandsContext{
-          executor_, task_manager_, *scada_services_.session_service,
-          node_event_provider_, file_cache_, profile_, *main_window_manager_,
-          node_service_, selection_commands_});
 
   auto status_bar_model =
       StatusBarModelBuilder{executor_,

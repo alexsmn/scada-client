@@ -15,10 +15,10 @@
 #include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
-#include "main_window/qt/status_bar_controller.h"
 #include "main_window/qt/view_manager_qt.h"
 #include "main_window/selection_commands.h"
 #include "main_window/simple_menu_command_handler.h"
+#include "main_window/status/qt/status_bar_controller.h"
 #include "profile/profile.h"
 
 #include <QAction>
