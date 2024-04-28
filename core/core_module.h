@@ -8,6 +8,7 @@
 #include <stack>
 
 class Executor;
+class ProgressHost;
 class Tracer;
 
 class CoreModule {
@@ -25,6 +26,8 @@ class CoreModule {
     return selection_commands_;
   }
 
+  ProgressHost& progress_host() { return *progress_host_; }
+
  private:
   std::stack<std::shared_ptr<void>> singletons_;
 
@@ -32,4 +35,6 @@ class CoreModule {
 
   BasicCommandRegistry<GlobalCommandContext> global_commands_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;
+
+  std::unique_ptr<ProgressHost> progress_host_;
 };

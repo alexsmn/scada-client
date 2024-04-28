@@ -34,7 +34,6 @@
 #include "services/alias_resolver_factory.h"
 #include "services/connection_state_reporter.h"
 #include "services/create_tree.h"
-#include "services/progress_host_impl.h"
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
@@ -187,9 +186,6 @@ void ClientApplication::Init() {
        .services_ = audited_scada_services,
        .node_event_provider_ = event_module_->node_event_provider()});
 
-  auto progress_host = std::make_shared<ProgressHostImpl>();
-  singletons_.emplace(progress_host);
-
   task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
       .executor_ = executor_,
       .node_service_ = *node_service_,
@@ -198,7 +194,7 @@ void ClientApplication::Init() {
           *audited_scada_services.node_management_service,
       .local_events_ = event_module_->local_events(),
       .profile_ = *profile_,
-      .progress_host_ = *progress_host});
+      .progress_host_ = core_module_->progress_host()});
 
   speech_ = std::make_unique<Speech>();
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
@@ -265,7 +261,7 @@ void ClientApplication::Init() {
           .global_commands_ = core_module_->global_commands()}));
 
   singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
-      executor_, *node_service_, *progress_host));
+      executor_, *node_service_, core_module_->progress_host()));
 
   auto controller_factory =
       std::make_shared<ControllerFactoryImpl>(ControllerFactoryImpl{
@@ -301,7 +297,7 @@ void ClientApplication::Init() {
           .node_command_handler_ =
               std::bind_front(&::ExecuteDefaultNodeCommand, executor_,
                               filesystem_component_->file_command()),
-          .progress_host_ = *progress_host,
+          .progress_host_ = core_module_->progress_host(),
           .create_tree_ = *create_tree_,
           .global_commands_ = core_module_->global_commands(),
           .selection_commands_ = core_module_->selection_commands(),

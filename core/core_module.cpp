@@ -1,5 +1,6 @@
-#include "core_module.h"
+#include "core/core_module.h"
 
+#include "core/progress_host_impl.h"
 #include "metrics/trace_sink_impl.h"
 #include "metrics/tracer.h"
 
@@ -10,6 +11,8 @@ CoreModule::CoreModule(std::shared_ptr<Executor> executor) {
   singletons_.emplace(trace_sink);
 
   tracer_ = std::make_unique<Tracer>(*trace_sink);
+
+  progress_host_ = std::make_unique<ProgressHostImpl>();
 }
 
 CoreModule::~CoreModule() {}

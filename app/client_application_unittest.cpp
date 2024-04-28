@@ -28,7 +28,7 @@ static constexpr std::string_view kKnownWindowTypes[] = {
     "Struct",   "Subsystems",   "Summ",         "Table",     "TableEditor",
     "TimeVal",  "Transmission", "Users"};
 
-Page MakeAllWindowsPage() {
+Page MakeKnownWindowsPage() {
   Page page;
 
   for (std::string_view type : kKnownWindowTypes) {
@@ -94,10 +94,10 @@ TEST_F(ClientApplicationTest, RunWithNewProfile) {
 }
 
 // Ensure that the initial page is created and all windows are defined.
-TEST_F(ClientApplicationTest, OpenKnownWindows) {
+TEST_F(ClientApplicationTest, OpensKnownWindows) {
   {
     Profile profile;
-    profile.AddPage(MakeAllWindowsPage());
+    profile.AddPage(MakeKnownWindowsPage());
     profile.Save();
   }
 
