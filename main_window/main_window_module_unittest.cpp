@@ -64,7 +64,6 @@ class MainWindowModuleTest : public Test {
   MainWindow* main_window_ = nullptr;
 
   static const int kWindowId = 111;
-  inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
 
 void MainWindowModuleTest::SetUp() {
@@ -117,7 +116,9 @@ TEST_F(MainWindowModuleTest, CloseLastWindowInvokesQuitHandler) {
 }
 
 TEST_F(MainWindowModuleTest, OpensViewWhenDownloadSucceeds) {
-  auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
+  auto window_def =
+      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
+          "some/path");
 
   EXPECT_CALL(controller_env_.file_manager_,
               DownloadFileFromServer(window_def.path));
@@ -127,7 +128,9 @@ TEST_F(MainWindowModuleTest, OpensViewWhenDownloadSucceeds) {
 }
 
 TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
-  auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
+  auto window_def =
+      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
+          "some/path");
 
   EXPECT_CALL(controller_env_.file_manager_,
               DownloadFileFromServer(window_def.path))

@@ -58,6 +58,7 @@ struct MainWindowModuleContext {
   CreateTree& create_tree_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  // TODO: Keep either controller factory or controller registry.
   ControllerFactory controller_factory_;
 };
 

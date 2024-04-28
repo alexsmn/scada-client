@@ -4,13 +4,10 @@
 #include "aui/models/status_bar_model_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
-#include "components/web/web_component.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
+#include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
-#include "filesystem/file_cache.h"
-#include "filesystem/file_manager_mock.h"
-#include "filesystem/file_registry.h"
 #include "main_window/action_manager.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
@@ -45,21 +42,15 @@ class MainWindowTest : public Test {
   void ExpectOpenView();
 
   AppEnvironment app_env_;
+  ControllerEnvironment controller_env_;
 
   MainWindowContext MakeMainWindowContext();
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
-
   ActionManager action_manager_;
-  FileRegistry file_registry_;
 
   StrictMock<MockFunction<void(const NodeCommandContext& context)>>
       node_command_handler_;
 
-  FileCache file_cache_{file_registry_};
-  StrictMock<MockFileManager> file_manager_;
-  Profile profile_;
   StrictMock<MockControllerFactory> controller_factory_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
@@ -72,7 +63,7 @@ class MainWindowTest : public Test {
       opened_view_factory_;
 
   MainWindowManager main_window_manager_{
-      {.profile_ = profile_,
+      {.profile_ = controller_env_.profile_,
        .main_window_factory_ = main_window_factory_.AsStdFunction(),
        .quit_handler_ = quit_handler_.AsStdFunction()}};
 
@@ -87,7 +78,6 @@ class MainWindowTest : public Test {
   std::optional<MainWindow> main_window_;
 
   static const int kWindowId = 111;
-  inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
 
 MainWindowTest::MainWindowTest() {
@@ -95,7 +85,7 @@ MainWindowTest::MainWindowTest() {
 
   // Add an empty page so the main window won't try to call `CreateInitialPage`.
   // There are no registered controllers.
-  profile_.AddPage({});
+  controller_env_.profile_.AddPage({});
 
 #if defined(UI_QT)
   main_window_.emplace(MakeMainWindowContext());
@@ -106,13 +96,13 @@ MainWindowTest::MainWindowTest() {
 
 MainWindowContext MainWindowTest::MakeMainWindowContext() {
   return {
-      .executor_ = executor_,
+      .executor_ = controller_env_.executor_,
       .action_manager_ = action_manager_,
       .window_id_ = kWindowId,
       .node_command_handler_ = node_command_handler_.AsStdFunction(),
-      .file_manager_ = file_manager_,
+      .file_manager_ = controller_env_.file_manager_,
       .main_window_manager_ = main_window_manager_,
-      .profile_ = profile_,
+      .profile_ = controller_env_.profile_,
       .opened_view_factory_ = opened_view_factory_.AsStdFunction(),
       .main_commands_factory_ =
           [](MainWindowInterface& main_window, DialogService& dialog_service) {
@@ -158,8 +148,8 @@ void MainWindowTest::ExpectOpenView() {
       .WillOnce(
           Invoke([this](MainWindow& main_window, WindowDefinition& window_def) {
             auto opened_view = std::make_unique<OpenedView>(OpenedViewContext{
-                .executor_ = executor_,
-                .window_info_ = kWindowInfo,
+                .executor_ = controller_env_.executor_,
+                .window_info_ = ControllerEnvironment::kFakeWindowInfo,
                 .window_def_ = window_def,
                 .dialog_service_ = main_window.GetDialogService(),
                 .controller_factory_ = controller_factory_.AsStdFunction()});
@@ -177,9 +167,12 @@ TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
 TEST_F(MainWindowTest, OpenView_DownloadSucceeds_OpensViewNormally) {
-  auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
+  auto window_def =
+      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
+          "some/path");
 
-  EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path));
+  EXPECT_CALL(controller_env_.file_manager_,
+              DownloadFileFromServer(window_def.path));
 
   ExpectOpenView();
 
@@ -190,9 +183,12 @@ TEST_F(MainWindowTest, OpenView_DownloadSucceeds_OpensViewNormally) {
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
 TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
-  auto window_def = WindowDefinition{kWindowInfo}.set_path("some/path");
+  auto window_def =
+      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
+          "some/path");
 
-  EXPECT_CALL(file_manager_, DownloadFileFromServer(window_def.path))
+  EXPECT_CALL(controller_env_.file_manager_,
+              DownloadFileFromServer(window_def.path))
       .WillOnce(
           Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
 
@@ -208,17 +204,17 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
 TEST_F(MainWindowTest, DISABLED_DeleteCurrentPage_Last) {
   main_window_->DeleteCurrentPage();
 
-  EXPECT_THAT(profile_.pages, SizeIs(1));
-  EXPECT_EQ(profile_.pages.begin()->second.GetWindowCount(), 0);
+  EXPECT_THAT(controller_env_.profile_.pages, SizeIs(1));
+  EXPECT_EQ(controller_env_.profile_.pages.begin()->second.GetWindowCount(), 0);
 }
 
 // When pages is NOT last, deletes the current page, creates to another page not
 // opened page.
 TEST_F(MainWindowTest, DeleteCurrentPage_NotLast) {
-  int another_page_id = profile_.AddPage(Page{}).id;
+  int another_page_id = controller_env_.profile_.AddPage(Page{}).id;
 
   main_window_->DeleteCurrentPage();
 
-  EXPECT_THAT(profile_.pages, SizeIs(1));
+  EXPECT_THAT(controller_env_.profile_.pages, SizeIs(1));
   EXPECT_EQ(main_window_->current_page().id, another_page_id);
 }

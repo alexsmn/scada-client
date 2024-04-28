@@ -104,10 +104,11 @@ ControllerRegistrarBase* FindControllerRegistrar(std::string_view name) {
     }
   }
 
-  assert(g_controller_registry);
-  for (const auto& [_, registrar] : g_controller_registry->registrars_) {
-    if (registrar->window_info().name == name) {
-      return registrar;
+  if (g_controller_registry) {
+    for (const auto& [_, registrar] : g_controller_registry->registrars_) {
+      if (registrar->window_info().name == name) {
+        return registrar;
+      }
     }
   }
 

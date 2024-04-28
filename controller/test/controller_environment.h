@@ -29,6 +29,15 @@
 #include <gmock/gmock.h>
 
 struct ControllerEnvironment {
+  ControllerEnvironment() {
+    controller_registry_.AddControllerFactory(
+        kFakeWindowInfo,
+        [](const ControllerContext&) -> std::unique_ptr<Controller> {
+          // This call must be intercepted by the fake controller factory.
+          throw std::runtime_error{"An attempt to create a fake controller"};
+        });
+  }
+
   scada::services services() {
     return {.monitored_item_service = &monitored_item_service_,
             .history_service = &history_service_,
@@ -79,6 +88,8 @@ struct ControllerEnvironment {
   testing::NiceMock<MockBlinkerManager> blinker_manager_;
   CreateTree create_tree_;
   PropertyService property_service_;
+
+  inline static const WindowInfo kFakeWindowInfo{.name = "fake"};
 };
 
 inline void ControllerEnvironment::TestController(unsigned command_id) {

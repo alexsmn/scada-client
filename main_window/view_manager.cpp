@@ -1,6 +1,7 @@
 #include "main_window/view_manager.h"
 
 #include "base/auto_reset.h"
+#include "base/containers/contains.h"
 #include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"
@@ -49,11 +50,8 @@ void ViewManager::DestroyView(OpenedView& view) {
     SetActiveView(nullptr);
   }
 
-  {
-    auto i = std::ranges::find(views_, &view);
-    assert(i != views_.end());
-    views_.erase(i);
-  }
+  assert(base::Contains(views_, &view));
+  std::erase(views_, &view);
 
   if (auto i = std::ranges::find(added_views_, &view);
       i != added_views_.end()) {

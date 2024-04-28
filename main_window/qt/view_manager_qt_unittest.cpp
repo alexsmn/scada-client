@@ -6,6 +6,7 @@
 #include "components/web/web_component.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
+#include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "main_window/view_manager_delegate_mock.h"
 
@@ -17,7 +18,8 @@
 using namespace testing;
 
 struct ViewState {
-  explicit ViewState(ViewManager& view_manager) : view_manager_{view_manager} {
+  ViewState(std::string_view window_type, ViewManager& view_manager)
+      : view_manager_{view_manager}, window_definition{window_type} {
     auto widget = std::make_unique<QWidget>();
 
     QObject::connect(widget.get(), &QObject::destroyed,
@@ -35,7 +37,7 @@ struct ViewState {
 
   ViewManager& view_manager_;
 
-  WindowDefinition window_definition{kWindowInfo};
+  WindowDefinition window_definition;
 
   NiceMock<MockFunction<void()>> widget_destroyed;
 
@@ -43,12 +45,11 @@ struct ViewState {
       std::make_unique<StrictMock<MockController>>();
 
   OpenedView* opened_view = nullptr;
-
-  inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
 
 class ViewManagerQtTest : public Test {
  public:
+  virtual void SetUp() override;
   virtual void TearDown() override;
 
  protected:
@@ -59,6 +60,8 @@ class ViewManagerQtTest : public Test {
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
 
+  ControllerRegistry controller_registry_;
+
   QMainWindow main_window_;
 
   StrictMock<MockDialogService> dialog_service_;
@@ -66,22 +69,35 @@ class ViewManagerQtTest : public Test {
   StrictMock<MockControllerFactory> controller_factory_;
 
   ViewManagerQt view_manager_qt_{main_window_, view_manager_delegate_};
+
+  inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
+
+void ViewManagerQtTest::SetUp() {
+  controller_registry_.AddControllerFactory(kWindowInfo,
+                                            [](const ControllerContext&) {
+                                              // This handler is intercepted by
+                                              // fake `controller_factory_` and
+                                              // must never invoked.
+                                              assert(false);
+                                              return nullptr;
+                                            });
+}
 
 void ViewManagerQtTest::TearDown() {}
 
 std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
-  auto view_state = std::make_unique<ViewState>(view_manager_qt_);
+  auto view_state =
+      std::make_unique<ViewState>(kWindowInfo.name, view_manager_qt_);
 
   auto new_opened_view = std::make_unique<OpenedView>(OpenedViewContext{
       .executor_ = executor_,
-      .window_info_ = ViewState::kWindowInfo,
+      .window_info_ = kWindowInfo,
       .window_def_ = view_state->window_definition,
       .dialog_service_ = dialog_service_,
       .controller_factory_ = controller_factory_.AsStdFunction()});
 
-  EXPECT_CALL(controller_factory_,
-              Call(ViewState::kWindowInfo.command_id, _, _))
+  EXPECT_CALL(controller_factory_, Call(kWindowInfo.command_id, _, _))
       .WillOnce(Return(ByMove(std::move(view_state->controller))));
 
   new_opened_view->Init();
