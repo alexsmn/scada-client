@@ -1,7 +1,9 @@
 ﻿#include "services/task_manager_impl.h"
 
+#include "base/promise.h"
 #include "base/promise_executor.h"
 #include "base/strings/stringprintf.h"
+#include "core/progress_host.h"
 #include "events/local_events.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
@@ -11,8 +13,6 @@
 #include "scada/node_management_service_promises.h"
 #include "scada/service_context.h"
 #include "scada/status_or.h"
-#include "base/promise.h"
-#include "services/progress_host.h"
 
 using namespace std::chrono_literals;
 
@@ -81,9 +81,8 @@ void TaskManagerImpl::CancelProgress() {
   running_progress_.reset();
 }
 
-promise<void> TaskManagerImpl::PostTask(
-    std::u16string_view description,
-    const TaskLauncher& launcher) {
+promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
+                                        const TaskLauncher& launcher) {
   return PostTaskMethod(description, [this, launcher] {
     scada::ToExplicitStatusCodePromise(launcher())
         .then(BindPromiseExecutor(
@@ -194,8 +193,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
       });
 }
 
-promise<void> TaskManagerImpl::PostDeleteTask(
-    const scada::NodeId& node_id) {
+promise<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
       base::StringPrintf(u"Удаление %ls", title.c_str()),
@@ -337,9 +335,8 @@ void TaskManagerImpl::Run() {
   }
 }
 
-promise<void> TaskManagerImpl::PostTaskMethod(
-    std::u16string_view title,
-    TaskMethod task) {
+promise<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
+                                              TaskMethod task) {
   auto promise = tasks_.emplace(std::u16string{title}, std::move(task)).promise;
 
   Run();

@@ -2,35 +2,15 @@
 
 #include "base/promise.h"
 #include "controller/node_id_set.h"
-#include "profile/window_definition.h"
 #include "node_service/node_ref.h"
 #include "scada/node_id.h"
 
 #include <string>
 
-namespace scada {
-class Status;
-}  // namespace scada
-
-class CreateTree;
-class DialogService;
-class FileCache;
-class LocalEvents;
-class MainWindow;
-class NodeService;
-class Page;
-class Profile;
-class OpenedView;
 class TaskManager;
 class TimedDataSpec;
 
 std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data);
-
-// TODO: Move to different file.
-void ReportRequestResult(const std::u16string& title,
-                         const scada::Status& status,
-                         LocalEvents& local_events,
-                         Profile& profile);
 
 const size_t kTableLimitation = 1000;
 
@@ -53,8 +33,3 @@ NamedNodes GetNamedNodes(const NodeRef& root,
 std::u16string FormatHostName(std::string_view host_name);
 
 void GetNodesRecursive(const NodeRef& parent, std::vector<NodeRef>& nodes);
-
-NodeRef GetPasteParentNode(NodeService& node_service,
-                           CreateTree& create_tree,
-                           const NodeRef& selected_node,
-                           const NodeRef& root_node);

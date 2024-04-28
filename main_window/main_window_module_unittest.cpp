@@ -5,6 +5,7 @@
 #include "components/web/web_component.h"
 #include "controller/controller_fake.h"
 #include "controller/test/controller_environment.h"
+#include "core/progress_host_impl.h"
 #include "events/event_module.h"
 #include "favorites/favorites_module.h"
 #include "main_window/main_window.h"
@@ -12,7 +13,6 @@
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
 #include "scada/status_promise.h"
-#include "services/progress_host_impl.h"
 #include "services/speech_service_mock.h"
 
 #include <gmock/gmock.h>

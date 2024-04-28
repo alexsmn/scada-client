@@ -9,6 +9,7 @@
 #include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
+#include "main_window/event_dispatcher.h"
 #include "main_window/main_menu_model.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_commands.h"
@@ -19,7 +20,6 @@
 #include "main_window/selection_commands.h"
 #include "main_window/status/status_bar_model_builder.h"
 #include "profile/profile.h"
-#include "services/event_dispatcher.h"
 
 #if defined(UI_QT)
 #include "main_window/qt/main_window_qt.h"

@@ -1,7 +1,7 @@
 #include "node_service_progress_tracker.h"
 
+#include "core/progress_host.h"
 #include "node_service/node_service.h"
-#include "services/progress_host.h"
 
 using namespace std::chrono_literals;
 

@@ -7,6 +7,7 @@
 #include "components/web/web_component.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
+#include "core/progress_host_impl.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_mock.h"
 #include "filesystem/file_registry.h"
@@ -16,7 +17,6 @@
 #include "main_window/status/status_bar_model_impl.h"
 #include "profile/profile.h"
 #include "scada/status_promise.h"
-#include "services/progress_host_impl.h"
 
 #if defined(UI_QT)
 #include "main_window/qt/main_window_qt.h"

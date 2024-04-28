@@ -1,7 +1,7 @@
 #include "status_bar_controller.h"
 
 #include "aui/models/status_bar_model.h"
-#include "services/progress_host.h"
+#include "core/progress_host.h"
 
 #include <QLabel>
 #include <QProgressBar>

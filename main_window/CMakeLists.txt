@@ -8,6 +8,11 @@ client_module_link_libraries(client_main_window PUBLIC aui)
 
 client_module_link_libraries(client_main_window PRIVATE
   client_controller
+  # TODO: Remove. Use dependecy injection.
+  client_export_csv
+  client_favorites
+  client_filesystem
+  client_portfolio
   client_print_service
   net
 )
@@ -28,12 +33,12 @@ target_link_libraries(client_main_window_wt PRIVATE client_wt_lib)
 
 target_link_libraries(client_main_window_qt_unittests PRIVATE
   aui_test_qt
-  # TODO: Remove dependency on `client_qt_lib`.
-  client_qt_lib
+  client_controller_test_qt
+  client_core
 )
 
 target_link_libraries(client_main_window_wt_unittests PRIVATE
   aui_test_wt
-  # TODO: Remove dependency on `client_wt_lib`.
-  client_wt_lib
+  client_controller_test_wt
+  client_core
 )

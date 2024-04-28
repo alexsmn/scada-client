@@ -80,20 +80,6 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   return str;
 }
 
-void ReportRequestResult(const std::u16string& title,
-                         const scada::Status& status,
-                         LocalEvents& local_events,
-                         Profile& profile) {
-  if (status && !profile.show_write_ok)
-    return;
-
-  scada::LocalizedText message = base::StringPrintf(
-      u"%ls - %ls.", title.c_str(), ToString16(status).c_str());
-  LocalEvents::Severity severity =
-      status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;
-  local_events.ReportEvent(severity, message);
-}
-
 promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
   return FetchChildren(node).then([node, max_count] {
     std::vector<promise<NodeIdSet>> promises;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "services/progress_host.h"
+#include "core/progress_host.h"
 
 #include <boost/signals2/signal.hpp>
 
