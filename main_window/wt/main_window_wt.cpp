@@ -37,7 +37,9 @@ MainWindow::MainWindow(Wt::WContainerWidget& parent,
   Init(*view_manager_);
 }
 
-MainWindow::~MainWindow() {}
+MainWindow::~MainWindow() {
+  view_manager_->ClosePage();
+}
 
 DialogService& MainWindow::GetDialogService() {
   return dialog_service_;

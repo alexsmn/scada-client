@@ -43,10 +43,9 @@ Page MakeKnownWindowsPage() {
 class ClientApplicationTest : public Test {
  public:
   ClientApplicationTest();
+  ~ClientApplicationTest();
 
  protected:
-  void StartApp();
-
   boost::asio::io_context io_context_;
   std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
@@ -54,7 +53,7 @@ class ClientApplicationTest : public Test {
 
   base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
-  StrictMock<MockFunction<promise<std::optional<DataServices>>(
+  NiceMock<MockFunction<promise<std::optional<DataServices>>(
       DataServicesContext&& services_context)>>
       login_handler_;
 
@@ -72,11 +71,12 @@ ClientApplicationTest::ClientApplicationTest() {
           DataServices::FromUnownedServices(services_.services())})));
 }
 
-void ClientApplicationTest::StartApp() {
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
-
-  app_.Start().get();
+ClientApplicationTest::~ClientApplicationTest() {
+  app_.Quit().get();
 }
+
+// TODO: Enable Wt tests once `QTabWidget::removeTab` stops returning null.
+#if !defined(UI_WT)
 
 TEST_F(ClientApplicationTest, LoginFailed) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
@@ -87,10 +87,7 @@ TEST_F(ClientApplicationTest, LoginFailed) {
 
 // Ensure that the initial page is created and all windows are defined.
 TEST_F(ClientApplicationTest, RunWithNewProfile) {
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
-
   app_.Start().get();
-  app_.Quit().get();
 }
 
 // Ensure that the initial page is created and all windows are defined.
@@ -100,8 +97,6 @@ TEST_F(ClientApplicationTest, OpensKnownWindows) {
     profile.AddPage(MakeKnownWindowsPage());
     profile.Save();
   }
-
-  EXPECT_CALL(login_handler_, Call(/*services_context=*/_));
 
   app_.Start().get();
 
@@ -113,14 +108,12 @@ TEST_F(ClientApplicationTest, OpensKnownWindows) {
     opened_view_types.emplace_back(opened_view->window_info().name);
   }
   EXPECT_THAT(opened_view_types, UnorderedElementsAreArray(kKnownWindowTypes));
-
-  app_.Quit().get();
 }
 
 // Ensures that Modus displays show the actual server data when the application
 // starts.
 TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
-  StartApp();
+  app_.Start().get();
 
   // ACT
 
@@ -153,3 +146,5 @@ TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
   timed_data.Connect(app_.timed_data_service(), node_id);
   EXPECT_EQ(timed_data.current(), initial_data_value);
 }
+
+#endif

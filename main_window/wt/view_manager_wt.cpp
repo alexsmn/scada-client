@@ -99,21 +99,22 @@ void ViewManagerWt::RootPane::SetRootBlock(std::unique_ptr<Block> block) {
 void ViewManagerWt::OpenLayout(Page& page, const PageLayout& layout) {
   Wt::WApplication::UpdateLock update_lock{Wt::WApplication::instance()};
 
-  if (auto block = OpenLayoutBlock(page, layout.main))
+  if (auto block = OpenLayoutBlock(page, layout.main)) {
     root_pane_.SetRootBlock(std::move(block));
+  }
 
-  // Open windows not opended by layout.
+  // Open windows not opened by layout.
   for (auto* opened_view : views_) {
-    if (!IsViewAdded(*opened_view))
+    if (!IsViewAdded(*opened_view)) {
       AddView(*opened_view);
+    }
   }
 }
 
 OpenedView* ViewManagerWt::FindViewByWidget(const Wt::WWidget* widget) {
-  auto i = std::find_if(views_.begin(), views_.end(),
-                        [widget](OpenedView* opened_view) {
-                          return opened_view->view() == widget;
-                        });
+  auto i = std::ranges::find(views_, widget, [](const OpenedView* opened_view) {
+    return opened_view->view();
+  });
   return i != views_.end() ? *i : nullptr;
 }
 
@@ -127,19 +128,22 @@ std::unique_ptr<Wt::WWidget> ViewManagerWt::RootPane::RemoveView(
     OpenedView& opened_view) {
   // TODO: Describe the scenario in a comment.
   assert(opened_view.view());
-  if (!opened_view.view())
+  if (!opened_view.view()) {
     return nullptr;
+  }
 
   auto* pane = FindWidgetPane(*opened_view.view());
-  if (!pane)
+  assert(pane);
+  if (!pane) {
     return nullptr;
+  }
 
-  auto w = pane->RemoveView(opened_view);
+  auto widget = pane->RemoveView(opened_view);
 
   opened_view.ReleaseView();
   view_manager_.DestroyView(opened_view);
 
-  return w;
+  return widget;
 }
 
 std::unique_ptr<Wt::WWidget> ViewManagerWt::DockPane::RemoveView(
@@ -150,25 +154,32 @@ std::unique_ptr<Wt::WWidget> ViewManagerWt::DockPane::RemoveView(
 
 void ViewManagerWt::DockPane::ClosePane() {}
 
+ViewManagerWt::DockSubPane::~DockSubPane() {}
+
 std::unique_ptr<Wt::WWidget> ViewManagerWt::DockSubPane::RemoveView(
     OpenedView& opened_view) {
   assert(opened_view.view());
 
-  auto w = tab_widget_->removeTab(opened_view.view());
+  auto widget = tab_widget_->removeTab(opened_view.view());
 
-  assert(root_pane_.widget_data_.find(w.get()) !=
-         root_pane_.widget_data_.end());
-  root_pane_.widget_data_.erase(w.get());
+  // WARNING: `WTabWidget::removeTab` may return null because of a bug.
+  assert(widget);
 
-  if (tab_widget_->count() == 0)
+  assert(root_pane_.widget_data_.contains(opened_view.view()));
+  root_pane_.widget_data_.erase(opened_view.view());
+
+  if (tab_widget_->count() == 0) {
     ClosePane();
+  }
 
-  return w;
+  return widget;
 }
 
 void ViewManagerWt::DockSubPane::ClosePane() {
   auto* item = root_pane_.root_layout_->findWidgetItem(tab_widget_);
-  assert(item);
+  if (!item) {
+    return;
+  }
 
   if (item->parentLayout() == root_pane_.root_layout_) {
     assert(root_pane_.root_layout_->indexOf(item) != -1);
@@ -221,7 +232,7 @@ std::unique_ptr<Wt::WWidget> ViewManagerWt::CenterPane::RemoveView(
   auto* tab_widget = root_pane_.GetTabWidget(opened_view);
   assert(tab_widget);
 
-  auto w = RemoveTabWorkaround(*tab_widget, *opened_view.view());
+  auto widget = RemoveTabWorkaround(*tab_widget, *opened_view.view());
 
   if (tab_widget !=
           root_pane_.root_layout_->widgetAt(Wt::LayoutPosition::Center) &&
@@ -229,11 +240,10 @@ std::unique_ptr<Wt::WWidget> ViewManagerWt::CenterPane::RemoveView(
     tab_widget->removeFromParent();
   }
 
-  assert(root_pane_.widget_data_.find(opened_view.view()) !=
-         root_pane_.widget_data_.end());
+  assert(root_pane_.widget_data_.contains(opened_view.view()));
   root_pane_.widget_data_.erase(opened_view.view());
 
-  return w;
+  return widget;
 }
 
 OpenedView* ViewManagerWt::GetActiveView() {
@@ -267,8 +277,9 @@ void ViewManagerWt::RootPane::AddView(OpenedView& view) {
 ViewManagerWt::DockPane& ViewManagerWt::RootPane::GetOrCreateDockPane(
     DockSide side) {
   auto& pane = dock_pane(side);
-  if (!pane)
-    pane = std::make_unique<DockPane>(view_manager_, *this, side);
+  if (!pane) {
+    pane = std::make_unique<DockPane>(view_manager_, /*root_pane=*/*this, side);
+  }
   return *pane;
 }
 
@@ -303,9 +314,12 @@ void ViewManagerWt::DockPane::AddView(OpenedView& view) {
 
   DockSubPane* subpane = nullptr;
   if (!subpanes_.empty() && tabify) {
-    subpane = &subpanes_.front();
+    subpane = subpanes_.front().get();
   } else {
-    subpane = &subpanes_.emplace_back(view_manager_, root_pane_, *this);
+    subpane = subpanes_
+                  .emplace_back(std::make_unique<DockSubPane>(
+                      view_manager_, root_pane_, /*dock_pane=*/*this))
+                  .get();
   }
 
   subpane->AddView(view);
@@ -317,11 +331,14 @@ ViewManagerWt::DockSubPane::DockSubPane(ViewManagerWt& view_manager,
     : view_manager_{view_manager},
       root_pane_{root_pane},
       dock_pane_{dock_pane} {
-  tab_widget_ = dock_pane.layout_->addWidget(root_pane_.CreateTabWidget(), 1);
-  if (dock_pane.side_ == DockSide::Bottom)
+  tab_widget_ =
+      dock_pane.layout_->addWidget(root_pane_.CreateTabWidget(), /*stretch=*/1);
+
+  if (dock_pane.side_ == DockSide::Bottom) {
     tab_widget_->setHeight(200);
-  else
+  } else {
     tab_widget_->setWidth(200);
+  }
 }
 
 void ViewManagerWt::DockSubPane::AddView(OpenedView& view) {
@@ -331,16 +348,16 @@ void ViewManagerWt::DockSubPane::AddView(OpenedView& view) {
   auto* tab =
       tab_widget_->addTab(std::unique_ptr<Wt::WWidget>(view.view()),
                           view.GetWindowTitle(), Wt::ContentLoading::Eager);
+
   tab->setCloseable(true);
 
   /*view.view()->resize(Wt::WLength{100, Wt::LengthUnit::Percentage},
                       Wt::WLength{100, Wt::LengthUnit::Percentage});*/
+
   view.view()->setHeight(Wt::WLength{99, Wt::LengthUnit::Percentage});
 
-  assert(root_pane_.widget_data_.find(view.view()) ==
-         root_pane_.widget_data_.end());
-  root_pane_.widget_data_.emplace(view.view(),
-                                  RootPane::WidgetData{tab_widget_});
+  assert(!root_pane_.widget_data_.contains(view.view()));
+  root_pane_.widget_data_.try_emplace(view.view(), tab_widget_, this);
 
   view_manager_.added_views_.emplace_back(&view);
 }
@@ -352,20 +369,20 @@ std::unique_ptr<ViewManagerWt::Block> ViewManagerWt::OpenLayoutBlock(
     std::vector<OpenedView*> tab_views;
     for (int window_id : block.wins) {
       auto* opened_view = FindViewByID(window_id);
-      if (!opened_view)
+      if (!opened_view) {
         continue;
+      }
 
       if (opened_view->window_info().is_pane()) {
-        auto side = opened_view->window_info().dock_bottom() ? DockSide::Left
-                                                             : DockSide::Bottom;
-        root_pane_.GetOrCreateDockPane(side).AddView(*opened_view);
+        root_pane_.AddView(*opened_view);
       } else {
         tab_views.emplace_back(opened_view);
       }
     }
 
-    if (tab_views.empty())
+    if (tab_views.empty()) {
       return nullptr;
+    }
 
     auto tab_widget = root_pane_.CreateTabWidget();
     for (auto* opened_view : tab_views) {
@@ -379,7 +396,7 @@ std::unique_ptr<ViewManagerWt::Block> ViewManagerWt::OpenLayoutBlock(
         /*tab_widget->contentsStack()->focussed().connect([this, tab] {
           delegate_.OnActiveViewChanged(FindViewByWidget(tab));
         });*/
-        added_views_.emplace_back(opened_view);
+        root_pane_.AddView(*opened_view);
       }
     }
     return std::make_unique<Block>(std::move(tab_widget));
@@ -387,10 +404,12 @@ std::unique_ptr<ViewManagerWt::Block> ViewManagerWt::OpenLayoutBlock(
   } else if (block.type == PageLayoutBlock::SPLIT) {
     auto child1 = OpenLayoutBlock(page, *block.left);
     auto child2 = OpenLayoutBlock(page, *block.right);
-    if (!child1)
+    if (!child1) {
       return child2;
-    if (!child2)
+    }
+    if (!child2) {
       return child1;
+    }
 
     auto layout = block.horz ? static_cast<std::unique_ptr<Wt::WBoxLayout>>(
                                    std::make_unique<Wt::WHBoxLayout>())
@@ -417,8 +436,9 @@ void ViewManagerWt::CenterPane::AddView(OpenedView& view) {
   auto* tab_widget = view_manager_.active_view_
                          ? root_pane_.GetTabWidget(*view_manager_.active_view_)
                          : nullptr;
-  if (!tab_widget)
+  if (!tab_widget) {
     tab_widget = GetFirstTabWidget(*root_pane_.root_layout_);
+  }
 
   if (!tab_widget) {
     auto root_widget = root_pane_.CreateTabWidget();
@@ -431,10 +451,8 @@ void ViewManagerWt::CenterPane::AddView(OpenedView& view) {
                          view.GetWindowTitle(), Wt::ContentLoading::Eager);
   tab->setCloseable(true);
 
-  assert(root_pane_.widget_data_.find(view.view()) ==
-         root_pane_.widget_data_.end());
-  root_pane_.widget_data_.emplace(view.view(),
-                                  RootPane::WidgetData{tab_widget, this});
+  assert(!root_pane_.widget_data_.contains(view.view()));
+  root_pane_.widget_data_.try_emplace(view.view(), tab_widget, this);
 
   view_manager_.added_views_.emplace_back(&view);
 }

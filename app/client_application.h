@@ -71,7 +71,7 @@ class ClientApplication : private ClientApplicationContext {
   [[nodiscard]] promise<void> Quit();
 
  private:
-  void Init();
+  void PostLogin();
 
   promise<void> Login();
   void OnLoginCompleted(const DataServices& services);
@@ -116,5 +116,7 @@ class ClientApplication : private ClientApplicationContext {
 
   bool profile_loaded_ = false;
 
+  // Sets on `Quit` and never resets. Allows multiple `Quit` calls.
+  bool quitting_ = false;
   promise<void> quit_promise_;
 };

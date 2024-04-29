@@ -74,7 +74,7 @@ ConfigurationTreeView::ConfigurationTreeView(
   });
 }
 
-ConfigurationTreeView::~ConfigurationTreeView() = default;
+ConfigurationTreeView::~ConfigurationTreeView() {}
 
 std::unique_ptr<UiView> ConfigurationTreeView::Init(
     const WindowDefinition& definition) {

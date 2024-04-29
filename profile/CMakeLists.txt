@@ -7,16 +7,6 @@ client_module_link_libraries(client_profile PRIVATE
   scada_common_events
 )
 
-target_link_libraries(client_profile_qt PRIVATE
-  # For `FindWindowInfoByName`.
-  client_controller_qt
-)
-
-target_link_libraries(client_profile_wt PRIVATE
-  # For `FindWindowInfoByName`.
-  client_controller_wt
-)
-
 # UTs.
 
 # TODO: This should work:

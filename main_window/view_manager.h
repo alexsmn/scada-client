@@ -25,7 +25,8 @@ class ViewManager {
 
   OpenedView* FindViewByType(std::string_view window_type) const;
 
-  OpenedView* CreateView(WindowDefinition& def, const OpenedView* after_view);
+  OpenedView* CreateView(WindowDefinition& def,
+                         const OpenedView* after_view = nullptr);
 
   OpenedView* OpenView(const WindowDefinition& def,
                        bool activate,
@@ -62,6 +63,7 @@ class ViewManager {
 
   ViewManagerDelegate& delegate_;
 
+  // TODO: Use unique_ptr instead of raw pointer.
   Views views_;
   Views added_views_;
 

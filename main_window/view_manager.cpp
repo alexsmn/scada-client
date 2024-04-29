@@ -25,8 +25,7 @@ OpenedView* ViewManager::FindViewByID(int id) const {
 }
 
 bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
-  auto i = std::ranges::find(added_views_, &opened_view);
-  return i != added_views_.end();
+  return base::Contains(added_views_, &opened_view);
 }
 
 OpenedView* ViewManager::FindViewByType(std::string_view window_type) const {
@@ -52,11 +51,7 @@ void ViewManager::DestroyView(OpenedView& view) {
 
   assert(base::Contains(views_, &view));
   std::erase(views_, &view);
-
-  if (auto i = std::ranges::find(added_views_, &view);
-      i != added_views_.end()) {
-    added_views_.erase(i);
-  }
+  std::erase(added_views_, &view);
 
   delegate_.OnViewClosed(view);
 
@@ -100,8 +95,9 @@ void ViewManager::OpenPage(const Page& page) {
       WindowDefinition& win = current_page_->GetWindow(i);
 
       // create window
-      if (win.visible)
-        CreateView(win, NULL);
+      if (win.visible) {
+        CreateView(win);
+      }
     }
 
     OpenLayout(*current_page_, current_page_->layout);
@@ -125,8 +121,9 @@ void ViewManager::ClosePage() {
   // Prevent WindowDefinition delete on close child windows.
   base::AutoReset<bool> closing_page(&closing_page_, true);
 
-  while (!views_.empty())
+  while (!views_.empty()) {
     CloseView(*views_.front());
+  }
 }
 
 OpenedView* ViewManager::OpenView(const WindowDefinition& def,

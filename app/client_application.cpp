@@ -144,10 +144,10 @@ MainWindowManager& ClientApplication::main_window_manager() {
 }
 
 promise<void> ClientApplication::Start() {
-  return Login().then(BindPromiseExecutor(executor_, [this] { Init(); }));
+  return Login().then(BindPromiseExecutor(executor_, [this] { PostLogin(); }));
 }
 
-void ClientApplication::Init() {
+void ClientApplication::PostLogin() {
   const scada::services& audited_scada_services =
       master_data_services_->as_services();
 
@@ -339,20 +339,31 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
 }
 
 promise<void> ClientApplication::Quit() {
+  if (quitting_) {
+    return quit_promise_;
+  }
+
   logger_->Write(LogSeverity::Normal, "Quit");
+
+  quitting_ = true;
 
   if (!master_data_services_) {
     quit_promise_.resolve();
     return quit_promise_;
   }
 
-  // TODO: Localize.
-  event_module_->local_events().ReportEvent(LocalEvents::SEV_ERROR,
-                                            u"Отключение от сервера...");
-
   logger_->Write(LogSeverity::Normal, "Disconnect");
+
+  // Event module is not created if login fails.
+  // TODO: Create event module unconditionally.
+  if (event_module_) {
+    // TODO: Localize.
+    event_module_->local_events().ReportEvent(LocalEvents::SEV_ERROR,
+                                              u"Отключение от сервера...");
+  }
 
   ForwardPromise(IgnoreResult(master_data_services_->Disconnect()),
                  quit_promise_);
+
   return quit_promise_;
 }

@@ -61,6 +61,8 @@ class ViewManagerWt final : public ViewManager {
                 RootPane& root_pane,
                 DockPane& dock_pane);
 
+    ~DockSubPane();
+
     void ClosePane();
 
     virtual void AddView(OpenedView& view) override;
@@ -90,7 +92,8 @@ class ViewManagerWt final : public ViewManager {
 
     Wt::WBoxLayout* layout_ = nullptr;
 
-    std::vector<DockSubPane> subpanes_;
+    // A pane address must be stable.
+    std::vector<std::unique_ptr<DockSubPane>> subpanes_;
 
     friend class DockSubPane;
   };

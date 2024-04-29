@@ -24,6 +24,7 @@ using namespace testing;
 class MainWindowModuleTest : public Test {
  public:
   virtual void SetUp() override;
+  virtual void TearDown() override;
 
  protected:
   AppEnvironment app_env_;
@@ -109,6 +110,15 @@ void MainWindowModuleTest::SetUp() {
   main_window_ = &main_windows.front();
 }
 
+void MainWindowModuleTest::TearDown() {
+  // Since the module is deleted in non-standard way, we need to clean up the
+  // main windows manually.
+  for (auto& main_window :
+       main_window_module_->main_window_manager().main_windows()) {
+    main_window.CleanupForTesting();
+  }
+}
+
 TEST_F(MainWindowModuleTest, CloseLastWindowInvokesQuitHandler) {
   EXPECT_CALL(quit_handler_, Call());
 
@@ -116,29 +126,27 @@ TEST_F(MainWindowModuleTest, CloseLastWindowInvokesQuitHandler) {
 }
 
 TEST_F(MainWindowModuleTest, OpensViewWhenDownloadSucceeds) {
+  auto path = std::filesystem::path("some/path");
+
+  EXPECT_CALL(controller_env_.file_manager_, DownloadFileFromServer(path));
+
   auto window_def =
-      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
-          "some/path");
+      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);
 
-  EXPECT_CALL(controller_env_.file_manager_,
-              DownloadFileFromServer(window_def.path));
-
-  EXPECT_THAT(main_window_->OpenView(window_def, /*make_active=*/true).get(),
-              NotNull());
+  EXPECT_THAT(main_window_->OpenView(window_def).get(), NotNull());
 }
 
 TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
-  auto window_def =
-      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
-          "some/path");
+  auto path = std::filesystem::path("some/path");
 
-  EXPECT_CALL(controller_env_.file_manager_,
-              DownloadFileFromServer(window_def.path))
+  EXPECT_CALL(controller_env_.file_manager_, DownloadFileFromServer(path))
       .WillOnce(
           Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
 
-  EXPECT_THAT(main_window_->OpenView(window_def, /*make_active=*/true).get(),
-              NotNull());
+  auto window_def =
+      WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);
+
+  EXPECT_THAT(main_window_->OpenView(window_def).get(), NotNull());
 }
 
 // When the current page is the last not opened, deletes the current page,
