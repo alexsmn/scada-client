@@ -2,15 +2,14 @@
 
 #include "aui/models/grid_range.h"
 #include "base/format_time.h"
-#include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "components/summary/summary_model_util.h"
-#include "profile/window_definition.h"
-#include "profile/window_definition_util.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "profile/window_definition.h"
+#include "profile/window_definition_util.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -423,7 +422,7 @@ void SummaryModel::SetParams(const TimeRange& time_range,
 }
 
 scada::DataValue SummaryModel::GetDataValue(int row, int column) const {
-  Column& col = *columns_[column];
+  const auto& col = *columns_[column];
   return col.GetDataValue(row);
 }
 

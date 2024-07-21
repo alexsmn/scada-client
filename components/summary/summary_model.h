@@ -22,6 +22,7 @@ class TimedDataSpec;
 class WindowDefinition;
 
 struct SummaryModelContext {
+  // The node service is only used when adding contained items.
   NodeService& node_service_;
   TimedDataService& timed_data_service_;
 };
