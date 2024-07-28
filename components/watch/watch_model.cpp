@@ -77,9 +77,10 @@ void WatchModel::SetDevice(NodeRef device) {
 
   Clear();
 
-  event_source_.Start(device_.node_id(),
-                      ToDateTimeRangeWithOpenRange(time_range_),
-                      /*delegate=*/*this);
+  event_source_.Start(
+      device_.node_id(),
+      ToDateTimeRangeWithOpenRange(time_range_, /*now=*/base::Time::Now()),
+      /*delegate=*/*this);
 }
 
 void WatchModel::SetTimeRange(const TimeRange& time_range) {
@@ -91,9 +92,10 @@ void WatchModel::SetTimeRange(const TimeRange& time_range) {
 
   Clear();
 
-  event_source_.Start(device_.node_id(),
-                      ToDateTimeRangeWithOpenRange(time_range_),
-                      /*delegate=*/*this);
+  event_source_.Start(
+      device_.node_id(),
+      ToDateTimeRangeWithOpenRange(time_range_, /*now=*/base::Time::Now()),
+      /*delegate=*/*this);
 }
 
 void WatchModel::SaveLog(const std::filesystem::path& path) {

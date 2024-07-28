@@ -22,10 +22,11 @@ struct SummaryModelParams {
 
 inline SummaryModelParams CalculateSummaryModelParams(
     const TimeRange& time_range,
-    scada::Duration interval) {
+    scada::Duration interval,
+    base::Time now) {
   assert(!interval.is_zero());
 
-  auto [start_time, end_time] = ToDateTimeRange(time_range);
+  auto [start_time, end_time] = ToDateTimeRange(time_range, now);
 
   // Align bounds to the aggregation interval.
   auto origin_time = scada::GetLocalAggregateStartTime();

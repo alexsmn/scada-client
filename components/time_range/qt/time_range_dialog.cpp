@@ -41,7 +41,7 @@ TimeRangeDialog::TimeRangeDialog(TimeRangeContext&& context, QWidget* parent)
 
   ui.timeGroupBox->setChecked(!time_range_.dates);
 
-  auto bounds = ToDateTimeRange(time_range_);
+  auto bounds = ToDateTimeRange(time_range_, /*now=*/base::Time::Now());
   auto start = ToQDateTime(bounds.first);
   auto end = ToQDateTime(bounds.second);
 

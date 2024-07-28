@@ -42,8 +42,10 @@ struct TimeRange {
   base::TimeDelta interval;
 };
 
-scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range);
-scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range);
+scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
+                                     base::Time now);
+scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range,
+                                                  base::Time now);
 
 std::string ToString(TimeRange::Type type);
 std::string ToString(const TimeRange& time_range);

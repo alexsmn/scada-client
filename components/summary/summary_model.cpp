@@ -399,8 +399,8 @@ void SummaryModel::SetParams(const TimeRange& time_range,
                              scada::AggregateFilter aggregate_filter) {
   assert(!aggregate_filter.is_null());
 
-  auto params =
-      CalculateSummaryModelParams(time_range, aggregate_filter.interval);
+  auto params = CalculateSummaryModelParams(
+      time_range, aggregate_filter.interval, /*now=*/base::Time::Now());
 
   time_range_ = time_range;
   aggregate_filter_ = std::move(aggregate_filter);

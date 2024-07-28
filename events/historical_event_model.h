@@ -63,7 +63,7 @@ class HistoricalEventModel {
 inline void HistoricalEventModel::Update() {
   historical_events_.clear();
 
-  auto [from, to] = ToDateTimeRange(time_range_);
+  auto [from, to] = ToDateTimeRange(time_range_, /*now=*/base::Time::Now());
 
   LOG(INFO) << "Query events from " << FormatTime(from).c_str();
 

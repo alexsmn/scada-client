@@ -89,7 +89,7 @@ struct GraphViewLoader {
 
   void FixTimeRange() {
     if (auto time_range = RestoreTimeRange(definition_)) {
-      auto [start, end] = ToDateTimeRange(*time_range);
+      auto [start, end] = ToDateTimeRange(*time_range, now);
       graph_.horizontal_axis().SetRange(views::GraphRange{
           start.ToDoubleT(), end.ToDoubleT(), views::GraphRange::TIME});
       graph_.horizontal_axis().SetTimeFit(time_range->type !=
@@ -106,6 +106,7 @@ struct GraphViewLoader {
   const Profile& profile_;
   MetrixGraph& graph_;
   GraphView& graph_view_;
+  base::Time now = base::Time::Now();
 
   using PaneMap = std::unordered_map<int, views::GraphPane*>;
   PaneMap pane_map;

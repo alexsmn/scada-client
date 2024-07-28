@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/models/mirror_table_model.h"
 #include "aui/table.h"
+#include "base/time/default_clock.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -30,6 +31,14 @@ const aui::TableColumn s_columns[] = {
      aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
 };
 
+struct MirrorTableModelHolder {
+  explicit MirrorTableModelHolder(std::shared_ptr<TimedDataModel> model)
+      : model_{std::move(model)} {}
+
+  const std::shared_ptr<TimedDataModel> model_;
+  aui::MirrorTableModel mirror_model{*model_};
+};
+
 }  // namespace
 
 // TimedDataController
@@ -40,26 +49,15 @@ TimedDataController::TimedDataController(const ControllerContext& context)
 std::unique_ptr<UiView> TimedDataController::Init(
     const WindowDefinition& definition) {
   model_ = std::make_shared<TimedDataModel>(
-      TimedDataModelContext{timed_data_service_});
+      TimedDataModelContext{.clock_ = *base::DefaultClock::GetInstance(),
+                            .timed_data_service_ = timed_data_service_});
 
-  struct MirrorTableModelHolder {
-    explicit MirrorTableModelHolder(std::shared_ptr<TimedDataModel> model)
-        : model_{std::move(model)} {}
-
-    const std::shared_ptr<TimedDataModel> model_;
-    aui::MirrorTableModel mirror_model{*model_};
-  };
+  model_->Init(definition);
 
   auto mirror_table_holder = std::make_shared<MirrorTableModelHolder>(model_);
 
   mirror_model_ = std::shared_ptr<aui::MirrorTableModel>(
       mirror_table_holder, &mirror_table_holder->mirror_model);
-
-  if (const WindowItem* item = definition.FindItem("Item"))
-    model_->SetFormula(item->GetString("path"));
-
-  if (auto time_range = RestoreTimeRange(definition))
-    model_->SetTimeRange(*time_range);
 
   if (const auto* item = definition.FindItem("View")) {
     mirror_model_->SetMirrored(
@@ -68,21 +66,21 @@ std::unique_ptr<UiView> TimedDataController::Init(
     mirror_model_->SetMirrored(profile_.timed_data.mirrored);
   }
 
-  view_ = new aui::Table(mirror_model_,
-                         std::vector<aui::TableColumn>(std::begin(s_columns),
-                                                       std::end(s_columns)));
-  view_->SetShowGrid(true);
+  auto view = std::make_unique<aui::Table>(
+      mirror_model_, std::vector<aui::TableColumn>(std::begin(s_columns),
+                                                   std::end(s_columns)));
+  view->SetShowGrid(true);
 
-  view_->SetContextMenuHandler([this](const aui::Point& point) {
+  view->SetContextMenuHandler([this](const aui::Point& point) {
     controller_delegate_.ShowPopupMenu(nullptr, IDR_ITEM_POPUP, point, true);
   });
 
 #if defined(UI_QT)
-  view_->horizontalHeader()->setSectionsClickable(true);
-  view_->horizontalHeader()->setSortIndicatorShown(true);
-  view_->horizontalHeader()->setSortIndicator(
+  view->horizontalHeader()->setSectionsClickable(true);
+  view->horizontalHeader()->setSortIndicatorShown(true);
+  view->horizontalHeader()->setSortIndicator(
       0, mirror_model_->mirrored() ? Qt::DescendingOrder : Qt::AscendingOrder);
-  QObject::connect(view_->horizontalHeader(), &QHeaderView::sectionClicked,
+  QObject::connect(view->horizontalHeader(), &QHeaderView::sectionClicked,
                    [this](int logical_index) {
                      if (logical_index == 0) {
                        mirror_model_->SetMirrored(!mirror_model_->mirrored());
@@ -96,9 +94,11 @@ std::unique_ptr<UiView> TimedDataController::Init(
                    });
 #endif
 
+  view_ = view.get();
+
   selection_.SelectTimedData(model_->timed_data());
 
-  return std::unique_ptr<UiView>{view_->CreateParentIfNecessary()};
+  return std::unique_ptr<UiView>{view.release()->CreateParentIfNecessary()};
 }
 
 void TimedDataController::Save(WindowDefinition& definition) {

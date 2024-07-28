@@ -28,8 +28,9 @@ base::Time AlignTime(base::Time time, base::TimeDelta interval) {
 
 }  // namespace
 
-scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range) {
-  auto result = ToDateTimeRange(time_range);
+scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range,
+                                                  base::Time now) {
+  auto result = ToDateTimeRange(time_range, now);
 
   if (time_range.end.is_null() || time_range.end.is_max()) {
     result.second = base::Time::Max();
@@ -38,8 +39,8 @@ scada::DateTimeRange ToDateTimeRangeWithOpenRange(const TimeRange& time_range) {
   return result;
 }
 
-scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range) {
-  auto now = base::Time::Now();
+scada::DateTimeRange ToDateTimeRange(const TimeRange& time_range,
+                                     base::Time now) {
   base::Time from, to;
 
   switch (time_range.type) {

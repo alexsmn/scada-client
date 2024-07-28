@@ -2,8 +2,10 @@
 
 #include "base/format_time.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/time/clock.h"
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"
+#include "profile/window_definition.h"
 #include "scada/date_time.h"
 #include "timed_data/timed_data_property.h"
 
@@ -12,29 +14,36 @@
 TimedDataModel::TimedDataModel(TimedDataModelContext&& context)
     : TimedDataModelContext{std::move(context)} {
   timed_data_.property_change_handler = [this](const PropertySet& properties) {
-    if (properties.is_current_changed())
-      Update({timed_data_.current().source_timestamp, scada::DateTime::Max()});
+    if (properties.is_current_changed()) {
+      UpdateRows(
+          {timed_data_.current().source_timestamp, scada::DateTime::Max()});
+    }
   };
 
-  timed_data_.update_handler = [this](
-                                   std::span<const scada::DataValue> values) {
-    assert(!values.empty());
-    Update({values.front().source_timestamp, values.back().source_timestamp});
-  };
+  timed_data_.update_handler =
+      [this](std::span<const scada::DataValue> values) {
+        if (!values.empty()) {
+          UpdateRows({values.front().source_timestamp,
+                      values.back().source_timestamp});
+        }
+      };
 
   timed_data_.ready_handler = [this] {
-    Update({timed_data_.ready_from(), scada::DateTime::Max()});
+    UpdateRows({timed_data_.ready_from(), scada::DateTime::Max()});
   };
 
   timed_data_.node_modified_handler = [this] { NotifyModelChanged(); };
 }
 
-void TimedDataModel::SetTimedData(TimedDataSpec timed_data) {
-  timed_data_ = std::move(timed_data);
-  Update({scada::DateTime::Min(), scada::DateTime::Max()});
+void TimedDataModel::Init(const WindowDefinition& window_def) {
+  if (const WindowItem* item = window_def.FindItem("Item")) {
+    SetFormula(item->GetString("path"));
+  }
+
+  SetTimeRange(RestoreTimeRange(window_def).value_or(TimeRange::Type::Day));
 }
 
-void TimedDataModel::Update(scada::DateTimeRange range) {
+void TimedDataModel::UpdateRows(const scada::DateTimeRange& range) {
   auto new_begin = begin_iterator_;
 
   int new_count = 0;
@@ -83,27 +92,31 @@ int TimedDataModel::GetRowCount() {
 }
 
 void TimedDataModel::GetCell(aui::TableCell& cell) {
-  const auto& tvq = value(cell.row);
+  const auto& data_value = value(cell.row);
 
   switch (cell.column_id) {
     case CID_TIME:
-      cell.text = ToString16(tvq.source_timestamp);
+      cell.text = base::UTF8ToUTF16(FormatTime(
+          data_value.source_timestamp, TIME_FORMAT_DATE | TIME_FORMAT_TIME |
+                                           TIME_FORMAT_MSEC |
+                                           (utc_time_ ? TIME_FORMAT_UTC : 0)));
       break;
 
     case CID_VALUE:
       // Format without quality.
-      cell.text =
-          timed_data_.GetValueString(tvq.value, tvq.qualifier, ValueFormat{0});
+      cell.text = timed_data_.GetValueString(
+          data_value.value, data_value.qualifier, ValueFormat{0});
       break;
 
     case CID_QUALITY:
-      cell.text = ToString16(tvq.qualifier);
+      cell.text = ToString16(data_value.qualifier);
       break;
 
     case CID_COLLECTION_TIME:
-      cell.text = base::UTF8ToUTF16(
-          FormatTime(tvq.server_timestamp,
-                     TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
+      cell.text = base::UTF8ToUTF16(FormatTime(
+          data_value.server_timestamp, TIME_FORMAT_DATE | TIME_FORMAT_TIME |
+                                           TIME_FORMAT_MSEC |
+                                           (utc_time_ ? TIME_FORMAT_UTC : 0)));
       break;
   }
 
@@ -115,13 +128,15 @@ void TimedDataModel::GetCell(aui::TableCell& cell) {
 void TimedDataModel::SetFormula(std::string_view formula) {
   TimedDataSpec timed_data;
   try {
-    timed_data.SetFrom(base::Time::Now() - base::TimeDelta::FromHours(1));
+    timed_data.SetFrom(timed_data_.from());
     timed_data.Connect(timed_data_service_, formula);
 
   } catch (const std::exception&) {
   }
 
-  SetTimedData(timed_data);
+  timed_data_ = timed_data;
+  SetTimeRange(time_range_);
+  UpdateRows({scada::DateTime::Min(), scada::DateTime::Max()});
 }
 
 TimeRange TimedDataModel::GetTimeRange() const {
@@ -130,15 +145,12 @@ TimeRange TimedDataModel::GetTimeRange() const {
 
 void TimedDataModel::SetTimeRange(const TimeRange& time_range) {
   time_range_ = time_range;
-  auto [start, end] = ToDateTimeRange(time_range_);
-
-  if (!timed_data_.connected())
-    return;
+  auto [start, end] = ToDateTimeRange(time_range_, clock_.Now());
 
   timed_data_.SetRange({start, end});
 
   end_time_ =
       time_range.end.is_null() ? scada::DateTime::Max() : time_range.end;
 
-  Update({scada::DateTime::Min(), end_time_});
+  UpdateRows({scada::DateTime::Min(), end_time_});
 }
