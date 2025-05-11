@@ -62,10 +62,14 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
                                   std::vector<scada::AddNodesResult>{
                                       {.added_node_id = added_node_id}}));
 
-  auto node_id = task_manager_
-                     ->PostInsertTask({.type_definition_id = type_def_id,
-                                       .parent_id = parent_id})
-                     .get();
+  const scada::NodeId node_id =
+      task_manager_
+          ->PostInsertTask(
+              // Provide the node ID similar to how it's provided on paste.
+              {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
+               .type_definition_id = type_def_id,
+               .parent_id = parent_id})
+          .get();
 
   EXPECT_EQ(node_id, added_node_id);
 

@@ -27,6 +27,10 @@ struct GraphViewSaver {
     }
 
     SaveTimeRange(definition_, graph_view_.GetTimeRange());
+
+    definition_.AddItem("Graph").SetString(
+        "bk_color",
+        aui::ColorToString(graph_.palette().color(graph_.backgroundRole())));
   }
 
   void SavePane(const GraphPane& pane) {

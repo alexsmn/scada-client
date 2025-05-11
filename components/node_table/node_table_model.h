@@ -30,7 +30,10 @@ class NodeTableModel : private PropertyContext,
   aui::FixedRowModel& row_model() { return row_model_; }
   aui::ColumnHeaderModel& column_model() { return column_model_; }
 
-  NodeRef node(int index) const { return rows_[index].node; }
+  NodeRef node(int index) const {
+    return index < static_cast<int>(rows_.size()) ? rows_[index].node
+                                                  : NodeRef();
+  }
 
   const scada::NodeId& sort_property_id() const { return sort_property_id_; }
   void SetSorting(const scada::NodeId& property_id);

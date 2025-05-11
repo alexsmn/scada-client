@@ -23,6 +23,8 @@ class GraphView : protected ControllerContext,
   bool FindColor(aui::Color color) const;
   aui::Color NewColor() const;
 
+  void SetGraphColor(aui::Color color);
+
   // Controller methods
   virtual bool IsWorking() const override;
   virtual std::unique_ptr<UiView> Init(
@@ -50,6 +52,7 @@ class GraphView : protected ControllerContext,
   void DeleteSelectedPane();
 
   void ChooseLineColor();
+  void ChooseGraphColor();
 
   void UndoZoom();
 

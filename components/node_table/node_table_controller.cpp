@@ -79,7 +79,8 @@ std::unique_ptr<UiView> NodeTableController::Init(
       return;
     }
 
-    auto node = model_->node(rows.front());
+    // TODO: Investigate why `rows.front()` is not valid in some cases.
+    NodeRef node = model_->node(rows.front());
     assert(node);
 
     selection_.SelectNode(node);

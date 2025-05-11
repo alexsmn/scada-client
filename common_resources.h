@@ -124,6 +124,7 @@
 #define ID_AGGREGATION_START            200
 #define IDR_STRUCT_POPUP                201
 #define ID_GRAPH_COLOR                  201
+#define ID_GRAPH_BK_COLOR               4035
 #define IDD_LOGIN                       202
 #define IDR_EVENT_POPUP                 202
 #define ID_EXPORT_EXCEL                 202
@@ -459,7 +460,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
-#define _APS_NEXT_COMMAND_VALUE         4035
+#define _APS_NEXT_COMMAND_VALUE         4036
 #define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           205
 #endif

@@ -781,7 +781,7 @@ BEGIN
         MENUITEM "Ступенчатый",                 ID_GRAPH_STEPS, CHECKED
         MENUITEM "Полоска прокрутки",           ID_GRAPH_SCROLL_BAR, CHECKED
         MENUITEM "Цвет...",                     ID_GRAPH_COLOR
-        MENUITEM SEPARATOR
+        MENUITEM "Цвет фона...",                ID_GRAPH_BK_COLOR
         MENUITEM "Текущее время",               ID_NOW, CHECKED
         MENUITEM SEPARATOR
         MENUITEM "Добавить панель",             ID_GRAPH_ADD_PANE

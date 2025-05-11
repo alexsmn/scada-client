@@ -31,7 +31,7 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
   graph_->horizontal_axis().SetScrollRange(graph_->horizontal_axis().range());
   graph_->UpdateData();
 
-  for (auto* pane : graph_->panes()) {
+  for (views::GraphPane* pane : graph_->panes()) {
     static_cast<MetrixGraph::MetrixPane*>(pane)->ShowLegend(true);
   }
 
@@ -98,6 +98,9 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
       Command{ID_GRAPH_COLOR}
           .set_execute_handler([this] { ChooseLineColor(); })
           .set_enabled_handler(line_enabled_handler));
+
+  command_registry_.AddCommand(Command{ID_GRAPH_BK_COLOR}.set_execute_handler(
+      [this] { ChooseGraphColor(); }));
 
   command_registry_.AddCommand(
       Command{ID_GRAPH_DOTS}
@@ -410,15 +413,33 @@ void GraphView::OnGraphModified() {
 }
 
 void GraphView::ChooseLineColor() {
-  auto* line = graph_->primary_line();
+  MetrixGraph::MetrixLine* line = graph_->primary_line();
   if (!line)
     return;
 
 #if defined(UI_QT)
-  auto new_color = QColorDialog::getColor(line->color(), graph_);
-  if (new_color.isValid())
+  QColor new_color = QColorDialog::getColor(line->color(), graph_);
+  if (new_color.isValid()) {
     line->SetColor(new_color);
+  }
 #endif
+}
+
+void GraphView::ChooseGraphColor() {
+#if defined(UI_QT)
+  QPalette palette = graph_->palette();
+  const QColor new_color =
+      QColorDialog::getColor(palette.color(graph_->backgroundRole()), graph_);
+  if (new_color.isValid()) {
+    SetGraphColor(new_color);
+  }
+#endif
+}
+
+void GraphView::SetGraphColor(aui::Color color) {
+  QPalette palette = graph_->palette();
+  palette.setColor(graph_->backgroundRole(), color.qcolor());
+  graph_->setPalette(palette);
 }
 
 void GraphView::OnSelectedCursorChanged() {

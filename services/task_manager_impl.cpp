@@ -94,35 +94,32 @@ promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
 
 promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
     const scada::NodeState& node_state) {
-  // Those fields must be unset:
-  assert(node_state.node_class == scada::NodeClass::Object);
-  assert(node_state.reference_type_id.is_null());
-  assert(node_state.children.empty());
-
-  promise<scada::NodeId> final_promise;
-
-  auto ref = shared_from_this();
+  const promise<scada::NodeId> final_promise;
+  const std::shared_ptr<TaskManagerImpl> ref = shared_from_this();
 
   // Cannot use `PostTask` because it only accepts void promises.
   PostTaskMethod(u"Вставка", [this, ref, node_state, final_promise] {
-    auto type_def = node_service_.GetNode(node_state.type_definition_id);
+    NodeRef type_def = node_service_.GetNode(node_state.type_definition_id);
 
-    auto add_node_promise =
+    promise<scada::NodeId> add_node_promise =
         FetchNode(type_def).then([this, ref, type_def, node_state] {
           if (type_def.node_class() != scada::NodeClass::ObjectType &&
               type_def.node_class() != scada::NodeClass::VariableType) {
             throw scada::status_exception{scada::StatusCode::Bad_WrongTypeId};
           }
 
-          auto node_class =
+          const scada::NodeClass node_class =
               type_def.node_class() == scada::NodeClass::ObjectType
                   ? scada::NodeClass::Object
                   : scada::NodeClass::Variable;
 
           return scada::AddNode(
               node_management_service_,
-              {node_state.node_id, node_state.parent_id, node_class,
-               node_state.type_definition_id, node_state.attributes});
+              // Create a new node ID on copy.
+              {.parent_id = node_state.parent_id,
+               .node_class = node_class,
+               .type_definition_id = node_state.type_definition_id,
+               .attributes = node_state.attributes});
         });
 
     scada::ToExplicitStatusCodePromise(add_node_promise)
@@ -132,28 +129,30 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
                                                      /*result_text=*/{});
                            }));
 
-    auto add_props_and_refs_promise = add_node_promise.then(BindPromiseExecutor(
-        executor_, weak_from_this(),
-        [this, node_state](const scada::NodeId& added_node_id) {
-          // TODO: Combine with properties.
+    promise<scada::NodeId> add_props_and_refs_promise =
+        add_node_promise.then(BindPromiseExecutor(
+            executor_, weak_from_this(),
+            [this, node_state](const scada::NodeId& added_node_id) {
+              // TODO: Combine with properties.
 
-          for (const auto& reference : node_state.references) {
-            if (reference.forward)
-              PostAddReference(reference.reference_type_id, added_node_id,
-                               reference.node_id);
-            else
-              PostAddReference(reference.reference_type_id, reference.node_id,
-                               added_node_id);
-          }
+              for (const auto& reference : node_state.references) {
+                if (reference.forward)
+                  PostAddReference(reference.reference_type_id, added_node_id,
+                                   reference.node_id);
+                else
+                  PostAddReference(reference.reference_type_id,
+                                   reference.node_id, added_node_id);
+              }
 
-          if (node_state.properties.empty()) {
-            return make_resolved_promise(added_node_id);
-          }
+              if (node_state.properties.empty()) {
+                return make_resolved_promise(added_node_id);
+              }
 
-          return ToValuePromise(PostUpdateTask(added_node_id, /*attributes=*/{},
-                                               node_state.properties),
-                                added_node_id);
-        }));
+              return ToValuePromise(
+                  PostUpdateTask(added_node_id, /*attributes=*/{},
+                                 node_state.properties),
+                  added_node_id);
+            }));
 
     ForwardPromise(add_props_and_refs_promise, final_promise);
   });

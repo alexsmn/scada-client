@@ -10,12 +10,12 @@ struct GraphViewLoader {
     for (auto& item : definition_.items) {
       if (item.name_is("GraphPane")) {
         ReadPane(item);
-
       } else if (item.name_is("Item")) {
         ReadItem(item);
-
       } else if (item.name_is("TimeScale")) {
         ReadTimeScale(item);
+      } else if (item.name_is("Graph")) {
+        ReadGraph(item);
       }
     }
 
@@ -23,6 +23,12 @@ struct GraphViewLoader {
       FixTimeRange();
       graph_.SetHorizontalScrollBarVisible(
           profile_.graph_view.default_scroll_bar);
+    }
+  }
+
+  void ReadGraph(const WindowItem& item) {
+    if (std::string_view color = item.GetString("bk_color"); !color.empty()) {
+      graph_view_.SetGraphColor(aui::StringToColor(color).native_color());
     }
   }
 
