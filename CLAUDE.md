@@ -133,10 +133,9 @@ Not managed by vcpkg:
 
 ## CI/CD
 
-GitHub Actions with two workflows, both triggered on pushes/PRs to `release/2.5`:
+GitHub Actions workflow triggered on pushes/PRs to `release/2.5`:
 
-1. **cmake-multi-platform.yml** — Uses the `default` CMake preset (Ninja Multi-Config) with vcpkg across Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang); runs configure, build, and test steps
-2. **msbuild.yml** — Builds on Windows with MSBuild after NuGet restore, with vcpkg manifest mode
+- **cmake-multi-platform.yml** — Uses the `default` CMake preset (Ninja Multi-Config) with vcpkg across Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang); runs configure, build, and test steps
 
 ## Architecture
 
