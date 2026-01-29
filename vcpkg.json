@@ -1,0 +1,26 @@
+{
+  "name": "scada-client",
+  "version": "2.5.6",
+  "description": "Telecontrol SCADA Client for industrial monitoring and control",
+  "license": "Apache-2.0",
+  "dependencies": [
+    "boost-algorithm",
+    "boost-asio",
+    "boost-beast",
+    "boost-locale",
+    "boost-range",
+    "boost-signals2",
+    "gtest",
+    "qt5-base",
+    "qt5-tools",
+    "wt",
+    {
+      "name": "qt5-activeqt",
+      "platform": "windows"
+    },
+    {
+      "name": "qt5-winextras",
+      "platform": "windows"
+    }
+  ]
+}

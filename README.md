@@ -20,13 +20,27 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 
 - C++17 compiler (MSVC, GCC, or Clang)
 - CMake 3.x+
-- Qt 5 (Widgets, LinguistTools)
-- Boost (ASIO, Signals2)
-- Wt (optional, for web UI)
+- [vcpkg](https://vcpkg.io/) (recommended for dependency management)
+- Qt 5 (Widgets, LinguistTools, PrintSupport; ActiveQt and WinExtras on Windows)
+- Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
+- Google Test
+- Wt (web UI framework)
 - OPC UA SDK (via `third_party/opc`)
 - Windows SDK / ATL (Windows only, for Modus and COM support)
 
 ## Building
+
+### Installing Dependencies with vcpkg
+
+```bash
+vcpkg install
+```
+
+This installs all dependencies declared in `vcpkg.json`. Then pass the vcpkg toolchain file when configuring CMake:
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
+```
 
 ### CMake (Cross-Platform)
 

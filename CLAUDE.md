@@ -79,7 +79,20 @@ scada-client/
 
 The project uses CMake with a hierarchical structure. Each module directory has its own `CMakeLists.txt`.
 
-**Configure and build:**
+**Install dependencies with vcpkg:**
+
+```bash
+vcpkg install
+```
+
+**Configure and build (with vcpkg):**
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
+cmake --build build --config Release
+```
+
+**Configure and build (system dependencies):**
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -S .
@@ -112,11 +125,17 @@ Qt targets get `AUTOMOC`, `AUTOUIC`, `AUTORCC` enabled and `.ts` translation fil
 
 ### Key Dependencies
 
-- **Qt 5** (Widgets, LinguistTools) — Required
-- **Boost** (ASIO for networking, Signals2 for events)
-- **Wt** — Web framework for alternative UI
+Managed via `vcpkg.json` manifest:
+
+- **Qt 5** — `qt5-base` (Widgets, PrintSupport), `qt5-tools` (LinguistTools), `qt5-activeqt` (Windows), `qt5-winextras` (Windows)
+- **Boost** — `boost-asio`, `boost-beast`, `boost-signals2`, `boost-locale`, `boost-range`, `boost-algorithm`
+- **Google Test** — `gtest`
+- **Wt** — `wt` (web framework for alternative UI)
+
+Not managed by vcpkg:
+
 - **OPC UA SDK** — Industrial protocol (via `third_party/opc`)
-- **Modus 6.30** — ActiveX/COM library (Windows/Qt only)
+- **Modus 6.30** — ActiveX/COM library (Windows/Qt only, via `${deps}/modus`)
 - **Windows SDK / ATL** — COM/ActiveX support (Windows only)
 
 ## CI/CD
