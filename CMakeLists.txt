@@ -1,3 +1,15 @@
+cmake_minimum_required(VERSION 3.25)
+
+project(scada-client
+  VERSION 2.5.6
+  LANGUAGES CXX
+)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+enable_testing()
+
 # Required for `AUTOMOC`, `AUTOUIC`, and `AUTORCC` added to all
 # `client_module` targets.
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
