@@ -79,29 +79,22 @@ scada-client/
 
 The project uses CMake with a hierarchical structure. Each module directory has its own `CMakeLists.txt`.
 
-**Install dependencies with vcpkg:**
+**Using CMake presets (recommended):**
 
 ```bash
-vcpkg install
+cmake --preset default           # Configure (Ninja Multi-Config, once)
+cmake --build --preset release   # Build Release
+cmake --build --preset debug     # Build Debug
+ctest --preset release           # Test Release
 ```
 
-**Configure and build (with vcpkg):**
+The `default` configure preset uses the Ninja Multi-Config generator with vcpkg via `$VCPKG_ROOT`. Build output goes to `build/`.
+
+**Manual configuration:**
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
 cmake --build build --config Release
-```
-
-**Configure and build (system dependencies):**
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -S .
-cmake --build build --config Release
-```
-
-**Run tests:**
-
-```bash
 ctest --test-dir build --build-config Release
 ```
 
@@ -142,8 +135,8 @@ Not managed by vcpkg:
 
 GitHub Actions with two workflows, both triggered on pushes/PRs to `release/2.5`:
 
-1. **cmake-multi-platform.yml** — Builds on Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang) in Release mode; runs CTest
-2. **msbuild.yml** — Builds on Windows with MSBuild after NuGet restore
+1. **cmake-multi-platform.yml** — Uses the `default` CMake preset (Ninja Multi-Config) with vcpkg across Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang); runs configure, build, and test steps
+2. **msbuild.yml** — Builds on Windows with MSBuild after NuGet restore, with vcpkg manifest mode
 
 ## Architecture
 
@@ -307,6 +300,8 @@ Unit tests follow the `*_unittest.cpp` naming convention (33 test files). Tests 
 ### Running Tests
 
 ```bash
+ctest --preset release
+# or manually:
 ctest --test-dir build --build-config Release
 ```
 

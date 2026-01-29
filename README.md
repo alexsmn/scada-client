@@ -30,23 +30,23 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 
 ## Building
 
-### Installing Dependencies with vcpkg
+### CMake Presets (Recommended)
+
+The project provides `CMakePresets.json` using the Ninja Multi-Config generator. Requires `VCPKG_ROOT` to be set.
 
 ```bash
-vcpkg install
+cmake --preset default              # Configure (once)
+cmake --build --preset release      # Build Release
+cmake --build --preset debug        # Build Debug
+ctest --preset release              # Test Release
 ```
 
-This installs all dependencies declared in `vcpkg.json`. Then pass the vcpkg toolchain file when configuring CMake:
+### Manual CMake Configuration
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
-```
-
-### CMake (Cross-Platform)
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -S .
 cmake --build build --config Release
+ctest --test-dir build --build-config Release
 ```
 
 ### MSBuild (Windows)
@@ -54,12 +54,6 @@ cmake --build build --config Release
 ```bash
 nuget restore .
 msbuild /m /p:Configuration=Release .
-```
-
-### Running Tests
-
-```bash
-ctest --test-dir build --build-config Release
 ```
 
 ## Project Structure
