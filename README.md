@@ -1,5 +1,122 @@
 # Telecontrol SCADA Client
 
+A C++ industrial SCADA (Supervisory Control and Data Acquisition) client application for remote monitoring and control of industrial systems. Provides real-time and historical data viewing, event/alarm journaling, device configuration management, and support for multiple industrial protocols.
+
+## Features
+
+- Remote device monitoring and control
+- Real-time and historical time-series data viewing
+- Event/alarm journaling with acknowledgment
+- Device and node configuration management
+- User authentication and persistent profiles
+- Multi-window interface with customizable page layouts
+- Data export (CSV, configuration)
+- Print and print preview
+- Graph/chart visualization
+- Protocol support: SCADA/Telecontrol, OPC UA, Vidicon, Modus
+- Dual UI: Qt 5 desktop application and Wt web application
+
+## Prerequisites
+
+- C++17 compiler (MSVC, GCC, or Clang)
+- CMake 3.x+
+- [vcpkg](https://vcpkg.io/) (recommended for dependency management)
+- Qt 5 (Widgets, LinguistTools, PrintSupport; ActiveQt and WinExtras on Windows)
+- Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
+- Google Test
+- Wt (web UI framework)
+- OPC UA SDK (via `third_party/opc`)
+- Windows SDK / ATL (Windows only, for Modus and COM support)
+
+## Building
+
+### CMake Presets (Recommended)
+
+The project provides `CMakePresets.json` using the Ninja Multi-Config generator. Requires `VCPKG_ROOT` to be set.
+
+```bash
+cmake --preset default              # Configure (once)
+cmake --build --preset release      # Build Release
+cmake --build --preset debug        # Build Debug
+ctest --preset release              # Test Release
+```
+
+### Manual CMake Configuration
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
+cmake --build build --config Release
+ctest --test-dir build --build-config Release
+```
+
+### MSBuild (Windows)
+
+```bash
+nuget restore .
+msbuild /m /p:Configuration=Release .
+```
+
+## Project Structure
+
+```
+scada-client/
+├── app/                # Application entry points (qt/ and wt/ subdirs)
+├── aui/                # Abstract UI layer (platform-agnostic models)
+├── base/               # Foundation utilities
+├── clipboard/          # Clipboard and node serialization
+├── components/         # ~22 reusable UI components
+├── configuration/      # Device/node configuration management
+├── controller/         # MVC controller layer and command registry
+├── core/               # Core module: command registries, tracer, progress
+├── events/             # Event system, journal, local events
+├── export/             # CSV and configuration export/import
+├── favorites/          # Bookmarks management
+├── filesystem/         # File system operations and caching
+├── graph/              # Graph/chart visualization
+├── main_window/        # Main window management and page lifecycle
+├── modus/              # Modus 6.30 ActiveX/COM integration (Qt only)
+├── portfolio/          # Portfolio management
+├── print/              # Print and print preview
+├── profile/            # User profiles, window definitions, layouts
+├── properties/         # Property management and dialogs
+├── services/           # Shared services (speech, tasks, telemetry)
+├── timed_data/         # Time-series data service
+├── vidicon/            # Vidicon protocol integration (Qt only)
+├── web/                # Web component
+├── res/                # Resources and settings
+└── test/               # Integration tests
+```
+
+Modules with UI code contain `qt/` and `wt/` subdirectories for platform-specific implementations. The custom `client_module.cmake` build system creates dual targets (`<name>_qt` and `<name>_wt`) automatically for each module.
+
+## Architecture
+
+The application uses a modular MVC architecture with context-based dependency injection. Each module defines a `*Context` struct containing its dependencies and privately inherits from it:
+
+```
+main() -> AppInit -> ClientApplication -> [CoreModule, EventModule, MainWindowModule, ...]
+```
+
+Three pluggable data service backends are supported via the `REGISTER_DATA_SERVICES` macro:
+
+| Backend | Protocol | Default Address |
+|---------|----------|-----------------|
+| Scada | Telecontrol | `localhost` |
+| OPC UA | OPC UA | `opc.tcp://localhost:4840` |
+| Vidicon | Vidicon | `localhost` |
+
+## Command-Line Switches
+
+| Switch | Description |
+|--------|-------------|
+| `--verbose-logging` | Enable verbose log output |
+| `--log-service-read` | Log service read operations |
+| `--log-service-browse` | Log service browse operations |
+| `--log-service-history` | Log service history operations |
+| `--log-service-event` | Log service events |
+| `--log-service-model-change-event` | Log model change events |
+| `--log-service-node-semantics-change-event` | Log node semantics change events |
+
 ## Discovery
 
 http://telecontrol.ru/discovery.json
@@ -8,8 +125,8 @@ http://telecontrol.ru/discovery.json
 
 Add to the `discovery.json` when possible:
 
-```
-  "telemetry": "https://d26i7akorx31n9.cloudfront.net/telemetry",
+```json
+"telemetry": "https://d26i7akorx31n9.cloudfront.net/telemetry",
 ```
 
 ## Updates
@@ -29,9 +146,13 @@ Add to the `discovery.json` when possible:
     "versions": {
       "2.3.8": {
         "description": "Many updates",
-        "installer": "https://telecontrol-public.s3-us-west-2.amazonaws.com/telecontrol-scada/telecontrol-scada-2.3.8.msi",
+        "installer": "https://telecontrol-public.s3-us-west-2.amazonaws.com/telecontrol-scada/telecontrol-scada-2.3.8.msi"
       }
     }
   }
 }
 ```
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE).
