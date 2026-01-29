@@ -37,8 +37,14 @@ jobs:
           - os: ubuntu-latest
             c_compiler: cl
 
+    env:
+      VCPKG_BINARY_SOURCES: 'clear;default'
+
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: recursive
 
     - name: Set up vcpkg
       uses: lukka/run-vcpkg@v11
