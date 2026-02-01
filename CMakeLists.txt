@@ -15,16 +15,19 @@ enable_testing()
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt5LinguistTools REQUIRED)
 
-include(FetchContent)
 include(client_module.cmake)
 include(translation.cmake)
 
-FetchContent_Declare(
-  scada_common
-  GIT_REPOSITORY https://github.com/alexsmn/scada-common.git
-  GIT_TAG release/2.5
-)
-FetchContent_MakeAvailable(scada_common)
+# Fetch scada-common only for standalone builds (not in the monorepo).
+if(NOT TARGET scada_common)
+  include(FetchContent)
+  FetchContent_Declare(
+    scada_common
+    GIT_REPOSITORY https://github.com/alexsmn/scada-common.git
+    GIT_TAG release/2.5
+  )
+  FetchContent_MakeAvailable(scada_common)
+endif()
 
 include_directories(client
   "."

@@ -6,6 +6,7 @@
 #include <optional>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 template <typename R, typename A>
