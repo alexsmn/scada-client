@@ -349,14 +349,14 @@ promise<> OpenedViewCommands::OnCreateRecordComplete(
   // Capture node so it doesn't release before completion.
   node.Fetch(NodeFetchStatus::NodeOnly(),
              [this, weak_ptr = weak_factory_.GetWeakPtr(), node,
-              promise](const NodeRef& node) mutable {
+              promise](const NodeRef& fetched_node) mutable {
                if (!weak_ptr.get()) {
                  promise.reject(std::exception{});
                  return;
                }
-               controller_->OnViewNodeCreated(node);
-               auto def =
-                   MakeWindowDefinition(&kNodePropertyWindowInfo, node, false);
+               controller_->OnViewNodeCreated(fetched_node);
+               auto def = MakeWindowDefinition(&kNodePropertyWindowInfo,
+                                               fetched_node, false);
                ::OpenView(main_window_, def, true);
                promise.resolve();
              });

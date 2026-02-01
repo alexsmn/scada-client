@@ -95,8 +95,8 @@ install(FILES ${TRANSLATIONS_OUT}
   COMPONENT Client)
 
 install(TARGETS client_qt
-  RUNTIME DESTINATION "bin"
-  COMPONENT Client)
+  RUNTIME_DEPENDENCY_SET client_deps
+  RUNTIME DESTINATION "bin" COMPONENT Client)
 
 # UT-s
 
