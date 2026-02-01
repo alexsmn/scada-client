@@ -76,19 +76,20 @@ add_custom_command(
 find_package(Qt5LinguistTools REQUIRED)
 qt5_add_translation(TRANSLATIONS_OUT "client_ru.ts")
 
-# Must be a custom command to run after build. `file(COPY)` won't work.
-add_custom_target(
-  client_qt_copy_translations
-  SOURCES ${TRANSLATIONS_OUT}
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different 
+add_custom_command(
+  OUTPUT "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
+  DEPENDS ${TRANSLATIONS_OUT}
+  COMMAND ${CMAKE_COMMAND} -E make_directory
+    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
     ${TRANSLATIONS_OUT}
-    ${CMAKE_BINARY_DIR}/bin/$<CONFIGURATION>/translations/client_ru.qm
-  COMMENT "Copy ${TRANSLATIONS_OUT} to output directory")
+    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
+  COMMENT "Copy translations to output directory")
+
+add_custom_target(client_qt_copy_translations
+  DEPENDS "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm")
 
 add_dependencies(client_qt client_qt_copy_translations)
-
-#file(COPY ${TRANSLATIONS_OUT}
-#   DESTINATION "${CMAKE_BINARY_DIR}/bin/$<CONFIGURATION>/translations")
 
 install(FILES ${TRANSLATIONS_OUT}
   DESTINATION "bin/translations"
