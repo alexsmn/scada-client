@@ -22,7 +22,6 @@ find_package(ScadaCommon REQUIRED)
 
 include_directories(client
   "."
-  "${third_party}/opc"
 )
 
 add_subdirectory(base)

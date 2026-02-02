@@ -6,14 +6,10 @@ client_module_link_libraries(client_modus PRIVATE
   client_web
 )
 
-add_subdirectory("${deps}/modus" modus)
+find_package(Modus REQUIRED)
 target_compile_definitions(modus PUBLIC MODUS_GDIP)
 
-add_subdirectory("${deps}/qt/schematic" "schematic") 
-
-target_include_directories(client_modus_qt PRIVATE
-  "${third_party}/modus"
-)
+find_package(Schematic REQUIRED)
 
 file(GLOB_RECURSE MODUS_IDLS CONFIGURE_DEPENDS
   "."
