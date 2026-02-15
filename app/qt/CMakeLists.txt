@@ -105,4 +105,4 @@ add_executable(client_qt_unittests ${UNITTESTS} ${UNITTESTS_QT})
 # Uses the custom runner from `test/qt/test_main_qt.cpp`.
 target_link_libraries(client_qt_unittests PRIVATE client_qt_lib base_unittest)
 include(GoogleTest)
-gtest_discover_tests(client_qt_unittests)
+gtest_discover_tests(client_qt_unittests DISCOVERY_MODE PRE_TEST)

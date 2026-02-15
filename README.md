@@ -32,21 +32,14 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 
 ### CMake Presets (Recommended)
 
-The project provides `CMakePresets.json` using the Ninja Multi-Config generator. Requires `VCPKG_ROOT` to be set.
+The shared `CMakePresets.json` defines a `ninja` configure preset (Ninja Multi-Config). Developers create a `CMakeUserPresets.json` (git-ignored) with local paths, MSVC environment, and dev presets that inherit from `ninja`. See `CMakeUserPresets.json.template` for the template.
 
 ```bash
-cmake --preset default              # Configure (once)
-cmake --build --preset release      # Build Release
-cmake --build --preset debug        # Build Debug
-ctest --preset release              # Test Release
-```
-
-### Manual CMake Configuration
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
-cmake --build build --config Release
-ctest --test-dir build --build-config Release
+cmake --preset ninja-dev                    # Configure (once)
+cmake --build --preset release-dev          # Build (RelWithDebInfo)
+cmake --build --preset debug-dev            # Build (Debug)
+ctest --preset test-release-dev             # Test (RelWithDebInfo)
+ctest --preset test-debug-dev               # Test (Debug)
 ```
 
 ### MSBuild (Windows)

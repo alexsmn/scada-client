@@ -79,23 +79,24 @@ scada-client/
 
 The project uses CMake with a hierarchical structure. Each module directory has its own `CMakeLists.txt`.
 
-**Using CMake presets (recommended):**
+**CMake Presets:**
+
+The shared `CMakePresets.json` defines a single `ninja` configure preset. Developers create a `CMakeUserPresets.json` (git-ignored) with local paths, MSVC environment, and dev presets that inherit from `ninja`. See `CMakeUserPresets.json.template` for the template.
+
+| Type | Preset | Description |
+| ---- | ------ | ----------- |
+| Configure | `ninja-dev` | Inherits `ninja`, adds MSVC environment and local paths |
+| Build | `debug-dev` | Debug build |
+| Build | `release-dev` | RelWithDebInfo build |
+| Test | `test-release-dev` | Runs tests (RelWithDebInfo) |
+| Test | `test-debug-dev` | Runs tests (Debug) |
 
 ```bash
-cmake --preset default           # Configure (Ninja Multi-Config, once)
-cmake --build --preset release   # Build Release
-cmake --build --preset debug     # Build Debug
-ctest --preset release           # Test Release
-```
-
-The `default` configure preset uses the Ninja Multi-Config generator with vcpkg via `$VCPKG_ROOT`. Build output goes to `build/`.
-
-**Manual configuration:**
-
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake -S .
-cmake --build build --config Release
-ctest --test-dir build --build-config Release
+cmake --preset ninja-dev                    # Configure (once)
+cmake --build --preset release-dev          # Build (RelWithDebInfo)
+cmake --build --preset debug-dev            # Build (Debug)
+ctest --preset test-release-dev             # Test (RelWithDebInfo)
+ctest --preset test-debug-dev               # Test (Debug)
 ```
 
 ### MSBuild (Windows Only)
@@ -135,7 +136,7 @@ Not managed by vcpkg:
 
 GitHub Actions workflow triggered on pushes/PRs to `release/2.5`:
 
-- **cmake-multi-platform.yml** — Uses the `default` CMake preset (Ninja Multi-Config) with vcpkg across Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang); runs configure, build, and test steps
+- **cmake-multi-platform.yml** — Uses CMake presets (Ninja Multi-Config) with vcpkg across Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang); runs configure, build, and test steps
 
 ## Architecture
 
@@ -299,9 +300,8 @@ Unit tests follow the `*_unittest.cpp` naming convention (33 test files). Tests 
 ### Running Tests
 
 ```bash
-ctest --preset release
-# or manually:
-ctest --test-dir build --build-config Release
+ctest --preset test-release-dev             # RelWithDebInfo
+ctest --preset test-debug-dev               # Debug
 ```
 
 ## Command-Line Switches

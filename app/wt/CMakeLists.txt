@@ -69,4 +69,4 @@ add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
 # Uses the custom runner from `test/wt/test_main_wt.cpp`.
 target_link_libraries(client_wt_unittests PRIVATE client_wt_lib base_unittest Wt::Test)
 include(GoogleTest)
-gtest_discover_tests(client_wt_unittests)
+gtest_discover_tests(client_wt_unittests DISCOVERY_MODE PRE_TEST)

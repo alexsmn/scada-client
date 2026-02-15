@@ -7,37 +7,16 @@
   },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default (Ninja Multi-Config)",
+      "name": "ninja",
+      "displayName": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "generator": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build",
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "debug",
-      "displayName": "Debug",
-      "configurePreset": "default",
-      "configuration": "Debug"
-    },
-    {
-      "name": "release",
-      "displayName": "Release",
-      "configurePreset": "default",
-      "configuration": "Release"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "debug",
-      "configurePreset": "default",
-      "configuration": "Debug"
-    },
-    {
-      "name": "release",
-      "configurePreset": "default",
-      "configuration": "Release"
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "BUILD_NUMBER": "0",
+        "OUTPUT_DIR": "build/${presetName}/bin",
+        "CMAKE_MODULE_PATH": "${sourceDir};$env{THIRD_PARTY}/modus;$env{THIRD_PARTY}/qt/graph_qt;$env{THIRD_PARTY}/qt/schematic"
+      }
     }
   ]
 }

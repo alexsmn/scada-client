@@ -54,6 +54,7 @@ file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.ui"
 )
 
+list(FILTER PATHS EXCLUDE REGEX "/build/")
 list(FILTER PATHS EXCLUDE REGEX "/client/app/")
 list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/client/base/")

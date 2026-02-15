@@ -20,6 +20,13 @@ file(GLOB_RECURSE MODUS_IDLS CONFIGURE_DEPENDS
 # find_package(MIDL)
 # build_idls(TARGET client_modus_qt)
 
+# Disable ccache for modus: #import generates .tlh/.tli files as side effects
+# that ccache cannot track.
+set_target_properties(client_modus_qt PROPERTIES
+  C_COMPILER_LAUNCHER ""
+  CXX_COMPILER_LAUNCHER ""
+)
+
 target_link_libraries(client_modus_qt PRIVATE
   gdiplus
   modus
