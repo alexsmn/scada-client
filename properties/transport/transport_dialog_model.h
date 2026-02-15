@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include <net/transport_string.h>
+#include <transport/transport_string.h>
 #include <string>
 #include <vector>
 
 class TransportDialogModel {
  public:
-  explicit TransportDialogModel(const net::TransportString& transport_string);
+  explicit TransportDialogModel(const transport::TransportString& transport_string);
 
   bool IsSerialPortType(int type_index) const;
 
@@ -34,7 +34,7 @@ class TransportDialogModel {
   std::vector<std::u16string> stop_bits_items;
   int stop_bits_index = 0;
 
-  net::TransportString transport_string_;
+  transport::TransportString transport_string_;
 
   void Save();
 };

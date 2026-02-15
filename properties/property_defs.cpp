@@ -10,7 +10,7 @@
 #include "scada/node_management_service.h"
 #include "services/task_manager.h"
 
-#include <net/transport_string.h>
+#include <transport/transport_string.h>
 
 namespace {
 
@@ -202,10 +202,10 @@ void TransportPropertyDefinition::HandleEditButton(
     const scada::NodeId& prop_decl_id) const {
   auto text = GetText(context, node, prop_decl_id);
 
-  net::TransportString transport_string{base::UTF16ToUTF8(text)};
+  transport::TransportString transport_string{base::UTF16ToUTF8(text)};
   ShowTransportDialog(context.dialog_service_, transport_string)
       .then([context, node,
-             prop_decl_id](const net::TransportString& transport_string) {
+             prop_decl_id](const transport::TransportString& transport_string) {
         auto text = base::UTF8ToUTF16(transport_string.ToString());
         SetTextHelper(context, node, prop_decl_id, text);
       });

@@ -5,7 +5,7 @@
 #include "properties/transport/transport_dialog_model.h"
 #include "ui_transport_dialog.h"
 
-#include <net/transport_string.h>
+#include <transport/transport_string.h>
 
 class TransportDialog : public QDialog {
   Q_OBJECT
@@ -14,7 +14,7 @@ class TransportDialog : public QDialog {
   explicit TransportDialog(std::unique_ptr<TransportDialogModel> model,
                            QWidget* parent = nullptr);
 
-  const net::TransportString& transport_string() const {
+  const transport::TransportString& transport_string() const {
     return model_->transport_string_;
   }
 
@@ -97,9 +97,9 @@ void TransportDialog::SetTypeIndex(int index) {
   ui.stackedWidget->setCurrentIndex(serial_port ? 1 : 0);
 }
 
-promise<net::TransportString> ShowTransportDialog(
+promise<transport::TransportString> ShowTransportDialog(
     DialogService& dialog_service,
-    const net::TransportString& transport_string) {
+    const transport::TransportString& transport_string) {
   auto model = std::make_unique<TransportDialogModel>(transport_string);
   auto dialog = std::make_unique<TransportDialog>(
       std::move(model), dialog_service.GetParentWidget());

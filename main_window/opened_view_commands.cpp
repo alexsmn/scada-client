@@ -28,7 +28,7 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
-#include "net/transport_string.h"
+#include "transport/transport_string.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "print/preview/print_preview.h"
@@ -299,16 +299,16 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
     properties.emplace_back(devices::id::Iec60870LinkType_Protocol,
                             static_cast<int>(protocol));
 
-    net::TransportString ts;
+    transport::TransportString ts;
     if (is104) {
-      ts.SetProtocol(net::TransportString::TCP);
-      ts.SetParam(net::TransportString::kParamHost, "localhost");
-      ts.SetParam(net::TransportString::kParamPort, 2404);
+      ts.SetProtocol(transport::TransportString::TCP);
+      ts.SetParam(transport::TransportString::kParamHost, "localhost");
+      ts.SetParam(transport::TransportString::kParamPort, 2404);
     } else {
-      ts.SetProtocol(net::TransportString::SERIAL);
-      ts.SetParam(net::TransportString::kParamName, "COM1");
+      ts.SetProtocol(transport::TransportString::SERIAL);
+      ts.SetParam(transport::TransportString::kParamName, "COM1");
     }
-    ts.SetParam(net::TransportString::kParamActive);
+    ts.SetParam(transport::TransportString::kParamActive);
     properties.emplace_back(devices::id::LinkType_Transport, ts.ToString());
   }
 

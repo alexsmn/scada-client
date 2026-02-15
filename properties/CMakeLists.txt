@@ -9,7 +9,7 @@ client_module_link_libraries(client_properties PUBLIC
 
 client_module_link_libraries(client_properties PRIVATE
   client_properties_transport
-  net
+  transport
 )
 
 # UTs.

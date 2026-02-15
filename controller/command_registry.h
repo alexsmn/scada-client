@@ -91,6 +91,7 @@ class BasicCommandRegistry {
   BasicCommand<C>& AddCommand(BasicCommand<C> command);
 
   BasicCommand<C>& AddCommand(unsigned command_id) {
+    // cppcheck-suppress returnTempReference
     return AddCommand({.command_id = command_id});
   }
 

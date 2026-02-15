@@ -12,7 +12,7 @@ target_link_libraries(client_common INTERFACE
   scada_core_opcua
   scada_core_remote
   timed_data
-  Net::net
+  Transport::transport
 )
 
 list(APPEND UNITTESTS

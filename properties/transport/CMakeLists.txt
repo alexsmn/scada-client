@@ -2,7 +2,7 @@ client_module(client_properties_transport)
 
 client_module_link_libraries(client_properties_transport PUBLIC
   aui
-  net
+  transport
 )
 
 # Qt.

@@ -11,6 +11,8 @@ StatusBarController::StatusBarController(QStatusBar& status_bar,
                                          aui::StatusBarModel& model,
                                          ProgressHost& progress_host)
     : status_bar_{status_bar}, model_{model}, progress_host_{progress_host} {
+  // cppcheck-suppress noCopyConstructor
+  // cppcheck-suppress noOperatorEq
   progress_bar_ = new QProgressBar{&status_bar_};
   progress_bar_->setAlignment(Qt::AlignRight);
   progress_bar_->setRange(0, 0);

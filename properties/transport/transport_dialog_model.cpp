@@ -6,7 +6,7 @@
 #include "base/strings/utf_string_conversions.h"
 
 #include <algorithm>
-#include <net/transport_string.h>
+#include <transport/transport_string.h>
 
 namespace {
 
@@ -37,9 +37,9 @@ static const StringPair kParityStrings[] = {
     StringPair(u"Пробел", "Space")};
 
 static const StringPair kFlowControlStrings[] = {
-    StringPair(u"Нет", net::TransportString::kFlowControlNone),
-    StringPair(u"XON/XOFF", net::TransportString::kFlowControlSoftware),
-    StringPair(u"Аппаратное", net::TransportString::kFlowControlHardware)};
+    StringPair(u"Нет", transport::TransportString::kFlowControlNone),
+    StringPair(u"XON/XOFF", transport::TransportString::kFlowControlSoftware),
+    StringPair(u"Аппаратное", transport::TransportString::kFlowControlHardware)};
 
 static const char16_t kDefaultString[] = u"<Текущее>";
 
@@ -68,30 +68,30 @@ static int FindStringPair(const StringPair pairs[],
 }  // namespace
 
 TransportDialogModel::TransportDialogModel(
-    const net::TransportString& transport_string)
+    const transport::TransportString& transport_string)
     : transport_string_{transport_string} {
   static_assert(_countof(kConnectionTypeStrings) == CONNECTION_TYPE_COUNT,
                 "NotEnoughConnectionTypeStrings");
   for (const auto& str : kConnectionTypeStrings)
     type_items.emplace_back(str);
 
-  net::TransportString::Protocol protocol = transport_string_.GetProtocol();
-  bool active = transport_string_.IsActive();
+  transport::TransportString::Protocol protocol = transport_string_.GetProtocol();
+  bool active = transport_string_.active();
 
   ConnectionType connection_type = CONNECTION_TYPE_COUNT;
   switch (protocol) {
     default:
-    case net::TransportString::TCP:
+    case transport::TransportString::TCP:
       connection_type =
           active ? CONNECTION_TYPE_TCP_CLIENT : CONNECTION_TYPE_TCP_SERVER;
       break;
 
-    case net::TransportString::UDP:
+    case transport::TransportString::UDP:
       connection_type =
           active ? CONNECTION_TYPE_UDP_CLIENT : CONNECTION_TYPE_UDP_SERVER;
       break;
 
-    case net::TransportString::SERIAL:
+    case transport::TransportString::SERIAL:
       connection_type = CONNECTION_TYPE_SERIAL;
       break;
   }
@@ -124,19 +124,19 @@ TransportDialogModel::TransportDialogModel(
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
     network_host = base::UTF8ToUTF16(
-        transport_string_.GetParamStr(net::TransportString::kParamHost));
+        transport_string_.GetParamStr(transport::TransportString::kParamHost));
     network_port =
-        transport_string_.GetParamInt(net::TransportString::kParamPort);
+        transport_string_.GetParamInt(transport::TransportString::kParamPort);
 
   } else {
     const auto name =
-        transport_string_.GetParamStr(net::TransportString::kParamName);
-    int port_no = net::TransportString::ParseSerialPortNumber(name);
+        transport_string_.GetParamStr(transport::TransportString::kParamName);
+    int port_no = transport::TransportString::ParseSerialPortNumber(name);
     serial_port_index = std::max(0, port_no - 1);
 
     {
       auto baud_rate = static_cast<unsigned>(
-          transport_string_.GetParamInt(net::TransportString::kParamBaudRate));
+          transport_string_.GetParamInt(transport::TransportString::kParamBaudRate));
       int index = -1;
       for (size_t i = 0; i < std::size(kBaudRates); ++i)
         if (kBaudRates[i] == baud_rate) {
@@ -148,7 +148,7 @@ TransportDialogModel::TransportDialogModel(
 
     {
       int bit_count =
-          transport_string_.GetParamInt(net::TransportString::kParamByteSize);
+          transport_string_.GetParamInt(transport::TransportString::kParamByteSize);
       int index = (bit_count >= kBitCountFirst && bit_count <= kBitCountLast)
                       ? bit_count - kBitCountFirst
                       : -1;
@@ -157,7 +157,7 @@ TransportDialogModel::TransportDialogModel(
 
     {
       const auto parity =
-          transport_string_.GetParamStr(net::TransportString::kParamParity);
+          transport_string_.GetParamStr(transport::TransportString::kParamParity);
       int index =
           FindStringPair(kParityStrings, std::size(kParityStrings), parity);
       parity_index = index + 1;
@@ -165,7 +165,7 @@ TransportDialogModel::TransportDialogModel(
 
     {
       const auto stopbits =
-          transport_string_.GetParamStr(net::TransportString::kParamStopBits);
+          transport_string_.GetParamStr(transport::TransportString::kParamStopBits);
       int index =
           FindString(kStopBitsStrings, std::size(kStopBitsStrings), stopbits);
       stop_bits_index = index + 1;
@@ -173,7 +173,7 @@ TransportDialogModel::TransportDialogModel(
 
     {
       const auto flowcontrol = transport_string_.GetParamStr(
-          net::TransportString::kParamFlowControl);
+          transport::TransportString::kParamFlowControl);
       int index = FindStringPair(kFlowControlStrings,
                                  std::size(kFlowControlStrings), flowcontrol);
       flow_control_index = index + 1;
@@ -186,87 +186,87 @@ bool TransportDialogModel::IsSerialPortType(int type_index) const {
 }
 
 void TransportDialogModel::Save() {
-  transport_string_ = net::TransportString();
+  transport_string_ = transport::TransportString();
 
   ConnectionType type = static_cast<ConnectionType>(type_index);
   switch (type) {
     default:
     case CONNECTION_TYPE_TCP_CLIENT:
     case CONNECTION_TYPE_TCP_SERVER:
-      transport_string_.SetProtocol(net::TransportString::TCP);
+      transport_string_.SetProtocol(transport::TransportString::TCP);
       transport_string_.SetActive(type == CONNECTION_TYPE_TCP_CLIENT);
       break;
 
     case CONNECTION_TYPE_UDP_CLIENT:
     case CONNECTION_TYPE_UDP_SERVER:
-      transport_string_.SetProtocol(net::TransportString::UDP);
+      transport_string_.SetProtocol(transport::TransportString::UDP);
       transport_string_.SetActive(type == CONNECTION_TYPE_UDP_CLIENT);
       break;
 
     case CONNECTION_TYPE_SERIAL: {
-      transport_string_.SetProtocol(net::TransportString::SERIAL);
+      transport_string_.SetProtocol(transport::TransportString::SERIAL);
       break;
     }
   }
 
   if (type != CONNECTION_TYPE_SERIAL) {
-    transport_string_.SetParam(net::TransportString::kParamHost,
+    transport_string_.SetParam(transport::TransportString::kParamHost,
                                base::UTF16ToUTF8(network_host));
-    transport_string_.SetParam(net::TransportString::kParamPort, network_port);
+    transport_string_.SetParam(transport::TransportString::kParamPort, network_port);
 
   } else {
     {
       int port_no = serial_port_index + 1;
       if (port_no <= 1)
         port_no = 1;
-      transport_string_.SetParam(net::TransportString::kParamName,
+      transport_string_.SetParam(transport::TransportString::kParamName,
                                  base::StringPrintf("COM%d", port_no));
     }
 
     {
       int i = baud_rate_index;
       if (i >= 1 && i <= static_cast<int>(std::size(kBaudRates))) {
-        transport_string_.SetParam(net::TransportString::kParamBaudRate,
+        transport_string_.SetParam(transport::TransportString::kParamBaudRate,
                                    kBaudRates[i - 1]);
       } else
-        transport_string_.RemoveParam(net::TransportString::kParamBaudRate);
+        transport_string_.RemoveParam(transport::TransportString::kParamBaudRate);
     }
 
     {
       int i = bit_count_index;
       if (i >= 1) {
         unsigned bitcount = static_cast<unsigned>(i - 1 + kBitCountFirst);
-        transport_string_.SetParam(net::TransportString::kParamByteSize,
+        transport_string_.SetParam(transport::TransportString::kParamByteSize,
                                    bitcount);
       } else
-        transport_string_.RemoveParam(net::TransportString::kParamByteSize);
+        transport_string_.RemoveParam(transport::TransportString::kParamByteSize);
     }
 
     {
       int i = parity_index;
       if (i >= 1) {
-        transport_string_.SetParam(net::TransportString::kParamParity,
+        transport_string_.SetParam(transport::TransportString::kParamParity,
                                    kParityStrings[i - 1].second);
       } else
-        transport_string_.RemoveParam(net::TransportString::kParamParity);
+        transport_string_.RemoveParam(transport::TransportString::kParamParity);
     }
 
     {
       int i = stop_bits_index;
       if (i >= 1) {
-        transport_string_.SetParam(net::TransportString::kParamStopBits,
+        transport_string_.SetParam(transport::TransportString::kParamStopBits,
                                    kStopBitsStrings[i - 1]);
       } else
-        transport_string_.RemoveParam(net::TransportString::kParamStopBits);
+        transport_string_.RemoveParam(transport::TransportString::kParamStopBits);
     }
 
     {
       int i = flow_control_index;
       if (i >= 1) {
-        transport_string_.SetParam(net::TransportString::kParamFlowControl,
+        transport_string_.SetParam(transport::TransportString::kParamFlowControl,
                                    kFlowControlStrings[i - 1].second);
       } else
-        transport_string_.RemoveParam(net::TransportString::kParamFlowControl);
+        transport_string_.RemoveParam(transport::TransportString::kParamFlowControl);
     }
   }
 }

@@ -14,7 +14,7 @@ client_module_link_libraries(client_main_window PRIVATE
   client_filesystem
   client_portfolio
   client_print_service
-  net
+  transport
 )
 
 # Qt.

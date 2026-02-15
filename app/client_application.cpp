@@ -43,7 +43,7 @@
 #include "vidicon/vidicon_module.h"
 #endif
 
-#include <net/transport_factory_impl.h>
+#include <transport/transport_factory_impl.h>
 
 using namespace std::chrono_literals;
 
@@ -99,7 +99,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
         reporter.Report(metrics);
       });
 
-  transport_factory_ = std::make_unique<net::TransportFactoryImpl>(io_context_);
+  transport_factory_ = transport::CreateTransportFactory();
 
   core_module_ = std::make_unique<CoreModule>(executor_);
 }

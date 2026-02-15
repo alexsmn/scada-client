@@ -2,10 +2,10 @@
 
 #include "base/promise.h"
 
-#include <net/transport_string.h>
+#include <transport/transport_string.h>
 
 class DialogService;
 
-promise<net::TransportString> ShowTransportDialog(
+promise<transport::TransportString> ShowTransportDialog(
     DialogService& dialog_service,
-    const net::TransportString& transport_string);
+    const transport::TransportString& transport_string);
