@@ -132,11 +132,30 @@ Not managed by vcpkg:
 - **Modus 6.30** — ActiveX/COM library (Windows/Qt only, via `${deps}/modus`)
 - **Windows SDK / ATL** — COM/ActiveX support (Windows only)
 
+## CMake Options
+
+| Option | Default | Description |
+| ------ | ------- | ----------- |
+| `BUILD_MODUS` | `ON` | Build Modus module (requires Modus and Schematic SDKs) |
+| `BUILD_OPC` | `ON` | Build Classic OPC modules in scada-common (Windows only) |
+| `BUILD_VIDICON` | `ON` | Build Vidicon modules in scada-common (Windows only) |
+
+The `vidicon` client module is automatically skipped when `scada_common_opc` and `scada_common_vidicon` targets are not available.
+
 ## CI/CD
 
-GitHub Actions workflow triggered on pushes/PRs to `release/2.5`:
+GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`) triggered on pushes/PRs to `release/2.5`.
 
-- **cmake-multi-platform.yml** — Uses CMake presets (Ninja Multi-Config) with vcpkg across Windows (MSVC), Ubuntu (GCC), Ubuntu (Clang); runs configure, build, and test steps
+**Matrix:** Windows x64, Windows x86, Ubuntu GCC, Ubuntu Clang.
+
+**How it works:** CI checks out dependency repos (`scada-core`, `scada-common`, `transport`, `chromebase`, `express`, `promise.hpp`, `graph-qt`, `opcuapp`, `UA-AnsiC`) as sibling directories and uses `cmake --preset ninja` with `-D` overrides for `CMAKE_MODULE_PATH` and other settings. Modules requiring proprietary SDKs (`BUILD_MODUS=OFF`, `BUILD_OPC=OFF`, `BUILD_VIDICON=OFF`) are disabled.
+
+```bash
+# CI build commands (for reference):
+cmake --preset ninja -DCMAKE_MODULE_PATH="..." -DBUILD_MODUS=OFF ...
+cmake --build build/ninja --config RelWithDebInfo
+ctest --test-dir build/ninja --build-config RelWithDebInfo --output-on-failure
+```
 
 ## Architecture
 

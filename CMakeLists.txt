@@ -39,8 +39,17 @@ add_subdirectory(favorites)
 add_subdirectory(web)
 add_subdirectory(print)
 add_subdirectory(properties)
-add_subdirectory(modus)
-add_subdirectory(vidicon)
+option(BUILD_MODUS "Build Modus module (requires Modus and Schematic SDKs)" ON)
+
+if(BUILD_MODUS)
+  add_subdirectory(modus)
+endif()
+
+# vidicon depends on scada_common_opc and scada_common_vidicon.
+if(TARGET scada_common_opc AND TARGET scada_common_vidicon)
+  add_subdirectory(vidicon)
+endif()
+
 add_subdirectory(configuration)
 add_subdirectory(graph)
 add_subdirectory(export)

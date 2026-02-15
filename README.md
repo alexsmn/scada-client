@@ -49,6 +49,19 @@ nuget restore .
 msbuild /m /p:Configuration=Release .
 ```
 
+## CI
+
+GitHub Actions builds on every push/PR to `release/2.5`:
+
+| Platform | Compiler | Architecture |
+|----------|----------|--------------|
+| Windows | MSVC | x64 |
+| Windows | MSVC | x86 |
+| Ubuntu | GCC | x64 |
+| Ubuntu | Clang | x64 |
+
+Dependency repos (`scada-core`, `scada-common`, `transport`, etc.) are checked out automatically. Modules requiring proprietary SDKs (Modus, Classic OPC, Vidicon) are disabled in CI.
+
 ## Project Structure
 
 ```
