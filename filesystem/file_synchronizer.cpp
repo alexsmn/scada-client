@@ -90,17 +90,17 @@ bool FileSynchronizer::ProcessFileDirectoryNode(NodeRef node) {
 
   std::error_code ec;
   if (std::filesystem::is_directory(path, ec)) {
-    logger_->WriteF(LogSeverity::Normal, "Directory '%s' is actual",
-                    path.string().c_str());
+    logger_->WriteF(LogSeverity::Normal, "Directory '{}' is actual",
+                    path.string());
     return true;
   }
 
-  logger_->WriteF(LogSeverity::Normal, "Create directory '%s'",
-                  path.string().c_str());
+  logger_->WriteF(LogSeverity::Normal, "Create directory '{}'",
+                  path.string());
 
   if (!std::filesystem::create_directories(path, ec)) {
-    logger_->WriteF(LogSeverity::Normal, "Create directory '%s' error: %s",
-                    path.string().c_str(), ec.message().c_str());
+    logger_->WriteF(LogSeverity::Normal, "Create directory '{}' error: {}",
+                    path.string(), ec.message());
     return false;
   }
 
@@ -117,11 +117,11 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
   std::error_code ec;
   auto actual_last_update_time = std::filesystem::last_write_time(path, ec);
   if (actual_last_update_time == last_update_time) {
-    logger_->WriteF(LogSeverity::Normal, "File '%s' is actual", path.c_str());
+    logger_->WriteF(LogSeverity::Normal, "File '{}' is actual", path.string());
     return true;
   }
 
-  logger_->WriteF(LogSeverity::Normal, "Download outdated '%s'", path.c_str());
+  logger_->WriteF(LogSeverity::Normal, "Download outdated '{}'", path.string());
 
   // TODO: Weak ptr.
   node.scada_node()
@@ -131,13 +131,13 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
             auto* data = data_value.value.get_if<scada::ByteString>();
             if (!data) {
               logger_->WriteF(LogSeverity::Warning,
-                              "Wrong downloaded data for file '%s'",
-                              path.c_str());
+                              "Wrong downloaded data for file '{}'",
+                              path.string());
               return;
             }
 
-            logger_->WriteF(LogSeverity::Normal, "Download '%s' complete",
-                            path.c_str());
+            logger_->WriteF(LogSeverity::Normal, "Download '{}' complete",
+                            path.string());
 
             base::WriteFile(AsFilePath(path), data->data(), data->size());
 
@@ -145,9 +145,9 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
             std::filesystem::last_write_time(path, last_update_time, ec);
           },
           [this, path](std::exception_ptr e) {
-            logger_->WriteF(LogSeverity::Warning, "Download '%s' error: %s",
-                            path.c_str(),
-                            ToString(scada::GetExceptionStatus(e)).c_str());
+            logger_->WriteF(LogSeverity::Warning, "Download '{}' error: {}",
+                            path.string(),
+                            ToString(scada::GetExceptionStatus(e)));
           });
 
   return true;

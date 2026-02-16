@@ -31,8 +31,8 @@ void AliasService::Resolve(std::string_view alias,
   auto alias_string = std::string{alias};
 
   if (!fetched_) {
-    logger_->WriteF(LogSeverity::Normal, "Pending resolution: %s",
-                    alias_string.c_str());
+    logger_->WriteF(LogSeverity::Normal, "Pending resolution: {}",
+                    alias_string);
     pending_aliases_[std::move(alias_string)].emplace_back(callback);
     return;
   }
@@ -46,7 +46,7 @@ void AliasService::Resolve(std::string_view alias,
 void AliasService::OnFetchCompleted() {
   assert(!fetched_);
 
-  logger_->WriteF(LogSeverity::Normal, "Fetch completed. %Iu aliases fetched",
+  logger_->WriteF(LogSeverity::Normal, "Fetch completed. {} aliases fetched",
                   aliases_.targets(scada::id::Organizes).size());
   fetched_ = true;
 
@@ -66,8 +66,8 @@ scada::NodeId AliasService::ResolveNow(const std::string& alias) const {
   auto aliased_node = alias_node.target(data_items::id::AliasOf);
   auto aliased_node_id = aliased_node.node_id();
 
-  logger_->WriteF(LogSeverity::Normal, "%s = %s", alias.c_str(),
-                  aliased_node_id.ToString().c_str());
+  logger_->WriteF(LogSeverity::Normal, "{} = {}", alias,
+                  aliased_node_id.ToString());
 
   return aliased_node_id;
 }

@@ -81,7 +81,7 @@ class ClientApplication : private ClientApplicationContext {
   std::shared_ptr<Logger> logger_;
   std::unique_ptr<MetricService> metric_service_;
 
-  std::unique_ptr<transport::TransportFactory> transport_factory_;
+  std::shared_ptr<transport::TransportFactory> transport_factory_;
 
   std::unique_ptr<ControllerRegistry> controller_registry_;
 
