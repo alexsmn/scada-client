@@ -87,7 +87,11 @@ jobs:
 
     - name: Install system dependencies (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y autoconf automake autoconf-archive
+      run: sudo apt-get update && sudo apt-get install -y autoconf automake autoconf-archive libltdl-dev
+
+    - name: Normalize workspace path
+      shell: bash
+      run: echo "WORKSPACE=${{ github.workspace }}" | sed 's|\\|/|g' >> "$GITHUB_ENV"
 
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
@@ -109,13 +113,13 @@ jobs:
         cmake --preset ninja
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_MODULE_PATH="${{ github.workspace }}/scada-client;${{ github.workspace }}/scada-common;${{ github.workspace }}/scada-core;${{ github.workspace }}/transport;${{ github.workspace }}/transport/cmake;${{ github.workspace }}/chromebase;${{ github.workspace }}/express;${{ github.workspace }}/promise.hpp;${{ github.workspace }}/graph-qt;${{ github.workspace }}/opcuapp"
+        -DCMAKE_MODULE_PATH="${{ env.WORKSPACE }}/scada-client;${{ env.WORKSPACE }}/scada-common;${{ env.WORKSPACE }}/scada-core;${{ env.WORKSPACE }}/transport;${{ env.WORKSPACE }}/transport/cmake;${{ env.WORKSPACE }}/chromebase;${{ env.WORKSPACE }}/express;${{ env.WORKSPACE }}/promise.hpp;${{ env.WORKSPACE }}/graph-qt;${{ env.WORKSPACE }}/opcuapp"
         -DBUILD_MODUS=OFF
         -DBUILD_OPC=OFF
         -DBUILD_VIDICON=OFF
-        -DOPCUA_ROOT_DIR="${{ github.workspace }}/UA-AnsiC"
-        -DOPCUAPP_DIR="${{ github.workspace }}/opcuapp"
-        -DOPCUA_DIR="${{ github.workspace }}/opcuapp"
+        -DOPCUA_ROOT_DIR="${{ env.WORKSPACE }}/UA-AnsiC"
+        -DOPCUAPP_DIR="${{ env.WORKSPACE }}/opcuapp"
+        -DOPCUA_DIR="${{ env.WORKSPACE }}/opcuapp"
         ${{ matrix.triplet && format('-DVCPKG_TARGET_TRIPLET={0}', matrix.triplet) || '' }}
 
     - name: Build
