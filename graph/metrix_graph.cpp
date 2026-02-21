@@ -3,7 +3,7 @@
 #include "base/format_time.h"
 #include "base/minute_time.h"
 #include "base/optional_util.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "graph/metrix_data_source.h"
 
 #if defined(UI_QT)
@@ -118,11 +118,11 @@ std::u16string MetrixGraph::Legend::GetText(const MetrixDataSource& data_source,
     }
     case 2: {
       auto data_value = GetCurrentValue(data_source);
-      return base::ASCIIToUTF16(FormatTime(data_value.source_timestamp));
+      return UtfConvert<char16_t>(FormatTime(data_value.source_timestamp));
     }
     case 3: {
       auto percent = GetPercentReady(data_source.timed_data());
-      return base::ASCIIToUTF16(std::to_string(percent) + '%');
+      return UtfConvert<char16_t>(std::to_string(percent) + '%');
     }
     default:
       return {};

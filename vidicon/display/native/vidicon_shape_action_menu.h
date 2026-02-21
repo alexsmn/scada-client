@@ -3,7 +3,7 @@
 #include "aui/models/simple_menu_model.h"
 #include "vidicon/display/native/vidicon_display_lib.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 
 struct VidiconShapeActionMenu : private aui::SimpleMenuModel::Delegate {
   VidiconShapeActionMenu(const vidicon::shape& shape,
@@ -11,7 +11,7 @@ struct VidiconShapeActionMenu : private aui::SimpleMenuModel::Delegate {
       : shape{shape} {
     int action_index = 0;
     for (const auto& action : actions) {
-      auto title = boost::locale::conv::utf_to_utf<char16_t>(action.title);
+      auto title = UtfConvert<char16_t>(action.title);
       if (action.checked) {
         menu_model.AddCheckItem(/*command_id*/ action_index, title);
       } else {

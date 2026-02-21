@@ -1,7 +1,7 @@
 ﻿#include "properties/property_defs.h"
 
 #include "aui/color.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "properties/transport/transport_dialog.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_service.h"
@@ -202,11 +202,11 @@ void TransportPropertyDefinition::HandleEditButton(
     const scada::NodeId& prop_decl_id) const {
   auto text = GetText(context, node, prop_decl_id);
 
-  transport::TransportString transport_string{base::UTF16ToUTF8(text)};
+  transport::TransportString transport_string{UtfConvert<char>(text)};
   ShowTransportDialog(context.dialog_service_, transport_string)
       .then([context, node,
              prop_decl_id](const transport::TransportString& transport_string) {
-        auto text = base::UTF8ToUTF16(transport_string.ToString());
+        auto text = UtfConvert<char16_t>(transport_string.ToString());
         SetTextHelper(context, node, prop_decl_id, text);
       });
 }

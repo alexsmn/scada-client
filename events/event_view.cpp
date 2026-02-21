@@ -8,7 +8,7 @@
 #include "base/excel.h"
 #include "base/u16format.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util_win.h"
+#include "base/utf_convert.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"
@@ -247,12 +247,12 @@ void EventView::ExportToExcel() {
     const auto& columns = table_->columns();
 
     for (size_t i = 0; i < columns.size(); ++i)
-      sheet.SetData(1, i + 1, base::AsWString(columns[i].title));
+      sheet.SetData(1, i + 1, UtfConvert<wchar_t>(columns[i].title));
 
     for (int row = 0; row < model_->GetRowCount(); ++row) {
       for (size_t col = 0; col < columns.size(); ++col) {
         auto text = model_->GetCellText(row, columns[col].id);
-        sheet.SetData(2 + row, col + 1, base::AsWString(text));
+        sheet.SetData(2 + row, col + 1, UtfConvert<wchar_t>(text));
       }
     }
 

@@ -6,7 +6,7 @@
 #include "model/filesystem_node_ids.h"
 #include "scada/status_promise.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <span>
 
 namespace {
@@ -59,7 +59,7 @@ promise<scada::NodeId> FileManagerImpl::GetFileNode(
   for (const auto& c : path) {
     relative_path.emplace_back(scada::RelativePathElement{
         .reference_type_id = scada::id::Organizes,
-        .target_name = boost::locale::conv::utf_to_utf<char>(c.wstring())});
+        .target_name = UtfConvert<char>(c.wstring())});
   }
 
   return scada_client_.node(filesystem::id::FileSystem)

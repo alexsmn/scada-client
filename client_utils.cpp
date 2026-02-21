@@ -5,7 +5,7 @@
 #include "base/range_util.h"
 #include "base/strings/strcat.h"
 #include "base/u16format.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -26,7 +26,7 @@ std::u16string FormatHostName(std::string_view host_name) {
   if (host_name.empty()) {
     return Translate("Local");
   } else {
-    return base::UTF8ToUTF16(host_name);
+    return UtfConvert<char16_t>(host_name);
   }
 }
 
@@ -43,10 +43,10 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
 
   auto val = timed_data.GetCurrentString();
 
-  auto str_time = base::UTF8ToUTF16(
+  auto str_time = UtfConvert<char16_t>(
       FormatTime(timed_data.change_time(),
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-  auto str_utime = base::UTF8ToUTF16(
+  auto str_utime = UtfConvert<char16_t>(
       FormatTime(timed_data.current().source_timestamp,
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
 
@@ -69,7 +69,7 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
         break;
       }
       // add event
-      std::u16string stime = base::UTF8ToUTF16(FormatTime(
+      std::u16string stime = UtfConvert<char16_t>(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       str += u16format(L"\n{} {}", stime, event.message);
     }

@@ -1,7 +1,7 @@
 ﻿#include "components/timed_data/timed_data_model.h"
 
 #include "base/format_time.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/time/clock.h"
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"
@@ -96,7 +96,7 @@ void TimedDataModel::GetCell(aui::TableCell& cell) {
 
   switch (cell.column_id) {
     case CID_TIME:
-      cell.text = base::UTF8ToUTF16(FormatTime(
+      cell.text = UtfConvert<char16_t>(FormatTime(
           data_value.source_timestamp, TIME_FORMAT_DATE | TIME_FORMAT_TIME |
                                            TIME_FORMAT_MSEC |
                                            (utc_time_ ? TIME_FORMAT_UTC : 0)));
@@ -113,7 +113,7 @@ void TimedDataModel::GetCell(aui::TableCell& cell) {
       break;
 
     case CID_COLLECTION_TIME:
-      cell.text = base::UTF8ToUTF16(FormatTime(
+      cell.text = UtfConvert<char16_t>(FormatTime(
           data_value.server_timestamp, TIME_FORMAT_DATE | TIME_FORMAT_TIME |
                                            TIME_FORMAT_MSEC |
                                            (utc_time_ ? TIME_FORMAT_UTC : 0)));

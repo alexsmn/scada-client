@@ -3,7 +3,7 @@
 #include "aui/dialog_service.h"
 #include "base/command_line.h"
 #include <boost/algorithm/string/join.hpp>
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/clipboard.h"
 #include "common_resources.h"
 #include "components/debugger/debug_switch.h"
@@ -58,7 +58,7 @@ void DebuggerModule::DumpDebugInfo(const SelectionCommandContext& context) {
     LOG(WARNING) << "Can't set clipboard data";
   }
 
-  if (!clipboard.SetText(base::UTF8ToWide(debug_text))) {
+  if (!clipboard.SetText(UtfConvert<wchar_t>(debug_text))) {
     LOG(WARNING) << "Can't set clipboard data";
   }
 

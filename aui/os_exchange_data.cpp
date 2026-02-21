@@ -1,7 +1,7 @@
 #include "aui/os_exchange_data.h"
 
 #include "base/pickle.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/scoped_hglobal.h"
 
 namespace aui {
@@ -446,7 +446,7 @@ void OSExchangeData::SetData(CustomFormat format,
 OSExchangeData::CustomFormat OSExchangeData::RegisterCustomFormat(
     const char* name) {
   return static_cast<CustomFormat>(
-      RegisterClipboardFormat(base::ASCIIToWide(name).c_str()));
+      RegisterClipboardFormat(UtfConvert<wchar_t>(name).c_str()));
 }
 
 }  // namespace aui

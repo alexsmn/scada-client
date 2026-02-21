@@ -2,7 +2,7 @@
 
 #include "base/csv_writer.h"
 #include "base/u16format.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "export/configuration/export_data.h"
 #include "model/node_id_util.h"
 
@@ -11,7 +11,7 @@ namespace {
 std::u16string FormatReferenceCell(const std::u16string& title,
                                    const scada::NodeId& prop_decl_id) {
   return u16format(L"{} @{}", title,
-                   base::UTF8ToUTF16(NodeIdToScadaString(prop_decl_id)));
+                   UtfConvert<char16_t>(NodeIdToScadaString(prop_decl_id)));
 }
 
 }  // namespace

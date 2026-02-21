@@ -1,6 +1,6 @@
 #include "properties/channel_property_definition.h"
 
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -29,7 +29,7 @@ ParseChannelPath(std::string_view channel_path) {
 
 }  // namespace
 
-const char16_t ChannelPropertyDefinition::kParentGroupDevice[] = u"<Ãðóïïà>";
+const char16_t ChannelPropertyDefinition::kParentGroupDevice[] = u"<ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½>";
 
 std::u16string ChannelPropertyDefinition::GetTitle(
     const PropertyContext& context,
@@ -83,13 +83,13 @@ std::u16string ChannelPropertyDefinition::GetText(
         IsNestedNodeId(node_id, parent_id, component_name)) {
       return device_
                  ? GetFullDisplayName(context.node_service_.GetNode(parent_id))
-                 : base::UTF8ToUTF16(component_name);
+                 : UtfConvert<char16_t>(component_name);
     } else if (auto path = GetParentGroupChannelPath(name); !path.empty()) {
-      return device_ ? kParentGroupDevice : base::UTF8ToUTF16(path);
+      return device_ ? kParentGroupDevice : UtfConvert<char16_t>(path);
     }
   }
 
-  return device_ ? std::u16string{} : base::UTF8ToUTF16(channel_path);
+  return device_ ? std::u16string{} : UtfConvert<char16_t>(channel_path);
 }
 
 void ChannelPropertyDefinition::SetText(const PropertyContext& context,
@@ -114,7 +114,7 @@ void ChannelPropertyDefinition::SetText(const PropertyContext& context,
   if (device_)
     parent_id = new_device_id;
   else
-    item_path = base::UTF16ToUTF8(text);
+    item_path = UtfConvert<char>(text);
 
   std::string formula;
   if (!parent_id.is_null()) {

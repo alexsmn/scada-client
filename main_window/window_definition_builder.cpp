@@ -1,7 +1,7 @@
 #include "window_definition_builder.h"
 
 #include "base/strings/strcat.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -144,7 +144,7 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
     window_info = &kDefaultWindowInfo;
 
   WindowDefinition window_def(*window_info);
-  window_def.title = base::UTF8ToUTF16(formula);
+  window_def.title = UtfConvert<char16_t>(formula);
 
   WindowItem& item = window_def.AddItem("Item");
   item.SetString("path", std::move(formula));

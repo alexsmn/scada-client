@@ -1,6 +1,6 @@
 ﻿#include "components/table/table_model.h"
 
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/time/time.h"
 #include "base/utils.h"
 #include "common_resources.h"
@@ -240,7 +240,7 @@ bool TableModel::SetCellText(int row,
                              const std::u16string& text) {
   assert(column_id == TableModel::COLUMN_TITLE);
 
-  std::string text2 = base::UTF16ToUTF8(text);
+  std::string text2 = UtfConvert<char>(text);
   if (!text2.empty() && text2[0] == L'=')
     text2.erase(0, 1);
 

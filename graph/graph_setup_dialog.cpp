@@ -1,6 +1,6 @@
 #include "graph/graph_setup_dialog.h"
 
-#include "base/strings/string_util_win.h"
+#include "base/utf_convert.h"
 
 LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
                                        WPARAM /*wParam*/,
@@ -58,7 +58,7 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
     dc.SelectStockPen(BLACK_PEN);
     dc.Rectangle(&crect);
     // draw text
-    text = base::AsWString(aui::GetColorName(dis->itemID));
+    text = UtfConvert<wchar_t>(aui::GetColorName(dis->itemID));
     rect.left = crect.right + 3;
   }
 

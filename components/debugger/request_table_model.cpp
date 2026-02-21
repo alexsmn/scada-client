@@ -1,7 +1,7 @@
 #include "components/debugger/request_table_model.h"
 
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/time_utils.h"
 #include "scada/session_service.h"
 
@@ -38,20 +38,20 @@ void RequestTableModel::GetCell(aui::TableCell& cell) {
       cell.text = base::NumberToString16(request.request_id);
       break;
     case 1:
-      cell.text = base::ASCIIToUTF16(ToString(request.phase));
+      cell.text = UtfConvert<char16_t>(ToString(request.phase));
       break;
     case 2:
-      cell.text = base::ASCIIToUTF16(std::format("{}", request.start_time));
+      cell.text = UtfConvert<char16_t>(std::format("{}", request.start_time));
       break;
     case 3:
       if (request.finish_time != RequestTime{}) {
         auto duration = request.finish_time - request.start_time;
         cell.text =
-            base::ASCIIToUTF16(std::format("{} ms", InMilliseconds(duration)));
+            UtfConvert<char16_t>(std::format("{} ms", InMilliseconds(duration)));
       }
       break;
     case 4:
-      cell.text = base::ASCIIToUTF16(request.title);
+      cell.text = UtfConvert<char16_t>(request.title);
       break;
   }
 }

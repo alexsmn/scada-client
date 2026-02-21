@@ -3,7 +3,7 @@
 #include "base/u16format.h"
 #include "base/strings/string_number_conversions.h"
 #include <boost/algorithm/string/predicate.hpp>
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 
 #include <algorithm>
 #include <format>
@@ -116,7 +116,8 @@ TransportDialogModel::TransportDialogModel(
 
   stop_bits_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kStopBitsStrings); ++i) {
-    stop_bits_items.emplace_back(base::UTF8ToUTF16(kStopBitsStrings[i]));
+    auto sv = kStopBitsStrings[i];
+    stop_bits_items.emplace_back(UtfConvert<char16_t>(sv));
   }
 
   flow_control_items.emplace_back(kDefaultString);
@@ -124,8 +125,8 @@ TransportDialogModel::TransportDialogModel(
     flow_control_items.emplace_back(kFlowControlStrings[i].first);
 
   if (connection_type != CONNECTION_TYPE_SERIAL) {
-    network_host = base::UTF8ToUTF16(
-        transport_string_.GetParamStr(transport::TransportString::kParamHost));
+    auto host_sv = transport_string_.GetParamStr(transport::TransportString::kParamHost);
+    network_host = UtfConvert<char16_t>(host_sv);
     network_port =
         transport_string_.GetParamInt(transport::TransportString::kParamPort);
 
@@ -212,7 +213,7 @@ void TransportDialogModel::Save() {
 
   if (type != CONNECTION_TYPE_SERIAL) {
     transport_string_.SetParam(transport::TransportString::kParamHost,
-                               base::UTF16ToUTF8(network_host));
+                               UtfConvert<char>(network_host));
     transport_string_.SetParam(transport::TransportString::kParamPort, network_port);
 
   } else {

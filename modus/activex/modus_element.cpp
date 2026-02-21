@@ -2,8 +2,7 @@
 
 #include "base/format.h"
 #include "base/strings/strcat.h"
-#include "base/strings/string_util_win.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/scoped_bstr.h"
 #include "events/event_set.h"
 #include "model/data_items_node_ids.h"
@@ -174,7 +173,7 @@ void ModusElement::UpdateData(bool init) {
           text = state ? kStateClose : kStateOpen;
 
       } else {
-        text = base::AsWString(WideFormat(value_));
+        text = UtfConvert<wchar_t>(WideFormat(value_));
       }
 
       SetParamValue(*sde_params_.Get(), prop_name_,
@@ -202,7 +201,7 @@ void ModusElement::UpdateData(bool init) {
           if (limits.limits[i] != kNoLimit) {
             SetParamValue(*sde_params_.Get(), ToString(static_cast<Limit>(i)),
                           base::win::ScopedBstr(
-                              base::UTF16ToWide(WideFormat(limits.limits[i]))));
+                              UtfConvert<wchar_t>(WideFormat(limits.limits[i]))));
           }
         }
       }

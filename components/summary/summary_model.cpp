@@ -13,7 +13,7 @@
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 
 #include "base/debug_util-inl.h"
 
@@ -155,7 +155,7 @@ SummaryModel::RowModel::RowModel(SummaryModel& model) : model_(model) {
 
 std::u16string SummaryModel::RowModel::GetTitle(int index) const {
   base::Time time = model_.GetRowTime(index);
-  return boost::locale::conv::utf_to_utf<char16_t>(
+  return UtfConvert<char16_t>(
       FormatTime(time, TIME_FORMAT_DATE | TIME_FORMAT_TIME));
 }
 

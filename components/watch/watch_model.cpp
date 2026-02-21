@@ -1,7 +1,7 @@
 ﻿#include "components/watch/watch_model.h"
 
 #include "base/format_time.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
@@ -102,7 +102,7 @@ void WatchModel::SaveLog(const std::filesystem::path& path) {
   std::ofstream str(path);
   for (int i = 0; i < GetRowCount(); ++i) {
     for (int j = 0; j < 3; j++) {
-      std::string text = base::UTF16ToUTF8(GetCellText(i, j));
+      std::string text = UtfConvert<char>(GetCellText(i, j));
       if (j)
         str << '\t';
       str << text.c_str();
@@ -127,7 +127,7 @@ void WatchModel::GetCell(aui::TableCell& cell) {
 
   switch (cell.column_id) {
     case 0:
-      cell.text = base::UTF8ToUTF16(
+      cell.text = UtfConvert<char16_t>(
           FormatTime(event.time, TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
 

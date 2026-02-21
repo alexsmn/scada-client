@@ -13,6 +13,8 @@
 #include "vidicon/teleclient/test/com_data_point_events.h"
 #include "vidicon/teleclient/test/com_event_connector.h"
 
+#include "base/utf_convert.h"
+
 #include <TeleClient.h>
 #include <atlcomcli.h>
 #include <gmock/gmock.h>
@@ -41,8 +43,7 @@ class VidiconClientTest : public Test {
 namespace {
 
 std::string ToString(std::wstring_view str) {
-  return boost::locale::conv::utf_to_utf<char>(str.data(),
-                                               str.data() + str.size());
+  return UtfConvert<char>(str);
 }
 
 }  // namespace
@@ -58,7 +59,7 @@ Microsoft::WRL::ComPtr<IDataPoint> VidiconClientTest::CreateDataPoint(
 
 TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
   const std::wstring_view address =
-      LR"(VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
+      LR"(VIDICON.Share.1\пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.пїЅпїЅ.пїЅпїЅ-10 пїЅпїЅпїЅ s3)";
 
   EXPECT_CALL(timed_data_service_, GetNodeTimedData(opc::MakeOpcNodeId(address),
                                                     /*aggregation*/ _));
@@ -70,7 +71,7 @@ TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
 
 TEST_F(VidiconClientTest, NewOpcAeDataPoint_FailsConnection) {
   const std::wstring_view address =
-      LR"(AE:VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
+      LR"(AE:VIDICON.Share.1\пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.пїЅпїЅ.пїЅпїЅ-10 пїЅпїЅпїЅ s3)";
 
   Microsoft::WRL::ComPtr<IDataPoint> data_point;
   ASSERT_HRESULT_FAILED(vidicon_client_.teleclient().RequestPoint(

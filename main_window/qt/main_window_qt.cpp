@@ -3,7 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/qt/client_utils_qt.h"
-#include "base/strings/string_util_win.h"
+#include "base/utf_convert.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
 #include "common_resources.h"
@@ -66,7 +66,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
           std::make_unique<aui::SimpleMenuModel>(menu_model.delegate());
       BuildMenuModel(menu_info.hSubMenu, context_menu_model, *submenu_model,
                      submenus);
-      menu_model.AddSubMenu(menu_info.wID, base::AsString16(title),
+      menu_model.AddSubMenu(menu_info.wID, UtfConvert<char16_t>(title),
                             submenu_model.get());
       submenus.emplace_back(std::move(submenu_model));
 
@@ -74,13 +74,13 @@ void BuildMenuModel(CMenuHandle menu_handle,
       menu_model.AddSeparator(aui::NORMAL_SEPARATOR);
 
     } else if (menu_info.fState & MFS_CHECKED) {
-      menu_model.AddCheckItem(menu_info.wID, base::AsString16(title));
+      menu_model.AddCheckItem(menu_info.wID, UtfConvert<char16_t>(title));
 
     } else if (menu_info.wID == ID_ITEM_COMMANDS) {
       menu_model.AddInplaceMenu(&context_menu_model);
 
     } else {
-      menu_model.AddItem(menu_info.wID, base::AsString16(title));
+      menu_model.AddItem(menu_info.wID, UtfConvert<char16_t>(title));
     }
   }
 }

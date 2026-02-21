@@ -7,7 +7,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/scoped_process_information.h"
 #include "base/win/win_util2.h"
 #include "common/node_state.h"
@@ -84,11 +84,11 @@ void PrintDiffReport(u16ostream& report,
            << std::endl;
     if (!node_state.node_id.is_null()) {
       report << u"  Ид = "
-             << base::UTF8ToUTF16(NodeIdToScadaString(node_state.node_id))
+             << UtfConvert<char16_t>(NodeIdToScadaString(node_state.node_id))
              << std::endl;
     }
     report << u"  Родитель = "
-           << base::UTF8ToUTF16(NodeIdToScadaString(node_state.parent_id))
+           << UtfConvert<char16_t>(NodeIdToScadaString(node_state.parent_id))
            << std::endl;
     report << u"  Имя = " << ToString16(node_state.attributes.display_name)
            << std::endl;

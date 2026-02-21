@@ -11,7 +11,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include "base/u16format.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/registry.h"
 #include "scada/session_service.h"
 #include "scada/status_promise.h"
@@ -40,37 +40,37 @@ const char16_t kAutoLoginMessage[] =
 struct RegHelper {
   bool ReadBool(std::string_view name) {
     DWORD value = 0;
-    key_.ReadValueDW(base::ASCIIToWide(name).c_str(), &value);
+    key_.ReadValueDW(UtfConvert<wchar_t>(name).c_str(), &value);
     return value != 0;
   }
 
   std::string ReadString(std::string_view name) {
     std::wstring value;
-    key_.ReadValue(base::ASCIIToWide(name).c_str(), &value);
-    return base::WideToASCII(value);
+    key_.ReadValue(UtfConvert<wchar_t>(name).c_str(), &value);
+    return UtfConvert<char>(value);
   }
 
   std::u16string ReadString16(std::string_view name) {
     std::wstring value;
-    key_.ReadValue(base::ASCIIToWide(name).c_str(), &value);
-    return base::WideToUTF16(value);
+    key_.ReadValue(UtfConvert<wchar_t>(name).c_str(), &value);
+    return UtfConvert<char16_t>(value);
   }
 
   bool Write(std::string_view name, bool bool_value) {
     DWORD dword_value = bool_value ? 1 : 0;
-    return key_.WriteValue(base::ASCIIToWide(name).c_str(), dword_value) ==
+    return key_.WriteValue(UtfConvert<wchar_t>(name).c_str(), dword_value) ==
            ERROR_SUCCESS;
   }
 
   bool Write(std::string_view name, std::string_view string_value) {
-    return key_.WriteValue(base::ASCIIToWide(name).c_str(),
-                           base::ASCIIToWide(string_value).c_str()) ==
+    return key_.WriteValue(UtfConvert<wchar_t>(name).c_str(),
+                           UtfConvert<wchar_t>(string_value).c_str()) ==
            ERROR_SUCCESS;
   }
 
   bool Write(std::string_view name, std::u16string_view string16_value) {
-    return key_.WriteValue(base::ASCIIToWide(name).c_str(),
-                           base::UTF16ToWide(string16_value).c_str()) ==
+    return key_.WriteValue(UtfConvert<wchar_t>(name).c_str(),
+                           UtfConvert<wchar_t>(string16_value).c_str()) ==
            ERROR_SUCCESS;
   }
 

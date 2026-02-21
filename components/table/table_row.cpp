@@ -3,7 +3,7 @@
 #include "aui/color.h"
 #include "base/format_time.h"
 #include "base/u16format.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "client_utils.h"
 #include "components/table/table_model.h"
 #include "events/event_set.h"
@@ -46,7 +46,7 @@ std::u16string FormatCellTime(scada::DateTime time) {
   if (time.is_null())
     return std::u16string{};
 
-  return base::UTF8ToUTF16(FormatTime(time, g_time_format));
+  return UtfConvert<char16_t>(FormatTime(time, g_time_format));
 }
 
 }  // namespace

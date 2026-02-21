@@ -3,7 +3,7 @@
 #include "aui/color.h"
 #include "aui/grid.h"
 #include "aui/os_exchange_data.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
 #include "common_resources.h"
@@ -117,7 +117,7 @@ void SheetController::AddContainedItem(const scada::NodeId& node_id,
   if (model_->is_editing() && current_index.column != -1 &&
       current_index.row != -1) {
     SheetCell& cell = model_->GetCell(current_index.row, current_index.column);
-    cell.SetFormula(u'=' + base::UTF8ToUTF16(MakeNodeIdFormula(node_id)));
+    cell.SetFormula(u'=' + UtfConvert<char16_t>(MakeNodeIdFormula(node_id)));
   }
 }
 

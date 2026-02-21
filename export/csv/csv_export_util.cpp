@@ -7,7 +7,7 @@
 #include "base/csv_writer.h"
 #include "base/excel.h"
 #include "base/json.h"
-#include "base/strings/string_util_win.h"
+#include "base/utf_convert.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
 #include "scada/variant.h"
@@ -133,7 +133,7 @@ void ExportToExcel(ExportModel::TableExportData& table,
   // Column titles.
   for (int i = 0; i < column_count; ++i) {
     const auto& title = table.columns[i].title;
-    sheet.SetData(1, 1 + i, base::AsWString(title));
+    sheet.SetData(1, 1 + i, UtfConvert<wchar_t>(title));
   }
 
   // Cells.
@@ -142,7 +142,7 @@ void ExportToExcel(ExportModel::TableExportData& table,
     for (int j = 0; j < column_count; ++j) {
       auto column_id = table.columns[j].id;
       auto text = table.model.GetCellText(row_range.first + i, column_id);
-      sheet.SetData(2 + i, 1 + j, base::AsWString(text));
+      sheet.SetData(2 + i, 1 + j, UtfConvert<wchar_t>(text));
     }
   }
 }
@@ -154,16 +154,16 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
   sheet.SetDataSize(row_count + 1, column_count + 1);
 
   // Column titles.
-  sheet.SetData(1, 1, base::AsWString(grid.row_title_column.title));
+  sheet.SetData(1, 1, UtfConvert<wchar_t>(grid.row_title_column.title));
   for (int i = 0; i < column_count; ++i) {
     auto title = grid.columns.GetTitle(i);
-    sheet.SetData(1, 2 + i, base::AsWString(title));
+    sheet.SetData(1, 2 + i, UtfConvert<wchar_t>(title));
   }
 
   // Row titles.
   for (int i = 0; i < row_count; ++i) {
     auto title = grid.rows.GetTitle(i);
-    sheet.SetData(2 + i, 1, base::AsWString(title));
+    sheet.SetData(2 + i, 1, UtfConvert<wchar_t>(title));
   }
 
   // Cells.
@@ -171,7 +171,7 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
   for (int i = 0; i < row_count; ++i) {
     for (int j = 0; j < column_count; ++j) {
       auto text = grid.model.GetCellText(i, j);
-      sheet.SetData(2 + i, 2 + j, base::AsWString(text));
+      sheet.SetData(2 + i, 2 + j, UtfConvert<wchar_t>(text));
     }
   }
 }

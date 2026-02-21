@@ -4,8 +4,9 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include "base/strings/string_util_win.h"
 #include "base/strings/sys_string_conversions.h"
+
+#include "base/utf_convert.h"
 #include "common_resources.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache_updater.h"
@@ -89,7 +90,7 @@ void ModusLoader::Load(SDECore::ISDEDocument50& sde_document,
   cache_updater_ = FileCacheUpdater::Create(FileCacheUpdaterContext{
       ID_MODUS_VIEW,
       FullFilePathToPublic(path),
-      base::AsString16(title_),
+      UtfConvert<char16_t>(title_),
       alias_resolver_,
       file_cache_,
   });

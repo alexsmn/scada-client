@@ -1,8 +1,7 @@
 #include "modus/activex/modus_document.h"
 
 #include "base/memory_istream.h"
-#include "base/strings/string_util_win.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/win/scoped_bstr.h"
 #include "base/win/variant_util.h"
 #include "modus/activex/modus_element.h"
@@ -76,7 +75,7 @@ void ModusDocument::Init(const std::filesystem::path& path,
                   object_map_[object_id] = added_object.get();
               });
 
-  title_ = base::WideToUTF16(loader.title());
+  title_ = UtfConvert<char16_t>(loader.title());
 
   EnableTopology(profile_.modus.topology);
 
@@ -200,7 +199,7 @@ void ModusDocument::OnDocDblClick(SDECore::IUIEventInfo& ui_event_info) {
   if (sde_object && !acked) {
     auto hyperlink = modus::GetHyperlink(*sde_object.Get());
     if (!hyperlink.empty()) {
-      navigation_callback_(base::AsString16(hyperlink));
+      navigation_callback_(UtfConvert<char16_t>(hyperlink));
     }
   }
 }

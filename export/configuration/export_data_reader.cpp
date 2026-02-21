@@ -3,7 +3,7 @@
 #include "aui/resource_error.h"
 #include "base/csv_reader.h"
 #include "base/u16format.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "common/format.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"
@@ -16,7 +16,7 @@ scada::NodeId ParseReferenceCell(std::u16string_view s) {
   if (p == s.npos)
     return scada::NodeId();
   auto n = s.substr(p + 1);
-  return NodeIdFromScadaString(base::UTF16ToUTF8(n));
+  return NodeIdFromScadaString(UtfConvert<char>(n));
 }
 
 scada::Variant::Type GetBuiltInDataType(const NodeRef& data_type) {
@@ -32,7 +32,7 @@ scada::Variant::Type GetBuiltInDataType(const NodeRef& data_type) {
     }
   }
 
-  throw ResourceError{u"Неизвестный тип данных"};
+  throw ResourceError{u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ"};
 }
 
 }  // namespace
@@ -44,7 +44,7 @@ ExportDataReader::ExportDataReader(NodeService& node_service, CsvReader& reader)
 
 ExportData ExportDataReader::Read() {
   if (!reader_.NextRow())
-    throw ResourceError{u"Нет строки заголовка"};
+    throw ResourceError{u"пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ"};
 
   // Skip Id, Parent, Type, Name.
   for (int i = 0; i < 4; ++i) {
@@ -68,7 +68,7 @@ ExportData::Property ExportDataReader::ParseProperty(
     std::u16string_view cell) const {
   auto prop_decl_id = ParseReferenceCell(cell);
   if (prop_decl_id.is_null()) {
-    throw ResourceError{u"Неверный формат имени столбца"};
+    throw ResourceError{u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ"};
   }
 
   auto prop_decl = node_service_.GetNode(prop_decl_id);
@@ -85,18 +85,18 @@ ExportData::Property ExportDataReader::ParseProperty(
 ExportData::Node ExportDataReader::ReadNode(
     const std::vector<ExportData::Property>& props) {
   // Id.
-  auto node_id = NodeIdFromScadaString(base::UTF16ToUTF8(ReadCell()));
+  auto node_id = NodeIdFromScadaString(UtfConvert<char>(ReadCell()));
 
   // Parent.
-  auto parent_id = NodeIdFromScadaString(base::UTF16ToUTF8(ReadCell()));
+  auto parent_id = NodeIdFromScadaString(UtfConvert<char>(ReadCell()));
   if (parent_id.is_null()) {
-    throw ResourceError{u"Группа не найдена"};
+    throw ResourceError{u"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ"};
   }
 
   // Type.
   auto type_definition = node_service_.GetNode(ParseReferenceCell(ReadCell()));
   if (!type_definition) {
-    throw ResourceError{u"Тип не найден"};
+    throw ResourceError{u"пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ"};
   }
 
   scada::LocalizedText display_name = ReadCell();
@@ -122,8 +122,8 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
   auto prop_decl = node_service_.GetNode(prop_decl_id);
   if (!prop_decl) {
     throw ResourceError{u16format(
-        L"Свойство {} не найдено",
-        base::ASCIIToUTF16(NodeIdToScadaString(prop_decl_id)))};
+        L"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ {} пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
+        UtfConvert<char16_t>(NodeIdToScadaString(prop_decl_id)))};
   }
 
   // The type system must be prefeteched before import starts.
@@ -148,7 +148,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
   auto data_type = GetBuiltInDataType(prop_decl.data_type());
   if (!StringToValue(string_value, data_type, new_value)) {
     throw ResourceError{u16format(
-        L"Невозможно преобразовать значение '{}' как тип '{}'",
+        L"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ '{}' пїЅпїЅпїЅ пїЅпїЅпїЅ '{}'",
         std::u16string{string_value}, ToString(data_type))};
   }
 
@@ -179,7 +179,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParseReferenceValue(
 std::u16string& ExportDataReader::ReadCell() {
   auto* cell = TryReadCell();
   if (!cell)
-    throw ResourceError(u"Количество ячеек в строке меньше ожидаемого");
+    throw ResourceError(u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
   return *cell;
 }
 

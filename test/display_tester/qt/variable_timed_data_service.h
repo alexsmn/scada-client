@@ -6,7 +6,7 @@
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_service.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <boost/range/adaptor/map.hpp>
 
 class VariableTimedData : public BaseTimedData {
@@ -19,7 +19,7 @@ class VariableTimedData : public BaseTimedData {
   }
 
   virtual scada::LocalizedText GetTitle() const {
-    return boost::locale::conv::utf_to_utf<char16_t>(formula_);
+    return UtfConvert<char16_t>(formula_);
   }
 
   void SetDataValue(const scada::DataValue& new_data_value) {

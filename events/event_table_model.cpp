@@ -3,7 +3,7 @@
 #include "base/excel.h"
 #include "base/format_time.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/utils.h"
 #include "events/current_event_model.h"
 #include "events/historical_event_model.h"
@@ -113,7 +113,7 @@ void EventTableModel::GetCell(aui::TableCell& cell) {
 
   switch (cell.column_id) {
     case EventColumnTime:
-      cell.text = base::UTF8ToUTF16(FormatTime(
+      cell.text = UtfConvert<char16_t>(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     case EventColumnSeverity:
@@ -143,7 +143,7 @@ void EventTableModel::GetCell(aui::TableCell& cell) {
         cell.text = ToString16(row.acknowledged_user.display_name());
       break;
     case EventColumnAckTime:
-      cell.text = base::UTF8ToUTF16(
+      cell.text = UtfConvert<char16_t>(
           FormatTime(event.acknowledged_time,
                      TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;

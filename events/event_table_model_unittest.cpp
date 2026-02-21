@@ -13,7 +13,7 @@
 #include "node_service/static/static_node_service.h"
 #include "scada/history_service_mock.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <gmock/gmock.h>
 
 using namespace testing;
@@ -30,7 +30,7 @@ struct TestNodeGenerator {
   }
 
   scada::LocalizedText display_name(int index) const {
-    return boost::locale::conv::utf_to_utf<char16_t>(
+    return UtfConvert<char16_t>(
         std::format("Event {}", index + 1));
   }
 
@@ -46,7 +46,7 @@ NodeEventProvider::EventContainer GenerateEvents(const TestNodeGenerator& nodes,
     scada::EventId event_id = static_cast<scada::EventId>(index + 1);
     scada::Event event{.event_id = event_id,
                        .node_id = nodes.node_id(index % nodes.count),
-                       .message = boost::locale::conv::utf_to_utf<char16_t>(
+                       .message = UtfConvert<char16_t>(
                            std::format("Event {}", index + 1))};
     events.try_emplace(event_id, std::move(event));
   }

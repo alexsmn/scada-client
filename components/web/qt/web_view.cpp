@@ -1,6 +1,6 @@
 #include "components/web/qt/web_view.h"
 
-#include "base/strings/string_util_win.h"
+#include "base/utf_convert.h"
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "controller/controller_registry.h"
@@ -40,7 +40,7 @@ std::unique_ptr<UiView> WebView::Init(const WindowDefinition& definition) {
     if (!url.empty()) {
       base::win::ScopedVariant e;
       VARIANT* empty = const_cast<VARIANT*>(e.ptr());
-      web->Navigate(base::win::ScopedBstr{base::AsWString(url)}, empty, empty,
+      web->Navigate(base::win::ScopedBstr{UtfConvert<wchar_t>(url)}, empty, empty,
                     empty, empty);
     }
   }

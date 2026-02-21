@@ -15,7 +15,7 @@
 #include "services/atl_module.h"
 #include "timed_data/timed_data_service_mock.h"
 
-#include <boost/locale/encoding_utf.hpp>
+#include "base/utf_convert.h"
 #include <gmock/gmock.h>
 
 DummyAtlModule _Module;
@@ -108,7 +108,7 @@ CComPtr<SdeFormStub> ModusDocumentTest::CreateSdeFormOrDie() {
   sde_object->techs_.emplace_back(tech);
 
   tech->params_.emplace_back(ParamStub::CreateOrDie(
-      L"ключ_привязки", boost::locale::conv::utf_to_utf<wchar_t>(kFormula)));
+      L"ключ_привязки", UtfConvert<wchar_t>(kFormula)));
 
   tech->params_.emplace_back(state_param_);
 

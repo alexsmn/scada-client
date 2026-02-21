@@ -2,7 +2,7 @@
 
 #include "base/executor.h"
 #include "base/range_util.h"
-#include "base/strings/utf_string_conversions.h"
+#include "base/utf_convert.h"
 #include "base/utils.h"
 #include "scada/event.h"
 #include "model/node_id_util.h"
@@ -62,7 +62,7 @@ std::u16string NodeTableModel::GetRowTitle(int row) {
   if (loading_)
     return {};
 
-  return base::UTF8ToUTF16(NodeIdToScadaString(rows_[row].node.node_id()));
+  return UtfConvert<char16_t>(NodeIdToScadaString(rows_[row].node.node_id()));
 }
 
 void NodeTableModel::GetCell(aui::GridCell& cell) {
@@ -79,10 +79,10 @@ void NodeTableModel::GetCell(aui::GridCell& cell) {
   const auto& column = columns_[cell.column];
 
   if (column.attr_id == scada::AttributeId::NodeId) {
-    cell.text = base::UTF8ToUTF16(NodeIdToScadaString(node.node_id()));
+    cell.text = UtfConvert<char16_t>(NodeIdToScadaString(node.node_id()));
     cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
   } else if (column.attr_id == scada::AttributeId::BrowseName)
-    cell.text = base::UTF8ToUTF16(node.browse_name().name());
+    cell.text = UtfConvert<char16_t>(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
   else if (column.prop_def->IsReadOnly(node,
@@ -105,7 +105,7 @@ bool NodeTableModel::SetCellText(int row,
   if (const auto& c = columns_[column];
       c.attr_id == scada::AttributeId::BrowseName) {
     task_manager_.PostUpdateTask(node.node_id(),
-                                 {.browse_name = base::UTF16ToUTF8(text)}, {});
+                                 {.browse_name = UtfConvert<char>(text)}, {});
   } else if (c.attr_id == scada::AttributeId::DisplayName) {
     task_manager_.PostUpdateTask(
         node.node_id(), {.display_name = scada::ToLocalizedText(text)}, {});
