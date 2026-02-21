@@ -2,7 +2,7 @@
 
 #include "base/format.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include "base/strings/sys_string_conversions.h"
 #include "base/struct_writer.h"
 #include "base/value_util.h"
@@ -53,7 +53,7 @@ WindowItem& WindowItem::operator=(const WindowItem& source) {
 }
 
 bool WindowItem::name_is(std::string_view n) const {
-  return base::EqualsCaseInsensitiveASCII(name, n);
+  return boost::iequals(name, n);
 }
 
 bool WindowItem::GetBool(std::string_view attr, bool default_value) const {

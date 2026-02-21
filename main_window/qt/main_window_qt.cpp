@@ -3,7 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/qt/client_utils_qt.h"
-#include "base/strings/string_util.h"
+#include "base/strings/string_util_win.h"
 #include "base/win/win_util2.h"
 #include "client_utils.h"
 #include "common_resources.h"

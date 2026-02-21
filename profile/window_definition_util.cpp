@@ -2,7 +2,7 @@
 
 #include "base/base64.h"
 #include "base/range_util.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/trim.hpp>
 #include "base/time_range.h"
 #include "base/time_utils.h"
 #include "base/value_util.h"
@@ -152,8 +152,7 @@ std::string SaveBlob(std::string_view blob) {
 }
 
 std::string RestoreBlob(std::string_view text) {
-  auto trimmed_text =
-      base::TrimString(text, base::kWhitespaceASCII, base::TRIM_ALL);
+  auto trimmed_text = boost::trim_copy(std::string{text});
   std::string blob;
   base::Base64Decode(trimmed_text, &blob);
   return blob;

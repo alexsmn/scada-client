@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "base/command_line.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/join.hpp>
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "common_resources.h"
@@ -50,7 +50,7 @@ void DebuggerModule::DumpDebugInfo(const SelectionCommandContext& context) {
 
   debug_info.push_back(context.selection.timed_data().DumpDebugInfo());
 
-  auto debug_text = base::JoinString(debug_info, "\n\n");
+  auto debug_text = boost::algorithm::join(debug_info, "\n\n");
 
   Clipboard clipboard;
 

@@ -1,11 +1,15 @@
 ﻿#include "components/login/login_controller.h"
 
-#include "Base/strings/string_split.h"
 #include "aui/dialog_service.h"
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
 #include "base/promise_executor.h"
-#include "base/strings/string_util.h"
+
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
@@ -13,6 +17,7 @@
 #include "scada/status_promise.h"
 
 #include <algorithm>
+#include <span>
 #include <windows.h>  // for VK_CONTROL
 
 #undef StrCat
@@ -77,26 +82,35 @@ std::string GetServerHostTypeKey(std::string_view server_type_name) {
 }
 
 std::vector<std::string> ParseListString(std::string_view users) {
-  return base::SplitString(users, ",", base::TRIM_WHITESPACE,
-                           base::SPLIT_WANT_NONEMPTY);
+  std::vector<std::string> result;
+  boost::split(result, users, boost::is_any_of(","));
+  for (auto& s : result)
+    boost::trim(s);
+  std::erase_if(result, [](const auto& s) { return s.empty(); });
+  return result;
 }
 
 std::vector<std::u16string> ParseListString(std::u16string_view users) {
-  return base::SplitString(users, u",", base::TRIM_WHITESPACE,
-                           base::SPLIT_WANT_NONEMPTY);
+  std::vector<std::u16string> result;
+  boost::split(result, users, boost::is_any_of(u","));
+  for (auto& s : result)
+    boost::trim(s);
+  std::erase_if(result, [](const auto& s) { return s.empty(); });
+  return result;
 }
 
-std::string BuildListString(base::span<const std::string> list) {
+std::string BuildListString(std::span<const std::string> list) {
   constexpr size_t kMaxCount = 10;
-  auto sublist = list.subspan(0, kMaxCount);
-  return base::JoinString(sublist, ",");
+  auto sublist = list.subspan(0, std::min(kMaxCount, list.size()));
+  return boost::algorithm::join(
+      boost::make_iterator_range(sublist.begin(), sublist.end()), ",");
 }
 
-std::u16string BuildListString(base::span<const std::u16string> list) {
+std::u16string BuildListString(std::span<const std::u16string> list) {
   constexpr size_t kMaxCount = 10;
-  auto count = std::min(kMaxCount, list.size());
-  auto sublist = list.subspan(0, count);
-  return base::JoinString(sublist, u",");
+  auto sublist = list.subspan(0, std::min(kMaxCount, list.size()));
+  return boost::algorithm::join(
+      boost::make_iterator_range(sublist.begin(), sublist.end()), u",");
 }
 
 void AppendMruList(std::vector<std::u16string>& list,

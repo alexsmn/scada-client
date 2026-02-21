@@ -1,6 +1,6 @@
 #include "modus/modus_util.h"
 
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include "profile/window_definition.h"
 #include "filesystem/file_util.h"
 #include "profile/profile.h"
@@ -13,8 +13,7 @@ bool IsModus2(const WindowDefinition& definition, Profile& profile) {
       modus2 = version >= 2;
   }
 
-  if (!base::LowerCaseEqualsASCII(definition.path.extension().string(),
-                                  ".xsde")) {
+  if (!boost::iequals(definition.path.extension().string(), ".xsde")) {
     modus2 = false;
   }
 
@@ -23,8 +22,8 @@ bool IsModus2(const WindowDefinition& definition, Profile& profile) {
 
 bool IsModusFilePath(const std::filesystem::path& path) {
   auto ext = path.extension().string();
-  return base::EqualsCaseInsensitiveASCII(ext, ".sde") ||
-         base::EqualsCaseInsensitiveASCII(ext, ".xsde");
+  return boost::iequals(ext, ".sde") ||
+         boost::iequals(ext, ".xsde");
 }
 
 std::optional<std::filesystem::path> MakeModusFilePath(

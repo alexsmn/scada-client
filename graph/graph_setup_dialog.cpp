@@ -1,6 +1,6 @@
 #include "graph/graph_setup_dialog.h"
 
-#include "base/strings/string_util.h"
+#include "base/strings/string_util_win.h"
 
 LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
                                        WPARAM /*wParam*/,

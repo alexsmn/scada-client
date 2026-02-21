@@ -1,8 +1,10 @@
 ﻿#include "modus/activex/modus_loader.h"
 
 #include "base/debug_util.h"
-#include "base/strings/string_split.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include "base/strings/string_util_win.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
 #include "controller/window_info.h"
@@ -40,8 +42,12 @@ std::vector<std::wstring> GetStateStrings(ISDEParams& params,
   if (!values)
     return {};
 
-  return base::SplitString(std::wstring(values), L";", base::TRIM_WHITESPACE,
-                           base::SPLIT_WANT_NONEMPTY);
+  std::vector<std::wstring> result;
+  boost::split(result, std::wstring(values), boost::is_any_of(L";"));
+  for (auto& s : result)
+    boost::trim(s);
+  std::erase_if(result, [](const auto& s) { return s.empty(); });
+  return result;
 }
 
 }  // namespace
@@ -246,8 +252,11 @@ void ModusLoader::LoadObject(ISDEObject& sde_object) {
     LOG_INFO(logger_) << "Processing tech" << LOG_TAG("Index", i)
                       << LOG_TAG("Bindings", bindings);
 
-    auto binding_list = base::SplitString(bindings, L";", base::TRIM_WHITESPACE,
-                                          base::SPLIT_WANT_NONEMPTY);
+    std::vector<std::wstring> binding_list;
+    boost::split(binding_list, bindings, boost::is_any_of(L";"));
+    for (auto& s : binding_list)
+      boost::trim(s);
+    std::erase_if(binding_list, [](const auto& s) { return s.empty(); });
     for (auto& binding : binding_list)
       LoadElement(object, sde_object, *params.Get(), binding, tag, i);
 

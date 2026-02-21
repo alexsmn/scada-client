@@ -4,7 +4,6 @@
 #include "base/command_line.h"
 #include "base/excel.h"
 #include "base/u16format.h"
-#include "base/strings/string_util.h"
 #include "base/win/win_util2.h"
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"

@@ -1,11 +1,24 @@
 #include "base/utils.h"
 
 #include "base/format.h"
-#include "base/strings/string_util.h"
+
+#include <boost/algorithm/string/predicate.hpp>
 
 #ifdef OS_WIN
 #include <windows.h>
 #endif
+
+namespace {
+
+template <class T>
+int CompareCaseInsensitiveASCII(std::basic_string_view<T> a,
+                                std::basic_string_view<T> b) {
+  if (boost::iequals(a, b))
+    return 0;
+  return boost::ilexicographical_compare(a, b) ? -1 : 1;
+}
+
+}  // namespace
 
 #ifdef OS_WIN
 HFONT CreateFont(LPCTSTR name, int height) {
@@ -42,10 +55,10 @@ int HumanCompareTextT(std::basic_string_view<T> left,
   int right_value = ScanEndingNumber(right, right_len);
 
   if (left_len != right_len) {
-    return base::CompareCaseInsensitiveASCII(left, right);
+    return CompareCaseInsensitiveASCII(left, right);
   }
 
-  int res = base::CompareCaseInsensitiveASCII(left.substr(0, left_len),
+  int res = CompareCaseInsensitiveASCII(left.substr(0, left_len),
                                               right.substr(0, right_len));
   if (res != 0) {
     return res;

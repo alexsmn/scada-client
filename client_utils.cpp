@@ -4,7 +4,6 @@
 #include "base/format_time.h"
 #include "base/range_util.h"
 #include "base/strings/strcat.h"
-#include "base/strings/string_util.h"
 #include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"

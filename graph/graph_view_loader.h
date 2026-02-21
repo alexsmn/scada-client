@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include "base/time_utils.h"
 #include "profile/profile.h"
 #include "profile/window_definition_util.h"
@@ -77,7 +77,7 @@ struct GraphViewLoader {
     auto srange = item.GetString("span");
     auto stime = item.GetString("time");
     base::Time from, to;
-    bool time_fit = base::EqualsCaseInsensitiveASCII(stime, "Now");
+    bool time_fit = boost::iequals(stime, "Now");
     if (time_fit || !Deserialize(stime, to)) {
       time_fit = true;
       to = base::Time::Now();

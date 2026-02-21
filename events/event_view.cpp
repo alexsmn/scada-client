@@ -8,7 +8,7 @@
 #include "base/excel.h"
 #include "base/u16format.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
+#include "base/strings/string_util_win.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"

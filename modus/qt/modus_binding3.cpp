@@ -1,6 +1,6 @@
 ﻿#include "modus_binding3.h"
 
-#include "base/strings/string_util.h"
+#include "base/string_util.h"
 
 namespace {
 
@@ -54,7 +54,7 @@ void ModusBinding3::Bind(const QString& property_name,
     Update();
   };
   auto formula_string = formula.toStdString();
-  if (base::IsStringASCII(formula_string))
+  if (IsStringASCII(formula_string))
     spec.Connect(timed_data_service, formula_string);
 }
 

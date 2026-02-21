@@ -2,7 +2,7 @@
 
 #include "base/u16format.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/predicate.hpp>
 #include "base/strings/utf_string_conversions.h"
 
 #include <algorithm>
@@ -48,7 +48,7 @@ static int FindString(const std::string_view strs[],
                       int count,
                       std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(strs[i], value)) {
+    if (boost::iequals(strs[i], value)) {
       return i;
     }
   }
@@ -59,7 +59,7 @@ static int FindStringPair(const StringPair pairs[],
                           int count,
                           std::string_view value) {
   for (int i = 0; i < count; ++i) {
-    if (base::EqualsCaseInsensitiveASCII(pairs[i].second, value)) {
+    if (boost::iequals(pairs[i].second, value)) {
       return i;
     }
   }

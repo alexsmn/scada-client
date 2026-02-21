@@ -1,7 +1,8 @@
 #include "export/csv/csv_export_command.h"
 
 #include "aui/dialog_service.h"
-#include "base/strings/string_util.h"
+
+#include <boost/algorithm/string/replace.hpp>
 #include "base/value_util.h"
 #include "base/win/win_util2.h"
 #include "export/csv/csv_export.h"
@@ -11,11 +12,10 @@
 
 namespace {
 
-const char16_t kExportTitle[] = u"Экспорт";
+const char16_t kExportTitle[] = u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ";
 
 std::filesystem::path MakeFileName(std::u16string_view text) {
-  std::u16string result;
-  base::ReplaceChars(text, u":", u"-", &result);
+  auto result = boost::replace_all_copy(std::u16string{text}, u":", u"-");
   return result;
 }
 
@@ -29,7 +29,7 @@ class CsvExportCommandRun
   promise<void> Run() {
     const std::string_view kCsvExt[] = {"*.csv"};
     const DialogService::Filter kFilters[] = {
-        {u"Файлы CSV", kCsvExt},
+        {u"пїЅпїЅпїЅпїЅпїЅ CSV", kCsvExt},
     };
 
     auto file_name = MakeFileName(window_title_);
@@ -53,7 +53,7 @@ class CsvExportCommandRun
         .then(std::bind_front(&CsvExportCommandRun::Export, ref))
         .then([this, ref] {
           return dialog_service_.RunMessageBox(
-              u"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+              u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ?", kExportTitle,
               MessageBoxMode::QuestionYesNo);
         })
         .then([this, ref](MessageBoxResult open_prompt_result) {
@@ -73,7 +73,7 @@ class CsvExportCommandRun
 
     } catch (const std::runtime_error&) {
       return dialog_service_
-          .RunMessageBox(u"Ошибка при экспорте.", kExportTitle,
+          .RunMessageBox(u"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.", kExportTitle,
                          MessageBoxMode::Error)
           .then([e = std::current_exception()](MessageBoxResult) {
             return make_rejected_promise(e);

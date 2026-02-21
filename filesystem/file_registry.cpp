@@ -1,7 +1,9 @@
 #include "filesystem/file_registry.h"
 
-#include "base/strings/string_split.h"
-#include "base/strings/string_util.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #include <cassert>
 
@@ -13,8 +15,10 @@ void FileRegistry::RegisterType(int id,
   TypeEntry& entry = type_map_[id];
   entry.type_id = id;
   entry.name = name;
-  entry.extensions = base::SplitString(extensions, ";", base::TRIM_WHITESPACE,
-                                       base::SPLIT_WANT_NONEMPTY);
+  boost::split(entry.extensions, extensions, boost::is_any_of(";"));
+  for (auto& e : entry.extensions)
+    boost::trim(e);
+  std::erase_if(entry.extensions, [](const auto& s) { return s.empty(); });
 }
 
 const FileRegistry::TypeEntry* FileRegistry::FindTypeById(int id) const {
@@ -25,7 +29,7 @@ const FileRegistry::TypeEntry* FileRegistry::FindTypeById(int id) const {
 const FileRegistry::TypeEntry* FileRegistry::FindTypeByName(
     std::string_view name) const {
   for (auto& [id, entry] : type_map_) {
-    if (base::EqualsCaseInsensitiveASCII(entry.name, name))
+    if (boost::iequals(entry.name, name))
       return &entry;
   }
   return nullptr;
@@ -35,7 +39,7 @@ const FileRegistry::TypeEntry* FileRegistry::FindTypeByExtension(
     std::string_view ext) const {
   for (auto& [id, entry] : type_map_) {
     for (auto& e : entry.extensions) {
-      if (base::EqualsCaseInsensitiveASCII(e, ext))
+      if (boost::iequals(e, ext))
         return &entry;
     }
   }

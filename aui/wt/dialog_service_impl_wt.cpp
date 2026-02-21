@@ -1,6 +1,5 @@
 #include "aui/wt/dialog_service_impl_wt.h"
 
-#include "base/strings/string_util.h"
 
 promise<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
     std::u16string_view message,

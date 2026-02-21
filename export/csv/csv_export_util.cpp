@@ -7,7 +7,7 @@
 #include "base/csv_writer.h"
 #include "base/excel.h"
 #include "base/json.h"
-#include "base/strings/string_util.h"
+#include "base/strings/string_util_win.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
 #include "scada/variant.h"

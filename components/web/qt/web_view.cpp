@@ -1,6 +1,6 @@
 #include "components/web/qt/web_view.h"
 
-#include "base/strings/string_util.h"
+#include "base/strings/string_util_win.h"
 #include "base/win/scoped_bstr.h"
 #include "base/win/scoped_variant.h"
 #include "controller/controller_registry.h"

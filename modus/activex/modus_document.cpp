@@ -1,7 +1,7 @@
 #include "modus/activex/modus_document.h"
 
 #include "base/memory_istream.h"
-#include "base/strings/string_util.h"
+#include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_bstr.h"
 #include "base/win/variant_util.h"

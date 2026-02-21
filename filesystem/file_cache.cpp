@@ -8,8 +8,6 @@
 #include "base/json.h"
 #include "base/logger.h"
 #include "base/path_service.h"
-#include "base/strings/string_split.h"
-#include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
 #include "base/values.h"
