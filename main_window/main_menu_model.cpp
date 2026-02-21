@@ -3,7 +3,7 @@
 #include "aui/dialog_service.h"
 #include "base/command_line.h"
 #include "base/promise_executor.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "common_resources.h"
 #include "components/debugger/debug_switch.h"
 #include "components/sheet/sheet_component.h"
@@ -184,7 +184,7 @@ void PageMenuModel::OpenPage(const Page& page) {
 
   std::u16string title = current_page.GetTitle();
   std::u16string message =
-      base::StringPrintf(u"Вернуться к сохраненному листу %ls?", title.c_str());
+      u16format(L"Вернуться к сохраненному листу {}?", title);
   dialog_service_.RunMessageBox(message, {}, MessageBoxMode::QuestionYesNo)
       .then(BindPromiseExecutor(
           executor_, [this, weak_ptr = weak_ptr_factory_.GetWeakPtr(),

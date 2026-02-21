@@ -1,6 +1,6 @@
 #include "main_window/status/event_status_provider.h"
 
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "events/node_event_provider.h"
 #include "profile/profile.h"
 #include "events/local_events.h"
@@ -24,12 +24,12 @@ std::u16string EventStatusProvider::GetEventCountText() const {
   size_t event_count = node_event_provider_.unacked_events().size() +
                        local_events_.events().size();
 
-  return event_count != 0 ? base::StringPrintf(u"Событий: %u", event_count)
+  return event_count != 0 ? u16format(L"События: {}", event_count)
                           : u"Нет событий";
 }
 
 std::u16string EventStatusProvider::GetSeverityText() const {
-  return base::StringPrintf(u"Важность: %u",
+  return u16format(L"Важность: {}",
                             node_event_provider_.severity_min());
 }
 

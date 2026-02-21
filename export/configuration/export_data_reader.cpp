@@ -2,7 +2,7 @@
 
 #include "aui/resource_error.h"
 #include "base/csv_reader.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
 #include "model/node_id_util.h"
@@ -121,9 +121,9 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
     const scada::NodeId& prop_decl_id) {
   auto prop_decl = node_service_.GetNode(prop_decl_id);
   if (!prop_decl) {
-    throw ResourceError{base::StringPrintf(
-        u"Свойство %ls не найдено",
-        base::ASCIIToUTF16(NodeIdToScadaString(prop_decl_id)).c_str())};
+    throw ResourceError{u16format(
+        L"Свойство {} не найдено",
+        base::ASCIIToUTF16(NodeIdToScadaString(prop_decl_id)))};
   }
 
   // The type system must be prefeteched before import starts.
@@ -147,9 +147,9 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
   scada::Variant new_value;
   auto data_type = GetBuiltInDataType(prop_decl.data_type());
   if (!StringToValue(string_value, data_type, new_value)) {
-    throw ResourceError{base::StringPrintf(
-        u"Невозможно преобразовать значение '%ls' как тип '%ls'",
-        std::u16string{string_value}.c_str(), ToString(data_type).c_str())};
+    throw ResourceError{u16format(
+        L"Невозможно преобразовать значение '{}' как тип '{}'",
+        std::u16string{string_value}, ToString(data_type))};
   }
 
   if (new_value.is_null()) {

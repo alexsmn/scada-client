@@ -2,7 +2,7 @@
 
 #include "base/promise.h"
 #include "base/promise_executor.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "core/progress_host.h"
 #include "events/local_events.h"
 #include "node_service/node_promises.h"
@@ -23,11 +23,11 @@ std::u16string FormatReference(NodeService& node_service,
                                const scada::NodeId& source_id,
                                const scada::NodeId& target_id,
                                bool add) {
-  return base::StringPrintf(
-      u"%ls типа %ls от %ls к %ls", add ? u"Создание связи" : u"Удаление связи",
-      GetDisplayName(node_service, reference_type_id).c_str(),
-      GetDisplayName(node_service, source_id).c_str(),
-      GetDisplayName(node_service, target_id).c_str());
+  return u16format(
+      L"{} типа {} от {} к {}", add ? L"Создание связи" : L"Удаление связи",
+      GetDisplayName(node_service, reference_type_id),
+      GetDisplayName(node_service, source_id),
+      GetDisplayName(node_service, target_id));
 }
 
 scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
@@ -166,7 +166,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
     scada::NodeProperties properties) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
-      base::StringPrintf(u"Изменение %ls", title.c_str()), [=]() mutable {
+      u16format(L"Изменение {}", title), [=]() mutable {
         auto node = node_service_.GetNode(node_id);
         return FetchNode(node)
             .then([&attribute_service = attribute_service_, node, attributes,
@@ -195,7 +195,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
 promise<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
-      base::StringPrintf(u"Удаление %ls", title.c_str()),
+      u16format(L"Удаление {}", title),
       [this, node_id,
        &node_management_service = node_management_service_]() mutable {
         return scada::DeleteNode(node_management_service, {node_id});
@@ -270,8 +270,8 @@ void TaskManagerImpl::ReportRequestCompletion(
   running_task_ = Task();
 
   if (!status || profile_.show_write_ok) {
-    std::u16string message = base::StringPrintf(
-        u"%ls: %ls.", task.title.c_str(), ToString16(status).c_str());
+    std::u16string message =
+        u16format(L"{}: {}.", task.title, ToString16(status));
     if (!result_text.empty()) {
       message += u'\n' + result_text;
     }

@@ -1,6 +1,6 @@
 ﻿#include "components/change_password/change_password.h"
 
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "components/change_password/change_password_dialog.h"
 #include "events/local_event_util.h"
 #include "model/security_node_ids.h"
@@ -14,8 +14,8 @@ void ChangePassword(const ChangePasswordContext& context,
       security::id::UserType_ChangePassword, current_password, new_password);
   scada::BindStatusCallback(promise, [context](const scada::Status& status) {
     auto title =
-        base::StringPrintf(u"Смена пароля пользователя %ls",
-                           ToString16(context.user_.display_name()).c_str());
+        u16format(L"Смена пароля пользователя {}",
+                  ToString16(context.user_.display_name()));
     ReportRequestResult(title, status, context.local_events_, context.profile_);
   });
 }

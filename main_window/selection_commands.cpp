@@ -4,7 +4,7 @@
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/promise_executor.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "client_utils.h"
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
@@ -263,8 +263,8 @@ promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
       file_cache_.GetList(view_type_id).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
-    auto msg = base::StringPrintf(u"Схема для объекта \"%ls\" не найдена.",
-                                  ToString16(node.display_name()).c_str());
+    auto msg = u16format(L"Схема для объекта \"{}\" не найдена.",
+                         ToString16(node.display_name()));
     return ToRejectedPromise<OpenedViewInterface*>(
         dialog_service_->RunMessageBox(msg, u"Схема", MessageBoxMode::Info));
   }
@@ -329,10 +329,10 @@ void SelectionCommands::DeleteSelection() {
 
   auto message =
       nodes.size() == 1
-          ? base::StringPrintf(u"Вы действительно хотите удалить %ls?",
-                               nodes.front().display_name().c_str())
-          : base::StringPrintf(u"Вы действительно хотите удалить %Iu объектов?",
-                               nodes.size());
+          ? u16format(L"Вы действительно хотите удалить {}?",
+                      nodes.front().display_name())
+          : u16format(L"Вы действительно хотите удалить {} объектов?",
+                      nodes.size());
 
   dialog_service_
       ->RunMessageBox(message, u"Удаление", MessageBoxMode::QuestionYesNo)

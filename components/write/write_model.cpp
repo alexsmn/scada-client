@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "base/promise_executor.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "common/format.h"
 #include "common/formula_util.h"
@@ -11,9 +11,9 @@
 #include "scada/status_promise.h"
 
 namespace {
-const char16_t kDiscreteConfirmationQuestion[] =
-    u"Перевести %ls в состояние %ls?";
-const char16_t kAnalogConfirmationQuestion[] = u"Записать в %ls значение %ls?";
+const wchar_t kDiscreteConfirmationQuestion[] =
+    L"Перевести {} в состояние {}?";
+const wchar_t kAnalogConfirmationQuestion[] = L"Записать в {} значение {}?";
 const char16_t kSecondStagePrefix[] =
     u"Удаленное устройство готово к исполнению команды.\n\n";
 }  // namespace
@@ -153,9 +153,9 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
 std::u16string WriteModel::GetConfirmationMessage(bool second_stage) const {
   auto value_str =
       spec_.GetValueString(write_value_, {}, ValueFormat{FORMAT_UNITS});
-  auto message = base::StringPrintf(
+  auto message = u16format(
       discrete_ ? kDiscreteConfirmationQuestion : kAnalogConfirmationQuestion,
-      spec_.GetTitle().c_str(), value_str.c_str());
+      spec_.GetTitle(), value_str);
   if (second_stage)
     message.insert(0, kSecondStagePrefix);
   return message;

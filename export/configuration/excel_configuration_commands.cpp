@@ -6,7 +6,7 @@
 #include "aui/resource_error.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/win/win_util2.h"
 #include "export/configuration/diff_builder.h"
 #include "export/configuration/diff_report.h"
@@ -117,9 +117,9 @@ ExportData ImportConfigurationCommand::LoadExportData(
     return reader.Read();
 
   } catch (const ResourceError& e) {
-    throw ResourceError{base::StringPrintf(
-        u"Ошибка при импорте строки %d, столбца %d: %ls.",
-        csv_reader.row_index(), csv_reader.cell_index(), e.message().c_str())};
+    throw ResourceError{u16format(
+        L"Ошибка при импорте строки {}, столбца {}: {}.",
+        csv_reader.row_index(), csv_reader.cell_index(), e.message())};
   }
 }
 

@@ -2,7 +2,6 @@
 
 #include "base/executor.h"
 #include "base/executor_task_runner.h"
-#include "base/strings/stringprintf.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

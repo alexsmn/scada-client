@@ -3,7 +3,7 @@
 #include <cassert>
 #include <vector>
 
-#include "base/strings/stringprintf.h"
+#include <format>
 
 // #import "C:\Program Files (x86)\Common Files\Microsoft
 // Shared\OFFICE12\MSO.DLL" rename_namespace("A") #import "C:\Program Files
@@ -153,7 +153,7 @@ void Excel::NewSheet(const ExcelSheetModel& sheet) {
   this->sheet = GetProperty(*excel.Get(), L"ActiveSheet");
 
   // range = sheet.Range[A1:XY]
-  auto str = base::StringPrintf(L"A1:%lc%d", L'A' + sheet.cols - 1, sheet.rows);
+  auto str = std::format(L"A1:{}{}", static_cast<wchar_t>(L'A' + sheet.cols - 1), sheet.rows);
   auto range = GetRange(str.c_str());
 
   // range.Value = data

@@ -6,7 +6,7 @@
 #include "base/containers/cxx20_erase.h"
 #include "base/promise_executor.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "scada/session_service.h"
@@ -26,8 +26,8 @@ const char kServerHostKeyPrefix[] = "Host:";
 const char16_t kForceLogoffMessage[] =
     u"Указанное имя пользователя уже используется другой сессией. Разорвать "
     u"открытую сессию и продолжить?";
-const char16_t kLoginFailedMessage[] =
-    u"Ошибка при подключении к серверу (%ls).";
+const wchar_t kLoginFailedMessage[] =
+    L"Ошибка при подключении к серверу ({}).";
 const char16_t kAutoLoginMessage[] =
     u"Чтобы отключить автоматический вход, удерживайте Ctrl при запуске "
     u"приложения.";
@@ -231,7 +231,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
 
   } else {
     std::u16string message =
-        base::StringPrintf(kLoginFailedMessage, ToString16(status).c_str());
+        u16format(kLoginFailedMessage, ToString16(status));
     dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error)
         .then(BindPromiseExecutor(executor_, weak_from_this(),
                                   [this](MessageBoxResult) {

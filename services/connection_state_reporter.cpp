@@ -1,7 +1,7 @@
 ﻿#include "services/connection_state_reporter.h"
 
 #include "base/bind.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/strings/sys_string_conversions.h"
 #include "client_utils.h"
 #include "scada/session_service.h"
@@ -47,7 +47,7 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   if (status) {
     local_events_.ReportEvent(
         LocalEvents::SEV_INFO,
-        base::StringPrintf(u"Отключение от сервера %ls. ", host_name.c_str()));
+        u16format(L"Отключение от сервера {}. ", host_name));
     return;
   }
 
@@ -55,10 +55,10 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   if (status.code() == scada::StatusCode::Bad_SessionForcedLogoff) {
     local_events_.ReportEvent(
         LocalEvents::SEV_ERROR,
-        base::StringPrintf(
-            u"Отключение от сервера %ls. Данные реквизиты используются для "
-            u"входа в систему с другого рабочего места.",
-            host_name.c_str()));
+        u16format(
+            L"Отключение от сервера {}. Данные реквизиты используются для "
+            L"входа в систему с другого рабочего места.",
+            host_name));
     return;
   }
 
@@ -71,9 +71,9 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
 
   local_events_.ReportEvent(
       LocalEvents::SEV_WARNING,
-      base::StringPrintf(
-          u"Разрыв связи с сервером %ls. %ls. Переподключение через %u секунд.",
-          host_name.c_str(), ToString16(status).c_str(), delay_s));
+      u16format(
+          L"Разрыв связи с сервером {}. {}. Переподключение через {} секунд.",
+          host_name, ToString16(status), delay_s));
 
   reconnect_timer_.StartOne(delay, [this] { OnReconnectTimer(); });
 }

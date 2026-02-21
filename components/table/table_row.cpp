@@ -2,7 +2,7 @@
 
 #include "aui/color.h"
 #include "base/format_time.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "client_utils.h"
 #include "components/table/table_model.h"
@@ -146,7 +146,7 @@ void TableRow::GetEventCell(TableCellEx& cell) const {
   cell.text = last_event.message;
 
   if (events->size() >= 2)
-    cell.text.insert(0, base::StringPrintf(u"[%d] ", events->size()));
+    cell.text.insert(0, u16format(L"[{}] ", events->size()));
 }
 
 void TableRow::GetCellEx(TableCellEx& cell) const {

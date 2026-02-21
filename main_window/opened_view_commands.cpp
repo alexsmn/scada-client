@@ -3,8 +3,8 @@
 #include "aui/dialog_service.h"
 #include "base/command_line.h"
 #include "base/excel.h"
+#include "base/u16format.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/win/win_util2.h"
 #include "clipboard/clipboard_util.h"
 #include "common_resources.h"
@@ -312,9 +312,7 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
     properties.emplace_back(devices::id::LinkType_Transport, ts.ToString());
   }
 
-  // `std::format` doesn't support `u16string`s.
-  auto title =
-      base::StringPrintf(u"Создание \"%ls\"", attributes.display_name.c_str());
+  auto title = u16format(L"Создание \"{}\"", attributes.display_name);
 
   auto insert_promise =
       task_manager_.PostInsertTask({.type_definition_id = type_node_id,

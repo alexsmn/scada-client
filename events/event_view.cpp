@@ -6,9 +6,9 @@
 #include "aui/resource_error.h"
 #include "aui/table.h"
 #include "base/excel.h"
+#include "base/u16format.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "client_utils.h"
 #include "common_resources.h"
 #include "components/time_range/time_range_dialog.h"
@@ -57,9 +57,9 @@ std::shared_ptr<EventTableModel> CreateEventTableModel(
 scada::EventSeverity ParseSeverity(std::u16string_view str) {
   unsigned severity = 0;
   if (!base::StringToUint(str, &severity) || severity > scada::kSeverityMax) {
-    throw ResourceError{base::StringPrintf(u"Введите число от %d до %d.",
-                                           scada::kSeverityMin,
-                                           scada::kSeverityMax)};
+    throw ResourceError{u16format(L"Введите число от {} до {}.",
+                                    scada::kSeverityMin,
+                                    scada::kSeverityMax)};
   }
 
   // TODO: Checked cast.

@@ -2,7 +2,7 @@
 
 #include "base/string_util.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/stringprintf.h"
+#include <format>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <cassert>
@@ -99,7 +99,7 @@ Color StringToColor(std::string_view str) {
 }
 
 std::string ColorToString(Color color) {
-  return base::StringPrintf("#%08X", EncodeColor(color));
+  return std::format("#{:08X}", EncodeColor(color));
 }
 
 std::ostream& operator<<(std::ostream& stream, Color color) {

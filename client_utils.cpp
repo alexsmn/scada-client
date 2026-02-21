@@ -5,7 +5,7 @@
 #include "base/range_util.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/clipboard.h"
 #include "client_utils.h"
@@ -66,14 +66,13 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
         str += L'\n';
       // limit for 3 events
       if (count >= 3) {
-        str += base::StringPrintf(u"\n(+ %d событий)", events->size() - count);
+        str += u16format(L"\n(+ {} событий)", events->size() - count);
         break;
       }
       // add event
       std::u16string stime = base::UTF8ToUTF16(FormatTime(
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
-      str += base::StringPrintf(u"\n%ls %ls", stime.c_str(),
-                                event.message.c_str());
+      str += u16format(L"\n{} {}", stime, event.message);
     }
   }
 

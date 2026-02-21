@@ -1,6 +1,6 @@
 #include "configuration_commands.h"
 
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "common_resources.h"
 #include "components/limits/limit_dialog.h"
 #include "components/write/write_dialog.h"
@@ -66,8 +66,8 @@ void ConfigurationCommands::Register() {
            [this](const SelectionCommandContext& context) {
              const auto& node = context.selection.node();
              task_manager_.PostTask(
-                 base::StringPrintf(u"Снятие блокировки с %ls",
-                                    node.display_name().c_str()),
+                 u16format(L"Снятие блокировки с {}",
+                                    node.display_name()),
                  [node] {
                    return node.scada_node().call(
                        data_items::id::DataItemType_Unlock);

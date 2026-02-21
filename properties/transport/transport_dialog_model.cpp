@@ -1,11 +1,12 @@
 ﻿#include "transport_dialog_model.h"
 
+#include "base/u16format.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 
 #include <algorithm>
+#include <format>
 #include <transport/transport_string.h>
 
 namespace {
@@ -99,7 +100,7 @@ TransportDialogModel::TransportDialogModel(
   type_index = static_cast<int>(connection_type);
 
   for (int i = 1; i <= 255; ++i)
-    serial_port_items.emplace_back(base::StringPrintf(u"COM%d:", i));
+    serial_port_items.emplace_back(u16format(L"COM{}:", i));
 
   baud_rate_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kBaudRates); ++i)
@@ -220,7 +221,7 @@ void TransportDialogModel::Save() {
       if (port_no <= 1)
         port_no = 1;
       transport_string_.SetParam(transport::TransportString::kParamName,
-                                 base::StringPrintf("COM%d", port_no));
+                                 std::format("COM{}", port_no));
     }
 
     {

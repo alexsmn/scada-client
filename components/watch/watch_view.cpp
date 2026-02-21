@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/table.h"
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "common_resources.h"
 #include "components/watch/watch_model.h"
 #include "components/watch/watch_model_builder.h"
@@ -87,9 +87,9 @@ promise<> WatchView::SaveLog() {
   SYSTEMTIME time;
   GetLocalTime(&time);
 
-  auto name = base::StringPrintf(u"%04d%02d%02d_%02d%02d%02d.log", time.wYear,
-                                 time.wMonth, time.wDay, time.wHour,
-                                 time.wMinute, time.wSecond);
+  auto name = u16format(L"{:04}{:02}{:02}_{:02}{:02}{:02}.log", time.wYear,
+                        time.wMonth, time.wDay, time.wHour,
+                        time.wMinute, time.wSecond);
 
   return dialog_service_.SelectSaveFile({u"Сохранить как", name})
       .then([model = model_](const std::filesystem::path& path) {

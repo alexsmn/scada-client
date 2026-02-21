@@ -1,6 +1,6 @@
 ﻿#include "components/multi_create/multi_create_model.h"
 
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
@@ -8,6 +8,8 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "services/task_manager.h"
+
+#include <format>
 
 namespace {
 
@@ -46,9 +48,9 @@ void MultiCreateModel::Run(const RunParams& params) {
     int address = params.starting_address + i;
 
     auto display_name = scada::ToLocalizedText(
-        base::StringPrintf(u"%ls%d", params.name_prefix.c_str(), number));
+        u16format(L"{}{}", params.name_prefix, number));
     auto item_path =
-        base::StringPrintf("%s%d", params.path_prefix.c_str(), address);
+        std::format("{}{}", params.path_prefix, address);
     auto path = MakeNodeIdFormula(MakeNestedNodeId(device_id, item_path));
 
     task_manager_.PostInsertTask(

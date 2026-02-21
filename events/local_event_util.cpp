@@ -1,6 +1,6 @@
 #include "events/local_event_util.h"
 
-#include "base/strings/stringprintf.h"
+#include "base/u16format.h"
 #include "events/local_events.h"
 #include "profile/profile.h"
 #include "scada/localized_text.h"
@@ -14,8 +14,8 @@ void ReportRequestResult(const std::u16string& title,
     return;
   }
 
-  scada::LocalizedText message = base::StringPrintf(
-      u"%ls - %ls.", title.c_str(), ToString16(status).c_str());
+  scada::LocalizedText message =
+      u16format(L"{} - {}.", title, ToString16(status));
 
   LocalEvents::Severity severity =
       status ? LocalEvents::SEV_INFO : LocalEvents::SEV_ERROR;

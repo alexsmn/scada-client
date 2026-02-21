@@ -115,14 +115,6 @@ std::string GetTimedDataUnits(const TimedDataSpec& spec) {
 }
 
 void TimedDataController::UpdateColumnTitles() {
-  /*int index = view_->FindVisibleColumn(CID_VALUE);
-  if (index == -1)
-    return;
-
-  std::u16string units =
-  base::SysNativeMBToWide(GetTimedDataUnits(model_->timed_data()));
-  std::u16string title = base::StringPrintf(L"%ls, %ls", kValueColumnTitle,
-  units.c_str()); view_->SetVisibleColumnTitle(index, title);*/
 }
 
 std::u16string TimedDataController::MakeTitle() const {
