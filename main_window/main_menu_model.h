@@ -1,11 +1,11 @@
 #pragma once
 
 #include "aui/models/simple_menu_model.h"
-#include "base/containers/span.h"
 #include "controller/command_registry.h"
 #include "filesystem/file_cache.h"
 
 #include <filesystem>
+#include <span>
 
 class CommandHandler;
 class DialogService;
@@ -58,7 +58,7 @@ class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
 class FavouritesMenuModel : private MainMenuContext,
                             public aui::SimpleMenuModel {
  public:
-  FavouritesMenuModel(base::span<const WindowInfo* const> window_infos,
+  FavouritesMenuModel(std::span<const WindowInfo* const> window_infos,
                       const MainMenuContext& context);
 
   // views::MenuModel
@@ -67,7 +67,7 @@ class FavouritesMenuModel : private MainMenuContext,
   virtual bool IsEnabledAt(int index) const override;
 
  private:
-  const base::span<const WindowInfo* const> window_infos_;
+  const std::span<const WindowInfo* const> window_infos_;
 
   std::vector<const WindowDefinition*> windows_;
 };

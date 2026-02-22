@@ -68,7 +68,7 @@ promise<std::vector<NodeRef>> CollectNodesRecursive(
 }
 
 std::set<NodeRef> CollectTypeDefinitions(std::span<const NodeRef> devices) {
-  return AsBaseSpan(devices) |
+  return AsRange(devices) |
          boost::adaptors::transformed(std::mem_fn(&NodeRef::type_definition)) |
          to_set;
 }

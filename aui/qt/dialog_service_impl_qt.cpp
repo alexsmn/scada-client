@@ -8,7 +8,7 @@
 
 namespace {
 
-std::string JoinStrings(base::span<const std::string_view> strings,
+std::string JoinStrings(std::span<const std::string_view> strings,
                         char separator) {
   if (strings.empty())
     return {};
@@ -32,7 +32,7 @@ QString MakeFilter(const DialogService::Filter& filter) {
   return result;
 }
 
-QString MakeFilter(base::span<const DialogService::Filter> filters) {
+QString MakeFilter(std::span<const DialogService::Filter> filters) {
   if (filters.empty())
     return {};
 

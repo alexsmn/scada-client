@@ -112,7 +112,7 @@ void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
 // FavouritesMenuModel
 
 FavouritesMenuModel::FavouritesMenuModel(
-    base::span<const WindowInfo* const> window_infos,
+    std::span<const WindowInfo* const> window_infos,
     const MainMenuContext& context)
     : MainMenuContext{context},
       aui::SimpleMenuModel{nullptr},
@@ -302,11 +302,11 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
     : MainMenuContext{context},
       aui::SimpleMenuModel{this},
       display_menu_model_{context},
-      table_favourites_{base::make_span(kTableWindowInfos), context},
+      table_favourites_{std::span{kTableWindowInfos}, context},
       table_submenu_{this},
 #if !defined(UI_WT)
       graph_favourites_{std::make_unique<FavouritesMenuModel>(
-          base::make_span(kGraphWindowInfos),
+          std::span{kGraphWindowInfos},
           context)},
 #endif
       graph_submenu_{this},

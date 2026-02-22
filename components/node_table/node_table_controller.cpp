@@ -13,13 +13,15 @@
 #include "remote/session_proxy.h"
 #include "services/task_manager.h"
 
+#include <span>
+
 #if defined(UI_QT)
 #include "aui/qt/grid.h"
 #endif
 
 namespace {
 
-base::span<
+std::span<
     const std::pair<unsigned /*command_id*/, scada::NodeId /*prop_decl_id*/>>
 GetSortCommands() {
   static std::pair<unsigned, scada::NodeId> kSortCommands[] = {

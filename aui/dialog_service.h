@@ -1,10 +1,10 @@
 #pragma once
 
 #include "aui/types.h"
-#include "base/containers/span.h"
 #include "base/promise.h"
 
 #include <filesystem>
+#include <span>
 #include <string_view>
 
 #if defined(UI_QT)
@@ -42,13 +42,13 @@ class DialogService {
 
   struct Filter {
     std::u16string_view title;
-    base::span<const std::string_view> extensions;
+    std::span<const std::string_view> extensions;
   };
 
   struct SaveParams {
     std::u16string_view title;
     std::filesystem::path default_path;
-    base::span<const Filter> filters;
+    std::span<const Filter> filters;
   };
 
   virtual promise<std::filesystem::path> SelectSaveFile(
