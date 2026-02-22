@@ -1,7 +1,7 @@
 ﻿#include "aui/color.h"
 
 #include "base/string_util.h"
-#include "base/strings/string_number_conversions.h"
+#include <charconv>
 #include <format>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -89,7 +89,8 @@ Color StringToColor(std::string_view str) {
   if (!str.empty() && str[0] == '#') {
     auto hex_string = str.substr(1);
     unsigned color = 0;
-    if (!base::HexStringToUInt(hex_string, &color)) {
+    auto [ptr, ec] = std::from_chars(hex_string.data(), hex_string.data() + hex_string.size(), color, 16);
+    if (ec != std::errc() || ptr != hex_string.data() + hex_string.size()) {
       return ColorCode::Black;
     }
     return DecodeColor(color);

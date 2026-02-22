@@ -1,6 +1,6 @@
 #include "components/debugger/request_table_model.h"
 
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 #include "base/utf_convert.h"
 #include "base/time_utils.h"
 #include "scada/session_service.h"
@@ -35,7 +35,7 @@ void RequestTableModel::GetCell(aui::TableCell& cell) {
 
   switch (cell.column_id) {
     case 0:
-      cell.text = base::NumberToString16(request.request_id);
+      cell.text = WideFormat(request.request_id);
       break;
     case 1:
       cell.text = UtfConvert<char16_t>(ToString(request.phase));

@@ -1,7 +1,7 @@
 ﻿#include "transport_dialog_model.h"
 
 #include "base/u16format.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include "base/utf_convert.h"
 
@@ -104,11 +104,11 @@ TransportDialogModel::TransportDialogModel(
 
   baud_rate_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kBaudRates); ++i)
-    baud_rate_items.emplace_back(base::NumberToString16(kBaudRates[i]));
+    baud_rate_items.emplace_back(WideFormat(kBaudRates[i]));
 
   bit_count_items.emplace_back(kDefaultString);
   for (int i = kBitCountFirst; i <= kBitCountLast; ++i)
-    bit_count_items.emplace_back(base::NumberToString16(i));
+    bit_count_items.emplace_back(WideFormat(i));
 
   parity_items.emplace_back(kDefaultString);
   for (unsigned i = 0; i < std::size(kParityStrings); ++i)

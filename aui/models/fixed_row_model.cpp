@@ -1,6 +1,6 @@
 #include "aui/models/fixed_row_model.h"
 
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 
 namespace aui {
 
@@ -26,7 +26,7 @@ base::string16 FixedRowModel::GetTitle(int index) const {
 // FixedRowModel::Delegate ----------------------------------------------------
 
 base::string16 FixedRowModel::Delegate::GetRowTitle(int index) {
-  return base::NumberToString16(index + 1);
+  return WideFormat(index + 1);
 }
 
 }  // namespace aui

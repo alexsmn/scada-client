@@ -4,7 +4,7 @@
 #include "base/client_paths.h"
 #include "base/file_path_util.h"
 #include "base/path_service.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "base/value_util.h"
@@ -251,7 +251,7 @@ Page& Profile::AddPage(const Page& page) {
   new_page.id = page_id;
 
   if (new_page.title.empty()) {
-    new_page.title = Translate("Page ") + base::NumberToString16(page_id);
+    new_page.title = Translate("Page ") + WideFormat(page_id);
   }
 
   return new_page;

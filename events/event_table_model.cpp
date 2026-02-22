@@ -3,7 +3,7 @@
 #include "aui/translation.h"
 #include "base/excel.h"
 #include "base/format_time.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
 #include "events/current_event_model.h"
@@ -118,7 +118,7 @@ void EventTableModel::GetCell(aui::TableCell& cell) {
           event.time, TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
       break;
     case EventColumnSeverity:
-      cell.text = base::NumberToString16(event.severity);
+      cell.text = WideFormat(event.severity);
       break;
     case EventColumnItem:
       if (row.node)

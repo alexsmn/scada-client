@@ -8,7 +8,7 @@
 #include "aui/table.h"
 #include "base/excel.h"
 #include "base/u16format.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/format.h"
 #include "base/utf_convert.h"
 #include "client_utils.h"
 #include "common_resources.h"
@@ -57,7 +57,7 @@ std::shared_ptr<EventTableModel> CreateEventTableModel(
 
 scada::EventSeverity ParseSeverity(std::u16string_view str) {
   unsigned severity = 0;
-  if (!base::StringToUint(str, &severity) || severity > scada::kSeverityMax) {
+  if (!Parse(str, severity) || severity > scada::kSeverityMax) {
     throw ResourceError{u16format(L"Enter a number from {} to {}.",
                                     scada::kSeverityMin,
                                     scada::kSeverityMax)};
@@ -303,7 +303,7 @@ promise<> EventView::SelectSeverity() {
                                   : model_->severity_min();
   auto prompt = Translate("Minimum severity threshold (0 = all events):");
   return RunPromptDialog(dialog_service_, prompt, /*title=*/kFilter,
-                         base::NumberToString16(initial_severity))
+                         WideFormat(initial_severity))
       .then(CatchResourceError(dialog_service_, /*title=*/kFilter,
                                &ParseSeverity))
       .then(std::bind_front(&EventView::SetSeverityMin, this));
