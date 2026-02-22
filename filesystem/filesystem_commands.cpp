@@ -1,6 +1,7 @@
 ﻿#include "filesystem/filesystem_commands.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "aui/prompt_dialog.h"
 #include "base/file_path_util.h"
 #include "base/promise_executor.h"
@@ -25,10 +26,10 @@
 
 namespace {
 
-const char16_t kAddFileTitle[] = u"Добавить файл";
-const char16_t kOpenFileTitle[] = u"Открыть файл";
-const char16_t kAddFileDirectoryPrompt[] = u"Имя папки:";
-const char16_t kAddFileDirectoryTitle[] = u"Создать папку";
+const char16_t kAddFileTitle[] = u"Add File";
+const char16_t kOpenFileTitle[] = u"Open File";
+const char16_t kAddFileDirectoryPrompt[] = u"Folder name:";
+const char16_t kAddFileDirectoryTitle[] = u"Create Folder";
 
 }  // namespace
 
@@ -50,7 +51,7 @@ promise<void> OpenJsonFile(const std::filesystem::path& path,
 
   if (!window_def) {
     return ToVoidPromise(dialog_service.RunMessageBox(
-        u"Файл имеет неверный формат.", kOpenFileTitle, MessageBoxMode::Error));
+        Translate("The file has an invalid format."), kOpenFileTitle, MessageBoxMode::Error));
   }
 
   return OpenView(main_window, *window_def);
@@ -77,7 +78,7 @@ promise<void> OpenFileCommandImpl::OpenFile(
   auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
   if (!window_info) {
     return ToVoidPromise(context.dialog_service.RunMessageBox(
-        u"Неизвестный тип файла.", kOpenFileTitle, MessageBoxMode::Error));
+        Translate("Unknown file type."), kOpenFileTitle, MessageBoxMode::Error));
   }
 
   auto window_def = WindowDefinition{*window_info}.set_path(path);
@@ -92,7 +93,7 @@ promise<void> OpenFileCommandImpl::Execute(
       // TODO: `weak ptr` for main window.
       [&dialog_service = context.dialog_service](std::exception_ptr) {
         return dialog_service
-            .RunMessageBox(u"Не удалось загрузить файл с сервера.",
+            .RunMessageBox(Translate("Failed to download file from server."),
                            kOpenFileTitle, MessageBoxMode::Error)
             .then([](MessageBoxResult) {
               return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
@@ -109,7 +110,7 @@ promise<> AddFile(NodeRef parent_directory,
         std::string contents_string;
         if (!base::ReadFileToString(AsFilePath(path), &contents_string)) {
           return ToRejectedPromise(dialog_service.RunMessageBox(
-              u"Не удалось считать файл.", kAddFileTitle,
+              Translate("Failed to read file."), kAddFileTitle,
               MessageBoxMode::Error));
         }
 

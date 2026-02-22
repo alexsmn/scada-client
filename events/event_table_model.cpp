@@ -1,5 +1,6 @@
 ﻿#include "events/event_table_model.h"
 
+#include "aui/translation.h"
 #include "base/excel.h"
 #include "base/format_time.h"
 #include "base/strings/string_number_conversions.h"
@@ -16,7 +17,7 @@ using namespace std::chrono_literals;
 
 namespace {
 
-const char16_t kLocalEventSource[] = u"Локальное событие";
+const char16_t kLocalEventSource[] = u"Local Event";
 
 void GetEventColors(const scada::Event& event,
                     aui::Color& text_color,
@@ -446,27 +447,27 @@ void EventTableModel::UnlockUpdate() {
 std::u16string EventTableModel::MakeTitle() const {
   std::u16string title;
   if (current_events_) {
-    title = u"Текущие события";
+    title = Translate("Current Events");
   } else {
     switch (historical_event_model_.time_range().type) {
       case TimeRange::Type::Day:
-        title = u"Журнал событий за день";
+        title = Translate("Event Journal for Day");
         break;
       case TimeRange::Type::Week:
-        title = u"Журнал событий за неделю";
+        title = Translate("Event Journal for Week");
         break;
       case TimeRange::Type::Month:
-        title = u"Журнал событий за месяц";
+        title = Translate("Event Journal for Month");
         break;
       case TimeRange::Type::Custom:
       default:
-        title = u"Журнал событий";  // TODO: Format time range.
+        title = Translate("Event Journal");  // TODO: Format time range.
         break;
     }
   }
 
   if (severity_min_ || !filter_node_ids_.empty())
-    title += u" (Фильтр)";
+    title += u" (Filter)";
 
   return title;
 }

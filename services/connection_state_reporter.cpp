@@ -1,5 +1,6 @@
 ﻿#include "services/connection_state_reporter.h"
 
+#include "aui/translation.h"
 #include "base/bind.h"
 #include "base/u16format.h"
 #include "base/strings/sys_string_conversions.h"
@@ -34,7 +35,7 @@ ConnectionStateReporter::~ConnectionStateReporter() {}
 void ConnectionStateReporter::OnSessionCreated() {
   local_events_.ReportEvent(
       LocalEvents::SEV_INFO,
-      u"Связь с сервером установлена. Выполнен вход в систему.");
+      Translate("Connection to server established. Login successful."));
 
   reconnect_timer_.Stop();
   reconnect_retry_ = 0;
@@ -47,7 +48,7 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   if (status) {
     local_events_.ReportEvent(
         LocalEvents::SEV_INFO,
-        u16format(L"Отключение от сервера {}. ", host_name));
+        u16format(L"Disconnecting from server {}. ", host_name));
     return;
   }
 
@@ -56,8 +57,8 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
     local_events_.ReportEvent(
         LocalEvents::SEV_ERROR,
         u16format(
-            L"Отключение от сервера {}. Данные реквизиты используются для "
-            L"входа в систему с другого рабочего места.",
+            L"Disconnected from server {}. These credentials are being used to "
+            L"log in from another workstation.",
             host_name));
     return;
   }
@@ -72,7 +73,7 @@ void ConnectionStateReporter::OnSessionDeleted(const scada::Status& status) {
   local_events_.ReportEvent(
       LocalEvents::SEV_WARNING,
       u16format(
-          L"Разрыв связи с сервером {}. {}. Переподключение через {} секунд.",
+          L"Connection to server {} lost. {}. Reconnecting in {} seconds.",
           host_name, ToString16(status), delay_s));
 
   reconnect_timer_.StartOne(delay, [this] { OnReconnectTimer(); });

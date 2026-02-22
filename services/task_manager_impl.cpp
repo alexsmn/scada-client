@@ -1,5 +1,6 @@
 ﻿#include "services/task_manager_impl.h"
 
+#include "aui/translation.h"
 #include "base/promise.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
@@ -24,7 +25,7 @@ std::u16string FormatReference(NodeService& node_service,
                                const scada::NodeId& target_id,
                                bool add) {
   return u16format(
-      L"{} типа {} от {} к {}", add ? L"Создание связи" : L"Удаление связи",
+      L"{} of type {} from {} to {}", add ? L"Adding reference" : L"Deleting reference",
       GetDisplayName(node_service, reference_type_id),
       GetDisplayName(node_service, source_id),
       GetDisplayName(node_service, target_id));
@@ -98,7 +99,7 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
   const std::shared_ptr<TaskManagerImpl> ref = shared_from_this();
 
   // Cannot use `PostTask` because it only accepts void promises.
-  PostTaskMethod(u"Вставка", [this, ref, node_state, final_promise] {
+  PostTaskMethod(Translate("Insert"), [this, ref, node_state, final_promise] {
     NodeRef type_def = node_service_.GetNode(node_state.type_definition_id);
 
     promise<scada::NodeId> add_node_promise =
@@ -166,7 +167,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
     scada::NodeProperties properties) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
-      u16format(L"Изменение {}", title), [=]() mutable {
+      u16format(L"Modifying {}", title), [=]() mutable {
         auto node = node_service_.GetNode(node_id);
         return FetchNode(node)
             .then([&attribute_service = attribute_service_, node, attributes,
@@ -195,7 +196,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
 promise<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   return PostTask(
-      u16format(L"Удаление {}", title),
+      u16format(L"Deleting {}", title),
       [this, node_id,
        &node_management_service = node_management_service_]() mutable {
         return scada::DeleteNode(node_management_service, {node_id});

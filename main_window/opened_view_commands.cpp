@@ -287,7 +287,7 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
   attributes.display_name = node_type.display_name();
   if (type_node_id == devices::id::Iec60870LinkType) {
     attributes.display_name =
-        is104 ? u"Направление МЭК-60870-104" : u"Направление МЭК-60870-101";
+        is104 ? u"IEC 60870-104 Link" : u"IEC 60870-101 Link";
   }
 
   // IEC link specific.
@@ -311,7 +311,7 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
     properties.emplace_back(devices::id::LinkType_Transport, ts.ToString());
   }
 
-  auto title = u16format(L"Создание \"{}\"", attributes.display_name);
+  auto title = u16format(L"Creating \"{}\"", attributes.display_name);
 
   auto insert_promise =
       task_manager_.PostInsertTask({.type_definition_id = type_node_id,
@@ -395,8 +395,7 @@ void OpenedViewCommands::ExportToExcel() {
 
   } catch (HRESULT /*err*/) {
     dialog_service_->RunMessageBox(
-        u"Не удалось выполнить экспорт. Проверьте корректность установки "
-        u"Microsoft Excel.",
-        u"Экспорт", MessageBoxMode::Error);
+        u"Export failed. Please check that Microsoft Excel is installed correctly.",
+        u"Export", MessageBoxMode::Error);
   }
 }

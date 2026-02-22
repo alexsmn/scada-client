@@ -1,5 +1,6 @@
 ﻿#include "components/watch/watch_model.h"
 
+#include "aui/translation.h"
 #include "base/format_time.h"
 #include "base/utf_convert.h"
 #include "node_service/node_service.h"
@@ -30,7 +31,7 @@ void WatchModel::OnEvent(const scada::Event& event) {
 
 void WatchModel::OnError(const scada::Status& status) {
   scada::Event event;
-  event.message = u"Подписка прервана. Возможно, устройство было удалено.";
+  event.message = Translate("Subscription interrupted. The device may have been deleted.");
   AddLine(event);
 }
 

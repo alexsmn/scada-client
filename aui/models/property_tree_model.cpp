@@ -1,5 +1,7 @@
 ﻿#include "property_tree_model.h"
 
+#include "aui/translation.h"
+
 #include <cassert>
 
 namespace aui {
@@ -114,7 +116,7 @@ PropertyTreeModel::~PropertyTreeModel() {
 }
 
 std::u16string PropertyTreeModel::GetColumnText(int column_id) const {
-  return column_id == 0 ? u"Параметр" : u"Значение";
+  return column_id == 0 ? Translate("Parameter") : Translate("Value");
 }
 
 PropertyGroupTreeNode* PropertyTreeModel::FindGroupNode(PropertyGroup& group) {

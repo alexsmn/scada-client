@@ -1,6 +1,7 @@
 ﻿#include "favorites/favourites_view.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "aui/prompt_dialog.h"
 #include "aui/tree.h"
 #include "common_resources.h"
@@ -14,7 +15,7 @@
 #endif
 
 namespace {
-const char16_t kAddUrl[] = u"Добавить Web-страницу";
+const char16_t kAddUrl[] = u"Add Web Page";
 }
 
 FavouritesView::FavouritesView(const ControllerContext& context,
@@ -88,12 +89,12 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 
 #if !defined(UI_WT)
 promise<> FavouritesView::AddUrl() {
-  return RunPromptDialog(dialog_service_, u"URL-адрес:", kAddUrl)
+  return RunPromptDialog(dialog_service_, Translate("URL:"), kAddUrl)
       .then([this](const std::u16string& url) {
         if (!IsWebUrl(url)) {
           return ToRejectedPromise(dialog_service_.RunMessageBox(
-              u"Допустимый URL-адрес должен начинаться с \"http://\" или "
-              u"\"https://\".",
+              Translate("A valid URL must start with \"http://\" or "
+              "\"https://\"."),
               kAddUrl, MessageBoxMode::Error));
         }
 

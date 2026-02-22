@@ -26,7 +26,7 @@ const aui::TableColumn s_columns[] = {
     {TimedDataModel::CID_TIME, kSourceTimestampTitle, 150,
      aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
     {TimedDataModel::CID_VALUE, kValueTitle, 150, aui::TableColumn::RIGHT},
-    {TimedDataModel::CID_QUALITY, u"Качество", 65, aui::TableColumn::LEFT},
+    {TimedDataModel::CID_QUALITY, u"Quality", 65, aui::TableColumn::LEFT},
     {TimedDataModel::CID_COLLECTION_TIME, kServerTimestampTitle, 150,
      aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
 };

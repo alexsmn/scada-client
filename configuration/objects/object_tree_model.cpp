@@ -1,5 +1,6 @@
 ﻿#include "configuration/objects/object_tree_model.h"
 
+#include "aui/translation.h"
 #include "configuration/tree/node_service_tree_impl.h"
 #include "scada/standard_node_ids.h"
 #include "model/data_items_node_ids.h"
@@ -25,7 +26,7 @@ int ObjectTreeModel::GetColumnCount() const {
 }
 
 std::u16string ObjectTreeModel::GetColumnText(int column_id) const {
-  return column_id == 0 ? u"Имя" : u"Значение";
+  return column_id == 0 ? Translate("Name") : Translate("Value");
 }
 
 int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {

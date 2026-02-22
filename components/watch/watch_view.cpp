@@ -1,6 +1,7 @@
 ﻿#include "components/watch/watch_view.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "aui/table.h"
 #include "base/u16format.h"
 #include "common_resources.h"
@@ -31,16 +32,16 @@ void WatchView::Save(WindowDefinition& definition) {
 std::u16string WatchView::MakeTitle() const {
   std::u16string title = ToString16(model_->device().display_name());
   if (model_->paused())
-    title += u" [Пауза]";
+    title += u" [Pause]";
   return title;
 }
 
 std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   const aui::TableColumn columns[] = {
-      {0, u"Время", 100, aui::TableColumn::LEFT,
+      {0, Translate("Time"), 100, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},
-      {1, u"Устройство", 100, aui::TableColumn::LEFT},
-      {2, u"Событие", 400, aui::TableColumn::LEFT},
+      {1, Translate("Device"), 100, aui::TableColumn::LEFT},
+      {2, Translate("Event"), 400, aui::TableColumn::LEFT},
   };
 
   if (const WindowItem* item = definition.FindItem("Item")) {
@@ -91,7 +92,7 @@ promise<> WatchView::SaveLog() {
                         time.wMonth, time.wDay, time.wHour,
                         time.wMinute, time.wSecond);
 
-  return dialog_service_.SelectSaveFile({u"Сохранить как", name})
+  return dialog_service_.SelectSaveFile({Translate("Save As"), name})
       .then([model = model_](const std::filesystem::path& path) {
         model->SaveLog(path);
       });

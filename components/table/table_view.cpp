@@ -1,6 +1,7 @@
 ﻿#include "components/table/table_view.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "aui/table.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -36,9 +37,9 @@ TableView::TableView(const ControllerContext& context)
        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
       {TableModel::COLUMN_SERVER_TIMESTAMP, kServerTimestampTitle, 170,
        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_CHANGE_TIME, u"Время изменения", 170,
+      {TableModel::COLUMN_CHANGE_TIME, Translate("Change Time"), 170,
        aui::TableColumn::LEFT, aui::TableColumn::DataType::DateTime},
-      {TableModel::COLUMN_EVENT, u"Событие", 200, aui::TableColumn::LEFT},
+      {TableModel::COLUMN_EVENT, Translate("Event"), 200, aui::TableColumn::LEFT},
   };
 
   view_ = new aui::Table{model_, std::move(columns)};

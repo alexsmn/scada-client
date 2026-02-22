@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
+#include "aui/translation.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
 #include "client_utils.h"
@@ -97,11 +98,11 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
     : MainWindowCommandsContext{std::move(context)},
       command_context_{main_window_, dialog_service_} {
   global_commands_.AddCommand(
-      MakeOptionCommand(ID_VIEW_TOOLBAR, u"Панель инструментов", profile_,
+      MakeOptionCommand(ID_VIEW_TOOLBAR, Translate("Toolbar"), profile_,
                         &MainWindowDef::toolbar));
 
   global_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
-                                                u"Строка состояния", profile_,
+                                                Translate("Status Bar"), profile_,
                                                 &MainWindowDef::status_bar));
 
   global_commands_.AddCommand(
@@ -123,7 +124,7 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
       {.command_id = ID_HELP_MANUAL,
        .execute_handler = [](const GlobalCommandContext& context) {
          WindowDefinition def(kWebWindowInfo);
-         def.title = u"Документация";
+         def.title = Translate("Documentation");
          def.path = std::filesystem::path(
              FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));
          context.main_window.OpenView(def, true);
@@ -336,7 +337,7 @@ promise<> MainWindowCommands::RenameCurrentPage() {
   const std::u16string& current_page_title =
       main_window_.GetCurrentPage().title;
 
-  return RunPromptDialog(dialog_service_, u"Имя:", u"Переименование",
+  return RunPromptDialog(dialog_service_, Translate("Name:"), Translate("Rename"),
                          current_page_title)
       .then([this](const std::u16string& title) {
         main_window_.SetCurrentPageTitle(title);
@@ -349,7 +350,7 @@ promise<> MainWindowCommands::ShowRenameWindowDialog() {
     return MakeRejectedPromise();
   }
 
-  return RunPromptDialog(dialog_service_, u"Имя:", u"Переименовать",
+  return RunPromptDialog(dialog_service_, Translate("Name:"), Translate("Rename"),
                          view->GetWindowTitle())
       // TODO: Capture weak pointer.
       .then(std::bind_front(&OpenedViewInterface::SetWindowTitle, view));

@@ -120,10 +120,10 @@ void ModusView::OpenPlaceholder() {
   placeholder->setTextFormat(Qt::RichText);
   placeholder->setText(
       QString::fromWCharArray(LR"(<html><body>
-    <p>Отсутствует компонент Modus ActivesXeme, используемый для отображения схем Модус.</p>
-    <p>Загрузите бесплатную версию компонента
-      с <a href="https://swman.ru">сайта производителя</a> или включите
-      экспериментальную <a href="#internal-render">встроенную отрисовку</a>.</p>
+    <p>The Modus ActiveXeme component used to display Modus schematics is missing.</p>
+    <p>Download the free version of the component
+      from the <a href="https://swman.ru">manufacturer's website</a> or enable
+      the experimental <a href="#internal-render">built-in rendering</a>.</p>
     </body></html>)"));
   placeholder->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
   placeholder->setWordWrap(true);

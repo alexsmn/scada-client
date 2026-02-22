@@ -1,6 +1,7 @@
 ﻿#include "main_window/main_menu_model.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/command_line.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
@@ -105,7 +106,7 @@ void DisplayMenuModel::AddItems(const WindowInfo& window_info) {
   }
 
   if (items_.empty()) {
-    AddItem(0, u"<Нет схем>");
+    AddItem(0, Translate("<No displays>"));
   }
 }
 
@@ -135,7 +136,7 @@ void FavouritesMenuModel::MenuWillShow() {
   }
 
   if (windows_.empty())
-    AddItem(0, u"<Нет избранного>");
+    AddItem(0, Translate("<No favourites>"));
 }
 
 void FavouritesMenuModel::ActivatedAt(int index) {
@@ -184,7 +185,7 @@ void PageMenuModel::OpenPage(const Page& page) {
 
   std::u16string title = current_page.GetTitle();
   std::u16string message =
-      u16format(L"Вернуться к сохраненному листу {}?", title);
+      u16format(L"Return to saved page {}?", title);
   dialog_service_.RunMessageBox(message, {}, MessageBoxMode::QuestionYesNo)
       .then(BindPromiseExecutor(
           executor_, [this, weak_ptr = weak_ptr_factory_.GetWeakPtr(),
@@ -197,7 +198,7 @@ void PageMenuModel::OpenPage(const Page& page) {
 void PageMenuModel::OpenPageHelper(const Page& page, bool revert) {
   // Don't allow to open same page in different windows.
   if (!revert && main_window_manager_.IsPageOpened(page.id)) {
-    dialog_service_.RunMessageBox(u"Указанный лист открыт в другом окне.", {},
+    dialog_service_.RunMessageBox(Translate("The specified page is open in another window."), {},
                                   MessageBoxMode::Info);
     return;
   }
@@ -253,14 +254,14 @@ void TrashMenuModel::MenuWillShow() {
     const WindowDefinition& window_def = trash.GetWindow(i);
     if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
       std::u16string label =
-          u"Восстановить " + window_def.GetTitle(*window_info);
+          Translate("Restore") + u" " + window_def.GetTitle(*window_info);
       AddItem(0, label);
     }
   }
 
   empty_ = GetItemCount() == 0;
   if (empty_)
-    AddItem(0, u"<Корзина пуста>");
+    AddItem(0, Translate("<Trash is empty>"));
 }
 
 void TrashMenuModel::ActivatedAt(int index) {
@@ -322,119 +323,119 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
 }
 
 void MainMenuModel::Rebuild() {
-  AddSubMenu(0, u"Схема", &display_menu_model_);
+  AddSubMenu(0, Translate("Display"), &display_menu_model_);
 
-  table_submenu_.AddItem(ID_TABLE_VIEW, u"Новая таблица");
-  table_submenu_.AddItem(ID_SHEET_VIEW, u"Новая п-таблица");
-  table_submenu_.AddItem(ID_TIMED_DATA_VIEW, u"Новая таблица значений");
+  table_submenu_.AddItem(ID_TABLE_VIEW, Translate("New Table"));
+  table_submenu_.AddItem(ID_SHEET_VIEW, Translate("New Custom Table"));
+  table_submenu_.AddItem(ID_TIMED_DATA_VIEW, Translate("New Data Table"));
   table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  table_submenu_.AddItem(ID_OPEN_GROUP_TABLE, u"Таблица группы");
+  table_submenu_.AddItem(ID_OPEN_GROUP_TABLE, Translate("Group Table"));
   table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   table_submenu_.AddInplaceMenu(&table_favourites_);
-  AddSubMenu(0, u"Таблица", &table_submenu_);
+  AddSubMenu(0, Translate("Table"), &table_submenu_);
 
-  graph_submenu_.AddItem(ID_GRAPH_VIEW, u"Новый");
+  graph_submenu_.AddItem(ID_GRAPH_VIEW, Translate("New"));
   graph_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (graph_favourites_)
     graph_submenu_.AddInplaceMenu(graph_favourites_.get());
-  AddSubMenu(0, u"График", &graph_submenu_);
+  AddSubMenu(0, Translate("Graph"), &graph_submenu_);
 
-  AddSubMenu(0, u"Объект", &context_menu_model_);
+  AddSubMenu(0, Translate("Item"), &context_menu_model_);
 
-  more_submenu_.AddCheckItem(ID_OBJECT_VIEW, u"Объекты");
-  more_submenu_.AddCheckItem(ID_EVENT_VIEW, u"События");
-  more_submenu_.AddCheckItem(ID_FAVOURITES_VIEW, u"Избранное");
-  more_submenu_.AddCheckItem(ID_FILE_SYSTEM_VIEW, u"Файлы");
-  more_submenu_.AddCheckItem(ID_PORTFOLIO_VIEW, u"Портфолио");
-  more_submenu_.AddCheckItem(ID_HARDWARE_VIEW, u"Оборудование");
-  more_submenu_.AddCheckItem(ID_EVENT_JOURNAL_VIEW, u"Журнал событий");
+  more_submenu_.AddCheckItem(ID_OBJECT_VIEW, Translate("Items"));
+  more_submenu_.AddCheckItem(ID_EVENT_VIEW, Translate("Events"));
+  more_submenu_.AddCheckItem(ID_FAVOURITES_VIEW, Translate("Favourites"));
+  more_submenu_.AddCheckItem(ID_FILE_SYSTEM_VIEW, Translate("Files"));
+  more_submenu_.AddCheckItem(ID_PORTFOLIO_VIEW, Translate("Portfolio"));
+  more_submenu_.AddCheckItem(ID_HARDWARE_VIEW, Translate("Hardware"));
+  more_submenu_.AddCheckItem(ID_EVENT_JOURNAL_VIEW, Translate("Event Journal"));
   if (admin_) {
     more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-    more_submenu_.AddCheckItem(ID_NODES_VIEW, u"Узлы");
-    more_submenu_.AddCheckItem(ID_TS_FORMATS_VIEW, u"Форматы");
+    more_submenu_.AddCheckItem(ID_NODES_VIEW, Translate("Nodes"));
+    more_submenu_.AddCheckItem(ID_TS_FORMATS_VIEW, Translate("Formats"));
     more_submenu_.AddCheckItem(ID_SIMULATION_ITEMS_VIEW,
-                               u"Эмулируемые сигналы");
-    more_submenu_.AddCheckItem(ID_USERS_VIEW, u"Пользователи");
-    more_submenu_.AddCheckItem(ID_HISTORICAL_DB_VIEW, u"Базы данных");
+                               Translate("Simulated Signals"));
+    more_submenu_.AddCheckItem(ID_USERS_VIEW, Translate("Users"));
+    more_submenu_.AddCheckItem(ID_HISTORICAL_DB_VIEW, Translate("Databases"));
     more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
     more_submenu_.AddItem(ID_EXPORT_CONFIGURATION_TO_EXCEL,
-                          u"Экспорт конфигурации в Excel...");
+                          Translate("Export Configuration to Excel..."));
     more_submenu_.AddItem(ID_IMPORT_CONFIGURATION_FROM_EXCEL,
-                          u"Импорт конфигурации из Excel...");
+                          Translate("Import Configuration from Excel..."));
   }
 #if !defined(NDEBUG)
   more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  more_submenu_.AddItem(ID_LOGIN, u"Подключиться к серверу...");
-  more_submenu_.AddItem(ID_LOGOFF, u"Отключиться от сервера");
+  more_submenu_.AddItem(ID_LOGIN, Translate("Connect to Server..."));
+  more_submenu_.AddItem(ID_LOGOFF, Translate("Disconnect from Server"));
 #endif
-  AddSubMenu(0, u"Далее", &more_submenu_);
+  AddSubMenu(0, Translate("More"), &more_submenu_);
 
   justify_index = GetItemCount();
 
-  page_submenu_.AddItem(ID_PAGE_NEW, u"Новый");
-  page_submenu_.AddItem(ID_PAGE_DELETE, u"Удалить");
-  page_submenu_.AddItem(ID_PAGE_RENAME, u"Переименовать");
+  page_submenu_.AddItem(ID_PAGE_NEW, Translate("New"));
+  page_submenu_.AddItem(ID_PAGE_DELETE, Translate("Delete"));
+  page_submenu_.AddItem(ID_PAGE_RENAME, Translate("Rename"));
   page_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   page_submenu_.AddInplaceMenu(&page_list_menu_);
-  AddSubMenu(0, u"Лист", &page_submenu_);
+  AddSubMenu(0, Translate("Page"), &page_submenu_);
 
-  window_submenu_.AddItem(ID_WINDOW_NEW, u"Новое");
+  window_submenu_.AddItem(ID_WINDOW_NEW, Translate("New"));
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  window_submenu_.AddItem(ID_VIEW_CHANGE_TITLE, u"Переименовать");
-  window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES, u"В избранное");
-  window_submenu_.AddItem(ID_VIEW_CLOSE, u"Закрыть");
+  window_submenu_.AddItem(ID_VIEW_CHANGE_TITLE, Translate("Rename"));
+  window_submenu_.AddItem(ID_VIEW_ADD_TO_FAVOURITES, Translate("Add to Favourites"));
+  window_submenu_.AddItem(ID_VIEW_CLOSE, Translate("Close"));
 #if defined(UI_QT)
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ, u"Разделить по горизонтали");
-  window_submenu_.AddItem(ID_WINDOW_SPLIT_VERT, u"Разделить по вертикали");
+  window_submenu_.AddItem(ID_WINDOW_SPLIT_HORZ, Translate("Split Horizontally"));
+  window_submenu_.AddItem(ID_WINDOW_SPLIT_VERT, Translate("Split Vertically"));
 #endif
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&window_list_menu_);
   window_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   window_submenu_.AddInplaceMenu(&trash_menu_);
-  AddSubMenu(0, u"Окно", &window_submenu_);
+  AddSubMenu(0, Translate("Window"), &window_submenu_);
 
   AddMenuCommands(settings_submenu_, commands_,
                   MenuGroup::MAIN_WINDOW_SETTINGS);
 
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddCheckItem(ID_WRITE_CONFIRMATION,
-                                 u"Подтверждение управления");
+                                 Translate("Control Confirmation"));
   settings_submenu_.AddCheckItem(ID_SHOW_WRITEOK,
-                                 u"Сообщение об успешном управлении");
+                                 Translate("Control Success Message"));
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddCheckItem(ID_SHOW_EVENTS,
-                                 u"Показывать события при появлении");
+                                 Translate("Show Events on Arrival"));
   settings_submenu_.AddCheckItem(ID_HIDE_EVENTS,
-                                 u"Скрывать события при квитировании");
+                                 Translate("Hide Events on Acknowledge"));
   settings_submenu_.AddCheckItem(ID_EVENT_FLASH_WINDOW,
-                                 u"Мигание основного окна по событию");
+                                 Translate("Flash Main Window on Event"));
   settings_submenu_.AddCheckItem(ID_EVENT_PLAY_SOUND,
-                                 u"Звуковая сигнализация по событию");
+                                 Translate("Sound Alarm on Event"));
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, u"Открыть папку схем");
+  settings_submenu_.AddItem(ID_VIEW_PUBLIC_FOLDER, Translate("Open Displays Folder"));
 
   AddMenuCommands(settings_submenu_, commands_, MenuGroup::DISPLAY_SETTINGS);
 
 #if defined(UI_QT)
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  settings_submenu_.AddSubMenu(0, u"Стиль", &style_submenu_);
+  settings_submenu_.AddSubMenu(0, Translate("Style"), &style_submenu_);
 #endif
 
-  AddSubMenu(0, u"Настройки", &settings_submenu_);
+  AddSubMenu(0, Translate("Settings"), &settings_submenu_);
 
-  help_submenu_.AddItem(ID_HELP_MANUAL, u"Документация");
+  help_submenu_.AddItem(ID_HELP_MANUAL, Translate("Documentation"));
   help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(kDebugSwitch)) {
     AddMenuCommands(help_submenu_, commands_, MenuGroup::DEBUG);
-    help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, u"Отладочная информация");
+    help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, Translate("Debug Information"));
     help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   }
-  help_submenu_.AddItem(ID_APP_ABOUT, u"О программе...");
+  help_submenu_.AddItem(ID_APP_ABOUT, Translate("About..."));
 #if defined(UI_QT)
-  help_submenu_.AddItem(ID_ABOUT_QT, u"О Qt...");
+  help_submenu_.AddItem(ID_ABOUT_QT, Translate("About Qt..."));
 #endif
-  AddSubMenu(0, u"Справка", &help_submenu_);
+  AddSubMenu(0, Translate("Help"), &help_submenu_);
 }
 
 bool MainMenuModel::IsCommandIdChecked(int command_id) const {

@@ -21,7 +21,7 @@ enum ConnectionType {
 };
 
 static const std::u16string_view kConnectionTypeStrings[] = {
-    u"TCP-клиент", u"TCP-сервер", u"UDP-клиент", u"UDP-сервер", u"COM-порт"};
+    u"TCP Client", u"TCP Server", u"UDP Client", u"UDP Server", u"Serial Port"};
 
 static const unsigned kBaudRates[] = {
     75,   110,  134,  150,   300,   600,   1200,  1800,   2400,
@@ -33,16 +33,16 @@ static const int kBitCountLast = 8;
 typedef std::pair<std::u16string_view, std::string_view> StringPair;
 
 static const StringPair kParityStrings[] = {
-    StringPair(u"Нет", "No"), StringPair(u"Чет", "Even"),
-    StringPair(u"Нечет", "Odd"), StringPair(u"Маркер", "Mark"),
-    StringPair(u"Пробел", "Space")};
+    StringPair(u"None", "No"), StringPair(u"Even", "Even"),
+    StringPair(u"Odd", "Odd"), StringPair(u"Mark", "Mark"),
+    StringPair(u"Space", "Space")};
 
 static const StringPair kFlowControlStrings[] = {
-    StringPair(u"Нет", transport::TransportString::kFlowControlNone),
+    StringPair(u"None", transport::TransportString::kFlowControlNone),
     StringPair(u"XON/XOFF", transport::TransportString::kFlowControlSoftware),
-    StringPair(u"Аппаратное", transport::TransportString::kFlowControlHardware)};
+    StringPair(u"Hardware", transport::TransportString::kFlowControlHardware)};
 
-static const char16_t kDefaultString[] = u"<Текущее>";
+static const char16_t kDefaultString[] = u"<Default>";
 
 static int FindString(const std::string_view strs[],
                       int count,

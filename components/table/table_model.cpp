@@ -1,5 +1,6 @@
 ﻿#include "components/table/table_model.h"
 
+#include "aui/translation.h"
 #include "base/utf_convert.h"
 #include "base/time/time.h"
 #include "base/utils.h"
@@ -67,7 +68,7 @@ void TableModel::GetCellEx(TableCellEx& cell) const {
 
   if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
-      cell.text = u"Введите выражение";
+      cell.text = Translate("Enter expression");
       cell.text_color = aui::Rgba{192, 192, 192};
     }
     return;
@@ -245,7 +246,7 @@ bool TableModel::SetCellText(int row,
     text2.erase(0, 1);
 
   if (!SetFormula(row, text2)) {
-    dialog_service_.RunMessageBox(u"Неверное выражение.", {},
+    dialog_service_.RunMessageBox(Translate("Invalid expression."), {},
                                   MessageBoxMode::Error);
     return false;
   }

@@ -1,6 +1,7 @@
 ﻿#include "main_window/actions.h"
 
 #include "aui/key_codes.h"
+#include "aui/translation.h"
 #include "common_resources.h"
 #include "main_window/action.h"
 #include "main_window/action_manager.h"
@@ -68,13 +69,13 @@ class NodeAction : private NodeRefObserver, public Action {
 void RegisterCreateActions(ActionManager& action_manager,
                            NodeService& node_service) {
   action_manager.AddAction(*new Action(ID_ADD_MULTIPLE_ITEMS, CATEGORY_CREATE,
-                                       u"Серия объектов..."));
+                                       Translate("Multiple Create...")));
   action_manager.AddAction(*new Action(ID_NEW_SERVICE_ITEMS, CATEGORY_CREATE,
-                                       u"Сервисные объекты..."));
+                                       Translate("Service Items...")));
   action_manager.AddAction(*new Action(ID_NEW_IEC60870_LINK101, CATEGORY_CREATE,
-                                       u"Направление МЭК-60870-101"));
+                                       Translate("IEC 60870-101 Link")));
   action_manager.AddAction(*new Action(ID_NEW_IEC60870_LINK104, CATEGORY_CREATE,
-                                       u"Направление МЭК-60870-104"));
+                                       Translate("IEC 60870-104 Link")));
 
   for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i) {
     action_manager.AddAction(
@@ -85,10 +86,10 @@ void RegisterCreateActions(ActionManager& action_manager,
 
 void RegisterFileSystemActions(ActionManager& action_manager) {
   action_manager.AddAction(*new Action(ID_CREATE_FILE_DIRECTORY,
-                                       CATEGORY_CREATE, u"Папка",
-                                       u"Создать папку..."));
+                                       CATEGORY_CREATE, Translate("Folder"),
+                                       Translate("Create Folder...")));
   action_manager.AddAction(
-      *new Action(ID_ADD_FILE, CATEGORY_CREATE, u"Файл", u"Добавить файл..."));
+      *new Action(ID_ADD_FILE, CATEGORY_CREATE, Translate("File"), Translate("Add File...")));
 }
 
 }  // namespace
@@ -106,197 +107,197 @@ scada::NodeId GetNewCommandTypeId(unsigned command_id) {
 
 void AddGlobalActions(ActionManager& action_manager,
                       NodeService& node_service) {
-  action_manager.AddAction(*new Action(ID_OPEN_GRAPH, CATEGORY_OPEN, u"График",
+  action_manager.AddAction(*new Action(ID_OPEN_GRAPH, CATEGORY_OPEN, Translate("Graph"),
                                        std::u16string(), ID_GRAPH_VIEW,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(*new Action(ID_TIMED_DATA_VIEW, CATEGORY_OPEN,
-                                       u"Данные", std::u16string(),
+                                       Translate("Data"), std::u16string(),
                                        IDB_TIMED_DATA, Action::ALWAYS_VISIBLE));
-  action_manager.AddAction(*new Action(ID_OPEN_DISPLAY, CATEGORY_OPEN, u"Схема",
+  action_manager.AddAction(*new Action(ID_OPEN_DISPLAY, CATEGORY_OPEN, Translate("Display"),
                                        std::u16string(), ID_MODUS_VIEW,
                                        Action::ALWAYS_VISIBLE));
-  action_manager.AddAction(*new Action(ID_OPEN_TABLE, CATEGORY_OPEN, u"Таблица",
+  action_manager.AddAction(*new Action(ID_OPEN_TABLE, CATEGORY_OPEN, Translate("Table"),
                                        std::u16string(), ID_TABLE_VIEW,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(*new Action(ID_OPEN_SUMMARY, CATEGORY_OPEN,
-                                       u"Сводка", std::u16string(), IDB_SUMMARY,
+                                       Translate("Summary"), std::u16string(), IDB_SUMMARY,
                                        Action::ALWAYS_VISIBLE));
   action_manager.AddAction(
-      *new Action(ID_HISTORICAL_EVENTS, CATEGORY_OPEN, u"События",
+      *new Action(ID_HISTORICAL_EVENTS, CATEGORY_OPEN, Translate("Events"),
                   std::u16string(), IDB_OPEN_EVENTS, Action::ALWAYS_VISIBLE));
 
   action_manager.AddAction(*new Action(ID_OPEN_GROUP_TABLE, CATEGORY_OPEN,
-                                       u"Таблица группы", std::u16string(), 0,
+                                       Translate("Group Table"), std::u16string(), 0,
                                        Action::VISIBLE));
 
   action_manager.AddAction(
-      *new Action(ID_ACKNOWLEDGE_CURRENT, CATEGORY_ITEM, u"Квитировать"));
+      *new Action(ID_ACKNOWLEDGE_CURRENT, CATEGORY_ITEM, Translate("Acknowledge")));
   action_manager.AddAction(*new Action(ID_UNLOCK_ITEM, CATEGORY_ITEM,
-                                       u"Снять блокировку", std::u16string(),
+                                       Translate("Unlock"), std::u16string(),
                                        IDB_UNLOCK));
   action_manager.AddAction(*new Action(
-      ID_WRITE, CATEGORY_ITEM, u"Управление...", u"Управление", IDB_WRITE));
+      ID_WRITE, CATEGORY_ITEM, Translate("Control..."), Translate("Control"), IDB_WRITE));
   action_manager.AddAction(*new Action(ID_WRITE_MANUAL, CATEGORY_ITEM,
-                                       u"Ручной ввод...", u"Ручной ввод",
+                                       Translate("Manual Input..."), Translate("Manual Input"),
                                        IDB_WRITE_MANUAL));
   action_manager.AddAction(
-      *new Action(ID_EDIT_LIMITS, CATEGORY_ITEM, u"Уставки...", u"Уставки"));
+      *new Action(ID_EDIT_LIMITS, CATEGORY_ITEM, Translate("Limits..."), Translate("Limits")));
 
   action_manager.AddAction(
-      *new Action(ID_DEV1_REFR, CATEGORY_DEVICE, u"Опросить устройство"));
+      *new Action(ID_DEV1_REFR, CATEGORY_DEVICE, Translate("Poll Device")));
   action_manager.AddAction(
-      *new Action(ID_DEV1_SYNC, CATEGORY_DEVICE, u"Синхронизировать часы"));
+      *new Action(ID_DEV1_SYNC, CATEGORY_DEVICE, Translate("Synchronize Clock")));
 
-  action_manager.AddAction(*new Action(ID_SETUP, CATEGORY_SETUP, u"Опции"));
-  action_manager.AddAction(*new Action(ID_PRINT, CATEGORY_SETUP, u"Печать",
+  action_manager.AddAction(*new Action(ID_SETUP, CATEGORY_SETUP, Translate("Options")));
+  action_manager.AddAction(*new Action(ID_PRINT, CATEGORY_SETUP, Translate("Print"),
                                        std::u16string(), IDB_PRINTER));
-  action_manager.AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, u"Правка"))
+  action_manager.AddAction(*new Action(ID_EDIT, CATEGORY_SETUP, Translate("Edit")))
       .set_checkable(true);
 
   action_manager.AddAction(
-      *new Action(ID_EXPORT_CSV, CATEGORY_EXPORT, u"Экспорт в CSV"));
+      *new Action(ID_EXPORT_CSV, CATEGORY_EXPORT, Translate("Export to CSV")));
   action_manager.AddAction(
-      *new Action(ID_EXPORT_EXCEL, CATEGORY_EXPORT, u"Экспорт в Excel"));
+      *new Action(ID_EXPORT_EXCEL, CATEGORY_EXPORT, Translate("Export to Excel")));
 
   action_manager.AddAction(
-      *new Action(ID_OPEN_WATCH, CATEGORY_SPECIFIC, u"Наблюдение"));
+      *new Action(ID_OPEN_WATCH, CATEGORY_SPECIFIC, Translate("Watch")));
   action_manager.AddAction(
-      *new Action(ID_OPEN_DEVICE_METRICS, CATEGORY_SPECIFIC, u"Метрики"));
+      *new Action(ID_OPEN_DEVICE_METRICS, CATEGORY_SPECIFIC, Translate("Metrics")));
   action_manager.AddAction(*new Action(ID_CHANGE_PASSWORD, CATEGORY_SPECIFIC,
-                                       u"Задать пароль...", u"Пароль"));
+                                       Translate("Set Password..."), Translate("Password")));
   action_manager.AddAction(
-      *new Action(ID_ITEM_ENABLE, CATEGORY_SPECIFIC, u"Включить"));
+      *new Action(ID_ITEM_ENABLE, CATEGORY_SPECIFIC, Translate("Enable")));
   action_manager.AddAction(
-      *new Action(ID_ITEM_DISABLE, CATEGORY_SPECIFIC, u"Отключить"));
-  action_manager.AddAction(*new Action(ID_PAUSE, CATEGORY_SPECIFIC, u"Пауза"));
+      *new Action(ID_ITEM_DISABLE, CATEGORY_SPECIFIC, Translate("Disable")));
+  action_manager.AddAction(*new Action(ID_PAUSE, CATEGORY_SPECIFIC, Translate("Pause")));
 
   action_manager.AddAction(*new Action(ID_ACKNOWLEDGE_ALL, CATEGORY_VIEW,
-                                       u"Квитировать все", std::u16string(),
+                                       Translate("Acknowledge All"), std::u16string(),
                                        IDB_ACKNOWLEDGE_ALL));
   action_manager.AddAction(*new Action(ID_SEVERITY_CUSTOM, CATEGORY_VIEW,
-                                       u"Важность...", u"Важность"));
+                                       Translate("Severity..."), Translate("Severity")));
   action_manager.AddAction(*new Action(ID_FAVOURITES_ADD_URL, CATEGORY_EDIT,
-                                       u"Добавить Web-страницу...",
-                                       u"Добавить Web-страницу"));
+                                       Translate("Add Web Page..."),
+                                       Translate("Add Web Page")));
   action_manager.AddAction(
-      *new Action(ID_MODUS_TOOLBAR, CATEGORY_VIEW, u"Панель инструментов"));
+      *new Action(ID_MODUS_TOOLBAR, CATEGORY_VIEW, Translate("Toolbar")));
   action_manager.AddAction(
-      *new Action(ID_MODUS_STATUSBAR, CATEGORY_VIEW, u"Строка состояния"));
+      *new Action(ID_MODUS_STATUSBAR, CATEGORY_VIEW, Translate("Status Bar")));
   action_manager.AddAction(*new Action(ID_EVENT_VIEW, CATEGORY_VIEW,
-                                       u"Панель событий", std::u16string(),
+                                       Translate("Event Panel"), std::u16string(),
                                        ID_EVENT_VIEW));
-  action_manager.AddAction(*new Action(ID_SAVE, CATEGORY_VIEW, u"Сохранить"));
+  action_manager.AddAction(*new Action(ID_SAVE, CATEGORY_VIEW, Translate("Save")));
   action_manager.AddAction(*new Action(ID_SAVE_AS, CATEGORY_VIEW,
-                                       u"Сохранить как...", u"Сохранить"));
+                                       Translate("Save As..."), Translate("Save")));
 
   action_manager
-      .AddAction(*new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, u"Текущие"))
+      .AddAction(*new Action(ID_CURRENT_EVENTS, CATEGORY_PERIOD, Translate("Current")))
       .set_checkable(true);
 
   action_manager
-      .AddAction(*new Action(ID_TIME_RANGE_15M, CATEGORY_PERIOD, u"15 минут"))
+      .AddAction(*new Action(ID_TIME_RANGE_15M, CATEGORY_PERIOD, Translate("15 min")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_TIME_RANGE_HOUR, CATEGORY_PERIOD, u"Час"))
+      .AddAction(*new Action(ID_TIME_RANGE_HOUR, CATEGORY_PERIOD, Translate("Hour")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, u"День"))
+      .AddAction(*new Action(ID_TIME_RANGE_DAY, CATEGORY_PERIOD, Translate("Day")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_TIME_RANGE_WEEK, CATEGORY_PERIOD, u"Неделя"))
+      .AddAction(*new Action(ID_TIME_RANGE_WEEK, CATEGORY_PERIOD, Translate("Week")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_TIME_RANGE_MONTH, CATEGORY_PERIOD, u"Месяц"))
+      .AddAction(*new Action(ID_TIME_RANGE_MONTH, CATEGORY_PERIOD, Translate("Month")))
       .set_checkable(true);
   action_manager
       .AddAction(*new Action(ID_TIME_RANGE_CUSTOM, CATEGORY_PERIOD,
-                             u"Другой...", u"Другой"))
+                             Translate("Custom..."), Translate("Custom")))
       .set_checkable(true);
 
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_1M, CATEGORY_INTERVAL, u"Минутный"))
+      .AddAction(*new Action(ID_INTERVAL_1M, CATEGORY_INTERVAL, Translate("1-Minute")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_5M, CATEGORY_INTERVAL, u"5 минут"))
+      .AddAction(*new Action(ID_INTERVAL_5M, CATEGORY_INTERVAL, Translate("5 min")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_15M, CATEGORY_INTERVAL, u"15 минут"))
+      .AddAction(*new Action(ID_INTERVAL_15M, CATEGORY_INTERVAL, Translate("15 min")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_30M, CATEGORY_INTERVAL, u"30 минут"))
+      .AddAction(*new Action(ID_INTERVAL_30M, CATEGORY_INTERVAL, Translate("30 min")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_1H, CATEGORY_INTERVAL, u"Часовой"))
+      .AddAction(*new Action(ID_INTERVAL_1H, CATEGORY_INTERVAL, Translate("1-Hour")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_12H, CATEGORY_INTERVAL, u"12 часов"))
+      .AddAction(*new Action(ID_INTERVAL_12H, CATEGORY_INTERVAL, Translate("12 hours")))
       .set_checkable(true);
   action_manager
-      .AddAction(*new Action(ID_INTERVAL_1D, CATEGORY_INTERVAL, u"Суточный"))
+      .AddAction(*new Action(ID_INTERVAL_1D, CATEGORY_INTERVAL, Translate("1-Day")))
       .set_checkable(true);
 
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_START, CATEGORY_AGGREGATION, u"Первое"))
+          *new Action(ID_AGGREGATION_START, CATEGORY_AGGREGATION, Translate("First")))
       .set_checkable(true);
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_END, CATEGORY_AGGREGATION, u"Последнее"))
+          *new Action(ID_AGGREGATION_END, CATEGORY_AGGREGATION, Translate("Last")))
       .set_checkable(true);
   action_manager
       .AddAction(*new Action(ID_AGGREGATION_COUNT, CATEGORY_AGGREGATION,
-                             u"Количество"))
+                             Translate("Count")))
       .set_checkable(true);
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_MIN, CATEGORY_AGGREGATION, u"Минимум"))
+          *new Action(ID_AGGREGATION_MIN, CATEGORY_AGGREGATION, Translate("Minimum")))
       .set_checkable(true);
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_MAX, CATEGORY_AGGREGATION, u"Максимум"))
+          *new Action(ID_AGGREGATION_MAX, CATEGORY_AGGREGATION, Translate("Maximum")))
       .set_checkable(true);
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_SUM, CATEGORY_AGGREGATION, u"Сумма"))
+          *new Action(ID_AGGREGATION_SUM, CATEGORY_AGGREGATION, Translate("Sum")))
       .set_checkable(true);
   action_manager
       .AddAction(
-          *new Action(ID_AGGREGATION_AVG, CATEGORY_AGGREGATION, u"Среднее"))
+          *new Action(ID_AGGREGATION_AVG, CATEGORY_AGGREGATION, Translate("Average")))
       .set_checkable(true);
 
   action_manager.AddAction(*new Action(ID_ITEM_PARAMS, CATEGORY_EDIT,
-                                       u"Параметры", std::u16string(),
+                                       Translate("Properties"), std::u16string(),
                                        IDB_RECORD_EDITOR));
   action_manager.AddAction(*new Action(ID_TABLE_CONFIG, CATEGORY_EDIT,
-                                       u"Параметры элементов", u"Элементы"));
+                                       Translate("Element Properties"), Translate("Elements")));
   action_manager.AddAction(*new Action(ID_TRANSMISSION_VIEW, CATEGORY_EDIT,
-                                       u"Таблица ретрансляции",
-                                       u"Ретрансляция"));
+                                       Translate("Transmission Table"),
+                                       Translate("Transmission")));
   action_manager.AddAction(
-      *new Action(ID_NEW_PORTFOLIO, CATEGORY_EDIT, u"Создать портфолио"));
+      *new Action(ID_NEW_PORTFOLIO, CATEGORY_EDIT, Translate("Create Portfolio")));
   action_manager.AddAction(*new Action(ID_ADD_ITEMS, CATEGORY_EDIT,
-                                       u"Добавить объекты...",
-                                       u"Добавить объекты"));
+                                       Translate("Add Items..."),
+                                       Translate("Add Items")));
   action_manager.AddAction(
-      *ActionBuilder(ID_RENAME, CATEGORY_EDIT, u"Переименовать")
+      *ActionBuilder(ID_RENAME, CATEGORY_EDIT, Translate("Rename"))
            .shortcut(aui::KeyCode::F2)
            .Build());
   action_manager.AddAction(
-      *ActionBuilder(ID_COPY, CATEGORY_EDIT, u"Копировать")
+      *ActionBuilder(ID_COPY, CATEGORY_EDIT, Translate("Copy"))
            .image_id(IDB_COPY)
            .shortcut({aui::ControlModifier, aui::KeyCode::C})
            .Build());
   action_manager.AddAction(
-      *ActionBuilder(ID_PASTE, CATEGORY_EDIT, u"Вставить")
+      *ActionBuilder(ID_PASTE, CATEGORY_EDIT, Translate("Paste"))
            .image_id(IDB_PASTE)
            .shortcut({aui::ControlModifier, aui::KeyCode::V})
            .Build());
-  action_manager.AddAction(*ActionBuilder(ID_DELETE, CATEGORY_EDIT, u"Удалить")
+  action_manager.AddAction(*ActionBuilder(ID_DELETE, CATEGORY_EDIT, Translate("Delete"))
                                 .image_id(IDB_DELETE)
                                 .shortcut(aui::KeyCode::Delete)
                                 .Build());
   action_manager.AddAction(
-      *new Action(ID_CLEAR_ALL, CATEGORY_EDIT, u"Очистить"));
+      *new Action(ID_CLEAR_ALL, CATEGORY_EDIT, Translate("Clear")));
 
   RegisterCreateActions(action_manager, node_service);
 

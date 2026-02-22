@@ -32,7 +32,7 @@ MultiCreateModel::MultiCreateModel(MultiCreateContext&& context)
 }
 
 std::u16string MultiCreateModel::GetAutoName(bool ts) const {
-  return ts ? u"ТС" : u"ТИТ";
+  return ts ? u"DI" : u"AI";
 }
 
 void MultiCreateModel::Run(const RunParams& params) {

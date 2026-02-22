@@ -26,8 +26,8 @@ std::unique_ptr<UiView> CreateErrorPlaceholderWidget(
   auto placeholder = std::make_unique<QLabel>(parent_widget);
   placeholder->setTextFormat(Qt::RichText);
   placeholder->setText(QString::fromWCharArray(LR"(<html><body>
-    <p>Не удалось загрузить библиотеку графических схем Видикон.</p>
-    <p>Код ошибки: <i>%1</i>.</p>
+    <p>Failed to load the Vidicon graphical display library.</p>
+    <p>Error code: <i>%1</i>.</p>
     </body></html>)")
                            .arg(QString::fromLatin1(error_message.data(),
                                                     error_message.size())));
@@ -128,7 +128,7 @@ void VidiconDisplayNativeView::OpenWriteWin(const QString& data_source,
 
   if (node_id.is_null()) {
     dialog_service_.RunMessageBox(
-        QString::fromWCharArray(L"Неверный адрес объекта Видикона: %1.")
+        QString::fromWCharArray(L"Invalid Vidicon object address: %1.")
             .arg(data_source)
             .toStdU16String(),
         /*title*/ {}, MessageBoxMode::Error);

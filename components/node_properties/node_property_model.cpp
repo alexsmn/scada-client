@@ -1,5 +1,6 @@
 ﻿#include "components/node_properties/node_property_model.h"
 
+#include "aui/translation.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
@@ -88,7 +89,7 @@ void NodePropertyModel::Update() {
   std::unordered_map<std::u16string, std::unique_ptr<NodeGroupModel>> groups;
 
   {
-    auto& group = groups[u"Атрибуты"];
+    auto& group = groups[Translate("Attributes")];
     group = std::make_unique<NodeGroupModel>(*this);
 
 #ifndef NDEBUG
@@ -144,7 +145,7 @@ void NodePropertyModel::Update() {
   }
 
   for (auto& [title, group] : groups) {
-    auto new_title = title.empty() ? u"Разное" : title;
+    auto new_title = title.empty() ? Translate("Misc") : title;
     root_.properties.emplace_back(
         NodeGroupModel::Property{.type = aui::PropertyGroup::ItemType::Category,
                                  .name = std::move(new_title),

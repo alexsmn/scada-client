@@ -3,6 +3,7 @@
 #include "export/configuration/excel_configuration_commands.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "aui/resource_error.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
@@ -22,8 +23,8 @@
 
 namespace {
 
-const char16_t kImportTitle[] = u"Импорт";
-const char16_t kExportTitle[] = u"Экспорт";
+const char16_t kImportTitle[] = u"Import";
+const char16_t kExportTitle[] = u"Export";
 const char kDefaultFileName[] = "configuration.csv";
 
 }  // namespace
@@ -43,7 +44,7 @@ promise<void> ExportConfigurationCommand::ExportTo(
     DialogService& dialog_service) const {
   std::ofstream stream{path};
   if (!stream) {
-    throw ResourceError{u"Не удалось открыть файл."};
+    throw ResourceError{Translate("Failed to open file.")};
   }
 
   return CollectExportData()
@@ -53,7 +54,7 @@ promise<void> ExportConfigurationCommand::ExportTo(
       })
       .then([&dialog_service] {
         return dialog_service.RunMessageBox(
-            u"Экспорт завершен. Открыть файл сейчас?", kExportTitle,
+            Translate("Export complete. Open the file now?"), kExportTitle,
             MessageBoxMode::QuestionYesNo);
       })
       .then([path](MessageBoxResult open_prompt) {
@@ -85,7 +86,7 @@ promise<void> ImportConfigurationCommand::ImportFrom(
         ExportData new_export_data = LoadExportData(path);
         DiffData diff = BuildDiffData(old_export_data, new_export_data);
         if (diff.IsEmpty()) {
-          throw ResourceError{u"Изменений не найдено"};
+          throw ResourceError{Translate("No changes found")};
         }
         ShowDiffReport(diff, node_service_);
         return diff;
@@ -94,7 +95,7 @@ promise<void> ImportConfigurationCommand::ImportFrom(
   return diff_promise
       .then([&dialog_service](const DiffData& diff) {
         return dialog_service.RunMessageBox(
-            u"Применить изменения?", kImportTitle,
+            Translate("Apply changes?"), kImportTitle,
             MessageBoxMode::QuestionYesNoDefaultNo);
       })
       .then([this, diff_promise](MessageBoxResult apply_prompt) {
@@ -108,7 +109,7 @@ ExportData ImportConfigurationCommand::LoadExportData(
     const std::filesystem::path& path) const {
   std::ifstream stream{path};
   if (!stream) {
-    throw ResourceError{u"Не удалось открыть файл."};
+    throw ResourceError{Translate("Failed to open file.")};
   }
 
   CsvReader csv_reader{stream, kNodeIdTitle};
@@ -118,7 +119,7 @@ ExportData ImportConfigurationCommand::LoadExportData(
 
   } catch (const ResourceError& e) {
     throw ResourceError{u16format(
-        L"Ошибка при импорте строки {}, столбца {}: {}.",
+        L"Error importing row {}, column {}: {}.",
         csv_reader.row_index(), csv_reader.cell_index(), e.message())};
   }
 }

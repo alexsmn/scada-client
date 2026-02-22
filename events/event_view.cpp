@@ -1,6 +1,7 @@
 ﻿#include "events/event_view.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "aui/models/table_column.h"
 #include "aui/prompt_dialog.h"
 #include "aui/resource_error.h"
@@ -26,7 +27,7 @@
 
 namespace {
 
-const char16_t kFilter[] = u"Фильтр";
+const char16_t kFilter[] = u"Filter";
 
 struct EventTableModelHolder {
   EventTableModelHolder(const ControllerContext& context,
@@ -57,7 +58,7 @@ std::shared_ptr<EventTableModel> CreateEventTableModel(
 scada::EventSeverity ParseSeverity(std::u16string_view str) {
   unsigned severity = 0;
   if (!base::StringToUint(str, &severity) || severity > scada::kSeverityMax) {
-    throw ResourceError{u16format(L"Введите число от {} до {}.",
+    throw ResourceError{u16format(L"Enter a number from {} to {}.",
                                     scada::kSeverityMin,
                                     scada::kSeverityMax)};
   }
@@ -77,15 +78,15 @@ EventView::EventView(const ControllerContext& context,
       is_panel_{is_panel},
       model_{CreateEventTableModel(context, local_events, is_panel)} {
   const aui::TableColumn kEventViewColumns[] = {
-      {EventColumnTime, u"Время", 150, aui::TableColumn::LEFT,
+      {EventColumnTime, Translate("Time"), 150, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},
-      {EventColumnItem, u"Объект", 170, aui::TableColumn::LEFT},
-      {EventColumnSeverity, u"Важность", 45, aui::TableColumn::RIGHT},
-      {EventColumnValue, u"Значение", 100, aui::TableColumn::RIGHT},
-      {EventColumnMessage, u"Сообщение", 300, aui::TableColumn::LEFT},
-      {EventColumnUser, u"Инициатор", 100, aui::TableColumn::LEFT},
-      {EventColumnAckUser, u"Квитировал", 100, aui::TableColumn::LEFT},
-      {EventColumnAckTime, u"Время квитирования", 150, aui::TableColumn::LEFT,
+      {EventColumnItem, Translate("Item"), 170, aui::TableColumn::LEFT},
+      {EventColumnSeverity, Translate("Severity"), 45, aui::TableColumn::RIGHT},
+      {EventColumnValue, Translate("Value"), 100, aui::TableColumn::RIGHT},
+      {EventColumnMessage, Translate("Message"), 300, aui::TableColumn::LEFT},
+      {EventColumnUser, Translate("User"), 100, aui::TableColumn::LEFT},
+      {EventColumnAckUser, Translate("Acknowledged By"), 100, aui::TableColumn::LEFT},
+      {EventColumnAckTime, Translate("Acknowledge Time"), 150, aui::TableColumn::LEFT,
        aui::TableColumn::DataType::DateTime},
   };
 
@@ -236,7 +237,7 @@ void EventView::Save(WindowDefinition& definition) {
 void EventView::ExportToExcel() {
   int rows = model_->GetRowCount();
   if (!rows) {
-    dialog_service_.RunMessageBox(u"Нет данных для экспорта.", u"Экспорт",
+    dialog_service_.RunMessageBox(Translate("No data to export."), Translate("Export"),
                                   MessageBoxMode::Info);
     return;
   }
@@ -262,7 +263,7 @@ void EventView::ExportToExcel() {
     excel.SetVisible();
 
   } catch (HRESULT /*err*/) {
-    dialog_service_.RunMessageBox(u"Ошибка при экспорте.", u"Экспорт",
+    dialog_service_.RunMessageBox(Translate("Export error."), Translate("Export"),
                                   MessageBoxMode::Error);
   }
 }
@@ -300,7 +301,7 @@ promise<> EventView::SelectSeverity() {
   unsigned initial_severity = model_->current_events()
                                   ? node_event_provider_.severity_min()
                                   : model_->severity_min();
-  const char16_t prompt[] = u"Минимальный порог важности (0 - все события):";
+  auto prompt = Translate("Minimum severity threshold (0 = all events):");
   return RunPromptDialog(dialog_service_, prompt, /*title=*/kFilter,
                          base::NumberToString16(initial_severity))
       .then(CatchResourceError(dialog_service_, /*title=*/kFilter,

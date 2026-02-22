@@ -17,15 +17,15 @@ struct ColorEntry {
 };
 
 constexpr ColorEntry kColorEntries[] = {
-    {"Transparent", u"Прозрачный", ColorCode::Transparent},
-    {"Black", u"Черный", ColorCode::Black},
-    {"White", u"Белый", ColorCode::White},
-    {"Red", u"Красный", ColorCode::Red},
-    {"Green", u"Зеленый", ColorCode::Green},
-    {"Blue", u"Синий", ColorCode::Blue},
-    {"Yellow", u"Желтый", ColorCode::Yellow},
-    {"Cyan", u"Голубой", ColorCode::Cyan},
-    {"Crimson", u"Малиновый", ColorCode::Crimson},
+    {"Transparent", u"Transparent", ColorCode::Transparent},
+    {"Black", u"Black", ColorCode::Black},
+    {"White", u"White", ColorCode::White},
+    {"Red", u"Red", ColorCode::Red},
+    {"Green", u"Green", ColorCode::Green},
+    {"Blue", u"Blue", ColorCode::Blue},
+    {"Yellow", u"Yellow", ColorCode::Yellow},
+    {"Cyan", u"Cyan", ColorCode::Cyan},
+    {"Crimson", u"Crimson", ColorCode::Crimson},
 };
 
 static const ColorEntry* GetColorEntry(int index) {

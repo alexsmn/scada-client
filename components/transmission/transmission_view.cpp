@@ -1,6 +1,7 @@
 ﻿#include "components/transmission/transmission_view.h"
 
 #include "aui/grid.h"
+#include "aui/translation.h"
 #include "aui/models/header_model.h"
 #include "common_resources.h"
 #include "components/transmission/transmission_model.h"
@@ -27,8 +28,8 @@ std::unique_ptr<UiView> TransmissionView::Init(
   }
 
   const aui::TableColumn columns[] = {
-      {0, u"Объект", 250, aui::TableColumn::LEFT},
-      {1, u"Адрес", 100, aui::TableColumn::RIGHT},
+      {0, Translate("Item"), 250, aui::TableColumn::LEFT},
+      {1, Translate("Address"), 100, aui::TableColumn::RIGHT},
   };
   column_model_->SetColumns(std::size(columns), columns);
 

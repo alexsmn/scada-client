@@ -1,6 +1,7 @@
 ﻿#include "main_window/selection_commands.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/promise_executor.h"
@@ -263,10 +264,10 @@ promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
       file_cache_.GetList(view_type_id).GetFilesContainingItem(node.node_id());
 
   if (cached_items.empty()) {
-    auto msg = u16format(L"Схема для объекта \"{}\" не найдена.",
+    auto msg = u16format(L"Display for item \"{}\" was not found.",
                          ToString16(node.display_name()));
     return ToRejectedPromise<OpenedViewInterface*>(
-        dialog_service_->RunMessageBox(msg, u"Схема", MessageBoxMode::Info));
+        dialog_service_->RunMessageBox(msg, Translate("Display"), MessageBoxMode::Info));
   }
 
   // TODO: Let user select scheme from list.
@@ -329,13 +330,13 @@ void SelectionCommands::DeleteSelection() {
 
   auto message =
       nodes.size() == 1
-          ? u16format(L"Вы действительно хотите удалить {}?",
+          ? u16format(L"Are you sure you want to delete {}?",
                       nodes.front().display_name())
-          : u16format(L"Вы действительно хотите удалить {} объектов?",
+          : u16format(L"Are you sure you want to delete {} items?",
                       nodes.size());
 
   dialog_service_
-      ->RunMessageBox(message, u"Удаление", MessageBoxMode::QuestionYesNo)
+      ->RunMessageBox(message, Translate("Delete"), MessageBoxMode::QuestionYesNo)
       .then(BindPromiseExecutor(
           executor_, [&task_manager = task_manager_,
                       nodes = std::move(nodes)](MessageBoxResult result) {

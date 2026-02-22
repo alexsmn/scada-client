@@ -21,7 +21,7 @@ using namespace std::chrono_literals;
 
 namespace {
 
-const char16_t kFetching[] = u"Загрузка...";
+const char16_t kFetching[] = u"Loading...";
 const auto kParentReferenceTypeId = scada::id::Organizes;
 const auto kSortDelay = 300ms;
 

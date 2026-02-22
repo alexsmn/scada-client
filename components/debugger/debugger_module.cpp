@@ -1,6 +1,7 @@
 ﻿#include "debugger_module.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/command_line.h"
 #include <boost/algorithm/string/join.hpp>
 #include "base/utf_convert.h"
@@ -22,7 +23,7 @@ DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
         DebuggerContext{.session_service_ = session_service_});
 
     global_commands_.AddCommand(
-        {.title = u"Отладчик",
+        {.title = Translate("Debugger"),
          .menu_group = MenuGroup::DEBUG,
          .execute_handler = [debugger](const GlobalCommandContext& context) {
            debugger->Open();
@@ -63,6 +64,6 @@ void DebuggerModule::DumpDebugInfo(const SelectionCommandContext& context) {
   }
 
   context.dialog_service.RunMessageBox(
-      u"Отладочная информация скопирована в буфер обмена.", {},
+      Translate("Debug information copied to clipboard."), {},
       MessageBoxMode::Info);
 }

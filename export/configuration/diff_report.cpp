@@ -45,7 +45,7 @@ void PrintRefs(NodeService& node_service,
                u16ostream& report) {
   for (const auto& r : refs) {
     auto target_name = r.add_target_id.is_null()
-                           ? u"(Нет)"
+                           ? u"(None)"
                            : GetDisplayName(node_service, r.add_target_id);
     report << ToString16(GetDisplayName(node_service, r.reference_type_id))
            << u" = " << ToString16(target_name) << std::endl;
@@ -66,12 +66,10 @@ void PrintRefs(NodeService& node_service,
 }
 
 const char16_t kDiffReportHeader[] =
-    uR"(Пожалуйста, убедитесь в правильности производимых изменений. Если перечисленные
-изменения не соответствуют ожидаемым, ответьте Нет на вопрос, который появится
-после закрытия данного окна.
+    uR"(Please verify the changes below are correct. If the listed changes do not match
+your expectations, answer No to the question that will appear after closing this window.
 
-ВНИМАНИЕ: При некорректном использовании данная операция может привести к
-потере конфигурации.)";
+WARNING: Incorrect use of this operation may lead to configuration loss.)";
 
 void PrintDiffReport(u16ostream& report,
                      const DiffData& diff,
@@ -80,17 +78,17 @@ void PrintDiffReport(u16ostream& report,
 
   for (auto& node_state : diff.create_nodes) {
     auto type_definition = node_service.GetNode(node_state.type_definition_id);
-    report << u"Создать: " << ToString16(type_definition.display_name())
+    report << u"Create: " << ToString16(type_definition.display_name())
            << std::endl;
     if (!node_state.node_id.is_null()) {
-      report << u"  Ид = "
+      report << u"  Id = "
              << UtfConvert<char16_t>(NodeIdToScadaString(node_state.node_id))
              << std::endl;
     }
-    report << u"  Родитель = "
+    report << u"  Parent = "
            << UtfConvert<char16_t>(NodeIdToScadaString(node_state.parent_id))
            << std::endl;
-    report << u"  Имя = " << ToString16(node_state.attributes.display_name)
+    report << u"  Name = " << ToString16(node_state.attributes.display_name)
            << std::endl;
     PrintProps(node_service, node_state.properties, report);
     PrintRefs(node_service, node_state.references, report);
@@ -98,16 +96,16 @@ void PrintDiffReport(u16ostream& report,
 
   for (auto& p : diff.modify_nodes) {
     auto node = node_service.GetNode(p.id);
-    report << u"Изменить: " << ToString16(node.display_name()) << std::endl;
+    report << u"Modify: " << ToString16(node.display_name()) << std::endl;
     if (!p.attrs.browse_name.empty())
-      report << u"  Имя = " << ToString16(p.attrs.browse_name) << std::endl;
+      report << u"  Name = " << ToString16(p.attrs.browse_name) << std::endl;
     PrintProps(node_service, p.props, report);
     PrintRefs(node_service, p.refs, report);
   }
 
   for (auto& p : diff.delete_nodes) {
     auto node = node_service.GetNode(p);
-    report << u"Удалить: " << ToString16(node.display_name()) << std::endl;
+    report << u"Delete: " << ToString16(node.display_name()) << std::endl;
   }
 }
 
@@ -130,7 +128,7 @@ void OpenNotepad(const std::filesystem::path& path) {
                      /*thread_attrs=*/nullptr, /*inherit_handles=*/FALSE,
                      /*create_flags=*/0, /*env=*/nullptr, /*cur_dir=*/nullptr,
                      &startup_info, &raw_process_info)) {
-    throw ResourceError{u"Не удалось открыть блокнот"};
+    throw ResourceError{u"Failed to open Notepad"};
   }
 
   base::win::ScopedProcessInformation proc_info{raw_process_info};

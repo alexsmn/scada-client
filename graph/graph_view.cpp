@@ -237,7 +237,7 @@ std::u16string GraphView::MakeTitle() const {
           ? static_cast<MetrixGraph::MetrixLine*>(
                 graph_->panes().front()->plot().primary_line())
           : nullptr;
-  return line ? line->data_source().title() : u"Нет объекта";
+  return line ? line->data_source().title() : u"No item";
 }
 
 bool GraphView::IsWorking() const {

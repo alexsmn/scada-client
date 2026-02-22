@@ -14,7 +14,7 @@ void ChangePassword(const ChangePasswordContext& context,
       security::id::UserType_ChangePassword, current_password, new_password);
   scada::BindStatusCallback(promise, [context](const scada::Status& status) {
     auto title =
-        u16format(L"Смена пароля пользователя {}",
+        u16format(L"Changing password for user {}",
                   ToString16(context.user_.display_name()));
     ReportRequestResult(title, status, context.local_events_, context.profile_);
   });

@@ -4,6 +4,6 @@
 #include "graph/graph_view.h"
 
 const WindowInfo kGraphWindowInfo = {
-    ID_GRAPH_VIEW, "Graph", u"График", WIN_INS, 0, 0, IDR_GRAPH_POPUP};
+    ID_GRAPH_VIEW, "Graph", u"Graph", WIN_INS, 0, 0, IDR_GRAPH_POPUP};
 
 REGISTER_CONTROLLER(GraphView, kGraphWindowInfo);

@@ -1,6 +1,7 @@
 ﻿#include "components/write/write_model.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "common/format.h"
@@ -11,10 +12,10 @@
 
 namespace {
 const wchar_t kDiscreteConfirmationQuestion[] =
-    L"Перевести {} в состояние {}?";
-const wchar_t kAnalogConfirmationQuestion[] = L"Записать в {} значение {}?";
+    L"Switch {} to state {}?";
+const wchar_t kAnalogConfirmationQuestion[] = L"Write value {} to {}?";
 const char16_t kSecondStagePrefix[] =
-    u"Удаленное устройство готово к исполнению команды.\n\n";
+    u"The remote device is ready to execute the command.\n\n";
 }  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
@@ -48,7 +49,7 @@ WriteModel::WriteModel(WriteContext&& context)
 }
 
 std::u16string WriteModel::GetWindowTitle() const {
-  return manual_ ? u"Ручной ввод" : u"Управление";
+  return manual_ ? Translate("Manual Input") : Translate("Control");
 }
 
 std::u16string WriteModel::GetSourceTitle() const {
@@ -118,7 +119,7 @@ std::u16string WriteModel::GetStatusText() const {
   if (!writing_)
     return {};
 
-  return write_selecting_ ? u"Подготовка к управлению..." : u"Управление...";
+  return write_selecting_ ? Translate("Preparing to control...") : Translate("Controlling...");
 }
 
 bool WriteModel::IsConditionOk() const {

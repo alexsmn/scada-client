@@ -1,5 +1,6 @@
 ﻿#include "main_window/action_manager.h"
 
+#include "aui/translation.h"
 #include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
 #include "main_window/action.h"
@@ -14,25 +15,25 @@ GroupedActions GroupCommands(ActionManager& action_manager,
   return grouped_commands;
 }
 
-std::u16string_view GetCommandCategoryTitle(CommandCategory category) {
-  static const std::u16string_view kTitles[] = {
-      u"Новый",       // CATEGORY_NEW
-      u"Открыть",     // CATEGORY_OPEN
-      u"Объект",      // CATEGORY_ITEM
-      u"Устройство",  // CATEGORY_DEVICE
-      u"Опции",       // CATEGORY_SETUP
-      u"Экспорт",     // CATEGORY_EXPORT
-      u"Разное",      // CATEGORY_SPECIFIC
-      u"Окно",        // CATEGORY_VIEW
-      u"Период",      // CATEGORY_PERIOD
-      u"Создать",     // CATEGORY_CREATE
-      u"Правка",      // CATEGORY_EDIT,
-      u"Функция",     // CATEGORY_AGGREGATION
-      u"Интервал",    // CATEGORY_INTERVAL
+std::u16string GetCommandCategoryTitle(CommandCategory category) {
+  static const char* const kTitles[] = {
+      "New",        // CATEGORY_NEW
+      "Open",       // CATEGORY_OPEN
+      "Item",       // CATEGORY_ITEM
+      "Device",     // CATEGORY_DEVICE
+      "Options",    // CATEGORY_SETUP
+      "Export",     // CATEGORY_EXPORT
+      "Misc",       // CATEGORY_SPECIFIC
+      "Window",     // CATEGORY_VIEW
+      "Period",     // CATEGORY_PERIOD
+      "Create",     // CATEGORY_CREATE
+      "Edit",       // CATEGORY_EDIT,
+      "Function",   // CATEGORY_AGGREGATION
+      "Interval",   // CATEGORY_INTERVAL
   };
   static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
   assert(category >= 0 && category < _countof(kTitles));
-  return kTitles[category];
+  return Translate(kTitles[category]);
 }
 
 bool CanExpandCommandCategory(CommandCategory category) {

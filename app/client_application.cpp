@@ -1,5 +1,6 @@
 ﻿#include "app/client_application.h"
 
+#include "aui/translation.h"
 #include "base/blinker.h"
 #include "base/boost_log_adapter.h"
 #include "base/command_line.h"
@@ -71,7 +72,7 @@ extern bool CreateOpcUaServices(const DataServicesContext& context,
                                 DataServices& services);
 
 REGISTER_DATA_SERVICES("Scada",
-                       u"Телеконтроль",
+                       u"Telecontrol",
                        CreateRemoteServices,
                        "localhost");
 
@@ -81,7 +82,7 @@ REGISTER_DATA_SERVICES("OpcUa",
                        "opc.tcp://localhost:4840");
 
 REGISTER_DATA_SERVICES("Vidicon",
-                       u"Видикон",
+                       u"Vidicon",
                        CreateVidiconServices,
                        "localhost");
 
@@ -359,7 +360,7 @@ promise<void> ClientApplication::Quit() {
   if (event_module_) {
     // TODO: Localize.
     event_module_->local_events().ReportEvent(LocalEvents::SEV_ERROR,
-                                              u"Отключение от сервера...");
+                                              Translate("Disconnecting from server..."));
   }
 
   ForwardPromise(IgnoreResult(master_data_services_->Disconnect()),

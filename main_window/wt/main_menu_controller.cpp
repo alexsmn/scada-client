@@ -84,7 +84,7 @@ MainMenuController::MainMenuController(MainMenuControllerContext&& context)
 
 std::unique_ptr<Wt::WWidget> MainMenuController::CreateWidget() {
   auto navigation = std::make_unique<Wt::WNavigationBar>();
-  navigation->setTitle(L"Телеконтроль", "http://telecontrol.ru");
+  navigation->setTitle(L"Telecontrol", "http://telecontrol.ru");
   navigation->setResponsive(true);
 
   auto* menu = navigation->addMenu(std::make_unique<Wt::WMenu>());

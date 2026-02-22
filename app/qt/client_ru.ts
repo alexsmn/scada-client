@@ -3,13 +3,10 @@
 <TS version="2.1" language="ru_RU">
 <context>
     <name></name>
+    <!-- client_utils.cpp -->
     <message>
         <source>Local</source>
-        <translation type="vanished">Локальный</translation>
-    </message>
-    <message>
-        <source>About</source>
-        <translation type="vanished">О программе</translation>
+        <translation>Локальный</translation>
     </message>
     <message>
         <source>Value</source>
@@ -27,10 +24,654 @@
         <source>events</source>
         <translation>событий</translation>
     </message>
+    <!-- action_manager.cpp: category titles -->
+    <message>
+        <source>New</source>
+        <translation>Создание</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Открыть</translation>
+    </message>
+    <message>
+        <source>Item</source>
+        <translation>Сигнал</translation>
+    </message>
+    <message>
+        <source>Device</source>
+        <translation>Устройство</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>Export</source>
+        <translation>Экспорт</translation>
+    </message>
+    <message>
+        <source>Misc</source>
+        <translation>Прочее</translation>
+    </message>
+    <message>
+        <source>Window</source>
+        <translation>Окно</translation>
+    </message>
+    <message>
+        <source>Period</source>
+        <translation>Период</translation>
+    </message>
+    <message>
+        <source>Create</source>
+        <translation>Создать</translation>
+    </message>
+    <message>
+        <source>Edit</source>
+        <translation>Редактирование</translation>
+    </message>
+    <message>
+        <source>Function</source>
+        <translation>Функция</translation>
+    </message>
+    <message>
+        <source>Interval</source>
+        <translation>Интервал</translation>
+    </message>
+    <!-- actions.cpp: create actions -->
+    <message>
+        <source>Multiple Create...</source>
+        <translation>Серийное создание...</translation>
+    </message>
+    <message>
+        <source>Service Items...</source>
+        <translation>Сервисные объекты...</translation>
+    </message>
+    <message>
+        <source>IEC 60870-101 Link</source>
+        <translation>Канал IEC 60870-101</translation>
+    </message>
+    <message>
+        <source>IEC 60870-104 Link</source>
+        <translation>Канал IEC 60870-104</translation>
+    </message>
+    <message>
+        <source>Folder</source>
+        <translation>Папка</translation>
+    </message>
+    <message>
+        <source>Create Folder...</source>
+        <translation>Создать папку...</translation>
+    </message>
+    <message>
+        <source>File</source>
+        <translation>Файл</translation>
+    </message>
+    <message>
+        <source>Add File...</source>
+        <translation>Добавить файл...</translation>
+    </message>
+    <!-- actions.cpp: open/view actions -->
+    <message>
+        <source>Graph</source>
+        <translation>График</translation>
+    </message>
+    <message>
+        <source>Data</source>
+        <translation>Данные</translation>
+    </message>
+    <message>
+        <source>Display</source>
+        <translation>Мнемосхема</translation>
+    </message>
+    <message>
+        <source>Table</source>
+        <translation>Таблица</translation>
+    </message>
+    <message>
+        <source>Summary</source>
+        <translation>Сводка</translation>
+    </message>
+    <message>
+        <source>Events</source>
+        <translation>События</translation>
+    </message>
+    <message>
+        <source>Group Table</source>
+        <translation>Групповая таблица</translation>
+    </message>
+    <!-- actions.cpp: item actions -->
+    <message>
+        <source>Acknowledge</source>
+        <translation>Квитирование</translation>
+    </message>
+    <message>
+        <source>Unlock</source>
+        <translation>Разблокировать</translation>
+    </message>
+    <message>
+        <source>Control...</source>
+        <translation>Управление...</translation>
+    </message>
+    <message>
+        <source>Control</source>
+        <translation>Управление</translation>
+    </message>
+    <message>
+        <source>Manual Input...</source>
+        <translation>Ручной ввод...</translation>
+    </message>
+    <message>
+        <source>Manual Input</source>
+        <translation>Ручной ввод</translation>
+    </message>
+    <message>
+        <source>Limits...</source>
+        <translation>Уставки...</translation>
+    </message>
+    <message>
+        <source>Limits</source>
+        <translation>Уставки</translation>
+    </message>
+    <!-- actions.cpp: device actions -->
+    <message>
+        <source>Poll Device</source>
+        <translation>Опрос устройства</translation>
+    </message>
+    <message>
+        <source>Synchronize Clock</source>
+        <translation>Синхронизация часов</translation>
+    </message>
+    <!-- actions.cpp: setup actions -->
+    <message>
+        <source>Print</source>
+        <translation>Печать</translation>
+    </message>
+    <!-- actions.cpp: export actions -->
+    <message>
+        <source>Export to CSV</source>
+        <translation>Экспорт в CSV</translation>
+    </message>
+    <message>
+        <source>Export to Excel</source>
+        <translation>Экспорт в Excel</translation>
+    </message>
+    <!-- actions.cpp: specific actions -->
+    <message>
+        <source>Watch</source>
+        <translation>Монитор</translation>
+    </message>
+    <message>
+        <source>Metrics</source>
+        <translation>Метрики</translation>
+    </message>
+    <message>
+        <source>Set Password...</source>
+        <translation>Задать пароль...</translation>
+    </message>
+    <message>
+        <source>Password</source>
+        <translation>Пароль</translation>
+    </message>
+    <message>
+        <source>Enable</source>
+        <translation>Включить</translation>
+    </message>
+    <message>
+        <source>Disable</source>
+        <translation>Отключить</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Пауза</translation>
+    </message>
+    <!-- actions.cpp: view actions -->
+    <message>
+        <source>Acknowledge All</source>
+        <translation>Квитировать все</translation>
+    </message>
+    <message>
+        <source>Severity...</source>
+        <translation>Важность...</translation>
+    </message>
+    <message>
+        <source>Severity</source>
+        <translation>Важность</translation>
+    </message>
+    <message>
+        <source>Add Web Page...</source>
+        <translation>Добавить веб-страницу...</translation>
+    </message>
+    <message>
+        <source>Add Web Page</source>
+        <translation>Добавить веб-страницу</translation>
+    </message>
+    <message>
+        <source>Toolbar</source>
+        <translation>Панель инструментов</translation>
+    </message>
+    <message>
+        <source>Status Bar</source>
+        <translation>Строка состояния</translation>
+    </message>
+    <message>
+        <source>Event Panel</source>
+        <translation>Панель событий</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Сохранить</translation>
+    </message>
+    <message>
+        <source>Save As...</source>
+        <translation>Сохранить как...</translation>
+    </message>
+    <!-- actions.cpp: period actions -->
+    <message>
+        <source>Current</source>
+        <translation>Текущие</translation>
+    </message>
+    <message>
+        <source>15 min</source>
+        <translation>15 мин</translation>
+    </message>
+    <message>
+        <source>Hour</source>
+        <translation>Час</translation>
+    </message>
+    <message>
+        <source>Day</source>
+        <translation>Сутки</translation>
+    </message>
+    <message>
+        <source>Week</source>
+        <translation>Неделя</translation>
+    </message>
+    <message>
+        <source>Month</source>
+        <translation>Месяц</translation>
+    </message>
+    <message>
+        <source>Custom...</source>
+        <translation>Произвольный...</translation>
+    </message>
+    <message>
+        <source>Custom</source>
+        <translation>Произвольный</translation>
+    </message>
+    <!-- actions.cpp: interval actions -->
+    <message>
+        <source>1-Minute</source>
+        <translation>1-Минутные</translation>
+    </message>
+    <message>
+        <source>5 min</source>
+        <translation>5 мин</translation>
+    </message>
+    <message>
+        <source>30 min</source>
+        <translation>30 мин</translation>
+    </message>
+    <message>
+        <source>1-Hour</source>
+        <translation>1-Часовые</translation>
+    </message>
+    <message>
+        <source>12 hours</source>
+        <translation>12 часов</translation>
+    </message>
+    <message>
+        <source>1-Day</source>
+        <translation>1-Суточные</translation>
+    </message>
+    <!-- actions.cpp: aggregation actions -->
+    <message>
+        <source>First</source>
+        <translation>Первое</translation>
+    </message>
+    <message>
+        <source>Last</source>
+        <translation>Последнее</translation>
+    </message>
+    <message>
+        <source>Count</source>
+        <translation>Количество</translation>
+    </message>
+    <message>
+        <source>Minimum</source>
+        <translation>Минимум</translation>
+    </message>
+    <message>
+        <source>Maximum</source>
+        <translation>Максимум</translation>
+    </message>
+    <message>
+        <source>Sum</source>
+        <translation>Сумма</translation>
+    </message>
+    <message>
+        <source>Average</source>
+        <translation>Среднее</translation>
+    </message>
+    <!-- actions.cpp: edit actions -->
+    <message>
+        <source>Properties</source>
+        <translation>Свойства</translation>
+    </message>
+    <message>
+        <source>Element Properties</source>
+        <translation>Свойства элемента</translation>
+    </message>
+    <message>
+        <source>Elements</source>
+        <translation>Элементы</translation>
+    </message>
+    <message>
+        <source>Transmission Table</source>
+        <translation>Таблица передачи</translation>
+    </message>
+    <message>
+        <source>Transmission</source>
+        <translation>Передача</translation>
+    </message>
+    <message>
+        <source>Create Portfolio</source>
+        <translation>Создать портфолио</translation>
+    </message>
+    <message>
+        <source>Add Items...</source>
+        <translation>Добавить объекты...</translation>
+    </message>
+    <message>
+        <source>Add Items</source>
+        <translation>Добавить объекты</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Переименовать</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Paste</source>
+        <translation>Вставить</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>Очистить</translation>
+    </message>
+    <!-- main_menu_model.cpp -->
+    <message>
+        <source>&lt;No displays&gt;</source>
+        <translation>&lt;Нет мнемосхем&gt;</translation>
+    </message>
+    <message>
+        <source>&lt;No favourites&gt;</source>
+        <translation>&lt;Нет избранного&gt;</translation>
+    </message>
+    <message>
+        <source>The specified page is open in another window.</source>
+        <translation>Указанная страница открыта в другом окне.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Восстановить</translation>
+    </message>
+    <message>
+        <source>&lt;Trash is empty&gt;</source>
+        <translation>&lt;Корзина пуста&gt;</translation>
+    </message>
+    <message>
+        <source>New Table</source>
+        <translation>Новая таблица</translation>
+    </message>
+    <message>
+        <source>New Custom Table</source>
+        <translation>Новая произвольная таблица</translation>
+    </message>
+    <message>
+        <source>New Data Table</source>
+        <translation>Новая таблица данных</translation>
+    </message>
+    <message>
+        <source>New</source>
+        <translation>Новый</translation>
+    </message>
+    <message>
+        <source>Items</source>
+        <translation>Объекты</translation>
+    </message>
+    <message>
+        <source>Favourites</source>
+        <translation>Избранное</translation>
+    </message>
+    <message>
+        <source>Files</source>
+        <translation>Файлы</translation>
+    </message>
     <message>
         <source>Portfolio</source>
         <translation>Портфолио</translation>
     </message>
+    <message>
+        <source>Hardware</source>
+        <translation>Оборудование</translation>
+    </message>
+    <message>
+        <source>Event Journal</source>
+        <translation>Журнал событий</translation>
+    </message>
+    <message>
+        <source>Nodes</source>
+        <translation>Узлы</translation>
+    </message>
+    <message>
+        <source>Formats</source>
+        <translation>Форматы</translation>
+    </message>
+    <message>
+        <source>Simulated Signals</source>
+        <translation>Имитационные сигналы</translation>
+    </message>
+    <message>
+        <source>Users</source>
+        <translation>Пользователи</translation>
+    </message>
+    <message>
+        <source>Databases</source>
+        <translation>Базы данных</translation>
+    </message>
+    <message>
+        <source>Export Configuration to Excel...</source>
+        <translation>Экспорт конфигурации в Excel...</translation>
+    </message>
+    <message>
+        <source>Import Configuration from Excel...</source>
+        <translation>Импорт конфигурации из Excel...</translation>
+    </message>
+    <message>
+        <source>Connect to Server...</source>
+        <translation>Подключиться к серверу...</translation>
+    </message>
+    <message>
+        <source>Disconnect from Server</source>
+        <translation>Отключиться от сервера</translation>
+    </message>
+    <message>
+        <source>More</source>
+        <translation>Дополнительно</translation>
+    </message>
+    <message>
+        <source>Page</source>
+        <translation>Страница</translation>
+    </message>
+    <message>
+        <source>Add to Favourites</source>
+        <translation>Добавить в избранное</translation>
+    </message>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Split Horizontally</source>
+        <translation>Разделить горизонтально</translation>
+    </message>
+    <message>
+        <source>Split Vertically</source>
+        <translation>Разделить вертикально</translation>
+    </message>
+    <message>
+        <source>Control Confirmation</source>
+        <translation>Подтверждение управления</translation>
+    </message>
+    <message>
+        <source>Control Success Message</source>
+        <translation>Сообщение об успехе управления</translation>
+    </message>
+    <message>
+        <source>Show Events on Arrival</source>
+        <translation>Показывать события при поступлении</translation>
+    </message>
+    <message>
+        <source>Hide Events on Acknowledge</source>
+        <translation>Скрывать события при квитировании</translation>
+    </message>
+    <message>
+        <source>Flash Main Window on Event</source>
+        <translation>Мигание окна при событии</translation>
+    </message>
+    <message>
+        <source>Sound Alarm on Event</source>
+        <translation>Звуковое оповещение при событии</translation>
+    </message>
+    <message>
+        <source>Open Displays Folder</source>
+        <translation>Открыть папку мнемосхем</translation>
+    </message>
+    <message>
+        <source>Style</source>
+        <translation>Стиль</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <source>Documentation</source>
+        <translation>Документация</translation>
+    </message>
+    <message>
+        <source>Debug Information</source>
+        <translation>Отладочная информация</translation>
+    </message>
+    <message>
+        <source>About...</source>
+        <translation>О программе...</translation>
+    </message>
+    <message>
+        <source>About Qt...</source>
+        <translation>О Qt...</translation>
+    </message>
+    <message>
+        <source>Help</source>
+        <translation>Справка</translation>
+    </message>
+    <!-- main_window_commands.cpp -->
+    <message>
+        <source>Name:</source>
+        <translation>Имя:</translation>
+    </message>
+    <!-- selection_commands.cpp -->
+    <!-- events/event_view.cpp -->
+    <message>
+        <source>Message</source>
+        <translation>Сообщение</translation>
+    </message>
+    <message>
+        <source>User</source>
+        <translation>Пользователь</translation>
+    </message>
+    <message>
+        <source>Acknowledged By</source>
+        <translation>Квитировал</translation>
+    </message>
+    <message>
+        <source>Acknowledge Time</source>
+        <translation>Время квитирования</translation>
+    </message>
+    <message>
+        <source>No data to export.</source>
+        <translation>Нет данных для экспорта.</translation>
+    </message>
+    <message>
+        <source>Export error.</source>
+        <translation>Ошибка экспорта.</translation>
+    </message>
+    <message>
+        <source>Minimum severity threshold (0 = all events):</source>
+        <translation>Минимальный порог важности (0 = все события):</translation>
+    </message>
+    <!-- events/event_table_model.cpp -->
+    <message>
+        <source>Current Events</source>
+        <translation>Текущие события</translation>
+    </message>
+    <message>
+        <source>Event Journal for Day</source>
+        <translation>Журнал событий за сутки</translation>
+    </message>
+    <message>
+        <source>Event Journal for Week</source>
+        <translation>Журнал событий за неделю</translation>
+    </message>
+    <message>
+        <source>Event Journal for Month</source>
+        <translation>Журнал событий за месяц</translation>
+    </message>
+    <!-- favorites/favourites_view.cpp -->
+    <message>
+        <source>URL:</source>
+        <translation>URL:</translation>
+    </message>
+    <!-- filesystem/filesystem_commands.cpp -->
+    <message>
+        <source>The file has an invalid format.</source>
+        <translation>Файл имеет неверный формат.</translation>
+    </message>
+    <message>
+        <source>Unknown file type.</source>
+        <translation>Неизвестный тип файла.</translation>
+    </message>
+    <message>
+        <source>Failed to download file from server.</source>
+        <translation>Не удалось загрузить файл с сервера.</translation>
+    </message>
+    <message>
+        <source>Failed to read file.</source>
+        <translation>Не удалось прочитать файл.</translation>
+    </message>
+    <!-- services/task_manager_impl.cpp -->
+    <message>
+        <source>Insert</source>
+        <translation>Вставка</translation>
+    </message>
+    <!-- services/connection_state_reporter.cpp -->
+    <message>
+        <source>Connection to server established. Login successful.</source>
+        <translation>Соединение с сервером установлено. Вход выполнен.</translation>
+    </message>
+    <!-- profile/profile.cpp -->
+    <message>
+        <source>Page </source>
+        <translation>Страница </translation>
+    </message>
+    <!-- modus/qt/modus_controller.cpp -->
     <message>
         <source>Built-in Modus diagram rendering is enabled and will be applied to subsequently opened diagrams. To disable, use the Settings menu.</source>
         <translation>Встроенная отрисовка схем Модус включена и будет применена для далее открытых схем. Для отключения функции используйте меню Настройки.</translation>
@@ -39,6 +680,7 @@
         <source>Built-in rendering</source>
         <translation>Встроенная отрисовка</translation>
     </message>
+    <!-- app/client_application.cpp -->
     <message>
         <source>The specified username is already in use by another session. Disconnect the open session and continue?</source>
         <translation>Указанное имя пользователя уже используется другой сессией. Разорвать открытую сессию и продолжить?</translation>
@@ -46,6 +688,96 @@
     <message>
         <source>To disable automatic login, hold Ctrl when launching the application.</source>
         <translation>Чтобы отключить автоматический вход, удерживайте Ctrl при запуске приложения.</translation>
+    </message>
+    <message>
+        <source>Disconnecting from server...</source>
+        <translation>Отключение от сервера...</translation>
+    </message>
+    <!-- export/configuration/excel_configuration_commands.cpp -->
+    <message>
+        <source>Failed to open file.</source>
+        <translation>Не удалось открыть файл.</translation>
+    </message>
+    <message>
+        <source>Export complete. Open the file now?</source>
+        <translation>Экспорт завершён. Открыть файл?</translation>
+    </message>
+    <message>
+        <source>No changes found</source>
+        <translation>Изменения не найдены</translation>
+    </message>
+    <message>
+        <source>Apply changes?</source>
+        <translation>Применить изменения?</translation>
+    </message>
+    <!-- portfolio/portfolio_manager.cpp -->
+    <!-- (Portfolio already defined above) -->
+    <!-- aui/models/property_tree_model.cpp -->
+    <message>
+        <source>Parameter</source>
+        <translation>Параметр</translation>
+    </message>
+    <!-- configuration/objects/object_tree_model.cpp -->
+    <!-- (Name and Value already defined) -->
+    <message>
+        <source>Name</source>
+        <translation>Имя</translation>
+    </message>
+    <!-- components/debugger/debugger_module.cpp -->
+    <message>
+        <source>Debugger</source>
+        <translation>Отладчик</translation>
+    </message>
+    <message>
+        <source>Debug information copied to clipboard.</source>
+        <translation>Отладочная информация скопирована в буфер обмена.</translation>
+    </message>
+    <!-- components/table/table_model.cpp -->
+    <message>
+        <source>Enter expression</source>
+        <translation>Введите выражение</translation>
+    </message>
+    <message>
+        <source>Invalid expression.</source>
+        <translation>Некорректное выражение.</translation>
+    </message>
+    <!-- components/table/table_view.cpp -->
+    <message>
+        <source>Change Time</source>
+        <translation>Время изменения</translation>
+    </message>
+    <message>
+        <source>Event</source>
+        <translation>Событие</translation>
+    </message>
+    <!-- components/write/write_model.cpp -->
+    <message>
+        <source>Preparing to control...</source>
+        <translation>Подготовка к управлению...</translation>
+    </message>
+    <message>
+        <source>Controlling...</source>
+        <translation>Управление...</translation>
+    </message>
+    <!-- components/watch/watch_view.cpp -->
+    <message>
+        <source>Save As</source>
+        <translation>Сохранить как</translation>
+    </message>
+    <!-- components/watch/watch_model.cpp -->
+    <message>
+        <source>Subscription interrupted. The device may have been deleted.</source>
+        <translation>Подписка прервана. Устройство могло быть удалено.</translation>
+    </message>
+    <!-- components/node_properties/node_property_model.cpp -->
+    <message>
+        <source>Attributes</source>
+        <translation>Атрибуты</translation>
+    </message>
+    <!-- components/transmission/transmission_view.cpp -->
+    <message>
+        <source>Address</source>
+        <translation>Адрес</translation>
     </message>
 </context>
 <context>

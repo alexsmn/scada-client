@@ -13,7 +13,7 @@
 #include "services/create_tree.h"
 
 const WindowInfo kWindowInfo = {
-    ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Файлы", WIN_SING, 200, 400};
+    ID_FILE_SYSTEM_VIEW, "FileSystemView", u"Files", WIN_SING, 200, 400};
 
 REGISTER_CONTROLLER(FileSystemView, kWindowInfo);
 

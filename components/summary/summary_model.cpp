@@ -437,7 +437,7 @@ bool SummaryModel::IsCustomUnits(const scada::NodeId& aggregation_id) {
 
 ExportModel::ExportData SummaryModel::GetExportData() {
   return GridExportData{
-      aui::TableColumn{-1, u"Время", 100, aui::TableColumn::LEFT,
+      aui::TableColumn{-1, u"Time", 100, aui::TableColumn::LEFT,
                        aui::TableColumn::DataType::General},
       *this, row_model(), column_model()};
 }

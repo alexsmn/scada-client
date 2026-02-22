@@ -20,9 +20,9 @@ void WriteExportData(const ExportData& data, CsvWriter& writer) {
   // Headers
   writer.StartRow();
   writer.WriteCell(kNodeIdTitle);
-  writer.WriteCell(u"Родитель");
-  writer.WriteCell(u"Тип");
-  writer.WriteCell(u"Имя");
+  writer.WriteCell(u"Parent");
+  writer.WriteCell(u"Type");
+  writer.WriteCell(u"Name");
   for (const auto& prop : data.props)
     writer.WriteCell(FormatReferenceCell(prop.display_name, prop.prop_decl_id));
 
