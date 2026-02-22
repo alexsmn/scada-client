@@ -1,7 +1,7 @@
 #include "properties/property_service.h"
 
 #include "base/range_util.h"
-#include "base/strings/strcat.h"
+#include "base/u16format.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -26,8 +26,8 @@ const EnumPropertyDefinition kEnumPropDef;
 
 struct ChannelPropertyTree {
   explicit ChannelPropertyTree(std::u16string_view suffix)
-      : device{base::StrCat({u"Устройство", suffix}), true},
-        channel{base::StrCat({u"Канал", suffix}), false} {}
+      : device{u16format(L"Device{}", suffix), true},
+        channel{u16format(L"Channel{}", suffix), false} {}
 
   ChannelPropertyDefinition device;
   ChannelPropertyDefinition channel;
@@ -36,8 +36,8 @@ struct ChannelPropertyTree {
 };
 
 const ChannelPropertyTree kObjectInput1PropTree{u""};
-const ChannelPropertyTree kObjectInput2PropTree{u" (Резерв)"};
-const ChannelPropertyTree kObjectOutputPropTree{u" (Управление)"};
+const ChannelPropertyTree kObjectInput2PropTree{u" (backup)"};
+const ChannelPropertyTree kObjectOutputPropTree{u" (control)"};
 
 const TransportPropertyDefinition kLinkTransportPropDef;
 

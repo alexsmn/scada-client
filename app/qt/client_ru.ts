@@ -11,6 +11,42 @@
         <source>About</source>
         <translation type="vanished">О программе</translation>
     </message>
+    <message>
+        <source>Value</source>
+        <translation>Значение</translation>
+    </message>
+    <message>
+        <source>Time</source>
+        <translation>Время</translation>
+    </message>
+    <message>
+        <source>Updated</source>
+        <translation>Обновлен</translation>
+    </message>
+    <message>
+        <source>events</source>
+        <translation>событий</translation>
+    </message>
+    <message>
+        <source>Portfolio</source>
+        <translation>Портфолио</translation>
+    </message>
+    <message>
+        <source>Built-in Modus diagram rendering is enabled and will be applied to subsequently opened diagrams. To disable, use the Settings menu.</source>
+        <translation>Встроенная отрисовка схем Модус включена и будет применена для далее открытых схем. Для отключения функции используйте меню Настройки.</translation>
+    </message>
+    <message>
+        <source>Built-in rendering</source>
+        <translation>Встроенная отрисовка</translation>
+    </message>
+    <message>
+        <source>The specified username is already in use by another session. Disconnect the open session and continue?</source>
+        <translation>Указанное имя пользователя уже используется другой сессией. Разорвать открытую сессию и продолжить?</translation>
+    </message>
+    <message>
+        <source>To disable automatic login, hold Ctrl when launching the application.</source>
+        <translation>Чтобы отключить автоматический вход, удерживайте Ctrl при запуске приложения.</translation>
+    </message>
 </context>
 <context>
     <name>AboutDialog</name>

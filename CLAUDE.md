@@ -355,4 +355,6 @@ Logging-related switches (pass as `--switch-name`):
 
 9. **Conditional compilation** — Use `#if !defined(UI_WT)` to guard Qt-only features (Modus, Vidicon, etc.).
 
+11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
+
 10. **Async code** uses `promise<T>` with `.then()` chaining and `BindPromiseExecutor` to stay on the correct executor thread.

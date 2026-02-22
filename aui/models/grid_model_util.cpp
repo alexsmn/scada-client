@@ -1,11 +1,8 @@
 #include "aui/models/grid_model_util.h"
 
-#include "base/strings/strcat.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/u16format.h"
 #include "aui/models/grid_model.h"
 #include "aui/models/grid_range.h"
-
-#undef StrCat
 
 namespace aui {
 
@@ -71,7 +68,7 @@ bool GetBaseNum(base::string16& base, int& num) {
 }
 
 base::string16 SetBaseNum(const base::char16* base, int num) {
-  return base::StrCat({base, base::NumberToString16(num)});
+  return u16format(L"{}{}", base, num);
 }
 
 class Expander {

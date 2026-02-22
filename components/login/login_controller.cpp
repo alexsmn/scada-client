@@ -1,6 +1,7 @@
 ﻿#include "components/login/login_controller.h"
 
 #include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/containers/contains.h"
 #include "base/containers/cxx20_erase.h"
 #include "base/promise_executor.h"
@@ -17,25 +18,22 @@
 #include "scada/status_promise.h"
 
 #include <algorithm>
+#include <format>
 #include <span>
 #include <windows.h>  // for VK_CONTROL
-
-#undef StrCat
-#include "base/strings/strcat.h"
 
 namespace {
 
 const wchar_t kRegistryKey[] = L"Software\\Telecontrol\\Workplace";
 const char kServerHostKeyPrefix[] = "Host:";
 
-const char16_t kForceLogoffMessage[] =
-    u"Указанное имя пользователя уже используется другой сессией. Разорвать "
-    u"открытую сессию и продолжить?";
+const char kForceLogoffMessage[] =
+    "The specified username is already in use by another session. "
+    "Disconnect the open session and continue?";
 const wchar_t kLoginFailedMessage[] =
-    L"Ошибка при подключении к серверу ({}).";
-const char16_t kAutoLoginMessage[] =
-    u"Чтобы отключить автоматический вход, удерживайте Ctrl при запуске "
-    u"приложения.";
+    L"Error connecting to server ({}).";
+const char kAutoLoginMessage[] =
+    "To disable automatic login, hold Ctrl when launching the application.";
 
 struct RegHelper {
   bool ReadBool(std::string_view name) {
@@ -78,7 +76,7 @@ struct RegHelper {
 };
 
 std::string GetServerHostTypeKey(std::string_view server_type_name) {
-  return base::StrCat({kServerHostKeyPrefix, server_type_name});
+  return std::format("{}{}", kServerHostKeyPrefix, server_type_name);
 }
 
 std::vector<std::string> ParseListString(std::string_view users) {
@@ -214,7 +212,7 @@ void LoginController::OnLoginCompleted() {
   auto promise = make_resolved_promise();
   if (auto_login && login_message_) {
     promise = ToVoidPromise(dialog_service_.RunMessageBox(
-        kAutoLoginMessage, {}, MessageBoxMode::Info));
+        Translate(kAutoLoginMessage), {}, MessageBoxMode::Info));
   }
 
   promise.then([completion_handler = this->completion_handler,
@@ -230,7 +228,7 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
 
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
     dialog_service_
-        .RunMessageBox(kForceLogoffMessage, {}, MessageBoxMode::QuestionYesNo)
+        .RunMessageBox(Translate(kForceLogoffMessage), {}, MessageBoxMode::QuestionYesNo)
         .then(BindPromiseExecutor(executor_, weak_from_this(),
                                   [this](MessageBoxResult message_box_result) {
                                     if (message_box_result ==

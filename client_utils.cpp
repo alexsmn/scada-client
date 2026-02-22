@@ -3,7 +3,6 @@
 #include "aui/translation.h"
 #include "base/format_time.h"
 #include "base/range_util.h"
-#include "base/strings/strcat.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "base/win/clipboard.h"
@@ -35,7 +34,7 @@ inline void AppendHint(std::u16string& hint,
                        std::u16string_view value) {
   if (value.empty())
     return;
-  hint += base::StrCat({u"\n", title, u": ", value});
+  hint += u16format(L"\n{}: {}", title, value);
 }
 
 std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
@@ -51,9 +50,9 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
                  TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC));
 
   auto str = name;
-  AppendHint(str, u"Значение", val);
-  AppendHint(str, u"Время", str_time);
-  AppendHint(str, u"Обновлен", str_utime);
+  AppendHint(str, Translate("Value"), val);
+  AppendHint(str, Translate("Time"), str_time);
+  AppendHint(str, Translate("Updated"), str_utime);
 
   // events
   const auto* events = timed_data.GetEvents();
@@ -65,7 +64,8 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
         str += L'\n';
       // limit for 3 events
       if (count >= 3) {
-        str += u16format(L"\n(+ {} событий)", events->size() - count);
+        str += u16format(L"\n(+ {} {})", events->size() - count,
+                         Translate("events"));
         break;
       }
       // add event

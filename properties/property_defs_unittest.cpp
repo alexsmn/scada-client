@@ -5,7 +5,7 @@
 #include "address_space/generic_node_factory.h"
 #include "address_space/node_factory_util.h"
 #include "aui/dialog_service_mock.h"
-#include "base/strings/strcat.h"
+#include "base/u16format.h"
 #include "common/formula_util.h"
 #include "common/node_state.h"
 #include "model/data_items_node_ids.h"
@@ -111,7 +111,7 @@ TEST_F(PropertyDefsTest, GetText_Device) {
       MakeNodeIdFormula(MakeNestedNodeId(device_id, "device.channel.path")));
 
   EXPECT_EQ(
-      base::StrCat({kLinkDisplayName, u" : ", kDeviceDisplayName}),
+      u16format(L"{} : {}", kLinkDisplayName, kDeviceDisplayName),
       channel_property_definition.GetText(property_context, data_item_node,
                                           data_items::id::DataItemType_Input1));
 }
@@ -134,6 +134,6 @@ TEST_F(PropertyDefsTest, Enum) {
   auto link = node_service->GetNode(link_id);
   auto* prop_def = PropertyService{}.GetPropertyDef(mode_prop_def);
   ASSERT_TRUE(prop_def);
-  EXPECT_EQ(u"Опрос",
+  EXPECT_EQ(u"Polling",
             prop_def->GetText(property_context, link, mode_prop_def.node_id()));
 }

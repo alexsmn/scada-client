@@ -1,8 +1,8 @@
 ﻿#include "portfolio/portfolio_manager.h"
 
+#include "aui/translation.h"
 #include "base/logging.h"
-#include "base/strings/strcat.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/u16format.h"
 #include "portfolio/portfolio.h"
 #include "scada/event.h"
 #include "model/node_id_util.h"
@@ -79,12 +79,12 @@ PortfolioManager::Portfolios::iterator PortfolioManager::Find(
 }
 
 Portfolio& PortfolioManager::New() {
-  static const char16_t mask[] = u"Портфолио";
+  const auto mask = Translate("Portfolio");
 
   std::u16string name = mask;
   int id = 2;
   while (Find(name) != portfolios.end())
-    name = base::StrCat({mask, u" ", base::NumberToString16(id++)});
+    name = u16format(L"{} {}", mask, id++);
 
   portfolios.push_back(Portfolio());
   Portfolio& portfolio = portfolios.back();

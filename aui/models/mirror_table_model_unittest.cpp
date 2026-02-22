@@ -1,7 +1,6 @@
 #include "aui/models/mirror_table_model.h"
 
-#include "base/strings/strcat.h"
-#include "base/strings/string_number_conversions.h"
+#include "base/u16format.h"
 #include "aui/models/mirror_table_model.h"
 #include "aui/models/table_model_observer_mock.h"
 
@@ -16,8 +15,7 @@ class TestTableModel : public TableModel {
   virtual int GetRowCount() override { return row_count; }
 
   virtual void GetCell(TableCell& cell) override {
-    cell.text = base::StrCat({base::NumberToString16(cell.row), u":",
-                              base::NumberToString16(cell.column_id)});
+    cell.text = u16format(L"{}:{}", cell.row, cell.column_id);
   }
 
   using TableModel::NotifyItemsAdded;

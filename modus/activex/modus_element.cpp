@@ -1,7 +1,7 @@
 ﻿#include "modus/activex/modus_element.h"
 
 #include "base/format.h"
-#include "base/strings/strcat.h"
+#include <format>
 #include "base/utf_convert.h"
 #include "base/win/scoped_bstr.h"
 #include "events/event_set.h"
@@ -121,7 +121,7 @@ std::wstring GetLimitSetString(const Limits& limits) {
       result.append(limit_string.data(), limit_string.size());
     }
   }
-  return base::StrCat({L"[", result, L"]"});
+  return std::format(L"[{}]", result);
 }
 
 inline bool operator==(const Limits& left, const Limits& right) {

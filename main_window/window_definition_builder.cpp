@@ -1,6 +1,6 @@
 #include "window_definition_builder.h"
 
-#include "base/strings/strcat.h"
+#include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "client_utils.h"
 #include "common/formula_util.h"
@@ -28,8 +28,8 @@ static const WindowInfo& kDefaultWindowInfo = kGraphWindowInfo;
 static const WindowInfo& kDefaultMultiWindowInfo = kTableWindowInfo;
 
 std::u16string MakeTitle(const WindowInfo& window_info, const NodeRef& node) {
-  return base::StrCat(
-      {window_info.title, u": ", ToString16(node.display_name())});
+  return u16format(L"{}: {}", window_info.title,
+                    ToString16(node.display_name()));
 }
 
 }  // namespace

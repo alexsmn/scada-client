@@ -1,7 +1,8 @@
 ﻿#include "modus/qt/modus_controller.h"
 
 #include "aui/dialog_service.h"
-#include "base/strings/strcat.h"
+#include "aui/translation.h"
+#include "base/u16format.h"
 #include "common_resources.h"
 #include "components/web/web_component.h"
 #include "controller/controller_delegate.h"
@@ -57,9 +58,10 @@ QWidget* ModusController::CreateModusView() {
     profile_.NotifyChange();
 
     dialog_service_.RunMessageBox(
-        u"Встроенная отрисовка схем Модус включена и будет применена для далее "
-        u"открытых схем. Для отключения функции используйте меню Настройки.",
-        u"Встроенная отрисовка", MessageBoxMode::Info);
+        Translate("Built-in Modus diagram rendering is enabled and will be "
+                  "applied to subsequently opened diagrams. To disable, use "
+                  "the Settings menu."),
+        Translate("Built-in rendering"), MessageBoxMode::Info);
     controller_delegate_.Close();
   };
 
@@ -151,8 +153,7 @@ void ModusController::OpenHyperlink(std::u16string_view hyperlink) {
   auto path = MakeModusFilePath(hyperlink, wrapper_->GetPath());
   if (!path.has_value()) {
     dialog_service_.RunMessageBox(
-        base::StrCat(
-            {u"Файл ", hyperlink, u" не найден или находится вне папки схем."}),
+        u16format(L"File {} not found or located outside the diagrams folder.", hyperlink),
         {}, MessageBoxMode::Error);
     return;
   }
