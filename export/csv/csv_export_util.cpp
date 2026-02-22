@@ -8,7 +8,6 @@
 #include "base/excel.h"
 #include "base/json.h"
 #include "base/utf_convert.h"
-#include "base/strings/sys_string_conversions.h"
 #include "base/value_util.h"
 #include "scada/variant.h"
 
@@ -58,7 +57,7 @@ bool Convert(const scada::Variant& source, base::win::ScopedVariant& target) {
       target.Set(source.get<scada::Double>());
       return true;
     case scada::Variant::STRING:
-      target.Set(base::SysNativeMBToWide(source.get<scada::String>()).c_str());
+      target.Set(UtfConvert<wchar_t>(source.get<scada::String>()).c_str());
       return true;
     case scada::Variant::LOCALIZED_TEXT:
       target.Set(source.get<scada::LocalizedText>().c_str());

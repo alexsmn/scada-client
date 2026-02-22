@@ -4,8 +4,6 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include "base/strings/sys_string_conversions.h"
-
 #include "base/utf_convert.h"
 #include "common_resources.h"
 #include "controller/window_info.h"
@@ -159,11 +157,11 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
       return;
     }
 
-    formula = base::SysWideToNativeMB(binding);
+    formula = UtfConvert<char>(binding);
 
   } else {
     prop_name = binding.substr(0, p);
-    formula = base::SysWideToNativeMB(binding.substr(p + 1));
+    formula = UtfConvert<char>(binding.substr(p + 1));
 
     // WORKAROUND: Use object params to access to enumerable types.
     if (tech_index == 0) {

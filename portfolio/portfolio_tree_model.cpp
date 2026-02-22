@@ -1,6 +1,5 @@
 #include "portfolio/portfolio_tree_model.h"
 
-#include "base/strings/sys_string_conversions.h"
 #include "portfolio/portfolio.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

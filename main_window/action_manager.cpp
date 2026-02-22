@@ -1,7 +1,6 @@
 ﻿#include "main_window/action_manager.h"
 
 #include "aui/translation.h"
-#include "base/strings/sys_string_conversions.h"
 #include "common_resources.h"
 #include "main_window/action.h"
 

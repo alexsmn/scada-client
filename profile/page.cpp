@@ -4,7 +4,6 @@
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/stl_util.h"
-#include "base/strings/sys_string_conversions.h"
 #include "base/utils.h"
 #include "base/value_util.h"
 #include "controller/window_info.h"

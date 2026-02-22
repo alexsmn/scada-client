@@ -1,6 +1,6 @@
 #include "modus/libmodus/modus_binding2.h"
 
-#include "base/strings/sys_string_conversions.h"
+#include "base/utf_convert.h"
 #include "common/node_state.h"
 #include "libmodus/render/shape.h"
 #include "libmodus/scheme/element.h"
@@ -26,7 +26,7 @@ Value ToValue(const scada::Variant& v) {
         return {};
     }
     case scada::Variant::STRING:
-      return base::SysNativeMBToWide(v.as_string());
+      return UtfConvert<wchar_t>(v.as_string());
     case scada::Variant::NODE_ID:
       return {};
     default:
@@ -63,11 +63,11 @@ ModusBinding2::ModusBinding2(Delegate& delegate,
   std::wstring formula = binding;
   auto p = formula.find(L'=');
   if (p != std::wstring::npos) {
-    property_name_ = base::SysWideToNativeMB(formula.substr(0, p));
+    property_name_ = UtfConvert<char>(formula.substr(0, p));
     formula = formula.substr(p + 1);
   }
 
-  data_point_.Connect(timed_data_service, base::SysWideToNativeMB(formula));
+  data_point_.Connect(timed_data_service, UtfConvert<char>(formula));
 
   Update();
 }
