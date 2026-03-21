@@ -6,6 +6,11 @@
 #include "scada/localized_text.h"
 #include "scada/status.h"
 
+// Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
+#ifdef ReportEvent
+#undef ReportEvent
+#endif
+
 void ReportRequestResult(const std::u16string& title,
                          const scada::Status& status,
                          LocalEvents& local_events,

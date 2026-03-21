@@ -46,6 +46,11 @@
 
 #include <transport/transport_factory_impl.h>
 
+// Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
+#ifdef ReportEvent
+#undef ReportEvent
+#endif
+
 using namespace std::chrono_literals;
 
 namespace {

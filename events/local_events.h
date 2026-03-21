@@ -6,6 +6,11 @@
 #include <string>
 #include <vector>
 
+// Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
+#ifdef ReportEvent
+#undef ReportEvent
+#endif
+
 class LocalEvents {
  public:
   // TODO: Use `scada::EventSeverity` instead of `Severity`.

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/log/trivial.hpp>
 #include "base/format_time.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time_range.h"
@@ -65,7 +66,7 @@ inline void HistoricalEventModel::Update() {
 
   auto [from, to] = ToDateTimeRange(time_range_, /*now=*/base::Time::Now());
 
-  LOG(INFO) << "Query events from " << FormatTime(from).c_str();
+  BOOST_LOG_TRIVIAL(info) << "Query events from " << FormatTime(from).c_str();
 
   assert(!request_running_);
   request_running_ = true;

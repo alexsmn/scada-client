@@ -1,6 +1,7 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
+#include <boost/log/trivial.hpp>
 #include "base/promise_executor.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
@@ -186,7 +187,7 @@ void BaseMainWindow::OnViewClosed(OpenedView& view) {
     SetActiveDataView(nullptr);
   }
 
-  LOG(INFO) << "Window " << view.window_info().title << " closed.";
+  BOOST_LOG_TRIVIAL(info) << "Window " << view.window_info().title << " closed.";
 
   if (view_manager_->is_closing_page()) {
     return;
@@ -212,7 +213,7 @@ void BaseMainWindow::OnViewClosed(OpenedView& view) {
 }
 
 void BaseMainWindow::OpenPage(const Page& page) {
-  LOG(INFO) << "Open page " << page.id;
+  BOOST_LOG_TRIVIAL(info) << "Open page " << page.id;
 
   view_manager_->OpenPage(page);
 
@@ -263,7 +264,7 @@ OpenedViewInterface* BaseMainWindow::FindViewByType(
 }
 
 void BaseMainWindow::SaveCurrentPage() {
-  LOG(INFO) << "Save page " << view_manager_->current_page().id;
+  BOOST_LOG_TRIVIAL(info) << "Save page " << view_manager_->current_page().id;
 
   view_manager_->SavePage();
 

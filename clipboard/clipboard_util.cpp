@@ -56,19 +56,15 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
     protocol::NodeId message;
     Convert(nodes.front().type_definition().node_id(), message);
 
-    LOG(INFO) << "Set clipboard data: " << message.DebugString();
     auto buffer = message.SerializePartialAsString();
-    if (!clipboard.SetData(kNodeTreeHeaderFormat, buffer.data(), buffer.size()))
-      LOG(ERROR) << "Can't set clipboard data";
+    clipboard.SetData(kNodeTreeHeaderFormat, buffer.data(), buffer.size());
   }
 
   {
     auto node_tree = BuildNodeTree(nodes);
 
-    LOG(INFO) << "Set clipboard data: " << node_tree.DebugString();
     auto buffer = node_tree.SerializePartialAsString();
-    if (!clipboard.SetData(kNodeTreeFormat, buffer.data(), buffer.size()))
-      LOG(ERROR) << "Can't set clipboard data";
+    clipboard.SetData(kNodeTreeFormat, buffer.data(), buffer.size());
   }
 }
 

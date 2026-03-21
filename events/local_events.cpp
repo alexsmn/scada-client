@@ -4,6 +4,11 @@
 
 #include <cassert>
 
+// Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
+#ifdef ReportEvent
+#undef ReportEvent
+#endif
+
 LocalEvents::LocalEvents() = default;
 
 LocalEvents::~LocalEvents() {

@@ -3,6 +3,8 @@
 #include "base/bind.h"
 #include "base/threading/thread_task_runner_handle.h"
 
+#include <cassert>
+
 namespace aui {
 
 const int kSeparatorId = -1;
@@ -62,7 +64,7 @@ void SimpleMenuModel::AddItem(int command_id, const base::string16& label) {
 void SimpleMenuModel::AddSeparator(MenuSeparatorType separator_type) {
 #if !defined(USE_AURA)
   if (separator_type != NORMAL_SEPARATOR) {
-    NOTIMPLEMENTED();
+    assert(false && "Not implemented");
   }
 #endif
   // DCHECK(items_.empty() || items_.back().type != TYPE_SEPARATOR);
@@ -114,7 +116,7 @@ void SimpleMenuModel::InsertSeparatorAt(int index,
                                         MenuSeparatorType separator_type) {
 #if !defined(USE_AURA)
   if (separator_type != NORMAL_SEPARATOR) {
-    NOTIMPLEMENTED();
+    assert(false && "Not implemented");
   }
 #endif
   Item item = {kSeparatorId, base::string16(), TYPE_SEPARATOR,
@@ -298,9 +300,9 @@ void SimpleMenuModel::InsertItemAtIndex(const Item& item, int index) {
 void SimpleMenuModel::ValidateItem(const Item& item) {
 #ifndef NDEBUG
   if (item.type == TYPE_SEPARATOR) {
-    DCHECK_EQ(item.command_id, kSeparatorId);
+    assert(item.command_id == kSeparatorId);
   } else {
-    DCHECK_GE(item.command_id, 0);
+    assert(item.command_id >= 0);
   }
 #endif  // NDEBUG
 }

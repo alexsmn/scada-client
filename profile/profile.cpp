@@ -1,6 +1,7 @@
 ﻿#include "profile/profile.h"
 
 #include "aui/translation.h"
+#include <boost/log/trivial.hpp>
 #include "base/client_paths.h"
 #include "base/file_path_util.h"
 #include "base/path_service.h"
@@ -43,16 +44,16 @@ MainWindowDef::MainWindowDef() {}
 Profile::Profile() {}
 
 void Profile::Load() {
-  LOG(INFO) << "Load profile";
+  BOOST_LOG_TRIVIAL(info) << "Load profile";
 
   std::string error_message;
   if (auto data = LoadJsonFromFile(GetFilePath(), &error_message)) {
     Load(*data);
   } else {
-    LOG(ERROR) << "Profile load error " << error_message;
+    BOOST_LOG_TRIVIAL(error) << "Profile load error " << error_message;
   }
 
-  LOG(INFO) << "Profile loaded";
+  BOOST_LOG_TRIVIAL(info) << "Profile loaded";
 }
 
 void Profile::Load(const base::Value& data) {
@@ -86,7 +87,7 @@ void Profile::Load(const base::Value& data) {
       try {
         page.Load(pagee);
       } catch (HRESULT err) {
-        LOG(ERROR) << "Error " << static_cast<int>(err) << " on load page "
+        BOOST_LOG_TRIVIAL(error) << "Error " << static_cast<int>(err) << " on load page "
                    << page.id;
         page.id = 0;
       }
@@ -125,7 +126,7 @@ void Profile::Load(const base::Value& data) {
 }
 
 void Profile::Save() {
-  LOG(INFO) << "Save profile";
+  BOOST_LOG_TRIVIAL(info) << "Save profile";
 
   for (const Writer& writer : writers_) {
     writer(*this);
@@ -134,9 +135,9 @@ void Profile::Save() {
   auto data = SaveToValue();
 
   if (SaveJsonToFile(data, GetFilePath()))
-    LOG(INFO) << "Profile saved";
+    BOOST_LOG_TRIVIAL(info) << "Profile saved";
   else
-    LOG(ERROR) << "Profile save error";
+    BOOST_LOG_TRIVIAL(error) << "Profile save error";
 }
 
 base::Value Profile::SaveToValue() const {

@@ -1,6 +1,7 @@
 #include "app/client_application.h"
 
 #include "app/app_init.h"
+#include <boost/log/trivial.hpp>
 #include "aui/wt/message_loop_wt.h"
 #include "base/bind_util.h"
 #include "base/executor.h"
@@ -45,13 +46,13 @@ HelloApplication::HelloApplication(const Wt::WEnvironment& env,
     : Wt::WApplication(env), io_context_{io_context} {
   setTheme(std::make_shared<Wt::WBootstrapTheme>());
 
-  LOG(INFO) << "Connect";
+  BOOST_LOG_TRIVIAL(info) << "Connect";
   // TODO: Handle quit request when the returned promise is resolved.
   auto _ = client_application_.Start();
 }
 
 HelloApplication::~HelloApplication() {
-  LOG(INFO) << "Disconnect";
+  BOOST_LOG_TRIVIAL(info) << "Disconnect";
 }
 
 int main(int argc, char** argv) {
@@ -71,7 +72,7 @@ int main(int argc, char** argv) {
     server.run();
 
   } catch (const std::exception& e) {
-    LOG(ERROR) << "Error: " << e.what();
+    BOOST_LOG_TRIVIAL(error) << "Error: " << e.what();
     result = -1;
   }
 

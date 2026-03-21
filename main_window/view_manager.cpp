@@ -1,5 +1,6 @@
 #include "main_window/view_manager.h"
 
+#include <boost/log/trivial.hpp>
 #include "base/auto_reset.h"
 #include "base/containers/contains.h"
 #include "controller/window_info.h"
@@ -131,7 +132,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
                                   const OpenedView* after_view) {
   const auto* window_info = FindWindowInfoByName(def.type);
   if (!window_info) {
-    LOG(ERROR) << "Window type not found: " << def.type;
+    BOOST_LOG_TRIVIAL(error) << "Window type not found: " << def.type;
     return nullptr;
   }
 
@@ -159,7 +160,7 @@ OpenedView* ViewManager::OpenView(const WindowDefinition& def,
     }
   }
 
-  LOG(INFO) << "Open window " << std::u16string{window_info->title};
+  BOOST_LOG_TRIVIAL(info) << "Open window " << std::u16string{window_info->title};
 
   if (!window_def) {
     window_def = &current_page().AddWindow(def);

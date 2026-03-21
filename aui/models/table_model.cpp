@@ -2,12 +2,14 @@
 
 #include "aui/models/table_model_observer.h"
 
+#include <cassert>
+
 namespace aui {
 
 TableModel::TableModel() = default;
 
 TableModel::~TableModel() {
-  DCHECK(!observers_.might_have_observers());
+  assert(!observers_.might_have_observers());
 }
 
 std::u16string TableModel::GetTooltip(int row, int column_id) {

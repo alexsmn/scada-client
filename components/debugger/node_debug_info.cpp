@@ -4,6 +4,7 @@
 #include "controller/selection_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"
+#include "scada/localized_text.h"
 
 #include <memory>
 
@@ -15,7 +16,7 @@ void PrintReferences(std::ostream& stream,
     stream << "{";
     stream << "forward: " << r.forward;
     stream << ", ";
-    stream << "type: " << r.reference_type.browse_name();
+    stream << "type: " << ToString(r.reference_type.browse_name());
     stream << ", ";
     stream << "target: " << NodeIdToScadaString(r.target.node_id());
     stream << "}";
@@ -34,11 +35,11 @@ std::string GetNodeDebugInfo(const NodeRef& node) {
   stream << std::endl;
 
   stream << "Attributes:" << std::endl;
-  stream << "BrowseName: " << node.browse_name() << std::endl;
-  stream << "DisplayName: " << node.display_name() << std::endl;
-  stream << "TypeDefinition: " << node.type_definition().browse_name()
+  stream << "BrowseName: " << ToString(node.browse_name()) << std::endl;
+  stream << "DisplayName: " << ToString(node.display_name()) << std::endl;
+  stream << "TypeDefinition: " << ToString(node.type_definition().browse_name())
          << std::endl;
-  stream << "Supertype: " << node.supertype().browse_name() << std::endl;
+  stream << "Supertype: " << ToString(node.supertype().browse_name()) << std::endl;
   stream << std::endl;
 
   stream << "References:" << std::endl;

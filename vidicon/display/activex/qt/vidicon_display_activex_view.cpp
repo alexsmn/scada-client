@@ -1,5 +1,7 @@
 ﻿#include "vidicon/display/activex/qt/vidicon_display_activex_view.h"
 
+#include <cassert>
+
 #include "base/win/scoped_bstr.h"
 #include "filesystem/file_util.h"
 #include "profile/window_definition.h"
@@ -73,7 +75,7 @@ std::unique_ptr<UiView> VidiconDisplayActiveXView::Init(
     ax_widget->queryInterface(IID_PPV_ARGS(&view));
     if (view) {
       HRESULT res = view->SetClient(&vidicon_client_.teleclient());
-      DCHECK(SUCCEEDED(res));
+      assert(SUCCEEDED(res));
     }
 
     form_->put_AutoStartRuntime(VARIANT_TRUE);

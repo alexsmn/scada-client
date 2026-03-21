@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include <boost/log/trivial.hpp>
 #include "base/command_line.h"
 #include <boost/algorithm/string/join.hpp>
 #include "base/utf_convert.h"
@@ -56,11 +57,11 @@ void DebuggerModule::DumpDebugInfo(const SelectionCommandContext& context) {
   Clipboard clipboard;
 
   if (!clipboard.SetText(debug_text)) {
-    LOG(WARNING) << "Can't set clipboard data";
+    BOOST_LOG_TRIVIAL(warning) << "Can't set clipboard data";
   }
 
   if (!clipboard.SetText(UtfConvert<wchar_t>(debug_text))) {
-    LOG(WARNING) << "Can't set clipboard data";
+    BOOST_LOG_TRIVIAL(warning) << "Can't set clipboard data";
   }
 
   context.dialog_service.RunMessageBox(

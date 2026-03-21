@@ -1,5 +1,7 @@
 ﻿#include "modus/activex/modus_loader.h"
 
+#include <cassert>
+
 #include "base/debug_util.h"
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -122,7 +124,7 @@ void ModusLoader::LoadElement(std::unique_ptr<ModusObject>& object,
                               const std::wstring& binding,
                               long object_tag,
                               long tech_index) {
-  DCHECK(!binding.empty());
+  assert(!binding.empty());
 
   // determine object type
   std::wstring prop_name;

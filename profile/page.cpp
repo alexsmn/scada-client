@@ -1,5 +1,7 @@
 ﻿#include "profile/page.h"
 
+#include <cassert>
+
 #include "base/base64.h"
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
@@ -150,7 +152,7 @@ int Page::FindWindowDef(const WindowDefinition& window) const {
 }
 
 void Page::DeleteWindow(int index) {
-  DCHECK_GE(index, 0);
+  assert(index >= 0);
   windows_.erase(windows_.begin() + index);
 }
 

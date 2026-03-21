@@ -1,8 +1,9 @@
 ﻿#include "portfolio/portfolio_manager.h"
 
 #include "aui/translation.h"
-#include "base/logging.h"
+#include <boost/log/trivial.hpp>
 #include "base/u16format.h"
+#include "base/utf_convert.h"
 #include "portfolio/portfolio.h"
 #include "scada/event.h"
 #include "model/node_id_util.h"
@@ -44,7 +45,7 @@ void PortfolioManager::DeleteNode(const scada::NodeId& node_id) {
     Portfolio& portfolio = *i;
     if (portfolio.items.erase(node_id)) {
       std::string item_path = NodeIdToScadaString(node_id);
-      LOG(INFO) << "Portfolio " << portfolio.name << ": "
+      BOOST_LOG_TRIVIAL(info) << "Portfolio " << UtfConvert<char>(portfolio.name) << ": "
                 << "Item " << item_path << " is removed";
 
       for (PortfolioEventsSet::iterator ei = portfolio_events.begin();

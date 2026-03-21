@@ -1,5 +1,7 @@
 #include "aui/os_exchange_data.h"
 
+#include <cassert>
+
 #include "base/pickle.h"
 #include "base/utf_convert.h"
 #include "base/win/scoped_hglobal.h"
@@ -416,7 +418,7 @@ bool OSExchangeData::GetPickledData(CustomFormat format,
   if (SUCCEEDED(data_object_->GetData(&format_etc, &medium))) {
     if (medium.tymed & TYMED_HGLOBAL) {
       base::win::ScopedHGlobal<char*> c_data(medium.hGlobal);
-      DCHECK_GT(c_data.Size(), 0u);
+      assert(c_data.Size() > 0u);
       data = base::Pickle(c_data.get(), static_cast<int>(c_data.Size()));
       success = true;
     }

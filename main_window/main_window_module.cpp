@@ -1,5 +1,6 @@
 #include "main_window/main_window_module.h"
 
+#include <boost/log/trivial.hpp>
 #include "common/master_data_services.h"
 #include "components/change_password/change_password_command_builder.h"
 #include "controller/controller_context.h"
@@ -193,7 +194,7 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   const auto* window_info = FindWindowInfoByName(window_def.type);
   if (!window_info) {
-    LOG(ERROR) << "Window type " << window_def.type << " not found.";
+    BOOST_LOG_TRIVIAL(error) << "Window type " << window_def.type << " not found.";
     return nullptr;
   }
 

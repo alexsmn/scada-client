@@ -1,5 +1,6 @@
 #include "filesystem/file_cache.h"
 
+#include <boost/log/trivial.hpp>
 #include "base/client_paths.h"
 #include "base/file_path_util.h"
 #include "base/files/file_enumerator.h"
@@ -87,12 +88,12 @@ int FileCache::FileList::Find(const std::filesystem::path& path) const {
 
 void FileCache::Load() {
   std::filesystem::path cache_path = GetCachePath();
-  LOG(INFO) << "Loading file cache from " << cache_path.string();
+  BOOST_LOG_TRIVIAL(info) << "Loading file cache from " << cache_path.string();
 
   std::string error_message;
   auto data = LoadJsonFromFile(cache_path, &error_message);
   if (!data) {
-    LOG(ERROR) << "Error on load file cache - " << error_message;
+    BOOST_LOG_TRIVIAL(error) << "Error on load file cache - " << error_message;
     return;
   }
 
@@ -113,7 +114,7 @@ void FileCache::Load() {
 
 void FileCache::Save() {
   auto cache_path = GetCachePath();
-  LOG(INFO) << "Saving file cache to " << cache_path.string();
+  BOOST_LOG_TRIVIAL(info) << "Saving file cache to " << cache_path.string();
 
   base::Value::ListStorage list_data;
   for (auto& [type_id, file_list] : file_map_) {
