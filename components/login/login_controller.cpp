@@ -2,8 +2,6 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/containers/contains.h"
-#include "base/containers/cxx20_erase.h"
 #include "base/promise_executor.h"
 
 #include <boost/algorithm/string/classification.hpp>
@@ -114,7 +112,7 @@ std::u16string BuildListString(std::span<const std::u16string> list) {
 void AppendMruList(std::vector<std::u16string>& list,
                    std::u16string_view new_item) {
   if (list.empty() || list.front() != new_item) {
-    base::Erase(list, new_item);
+    std::erase(list, new_item);
     list.emplace(list.begin(), new_item);
   }
 

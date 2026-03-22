@@ -1,6 +1,5 @@
 #include "modus/libmodus/modus_style_library2.h"
 
-#include "base/memory/singleton.h"
 #include "modus/libmodus/modus_style2.h"
 #include "libmodus/gfx/gdip.h"
 

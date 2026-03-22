@@ -1,6 +1,6 @@
 #include "configuration/tree/node_service_tree_impl.h"
 
-#include "base/containers/contains.h"
+#include <algorithm>
 #include "base/executor.h"
 #include "scada/event.h"
 #include "node_service/node_service.h"

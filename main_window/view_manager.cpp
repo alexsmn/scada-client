@@ -2,7 +2,6 @@
 
 #include <boost/log/trivial.hpp>
 #include "base/auto_reset.h"
-#include "base/containers/contains.h"
 #include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"
@@ -26,7 +25,7 @@ OpenedView* ViewManager::FindViewByID(int id) const {
 }
 
 bool ViewManager::IsViewAdded(OpenedView& opened_view) const {
-  return base::Contains(added_views_, &opened_view);
+  return std::ranges::find(added_views_, &opened_view) != added_views_.end();
 }
 
 OpenedView* ViewManager::FindViewByType(std::string_view window_type) const {
@@ -50,7 +49,7 @@ void ViewManager::DestroyView(OpenedView& view) {
     SetActiveView(nullptr);
   }
 
-  assert(base::Contains(views_, &view));
+  assert(std::ranges::find(views_, &view) != views_.end());
   std::erase(views_, &view);
   std::erase(added_views_, &view);
 

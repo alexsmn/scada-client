@@ -1,6 +1,5 @@
 #include "export/configuration/export_data_builder.h"
 
-#include "base/containers/contains.h"
 #include "base/range_util.h"
 #include "export/configuration/export_data.h"
 #include "model/data_items_node_ids.h"
@@ -8,6 +7,7 @@
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 
+#include <algorithm>
 #include <boost/range/combine.hpp>
 
 namespace {
@@ -69,8 +69,9 @@ promise<std::vector<ExportData::Node>> CollectNodeHierarchy(
           [](const std::vector<std::vector<ExportData::Node>>& node_list_list) {
             std::vector<ExportData::Node> nodes = Join(node_list_list);
             std::erase_if(nodes, [](const ExportData::Node& node) {
-              return !base::Contains(kExportedNamespaceIndexes,
-                                     node.node_id.namespace_index());
+              return std::ranges::find(kExportedNamespaceIndexes,
+                                       node.node_id.namespace_index()) ==
+                     std::end(kExportedNamespaceIndexes);
             });
             return nodes;
           });
