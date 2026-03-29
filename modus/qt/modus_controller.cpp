@@ -34,14 +34,13 @@ QWidget* ModusController::CreateModusView() {
   };
 
   auto navigation_callback =
-      [executor = executor_,
-       weak_ptr = weak_factory_.GetWeakPtr()](std::u16string_view hyperlink) {
+      [executor = executor_, cancelation = cancelation_.weak_ptr(),
+       this](std::u16string_view hyperlink) {
         // Intentionally delay open to exit from the Modus handler.
-        executor->PostTask([weak_ptr, hyperlink = std::u16string{hyperlink}] {
-          if (auto* ptr = weak_ptr.get()) {
-            ptr->OpenHyperlink(hyperlink);
-          }
-        });
+        executor->PostTask(BindCancelation(
+            cancelation, [this, hyperlink = std::u16string{hyperlink}] {
+              OpenHyperlink(hyperlink);
+            }));
       };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
@@ -85,14 +84,11 @@ QWidget* ModusController::CreateModusView2() {
       [this](const TimedDataSpec& spec) { selection_.SelectTimedData(spec); });
 
   view2_->set_navigation_signal(
-      [executor = executor_, weak_ptr = weak_factory_.GetWeakPtr()](
-          const std::filesystem::path& path) {
+      [executor = executor_, cancelation = cancelation_.weak_ptr(),
+       this](const std::filesystem::path& path) {
         // Intentionally delay open to exit from the Modus handler.
-        executor->PostTask([weak_ptr, path] {
-          if (auto* ptr = weak_ptr.get()) {
-            ptr->OpenPath(path);
-          }
-        });
+        executor->PostTask(
+            BindCancelation(cancelation, [this, path] { OpenPath(path); }));
       });
 
   view2_->set_double_click_signal(

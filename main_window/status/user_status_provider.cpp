@@ -1,7 +1,6 @@
 #include "main_window/status/user_status_provider.h"
 
 #include "base/executor.h"
-#include "base/executor_task_runner.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"

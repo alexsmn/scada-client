@@ -94,6 +94,8 @@ EventView::EventView(const ControllerContext& context,
   if (is_panel)
     count -= 2;
 
+  // cppcheck-suppress noCopyConstructor
+  // cppcheck-suppress noOperatorEq
   table_ = new aui::Table{model_,
                           std::vector<aui::TableColumn>(
                               kEventViewColumns, kEventViewColumns + count),

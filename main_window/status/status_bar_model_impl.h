@@ -3,6 +3,7 @@
 #include "aui/models/status_bar_model.h"
 #include "base/observer_list.h"
 
+#include <functional>
 #include <memory>
 
 class StatusBarModelImpl final : public aui::StatusBarModel {

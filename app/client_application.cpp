@@ -3,7 +3,7 @@
 #include "aui/translation.h"
 #include "base/blinker.h"
 #include "base/boost_log_adapter.h"
-#include "base/command_line.h"
+#include "base/program_options.h"
 #include "base/promise_executor.h"
 #include "common/audit.h"
 #include "common/master_data_services.h"
@@ -56,17 +56,14 @@ using namespace std::chrono_literals;
 namespace {
 
 scada::ServiceLogParams ReadServiceLogParamsFromCommandLine() {
-  assert(base::CommandLine::ForCurrentProcess());
-  const auto& command_line = *base::CommandLine::ForCurrentProcess();
-
-  return {.log_read = command_line.HasSwitch("log-service-read"),
-          .log_browse = command_line.HasSwitch("log-service-browse"),
-          .log_history = command_line.HasSwitch("log-service-history"),
-          .log_event = command_line.HasSwitch("log-service-event"),
+  return {.log_read = client::HasOption("log-service-read"),
+          .log_browse = client::HasOption("log-service-browse"),
+          .log_history = client::HasOption("log-service-history"),
+          .log_event = client::HasOption("log-service-event"),
           .log_model_change_event =
-              command_line.HasSwitch("log-service-model-change-event"),
-          .log_node_semantics_change_event = command_line.HasSwitch(
-              "log-service-node-semantics-change-event")};
+              client::HasOption("log-service-model-change-event"),
+          .log_node_semantics_change_event =
+              client::HasOption("log-service-node-semantics-change-event")};
 }
 
 }  // namespace

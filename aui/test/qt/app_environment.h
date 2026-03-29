@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aui/qt/message_loop_qt.h"
-#include "base/threading/thread_task_runner_handle.h"
 
 #include <QApplication>
 
@@ -11,6 +10,5 @@ class AppEnvironment {
   QApplication app_{argc_, nullptr};
 
   // QApplication must be created.
-  base::ThreadTaskRunnerHandle task_runner_handle_{
-      base::MakeRefCounted<MessageLoopQt>()};
+  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
 };

@@ -329,8 +329,8 @@ void Grid::RequestFocus() {
   setFocus(true);
 }
 
-base::Value Grid::SaveState() const {
-  base::Value data{base::Value::Type::DICTIONARY};
+boost::json::value Grid::SaveState() const {
+  boost::json::value data{boost::json::object{}};
   /*auto& header = *horizontalHeader();
   base::ListValue columns;
   for (int i = 0;; ++i) {
@@ -346,7 +346,7 @@ base::Value Grid::SaveState() const {
   return data;
 }
 
-void Grid::RestoreState(const base::Value& data) {
+void Grid::RestoreState(const boost::json::value& data) {
   /*if (auto* columns = GetList(data, "columns")) {
     auto& header = *horizontalHeader();
     int visual_index = 0;

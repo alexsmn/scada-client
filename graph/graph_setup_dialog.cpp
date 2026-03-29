@@ -1,5 +1,6 @@
 #include "graph/graph_setup_dialog.h"
 
+#include "aui/color_win.h"
 #include "base/utf_convert.h"
 
 LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,

@@ -3,9 +3,6 @@
 #include "export/configuration/diff_report.h"
 
 #include "aui/resource_error.h"
-#include "base/file_path_util.h"
-#include "base/files/file_path.h"
-#include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/utf_convert.h"
 #include "base/win/scoped_process_information.h"
@@ -16,6 +13,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 
+#include <filesystem>
 #include <fstream>
 
 using u16ostream = std::basic_ostream<char16_t>;
@@ -110,14 +108,14 @@ void PrintDiffReport(u16ostream& report,
 }
 
 void OpenNotepad(const std::filesystem::path& path) {
-  base::FilePath system_path;
+  std::filesystem::path system_path;
   if (!base::PathService::Get(base::DIR_WINDOWS, &system_path)) {
     return;
   }
 
   std::wstring command_line =
-      std::format(L"\"{}notepad.exe\" {}",
-                  system_path.AsEndingWithSeparator().value(), path.wstring());
+      std::format(L"\"{}\" {}",
+                  (system_path / "notepad.exe").wstring(), path.wstring());
 
   STARTUPINFO startup_info = {sizeof(startup_info)};
   PROCESS_INFORMATION raw_process_info = {};
@@ -140,12 +138,9 @@ void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
     return;
   }
 
-  base::FilePath temp_dir;
-  if (!base::GetTempDir(&temp_dir)) {
-    return;
-  }
+  auto temp_dir = std::filesystem::temp_directory_path();
 
-  auto report_path = AsFilesystemPath(temp_dir.AppendASCII("report.txt"));
+  auto report_path = temp_dir / "report.txt";
 
   std::basic_ofstream<char16_t> report{report_path};
   PrintDiffReport(report, diff, node_service);

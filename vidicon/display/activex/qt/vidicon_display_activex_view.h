@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/timer/timer.h"
 #include "controller/controller.h"
 #include "vidicon/display/activex/display_viewer_api.h"
 
@@ -33,5 +32,4 @@ class VidiconDisplayActiveXView : public Controller {
   QAxWidget* ax_widget_ = nullptr;
   Microsoft::WRL::ComPtr<ViewerX::IViewerForm> form_;
 
-  base::Timer synchronize_timer_;
 };

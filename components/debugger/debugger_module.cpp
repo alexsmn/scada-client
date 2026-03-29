@@ -2,8 +2,8 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include <boost/log/trivial.hpp>
-#include "base/command_line.h"
+#include "base/boost_log.h"
+#include "base/program_options.h"
 #include <boost/algorithm/string/join.hpp>
 #include "base/utf_convert.h"
 #include "base/win/clipboard.h"
@@ -19,7 +19,7 @@
 
 DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
     : DebuggerModuleContext{std::move(context)} {
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(kDebugSwitch)) {
+  if (client::HasOption(kDebugSwitch)) {
     auto debugger = std::make_shared<Debugger>(
         DebuggerContext{.session_service_ = session_service_});
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "base/win/dragdrop.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
@@ -39,6 +38,4 @@ class NodeTableController : protected ControllerContext,
   aui::Grid* grid_ = nullptr;
 
   CommandRegistry command_registry_;
-
-  base::WeakPtrFactory<NodeTableController> weak_ptr_factory_{this};
 };

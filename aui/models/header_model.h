@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/observer_list.h"
-#include "base/strings/string16.h"
+#include <string>
 #include "aui/models/table_column.h"
 
 namespace aui {
@@ -23,7 +23,7 @@ class HeaderModel {
   virtual int GetSize(int index) const = 0;
   virtual void SetSize(int index, int new_size) {}
 
-  virtual base::string16 GetTitle(int index) const = 0;
+  virtual std::u16string GetTitle(int index) const = 0;
 
   virtual TableColumn::Alignment GetAlignment(int index) const {
     return TableColumn::CENTER;
@@ -57,7 +57,7 @@ class ColumnHeaderModel : public HeaderModel {
 
   // HeaderModel
   virtual int GetCount() const override { return columns_.size(); }
-  virtual base::string16 GetTitle(int index) const override;
+  virtual std::u16string GetTitle(int index) const override;
   virtual int GetSize(int index) const override {
     return columns_[index].width;
   }

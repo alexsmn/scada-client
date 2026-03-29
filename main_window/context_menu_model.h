@@ -3,6 +3,9 @@
 #include "aui/models/simple_menu_model.h"
 #include "main_window/simple_menu_command_handler.h"
 
+#include <memory>
+#include <vector>
+
 class ActionManager;
 class MainWindowInterface;
 class CommandHandler;

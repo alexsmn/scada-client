@@ -15,7 +15,7 @@ namespace {
 
 constexpr WindowInfo kFavoritesWindowInfo = {.command_id = ID_FAVOURITES_VIEW,
                                              .name = "Favorites",
-                                             .title = u"Избранное",
+                                             .title = u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
                                              .flags = WIN_SING,
                                              .size = {200, 400}};
 
@@ -31,12 +31,12 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
         return std::make_unique<FavouritesView>(context, favorites);
       });
 
-  if (const auto* key = profile_.data().FindKey("favorites")) {
+  if (auto* key = profile_.data().is_object() ? profile_.data().as_object().if_contains("favorites") : nullptr) {
     favourites_->Load(*key);
   }
 
-  profile_.RegisterSerializer([this](base::Value& data) {
-    data.SetKey("favorites", favourites_->Save());
+  profile_.RegisterSerializer([this](boost::json::value& data) {
+    data.as_object()["favorites"] = favourites_->Save();
   });
 
   global_commands_.AddCommand(

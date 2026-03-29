@@ -4,7 +4,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
-#ifdef OS_WIN
+#ifdef _WIN32
 #include <windows.h>
 #endif
 
@@ -20,7 +20,7 @@ int CompareCaseInsensitiveASCII(std::basic_string_view<T> a,
 
 }  // namespace
 
-#ifdef OS_WIN
+#ifdef _WIN32
 HFONT CreateFont(LPCTSTR name, int height) {
   return ::CreateFont(height, 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET,
                       OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,

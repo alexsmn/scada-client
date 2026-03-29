@@ -1,8 +1,6 @@
 #include "filesystem/file_manager_impl.h"
 
 #include "base/client_paths.h"
-#include "base/file_path_util.h"
-#include "base/files/file_util.h"
 #include "base/path_service.h"
 #include "base/test/scoped_path_override.h"
 #include "filesystem/file_util.h"
@@ -11,6 +9,7 @@
 #include "scada/client.h"
 #include "scada/view_service_mock.h"
 
+#include <fstream>
 #include <gmock/gmock.h>
 
 #include "base/debug_util-inl.h"
@@ -68,8 +67,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_SendsExpectedServerRequests) {
   file_manager_.DownloadFileFromServer(path).get();
 
   auto public_path = GetPublicFilePath(path);
-  std::string actual_contents;
-  ASSERT_TRUE(
-      base::ReadFileToString(AsFilePath(public_path), &actual_contents));
+  std::ifstream ifs{public_path};
+  std::string actual_contents{std::istreambuf_iterator<char>{ifs}, {}};
+  ASSERT_TRUE(ifs.is_open());
   EXPECT_EQ(actual_contents, file_contents);
 }

@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/command_line.h"
+#include "base/program_options.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "common_resources.h"
@@ -127,7 +127,7 @@ void FavouritesMenuModel::MenuWillShow() {
     for (int i = 0; i != favourites_folder->GetWindowCount(); ++i) {
       const auto& window_def = favourites_folder->GetWindow(i);
       if (const auto* window_info = FindWindowInfoByName(window_def.type)) {
-        if (base::Contains(window_infos_, window_info)) {
+        if (std::ranges::find(window_infos_, window_info) != window_infos_.end()) {
           AddItem(0, window_def.GetTitle(*window_info));
           windows_.push_back(&window_def);
         }
@@ -188,11 +188,12 @@ void PageMenuModel::OpenPage(const Page& page) {
       u16format(L"Return to saved page {}?", title);
   dialog_service_.RunMessageBox(message, {}, MessageBoxMode::QuestionYesNo)
       .then(BindPromiseExecutor(
-          executor_, [this, weak_ptr = weak_ptr_factory_.GetWeakPtr(),
-                      &page](MessageBoxResult message_box_result) {
-            if (weak_ptr.get() && message_box_result == MessageBoxResult::Yes)
-              OpenPageHelper(page, true);
-          }));
+          executor_,
+          cancelation_.Bind(
+              [this, &page](MessageBoxResult message_box_result) {
+                if (message_box_result == MessageBoxResult::Yes)
+                  OpenPageHelper(page, true);
+              })));
 }
 
 void PageMenuModel::OpenPageHelper(const Page& page, bool revert) {
@@ -426,7 +427,7 @@ void MainMenuModel::Rebuild() {
 
   help_submenu_.AddItem(ID_HELP_MANUAL, Translate("Documentation"));
   help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(kDebugSwitch)) {
+  if (client::HasOption(kDebugSwitch)) {
     AddMenuCommands(help_submenu_, commands_, MenuGroup::DEBUG);
     help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, Translate("Debug Information"));
     help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);

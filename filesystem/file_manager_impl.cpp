@@ -1,12 +1,12 @@
 #include "filesystem/file_manager_impl.h"
 
-#include "base/file_path_util.h"
-#include "base/files/file_util.h"
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
 #include "scada/status_promise.h"
 
 #include "base/utf_convert.h"
+
+#include <fstream>
 #include <span>
 
 namespace {
@@ -40,9 +40,9 @@ promise<void> FileManagerImpl::DownloadFileFromServer(
         auto public_path = GetPublicFilePath(path);
         std::error_code ec;
         std::filesystem::create_directories(public_path.parent_path(), ec);
-        int written = base::WriteFile(AsFilePath(public_path), contents.data(),
-                                      contents.size());
-        if (written != static_cast<int>(contents.size())) {
+        std::ofstream ofs{public_path, std::ios::binary};
+        ofs.write(contents.data(), contents.size());
+        if (!ofs) {
           throw scada::status_exception{scada::StatusCode::Bad};
         }
       });

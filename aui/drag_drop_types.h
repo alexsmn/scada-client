@@ -18,10 +18,10 @@ class DragDropTypes {
     DRAG_EVENT_SOURCE_TOUCH,
   };
 
-#if defined(OS_WIN)
+#if defined(_WIN32)
   static uint32_t DragOperationToDropEffect(int drag_operation);
   static int DropEffectToDragOperation(uint32_t effect);
-#elif !defined(OS_MACOSX)
+#elif !defined(__APPLE__)
   static int DragOperationToGdkDragAction(int drag_operation);
   static int GdkDragActionToDragOperation(int gdk_drag_action);
 #endif

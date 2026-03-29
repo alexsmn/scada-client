@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
+#include "base/cancelation.h"
 #include "common/aliases.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
@@ -48,5 +48,5 @@ class ModusController : protected ControllerContext, public Controller {
 
   CommandRegistry command_registry_;
 
-  base::WeakPtrFactory<ModusController> weak_factory_{this};
+  Cancelation cancelation_;
 };

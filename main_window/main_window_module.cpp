@@ -1,6 +1,6 @@
 #include "main_window/main_window_module.h"
 
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "common/master_data_services.h"
 #include "components/change_password/change_password_command_builder.h"
 #include "controller/controller_context.h"

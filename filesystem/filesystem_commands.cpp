@@ -3,7 +3,6 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/prompt_dialog.h"
-#include "base/file_path_util.h"
 #include "base/promise_executor.h"
 #include "common_resources.h"
 #include "controller/contents_model.h"
@@ -23,6 +22,7 @@
 
 #include <cassert>
 #include <filesystem>
+#include <fstream>
 
 namespace {
 
@@ -107,8 +107,9 @@ promise<> AddFile(NodeRef parent_directory,
   return dialog_service.SelectOpenFile(kAddFileTitle)
       .then([parent_directory, &dialog_service,
              &task_manager](const std::filesystem::path& path) {
-        std::string contents_string;
-        if (!base::ReadFileToString(AsFilePath(path), &contents_string)) {
+        std::ifstream ifs{path, std::ios::binary};
+        std::string contents_string{std::istreambuf_iterator<char>{ifs}, {}};
+        if (!ifs.is_open()) {
           return ToRejectedPromise(dialog_service.RunMessageBox(
               Translate("Failed to read file."), kAddFileTitle,
               MessageBoxMode::Error));

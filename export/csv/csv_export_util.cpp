@@ -175,8 +175,8 @@ void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet) {
   }
 }
 
-base::Value ToJson(const CsvExportParams& params) {
-  base::Value result{base::Value::Type::DICTIONARY};
+boost::json::value ToJson(const CsvExportParams& params) {
+  boost::json::value result{boost::json::object{}};
   SetKey(result, "unicode", params.unicode);
   SetKey(result, "delimiter", std::string{params.delimiter});
   SetKey(result, "quote", std::string{params.quote});
@@ -184,7 +184,7 @@ base::Value ToJson(const CsvExportParams& params) {
 }
 
 template <>
-std::optional<CsvExportParams> FromJson(const base::Value& value) {
+std::optional<CsvExportParams> FromJson(const boost::json::value& value) {
   CsvExportParams params;
 
   params.unicode = GetBool(value, "unicode", params.unicode);

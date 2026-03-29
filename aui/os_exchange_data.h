@@ -1,8 +1,7 @@
 #pragma once
 
-#include "base/memory/ref_counted.h"
-
 #include <objidl.h>
+#include <atomic>
 #include <vector>
 
 namespace base {
@@ -11,8 +10,7 @@ class Pickle;
 
 namespace aui {
 
-class DataObjectImpl : public IDataObject,
-                       public base::RefCountedThreadSafe<DataObjectImpl> {
+class DataObjectImpl : public IDataObject {
  public:
   DataObjectImpl();
   virtual ~DataObjectImpl();
@@ -76,6 +74,8 @@ class DataObjectImpl : public IDataObject,
 
   typedef std::vector<StoredDataInfo*> StoredData;
   StoredData contents_;
+
+  std::atomic<LONG> ref_count_{0};
 };
 
 class OSExchangeData {
@@ -84,6 +84,9 @@ class OSExchangeData {
   explicit OSExchangeData(IDataObject* data_object);
   ~OSExchangeData();
 
+  OSExchangeData(const OSExchangeData&) = delete;
+  OSExchangeData& operator=(const OSExchangeData&) = delete;
+
   typedef CLIPFORMAT CustomFormat;
 
   bool HasCustomFormat(CustomFormat format) const;
@@ -91,17 +94,15 @@ class OSExchangeData {
   bool GetPickledData(CustomFormat format, base::Pickle& data) const;
   void SetPickledData(CustomFormat format, base::Pickle& data);
 
-  IDataObject* GetIDataObject() const { return data_object_.get(); }
+  IDataObject* GetIDataObject() const { return data_object_; }
 
   static CustomFormat RegisterCustomFormat(const char* name);
 
  private:
   void SetData(CustomFormat format, const void* data, size_t size);
 
-  scoped_refptr<DataObjectImpl> data_object_impl_;
-  scoped_refptr<IDataObject> data_object_;
-
-  DISALLOW_COPY_AND_ASSIGN(OSExchangeData);
+  DataObjectImpl* data_object_impl_ = nullptr;
+  IDataObject* data_object_ = nullptr;
 };
 
 }  // namespace aui

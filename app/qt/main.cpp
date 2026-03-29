@@ -4,8 +4,6 @@
 #include "app/qt/installed_translation.h"
 #include "aui/qt/message_loop_qt.h"
 #include "base/executor_timer.h"
-#include "base/task_runner_executor.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
 #include "project.h"
@@ -40,10 +38,7 @@ int main(int argc, char* argv[]) {
   InstalledStyle installed_style{settings};
 
   // `QApplication` must be created.
-  auto task_runner = base::MakeRefCounted<MessageLoopQt>();
-  base::ThreadTaskRunnerHandle message_loop{task_runner};
-
-  auto executor = std::make_shared<TaskRunnerExecutor>(task_runner);
+  auto executor = std::make_shared<MessageLoopQt>();
 
   boost::asio::io_context io_context;
   ExecutorTimer io_context_poll{executor};

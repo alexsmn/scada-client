@@ -1,43 +1,38 @@
 #pragma once
 
-#include "base/pending_task.h"
-#include "base/single_thread_task_runner.h"
+#include "base/executor.h"
 
 #include <QTimer>
 #include <mutex>
+#include <queue>
 
-class MessageLoopQt final : public base::SingleThreadTaskRunner {
+class MessageLoopQt final : public Executor {
  public:
   MessageLoopQt();
   ~MessageLoopQt();
 
-  void Run();
-
-  virtual bool PostDelayedTask(const base::Location& from_here,
-                               base::OnceClosure task,
-                               base::TimeDelta delay) override {
-    return PostTaskHelper(from_here, std::move(task), delay,
-                          base::Nestable::kNestable);
-  }
-
-  virtual bool PostNonNestableDelayedTask(const base::Location& from_here,
-                                          base::OnceClosure task,
-                                          base::TimeDelta delay) override {
-    return PostTaskHelper(from_here, std::move(task), delay,
-                          base::Nestable::kNonNestable);
-  }
-
-  virtual bool RunsTasksInCurrentSequence() const override { return true; }
+  // Executor
+  virtual void PostDelayedTask(Duration delay,
+                               Task task,
+                               const std::source_location& location =
+                                   std::source_location::current()) override;
+  virtual size_t GetTaskCount() const override;
 
  private:
-  bool PostTaskHelper(const base::Location& from_here,
-                      base::OnceClosure task,
-                      base::TimeDelta delay,
-                      base::Nestable nestable);
+  struct PendingTask {
+    bool operator<(const PendingTask& other) const;
+
+    Task task;
+    TimePoint time;
+    int sequence = 0;
+  };
+
+  void Run();
 
   QTimer timer_;
 
-  std::recursive_mutex mutex_;
+  mutable std::recursive_mutex mutex_;
   int sequence_num_ = 0;
-  base::DelayedTaskQueue queue_;
+  std::queue<Task> immediate_queue_;
+  std::priority_queue<PendingTask> delayed_queue_;
 };

@@ -1,7 +1,7 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "base/promise_executor.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"

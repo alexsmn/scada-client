@@ -1,9 +1,8 @@
 ﻿#include "profile/profile.h"
 
 #include "aui/translation.h"
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "base/client_paths.h"
-#include "base/file_path_util.h"
 #include "base/path_service.h"
 #include "base/format.h"
 #include "base/time_utils.h"
@@ -16,7 +15,7 @@
 
 namespace {
 
-void LoadMainWindowDef(MainWindowDef& main_window, const base::Value& data) {
+void LoadMainWindowDef(MainWindowDef& main_window, const boost::json::value& data) {
   const int inval = (unsigned)(-1) / 2;
   int left = GetInt(data, "left", inval);
   int top = GetInt(data, "top", inval);
@@ -56,8 +55,8 @@ void Profile::Load() {
   BOOST_LOG_TRIVIAL(info) << "Profile loaded";
 }
 
-void Profile::Load(const base::Value& data) {
-  data_ = data.Clone();
+void Profile::Load(const boost::json::value& data) {
+  data_ = data;
 
   // common settings
   show_write_ok = GetBool(data, "showWriteOk", show_write_ok);
@@ -97,12 +96,12 @@ void Profile::Load(const base::Value& data) {
   }
 
   // out-of-page
-  if (auto* out_pagese = data.FindKey("floatingWindows"))
+  if (auto* out_pagese = data.is_object() ? data.as_object().if_contains("floatingWindows") : nullptr)
     out_wins.Load(*out_pagese);
 
   if (auto* event_journal = FindDict(data, "eventJournal")) {
     if (auto* state = FindDict(*event_journal, "defaultState"))
-      this->event_journal.default_state = state->Clone();
+      this->event_journal.default_state = *state;
   }
 
   if (auto* graphe = FindDict(data, "graph")) {
@@ -140,8 +139,8 @@ void Profile::Save() {
     BOOST_LOG_TRIVIAL(error) << "Profile save error";
 }
 
-base::Value Profile::SaveToValue() const {
-  base::Value data = data_.Clone();
+boost::json::value Profile::SaveToValue() const {
+  boost::json::value data = data_;
 
   // common settings
   SetKey(data, "showWriteOk", show_write_ok);
@@ -155,9 +154,9 @@ base::Value Profile::SaveToValue() const {
 
   // window settings
   {
-    base::Value::ListStorage list;
+    boost::json::array list;
     for (const auto& [id, main_window] : main_windows) {
-      base::Value wine{base::Value::Type::DICTIONARY};
+      boost::json::value wine{boost::json::object{}};
       SetKey(wine, "id", main_window.id);
       SetKey(wine, "left", main_window.bounds.x());
       SetKey(wine, "top", main_window.bounds.y());
@@ -171,60 +170,60 @@ base::Value Profile::SaveToValue() const {
       SetKey(wine, "page", main_window.page_id);
       list.emplace_back(std::move(wine));
     }
-    data.SetKey("windows", base::Value{std::move(list)});
+    data.as_object()["windows"] = std::move(list);
   }
 
   // pages root
   {
-    base::Value::ListStorage list;
+    boost::json::array list;
     for (const auto& [_, page] : pages) {
       list.emplace_back(page.Save(false));
     }
-    data.SetKey("pages", base::Value{std::move(list)});
+    data.as_object()["pages"] = std::move(list);
   }
 
   // out-of-page
-  data.SetKey("floatingWindows", out_wins.Save(true));
+  data.as_object()["floatingWindows"] = out_wins.Save(true);
 
   // Event Journal
   {
-    base::Value value{base::Value::Type::DICTIONARY};
-    value.SetKey("defaultState", event_journal.default_state.Clone());
-    data.SetKey("eventJournal", std::move(value));
+    boost::json::value value{boost::json::object{}};
+    value.as_object()["defaultState"] = event_journal.default_state;
+    data.as_object()["eventJournal"] = std::move(value);
   }
 
   // GraphView
   {
-    base::Value graphe{base::Value::Type::DICTIONARY};
+    boost::json::value graphe{boost::json::object{}};
     SetKey(graphe, "def_span", SerializeToString(graph_view.default_span));
     SetKey(graphe, "def_weight", graph_view.default_width);
     SetKey(graphe, "def_scroll_bar", graph_view.default_scroll_bar);
-    data.SetKey("graph", std::move(graphe));
+    data.as_object()["graph"] = std::move(graphe);
   }
 
   // TimeRangeDialog
   {
-    base::Value node{base::Value::Type::DICTIONARY};
+    boost::json::value node{boost::json::object{}};
     SetKey(node, "width", time_range_dialog.width);
     SetKey(node, "height", time_range_dialog.height);
-    data.SetKey("timeRangeDialog", std::move(node));
+    data.as_object()["timeRangeDialog"] = std::move(node);
   }
 
   // NodeTable
   {
-    base::Value node{base::Value::Type::DICTIONARY};
+    boost::json::value node{boost::json::object{}};
     if (!node_table.default_sort_property_id.is_null()) {
       SetKey(node, "sort-property-id",
              NodeIdToScadaString(node_table.default_sort_property_id));
     }
-    data.SetKey("nodeTable", std::move(node));
+    data.as_object()["nodeTable"] = std::move(node);
   }
 
   // TimedData
   {
-    base::Value node{base::Value::Type::DICTIONARY};
+    boost::json::value node{boost::json::object{}};
     SetKey(node, "mirrored", timed_data.mirrored);
-    data.SetKey("timedData", std::move(node));
+    data.as_object()["timedData"] = std::move(node);
   }
 
   for (const auto& serializer : serializers_) {
@@ -235,9 +234,9 @@ base::Value Profile::SaveToValue() const {
 }
 
 std::filesystem::path Profile::GetFilePath() {
-  base::FilePath path;
+  std::filesystem::path path;
   base::PathService::Get(client::DIR_PRIVATE, &path);
-  return AsFilesystemPath(path.Append(L"profile.json"));
+  return path / "profile.json";
 }
 
 Page& Profile::AddPage(const Page& page) {

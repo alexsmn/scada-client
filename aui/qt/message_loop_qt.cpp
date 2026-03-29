@@ -1,5 +1,17 @@
 #include "aui/qt/message_loop_qt.h"
 
+#include <cassert>
+
+// MessageLoopQt::PendingTask
+
+bool MessageLoopQt::PendingTask::operator<(const PendingTask& other) const {
+  if (time != other.time)
+    return time > other.time;  // min-heap: smaller time = higher priority
+  return sequence > other.sequence;
+}
+
+// MessageLoopQt
+
 MessageLoopQt::MessageLoopQt() {
   QObject::connect(&timer_, &QTimer::timeout, [this] { Run(); });
   timer_.start(10);
@@ -7,31 +19,47 @@ MessageLoopQt::MessageLoopQt() {
 
 MessageLoopQt::~MessageLoopQt() {}
 
-void MessageLoopQt::Run() {
-  auto ticks = base::TimeTicks::Now();
+void MessageLoopQt::PostDelayedTask(Duration delay,
+                                    Task task,
+                                    const std::source_location& location) {
+  assert(task);
 
-  std::unique_lock<std::recursive_mutex> lock{mutex_};
-  while (!queue_.empty() && queue_.top().delayed_run_time <= ticks) {
-    auto pending_task = std::move(const_cast<base::PendingTask&>(queue_.top()));
-    queue_.pop();
-    lock.unlock();
-    std::move(pending_task.task).Run();
-    lock.lock();
+  std::lock_guard<std::recursive_mutex> lock{mutex_};
+  if (delay == Duration()) {
+    immediate_queue_.emplace(std::move(task));
+  } else {
+    PendingTask pending_task{
+        .task = std::move(task),
+        .time = Clock::now() + delay,
+        .sequence = sequence_num_++,
+    };
+    delayed_queue_.emplace(std::move(pending_task));
   }
 }
 
-bool MessageLoopQt::PostTaskHelper(const base::Location& from_here,
-                                   base::OnceClosure task,
-                                   base::TimeDelta delay,
-                                   base::Nestable nestable) {
-  assert(task);
-
-  auto ticks = base::TimeTicks::Now() + delay;
-
+size_t MessageLoopQt::GetTaskCount() const {
   std::lock_guard<std::recursive_mutex> lock{mutex_};
-  base::PendingTask pending_task(from_here, std::move(task), ticks, nestable);
-  pending_task.sequence_num = sequence_num_++;
-  queue_.emplace(std::move(pending_task));
+  return immediate_queue_.size() + delayed_queue_.size();
+}
 
-  return true;
+void MessageLoopQt::Run() {
+  auto now = Clock::now();
+
+  std::unique_lock<std::recursive_mutex> lock{mutex_};
+
+  // Move due delayed tasks to the immediate queue.
+  while (!delayed_queue_.empty() && delayed_queue_.top().time <= now) {
+    immediate_queue_.emplace(
+        std::move(const_cast<PendingTask&>(delayed_queue_.top()).task));
+    delayed_queue_.pop();
+  }
+
+  // Run all immediate tasks.
+  while (!immediate_queue_.empty()) {
+    auto task = std::move(immediate_queue_.front());
+    immediate_queue_.pop();
+    lock.unlock();
+    task();
+    lock.lock();
+  }
 }

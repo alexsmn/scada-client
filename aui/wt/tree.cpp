@@ -189,8 +189,8 @@ void Tree::SetRowHeight(int row_height) {
   model_adapter_->row_height = row_height;
 }
 
-base::Value Tree::SaveState() const {
-  base::Value data{base::Value::Type::DICTIONARY};
+boost::json::value Tree::SaveState() const {
+  boost::json::value data{boost::json::object{}};
   /*auto& header = *this->header();
   base::ListValue columns;
   for (int i = 0;; ++i) {
@@ -206,7 +206,7 @@ base::Value Tree::SaveState() const {
   return data;
 }
 
-void Tree::RestoreState(const base::Value& data) {
+void Tree::RestoreState(const boost::json::value& data) {
   /*if (auto* columns = GetList(data, "columns")) {
     auto& header = *this->header();
     int visual_index = 0;

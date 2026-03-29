@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/json.h"
+#include <boost/json.hpp>
 #include "base/time_range.h"
 #include "profile/window_definition.h"
 #include "scada/node_id.h"
@@ -9,21 +9,21 @@
 #include <string_view>
 
 template <>
-std::optional<base::Time> FromJson(const base::Value& value);
+std::optional<base::Time> FromJson(const boost::json::value& value);
 
 template <>
-std::optional<TimeRange> FromJson(const base::Value& value);
+std::optional<TimeRange> FromJson(const boost::json::value& value);
 
 template <>
-std::optional<base::TimeDelta> FromJson(const base::Value& value);
+std::optional<base::TimeDelta> FromJson(const boost::json::value& value);
 
-base::Value ToJson(std::string_view str);
+boost::json::value ToJson(std::string_view str);
 
-base::Value ToJson(base::Time time);
+boost::json::value ToJson(base::Time time);
 
-base::Value ToJson(const TimeRange& time_range);
+boost::json::value ToJson(const TimeRange& time_range);
 
-base::Value ToJson(base::TimeDelta duration);
+boost::json::value ToJson(base::TimeDelta duration);
 
 std::string SaveBlob(std::string_view blob);
 
@@ -34,15 +34,15 @@ void SaveTimeRange(WindowDefinition& definition, const TimeRange& time_range);
 std::optional<TimeRange> RestoreTimeRange(const WindowDefinition& definition);
 
 template <>
-std::optional<WindowItems> FromJson(const base::Value& data);
+std::optional<WindowItems> FromJson(const boost::json::value& data);
 
-base::Value ToJson(const WindowItems& items);
+boost::json::value ToJson(const WindowItems& items);
 
-base::Value ToJson(const WindowDefinition& def);
+boost::json::value ToJson(const WindowDefinition& def);
 
 template <>
-std::optional<WindowDefinition> FromJson(const base::Value& win);
+std::optional<WindowDefinition> FromJson(const boost::json::value& win);
 
-base::Value ToJson(const scada::NodeId& node_id);
+boost::json::value ToJson(const scada::NodeId& node_id);
 
-std::optional<scada::NodeId> FromJson(const base::Value& json);
+std::optional<scada::NodeId> FromJson(const boost::json::value& json);

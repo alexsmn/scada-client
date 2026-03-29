@@ -3,8 +3,6 @@
 #include "address_space/test/test_scada_node_states.h"
 #include "aui/dialog_service_mock.h"
 #include "base/csv_writer.h"
-#include "base/file_path_util.h"
-#include "base/files/scoped_temp_dir.h"
 #include "common/test/node_state_matcher.h"
 #include "common_resources.h"
 #include "controller/command_registry.h"
@@ -18,6 +16,8 @@
 #include "node_service/static/static_node_service.h"
 #include "services/task_manager_mock.h"
 
+#include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <gmock/gmock.h>
 
@@ -27,7 +27,8 @@ using namespace testing;
 
 class ExportConfigurationModuleTest : public Test {
  public:
-  virtual void SetUp() override;
+  void SetUp() override;
+  void TearDown() override;
 
  protected:
   std::filesystem::path WriteExportDataToTempFile(
@@ -47,13 +48,22 @@ class ExportConfigurationModuleTest : public Test {
                                      .task_manager_ = task_manager_,
                                      .global_commands_ = global_commands_}};
 
-  base::ScopedTempDir temp_dir_;
+  std::filesystem::path temp_dir_;
 };
 
 void ExportConfigurationModuleTest::SetUp() {
   node_service_.AddAll(GetScadaNodeStates());
 
-  ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
+  temp_dir_ = std::filesystem::temp_directory_path() /
+              ("scada_test_" + std::to_string(
+                   std::chrono::steady_clock::now()
+                       .time_since_epoch()
+                       .count()));
+  std::filesystem::create_directories(temp_dir_);
+}
+
+void ExportConfigurationModuleTest::TearDown() {
+  std::filesystem::remove_all(temp_dir_);
 }
 
 TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
@@ -129,8 +139,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
 
 std::filesystem::path ExportConfigurationModuleTest::WriteExportDataToTempFile(
     const ExportData& export_data) const {
-  std::filesystem::path export_file_path =
-      AsFilesystemPath(temp_dir_.GetPath()) / "export_file.csv";
+  std::filesystem::path export_file_path = temp_dir_ / "export_file.csv";
 
   std::ofstream stream{export_file_path};
   CsvWriter csv_writer{stream};

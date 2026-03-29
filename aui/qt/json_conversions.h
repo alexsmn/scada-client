@@ -1,73 +1,76 @@
 #pragma once
 
-base::Value ToJson(const QVariant& v);
-QVariant ToQVariant(const base::Value& v);
+#include <boost/json.hpp>
+#include <QMap>
+#include <QString>
+#include <QVariant>
 
-base::Value ToJson(const QMap<QString, QVariant>& m) {
-  base::Value::DictStorage dict;
+boost::json::value ToJson(const QVariant& v);
+QVariant ToQVariant(const boost::json::value& v);
+
+inline boost::json::value ToJson(const QMap<QString, QVariant>& m) {
+  boost::json::object obj;
   for (const auto& [key, value] : m.toStdMap()) {
-    dict.try_emplace(key.toStdString(),
-                     std::make_unique<base::Value>(ToJson(value)));
+    obj[key.toStdString()] = ToJson(value);
   }
-  return base::Value{std::move(dict)};
+  return boost::json::value{std::move(obj)};
 }
 
-QMap<QString, QVariant> ToQMap(const base::Value& v) {
+inline QMap<QString, QVariant> ToQMap(const boost::json::value& v) {
   QMap<QString, QVariant> map;
-  for (const auto& [key, value] : v.DictItems()) {
-    map.insert(QString::fromStdString(key), ToQVariant(value));
+  if (v.is_object()) {
+    for (const auto& [key, value] : v.as_object()) {
+      map.insert(QString::fromStdString(std::string{key}), ToQVariant(value));
+    }
   }
   return map;
 }
 
-base::Value ToJson(const QVariant& v) {
+inline boost::json::value ToJson(const QVariant& v) {
   switch (v.type()) {
     case QVariant::Bool:
-      return base::Value{v.toBool()};
+      return boost::json::value{v.toBool()};
     case QVariant::Int:
     case QVariant::UInt:
     case QVariant::LongLong:
-      return base::Value{v.toInt()};
+      return boost::json::value{v.toInt()};
     case QVariant::Double:
-      return base::Value{v.toDouble()};
+      return boost::json::value{v.toDouble()};
     case QVariant::String:
-      return base::Value{v.toString().toStdString()};
+      return boost::json::value{v.toString().toStdString()};
     case QVariant::List: {
-      base::Value::ListStorage list;
+      boost::json::array list;
       for (const auto& item : v.toList()) {
         list.emplace_back(ToJson(item));
       }
-      return base::Value{std::move(list)};
+      return boost::json::value{std::move(list)};
     }
     case QVariant::Map: {
       return ToJson(v.toMap());
     }
     default:
-      return base::Value{};
+      return boost::json::value{};
   }
 }
 
-QVariant ToQVariant(const base::Value& v) {
-  switch (v.type()) {
-    case base::Value::Type::BOOLEAN:
-      return QVariant{v.GetBool()};
-    case base::Value::Type::INTEGER:
-      return QVariant{v.GetInt()};
-    case base::Value::Type::DOUBLE:
-      return QVariant{v.GetDouble()};
-    case base::Value::Type::STRING:
-      return QVariant{QString::fromStdString(v.GetString())};
-    case base::Value::Type::LIST: {
-      QVariantList list;
-      for (const auto& item : v.GetList()) {
-        list.append(ToQVariant(item));
-      }
-      return QVariant{list};
+inline QVariant ToQVariant(const boost::json::value& v) {
+  if (v.is_bool())
+    return QVariant{v.as_bool()};
+  if (v.is_int64())
+    return QVariant{static_cast<int>(v.as_int64())};
+  if (v.is_double())
+    return QVariant{v.as_double()};
+  if (v.is_string())
+    return QVariant{QString::fromStdString(std::string{v.as_string()})};
+  if (v.is_array()) {
+    QVariantList list;
+    for (const auto& item : v.as_array()) {
+      list.append(ToQVariant(item));
     }
-    case base::Value::Type::DICTIONARY: {
-      return QVariant{ToQMap(v)};
-    }
-    default:
-      return QVariant{};
+    return QVariant{list};
   }
+  if (v.is_object()) {
+    return QVariant{ToQMap(v)};
+  }
+  return QVariant{};
 }

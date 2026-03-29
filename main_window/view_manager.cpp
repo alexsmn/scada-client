@@ -1,6 +1,6 @@
 #include "main_window/view_manager.h"
 
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "base/auto_reset.h"
 #include "controller/window_info.h"
 #include "main_window/opened_view.h"

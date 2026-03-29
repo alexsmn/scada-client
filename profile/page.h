@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/values.h"
+#include <boost/json.hpp>
 #include "profile/page_layout.h"
 #include "profile/window_definition.h"
 
@@ -23,8 +23,8 @@ class Page {
   int GetWindowCount() const { return windows_.size(); }
   WindowDefinition& GetWindow(int index) const { return *windows_[index]; }
 
-  void Load(const base::Value& value);
-  base::Value Save(bool current) const;
+  void Load(const boost::json::value& value);
+  boost::json::value Save(bool current) const;
 
   int id = 0;
   std::u16string title;

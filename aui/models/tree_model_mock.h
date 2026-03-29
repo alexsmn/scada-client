@@ -12,7 +12,7 @@ class MockTreeModel : public TreeModel {
   MOCK_METHOD(void*, GetParent, (void* node));
   MOCK_METHOD(int, GetChildCount, (void* parent));
   MOCK_METHOD(void*, GetChild, (void* parent, int index));
-  MOCK_METHOD(base::string16, GetText, (void* node, int column_id));
+  MOCK_METHOD(std::u16string, GetText, (void* node, int column_id));
 };
 
 }  // namespace aui

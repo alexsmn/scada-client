@@ -43,7 +43,7 @@ void ColumnHeaderModel::SetColumns(int count, const TableColumn* columns) {
   NotifyModelChanged();
 }
 
-base::string16 ColumnHeaderModel::GetTitle(int index) const {
+std::u16string ColumnHeaderModel::GetTitle(int index) const {
   return columns_[index].title;
 }
 

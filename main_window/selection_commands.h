@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
+#include "base/cancelation.h"
 #include "base/promise.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
@@ -83,5 +83,5 @@ class SelectionCommands : private SelectionCommandsContext,
   // TODO: Replace with |selection_commands_|.
   CommandRegistry command_registry_;
 
-  base::WeakPtrFactory<SelectionCommands> weak_ptr_factory_{this};
+  Cancelation cancelation_;
 };

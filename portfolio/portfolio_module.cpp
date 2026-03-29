@@ -12,7 +12,7 @@ namespace {
 
 constexpr WindowInfo kPortfolioWindowInfo = {.command_id = ID_PORTFOLIO_VIEW,
                                              .name = "Portfolio",
-                                             .title = u"Портфолио",
+                                             .title = u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
                                              .flags = WIN_SING | WIN_INS,
                                              .size = {200, 400}};
 
@@ -30,14 +30,13 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
       });
 
   // portfolios
-  if (const base::Value::ListStorage* pfoliose =
-          GetList(profile_.data(), "portfolios")) {
-    for (const base::Value& pfolioe : *pfoliose) {
+  if (const auto* pfoliose = GetList(profile_.data(), "portfolios")) {
+    for (const auto& pfolioe : *pfoliose) {
       Portfolio& portfolio = portfolio_manager_->portfolios.emplace_back();
       portfolio.name = GetString16(pfolioe, "name");
       // items
-      if (const base::Value::ListStorage* itemse = GetList(pfolioe, "items")) {
-        for (const base::Value& iteme : *itemse) {
+      if (const auto* itemse = GetList(pfolioe, "items")) {
+        for (const auto& iteme : *itemse) {
           auto path = GetString(iteme, "path");
           if (auto node_id = NodeIdFromScadaString(path); !node_id.is_null()) {
             portfolio.items.insert(node_id);
@@ -47,21 +46,21 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
     }
   }
 
-  profile_.RegisterSerializer([this](base::Value& data) {
-    base::Value::ListStorage portfolio_storage;
+  profile_.RegisterSerializer([this](boost::json::value& data) {
+    boost::json::array portfolio_storage;
     for (const Portfolio& portfolio : portfolio_manager_->portfolios) {
-      base::Value pfolioe{base::Value::Type::DICTIONARY};
+      boost::json::value pfolioe{boost::json::object{}};
       SetKey(pfolioe, "name", portfolio.name);
       {
-        base::Value::ListStorage item_storage;
+        boost::json::array item_storage;
         for (const scada::NodeId& node_id : portfolio.items) {
           item_storage.emplace_back(NodeIdToScadaString(node_id));
         }
-        pfolioe.SetKey("items", base::Value{std::move(item_storage)});
+        pfolioe.as_object()["items"] = std::move(item_storage);
       }
       portfolio_storage.emplace_back(std::move(pfolioe));
     }
-    data.SetKey("portfolios", base::Value{std::move(portfolio_storage)});
+    data.as_object()["portfolios"] = std::move(portfolio_storage);
   });
 }
 

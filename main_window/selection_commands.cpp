@@ -2,8 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/command_line.h"
-#include "base/files/file_util.h"
+#include "base/program_options.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "client_utils.h"
@@ -102,12 +101,10 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       Command{ID_OPEN_DEVICE_METRICS}
           .set_execute_handler([this] {
             MakeDeviceMetricsWindowDefinition(selection_->node())
-                .then([weak_ptr = weak_ptr_factory_.GetWeakPtr()](
-                          const WindowDefinition& window_definition) {
-                  if (auto* ptr = weak_ptr.get()) {
-                    ptr->OpenWindow(window_definition);
-                  }
-                });
+                .then(cancelation_.Bind(
+                    [this](const WindowDefinition& window_definition) {
+                      OpenWindow(window_definition);
+                    }));
           })
           .set_available_handler([this] {
             return IsInstanceOf(selection()->node(), devices::id::DeviceType);
@@ -222,12 +219,10 @@ void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
   if (selection_ && !selection_->empty()) {
     // TODO: Capture |main_window_| by weak pointer.
     MakeWindowDefinition(window_info, selection_->node(), true)
-        .then([weak_ptr = weak_ptr_factory_.GetWeakPtr()](
-                  const WindowDefinition& window_definition) {
-          if (auto ptr = weak_ptr.get()) {
-            ptr->OpenWindow(window_definition);
-          }
-        });
+        .then(cancelation_.Bind(
+            [this](const WindowDefinition& window_definition) {
+              OpenWindow(window_definition);
+            }));
   }
 }
 

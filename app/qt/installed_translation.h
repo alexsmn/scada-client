@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/command_line.h"
+#include "base/program_options.h"
 
 #include <QApplication>
 #include <QLibraryInfo>
@@ -37,9 +37,7 @@ class InstalledTranslation {
       return locale_name;
     }
 
-    if (auto locale_name =
-            base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-                "locale");
+    if (auto locale_name = client::GetOptionValue("locale");
         !locale_name.empty()) {
       return QString::fromStdString(locale_name);
     }

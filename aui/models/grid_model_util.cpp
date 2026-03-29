@@ -40,7 +40,7 @@ void SetLastColumn(GridRange& range, int last_column) {
   range.set_column_count(last_column - range.column() + 1);
 }
 
-int Digit(base::char16 ch) {
+int Digit(char16_t ch) {
   int res = static_cast<int>(ch - L'0');
   if (res < 0 || res > 9)
     return -1;
@@ -48,7 +48,7 @@ int Digit(base::char16 ch) {
     return res;
 }
 
-bool GetBaseNum(base::string16& base, int& num) {
+bool GetBaseNum(std::u16string& base, int& num) {
   if (base.empty())
     return false;
   if (Digit(base[base.length() - 1]) == -1)
@@ -67,7 +67,7 @@ bool GetBaseNum(base::string16& base, int& num) {
   return exp != 1;
 }
 
-base::string16 SetBaseNum(const base::char16* base, int num) {
+std::u16string SetBaseNum(const char16_t* base, int num) {
   return u16format(L"{}{}", base, num);
 }
 
@@ -96,7 +96,7 @@ class Expander {
     source_cells_.resize(cell_count);
     for (int i = 0; i < cell_count; ++i) {
       SourceCell& source = source_cells_[i];
-      base::string16 text =
+      std::u16string text =
           columns ? model_.GetCellText(first_cell + i, source_row)
                   : model_.GetCellText(source_row, first_cell + i);
       source.base_text = text;
@@ -115,7 +115,7 @@ class Expander {
 
  private:
   struct SourceCell {
-    base::string16 base_text;
+    std::u16string base_text;
     bool autoincrement;
     int base_index;
   };
@@ -127,7 +127,7 @@ class Expander {
   }
 
   void ExpandCell(int row, int column, const SourceCell& source, int offset) {
-    base::string16 new_text;
+    std::u16string new_text;
     if (source.autoincrement) {
       new_text =
           SetBaseNum(source.base_text.c_str(), source.base_index + offset);
@@ -170,7 +170,7 @@ void ExpandGridRange(GridModel& model,
 
   if (!increment) {
     // copy with CTRL
-    base::string16 text = model.GetCellText(range.row(), range.column());
+    std::u16string text = model.GetCellText(range.row(), range.column());
     for (int row = fill_range.row(); row <= fill_range.last_row(); row++) {
       for (int col = fill_range.column(); col <= fill_range.last_column();
            col++)

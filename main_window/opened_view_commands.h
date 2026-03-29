@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/types.h"
-#include "base/memory/weak_ptr.h"
+#include "base/cancelation.h"
 #include "base/promise.h"
 #include "base/timer/timer.h"
 #include "common/node_state.h"
@@ -79,5 +79,5 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   MainWindow* main_window_ = nullptr;
   DialogService* dialog_service_ = nullptr;
 
-  base::WeakPtrFactory<OpenedViewCommands> weak_factory_{this};
+  Cancelation cancelation_;
 };

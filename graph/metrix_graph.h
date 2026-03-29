@@ -1,8 +1,9 @@
 #pragma once
 
 #include "aui/graph.h"
-#include "base/timer/timer.h"
 #include "graph/metrix_data_source.h"
+
+#include <QTimer>
 #include "timed_data/timed_data.h"
 #include "timed_data/timed_data_observer.h"
 
@@ -114,5 +115,5 @@ class MetrixGraph : private MetrixGraphContext, public Graph {
   void UpdateData();
 
  private:
-  base::RepeatingTimer update_data_timer_;
+  QTimer update_data_timer_;
 };

@@ -18,7 +18,7 @@ struct SheetFormatBase {
   aui::Color color = aui::ColorCode::Transparent;
   unsigned char align = DT_LEFT;
 
-  scoped_refptr<ConditionalFormat> conditional_format_;
+  std::shared_ptr<ConditionalFormat> conditional_format_;
 };
 
 class SheetFormat : public SheetFormatBase,

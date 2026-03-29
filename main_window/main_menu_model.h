@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/models/simple_menu_model.h"
+#include "base/cancelation.h"
 #include "controller/command_registry.h"
 #include "filesystem/file_cache.h"
 
@@ -87,7 +88,7 @@ class PageMenuModel : private MainMenuContext, public aui::SimpleMenuModel {
 
   int active_index_ = -1;
 
-  base::WeakPtrFactory<PageMenuModel> weak_ptr_factory_{this};
+  Cancelation cancelation_;
 };
 
 class WindowMenuModel : private MainMenuContext, public aui::SimpleMenuModel {

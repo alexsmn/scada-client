@@ -23,7 +23,7 @@ struct Rgba {
 #include "aui/wt/color_wt.h"
 #endif
 
-#if defined(OS_WIN)
+#if defined(_WIN32)
 #include "aui/color_win.h"
 #endif
 

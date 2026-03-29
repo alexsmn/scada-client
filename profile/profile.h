@@ -2,12 +2,12 @@
 
 #include "aui/color.h"
 #include "aui/rect.h"
-#include "base/files/file_path.h"
 #include "base/time/time.h"
 #include "common_resources.h"
 #include "profile/page.h"
 #include "scada/node_id.h"
 
+#include <boost/json.hpp>
 #include <boost/signals2/signal.hpp>
 #include <map>
 
@@ -49,7 +49,7 @@ class Profile {
   aui::Color alarm_color = aui::ColorCode::Yellow;
 
   struct EventJournal {
-    base::Value default_state;
+    boost::json::value default_state;
   };
 
   EventJournal event_journal;
@@ -112,14 +112,14 @@ class Profile {
 
   TimedData timed_data;
 
-  const base::Value& data() const { return data_; }
-  base::Value& data() { return data_; }
+  const boost::json::value& data() const { return data_; }
+  boost::json::value& data() { return data_; }
 
   using Writer = std::function<void(Profile& profile)>;
 
   void RegisterWriter(const Writer& writer) { writers_.emplace_back(writer); }
 
-  using Serializer = std::function<void(base::Value& data)>;
+  using Serializer = std::function<void(boost::json::value& data)>;
 
   void RegisterSerializer(const Serializer& serializer) {
     serializers_.emplace_back(serializer);
@@ -134,12 +134,12 @@ class Profile {
   void NotifyChange() { profile_change_signal_(); }
 
  private:
-  void Load(const base::Value& data);
-  base::Value SaveToValue() const;
+  void Load(const boost::json::value& data);
+  boost::json::value SaveToValue() const;
 
   std::filesystem::path GetFilePath();
 
-  base::Value data_{base::Value::Type::DICTIONARY};
+  boost::json::value data_{boost::json::object{}};
 
   std::vector<Writer> writers_;
   std::vector<Serializer> serializers_;

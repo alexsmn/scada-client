@@ -24,7 +24,7 @@ class SheetCell {
 
   TimedDataSpec timed_data_;
 
-  scoped_refptr<SheetFormat> format_;
+  std::shared_ptr<SheetFormat> format_;
 
  private:
   void UpdateTextFromFormula();
@@ -42,5 +42,6 @@ class SheetCell {
 
   bool blinking_;
 
-  DISALLOW_COPY_AND_ASSIGN(SheetCell);
+  SheetCell(const SheetCell&) = delete;
+  SheetCell& operator=(const SheetCell&) = delete;
 };

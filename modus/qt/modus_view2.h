@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/files/file_path.h"
 #include "modus/libmodus/modus_binding2.h"
 #include "modus/modus_view_wrapper.h"
 #include "libmodus/gfx/gfx.h"

@@ -19,13 +19,13 @@ int FixedRowModel::GetSize(int index) const {
   return row_height_;
 }
 
-base::string16 FixedRowModel::GetTitle(int index) const {
+std::u16string FixedRowModel::GetTitle(int index) const {
   return delegate_.GetRowTitle(index);
 }
 
 // FixedRowModel::Delegate ----------------------------------------------------
 
-base::string16 FixedRowModel::Delegate::GetRowTitle(int index) {
+std::u16string FixedRowModel::Delegate::GetRowTitle(int index) {
   return WideFormat(index + 1);
 }
 

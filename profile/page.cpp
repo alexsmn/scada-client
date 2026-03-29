@@ -2,10 +2,6 @@
 
 #include <cassert>
 
-#include "base/base64.h"
-#include "base/files/file_util.h"
-#include "base/json/json_string_value_serializer.h"
-#include "base/stl_util.h"
 #include "base/utils.h"
 #include "base/value_util.h"
 #include "controller/window_info.h"
@@ -40,7 +36,7 @@ Page& Page::operator=(const Page& source) {
   return *this;
 }
 
-void Page::Load(const base::Value& data) {
+void Page::Load(const boost::json::value& data) {
   id = GetInt(data, "id");
   title = GetString16(data, "title");
 
@@ -73,8 +69,8 @@ void Page::Load(const base::Value& data) {
   }
 }
 
-base::Value Page::Save(bool current) const {
-  base::Value result{base::Value::Type::DICTIONARY};
+boost::json::value Page::Save(bool current) const {
+  boost::json::value result{boost::json::object{}};
 
   // page attributes
   if (id)
@@ -82,14 +78,14 @@ base::Value Page::Save(bool current) const {
   if (!title.empty())
     SetKey(result, "title", title);
 
-  base::Value::ListStorage windows;
+  boost::json::array windows;
   windows.reserve(GetWindowCount());
   for (int i = 0; i < GetWindowCount(); ++i)
     windows.emplace_back(ToJson(GetWindow(i)));
-  result.SetKey("windows", base::Value{std::move(windows)});
+  result.as_object()["windows"] = std::move(windows);
 
   // layout
-  result.SetKey("layout", ToJson(layout));
+  result.as_object()["layout"] = ToJson(layout);
 
   return result;
 }

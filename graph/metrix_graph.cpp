@@ -241,8 +241,9 @@ void MetrixGraph::MetrixLine::OnDataSourceDeleted() {
 
 MetrixGraph::MetrixGraph(MetrixGraphContext&& context)
     : MetrixGraphContext{std::move(context)} {
-  update_data_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(50),
-                           this, &MetrixGraph::UpdateData);
+  QObject::connect(&update_data_timer_, &QTimer::timeout,
+                    [this] { UpdateData(); });
+  update_data_timer_.start(50);
 }
 
 void MetrixGraph::UpdateCurBox() {

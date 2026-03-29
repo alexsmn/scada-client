@@ -1,7 +1,5 @@
 #include "filesystem/file_synchronizer.h"
 
-#include "base/file_path_util.h"
-#include "base/files/file_util.h"
 #include "base/logger.h"
 #include "filesystem/filesystem_util.h"
 #include "model/filesystem_node_ids.h"
@@ -9,6 +7,8 @@
 #include "node_service/node_util.h"
 #include "scada/event.h"
 #include "scada/status_exception.h"
+
+#include <fstream>
 
 #if defined(UI_QT)
 #include <QUrl>
@@ -138,7 +138,8 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
             logger_->WriteF(LogSeverity::Normal, "Download '{}' complete",
                             path.string());
 
-            base::WriteFile(AsFilePath(path), data->data(), data->size());
+            std::ofstream{path, std::ios::binary}.write(data->data(),
+                                                          data->size());
 
             std::error_code ec;
             std::filesystem::last_write_time(path, last_update_time, ec);

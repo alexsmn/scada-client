@@ -154,7 +154,7 @@ class PageLayout {
   }
 };
 
-base::Value ToJson(const PageLayout& layout);
+boost::json::value ToJson(const PageLayout& layout);
 
 template <>
-std::optional<PageLayout> FromJson(const base::Value& json);
+std::optional<PageLayout> FromJson(const boost::json::value& json);

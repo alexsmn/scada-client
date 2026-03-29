@@ -81,18 +81,18 @@ void Favourites::NotifyWindowChanged(const Page& folder,
     o.OnWindowChanged(folder, window);
 }
 
-void Favourites::Load(const base::Value& value) {
-  if (!value.is_list())
+void Favourites::Load(const boost::json::value& value) {
+  if (!value.is_array())
     return;
 
-  for (const auto& folder_data : value.GetList())
+  for (const auto& folder_data : value.as_array())
     folders_.emplace_back().Load(folder_data);
 }
 
-base::Value Favourites::Save() const {
-  base::Value::ListStorage list;
+boost::json::value Favourites::Save() const {
+  boost::json::array list;
   list.reserve(folders_.size());
   for (auto& folder : folders_)
     list.emplace_back(folder.Save(false));
-  return base::Value{std::move(list)};
+  return boost::json::value{std::move(list)};
 }

@@ -4,7 +4,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include "base/struct_writer.h"
 #include "base/value_util.h"
-#include "base/values.h"
 #include "controller/window_info.h"
 
 #include "base/debug_util-inl.h"
@@ -36,16 +35,16 @@ std::ostream& operator<<(std::ostream& stream,
 
 WindowItem::WindowItem(std::string&& name) : name{std::move(name)} {}
 
-WindowItem::WindowItem(std::string&& name, base::Value&& attributes)
+WindowItem::WindowItem(std::string&& name, boost::json::value&& attributes)
     : name{std::move(name)}, attributes{std::move(attributes)} {}
 
 WindowItem::WindowItem(const WindowItem& source)
-    : name{source.name}, attributes{source.attributes.Clone()} {}
+    : name{source.name}, attributes{source.attributes} {}
 
 WindowItem& WindowItem::operator=(const WindowItem& source) {
   if (&source != this) {
     name = source.name;
-    attributes = source.attributes.Clone();
+    attributes = source.attributes;
   }
   return *this;
 }
@@ -113,7 +112,7 @@ WindowDefinition::WindowDefinition(const WindowDefinition& other)
       visible(other.visible),
       locked(other.locked),
       items(other.items),
-      storage(other.storage.Clone()) {}
+      storage(other.storage) {}
 
 WindowDefinition::~WindowDefinition() {}
 
@@ -126,7 +125,7 @@ WindowDefinition& WindowDefinition::operator=(const WindowDefinition& other) {
   visible = other.visible;
   locked = other.locked;
   items = other.items;
-  storage = other.storage.Clone();
+  storage = other.storage;
   return *this;
 }
 
@@ -152,7 +151,7 @@ WindowItem& WindowDefinition::AddItem(std::string name) {
 }
 
 WindowItem* WindowDefinition::FindItem(const char* name) {
-  for (WindowItems::iterator i = items.begin(); i != items.end(); i++) {
+  for (WindowItems::iterator i = items.begin(); i != items.end(); ++i) {
     WindowItem& item = *i;
     if (item.name_is(name))
       return &item;
@@ -161,7 +160,7 @@ WindowItem* WindowDefinition::FindItem(const char* name) {
 }
 
 const WindowItem* WindowDefinition::FindItem(const char* name) const {
-  for (WindowItems::const_iterator i = items.begin(); i != items.end(); i++) {
+  for (WindowItems::const_iterator i = items.begin(); i != items.end(); ++i) {
     const WindowItem& item = *i;
     if (item.name_is(name))
       return &item;

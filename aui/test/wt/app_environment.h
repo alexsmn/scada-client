@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aui/wt/message_loop_wt.h"
-#include "base/threading/thread_task_runner_handle.h"
 
 #include <Wt/Test/WTestEnvironment.h>
 #include <Wt/WApplication.h>
@@ -15,6 +14,6 @@ class AppEnvironment {
   boost::asio::io_context io_context_;
 
   // Application must be created.
-  base::ThreadTaskRunnerHandle task_runner_handle_{
-      base::MakeRefCounted<MessageLoopWt>(io_context_)};
+  std::shared_ptr<Executor> executor_ =
+      std::make_shared<MessageLoopWt>(io_context_);
 };

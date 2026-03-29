@@ -1,7 +1,7 @@
 ﻿#include "portfolio/portfolio_manager.h"
 
 #include "aui/translation.h"
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "portfolio/portfolio.h"

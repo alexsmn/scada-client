@@ -1,7 +1,6 @@
 #include "aui/qt/message_loop_qt.h"
 #include "base/client_paths.h"
 #include "base/test/test_executor.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "profile/window_definition.h"
 #include "services/atl_module.h"
 #include "test/display_tester/qt/display_tester_state.h"
@@ -32,7 +31,7 @@ std::unique_ptr<QWidget> CreateVidiconDisplayView(
       !path.empty()
           ? path
           : std::filesystem::path{
-                R"(c:\ProgramData\Telecontrol\SCADA Client\по-258.vds)"};
+                R"(c:\ProgramData\Telecontrol\SCADA Client\??-258.vds)"};
 
   return vidicon_display_view->Init(definition);
 }
@@ -43,7 +42,7 @@ int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
 
   QApplication qapp(argc, argv);
-  base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};
+  auto executor = std::make_shared<MessageLoopQt>();
   State state;
 
   DisplayTesterWindow tester_window{

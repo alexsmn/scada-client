@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/values.h"
+#include <boost/json.hpp>
 #include "aui/color.h"
 #include "aui/handlers.h"
 
@@ -56,8 +56,8 @@ class Tree : public QTreeView {
   void SetDragHandler(std::vector<std::string> mime_types, DragHandler handler);
   void SetDropHandler(DropHandler handler);
 
-  base::Value SaveState() const;
-  void RestoreState(const base::Value& data);
+  boost::json::value SaveState() const;
+  void RestoreState(const boost::json::value& data);
 
  protected:
   // QTreeView

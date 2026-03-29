@@ -1,7 +1,6 @@
 #include "aui/qt/message_loop_qt.h"
 #include "base/client_paths.h"
 #include "base/test/test_executor.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "modus/modus_component.h"
@@ -62,7 +61,7 @@ int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
 
   QApplication qapp(argc, argv);
-  base::ThreadTaskRunnerHandle message_loop{new MessageLoopQt};
+  auto executor = std::make_shared<MessageLoopQt>();
   State state;
 
   DisplayTesterWindow tester_window{

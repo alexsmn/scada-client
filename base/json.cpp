@@ -1,36 +1,45 @@
 #include "base/json.h"
 
-#include "base/file_path_util.h"
-#include "base/json/json_file_value_serializer.h"
-#include "base/json/json_reader.h"
-#include "base/json/json_string_value_serializer.h"
+#include <fstream>
+#include <sstream>
 
-bool SaveJsonToFile(const base::Value& data,
+std::optional<boost::json::value> LoadJsonFromFile(
+    const std::filesystem::path& path,
+    std::string* error_message) {
+  std::ifstream ifs{path};
+  if (!ifs) {
+    if (error_message)
+      *error_message = "Cannot open file";
+    return std::nullopt;
+  }
+  std::string contents{std::istreambuf_iterator<char>{ifs}, {}};
+  return LoadJsonFromString(contents, error_message);
+}
+
+std::optional<boost::json::value> LoadJsonFromString(
+    std::string_view contents,
+    std::string* error_message) {
+  boost::system::error_code ec;
+  boost::json::parse_options opts;
+  opts.allow_trailing_commas = true;
+  auto value = boost::json::parse(contents, ec, {}, opts);
+  if (ec) {
+    if (error_message)
+      *error_message = ec.message();
+    return std::nullopt;
+  }
+  return value;
+}
+
+bool SaveJsonToFile(const boost::json::value& data,
                     const std::filesystem::path& path) {
-  JSONFileValueSerializer serializer{AsFilePath(path)};
-  return serializer.Serialize(data);
+  std::ofstream ofs{path};
+  if (!ofs)
+    return false;
+  ofs << boost::json::serialize(data);
+  return ofs.good();
 }
 
-std::string SaveJsonToString(const base::Value& data) {
-  std::string json_string;
-  JSONStringValueSerializer serializer{&json_string};
-  if (!serializer.Serialize(data))
-    throw new std::runtime_error("Cannot serialize the value to JSON");
-  return json_string;
-}
-
-std::optional<base::Value> LoadJsonFromFile(const std::filesystem::path& path,
-                                            std::string* error_message) {
-  JSONFileValueDeserializer deserializer{AsFilePath(path),
-                                         base::JSON_ALLOW_TRAILING_COMMAS};
-  auto value_ptr = deserializer.Deserialize(nullptr, error_message);
-  return value_ptr ? std::make_optional(std::move(*value_ptr)) : std::nullopt;
-}
-
-std::optional<base::Value> LoadJsonFromString(std::string_view contents,
-                                              std::string* error_message) {
-  JSONStringValueDeserializer deserializer{contents,
-                                           base::JSON_ALLOW_TRAILING_COMMAS};
-  auto value_ptr = deserializer.Deserialize(nullptr, error_message);
-  return value_ptr ? std::make_optional(std::move(*value_ptr)) : std::nullopt;
+std::string SaveJsonToString(const boost::json::value& data) {
+  return boost::json::serialize(data);
 }

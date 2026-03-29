@@ -8,23 +8,23 @@ namespace {
 const char* kDockNames[4] = {"bottom", "top", "left", "right"};
 }
 
-base::Value SaveLayoutBlock(const PageLayoutBlock& block) {
-  base::Value result{base::Value::Type::DICTIONARY};
+boost::json::value SaveLayoutBlock(const PageLayoutBlock& block) {
+  boost::json::value result{boost::json::object{}};
   SetKey(result, "type",
          block.type == PageLayoutBlock::PANE ? "pane" : "split");
 
   if (block.type == PageLayoutBlock::SPLIT) {
     SetKey(result, "orientation", block.horz ? "horizontal" : "vertical");
     SetKey(result, "pos", block.pos);
-    result.SetKey("first", SaveLayoutBlock(*block.left));
-    result.SetKey("second", SaveLayoutBlock(*block.right));
+    result.as_object()["first"] = SaveLayoutBlock(*block.left);
+    result.as_object()["second"] = SaveLayoutBlock(*block.right);
 
   } else {
-    base::Value::ListStorage list;
+    boost::json::array list;
     list.reserve(block.wins.size());
     for (auto window_id : block.wins)
-      list.emplace_back(base::Value{window_id});
-    result.SetKey("windows", base::Value{std::move(list)});
+      list.emplace_back(window_id);
+    result.as_object()["windows"] = std::move(list);
 
     if (block.active_window != -1)
       SetKey(result, "active", block.active_window);
@@ -36,7 +36,7 @@ base::Value SaveLayoutBlock(const PageLayoutBlock& block) {
   return result;
 }
 
-void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
+void LoadLayoutBlock(PageLayoutBlock& block, const boost::json::value& value) {
   assert(block.type == PageLayoutBlock::PANE);
   assert(block.wins.empty());
   assert(!block.left && !block.right);
@@ -56,8 +56,8 @@ void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
     assert(block.type == PageLayoutBlock::PANE);
     if (auto* windows = GetList(value, "windows")) {
       for (auto& window : *windows) {
-        if (window.is_int())
-          block.wins.push_back(window.GetInt());
+        if (window.is_int64())
+          block.wins.push_back(static_cast<int>(window.as_int64()));
       }
     }
     block.active_window = GetInt(value, "active", -1);
@@ -66,10 +66,10 @@ void LoadLayoutBlock(PageLayoutBlock& block, const base::Value& value) {
   block.central = GetBool(value, "central");
 }
 
-base::Value ToJson(const PageLayout& layout) {
-  base::Value layout_data{base::Value::Type::DICTIONARY};
+boost::json::value ToJson(const PageLayout& layout) {
+  boost::json::value layout_data{boost::json::object{}};
   if (!layout.main.empty())
-    layout_data.SetKey("center", SaveLayoutBlock(layout.main));
+    layout_data.as_object()["center"] = SaveLayoutBlock(layout.main);
   for (int i = 0; i < 4; i++) {
     auto& dock = layout.dock[i];
     if (dock.empty())
@@ -78,7 +78,7 @@ base::Value ToJson(const PageLayout& layout) {
     auto dock_data = SaveLayoutBlock(dock);
     SetKey(dock_data, "size", dock.size);
     SetKey(dock_data, "place", dock.place);
-    layout_data.SetKey(kDockNames[i], std::move(dock_data));
+    layout_data.as_object()[kDockNames[i]] = std::move(dock_data);
   }
   if (!layout.blob.empty())
     SetKey(layout_data, "blob", SaveBlob(layout.blob));
@@ -86,7 +86,7 @@ base::Value ToJson(const PageLayout& layout) {
 }
 
 template <>
-std::optional<PageLayout> FromJson(const base::Value& json) {
+std::optional<PageLayout> FromJson(const boost::json::value& json) {
   PageLayout layout;
 
   if (const auto* maine = FindDict(json, "center"))

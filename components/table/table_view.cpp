@@ -42,6 +42,8 @@ TableView::TableView(const ControllerContext& context)
       {TableModel::COLUMN_EVENT, Translate("Event"), 200, aui::TableColumn::LEFT},
   };
 
+  // cppcheck-suppress noCopyConstructor
+  // cppcheck-suppress noOperatorEq
   view_ = new aui::Table{model_, std::move(columns)};
 
   view_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});

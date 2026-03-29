@@ -1,6 +1,5 @@
 #include "components/sheet/sheet_model.h"
 
-#include "base/stl_util.h"
 #include "components/sheet/sheet_cell.h"
 #include "aui/color.h"
 #include "aui/models/grid_range.h"

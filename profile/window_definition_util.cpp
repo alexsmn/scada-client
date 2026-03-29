@@ -17,29 +17,30 @@
 
 namespace {
 
-WindowItem LoadWindowItem(const base::Value& item_data) {
+WindowItem LoadWindowItem(const boost::json::value& item_data) {
   WindowItem item;
   item.name = std::string{GetString(item_data, "name")};
-  if (auto* value = item_data.FindKey("@value")) {
-    item.attributes = value->Clone();
+  if (auto* value = item_data.is_object() ? item_data.as_object().if_contains("@value") : nullptr) {
+    item.attributes = *value;
   } else {
-    item.attributes = item_data.Clone();
-    item.attributes.RemoveKey("name");
+    item.attributes = item_data;
+    if (item.attributes.is_object())
+      item.attributes.as_object().erase("name");
   }
   return item;
 }
 
-base::Value SaveWindowItem(const WindowItem& item) {
-  if (item.attributes.is_dict()) {
-    assert(!item.attributes.FindKey("name"));
-    assert(!item.attributes.FindKey("@value"));
-    auto item_data = item.attributes.Clone();
+boost::json::value SaveWindowItem(const WindowItem& item) {
+  if (item.attributes.is_object()) {
+    assert(!item.attributes.as_object().if_contains("name"));
+    assert(!item.attributes.as_object().if_contains("@value"));
+    auto item_data = item.attributes;
     SetKey(item_data, "name", item.name);
     return item_data;
   } else {
-    base::Value item_data{base::Value::Type::DICTIONARY};
-    item_data.SetKey("name", base::Value{item.name});
-    item_data.SetKey("@value", item.attributes.Clone());
+    boost::json::value item_data{boost::json::object{}};
+    item_data.as_object()["name"] = item.name;
+    item_data.as_object()["@value"] = item.attributes;
     return item_data;
   }
 }
@@ -47,23 +48,25 @@ base::Value SaveWindowItem(const WindowItem& item) {
 }  // namespace
 
 template <>
-std::optional<base::Time> FromJson(const base::Value& value) {
-  std::string_view str;
-  if (!value.GetAsString(&str))
+std::optional<base::Time> FromJson(const boost::json::value& value) {
+  if (!value.is_string())
     return std::nullopt;
 
   base::Time time;
-  if (!Deserialize(str, time))
+  if (!Deserialize(std::string_view{value.as_string()}, time))
     return std::nullopt;
 
   return time;
 }
 
 template <>
-std::optional<TimeRange> FromJson(const base::Value& value) {
-  auto* type_string = value.FindKeyOfType("type", base::Value::Type::STRING);
-  if (type_string) {
-    auto type = ParseTimeRangeType(type_string->GetString());
+std::optional<TimeRange> FromJson(const boost::json::value& value) {
+  if (!value.is_object())
+    return std::nullopt;
+
+  auto type_str = GetString(value, "type");
+  if (!type_str.empty()) {
+    auto type = ParseTimeRangeType(type_str);
     if (type == TimeRange::Type::Count)
       return std::nullopt;
 
@@ -71,7 +74,7 @@ std::optional<TimeRange> FromJson(const base::Value& value) {
       return type;
   }
 
-  if (auto* interval_value = value.FindKey("interval")) {
+  if (auto* interval_value = value.as_object().if_contains("interval")) {
     auto interval = FromJson<base::TimeDelta>(*interval_value);
     if (!interval.has_value() || interval->is_zero())
       return std::nullopt;
@@ -81,8 +84,8 @@ std::optional<TimeRange> FromJson(const base::Value& value) {
 
   // Custom time range.
 
-  auto* start_value = value.FindKey("start");
-  auto* end_value = value.FindKey("end");
+  auto* start_value = value.as_object().if_contains("start");
+  auto* end_value = value.as_object().if_contains("end");
   if (!start_value || !end_value)
     return std::nullopt;
 
@@ -97,7 +100,7 @@ std::optional<TimeRange> FromJson(const base::Value& value) {
 }
 
 template <>
-std::optional<base::TimeDelta> FromJson(const base::Value& value) {
+std::optional<base::TimeDelta> FromJson(const boost::json::value& value) {
   return base::TimeDelta::FromSeconds(
              GetKey<int>(value, "seconds").value_or(0)) +
          base::TimeDelta::FromMinutes(
@@ -106,21 +109,21 @@ std::optional<base::TimeDelta> FromJson(const base::Value& value) {
          base::TimeDelta::FromDays(GetKey<int>(value, "days").value_or(0));
 }
 
-base::Value ToJson(std::string_view str) {
-  return base::Value{str};
+boost::json::value ToJson(std::string_view str) {
+  return boost::json::value{std::string{str}};
 }
 
-base::Value ToJson(base::Time time) {
-  return base::Value{SerializeToString(time)};
+boost::json::value ToJson(base::Time time) {
+  return boost::json::value{SerializeToString(time)};
 }
 
-base::Value ToJson(const TimeRange& time_range) {
-  base::Value result{base::Value::Type::DICTIONARY};
+boost::json::value ToJson(const TimeRange& time_range) {
+  boost::json::value result{boost::json::object{}};
   if (time_range.type == TimeRange::Type::Interval) {
-    result.SetKey("interval", ToJson(time_range.interval));
+    result.as_object()["interval"] = ToJson(time_range.interval);
   } else if (time_range.type == TimeRange::Type::Custom) {
-    result.SetKey("start", ToJson(time_range.start));
-    result.SetKey("end", ToJson(time_range.end));
+    result.as_object()["start"] = ToJson(time_range.start);
+    result.as_object()["end"] = ToJson(time_range.end);
     SetKey(result, "dates", time_range.dates);
   } else {
     SetKey(result, "type", ToString(time_range.type));
@@ -128,8 +131,8 @@ base::Value ToJson(const TimeRange& time_range) {
   return result;
 }
 
-base::Value ToJson(base::TimeDelta duration) {
-  base::Value result{base::Value::Type::DICTIONARY};
+boost::json::value ToJson(base::TimeDelta duration) {
+  boost::json::value result{boost::json::object{}};
   auto value = duration.InSeconds();
   if (auto seconds = value % 60)
     SetKey(result, "seconds", static_cast<int>(seconds));
@@ -171,21 +174,24 @@ std::optional<TimeRange> RestoreTimeRange(const WindowDefinition& definition) {
 }
 
 template <>
-std::optional<WindowItems> FromJson(const base::Value& data) {
-  if (!data.is_list())
+std::optional<WindowItems> FromJson(const boost::json::value& data) {
+  if (!data.is_array())
     return std::nullopt;
 
-  return data.GetList() | boost::adaptors::transformed(&LoadWindowItem) |
+  return data.as_array() | boost::adaptors::transformed(&LoadWindowItem) |
          to_vector;
 }
 
-base::Value ToJson(const WindowItems& items) {
-  return base::Value{items | boost::adaptors::transformed(&SaveWindowItem) |
-                     to_vector};
+boost::json::value ToJson(const WindowItems& items) {
+  boost::json::array arr;
+  arr.reserve(items.size());
+  for (const auto& item : items)
+    arr.emplace_back(SaveWindowItem(item));
+  return boost::json::value{std::move(arr)};
 }
 
-base::Value ToJson(const WindowDefinition& def) {
-  base::Value win{base::Value::Type::DICTIONARY};
+boost::json::value ToJson(const WindowDefinition& def) {
+  boost::json::value win{boost::json::object{}};
   SetKey(win, "type", def.type);
   SetKey(win, "id", def.id);
 
@@ -204,14 +210,14 @@ base::Value ToJson(const WindowDefinition& def) {
   SetKey(win, "height", def.size.height);
   SetKey(win, "locked", def.locked);
 
-  win.SetKey("items", ToJson(def.items));
-  win.SetKey("data", def.storage.Clone());
+  win.as_object()["items"] = ToJson(def.items);
+  win.as_object()["data"] = def.storage;
 
   return win;
 }
 
 template <>
-std::optional<WindowDefinition> FromJson(const base::Value& json) {
+std::optional<WindowDefinition> FromJson(const boost::json::value& json) {
   WindowDefinition w;
   w.id = GetInt(json, "id", 0);
   w.type = GetString(json, "type");
@@ -220,27 +226,27 @@ std::optional<WindowDefinition> FromJson(const base::Value& json) {
   w.path = std::filesystem::path(GetString16(json, "path"));
   w.size = {GetInt(json, "width"), GetInt(json, "height")};
 
-  if (auto* items = json.FindKey("items")) {
+  if (auto* items = json.is_object() ? json.as_object().if_contains("items") : nullptr) {
     w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});
   }
 
   if (auto* data = FindDict(json, "data")) {
-    w.storage = data->Clone();
+    w.storage = *data;
   }
 
   return w;
 }
 
-base::Value ToJson(const scada::NodeId& node_id) {
-  return node_id.is_null() ? base::Value{}
-                           : base::Value{NodeIdToScadaString(node_id)};
+boost::json::value ToJson(const scada::NodeId& node_id) {
+  return node_id.is_null() ? boost::json::value{}
+                           : boost::json::value{NodeIdToScadaString(node_id)};
 }
 
 template <>
-std::optional<scada::NodeId> FromJson(const base::Value& json) {
+std::optional<scada::NodeId> FromJson(const boost::json::value& json) {
   if (!json.is_string())
     return std::nullopt;
-  auto node_id = NodeIdFromScadaString(json.GetString());
+  auto node_id = NodeIdFromScadaString(std::string_view{json.as_string()});
   return node_id.is_null() ? std::optional<scada::NodeId>{}
                            : std::optional<scada::NodeId>{std::move(node_id)};
 }

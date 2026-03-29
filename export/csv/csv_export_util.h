@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/values.h"
+#include <boost/json.hpp>
 #include "export/export_model.h"
 
 #include <filesystem>
@@ -23,4 +23,4 @@ void ExportToCsv(ExportModel::GridExportData& grid,
 void ExportToExcel(ExportModel::TableExportData& table, ExcelSheetModel& sheet);
 void ExportToExcel(ExportModel::GridExportData& grid, ExcelSheetModel& sheet);
 
-base::Value ToJson(const CsvExportParams& params);
+boost::json::value ToJson(const CsvExportParams& params);

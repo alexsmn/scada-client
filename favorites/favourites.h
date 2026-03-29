@@ -37,8 +37,8 @@ class Favourites {
     observers_.RemoveObserver(&observer);
   }
 
-  void Load(const base::Value& value);
-  base::Value Save() const;
+  void Load(const boost::json::value& value);
+  boost::json::value Save() const;
 
   // TODO: Move into private.
   void NotifyFolderAdded(const Page& folder) const;
@@ -53,5 +53,6 @@ class Favourites {
 
   mutable base::ObserverList<Observer> observers_;
 
-  DISALLOW_COPY_AND_ASSIGN(Favourites);
+  Favourites(const Favourites&) = delete;
+  Favourites& operator=(const Favourites&) = delete;
 };

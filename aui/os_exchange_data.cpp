@@ -4,13 +4,36 @@
 
 #include "base/pickle.h"
 #include "base/utf_convert.h"
-#include "base/win/scoped_hglobal.h"
+
+namespace {
+
+// Simple RAII wrapper for GlobalLock/GlobalUnlock.
+template <typename T>
+class ScopedHGlobal {
+ public:
+  explicit ScopedHGlobal(HGLOBAL handle)
+      : handle_(handle), ptr_(static_cast<T>(::GlobalLock(handle))) {}
+  ~ScopedHGlobal() {
+    if (handle_)
+      ::GlobalUnlock(handle_);
+  }
+  ScopedHGlobal(const ScopedHGlobal&) = delete;
+  ScopedHGlobal& operator=(const ScopedHGlobal&) = delete;
+  T get() const { return ptr_; }
+  size_t Size() const { return handle_ ? ::GlobalSize(handle_) : 0; }
+
+ private:
+  HGLOBAL handle_;
+  T ptr_;
+};
+
+}  // namespace
 
 namespace aui {
 
 static STGMEDIUM* GetStorageForBytes(const void* data, size_t bytes) {
   HGLOBAL handle = GlobalAlloc(GPTR, static_cast<int>(bytes));
-  base::win::ScopedHGlobal<char*> scoped(handle);
+  ScopedHGlobal<char*> scoped(handle);
   size_t allocated = static_cast<size_t>(GlobalSize(handle));
   memcpy(scoped.get(), data, allocated);
 
@@ -72,7 +95,8 @@ class FormatEtcEnumerator : public IEnumFORMATETC {
 
   LONG ref_count_;
 
-  DISALLOW_COPY_AND_ASSIGN(FormatEtcEnumerator);
+  FormatEtcEnumerator(const FormatEtcEnumerator&) = delete;
+  FormatEtcEnumerator& operator=(const FormatEtcEnumerator&) = delete;
 };
 
 // Safely makes a copy of all of the relevant bits of a FORMATETC object.
@@ -382,26 +406,35 @@ HRESULT __stdcall DataObjectImpl::QueryInterface(const IID& iid,
 }
 
 ULONG __stdcall DataObjectImpl::AddRef() {
-  // TODO: Reimplement with IUnknownImpl.
-  RefCountedThreadSafe<DataObjectImpl>::AddRef();
-  return 1;
+  return ++ref_count_;
 }
 
 ULONG __stdcall DataObjectImpl::Release() {
-  RefCountedThreadSafe<DataObjectImpl>::Release();
-  return 1;
+  LONG count = --ref_count_;
+  if (count == 0) {
+    delete this;
+  }
+  return count;
 }
 
 // OSExchangeData
 
-OSExchangeData::OSExchangeData()
-    : data_object_impl_(new DataObjectImpl),
-      data_object_(data_object_impl_.get()) {}
+OSExchangeData::OSExchangeData() {
+  data_object_impl_ = new DataObjectImpl;
+  data_object_impl_->AddRef();
+  data_object_ = data_object_impl_;
+}
 
 OSExchangeData::OSExchangeData(IDataObject* data_object)
-    : data_object_(data_object) {}
+    : data_object_(data_object) {
+  if (data_object_)
+    data_object_->AddRef();
+}
 
-OSExchangeData::~OSExchangeData() {}
+OSExchangeData::~OSExchangeData() {
+  if (data_object_)
+    data_object_->Release();
+}
 
 bool OSExchangeData::HasCustomFormat(CustomFormat format) const {
   assert(data_object_);
@@ -417,7 +450,7 @@ bool OSExchangeData::GetPickledData(CustomFormat format,
   STGMEDIUM medium;
   if (SUCCEEDED(data_object_->GetData(&format_etc, &medium))) {
     if (medium.tymed & TYMED_HGLOBAL) {
-      base::win::ScopedHGlobal<char*> c_data(medium.hGlobal);
+      ScopedHGlobal<char*> c_data(medium.hGlobal);
       assert(c_data.Size() > 0u);
       data = base::Pickle(c_data.get(), static_cast<int>(c_data.Size()));
       success = true;

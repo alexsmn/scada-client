@@ -1,7 +1,6 @@
 ﻿#include "services/connection_state_reporter.h"
 
 #include "aui/translation.h"
-#include "base/bind.h"
 #include "base/u16format.h"
 #include "client_utils.h"
 #include "scada/session_service.h"

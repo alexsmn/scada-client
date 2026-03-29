@@ -2,8 +2,8 @@
 
 #include "aui/size.h"
 #include "base/json.h"
-#include "base/values.h"
 
+#include <boost/json.hpp>
 #include <filesystem>
 #include <optional>
 #include <vector>
@@ -14,7 +14,7 @@ class WindowItem {
  public:
   WindowItem() {}
   explicit WindowItem(std::string&& name);
-  WindowItem(std::string&& name, base::Value&& attributes);
+  WindowItem(std::string&& name, boost::json::value&& attributes);
 
   WindowItem(const WindowItem& source);
   WindowItem& operator=(const WindowItem& source);
@@ -42,12 +42,12 @@ class WindowItem {
   template <class T>
   WindowItem& Set(const T& value);
 
-  WindowItem& Set(base::Value&& value);
+  WindowItem& Set(boost::json::value&& value);
 
   bool operator==(const WindowItem& other) const;
 
   std::string name;
-  base::Value attributes{base::Value::Type::DICTIONARY};
+  boost::json::value attributes{boost::json::object{}};
 };
 
 typedef std::vector<WindowItem> WindowItems;
@@ -93,7 +93,7 @@ class WindowDefinition {
 
   WindowItems items;
 
-  base::Value storage;
+  boost::json::value storage;
 
   WindowDefinition& set_title(std::u16string_view title) {
     this->title = std::u16string{title};
@@ -135,12 +135,12 @@ inline WindowItem& WindowItem::Set(const T& value) {
 }
 
 template <>
-inline WindowItem& WindowItem::Set(const base::Value& value) {
-  attributes = value.Clone();
+inline WindowItem& WindowItem::Set(const boost::json::value& value) {
+  attributes = value;
   return *this;
 }
 
-inline WindowItem& WindowItem::Set(base::Value&& value) {
+inline WindowItem& WindowItem::Set(boost::json::value&& value) {
   attributes = std::move(value);
   return *this;
 }

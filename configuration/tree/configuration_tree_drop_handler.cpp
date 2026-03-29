@@ -128,7 +128,7 @@ int ConfigurationTreeDropHandler::GetDropAction(
       return aui::DragDropTypes::DRAG_NONE;
     }
 
-    if (target_node && target_node->node() != dragging_node &&
+    if (target_node->node() != dragging_node &&
         target_node->node() != dragging_node.parent()) {
       auto old_parent_id = dragging_node.parent().node_id();
       auto new_parent_id = target_node->node().node_id();

@@ -27,35 +27,31 @@ REGISTER_CONTROLLER(TestController, kTestWindowInfo);
 
 namespace {
 
-template <class T>
-base::Value MakeListValue(std::initializer_list<T> values) {
-  base::Value::ListStorage list;
+boost::json::value MakeListValue(std::initializer_list<int> values) {
+  boost::json::array list;
   list.reserve(values.size());
-  for (auto&& value : values)
-    list.emplace_back(std::move(value));
-  return base::Value{std::move(list)};
+  for (auto value : values)
+    list.emplace_back(value);
+  return boost::json::value{std::move(list)};
 }
 
-template <class T>
-base::Value MakeDictValue(
-    std::initializer_list<std::pair<std::string, T>> key_values) {
-  base::Value::DictStorage dict;
-  dict.reserve(key_values.size());
+boost::json::value MakeDictValue(
+    std::initializer_list<std::pair<std::string, int>> key_values) {
+  boost::json::object obj;
   for (auto&& [key, value] : key_values) {
-    dict.try_emplace(std::move(key),
-                     std::make_unique<base::Value>(std::move(value)));
+    obj[key] = value;
   }
-  return base::Value{std::move(dict)};
+  return boost::json::value{std::move(obj)};
 }
 
 const WindowItems kTestWindowItems = {
-    {"empty", base::Value{}},
-    {"int", base::Value{123}},
-    {"int", base::Value{321}},
-    {"string", base::Value{"text"}},
-    {"string", base::Value{"more text"}},
+    {"empty", boost::json::value{}},
+    {"int", boost::json::value{123}},
+    {"int", boost::json::value{321}},
+    {"string", boost::json::value{"text"}},
+    {"string", boost::json::value{"more text"}},
     {"list", MakeListValue({1, 2, 3})},
-    {"dict", MakeDictValue<int>({{"a", 1}, {"b", 2}, {"c", 3}})},
+    {"dict", MakeDictValue({{"a", 1}, {"b", 2}, {"c", 3}})},
 };
 
 const std::string_view kTestWindowItemsJson = R"(
@@ -70,47 +66,34 @@ const std::string_view kTestWindowItemsJson = R"(
     ])";
 
 template <class T>
-base::Value ValueOf(T&& value) {
-  return base::Value{std::forward<T>(value)};
+boost::json::value ValueOf(T&& value) {
+  return boost::json::value{std::forward<T>(value)};
 }
 
 template <>
-base::Value ValueOf(base::Value&& value) {
+boost::json::value ValueOf(boost::json::value&& value) {
   return std::move(value);
 }
 
-void ListOfHelper(const base::Value::ListStorage&) {}
-
-template <class T, class... Args>
-void ListOfHelper(base::Value::ListStorage& storage, T&& item, Args&&... args) {
-  storage.emplace_back(std::forward<T>(item));
-  ListOfHelper(storage, std::forward<Args>(args)...);
+boost::json::value DictOf(std::string key1, int val1,
+                           std::string key2, int val2) {
+  boost::json::object obj;
+  obj[key1] = val1;
+  obj[key2] = val2;
+  return boost::json::value{std::move(obj)};
 }
 
-template <class... Args>
-base::Value ListOf(Args&&... args) {
-  base::Value::ListStorage storage;
-  ListOfHelper(storage, std::forward<Args>(args)...);
-  return base::Value{std::move(storage)};
+boost::json::value ListOf(boost::json::value v1, boost::json::value v2) {
+  boost::json::array arr;
+  arr.emplace_back(std::move(v1));
+  arr.emplace_back(std::move(v2));
+  return boost::json::value{std::move(arr)};
 }
 
-void DictOfHelper(const base::Value::DictStorage&) {}
-
-template <class Key, class Value, class... Args>
-void DictOfHelper(base::Value::DictStorage& storage,
-                  Key&& key,
-                  Value&& value,
-                  Args&&... args) {
-  storage.emplace(std::forward<Key>(key),
-                  std::make_unique<base::Value>(std::forward<Value>(value)));
-  DictOfHelper(storage, std::forward<Args>(args)...);
-}
-
-template <class... Args>
-base::Value DictOf(Args&&... args) {
-  base::Value::DictStorage storage;
-  DictOfHelper(storage, std::forward<Args>(args)...);
-  return base::Value{std::move(storage)};
+boost::json::value DictOf(std::string key1, boost::json::value val1) {
+  boost::json::object obj;
+  obj[key1] = std::move(val1);
+  return boost::json::value{std::move(obj)};
 }
 
 WindowDefinition MakeTestWindowDefinition() {
@@ -147,20 +130,20 @@ const std::string_view kTestWindowDefinitionJson = R"(
 }  // namespace
 
 TEST(FromJson, NodeId) {
-  EXPECT_FALSE(FromJson<scada::NodeId>(base::Value()));
-  EXPECT_FALSE(FromJson<scada::NodeId>(base::Value(123)));
-  EXPECT_FALSE(FromJson<scada::NodeId>(base::Value("abcdef")));
+  EXPECT_FALSE(FromJson<scada::NodeId>(boost::json::value()));
+  EXPECT_FALSE(FromJson<scada::NodeId>(boost::json::value(123)));
+  EXPECT_FALSE(FromJson<scada::NodeId>(boost::json::value("abcdef")));
   EXPECT_EQ(scada::NodeId(123, 1),
-            FromJson<scada::NodeId>(base::Value("TS.123")));
+            FromJson<scada::NodeId>(boost::json::value("TS.123")));
 }
 
 TEST(ToJson, NodeId) {
-  EXPECT_EQ(base::Value(), ToJson(scada::NodeId()));
-  EXPECT_EQ(base::Value("TS.123"), ToJson(scada::NodeId(123, 1)));
+  EXPECT_EQ(boost::json::value(), ToJson(scada::NodeId()));
+  EXPECT_EQ(boost::json::value("TS.123"), ToJson(scada::NodeId(123, 1)));
 }
 
 TEST(FromJson, WindowItems) {
-  std::optional<base::Value> json = LoadJsonFromString(kTestWindowItemsJson);
+  auto json = LoadJsonFromString(kTestWindowItemsJson);
   ASSERT_TRUE(json);
 
   auto window_items = FromJson<WindowItems>(*json);
@@ -171,16 +154,14 @@ TEST(FromJson, WindowItems) {
 TEST(ToJson, WindowItems) {
   auto json = ToJson(kTestWindowItems);
 
-  std::optional<base::Value> expected_json =
-      LoadJsonFromString(kTestWindowItemsJson);
+  auto expected_json = LoadJsonFromString(kTestWindowItemsJson);
   ASSERT_TRUE(expected_json);
 
   EXPECT_EQ(*expected_json, json);
 }
 
 TEST(FromJson, WindowDefinition) {
-  std::optional<base::Value> json =
-      LoadJsonFromString(kTestWindowDefinitionJson);
+  auto json = LoadJsonFromString(kTestWindowDefinitionJson);
   ASSERT_TRUE(json);
 
   auto window_definition = FromJson<WindowDefinition>(*json);
@@ -191,8 +172,7 @@ TEST(FromJson, WindowDefinition) {
 TEST(ToJson, WindowDefinition) {
   auto json = ToJson(MakeTestWindowDefinition());
 
-  std::optional<base::Value> expected_json =
-      LoadJsonFromString(kTestWindowDefinitionJson);
+  auto expected_json = LoadJsonFromString(kTestWindowDefinitionJson);
   ASSERT_TRUE(expected_json);
 
   EXPECT_EQ(*expected_json, json);

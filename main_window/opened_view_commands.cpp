@@ -1,7 +1,7 @@
 ﻿#include "opened_view_commands.h"
 
 #include "aui/dialog_service.h"
-#include "base/command_line.h"
+#include "base/program_options.h"
 #include "base/excel.h"
 #include "base/u16format.h"
 #include "base/win/win_util2.h"
@@ -72,8 +72,7 @@ std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
 
 OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
     : OpenedViewCommandsContext{std::move(context)},
-      excel_enabled_{
-          base::CommandLine::ForCurrentProcess()->HasSwitch("excel")} {}
+      excel_enabled_{client::HasOption("excel")} {}
 
 OpenedViewCommands::~OpenedViewCommands() {}
 
@@ -195,12 +194,10 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
         ShowTimeRangeDialog(*dialog_service_, {profile_, range, time_required})
-            .then([model, weak_ptr = weak_factory_.GetWeakPtr()](
-                      const TimeRange& time_range) {
-              if (weak_ptr.get()) {
-                model->SetTimeRange(time_range);
-              }
-            });
+            .then(cancelation_.Bind(
+                [model](const TimeRange& time_range) {
+                  model->SetTimeRange(time_range);
+                }));
       } else {
         model->SetTimeRange(*time_range);
       }
@@ -320,23 +317,18 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
                                     .properties = std::move(properties)});
 
   ToVoidPromise(insert_promise)
-      .except([this, weak_ptr = weak_factory_.GetWeakPtr(),
-               title](std::exception_ptr e) {
-        if (weak_ptr.get()) {
-          ReportRequestResult(title, scada::GetExceptionStatus(e),
-                              local_events_, profile_);
-        }
-      });
+      .except(cancelation_.Bind(
+          [this, title](std::exception_ptr e) {
+            ReportRequestResult(title, scada::GetExceptionStatus(e),
+                                local_events_, profile_);
+          }));
 
-  return insert_promise.then([this, weak_ptr = weak_factory_.GetWeakPtr(),
-                              title](const scada::NodeId& node_id) {
-    if (!weak_ptr.get()) {
-      return MakeRejectedPromise();
-    }
-    ReportRequestResult(title, scada::StatusCode::Good, local_events_,
-                        profile_);
-    return OnCreateRecordComplete(node_id);
-  });
+  return insert_promise.then(cancelation_.Bind(
+      [this, title](const scada::NodeId& node_id) {
+        ReportRequestResult(title, scada::StatusCode::Good, local_events_,
+                            profile_);
+        return OnCreateRecordComplete(node_id);
+      }));
 }
 
 promise<> OpenedViewCommands::OnCreateRecordComplete(
@@ -345,18 +337,14 @@ promise<> OpenedViewCommands::OnCreateRecordComplete(
   promise<> promise;
   // Capture node so it doesn't release before completion.
   node.Fetch(NodeFetchStatus::NodeOnly(),
-             [this, weak_ptr = weak_factory_.GetWeakPtr(), node,
-              promise](const NodeRef& fetched_node) mutable {
-               if (!weak_ptr.get()) {
-                 promise.reject(std::exception{});
-                 return;
-               }
-               controller_->OnViewNodeCreated(fetched_node);
-               auto def = MakeWindowDefinition(&kNodePropertyWindowInfo,
-                                               fetched_node, false);
-               ::OpenView(main_window_, def, true);
-               promise.resolve();
-             });
+             cancelation_.Bind(
+                 [this, node, promise](const NodeRef& fetched_node) mutable {
+                   controller_->OnViewNodeCreated(fetched_node);
+                   auto def = MakeWindowDefinition(&kNodePropertyWindowInfo,
+                                                   fetched_node, false);
+                   ::OpenView(main_window_, def, true);
+                   promise.resolve();
+                 }));
   return promise;
 }
 

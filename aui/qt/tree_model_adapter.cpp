@@ -11,7 +11,7 @@
 #include <cassert>
 #include <windows.h>
 
-#ifdef OS_WIN
+#ifdef _WIN32
 #include <QtWin>
 #endif
 

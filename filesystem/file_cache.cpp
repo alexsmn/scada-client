@@ -1,31 +1,28 @@
 #include "filesystem/file_cache.h"
 
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "base/client_paths.h"
-#include "base/file_path_util.h"
-#include "base/files/file_enumerator.h"
-#include "base/files/file_util.h"
 #include "base/format.h"
 #include "base/json.h"
 #include "base/logger.h"
 #include "base/path_service.h"
 #include "base/value_util.h"
-#include "base/values.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/file_util.h"
 #include "model/node_id_util.h"
 
+#include <filesystem>
 #include <optional>
 
 namespace {
 
 std::filesystem::path GetCachePath() {
-  base::FilePath path;
+  std::filesystem::path path;
   base::PathService::Get(client::DIR_PUBLIC, &path);
-  return AsFilesystemPath(path.Append(FILE_PATH_LITERAL("file-cache.json")));
+  return path / "file-cache.json";
 }
 
-FileCache::FileEntry LoadFileEntry(const base::Value& data) {
+FileCache::FileEntry LoadFileEntry(const boost::json::value& data) {
   std::filesystem::path path{GetString16(data, "path")};
 
   FileCache::FileEntry entry{path, GetString16(data, "title")};
@@ -35,9 +32,9 @@ FileCache::FileEntry LoadFileEntry(const base::Value& data) {
     entry.title = path.stem().u16string();
 
   if (auto* items_data = FindDict(data, "items")) {
-    for (const auto& [key, value] : items_data->DictItems()) {
+    for (const auto& [key, value] : items_data->as_object()) {
       auto node_id = NodeIdFromScadaString(key);
-      int tag = value.is_int() ? value.GetInt() : -1;
+      int tag = value.is_int64() ? static_cast<int>(value.as_int64()) : -1;
       entry.items.try_emplace(std::move(node_id), tag);
     }
   }
@@ -45,9 +42,9 @@ FileCache::FileEntry LoadFileEntry(const base::Value& data) {
   return entry;
 }
 
-base::Value SaveFileEntry(const FileCache::FileEntry& entry,
-                          std::string_view type_name) {
-  base::Value file_data{base::Value::Type::DICTIONARY};
+boost::json::value SaveFileEntry(const FileCache::FileEntry& entry,
+                                  std::string_view type_name) {
+  boost::json::value file_data{boost::json::object{}};
 
   SetKey(file_data, "type", type_name);
   SetKey(file_data, "path", entry.path.u16string());
@@ -55,10 +52,10 @@ base::Value SaveFileEntry(const FileCache::FileEntry& entry,
     SetKey(file_data, "title", entry.title);
 
   if (!entry.items.empty()) {
-    base::Value items_data{base::Value::Type::DICTIONARY};
+    boost::json::value items_data{boost::json::object{}};
     for (auto& [node_id, key] : entry.items)
       SetKey(items_data, NodeIdToScadaString(node_id), key);
-    file_data.SetKey("items", std::move(items_data));
+    file_data.as_object()["items"] = std::move(items_data);
   }
 
   return file_data;
@@ -97,13 +94,13 @@ void FileCache::Load() {
     return;
   }
 
-  if (data->is_list()) {
-    for (auto& file_data : data->GetList()) {
+  if (data->is_array()) {
+    for (auto& file_data : data->as_array()) {
       if (auto* type =
               file_registry_.FindTypeByName(GetString(file_data, "type"))) {
         auto entry = LoadFileEntry(file_data);
         // Skip removed displays.
-        if (!base::PathExists(AsFilePath(GetPublicFilePath(entry.path))))
+        if (!std::filesystem::exists(GetPublicFilePath(entry.path)))
           continue;
         auto& file_list = file_map_[type->type_id];
         file_list.emplace_back(std::move(entry));
@@ -116,7 +113,7 @@ void FileCache::Save() {
   auto cache_path = GetCachePath();
   BOOST_LOG_TRIVIAL(info) << "Saving file cache to " << cache_path.string();
 
-  base::Value::ListStorage list_data;
+  boost::json::array list_data;
   for (auto& [type_id, file_list] : file_map_) {
     auto* type = file_registry_.FindTypeById(type_id);
     if (!type)
@@ -126,7 +123,7 @@ void FileCache::Save() {
       list_data.emplace_back(SaveFileEntry(entry, type->name));
   }
 
-  SaveJsonToFile(base::Value{std::move(list_data)}, cache_path);
+  SaveJsonToFile(boost::json::value{std::move(list_data)}, cache_path);
 }
 
 std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
@@ -145,17 +142,15 @@ std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
 }
 
 void FileCache::Refresh() {
-  base::FilePath public_path;
+  std::filesystem::path public_path;
   base::PathService::Get(client::DIR_PUBLIC, &public_path);
 
   // Add new files.
-  // WARNING: FileEnumerator matches ".tsdt" by "*.tsd". Need to check
-  // extension explicitly.
-  base::FileEnumerator file_enumerator(public_path, false,
-                                       base::FileEnumerator::FILES);
-  base::FilePath full_path;
-  while (!(full_path = file_enumerator.Next()).empty()) {
-    auto path = AsFilesystemPath(full_path.BaseName());
+  for (const auto& entry : std::filesystem::directory_iterator(public_path)) {
+    if (!entry.is_regular_file())
+      continue;
+    auto full_path = entry.path();
+    auto path = full_path.filename();
     auto* type = file_registry_.FindTypeByExtension(path.extension().string());
     if (!type)
       continue;

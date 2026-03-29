@@ -17,14 +17,14 @@ namespace {
 constexpr WindowInfo kEventWindowInfo = {
     .command_id = ID_EVENT_VIEW,
     .name = "Event",
-    .title = u"События",
+    .title = u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
     .flags = WIN_SING | WIN_DOCKB | WIN_CAN_PRINT,
     .size = {800, 200}};
 
 constexpr WindowInfo kEventJournalWindowInfo = {
     .command_id = ID_EVENT_JOURNAL_VIEW,
     .name = "EventJournal",
-    .title = u"Журнал событий",
+    .title = u"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
     .flags = WIN_INS | WIN_CAN_PRINT};
 
 }  // namespace
@@ -57,7 +57,7 @@ EventModule::EventModule(EventModuleContext&& context)
                                            /*is_panel=*/false);
       });
 
-  profile_.RegisterSerializer([this](base::Value& data) {
+  profile_.RegisterSerializer([this](boost::json::value& data) {
     SetKey(data, "severityMin",
            static_cast<int>(event_fetcher_->severity_min()));
   });

@@ -168,7 +168,7 @@ std::vector<std::pair<int, int>> NodeTableModel::FindUpdatedRanges(
     const auto& row = rows_[i];
     // E.g. TS format can update.
     if (row.node.node_id() == node_id ||
-        base::Contains(row.additional_targets, node_id)) {
+        std::ranges::find(row.additional_targets, node_id) != row.additional_targets.end()) {
       if (!results.empty() && results.back().second + 1 == i) {
         results.back().second = i;
       } else {

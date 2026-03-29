@@ -36,6 +36,8 @@ ConfigurationTreeView::ConfigurationTreeView(
     : ControllerContext{context},
       model_{std::move(model)},
       drop_handler_{std::move(drop_handler)} {
+  // cppcheck-suppress noCopyConstructor
+  // cppcheck-suppress noOperatorEq
   tree_view_ = new aui::Tree{model_};
   tree_view_->LoadIcons(IDB_ITEMS, 16, aui::Rgba{255, 0, 255});
   tree_view_->SetRootVisible(true);

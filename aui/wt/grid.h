@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/values.h"
+#include <boost/json.hpp>
 #include "aui/handlers.h"
 #include "aui/models/grid_model.h"
 #include "aui/models/grid_range.h"
@@ -69,8 +69,8 @@ class Grid final : public Wt::WTableView {
 
   void RequestFocus();
 
-  base::Value SaveState() const;
-  void RestoreState(const base::Value& data);
+  boost::json::value SaveState() const;
+  void RestoreState(const boost::json::value& data);
 
  protected:
   // Wt::WTableView

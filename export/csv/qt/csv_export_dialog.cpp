@@ -92,7 +92,7 @@ promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
 
   return StartModalDialog(std::move(dialog))
       .then([&profile](CsvExportDialog* dialog) {
-        profile.data().SetKey("csv", ToJson(dialog->params_));
+        profile.data().as_object()["csv"] = ToJson(dialog->params_);
         return dialog->params_;
       });
 }

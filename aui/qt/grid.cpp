@@ -3,6 +3,8 @@
 #include "base/value_util.h"
 #include "aui/models/grid_model_util.h"
 
+#include <windows.h>
+
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QHeaderView>
@@ -297,24 +299,24 @@ void Grid::OpenEditor(const GridModelIndex& index) {
   edit(model()->index(index.row, index.column));
 }
 
-base::Value Grid::SaveState() const {
-  base::Value data{base::Value::Type::DICTIONARY};
+boost::json::value Grid::SaveState() const {
+  boost::json::value data{boost::json::object{}};
   auto& header = *horizontalHeader();
-  base::ListValue columns;
+  boost::json::array columns;
   for (int i = 0;; ++i) {
     int index = header.logicalIndex(i);
     if (index == -1)
       break;
-    base::DictionaryValue column;
-    column.SetInteger("ix", index);
-    column.SetInteger("size", header.sectionSize(index));
-    columns.GetList().emplace_back(std::move(column));
+    boost::json::value column{boost::json::object{}};
+    SetKey(column, "ix", index);
+    SetKey(column, "size", header.sectionSize(index));
+    columns.emplace_back(std::move(column));
   }
-  data.SetKey("columns", std::move(columns));
+  data.as_object()["columns"] = std::move(columns);
   return data;
 }
 
-void Grid::RestoreState(const base::Value& data) {
+void Grid::RestoreState(const boost::json::value& data) {
   if (auto* columns = GetList(data, "columns")) {
     auto& header = *horizontalHeader();
     int visual_index = 0;

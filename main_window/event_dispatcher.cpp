@@ -41,12 +41,9 @@ void EventDispatcher::OnAllEventsAcknowledged() {
 void EventDispatcher::ShowEventsDelayed(bool added) {
   if (!showing_events_) {
     showing_events_ = true;
-    executor_->PostDelayedTask(kDelay,
-                               [this, weak_ptr = weak_factory_.GetWeakPtr()] {
-                                 if (weak_ptr.get()) {
-                                   ShowEvents(showing_events_added_);
-                                 }
-                               });
+    executor_->PostDelayedTask(
+      kDelay,
+      cancelation_.Bind([this] { ShowEvents(showing_events_added_); }));
   }
   showing_events_added_ = added;
 }

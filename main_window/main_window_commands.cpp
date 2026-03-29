@@ -22,6 +22,8 @@
 #include "services/speech_service.h"
 
 #include <Windows.h>
+#include <shellapi.h>
+#include <filesystem>
 
 #include <atlres.h>
 #include <shellapi.h>
@@ -57,13 +59,13 @@ static bool Profile::*GetOption(UINT id) {
 }
 
 void OpenPublicFolder() {
-  base::FilePath path;
+  std::filesystem::path path;
   if (!base::PathService::Get(client::DIR_PUBLIC, &path)) {
     return;
   }
 
   ShellExecuteW(/*hwnd=*/nullptr, /*lpOperation=*/L"open",
-                /*lpFile=*/path.value().c_str(), /*lpParameters=*/nullptr,
+                /*lpFile=*/path.wstring().c_str(), /*lpParameters=*/nullptr,
                 /*lpDirectory=*/nullptr,
                 /*nShowCmd=*/SW_SHOWNORMAL);
 }
@@ -126,7 +128,7 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
          WindowDefinition def(kWebWindowInfo);
          def.title = Translate("Documentation");
          def.path = std::filesystem::path(
-             FILE_PATH_LITERAL("http://www.telecontrol.ru/workplace_manual"));
+             L"http://www.telecontrol.ru/workplace_manual");
          context.main_window.OpenView(def, true);
        }});
 #endif

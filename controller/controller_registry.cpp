@@ -1,7 +1,5 @@
 #include "controller_registry.h"
 
-#include "base/lazy_instance.h"
-
 #include <cassert>
 
 namespace {
@@ -11,8 +9,10 @@ ControllerRegistry* g_controller_registry = nullptr;
 typedef std::map<unsigned /*command_id*/, ControllerRegistrarBase*>
     ControllerRegistrarMap;
 
-base::LazyInstance<ControllerRegistrarMap>::Leaky g_static_controllers =
-    LAZY_INSTANCE_INITIALIZER;
+ControllerRegistrarMap& GetStaticControllers() {
+  static ControllerRegistrarMap instance;
+  return instance;
+}
 
 class ControllerFactoryRegistrar final : public ControllerRegistrarBase {
  public:
@@ -72,7 +72,7 @@ ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info,
                                                  bool is_static)
     : window_info_{window_info} {
   if (is_static) {
-    auto& registrar = g_static_controllers.Get();
+    auto& registrar = GetStaticControllers();
     assert(registrar.find(window_info.command_id) == registrar.end());
     registrar.emplace(window_info.command_id, this);
   }
@@ -80,7 +80,7 @@ ControllerRegistrarBase::ControllerRegistrarBase(const WindowInfo& window_info,
 
 ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id) {
   if (const ControllerRegistrarMap* static_map =
-          g_static_controllers.Pointer()) {
+          &GetStaticControllers()) {
     if (auto i = static_map->find(command_id); i != static_map->end()) {
       return i->second;
     }
@@ -98,7 +98,7 @@ ControllerRegistrarBase* GetControllerRegistrar(unsigned command_id) {
 }
 
 ControllerRegistrarBase* FindControllerRegistrar(std::string_view name) {
-  for (const auto& [_, registrar] : g_static_controllers.Get()) {
+  for (const auto& [_, registrar] : GetStaticControllers()) {
     if (registrar->window_info().name == name) {
       return registrar;
     }

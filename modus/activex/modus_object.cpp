@@ -1,6 +1,5 @@
 ﻿#include "modus/activex/modus_object.h"
 
-#include "base/stl_util.h"
 #include "modus/activex/modus_element.h"
 
 #include <string_view>

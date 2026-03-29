@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/values.h"
+#include <boost/json.hpp>
 #include "aui/color.h"
 #include "aui/handlers.h"
 
@@ -50,8 +50,8 @@ class Table : public QTableView {
 
   void LoadIcons(unsigned resource_id, int width, Color mask_color);
 
-  base::Value SaveState() const;
-  void RestoreState(const base::Value& data);
+  boost::json::value SaveState() const;
+  void RestoreState(const boost::json::value& data);
 
   void CopyToClipbard();
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
 #include "aui/models/menu_model.h"
 
 #include <vector>
@@ -138,16 +137,11 @@ class SimpleMenuModel : public MenuModel {
   void InsertItemAtIndex(const Item& item, int index);
   void ValidateItem(const Item& item);
 
-  // Notify the delegate that the menu is closed.
-  void OnMenuClosed();
-
   ItemVector items_;
 
   Delegate* delegate_;
 
   MenuModelDelegate* menu_model_delegate_;
-
-  base::WeakPtrFactory<SimpleMenuModel> method_factory_;
 };
 
 }  // namespace aui

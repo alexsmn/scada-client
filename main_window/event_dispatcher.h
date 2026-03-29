@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/memory/weak_ptr.h"
+#include "base/cancelation.h"
 #include "events/event_observer.h"
 
 #include <boost/signals2/connection.hpp>
@@ -43,5 +43,5 @@ class EventDispatcher final : private EventDispatcherContext,
 
   boost::signals2::scoped_connection local_event_connection_;
 
-  base::WeakPtrFactory<EventDispatcher> weak_factory_{this};
+  Cancelation cancelation_;
 };

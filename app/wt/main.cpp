@@ -1,12 +1,9 @@
 #include "app/client_application.h"
 
 #include "app/app_init.h"
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "aui/wt/message_loop_wt.h"
-#include "base/bind_util.h"
 #include "base/executor.h"
-#include "base/task_runner_executor.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "components/login/wt/login_dialog.h"
 
 #include <wt/WApplication.h>
@@ -27,10 +24,8 @@ class HelloApplication : public Wt::WApplication {
 
  private:
   boost::asio::io_context& io_context_;
-  scoped_refptr<MessageLoopWt> task_runner_{new MessageLoopWt{io_context_}};
   const std::shared_ptr<Executor> executor_ =
-      std::make_shared<TaskRunnerExecutor>(task_runner_);
-  // base::ThreadTaskRunnerHandle thread_task_runner_handle_{task_runner_};
+      std::make_shared<MessageLoopWt>(io_context_);
 
   ClientApplication client_application_{ClientApplicationContext{
       .io_context_ = io_context_,

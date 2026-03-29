@@ -258,7 +258,7 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
         added_views_.emplace_back(opened_view);
       }
     }
-    return std::move(tabs);
+    return tabs;  // NRVO
 
   } else if (block.type == PageLayoutBlock::SPLIT) {
     auto widget1 = OpenLayoutBlock(page, *block.left);
@@ -277,7 +277,7 @@ std::unique_ptr<QWidget> ViewManagerQt::OpenLayoutBlock(
     splitter->setSizes(
         {std::numeric_limits<int>::max() / 100 * block.pos,
          std::numeric_limits<int>::max() / 100 * (100 - block.pos)});
-    return std::move(splitter);
+    return splitter;  // NRVO
 
   } else {
     assert(false);

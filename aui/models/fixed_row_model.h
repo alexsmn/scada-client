@@ -9,7 +9,7 @@ class FixedRowModel : public HeaderModel {
   class Delegate {
    public:
     virtual int GetRowCount() = 0;
-    virtual base::string16 GetRowTitle(int index);
+    virtual std::u16string GetRowTitle(int index);
   };
 
   explicit FixedRowModel(Delegate& delegate);
@@ -21,7 +21,7 @@ class FixedRowModel : public HeaderModel {
   // aui::HeaderModel
   virtual int GetCount() const override;
   virtual int GetSize(int index) const override;
-  virtual base::string16 GetTitle(int index) const override;
+  virtual std::u16string GetTitle(int index) const override;
 
  private:
   Delegate& delegate_;

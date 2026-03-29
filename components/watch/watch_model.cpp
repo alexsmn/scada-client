@@ -106,7 +106,7 @@ void WatchModel::SaveLog(const std::filesystem::path& path) {
       std::string text = UtfConvert<char>(GetCellText(i, j));
       if (j)
         str << '\t';
-      str << text.c_str();
+      str << text;
     }
     str << '\n';
   }

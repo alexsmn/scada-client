@@ -118,24 +118,24 @@ void Table::OpenEditor(int row) {
   edit(RowToIndex(row));
 }
 
-base::Value Table::SaveState() const {
-  base::Value data{base::Value::Type::DICTIONARY};
+boost::json::value Table::SaveState() const {
+  boost::json::value data{boost::json::object{}};
   auto& header = *horizontalHeader();
-  base::ListValue columns;
+  boost::json::array columns;
   for (int i = 0;; ++i) {
     int index = header.logicalIndex(i);
     if (index == -1)
       break;
-    base::DictionaryValue column;
-    column.SetInteger("ix", index);
-    column.SetInteger("size", header.sectionSize(index));
-    columns.GetList().emplace_back(std::move(column));
+    boost::json::value column{boost::json::object{}};
+    SetKey(column, "ix", index);
+    SetKey(column, "size", header.sectionSize(index));
+    columns.emplace_back(std::move(column));
   }
-  data.SetKey("columns", std::move(columns));
+  data.as_object()["columns"] = std::move(columns);
   return data;
 }
 
-void Table::RestoreState(const base::Value& data) {
+void Table::RestoreState(const boost::json::value& data) {
   if (auto* columns = GetList(data, "columns")) {
     auto& header = *horizontalHeader();
     int visual_index = 0;

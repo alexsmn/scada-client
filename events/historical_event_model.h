@@ -1,8 +1,8 @@
 #pragma once
 
-#include <boost/log/trivial.hpp>
+#include "base/boost_log.h"
 #include "base/format_time.h"
-#include "base/memory/weak_ptr.h"
+#include "base/cancelation.h"
 #include "base/time_range.h"
 #include "scada/event.h"
 #include "scada/history_service.h"
@@ -34,7 +34,7 @@ class HistoricalEventModel {
   bool working() const { return request_running_; }
 
   void CancelRequest() {
-    weak_factory_.InvalidateWeakPtrs();
+    cancelation_.Cancel();
     request_running_ = false;
   }
 
@@ -58,7 +58,7 @@ class HistoricalEventModel {
 
   bool request_running_ = false;
 
-  base::WeakPtrFactory<HistoricalEventModel> weak_factory_{this};
+  Cancelation cancelation_;
 };
 
 inline void HistoricalEventModel::Update() {
@@ -71,15 +71,14 @@ inline void HistoricalEventModel::Update() {
   assert(!request_running_);
   request_running_ = true;
 
-  auto weak_ptr = weak_factory_.GetWeakPtr();
   history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED},
       BindExecutor(executor_,
-                   [this, weak_ptr](scada::HistoryReadEventsResult result) {
-                     if (weak_ptr.get())
-                       OnHistoryReadEventsCompleted(std::move(result));
-                   }));
+                   cancelation_.Bind(
+                       [this](scada::HistoryReadEventsResult result) {
+                         OnHistoryReadEventsCompleted(std::move(result));
+                       })));
 }
 
 inline void HistoricalEventModel::OnHistoryReadEventsCompleted(

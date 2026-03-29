@@ -1,14 +1,14 @@
 #pragma once
 
-#include "base/memory/ref_counted.h"
-
+#include <cassert>
 #include <map>
+#include <memory>
 
 template <class Key, class Payload>
 class Pool;
 
 template <class Key, class Payload>
-class PoolItem : public base::RefCounted<Payload> {
+class PoolItem : public std::enable_shared_from_this<Payload> {
  public:
   PoolItem() {}
   ~PoolItem();
@@ -23,21 +23,24 @@ class Pool {
   Pool() {}
   ~Pool() { assert(payload_map_.empty()); }
 
-  scoped_refptr<Payload> Get(const Key& key) {
+  Pool(const Pool&) = delete;
+  Pool& operator=(const Pool&) = delete;
+
+  std::shared_ptr<Payload> Get(const Key& key) {
     auto p = payload_map_.try_emplace(key);
     Payload*& payload = p.first->second;
     if (!payload) {
-      payload = new Payload(key);
+      auto shared = std::make_shared<Payload>(key);
+      payload = shared.get();
       payload->pool_ = this;
       payload->pos_ = p.first;
+      return shared;
     }
-    return scoped_refptr<Payload>(payload);
+    return std::static_pointer_cast<Payload>(payload->shared_from_this());
   }
 
   typedef std::map<Key, Payload*> PayloadMap;
   PayloadMap payload_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(Pool);
 };
 
 template <class Key, class Payload>
