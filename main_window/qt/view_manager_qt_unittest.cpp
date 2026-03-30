@@ -122,10 +122,8 @@ TEST_F(ViewManagerQtTest, CloseView_DeletesNativeView) {
 
 TEST_F(ViewManagerQtTest, SplitAndClose) {
   auto view_state1 = ExpectOpenView();
-  auto* opened_view1 =
-      view_manager_qt_.OpenView(view_state1->window_definition,
-                                /*make_active=*/true, /*after_view=*/nullptr);
-  opened_view1;
+  view_manager_qt_.OpenView(view_state1->window_definition,
+                            /*make_active=*/true, /*after_view=*/nullptr);
 
   auto view_state2 = ExpectOpenView();
   auto* opened_view2 =

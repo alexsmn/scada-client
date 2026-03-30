@@ -143,7 +143,10 @@ std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
 
 void FileCache::Refresh() {
   std::filesystem::path public_path;
-  base::PathService::Get(client::DIR_PUBLIC, &public_path);
+  if (!base::PathService::Get(client::DIR_PUBLIC, &public_path) ||
+      !std::filesystem::is_directory(public_path)) {
+    return;
+  }
 
   // Add new files.
   for (const auto& entry : std::filesystem::directory_iterator(public_path)) {

@@ -114,6 +114,8 @@ class ViewManagerWt final : public ViewManager {
   class RootPane : public Pane {
    public:
     explicit RootPane(ViewManagerWt& view_manager);
+    RootPane(const RootPane&) = delete;
+    RootPane& operator=(const RootPane&) = delete;
 
     DockPane& GetOrCreateDockPane(DockSide side);
 
