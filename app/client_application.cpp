@@ -183,12 +183,16 @@ void ClientApplication::PostLogin() {
       .controller_registry_ = *controller_registry_,
       .selection_commands_ = core_module_->selection_commands()});
 
-  timed_data_service_ = CreateTimedDataService(
-      {.executor_ = executor_,
-       .alias_resolver_ = alias_resolver,
-       .node_service_ = *node_service_,
-       .services_ = audited_scada_services,
-       .node_event_provider_ = event_module_->node_event_provider()});
+  if (timed_data_service_override_) {
+    timed_data_service_ = std::move(timed_data_service_override_);
+  } else {
+    timed_data_service_ = CreateTimedDataService(
+        {.executor_ = executor_,
+         .alias_resolver_ = alias_resolver,
+         .node_service_ = *node_service_,
+         .services_ = audited_scada_services,
+         .node_event_provider_ = event_module_->node_event_provider()});
+  }
 
   task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
       .executor_ = executor_,

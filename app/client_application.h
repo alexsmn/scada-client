@@ -42,6 +42,8 @@ class TimedDataService;
 class Speech;
 class WriteService;
 
+class TimedDataService;
+
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;
   const std::shared_ptr<Executor> executor_;
@@ -52,6 +54,10 @@ struct ClientApplicationContext {
       login_handler_;
 
   NodeServiceTreeFactory node_service_tree_factory_;
+
+  // Optional override for testing/screenshots. If set, used instead of
+  // creating a real TimedDataService from NodeService + HistoryService.
+  std::unique_ptr<TimedDataService> timed_data_service_override_;
 };
 
 class ClientApplication : private ClientApplicationContext {

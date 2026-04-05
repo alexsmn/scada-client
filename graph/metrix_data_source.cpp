@@ -204,6 +204,24 @@ void MetrixDataSource::UpdateRange() {
         node[data_items::id::AnalogItemType_EuHi].value().get_or(
             views::kGraphUnknownValue));
   }
+
+  // Auto-compute range from data when node limits are unavailable.
+  if (range_.low() == views::kGraphUnknownValue) {
+    auto values = timed_data_.values();
+    double lo = std::numeric_limits<double>::max();
+    double hi = std::numeric_limits<double>::lowest();
+    for (const auto& v : values) {
+      double d = v.value.get_or(views::kGraphUnknownValue);
+      if (d != views::kGraphUnknownValue) {
+        lo = std::min(lo, d);
+        hi = std::max(hi, d);
+      }
+    }
+    if (lo <= hi) {
+      double margin = std::max((hi - lo) * 0.05, 1.0);
+      range_ = views::GraphRange(lo - margin, hi + margin);
+    }
+  }
 }
 
 void MetrixDataSource::UpdateLimits() {
