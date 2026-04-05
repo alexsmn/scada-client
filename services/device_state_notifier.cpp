@@ -4,7 +4,7 @@
 #include "model/devices_node_ids.h"
 #include "timed_data/timed_data_service.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 std::string ToString(DeviceState device_state) {
   static const char* kStrings[] = {"Unknown", "Disabled", "Offline", "Online"};

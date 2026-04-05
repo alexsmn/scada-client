@@ -2,6 +2,8 @@
 
 scada_module(client_clipboard)
 
+target_precompile_headers(client_clipboard REUSE_FROM scada_base)
+
 target_link_libraries(client_clipboard PUBLIC
   node_service
 )

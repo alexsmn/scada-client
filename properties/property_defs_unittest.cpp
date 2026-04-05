@@ -20,7 +20,7 @@
 #include "properties/property_service.h"
 #include "services/task_manager_mock.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 using namespace testing;
 

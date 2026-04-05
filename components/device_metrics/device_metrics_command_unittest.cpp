@@ -19,7 +19,7 @@
 #include <boost/range/adaptor/map.hpp>
 #include <gmock/gmock.h>
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 using namespace boost::adaptors;
 using namespace testing;

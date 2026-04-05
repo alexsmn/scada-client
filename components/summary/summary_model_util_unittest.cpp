@@ -4,7 +4,7 @@
 
 #include <gmock/gmock.h>
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 TEST(SummaryModelUtil, CalculateSummaryModelParams) {
   auto params = CalculateSummaryModelParams(

@@ -15,7 +15,7 @@
 
 #include "base/utf_convert.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 // SummaryModel::Column -------------------------------------------------------
 

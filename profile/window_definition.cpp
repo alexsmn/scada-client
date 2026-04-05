@@ -6,7 +6,7 @@
 #include "base/value_util.h"
 #include "controller/window_info.h"
 
-#include "base/debug_util-inl.h"
+#include "base/debug_util.h"
 
 std::ostream& operator<<(std::ostream& stream, const WindowItem& window_item) {
   StructWriter{stream}
