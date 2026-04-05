@@ -1,5 +1,6 @@
 #pragma once
 
+#include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_model.h"
 
 #include <memory>
@@ -12,6 +13,7 @@ struct HardwareTreeModelContext {
   const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   TimedDataService& timed_data_service_;
+  const NodeServiceTreeFactory& node_service_tree_factory_;
 };
 
 class HardwareTreeModel : public ConfigurationTreeModel {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_view.h"
 #include "controller/contents_observer.h"
 #include "aui/models/tree_model.h"
@@ -11,7 +12,8 @@ class ObjectTreeView : public ConfigurationTreeView,
                        protected aui::TreeModelObserver,
                        private ContentsObserver {
  public:
-  explicit ObjectTreeView(const ControllerContext& context);
+  ObjectTreeView(const ControllerContext& context,
+                 const NodeServiceTreeFactory& node_service_tree_factory);
   virtual ~ObjectTreeView();
 
  protected:
@@ -31,7 +33,8 @@ class ObjectTreeView : public ConfigurationTreeView,
                                       bool added) override;
 
   static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
-      const ControllerContext& context);
+      const ControllerContext& context,
+      const NodeServiceTreeFactory& node_service_tree_factory);
 
   static std::unique_ptr<ConfigurationTreeDropHandler> CreateTreeDropHandler(
       const ControllerContext& context);

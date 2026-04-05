@@ -11,6 +11,7 @@
 #include "components/debugger/debugger_module.h"
 #include "components/write/write_service_impl.h"
 #include "configuration/configuration_module.h"
+#include "configuration/tree/node_service_tree_impl.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
 #include "core/core_module.h"
@@ -214,8 +215,16 @@ void ClientApplication::PostLogin() {
                               .profile_ = *profile_});
 
   singletons_.emplace(std::make_shared<ConfigurationModule>(
-      ConfigurationModuleContext{.controller_registry_ = *controller_registry_,
-                                 .profile_ = *profile_}));
+      ConfigurationModuleContext{
+          .controller_registry_ = *controller_registry_,
+          .profile_ = *profile_,
+          .node_service_tree_factory_ =
+              node_service_tree_factory_
+                  ? node_service_tree_factory_
+                  : NodeServiceTreeFactory{[](NodeServiceTreeImplContext&& ctx) {
+                      return std::make_unique<NodeServiceTreeImpl>(
+                          std::move(ctx));
+                    }}}));
 
   singletons_.emplace(std::make_shared<DebuggerModule>(DebuggerModuleContext{
       .session_service_ = *audited_scada_services.session_service,

@@ -5,15 +5,19 @@
 #include "configuration/tree/node_service_tree_impl.h"
 #include "node_service/node_service.h"
 
-NodesView::NodesView(const ControllerContext& context)
-    : ConfigurationTreeView{context, CreateConfigurationTreeModel(context),
-                            CreateConfigurationTreeDropHandler(context)} {}
+NodesView::NodesView(const ControllerContext& context,
+                     const NodeServiceTreeFactory& node_service_tree_factory)
+    : ConfigurationTreeView{
+          context,
+          CreateConfigurationTreeModel(context, node_service_tree_factory),
+          CreateConfigurationTreeDropHandler(context)} {}
 
 // static
 std::shared_ptr<ConfigurationTreeModel> NodesView::CreateConfigurationTreeModel(
-    const ControllerContext& context) {
+    const ControllerContext& context,
+    const NodeServiceTreeFactory& node_service_tree_factory) {
   auto node_service_tree =
-      std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+      node_service_tree_factory(NodeServiceTreeImplContext{
           .executor_ = context.executor_,
           .node_service_ = context.node_service_,
           .root_node_ = context.node_service_.GetNode(scada::id::RootFolder),

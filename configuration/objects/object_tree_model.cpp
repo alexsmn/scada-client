@@ -9,7 +9,7 @@
 ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
-          std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+          node_service_tree_factory_(NodeServiceTreeImplContext{
               .executor_ = ObjectTreeModelContext::executor_,
               .node_service_ = ObjectTreeModelContext::node_service_,
               .root_node_ = ObjectTreeModelContext::root_,

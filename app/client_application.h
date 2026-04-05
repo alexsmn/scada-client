@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
+#include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
 
 #include <memory>
@@ -49,6 +50,8 @@ struct ClientApplicationContext {
   const std::function<promise<std::optional<DataServices>>(
       DataServicesContext&& services_context)>
       login_handler_;
+
+  NodeServiceTreeFactory node_service_tree_factory_;
 };
 
 class ClientApplication : private ClientApplicationContext {

@@ -8,17 +8,22 @@
 
 class HardwareTreeView : public ConfigurationTreeView {
  public:
-  explicit HardwareTreeView(const ControllerContext& context)
-      : ConfigurationTreeView{context, CreateConfigurationTreeModel(context),
-                              CreateTreeDropHandler(context)} {}
+  HardwareTreeView(const ControllerContext& context,
+                   const NodeServiceTreeFactory& node_service_tree_factory)
+      : ConfigurationTreeView{
+            context,
+            CreateConfigurationTreeModel(context, node_service_tree_factory),
+            CreateTreeDropHandler(context)} {}
 
  private:
   static std::shared_ptr<ConfigurationTreeModel> CreateConfigurationTreeModel(
-      const ControllerContext& context) {
+      const ControllerContext& context,
+      const NodeServiceTreeFactory& node_service_tree_factory) {
     auto model = std::make_shared<HardwareTreeModel>(HardwareTreeModelContext{
         .executor_ = context.executor_,
         .node_service_ = context.node_service_,
-        .timed_data_service_ = context.timed_data_service_});
+        .timed_data_service_ = context.timed_data_service_,
+        .node_service_tree_factory_ = node_service_tree_factory});
     model->Init();
     return model;
   }

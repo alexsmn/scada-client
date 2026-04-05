@@ -1,5 +1,6 @@
 #pragma once
 
+#include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "configuration/objects/visible_node_model.h"
 
@@ -15,6 +16,7 @@ struct ObjectTreeModelContext {
   TimedDataService& timed_data_service_;
   Profile& profile_;
   BlinkerManager& blinker_manager_;
+  const NodeServiceTreeFactory& node_service_tree_factory_;
 };
 
 class ObjectTreeModel : private ObjectTreeModelContext,

@@ -9,13 +9,13 @@
 namespace {
 
 static constexpr WindowInfo kObjectTreeWindowInfo = {
-    ID_OBJECT_VIEW, "Struct", u"Объекты", WIN_SING, 200, 400, 0};
+    ID_OBJECT_VIEW, "Struct", u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅ", WIN_SING, 200, 400, 0};
 
 static constexpr WindowInfo kHardwareTreeWindowInfo = {
-    ID_HARDWARE_VIEW, "Subsystems", u"Оборудование", WIN_SING, 200, 400};
+    ID_HARDWARE_VIEW, "Subsystems", u"пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ", WIN_SING, 200, 400};
 
 static constexpr WindowInfo kNodesWindowInfo = {
-    ID_NODES_VIEW, "Nodes", u"Узлы", WIN_SING | WIN_REQUIRES_ADMIN,
+    ID_NODES_VIEW, "Nodes", u"пїЅпїЅпїЅпїЅ", WIN_SING | WIN_REQUIRES_ADMIN,
     200,           400,     0};
 
 }  // namespace
@@ -23,18 +23,21 @@ static constexpr WindowInfo kNodesWindowInfo = {
 ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
     : ConfigurationModuleContext{std::move(context)} {
   controller_registry_.AddControllerFactory(
-      kObjectTreeWindowInfo, [](const ControllerContext& context) {
-        return std::make_unique<ObjectTreeView>(context);
+      kObjectTreeWindowInfo,
+      [f = node_service_tree_factory_](const ControllerContext& context) {
+        return std::make_unique<ObjectTreeView>(context, f);
       });
 
   controller_registry_.AddControllerFactory(
-      kHardwareTreeWindowInfo, [](const ControllerContext& context) {
-        return std::make_unique<HardwareTreeView>(context);
+      kHardwareTreeWindowInfo,
+      [f = node_service_tree_factory_](const ControllerContext& context) {
+        return std::make_unique<HardwareTreeView>(context, f);
       });
 
   controller_registry_.AddControllerFactory(
-      kNodesWindowInfo, [](const ControllerContext& context) {
-        return std::make_unique<NodesView>(context);
+      kNodesWindowInfo,
+      [f = node_service_tree_factory_](const ControllerContext& context) {
+        return std::make_unique<NodesView>(context, f);
       });
 
   profile_.RegisterWriter([](Profile& profile) {

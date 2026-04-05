@@ -10,9 +10,13 @@
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 
-ObjectTreeView::ObjectTreeView(const ControllerContext& context)
-    : ConfigurationTreeView{context, CreateConfigurationTreeModel(context),
-                            CreateTreeDropHandler(context)} {
+ObjectTreeView::ObjectTreeView(
+    const ControllerContext& context,
+    const NodeServiceTreeFactory& node_service_tree_factory)
+    : ConfigurationTreeView{
+          context,
+          CreateConfigurationTreeModel(context, node_service_tree_factory),
+          CreateTreeDropHandler(context)} {
   tree_view().SetHeaderVisible(true);
   tree_view().SetShowChecks(true);
 
@@ -49,7 +53,9 @@ ObjectTreeView::~ObjectTreeView() {
 
 // static
 std::shared_ptr<ConfigurationTreeModel>
-ObjectTreeView::CreateConfigurationTreeModel(const ControllerContext& context) {
+ObjectTreeView::CreateConfigurationTreeModel(
+    const ControllerContext& context,
+    const NodeServiceTreeFactory& node_service_tree_factory) {
   auto model = std::make_shared<ObjectTreeModel>(ObjectTreeModelContext{
       context.executor_,
       context.node_service_,
@@ -57,6 +63,7 @@ ObjectTreeView::CreateConfigurationTreeModel(const ControllerContext& context) {
       context.timed_data_service_,
       context.profile_,
       context.blinker_manager_,
+      node_service_tree_factory,
   });
   model->Init();
   return model;
