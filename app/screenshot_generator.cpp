@@ -4,6 +4,7 @@
 #include "app/qt/installed_translation.h"
 #include "aui/test/app_environment.h"
 #include "base/boost_json_file.h"
+#include "base/time_utils.h"
 #include "base/utf_convert.h"
 #include "configuration/tree/node_service_tree_mock.h"
 #include "controller/window_info.h"
@@ -20,6 +21,8 @@
 #include "scada/services_mock.h"
 #include "scada/view_service_mock.h"
 #include "timed_data/timed_data_service_fake.h"
+
+#include "graph/metrix_graph.h"
 
 #include <QPixmap>
 #include <boost/asio/io_context.hpp>
@@ -147,7 +150,6 @@ void SaveScreenshot(QWidget* widget,
     return;
 
   widget->resize(spec.width, spec.height);
-  // Process pending layout and paint events so the widget renders correctly.
   QApplication::processEvents();
   widget->repaint();
   QApplication::processEvents();
@@ -155,6 +157,66 @@ void SaveScreenshot(QWidget* widget,
   QPixmap pixmap = widget->grab();
   auto path = GetOutputDir() / spec.filename;
   pixmap.save(QString::fromStdString(path.string()));
+}
+
+// Render a standalone graph widget populated from JSON timed data.
+// This bypasses the hidden main window layout issues by creating a fresh
+// Graph shown as a top-level window — matching graph_qt's RenderWidget().
+void SaveGraphScreenshot(const ScreenshotData::ScreenshotSpec& spec,
+                         TimedDataService& timed_data_service) {
+  MetrixGraph graph{MetrixGraphContext{timed_data_service}};
+  const auto& jgraph = g_data.json.at("graph").as_object();
+
+  // Create panes.
+  std::map<int, MetrixGraph::MetrixPane*> pane_map;
+  for (const auto& jp : jgraph.at("panes").as_array()) {
+    auto& pane = graph.NewPane();
+    int ix = static_cast<int>(jp.at("index").as_int64());
+    pane.size_percent_ = static_cast<int>(jp.at("size").as_int64());
+    pane_map[ix] = &pane;
+    if (auto* act = jp.as_object().if_contains("active");
+        act && act->as_bool())
+      graph.SelectPane(&pane);
+  }
+
+  // Create lines.
+  for (const auto& ji : jgraph.at("items").as_array()) {
+    auto path = std::string(ji.at("path").as_string());
+    int pane_ix = static_cast<int>(ji.at("pane").as_int64());
+    auto* pane = pane_map[pane_ix];
+    auto& line = graph.NewLine(path, *pane);
+    line.SetColor(QColor(QString::fromStdString(
+        std::string(ji.at("color").as_string()))));
+    line.set_dots_shown(ji.at("dots").as_bool());
+    line.set_stepped(ji.at("stepped").as_bool());
+  }
+
+  // Set time range.
+  auto now = base::Time::Now();
+  // Parse span from "HH:MM:SS" string.
+  auto span_str = std::string(jgraph.at("time_scale").at("span").as_string());
+  base::TimeDelta span;
+  Deserialize(span_str, span);
+  double from = (now - span).ToDoubleT();
+  double to = now.ToDoubleT();
+  graph.horizontal_axis().SetTimeFit(false);
+  graph.horizontal_axis().SetRange(
+      views::GraphRange{from, to, views::GraphRange::TIME});
+
+  graph.UpdateData();
+
+  // Show legends.
+  for (auto* pane : graph.panes())
+    static_cast<MetrixGraph::MetrixPane*>(pane)->ShowLegend(true);
+
+  // Render — matching graph_qt's RenderWidget pattern exactly.
+  graph.setFixedSize(spec.width, spec.height);
+  graph.show();
+  QApplication::processEvents();
+
+  QPixmap pixmap = graph.grab();
+  auto output_path = GetOutputDir() / spec.filename;
+  pixmap.save(QString::fromStdString(output_path.string()));
 }
 
 // --- Graph definition from JSON ---
@@ -646,7 +708,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
       continue;
     }
 
-    SaveScreenshot(widget, spec);
+    if (spec.window_type == "Graph") {
+      // Render graph standalone — hidden main windows don't lay out
+      // QSplitter children, so we create a fresh graph widget.
+      auto timed_data_service = MakeFakeTimedDataService();
+      SaveGraphScreenshot(spec, *timed_data_service);
+    } else {
+      SaveScreenshot(widget, spec);
+    }
     ++captured;
   }
 

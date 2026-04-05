@@ -113,5 +113,5 @@ add_executable(screenshot_generator
   "../client_application.cpp"
   "../client_application.h"
 )
-target_link_libraries(screenshot_generator PRIVATE client_qt_lib base_unittest)
+target_link_libraries(screenshot_generator PRIVATE client_qt_lib base_unittest graph_qt)
 set_target_properties(screenshot_generator PROPERTIES AUTOMOC ON)
