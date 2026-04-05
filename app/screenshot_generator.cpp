@@ -15,6 +15,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "node_service/node_model_mock.h"
+#include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/history_service_mock.h"
@@ -76,6 +77,13 @@ struct ScreenshotData {
   const NodeInfo* FindNode(uint32_t id) const {
     for (const auto& n : nodes)
       if (n.node_id.numeric_id() == id)
+        return &n;
+    return nullptr;
+  }
+
+  const NodeInfo* FindNode(const scada::NodeId& node_id) const {
+    for (const auto& n : nodes)
+      if (n.node_id == node_id)
         return &n;
     return nullptr;
   }
@@ -286,34 +294,60 @@ NodeRef MakeTestNode(const scada::NodeId& node_id,
 
 // Persistent storage for mock nodes (must outlive the tree).
 struct MockNodeStorage {
-  std::map<uint32_t, NodeRef> refs;
+  std::unordered_map<scada::NodeId, NodeRef> refs;
 
   NodeRef Get(const ScreenshotData::NodeInfo& info) {
-    auto it = refs.find(info.node_id.numeric_id());
+    auto it = refs.find(info.node_id);
     if (it != refs.end())
       return it->second;
     auto ref = MakeTestNode(info.node_id,
                             UtfConvert<char16_t>(info.name),
                             info.node_class);
-    refs[info.node_id.numeric_id()] = ref;
+    refs[info.node_id] = ref;
     return ref;
+  }
+
+  NodeRef Find(const scada::NodeId& node_id) const {
+    auto it = refs.find(node_id);
+    return it != refs.end() ? it->second : NodeRef{};
   }
 };
 
 static MockNodeStorage g_node_storage;
 
+// NodeService that returns pre-built NodeRefs from g_node_storage.
+class MockNodeService : public NodeService {
+ public:
+  NodeRef GetNode(const scada::NodeId& node_id) override {
+    return g_node_storage.Find(node_id);
+  }
+  void Subscribe(NodeRefObserver&) const override {}
+  void Unsubscribe(NodeRefObserver&) const override {}
+  size_t GetPendingTaskCount() const override { return 0; }
+};
+
+std::shared_ptr<NodeService> MakeMockNodeService() {
+  // Populate g_node_storage with all nodes from JSON.
+  for (const auto& info : g_data.nodes)
+    g_node_storage.Get(info);
+  return std::make_shared<MockNodeService>();
+}
+
 std::unique_ptr<NodeServiceTree> MakeMockNodeServiceTree(
-    NodeServiceTreeImplContext&&) {
+    NodeServiceTreeImplContext&& context) {
   auto tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
 
   // Build refs for all nodes from JSON.
   for (const auto& info : g_data.nodes)
     g_node_storage.Get(info);
 
-  // Root is the node with id=84, ns=0.
-  auto root_info = g_data.FindNode(84);
-  assert(root_info);
-  auto root = g_node_storage.Get(*root_info);
+  // Use the context's root node if available. Fall back to Objects {84,0}.
+  NodeRef root = context.root_node_;
+  if (!root) {
+    auto root_info = g_data.FindNode(84);
+    assert(root_info);
+    root = g_node_storage.Get(*root_info);
+  }
   ON_CALL(*tree, GetRoot()).WillByDefault(Return(root));
 
   ON_CALL(*tree, HasChildren(_)).WillByDefault(Return(false));
@@ -451,7 +485,8 @@ class ScreenshotGenerator : public Test {
       .executor_ = executor_,
       .login_handler_ = login_handler_.AsStdFunction(),
       .node_service_tree_factory_ = MakeMockNodeServiceTree,
-      .timed_data_service_override_ = MakeFakeTimedDataService()}};
+      .timed_data_service_override_ = MakeFakeTimedDataService(),
+      .node_service_override_ = MakeMockNodeService()}};
 
 };
 

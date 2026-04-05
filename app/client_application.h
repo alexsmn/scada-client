@@ -58,6 +58,10 @@ struct ClientApplicationContext {
   // Optional override for testing/screenshots. If set, used instead of
   // creating a real TimedDataService from NodeService + HistoryService.
   std::unique_ptr<TimedDataService> timed_data_service_override_;
+
+  // Optional override for testing/screenshots. If set, used instead of
+  // creating a real NodeService from browse/attribute services.
+  std::shared_ptr<NodeService> node_service_override_;
 };
 
 class ClientApplication : private ClientApplicationContext {

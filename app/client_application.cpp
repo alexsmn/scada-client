@@ -157,14 +157,19 @@ void ClientApplication::PostLogin() {
 
   scada::client scada_client{audited_scada_services};
 
-  node_service_ = CreateNodeService(NodeServiceContext{
-      .executor_ = executor_,
-      .session_service_ = *audited_scada_services.session_service,
-      .attribute_service_ = *audited_scada_services.attribute_service,
-      .view_service_ = *audited_scada_services.view_service,
-      .monitored_item_service_ = *audited_scada_services.monitored_item_service,
-      .method_service_ = *audited_scada_services.method_service,
-      .scada_client_ = scada_client});
+  if (node_service_override_) {
+    node_service_ = std::move(node_service_override_);
+  } else {
+    node_service_ = CreateNodeService(NodeServiceContext{
+        .executor_ = executor_,
+        .session_service_ = *audited_scada_services.session_service,
+        .attribute_service_ = *audited_scada_services.attribute_service,
+        .view_service_ = *audited_scada_services.view_service,
+        .monitored_item_service_ =
+            *audited_scada_services.monitored_item_service,
+        .method_service_ = *audited_scada_services.method_service,
+        .scada_client_ = scada_client});
+  }
 
   AliasResolver alias_resolver = CreateAliasResolver(*node_service_, logger_);
 
