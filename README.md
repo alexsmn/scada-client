@@ -159,6 +159,34 @@ Add to the `discovery.json` when possible:
 }
 ```
 
+## Screenshot Generator
+
+The screenshot generator (`app/screenshot_generator.cpp`) captures PNG screenshots of
+client window types using an offscreen Qt renderer. It is built as a GTest fixture inside
+`client_qt_unittests`.
+
+### Running
+
+```bash
+# Capture all screenshots to the default ./screenshots/ directory:
+client_qt_unittests --gtest_filter="ScreenshotGenerator.*"
+
+# Specify a custom output directory:
+client_qt_unittests --gtest_filter="ScreenshotGenerator.*" --screenshot-dir=path/to/output
+```
+
+### Available tests
+
+| Test               | Output                                                                        |
+|--------------------|-------------------------------------------------------------------------------|
+| `CaptureAllWindows` | Individual PNGs for each window type (graph.png, table.png, events.png, etc.) |
+| `CaptureMainWindow` | `client-window.png` — composite main window with Graph, Nodes, and Events    |
+
+### Window types captured
+
+Graph, Table, Summary, Events, EventJournal, DeviceWatch, ObjectTree, Devices,
+Users, Parameters, Sheet, Favorites, Files, TimedData, Retransmission.
+
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).

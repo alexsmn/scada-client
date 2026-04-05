@@ -1,6 +1,7 @@
 #include "client_application.h"
 
 #include "aui/test/app_environment.h"
+#include "controller/window_info.h"
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
@@ -10,6 +11,7 @@
 #include "profile/profile.h"
 #include "scada/services_mock.h"
 
+#include <QApplication>
 #include <QPixmap>
 #include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
@@ -104,6 +106,9 @@ class ScreenshotGenerator : public Test {
 };
 
 ScreenshotGenerator::ScreenshotGenerator() {
+  // Match the default client style.
+  QApplication::setStyle("Fusion");
+
   // Don't actually show windows on screen -- render offscreen only.
   MainWindow::SetHideForTesting();
 

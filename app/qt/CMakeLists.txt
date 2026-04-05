@@ -106,3 +106,12 @@ add_executable(client_qt_unittests ${UNITTESTS} ${UNITTESTS_QT})
 target_link_libraries(client_qt_unittests PRIVATE client_qt_lib base_unittest)
 include(GoogleTest)
 gtest_discover_tests(client_qt_unittests DISCOVERY_MODE PRE_TEST)
+
+# Screenshot generator — captures window type PNGs for documentation.
+add_executable(screenshot_generator
+  "../screenshot_generator.cpp"
+  "../client_application.cpp"
+  "../client_application.h"
+)
+target_link_libraries(screenshot_generator PRIVATE client_qt_lib base_unittest)
+set_target_properties(screenshot_generator PROPERTIES AUTOMOC ON)
