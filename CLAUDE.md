@@ -62,6 +62,10 @@ scada-client/
 ├── web/                    # Web component
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
+├── docs/                   # Design doc and architecture diagrams
+│   ├── design.md           # High-level design (use cases, requirements, components)
+│   ├── *.mmd               # Mermaid diagram sources
+│   └── *.svg               # Generated diagrams referenced from design.md
 ├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
 ├── CMakeLists.txt          # Root CMake build file
 ├── client_module.cmake     # Custom CMake helpers for dual Qt/Wt target creation
@@ -72,6 +76,80 @@ scada-client/
 ├── tasks.md                # Bug/feature backlog
 └── command-line.md         # Command-line switch documentation
 ```
+
+## Documentation
+
+The high-level design document lives at `docs/design.md`. It captures use
+cases, functional and non-functional requirements, and the layered
+component architecture, all grounded in concrete source files. Treat it as
+a living document, not a snapshot.
+
+### When to update the docs
+
+**Update `docs/design.md` (and the relevant diagram) whenever you change
+or add functionality.** Concretely, that means at minimum:
+
+- Adding or removing a top-level module (`*_module.{h,cpp}`) — update the
+  module table and `module-graph.mmd`.
+- Adding or removing a directory under `client/` that hosts a new layer or
+  domain area — update the layer description and `architecture-layers.mmd`.
+- Adding or removing a back-end registered with `REGISTER_DATA_SERVICES` —
+  update FR-1 in §3.
+- Changing the bootstrap order in `ClientApplication::PostLogin()` —
+  update `bootstrap-sequence.mmd`.
+- Adding a new actor-facing capability that isn't covered by an existing
+  use case — add a row to the use-case table in §2 and a functional
+  requirement in §3.
+- Removing a use case (deleting a feature) — strike the row in §2 and the
+  matching FR.
+
+If you cannot tell whether a change affects the doc, ask. Drift between
+the doc and the code is worse than no doc.
+
+### Diagrams
+
+Architecture diagrams live next to `design.md` as Mermaid sources:
+
+| File | Renders to | Used in design.md §|
+|---|---|---|
+| `docs/architecture-layers.mmd` | `architecture-layers.svg` | §5 (component overview) |
+| `docs/module-graph.mmd` | `module-graph.svg` | §5.6 (domain modules) |
+| `docs/bootstrap-sequence.mmd` | `bootstrap-sequence.svg` | §5.1 (startup sequence) |
+
+The `.svg` files are committed alongside the `.mmd` sources so the doc
+renders correctly on GitHub without a build step.
+
+**To update a diagram:**
+
+1. Edit the corresponding `.mmd` file. Mermaid syntax reference:
+   <https://mermaid.js.org/intro/>.
+2. Regenerate the SVG with `mmdc` (mermaid-cli, installed globally via
+   `npm install -g @mermaid-js/mermaid-cli`):
+
+   ```bash
+   cd client/docs
+   mmdc -i <name>.mmd -o <name>.svg -b transparent
+   ```
+
+3. Commit both the `.mmd` source *and* the regenerated `.svg`. They must
+   stay in lock-step — never commit one without the other.
+
+**Mermaid quirks worth knowing:**
+
+- Sequence-diagram message text cannot contain `,` `;` `&` HTML entities,
+  or PascalCase identifiers at the very end of a line — the parser
+  interprets them as new statements. Rephrase or split.
+- Flowchart node labels accept HTML (`<b>`, `<i>`, `<br/>`); sequence
+  participant labels do not.
+- Always end the file with a trailing newline.
+
+**To add a new diagram:**
+
+1. Create `docs/<name>.mmd`.
+2. Render it as above.
+3. Reference it from `design.md` with `![alt](<name>.svg)` and a "Source:
+   …" caption pointing back to the `.mmd`.
+4. Add it to the table above in this section.
 
 ## Build System
 

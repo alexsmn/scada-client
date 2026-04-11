@@ -1,0 +1,31 @@
+%%{init: {'flowchart': {'htmlLabels': true}}}%%
+flowchart LR
+    subgraph Surface["UI surface"]
+        direction TB
+        PLAT["<b>Platform integrations</b><br/><i>modus/, vidicon/</i><br/>(Qt + Windows only)"]
+        UI["<b>UI components (~20)</b><br/><i>components/*</i>"]
+        MW["<b>Main window &amp; view manager</b><br/><i>main_window/</i>"]
+        PLAT --> UI --> MW
+    end
+
+    subgraph Logic["Application logic"]
+        direction TB
+        CTRL["<b>Controllers / commands</b><br/><i>controller/</i>"]
+        DOM["<b>Domain modules</b><br/><i>configuration/, events/,</i><br/><i>favorites/, portfolio/,</i><br/><i>filesystem/, graph/,</i><br/><i>export/, print/, properties/</i>"]
+        PROF["<b>Profile &amp; persistence</b><br/><i>profile/</i>"]
+        CTRL --> DOM --> PROF
+    end
+
+    subgraph Plane["Data plane &amp; foundation"]
+        direction TB
+        SVC["<b>Services &amp; data plane</b><br/><i>services/,<br/>common/master_data_services</i>"]
+        AUI["<b>Abstract UI layer</b><br/><i>aui/</i>"]
+        CORE["<b>Core orchestration</b><br/><i>core/, base/</i>"]
+        BOOT["<b>Application bootstrap</b><br/><i>app/, app/qt, app/wt</i>"]
+        SVC --> AUI --> CORE --> BOOT
+    end
+
+    Surface --> Logic --> Plane
+
+    classDef qtonly fill:#fef3c7,stroke:#b45309
+    class PLAT qtonly

@@ -1,0 +1,41 @@
+%%{init: {'flowchart': {'htmlLabels': true}}}%%
+flowchart TB
+    Core["<b>CoreModule</b><br/><i>core/</i><br/>tracer · registries ·<br/>progress host"]
+
+    subgraph Domain["Domain modules"]
+        direction TB
+        Event["EventModule<br/><i>events/</i>"]
+        Config["ConfigurationModule<br/><i>configuration/</i>"]
+        Csv["CsvExportModule<br/><i>export/csv/</i>"]
+        ExportCfg["ExportConfigurationModule<br/><i>export/configuration/</i>"]
+        Debug["DebuggerModule<br/><i>components/debugger/</i>"]
+        Fav["FavoritesModule<br/><i>favorites/</i>"]
+        Portfolio["PortfolioModule<br/><i>portfolio/</i>"]
+        Modus["ModusModule<br/><i>modus/</i><br/>(Qt only)"]
+        Vidicon["VidiconModule<br/><i>vidicon/</i><br/>(Qt only)"]
+    end
+
+    MW["<b>MainWindowModule</b><br/><i>main_window/</i><br/>orchestrates pages,<br/>views &amp; alarms"]
+
+    Core --> Event
+    Core --> Config
+    Core --> Csv
+    Core --> ExportCfg
+    Core --> Debug
+    Core --> Fav
+    Core --> Portfolio
+    Core --> Modus
+    Core --> Vidicon
+
+    Event -->|local_events,<br/>node_event_provider| MW
+    Fav -->|favourites| MW
+    Portfolio -->|portfolio_manager| MW
+    Event -.->|local_events| Vidicon
+    Fav -.->|profile| Modus
+
+    classDef root fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px
+    classDef orchestrator fill:#dcfce7,stroke:#166534,stroke-width:2px
+    classDef qtonly fill:#fef3c7,stroke:#b45309
+    class Core root
+    class MW orchestrator
+    class Modus,Vidicon qtonly

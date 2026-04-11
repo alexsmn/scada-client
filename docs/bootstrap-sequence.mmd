@@ -1,0 +1,55 @@
+sequenceDiagram
+    autonumber
+    actor User
+    participant Main as main (app/qt or app/wt)
+    participant App as ClientApplication
+    participant Core as CoreModule
+    participant Login as LoginDialog
+    participant Backend
+    participant Profile
+    participant Modules as Domain modules
+    participant MW as MainWindowModule
+
+    User->>Main: launch client.exe
+    Main->>Main: parse command line, install translator
+    Main->>App: new ClientApplication(ctx)
+    activate App
+    App->>Core: new CoreModule(executor)
+    Core-->>App: tracer, command registries, progress host
+    Note right of App: also: transport_factory_, master_data_services_
+    deactivate App
+
+    Main->>App: Start()
+    activate App
+    App->>Login: login_handler_(ctx)
+    activate Login
+    Login->>User: prompt credentials and backend
+    User-->>Login: username, password, backend
+    Login->>Backend: connect and authenticate
+    Backend-->>Login: services
+    Login-->>App: DataServices
+    deactivate Login
+
+    App->>App: PostLogin()
+    App->>Profile: Load()
+    Profile-->>App: window layouts, pages, prefs
+
+    rect rgb(245, 245, 250)
+    Note over App,Modules: Construct domain modules in dependency order
+    App->>Modules: EventModule, TimedDataService, TaskManager, ConnectionStateReporter, WriteService
+    App->>Modules: ConfigurationModule, DebuggerModule, FileSystemComponent
+    App->>Modules: FavoritesModule, PortfolioModule
+    App->>Modules: ModusModule, VidiconModule (Qt only)
+    App->>Modules: ExportConfigurationModule
+    end
+
+    App->>MW: new MainWindowModule(ctx)
+    activate MW
+    MW->>Profile: read pages and window definitions
+    MW->>MW: instantiate views via ControllerRegistry
+    MW->>User: display main window
+    deactivate MW
+    deactivate App
+
+    Note over User,MW: After bootstrap the UI is live - events stream in via EventFetcher and values via the monitored-item subscription
+
