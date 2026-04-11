@@ -1,4 +1,4 @@
-#include "vidicon/teleclient/vidicon_client.h"
+﻿#include "vidicon/teleclient/vidicon_client.h"
 
 #include "base/test/test_executor.h"
 #include "base/win/scoped_bstr.h"
@@ -59,7 +59,7 @@ Microsoft::WRL::ComPtr<IDataPoint> VidiconClientTest::CreateDataPoint(
 
 TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
   const std::wstring_view address =
-      LR"(VIDICON.Share.1\�����������.��.��-10 ��� s3)";
+      LR"(VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
 
   EXPECT_CALL(timed_data_service_, GetNodeTimedData(opc::MakeOpcNodeId(address),
                                                     /*aggregation*/ _));
@@ -71,7 +71,7 @@ TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
 
 TEST_F(VidiconClientTest, NewOpcAeDataPoint_FailsConnection) {
   const std::wstring_view address =
-      LR"(AE:VIDICON.Share.1\�����������.��.��-10 ��� s3)";
+      LR"(AE:VIDICON.Share.1\Стройфарфор.ТС.ВВ-10 ЭГД s3)";
 
   Microsoft::WRL::ComPtr<IDataPoint> data_point;
   ASSERT_HRESULT_FAILED(vidicon_client_.teleclient().RequestPoint(

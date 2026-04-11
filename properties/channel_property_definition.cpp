@@ -29,7 +29,7 @@ ParseChannelPath(std::string_view channel_path) {
 
 }  // namespace
 
-const char16_t ChannelPropertyDefinition::kParentGroupDevice[] = u"<������>";
+const char16_t ChannelPropertyDefinition::kParentGroupDevice[] = u"<Group>";
 
 std::u16string ChannelPropertyDefinition::GetTitle(
     const PropertyContext& context,

@@ -32,7 +32,7 @@ scada::Variant::Type GetBuiltInDataType(const NodeRef& data_type) {
     }
   }
 
-  throw ResourceError{u"����������� ��� ������"};
+  throw ResourceError{u"Unknown data type"};
 }
 
 }  // namespace
@@ -44,7 +44,7 @@ ExportDataReader::ExportDataReader(NodeService& node_service, CsvReader& reader)
 
 ExportData ExportDataReader::Read() {
   if (!reader_.NextRow())
-    throw ResourceError{u"��� ������ ���������"};
+    throw ResourceError{u"No header row"};
 
   // Skip Id, Parent, Type, Name.
   for (int i = 0; i < 4; ++i) {
@@ -68,7 +68,7 @@ ExportData::Property ExportDataReader::ParseProperty(
     std::u16string_view cell) const {
   auto prop_decl_id = ParseReferenceCell(cell);
   if (prop_decl_id.is_null()) {
-    throw ResourceError{u"�������� ������ ����� �������"};
+    throw ResourceError{u"Invalid column name format"};
   }
 
   auto prop_decl = node_service_.GetNode(prop_decl_id);
@@ -90,13 +90,13 @@ ExportData::Node ExportDataReader::ReadNode(
   // Parent.
   auto parent_id = NodeIdFromScadaString(UtfConvert<char>(ReadCell()));
   if (parent_id.is_null()) {
-    throw ResourceError{u"������ �� �������"};
+    throw ResourceError{u"Group not found"};
   }
 
   // Type.
   auto type_definition = node_service_.GetNode(ParseReferenceCell(ReadCell()));
   if (!type_definition) {
-    throw ResourceError{u"��� �� ������"};
+    throw ResourceError{u"Type not found"};
   }
 
   scada::LocalizedText display_name = ReadCell();
@@ -122,7 +122,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ReadProperty(
   auto prop_decl = node_service_.GetNode(prop_decl_id);
   if (!prop_decl) {
     throw ResourceError{u16format(
-        L"�������� {} �� �������",
+        L"Property {} not found",
         UtfConvert<char16_t>(NodeIdToScadaString(prop_decl_id)))};
   }
 
@@ -148,7 +148,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParsePropertyValue(
   auto data_type = GetBuiltInDataType(prop_decl.data_type());
   if (!StringToValue(string_value, data_type, new_value)) {
     throw ResourceError{u16format(
-        L"���������� ������������� �������� '{}' ��� ��� '{}'",
+        L"Cannot convert value '{}' to type '{}'",
         std::u16string{string_value}, ToString(data_type))};
   }
 
@@ -179,7 +179,7 @@ std::optional<ExportData::PropertyValue> ExportDataReader::ParseReferenceValue(
 std::u16string& ExportDataReader::ReadCell() {
   auto* cell = TryReadCell();
   if (!cell)
-    throw ResourceError(u"���������� ����� � ������ ������ ����������");
+    throw ResourceError(u"Row has fewer cells than expected");
   return *cell;
 }
 

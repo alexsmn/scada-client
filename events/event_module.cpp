@@ -17,14 +17,14 @@ namespace {
 constexpr WindowInfo kEventWindowInfo = {
     .command_id = ID_EVENT_VIEW,
     .name = "Event",
-    .title = u"�������",
+    .title = u"Events",
     .flags = WIN_SING | WIN_DOCKB | WIN_CAN_PRINT,
     .size = {800, 200}};
 
 constexpr WindowInfo kEventJournalWindowInfo = {
     .command_id = ID_EVENT_JOURNAL_VIEW,
     .name = "EventJournal",
-    .title = u"������ �������",
+    .title = u"Event Journal",
     .flags = WIN_INS | WIN_CAN_PRINT};
 
 }  // namespace

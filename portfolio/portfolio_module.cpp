@@ -12,7 +12,7 @@ namespace {
 
 constexpr WindowInfo kPortfolioWindowInfo = {.command_id = ID_PORTFOLIO_VIEW,
                                              .name = "Portfolio",
-                                             .title = u"���������",
+                                             .title = u"Portfolio",
                                              .flags = WIN_SING | WIN_INS,
                                              .size = {200, 400}};
 

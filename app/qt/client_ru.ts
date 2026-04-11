@@ -479,6 +479,58 @@
         <translation>Оборудование</translation>
     </message>
     <message>
+        <source>Favorites</source>
+        <translation>Избранное</translation>
+    </message>
+    <message>
+        <source>CSV Files</source>
+        <translation>Файлы CSV</translation>
+    </message>
+    <message>
+        <source>Export completed. Open the file now?</source>
+        <translation>Экспорт завершен. Открыть файл сейчас?</translation>
+    </message>
+    <message>
+        <source>Export failed.</source>
+        <translation>Ошибка при экспорте.</translation>
+    </message>
+    <message>
+        <source>Unknown data type</source>
+        <translation>Неизвестный тип данных</translation>
+    </message>
+    <message>
+        <source>No header row</source>
+        <translation>Нет строки заголовка</translation>
+    </message>
+    <message>
+        <source>Invalid column name format</source>
+        <translation>Неверный формат имени столбца</translation>
+    </message>
+    <message>
+        <source>Group not found</source>
+        <translation>Группа не найдена</translation>
+    </message>
+    <message>
+        <source>Type not found</source>
+        <translation>Тип не найден</translation>
+    </message>
+    <message>
+        <source>Property {} not found</source>
+        <translation>Свойство {} не найдено</translation>
+    </message>
+    <message>
+        <source>Cannot convert value &apos;{}&apos; to type &apos;{}&apos;</source>
+        <translation>Невозможно преобразовать значение &apos;{}&apos; как тип &apos;{}&apos;</translation>
+    </message>
+    <message>
+        <source>Row has fewer cells than expected</source>
+        <translation>Количество ячеек в строке меньше ожидаемого</translation>
+    </message>
+    <message>
+        <source>&lt;Group&gt;</source>
+        <translation>&lt;Группа&gt;</translation>
+    </message>
+    <message>
         <source>Formats</source>
         <translation>Форматы</translation>
     </message>

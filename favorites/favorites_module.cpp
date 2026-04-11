@@ -15,7 +15,7 @@ namespace {
 
 constexpr WindowInfo kFavoritesWindowInfo = {.command_id = ID_FAVOURITES_VIEW,
                                              .name = "Favorites",
-                                             .title = u"���������",
+                                             .title = u"Favorites",
                                              .flags = WIN_SING,
                                              .size = {200, 400}};
 

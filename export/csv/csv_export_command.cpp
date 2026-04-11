@@ -12,7 +12,7 @@
 
 namespace {
 
-const char16_t kExportTitle[] = u"�������";
+const char16_t kExportTitle[] = u"Export";
 
 std::filesystem::path MakeFileName(std::u16string_view text) {
   auto result = boost::replace_all_copy(std::u16string{text}, u":", u"-");
@@ -29,7 +29,7 @@ class CsvExportCommandRun
   promise<void> Run() {
     const std::string_view kCsvExt[] = {"*.csv"};
     const DialogService::Filter kFilters[] = {
-        {u"����� CSV", kCsvExt},
+        {u"CSV Files", kCsvExt},
     };
 
     auto file_name = MakeFileName(window_title_);
@@ -53,7 +53,7 @@ class CsvExportCommandRun
         .then(std::bind_front(&CsvExportCommandRun::Export, ref))
         .then([this, ref] {
           return dialog_service_.RunMessageBox(
-              u"������� ��������. ������� ���� ������?", kExportTitle,
+              u"Export completed. Open the file now?", kExportTitle,
               MessageBoxMode::QuestionYesNo);
         })
         .then([this, ref](MessageBoxResult open_prompt_result) {
@@ -73,7 +73,7 @@ class CsvExportCommandRun
 
     } catch (const std::runtime_error&) {
       return dialog_service_
-          .RunMessageBox(u"������ ��� ��������.", kExportTitle,
+          .RunMessageBox(u"Export failed.", kExportTitle,
                          MessageBoxMode::Error)
           .then([e = std::current_exception()](MessageBoxResult) {
             return make_rejected_promise(e);
