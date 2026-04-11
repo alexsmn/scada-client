@@ -1,0 +1,50 @@
+%%{init: {'flowchart': {'htmlLabels': true}}}%%
+flowchart LR
+    Operator(("Operator"))
+    Engineer(("Engineer"))
+    Admin(("Admin"))
+
+    subgraph Monitoring["Monitoring &amp; visualization"]
+        direction TB
+        UC1["UC-1 Monitor live values"]
+        UC2["UC-2 Visualise time-series on a graph"]
+        UC3["UC-3 View tables, summaries &amp; sheets"]
+        UC4["UC-4 Acknowledge events / alarms"]
+        UC5["UC-5 Browse event journals"]
+        UC6["UC-6 Watch a custom spreadsheet"]
+    end
+
+    subgraph OpTools["Operator tools"]
+        direction TB
+        UC7["UC-7 Issue control commands"]
+        UC8["UC-8 Manage favourites &amp; portfolios"]
+        UC9["UC-9 Print / export the active view"]
+        UC10["UC-10 Browse server files"]
+        UC11["UC-11 View Modus / Vidicon schematics"]
+    end
+
+    subgraph Config["Configuration"]
+        direction TB
+        UC12["UC-12 Edit device parameters, limits &amp; aliases"]
+        UC13["UC-13 Bulk-create data items"]
+        UC14["UC-14 Export / import configuration"]
+        UC15["UC-15 Inspect protocol traffic"]
+        UC16["UC-16 Save window layouts &amp; profiles"]
+    end
+
+    subgraph Administration["Administration"]
+        direction TB
+        UC17["UC-17 Authenticate against a back-end"]
+        UC18["UC-18 Manage users / passwords"]
+        UC19["UC-19 Configure transmission rules"]
+    end
+
+    Operator --> Monitoring
+    Operator --> OpTools
+    Engineer --> Config
+    Admin --> Administration
+
+    classDef actor fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px
+    class Operator,Engineer,Admin actor
+    classDef ucase fill:#f9fafb,stroke:#6b7280
+    class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19 ucase

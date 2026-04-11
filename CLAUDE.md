@@ -112,6 +112,7 @@ Architecture diagrams live next to `design.md` as Mermaid sources:
 
 | File | Renders to | Used in design.md §|
 |---|---|---|
+| `docs/use-cases.mmd` | `use-cases.svg` | §2 (use cases) |
 | `docs/architecture-layers.mmd` | `architecture-layers.svg` | §5 (component overview) |
 | `docs/module-graph.mmd` | `module-graph.svg` | §5.6 (domain modules) |
 | `docs/bootstrap-sequence.mmd` | `bootstrap-sequence.svg` | §5.1 (startup sequence) |

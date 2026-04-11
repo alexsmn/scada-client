@@ -30,8 +30,20 @@ documentation site at <https://telecontrol-ru.github.io/scada/>.
 The client targets three actor archetypes — **operator** (read-mostly,
 monitoring shifts), **engineer** (configures devices, exports data), and
 **administrator** (manages users, system settings). The use cases below are
-grounded in concrete components in the source tree; each cites where the
-behaviour lives.
+grouped into four areas — *monitoring & visualization*, *operator tools*,
+*configuration*, and *administration* — and each is grounded in concrete
+components in the source tree.
+
+<p align="center">
+  <img src="use-cases.svg" alt="Use case diagram" width="820">
+</p>
+
+> Source: [`use-cases.mmd`](use-cases.mmd). Regenerate with
+> `mmdc -i use-cases.mmd -o use-cases.svg -b transparent`.
+
+The table that follows expands each use case with the source folder
+that implements it. The columns are read as: identifier, actor, goal,
+implementation.
 
 | # | Actor | Use case | Source |
 |---|---|---|---|
