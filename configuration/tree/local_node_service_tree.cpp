@@ -8,26 +8,40 @@
 #include <string>
 #include <utility>
 
+namespace {
+
+// Parses "ns.id" (e.g. "0.84") or a bare "id" (implies ns=1) into a NodeId.
+scada::NodeId ParseJsonNodeId(std::string_view s) {
+  scada::NumericId id = 0;
+  scada::NamespaceIndex ns = 1;
+  if (auto dot = s.find('.'); dot != std::string_view::npos) {
+    ns = static_cast<scada::NamespaceIndex>(
+        std::stoi(std::string(s.substr(0, dot))));
+    id = static_cast<scada::NumericId>(
+        std::stoi(std::string(s.substr(dot + 1))));
+  } else {
+    id = static_cast<scada::NumericId>(std::stoi(std::string(s)));
+  }
+  return scada::NodeId{id, ns};
+}
+
+scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
+  if (child.is_string())
+    return ParseJsonNodeId(std::string_view(child.as_string()));
+  return scada::NodeId{static_cast<scada::NumericId>(child.as_int64()), 1};
+}
+
+}  // namespace
+
 void LocalNodeServiceTree::SharedData::LoadFromJson(
     const boost::json::value& root) {
   for (const auto& [key, val] : root.at("tree").as_object()) {
-    auto key_str = std::string(key);
-    scada::NumericId id = 0;
-    scada::NamespaceIndex ns = 1;
-    if (auto dot = key_str.find('.'); dot != std::string::npos) {
-      ns = static_cast<scada::NamespaceIndex>(
-          std::stoi(key_str.substr(0, dot)));
-      id = static_cast<scada::NumericId>(std::stoi(key_str.substr(dot + 1)));
-    } else {
-      id = static_cast<scada::NumericId>(std::stoi(key_str));
-    }
+    auto parent = ParseJsonNodeId(std::string_view(key));
 
     std::vector<scada::NodeId> child_ids;
-    for (const auto& child : val.as_array()) {
-      child_ids.push_back(
-          scada::NodeId{static_cast<scada::NumericId>(child.as_int64()), 1});
-    }
-    children[scada::NodeId{id, ns}] = std::move(child_ids);
+    for (const auto& child : val.as_array())
+      child_ids.push_back(ParseJsonChildNodeId(child));
+    children[parent] = std::move(child_ids);
   }
 }
 
