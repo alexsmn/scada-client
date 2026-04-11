@@ -1,26 +1,26 @@
 #include "client_application.h"
 
+#include "address_space/local_attribute_service.h"
+#include "address_space/local_history_service.h"
+#include "address_space/local_monitored_item_service.h"
+#include "address_space/local_session_service.h"
+#include "address_space/local_view_service.h"
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
 #include "aui/test/app_environment.h"
 #include "base/boost_json_file.h"
-#include "base/time_utils.h"
-#include "base/utf_convert.h"
-#include "configuration/tree/node_service_tree_mock.h"
-#include "controller/window_info.h"
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
+#include "base/time_utils.h"
+#include "base/utf_convert.h"
+#include "configuration/tree/local_node_service_tree.h"
+#include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
-#include "node_service/node_model_mock.h"
-#include "node_service/node_service.h"
+#include "node_service/local/local_node_service.h"
 #include "profile/profile.h"
-#include "scada/attribute_service_mock.h"
-#include "scada/history_service_mock.h"
-#include "scada/services_mock.h"
-#include "scada/view_service_mock.h"
 #include "timed_data/timed_data_service_fake.h"
 
 #include "graph/metrix_graph.h"
@@ -28,12 +28,9 @@
 #include <QPixmap>
 #include <boost/asio/io_context.hpp>
 #include <boost/json.hpp>
-#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <filesystem>
-#include <random>
-
-using namespace ::testing;
 
 namespace {
 
@@ -41,82 +38,25 @@ namespace {
 std::filesystem::path g_output_dir;
 
 // --- JSON data loaded at startup ---
+//
+// Only the graph/screenshot rendering bits consult this directly; node,
+// attribute, view, history data is loaded into the local services.
 
-struct ScreenshotData {
+struct ScreenshotSpec {
+  std::string window_type;
+  std::string filename;
+  int width = 800;
+  int height = 600;
+};
+
+struct ScreenshotConfig {
   boost::json::value json;
-
-  // Parsed from JSON.
-  struct NodeInfo {
-    scada::NodeId node_id;
-    std::string name;
-    scada::NodeClass node_class = scada::NodeClass::Object;
-    double base_value = 0.0;
-    bool has_base_value = false;
-  };
-
-  struct ScreenshotSpec {
-    std::string window_type;
-    std::string filename;
-    int width = 800;
-    int height = 600;
-  };
-
-  std::vector<NodeInfo> nodes;
-  std::map<std::string, std::vector<uint32_t>> tree;
   std::vector<ScreenshotSpec> screenshots;
 
   void Load(const std::filesystem::path& path) {
     auto opt = ReadBoostJsonFromFile(path);
     ASSERT_TRUE(opt.has_value()) << "Failed to read " << path.string();
     json = std::move(*opt);
-    ParseNodes();
-    ParseTree();
-    ParseScreenshots();
-  }
-
-  const NodeInfo* FindNode(uint32_t id) const {
-    for (const auto& n : nodes)
-      if (n.node_id.numeric_id() == id)
-        return &n;
-    return nullptr;
-  }
-
-  const NodeInfo* FindNode(const scada::NodeId& node_id) const {
-    for (const auto& n : nodes)
-      if (n.node_id == node_id)
-        return &n;
-    return nullptr;
-  }
-
- private:
-  void ParseNodes() {
-    for (const auto& jn : json.at("nodes").as_array()) {
-      NodeInfo info;
-      auto id = static_cast<uint32_t>(jn.at("id").as_int64());
-      auto ns = static_cast<uint16_t>(jn.at("ns").as_int64());
-      info.node_id = scada::NodeId{id, ns};
-      info.name = std::string(jn.at("name").as_string());
-      auto cls = jn.at("class").as_string();
-      info.node_class = (cls == "variable") ? scada::NodeClass::Variable
-                                            : scada::NodeClass::Object;
-      if (auto* bv = jn.as_object().if_contains("base_value")) {
-        info.base_value = bv->to_number<double>();
-        info.has_base_value = true;
-      }
-      nodes.push_back(std::move(info));
-    }
-  }
-
-  void ParseTree() {
-    for (const auto& [key, val] : json.at("tree").as_object()) {
-      std::vector<uint32_t> children;
-      for (const auto& child : val.as_array())
-        children.push_back(static_cast<uint32_t>(child.as_int64()));
-      tree[std::string(key)] = std::move(children);
-    }
-  }
-
-  void ParseScreenshots() {
     for (const auto& js : json.at("screenshots").as_array()) {
       ScreenshotSpec spec;
       spec.window_type = std::string(js.at("type").as_string());
@@ -128,8 +68,8 @@ struct ScreenshotData {
   }
 };
 
-// Global data loaded from JSON.
-ScreenshotData g_data;
+// Global config loaded once per test suite.
+ScreenshotConfig g_config;
 
 // --- Helpers ---
 
@@ -152,8 +92,7 @@ std::filesystem::path GetOutputDir() {
   return std::filesystem::current_path() / "screenshots";
 }
 
-void SaveScreenshot(QWidget* widget,
-                    const ScreenshotData::ScreenshotSpec& spec) {
+void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
   if (!widget)
     return;
 
@@ -170,10 +109,10 @@ void SaveScreenshot(QWidget* widget,
 // Render a standalone graph widget populated from JSON timed data.
 // This bypasses the hidden main window layout issues by creating a fresh
 // Graph shown as a top-level window — matching graph_qt's RenderWidget().
-void SaveGraphScreenshot(const ScreenshotData::ScreenshotSpec& spec,
+void SaveGraphScreenshot(const ScreenshotSpec& spec,
                          TimedDataService& timed_data_service) {
   MetrixGraph graph{MetrixGraphContext{timed_data_service}};
-  const auto& jgraph = g_data.json.at("graph").as_object();
+  const auto& jgraph = g_config.json.at("graph").as_object();
 
   // Create panes.
   std::map<int, MetrixGraph::MetrixPane*> pane_map;
@@ -231,7 +170,7 @@ void SaveGraphScreenshot(const ScreenshotData::ScreenshotSpec& spec,
 
 WindowDefinition MakeGraphDefinition() {
   WindowDefinition def{"Graph"};
-  const auto& graph = g_data.json.at("graph").as_object();
+  const auto& graph = g_config.json.at("graph").as_object();
 
   for (const auto& jp : graph.at("panes").as_array()) {
     auto& item = def.AddItem("GraphPane");
@@ -262,7 +201,7 @@ WindowDefinition MakeGraphDefinition() {
 
 Page MakeScreenshotPage() {
   Page page;
-  for (const auto& spec : g_data.screenshots) {
+  for (const auto& spec : g_config.screenshots) {
     if (spec.window_type == "Graph")
       page.AddWindow(MakeGraphDefinition());
     else
@@ -271,160 +210,13 @@ Page MakeScreenshotPage() {
   return page;
 }
 
-// --- Mock node tree from JSON ---
+// --- Local TimedDataService populated from JSON ---
 
-NodeRef MakeTestNode(const scada::NodeId& node_id,
-                     std::u16string display_name,
-                     scada::NodeClass node_class = scada::NodeClass::Object) {
-  auto model = std::make_shared<NiceMock<MockNodeModel>>();
-  ON_CALL(*model, GetAttribute(scada::AttributeId::NodeId))
-      .WillByDefault(Return(scada::Variant{node_id}));
-  ON_CALL(*model, GetAttribute(scada::AttributeId::DisplayName))
-      .WillByDefault(
-          Return(scada::Variant{scada::LocalizedText{display_name}}));
-  ON_CALL(*model, GetAttribute(scada::AttributeId::NodeClass))
-      .WillByDefault(
-          Return(scada::Variant{static_cast<scada::Int32>(node_class)}));
-  ON_CALL(*model, GetStatus())
-      .WillByDefault(Return(scada::StatusCode::Good));
-  ON_CALL(*model, GetFetchStatus())
-      .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
-  return model;
-}
-
-// Persistent storage for mock nodes (must outlive the tree).
-struct MockNodeStorage {
-  std::unordered_map<scada::NodeId, NodeRef> refs;
-
-  NodeRef Get(const ScreenshotData::NodeInfo& info) {
-    auto it = refs.find(info.node_id);
-    if (it != refs.end())
-      return it->second;
-    auto ref = MakeTestNode(info.node_id,
-                            UtfConvert<char16_t>(info.name),
-                            info.node_class);
-    refs[info.node_id] = ref;
-    return ref;
-  }
-
-  NodeRef Find(const scada::NodeId& node_id) const {
-    auto it = refs.find(node_id);
-    return it != refs.end() ? it->second : NodeRef{};
-  }
-};
-
-static MockNodeStorage g_node_storage;
-
-// NodeService that returns pre-built NodeRefs from g_node_storage.
-class MockNodeService : public NodeService {
- public:
-  NodeRef GetNode(const scada::NodeId& node_id) override {
-    return g_node_storage.Find(node_id);
-  }
-  void Subscribe(NodeRefObserver&) const override {}
-  void Unsubscribe(NodeRefObserver&) const override {}
-  size_t GetPendingTaskCount() const override { return 0; }
-};
-
-std::shared_ptr<NodeService> MakeMockNodeService() {
-  // Populate g_node_storage with all nodes from JSON.
-  for (const auto& info : g_data.nodes)
-    g_node_storage.Get(info);
-  return std::make_shared<MockNodeService>();
-}
-
-std::unique_ptr<NodeServiceTree> MakeMockNodeServiceTree(
-    NodeServiceTreeImplContext&& context) {
-  auto tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
-
-  // Build refs for all nodes from JSON.
-  for (const auto& info : g_data.nodes)
-    g_node_storage.Get(info);
-
-  // Use the context's root node if available. Fall back to Objects {84,0}.
-  NodeRef root = context.root_node_;
-  if (!root) {
-    auto root_info = g_data.FindNode(84);
-    assert(root_info);
-    root = g_node_storage.Get(*root_info);
-  }
-  ON_CALL(*tree, GetRoot()).WillByDefault(Return(root));
-
-  ON_CALL(*tree, HasChildren(_)).WillByDefault(Return(false));
-  ON_CALL(*tree, GetChildren(_))
-      .WillByDefault(Return(std::vector<NodeServiceTree::ChildRef>{}));
-
-  auto org = scada::id::Organizes;
-
-  // Set up HasChildren and GetChildren from the tree map.
-  // Only entries that have children in the "tree" map (with bare numeric keys
-  // for ns=1) are wired up for HasChildren/GetChildren on the NodeServiceTree.
-  for (const auto& [key, children] : g_data.tree) {
-    // Parse the key to find the node.
-    // Keys are "ns.id" (e.g. "0.84") or just "id" (implies ns=1).
-    uint32_t id;
-    uint16_t ns = 1;
-    if (auto dot = key.find('.'); dot != std::string::npos) {
-      ns = static_cast<uint16_t>(std::stoi(key.substr(0, dot)));
-      id = static_cast<uint32_t>(std::stoi(key.substr(dot + 1)));
-    } else {
-      id = static_cast<uint32_t>(std::stoi(key));
-    }
-
-    // Find the parent node ref.
-    auto parent_info = g_data.FindNode(id);
-    if (!parent_info)
-      continue;
-    auto parent_ref = g_node_storage.Get(*parent_info);
-
-    // Build child refs.
-    std::vector<NodeServiceTree::ChildRef> child_refs;
-    for (uint32_t child_id : children) {
-      auto child_info = g_data.FindNode(child_id);
-      if (!child_info)
-        continue;
-      child_refs.push_back({org, true, g_node_storage.Get(*child_info)});
-    }
-
-    ON_CALL(*tree, HasChildren(parent_ref)).WillByDefault(Return(true));
-    ON_CALL(*tree, GetChildren(parent_ref))
-        .WillByDefault(Return(child_refs));
-  }
-
-  return tree;
-}
-
-// --- Mock data helpers ---
-
-scada::DataValue MakeValue(scada::Variant value) {
-  const auto now = base::Time::Now();
-  return scada::DataValue{std::move(value), {}, now, now};
-}
-
-scada::DataValue MakeValueAt(scada::Variant value, base::Time time) {
-  return scada::DataValue{std::move(value), {}, time, time};
-}
-
-scada::BrowseResult MakeBrowseChildren(
-    const std::vector<uint32_t>& children) {
-  scada::BrowseResult result;
-  result.status_code = scada::StatusCode::Good;
-  for (uint32_t child_id : children) {
-    result.references.push_back(
-        {.reference_type_id = scada::NodeId{35, 0},
-         .forward = true,
-         .node_id = scada::NodeId{child_id, 1}});
-  }
-  return result;
-}
-
-// --- Fake TimedDataService from JSON ---
-
-std::unique_ptr<FakeTimedDataService> MakeFakeTimedDataService() {
+std::unique_ptr<FakeTimedDataService> MakeLocalTimedDataService() {
   auto service = std::make_unique<FakeTimedDataService>();
   const auto now = base::Time::Now();
 
-  for (const auto& jtd : g_data.json.at("timed_data").as_array()) {
+  for (const auto& jtd : g_config.json.at("timed_data").as_array()) {
     auto formula = std::string(jtd.at("formula").as_string());
     const auto& jvalues = jtd.at("values").as_array();
 
@@ -433,7 +225,10 @@ std::unique_ptr<FakeTimedDataService> MakeFakeTimedDataService() {
     for (int i = 0; i < count; ++i) {
       auto time = now - base::TimeDelta::FromMinutes(30 * (count - i));
       td->data_values.push_back(
-          MakeValueAt(scada::Variant{jvalues[i].to_number<double>()}, time));
+          scada::DataValue{scada::Variant{jvalues[i].to_number<double>()},
+                           {},
+                           time,
+                           time});
     }
     td->ready_ranges.push_back(
         {now - base::TimeDelta::FromMinutes(30 * count), now});
@@ -444,27 +239,31 @@ std::unique_ptr<FakeTimedDataService> MakeFakeTimedDataService() {
 
 }  // namespace
 
-class ScreenshotGenerator : public Test {
+class ScreenshotGenerator : public ::testing::Test {
  public:
-  static void SetUpTestSuite() {
-    g_data.Load(GetDataFilePath());
-  }
+  static void SetUpTestSuite() { g_config.Load(GetDataFilePath()); }
 
   ScreenshotGenerator();
   ~ScreenshotGenerator();
 
  protected:
-  void SetupMockData();
-
   boost::asio::io_context io_context_;
   std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
 
-  NiceMock<scada::MockAttributeService> attribute_service_;
-  NiceMock<scada::MockViewService> view_service_;
-  NiceMock<scada::MockHistoryService> history_service_;
-  NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
-  NiceMock<scada::MockSessionService> session_service_;
+  // JSON-backed SCADA services — replace the gmock-based mocks the earlier
+  // generator used. Populated from `screenshot_data.json` in the constructor
+  // body, which runs before any test (and therefore before `app_.Start()`).
+  scada::LocalAttributeService attribute_service_;
+  scada::LocalViewService view_service_;
+  scada::LocalHistoryService history_service_;
+  scada::LocalMonitoredItemService monitored_item_service_;
+  scada::LocalSessionService session_service_;
+
+  std::shared_ptr<LocalNodeService> node_service_ =
+      std::make_shared<LocalNodeService>();
+  std::shared_ptr<LocalNodeServiceTree::SharedData> tree_data_ =
+      std::make_shared<LocalNodeServiceTree::SharedData>();
 
   scada::services services_{
       .attribute_service = &attribute_service_,
@@ -476,18 +275,18 @@ class ScreenshotGenerator : public Test {
 
   base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
-  NiceMock<MockFunction<promise<std::optional<DataServices>>(
-      DataServicesContext&& services_context)>>
-      login_handler_;
-
   ClientApplication app_{ClientApplicationContext{
       .io_context_ = io_context_,
       .executor_ = executor_,
-      .login_handler_ = login_handler_.AsStdFunction(),
-      .node_service_tree_factory_ = MakeMockNodeServiceTree,
-      .timed_data_service_override_ = MakeFakeTimedDataService(),
-      .node_service_override_ = MakeMockNodeService()}};
-
+      .login_handler_ =
+          [this](DataServicesContext&&) {
+            return make_resolved_promise(std::optional{
+                DataServices::FromUnownedServices(services_)});
+          },
+      .node_service_tree_factory_ =
+          LocalNodeServiceTree::MakeFactory(*node_service_, tree_data_),
+      .timed_data_service_override_ = MakeLocalTimedDataService(),
+      .node_service_override_ = node_service_}};
 };
 
 ScreenshotGenerator::ScreenshotGenerator() {
@@ -501,198 +300,14 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // Don't actually show windows on screen -- render offscreen only.
   MainWindow::SetHideForTesting();
 
-  ON_CALL(session_service_, HasPrivilege(_)).WillByDefault(Return(true));
-  ON_CALL(session_service_, Disconnect())
-      .WillByDefault(Return(make_resolved_promise()));
-
-  ON_CALL(monitored_item_service_, CreateMonitoredItem(_, _))
-      .WillByDefault(
-          [](const scada::ReadValueId&, const scada::MonitoringParameters&) {
-            auto item =
-                std::make_shared<NiceMock<scada::MockMonitoredItem>>();
-            ON_CALL(*item, Subscribe(_))
-                .WillByDefault(
-                    [](scada::MonitoredItemHandler handler) {
-                      // Deliver an initial value so views show data.
-                      if (auto* h =
-                              std::get_if<scada::DataChangeHandler>(&handler)) {
-                        static std::mt19937 rng{99};
-                        std::uniform_real_distribution<double> dist(10, 200);
-                        (*h)(MakeValue(scada::Variant{dist(rng)}));
-                      }
-                    });
-            return item;
-          });
-
-  ON_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillByDefault(Return(make_resolved_promise(
-          std::optional{DataServices::FromUnownedServices(services_)})));
-
-  SetupMockData();
-}
-
-void ScreenshotGenerator::SetupMockData() {
-  const auto now = base::Time::Now();
-
-  // --- Attribute reads: return display names and values from JSON nodes ---
-  ON_CALL(attribute_service_, Read(_, _, _))
-      .WillByDefault(
-          [now](const scada::ServiceContext&,
-                const std::shared_ptr<const std::vector<scada::ReadValueId>>&
-                    inputs,
-                const scada::ReadCallback& callback) {
-            std::vector<scada::DataValue> results;
-            results.reserve(inputs->size());
-            for (const auto& input : *inputs) {
-              auto id = input.node_id.is_numeric()
-                            ? input.node_id.numeric_id()
-                            : 0u;
-              const auto* node_info = g_data.FindNode(id);
-              switch (input.attribute_id) {
-                case scada::AttributeId::DisplayName:
-                  if (node_info) {
-                    results.push_back(
-                        MakeValue(scada::Variant{node_info->name}));
-                  } else {
-                    results.push_back(MakeValue(
-                        scada::Variant{"Node " + std::to_string(id)}));
-                  }
-                  break;
-
-                case scada::AttributeId::Value: {
-                  if (node_info && node_info->has_base_value) {
-                    static std::mt19937 rng{42};
-                    std::normal_distribution<double> dist(
-                        node_info->base_value,
-                        std::abs(node_info->base_value) * 0.01);
-                    results.push_back(MakeValue(scada::Variant{dist(rng)}));
-                  } else {
-                    results.push_back(MakeValue(scada::Variant{0.0}));
-                  }
-                  break;
-                }
-
-                case scada::AttributeId::NodeClass:
-                  if (node_info) {
-                    results.push_back(MakeValue(
-                        static_cast<scada::Int32>(node_info->node_class)));
-                  } else {
-                    results.push_back(
-                        MakeValue(static_cast<scada::Int32>(1)));
-                  }
-                  break;
-
-                default:
-                  results.push_back(MakeValue(scada::Variant{}));
-                  break;
-              }
-            }
-            callback(scada::StatusCode::Good, std::move(results));
-          });
-
-  // --- Browse: return children from JSON tree ---
-  ON_CALL(view_service_, Browse(_, _, _))
-      .WillByDefault(
-          [](const scada::ServiceContext&,
-             const std::vector<scada::BrowseDescription>& inputs,
-             const scada::BrowseCallback& callback) {
-            std::vector<scada::BrowseResult> results;
-            for (const auto& desc : inputs) {
-              auto id = desc.node_id.is_numeric()
-                            ? desc.node_id.numeric_id()
-                            : 0u;
-              auto ns = desc.node_id.namespace_index();
-
-              // Try "ns.id" key first, then bare "id" (implies ns=1).
-              auto key = std::to_string(ns) + "." + std::to_string(id);
-              auto it = g_data.tree.find(key);
-              if (it == g_data.tree.end()) {
-                key = std::to_string(id);
-                it = g_data.tree.find(key);
-              }
-
-              if (it != g_data.tree.end()) {
-                results.push_back(MakeBrowseChildren(it->second));
-              } else {
-                results.push_back(scada::BrowseResult{});
-              }
-            }
-            callback(scada::StatusCode::Good, std::move(results));
-          });
-
-  ON_CALL(view_service_, TranslateBrowsePaths(_, _))
-      .WillByDefault(InvokeArgument<1>(
-          scada::StatusCode::Good,
-          std::vector<scada::BrowsePathResult>{}));
-
-  // --- History: return time-series data per node ---
-  ON_CALL(history_service_, HistoryReadRaw(_, _))
-      .WillByDefault(
-          [now](const scada::HistoryReadRawDetails& details,
-                const scada::HistoryReadRawCallback& callback) {
-            auto id = details.node_id.is_numeric()
-                          ? details.node_id.numeric_id()
-                          : 0u;
-            const auto* node_info = g_data.FindNode(id);
-            double base_val =
-                (node_info && node_info->has_base_value)
-                    ? node_info->base_value
-                    : 100.0;
-            std::mt19937 rng{static_cast<unsigned>(id)};
-            std::normal_distribution<double> dist(base_val,
-                                                  std::abs(base_val) * 0.05);
-            std::vector<scada::DataValue> values;
-            for (int i = 0; i < 48; ++i) {
-              auto time = now - base::TimeDelta::FromMinutes(30 * (48 - i));
-              values.push_back(MakeValueAt(scada::Variant{dist(rng)}, time));
-            }
-            callback(scada::HistoryReadRawResult{
-                .status = scada::StatusCode::Good,
-                .values = std::move(values),
-            });
-          });
-
-  // --- History events from JSON ---
-  ON_CALL(history_service_, HistoryReadEvents(_, _, _, _, _))
-      .WillByDefault(
-          [now](const scada::NodeId&, base::Time, base::Time,
-                const scada::EventFilter&,
-                const scada::HistoryReadEventsCallback& callback) {
-            std::vector<scada::Event> events;
-
-            auto parse_severity = [](std::string_view s) -> scada::UInt32 {
-              if (s == "warning")
-                return scada::kSeverityWarning;
-              if (s == "critical")
-                return scada::kSeverityCritical;
-              return scada::kSeverityNormal;
-            };
-
-            for (const auto& je : g_data.json.at("events").as_array()) {
-              scada::Event e;
-              e.event_id = static_cast<scada::EventId>(
-                  je.at("id").as_int64());
-              double hours_ago = je.at("hours_ago").to_number<double>();
-              e.time = now - base::TimeDelta::FromSecondsD(hours_ago * 3600);
-              e.receive_time = e.time;
-              e.severity = parse_severity(
-                  je.at("severity").as_string());
-              e.message = UtfConvert<char16_t>(
-                  std::string(je.at("message").as_string()));
-              e.node_id = scada::NodeId{
-                  static_cast<uint32_t>(je.at("node_id").as_int64()), 1};
-              e.change_mask = static_cast<scada::UInt32>(
-                  je.at("change_mask").as_int64());
-              e.acked = true;
-              e.acknowledged_time = e.time;
-              events.push_back(std::move(e));
-            }
-
-            callback(scada::HistoryReadEventsResult{
-                .status = scada::StatusCode::Good,
-                .events = std::move(events),
-            });
-          });
+  // Populate the local services from the JSON file. The `app_` member was
+  // already constructed above, but it only wires up the services — nothing
+  // calls into them until `app_.Start()` runs inside the test body.
+  attribute_service_.LoadFromJson(g_config.json);
+  view_service_.LoadFromJson(g_config.json);
+  history_service_.LoadFromJson(g_config.json);
+  node_service_->LoadFromJson(g_config.json);
+  tree_data_->LoadFromJson(g_config.json);
 }
 
 ScreenshotGenerator::~ScreenshotGenerator() {
@@ -719,11 +334,11 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     QApplication::processEvents();
 
   const auto& main_windows = app_.main_window_manager().main_windows();
-  ASSERT_THAT(main_windows, SizeIs(1));
+  ASSERT_EQ(main_windows.size(), 1u);
   const MainWindow& main_window = main_windows.front();
 
   int captured = 0;
-  for (const auto& spec : g_data.screenshots) {
+  for (const auto& spec : g_config.screenshots) {
     OpenedView* view = nullptr;
     for (OpenedView* v : main_window.opened_views()) {
       if (v->window_info().name == spec.window_type) {
@@ -746,7 +361,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "Graph") {
       // Render graph standalone — hidden main windows don't lay out
       // QSplitter children, so we create a fresh graph widget.
-      auto timed_data_service = MakeFakeTimedDataService();
+      auto timed_data_service = MakeLocalTimedDataService();
       SaveGraphScreenshot(spec, *timed_data_service);
     } else {
       SaveScreenshot(widget, spec);
@@ -754,7 +369,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     ++captured;
   }
 
-  std::cout << "Captured " << captured << "/" << g_data.screenshots.size()
+  std::cout << "Captured " << captured << "/" << g_config.screenshots.size()
             << " screenshots to " << output_dir.string() << std::endl;
 }
 
@@ -779,7 +394,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     QApplication::processEvents();
 
   const auto& main_windows = app_.main_window_manager().main_windows();
-  ASSERT_THAT(main_windows, SizeIs(1));
+  ASSERT_EQ(main_windows.size(), 1u);
 
   // The MainWindow is a QMainWindow -- grab the whole window.
   auto* qmain = dynamic_cast<const QWidget*>(&main_windows.front());

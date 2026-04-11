@@ -2,6 +2,8 @@
   "nodes": [
     { "id": 84,  "ns": 0, "name": "Objects",           "class": "object" },
     { "id": 24,  "ns": 7, "name": "DataItems",         "class": "object" },
+    { "id": 30,  "ns": 7, "name": "Devices",           "class": "object" },
+    { "id": 304, "ns": 7, "name": "FileSystem",        "class": "object" },
     { "id": 100, "ns": 1, "name": "Substation Alpha",  "class": "object" },
     { "id": 101, "ns": 1, "name": "Substation Beta",   "class": "object" },
     { "id": 102, "ns": 1, "name": "Substation Gamma",  "class": "object" },
@@ -28,7 +30,8 @@
   "tree": {
     "0.84":  [100, 101, 102],
     "7.24":  [100, 101, 102],
-    "1.304": [100, 101],
+    "7.30":  [103, 104, 105],
+    "7.304": [100, 101],
     "100":   [103, 104],
     "101":   [105, 106],
     "102":   [107, 108],
