@@ -1,65 +1,85 @@
-# Client Bugs
+# Client tasks
 
-## PropertyView: Expand on the first open. Especially for just created nodes
+Work that lives **only** in `scada-client` (UI, components, profile,
+modus, vidicon). Cross-cutting items that span the client and server (or
+that touch the wire protocol) belong in [`tasks.md`](../tasks.md) at the
+repo root.
 
-## DataItem: Address Builder
+Tasks are grouped by area. New entries go under the matching cluster or,
+if none fits, into **Misc** — never as a flat top-level entry.
 
-## Don't open duplicate node properties window
+## Object, hardware & file trees
 
-## Show local error events in event view in red color.
+### `ObjectView`: Don't show "has children" for TS and TIT
 
-## Add more shutdown logs
+### `ConfigurationNodeView`: Show "loading" when node itself is not loaded
 
-## DeviceCommands: Use aliases where possible
+### `HardwareTree`: Metrics from root
 
-Debatable.
+### Save expanded tree nodes
 
-## Split SelectionCommands in multiple files or per components
+### Locate current object in the `ObjectTree`
 
-## Split OpenedViewCommands in multiple files or per components
+### `ObjectTree`: Search / filter
 
-## Modus QT: Implement Modus commands.
+### Progress bar for object pulls for `WindowDefinition` building
 
-## ObjectView: Don't show "has children" for TS and TIT
+## Property editor, limits & dialogs
 
-## ConfigurationNodeView: Show "loading" when node itself is not loaded
+### `PropertyView`: Expand on the first open. Especially for just created nodes
 
-## Isolate components and make them responsible for wiring
+### Don't open duplicate node-properties window
 
-## LimitDialog: Show error when set limits fails and don't close the dialog
+### `LimitDialog`: Show error when set limits fails and don't close the dialog
 
-## Login: Make server list to depend on type
+### Property editor: Non-modifiable attributes must be grey
+
+## Command framework
+
+### Split `SelectionCommands` into multiple files or per components
+
+### Split `OpenedViewCommands` into multiple files or per components
+
+### `MainCommands`, `OpenedViewCommands` and `SelectionCommands` should be singletons
+
+Then they can be constructed via `ComponentApi`.
+
+### Apply dependency-injection framework
+
+### Isolate components and make them responsible for wiring
+
+## Login & data services
+
+### Login: Make server list depend on type
 
 Needed for OPC UA connection.
 
-## HardwareTree: Metrics from root
+### `DeviceCommands`: Use aliases where possible
 
-## Custom Table: Open new table for multiple selection
+Debatable.
 
-## Property Editor: Non-modifiable attributes must be grey
+### Don't create `MonitoredItem` on selection
 
-# Client Features
+E.g. for files selected in File View.
 
-## Save expanded tree nodes
+## Events, graphs & display
 
-## Locate current object in the ObjectTree
+### Show local error events in event view in red color
 
-## ObjectTree: Search/Filter
+### Graph: A line mark for historical vs real-time points
 
-## Progress bar for object pulls for WindowDefinition building
+### Icons or hints for value indicators like `[C]`
 
-## Graph: A line mark for historical vs real-time points
+## Modus & data-item editor
 
-## Icons or hints for value indicators like [C]
+### Modus Qt: Implement Modus commands
 
-## Apply dependency injection framework
+### `DataItem`: Address builder
 
-## MainCommands, OpenedViewCommands and SelectionCommands should be singletons
+## Misc
 
-Then they can be contructed via ComponentApi.
+### Add more shutdown logs
 
-## Don't create MonitoredItem on selection
+### Custom table: Open new table for multiple selection
 
-E.g. for files selected in File View
-
-## Get rid of IsWorking
+### Get rid of `IsWorking`
