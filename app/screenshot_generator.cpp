@@ -5,7 +5,6 @@
 #include "address_space/local_monitored_item_service.h"
 #include "address_space/local_session_service.h"
 #include "address_space/local_view_service.h"
-#include "app/qt/installed_style.h"
 #include "aui/test/app_environment.h"
 #include "base/boost_json_file.h"
 #include "base/client_paths.h"
@@ -311,9 +310,13 @@ ScreenshotGenerator::ScreenshotGenerator() {
   if (translator_.load("client_ru", translation_dir))
     QApplication::installTranslator(&translator_);
 
-  // Match the default client style.
-  static QSettings settings;
-  static InstalledStyle installed_style{settings};
+  // Match the default client style. Set directly rather than going through
+  // InstalledStyle for the same reason we bypass InstalledTranslation: it
+  // round-trips through QSettings, which is unreliable here, and also
+  // writes back the live style's objectName on destruction — so the second
+  // TEST_F picks up whatever name QStyleFactory returned instead of
+  // "Fusion".
+  QApplication::setStyle("Fusion");
 
   // Don't actually show windows on screen -- render offscreen only.
   MainWindow::SetHideForTesting();
