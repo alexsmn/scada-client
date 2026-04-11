@@ -1,5 +1,7 @@
 ﻿#include "main_window/opened_view.h"
 
+#include "aui/translation.h"
+#include "base/utf_convert.h"
 #include "common_resources.h"
 #include "controller/command_handler.h"
 #include "controller/controller.h"
@@ -60,9 +62,15 @@ void OpenedView::SetWindowTitle(std::u16string_view title) {
 }
 
 std::u16string OpenedView::GetWindowTitle() const {
+  // WindowInfo::title is stored as an English literal in the source; run it
+  // through Translate() so localized builds show the translated title.
+  auto translated_info_title = [this] {
+    return Translate(UtfConvert<char>(std::u16string_view{window_info().title}));
+  };
+
   // don't allow custom titles for predefined windows
   if (window_info().is_pane())
-    return std::u16string{window_info().title};
+    return translated_info_title();
 
   if (!user_title_.empty())
     return user_title_;
@@ -70,7 +78,7 @@ std::u16string OpenedView::GetWindowTitle() const {
   if (!title_.empty())
     return title_;
 
-  return std::u16string{window_info().title};
+  return translated_info_title();
 }
 
 void OpenedView::UpdateTitle() {

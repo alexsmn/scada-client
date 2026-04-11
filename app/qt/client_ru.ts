@@ -471,6 +471,14 @@
         <translation>Узлы</translation>
     </message>
     <message>
+        <source>Objects</source>
+        <translation>Объекты</translation>
+    </message>
+    <message>
+        <source>Subsystems</source>
+        <translation>Оборудование</translation>
+    </message>
+    <message>
         <source>Formats</source>
         <translation>Форматы</translation>
     </message>

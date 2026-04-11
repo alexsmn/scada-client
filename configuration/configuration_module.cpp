@@ -9,13 +9,13 @@
 namespace {
 
 static constexpr WindowInfo kObjectTreeWindowInfo = {
-    ID_OBJECT_VIEW, "Struct", u"�������", WIN_SING, 200, 400, 0};
+    ID_OBJECT_VIEW, "Struct", u"Objects", WIN_SING, 200, 400, 0};
 
 static constexpr WindowInfo kHardwareTreeWindowInfo = {
-    ID_HARDWARE_VIEW, "Subsystems", u"������������", WIN_SING, 200, 400};
+    ID_HARDWARE_VIEW, "Subsystems", u"Subsystems", WIN_SING, 200, 400};
 
 static constexpr WindowInfo kNodesWindowInfo = {
-    ID_NODES_VIEW, "Nodes", u"����", WIN_SING | WIN_REQUIRES_ADMIN,
+    ID_NODES_VIEW, "Nodes", u"Nodes", WIN_SING | WIN_REQUIRES_ADMIN,
     200,           400,     0};
 
 }  // namespace
