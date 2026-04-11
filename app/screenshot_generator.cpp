@@ -6,7 +6,6 @@
 #include "address_space/local_session_service.h"
 #include "address_space/local_view_service.h"
 #include "app/qt/installed_style.h"
-#include "app/qt/installed_translation.h"
 #include "aui/test/app_environment.h"
 #include "base/boost_json_file.h"
 #include "base/client_paths.h"
@@ -25,7 +24,10 @@
 
 #include "graph/metrix_graph.h"
 
+#include <QApplication>
+#include <QLocale>
 #include <QPixmap>
+#include <QTranslator>
 #include <boost/asio/io_context.hpp>
 #include <boost/json.hpp>
 #include <gtest/gtest.h>
@@ -251,6 +253,10 @@ class ScreenshotGenerator : public ::testing::Test {
   std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
 
+  // Russian translator, installed in the constructor body. Must outlive the
+  // QApplication inside `app_env_`, hence declared right after it.
+  QTranslator translator_;
+
   // JSON-backed SCADA services — replace the gmock-based mocks the earlier
   // generator used. Populated from `screenshot_data.json` in the constructor
   // body, which runs before any test (and therefore before `app_.Start()`).
@@ -290,11 +296,23 @@ class ScreenshotGenerator : public ::testing::Test {
 };
 
 ScreenshotGenerator::ScreenshotGenerator() {
-  // Match the default client style and language.
-  // Must happen after AppEnvironment creates QApplication but before Start().
+  // Install the Russian translator directly. We intentionally bypass
+  // InstalledTranslation here: it reads the locale from a QSettings instance
+  // that lacks an organization/app name (AppEnvironment constructs a bare
+  // QApplication), so the value round-trips through an unreliable backing
+  // store and the Russian .qm ends up not loading at all.
+  //
+  // The install must happen per-fixture: each TEST_F spins up a fresh
+  // QApplication via AppEnvironment, and QTranslator registrations don't
+  // survive across QApplication instances.
+  QLocale::setDefault(QLocale{QLocale::Russian, QLocale::Russia});
+  const auto translation_dir =
+      QApplication::applicationDirPath() + "/translations";
+  if (translator_.load("client_ru", translation_dir))
+    QApplication::installTranslator(&translator_);
+
+  // Match the default client style.
   static QSettings settings;
-  settings.setValue("LocaleName", "ru");
-  static InstalledTranslation installed_translation{settings};
   static InstalledStyle installed_style{settings};
 
   // Don't actually show windows on screen -- render offscreen only.
