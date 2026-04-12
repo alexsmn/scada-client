@@ -90,6 +90,9 @@ list(FILTER PATHS EXCLUDE REGEX "/client/profile/")
 list(FILTER PATHS EXCLUDE REGEX "/client/properties/")
 list(FILTER PATHS EXCLUDE REGEX "/client/services/")
 list(FILTER PATHS EXCLUDE REGEX "/client/vidicon/")
+# `tools/` hosts standalone utility executables (e.g. the screenshot
+# generator); each manages its own sources via its own CMakeLists.
+list(FILTER PATHS EXCLUDE REGEX "/client/tools/")
 # Exclude `main.cpp` from all executables: apps and tests.
 list(FILTER PATHS EXCLUDE REGEX "main.cpp")
 
@@ -115,3 +118,4 @@ endforeach()
 
 add_subdirectory(components)
 add_subdirectory(app)
+add_subdirectory(tools)

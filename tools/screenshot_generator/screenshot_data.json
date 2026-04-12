@@ -202,5 +202,14 @@
     { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },
     { "type": "TimeVal",        "filename": "data.png",                "width": 800,  "height": 400 },
     { "type": "Transmission",   "filename": "client-retransmission.png","width": 763,  "height": 645 }
+  ],
+
+  "_dialogs_comment": [
+    "Modal-dialog captures. Each entry's `kind` is dispatched in the",
+    "CaptureDialogs TEST_F to build the right dialog class with its own",
+    "fixture. Filenames and dimensions track scada-docs/img/MANIFEST.md."
+  ],
+  "dialogs": [
+    { "kind": "login", "filename": "client-login.png", "width": 403, "height": 180 }
   ]
 }
