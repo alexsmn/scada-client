@@ -231,7 +231,8 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
 
-  DialogEnvironment env{.executor = executor_};
+  DialogEnvironment env{.executor = executor_,
+                        .node_service = node_service_.get()};
 
   int captured = 0;
   for (const auto& spec : g_config.dialogs) {
