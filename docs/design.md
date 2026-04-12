@@ -170,6 +170,44 @@ Also lives here: `app_init.{h,cpp}` (one-time GDI+ / ATL setup),
 `screenshot_generator.cpp` (offline rendering harness for docs and tests),
 and `client_application_unittest.cpp`.
 
+#### Regenerating the doc screenshots
+
+Most images under `scada-docs/img/` are produced by the offline
+`screenshot_generator` (see FR-21). The source-of-truth for which images
+are auto-generated vs. hand-maintained is
+[`scada-docs/img/MANIFEST.md`](https://github.com/telecontrol/scada-docs/blob/master/img/MANIFEST.md);
+tags there tell you whether a file is an `auto-view`, `auto-dialog`,
+`auto-menu`, `auto-state`, or one of the `manual-*` / `obsolete`
+categories.
+
+To regenerate:
+
+```batch
+cmake --build --preset release-dev -t screenshot_generator
+set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
+build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
+```
+
+On Unix-y shells it's `SCREENSHOT_OUT_DIR=... ./screenshot_generator`.
+
+If `SCREENSHOT_OUT_DIR` is unset, the generator writes to
+`<cwd>/screenshots/` — useful for local diffing before overwriting the
+docs copies.
+
+To add a new auto-screenshot:
+
+1. Register (or locate) a `WindowInfo` for the view in its component
+   (`components/*/`, `main_window/`, etc.).
+2. Add an entry to the `screenshots:` array in
+   `app/screenshot_data.json` — `type` must match `WindowInfo::name`,
+   `filename` matches the scada-docs filename from the manifest, and
+   `width` / `height` match the docs image dimensions pixel-exact.
+3. If the view needs fixture data (new nodes, timed values, events),
+   extend the matching section of `screenshot_data.json`.
+4. Add a row to `scada-docs/img/MANIFEST.md` with the right tag and
+   the markdown page(s) that embed it.
+5. Rebuild `screenshot_generator` and confirm the new file lands.
+
 The full startup sequence — from `main()` through login to the first
 visible page — looks like this:
 
