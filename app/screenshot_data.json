@@ -179,21 +179,28 @@
     "time_scale": { "time": "Now", "span": "24:00:00", "scroll_bar": true }
   },
 
+  "_screenshots_comment": [
+    "Filenames track scada-docs/img/* names where possible so the output is",
+    "a drop-in replacement for the hand-captured docs images. Dimensions",
+    "follow the docs images; if there is no matching docs image yet the",
+    "size is a reasonable default. The scada-docs/img/MANIFEST.md reference",
+    "column maps each filename to the markdown page(s) that embed it."
+  ],
   "screenshots": [
-    { "type": "Graph",          "filename": "graph.png",          "width": 900, "height": 500 },
-    { "type": "Table",          "filename": "table.png",          "width": 800, "height": 400 },
-    { "type": "Summ",           "filename": "summary.png",        "width": 800, "height": 500 },
-    { "type": "Event",          "filename": "events.png",         "width": 800, "height": 300 },
-    { "type": "EventJournal",   "filename": "events-log.png",     "width": 800, "height": 400 },
-    { "type": "Log",            "filename": "device-watch.png",   "width": 800, "height": 400 },
-    { "type": "Nodes",          "filename": "object-tree.png",    "width": 300, "height": 500 },
-    { "type": "Struct",         "filename": "devices.png",        "width": 300, "height": 500 },
-    { "type": "Users",          "filename": "users.png",          "width": 600, "height": 300 },
-    { "type": "Params",         "filename": "parameters.png",     "width": 500, "height": 400 },
-    { "type": "CusTable",       "filename": "sheet.png",          "width": 800, "height": 400 },
-    { "type": "Favorites",      "filename": "favorites.png",      "width": 300, "height": 400 },
-    { "type": "FileSystemView", "filename": "files.png",          "width": 300, "height": 400 },
-    { "type": "TimeVal",        "filename": "data.png",           "width": 800, "height": 400 },
-    { "type": "Transmission",   "filename": "retransmission.png", "width": 800, "height": 400 }
+    { "type": "Graph",          "filename": "graph-cursor.jpg",        "width": 1024, "height": 901 },
+    { "type": "Table",          "filename": "table.png",               "width": 800,  "height": 400 },
+    { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },
+    { "type": "Event",          "filename": "events.png",              "width": 800,  "height": 300 },
+    { "type": "EventJournal",   "filename": "events-log.png",          "width": 800,  "height": 400 },
+    { "type": "Log",            "filename": "device-watch.png",        "width": 800,  "height": 400 },
+    { "type": "Nodes",          "filename": "object-tree.png",         "width": 300,  "height": 500 },
+    { "type": "Struct",         "filename": "devices.png",             "width": 300,  "height": 500 },
+    { "type": "Users",          "filename": "users.png",               "width": 500,  "height": 302 },
+    { "type": "Params",         "filename": "parameters.png",          "width": 500,  "height": 400 },
+    { "type": "CusTable",       "filename": "sheet.png",               "width": 800,  "height": 400 },
+    { "type": "Favorites",      "filename": "favorites.png",           "width": 300,  "height": 400 },
+    { "type": "FileSystemView", "filename": "files.png",               "width": 300,  "height": 400 },
+    { "type": "TimeVal",        "filename": "data.png",                "width": 800,  "height": 400 },
+    { "type": "Transmission",   "filename": "client-retransmission.png","width": 763,  "height": 645 }
   ]
 }

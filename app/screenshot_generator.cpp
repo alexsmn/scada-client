@@ -24,6 +24,7 @@
 #include "graph/metrix_graph.h"
 
 #include <QApplication>
+#include <QByteArray>
 #include <QLocale>
 #include <QPixmap>
 #include <QTranslator>
@@ -35,8 +36,19 @@
 
 namespace {
 
-// Output directory for screenshots. Override via --screenshot-dir flag.
+// Cached output directory for screenshots.
+//
+// Resolution order, checked once on first use of `GetOutputDir()`:
+//   1. `SCREENSHOT_OUT_DIR` environment variable.
+//   2. `<cwd>/screenshots` — the original default.
+//
+// Lets a docs-side script point the generator directly at
+// `scada-docs/img/` without editing the source. We don't parse a
+// `--out` command-line flag here because AppEnvironment constructs
+// QApplication with a zeroed argv, so the real args aren't reachable
+// via QCoreApplication::arguments(); the env var sidesteps that.
 std::filesystem::path g_output_dir;
+bool g_output_dir_resolved = false;
 
 // --- JSON data loaded at startup ---
 //
@@ -88,9 +100,21 @@ std::filesystem::path GetDataFilePath() {
 }
 
 std::filesystem::path GetOutputDir() {
-  if (!g_output_dir.empty())
+  if (g_output_dir_resolved)
     return g_output_dir;
-  return std::filesystem::current_path() / "screenshots";
+
+  // 1. Environment variable. Use qgetenv (safe CRT wrapper) to dodge the
+  // MSVC deprecation of std::getenv.
+  const QByteArray env = qgetenv("SCREENSHOT_OUT_DIR");
+  if (!env.isEmpty())
+    g_output_dir = std::filesystem::path{env.toStdString()};
+
+  // 2. Default.
+  if (g_output_dir.empty())
+    g_output_dir = std::filesystem::current_path() / "screenshots";
+
+  g_output_dir_resolved = true;
+  return g_output_dir;
 }
 
 void SaveScreenshot(QWidget* widget, const ScreenshotSpec& spec) {
@@ -417,11 +441,13 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
 
-  // The MainWindow is a QMainWindow -- grab the whole window.
+  // The MainWindow is a QMainWindow -- grab the whole window. Size
+  // tracks scada-docs/img/client-window.png (1920x1080) so the generator
+  // output is a drop-in replacement for the hand-captured doc image.
   auto* qmain = dynamic_cast<const QWidget*>(&main_windows.front());
   if (qmain) {
     auto* mutable_widget = const_cast<QWidget*>(qmain);
-    mutable_widget->resize(1024, 700);
+    mutable_widget->resize(1920, 1080);
     QApplication::processEvents();
     QPixmap pixmap = mutable_widget->grab();
     auto path = output_dir / "client-window.png";
