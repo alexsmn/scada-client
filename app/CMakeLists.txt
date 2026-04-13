@@ -8,7 +8,6 @@ target_link_libraries(client_common INTERFACE
   client_core
   scada_common_events
   scada_common_vidicon_services
-  scada_core_opcua
   scada_core_remote
   timed_data
   Transport::transport

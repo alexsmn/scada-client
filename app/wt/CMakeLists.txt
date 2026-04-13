@@ -23,6 +23,10 @@ list(REMOVE_ITEM SOURCES_WT ${COMPONENTS})
 add_library(client_wt_lib
   ${SOURCES}
   ${SOURCES_WT}
+  "../client_application_modules.cpp"
+  "../client_application_modules.h"
+  "../opcua_services_module.cpp"
+  "../opcua_services_module.h"
 )
 
 target_sources(client_wt_lib INTERFACE ${COMPONENTS})
@@ -40,10 +44,10 @@ target_link_libraries(client_wt_lib PUBLIC
   client_filesystem_wt
   client_main_window_wt
   client_portfolio_wt
-  client_print_preview_wt
   client_profile_wt
   client_properties_wt
   client_services_wt
+  scada_core_opcua
 )
 
 target_compile_options(client_wt_lib PUBLIC

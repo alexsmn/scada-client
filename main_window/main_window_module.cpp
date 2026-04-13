@@ -223,6 +223,7 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
           executor_, selection_commands_object_, task_manager_,
           *scada_services_.session_service, timed_data_service_, node_service_,
+          print_service_,
           *action_manager_, local_events_, file_cache_, profile_,
           *main_window_manager_, create_tree_});
 

@@ -12,49 +12,61 @@ file(GLOB MAIN_QT CONFIGURE_DEPENDS
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 
-# Lib
+# Core lib
 
 set(COMPONENTS ${SOURCES} ${SOURCES_QT})
 list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
 list(REMOVE_ITEM SOURCES ${COMPONENTS})
 list(REMOVE_ITEM SOURCES_QT ${COMPONENTS})
 
-add_library(client_qt_lib
+add_library(client_qt_core
   ${SOURCES}
   ${SOURCES_QT}
+  "../client_application_modules.cpp"
+  "../client_application_modules.h"
+  "../opcua_services_module.cpp"
+  "../opcua_services_module.h"
 )
 
-target_sources(client_qt_lib INTERFACE ${COMPONENTS})
+target_sources(client_qt_core INTERFACE ${COMPONENTS})
 
-set_target_properties(client_qt_lib PROPERTIES
+set_target_properties(client_qt_core PROPERTIES
   AUTOMOC ON
   AUTOUIC ON
   AUTORCC ON
 )
 
-target_link_libraries(client_qt_lib PUBLIC
+target_link_libraries(client_qt_core PUBLIC
   aui_qt
   client_common
   client_configuration_qt
   client_controller_qt
   client_events_qt
   client_export_configuration_qt
+  client_graph_qt
+  client_profile_qt
+  client_services_qt
+)
+
+client_qt_translations(client_qt_core
+  "client_ru.ts"
+)
+
+# Full lib
+
+add_library(client_qt_lib INTERFACE)
+
+target_link_libraries(client_qt_lib INTERFACE
+  client_qt_core
   client_export_csv_qt
   client_favorites_qt
-  client_graph_qt
   client_main_window_qt
   client_modus_qt
   client_portfolio_qt
-  client_print_preview_qt
   client_print_service_qt
-  client_profile_qt
   client_properties_qt
-  client_services_qt
+  scada_core_opcua
   client_vidicon_qt
-)
-
-client_qt_translations(client_qt_lib
-  "client_ru.ts"
 )
 
 # Exe

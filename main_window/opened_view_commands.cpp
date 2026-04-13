@@ -30,7 +30,6 @@
 #include "transport/transport_string.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
-#include "print/preview/print_preview.h"
 #include "print/service/print_service.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
@@ -111,6 +110,7 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
         return nullptr;
 #if defined(UI_QT)
     case ID_PRINT:
+      return print_service_ && controller_->GetExportModel() ? this : nullptr;
 #endif
     case ID_EXPORT_CSV:
       return controller_->GetExportModel() ? this : nullptr;
@@ -156,11 +156,11 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       ExportToExcel();
       return;
     case ID_PRINT: {
-      static PrintService print_service;
-      ShowPrintPreviewDialog(
-          *dialog_service_, print_service,
-          [opened_view = opened_view_, &print_service = print_service] {
-            opened_view->Print(print_service);
+      assert(print_service_);
+      print_service_->ShowPrintPreviewDialog(
+          *dialog_service_,
+          [opened_view = opened_view_, print_service = print_service_] {
+            opened_view->Print(*print_service);
           });
       return;
     }

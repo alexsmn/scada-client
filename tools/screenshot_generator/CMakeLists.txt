@@ -1,7 +1,8 @@
 # Offline screenshot generator: renders scada-docs/img/* from a JSON
-# fixture. Links against client_qt_lib for the UI stack plus base_unittest
+# fixture. Links against the smaller client_qt_core runtime plus
+# client_main_window_qt for the actual top-level shell, and base_unittest
 # for the shared gtest main. `client_application.{cpp,h}` is excluded
-# from client_qt_lib (see app/qt/CMakeLists.txt) so it's compiled in
+# from client_qt_core (see app/qt/CMakeLists.txt) so it's compiled in
 # directly here — same arrangement as the regular `client_qt` exe.
 
 add_executable(screenshot_generator
@@ -23,7 +24,9 @@ add_executable(screenshot_generator
 )
 
 target_link_libraries(screenshot_generator PRIVATE
-  client_qt_lib
+  client_qt_core
+  client_main_window_qt
+  client_properties_qt
   base_unittest
   graph_qt
 )
@@ -34,7 +37,7 @@ set_target_properties(screenshot_generator PROPERTIES
 
 # Lighten the linker's memory footprint. The 32-bit Microsoft link.exe
 # otherwise hits LNK1102 ("out of memory") on this target: it links
-# everything client_qt_lib pulls in plus gtest inside the 4 GB
+# the Qt runtime, main-window shell, and gtest inside the 4 GB
 # virtual-address ceiling of a 32-bit process. /DEBUG:NONE drops the
 # 600 MB+ PDB; /INCREMENTAL:NO drops the .ilk bookkeeping; /OPT:REF +
 # /OPT:ICF let the linker throw away unreferenced symbols and fold

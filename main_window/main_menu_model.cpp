@@ -26,10 +26,10 @@
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
 #include "modus/modus_component.h"
-#include "vidicon/display/vidicon_display_component.h"
 #endif
 
 #include <atlres.h>
+#include <ranges>
 
 #if defined(UI_QT)
 #include <QApplication>
@@ -56,7 +56,24 @@ void AddMenuCommands(aui::SimpleMenuModel& menu,
   }
 }
 
+std::vector<const WindowInfo*>& GetDisplayMenuWindowInfos() {
+  static std::vector<const WindowInfo*> window_infos;
+  return window_infos;
+}
+
 }  // namespace
+
+void RegisterDisplayMenuWindowInfo(const WindowInfo& window_info) {
+  auto& window_infos = GetDisplayMenuWindowInfos();
+  if (std::ranges::find(window_infos, &window_info) == window_infos.end()) {
+    window_infos.push_back(&window_info);
+  }
+}
+
+void UnregisterDisplayMenuWindowInfo(const WindowInfo& window_info) {
+  auto& window_infos = GetDisplayMenuWindowInfos();
+  std::erase(window_infos, &window_info);
+}
 
 const WindowInfo* const kTableWindowInfos[] = {
     &kTableWindowInfo, &kSheetWindowInfo, &kTimedDataWindowInfo};
@@ -76,7 +93,9 @@ void DisplayMenuModel::MenuWillShow() {
 
 #if !defined(UI_WT)
   AddItems(kModusWindowInfo);
-  AddItems(kVidiconDisplayWindowInfo);
+  for (const WindowInfo* window_info : GetDisplayMenuWindowInfos()) {
+    AddItems(*window_info);
+  }
 #endif
 }
 

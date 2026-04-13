@@ -21,6 +21,9 @@ class WindowDefinition;
 struct GlobalCommandContext;
 struct WindowInfo;
 
+void RegisterDisplayMenuWindowInfo(const WindowInfo& window_info);
+void UnregisterDisplayMenuWindowInfo(const WindowInfo& window_info);
+
 struct MainMenuContext {
   const std::shared_ptr<Executor> executor_;
   MainWindowManager& main_window_manager_;

@@ -15,11 +15,13 @@
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "base/test/test_executor.h"
+#include "configuration/configuration_module.h"
 #include "configuration/tree/local_node_service_tree.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
+#include "node_service_progress_tracker.h"
 #include "node_service/local/local_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
@@ -36,6 +38,19 @@ namespace {
 
 // Global config loaded once per test suite.
 ScreenshotConfig g_config;
+
+ClientApplicationModuleConfigurator MakeScreenshotModules() {
+  return [](ClientApplicationModuleContext& context) {
+    context.singletons_.emplace(std::make_shared<ConfigurationModule>(
+        ConfigurationModuleContext{
+            .controller_registry_ = context.controller_registry_,
+            .profile_ = context.profile_,
+            .node_service_tree_factory_ = context.node_service_tree_factory_}));
+
+    context.singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
+        context.executor_, context.node_service_, context.progress_host_));
+  };
+}
 
 }  // namespace
 
@@ -94,7 +109,8 @@ class ScreenshotGenerator : public ::testing::Test {
       // Historical data comes from LocalHistoryService (which synthesises
       // a 48-point profile around each node's `base_value`); current
       // values come from LocalAttributeService (AttributeId::Value).
-      .node_service_override_ = node_service_}};
+      .node_service_override_ = node_service_,
+      .module_configurator_ = MakeScreenshotModules()}};
 };
 
 ScreenshotGenerator::ScreenshotGenerator() {

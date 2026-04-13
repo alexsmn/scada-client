@@ -19,8 +19,8 @@ client_module_link_libraries(client_main_window PRIVATE
 
 # Qt.
 
-# TODO: Remove dependency on `client_qt_lib`.
-target_link_libraries(client_main_window_qt PRIVATE client_qt_lib winmm)
+# TODO: Remove dependency on `client_qt_core`.
+target_link_libraries(client_main_window_qt PRIVATE client_qt_core winmm)
 
 client_qt_translations(client_main_window_qt "qt/main_window_ru.ts")
 

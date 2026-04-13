@@ -25,6 +25,7 @@ class NodeService;
 class OpenedView;
 class PortfolioManager;
 class Profile;
+class PrintService;
 class ProgressHost;
 class SelectionCommands;
 class SpeechService;
@@ -47,6 +48,7 @@ struct MainWindowModuleContext {
   NodeEventProvider& node_event_provider_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
+  PrintService* print_service_;
   PortfolioManager& portfolio_manager_;
   LocalEvents& local_events_;
   Favourites& favourites_;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/client_application_modules.h"
 #include "base/promise.h"
 #include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
@@ -36,6 +37,7 @@ class NodeService;
 class NodeServiceProgressTracker;
 class PortfolioModule;
 class Profile;
+class PrintModule;
 class PropertyService;
 class TaskManager;
 class TimedDataService;
@@ -62,6 +64,9 @@ struct ClientApplicationContext {
   // Optional override for testing/screenshots. If set, used instead of
   // creating a real NodeService from browse/attribute services.
   std::shared_ptr<NodeService> node_service_override_;
+
+  ClientApplicationModuleConfigurator module_configurator_ =
+      MakeDefaultClientApplicationModules();
 };
 
 class ClientApplication : private ClientApplicationContext {
@@ -110,6 +115,7 @@ class ClientApplication : private ClientApplicationContext {
   std::shared_ptr<TaskManager> task_manager_;
   std::unique_ptr<PortfolioModule> portfolio_module_;
   std::unique_ptr<FavoritesModule> favorites_module_;
+  std::unique_ptr<PrintModule> print_module_;
   std::unique_ptr<Speech> speech_;
   std::unique_ptr<BlinkerManager> blinker_manager_;
   std::unique_ptr<CreateTree> create_tree_;

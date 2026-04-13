@@ -30,6 +30,7 @@ class MainWindowManager;
 class NodeService;
 class OpenedView;
 class Profile;
+class PrintService;
 class SelectionCommands;
 class TaskManager;
 class TimedDataService;
@@ -41,6 +42,7 @@ struct OpenedViewCommandsContext {
   scada::SessionService& session_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
+  PrintService* print_service_;
   ActionManager& action_manager_;
   LocalEvents& local_events_;
   FileCache& file_cache_;

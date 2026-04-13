@@ -3,6 +3,7 @@
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 #include "filesystem/file_registry.h"
+#include "main_window/main_menu_model.h"
 #include "vidicon/display/native/vidicon_display_native_view.h"
 #include "vidicon/display/vidicon_display_component.h"
 #include "vidicon/teleclient/vidicon_client.h"
@@ -26,6 +27,10 @@ VidiconModule::VidiconModule(VidiconModuleContext&& context)
 
   file_registry_.RegisterType(kVidiconDisplayWindowInfo.command_id,
                               kVidiconDisplayWindowInfo.name, ".vds");
+
+  RegisterDisplayMenuWindowInfo(kVidiconDisplayWindowInfo);
 }
 
-VidiconModule::~VidiconModule() = default;
+VidiconModule::~VidiconModule() {
+  UnregisterDisplayMenuWindowInfo(kVidiconDisplayWindowInfo);
+}

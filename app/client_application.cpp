@@ -8,9 +8,7 @@
 #include "common/audit.h"
 #include "common/master_data_services.h"
 #include "common_resources.h"
-#include "components/debugger/debugger_module.h"
 #include "components/write/write_service_impl.h"
-#include "configuration/configuration_module.h"
 #include "configuration/tree/node_service_tree_impl.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
@@ -28,6 +26,7 @@
 #include "node_service/node_service_factory.h"
 #include "node_service_progress_tracker.h"
 #include "portfolio/portfolio_module.h"
+#include "print/service/print_module.h"
 #include "profile/profile.h"
 #include "project.h"
 #include "properties/property_service.h"
@@ -39,11 +38,6 @@
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
-
-#if !defined(UI_WT)
-#include "modus/modus_module.h"
-#include "vidicon/vidicon_module.h"
-#endif
 
 #include <transport/transport_factory_impl.h>
 
@@ -71,18 +65,11 @@ scada::ServiceLogParams ReadServiceLogParamsFromCommandLine() {
 
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
-extern bool CreateOpcUaServices(const DataServicesContext& context,
-                                DataServices& services);
 
 REGISTER_DATA_SERVICES("Scada",
                        u"Telecontrol",
                        CreateRemoteServices,
                        "localhost");
-
-REGISTER_DATA_SERVICES("OpcUa",
-                       u"OPC UA",
-                       CreateOpcUaServices,
-                       "opc.tcp://localhost:4840");
 
 REGISTER_DATA_SERVICES("Vidicon",
                        u"Vidicon",
@@ -127,6 +114,7 @@ ClientApplication::~ClientApplication() {
   connection_state_reporter_.reset();
   blinker_manager_.reset();
   speech_.reset();
+  print_module_.reset();
   favorites_module_.reset();
   portfolio_module_.reset();
   task_manager_.reset();
@@ -223,22 +211,7 @@ void ClientApplication::PostLogin() {
                               .timed_data_service_ = *timed_data_service_,
                               .profile_ = *profile_});
 
-  singletons_.emplace(std::make_shared<ConfigurationModule>(
-      ConfigurationModuleContext{
-          .controller_registry_ = *controller_registry_,
-          .profile_ = *profile_,
-          .node_service_tree_factory_ =
-              node_service_tree_factory_
-                  ? node_service_tree_factory_
-                  : NodeServiceTreeFactory{[](NodeServiceTreeImplContext&& ctx) {
-                      return std::make_unique<NodeServiceTreeImpl>(
-                          std::move(ctx));
-                    }}}));
-
-  singletons_.emplace(std::make_shared<DebuggerModule>(DebuggerModuleContext{
-      .session_service_ = *audited_scada_services.session_service,
-      .global_commands_ = core_module_->global_commands(),
-      .selection_commands_ = core_module_->selection_commands()}));
+  create_tree_ = std::make_unique<CreateTree>();
 
   filesystem_component_ = std::make_unique<FileSystemComponent>(
       FileSystemComponentContext{.node_service_ = *node_service_,
@@ -254,35 +227,35 @@ void ClientApplication::PostLogin() {
   portfolio_module_ = std::make_unique<PortfolioModule>(
       PortfolioModuleContext{*node_service_, *profile_, *controller_registry_});
 
-  create_tree_ = std::make_unique<CreateTree>();
-
   property_service_ = std::make_unique<PropertyService>();
 
-#if !defined(UI_WT)
-  singletons_.emplace(std::make_shared<ModusModule>(ModusModuleContext{
-      .controller_registry_ = *controller_registry_,
-      .blinker_manager_ = *blinker_manager_,
-      .file_registry_ = filesystem_component_->file_registry(),
-      .global_commands_ = core_module_->global_commands(),
-      .profile_ = *profile_,
-      .alias_resolver_ = alias_resolver}));
-
-  singletons_.emplace(std::make_shared<VidiconModule>(VidiconModuleContext{
-      .executor_ = executor_,
-      .timed_data_service_ = *timed_data_service_,
-      .controller_registry_ = *controller_registry_,
-      .write_service_ = *write_service_,
-      .file_registry_ = filesystem_component_->file_registry()}));
-#endif
-
-  singletons_.emplace(std::make_shared<ExportConfigurationModule>(
-      ExportConfigurationModuleContext{
-          .node_service_ = *node_service_,
-          .task_manager_ = *task_manager_,
-          .global_commands_ = core_module_->global_commands()}));
-
-  singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
-      executor_, *node_service_, core_module_->progress_host()));
+  if (module_configurator_) {
+    auto module_context = ClientApplicationModuleContext{
+        .executor_ = executor_,
+        .scada_services_ = audited_scada_services,
+        .alias_resolver_ = alias_resolver,
+        .controller_registry_ = *controller_registry_,
+        .profile_ = *profile_,
+        .node_service_ = *node_service_,
+        .task_manager_ = *task_manager_,
+        .timed_data_service_ = *timed_data_service_,
+        .write_service_ = *write_service_,
+        .print_module_ = print_module_,
+        .node_service_tree_factory_ =
+            node_service_tree_factory_
+                ? node_service_tree_factory_
+                : NodeServiceTreeFactory{[](NodeServiceTreeImplContext&& ctx) {
+                    return std::make_unique<NodeServiceTreeImpl>(
+                        std::move(ctx));
+                  }},
+        .filesystem_component_ = *filesystem_component_,
+        .blinker_manager_ = *blinker_manager_,
+        .progress_host_ = core_module_->progress_host(),
+        .global_commands_ = core_module_->global_commands(),
+        .selection_commands_ = core_module_->selection_commands(),
+        .singletons_ = singletons_};
+    module_configurator_(module_context);
+  }
 
   auto controller_factory =
       std::make_shared<ControllerFactoryImpl>(ControllerFactoryImpl{
@@ -309,6 +282,8 @@ void ClientApplication::PostLogin() {
           .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
           .node_service_ = *node_service_,
+          .print_service_ =
+              print_module_ ? &print_module_->print_service() : nullptr,
           .portfolio_manager_ = portfolio_module_->portfolio_manager(),
           .local_events_ = event_module_->local_events(),
           .favourites_ = favorites_module_->favourites(),
