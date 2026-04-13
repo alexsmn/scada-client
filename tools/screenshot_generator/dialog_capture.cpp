@@ -15,6 +15,7 @@
 #include "scada/data_services_factory.h"
 #include "scada/logging.h"
 #include "scada/node_id.h"
+#include "node_service/node_fetch_status.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_service.h"
 
@@ -73,6 +74,18 @@ class NullTaskManager : public TaskManager {
     return make_rejected_promise<void>(std::exception{});
   }
 };
+
+bool WaitForNodeFetched(const NodeRef& node,
+                        const NodeFetchStatus& requested_status) {
+  if (!node)
+    return false;
+
+  bool fetched = false;
+  node.Fetch(requested_status, [&fetched](const NodeRef&) { fetched = true; });
+  while (!fetched)
+    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+  return true;
+}
 
 // Scans top-level widgets for a visible QDialog, resizes it to the
 // spec dims, grabs a pixmap, and rejects the dialog so whoever called
@@ -150,6 +163,10 @@ void BuildLimitsDialog(DialogEnvironment& env,
   auto node = env.node_service->GetNode(scada::NodeId{212, 1});
   if (!node) {
     ADD_FAILURE() << "LimitsDialog: fixture node 1.212 not found";
+    return;
+  }
+  if (!WaitForNodeFetched(node, NodeFetchStatus::NodeOnly())) {
+    ADD_FAILURE() << "LimitsDialog: failed to fetch fixture node 1.212";
     return;
   }
   ShowLimitsDialog(dialog_service,

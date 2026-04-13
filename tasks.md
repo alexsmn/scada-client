@@ -48,6 +48,15 @@ Then they can be constructed via `ComponentApi`.
 
 ### Isolate components and make them responsible for wiring
 
+### Remove `client_qt_lib` and make modules reference each other
+
+Goal: stop using the catch-all `client_qt_lib` umbrella and make each
+binary link only the modules it actually needs. That means expressing
+the real dependency graph between client modules directly, so
+`screenshot_generator`, `client_qt`, test binaries, and small tools can
+all build against minimal link sets instead of dragging the full UI
+stack transitively.
+
 ## Login & data services
 
 ### Login: Make server list depend on type

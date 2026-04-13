@@ -74,7 +74,7 @@ scada-client/
 ├── common_resources.h      # Resource IDs and constants
 ├── client_utils.cpp/.h     # Global utility functions
 ├── tasks.md                # Bug/feature backlog
-└── command-line.md         # Command-line switch documentation
+└── docs/command-line.md    # Command-line switch documentation
 ```
 
 ## Documentation
