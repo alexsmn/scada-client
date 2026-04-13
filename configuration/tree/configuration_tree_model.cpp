@@ -48,6 +48,13 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
 
 void ConfigurationTreeModel::UpdateChildTreeNodes(
     ConfigurationTreeNode& parent_tree_node) {
+  // Keep the root's first level current, and keep already-expanded nodes
+  // current, but do not materialize descendants for collapsed nodes.
+  // Otherwise ordinary fetch-status notifications keep walking deeper
+  // into the address space in the background and can overflow the stack.
+  if (parent_tree_node.parent() && !parent_tree_node.children_requested_)
+    return;
+
   LOG_INFO(logger_) << "Update child tree nodes"
                     << LOG_TAG("NodeId",
                                NodeIdToScadaString(

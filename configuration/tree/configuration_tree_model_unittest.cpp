@@ -17,6 +17,14 @@ NodeRef MakeTestNodeRef(const scada::NodeId& node_id) {
   return node_model;
 }
 
+std::shared_ptr<NiceMock<MockNodeModel>> MakeTestNodeModel(
+    const scada::NodeId& node_id) {
+  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
+  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
+      .WillByDefault(Return(node_id));
+  return node_model;
+}
+
 }  // namespace
 
 class ConfigurationTreeModelTest : public Test {
@@ -26,6 +34,7 @@ class ConfigurationTreeModelTest : public Test {
   const NodeRef root_node_ = MakeTestNodeRef(scada::id::RootFolder);
 
   MockNodeServiceTree* node_service_tree_ = nullptr;
+  NodeServiceTree::Observer* observer_ = nullptr;
   std::unique_ptr<ConfigurationTreeModel> model_;
 
   inline static const scada::NodeId kNodeId1{1, 1};
@@ -37,7 +46,10 @@ void ConfigurationTreeModelTest::InitModel(
     std::unique_ptr<MockNodeServiceTree> node_service_tree) {
   node_service_tree_ = node_service_tree.get();
 
-  EXPECT_CALL(*node_service_tree_, SetObserver(_));
+  EXPECT_CALL(*node_service_tree_, SetObserver(_))
+      .WillOnce([this](NodeServiceTree::Observer* observer) {
+        observer_ = observer;
+      });
 
   EXPECT_CALL(*node_service_tree_, GetRoot()).WillOnce(Return(root_node_));
 
@@ -107,4 +119,48 @@ TEST_F(ConfigurationTreeModelTest, ConstructionDoesNotRecurseIntoGrandchildren) 
 
   auto* root = model_->GetRoot();
   EXPECT_EQ(1, model_->GetChildCount(root));
+}
+
+TEST_F(ConfigurationTreeModelTest, CreatingChildrenDoesNotFetchNodesInCtor) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  auto child_model = MakeTestNodeModel(kNodeId1);
+
+  EXPECT_CALL(*child_model, Fetch(_, _)).Times(0);
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes, .child_node = child_model}
+      }));
+
+  InitModel(std::move(node_service_tree));
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  EXPECT_EQ(static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0))
+                ->node()
+                .node_id(),
+            kNodeId1);
+}
+
+TEST_F(ConfigurationTreeModelTest,
+       ChildrenChangedDoesNotPopulateCollapsedDescendants) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .Times(1)
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId1)}}));
+
+  InitModel(std::move(node_service_tree));
+  ASSERT_NE(observer_, nullptr);
+
+  observer_->OnNodeChildrenChanged(kNodeId1);
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+  EXPECT_EQ(
+      static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0))
+          ->GetChildCount(),
+      0);
 }

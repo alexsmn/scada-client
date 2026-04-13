@@ -15,17 +15,12 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
       node_{std::move(node)} {
   model_.tree_node_map_.emplace(node_.node_id(), this);
 
-  // Children load lazily — only via FetchMore (Qt calls it when the
-  // user expands the row). Eagerly attaching already-loaded children
-  // here used to be an optimization for re-opening the Objects panel,
-  // but it walks the entire NodeService tree synchronously when the
-  // address space starts pre-populated (e.g. screenshot generator on
-  // top of AddressSpaceImpl3) — recursive ctor → AddChildren → ctor
-  // overflows the stack. The lazy path covers the re-open case too:
-  // Qt calls FetchMore again, and `node_.children_fetched()` short-
-  // circuits the fetch when children are already in the address space.
-
-  node_.Fetch(NodeFetchStatus::NodeOnly());
+  // Do not fetch here. Node fetch-status updates are reported back to
+  // the tree as synthetic reference changes; creating a tree node and
+  // immediately calling Fetch(NodeOnly) feeds the same update loop and
+  // can recurse until the stack overflows during startup. Unfetched
+  // nodes still render with a fallback display name until the regular
+  // node-service pipeline fills them in.
 }
 
 ConfigurationTreeNode::~ConfigurationTreeNode() {
