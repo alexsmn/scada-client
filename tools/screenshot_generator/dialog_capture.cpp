@@ -190,9 +190,18 @@ void BuildLimitsDialog(DialogEnvironment& env,
 void BuildWriteDialog(DialogEnvironment& env,
                       DialogServiceImplQt& dialog_service,
                       bool manual) {
-  if (!env.timed_data_service || !env.profile) {
+  if (!env.timed_data_service || !env.profile || !env.node_service) {
     ADD_FAILURE()
-        << "WriteDialog needs timed_data_service + profile in env";
+        << "WriteDialog needs timed_data_service + profile + node_service in env";
+    return;
+  }
+  auto node = env.node_service->GetNode(scada::NodeId{212, 1});
+  if (!node) {
+    ADD_FAILURE() << "WriteDialog: fixture node 1.212 not found";
+    return;
+  }
+  if (!WaitForNodeFetched(node, NodeFetchStatus::NodeOnly())) {
+    ADD_FAILURE() << "WriteDialog: failed to fetch fixture node 1.212";
     return;
   }
   ExecuteWriteDialog(dialog_service,
