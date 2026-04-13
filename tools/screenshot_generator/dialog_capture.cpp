@@ -9,13 +9,14 @@
 #include "components/limits/limit_dialog.h"
 #include "components/login/login_dialog.h"
 #include "components/write/write_dialog.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_ref.h"
+#include "node_service/node_fetch_status.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "scada/data_services_factory.h"
 #include "scada/logging.h"
 #include "scada/node_id.h"
-#include "node_service/node_fetch_status.h"
 #include "services/task_manager.h"
 #include "timed_data/timed_data_service.h"
 
@@ -75,16 +76,28 @@ class NullTaskManager : public TaskManager {
   }
 };
 
-bool WaitForNodeFetched(const NodeRef& node,
-                        const NodeFetchStatus& requested_status) {
-  if (!node)
-    return false;
+bool WaitForPendingNodeLoads(NodeService& node_service) {
+  bool finished = false;
+  std::move(WaitForPendingNodes(node_service))
+      .then([&] { finished = true; }, [&](std::exception_ptr) {
+        ADD_FAILURE() << "NodeService pending-node wait failed";
+        finished = true;
+      });
 
-  bool fetched = false;
-  node.Fetch(requested_status, [&fetched](const NodeRef&) { fetched = true; });
-  while (!fetched)
+  while (!finished)
     QApplication::processEvents(QEventLoop::WaitForMoreEvents);
   return true;
+}
+
+bool FetchAndWaitForPendingNodeLoads(NodeService& node_service,
+                                     const NodeRef& node,
+                                     const NodeFetchStatus& requested_status) {
+  if (!node) {
+    return false;
+  }
+
+  node.Fetch(requested_status);
+  return WaitForPendingNodeLoads(node_service);
 }
 
 // Scans top-level widgets for a visible QDialog, resizes it to the
@@ -165,7 +178,8 @@ void BuildLimitsDialog(DialogEnvironment& env,
     ADD_FAILURE() << "LimitsDialog: fixture node 1.212 not found";
     return;
   }
-  if (!WaitForNodeFetched(node, NodeFetchStatus::NodeOnly())) {
+  if (!FetchAndWaitForPendingNodeLoads(
+          *env.node_service, node, NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch fixture node 1.212";
     return;
   }
@@ -200,7 +214,8 @@ void BuildWriteDialog(DialogEnvironment& env,
     ADD_FAILURE() << "WriteDialog: fixture node 1.212 not found";
     return;
   }
-  if (!WaitForNodeFetched(node, NodeFetchStatus::NodeOnly())) {
+  if (!FetchAndWaitForPendingNodeLoads(
+          *env.node_service, node, NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "WriteDialog: failed to fetch fixture node 1.212";
     return;
   }
