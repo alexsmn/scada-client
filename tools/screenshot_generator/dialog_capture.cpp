@@ -8,12 +8,15 @@
 #include "base/promise.h"
 #include "components/limits/limit_dialog.h"
 #include "components/login/login_dialog.h"
+#include "components/write/write_dialog.h"
 #include "node_service/local/local_node_service.h"
 #include "node_service/node_ref.h"
+#include "profile/profile.h"
 #include "scada/data_services_factory.h"
 #include "scada/logging.h"
 #include "scada/node_id.h"
 #include "services/task_manager.h"
+#include "timed_data/timed_data_service.h"
 
 #include <QApplication>
 #include <QDialog>
@@ -146,6 +149,31 @@ void BuildLimitsDialog(DialogEnvironment& env,
   QApplication::processEvents();
 }
 
+// Write dialog family. `manual` picks between "Manual Input" (TI
+// manual override) and "Control" (remote device control). Target node
+// is 1.200 — an analog TI node in the fixture; the model treats it as
+// continuous (not discrete) because no HasTsFormat reference is wired
+// up, which matches the ti-*-control docs images. The ts- variants
+// will render identically until the fixture grows a proper TS (with
+// logical / discrete semantics).
+void BuildWriteDialog(DialogEnvironment& env,
+                      DialogServiceImplQt& dialog_service,
+                      bool manual) {
+  if (!env.timed_data_service || !env.profile) {
+    ADD_FAILURE()
+        << "WriteDialog needs timed_data_service + profile in env";
+    return;
+  }
+  ExecuteWriteDialog(dialog_service,
+                     WriteContext{.executor_ = env.executor,
+                                  .timed_data_service_ =
+                                      *env.timed_data_service,
+                                  .node_id_ = scada::NodeId{200, 1},
+                                  .profile_ = *env.profile,
+                                  .manual_ = manual});
+  QApplication::processEvents();
+}
+
 }  // namespace
 
 bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
@@ -159,6 +187,10 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
     BuildLoginDialog(env, transport_factory, logger);
   } else if (spec.kind == "limits") {
     BuildLimitsDialog(env, task_manager, dialog_service);
+  } else if (spec.kind == "write-manual") {
+    BuildWriteDialog(env, dialog_service, /*manual=*/true);
+  } else if (spec.kind == "write-remote") {
+    BuildWriteDialog(env, dialog_service, /*manual=*/false);
   } else {
     ADD_FAILURE() << "Unknown dialog kind: " << spec.kind;
     return false;

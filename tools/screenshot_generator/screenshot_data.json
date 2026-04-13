@@ -210,7 +210,9 @@
     "fixture. Filenames and dimensions track scada-docs/img/MANIFEST.md."
   ],
   "dialogs": [
-    { "kind": "login",  "filename": "client-login.png", "width": 403, "height": 180 },
-    { "kind": "limits", "filename": "limits.png",       "width": 344, "height": 296 }
+    { "kind": "login",        "filename": "client-login.png",            "width": 403, "height": 180 },
+    { "kind": "limits",       "filename": "limits.png",                  "width": 344, "height": 296 },
+    { "kind": "write-manual", "filename": "ti-manual-control.png",       "width": 354, "height": 207 },
+    { "kind": "write-remote", "filename": "ti-remote-control-enabled.png","width": 354, "height": 207 }
   ]
 }

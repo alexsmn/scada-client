@@ -231,8 +231,16 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
 
+  // WriteDialog needs a live TimedDataService + Profile. Both are
+  // cheap — a fresh FakeTimedDataService populated from the fixture
+  // and a default-constructed Profile — so we build them per test.
+  auto timed_data_service = MakeLocalTimedDataService(g_config.json);
+  Profile profile;
+
   DialogEnvironment env{.executor = executor_,
-                        .node_service = node_service_.get()};
+                        .node_service = node_service_.get(),
+                        .timed_data_service = timed_data_service.get(),
+                        .profile = &profile};
 
   int captured = 0;
   for (const auto& spec : g_config.dialogs) {

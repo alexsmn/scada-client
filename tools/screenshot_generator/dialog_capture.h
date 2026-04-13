@@ -5,6 +5,8 @@
 struct DialogSpec;
 class Executor;
 class LocalNodeService;
+class Profile;
+class TimedDataService;
 
 // Environment the dialog builders share: an executor to pin
 // continuations to, plus whatever services each kind happens to need.
@@ -15,6 +17,13 @@ struct DialogEnvironment {
   // (limits, write, …) pull NodeRefs from here. Null is fine for kinds
   // that don't need it.
   LocalNodeService* node_service = nullptr;
+  // TimedDataService instance the WriteDialog family connects specs to.
+  // Null is fine for kinds that don't need it.
+  TimedDataService* timed_data_service = nullptr;
+  // Profile — WriteModel consults `profile.control_confirmation` on the
+  // write path (never taken in capture mode), but still needs a valid
+  // reference at construction time.
+  Profile* profile = nullptr;
 };
 
 // Builds and shows the dialog identified by `spec.kind`, then grabs a
