@@ -22,7 +22,7 @@
 #include "main_window/opened_view.h"
 #include "node_service/local/local_node_service.h"
 #include "profile/profile.h"
-#include "timed_data/timed_data_service_fake.h"
+#include "timed_data/timed_data_service.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -89,8 +89,11 @@ class ScreenshotGenerator : public ::testing::Test {
           },
       .node_service_tree_factory_ =
           LocalNodeServiceTree::MakeFactory(*node_service_, tree_data_),
-      .timed_data_service_override_ =
-          MakeLocalTimedDataService(g_config.json),
+      // No `timed_data_service_override_`: let ClientApplication build
+      // the real TimedDataServiceImpl on top of the local services.
+      // Historical data comes from LocalHistoryService (which synthesises
+      // a 48-point profile around each node's `base_value`); current
+      // values come from LocalAttributeService (AttributeId::Value).
       .node_service_override_ = node_service_}};
 };
 
@@ -184,8 +187,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     if (spec.window_type == "Graph") {
       // Render graph standalone — hidden main windows don't lay out
       // QSplitter children, so we build a fresh graph widget.
-      auto timed_data_service = MakeLocalTimedDataService(g_config.json);
-      SaveGraphScreenshot(spec, *timed_data_service, g_config.json);
+      SaveGraphScreenshot(spec, app_.timed_data_service(), g_config.json);
     } else {
       SaveScreenshot(widget, spec);
     }
@@ -236,15 +238,17 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
 
-  // WriteDialog needs a live TimedDataService + Profile. Both are
-  // cheap — a fresh FakeTimedDataService populated from the fixture
-  // and a default-constructed Profile — so we build them per test.
-  auto timed_data_service = MakeLocalTimedDataService(g_config.json);
-  Profile profile;
+  // Start the app so the real TimedDataServiceImpl is wired up; the
+  // WriteDialog family reads current values, formula titles, and
+  // engineering units through it.
+  app_.Start().get();
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
 
+  Profile profile;
   DialogEnvironment env{.executor = executor_,
                         .node_service = node_service_.get(),
-                        .timed_data_service = timed_data_service.get(),
+                        .timed_data_service = &app_.timed_data_service(),
                         .profile = &profile};
 
   int captured = 0;

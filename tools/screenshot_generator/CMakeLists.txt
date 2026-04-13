@@ -32,6 +32,24 @@ set_target_properties(screenshot_generator PROPERTIES
   AUTOMOC ON
 )
 
+# Lighten the linker's memory footprint. The 32-bit Microsoft link.exe
+# otherwise hits LNK1102 ("out of memory") on this target: it links
+# everything client_qt_lib pulls in plus gtest inside the 4 GB
+# virtual-address ceiling of a 32-bit process. /DEBUG:NONE drops the
+# 600 MB+ PDB; /INCREMENTAL:NO drops the .ilk bookkeeping; /OPT:REF +
+# /OPT:ICF let the linker throw away unreferenced symbols and fold
+# identical functions (saves a lot on template-heavy input). This is
+# a tooling binary that we never attach a debugger to, so losing its
+# PDB is fine — the client exe is unaffected.
+if(MSVC)
+  target_link_options(screenshot_generator PRIVATE
+    "/DEBUG:NONE"
+    "/INCREMENTAL:NO"
+    "/OPT:REF"
+    "/OPT:ICF"
+  )
+endif()
+
 # After the executable links, run it and drop the PNGs into
 # client/docs/screenshots/ so the docs gallery stays in sync on every
 # local build. The dir is gitignored — commit copies to scada-docs

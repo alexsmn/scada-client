@@ -2,10 +2,8 @@
 
 #include <boost/json/value.hpp>
 
-#include <memory>
 #include <vector>
 
-class FakeTimedDataService;
 class Page;
 struct ScreenshotSpec;
 
@@ -14,8 +12,3 @@ struct ScreenshotSpec;
 // else gets a bare `WindowDefinition{type}`.
 Page MakeScreenshotPage(const std::vector<ScreenshotSpec>& specs,
                         const boost::json::value& json);
-
-// Constructs a FakeTimedDataService and populates it from the
-// `timed_data` section of the fixture JSON.
-std::unique_ptr<FakeTimedDataService> MakeLocalTimedDataService(
-    const boost::json::value& json);
