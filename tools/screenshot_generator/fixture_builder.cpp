@@ -6,6 +6,7 @@
 #include "address_space/address_space_impl.h"
 #include "address_space/generic_node_factory.h"
 #include "common/node_state.h"
+#include "model/data_items_node_ids.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "scada/standard_node_ids.h"
@@ -39,6 +40,26 @@ scada::NodeId ParseJsonChildNodeId(const boost::json::value& child) {
   if (child.is_string())
     return ParseJsonNodeId(std::string_view(child.as_string()));
   return scada::NodeId{static_cast<scada::NumericId>(child.as_int64()), 1};
+}
+
+std::optional<scada::NodeId> ParseJsonPropertyId(std::string_view name) {
+  if (name == "display_format")
+    return data_items::id::AnalogItemType_DisplayFormat;
+  return std::nullopt;
+}
+
+scada::NodeId ParseJsonTypeDefinition(const boost::json::object& node) {
+  if (const auto* type = node.if_contains("type_definition")) {
+    auto type_name = std::string_view(type->as_string());
+    if (type_name == "analog_item")
+      return data_items::id::AnalogItemType;
+    if (type_name == "discrete_item")
+      return data_items::id::DiscreteItemType;
+  }
+
+  const bool is_variable = node.at("class").as_string() == "variable";
+  return is_variable ? scada::NodeId{scada::id::BaseVariableType, 0}
+                     : scada::NodeId{scada::id::FolderType, 0};
 }
 
 }  // namespace
@@ -115,9 +136,7 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
       state.node_id = node_id;
       state.node_class = is_variable ? scada::NodeClass::Variable
                                      : scada::NodeClass::Object;
-      state.type_definition_id =
-          is_variable ? scada::NodeId{scada::id::BaseVariableType, 0}
-                      : scada::NodeId{scada::id::FolderType, 0};
+      state.type_definition_id = ParseJsonTypeDefinition(jn.as_object());
       state.parent_id = parent_id;
       state.reference_type_id = scada::NodeId{scada::id::Organizes, 0};
       state.attributes.browse_name =
@@ -127,6 +146,17 @@ void PopulateFixtureNodes(AddressSpaceImpl& address_space,
       if (is_variable) {
         if (const auto* bv = jn.as_object().if_contains("base_value"))
           state.attributes.value = scada::Variant{bv->to_number<double>()};
+      }
+
+      if (const auto* properties = jn.as_object().if_contains("properties")) {
+        for (const auto& [name, value] : properties->as_object()) {
+          auto property_id = ParseJsonPropertyId(name);
+          if (!property_id)
+            continue;
+          if (value.is_string())
+            state.properties.emplace_back(*property_id,
+                                          std::string(value.as_string()));
+        }
       }
 
       factory.CreateNode(state);
