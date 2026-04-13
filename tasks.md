@@ -195,6 +195,155 @@ PR / commit):
     states. Each batch is one PR with side-by-side before/after
     review.
 
+    Blocked on the **content-gap** tasks below: every candidate
+    compared so far against the scada-docs originals loses
+    information (empty tables, missing values, formulas in place of
+    display names, no status-bar content, …). Land the fixture
+    enrichment tasks first, then replace one subset of images per
+    PR.
+
+### Screenshot-generator content gaps
+
+Each gap below is one small fixture / rendering change that unblocks
+one or more `auto-*` images for bulk replace (subtask 13). Discovered
+by side-by-side diffing the current generator output against
+`scada-docs/img/`.
+
+#### Gap: seed login user list + expanded combo state
+
+`scada-docs/img/client-login.png` shows an OPEN combobox with 7 user
+names (root, Диспетчер 1, Инженер АСУ, Диспетчер, Руководитель,
+Инженер, АСУ). Our capture shows `root` only in a closed combo.
+Needs: (1) seed `LoginController::user_list` — currently read from
+`HKEY_CURRENT_USER\Software\Telecontrol\Workplace\UserList` in
+`login_controller.cpp` — either via registry write in the fixture
+setup or by adding a test hook that accepts a pre-populated list;
+(2) optionally trigger `QComboBox::showPopup()` before capture so the
+list is visible.
+
+#### Gap: populate analog limits + node display name in `LimitDialog`
+
+`scada-docs/img/limits.png` shows "Температура нагрева" as source
+title and four populated limit values (Аварийные: Верхняя 90 /
+Нижняя −25; Уставки: Верхняя 70 / Нижняя −10). Our capture shows
+"Активная мощность" + four empty fields. Also blocks
+`limits-chart.png` (subtask 4). Needs: extend the
+`LocalNodeService` / `LocalAttributeService` fixture path so a node
+can expose `AnalogItemType_LimitLo/Hi/LoLo/HiHi` as `HasProperty`
+children with values. Then add a node modelled as
+"Температура нагрева" and point the limits dialog at it.
+
+#### Gap: `WriteDialog` source title + current value + unit
+
+`scada-docs/img/ti-manual-control.png` and
+`ti-remote-control-enabled.png` show: source title
+"Температура нагрева", current value "41 °C", new value pre-filled
+with "25", engineering unit "°C" next to the combo. Our captures
+show `TS.200` (formula, not display name) and empty current / new /
+unit fields. Needs: (1) confirm `TimedDataSpec::GetTitle()` returns
+the node's `display_name` when wired to the local fixture — should
+already work, verify; (2) `FakeTimedDataService` must return a
+current `DataValue` for formulas like `TS.200` so
+`GetCurrentValue()` renders; (3) populate
+`AnalogItemType_EngineeringUnits` on the fixture node so
+`GetAnalogUnits()` returns "°C".
+
+#### Gap: `OutputCondition` for `ti-remote-control-enabled`
+
+`scada-docs/img/ti-remote-control-enabled.png` shows a
+"Условие: Выполнено" row between current and new value. Our
+`write-remote` capture has no condition row because the fixture node
+has no `DataItemType_OutputCondition`. Needs: populate
+`OutputCondition` on the TS/TI node and wire the referenced formula
+to always evaluate truthy so `has_condition_=true` AND
+`IsConditionOk()=true`. Also unblocks `ti-remote-control-disabled`
+(same node, condition evaluates false) and
+`ts-remote-control-confirm` (post-second-stage confirmation).
+
+#### Gap: Users table — populated rows
+
+`scada-docs/img/users.png` shows 13 rows populated with Browse Name
+(`SCADA.234`, `USER.1`..`USER.12`), Name (root, Клиент 1..10,
+Администратор, guest), Права (0..3), and Множество сессий (Да /
+Нет). Our capture shows two default columns (Browse Name, Name) and
+no rows. Needs: add user nodes under the Users folder (`7.29`) in
+the fixture tree, each with the scada-specific attributes the Users
+table model reads (likely a `security::UserType` node with
+properties for rights and multi-session). Find the read path in
+`components/node_table/` and work backwards.
+
+#### Gap: `Transmission` view — populated rows
+
+`scada-docs/img/client-retransmission.png` shows a Transmission view
+with 4 rows: `TC1` (1001), `TC8` (1002), `Ua` (2001),
+"Дорасчет Ua.среднее" (2002). Our capture shows column headers
+"Сигнал" / "Адрес" and no rows. Needs: add transmission node
+children under the relevant retransmission folder (`7.34` /
+`7.342` / `7.343` / `7.344`) with the address attribute populated.
+Check `TransmissionModel` / `TransmissionView` to see which
+attributes it reads.
+
+#### Gap: graph cursor + 2-pane noisy variant
+
+`scada-docs/img/graph-cursor.jpg` shows a 2-pane graph with noisy
+data and two vertical cursor lines at specific timestamps (the
+"cursor" feature from `client/graph.md`). Our `graph-cursor.jpg`
+shows 3 panes with smooth sinusoidal data and no cursor. Needs:
+(1) switch the generator's graph fixture to a 2-pane layout;
+(2) denser / noisier values in `timed_data`; (3) enable `MetrixGraph`
+cursor(s) before `SaveGraphScreenshot`. Lowest priority — our
+output is a working graph, just different content.
+
+#### Gap: `client-window` page layout — Modus schematic centre
+
+`scada-docs/img/client-window.png` shows the main window with a
+Modus schematic (ОРУ-110 кВ, КРУ-10 кВ, ЗРУ-6 кВ) as the central
+page — a substation mimic with coloured switches, transformers,
+buses, and a properties panel on the right. Our `CaptureMainWindow`
+uses an `EventJournal + Summ + Struct` layout. Two options:
+(a) swap the fixture page to Modus — blocked on the fake Modus
+runtime (out of scope); (b) retag `client-window.png` as
+`manual-modus` (or similar) until the fake runtime exists, and
+accept that the auto-generated composite isn't the one the docs
+show.
+
+#### Gap: some `auto-menu` images are actually annotated view screenshots
+
+`scada-docs/img/menu-events.png` (despite the name) shows an Event
+view with coloured row highlighting and red-underline annotations
+on status-bar elements — not a right-click popup menu. Several
+other `menu-*.png` may be similar. Audit all 15 `auto-menu` rows in
+`MANIFEST.md`, reclassify the ones that are annotated view
+composites to `manual-annotated`, and let subtask 7 (menu
+rendering) focus only on true `QMenu` popups.
+
+#### Gap: fixture needs realistic event log rows + status-bar content
+
+`scada-docs/img/menu-events.png` and similar show canonical event
+rows ("Связь с сервером установлена...", "Разрыв связи с сервером
+10.0.1.166..."), timestamps like `07.02.2024 09:28:53.130`,
+importance 50 / 60, object "Локальное событие", and status-bar
+strings "Готово", "Диспетчер 1", "Подключен", "Отклик: 0 мс". Our
+`events[]` array is plausible but doesn't match the docs' canonical
+examples; `events-log.png` rendered from our fixture drifts from
+the narrative the docs describe. Needs: (1) refresh `events[]` with
+the canonical messages; (2) wire the status bar to render populated
+user / connection / response-time strings instead of the default
+placeholders.
+
+#### Gap: Object tree fixture needs device / section structure
+
+Most docs screenshots that include the Object tree
+(`client-retransmission.png`, `devices-on.png`, `client-window.png`,
+`menu-create-object*`) show a structured tree: M340, Smart Termo,
+Диагностика, КРУ, КСВ2.0, Мониторинг t, ЭНИП-2 + ЭНМВ-1,
+ЭСТРА-ПС (ТИ/ТС/ТУ), with expandable nodes like TS1..TC8, F, T,
+Ua/Ub/Uc, Uab/Ubc/Uca, etc. Our tree has "Подстанция Альфа/Бета/
+Гамма" placeholders. Either align our fixture with the docs'
+canonical tree OR retag the affected docs images and accept the
+mismatch. Cascades into every view-type screenshot that includes
+the Object tree.
+
 ## Misc
 
 ### Add more shutdown logs
