@@ -136,10 +136,10 @@ void BuildLoginDialog(DialogEnvironment& env,
 }
 
 // Limits dialog: needs a NodeRef to an analog variable plus a
-// TaskManager for the (never-taken) write path. We pull node 1.200
-// ("Активная мощность") out of the fixture; the node has no AnalogItem
-// attributes, so the four limit fields render empty — which is close
-// enough to the docs image for a drop-in replacement.
+// TaskManager for the (never-taken) write path. We pull node 1.212
+// ("Температура нагрева") out of the fixture — the analog node the docs
+// images target. Limit values still render empty until the fixture grows
+// HasProperty support for AnalogItemType_Limit{Hi,Lo,HiHi,LoLo} (gap #2).
 void BuildLimitsDialog(DialogEnvironment& env,
                        NullTaskManager& task_manager,
                        DialogServiceImplQt& dialog_service) {
@@ -147,9 +147,9 @@ void BuildLimitsDialog(DialogEnvironment& env,
     ADD_FAILURE() << "LimitsDialog needs a node_service in DialogEnvironment";
     return;
   }
-  auto node = env.node_service->GetNode(scada::NodeId{200, 1});
+  auto node = env.node_service->GetNode(scada::NodeId{212, 1});
   if (!node) {
-    ADD_FAILURE() << "LimitsDialog: fixture node 1.200 not found";
+    ADD_FAILURE() << "LimitsDialog: fixture node 1.212 not found";
     return;
   }
   ShowLimitsDialog(dialog_service,
@@ -159,11 +159,17 @@ void BuildLimitsDialog(DialogEnvironment& env,
 
 // Write dialog family. `manual` picks between "Manual Input" (TI
 // manual override) and "Control" (remote device control). Target node
-// is 1.200 — an analog TI node in the fixture; the model treats it as
-// continuous (not discrete) because no HasTsFormat reference is wired
-// up, which matches the ti-*-control docs images. The ts- variants
-// will render identically until the fixture grows a proper TS (with
-// logical / discrete semantics).
+// is 1.212 ("Температура нагрева") — the analog TI node the docs
+// images use. The model treats it as continuous (not discrete) because
+// no HasTsFormat reference is wired up, which matches the ti-*-control
+// docs images. The ts- variants will render identically until the
+// fixture grows a proper TS (with logical / discrete semantics).
+//
+// After show() we pump events aggressively: the real TimedDataServiceImpl
+// fulfils the current value through an async subscribe+read chain routed
+// through TestExecutor and Qt's event loop, and the UI only updates via
+// current_change_handler once the DataValue lands. Too few pumps leaves
+// the "Current value:" label blank in the grab.
 void BuildWriteDialog(DialogEnvironment& env,
                       DialogServiceImplQt& dialog_service,
                       bool manual) {
@@ -176,10 +182,11 @@ void BuildWriteDialog(DialogEnvironment& env,
                      WriteContext{.executor_ = env.executor,
                                   .timed_data_service_ =
                                       *env.timed_data_service,
-                                  .node_id_ = scada::NodeId{200, 1},
+                                  .node_id_ = scada::NodeId{212, 1},
                                   .profile_ = *env.profile,
                                   .manual_ = manual});
-  QApplication::processEvents();
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
 }
 
 }  // namespace

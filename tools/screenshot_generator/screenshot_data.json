@@ -106,7 +106,8 @@
     { "id": 208, "ns": 1, "name": "Частота",             "class": "variable", "base_value": 50.01 },
     { "id": 209, "ns": 1, "name": "Коэффициент мощности","class": "variable", "base_value": 0.95 },
     { "id": 210, "ns": 1, "name": "Суммарная энергия",   "class": "variable", "base_value": 48723 },
-    { "id": 211, "ns": 1, "name": "Температура",         "class": "variable", "base_value": 42.3 }
+    { "id": 211, "ns": 1, "name": "Температура",         "class": "variable", "base_value": 42.3 },
+    { "id": 212, "ns": 1, "name": "Температура нагрева", "class": "variable", "base_value": 41.0 }
   ],
 
   "tree": {
@@ -142,7 +143,7 @@
     "115":   [202, 203, 204],
     "116":   [205, 206],
     "123":   [208],
-    "124":   [211]
+    "124":   [211, 212]
   },
 
   "timed_data": [
