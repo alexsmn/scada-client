@@ -15,9 +15,15 @@ ConfigurationTreeNode::ConfigurationTreeNode(ConfigurationTreeModel& model,
       node_{std::move(node)} {
   model_.tree_node_map_.emplace(node_.node_id(), this);
 
-  // Must add nodes that are already loaded. This happens e.g. when Objects
-  // panel is closed and re-opened.
-  AddChildren();
+  // Children load lazily â€” only via FetchMore (Qt calls it when the
+  // user expands the row). Eagerly attaching already-loaded children
+  // here used to be an optimization for re-opening the Objects panel,
+  // but it walks the entire NodeService tree synchronously when the
+  // address space starts pre-populated (e.g. screenshot generator on
+  // top of AddressSpaceImpl3) â€” recursive ctor â†’ AddChildren â†’ ctor
+  // overflows the stack. The lazy path covers the re-open case too:
+  // Qt calls FetchMore again, and `node_.children_fetched()` short-
+  // circuits the fetch when children are already in the address space.
 
   node_.Fetch(NodeFetchStatus::NodeOnly());
 }
@@ -46,7 +52,7 @@ std::u16string ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(node_.display_name());
 
   if (children_requested_ && !children_loaded_)
-    text += u" [Çàãðóçêà]";
+    text += u" [ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]";
 
   return text;
 }
@@ -99,7 +105,13 @@ void ConfigurationTreeNode::FetchMore() {
 ConfigurationTreeRootNode::ConfigurationTreeRootNode(
     ConfigurationTreeModel& model,
     NodeRef tree)
-    : ConfigurationTreeNode{model, {}, true, tree} {}
+    : ConfigurationTreeNode{model, {}, true, tree} {
+  // One level of prefetch so the tree shows its first rows immediately
+  // when the panel opens. Grandchildren load lazily through FetchMore â€”
+  // stopping the recursion here is what prevents the ctor chain from
+  // walking a pre-populated address space to a stack overflow.
+  AddChildren();
+}
 
 std::u16string ConfigurationTreeRootNode::GetText(int column_id) const {
   return ToString16(node().display_name());

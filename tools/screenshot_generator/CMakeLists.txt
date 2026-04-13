@@ -35,17 +35,30 @@ set_target_properties(screenshot_generator PROPERTIES
   AUTOMOC ON
 )
 
-# Lighten the linker's memory footprint. The 32-bit Microsoft link.exe
-# otherwise hits LNK1102 ("out of memory") on this target: it links
-# the Qt runtime, main-window shell, and gtest inside the 4 GB
-# virtual-address ceiling of a 32-bit process. /DEBUG:NONE drops the
-# 600 MB+ PDB; /INCREMENTAL:NO drops the .ilk bookkeeping; /OPT:REF +
-# /OPT:ICF let the linker throw away unreferenced symbols and fold
-# identical functions (saves a lot on template-heavy input). This is
-# a tooling binary that we never attach a debugger to, so losing its
-# PDB is fine — the client exe is unaffected.
+# 32-bit Microsoft link.exe hits LNK1102 ("out of memory") on this
+# target — Qt + main-window shell + the full address-space machinery
+# (incl. ScadaAddressSpaceBuilder which materialises every standard
+# SCADA type) blow past the 4 GB virtual-address ceiling of a 32-bit
+# process. Substitute the LLVM lld-link drop-in (64-bit, far smaller
+# per-symbol overhead). LINKER_TYPE=LLD tells CMake to invoke lld-link
+# instead of link.exe; we prefix PATH so the lookup succeeds even when
+# the configure preset doesn't include the LLVM toolset bin dir.
 if(MSVC)
+  find_program(SCREENSHOT_GENERATOR_LD lld-link
+    HINTS
+      "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin"
+      "C:/Program Files (x86)/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin"
+    DOC "Path to lld-link.exe used to link screenshot_generator")
+  if(SCREENSHOT_GENERATOR_LD)
+    cmake_path(GET SCREENSHOT_GENERATOR_LD PARENT_PATH _llvm_bin)
+    cmake_path(NATIVE_PATH _llvm_bin _llvm_bin_native)
+    set_property(TARGET screenshot_generator PROPERTY LINKER_TYPE LLD)
+    set_property(TARGET screenshot_generator PROPERTY RULE_LAUNCH_LINK
+      "\"${CMAKE_COMMAND}\" -E env \"PATH=${_llvm_bin_native};$ENV{PATH}\"")
+  endif()
   target_link_options(screenshot_generator PRIVATE
+    # Drop the PDB / .ilk and let the linker throw away unreferenced
+    # symbols / fold identical funcs. Helpful regardless of linker.
     "/DEBUG:NONE"
     "/INCREMENTAL:NO"
     "/OPT:REF"

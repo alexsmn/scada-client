@@ -46,11 +46,16 @@ class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
 
   void Changed();
 
+  // Attaches one level of children already present in the address space
+  // to this tree node. Intentionally not called from the ctor — see the
+  // ctor comment for the stack-overflow reason — but the root node
+  // invokes it explicitly so the tree shows its first level without
+  // needing Qt to call FetchMore first.
+  void AddChildren();
+
   virtual void OnModelChanged() {}
 
  private:
-  void AddChildren();
-
   ConfigurationTreeModel& model_;
   const scada::NodeId reference_type_id_;
   const bool forward_reference_;

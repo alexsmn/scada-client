@@ -5,24 +5,26 @@
 #include "screenshot_output.h"
 #include "widget_capture.h"
 
-#include "address_space/local_attribute_service.h"
+#include "address_space/address_space_impl3.h"
+#include "address_space/attribute_service_impl.h"
 #include "address_space/local_history_service.h"
+#include "address_space/local_method_service.h"
 #include "address_space/local_monitored_item_service.h"
+#include "address_space/local_node_management_service.h"
 #include "address_space/local_session_service.h"
-#include "address_space/local_view_service.h"
+#include "address_space/view_service_impl.h"
 #include "app/client_application.h"
+#include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
-#include "base/test/test_executor.h"
 #include "configuration/configuration_module.h"
-#include "configuration/tree/local_node_service_tree.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
+#include "node_service/node_service.h"
 #include "node_service_progress_tracker.h"
-#include "node_service/local/local_node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
 
@@ -38,6 +40,25 @@ namespace {
 
 // Global config loaded once per test suite.
 ScreenshotConfig g_config;
+
+// `MessageLoopQt` defers tasks to a 10 ms QTimer, so blocking on
+// `promise::get()` would deadlock the only thread that drives the
+// timer. Wait by pumping the event loop until the promise resolves.
+template <class T>
+T WaitForPromise(promise<T> p) {
+  std::optional<T> result;
+  std::move(p).then([&](T value) { result = std::move(value); });
+  while (!result)
+    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+  return std::move(*result);
+}
+
+inline void WaitForPromise(promise<void> p) {
+  bool done = false;
+  std::move(p).then([&] { done = true; });
+  while (!done)
+    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+}
 
 ClientApplicationModuleConfigurator MakeScreenshotModules() {
   return [](ClientApplicationModuleContext& context) {
@@ -63,32 +84,38 @@ class ScreenshotGenerator : public ::testing::Test {
 
  protected:
   boost::asio::io_context io_context_;
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  // QApplication must exist before MessageLoopQt — the latter wires a
+  // QTimer in its ctor — so app_env_ is declared first.
   AppEnvironment app_env_;
+  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
 
   // Russian translator, installed in the constructor body. Must outlive
   // the QApplication inside `app_env_`, hence declared right after it.
   QTranslator translator_;
 
-  // JSON-backed SCADA services. Populated from `screenshot_data.json`
-  // in the constructor body, which runs before any test (and therefore
-  // before `app_.Start()`).
-  scada::LocalAttributeService attribute_service_;
-  scada::LocalViewService view_service_;
+  // SCADA back-end. The address space starts pre-populated with the
+  // standard OPC UA + SCADA folder/type tree (AddressSpaceImpl3 builds
+  // it in its ctor); ns=1 instance nodes from `screenshot_data.json`
+  // get added on top in the test fixture's constructor body.
+  AddressSpaceImpl3 address_space_;
+  SyncAttributeServiceImpl sync_attribute_service_{
+      AttributeServiceImplContext{address_space_}};
+  AttributeServiceImpl attribute_service_{sync_attribute_service_};
+  SyncViewServiceImpl sync_view_service_{ViewServiceImplContext{address_space_}};
+  ViewServiceImpl view_service_{sync_view_service_};
   scada::LocalHistoryService history_service_;
   scada::LocalMonitoredItemService monitored_item_service_;
+  scada::LocalMethodService method_service_;
+  scada::LocalNodeManagementService node_management_service_;
   scada::LocalSessionService session_service_;
-
-  std::shared_ptr<LocalNodeService> node_service_ =
-      std::make_shared<LocalNodeService>();
-  std::shared_ptr<LocalNodeServiceTree::SharedData> tree_data_ =
-      std::make_shared<LocalNodeServiceTree::SharedData>();
 
   scada::services services_{
       .attribute_service = &attribute_service_,
       .monitored_item_service = &monitored_item_service_,
+      .method_service = &method_service_,
       .history_service = &history_service_,
       .view_service = &view_service_,
+      .node_management_service = &node_management_service_,
       .session_service = &session_service_,
   };
 
@@ -102,14 +129,14 @@ class ScreenshotGenerator : public ::testing::Test {
             return make_resolved_promise(std::optional{
                 DataServices::FromUnownedServices(services_)});
           },
-      .node_service_tree_factory_ =
-          LocalNodeServiceTree::MakeFactory(*node_service_, tree_data_),
-      // No `timed_data_service_override_`: let ClientApplication build
-      // the real TimedDataServiceImpl on top of the local services.
-      // Historical data comes from LocalHistoryService (which synthesises
-      // a 48-point profile around each node's `base_value`); current
-      // values come from LocalAttributeService (AttributeId::Value).
-      .node_service_override_ = node_service_,
+      // Intentionally no node_service/timed_data_service/tree-factory
+      // overrides: we let ClientApplication build the production
+      // `v1::NodeServiceImpl`, `TimedDataServiceImpl`, and default
+      // `NodeServiceTreeImpl` on top of the Local* services. The node
+      // graph is populated on demand by the address-space fetcher over
+      // `LocalViewService::Browse` + `LocalAttributeService::Read`,
+      // which is how current values, display names, and tree structure
+      // all flow through the real code paths the client runs in prod.
       .module_configurator_ = MakeScreenshotModules()}};
 };
 
@@ -145,16 +172,17 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // capture child-widget content (see commit history).
   MainWindow::SetHideForTesting();
 
-  // Populate the local services from the JSON file.
-  attribute_service_.LoadFromJson(g_config.json);
-  view_service_.LoadFromJson(g_config.json);
+  // Populate the address space with ns=1 instance nodes; everything
+  // else (standard OPC UA / SCADA tree) was already built by
+  // AddressSpaceImpl3's constructor. The real `v1::NodeServiceImpl`
+  // inside ClientApplication browses and reads them through
+  // ViewServiceImpl + AttributeServiceImpl on demand.
+  PopulateFixtureNodes(address_space_, g_config.json);
   history_service_.LoadFromJson(g_config.json);
-  node_service_->LoadFromJson(g_config.json);
-  tree_data_->LoadFromJson(g_config.json);
 }
 
 ScreenshotGenerator::~ScreenshotGenerator() {
-  app_.Quit().get();
+  WaitForPromise(app_.Quit());
 }
 
 #if !defined(UI_WT)
@@ -169,7 +197,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     profile.Save();
   }
 
-  app_.Start().get();
+  WaitForPromise(app_.Start());
 
   // Let async data loads and model updates complete.
   for (int i = 0; i < 20; ++i)
@@ -228,7 +256,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     profile.Save();
   }
 
-  app_.Start().get();
+  WaitForPromise(app_.Start());
 
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
@@ -250,6 +278,45 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   }
 }
 
+// Regression test for a stack overflow that fires during `app_.Start()`
+// when a page containing a Struct (tree) window is loaded on top of the
+// in-memory address space.
+//
+// The fixture wires the real `v1::NodeServiceImpl` and
+// `NodeServiceTreeImpl` over synchronous Local* services that complete
+// fetch callbacks in the caller's stack frame. During boot the tree
+// model opens the root; each `ConfigurationTreeNode` ctor calls
+// `node_.Fetch(NodeOnly)`; the fetch completes synchronously, fires
+// `OnNodeChildrenChanged`, which re-enters `UpdateChildTreeNodes`, which
+// creates more `ConfigurationTreeNode` children, each calling `Fetch()`
+// again — and so on until the stack runs out. In production (gRPC)
+// fetches return async over a socket, so the chain stays shallow and
+// the bug never surfaces.
+//
+// This test is the smallest repro: only a Struct window on the page,
+// no screenshots, no dialogs. The bug fix should let `app_.Start()`
+// return normally and leave one main window open.
+TEST_F(ScreenshotGenerator, BootWithStructPageDoesNotOverflowStack) {
+  {
+    Profile profile;
+    Page page;
+    page.AddWindow(WindowDefinition{"Struct"});
+    profile.AddPage(page);
+    profile.Save();
+  }
+
+  WaitForPromise(app_.Start());
+
+  // Let the initial address-space fetch cascade complete.
+  for (int i = 0; i < 20; ++i)
+    QApplication::processEvents();
+
+  // If the fetch cascade overflowed the stack the process would have
+  // aborted before this line — reaching here means the recursion is
+  // bounded.
+  EXPECT_EQ(app_.main_window_manager().main_windows().size(), 1u);
+}
+
 TEST_F(ScreenshotGenerator, CaptureDialogs) {
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
@@ -257,13 +324,13 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   // Start the app so the real TimedDataServiceImpl is wired up; the
   // WriteDialog family reads current values, formula titles, and
   // engineering units through it.
-  app_.Start().get();
+  WaitForPromise(app_.Start());
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 
   Profile profile;
   DialogEnvironment env{.executor = executor_,
-                        .node_service = node_service_.get(),
+                        .node_service = &app_.node_service(),
                         .timed_data_service = &app_.timed_data_service(),
                         .profile = &profile};
 

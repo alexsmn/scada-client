@@ -99,6 +99,7 @@ class ClientApplication : private ClientApplicationContext {
   ClientApplication& operator=(const ClientApplication&) = delete;
 
   TimedDataService& timed_data_service() { return *timed_data_service_; }
+  NodeService& node_service() { return *node_service_; }
   ControllerRegistry& controller_registry() { return *controller_registry_; }
   Profile& profile() { return *profile_; }
   MainWindowManager& main_window_manager();

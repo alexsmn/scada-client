@@ -54,22 +54,57 @@ void ConfigurationTreeModelTest::InitModel(
 TEST_F(ConfigurationTreeModelTest, PrefetchedChildrenAreAvailable) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
 
-  // Expect one call for the root node and a call per child node.
+  // Only the root node prefetches its direct children. Grandchildren load
+  // lazily through `FetchMore`; see the construction-doesn't-recurse test
+  // below for the reason.
   // WARNING: Cannot use the equality matcher for the `NodeRef` parameter as it
   // seems to bring a deadlock.
   EXPECT_CALL(*node_service_tree, GetChildren(_))
-      .Times(4)
       .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
           {.reference_type_id = scada::id::Organizes,
            .child_node = MakeTestNodeRef(kNodeId1)},
           {.reference_type_id = scada::id::Organizes,
            .child_node = MakeTestNodeRef(kNodeId2)},
           {.reference_type_id = scada::id::Organizes,
-           .child_node = MakeTestNodeRef(kNodeId3)}}))
-      .WillRepeatedly(DoDefault());
+           .child_node = MakeTestNodeRef(kNodeId3)}}));
 
   InitModel(std::move(node_service_tree));
 
   auto* root = model_->GetRoot();
   EXPECT_EQ(3, model_->GetChildCount(root));
+}
+
+// Regression: `ConfigurationTreeNode`'s ctor used to invoke `AddChildren()`,
+// which called the ctor of every child, which again called `AddChildren()`,
+// and so on. When the address space starts pre-populated (e.g. the
+// screenshot generator wired over AddressSpaceImpl3) every node already
+// has children loaded, so the chain walked the entire tree synchronously
+// and exploded the stack. The fix restricts the eager prefetch to the
+// root node — grandchildren stay lazy and only load via `FetchMore`.
+//
+// This test configures a mock tree where every node reports one child, ad
+// infinitum. The old implementation would recurse forever and trip the
+// `gmock` call limit (or, in a release build, the process stack); the new
+// one stops after the root's single prefetch.
+TEST_F(ConfigurationTreeModelTest, ConstructionDoesNotRecurseIntoGrandchildren) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+
+  // Every `GetChildren(...)` call returns a single child whose id is one
+  // past the caller's — a bottomless chain. Only the root's prefetch must
+  // run; if the ctor recursed into the child the mock would be called
+  // more than once and `.Times(1)` would fail.
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .Times(1)
+      .WillRepeatedly([](const NodeRef& node) {
+        const auto child_id =
+            scada::NodeId{node.node_id().numeric_id() + 1, 1};
+        return std::vector<NodeServiceTree::ChildRef>{
+            {.reference_type_id = scada::id::Organizes,
+             .child_node = MakeTestNodeRef(child_id)}};
+      });
+
+  InitModel(std::move(node_service_tree));
+
+  auto* root = model_->GetRoot();
+  EXPECT_EQ(1, model_->GetChildCount(root));
 }

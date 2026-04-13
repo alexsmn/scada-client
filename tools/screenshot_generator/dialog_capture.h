@@ -4,7 +4,7 @@
 
 struct DialogSpec;
 class Executor;
-class LocalNodeService;
+class NodeService;
 class Profile;
 class TimedDataService;
 
@@ -13,10 +13,10 @@ class TimedDataService;
 // Owned by `main.cpp`'s test fixture and passed in by reference.
 struct DialogEnvironment {
   std::shared_ptr<Executor> executor;
-  // LocalNodeService from the fixture — dialogs that operate on a node
-  // (limits, write, …) pull NodeRefs from here. Null is fine for kinds
-  // that don't need it.
-  LocalNodeService* node_service = nullptr;
+  // NodeService from the running application — dialogs that operate on
+  // a node (limits, write, …) pull NodeRefs from here. Null is fine for
+  // kinds that don't need it.
+  NodeService* node_service = nullptr;
   // TimedDataService instance the WriteDialog family connects specs to.
   // Null is fine for kinds that don't need it.
   TimedDataService* timed_data_service = nullptr;

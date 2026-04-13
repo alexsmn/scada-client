@@ -112,8 +112,8 @@ the sequential `for` loop in `CaptureDialogs`.
 
 | Key | Type | Purpose |
 |---|---|---|
-| `nodes` | array | Address-space entries: `{id, ns, name, class}`, class ∈ `object` \| `variable`, `base_value` on variables. Loaded into `LocalAttributeService` / `LocalNodeService`. |
-| `tree` | object | Parent → children map. Keys are `"<ns>.<id>"` or bare IDs for ns=1. Loaded into `LocalViewService` and `LocalNodeServiceTree::SharedData`. |
+| `nodes` | array | Address-space entries: `{id, ns, name, class}`, class ∈ `object` \| `variable`, `base_value` on variables. Loaded into `LocalAttributeService`; the running `v1::NodeServiceImpl` pulls each node's attributes through it on demand. |
+| `tree` | object | Parent → children map. Keys are `"<ns>.<id>"` or bare IDs for ns=1. Loaded into `LocalViewService`; the running `AddressSpaceFetcher` walks it via `Browse` to populate the live address space. |
 | `timed_data` | array | `{formula, values}` entries — values are spaced at 30-minute intervals ending at "now". Feeds `FakeTimedDataService`. |
 | `events` | array | `{id, hours_ago, severity, message, node_id, change_mask}` — injected into `LocalHistoryService`. |
 | `graph` | object | Panes, lines (`path`, `color`, `pane`, `dots`, `stepped`), time scale. Used by both the `Graph` profile path and standalone rendering. |

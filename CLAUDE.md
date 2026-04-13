@@ -437,3 +437,5 @@ Logging-related switches (pass as `--switch-name`):
 11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
 
 10. **Async code** uses `promise<T>` with `.then()` chaining and `BindPromiseExecutor` to stay on the correct executor thread.
+
+12. **Add a regression unit test for every fixed bug.** When fixing a bug, add a `*_unittest.cpp` test that fails against the pre-fix code and passes after the fix — it locks in the fix and documents the failure mode in an executable form. If writing the test would require a major redesign (e.g., a new mock layer, restructuring the class under test, splitting a module), confirm the scope with the user before embarking; a targeted regression test on existing seams is always preferable to invasive test plumbing.
