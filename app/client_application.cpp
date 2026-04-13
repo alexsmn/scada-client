@@ -1,4 +1,4 @@
-﻿#include "app/client_application.h"
+#include "app/client_application.h"
 
 #include "aui/translation.h"
 #include "base/blinker.h"
@@ -76,6 +76,13 @@ REGISTER_DATA_SERVICES("Vidicon",
                        CreateVidiconServices,
                        "localhost");
 
+// Locals shared across the PostLogin() phase helpers.
+struct ClientApplication::PostLoginContext {
+  scada::services audited_scada_services;
+  scada::client scada_client;
+  AliasResolver alias_resolver;
+};
+
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
       metric_service_{
@@ -93,42 +100,21 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   transport_factory_ = transport::CreateTransportFactory();
 
   core_module_ = std::make_unique<CoreModule>(executor_);
+
+  shutdown_stack_.Push([this] { transport_factory_.reset(); });
+  shutdown_stack_.Push([this] { core_module_.reset(); });
+  shutdown_stack_.Push([this] { master_data_services_ = nullptr; });
 }
 
 ClientApplication::~ClientApplication() {
-  node_service_progress_tracker_.reset();
-  main_window_module_.reset();
-
+  // Save profile before shutdown_stack_ runs teardown callbacks (which
+  // include resetting profile_ itself).
   if (profile_ && profile_loaded_) {
     profile_->Save();
   }
-
-  // Shutdown OPC.
-  // extern void ShutdownOpc();
-  // ShutdownOpc();
-
-  while (!singletons_.empty()) {
-    singletons_.pop();
-  }
-
-  connection_state_reporter_.reset();
-  blinker_manager_.reset();
-  speech_.reset();
-  print_module_.reset();
-  favorites_module_.reset();
-  portfolio_module_.reset();
-  task_manager_.reset();
-
-  profile_.reset();
-
-  create_tree_.reset();
-  timed_data_service_.reset();
-  node_service_.reset();
-
-  master_data_services_ = nullptr;
-
-  core_module_.reset();
-  transport_factory_.reset();
+  // shutdown_stack_ is the last declared member: its destructor runs
+  // registered teardown callbacks LIFO, then the remaining members
+  // auto-destroy in reverse declaration order.
 }
 
 MainWindowManager& ClientApplication::main_window_manager() {
@@ -140,39 +126,58 @@ promise<void> ClientApplication::Start() {
 }
 
 void ClientApplication::PostLogin() {
-  const scada::services& audited_scada_services =
-      master_data_services_->as_services();
+  PostLoginContext ctx{
+      .audited_scada_services = master_data_services_->as_services(),
+      .scada_client = scada::client{master_data_services_->as_services()},
+      .alias_resolver = {}};
 
-  scada::client scada_client{audited_scada_services};
-
-  if (node_service_override_) {
-    node_service_ = std::move(node_service_override_);
-  } else {
-    node_service_ = CreateNodeService(NodeServiceContext{
-        .executor_ = executor_,
-        .session_service_ = *audited_scada_services.session_service,
-        .attribute_service_ = *audited_scada_services.attribute_service,
-        .view_service_ = *audited_scada_services.view_service,
-        .monitored_item_service_ =
-            *audited_scada_services.monitored_item_service,
-        .method_service_ = *audited_scada_services.method_service,
-        .scada_client_ = scada_client});
-  }
-
-  AliasResolver alias_resolver = CreateAliasResolver(*node_service_, logger_);
+  CreateNodeService(ctx);
+  ctx.alias_resolver = CreateAliasResolver(*node_service_, logger_);
 
   singletons_.emplace(
       std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
 
+  CreateEventAndDataServices(ctx);
+  CreateUserServices(ctx);
+  CreateFeatureComponents(ctx);
+  RunModuleConfigurator(ctx);
+  CreateMainWindow(ctx);
+
+  // TODO: Move selection command registry out of `MainWindowModule`.
+  filesystem_component_->set_selection_commands(
+      &core_module_->selection_commands());
+
+  filesystem_component_->StartUp();
+}
+
+void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
+  if (node_service_override_) {
+    node_service_ = std::move(node_service_override_);
+  } else {
+    node_service_ = ::CreateNodeService(NodeServiceContext{
+        .executor_ = executor_,
+        .session_service_ = *ctx.audited_scada_services.session_service,
+        .attribute_service_ = *ctx.audited_scada_services.attribute_service,
+        .view_service_ = *ctx.audited_scada_services.view_service,
+        .monitored_item_service_ =
+            *ctx.audited_scada_services.monitored_item_service,
+        .method_service_ = *ctx.audited_scada_services.method_service,
+        .scada_client_ = ctx.scada_client});
+  }
+  shutdown_stack_.Push([this] { node_service_.reset(); });
+}
+
+void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) {
   profile_ = std::make_unique<Profile>();
   profile_->Load();
   profile_loaded_ = true;
+  shutdown_stack_.Push([this] { profile_.reset(); });
 
   event_module_ = std::make_unique<EventModule>(EventModuleContext{
       .executor_ = executor_,
       .logger_ = logger_,
       .profile_ = *profile_,
-      .services_ = audited_scada_services,
+      .services_ = ctx.audited_scada_services,
       .controller_registry_ = *controller_registry_,
       .selection_commands_ = core_module_->selection_commands()});
 
@@ -181,30 +186,38 @@ void ClientApplication::PostLogin() {
   } else {
     timed_data_service_ = CreateTimedDataService(
         {.executor_ = executor_,
-         .alias_resolver_ = alias_resolver,
+         .alias_resolver_ = ctx.alias_resolver,
          .node_service_ = *node_service_,
-         .services_ = audited_scada_services,
+         .services_ = ctx.audited_scada_services,
          .node_event_provider_ = event_module_->node_event_provider()});
   }
+  shutdown_stack_.Push([this] { timed_data_service_.reset(); });
+}
 
+void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
   task_manager_ = std::make_shared<TaskManagerImpl>(TaskManagerImplContext{
       .executor_ = executor_,
       .node_service_ = *node_service_,
-      .attribute_service_ = *audited_scada_services.attribute_service,
+      .attribute_service_ = *ctx.audited_scada_services.attribute_service,
       .node_management_service_ =
-          *audited_scada_services.node_management_service,
+          *ctx.audited_scada_services.node_management_service,
       .local_events_ = event_module_->local_events(),
       .profile_ = *profile_,
       .progress_host_ = core_module_->progress_host()});
+  shutdown_stack_.Push([this] { task_manager_.reset(); });
 
   speech_ = std::make_unique<Speech>();
+  shutdown_stack_.Push([this] { speech_.reset(); });
+
   blinker_manager_ = std::make_unique<BlinkerManagerImpl>(executor_);
+  shutdown_stack_.Push([this] { blinker_manager_.reset(); });
 
   connection_state_reporter_ =
       std::make_unique<ConnectionStateReporter>(ConnectionStateReporterContext{
           .executor_ = executor_,
-          .session_service_ = *audited_scada_services.session_service,
+          .session_service_ = *ctx.audited_scada_services.session_service,
           .local_events_ = event_module_->local_events()});
+  shutdown_stack_.Push([this] { connection_state_reporter_.reset(); });
 
   write_service_ = std::make_unique<WriteServiceImpl>(
       WriteServiceImplContext{.executor_ = executor_,
@@ -212,56 +225,72 @@ void ClientApplication::PostLogin() {
                               .profile_ = *profile_});
 
   create_tree_ = std::make_unique<CreateTree>();
+  shutdown_stack_.Push([this] { create_tree_.reset(); });
+}
 
+void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
   filesystem_component_ = std::make_unique<FileSystemComponent>(
       FileSystemComponentContext{.node_service_ = *node_service_,
                                  .task_manager_ = *task_manager_,
                                  .create_tree_ = *create_tree_,
-                                 .scada_client_ = scada_client});
+                                 .scada_client_ = ctx.scada_client});
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,
       .global_commands_ = core_module_->global_commands(),
       .controller_registry_ = *controller_registry_});
+  shutdown_stack_.Push([this] { favorites_module_.reset(); });
 
   portfolio_module_ = std::make_unique<PortfolioModule>(
       PortfolioModuleContext{*node_service_, *profile_, *controller_registry_});
+  shutdown_stack_.Push([this] { portfolio_module_.reset(); });
 
   property_service_ = std::make_unique<PropertyService>();
+}
 
-  if (module_configurator_) {
-    auto module_context = ClientApplicationModuleContext{
-        .executor_ = executor_,
-        .scada_services_ = audited_scada_services,
-        .alias_resolver_ = alias_resolver,
-        .controller_registry_ = *controller_registry_,
-        .profile_ = *profile_,
-        .node_service_ = *node_service_,
-        .task_manager_ = *task_manager_,
-        .timed_data_service_ = *timed_data_service_,
-        .write_service_ = *write_service_,
-        .print_module_ = print_module_,
-        .node_service_tree_factory_ =
-            node_service_tree_factory_
-                ? node_service_tree_factory_
-                : NodeServiceTreeFactory{[](NodeServiceTreeImplContext&& ctx) {
-                    return std::make_unique<NodeServiceTreeImpl>(
-                        std::move(ctx));
-                  }},
-        .filesystem_component_ = *filesystem_component_,
-        .blinker_manager_ = *blinker_manager_,
-        .progress_host_ = core_module_->progress_host(),
-        .global_commands_ = core_module_->global_commands(),
-        .selection_commands_ = core_module_->selection_commands(),
-        .singletons_ = singletons_};
-    module_configurator_(module_context);
+ClientApplicationModuleContext ClientApplication::BuildModuleContext(
+    const PostLoginContext& ctx) {
+  return ClientApplicationModuleContext{
+      .executor_ = executor_,
+      .scada_services_ = ctx.audited_scada_services,
+      .alias_resolver_ = ctx.alias_resolver,
+      .controller_registry_ = *controller_registry_,
+      .profile_ = *profile_,
+      .node_service_ = *node_service_,
+      .task_manager_ = *task_manager_,
+      .timed_data_service_ = *timed_data_service_,
+      .write_service_ = *write_service_,
+      .print_module_ = print_module_,
+      .node_service_tree_factory_ =
+          node_service_tree_factory_
+              ? node_service_tree_factory_
+              : NodeServiceTreeFactory{[](NodeServiceTreeImplContext&& inner) {
+                  return std::make_unique<NodeServiceTreeImpl>(std::move(inner));
+                }},
+      .filesystem_component_ = *filesystem_component_,
+      .blinker_manager_ = *blinker_manager_,
+      .progress_host_ = core_module_->progress_host(),
+      .global_commands_ = core_module_->global_commands(),
+      .selection_commands_ = core_module_->selection_commands(),
+      .singletons_ = singletons_};
+}
+
+void ClientApplication::RunModuleConfigurator(const PostLoginContext& ctx) {
+  if (!module_configurator_) {
+    return;
   }
+  auto module_context = BuildModuleContext(ctx);
+  module_configurator_(module_context);
+  shutdown_stack_.Push([this] { print_module_.reset(); });
+  shutdown_stack_.Push([this] { node_service_progress_tracker_.reset(); });
+}
 
+void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
   auto controller_factory =
       std::make_shared<ControllerFactoryImpl>(ControllerFactoryImpl{
           .executor_ = executor_,
           .profile_ = *profile_,
-          .scada_services_ = audited_scada_services,
+          .scada_services_ = ctx.audited_scada_services,
           .task_manager_ = *task_manager_,
           .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
@@ -276,7 +305,7 @@ void ClientApplication::PostLogin() {
           .executor_ = executor_,
           .profile_ = *profile_,
           .quit_handler_ = std::bind_front(&ClientApplication::Quit, this),
-          .scada_services_ = audited_scada_services,
+          .scada_services_ = ctx.audited_scada_services,
           .login_handler_ = std::bind_front(&ClientApplication::Login, this),
           .task_manager_ = *task_manager_,
           .node_event_provider_ = event_module_->node_event_provider(),
@@ -299,12 +328,7 @@ void ClientApplication::PostLogin() {
           .selection_commands_ = core_module_->selection_commands(),
           .controller_factory_ = std::bind_front(
               &ControllerFactoryImpl::CreateController, controller_factory)});
-
-  // TODO: Move selection command registry out of `MainWindowModule`.
-  filesystem_component_->set_selection_commands(
-      &core_module_->selection_commands());
-
-  filesystem_component_->StartUp();
+  shutdown_stack_.Push([this] { main_window_module_.reset(); });
 }
 
 promise<void> ClientApplication::Login() {

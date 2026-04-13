@@ -8,14 +8,19 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
+#include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/services_mock.h"
+#include "services/task_manager.h"
+#include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
 
 #include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
+
+#include <vector>
 
 using namespace ::testing;
 
@@ -73,6 +78,34 @@ ClientApplicationTest::ClientApplicationTest() {
 
 ClientApplicationTest::~ClientApplicationTest() {
   app_.Quit().get();
+}
+
+// ShutdownStack is the teardown-callback utility used by ClientApplication.
+// Test it directly so regressions in its LIFO behavior are caught without
+// standing up the full application.
+
+TEST(ShutdownStackTest, EmptyStackDestroysCleanly) {
+  ShutdownStack stack;
+}
+
+TEST(ShutdownStackTest, RunsPushedActionsInLifoOrder) {
+  std::vector<int> order;
+  {
+    ShutdownStack stack;
+    stack.Push([&] { order.push_back(1); });
+    stack.Push([&] { order.push_back(2); });
+    stack.Push([&] { order.push_back(3); });
+  }
+  EXPECT_THAT(order, ElementsAre(3, 2, 1));
+}
+
+TEST(ShutdownStackTest, RunsSinglePushedAction) {
+  bool ran = false;
+  {
+    ShutdownStack stack;
+    stack.Push([&] { ran = true; });
+  }
+  EXPECT_TRUE(ran);
 }
 
 // TODO: Enable Wt tests once `QTabWidget::removeTab` stops returning null.
@@ -145,6 +178,76 @@ TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
   TimedDataSpec timed_data;
   timed_data.Connect(app_.timed_data_service(), node_id);
   EXPECT_EQ(timed_data.current(), initial_data_value);
+}
+
+// Constructs its own `ClientApplication` so individual tests can inject a
+// custom `module_configurator_` to observe `BuildModuleContext()`.
+class ClientApplicationConfiguratorTest : public Test {
+ public:
+  ClientApplicationConfiguratorTest() {
+    MainWindow::SetHideForTesting();
+    ON_CALL(login_handler_, Call(/*services_context=*/_))
+        .WillByDefault(Return(make_resolved_promise(std::optional{
+            DataServices::FromUnownedServices(services_.services())})));
+  }
+
+ protected:
+  boost::asio::io_context io_context_;
+  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  AppEnvironment app_env_;
+  scada::MockServices services_;
+  base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
+  NiceMock<MockFunction<promise<std::optional<DataServices>>(
+      DataServicesContext&& services_context)>>
+      login_handler_;
+};
+
+// PostLogin's RunModuleConfigurator phase invokes module_configurator_ with
+// the context returned by BuildModuleContext(). Verify the configurator is
+// called, and that the references it receives point at the application's
+// own modules.
+TEST_F(ClientApplicationConfiguratorTest,
+       InvokesConfiguratorWithPopulatedContext) {
+  bool called = false;
+  Profile* captured_profile = nullptr;
+  NodeService* captured_node_service = nullptr;
+  TaskManager* captured_task_manager = nullptr;
+  TimedDataService* captured_timed_data = nullptr;
+  ControllerRegistry* captured_controller_registry = nullptr;
+  Executor* captured_executor = nullptr;
+
+  auto default_configurator = MakeDefaultClientApplicationModules();
+  auto capturing_configurator =
+      [&, default_configurator = std::move(default_configurator)](
+          ClientApplicationModuleContext& ctx) {
+        called = true;
+        captured_profile = &ctx.profile_;
+        captured_node_service = &ctx.node_service_;
+        captured_task_manager = &ctx.task_manager_;
+        captured_timed_data = &ctx.timed_data_service_;
+        captured_controller_registry = &ctx.controller_registry_;
+        captured_executor = ctx.executor_.get();
+        default_configurator(ctx);
+      };
+
+  ClientApplication app{ClientApplicationContext{
+      .io_context_ = io_context_,
+      .executor_ = executor_,
+      .login_handler_ = login_handler_.AsStdFunction(),
+      .module_configurator_ = std::move(capturing_configurator),
+  }};
+
+  app.Start().get();
+
+  EXPECT_TRUE(called);
+  EXPECT_EQ(captured_profile, &app.profile());
+  EXPECT_EQ(captured_timed_data, &app.timed_data_service());
+  EXPECT_EQ(captured_controller_registry, &app.controller_registry());
+  EXPECT_EQ(captured_executor, executor_.get());
+  EXPECT_NE(captured_node_service, nullptr);
+  EXPECT_NE(captured_task_manager, nullptr);
+
+  app.Quit().get();
 }
 
 #endif

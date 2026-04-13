@@ -5,8 +5,29 @@
 #include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
 
+#include <functional>
 #include <memory>
 #include <stack>
+
+// Runs a LIFO list of teardown callbacks when destroyed. Used by
+// `ClientApplication` so each module's shutdown can be registered next
+// to its construction site instead of being manually ordered in the
+// destructor.
+class ShutdownStack {
+ public:
+  ~ShutdownStack() {
+    while (!actions_.empty()) {
+      actions_.top()();
+      actions_.pop();
+    }
+  }
+  void Push(std::function<void()> action) {
+    actions_.push(std::move(action));
+  }
+
+ private:
+  std::stack<std::function<void()>> actions_;
+};
 
 namespace boost {
 namespace asio {
@@ -89,7 +110,18 @@ class ClientApplication : private ClientApplicationContext {
   [[nodiscard]] promise<void> Quit();
 
  private:
+  struct PostLoginContext;
+
   void PostLogin();
+  void CreateNodeService(const PostLoginContext& ctx);
+  void CreateEventAndDataServices(const PostLoginContext& ctx);
+  void CreateUserServices(const PostLoginContext& ctx);
+  void CreateFeatureComponents(const PostLoginContext& ctx);
+  void RunModuleConfigurator(const PostLoginContext& ctx);
+  void CreateMainWindow(const PostLoginContext& ctx);
+
+  ClientApplicationModuleContext BuildModuleContext(
+      const PostLoginContext& ctx);
 
   promise<void> Login();
   void OnLoginCompleted(const DataServices& services);
@@ -138,4 +170,8 @@ class ClientApplication : private ClientApplicationContext {
   // Sets on `Quit` and never resets. Allows multiple `Quit` calls.
   bool quitting_ = false;
   promise<void> quit_promise_;
+
+  // Must be the last member so it is destroyed first, running registered
+  // teardown callbacks before the other members are torn down.
+  ShutdownStack shutdown_stack_;
 };
