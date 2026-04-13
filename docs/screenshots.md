@@ -31,9 +31,9 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `main.cpp` | Test fixture `ScreenshotGenerator` and the three `TEST_F`s: `CaptureAllWindows`, `CaptureMainWindow`, `CaptureDialogs`. |
 | `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json`. |
 | `screenshot_output.{h,cpp}` | `GetOutputDir()` — resolves `SCREENSHOT_OUT_DIR` once. |
-| `widget_capture.{h,cpp}` | `SaveScreenshot(QWidget*, const ScreenshotSpec&)` — the generic "resize, grab, save" helper. |
+| `widget_capture.{h,cpp}` | `SaveScreenshot(QWidget*, const ScreenshotSpec&)` — the generic "resize, grab, save" helper for sub-widgets inside the MDI area. |
 | `graph_capture.{h,cpp}` | `SaveGraphScreenshot` builds a standalone `MetrixGraph` (hidden main windows don't lay out `QSplitter` children); `MakeGraphDefinition` builds the matching `WindowDefinition` for the profile path. |
-| `dialog_capture.{h,cpp}` | `CaptureDialog(spec, env)` — per-kind builders invoke the component's public `Execute…Dialog()` factory, which calls `show()` internally; we then find the visible dialog via `QApplication::topLevelWidgets()`, grab, and `reject()`. |
+| `dialog_capture.{h,cpp}` | `CaptureDialog(spec, env)` — per-kind builders invoke the component's public `Execute…Dialog()` factory, which calls `show()` internally; we then find the visible dialog via `QApplication::topLevelWidgets()`, grab, and hide+reject. |
 | `fixture_builder.{h,cpp}` | `MakeScreenshotPage` (builds a `Page` with one window per `ScreenshotSpec`) and `MakeLocalTimedDataService` (populates a `FakeTimedDataService` from the fixture's `timed_data` array). |
 | `screenshot_data.json` | The fixture: nodes, tree, timed data, events, graph config, screenshot list, dialog list. |
 | `CMakeLists.txt` | Builds `screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
@@ -125,14 +125,25 @@ so the generator output is a drop-in replacement.
 
 ## Running it
 
+Building the `screenshot_generator` target runs the generator as a
+POST_BUILD step, dropping the PNGs into `client/docs/screenshots/`
+(gitignored). That keeps the local gallery in lock-step with the
+current client build — useful for comparing runs before publishing
+anything to scada-docs.
+
 ```batch
 cmake --build --preset release-dev -t screenshot_generator
+```
+
+To render into a different directory (typically `scada-docs/img/`
+before committing a refresh there):
+
+```batch
 set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
 build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 ```
 
-Without `SCREENSHOT_OUT_DIR` set, output lands in `<cwd>/screenshots/`
-— useful for a side-by-side diff before overwriting the docs copies.
+Without `SCREENSHOT_OUT_DIR` set, output lands in `<cwd>/screenshots/`.
 
 Run a subset with `--gtest_filter`:
 
@@ -199,6 +210,36 @@ Workflow:
    `MANIFEST.md` by retagging the orphaned files `obsolete` in the
    same PR that removes the feature — don't leave `auto-*` rows
    pointing at dead window types.
+
+## Why no native window frames
+
+Screenshots intentionally don't include the OS title bar / border.
+The capture runs headless: `MainWindow::SetHideForTesting()` makes
+the main window skip `show()`, dialogs are shown but never mapped to
+the screen compositor, and everything is captured via
+`QWidget::grab()` which renders the widget tree into a QPixmap
+without touching the OS window manager.
+
+This keeps the suite portable (no desktop session required on
+Windows or Linux CI) at the cost of frame-less output. We evaluated
+two alternatives and rejected both:
+
+- **`QScreen::grabWindow(winId)`** — on Qt 5 / Windows this calls
+  `PrintWindow` without `PW_RENDERFULLCONTENT` and returns only the
+  client area. On top of that, grabbing a desktop rect at the
+  window's `frameGeometry()` picks up whatever is on top in OS
+  Z-order, which on a busy dev box is rarely our window.
+- **`PrintWindow(hwnd, hdc, PW_RENDERFULLCONTENT)`** — captures
+  frame + client independently of Z-order, but doesn't reliably
+  refresh DWM's internal bitmap for Qt dialogs that were never
+  foregrounded, so child widgets come out black even though
+  `widget->grab()` on the same dialog renders them fine. The
+  write-dialog family hit this consistently.
+
+If docs ever need authentic OS frames, the cleanest path is to
+composite `widget->grab()` onto a PrintWindow capture — frame from
+PrintWindow, content from the widget tree render. Not worth it right
+now.
 
 ## Known constraints
 

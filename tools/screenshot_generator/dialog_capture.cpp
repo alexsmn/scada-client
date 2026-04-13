@@ -101,8 +101,16 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   auto path = GetOutputDir() / spec.filename;
   pixmap.save(QString::fromStdString(path.string()));
 
+  // Hide *before* reject(). LoginDialog overrides reject() to resolve
+  // its promise and deliberately doesn't call QDialog::reject(), which
+  // means reject() alone leaves the dialog visible — and the next
+  // capture's top-level-widgets scan finds the login again instead of
+  // the dialog just shown. An explicit hide() clears isVisible() for
+  // that scan regardless of what reject() does.
+  dialog->hide();
   dialog->reject();
-  QApplication::processEvents();
+  for (int i = 0; i < 3; ++i)
+    QApplication::processEvents();
   return true;
 }
 

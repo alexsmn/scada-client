@@ -118,7 +118,12 @@ ScreenshotGenerator::ScreenshotGenerator() {
   // "Fusion".
   QApplication::setStyle("Fusion");
 
-  // Render offscreen.
+  // Render offscreen. `widget->grab()` renders the Qt widget tree to a
+  // QPixmap without needing the window to be on-screen — so this
+  // suite works headless (incl. CI without a desktop session).
+  // Trade-off: we don't get the native OS title bar / frame; we tried
+  // PrintWindow(PW_RENDERFULLCONTENT) for that and it didn't reliably
+  // capture child-widget content (see commit history).
   MainWindow::SetHideForTesting();
 
   // Populate the local services from the JSON file.
