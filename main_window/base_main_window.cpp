@@ -225,8 +225,13 @@ void BaseMainWindow::OpenPage(const Page& page) {
 }
 
 void BaseMainWindow::DeleteCurrentPage() {
-  auto& page = current_page();
-  profile_.pages.erase(page.id);
+  const int page_id = current_page().id;
+
+  // Close the current page before removing it from the profile so view teardown
+  // runs against a still-valid page object.
+  view_manager_->ClosePage();
+
+  profile_.pages.erase(page_id);
 
   // Select first not opened page.
   const Page* select_page = main_window_manager_.FindFirstNotOpenedPage();

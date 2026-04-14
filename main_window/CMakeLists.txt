@@ -35,10 +35,12 @@ target_link_libraries(client_main_window_qt_unittests PRIVATE
   aui_test_qt
   client_controller_test_qt
   client_core
+  client_properties_qt
 )
 
 target_link_libraries(client_main_window_wt_unittests PRIVATE
   aui_test_wt
   client_controller_test_wt
   client_core
+  client_properties_wt
 )
