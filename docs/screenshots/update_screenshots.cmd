@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
-for %%I in ("%SCRIPT_DIR%\..\..") do set "REPO_ROOT=%%~fI"
+for %%I in ("%SCRIPT_DIR%\..\..\..") do set "REPO_ROOT=%%~fI"
 if "%~1"=="" (
   set "DOCS_IMG_DIR=%REPO_ROOT%\scada-docs\img"
 ) else (
@@ -12,9 +12,17 @@ if "%~1"=="" (
 set "GENERATOR_EXE=%REPO_ROOT%\build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe"
 set "TMP_DIR=%TEMP%\scada-docs-screenshots-%RANDOM%%RANDOM%"
 
+echo Building screenshot_generator if needed
+pushd "%REPO_ROOT%" >nul || exit /b 1
+cmake --build --preset release-dev --target screenshot_generator || (
+  popd >nul
+  exit /b 1
+)
+popd >nul
+
 if not exist "%GENERATOR_EXE%" (
   echo screenshot_generator.exe not found at "%GENERATOR_EXE%" 1>&2
-  echo Build it first: cmake --build --preset release-dev --target screenshot_generator 1>&2
+  echo Build step completed but the executable is still missing. 1>&2
   exit /b 1
 )
 
@@ -31,6 +39,7 @@ set "SCREENSHOT_OUT_DIR=%TMP_DIR%"
 
 echo Publishing supported images to "%DOCS_IMG_DIR%"
 for %%F in (
+  client-login.png
   client-retransmission.png
   users.png
 ) do (
@@ -41,8 +50,9 @@ for %%F in (
   copy /Y "%TMP_DIR%\%%F" "%DOCS_IMG_DIR%\%%F" >nul || goto :cleanup_fail
 )
 
-echo Updated 2 scada-docs images:
+echo Updated 3 scada-docs images:
 for %%F in (
+  client-login.png
   client-retransmission.png
   users.png
 ) do echo   %%F
