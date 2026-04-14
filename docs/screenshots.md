@@ -38,6 +38,11 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `screenshot_data.json` | The fixture: nodes, tree, timed data, events, graph config, screenshot list, dialog list. |
 | `CMakeLists.txt` | Builds `screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
 
+The docs refresh helper for the current rollout lives outside that
+tree at `client/docs/screenshots/update_screenshots.cmd`. It runs the
+generator into a temporary directory and copies only the approved
+`scada-docs/img/` batch (`client-retransmission.png`, `users.png`).
+
 ### Why the split
 
 The prior single-file `app/screenshot_generator.cpp` pulled in every
@@ -145,11 +150,12 @@ build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 
 Without `SCREENSHOT_OUT_DIR` set, output lands in `<cwd>/screenshots/`.
 
-For the first `scada-docs` rollout, use the client-side helper script:
+For the first `scada-docs` rollout, use the client-side helper script
+`client/docs/screenshots/update_screenshots.cmd`:
 
 ```bash
 cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
-cmd.exe /c C:\tc\scada\client\update_scada_docs_screenshots.cmd
+cmd.exe /c C:\tc\scada\client\docs\screenshots\update_screenshots.cmd
 ```
 
 The script renders into a temporary directory, then copies only the
@@ -208,7 +214,8 @@ The source of truth for which files are auto vs manual is
 
 Workflow:
 
-1. For the current rollout, run `client/update_scada_docs_screenshots.cmd`.
+1. For the current rollout, run
+   `client/docs/screenshots/update_screenshots.cmd`.
    It publishes only `client-retransmission.png` and `users.png` into
    `scada-docs/img/`.
 2. `git diff img/` in scada-docs to review every image that changed.

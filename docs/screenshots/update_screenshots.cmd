@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
-for %%I in ("%SCRIPT_DIR%..") do set "REPO_ROOT=%%~fI"
+for %%I in ("%SCRIPT_DIR%\..\..") do set "REPO_ROOT=%%~fI"
 if "%~1"=="" (
   set "DOCS_IMG_DIR=%REPO_ROOT%\scada-docs\img"
 ) else (

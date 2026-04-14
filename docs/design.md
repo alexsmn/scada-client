@@ -195,7 +195,7 @@ If `SCREENSHOT_OUT_DIR` is unset, the generator writes to
 docs copies.
 
 For the first docs rollout, prefer the helper script at
-`client/update_scada_docs_screenshots.cmd`. It renders into a temporary
+`client/docs/screenshots/update_screenshots.cmd`. It renders into a temporary
 directory and then updates only the current approved rollout subset in
 `scada-docs/img/`: `client-retransmission.png` and `users.png`.
 
