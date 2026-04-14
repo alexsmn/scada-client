@@ -145,6 +145,17 @@ build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 
 Without `SCREENSHOT_OUT_DIR` set, output lands in `<cwd>/screenshots/`.
 
+For the first `scada-docs` rollout, use the client-side helper script:
+
+```bash
+cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
+cmd.exe /c C:\tc\scada\client\update_scada_docs_screenshots.cmd
+```
+
+The script renders into a temporary directory, then copies only the
+currently approved rollout subset into `scada-docs/img/`:
+`client-retransmission.png` and `users.png`.
+
 Run a subset with `--gtest_filter`:
 
 ```batch
@@ -197,8 +208,9 @@ The source of truth for which files are auto vs manual is
 
 Workflow:
 
-1. Point `SCREENSHOT_OUT_DIR` at your scada-docs checkout's `img/`
-   dir, run the generator.
+1. For the current rollout, run `client/update_scada_docs_screenshots.cmd`.
+   It publishes only `client-retransmission.png` and `users.png` into
+   `scada-docs/img/`.
 2. `git diff img/` in scada-docs to review every image that changed.
    Expect a diff any time the real UI changes — that is the visual
    regression signal. If the diff is noise only (font antialiasing,
