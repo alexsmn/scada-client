@@ -28,7 +28,7 @@ std::unique_ptr<UiView> TransmissionView::Init(
   }
 
   const aui::TableColumn columns[] = {
-      {0, Translate("Item"), 250, aui::TableColumn::LEFT},
+      {0, Translate("Object"), 250, aui::TableColumn::LEFT},
       {1, Translate("Address"), 100, aui::TableColumn::RIGHT},
   };
   column_model_->SetColumns(std::size(columns), columns);

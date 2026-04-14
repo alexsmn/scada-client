@@ -13,6 +13,8 @@ void ScreenshotConfig::Load(const std::filesystem::path& path) {
     ScreenshotSpec spec;
     spec.window_type = std::string(js.at("type").as_string());
     spec.filename = std::string(js.at("filename").as_string());
+    if (const auto* item_path = js.as_object().if_contains("path"))
+      spec.path = std::string(item_path->as_string());
     spec.width = static_cast<int>(js.at("width").as_int64());
     spec.height = static_cast<int>(js.at("height").as_int64());
     screenshots.push_back(std::move(spec));

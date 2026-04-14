@@ -98,10 +98,10 @@ void NodePropertyModel::Update() {
                                    scada::AttributeId::NodeId);
 #endif
     group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
-                                   std::u16string{kBrowseNameAttributeString},
+                                   Translate("Browse Name"),
                                    scada::AttributeId::BrowseName);
     group->properties.emplace_back(aui::PropertyGroup::ItemType::Property,
-                                   std::u16string{kDisplayNameAttributeString},
+                                   Translate("Name"),
                                    scada::AttributeId::DisplayName);
   }
 

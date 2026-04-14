@@ -11,6 +11,7 @@
 struct ScreenshotSpec {
   std::string window_type;
   std::string filename;
+  std::string path;
   int width = 800;
   int height = 600;
 };

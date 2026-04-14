@@ -193,6 +193,11 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 
   {
     Profile profile;
+    // Keep screenshot windows stable: the fixture currently seeds only
+    // historical events, so the normal auto-hide policy would close the
+    // Event pane during startup before CaptureAllWindows inspects it.
+    profile.event_auto_show = false;
+    profile.event_auto_hide = false;
     profile.AddPage(MakeScreenshotPage(g_config.screenshots, g_config.json));
     profile.Save();
   }

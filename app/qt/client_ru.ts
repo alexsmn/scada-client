@@ -38,6 +38,10 @@
         <translation>Сигнал</translation>
     </message>
     <message>
+        <source>Object</source>
+        <translation>Объект</translation>
+    </message>
+    <message>
         <source>Device</source>
         <translation>Устройство</translation>
     </message>
@@ -779,6 +783,10 @@
     </message>
     <!-- configuration/objects/object_tree_model.cpp -->
     <!-- (Name and Value already defined) -->
+    <message>
+        <source>Browse Name</source>
+        <translation>Обозначение</translation>
+    </message>
     <message>
         <source>Name</source>
         <translation>Имя</translation>

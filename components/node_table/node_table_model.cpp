@@ -4,6 +4,7 @@
 #include "base/range_util.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
+#include "aui/translation.h"
 #include "scada/event.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
@@ -306,7 +307,7 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   {
     columns_.emplace_back(scada::AttributeId::BrowseName);
     columns.emplace_back(static_cast<int>(columns.size()),
-                         kBrowseNameAttributeString, 75,
+                         Translate("Browse Name"), 75,
                          aui::TableColumn::LEFT);
   }
 
@@ -314,7 +315,7 @@ void NodeTableModel::UpdateColumns(const PropertyDefs& property_defs) {
   {
     columns_.emplace_back(scada::AttributeId::DisplayName);
     columns.emplace_back(static_cast<int>(columns.size()),
-                         kDisplayNameAttributeString, 75,
+                         Translate("Name"), 75,
                          aui::TableColumn::LEFT);
   }
 
