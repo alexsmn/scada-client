@@ -3,6 +3,7 @@
 #include "base/boost_json_file.h"
 #include "model/node_id_util.h"
 
+#include <QByteArray>
 #include <gtest/gtest.h>
 
 #include <unordered_set>
@@ -10,11 +11,16 @@
 namespace {
 
 std::filesystem::path GetImageManifestPath() {
+  const QByteArray env = qgetenv("SCREENSHOT_IMAGE_MANIFEST");
+  if (!env.isEmpty()) {
+    return std::filesystem::path{env.toStdString()}.lexically_normal();
+  }
+
   for (const auto& candidate : {
            std::filesystem::path{__FILE__}.parent_path() /
-               "../../docs/image_manifest.json",
+               "../../docs/screenshots/image_manifest.json",
            std::filesystem::current_path() /
-               "client/docs/image_manifest.json",
+               "client/docs/screenshots/image_manifest.json",
            std::filesystem::current_path() / "image_manifest.json",
        }) {
     if (std::filesystem::exists(candidate))

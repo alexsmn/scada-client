@@ -20,7 +20,7 @@ The same harness also renders modal dialogs (LoginDialog, …) and, as
 the fixture grows, popup menus and device-state variants.
 
 It replaces hand-captured screenshots for everything tagged `auto-*`
-in `client/docs/image_manifest.json`.
+in `client/docs/screenshots/image_manifest.json`.
 
 ## Source layout
 
@@ -29,7 +29,7 @@ Everything lives under `client/tools/screenshot_generator/`:
 | File | Responsibility |
 |---|---|
 | `main.cpp` | Test fixture `ScreenshotGenerator` and the three `TEST_F`s: `CaptureAllWindows`, `CaptureMainWindow`, `CaptureDialogs`. |
-| `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json`. |
+| `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json` and resolves `SCREENSHOT_IMAGE_MANIFEST`. |
 | `screenshot_output.{h,cpp}` | `GetOutputDir()` — resolves `SCREENSHOT_OUT_DIR` once. |
 | `widget_capture.{h,cpp}` | `SaveScreenshot(QWidget*, const ScreenshotSpec&)` — the generic "resize, grab, save" helper for sub-widgets inside the MDI area. |
 | `graph_capture.{h,cpp}` | `SaveGraphScreenshot` builds a standalone `MetrixGraph` (hidden main windows don't lay out `QSplitter` children); `MakeGraphDefinition` builds the matching `WindowDefinition` for the profile path. |
@@ -39,8 +39,7 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `CMakeLists.txt` | Builds `screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
 
 The docs refresh helper for the current rollout lives outside that
-tree at `client/docs/update_screenshots.cmd`. It runs the
-generator into a temporary directory and copies only the approved
+tree at `client/docs/screenshots/update_screenshots.cmd`. It copies only the approved
 `scada-docs/img/` batch (`client-login.png`, `client-retransmission.png`,
 `graph-cursor.png`, `users.png`).
 
@@ -132,7 +131,7 @@ so the generator output is a drop-in replacement.
 ## Running it
 
 Building the `screenshot_generator` target runs the generator as a
-POST_BUILD step, dropping the PNGs into `client/docs/`
+POST_BUILD step, dropping the PNGs into `client/docs/screenshots/`
 (gitignored). That keeps the local gallery in lock-step with the
 current client build — useful for comparing runs before publishing
 anything to scada-docs.
@@ -146,23 +145,42 @@ before committing a refresh there):
 
 ```batch
 set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
+set SCREENSHOT_IMAGE_MANIFEST=C:\tc\scada\client\docs\screenshots\image_manifest.json
 build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 ```
 
-Without `SCREENSHOT_OUT_DIR` set, output lands in `client/docs/`.
+`SCREENSHOT_OUT_DIR` is required; the POST_BUILD step sets it for the default `client/docs/screenshots/` output. `SCREENSHOT_IMAGE_MANIFEST` is optional; if unset, the generator falls back to its built-in manifest search paths.
 
 For the first `scada-docs` rollout, use the client-side helper script
-`client/docs/update_screenshots.cmd`:
+`client/docs/screenshots/update_screenshots.cmd`:
 
 ```bash
 cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
-cmd.exe /c C:\tc\scada\client\docs\update_screenshots.cmd
+cmd.exe /c C:\tc\scada\client\docs\screenshots\update_screenshots.cmd
 ```
 
-The script renders into a temporary directory, then copies only the
-currently approved rollout subset into `scada-docs/img/`:
+The script copies the currently approved rollout subset from
+`client/docs/screenshots/` into `scada-docs/img/`:
 `client-login.png`, `client-retransmission.png`, `graph-cursor.png`,
 and `users.png`.
+
+### Full pipeline
+
+From the repo root (`C:\tc\scada`), the end-to-end refresh pipeline is:
+
+```batch
+cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
+cmd.exe /c "cd /d C:\tc\scada && call client\docs\screenshots\update_screenshots.cmd"
+```
+
+What this does:
+
+1. Rebuilds `screenshot_generator`.
+2. Lets the target's POST_BUILD step regenerate `client/docs/screenshots/*`.
+3. Copies the approved rollout subset into `C:\tc\scada\scada-docs\img\`.
+
+Use the `call` form for the second command. Direct `cmd.exe /c C:\...\foo.cmd`
+invocation can be parsed incorrectly by `cmd.exe` in some environments.
 
 Run a subset with `--gtest_filter`:
 
@@ -182,7 +200,7 @@ Pick the flow that fits the new image's manifest tag.
    scada-docs dimensions exactly.
 3. If the view needs nodes, timed data, or events that aren't already
    in the fixture, extend the matching arrays.
-4. Add an entry to `client/docs/image_manifest.json` tagged
+4. Add an entry to `client/docs/screenshots/image_manifest.json` tagged
    `auto-view`.
 5. Rebuild and verify the PNG lands.
 
@@ -198,7 +216,7 @@ Pick the flow that fits the new image's manifest tag.
 3. Add a new arm to the `if/else` chain in `CaptureDialog`.
 4. Append `{ "kind": "…", "filename": "…", "width": W, "height": H }`
    to `dialogs:` in `screenshot_data.json`.
-5. Entry in `client/docs/image_manifest.json` tagged
+5. Entry in `client/docs/screenshots/image_manifest.json` tagged
    `auto-dialog`.
 
 ### `auto-menu` — a right-click popup
@@ -214,12 +232,12 @@ are the subject of the `auto-state` task.)
 ## Managing scada-docs/img
 
 The source of truth for which files are auto vs manual is
-`client/docs/image_manifest.json`.
+`client/docs/screenshots/image_manifest.json`.
 
 Workflow:
 
 1. For the current rollout, run
-   `client/docs/update_screenshots.cmd`.
+   `client/docs/screenshots/update_screenshots.cmd`.
    It publishes only `client-login.png`, `client-retransmission.png`,
    `graph-cursor.png`, and `users.png` into `scada-docs/img/`.
 2. `git diff img/` in scada-docs to review every image that changed.

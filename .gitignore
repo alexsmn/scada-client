@@ -1,6 +1,9 @@
 build/
 CMakeUserPresets.json
 .claude/
-# Screenshot generator output. PNGs are regenerated on every build by
-# the screenshot_generator POST_BUILD step; see docs/screenshots.md.
+*.aps
 docs/screenshots/
+!docs/screenshots/
+docs/screenshots/*
+!docs/screenshots/image_manifest.json
+!docs/screenshots/update_screenshots.cmd

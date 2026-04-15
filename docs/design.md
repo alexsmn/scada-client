@@ -175,7 +175,7 @@ and `client_application_unittest.cpp`.
 Most images under `scada-docs/img/` are produced by the offline
 `screenshot_generator` (see FR-21). The source-of-truth for which images
 are auto-generated vs. hand-maintained is
-`client/docs/image_manifest.json`;
+`client/docs/screenshots/image_manifest.json`;
 tags there tell you whether a file is an `auto-view`, `auto-dialog`,
 `auto-menu`, `auto-state`, or one of the `manual-*` / `obsolete`
 categories.
@@ -185,18 +185,20 @@ To regenerate:
 ```batch
 cmake --build --preset release-dev -t screenshot_generator
 set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
+set SCREENSHOT_IMAGE_MANIFEST=C:\tc\scada\client\docs\screenshots\image_manifest.json
 build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 ```
 
 On Unix-y shells it's `SCREENSHOT_OUT_DIR=... ./screenshot_generator`.
 
-If `SCREENSHOT_OUT_DIR` is unset, the generator writes to
-`client/docs/` — useful for local diffing before overwriting the
-docs copies.
+`SCREENSHOT_OUT_DIR` is required for the generator. The build
+POST_BUILD step points it at `client/docs/screenshots/`.
+`SCREENSHOT_IMAGE_MANIFEST` is optional and overrides the default
+`client/docs/screenshots/image_manifest.json` lookup.
 
 For the first docs rollout, prefer the helper script at
-`client/docs/update_screenshots.cmd`. It renders into a temporary
-directory and then updates only the current approved rollout subset in
+`client/docs/screenshots/update_screenshots.cmd`. It copies the current
+approved rollout subset from `client/docs/screenshots/` into
 `scada-docs/img/`: `client-login.png`, `client-retransmission.png`,
 `graph-cursor.png`, and `users.png`.
 
@@ -210,7 +212,7 @@ To add a new auto-screenshot:
    `width` / `height` match the docs image dimensions pixel-exact.
 3. If the view needs fixture data (new nodes, timed values, events),
    extend the matching section of `screenshot_data.json`.
-4. Add an entry to `client/docs/image_manifest.json` with the
+4. Add an entry to `client/docs/screenshots/image_manifest.json` with the
    right tag and the markdown page(s) that embed it.
 5. Rebuild `screenshot_generator` and confirm the new file lands.
 

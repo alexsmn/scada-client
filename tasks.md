@@ -119,7 +119,7 @@ test fixture supports a fake Modus runtime.
 PR / commit):
 
 1. **Inventory and tag.** Walk `scada-docs/img/*` and maintain a
-   manifest at `client/docs/image_manifest.json` tagging each
+   manifest at `client/docs/screenshots/image_manifest.json` tagging each
    file with one of `auto-view`, `auto-dialog`, `auto-menu`,
    `auto-state`, `manual-diagram`, `manual-modus`, `manual-os`, or
    `obsolete`. The manifest is the source of truth for what the
@@ -136,9 +136,8 @@ PR / commit):
 
 3. **Add an output-directory flag.** Extend
    `screenshot_generator.cpp` with a `--out <dir>` (or
-   `SCREENSHOT_OUT_DIR` env var) so the generator can write directly
-   into `scada-docs/img/` from a docs-side script, instead of always
-   writing into `scada/screenshots/`.
+   `SCREENSHOT_OUT_DIR` env var) so the generator can write to an
+   explicit target directory instead of relying on an implicit default.
 
 4. **Add the missing window-type captures** (~10 items). For each
    new window type — `Login`, `Transmission`, `Users` table,

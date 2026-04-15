@@ -36,16 +36,16 @@ set_target_properties(screenshot_generator PROPERTIES
 )
 
 # After the executable links, run it and drop the PNGs into
-# client/docs/ so the docs gallery stays in sync on every
+# client/docs/screenshots/ so the docs gallery stays in sync on every
 # local build. The dir is gitignored — commit copies to scada-docs
 # separately. Requires a desktop session (see docs/screenshots.md
 # "Native window frames").
-set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs")
+set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots")
 add_custom_command(TARGET screenshot_generator POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
   COMMAND ${CMAKE_COMMAND} -E env
     "SCREENSHOT_OUT_DIR=${SCREENSHOT_DOCS_DIR}"
     $<TARGET_FILE:screenshot_generator>
-  COMMENT "Rendering screenshots into docs/"
+  COMMENT "Rendering screenshots into docs/screenshots/"
   VERBATIM
 )
