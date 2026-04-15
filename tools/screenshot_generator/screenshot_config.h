@@ -2,6 +2,8 @@
 
 #include <boost/json/value.hpp>
 
+#include "scada/node_id.h"
+
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -32,6 +34,7 @@ struct ScreenshotConfig {
   boost::json::value json;
   std::vector<ScreenshotSpec> screenshots;
   std::vector<DialogSpec> dialogs;
+  scada::NodeId dialog_analog_node_id;
 
   // Reads `path` and populates the fields. Uses `ASSERT_*` on failure
   // so a bad fixture fails the test suite before any TEST_F runs.

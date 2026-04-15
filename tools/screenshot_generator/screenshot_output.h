@@ -6,7 +6,7 @@
 //
 // Resolution order, computed once on first call and cached:
 //   1. `SCREENSHOT_OUT_DIR` environment variable.
-//   2. `<cwd>/screenshots` — the original default.
+//   2. `client/docs` under the repo root.
 //
 // Lets a docs-side script point the generator at `scada-docs/img/`
 // without editing the source. A `--out` CLI flag isn't viable because

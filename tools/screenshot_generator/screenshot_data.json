@@ -12,6 +12,8 @@
     "the address space files only define types, not instances."
   ],
 
+  "dialog_analog_node_id": "TIT.212",
+
   "nodes": [
     { "id": "TS.100", "browse_name": "M340",                "class": "object", "type_definition": "SCADA.108" },
     { "id": "TS.101", "browse_name": "Smart Termo",         "class": "object", "type_definition": "SCADA.118" },
@@ -44,19 +46,19 @@
     { "id": "TS.128", "browse_name": "Uab",                 "class": "object" },
     { "id": "TS.129", "browse_name": "Ubc",                 "class": "object" },
     { "id": "TS.130", "browse_name": "Uca",                 "class": "object" },
-    { "id": "TS.200", "browse_name": "Активная мощность",   "class": "variable", "base_value": 125.4 },
-    { "id": "TS.201", "browse_name": "Реактивная мощность", "class": "variable", "base_value": -32.1 },
-    { "id": "TS.202", "browse_name": "Напряжение L1-L2",    "class": "variable", "base_value": 10.52 },
-    { "id": "TS.203", "browse_name": "Ток L1",              "class": "variable", "base_value": 10.48 },
-    { "id": "TS.204", "browse_name": "Напряжение L2-L3",    "class": "variable", "base_value": 10.55 },
-    { "id": "TS.205", "browse_name": "Ток L2",              "class": "variable", "base_value": 302.5 },
-    { "id": "TS.206", "browse_name": "Ток L3",              "class": "variable", "base_value": 298.1 },
-    { "id": "TS.207", "browse_name": "Напряжение L3-L1",    "class": "variable", "base_value": 305.7 },
-    { "id": "TS.208", "browse_name": "Частота",             "class": "variable", "base_value": 50.01 },
-    { "id": "TS.209", "browse_name": "Коэффициент мощности","class": "variable", "base_value": 0.95 },
-    { "id": "TS.210", "browse_name": "Суммарная энергия",   "class": "variable", "base_value": 48723 },
-    { "id": "TS.211", "browse_name": "Температура",         "class": "variable", "type_definition": "analog_item", "base_value": 42.3, "properties": { "display_format": "0.#" } },
-    { "id": "TS.212", "browse_name": "Температура нагрева", "class": "variable", "type_definition": "analog_item", "base_value": 41.0, "properties": { "display_format": "0.#" } },
+    { "id": "TIT.200", "browse_name": "Активная мощность",   "class": "variable", "type_definition": "analog_item", "base_value": 125.4, "properties": { "SCADA.158": 110.0,  "SCADA.159": 140.0 } },
+    { "id": "TIT.201", "browse_name": "Реактивная мощность", "class": "variable", "type_definition": "analog_item", "base_value": -32.1, "properties": { "SCADA.158": -40.0, "SCADA.159": -20.0 } },
+    { "id": "TIT.202", "browse_name": "Напряжение L1-L2",    "class": "variable", "type_definition": "analog_item", "base_value": 10.52 },
+    { "id": "TIT.203", "browse_name": "Ток L1",              "class": "variable", "type_definition": "analog_item", "base_value": 10.48 },
+    { "id": "TIT.204", "browse_name": "Напряжение L2-L3",    "class": "variable", "type_definition": "analog_item", "base_value": 10.55 },
+    { "id": "TIT.205", "browse_name": "Ток L2",              "class": "variable", "type_definition": "analog_item", "base_value": 302.5 },
+    { "id": "TIT.206", "browse_name": "Ток L3",              "class": "variable", "type_definition": "analog_item", "base_value": 298.1 },
+    { "id": "TIT.207", "browse_name": "Напряжение L3-L1",    "class": "variable", "type_definition": "analog_item", "base_value": 305.7 },
+    { "id": "TIT.208", "browse_name": "Частота",             "class": "variable", "type_definition": "analog_item", "base_value": 50.01, "properties": { "SCADA.158": 49.95, "SCADA.159": 50.05 } },
+    { "id": "TIT.209", "browse_name": "Коэффициент мощности","class": "variable", "type_definition": "analog_item", "base_value": 0.95 },
+    { "id": "TIT.210", "browse_name": "Суммарная энергия",   "class": "variable", "type_definition": "analog_item", "base_value": 48723 },
+    { "id": "TIT.211", "browse_name": "Температура",         "class": "variable", "type_definition": "analog_item", "base_value": 42.3, "properties": { "display_format": "0.#" } },
+    { "id": "TIT.212", "browse_name": "Температура нагрева", "class": "variable", "type_definition": "analog_item", "base_value": 41.0, "properties": { "display_format": "0.#" } },
 
     { "id": "SCADA.234", "browse_name": "root",          "display_name": "root",           "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": false } },
     { "id": "USER.1",    "browse_name": "Клиент 1",      "display_name": "Руководитель",   "class": "object", "type_definition": "SCADA.16", "properties": { "SCADA.170": 0, "SCADA.345": true } },
@@ -74,14 +76,14 @@
 
     { "id": "TS.701", "browse_name": "Канал MODBUS",              "class": "object",   "type_definition": "SCADA.108" },
     { "id": "TS.702", "browse_name": "Ретрансляция КП-02 MODBUS", "class": "object",   "type_definition": "SCADA.118", "properties": { "SCADA.168": 2 } },
-    { "id": "TS.721", "browse_name": "TC1",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0 },
-    { "id": "TS.722", "browse_name": "TC8",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0 },
-    { "id": "TS.723", "browse_name": "Ua",                        "class": "variable", "type_definition": "analog_item", "base_value": 10.5 },
-    { "id": "TS.724", "browse_name": "Дорасчет Ua среднее",       "class": "variable", "type_definition": "analog_item", "base_value": 10.4 },
-    { "id": "TS.731", "browse_name": "TX_TC1",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1001 }, "references": [{ "type": "SCADA.221", "target": "TS.721" }] },
-    { "id": "TS.732", "browse_name": "TX_TC8",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1002 }, "references": [{ "type": "SCADA.221", "target": "TS.722" }] },
-    { "id": "TS.733", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2001 }, "references": [{ "type": "SCADA.221", "target": "TS.723" }] },
-    { "id": "TS.734", "browse_name": "TX_Ua_AVG",                 "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2002 }, "references": [{ "type": "SCADA.221", "target": "TS.724" }] }
+    { "id": "TIT.721", "browse_name": "TC1",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
+    { "id": "TIT.722", "browse_name": "TC8",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
+    { "id": "TIT.723", "browse_name": "Ua",                        "class": "variable", "type_definition": "analog_item", "base_value": 10.5, "properties": { "display_format": "0.#" } },
+    { "id": "TIT.724", "browse_name": "Дорасчет Ua среднее",       "class": "variable", "type_definition": "analog_item", "base_value": 10.4, "properties": { "display_format": "0.#" } },
+    { "id": "TS.731", "browse_name": "TX_TC1",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1001 }, "references": [{ "type": "SCADA.221", "target": "TIT.721" }] },
+    { "id": "TS.732", "browse_name": "TX_TC8",                    "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 1002 }, "references": [{ "type": "SCADA.221", "target": "TIT.722" }] },
+    { "id": "TS.733", "browse_name": "TX_Ua",                     "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2001 }, "references": [{ "type": "SCADA.221", "target": "TIT.723" }] },
+    { "id": "TS.734", "browse_name": "TX_Ua_AVG",                 "class": "object",   "type_definition": "SCADA.342", "properties": { "SCADA.225": 2002 }, "references": [{ "type": "SCADA.221", "target": "TIT.724" }] }
   ],
 
   "tree": {
@@ -98,7 +100,7 @@
     "SCADA.28":  ["SCADA.67"],
     "SCADA.300": ["SCADA.301"],
 
-    "SCADA.24":  ["TS.100", "TS.101", "TS.102", "TS.109", "TS.110", "TS.111", "TS.112", "TS.113", "TS.721", "TS.722", "TS.723", "TS.724"],
+    "SCADA.24":  ["TS.100", "TS.101", "TS.102", "TS.109", "TS.110", "TS.111", "TS.112", "TS.113", "TIT.721", "TIT.722", "TIT.723", "TIT.724"],
     "SCADA.30":  ["TS.103", "TS.104", "TS.105", "TS.106", "TS.107", "TS.108", "TS.701"],
 
     "TS.100":    ["TS.117", "TS.118", "TS.119"],
@@ -115,16 +117,16 @@
     "TS.111":    ["TS.128", "TS.129", "TS.130"],
     "TS.112":    ["TS.106", "TS.107"],
     "TS.113":    ["TS.114", "TS.115", "TS.116"],
-    "TS.114":    ["TS.200", "TS.201"],
-    "TS.115":    ["TS.202", "TS.203", "TS.204"],
-    "TS.116":    ["TS.205", "TS.206"],
-    "TS.123":    ["TS.208"],
-    "TS.124":    ["TS.211", "TS.212"]
+    "TS.114":    ["TIT.200", "TIT.201"],
+    "TS.115":    ["TIT.202", "TIT.203", "TIT.204"],
+    "TS.116":    ["TIT.205", "TIT.206"],
+    "TS.123":    ["TIT.208"],
+    "TS.124":    ["TIT.211", "TIT.212"]
   },
 
   "timed_data": [
     {
-      "formula": "TS.200",
+      "formula": "TIT.200",
       "values": [
         118.2, 121.5, 124.8, 126.3, 128.1, 130.5, 127.9, 125.4, 123.1, 120.8,
         119.5, 122.3, 125.7, 128.9, 131.2, 133.0, 130.8, 128.5, 126.2, 123.8,
@@ -134,7 +136,7 @@
       ]
     },
     {
-      "formula": "TS.201",
+      "formula": "TIT.201",
       "values": [
         -28.5, -29.8, -31.2, -32.6, -34.0, -35.1, -33.8, -32.4, -30.9, -29.5,
         -28.2, -29.6, -31.0, -32.5, -33.9, -35.3, -34.0, -32.7, -31.3, -29.9,
@@ -144,7 +146,7 @@
       ]
     },
     {
-      "formula": "TS.202",
+      "formula": "TIT.202",
       "values": [
         10.48, 10.50, 10.52, 10.54, 10.55, 10.53, 10.51, 10.49, 10.47, 10.46,
         10.48, 10.50, 10.53, 10.55, 10.57, 10.58, 10.56, 10.54, 10.52, 10.50,
@@ -154,7 +156,7 @@
       ]
     },
     {
-      "formula": "TS.208",
+      "formula": "TIT.208",
       "values": [
         50.01, 50.02, 50.00, 49.99, 49.98, 50.00, 50.01, 50.03, 50.02, 50.00,
         49.99, 49.98, 50.00, 50.01, 50.02, 50.03, 50.01, 50.00, 49.99, 49.98,
@@ -167,12 +169,12 @@
 
   "events": [
     { "id": 1001, "hours_ago": 5.0,    "severity": "normal",   "message": "КП-01 на связи",                                 "node_id": "TS.103", "change_mask": 16 },
-    { "id": 1002, "hours_ago": 4.0,    "severity": "warning",  "message": "Напряжение L1-L2 верхняя уставка (10.8 кВ)",     "node_id": "TS.202", "change_mask": 4  },
+    { "id": 1002, "hours_ago": 4.0,    "severity": "warning",  "message": "Напряжение L1-L2 верхняя уставка (10.8 кВ)",     "node_id": "TIT.202", "change_mask": 4  },
     { "id": 1003, "hours_ago": 3.0,    "severity": "critical", "message": "КП-02: обрыв связи",                              "node_id": "TS.104", "change_mask": 16 },
     { "id": 1004, "hours_ago": 2.0,    "severity": "normal",   "message": "КП-02: связь восстановлена",                      "node_id": "TS.104", "change_mask": 16 },
-    { "id": 1005, "hours_ago": 1.0,    "severity": "normal",   "message": "Ручной ввод: Активная мощность = 130.5 МВт",     "node_id": "TS.200", "change_mask": 32 },
-    { "id": 1006, "hours_ago": 0.5,    "severity": "warning",  "message": "Коэффициент мощности ниже порога (0.87)",         "node_id": "TS.209", "change_mask": 4  },
-    { "id": 1007, "hours_ago": 0.1667, "severity": "normal",   "message": "Трансформатор T1: температура в норме (42.3\u00B0C)", "node_id": "TS.211", "change_mask": 1  }
+    { "id": 1005, "hours_ago": 1.0,    "severity": "normal",   "message": "Ручной ввод: Активная мощность = 130.5 МВт",     "node_id": "TIT.200", "change_mask": 32 },
+    { "id": 1006, "hours_ago": 0.5,    "severity": "warning",  "message": "Коэффициент мощности ниже порога (0.87)",         "node_id": "TIT.209", "change_mask": 4  },
+    { "id": 1007, "hours_ago": 0.1667, "severity": "normal",   "message": "Трансформатор T1: температура в норме (42.3\u00B0C)", "node_id": "TIT.211", "change_mask": 1  }
   ],
 
   "graph": {
@@ -182,9 +184,9 @@
       { "index": 3, "size": 30 }
     ],
     "items": [
-      { "path": "TS.200", "color": "#0000FF", "pane": 1, "dots": true, "stepped": false },
-      { "path": "TS.201", "color": "#FF0000", "pane": 2, "dots": true, "stepped": false },
-      { "path": "TS.208", "color": "#FF8C00", "pane": 3, "dots": true, "stepped": false }
+      { "path": "TIT.200", "color": "#0000FF", "pane": 1, "dots": true, "stepped": false },
+      { "path": "TIT.201", "color": "#FF0000", "pane": 2, "dots": true, "stepped": false },
+      { "path": "TIT.208", "color": "#FF8C00", "pane": 3, "dots": true, "stepped": false }
     ],
     "time_scale": { "time": "Now", "span": "24:00:00", "scroll_bar": true }
   },
@@ -193,11 +195,11 @@
     "Filenames track scada-docs/img/* names where possible so the output is",
     "a drop-in replacement for the hand-captured docs images. Dimensions",
     "follow the docs images; if there is no matching docs image yet the",
-    "size is a reasonable default. The scada-docs/img/MANIFEST.md reference",
+    "size is a reasonable default. The image manifest reference",
     "column maps each filename to the markdown page(s) that embed it."
   ],
   "screenshots": [
-    { "type": "Graph",          "filename": "graph-cursor.jpg",        "width": 1024, "height": 901 },
+    { "type": "Graph",          "filename": "graph-cursor.png",        "width": 1024, "height": 901 },
     { "type": "Table",          "filename": "table.png",               "width": 800,  "height": 400 },
     { "type": "Summ",           "filename": "summary.png",             "width": 800,  "height": 500 },
     { "type": "Event",          "filename": "events.png",              "width": 800,  "height": 300 },
@@ -217,7 +219,7 @@
   "_dialogs_comment": [
     "Modal-dialog captures. Each entry's `kind` is dispatched in the",
     "CaptureDialogs TEST_F to build the right dialog class with its own",
-    "fixture. Filenames and dimensions track scada-docs/img/MANIFEST.md."
+    "fixture. Filenames and dimensions track image_manifest.json."
   ],
   "dialogs": [
     { "kind": "login",        "filename": "client-login.png",            "width": 403, "height": 180 },

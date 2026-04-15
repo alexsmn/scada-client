@@ -1,5 +1,7 @@
 #pragma once
 
+#include "scada/node_id.h"
+
 #include <memory>
 
 struct DialogSpec;
@@ -24,6 +26,8 @@ struct DialogEnvironment {
   // write path (never taken in capture mode), but still needs a valid
   // reference at construction time.
   Profile* profile = nullptr;
+  // Analog item node used by the limits/write dialog screenshots.
+  scada::NodeId dialog_analog_node_id;
 };
 
 // Builds and shows the dialog identified by `spec.kind`, then grabs a

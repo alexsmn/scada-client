@@ -19,8 +19,9 @@ std::filesystem::path GetOutputDir() {
     g_output_dir = std::filesystem::path{env.toStdString()};
 
   if (g_output_dir.empty())
-    g_output_dir = std::filesystem::current_path() / "screenshots";
+    g_output_dir = std::filesystem::path{__FILE__}.parent_path() /
+                   "../../docs";
 
   g_output_dir_resolved = true;
-  return g_output_dir;
+  return g_output_dir.lexically_normal();
 }

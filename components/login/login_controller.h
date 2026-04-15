@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/settings_store.h"
 #include "base/boost_log.h"
 #include "scada/data_services_factory.h"
 #include "scada/localized_text.h"
@@ -17,7 +18,8 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
  public:
   LoginController(std::shared_ptr<Executor> executor,
                   DataServicesContext&& services_context,
-                  DialogService& dialog_service);
+                  DialogService& dialog_service,
+                  std::shared_ptr<SettingsStore> settings_store = {});
 
   void Login();
 
@@ -48,6 +50,7 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   const std::shared_ptr<Executor> executor_;
   DataServicesContext services_context_;
   DialogService& dialog_service_;
+  std::shared_ptr<SettingsStore> settings_store_;
 
   bool login_message_ = false;
   bool connecting_ = false;

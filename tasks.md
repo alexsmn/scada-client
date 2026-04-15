@@ -102,7 +102,7 @@ Approximate inventory (50 images referenced from `scada-docs/*.md`):
 | Category | Count | Example filenames |
 |---|---|---|
 | Already produced by the generator | 1 | `client-window.png` |
-| Window types not yet captured | ~10 | `client-login.png`, `client-retransmission.png`, `users.png`, `limits.png`, `limits-chart.png`, `graph-cursor.jpg`, `display.png` |
+| Window types not yet captured | ~10 | `client-login.png`, `client-retransmission.png`, `users.png`, `limits.png`, `limits-chart.png`, `graph-cursor.png`, `display.png` |
 | Modal dialogs | ~8 | `ts-manual-control.png`, `ti-remote-control-confirm.png`, `ts-remote-control-{enabled,disabled}.png`, etc. |
 | Right-click / popup menus | ~13 | `menu-create-object*.png`, `menu-parameters*.png`, `menu-events*.png`, … |
 | Device runtime-state captures | 5 | `devices-{create,off,on,status,traffic}.png` |
@@ -118,8 +118,8 @@ test fixture supports a fake Modus runtime.
 **Incremental subtasks** (each is small enough to land as its own
 PR / commit):
 
-1. **Inventory and tag.** Walk `scada-docs/img/*` and write a
-   manifest at `scada-docs/img/MANIFEST.md` (or `.yaml`) tagging each
+1. **Inventory and tag.** Walk `scada-docs/img/*` and maintain a
+   manifest at `client/docs/image_manifest.json` tagging each
    file with one of `auto-view`, `auto-dialog`, `auto-menu`,
    `auto-state`, `manual-diagram`, `manual-modus`, `manual-os`, or
    `obsolete`. The manifest is the source of truth for what the
@@ -128,7 +128,7 @@ PR / commit):
 
 2. **Match existing generator output.** For the items currently
    tagged `auto-view` *and* already produced by the generator (just
-   `client-window.png` today, plus near-misses like `graph-cursor.jpg`
+   `client-window.png` today, plus near-misses like `graph-cursor.png`
    ↔ `graph.png`), align filenames, dimensions, and crop boxes so
    the generator's output is a drop-in replacement. Update the
    generator's `screenshot_data.json` `screenshots:` section to
@@ -294,9 +294,9 @@ attributes it reads.
 
 #### Gap: graph cursor + 2-pane noisy variant
 
-`scada-docs/img/graph-cursor.jpg` shows a 2-pane graph with noisy
+`scada-docs/img/graph-cursor.png` shows a 2-pane graph with noisy
 data and two vertical cursor lines at specific timestamps (the
-"cursor" feature from `client/graph.md`). Our `graph-cursor.jpg`
+"cursor" feature from `client/graph.md`). Our `graph-cursor.png`
 shows 3 panes with smooth sinusoidal data and no cursor. Needs:
 (1) switch the generator's graph fixture to a 2-pane layout;
 (2) denser / noisier values in `timed_data`; (3) enable `MetrixGraph`
@@ -322,7 +322,7 @@ show.
 view with coloured row highlighting and red-underline annotations
 on status-bar elements — not a right-click popup menu. Several
 other `menu-*.png` may be similar. Audit all 15 `auto-menu` rows in
-`MANIFEST.md`, reclassify the ones that are annotated view
+`image_manifest.json`, reclassify the ones that are annotated view
 composites to `manual-annotated`, and let subtask 7 (menu
 rendering) focus only on true `QMenu` popups.
 

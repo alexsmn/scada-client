@@ -20,7 +20,7 @@ The same harness also renders modal dialogs (LoginDialog, …) and, as
 the fixture grows, popup menus and device-state variants.
 
 It replaces hand-captured screenshots for everything tagged `auto-*`
-in [`scada-docs/img/MANIFEST.md`](https://github.com/telecontrol/scada-docs/blob/master/img/MANIFEST.md).
+in `client/docs/image_manifest.json`.
 
 ## Source layout
 
@@ -39,9 +39,10 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `CMakeLists.txt` | Builds `screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
 
 The docs refresh helper for the current rollout lives outside that
-tree at `client/docs/screenshots/update_screenshots.cmd`. It runs the
+tree at `client/docs/update_screenshots.cmd`. It runs the
 generator into a temporary directory and copies only the approved
-`scada-docs/img/` batch (`client-retransmission.png`, `users.png`).
+`scada-docs/img/` batch (`client-login.png`, `client-retransmission.png`,
+`graph-cursor.png`, `users.png`).
 
 ### Why the split
 
@@ -131,7 +132,7 @@ so the generator output is a drop-in replacement.
 ## Running it
 
 Building the `screenshot_generator` target runs the generator as a
-POST_BUILD step, dropping the PNGs into `client/docs/screenshots/`
+POST_BUILD step, dropping the PNGs into `client/docs/`
 (gitignored). That keeps the local gallery in lock-step with the
 current client build — useful for comparing runs before publishing
 anything to scada-docs.
@@ -148,19 +149,20 @@ set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
 build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 ```
 
-Without `SCREENSHOT_OUT_DIR` set, output lands in `<cwd>/screenshots/`.
+Without `SCREENSHOT_OUT_DIR` set, output lands in `client/docs/`.
 
 For the first `scada-docs` rollout, use the client-side helper script
-`client/docs/screenshots/update_screenshots.cmd`:
+`client/docs/update_screenshots.cmd`:
 
 ```bash
 cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
-cmd.exe /c C:\tc\scada\client\docs\screenshots\update_screenshots.cmd
+cmd.exe /c C:\tc\scada\client\docs\update_screenshots.cmd
 ```
 
 The script renders into a temporary directory, then copies only the
 currently approved rollout subset into `scada-docs/img/`:
-`client-retransmission.png` and `users.png`.
+`client-login.png`, `client-retransmission.png`, `graph-cursor.png`,
+and `users.png`.
 
 Run a subset with `--gtest_filter`:
 
@@ -180,7 +182,8 @@ Pick the flow that fits the new image's manifest tag.
    scada-docs dimensions exactly.
 3. If the view needs nodes, timed data, or events that aren't already
    in the fixture, extend the matching arrays.
-4. Add a row to `scada-docs/img/MANIFEST.md` tagged `auto-view`.
+4. Add an entry to `client/docs/image_manifest.json` tagged
+   `auto-view`.
 5. Rebuild and verify the PNG lands.
 
 ### `auto-dialog` — a new modal dialog
@@ -195,7 +198,8 @@ Pick the flow that fits the new image's manifest tag.
 3. Add a new arm to the `if/else` chain in `CaptureDialog`.
 4. Append `{ "kind": "…", "filename": "…", "width": W, "height": H }`
    to `dialogs:` in `screenshot_data.json`.
-5. Row in `scada-docs/img/MANIFEST.md` tagged `auto-dialog`.
+5. Entry in `client/docs/image_manifest.json` tagged
+   `auto-dialog`.
 
 ### `auto-menu` — a right-click popup
 
@@ -210,14 +214,14 @@ are the subject of the `auto-state` task.)
 ## Managing scada-docs/img
 
 The source of truth for which files are auto vs manual is
-[`scada-docs/img/MANIFEST.md`](https://github.com/telecontrol/scada-docs/blob/master/img/MANIFEST.md).
+`client/docs/image_manifest.json`.
 
 Workflow:
 
 1. For the current rollout, run
-   `client/docs/screenshots/update_screenshots.cmd`.
-   It publishes only `client-retransmission.png` and `users.png` into
-   `scada-docs/img/`.
+   `client/docs/update_screenshots.cmd`.
+   It publishes only `client-login.png`, `client-retransmission.png`,
+   `graph-cursor.png`, and `users.png` into `scada-docs/img/`.
 2. `git diff img/` in scada-docs to review every image that changed.
    Expect a diff any time the real UI changes — that is the visual
    regression signal. If the diff is noise only (font antialiasing,
@@ -226,7 +230,7 @@ Workflow:
    client change that caused them. It's easier to review image diffs
    on their own, and it lets the client PR stay focused.
 4. When removing a feature from the client, update
-   `MANIFEST.md` by retagging the orphaned files `obsolete` in the
+   `image_manifest.json` by retagging the orphaned files `obsolete` in the
    same PR that removes the feature — don't leave `auto-*` rows
    pointing at dead window types.
 

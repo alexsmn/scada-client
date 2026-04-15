@@ -24,6 +24,14 @@
         <source>events</source>
         <translation>событий</translation>
     </message>
+    <message>
+        <source>Telecontrol</source>
+        <translation>Телеконтроль</translation>
+    </message>
+    <message>
+        <source>Vidicon</source>
+        <translation>Видикон</translation>
+    </message>
     <!-- action_manager.cpp: category titles -->
     <message>
         <source>New</source>

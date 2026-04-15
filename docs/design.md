@@ -175,7 +175,7 @@ and `client_application_unittest.cpp`.
 Most images under `scada-docs/img/` are produced by the offline
 `screenshot_generator` (see FR-21). The source-of-truth for which images
 are auto-generated vs. hand-maintained is
-[`scada-docs/img/MANIFEST.md`](https://github.com/telecontrol/scada-docs/blob/master/img/MANIFEST.md);
+`client/docs/image_manifest.json`;
 tags there tell you whether a file is an `auto-view`, `auto-dialog`,
 `auto-menu`, `auto-state`, or one of the `manual-*` / `obsolete`
 categories.
@@ -191,13 +191,14 @@ build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
 On Unix-y shells it's `SCREENSHOT_OUT_DIR=... ./screenshot_generator`.
 
 If `SCREENSHOT_OUT_DIR` is unset, the generator writes to
-`<cwd>/screenshots/` — useful for local diffing before overwriting the
+`client/docs/` — useful for local diffing before overwriting the
 docs copies.
 
 For the first docs rollout, prefer the helper script at
-`client/docs/screenshots/update_screenshots.cmd`. It renders into a temporary
+`client/docs/update_screenshots.cmd`. It renders into a temporary
 directory and then updates only the current approved rollout subset in
-`scada-docs/img/`: `client-retransmission.png` and `users.png`.
+`scada-docs/img/`: `client-login.png`, `client-retransmission.png`,
+`graph-cursor.png`, and `users.png`.
 
 To add a new auto-screenshot:
 
@@ -209,8 +210,8 @@ To add a new auto-screenshot:
    `width` / `height` match the docs image dimensions pixel-exact.
 3. If the view needs fixture data (new nodes, timed values, events),
    extend the matching section of `screenshot_data.json`.
-4. Add a row to `scada-docs/img/MANIFEST.md` with the right tag and
-   the markdown page(s) that embed it.
+4. Add an entry to `client/docs/image_manifest.json` with the
+   right tag and the markdown page(s) that embed it.
 5. Rebuild `screenshot_generator` and confirm the new file lands.
 
 The full startup sequence — from `main()` through login to the first

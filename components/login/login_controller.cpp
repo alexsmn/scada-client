@@ -10,8 +10,6 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include "base/u16format.h"
-#include "base/utf_convert.h"
-#include "base/win/registry.h"
 #include "scada/session_service.h"
 #include "scada/status_promise.h"
 
@@ -32,46 +30,6 @@ const wchar_t kLoginFailedMessage[] =
     L"Error connecting to server ({}).";
 const char kAutoLoginMessage[] =
     "To disable automatic login, hold Ctrl when launching the application.";
-
-struct RegHelper {
-  bool ReadBool(std::string_view name) {
-    DWORD value = 0;
-    key_.ReadValueDW(UtfConvert<wchar_t>(name).c_str(), &value);
-    return value != 0;
-  }
-
-  std::string ReadString(std::string_view name) {
-    std::wstring value;
-    key_.ReadValue(UtfConvert<wchar_t>(name).c_str(), &value);
-    return UtfConvert<char>(value);
-  }
-
-  std::u16string ReadString16(std::string_view name) {
-    std::wstring value;
-    key_.ReadValue(UtfConvert<wchar_t>(name).c_str(), &value);
-    return UtfConvert<char16_t>(value);
-  }
-
-  bool Write(std::string_view name, bool bool_value) {
-    DWORD dword_value = bool_value ? 1 : 0;
-    return key_.WriteValue(UtfConvert<wchar_t>(name).c_str(), dword_value) ==
-           ERROR_SUCCESS;
-  }
-
-  bool Write(std::string_view name, std::string_view string_value) {
-    return key_.WriteValue(UtfConvert<wchar_t>(name).c_str(),
-                           UtfConvert<wchar_t>(string_value).c_str()) ==
-           ERROR_SUCCESS;
-  }
-
-  bool Write(std::string_view name, std::u16string_view string16_value) {
-    return key_.WriteValue(UtfConvert<wchar_t>(name).c_str(),
-                           UtfConvert<wchar_t>(string16_value).c_str()) ==
-           ERROR_SUCCESS;
-  }
-
-  base::win::RegKey& key_;
-};
 
 std::string GetServerHostTypeKey(std::string_view server_type_name) {
   return std::format("{}{}", kServerHostKeyPrefix, server_type_name);
@@ -109,6 +67,15 @@ std::u16string BuildListString(std::span<const std::u16string> list) {
       boost::make_iterator_range(sublist.begin(), sublist.end()), u",");
 }
 
+std::u16string TranslateDataServicesDisplayName(
+    std::u16string_view display_name) {
+  if (display_name == u"Telecontrol")
+    return Translate("Telecontrol");
+  if (display_name == u"Vidicon")
+    return Translate("Vidicon");
+  return std::u16string{display_name};
+}
+
 void AppendMruList(std::vector<std::u16string>& list,
                    std::u16string_view new_item) {
   if (list.empty() || list.front() != new_item) {
@@ -124,27 +91,32 @@ void AppendMruList(std::vector<std::u16string>& list,
 
 LoginController::LoginController(std::shared_ptr<Executor> executor,
                                  DataServicesContext&& services_context,
-                                 DialogService& dialog_service)
+                                 DialogService& dialog_service,
+                                 std::shared_ptr<SettingsStore> settings_store)
     : executor_{std::move(executor)},
       services_context_{std::move(services_context)},
-      dialog_service_{dialog_service} {
-  base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey, KEY_QUERY_VALUE);
-  RegHelper reg_helper{reg};
-  user_name = reg_helper.ReadString16("User");
-  std::u16string users = reg_helper.ReadString16("UserList");
+      dialog_service_{dialog_service},
+      settings_store_{std::move(settings_store)} {
+  if (!settings_store_)
+    settings_store_ =
+        std::make_shared<RegistrySettingsStore>(HKEY_CURRENT_USER, kRegistryKey);
+
+  user_name = settings_store_->ReadString16("User");
+  std::u16string users = settings_store_->ReadString16("UserList");
   user_list = ParseListString(users);
 
-  auto server_type = reg_helper.ReadString("ServerType");
-  password = reg_helper.ReadString16("Password");
-  auto_login = reg_helper.ReadBool("AutoLogin");
+  auto server_type = settings_store_->ReadString("ServerType");
+  password = settings_store_->ReadString16("Password");
+  auto_login = settings_store_->ReadBool("AutoLogin");
 
   const auto& list = GetDataServicesInfoList();
   server_type_data_.resize(list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     auto& info = list[i];
-    server_type_list.emplace_back(info.display_name);
+    server_type_list.emplace_back(
+        TranslateDataServicesDisplayName(info.display_name));
     server_type_data_[i].host =
-        reg_helper.ReadString(GetServerHostTypeKey(info.name));
+        settings_store_->ReadString(GetServerHostTypeKey(info.name));
     if (EqualDataServicesName(info.name, server_type))
       SetServerTypeIndex(i);
   }
@@ -152,7 +124,7 @@ LoginController::LoginController(std::shared_ptr<Executor> executor,
   // Backward compatibility.
   assert(!server_type_data_.empty());
   if (server_type_data_[0].host.empty())
-    server_type_data_[0].host = reg_helper.ReadString("Host");
+    server_type_data_[0].host = settings_store_->ReadString("Host");
 
   for (size_t i = 0; i < list.size(); ++i) {
     if (server_type_data_[i].host.empty())
@@ -193,19 +165,16 @@ void LoginController::OnLoginCompleted() {
   // save last users
   AppendMruList(user_list, user_name);
 
-  base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
-                        KEY_SET_VALUE | KEY_QUERY_VALUE);
-  RegHelper reg_helper{reg};
-  reg_helper.Write("User", user_name);
-  reg_helper.Write("UserList", BuildListString(user_list));
-  reg_helper.Write("Host", server_host);
-  reg_helper.Write(
+  settings_store_->Write("User", user_name);
+  settings_store_->Write("UserList", BuildListString(user_list));
+  settings_store_->Write("Host", server_host);
+  settings_store_->Write(
       GetServerHostTypeKey(GetDataServicesInfoList()[server_type_index_].name),
       server_host);
-  reg_helper.Write("ServerType", server_type_);
-  reg_helper.Write("AutoLogin", auto_login);
+  settings_store_->Write("ServerType", server_type_);
+  settings_store_->Write("AutoLogin", auto_login);
   if (auto_login)
-    reg_helper.Write("Password", password);
+    settings_store_->Write("Password", password);
 
   auto promise = make_resolved_promise();
   if (auto_login && login_message_) {
@@ -277,10 +246,7 @@ void LoginController::DeleteUserName(std::u16string_view user_name) {
   if (i == user_list.end())
     return;
 
-  base::win::RegKey reg(HKEY_CURRENT_USER, kRegistryKey,
-                        KEY_SET_VALUE | KEY_QUERY_VALUE);
-  RegHelper reg_helper{reg};
-  reg_helper.Write("UserList", BuildListString(user_list));
+  settings_store_->Write("UserList", BuildListString(user_list));
 }
 
 void LoginController::SetServerTypeIndex(int index) {

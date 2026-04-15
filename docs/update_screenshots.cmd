@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
-for %%I in ("%SCRIPT_DIR%\..\..\..") do set "REPO_ROOT=%%~fI"
+for %%I in ("%SCRIPT_DIR%\..\..") do set "REPO_ROOT=%%~fI"
 if "%~1"=="" (
   set "DOCS_IMG_DIR=%REPO_ROOT%\scada-docs\img"
 ) else (
@@ -41,6 +41,7 @@ echo Publishing supported images to "%DOCS_IMG_DIR%"
 for %%F in (
   client-login.png
   client-retransmission.png
+  graph-cursor.png
   users.png
 ) do (
   if not exist "%TMP_DIR%\%%F" (
@@ -50,10 +51,11 @@ for %%F in (
   copy /Y "%TMP_DIR%\%%F" "%DOCS_IMG_DIR%\%%F" >nul || goto :cleanup_fail
 )
 
-echo Updated 3 scada-docs images:
+echo Updated 4 scada-docs images:
 for %%F in (
   client-login.png
   client-retransmission.png
+  graph-cursor.png
   users.png
 ) do echo   %%F
 

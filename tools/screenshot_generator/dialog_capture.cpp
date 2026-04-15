@@ -162,9 +162,10 @@ void BuildLoginDialog(DialogEnvironment& env,
 }
 
 // Limits dialog: needs a NodeRef to an analog variable plus a
-// TaskManager for the (never-taken) write path. We pull node 1.212
-// ("Температура нагрева") out of the fixture — the analog node the docs
-// images target. Limit values still render empty until the fixture grows
+// TaskManager for the (never-taken) write path. We pull the configured
+// dialog analog node out of the fixture; in the current fixture that is
+// "Температура нагрева", the analog node the docs images target. Limit
+// values still render empty until the fixture grows
 // HasProperty support for AnalogItemType_Limit{Hi,Lo,HiHi,LoLo} (gap #2).
 void BuildLimitsDialog(DialogEnvironment& env,
                        NullTaskManager& task_manager,
@@ -173,14 +174,14 @@ void BuildLimitsDialog(DialogEnvironment& env,
     ADD_FAILURE() << "LimitsDialog needs a node_service in DialogEnvironment";
     return;
   }
-  auto node = env.node_service->GetNode(scada::NodeId{212, 1});
+  auto node = env.node_service->GetNode(env.dialog_analog_node_id);
   if (!node) {
-    ADD_FAILURE() << "LimitsDialog: fixture node 1.212 not found";
+    ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
     return;
   }
   if (!FetchAndWaitForPendingNodeLoads(
           *env.node_service, node, NodeFetchStatus::NodeOnly())) {
-    ADD_FAILURE() << "LimitsDialog: failed to fetch fixture node 1.212";
+    ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
     return;
   }
   ShowLimitsDialog(dialog_service,
@@ -190,7 +191,7 @@ void BuildLimitsDialog(DialogEnvironment& env,
 
 // Write dialog family. `manual` picks between "Manual Input" (TI
 // manual override) and "Control" (remote device control). Target node
-// is 1.212 ("Температура нагрева") — the analog TI node the docs
+// is configured in `screenshot_data.json` — the analog TI node the docs
 // images use. The model treats it as continuous (not discrete) because
 // no HasTsFormat reference is wired up, which matches the ti-*-control
 // docs images. The ts- variants will render identically until the
@@ -209,21 +210,21 @@ void BuildWriteDialog(DialogEnvironment& env,
         << "WriteDialog needs timed_data_service + profile + node_service in env";
     return;
   }
-  auto node = env.node_service->GetNode(scada::NodeId{212, 1});
+  auto node = env.node_service->GetNode(env.dialog_analog_node_id);
   if (!node) {
-    ADD_FAILURE() << "WriteDialog: fixture node 1.212 not found";
+    ADD_FAILURE() << "WriteDialog: configured fixture node not found";
     return;
   }
   if (!FetchAndWaitForPendingNodeLoads(
           *env.node_service, node, NodeFetchStatus::NodeOnly())) {
-    ADD_FAILURE() << "WriteDialog: failed to fetch fixture node 1.212";
+    ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
     return;
   }
   ExecuteWriteDialog(dialog_service,
                      WriteContext{.executor_ = env.executor,
                                   .timed_data_service_ =
                                       *env.timed_data_service,
-                                  .node_id_ = scada::NodeId{212, 1},
+                                  .node_id_ = env.dialog_analog_node_id,
                                   .profile_ = *env.profile,
                                   .manual_ = manual});
   for (int i = 0; i < 20; ++i)

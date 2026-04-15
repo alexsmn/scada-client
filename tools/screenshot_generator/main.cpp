@@ -337,7 +337,8 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   DialogEnvironment env{.executor = executor_,
                         .node_service = &app_.node_service(),
                         .timed_data_service = &app_.timed_data_service(),
-                        .profile = &profile};
+                        .profile = &profile,
+                        .dialog_analog_node_id = g_config.dialog_analog_node_id};
 
   int captured = 0;
   for (const auto& spec : g_config.dialogs) {
