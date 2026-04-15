@@ -16,9 +16,10 @@
 
 namespace {
 
-std::filesystem::path GetCachePath() {
+std::optional<std::filesystem::path> GetCachePath() {
   std::filesystem::path path;
-  base::PathService::Get(client::DIR_PUBLIC, &path);
+  if (!base::PathService::Get(client::DIR_PUBLIC, &path) || path.empty())
+    return std::nullopt;
   return path / "file-cache.json";
 }
 
@@ -84,11 +85,14 @@ int FileCache::FileList::Find(const std::filesystem::path& path) const {
 }
 
 void FileCache::Load() {
-  std::filesystem::path cache_path = GetCachePath();
-  BOOST_LOG_TRIVIAL(info) << "Loading file cache from " << cache_path.string();
+  const auto cache_path = GetCachePath();
+  if (!cache_path)
+    return;
+
+  BOOST_LOG_TRIVIAL(info) << "Loading file cache from " << cache_path->string();
 
   std::string error_message;
-  auto data = LoadJsonFromFile(cache_path, &error_message);
+  auto data = LoadJsonFromFile(*cache_path, &error_message);
   if (!data) {
     BOOST_LOG_TRIVIAL(error) << "Error on load file cache - " << error_message;
     return;
@@ -111,7 +115,10 @@ void FileCache::Load() {
 
 void FileCache::Save() {
   auto cache_path = GetCachePath();
-  BOOST_LOG_TRIVIAL(info) << "Saving file cache to " << cache_path.string();
+  if (!cache_path)
+    return;
+
+  BOOST_LOG_TRIVIAL(info) << "Saving file cache to " << cache_path->string();
 
   boost::json::array list_data;
   for (auto& [type_id, file_list] : file_map_) {
@@ -123,7 +130,7 @@ void FileCache::Save() {
       list_data.emplace_back(SaveFileEntry(entry, type->name));
   }
 
-  SaveJsonToFile(boost::json::value{std::move(list_data)}, cache_path);
+  SaveJsonToFile(boost::json::value{std::move(list_data)}, *cache_path);
 }
 
 std::vector<FileCache::DisplayItem> FileCache::FileList::GetFilesContainingItem(
