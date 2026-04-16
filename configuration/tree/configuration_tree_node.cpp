@@ -39,7 +39,7 @@ void ConfigurationTreeNode::AddChildren() {
     auto new_child_tree_node =
         model_.CreateTreeNodeIfMatches(reference_type_id, forward, child_node);
     if (new_child_tree_node)
-      Add(n++, std::move(new_child_tree_node));
+      model_.Add(*this, n++, std::move(new_child_tree_node));
   }
 }
 
@@ -103,10 +103,11 @@ ConfigurationTreeRootNode::ConfigurationTreeRootNode(
     NodeRef tree)
     : ConfigurationTreeNode{model, {}, true, tree} {
   // One level of prefetch so the tree shows its first rows immediately
-  // when the panel opens. Grandchildren load lazily through FetchMore —
-  // stopping the recursion here is what prevents the ctor chain from
-  // walking a pre-populated address space to a stack overflow.
-  AddChildren();
+  // when the panel opens. If the root's children are not in the local
+  // address space yet, kick off the regular fetch path; grandchildren
+  // still stay lazy through FetchMore, which is what prevents the ctor
+  // chain from walking a pre-populated address space to a stack overflow.
+  FetchMore();
 }
 
 std::u16string ConfigurationTreeRootNode::GetText(int column_id) const {

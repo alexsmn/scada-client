@@ -172,11 +172,16 @@ void Tree::SetCheckedNodes(std::set<void*> nodes) {
 }
 
 void Tree::SetRootVisible(bool visible) {
-  if (visible)
+  if (visible) {
     setRootIndex({});
-  else
+    // A visible root still needs the branch decoration; otherwise the
+    // top-level node loses its expander and only the root row is shown.
+    setRootIsDecorated(true);
+    expand(model()->index(0, 0));
+  } else {
     setRootIndex(model()->index(0, 0));
-  setRootIsDecorated(!visible);
+    setRootIsDecorated(true);
+  }
 }
 
 void Tree::SetCompareHandler(TreeCompareHandler handler) {
