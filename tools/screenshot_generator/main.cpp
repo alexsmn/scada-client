@@ -111,36 +111,6 @@ aui::Tree* FindTreeWidget(QWidget* widget) {
   return nullptr;
 }
 
-void PopulateSnapshotTree(QStandardItemModel& snapshot_model,
-                          const QAbstractItemModel& source_model,
-                          const QModelIndex& source_parent,
-                          QStandardItem* snapshot_parent,
-                          int depth) {
-  if (depth <= 0)
-    return;
-
-  const int row_count = source_model.rowCount(source_parent);
-  const int column_count = source_model.columnCount(source_parent);
-  for (int row = 0; row < row_count; ++row) {
-    QList<QStandardItem*> items;
-    for (int column = 0; column < column_count; ++column) {
-      const auto index = source_model.index(row, column, source_parent);
-      items.append(
-          new QStandardItem(source_model.data(index, Qt::DisplayRole).toString()));
-    }
-
-    auto* first_item = items.front();
-    if (snapshot_parent)
-      snapshot_parent->appendRow(items);
-    else
-      snapshot_model.appendRow(items);
-
-    PopulateSnapshotTree(snapshot_model, source_model,
-                         source_model.index(row, 0, source_parent), first_item,
-                         depth - 1);
-  }
-}
-
 }  // namespace
 
 class ScreenshotGenerator : public ::testing::Test {
@@ -451,11 +421,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
         proxy_model->sourceModel()->rowCount(materialized_source_root);
   }
 
-  const bool can_use_snapshot =
-      !first_child_visible && proxy_model && materialized_source_root.isValid() &&
-      source_child_count > 0;
-
-  if (!first_child_visible && !can_use_snapshot) {
+  if (!first_child_visible) {
     const auto& visible_root = tree->rootIndex();
     const auto proxy_child_count = tree->model()->rowCount(visible_root);
     const auto first_child = tree->model()->index(0, 0, visible_root);
@@ -480,58 +446,8 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
                   << " | viewport_visible=" << tree->viewport()->isVisible()
                   << " | dock_visible="
                   << (tree_dock ? tree_dock->isVisible() : true);
-  } else if (can_use_snapshot) {
-    std::cout << "CaptureMainWindow: using snapshot tree fallback"
-              << " | source_child_count=" << source_child_count << std::endl;
   }
-
-  std::unique_ptr<QStandardItemModel> snapshot_model;
-  QWidget* snapshot_container = nullptr;
-  QTreeView* snapshot_tree = nullptr;
-  if (can_use_snapshot) {
-    snapshot_model = std::make_unique<QStandardItemModel>();
-    snapshot_model->setColumnCount(
-        proxy_model->sourceModel()->columnCount(materialized_source_root));
-    for (int column = 0; column < snapshot_model->columnCount(); ++column) {
-      snapshot_model->setHeaderData(
-          column, Qt::Horizontal,
-          proxy_model->sourceModel()->headerData(
-              column, Qt::Horizontal, Qt::DisplayRole));
-    }
-
-    PopulateSnapshotTree(*snapshot_model, *proxy_model->sourceModel(),
-                         materialized_source_root, nullptr, 4);
-
-    snapshot_tree = new QTreeView();
-    snapshot_tree->setModel(snapshot_model.get());
-    snapshot_tree->setFont(tree->font());
-    snapshot_tree->setHeaderHidden(tree->header()->isHidden());
-    snapshot_tree->setIndentation(tree->indentation());
-    snapshot_tree->setUniformRowHeights(tree->uniformRowHeights());
-    snapshot_tree->expandAll();
-    snapshot_tree->resizeColumnToContents(0);
-    snapshot_tree->setRootIsDecorated(tree->rootIsDecorated());
-
-    if (tree_dock) {
-      snapshot_container = new QWidget();
-      auto* layout = new QVBoxLayout(snapshot_container);
-      layout->setContentsMargins(0, 0, 0, 0);
-      layout->addWidget(snapshot_tree);
-      if (auto* old_widget = tree_dock->widget())
-        old_widget->hide();
-      tree_dock->setWidget(snapshot_container);
-      snapshot_container->show();
-    } else {
-      snapshot_tree->setParent(tree->parentWidget());
-      snapshot_tree->setGeometry(tree->geometry());
-      snapshot_tree->show();
-      tree->hide();
-    }
-    for (int i = 0; i < 10; ++i)
-      QApplication::processEvents();
-  } else {
-    ASSERT_TRUE(first_child_visible);
-  }
+  ASSERT_TRUE(first_child_visible);
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 

@@ -5,6 +5,10 @@
 # (see app/qt/CMakeLists.txt) so it's compiled in directly here — same
 # arrangement as the regular `client_qt` exe.
 
+file(GLOB SCREENSHOT_GENERATOR_WIN32_RESOURCES CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../*.rc"
+)
+
 add_executable(client_screenshot_generator
   "main.cpp"
   "screenshot_config.cpp"
@@ -21,6 +25,7 @@ add_executable(client_screenshot_generator
   "dialog_capture.h"
   "fixture_builder.cpp"
   "fixture_builder.h"
+  ${SCREENSHOT_GENERATOR_WIN32_RESOURCES}
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.h"
 )
