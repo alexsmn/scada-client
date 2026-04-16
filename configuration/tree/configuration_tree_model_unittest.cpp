@@ -1,5 +1,6 @@
 #include "configuration/tree/configuration_tree_model.h"
 
+#include "aui/translation.h"
 #include "configuration/tree/node_service_tree_mock.h"
 #include "scada/standard_node_ids.h"
 #include "node_service/node_model_mock.h"
@@ -216,6 +217,37 @@ TEST_F(ConfigurationTreeModelTest,
 
   EXPECT_EQ(1, child->GetChildCount());
   EXPECT_EQ(child->GetChild(0).node().node_id(), kNodeId2);
+}
+
+TEST_F(ConfigurationTreeModelTest,
+       FetchMoreShowsTranslatedLoadingSuffixWithoutDotsWhilePending) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  auto child_model = MakeTestNodeModel(kNodeId1);
+
+  ON_CALL(*child_model, GetFetchStatus())
+      .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
+  ON_CALL(*child_model, GetAttribute(scada::AttributeId::DisplayName))
+      .WillByDefault(Return(scada::LocalizedText{u"Loading node"}));
+
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
+      .WillOnce([](const NodeFetchStatus&, const NodeModel::FetchCallback&) {});
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes, .child_node = child_model}
+      }));
+
+  InitModel(std::move(node_service_tree));
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+
+  auto* child =
+      static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
+  child->FetchMore();
+
+  EXPECT_EQ(child->GetText(0),
+            u"Loading node [" + Translate("Loading") + u"]");
 }
 
 TEST_F(ConfigurationTreeModelTest, RootFetchesChildrenWhenNotPrefetched) {

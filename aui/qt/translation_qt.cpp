@@ -10,6 +10,7 @@ namespace {
 [[maybe_unused]] constexpr const char* kTranslationNoops[] = {
     QT_TRANSLATE_NOOP("", "Telecontrol"),
     QT_TRANSLATE_NOOP("", "Vidicon"),
+    QT_TRANSLATE_NOOP("", "Loading"),
 };
 
 }  // namespace

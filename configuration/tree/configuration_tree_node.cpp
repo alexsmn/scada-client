@@ -1,5 +1,6 @@
 #include "configuration/tree/configuration_tree_node.h"
 
+#include "aui/translation.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/node_id_util.h"
 
@@ -47,7 +48,7 @@ std::u16string ConfigurationTreeNode::GetText(int column_id) const {
   auto text = ToString16(node_.display_name());
 
   if (children_requested_ && !children_loaded_)
-    text += u" [��������]";
+    text += u" [" + Translate("Loading") + u"]";
 
   return text;
 }

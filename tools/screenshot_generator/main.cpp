@@ -21,10 +21,12 @@
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "configuration/configuration_module.h"
+#include "aui/translation.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service_progress_tracker.h"
 #include "profile/profile.h"
@@ -93,6 +95,19 @@ bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
       return false;
     QApplication::processEvents(QEventLoop::AllEvents, 50);
   }
+  return true;
+}
+
+bool WaitForPendingNodeLoads(NodeService& node_service) {
+  bool finished = false;
+  std::move(WaitForPendingNodes(node_service))
+      .then([&] { finished = true; }, [&](std::exception_ptr) {
+        ADD_FAILURE() << "NodeService pending-node wait failed";
+        finished = true;
+      });
+
+  while (!finished)
+    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
   return true;
 }
 
@@ -244,6 +259,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
   }
 
   WaitForPromise(app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   // Let async data loads and model updates complete.
   for (int i = 0; i < 20; ++i)
@@ -309,6 +325,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
   }
 
   WaitForPromise(app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
@@ -360,6 +377,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
 
   if (tree->model()->canFetchMore(root_index))
     tree->model()->fetchMore(root_index);
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   // For the screenshot we want the object rows, not the synthetic tree root.
   // Making the fetched root the view root sidesteps the "expanded root with
@@ -448,6 +466,16 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
                   << (tree_dock ? tree_dock->isVisible() : true);
   }
   ASSERT_TRUE(first_child_visible);
+  ASSERT_TRUE(WaitUntil([&] {
+    const auto loading_suffix =
+        QString::fromStdU16String(u"[" + Translate("Loading") + u"]");
+    for (int row = 0; row < tree->model()->rowCount(tree->rootIndex()); ++row) {
+      const auto index = tree->model()->index(row, 0, tree->rootIndex());
+      if (index.data(Qt::DisplayRole).toString().contains(loading_suffix))
+        return false;
+    }
+    return true;
+  }));
   for (int i = 0; i < 10; ++i)
     QApplication::processEvents();
 
@@ -504,6 +532,7 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   // WriteDialog family reads current values, formula titles, and
   // engineering units through it.
   WaitForPromise(app_.Start());
+  ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
 

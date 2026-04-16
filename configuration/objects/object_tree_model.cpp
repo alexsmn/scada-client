@@ -6,6 +6,23 @@
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
 
+class ObjectTreeModel::ObjectTreeNode : public ConfigurationTreeNode {
+ public:
+  ObjectTreeNode(ObjectTreeModel& model,
+                 scada::NodeId reference_type_id,
+                 bool forward_reference,
+                 const NodeRef& node)
+      : ConfigurationTreeNode{model, std::move(reference_type_id),
+                              forward_reference, node} {}
+
+  virtual void OnModelChanged() override { Changed(); }
+
+  virtual int GetIcon() const override {
+    return IsInstanceOf(node(), data_items::id::DataItemType) ? IMAGE_ITEM
+                                                              : IMAGE_FOLDER;
+  }
+};
+
 ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
@@ -31,6 +48,14 @@ std::u16string ObjectTreeModel::GetColumnText(int column_id) const {
 
 int ObjectTreeModel::GetColumnPreferredSize(int column_id) const {
   return column_id == 0 ? 200 : 0;
+}
+
+std::unique_ptr<ConfigurationTreeNode> ObjectTreeModel::CreateTreeNode(
+    const scada::NodeId& reference_type_id,
+    bool forward_reference,
+    const NodeRef& node) {
+  return std::make_unique<ObjectTreeNode>(*this, reference_type_id,
+                                          forward_reference, node);
 }
 
 std::u16string ObjectTreeModel::GetText(void* tree_node, int column_id) {

@@ -32,6 +32,10 @@
         <source>Vidicon</source>
         <translation>Видикон</translation>
     </message>
+    <message>
+        <source>Loading</source>
+        <translation>Загрузка</translation>
+    </message>
     <!-- action_manager.cpp: category titles -->
     <message>
         <source>New</source>

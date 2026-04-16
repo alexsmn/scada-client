@@ -77,6 +77,7 @@
     { "id": "TS.701", "browse_name": "Канал MODBUS",              "class": "object",   "type_definition": "SCADA.108" },
     { "id": "TS.702", "browse_name": "Ретрансляция КП-02 MODBUS", "class": "object",   "type_definition": "SCADA.118", "properties": { "SCADA.168": 2 } },
     { "id": "TIT.721", "browse_name": "TC1",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
+    { "id": "TIT.725", "browse_name": "TC2",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
     { "id": "TIT.722", "browse_name": "TC8",                       "class": "variable", "type_definition": "analog_item", "base_value": 1.0,  "properties": { "display_format": "0.#" } },
     { "id": "TIT.723", "browse_name": "Ua",                        "class": "variable", "type_definition": "analog_item", "base_value": 10.5, "properties": { "display_format": "0.#" } },
     { "id": "TIT.724", "browse_name": "Дорасчет Ua среднее",       "class": "variable", "type_definition": "analog_item", "base_value": 10.4, "properties": { "display_format": "0.#" } },
@@ -100,7 +101,7 @@
     "SCADA.28":  ["SCADA.67"],
     "SCADA.300": ["SCADA.301"],
 
-    "SCADA.24":  ["TS.100", "TS.101", "TS.102", "TS.109", "TS.110", "TS.111", "TS.112", "TS.113", "TIT.721", "TIT.722", "TIT.723", "TIT.724"],
+    "SCADA.24":  ["TS.100", "TS.101", "TS.102", "TS.109", "TS.110", "TS.111", "TS.112", "TS.113", "TIT.721", "TIT.725", "TIT.722", "TIT.723", "TIT.724"],
     "SCADA.30":  ["TS.103", "TS.104", "TS.105", "TS.106", "TS.107", "TS.108", "TS.701"],
 
     "TS.100":    ["TS.117", "TS.118", "TS.119"],
@@ -112,7 +113,7 @@
     "TS.702":    ["TS.731", "TS.732", "TS.733", "TS.734"],
     "TS.105":    ["TS.128", "TS.129", "TS.130"],
     "TS.108":    ["TS.124"],
-    "TS.109":    ["TS.120", "TS.121", "TS.122"],
+    "TS.109":    ["TIT.721", "TIT.725", "TIT.722"],
     "TS.110":    ["TS.125", "TS.126", "TS.127"],
     "TS.111":    ["TS.128", "TS.129", "TS.130"],
     "TS.112":    ["TS.106", "TS.107"],

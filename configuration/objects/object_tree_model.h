@@ -36,8 +36,15 @@ class ObjectTreeModel : private ObjectTreeModelContext,
                                         int column_id) override;
 
  private:
+  virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(
+      const scada::NodeId& reference_type_id,
+      bool forward_reference,
+      const NodeRef& node) override;
+
   std::shared_ptr<VisibleNode> CreateVisibleNode(void* tree_node);
   std::shared_ptr<VisibleNode> CreateFetchedVisibleNode(const NodeRef& node);
 
   VisibleNodeModel visible_node_model_;
+
+  class ObjectTreeNode;
 };
