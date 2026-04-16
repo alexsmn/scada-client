@@ -6,4 +6,3 @@ docs/screenshots/
 !docs/screenshots/
 docs/screenshots/*
 !docs/screenshots/image_manifest.json
-!docs/screenshots/update_screenshots.cmd

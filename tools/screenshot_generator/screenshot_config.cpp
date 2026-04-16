@@ -1,9 +1,9 @@
 #include "screenshot_config.h"
 
+#include "screenshot_options.h"
 #include "base/boost_json_file.h"
 #include "model/node_id_util.h"
 
-#include <QByteArray>
 #include <gtest/gtest.h>
 
 #include <unordered_set>
@@ -11,9 +11,9 @@
 namespace {
 
 std::filesystem::path GetImageManifestPath() {
-  const QByteArray env = qgetenv("SCREENSHOT_IMAGE_MANIFEST");
-  if (!env.isEmpty()) {
-    return std::filesystem::path{env.toStdString()}.lexically_normal();
+  const auto& options = GetScreenshotOptions();
+  if (!options.image_manifest.empty()) {
+    return options.image_manifest.lexically_normal();
   }
 
   for (const auto& candidate : {
@@ -42,8 +42,17 @@ std::unordered_set<std::string> GetManagedImageFilenames() {
 
   if (const auto* images = manifest->as_object().if_contains("images")) {
     for (const auto& image : images->as_array()) {
-      if (const auto* file = image.as_object().if_contains("file"))
-        filenames.emplace(std::string(file->as_string()));
+      const auto& object = image.as_object();
+      const auto* file = object.if_contains("file");
+      const auto* tag = object.if_contains("tag");
+      if (!file || !tag)
+        continue;
+
+      const std::string_view tag_value = tag->as_string().c_str();
+      if (!tag_value.starts_with("auto-"))
+        continue;
+
+      filenames.emplace(std::string(file->as_string()));
     }
   }
 
@@ -53,10 +62,17 @@ std::unordered_set<std::string> GetManagedImageFilenames() {
 template <class Spec>
 bool IsManagedImage(const std::unordered_set<std::string>& managed_images,
                     const Spec& spec) {
-  return managed_images.empty() || managed_images.contains(spec.filename);
+  if (!managed_images.empty() && !managed_images.contains(spec.filename))
+    return false;
+  return ShouldCaptureScreenshot(spec.filename);
 }
 
 }  // namespace
+
+bool IsAutoManagedImageFilename(std::string_view filename) {
+  const auto managed_images = GetManagedImageFilenames();
+  return managed_images.contains(std::string(filename));
+}
 
 void ScreenshotConfig::Load(const std::filesystem::path& path) {
   auto opt = ReadBoostJsonFromFile(path);

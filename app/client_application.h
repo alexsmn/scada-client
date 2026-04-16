@@ -2,12 +2,14 @@
 
 #include "app/client_application_modules.h"
 #include "base/promise.h"
+#include "timed_data/timed_data_service.h"
 #include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
 
 #include <functional>
 #include <memory>
 #include <stack>
+#include <stdexcept>
 
 // Runs a LIFO list of teardown callbacks when destroyed. Used by
 // `ClientApplication` so each module's shutdown can be registered next
@@ -61,11 +63,13 @@ class Profile;
 class PrintModule;
 class PropertyService;
 class TaskManager;
-class TimedDataService;
 class Speech;
 class WriteService;
 
-class TimedDataService;
+class LoginCanceled : public std::runtime_error {
+ public:
+  LoginCanceled() : std::runtime_error{"Login canceled"} {}
+};
 
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;

@@ -1,7 +1,7 @@
 # Screenshot generator
 
 Low-level design of the offline screenshot generator plus the
-day-to-day workflow for managing images under `scada-docs/img/`.
+day-to-day workflow for managing images under `client/docs/screenshots/`.
 
 For the high-level "what is FR-21", see `design.md` §5.1 "Regenerating
 the doc screenshots". This doc is the authoritative reference when you
@@ -9,7 +9,7 @@ are modifying the generator itself or adding new captures.
 
 ## What the generator is
 
-`client/tools/screenshot_generator/screenshot_generator.exe` is a Qt
+`client/tools/screenshot_generator/client_screenshot_generator.exe` is a Qt
 test binary that boots the real `ClientApplication` against a set of
 in-memory `Local*Service` fixtures, opens each window type the docs
 need, and writes a PNG per capture to a configurable output directory.
@@ -22,6 +22,32 @@ the fixture grows, popup menus and device-state variants.
 It replaces hand-captured screenshots for everything tagged `auto-*`
 in `client/docs/screenshots/image_manifest.json`.
 
+## Inputs and outputs
+
+### Command-line flags
+
+The generator reads these command-line flags:
+
+| Flag | Required | Purpose |
+|---|---|---|
+| `--out=<dir>` | yes | Output directory for generated PNGs. The CMake `POST_BUILD` step sets this to `client/docs/screenshots/`. |
+| `--image-manifest=<path>` | no | Override path to `image_manifest.json`. If unset, the generator falls back to its built-in manifest search paths. |
+| `--only=<files>` | no | Comma / semicolon / newline-separated list of PNG filenames to regenerate, for example `client-login.png,users.png`. If unset, the generator renders every managed screenshot. |
+
+### Outputs
+
+The generator writes PNGs into the directory passed via `--out`.
+
+Current output groups:
+
+| Source | Output files |
+|---|---|
+| `CaptureAllWindows` | One PNG per `screenshots:` entry from `screenshot_data.json`, filtered by the image manifest and `--only`. |
+| `CaptureMainWindow` | `client-window.png` |
+| `CaptureDialogs` | One PNG per `dialogs:` entry from `screenshot_data.json`, filtered by the image manifest and `--only`. |
+
+The `update-screenshots-dev` workflow preset refreshes the approved local subset in `client/docs/screenshots/`.
+
 ## Source layout
 
 Everything lives under `client/tools/screenshot_generator/`:
@@ -29,18 +55,20 @@ Everything lives under `client/tools/screenshot_generator/`:
 | File | Responsibility |
 |---|---|
 | `main.cpp` | Test fixture `ScreenshotGenerator` and the three `TEST_F`s: `CaptureAllWindows`, `CaptureMainWindow`, `CaptureDialogs`. |
-| `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json` and resolves `SCREENSHOT_IMAGE_MANIFEST`. |
-| `screenshot_output.{h,cpp}` | `GetOutputDir()` — resolves `SCREENSHOT_OUT_DIR` once. |
+| `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json`, resolves `--image-manifest`, and applies `--only`. |
+| `screenshot_options.{h,cpp}` | Parses `--out`, `--image-manifest`, and `--only` once from the process command line. |
+| `screenshot_output.{h,cpp}` | `GetOutputDir()` — resolves `--out`. |
 | `widget_capture.{h,cpp}` | `SaveScreenshot(QWidget*, const ScreenshotSpec&)` — the generic "resize, grab, save" helper for sub-widgets inside the MDI area. |
 | `graph_capture.{h,cpp}` | `SaveGraphScreenshot` builds a standalone `MetrixGraph` (hidden main windows don't lay out `QSplitter` children); `MakeGraphDefinition` builds the matching `WindowDefinition` for the profile path. |
 | `dialog_capture.{h,cpp}` | `CaptureDialog(spec, env)` — per-kind builders invoke the component's public `Execute…Dialog()` factory, which calls `show()` internally; we then find the visible dialog via `QApplication::topLevelWidgets()`, grab, and hide+reject. |
 | `fixture_builder.{h,cpp}` | `MakeScreenshotPage` (builds a `Page` with one window per `ScreenshotSpec`) and `MakeLocalTimedDataService` (populates a `FakeTimedDataService` from the fixture's `timed_data` array). |
 | `screenshot_data.json` | The fixture: nodes, tree, timed data, events, graph config, screenshot list, dialog list. |
-| `CMakeLists.txt` | Builds `screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
+| `CMakeLists.txt` | Builds `client_screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
 
 The docs refresh helper for the current rollout lives outside that
-tree at `client/docs/screenshots/update_screenshots.cmd`. It copies only the approved
-`scada-docs/img/` batch (`client-login.png`, `client-retransmission.png`,
+tree at `cmake/update_screenshots.cmake`, driven by the
+`update-screenshots-dev` workflow preset. It refreshes only the approved
+local batch (`client-login.png`, `client-retransmission.png`,
 `graph-cursor.png`, `users.png`).
 
 ### Why the split
@@ -76,8 +104,18 @@ Three `TEST_F` bodies cover the three capture modes:
 ### `CaptureMainWindow` — the whole main window at 1920×1080
 
 Opens a couple of representative views (`EventJournal`, `Summ`,
-`Struct`) in a profile, starts the app, resizes the `QMainWindow` to
-match `scada-docs/img/client-window.png` and grabs the whole thing.
+`Struct`) in a profile, temporarily disables `SetHideForTesting()` for
+that test, waits for the `Struct` tree to materialize child rows,
+shows the real `QMainWindow`, activates its layouts, and grabs the
+window at 1920×1080.
+
+The key finding from debugging was that hidden top-level capture was
+too early: `ConfigurationTreeModel` logged that the `Struct` children
+were loaded (`Load children` / `Children` for `SCADA.24`), but the
+hidden-window screenshot still rendered only the single top-level
+`Все объекты` row. Showing the real window is now the intended fix for
+`client-window.png`; the standalone-graph workaround remains specific
+to the graph capture path.
 
 ### `CaptureDialogs` — modal dialogs
 
@@ -125,42 +163,47 @@ the sequential `for` loop in `CaptureDialogs`.
 | `screenshots` | array | `{type, filename, width, height}` — one entry per main-window view. `type` matches `WindowInfo::name`. |
 | `dialogs` | array | `{kind, filename, width?, height?}` — one entry per modal dialog. `kind` is the dispatch key in `dialog_capture.cpp`. |
 
-`width`/`height` should match the scada-docs target image pixel-exact
-so the generator output is a drop-in replacement.
+`width`/`height` should match the intended docs image pixel-exact so
+the generator output stays stable.
 
 ## Running it
 
-Building the `screenshot_generator` target runs the generator as a
+Building the `client_screenshot_generator` target runs the generator as a
 POST_BUILD step, dropping the PNGs into `client/docs/screenshots/`
 (gitignored). That keeps the local gallery in lock-step with the
-current client build — useful for comparing runs before publishing
-anything to scada-docs.
+current client build.
 
 ```batch
-cmake --build --preset release-dev -t screenshot_generator
+cmake --build --preset release-dev -t client_screenshot_generator
 ```
 
-To render into a different directory (typically `scada-docs/img/`
-before committing a refresh there):
+To render into a different directory:
 
 ```batch
-set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
-set SCREENSHOT_IMAGE_MANIFEST=C:\tc\scada\client\docs\screenshots\image_manifest.json
-build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
+build\ninja-dev\bin\RelWithDebInfo\client_screenshot_generator.exe ^
+  --out=C:\path\to\output-dir ^
+  --image-manifest=C:\tc\scada\client\docs\screenshots\image_manifest.json
 ```
 
-`SCREENSHOT_OUT_DIR` is required; the POST_BUILD step sets it for the default `client/docs/screenshots/` output. `SCREENSHOT_IMAGE_MANIFEST` is optional; if unset, the generator falls back to its built-in manifest search paths.
+`--out` is required; the POST_BUILD step sets it for the default `client/docs/screenshots/` output. `--image-manifest` is optional; if unset, the generator falls back to its built-in manifest search paths.
 
-For the first `scada-docs` rollout, use the client-side helper script
-`client/docs/screenshots/update_screenshots.cmd`:
+To regenerate only a few named files:
+
+```batch
+build\ninja-dev\bin\RelWithDebInfo\client_screenshot_generator.exe ^
+  --out=C:\tc\scada\client\docs\screenshots ^
+  --image-manifest=C:\tc\scada\client\docs\screenshots\image_manifest.json ^
+  --only=client-login.png;users.png
+```
+
+To refresh the approved local subset, use the workflow preset:
 
 ```bash
-cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
-cmd.exe /c C:\tc\scada\client\docs\screenshots\update_screenshots.cmd
+cmd.exe /c "cd /d C:\tc\scada && cmake --workflow --preset update-screenshots-dev"
 ```
 
-The script copies the currently approved rollout subset from
-`client/docs/screenshots/` into `scada-docs/img/`:
+The target rebuilds `client_screenshot_generator` if needed, then refreshes
+the currently approved local subset in `client/docs/screenshots/`:
 `client-login.png`, `client-retransmission.png`, `graph-cursor.png`,
 and `users.png`.
 
@@ -169,23 +212,18 @@ and `users.png`.
 From the repo root (`C:\tc\scada`), the end-to-end refresh pipeline is:
 
 ```batch
-cmd.exe /c "cd /d C:\tc\scada && cmake --build --preset release-dev --target screenshot_generator"
-cmd.exe /c "cd /d C:\tc\scada && call client\docs\screenshots\update_screenshots.cmd"
+cmd.exe /c "cd /d C:\tc\scada && cmake --workflow --preset update-screenshots-dev"
 ```
 
 What this does:
 
-1. Rebuilds `screenshot_generator`.
+1. Rebuilds `client_screenshot_generator`.
 2. Lets the target's POST_BUILD step regenerate `client/docs/screenshots/*`.
-3. Copies the approved rollout subset into `C:\tc\scada\scada-docs\img\`.
-
-Use the `call` form for the second command. Direct `cmd.exe /c C:\...\foo.cmd`
-invocation can be parsed incorrectly by `cmd.exe` in some environments.
 
 Run a subset with `--gtest_filter`:
 
 ```batch
-screenshot_generator.exe --gtest_filter=ScreenshotGenerator.CaptureDialogs
+client_screenshot_generator.exe --gtest_filter=ScreenshotGenerator.CaptureDialogs
 ```
 
 ## Adding a new auto-screenshot
@@ -197,7 +235,7 @@ Pick the flow that fits the new image's manifest tag.
 1. Register or locate the `WindowInfo` in the owning component.
 2. Append `{ "type": "…", "filename": "…", "width": W, "height": H }`
    to `screenshots:` in `screenshot_data.json`. Match the
-   scada-docs dimensions exactly.
+   intended docs dimensions exactly.
 3. If the view needs nodes, timed data, or events that aren't already
    in the fixture, extend the matching arrays.
 4. Add an entry to `client/docs/screenshots/image_manifest.json` tagged
@@ -229,7 +267,7 @@ rendering pipeline lands as part of the `auto-menu` task.)
 (Not yet implemented — needs fixture knobs for per-device state, which
 are the subject of the `auto-state` task.)
 
-## Managing scada-docs/img
+## Managing Generated Images
 
 The source of truth for which files are auto vs manual is
 `client/docs/screenshots/image_manifest.json`.
@@ -237,16 +275,15 @@ The source of truth for which files are auto vs manual is
 Workflow:
 
 1. For the current rollout, run
-   `client/docs/screenshots/update_screenshots.cmd`.
-   It publishes only `client-login.png`, `client-retransmission.png`,
-   `graph-cursor.png`, and `users.png` into `scada-docs/img/`.
-2. `git diff img/` in scada-docs to review every image that changed.
+   `cmake --workflow --preset update-screenshots-dev`.
+   It refreshes only `client-login.png`, `client-retransmission.png`,
+   `graph-cursor.png`, and `users.png` in `client/docs/screenshots/`.
+2. Inspect `client/docs/screenshots/` to review every image that changed.
    Expect a diff any time the real UI changes — that is the visual
    regression signal. If the diff is noise only (font antialiasing,
    clock values), either tighten the fixture or accept it.
-3. Commit the scada-docs image changes in a separate PR from the
-   client change that caused them. It's easier to review image diffs
-   on their own, and it lets the client PR stay focused.
+3. If you changed the fixture or capture code, also inspect any PNGs
+   outside the approved rollout subset that were regenerated locally.
 4. When removing a feature from the client, update
    `image_manifest.json` by retagging the orphaned files `obsolete` in the
    same PR that removes the feature — don't leave `auto-*` rows
@@ -284,10 +321,11 @@ now.
 
 ## Known constraints
 
-- **QApplication argv is zeroed.** `AppEnvironment` builds the
-  `QApplication` with `{0, nullptr}`, so command-line flags
-  (`--out`, …) are invisible to `QCoreApplication::arguments()`.
-  Configuration has to flow through env vars instead.
+- **Qt app argv is still zeroed.** `AppEnvironment` builds the
+  `QApplication` with `{0, nullptr}`, so
+  `QCoreApplication::arguments()` cannot see the generator flags.
+  `screenshot_options.cpp` works around that by parsing the process
+  command line directly before the fixture starts.
 - **`StubTransportFactory` is out of sync.** The upstream
   `third_party/net` stub doesn't match the current
   `TransportFactory` interface. `dialog_capture.cpp` carries its own

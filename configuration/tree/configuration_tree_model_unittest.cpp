@@ -164,3 +164,44 @@ TEST_F(ConfigurationTreeModelTest,
           ->GetChildCount(),
       0);
 }
+
+TEST_F(ConfigurationTreeModelTest,
+       FetchMoreAddsChildrenWithoutObserverReferenceChange) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  auto child_model = MakeTestNodeModel(kNodeId1);
+  bool children_fetched = false;
+
+  ON_CALL(*child_model, GetFetchStatus())
+      .WillByDefault([&] {
+        return children_fetched ? NodeFetchStatus::NodeAndChildren()
+                                : NodeFetchStatus::NodeOnly();
+      });
+
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
+      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
+        children_fetched = true;
+        cb();
+      });
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes, .child_node = child_model}
+      }))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes,
+           .child_node = MakeTestNodeRef(kNodeId2)}}));
+
+  InitModel(std::move(node_service_tree));
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+
+  auto* child =
+      static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
+  EXPECT_EQ(0, child->GetChildCount());
+
+  child->FetchMore();
+
+  EXPECT_EQ(1, child->GetChildCount());
+  EXPECT_EQ(child->GetChild(0).node().node_id(), kNodeId2);
+}

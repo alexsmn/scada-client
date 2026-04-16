@@ -53,7 +53,7 @@ Then they can be constructed via `ComponentApi`.
 Goal: stop using the catch-all `client_qt_lib` umbrella and make each
 binary link only the modules it actually needs. That means expressing
 the real dependency graph between client modules directly, so
-`screenshot_generator`, `client_qt`, test binaries, and small tools can
+`client_screenshot_generator`, `client_qt`, test binaries, and small tools can
 all build against minimal link sets instead of dragging the full UI
 stack transitively.
 
@@ -87,7 +87,7 @@ E.g. for files selected in File View.
 
 ## Screenshot generator
 
-### Extend `screenshot_generator` to regenerate all scada-docs screenshots
+### Extend `client_screenshot_generator` to regenerate all scada-docs screenshots
 
 Goal: bring `scada-docs/img/*` under the offline screenshot generator
 (`app/screenshot_generator.cpp`) so doc images can be regenerated
@@ -135,9 +135,9 @@ PR / commit):
    emit the scada-docs filename instead of the current short name.
 
 3. **Add an output-directory flag.** Extend
-   `screenshot_generator.cpp` with a `--out <dir>` (or
-   `SCREENSHOT_OUT_DIR` env var) so the generator can write to an
-   explicit target directory instead of relying on an implicit default.
+   `screenshot_generator.cpp` with a `--out <dir>` flag so the
+   generator can write to an explicit target directory instead of
+   relying on an implicit default.
 
 4. **Add the missing window-type captures** (~10 items). For each
    new window type — `Login`, `Transmission`, `Users` table,

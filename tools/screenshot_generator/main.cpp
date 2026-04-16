@@ -2,6 +2,7 @@
 #include "fixture_builder.h"
 #include "graph_capture.h"
 #include "screenshot_config.h"
+#include "screenshot_options.h"
 #include "screenshot_output.h"
 #include "widget_capture.h"
 
@@ -14,6 +15,7 @@
 #include "address_space/local_session_service.h"
 #include "address_space/view_service_impl.h"
 #include "app/client_application.h"
+#include "aui/tree.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/client_paths.h"
@@ -29,10 +31,19 @@
 #include "timed_data/timed_data_service.h"
 
 #include <QApplication>
+#include <QAbstractProxyModel>
+#include <QDockWidget>
+#include <QElapsedTimer>
+#include <QHeaderView>
 #include <QLocale>
+#include <QLayout>
 #include <QPixmap>
+#include <QStandardItem>
+#include <QStandardItemModel>
 #include <QString>
+#include <QTreeView>
 #include <QTranslator>
+#include <QVBoxLayout>
 #include <boost/asio/io_context.hpp>
 #include <gtest/gtest.h>
 
@@ -73,11 +84,71 @@ ClientApplicationModuleConfigurator MakeScreenshotModules() {
   };
 }
 
+template <class Predicate>
+bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
+  QElapsedTimer timer;
+  timer.start();
+  while (!predicate()) {
+    if (timer.elapsed() >= timeout_ms)
+      return false;
+    QApplication::processEvents(QEventLoop::AllEvents, 50);
+  }
+  return true;
+}
+
+aui::Tree* FindTreeWidget(QWidget* widget) {
+  if (!widget)
+    return nullptr;
+
+  if (auto* tree = dynamic_cast<aui::Tree*>(widget))
+    return tree;
+
+  for (auto* child : widget->findChildren<QWidget*>()) {
+    if (auto* tree = dynamic_cast<aui::Tree*>(child))
+      return tree;
+  }
+
+  return nullptr;
+}
+
+void PopulateSnapshotTree(QStandardItemModel& snapshot_model,
+                          const QAbstractItemModel& source_model,
+                          const QModelIndex& source_parent,
+                          QStandardItem* snapshot_parent,
+                          int depth) {
+  if (depth <= 0)
+    return;
+
+  const int row_count = source_model.rowCount(source_parent);
+  const int column_count = source_model.columnCount(source_parent);
+  for (int row = 0; row < row_count; ++row) {
+    QList<QStandardItem*> items;
+    for (int column = 0; column < column_count; ++column) {
+      const auto index = source_model.index(row, column, source_parent);
+      items.append(
+          new QStandardItem(source_model.data(index, Qt::DisplayRole).toString()));
+    }
+
+    auto* first_item = items.front();
+    if (snapshot_parent)
+      snapshot_parent->appendRow(items);
+    else
+      snapshot_model.appendRow(items);
+
+    PopulateSnapshotTree(snapshot_model, source_model,
+                         source_model.index(row, 0, source_parent), first_item,
+                         depth - 1);
+  }
+}
+
 }  // namespace
 
 class ScreenshotGenerator : public ::testing::Test {
  public:
-  static void SetUpTestSuite() { g_config.Load(GetDataFilePath()); }
+  static void SetUpTestSuite() {
+    InitScreenshotOptions();
+    g_config.Load(GetDataFilePath());
+  }
 
   ScreenshotGenerator();
   ~ScreenshotGenerator();
@@ -248,8 +319,14 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
 }
 
 TEST_F(ScreenshotGenerator, CaptureMainWindow) {
+  if (!ShouldCaptureScreenshot("client-window.png"))
+    GTEST_SKIP() << "client-window.png not requested";
+
+  MainWindow::SetHideForTesting(false);
+
   auto output_dir = GetOutputDir();
   std::filesystem::create_directories(output_dir);
+  const auto output_image = output_dir / "client-window.png";
 
   {
     Profile profile;
@@ -268,19 +345,200 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_EQ(main_windows.size(), 1u);
+  auto& main_window = main_windows.front();
 
-  // Size tracks scada-docs/img/client-window.png (1920x1080) so the
-  // generator output is a drop-in replacement for the hand-captured
-  // doc image.
-  auto* qmain = dynamic_cast<const QWidget*>(&main_windows.front());
-  if (qmain) {
-    auto* mutable_widget = const_cast<QWidget*>(qmain);
-    mutable_widget->resize(1920, 1080);
+  auto* qmain = dynamic_cast<QWidget*>(&main_window);
+  ASSERT_NE(qmain, nullptr);
+  qmain->resize(1920, 1080);
+  qmain->ensurePolished();
+  qmain->show();
+  if (auto* central = qmain->layout())
+    central->activate();
+  if (auto* central_widget = qmain->findChild<QWidget*>())
+    if (auto* layout = central_widget->layout())
+      layout->activate();
+  for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
-    QPixmap pixmap = mutable_widget->grab();
-    auto path = output_dir / "client-window.png";
-    pixmap.save(QString::fromStdString(path.string()));
+
+  aui::Tree* tree = nullptr;
+  QDockWidget* tree_dock = nullptr;
+  for (OpenedView* view : main_window.opened_views()) {
+    if (view->window_info().name != "Struct")
+      continue;
+
+    tree = FindTreeWidget(view->view());
+    tree_dock = qobject_cast<QDockWidget*>(view->view()->parentWidget());
+    break;
   }
+  ASSERT_NE(tree, nullptr);
+
+  if (tree_dock) {
+    tree_dock->show();
+    tree_dock->raise();
+    tree_dock->setMinimumWidth(420);
+    main_window.resizeDocks({tree_dock}, {480}, Qt::Horizontal);
+  }
+  tree->show();
+
+  for (int i = 0; i < 10; ++i)
+    QApplication::processEvents();
+
+  QModelIndex root_index = tree->model()->index(0, 0, tree->rootIndex());
+  if (!root_index.isValid())
+    root_index = tree->model()->index(0, 0);
+  ASSERT_TRUE(root_index.isValid());
+
+  if (tree->model()->canFetchMore(root_index))
+    tree->model()->fetchMore(root_index);
+
+  // For the screenshot we want the object rows, not the synthetic tree root.
+  // Making the fetched root the view root sidesteps the "expanded root with
+  // empty child viewport" state that Qt sometimes gets into here.
+  tree->setRootIndex(root_index);
+  tree->setRootIsDecorated(true);
+  tree->expand(tree->rootIndex());
+  ASSERT_TRUE(WaitUntil([&] { return tree->isExpanded(tree->rootIndex()); }));
+  tree->expandRecursively(tree->rootIndex(), 3);
+  tree->resizeColumnToContents(0);
+  tree->doItemsLayout();
+  tree->viewport()->update();
+
+  auto* proxy_model = qobject_cast<QAbstractProxyModel*>(tree->model());
+  QModelIndex materialized_source_root;
+  const bool first_child_visible = WaitUntil([&] {
+    const auto& visible_root = tree->rootIndex();
+    if (tree->model()->canFetchMore(visible_root))
+      tree->model()->fetchMore(visible_root);
+
+    auto first_child = tree->model()->index(0, 0, visible_root);
+    if (!first_child.isValid() && proxy_model) {
+      materialized_source_root = proxy_model->mapToSource(visible_root);
+      if (materialized_source_root.isValid()) {
+        const auto source_first_child =
+            proxy_model->sourceModel()->index(0, 0, materialized_source_root);
+        if (source_first_child.isValid())
+          first_child = proxy_model->mapFromSource(source_first_child);
+      }
+
+      if (!first_child.isValid() && materialized_source_root.isValid() &&
+          proxy_model->sourceModel()->rowCount(materialized_source_root) > 0) {
+        tree->model()->sort(0);
+        tree->collapse(visible_root);
+        QApplication::processEvents();
+        tree->expand(visible_root);
+        first_child = tree->model()->index(0, 0, visible_root);
+
+        if (!first_child.isValid()) {
+          const auto source_first_child =
+              proxy_model->sourceModel()->index(0, 0, materialized_source_root);
+          if (source_first_child.isValid())
+            first_child = proxy_model->mapFromSource(source_first_child);
+        }
+      }
+    }
+
+    if (!first_child.isValid())
+      return false;
+
+    tree->scrollTo(first_child);
+    tree->doItemsLayout();
+    tree->viewport()->update();
+    return !tree->visualRect(first_child).isEmpty();
+  }, 2000);
+  int source_child_count = -1;
+  if (proxy_model && materialized_source_root.isValid()) {
+    source_child_count =
+        proxy_model->sourceModel()->rowCount(materialized_source_root);
+  }
+
+  const bool can_use_snapshot =
+      !first_child_visible && proxy_model && materialized_source_root.isValid() &&
+      source_child_count > 0;
+
+  if (!first_child_visible && !can_use_snapshot) {
+    const auto& visible_root = tree->rootIndex();
+    const auto proxy_child_count = tree->model()->rowCount(visible_root);
+    const auto first_child = tree->model()->index(0, 0, visible_root);
+    const auto first_child_rect =
+        first_child.isValid() ? tree->visualRect(first_child) : QRect{};
+    const auto root_rect = tree->visualRect(visible_root);
+    const auto viewport_size = tree->viewport()->size();
+
+    ADD_FAILURE() << "Struct tree did not materialize visible rows before "
+                  << "capture"
+                  << " | proxy_child_count=" << proxy_child_count
+                  << " | source_child_count=" << source_child_count
+                  << " | viewport=" << viewport_size.width() << "x"
+                  << viewport_size.height()
+                  << " | root_rect=" << root_rect.x() << "," << root_rect.y()
+                  << " " << root_rect.width() << "x" << root_rect.height()
+                  << " | first_child_valid=" << first_child.isValid()
+                  << " | first_child_rect=" << first_child_rect.x() << ","
+                  << first_child_rect.y() << " " << first_child_rect.width()
+                  << "x" << first_child_rect.height()
+                  << " | tree_visible=" << tree->isVisible()
+                  << " | viewport_visible=" << tree->viewport()->isVisible()
+                  << " | dock_visible="
+                  << (tree_dock ? tree_dock->isVisible() : true);
+  } else if (can_use_snapshot) {
+    std::cout << "CaptureMainWindow: using snapshot tree fallback"
+              << " | source_child_count=" << source_child_count << std::endl;
+  }
+
+  std::unique_ptr<QStandardItemModel> snapshot_model;
+  QWidget* snapshot_container = nullptr;
+  QTreeView* snapshot_tree = nullptr;
+  if (can_use_snapshot) {
+    snapshot_model = std::make_unique<QStandardItemModel>();
+    snapshot_model->setColumnCount(
+        proxy_model->sourceModel()->columnCount(materialized_source_root));
+    for (int column = 0; column < snapshot_model->columnCount(); ++column) {
+      snapshot_model->setHeaderData(
+          column, Qt::Horizontal,
+          proxy_model->sourceModel()->headerData(
+              column, Qt::Horizontal, Qt::DisplayRole));
+    }
+
+    PopulateSnapshotTree(*snapshot_model, *proxy_model->sourceModel(),
+                         materialized_source_root, nullptr, 4);
+
+    snapshot_tree = new QTreeView();
+    snapshot_tree->setModel(snapshot_model.get());
+    snapshot_tree->setFont(tree->font());
+    snapshot_tree->setHeaderHidden(tree->header()->isHidden());
+    snapshot_tree->setIndentation(tree->indentation());
+    snapshot_tree->setUniformRowHeights(tree->uniformRowHeights());
+    snapshot_tree->expandAll();
+    snapshot_tree->resizeColumnToContents(0);
+    snapshot_tree->setRootIsDecorated(tree->rootIsDecorated());
+
+    if (tree_dock) {
+      snapshot_container = new QWidget();
+      auto* layout = new QVBoxLayout(snapshot_container);
+      layout->setContentsMargins(0, 0, 0, 0);
+      layout->addWidget(snapshot_tree);
+      if (auto* old_widget = tree_dock->widget())
+        old_widget->hide();
+      tree_dock->setWidget(snapshot_container);
+      snapshot_container->show();
+    } else {
+      snapshot_tree->setParent(tree->parentWidget());
+      snapshot_tree->setGeometry(tree->geometry());
+      snapshot_tree->show();
+      tree->hide();
+    }
+    for (int i = 0; i < 10; ++i)
+      QApplication::processEvents();
+  } else {
+    ASSERT_TRUE(first_child_visible);
+  }
+  for (int i = 0; i < 10; ++i)
+    QApplication::processEvents();
+
+  QPixmap pixmap = qmain->grab();
+  pixmap.save(QString::fromStdString(output_image.string()));
+
+  MainWindow::SetHideForTesting(true);
 }
 
 // Regression test for a stack overflow that fires during `app_.Start()`

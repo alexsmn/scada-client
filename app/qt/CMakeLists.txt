@@ -8,6 +8,8 @@ file(GLOB MAIN_QT CONFIGURE_DEPENDS
   "../client_application.h"
   "../app_init.cpp"
   "../app_init.h"
+  "../startup_exception.cpp"
+  "../startup_exception.h"
   "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
@@ -119,5 +121,5 @@ target_link_libraries(client_qt_unittests PRIVATE client_qt_lib base_unittest)
 include(GoogleTest)
 gtest_discover_tests(client_qt_unittests DISCOVERY_MODE PRE_TEST)
 
-# The screenshot_generator executable lives in
+# The client_screenshot_generator executable lives in
 # `tools/screenshot_generator/` — see that directory's CMakeLists.

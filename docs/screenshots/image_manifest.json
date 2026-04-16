@@ -3,7 +3,7 @@
     { "file": "MODBUS_func.png", "tag": "manual-diagram", "referenced_from": ["protocols.md"], "notes": "Modbus function-code table, hand-drawn." },
     { "file": "client-login.png", "tag": "auto-dialog", "referenced_from": ["getting-started.md"], "notes": "LoginDialog modal shown at startup; rendered by the dialog pipeline." },
     { "file": "client-retransmission.png", "tag": "auto-view", "referenced_from": ["client.md"], "notes": "Transmission window type." },
-    { "file": "client-window.png", "tag": "auto-view", "referenced_from": ["client.md"], "notes": "Full main window; already produced by CaptureMainWindow." },
+    { "file": "client-window.png", "tag": "manual-modus", "referenced_from": ["client.md"], "notes": "Docs image is a full main window with a Modus schematic centre; CaptureMainWindow only renders the non-Modus EventJournal + Summ + Struct fallback, so keep this hand-maintained until the fake Modus runtime exists." },
     { "file": "control-confirm.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by t{s,i}-remote-control-confirm.png." },
     { "file": "control-ti.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by ti-remote-control-enabled.png." },
     { "file": "control-ts.jpg", "tag": "obsolete", "referenced_from": [], "notes": "Superseded by ts-remote-control-enabled.png." },
@@ -60,12 +60,12 @@
     { "file": "users.png", "tag": "auto-view", "referenced_from": ["dev/users.md"], "notes": "Users window." }
   ],
   "counts": {
-    "auto-view": 5,
+    "auto-view": 4,
     "auto-dialog": 15,
     "auto-menu": 15,
     "auto-state": 5,
     "manual-diagram": 4,
-    "manual-modus": 4,
+    "manual-modus": 5,
     "manual-os": 2,
     "obsolete": 5
   },

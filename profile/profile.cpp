@@ -12,6 +12,7 @@
 #include "model/scada_node_ids.h"
 
 #include <ATLComTime.h>
+#include <stdexcept>
 
 namespace {
 
@@ -235,7 +236,9 @@ boost::json::value Profile::SaveToValue() const {
 
 std::filesystem::path Profile::GetFilePath() {
   std::filesystem::path path;
-  base::PathService::Get(client::DIR_PRIVATE, &path);
+  if (!base::PathService::Get(client::DIR_PRIVATE, &path) || path.empty()) {
+    throw std::runtime_error{"Cannot resolve client profile directory"};
+  }
   return path / "profile.json";
 }
 

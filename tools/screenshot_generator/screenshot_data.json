@@ -192,8 +192,8 @@
   },
 
   "_screenshots_comment": [
-    "Filenames track scada-docs/img/* names where possible so the output is",
-    "a drop-in replacement for the hand-captured docs images. Dimensions",
+    "Filenames track the docs image names where possible so the output is",
+    "a drop-in replacement for the current docs images. Dimensions",
     "follow the docs images; if there is no matching docs image yet the",
     "size is a reasonable default. The image manifest reference",
     "column maps each filename to the markdown page(s) that embed it."

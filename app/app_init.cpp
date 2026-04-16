@@ -9,6 +9,7 @@
 
 #include <Windows.h>
 #include <filesystem>
+#include <stdexcept>
 
 namespace {
 
@@ -33,7 +34,9 @@ void InitCrashDump() {
 // Path service must be initialized before calling this function.
 void InitLogging() {
   std::filesystem::path log_path;
-  base::PathService::Get(client::DIR_LOG, &log_path);
+  if (!base::PathService::Get(client::DIR_LOG, &log_path) || log_path.empty()) {
+    throw std::runtime_error{"Cannot resolve client log directory"};
+  }
   std::filesystem::create_directories(log_path);
 
   {

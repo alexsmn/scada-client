@@ -41,6 +41,10 @@ struct ScreenshotConfig {
   void Load(const std::filesystem::path& path);
 };
 
+// Returns true when `filename` is tagged `auto-*` in the image manifest and
+// should therefore be rendered by the screenshot generator.
+bool IsAutoManagedImageFilename(std::string_view filename);
+
 // Locates `screenshot_data.json` on disk: next to this file, then the
 // current working directory. Falls back to a bare filename if neither
 // exists.

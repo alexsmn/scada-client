@@ -88,9 +88,10 @@ void ConfigurationTreeNode::FetchMore() {
   node_.Fetch(NodeFetchStatus::NodeAndChildren(), [this](const NodeRef& node) {
     LOG_INFO(model_.logger_)
         << "Children"
-        << LOG_TAG("NodeId", NodeIdToScadaString(node_.node_id()));
+        << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
 
     children_loaded_ = true;
+    AddChildren();
     Changed();
   });
 }

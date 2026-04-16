@@ -92,7 +92,7 @@ class BaseMainWindow : protected MainWindowContext,
   // TODO: Move to a separate class.
   void ExecuteDefaultNodeCommand(const NodeRef& node);
 
-  static void SetHideForTesting() { g_hide_for_testing = true; }
+  static void SetHideForTesting(bool hide = true) { g_hide_for_testing = hide; }
 
  protected:
   void Init(ViewManager& view_manager);

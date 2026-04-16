@@ -341,7 +341,7 @@ promise<void> ClientApplication::Login() {
       .then(BindPromiseExecutor(executor_,
                                 [this](std::optional<DataServices> services) {
                                   if (!services) {
-                                    throw std::runtime_error{"Login failed"};
+                                    throw LoginCanceled{};
                                   }
                                   OnLoginCompleted(std::move(*services));
                                 }));

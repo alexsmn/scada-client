@@ -115,7 +115,15 @@ TEST_F(ClientApplicationTest, LoginFailed) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
       .WillOnce(Return(make_resolved_promise(std::optional<DataServices>{})));
 
-  EXPECT_THROW(app_.Start().get(), std::runtime_error);
+  EXPECT_THROW(app_.Start().get(), LoginCanceled);
+}
+
+TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
+  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
+      .WillOnce(Return(make_resolved_promise(std::optional<DataServices>{})));
+
+  EXPECT_THROW(app_.Start().get(), LoginCanceled);
+  EXPECT_NO_THROW(app_.Quit().get());
 }
 
 // Ensure that the initial page is created and all windows are defined.

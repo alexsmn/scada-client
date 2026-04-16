@@ -173,7 +173,7 @@ and `client_application_unittest.cpp`.
 #### Regenerating the doc screenshots
 
 Most images under `scada-docs/img/` are produced by the offline
-`screenshot_generator` (see FR-21). The source-of-truth for which images
+`client_screenshot_generator` (see FR-21). The source-of-truth for which images
 are auto-generated vs. hand-maintained is
 `client/docs/screenshots/image_manifest.json`;
 tags there tell you whether a file is an `auto-view`, `auto-dialog`,
@@ -183,24 +183,31 @@ categories.
 To regenerate:
 
 ```batch
-cmake --build --preset release-dev -t screenshot_generator
-set SCREENSHOT_OUT_DIR=C:\path\to\scada-docs\img
-set SCREENSHOT_IMAGE_MANIFEST=C:\tc\scada\client\docs\screenshots\image_manifest.json
-build\ninja-dev\bin\RelWithDebInfo\screenshot_generator.exe
+cmake --build --preset release-dev -t client_screenshot_generator
+build\ninja-dev\bin\RelWithDebInfo\client_screenshot_generator.exe ^
+  --out=C:\path\to\scada-docs\img ^
+  --image-manifest=C:\tc\scada\client\docs\screenshots\image_manifest.json
 ```
 
-On Unix-y shells it's `SCREENSHOT_OUT_DIR=... ./screenshot_generator`.
+On Unix-y shells it's `./client_screenshot_generator --out=... --image-manifest=...`.
 
-`SCREENSHOT_OUT_DIR` is required for the generator. The build
+`--out` is required for the generator. The build
 POST_BUILD step points it at `client/docs/screenshots/`.
-`SCREENSHOT_IMAGE_MANIFEST` is optional and overrides the default
+`--image-manifest` is optional and overrides the default
 `client/docs/screenshots/image_manifest.json` lookup.
 
-For the first docs rollout, prefer the helper script at
-`client/docs/screenshots/update_screenshots.cmd`. It copies the current
-approved rollout subset from `client/docs/screenshots/` into
-`scada-docs/img/`: `client-login.png`, `client-retransmission.png`,
-`graph-cursor.png`, and `users.png`.
+For the first docs rollout, prefer the top-level
+`update-screenshots-dev` workflow preset:
+
+```batch
+cmake --workflow --preset update-screenshots-dev
+```
+
+It rebuilds `client_screenshot_generator` if needed, regenerates
+`client/docs/screenshots/` through the target's POST_BUILD step, and
+copies the current approved rollout subset into `scada-docs/img/`:
+`client-login.png`, `client-retransmission.png`, `graph-cursor.png`,
+and `users.png`.
 
 To add a new auto-screenshot:
 
@@ -214,7 +221,7 @@ To add a new auto-screenshot:
    extend the matching section of `screenshot_data.json`.
 4. Add an entry to `client/docs/screenshots/image_manifest.json` with the
    right tag and the markdown page(s) that embed it.
-5. Rebuild `screenshot_generator` and confirm the new file lands.
+5. Rebuild `client_screenshot_generator` and confirm the new file lands.
 
 The full startup sequence — from `main()` through login to the first
 visible page — looks like this:
