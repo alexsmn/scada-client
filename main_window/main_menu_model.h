@@ -161,6 +161,7 @@ class MainMenuModel final : private MainMenuContext,
   aui::SimpleMenuModel window_submenu_;
 #if defined(UI_QT)
   StyleMenuModel style_submenu_;
+  aui::SimpleMenuModel language_submenu_;
 #endif
   aui::SimpleMenuModel settings_submenu_;
   aui::SimpleMenuModel help_submenu_;

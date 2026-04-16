@@ -29,6 +29,8 @@
 #include <shellapi.h>
 
 #if defined(UI_QT)
+#include <QApplication>
+#include <QSettings>
 #include <QMessageBox>
 #endif
 
@@ -57,6 +59,60 @@ static bool Profile::*GetOption(UINT id) {
   }
   return nullptr;
 }
+
+#if defined(UI_QT)
+QString GetSelectedLocaleName() {
+  QSettings settings;
+
+  if (auto locale_name = settings.value("LocaleName").toString();
+      !locale_name.isEmpty()) {
+    return locale_name;
+  }
+
+  return QLocale::system().bcp47Name();
+}
+
+bool IsRussianLocale(QStringView locale_name) {
+  return locale_name.startsWith(u"ru", Qt::CaseInsensitive);
+}
+
+void SetLocaleName(std::string_view locale_name) {
+  QSettings settings;
+  settings.setValue("LocaleName", QString::fromStdString(std::string(locale_name)));
+}
+
+void ApplyLanguageSelection(const GlobalCommandContext& context,
+                            std::string_view locale_name) {
+  SetLocaleName(locale_name);
+  context.dialog_service
+      .RunMessageBox(
+          Translate("Restart the application to apply the new language now?"),
+          Translate("Language"), MessageBoxMode::QuestionYesNo)
+      .then([](MessageBoxResult result) {
+        if (result == MessageBoxResult::Yes) {
+          QApplication::quit();
+        }
+      });
+}
+
+BasicCommand<GlobalCommandContext> MakeLanguageCommand(
+    unsigned command_id,
+    std::u16string_view title,
+    std::string_view locale_name,
+    bool is_russian) {
+  return {
+      .command_id = command_id,
+      .title = std::u16string{title},
+      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
+      .execute_handler =
+          [locale_name](const GlobalCommandContext& context) {
+            ApplyLanguageSelection(context, locale_name);
+          },
+      .checked_handler = [is_russian](const GlobalCommandContext&) {
+        return IsRussianLocale(GetSelectedLocaleName()) == is_russian;
+      }};
+}
+#endif
 
 void OpenPublicFolder() {
   std::filesystem::path path;
@@ -119,6 +175,12 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
        .execute_handler = [](const GlobalCommandContext& context) {
          QMessageBox::aboutQt(context.dialog_service.GetParentWidget());
        }});
+
+  global_commands_.AddCommand(MakeLanguageCommand(
+      ID_LANGUAGE_ENGLISH, Translate("English"), "en", /*is_russian=*/false));
+  global_commands_.AddCommand(MakeLanguageCommand(
+      ID_LANGUAGE_RUSSIAN, Translate("Russian"), "ru_RU",
+      /*is_russian=*/true));
 #endif
 
 #if !defined(UI_WT)

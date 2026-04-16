@@ -125,6 +125,8 @@
 #define IDR_STRUCT_POPUP                201
 #define ID_GRAPH_COLOR                  201
 #define ID_GRAPH_BK_COLOR               4035
+#define ID_LANGUAGE_ENGLISH             4042
+#define ID_LANGUAGE_RUSSIAN             4043
 #define IDD_LOGIN                       202
 #define IDR_EVENT_POPUP                 202
 #define ID_EXPORT_EXCEL                 202

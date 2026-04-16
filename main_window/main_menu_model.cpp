@@ -337,6 +337,9 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
       window_list_menu_{context},
       trash_menu_{context},
       window_submenu_{this},
+#if defined(UI_QT)
+      language_submenu_{this},
+#endif
       settings_submenu_{this},
       help_submenu_{this} {
   Rebuild();
@@ -438,6 +441,11 @@ void MainMenuModel::Rebuild() {
   AddMenuCommands(settings_submenu_, commands_, MenuGroup::DISPLAY_SETTINGS);
 
 #if defined(UI_QT)
+  settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  language_submenu_.Clear();
+  language_submenu_.AddCheckItem(ID_LANGUAGE_ENGLISH, Translate("English"));
+  language_submenu_.AddCheckItem(ID_LANGUAGE_RUSSIAN, Translate("Russian"));
+  settings_submenu_.AddSubMenu(0, Translate("Language"), &language_submenu_);
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddSubMenu(0, Translate("Style"), &style_submenu_);
 #endif
