@@ -1,4 +1,24 @@
-%%{init: {'flowchart': {'htmlLabels': true}}}%%
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': 'transparent',
+    'primaryColor': '#1f2937',
+    'primaryBorderColor': '#93c5fd',
+    'primaryTextColor': '#f8fafc',
+    'secondaryColor': '#1f2937',
+    'secondaryBorderColor': '#93c5fd',
+    'secondaryTextColor': '#f8fafc',
+    'tertiaryColor': '#0f172a',
+    'tertiaryBorderColor': '#94a3b8',
+    'tertiaryTextColor': '#f8fafc',
+    'lineColor': '#cbd5e1',
+    'defaultLinkColor': '#cbd5e1',
+    'clusterBkg': '#111827',
+    'clusterBorder': '#94a3b8',
+    'titleColor': '#f8fafc'
+  },
+  'flowchart': {'htmlLabels': true}
+}}%%
 flowchart TB
     Core["<b>CoreModule</b><br/><i>core/</i><br/>tracer · registries ·<br/>progress host"]
 
@@ -33,9 +53,9 @@ flowchart TB
     Event -.->|local_events| Vidicon
     Fav -.->|profile| Modus
 
-    classDef root fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px
-    classDef orchestrator fill:#dcfce7,stroke:#166534,stroke-width:2px
-    classDef qtonly fill:#fef3c7,stroke:#b45309
+    classDef root fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px,color:#111827
+    classDef orchestrator fill:#dcfce7,stroke:#166534,stroke-width:2px,color:#111827
+    classDef qtonly fill:#fef3c7,stroke:#b45309,color:#111827
     class Core root
     class MW orchestrator
     class Modus,Vidicon qtonly

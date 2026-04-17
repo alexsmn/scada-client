@@ -1,3 +1,29 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': 'transparent',
+    'primaryTextColor': '#f8fafc',
+    'secondaryTextColor': '#f8fafc',
+    'tertiaryTextColor': '#f8fafc',
+    'lineColor': '#cbd5e1',
+    'signalColor': '#cbd5e1',
+    'signalTextColor': '#f8fafc',
+    'actorBorder': '#93c5fd',
+    'actorBkg': '#1f2937',
+    'actorTextColor': '#f8fafc',
+    'actorLineColor': '#94a3b8',
+    'labelBoxBkgColor': '#111827',
+    'labelBoxBorderColor': '#94a3b8',
+    'labelTextColor': '#f8fafc',
+    'loopTextColor': '#f8fafc',
+    'noteBorderColor': '#94a3b8',
+    'noteBkgColor': '#111827',
+    'noteTextColor': '#f8fafc',
+    'activationBorderColor': '#93c5fd',
+    'activationBkgColor': '#1e293b',
+    'sequenceNumberColor': '#111827'
+  }
+}}%%
 sequenceDiagram
     autonumber
     actor User
@@ -52,4 +78,3 @@ sequenceDiagram
     deactivate App
 
     Note over User,MW: After bootstrap the UI is live - events stream in via EventFetcher and values via the monitored-item subscription
-

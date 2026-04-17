@@ -1,4 +1,24 @@
-%%{init: {'flowchart': {'htmlLabels': true}}}%%
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'background': 'transparent',
+    'primaryColor': '#1f2937',
+    'primaryBorderColor': '#93c5fd',
+    'primaryTextColor': '#f8fafc',
+    'secondaryColor': '#1f2937',
+    'secondaryBorderColor': '#93c5fd',
+    'secondaryTextColor': '#f8fafc',
+    'tertiaryColor': '#0f172a',
+    'tertiaryBorderColor': '#94a3b8',
+    'tertiaryTextColor': '#f8fafc',
+    'lineColor': '#cbd5e1',
+    'defaultLinkColor': '#cbd5e1',
+    'clusterBkg': '#111827',
+    'clusterBorder': '#94a3b8',
+    'titleColor': '#f8fafc'
+  },
+  'flowchart': {'htmlLabels': true}
+}}%%
 flowchart LR
     Operator(("Operator"))
     Engineer(("Engineer"))
@@ -44,7 +64,7 @@ flowchart LR
     Engineer --> Config
     Admin --> Administration
 
-    classDef actor fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px
+    classDef actor fill:#dbeafe,stroke:#1e3a8a,stroke-width:2px,color:#111827
     class Operator,Engineer,Admin actor
-    classDef ucase fill:#f9fafb,stroke:#6b7280
+    classDef ucase fill:#f9fafb,stroke:#6b7280,color:#111827
     class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19 ucase
