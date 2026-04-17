@@ -63,7 +63,7 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `dialog_capture.{h,cpp}` | `CaptureDialog(spec, env)` — per-kind builders invoke the component's public `Execute…Dialog()` factory, which calls `show()` internally; we then find the visible dialog via `QApplication::topLevelWidgets()`, grab, and hide+reject. |
 | `fixture_builder.{h,cpp}` | `MakeScreenshotPage` (builds a `Page` with one window per `ScreenshotSpec`) and `MakeLocalTimedDataService` (populates a `FakeTimedDataService` from the fixture's `timed_data` array). |
 | `screenshot_data.json` | The fixture: nodes, tree, timed data, events, graph config, screenshot list, dialog list. |
-| `CMakeLists.txt` | Builds `client_screenshot_generator.exe`; links `client_qt_lib + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_lib`). |
+| `CMakeLists.txt` | Builds `client_screenshot_generator.exe`; links `client_qt_core + client_export_csv_qt + client_favorites_qt + client_main_window_qt + client_modus_qt + client_portfolio_qt + client_print_service_qt + client_properties_qt + client_vidicon_qt + scada_core_opcua + base_unittest + graph_qt` and compiles `client_application.{cpp,h}` directly (it's excluded from `client_qt_core`). |
 
 The docs refresh helper for the current rollout lives outside that
 tree at `cmake/update_screenshots.cmake`, driven by the

@@ -1,7 +1,7 @@
 # Offline screenshot generator: renders doc screenshots from a JSON
 # fixture. It should ride the same client-side dependency stack as the
 # real Qt application, plus the shared gtest runner used by the Qt test
-# binaries. `client_application.{cpp,h}` is excluded from `client_qt_lib`
+# binaries. `client_application.{cpp,h}` is excluded from `client_qt_core`
 # (see app/qt/CMakeLists.txt) so it's compiled in directly here — same
 # arrangement as the regular `client_qt` exe.
 
@@ -31,7 +31,16 @@ add_executable(client_screenshot_generator
 )
 
 target_link_libraries(client_screenshot_generator PRIVATE
-  client_qt_lib
+  client_qt_core
+  client_export_csv_qt
+  client_favorites_qt
+  client_main_window_qt
+  client_modus_qt
+  client_portfolio_qt
+  client_print_service_qt
+  client_properties_qt
+  client_vidicon_qt
+  scada_core_opcua
   base_unittest
   graph_qt
 )

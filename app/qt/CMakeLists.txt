@@ -54,11 +54,10 @@ client_qt_translations(client_qt_core
   "client_ru.ts"
 )
 
-# Full lib
+# Exe
 
-add_library(client_qt_lib INTERFACE)
-
-target_link_libraries(client_qt_lib INTERFACE
+add_executable(client_qt WIN32 ${MAIN_QT})
+target_link_libraries(client_qt PUBLIC
   client_qt_core
   client_export_csv_qt
   client_favorites_qt
@@ -67,14 +66,9 @@ target_link_libraries(client_qt_lib INTERFACE
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
-  scada_core_opcua
   client_vidicon_qt
+  scada_core_opcua
 )
-
-# Exe
-
-add_executable(client_qt WIN32 ${MAIN_QT})
-target_link_libraries(client_qt PUBLIC client_qt_lib)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
 if(COMMAND scada_add_windows_version_info)
   scada_add_windows_version_info(client_qt
@@ -123,7 +117,19 @@ install(TARGETS client_qt
 
 add_executable(client_qt_unittests ${UNITTESTS} ${UNITTESTS_QT})
 # Uses the custom runner from `test/qt/test_main_qt.cpp`.
-target_link_libraries(client_qt_unittests PRIVATE client_qt_lib base_unittest)
+target_link_libraries(client_qt_unittests PRIVATE
+  client_qt_core
+  client_export_csv_qt
+  client_favorites_qt
+  client_main_window_qt
+  client_modus_qt
+  client_portfolio_qt
+  client_print_service_qt
+  client_properties_qt
+  client_vidicon_qt
+  scada_core_opcua
+  base_unittest
+)
 include(GoogleTest)
 gtest_discover_tests(client_qt_unittests DISCOVERY_MODE PRE_TEST)
 
