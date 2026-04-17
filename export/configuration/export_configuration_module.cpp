@@ -1,6 +1,6 @@
 #include "export/configuration/export_configuration_module.h"
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "export/configuration/diff_report.h"

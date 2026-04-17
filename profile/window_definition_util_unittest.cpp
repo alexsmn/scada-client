@@ -1,7 +1,7 @@
 #include "window_definition_util.h"
 
 #include "base/json.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/controller_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"

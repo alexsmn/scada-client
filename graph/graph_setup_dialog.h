@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "aui/color.h"
 
 #include <algorithm>

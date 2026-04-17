@@ -22,7 +22,27 @@ class TaskManagerTest : public Test {
   virtual void SetUp() override;
 
  protected:
-  const std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  template <class T>
+  T Wait(promise<T> pending) {
+    using namespace std::chrono_literals;
+    while (pending.wait_for(1ms) == promise_wait_status::timeout) {
+      executor_->Advance(10ms);
+    }
+    executor_->Poll();
+    return pending.get();
+  }
+
+  void Wait(promise<void> pending) {
+    using namespace std::chrono_literals;
+    while (pending.wait_for(1ms) == promise_wait_status::timeout) {
+      executor_->Advance(10ms);
+    }
+    executor_->Poll();
+    pending.get();
+  }
+
+  const std::shared_ptr<TestExecutor> executor_ =
+      std::make_shared<TestExecutor>();
 
   StaticNodeService node_service_;
   scada::MockAttributeService attribute_service_;
@@ -63,13 +83,11 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
                                       {.added_node_id = added_node_id}}));
 
   const scada::NodeId node_id =
-      task_manager_
-          ->PostInsertTask(
-              // Provide the node ID similar to how it's provided on paste.
-              {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
-               .type_definition_id = type_def_id,
-               .parent_id = parent_id})
-          .get();
+      Wait(task_manager_->PostInsertTask(
+          // Provide the node ID similar to how it's provided on paste.
+          {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
+           .type_definition_id = type_def_id,
+           .parent_id = parent_id}));
 
   EXPECT_EQ(node_id, added_node_id);
 
@@ -94,11 +112,10 @@ TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
       .WillOnce(InvokeArgument<1>(scada::StatusCode::Bad,
                                   std::vector<scada::AddNodesResult>{}));
 
-  EXPECT_THROW(task_manager_
-                   ->PostInsertTask({.type_definition_id = type_def_id,
-                                     .parent_id = parent_id})
-                   .get(),
-               scada::status_exception);
+  EXPECT_THROW(
+      Wait(task_manager_->PostInsertTask({.type_definition_id = type_def_id,
+                                          .parent_id = parent_id})),
+      scada::status_exception);
 
   EXPECT_THAT(
       local_events_.events(),
@@ -110,10 +127,9 @@ TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
 TEST_F(TaskManagerTest, PostInsertTask_BadTypeDefId) {
   // Intentionally specify wrong type definition ID, so add node fails.
   EXPECT_THROW(
-      task_manager_
-          ->PostInsertTask({.type_definition_id = scada::id::References,
-                            .parent_id = data_items::id::DataItems})
-          .get(),
+      Wait(task_manager_->PostInsertTask(
+          {.type_definition_id = scada::id::References,
+           .parent_id = data_items::id::DataItems})),
       scada::status_exception);
 
   EXPECT_THAT(
@@ -133,7 +149,7 @@ TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {
       .WillOnce(InvokeArgument<1>(scada::StatusCode::Bad,
                                   std::vector<scada::StatusCode>{}));
 
-  EXPECT_THROW(task_manager_->PostDeleteTask(node_id).get(),
+  EXPECT_THROW(Wait(task_manager_->PostDeleteTask(node_id)),
                scada::status_exception);
 
   EXPECT_THAT(

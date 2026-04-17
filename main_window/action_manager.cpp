@@ -1,7 +1,7 @@
 ﻿#include "main_window/action_manager.h"
 
 #include "aui/translation.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "main_window/action.h"
 
 GroupedActions GroupCommands(ActionManager& action_manager,

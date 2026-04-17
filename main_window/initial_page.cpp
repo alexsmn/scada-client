@@ -1,6 +1,6 @@
 #include "main_window/initial_page.h"
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/window_info.h"
 
 Page CreateInitialPage() {

@@ -1,7 +1,7 @@
 #include "configuration_commands.h"
 
 #include "base/u16format.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/limits/limit_dialog.h"
 #include "components/write/write_dialog.h"
 #include "controller/command_registry.h"

@@ -2,7 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/u16format.h"
-#include "client_utils.h"
+#include "ui/common/client_utils.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
 #include "events/local_events.h"

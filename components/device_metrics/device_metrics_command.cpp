@@ -1,9 +1,9 @@
 #include "components/device_metrics/device_metrics_command.h"
 
 #include "aui/color.h"
-#include "client_utils.h"
+#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/device_metrics/node_collector.h"
 #include "components/sheet/sheet_component.h"
 #include "controller/window_info.h"

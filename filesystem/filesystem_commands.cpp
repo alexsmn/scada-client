@@ -4,7 +4,7 @@
 #include "aui/translation.h"
 #include "aui/prompt_dialog.h"
 #include "base/promise_executor.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_manager.h"

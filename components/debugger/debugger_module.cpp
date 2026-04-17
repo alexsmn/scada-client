@@ -7,7 +7,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include "base/utf_convert.h"
 #include "base/win/clipboard.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/debugger/debug_switch.h"
 #include "controller/command_registry.h"
 #include "controller/selection_model.h"

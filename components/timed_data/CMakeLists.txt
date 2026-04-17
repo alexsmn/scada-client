@@ -1,0 +1,8 @@
+client_component_module(client_component_timed_data)
+
+target_link_libraries(client_component_timed_data_qt_unittests PRIVATE
+  timed_data
+)
+target_link_libraries(client_component_timed_data_wt_unittests PRIVATE
+  timed_data
+)

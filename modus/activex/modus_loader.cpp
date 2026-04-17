@@ -7,7 +7,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include "base/utf_convert.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache_updater.h"
 #include "filesystem/file_util.h"

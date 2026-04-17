@@ -1,9 +1,14 @@
 #include "client_application.h"
 
+#include "address_space/address_space_impl3.h"
+#include "address_space/address_space_util.h"
+#include "address_space/node_utils.h"
+#include "address_space/object.h"
+#include "address_space/variable.h"
+#include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
-#include "base/test/test_executor.h"
 #include "controller/controller_registry.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -13,13 +18,19 @@
 #include "scada/monitoring_parameters.h"
 #include "scada/read_value_id.h"
 #include "scada/services_mock.h"
+#include "node_service/v1/test/test_node_service.h"
 #include "services/task_manager.h"
+#include "timed_data/base_timed_data.h"
 #include "timed_data/timed_data_service.h"
 #include "timed_data/timed_data_spec.h"
 
 #include <boost/asio/io_context.hpp>
 #include <gmock/gmock.h>
+#include <QApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
 
+#include <optional>
 #include <vector>
 
 using namespace ::testing;
@@ -43,6 +54,64 @@ Page MakeKnownWindowsPage() {
   return page;
 }
 
+std::shared_ptr<NodeService> MakeClientTestNodeService(
+    AddressSpaceImpl3& address_space) {
+  address_space.AddStaticNode<scada::GenericVariable>(
+      scada::NodeId{1, 1},
+      "TestNode",
+      u"TestNode",
+      scada::AsDataType(*address_space.GetNode(scada::id::String)));
+  scada::AddReference(address_space,
+                      scada::id::HasTypeDefinition,
+                      scada::NodeId{1, 1},
+                      scada::id::BaseVariableType);
+  scada::AddReference(address_space,
+                      scada::id::Organizes,
+                      scada::id::ObjectsFolder,
+                      scada::NodeId{1, 1});
+  return v1::CreateTestNodeService(address_space);
+}
+
+ClientApplicationModuleConfigurator MakeUnitTestModules() {
+  auto modules = ClientApplicationModules{};
+  modules.modus = false;
+  modules.vidicon = false;
+  return MakeDefaultClientApplicationModules(modules);
+}
+
+class FixedValueTimedData final : public BaseTimedData {
+ public:
+  explicit FixedValueTimedData(scada::DataValue value) {
+    UpdateCurrent(value);
+  }
+
+  std::string GetFormula(bool aliases) const override { return "fixed"; }
+  scada::LocalizedText GetTitle() const override { return u"fixed"; }
+};
+
+class FixedValueTimedDataService final : public TimedDataService {
+ public:
+  FixedValueTimedDataService(scada::NodeId node_id, scada::DataValue value)
+      : node_id_{std::move(node_id)},
+        timed_data_{std::make_shared<FixedValueTimedData>(std::move(value))} {}
+
+  std::shared_ptr<TimedData> GetNodeTimedData(
+      const scada::NodeId& node_id,
+      const scada::AggregateFilter& aggregation) override {
+    return node_id == node_id_ ? timed_data_ : nullptr;
+  }
+
+  std::shared_ptr<TimedData> GetFormulaTimedData(
+      std::string_view formula,
+      const scada::AggregateFilter& aggregation) override {
+    return nullptr;
+  }
+
+ private:
+  const scada::NodeId node_id_;
+  const std::shared_ptr<TimedData> timed_data_;
+};
+
 }  // namespace
 
 class ClientApplicationTest : public Test {
@@ -51,9 +120,50 @@ class ClientApplicationTest : public Test {
   ~ClientApplicationTest();
 
  protected:
+  template <class T>
+  T Wait(promise<T> pending) {
+    std::optional<T> result;
+    std::move(pending).then([&](T value) { result = std::move(value); });
+    while (!result) {
+      io_context_.poll();
+      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    return std::move(*result);
+  }
+
+  void Wait(promise<void> pending) {
+    bool done = false;
+    std::move(pending).then([&] { done = true; });
+    while (!done) {
+      io_context_.poll();
+      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+  }
+
+  void StartApp() {
+    Wait(app_.Start());
+  }
+
+  template <class Predicate>
+  bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
+    QElapsedTimer timer;
+    timer.start();
+    while (!predicate()) {
+      if (timer.elapsed() >= timeout_ms) {
+        return false;
+      }
+      io_context_.poll();
+      QApplication::processEvents(QEventLoop::AllEvents, 50);
+    }
+    return true;
+  }
+
   boost::asio::io_context io_context_;
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
+  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
+  AddressSpaceImpl3 address_space_;
+  std::shared_ptr<NodeService> node_service_override_ =
+      MakeClientTestNodeService(address_space_);
   scada::MockServices services_;
 
   base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
@@ -65,7 +175,9 @@ class ClientApplicationTest : public Test {
   ClientApplication app_{ClientApplicationContext{
       .io_context_ = io_context_,
       .executor_ = executor_,
-      .login_handler_ = login_handler_.AsStdFunction()}};
+      .login_handler_ = login_handler_.AsStdFunction(),
+      .node_service_override_ = node_service_override_,
+      .module_configurator_ = MakeUnitTestModules()}};
 };
 
 ClientApplicationTest::ClientApplicationTest() {
@@ -77,7 +189,7 @@ ClientApplicationTest::ClientApplicationTest() {
 }
 
 ClientApplicationTest::~ClientApplicationTest() {
-  app_.Quit().get();
+  Wait(app_.Quit());
 }
 
 // ShutdownStack is the teardown-callback utility used by ClientApplication.
@@ -115,20 +227,22 @@ TEST_F(ClientApplicationTest, LoginFailed) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
       .WillOnce(Return(make_resolved_promise(std::optional<DataServices>{})));
 
-  EXPECT_THROW(app_.Start().get(), LoginCanceled);
+  auto started = app_.Start();
+  EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
 }
 
 TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
       .WillOnce(Return(make_resolved_promise(std::optional<DataServices>{})));
 
-  EXPECT_THROW(app_.Start().get(), LoginCanceled);
-  EXPECT_NO_THROW(app_.Quit().get());
+  auto started = app_.Start();
+  EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
+  EXPECT_NO_THROW(Wait(app_.Quit()));
 }
 
 // Ensure that the initial page is created and all windows are defined.
 TEST_F(ClientApplicationTest, RunWithNewProfile) {
-  app_.Start().get();
+  StartApp();
 }
 
 // Ensure that the initial page is created and all windows are defined.
@@ -139,7 +253,7 @@ TEST_F(ClientApplicationTest, OpensKnownWindows) {
     profile.Save();
   }
 
-  app_.Start().get();
+  StartApp();
 
   const auto& main_windows = app_.main_window_manager().main_windows();
   ASSERT_THAT(main_windows, SizeIs(1));
@@ -154,10 +268,6 @@ TEST_F(ClientApplicationTest, OpensKnownWindows) {
 // Ensures that Modus displays show the actual server data when the application
 // starts.
 TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
-  app_.Start().get();
-
-  // ACT
-
   auto node_id = scada::NodeId{1, 1};
   auto initial_timestamp = scada::DateTime::Now();
   auto initial_data_value =
@@ -165,27 +275,24 @@ TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
                        /*source_timestamp=*/initial_timestamp,
                        /*server_timestamp=*/initial_timestamp};
 
-  auto monitored_item =
-      std::make_shared<StrictMock<scada::MockMonitoredItem>>();
+  ClientApplication app{ClientApplicationContext{
+      .io_context_ = io_context_,
+      .executor_ = executor_,
+      .login_handler_ = login_handler_.AsStdFunction(),
+      .timed_data_service_override_ =
+          std::make_unique<FixedValueTimedDataService>(node_id,
+                                                       initial_data_value),
+      .node_service_override_ = node_service_override_,
+      .module_configurator_ = MakeUnitTestModules()}};
 
-  EXPECT_CALL(
-      services_.monitored_item_service,
-      CreateMonitoredItem(
-          /*read_value_id=*/FieldsAre(node_id, scada::AttributeId::Value),
-          /*monitoring_params=*/Property(&scada::MonitoringParameters::is_null,
-                                         IsTrue())))
-      .WillOnce(Return(monitored_item));
-
-  EXPECT_CALL(*monitored_item, Subscribe(/*handler=*/_))
-      .WillOnce(
-          [initial_data_value](const scada::MonitoredItemHandler& handler) {
-            // Set the initial value upon subscription.
-            std::get<scada::DataChangeHandler>(handler)(initial_data_value);
-          });
+  Wait(app.Start());
 
   TimedDataSpec timed_data;
-  timed_data.Connect(app_.timed_data_service(), node_id);
+  timed_data.Connect(app.timed_data_service(), node_id);
+  ASSERT_TRUE(WaitUntil([&] { return timed_data.current() == initial_data_value; }));
   EXPECT_EQ(timed_data.current(), initial_data_value);
+
+  Wait(app.Quit());
 }
 
 // Constructs its own `ClientApplication` so individual tests can inject a
@@ -200,9 +307,32 @@ class ClientApplicationConfiguratorTest : public Test {
   }
 
  protected:
+  template <class T>
+  T Wait(promise<T> pending) {
+    std::optional<T> result;
+    std::move(pending).then([&](T value) { result = std::move(value); });
+    while (!result) {
+      io_context_.poll();
+      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    return std::move(*result);
+  }
+
+  void Wait(promise<void> pending) {
+    bool done = false;
+    std::move(pending).then([&] { done = true; });
+    while (!done) {
+      io_context_.poll();
+      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+  }
+
   boost::asio::io_context io_context_;
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
   AppEnvironment app_env_;
+  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
+  AddressSpaceImpl3 address_space_;
+  std::shared_ptr<NodeService> node_service_override_ =
+      MakeClientTestNodeService(address_space_);
   scada::MockServices services_;
   base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
   NiceMock<MockFunction<promise<std::optional<DataServices>>(
@@ -224,9 +354,8 @@ TEST_F(ClientApplicationConfiguratorTest,
   ControllerRegistry* captured_controller_registry = nullptr;
   Executor* captured_executor = nullptr;
 
-  auto default_configurator = MakeDefaultClientApplicationModules();
   auto capturing_configurator =
-      [&, default_configurator = std::move(default_configurator)](
+      [&, default_configurator = MakeUnitTestModules()](
           ClientApplicationModuleContext& ctx) {
         called = true;
         captured_profile = &ctx.profile_;
@@ -242,10 +371,11 @@ TEST_F(ClientApplicationConfiguratorTest,
       .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ = login_handler_.AsStdFunction(),
+      .node_service_override_ = node_service_override_,
       .module_configurator_ = std::move(capturing_configurator),
   }};
 
-  app.Start().get();
+  Wait(app.Start());
 
   EXPECT_TRUE(called);
   EXPECT_EQ(captured_profile, &app.profile());
@@ -255,7 +385,7 @@ TEST_F(ClientApplicationConfiguratorTest,
   EXPECT_NE(captured_node_service, nullptr);
   EXPECT_NE(captured_task_manager, nullptr);
 
-  app.Quit().get();
+  Wait(app.Quit());
 }
 
 #endif

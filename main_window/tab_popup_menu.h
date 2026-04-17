@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/models/simple_menu_model.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "main_window/simple_menu_command_handler.h"
 
 class TabPopupMenu : public aui::SimpleMenuModel {

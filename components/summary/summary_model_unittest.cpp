@@ -2,7 +2,7 @@
 
 #include "base/test/test_time.h"
 #include "common/aggregation.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/summary/summary_component.h"
 #include "controller/window_info.h"
 #include "node_service/node_service_mock.h"

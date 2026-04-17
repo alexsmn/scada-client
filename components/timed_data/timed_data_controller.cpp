@@ -6,7 +6,7 @@
 #include "base/time/default_clock.h"
 #include "base/win/win_util2.h"
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
 #include "model/scada_node_ids.h"
@@ -14,7 +14,7 @@
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "profile/window_definition_util.h"
-#include "string_const.h"
+#include "app/string_const.h"
 
 #if defined(UI_QT)
 #include <QHeaderView>

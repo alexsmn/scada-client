@@ -1,7 +1,7 @@
 #include "main_window/event_dispatcher.h"
 
 #include "base/executor.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
 #include "main_window/action_manager.h"

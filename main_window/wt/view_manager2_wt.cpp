@@ -1,7 +1,7 @@
 #include "main_window/wt/view_manager2_wt.h"
 
 #include "base/auto_reset.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"

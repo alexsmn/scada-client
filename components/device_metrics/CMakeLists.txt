@@ -1,0 +1,19 @@
+client_component_module(client_component_device_metrics)
+
+target_link_libraries(client_component_device_metrics_qt PRIVATE
+  client_component_sheet_qt
+  client_ui_common_qt
+  node_service_v1
+)
+target_link_libraries(client_component_device_metrics_wt PRIVATE
+  client_component_sheet_wt
+  client_ui_common_wt
+  node_service_v1
+)
+
+target_link_libraries(client_component_device_metrics_qt_unittests PRIVATE
+  address_space
+)
+target_link_libraries(client_component_device_metrics_wt_unittests PRIVATE
+  address_space
+)

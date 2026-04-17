@@ -2,7 +2,7 @@
 
 #include "aui/translation.h"
 #include "base/utf_convert.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/command_handler.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"

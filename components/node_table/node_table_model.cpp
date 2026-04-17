@@ -14,7 +14,7 @@
 #include "properties/property_definition.h"
 #include "properties/property_service.h"
 #include "services/task_manager.h"
-#include "string_const.h"
+#include "app/string_const.h"
 
 #include <boost/range/adaptor/transformed.hpp>
 

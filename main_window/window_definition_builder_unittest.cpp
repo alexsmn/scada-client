@@ -1,7 +1,7 @@
 ﻿#include "window_definition_builder.h"
 
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/open_context.h"
 #include "controller/window_info.h"
 #include "node_service/node_model_mock.h"

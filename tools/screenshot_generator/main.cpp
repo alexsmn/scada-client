@@ -2,6 +2,7 @@
 #include "fixture_builder.h"
 #include "graph_capture.h"
 #include "screenshot_config.h"
+#include "screenshot_modules.h"
 #include "screenshot_options.h"
 #include "screenshot_output.h"
 #include "widget_capture.h"
@@ -20,7 +21,6 @@
 #include "aui/test/app_environment.h"
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
-#include "configuration/configuration_module.h"
 #include "aui/translation.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
@@ -28,7 +28,6 @@
 #include "main_window/opened_view.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
-#include "node_service_progress_tracker.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
 
@@ -71,19 +70,6 @@ inline void WaitForPromise(promise<void> p) {
   std::move(p).then([&] { done = true; });
   while (!done)
     QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-}
-
-ClientApplicationModuleConfigurator MakeScreenshotModules() {
-  return [](ClientApplicationModuleContext& context) {
-    context.singletons_.emplace(std::make_shared<ConfigurationModule>(
-        ConfigurationModuleContext{
-            .controller_registry_ = context.controller_registry_,
-            .profile_ = context.profile_,
-            .node_service_tree_factory_ = context.node_service_tree_factory_}));
-
-    context.singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
-        context.executor_, context.node_service_, context.progress_host_));
-  };
 }
 
 template <class Predicate>

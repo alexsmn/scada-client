@@ -2,7 +2,7 @@
 
 #include "aui/qt/client_utils_qt.h"
 #include "base/auto_reset.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/window_info.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager_delegate.h"

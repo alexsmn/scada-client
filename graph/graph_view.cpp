@@ -1,7 +1,7 @@
 ﻿#include "graph/graph_view.h"
 
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/time_range/time_range_dialog.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"

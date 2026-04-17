@@ -5,7 +5,7 @@
 #include "base/program_options.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/debugger/debug_switch.h"
 #include "components/sheet/sheet_component.h"
 #include "components/table/table_component.h"

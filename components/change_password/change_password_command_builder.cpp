@@ -1,6 +1,6 @@
 #include "change_password_command_builder.h"
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/change_password/change_password_dialog.h"
 #include "controller/selection_model.h"
 #include "model/security_node_ids.h"

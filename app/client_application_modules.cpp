@@ -4,8 +4,7 @@
 #include "configuration/configuration_module.h"
 #include "export/configuration/export_configuration_module.h"
 #include "filesystem/filesystem_component.h"
-#include "main_window/main_window_module.h"
-#include "node_service_progress_tracker.h"
+#include "services/ui/node_service_progress_tracker.h"
 #include "app/opcua_services_module.h"
 #include "print/service/print_module.h"
 

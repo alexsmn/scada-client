@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
 
 project(scada-client
   VERSION 2.5.6
@@ -60,7 +63,6 @@ add_subdirectory(configuration)
 add_subdirectory(graph)
 add_subdirectory(export)
 add_subdirectory(test)
-add_subdirectory(main_window)
 
 file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.cpp"
@@ -74,6 +76,7 @@ list(FILTER PATHS EXCLUDE REGEX "/client/app/")
 list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/client/base/")
 list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
+list(FILTER PATHS EXCLUDE REGEX "/client/components/")
 list(FILTER PATHS EXCLUDE REGEX "/client/configuration/")
 list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
 list(FILTER PATHS EXCLUDE REGEX "/client/core/")
@@ -116,6 +119,41 @@ foreach(PATH ${PATHS})
   ENDIF()
 endforeach()
 
+set(CLIENT_COMPONENTS
+  about
+  change_password
+  create_service_item
+  debugger
+  device_metrics
+  limits
+  login
+  multi_create
+  node_properties
+  node_table
+  select_item
+  sheet
+  summary
+  table
+  time_range
+  timed_data
+  transmission
+  watch
+  web
+  write
+)
+
+set(CLIENT_COMPONENT_MODULES)
+set(CLIENT_QT_COMPONENT_TARGETS)
+set(CLIENT_WT_COMPONENT_TARGETS)
+foreach(component_name IN LISTS CLIENT_COMPONENTS)
+  list(APPEND CLIENT_COMPONENT_MODULES client_component_${component_name})
+  list(APPEND CLIENT_QT_COMPONENT_TARGETS client_component_${component_name}_qt)
+  if(NOT component_name STREQUAL "web")
+    list(APPEND CLIENT_WT_COMPONENT_TARGETS client_component_${component_name}_wt)
+  endif()
+endforeach()
+
 add_subdirectory(components)
+add_subdirectory(main_window)
 add_subdirectory(app)
 add_subdirectory(tools)

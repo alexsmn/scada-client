@@ -1,5 +1,3 @@
-#define _SILENCE_CXX20_CODECVT_FACETS_DEPRECATION_WARNING
-
 #include "export/configuration/diff_report.h"
 
 #include "aui/resource_error.h"
@@ -15,6 +13,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 
 using u16ostream = std::basic_ostream<char16_t>;
 
@@ -142,8 +141,14 @@ void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
 
   auto report_path = temp_dir / "report.txt";
 
-  std::basic_ofstream<char16_t> report{report_path};
+  std::basic_ostringstream<char16_t> report;
   PrintDiffReport(report, diff, node_service);
+
+  std::ofstream report_file{report_path, std::ios::binary};
+  constexpr char kUtf8Bom[] = "\xEF\xBB\xBF";
+  report_file.write(kUtf8Bom, sizeof(kUtf8Bom) - 1);
+  auto utf8_report = UtfConvert<char>(report.str());
+  report_file << utf8_report;
 
   OpenNotepad(report_path);
 }

@@ -2,7 +2,7 @@
 
 #include "aui/key_codes.h"
 #include "aui/translation.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "main_window/action.h"
 #include "main_window/action_manager.h"
 #include "model/data_items_node_ids.h"

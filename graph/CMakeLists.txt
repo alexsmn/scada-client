@@ -9,5 +9,7 @@ client_module_link_libraries(client_graph PRIVATE
 )
 
 target_link_libraries(client_graph_qt_unittests PRIVATE
+  aui_qt
   client_controller_test_qt
+  graph_qt
 )

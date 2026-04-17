@@ -3,7 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/qt/client_utils_qt.h"
 #include "aui/qt/dialog_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "project.h"
 #include "ui_about_dialog.h"
 

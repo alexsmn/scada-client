@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "configuration/devices/hardware_tree_model.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_view.h"

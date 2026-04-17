@@ -3,7 +3,7 @@
 #include "aui/grid.h"
 #include "aui/translation.h"
 #include "aui/models/header_model.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/transmission/transmission_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_service.h"

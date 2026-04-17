@@ -1,6 +1,6 @@
 #include "node_debug_info.h"
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/selection_model.h"
 #include "model/node_id_util.h"
 #include "node_service/node_ref.h"

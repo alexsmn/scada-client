@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/window_info.h"
 
 // Used directly by Modus controller.

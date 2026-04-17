@@ -1,12 +1,12 @@
 # Offline screenshot generator: renders doc screenshots from a JSON
 # fixture. It should ride the same client-side dependency stack as the
 # real Qt application, plus the shared gtest runner used by the Qt test
-# binaries. `client_application.{cpp,h}` is excluded from `client_qt_core`
-# (see app/qt/CMakeLists.txt) so it's compiled in directly here — same
-# arrangement as the regular `client_qt` exe.
+# binaries. `client_application.{cpp,h}` is excluded from the reusable
+# base-owned helper target, so it and the shared app-support wiring are
+# compiled in directly here — same arrangement as the regular `client_qt` exe.
 
 file(GLOB SCREENSHOT_GENERATOR_WIN32_RESOURCES CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../*.rc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/*.rc"
 )
 
 add_executable(client_screenshot_generator
@@ -17,6 +17,8 @@ add_executable(client_screenshot_generator
   "screenshot_options.h"
   "screenshot_output.cpp"
   "screenshot_output.h"
+  "screenshot_modules.cpp"
+  "screenshot_modules.h"
   "widget_capture.cpp"
   "widget_capture.h"
   "graph_capture.cpp"
@@ -26,12 +28,26 @@ add_executable(client_screenshot_generator
   "fixture_builder.cpp"
   "fixture_builder.h"
   ${SCREENSHOT_GENERATOR_WIN32_RESOURCES}
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/opcua_services_module.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/opcua_services_module.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.h"
 )
 
 target_link_libraries(client_screenshot_generator PRIVATE
-  client_qt_core
+  aui_qt
+  client_common
+  client_configuration_qt
+  client_controller_qt
+  client_events_qt
+  client_export_configuration_qt
+  client_graph_qt
+  client_profile_qt
+  client_services_qt
+  ${CLIENT_QT_COMPONENT_TARGETS}
+  client_ui_common_qt
+  client_ui_dragdrop_qt
+  client_ui_progress_qt
   client_export_csv_qt
   client_favorites_qt
   client_main_window_qt

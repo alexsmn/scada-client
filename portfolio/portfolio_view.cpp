@@ -1,7 +1,7 @@
 ﻿#include "portfolio/portfolio_view.h"
 
 #include "aui/tree.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/select_item/select_item_dialog.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"

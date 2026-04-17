@@ -1,7 +1,7 @@
 #include "main_window/page_commands.h"
 
 #include "aui/prompt_dialog.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "main_window/initial_page.h"

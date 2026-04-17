@@ -3,6 +3,15 @@
     [CONFIG qt wt ...]
   )
 ]]
+function(client_target_use_base_pch TARGET_NAME)
+  if(TARGET ${TARGET_NAME} AND TARGET scada_base)
+    get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
+    if(NOT TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
+      target_precompile_headers(${TARGET_NAME} REUSE_FROM scada_base)
+    endif()
+  endif()
+endfunction()
+
 function(client_module MODULE_NAME)
   cmake_parse_arguments(ARG "" "" "CONFIG" ${ARGN})
 
@@ -13,6 +22,7 @@ function(client_module MODULE_NAME)
   foreach(CONFIG ${ARG_CONFIG})
     scada_module(${MODULE_NAME}_${CONFIG})
     scada_module_sources(${MODULE_NAME}_${CONFIG} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/${CONFIG}")
+    client_target_use_base_pch(${MODULE_NAME}_${CONFIG})
 
     if(CONFIG STREQUAL "qt")
       set_target_properties(${MODULE_NAME}_${CONFIG} PROPERTIES

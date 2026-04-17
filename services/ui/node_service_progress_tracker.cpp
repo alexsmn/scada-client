@@ -1,4 +1,4 @@
-#include "node_service_progress_tracker.h"
+#include "services/ui/node_service_progress_tracker.h"
 
 #include "core/progress_host.h"
 #include "node_service/node_service.h"

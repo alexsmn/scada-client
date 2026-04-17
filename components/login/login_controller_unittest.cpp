@@ -3,6 +3,7 @@
 #include "aui/dialog_service_mock.h"
 #include "base/memory_settings_store.h"
 #include "base/test/test_executor.h"
+#include "scada/data_services_factory.h"
 
 #include <gmock/gmock.h>
 #include <transport/transport_factory.h>
@@ -23,6 +24,17 @@ class NullTransportFactory final : public transport::TransportFactory {
     return transport::ERR_NOT_IMPLEMENTED;
   }
 };
+
+bool CreateScadaStubDataServices(const DataServicesContext&, DataServices&) {
+  return true;
+}
+
+bool CreateVidiconStubDataServices(const DataServicesContext&, DataServices&) {
+  return true;
+}
+
+REGISTER_DATA_SERVICES("Scada", u"Telecontrol", CreateScadaStubDataServices, "");
+REGISTER_DATA_SERVICES("Vidicon", u"Vidicon", CreateVidiconStubDataServices, "");
 
 class TestLoginController : public LoginController {
  public:

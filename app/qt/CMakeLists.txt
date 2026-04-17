@@ -2,7 +2,7 @@
 cmake_policy(SET CMP0020 NEW)
 
 file(GLOB MAIN_QT CONFIGURE_DEPENDS
-  "../../*.rc"
+  "../*.rc"
   "../../res/client.qrc"
   "../client_application.cpp"
   "../client_application.h"
@@ -14,31 +14,18 @@ file(GLOB MAIN_QT CONFIGURE_DEPENDS
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 
-# Core lib
-
-set(COMPONENTS ${SOURCES} ${SOURCES_QT})
-list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
-list(REMOVE_ITEM SOURCES ${COMPONENTS})
-list(REMOVE_ITEM SOURCES_QT ${COMPONENTS})
-
-add_library(client_qt_core
-  ${SOURCES}
-  ${SOURCES_QT}
+set(CLIENT_QT_APP_SUPPORT
   "../client_application_modules.cpp"
   "../client_application_modules.h"
   "../opcua_services_module.cpp"
   "../opcua_services_module.h"
 )
 
-target_sources(client_qt_core INTERFACE ${COMPONENTS})
+# Exe
 
-set_target_properties(client_qt_core PROPERTIES
-  AUTOMOC ON
-  AUTOUIC ON
-  AUTORCC ON
-)
-
-target_link_libraries(client_qt_core PUBLIC
+add_executable(client_qt WIN32 ${MAIN_QT} ${CLIENT_QT_APP_SUPPORT})
+target_precompile_headers(client_qt REUSE_FROM scada_base)
+target_link_libraries(client_qt PUBLIC
   aui_qt
   client_common
   client_configuration_qt
@@ -48,17 +35,10 @@ target_link_libraries(client_qt_core PUBLIC
   client_graph_qt
   client_profile_qt
   client_services_qt
-)
-
-client_qt_translations(client_qt_core
-  "client_ru.ts"
-)
-
-# Exe
-
-add_executable(client_qt WIN32 ${MAIN_QT})
-target_link_libraries(client_qt PUBLIC
-  client_qt_core
+  ${CLIENT_QT_COMPONENT_TARGETS}
+  client_ui_common_qt
+  client_ui_dragdrop_qt
+  client_ui_progress_qt
   client_export_csv_qt
   client_favorites_qt
   client_main_window_qt
@@ -115,10 +95,34 @@ install(TARGETS client_qt
 
 # UT-s
 
-add_executable(client_qt_unittests ${UNITTESTS} ${UNITTESTS_QT})
+add_executable(client_qt_unittests
+  ${UNITTESTS}
+  ${UNITTESTS_QT}
+  ${CLIENT_QT_APP_SUPPORT}
+)
+target_precompile_headers(client_qt_unittests REUSE_FROM scada_base)
+if(MSVC)
+  target_link_options(client_qt_unittests PRIVATE
+    "$<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>"
+    "$<$<CONFIG:RelWithDebInfo>:/INCREMENTAL:NO>"
+    "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
+  )
+endif()
 # Uses the custom runner from `test/qt/test_main_qt.cpp`.
 target_link_libraries(client_qt_unittests PRIVATE
-  client_qt_core
+  aui_qt
+  client_common
+  client_configuration_qt
+  client_controller_qt
+  client_events_qt
+  client_export_configuration_qt
+  client_graph_qt
+  client_profile_qt
+  client_services_qt
+  ${CLIENT_QT_COMPONENT_TARGETS}
+  client_ui_common_qt
+  client_ui_dragdrop_qt
+  client_ui_progress_qt
   client_export_csv_qt
   client_favorites_qt
   client_main_window_qt

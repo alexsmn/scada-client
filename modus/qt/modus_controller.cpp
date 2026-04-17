@@ -3,7 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/u16format.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/web/web_component.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"

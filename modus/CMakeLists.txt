@@ -36,6 +36,7 @@ target_link_libraries(client_modus_qt PRIVATE
 # UTs
 
 target_link_libraries(client_modus_qt_unittests PRIVATE
+  aui_qt
   client_filesystem_qt
 )
 

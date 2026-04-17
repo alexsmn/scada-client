@@ -1,4 +1,4 @@
-﻿#define _SILENCE_CXX20_CODECVT_FACETS_DEPRECATION_WARNING
+﻿
 
 #include "export/configuration/excel_configuration_commands.h"
 

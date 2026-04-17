@@ -2,8 +2,8 @@
 
 #include "aui/grid.h"
 #include "aui/models/header_model.h"
-#include "client_utils.h"
-#include "common_resources.h"
+#include "ui/common/client_utils.h"
+#include "resources/common_resources.h"
 #include "components/node_table/node_table_model.h"
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"

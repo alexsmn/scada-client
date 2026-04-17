@@ -1,6 +1,6 @@
 ﻿#include "configuration/tree/configuration_tree_view.h"
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "configuration/tree/node_service_tree_impl.h"

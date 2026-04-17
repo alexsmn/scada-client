@@ -4,7 +4,7 @@
 #include "aui/translation.h"
 #include "aui/prompt_dialog.h"
 #include "aui/tree.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/controller_delegate.h"
 #include "favorites/favourites.h"
 #include "favorites/favourites_tree_model.h"

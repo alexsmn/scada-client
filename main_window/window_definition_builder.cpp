@@ -2,9 +2,9 @@
 
 #include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "client_utils.h"
+#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/table/table_component.h"
 #include "controller/controller.h"
 #include "controller/window_info.h"

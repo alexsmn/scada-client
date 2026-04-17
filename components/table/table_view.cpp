@@ -3,9 +3,9 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/table.h"
-#include "client_utils.h"
+#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/table/table_model.h"
 #include "components/table/table_row.h"
 #include "controller/contents_observer.h"
@@ -16,7 +16,7 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "string_const.h"
+#include "app/string_const.h"
 
 // TableView
 

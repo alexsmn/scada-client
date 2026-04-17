@@ -1,4 +1,4 @@
-﻿#include "client_utils.h"
+﻿#include "ui/common/client_utils.h"
 
 #include "aui/translation.h"
 #include "base/format_time.h"
@@ -6,9 +6,9 @@
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "base/win/clipboard.h"
-#include "client_utils.h"
+#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "events/event_set.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"

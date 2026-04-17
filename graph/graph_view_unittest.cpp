@@ -1,7 +1,7 @@
 #include "graph/graph_view.h"
 
 #include "aui/test/app_environment.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/test/controller_environment.h"
 #include "graph/metrix_graph.h"
 #include "timed_data/timed_data_service_fake.h"

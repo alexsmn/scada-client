@@ -1,7 +1,7 @@
 ﻿#include "vidicon/display/native/qt/vidicon_display_native_view.h"
 
 #include "aui/dialog_service.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/write/write_service.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"

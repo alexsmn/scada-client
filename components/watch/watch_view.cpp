@@ -4,7 +4,7 @@
 #include "aui/translation.h"
 #include "aui/table.h"
 #include "base/u16format.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "components/watch/watch_model.h"
 #include "components/watch/watch_model_builder.h"
 #include "controller/controller_delegate.h"

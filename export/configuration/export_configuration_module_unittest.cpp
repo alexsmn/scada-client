@@ -4,7 +4,7 @@
 #include "aui/dialog_service_mock.h"
 #include "base/csv_writer.h"
 #include "common/test/node_state_matcher.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "diff_data.h"

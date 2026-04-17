@@ -1,7 +1,7 @@
 ﻿#include "configuration/objects/object_tree_view.h"
 
 #include "aui/tree.h"
-#include "client_utils.h"
+#include "ui/common/client_utils.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/objects/object_tree_model.h"
 #include "controller/contents_model.h"

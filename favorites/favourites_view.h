@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/promise.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"

@@ -3,7 +3,7 @@
 #include "aui/color.h"
 #include "aui/rect.h"
 #include "base/time/time.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "profile/page.h"
 #include "scada/node_id.h"
 

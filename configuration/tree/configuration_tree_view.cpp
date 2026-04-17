@@ -1,11 +1,11 @@
 ﻿#include "configuration/tree/configuration_tree_view.h"
 
 #include "aui/tree.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "configuration/tree/configuration_tree_drop_handler.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "controller/controller_delegate.h"
-#include "item_drag_data.h"
+#include "aui/dragdrop/item_drag_data.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition.h"
 

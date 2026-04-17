@@ -7,7 +7,7 @@
 #include "properties/property_definition.h"
 #include "properties/property_service.h"
 #include "scada/event.h"
-#include "string_const.h"
+#include "app/string_const.h"
 
 #include <span>
 

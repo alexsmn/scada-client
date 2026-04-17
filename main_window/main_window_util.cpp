@@ -1,8 +1,8 @@
 #include "main_window/main_window_util.h"
 
 #include "aui/key_codes.h"
-#include "client_utils.h"
-#include "common_resources.h"
+#include "ui/common/client_utils.h"
+#include "resources/common_resources.h"
 #include "components/node_properties/node_property_component.h"
 #include "components/node_table/node_table_component.h"
 #include "components/table/table_component.h"

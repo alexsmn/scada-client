@@ -5,6 +5,12 @@ client_module_sources(client_main_window PRIVATE status)
 client_module_include_directories(client_main_window PUBLIC "..")
 
 client_module_link_libraries(client_main_window PUBLIC aui)
+client_module_link_libraries(client_main_window PUBLIC
+  ${CLIENT_COMPONENT_MODULES}
+)
+client_module_link_libraries(client_main_window PUBLIC
+  client_graph
+)
 
 client_module_link_libraries(client_main_window PRIVATE
   client_controller
@@ -19,8 +25,12 @@ client_module_link_libraries(client_main_window PRIVATE
 
 # Qt.
 
-# TODO: Remove dependency on `client_qt_core`.
-target_link_libraries(client_main_window_qt PRIVATE client_qt_core winmm)
+target_link_libraries(client_main_window_qt PRIVATE
+  client_ui_common_qt
+  client_ui_dragdrop_qt
+  client_ui_progress_qt
+  winmm
+)
 
 client_qt_translations(client_main_window_qt "qt/main_window_ru.ts")
 

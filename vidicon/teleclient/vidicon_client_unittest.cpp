@@ -29,7 +29,7 @@ class VidiconClientTest : public Test {
  protected:
   Microsoft::WRL::ComPtr<IDataPoint> CreateDataPoint(std::wstring_view address);
 
-  const std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  const std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
   NiceMock<MockTimedDataService> timed_data_service_;
 
   VidiconClient vidicon_client_{
@@ -65,6 +65,7 @@ TEST_F(VidiconClientTest, NewOpcDaDataPoint_ConnectsOpcNode) {
                                                     /*aggregation*/ _));
 
   auto data_point = CreateDataPoint(address);
+  executor_->Poll();
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
 }
@@ -87,6 +88,7 @@ TEST_F(VidiconClientTest, NewVidiconDataPoint_ConnectsVidiconNode) {
                                /*aggregation*/ _));
 
   auto data_point = CreateDataPoint(address);
+  executor_->Poll();
 
   EXPECT_THAT(timed_data_service_.default_timed_data_->observers_, SizeIs(1));
 }
@@ -94,6 +96,8 @@ TEST_F(VidiconClientTest, NewVidiconDataPoint_ConnectsVidiconNode) {
 TEST_F(VidiconClientTest, ReleaseDataPoint_DisconnectsTimedData) {
   auto data_point = CreateDataPoint(L"address");
   ASSERT_THAT(data_point, NotNull());
+
+  executor_->Poll();
 
   // Disconnect.
 
@@ -105,6 +109,8 @@ TEST_F(VidiconClientTest, ReleaseDataPoint_DisconnectsTimedData) {
 TEST_F(VidiconClientTest, ReceiveDataPointEvents) {
   auto data_point = CreateDataPoint(L"address");
   ASSERT_THAT(data_point, NotNull());
+
+  executor_->Poll();
 
   // Connect events.
 

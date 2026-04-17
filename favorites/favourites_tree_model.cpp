@@ -1,6 +1,6 @@
 #include "favorites/favourites_tree_model.h"
 
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/window_info.h"
 
 class FavouritesFolderNode;

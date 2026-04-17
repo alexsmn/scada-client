@@ -15,11 +15,6 @@ list(FILTER SOURCES EXCLUDE REGEX "/web/")
 
 # Lib
 
-set(COMPONENTS ${SOURCES} ${SOURCES_WT})
-list(FILTER COMPONENTS INCLUDE REGEX [[_component\..*]])
-list(REMOVE_ITEM SOURCES ${COMPONENTS})
-list(REMOVE_ITEM SOURCES_WT ${COMPONENTS})
-
 add_library(client_wt_lib
   ${SOURCES}
   ${SOURCES_WT}
@@ -28,8 +23,7 @@ add_library(client_wt_lib
   "../opcua_services_module.cpp"
   "../opcua_services_module.h"
 )
-
-target_sources(client_wt_lib INTERFACE ${COMPONENTS})
+target_precompile_headers(client_wt_lib REUSE_FROM scada_base)
 
 find_package(wt REQUIRED)
 target_link_libraries(client_wt_lib PUBLIC
@@ -47,6 +41,8 @@ target_link_libraries(client_wt_lib PUBLIC
   client_profile_wt
   client_properties_wt
   client_services_wt
+  client_ui_progress_wt
+  ${CLIENT_WT_COMPONENT_TARGETS}
   scada_core_opcua
 )
 
@@ -58,6 +54,13 @@ target_compile_options(client_wt_lib PUBLIC
 # Exe
 
 add_executable(client_wt ${MAIN_WT})
+target_precompile_headers(client_wt REUSE_FROM scada_base)
+
+if(MSVC)
+  target_link_options(client_wt PRIVATE
+    "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
+  )
+endif()
 
 target_link_libraries(client_wt PUBLIC
   Wt::HTTP
@@ -70,6 +73,7 @@ set_property(TARGET client_wt PROPERTY OUTPUT_NAME "webserver")
 # UT-s
 
 add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
+target_precompile_headers(client_wt_unittests REUSE_FROM scada_base)
 # Uses the custom runner from `test/wt/test_main_wt.cpp`.
 target_link_libraries(client_wt_unittests PRIVATE client_wt_lib base_unittest Wt::Test)
 include(GoogleTest)

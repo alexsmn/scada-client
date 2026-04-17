@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/key_codes.h"
-#include "common_resources.h"
+#include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
