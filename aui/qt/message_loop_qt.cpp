@@ -1,6 +1,31 @@
 #include "aui/qt/message_loop_qt.h"
 
+#include "base/boost_log.h"
+#include "scada/status_exception.h"
+
 #include <cassert>
+#include <exception>
+
+namespace {
+
+void LogUnhandledTaskException(std::exception_ptr exception) {
+  try {
+    std::rethrow_exception(exception);
+  } catch (const scada::status_exception& e) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Unhandled exception in Qt message loop task"
+        << " | Status = " << ToString(e.status());
+  } catch (const std::exception& e) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Unhandled exception in Qt message loop task"
+        << " | Error = " << e.what();
+  } catch (...) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Unhandled unknown exception in Qt message loop task";
+  }
+}
+
+}  // namespace
 
 // MessageLoopQt::PendingTask
 
@@ -59,7 +84,11 @@ void MessageLoopQt::Run() {
     auto task = std::move(immediate_queue_.front());
     immediate_queue_.pop();
     lock.unlock();
-    task();
+    try {
+      task();
+    } catch (...) {
+      LogUnhandledTaskException(std::current_exception());
+    }
     lock.lock();
   }
 }

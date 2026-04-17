@@ -54,13 +54,23 @@ For each test:
 6. Start `client.exe` with test-only startup flags that point at:
    - the test-settings file,
    - a ready-file path,
-   - a login-status-file path.
+   - a login-status-file path,
+   - a per-test client log / dump directory.
 7. Wait for one of:
    - ready file: login/startup succeeded,
    - status file with failure text: login failed deterministically,
    - process exit/crash,
    - timeout.
-8. Assert the expected outcome, then terminate both processes cleanly.
+8. Assert the expected outcome, including a short post-login or post-rejection
+   stability window so delayed server exits are caught, then terminate both
+   processes cleanly.
+
+Per-test diagnostics are written into the temp workspace instead of user-global
+locations:
+
+- `ServerLogs/` contains `server.exe` logs and server crash dumps.
+- `ClientLogs/` contains `client.exe` logs and client crash dumps.
+- marker files such as ready/status outputs remain at workspace root.
 
 ## Test-Only Client Hook
 
@@ -75,8 +85,13 @@ The Qt startup path accepts these test-only flags:
 - `--test-settings-file=<path>`
 - `--test-ready-file=<path>`
 - `--test-status-file=<path>`
+- `--test-log-dir=<path>`
 
 These are only used by the E2E harness.
+
+When `--test-log-dir` is present, the client overrides its normal
+`%LOCALAPPDATA%\Telecontrol\SCADA Client\logs` path and writes both component
+logs and crash dumps into the supplied per-test directory.
 
 ### Settings behavior
 
@@ -123,6 +138,10 @@ window automation:
 The ready file is the positive proof that the real client completed login and
 post-login bootstrap against the server.
 
+The harness still treats child-process exit as a first-class signal: if the
+client or server dies before the expected status is observed, the test fails and
+reports the child exit code when available.
+
 ## Server Fixture
 
 The E2E harness uses a temp copy of the checked-in server data fixture rather
@@ -138,8 +157,15 @@ Required fixture contents:
 The harness rewrites the session port in the temp `server.json` so each run can
 use a free local TCP port.
 
+The harness also rewrites the server log directory into the temp workspace so
+server logs and server crash dumps stay with the rest of the test artifacts.
+
 The first version uses the built-in `root` user path already exercised by the
 existing server-side tests.
+
+The current harness also disables optional subsystems such as OPC UA and
+Vidicon in the temp `server.json` so the E2E run stays focused on the SCADA
+remote-session path.
 
 ## Assertions
 
@@ -152,7 +178,18 @@ Expected behavior:
 - the remote session is established successfully,
 - the client writes `success` to the status file,
 - the client writes the ready file after `ClientApplication::Start()` succeeds,
-- the client remains alive until the harness shuts it down.
+- the client remains alive until the harness shuts it down,
+- the server remains alive for a short post-connect stability window after the
+  client finishes login, so delayed crashes are treated as test failures.
+
+Current harness details:
+
+- waits up to 30 seconds for the server listener to accept TCP connections,
+- waits up to 30 seconds for the client status file / login outcome,
+- waits up to 10 seconds for a server auth signal in the log directory
+  (`Authorization succeeded` or `CreateSession completed`),
+- then holds both `client.exe` and `server.exe` alive for a 10 second
+  post-connect stability window.
 
 ### `Connect_BadPassword`
 
@@ -163,8 +200,16 @@ Expected behavior:
 - the client writes a failure status such as
   `failure: Bad_WrongLoginCredentials`,
 - the client does not write the ready file,
+- the server remains alive after rejecting the bad credentials,
 - the client exits cleanly or becomes terminable immediately after the failed
   login path resolves.
+
+Current harness details:
+
+- still requires the server listener to start normally before the client runs,
+- verifies the server does not log successful authorization,
+- holds the server alive for a 10 second post-rejection stability window so
+  failed-auth connect crashes are also caught.
 
 ## Process and Timeout Policy
 
@@ -175,6 +220,12 @@ Required behavior:
 - capture child stdout/stderr or logs into the temp workspace for diagnosis,
 - use bounded startup and shutdown timeouts,
 - treat unexpected client/server exit as test failure,
+- include process-exit diagnostics in assertion failures when the exit code is
+  available,
+- keep the successful session alive long enough to catch short delayed server
+  crashes after connect,
+- keep the server alive long enough after rejected credentials to catch delayed
+  auth-path crashes as well,
 - forcibly terminate lingering child processes during teardown,
 - always clean temp files after the test unless preservation is requested for
   debugging.

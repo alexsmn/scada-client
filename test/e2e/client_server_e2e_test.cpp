@@ -37,6 +37,7 @@ constexpr auto kWaitStep = 100ms;
 constexpr auto kServerStartTimeout = 30s;
 constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
+constexpr auto kPostConnectStabilityTimeout = 10s;
 
 std::filesystem::path GetServerExePath() {
   return std::filesystem::path{SCADA_E2E_SERVER_EXE};
@@ -136,6 +137,13 @@ void ForceTerminate(base::win::ScopedProcessInformation& process_info) {
   }
 }
 
+void WaitForExit(base::win::ScopedProcessInformation& process_info,
+                 DWORD timeout_ms = 5000) {
+  if (!process_info.process_handle())
+    return;
+  WaitForSingleObject(process_info.process_handle(), timeout_ms);
+}
+
 class JobObject {
  public:
   JobObject() {
@@ -171,6 +179,16 @@ struct ChildProcess {
     DWORD exit_code = 0;
     return GetExitCodeProcess(process_info.process_handle(), &exit_code) &&
            exit_code == STILL_ACTIVE;
+  }
+
+  std::optional<DWORD> ExitCode() const {
+    if (!process_info.process_handle())
+      return std::nullopt;
+
+    DWORD exit_code = 0;
+    if (!GetExitCodeProcess(process_info.process_handle(), &exit_code))
+      return std::nullopt;
+    return exit_code;
   }
 };
 
@@ -251,6 +269,8 @@ class ClientServerE2eTest : public ::testing::Test {
     }
     ForceTerminate(client_.process_info);
     ForceTerminate(server_.process_info);
+    WaitForExit(client_.process_info);
+    WaitForExit(server_.process_info);
   }
 
   void PrepareWorkspace() {
@@ -276,14 +296,15 @@ class ClientServerE2eTest : public ::testing::Test {
          {{"enabled", true},
           {"dir", (workspace_.path() / "FileSystem").string()}}},
         {"vidicon", {{"enabled", false}}},
-        {"log", {{"dir", (workspace_.path() / "Logs").string()}}}};
+        {"log", {{"dir", (workspace_.path() / "ServerLogs").string()}}}};
     WriteTextFile(workspace_.path() / "server.json",
                   boost::json::serialize(server_json));
 
     ready_file_ = workspace_.path() / "client-ready.txt";
     status_file_ = workspace_.path() / "client-status.txt";
     settings_file_ = workspace_.path() / "client-settings.json";
-    server_log_dir_ = workspace_.path() / "Logs";
+    server_log_dir_ = workspace_.path() / "ServerLogs";
+    client_log_dir_ = workspace_.path() / "ClientLogs";
   }
 
   void WriteClientSettings(std::string_view password) {
@@ -315,7 +336,8 @@ class ClientServerE2eTest : public ::testing::Test {
         GetClientExePath(),
         {L"--test-settings-file=" + settings_file_.wstring(),
          L"--test-ready-file=" + ready_file_.wstring(),
-         L"--test-status-file=" + status_file_.wstring()},
+         L"--test-status-file=" + status_file_.wstring(),
+         L"--test-log-dir=" + client_log_dir_.wstring()},
         GetClientExePath().parent_path(),
         job_,
         client_);
@@ -330,6 +352,46 @@ class ClientServerE2eTest : public ::testing::Test {
                             kClientStartTimeout));
     EXPECT_TRUE(ok) << "Timed out waiting for client status file";
     return ReadFileOrEmpty(status_file_);
+  }
+
+  bool WaitForReadyOrStatus() {
+    return WaitUntil(
+        [this] {
+          return std::filesystem::exists(ready_file_) ||
+                 std::filesystem::exists(status_file_) || !client_.IsRunning();
+        },
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            kClientStartTimeout));
+  }
+
+  std::string DescribeProcessExit(const ChildProcess& process,
+                                  std::string_view name) const {
+    auto exit_code = process.ExitCode();
+    if (!exit_code)
+      return std::string{name} + " process exit code unavailable";
+    if (*exit_code == STILL_ACTIVE)
+      return std::string{name} + " is still running";
+    return std::string{name} + " exited with code " +
+           std::to_string(static_cast<unsigned long>(*exit_code));
+  }
+
+  void ExpectProcessesRemainRunningFor(
+      std::chrono::milliseconds timeout,
+      std::string_view context) {
+    auto ok = WaitUntil([this] {
+      return !server_.IsRunning() || !client_.IsRunning();
+    }, timeout);
+    EXPECT_FALSE(ok)
+        << "Unexpected process exit while " << context << ": "
+        << DescribeProcessExit(server_, "server") << ", "
+        << DescribeProcessExit(client_, "client");
+  }
+
+  void ExpectServerRemainsRunningFor(std::chrono::milliseconds timeout,
+                                     std::string_view context) {
+    auto ok = WaitUntil([this] { return !server_.IsRunning(); }, timeout);
+    EXPECT_FALSE(ok) << "Unexpected server exit while " << context << ": "
+                     << DescribeProcessExit(server_, "server");
   }
 
   void ExpectServerAuthLog() {
@@ -351,6 +413,7 @@ class ClientServerE2eTest : public ::testing::Test {
   std::filesystem::path status_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;
+  std::filesystem::path client_log_dir_;
 
   ChildProcess server_;
   ChildProcess client_;
@@ -361,15 +424,20 @@ TEST_F(ClientServerE2eTest, Connect_Success) {
   StartServer();
   StartClient();
 
-  auto status = WaitForStatus();
-  EXPECT_EQ(status, "success");
-  EXPECT_TRUE(WaitUntil([this] { return std::filesystem::exists(ready_file_); },
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            kClientStartTimeout)))
-      << "Client did not emit ready file";
+  ASSERT_TRUE(WaitForReadyOrStatus())
+      << "Timed out waiting for client ready/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  EXPECT_TRUE(std::filesystem::exists(ready_file_))
+      << "Client did not emit ready file; status: " << status;
+  EXPECT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for ready: " << status;
   EXPECT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
 
   ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for the post-login session to remain stable");
 }
 
 TEST_F(ClientServerE2eTest, Connect_BadPassword) {
@@ -384,6 +452,10 @@ TEST_F(ClientServerE2eTest, Connect_BadPassword) {
       << "Ready file should not be produced on login failure";
   EXPECT_FALSE(ContainsInDirectory(server_log_dir_, "Authorization succeeded"))
       << "Server should not record successful authorization";
+  ExpectServerRemainsRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for the server to remain stable after rejecting bad credentials");
 }
 
 }  // namespace

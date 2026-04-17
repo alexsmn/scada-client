@@ -13,6 +13,15 @@
 
 namespace {
 
+void InitE2eLogPathOverride() {
+  auto log_dir = client::GetOptionValue("test-log-dir");
+  if (log_dir.empty())
+    return;
+
+  std::filesystem::create_directories(log_dir);
+  base::PathService::Override(client::DIR_LOG, log_dir);
+}
+
 LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   auto name = GetDumpFileName("client");
 
@@ -50,6 +59,7 @@ AppInit::AppInit() {
 
   scada::RegisterPathProvider();
   client::RegisterPathProvider();
+  InitE2eLogPathOverride();
 
   InitCrashDump();
   InitLogging();

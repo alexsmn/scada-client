@@ -1,11 +1,13 @@
 ﻿#include "components/node_table/node_table_model.h"
 
+#include "base/boost_log.h"
 #include "base/executor.h"
 #include "base/range_util.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
 #include "aui/translation.h"
 #include "scada/event.h"
+#include "scada/status_exception.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_promises.h"
@@ -25,6 +27,12 @@ namespace {
 const char16_t kFetching[] = u"Loading...";
 const auto kParentReferenceTypeId = scada::id::Organizes;
 const auto kSortDelay = 300ms;
+
+void LogLoadFailure(const scada::Status& status) {
+  BOOST_LOG_TRIVIAL(error)
+      << "NodeTableModel startup load failed"
+      << " | Status = " << ToString(status);
+}
 
 }  // namespace
 
@@ -52,7 +60,12 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
       }))
       // It's important to return promise form the callback.
       .then([parent_node] { return FetchChildren(parent_node); })
-      .then(cancelation_.Bind([this] { UpdateRows(); }));
+      .then(cancelation_.Bind([this] { UpdateRows(); }))
+      .except(cancelation_.Bind([this](std::exception_ptr exception) {
+        loading_ = false;
+        LogLoadFailure(scada::GetExceptionStatus(exception));
+        NotifyModelChanged();
+      }));
 }
 
 int NodeTableModel::GetRowCount() {

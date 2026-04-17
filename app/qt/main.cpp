@@ -10,6 +10,7 @@
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
 #include "project.h"
+#include "scada/status_exception.h"
 #include "services/atl_module.h"
 
 #include <Windows.h>
@@ -17,12 +18,59 @@
 #include <QSettings>
 #include <QTimer>
 #include <boost/asio/io_context.hpp>
+#include <cstdlib>
 
 using namespace std::chrono_literals;
 
 DummyAtlModule _Module;
 
 namespace {
+
+constexpr auto kE2eStartupSuccessDelay = 2s;
+
+void LogQtEventException(std::exception_ptr exception) {
+  try {
+    std::rethrow_exception(exception);
+  } catch (const scada::status_exception& e) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Unhandled exception in Qt event handler"
+        << " | Status = " << ToString(e.status());
+    client::ReportE2eStatusIfUnset("failure: qt-event");
+  } catch (const std::exception& e) {
+    BOOST_LOG_TRIVIAL(error)
+        << "Unhandled exception in Qt event handler"
+        << " | Error = " << e.what();
+    client::ReportE2eStatusIfUnset("failure: qt-event");
+  } catch (...) {
+    BOOST_LOG_TRIVIAL(error) << "Unhandled unknown exception in Qt event handler";
+    client::ReportE2eStatusIfUnset("failure: qt-event");
+  }
+}
+
+[[noreturn]] void OnTerminate() {
+  auto exception = std::current_exception();
+  if (exception) {
+    LogQtEventException(exception);
+  } else {
+    BOOST_LOG_TRIVIAL(error) << "std::terminate called without an active exception";
+    client::ReportE2eStatusIfUnset("failure: terminate");
+  }
+  std::_Exit(1);
+}
+
+class SafeApplication final : public QApplication {
+ public:
+  using QApplication::QApplication;
+
+  bool notify(QObject* receiver, QEvent* event) override {
+    try {
+      return QApplication::notify(receiver, event);
+    } catch (...) {
+      LogQtEventException(std::current_exception());
+      return false;
+    }
+  }
+};
 
 void ShowStartupTrace(const wchar_t* message) {
   OutputDebugStringW(message);
@@ -36,15 +84,29 @@ void LogStartupException(std::exception_ptr exception) {
   }
 }
 
+void ScheduleE2eStartupReady(const std::shared_ptr<Executor>& executor) {
+  auto startup_timer = std::make_shared<ExecutorTimer>(executor);
+  startup_timer->StartOne(kE2eStartupSuccessDelay, [startup_timer] {
+    BOOST_LOG_TRIVIAL(info) << "E2E startup checkpoint reached"
+                            << " | DelayMs = "
+                            << std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   kE2eStartupSuccessDelay)
+                                   .count();
+    client::ReportE2eStatusIfUnset("success");
+    client::ReportE2eReady();
+  });
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
   try {
     AppInit app_init;
+    std::set_terminate(&OnTerminate);
 
     GdiplusInitializer gdiplus;
 
-    QApplication qapp(argc, argv);
+    SafeApplication qapp(argc, argv);
 
     QApplication::setApplicationName("Telecontrol SCADA Client");
     QApplication::setOrganizationName("Telecontrol");
@@ -72,11 +134,12 @@ int main(int argc, char* argv[]) {
           return ExecuteLoginDialog(executor, std::move(services_context));
         }}};
 
-    executor->PostTask([&app] {
+    executor->PostTask([&app, executor] {
       app.Start()
-          .then([&app] {
-            client::ReportE2eStatusIfUnset("success");
-            client::ReportE2eReady();
+          .then([&app, executor] {
+            BOOST_LOG_TRIVIAL(info)
+                << "Client startup completed; entering steady-state run loop";
+            ScheduleE2eStartupReady(executor);
             return app.Run();
           })
           .except([](std::exception_ptr exception) {
