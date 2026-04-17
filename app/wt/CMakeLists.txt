@@ -74,6 +74,13 @@ set_property(TARGET client_wt PROPERTY OUTPUT_NAME "webserver")
 
 add_executable(client_wt_unittests ${UNITTESTS} ${UNITTESTS_WT})
 target_precompile_headers(client_wt_unittests REUSE_FROM scada_base)
+if(MSVC)
+  target_link_options(client_wt_unittests PRIVATE
+    "$<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>"
+    "$<$<CONFIG:RelWithDebInfo>:/INCREMENTAL:NO>"
+    "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
+  )
+endif()
 # Uses the custom runner from `test/wt/test_main_wt.cpp`.
 target_link_libraries(client_wt_unittests PRIVATE client_wt_lib base_unittest Wt::Test)
 include(GoogleTest)

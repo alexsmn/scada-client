@@ -16,10 +16,13 @@ target_link_libraries(client_common INTERFACE
 list(APPEND UNITTESTS
   "${CMAKE_CURRENT_SOURCE_DIR}/client_application.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/client_application.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/client_application_unittest.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/startup_exception.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/startup_exception.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/startup_exception_unittest.cpp"
+)
+
+list(APPEND UNITTESTS_QT
+  "${CMAKE_CURRENT_SOURCE_DIR}/client_application_unittest.cpp"
 )
 
 add_subdirectory(qt)
