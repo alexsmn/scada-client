@@ -76,6 +76,12 @@ target_link_libraries(client_qt_lib INTERFACE
 add_executable(client_qt WIN32 ${MAIN_QT})
 target_link_libraries(client_qt PUBLIC client_qt_lib)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
+if(COMMAND scada_add_windows_version_info)
+  scada_add_windows_version_info(client_qt
+    DESCRIPTION "Telecontrol SCADA Client"
+    INTERNAL_NAME "SCADA Client"
+    ORIGINAL_FILENAME "client.exe")
+endif()
 
 client_qt_translations(client_qt "app_ru.ts")
 
