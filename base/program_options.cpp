@@ -33,7 +33,16 @@ void InitProgramOptions() {
       ("log-service-node-semantics-change-event", "Log node semantics change events")
       ("log-alias-service", "Log alias service operations")
       ("node-service-v2", "Use v2 node service")
-      ("log-severity", po::value<std::string>(), "Log severity level");
+      ("log-severity", po::value<std::string>(), "Log severity level")
+      ("test-settings-file",
+       po::value<std::string>(),
+       "E2E-only login settings file")
+      ("test-ready-file",
+       po::value<std::string>(),
+       "E2E-only startup readiness marker file")
+      ("test-status-file",
+       po::value<std::string>(),
+       "E2E-only login status marker file");
 
 #ifdef _WIN32
   int argc = 0;

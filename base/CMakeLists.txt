@@ -4,6 +4,13 @@ target_precompile_headers(client_base REUSE_FROM scada_base)
 
 target_link_libraries(client_base PUBLIC scada_base)
 
+target_sources(client_base PRIVATE
+  "file_settings_store.cpp"
+  "file_settings_store.h"
+  "e2e_test_hooks.cpp"
+  "e2e_test_hooks.h"
+)
+
 set(CLIENT_UI_COMMON_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils.h"

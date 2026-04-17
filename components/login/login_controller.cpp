@@ -193,6 +193,9 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
 
   services_ = {};
 
+  if (login_failed_handler && login_failed_handler(status))
+    return;
+
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
     dialog_service_
         .RunMessageBox(Translate(kForceLogoffMessage), {}, MessageBoxMode::QuestionYesNo)

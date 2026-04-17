@@ -27,6 +27,7 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
 
   std::function<void(DataServices services)> completion_handler;
   std::function<void()> error_handler;
+  std::function<bool(const scada::Status& status)> login_failed_handler;
 
   std::vector<std::u16string> server_type_list;
 

@@ -1,5 +1,6 @@
 #include "components/login/qt/login_dialog.h"
 
+#include "base/e2e_test_hooks.h"
 #include "components/login/login_controller.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
@@ -31,15 +32,28 @@ QStringList MakeQStringList(const std::vector<std::u16string>& source) {
 
 LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
                          DataServicesContext&& services_context)
-    : controller_{std::make_shared<LoginController>(std::move(executor),
-                                                    std::move(services_context),
-                                                    dialog_service_)} {
+    : controller_{std::make_shared<LoginController>(
+          std::move(executor),
+          std::move(services_context),
+          dialog_service_,
+          client::CreateE2eSettingsStore())} {
   ui.setupUi(this);
 
   dialog_service_.parent_widget = this;
 
   controller_->completion_handler = [this](DataServices services) {
     promise.resolve(std::move(services));
+  };
+
+  controller_->login_failed_handler = [this](const scada::Status& status) {
+    if (!client::IsE2eTestMode())
+      return false;
+
+    client::ReportE2eStatus(
+        std::string{"failure: "} + ToString(status));
+    promise.resolve(std::nullopt);
+    close();
+    return true;
   };
 
   controller_->error_handler = [this] {
@@ -93,6 +107,9 @@ void LoginDialog::accept() {
 }
 
 void LoginDialog::reject() {
+  if (client::IsE2eTestMode()) {
+    client::ReportE2eStatusIfUnset("canceled");
+  }
   promise.resolve(std::nullopt);
 }
 

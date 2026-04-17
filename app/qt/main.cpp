@@ -4,6 +4,7 @@
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
 #include "aui/qt/message_loop_qt.h"
+#include "base/e2e_test_hooks.h"
 #include "base/boost_log.h"
 #include "base/executor_timer.h"
 #include "base/win/gdiplus_initializer.h"
@@ -16,7 +17,6 @@
 #include <QSettings>
 #include <QTimer>
 #include <boost/asio/io_context.hpp>
-#include <cstring>
 
 using namespace std::chrono_literals;
 
@@ -74,19 +74,27 @@ int main(int argc, char* argv[]) {
 
     executor->PostTask([&app] {
       app.Start()
-          .then([&app] { return app.Run(); })
+          .then([&app] {
+            client::ReportE2eStatusIfUnset("success");
+            client::ReportE2eReady();
+            return app.Run();
+          })
           .except([](std::exception_ptr exception) {
             LogStartupException(exception);
+            client::ReportE2eStatusIfUnset("failure: startup");
           })
           .then(&QApplication::quit);
     });
 
     return QApplication::exec();
-  } catch (const std::exception& e) {
-    std::wstring message = L"main() exception: ";
-    message += std::wstring{e.what(), e.what() + std::strlen(e.what())};
-    ShowStartupTrace(message.c_str());
-    return -1;
+  } catch (const std::exception&) {
+    auto exception = std::current_exception();
+    if (auto message = GetStartupErrorMessage(exception)) {
+      std::wstring wide_message{message->begin(), message->end()};
+      ShowStartupTrace(wide_message.c_str());
+      return -1;
+    }
+    return 0;
   } catch (...) {
     ShowStartupTrace(L"main() failed with an unknown exception");
     return -1;

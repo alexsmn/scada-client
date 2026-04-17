@@ -62,7 +62,6 @@ endif()
 add_subdirectory(configuration)
 add_subdirectory(graph)
 add_subdirectory(export)
-add_subdirectory(test)
 
 file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.cpp"
@@ -92,6 +91,7 @@ list(FILTER PATHS EXCLUDE REGEX "/client/print/")
 list(FILTER PATHS EXCLUDE REGEX "/client/profile/")
 list(FILTER PATHS EXCLUDE REGEX "/client/properties/")
 list(FILTER PATHS EXCLUDE REGEX "/client/services/")
+list(FILTER PATHS EXCLUDE REGEX "/client/test/e2e/")
 list(FILTER PATHS EXCLUDE REGEX "/client/vidicon/")
 # `tools/` hosts standalone utility executables (e.g. the screenshot
 # generator); each manages its own sources via its own CMakeLists.
@@ -156,4 +156,5 @@ endforeach()
 add_subdirectory(components)
 add_subdirectory(main_window)
 add_subdirectory(app)
+add_subdirectory(test)
 add_subdirectory(tools)

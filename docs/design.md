@@ -233,6 +233,10 @@ visible page — looks like this:
 > Source: [`bootstrap-sequence.mmd`](bootstrap-sequence.mmd). Regenerate
 > with `mmdc -i bootstrap-sequence.mmd -o bootstrap-sequence.svg -b transparent`.
 
+The always-on cross-process Qt E2E test design for launching the real
+`client.exe` against the real `server.exe` is documented separately in
+[`e2e-client-server.md`](e2e-client-server.md).
+
 ### 5.2 Core orchestration — `core/`
 
 Owns the singletons every other module needs: `Tracer` for observability,
