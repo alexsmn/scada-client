@@ -36,6 +36,8 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
   std::vector<ConfigurationTreeNode*> FindTreeNodes(
       const scada::NodeId& node_id);
 
+  std::weak_ptr<void> GetLifetimeToken() const { return lifetime_token_; }
+
  protected:
   // Returns nullptr if node must be skipped.
   virtual std::unique_ptr<ConfigurationTreeNode> CreateTreeNode(
@@ -63,6 +65,7 @@ class ConfigurationTreeModel : private ConfigurationTreeModelContext,
   virtual void OnNodeSemanticsChanged(const scada::NodeId& node_id) override;
 
   std::multimap<scada::NodeId, ConfigurationTreeNode*> tree_node_map_;
+  std::shared_ptr<void> lifetime_token_ = std::make_shared<int>(0);
 
   friend class ConfigurationTreeNode;
 };

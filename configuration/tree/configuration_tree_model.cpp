@@ -36,6 +36,7 @@ void ConfigurationTreeModel::Init() {
 }
 
 ConfigurationTreeModel::~ConfigurationTreeModel() {
+  lifetime_token_.reset();
   set_root(nullptr);
 }
 
@@ -61,6 +62,9 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
                                    parent_tree_node.node().node_id()));
 
   auto children = node_service_tree_->GetChildren(parent_tree_node.node());
+  const auto child_count_before = parent_tree_node.GetChildCount();
+  int removed_child_count = 0;
+  int added_child_count = 0;
 
   // Delete missing targets.
   for (int i = 0; i < parent_tree_node.GetChildCount();) {
@@ -68,9 +72,10 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
     bool exists =
         DoesChildExist(children, tree_node.reference_type_id(),
                        tree_node.forward_reference(), tree_node.node());
-    if (!exists)
+    if (!exists) {
       Remove(parent_tree_node, i);
-    else
+      ++removed_child_count;
+    } else
       ++i;
   }
 
@@ -80,8 +85,18 @@ void ConfigurationTreeModel::UpdateChildTreeNodes(
     if (tree_node) {
       Add(parent_tree_node, parent_tree_node.GetChildCount(),
           std::move(tree_node));
+      ++added_child_count;
     }
   }
+
+  LOG_INFO(logger_) << "Child tree nodes updated"
+                    << LOG_TAG("NodeId",
+                               NodeIdToScadaString(
+                                   parent_tree_node.node().node_id()))
+                    << LOG_TAG("PreviousChildCount", child_count_before)
+                    << LOG_TAG("RemovedChildCount", removed_child_count)
+                    << LOG_TAG("AddedChildCount", added_child_count)
+                    << LOG_TAG("TotalChildCount", parent_tree_node.GetChildCount());
 }
 
 void ConfigurationTreeModel::DeleteTreeNodes(const scada::NodeId& node_id) {

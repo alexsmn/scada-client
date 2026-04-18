@@ -282,3 +282,37 @@ TEST_F(ConfigurationTreeModelTest, RootFetchesChildrenWhenNotPrefetched) {
                 .node_id(),
             kNodeId1);
 }
+
+TEST_F(ConfigurationTreeModelTest,
+       DelayedFetchMoreCallbackAfterModelDestructionIsIgnored) {
+  auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
+  auto child_model = MakeTestNodeModel(kNodeId1);
+  NodeModel::FetchCallback delayed_callback;
+
+  ON_CALL(*child_model, GetFetchStatus())
+      .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
+
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
+      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
+        delayed_callback = cb;
+      });
+
+  EXPECT_CALL(*node_service_tree, GetChildren(_))
+      .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
+          {.reference_type_id = scada::id::Organizes, .child_node = child_model}
+      }));
+
+  InitModel(std::move(node_service_tree));
+
+  auto* root = model_->GetRoot();
+  ASSERT_EQ(1, model_->GetChildCount(root));
+
+  auto* child =
+      static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
+  child->FetchMore();
+  ASSERT_TRUE(static_cast<bool>(delayed_callback));
+
+  model_.reset();
+
+  EXPECT_NO_THROW(delayed_callback());
+}

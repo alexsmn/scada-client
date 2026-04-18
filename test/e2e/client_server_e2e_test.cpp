@@ -38,6 +38,9 @@ constexpr auto kServerStartTimeout = 30s;
 constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
 constexpr auto kPostConnectStabilityTimeout = 10s;
+constexpr auto kObjectTreeLoadTimeout = 15s;
+constexpr std::string_view kStartupCompletedLog =
+    "Client startup completed; entering steady-state run loop";
 
 std::filesystem::path GetServerExePath() {
   return std::filesystem::path{SCADA_E2E_SERVER_EXE};
@@ -89,6 +92,54 @@ bool ContainsInDirectory(const std::filesystem::path& dir,
       return true;
   }
   return false;
+}
+
+std::optional<int> FindLoggedObjectTreeChildCount(
+    const std::filesystem::path& dir) {
+  constexpr std::string_view kCompletionMarker =
+      "Children fetched callback completed";
+  constexpr std::string_view kNodeIdMarker = "NodeId = SCADA.24";
+  constexpr std::string_view kAddedChildCountMarker = "AddedChildCount = ";
+
+  std::error_code ec;
+  if (!std::filesystem::exists(dir, ec))
+    return std::nullopt;
+
+  for (const auto& entry : std::filesystem::directory_iterator{dir, ec}) {
+    if (!entry.is_regular_file())
+      continue;
+
+    const auto contents = ReadFileOrEmpty(entry.path());
+    size_t pos = 0;
+    while ((pos = contents.find(kCompletionMarker.data(), pos)) !=
+           std::string::npos) {
+      const auto line_end = contents.find('\n', pos);
+      const auto line = contents.substr(
+          pos,
+          line_end == std::string::npos ? std::string::npos : line_end - pos);
+      pos = line_end == std::string::npos ? contents.size() : line_end + 1;
+
+      if (line.find(kNodeIdMarker) == std::string::npos)
+        continue;
+
+      const auto count_pos = line.find(kAddedChildCountMarker);
+      if (count_pos == std::string::npos)
+        continue;
+
+      const auto value_begin = count_pos + kAddedChildCountMarker.size();
+      size_t value_end = value_begin;
+      while (value_end < line.size() && line[value_end] >= '0' &&
+             line[value_end] <= '9') {
+        ++value_end;
+      }
+      if (value_end == value_begin)
+        continue;
+
+      return std::stoi(line.substr(value_begin, value_end - value_begin));
+    }
+  }
+
+  return std::nullopt;
 }
 
 int FindAvailablePort() {
@@ -300,7 +351,6 @@ class ClientServerE2eTest : public ::testing::Test {
     WriteTextFile(workspace_.path() / "server.json",
                   boost::json::serialize(server_json));
 
-    ready_file_ = workspace_.path() / "client-ready.txt";
     status_file_ = workspace_.path() / "client-status.txt";
     settings_file_ = workspace_.path() / "client-settings.json";
     server_log_dir_ = workspace_.path() / "ServerLogs";
@@ -335,7 +385,6 @@ class ClientServerE2eTest : public ::testing::Test {
     LaunchProcess(
         GetClientExePath(),
         {L"--test-settings-file=" + settings_file_.wstring(),
-         L"--test-ready-file=" + ready_file_.wstring(),
          L"--test-status-file=" + status_file_.wstring(),
          L"--test-log-dir=" + client_log_dir_.wstring()},
         GetClientExePath().parent_path(),
@@ -354,14 +403,24 @@ class ClientServerE2eTest : public ::testing::Test {
     return ReadFileOrEmpty(status_file_);
   }
 
-  bool WaitForReadyOrStatus() {
+  bool WaitForStartupOrStatus() {
     return WaitUntil(
         [this] {
-          return std::filesystem::exists(ready_file_) ||
+          return ContainsInDirectory(client_log_dir_, kStartupCompletedLog) ||
                  std::filesystem::exists(status_file_) || !client_.IsRunning();
         },
         std::chrono::duration_cast<std::chrono::milliseconds>(
             kClientStartTimeout));
+  }
+
+  bool WaitForObjectTreeReady() {
+    return WaitUntil(
+        [this] {
+          auto child_count = FindLoggedObjectTreeChildCount(client_log_dir_);
+          return (child_count && *child_count > 0) || !client_.IsRunning();
+        },
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            kObjectTreeLoadTimeout));
   }
 
   std::string DescribeProcessExit(const ChildProcess& process,
@@ -409,7 +468,6 @@ class ClientServerE2eTest : public ::testing::Test {
   JobObject job_;
   int port_ = 0;
 
-  std::filesystem::path ready_file_;
   std::filesystem::path status_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;
@@ -424,13 +482,13 @@ TEST_F(ClientServerE2eTest, Connect_Success) {
   StartServer();
   StartClient();
 
-  ASSERT_TRUE(WaitForReadyOrStatus())
-      << "Timed out waiting for client ready/status signal";
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
   const auto status = ReadFileOrEmpty(status_file_);
-  EXPECT_TRUE(std::filesystem::exists(ready_file_))
-      << "Client did not emit ready file; status: " << status;
+  EXPECT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
   EXPECT_TRUE(status.empty() || status == "success")
-      << "Unexpected client status while waiting for ready: " << status;
+      << "Unexpected client status while waiting for startup: " << status;
   EXPECT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
 
   ExpectServerAuthLog();
@@ -438,6 +496,38 @@ TEST_F(ClientServerE2eTest, Connect_Success) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
       "waiting for the post-login session to remain stable");
+}
+
+TEST_F(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
+  WriteClientSettings(/*password=*/"");
+  StartServer();
+  StartClient();
+
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  ASSERT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
+  ASSERT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for startup: " << status;
+  ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
+
+  ASSERT_TRUE(WaitForObjectTreeReady())
+      << "Timed out waiting for object tree ready signal; status: "
+      << ReadFileOrEmpty(status_file_);
+  const auto child_count = FindLoggedObjectTreeChildCount(client_log_dir_);
+  ASSERT_TRUE(child_count)
+      << "Client reported startup ready but client logs never showed a "
+         "completed first-level object tree fetch for SCADA.24";
+  EXPECT_GT(*child_count, 0)
+      << "Client loaded the object tree root but did not materialize any "
+         "first-level children";
+
+  ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for the object tree to remain available after login");
 }
 
 TEST_F(ClientServerE2eTest, Connect_BadPassword) {
@@ -448,8 +538,6 @@ TEST_F(ClientServerE2eTest, Connect_BadPassword) {
   auto status = WaitForStatus();
   EXPECT_NE(status.find("failure: Bad_WrongLoginCredentials"), std::string::npos)
       << "Unexpected client status: " << status;
-  EXPECT_FALSE(std::filesystem::exists(ready_file_))
-      << "Ready file should not be produced on login failure";
   EXPECT_FALSE(ContainsInDirectory(server_log_dir_, "Authorization succeeded"))
       << "Server should not record successful authorization";
   ExpectServerRemainsRunningFor(

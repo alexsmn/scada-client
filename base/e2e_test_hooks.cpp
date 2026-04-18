@@ -10,7 +10,6 @@ namespace client {
 namespace {
 
 constexpr std::string_view kTestSettingsFileOption = "test-settings-file";
-constexpr std::string_view kTestReadyFileOption = "test-ready-file";
 constexpr std::string_view kTestStatusFileOption = "test-status-file";
 
 std::atomic_bool& GetStatusReported() {
@@ -60,10 +59,6 @@ void ReportE2eStatusIfUnset(std::string_view status) {
   if (GetStatusReported().compare_exchange_strong(expected, true)) {
     WriteFile(GetOptionPath(kTestStatusFileOption), status);
   }
-}
-
-void ReportE2eReady() {
-  WriteFile(GetOptionPath(kTestReadyFileOption), "ready");
 }
 
 }  // namespace client

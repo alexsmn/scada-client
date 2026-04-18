@@ -51,7 +51,7 @@ class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
   // ctor comment for the stack-overflow reason — but the root node
   // invokes it explicitly so the tree shows its first level without
   // needing Qt to call FetchMore first.
-  void AddChildren();
+  int AddChildren();
 
   virtual void OnModelChanged() {}
 

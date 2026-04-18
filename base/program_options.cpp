@@ -37,9 +37,6 @@ void InitProgramOptions() {
       ("test-settings-file",
        po::value<std::string>(),
        "E2E-only login settings file")
-      ("test-ready-file",
-       po::value<std::string>(),
-       "E2E-only startup readiness marker file")
       ("test-status-file",
        po::value<std::string>(),
        "E2E-only login status marker file")

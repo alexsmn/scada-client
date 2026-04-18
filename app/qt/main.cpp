@@ -26,8 +26,6 @@ DummyAtlModule _Module;
 
 namespace {
 
-constexpr auto kE2eStartupSuccessDelay = 2s;
-
 void LogQtEventException(std::exception_ptr exception) {
   try {
     std::rethrow_exception(exception);
@@ -84,19 +82,6 @@ void LogStartupException(std::exception_ptr exception) {
   }
 }
 
-void ScheduleE2eStartupReady(const std::shared_ptr<Executor>& executor) {
-  auto startup_timer = std::make_shared<ExecutorTimer>(executor);
-  startup_timer->StartOne(kE2eStartupSuccessDelay, [startup_timer] {
-    BOOST_LOG_TRIVIAL(info) << "E2E startup checkpoint reached"
-                            << " | DelayMs = "
-                            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                                   kE2eStartupSuccessDelay)
-                                   .count();
-    client::ReportE2eStatusIfUnset("success");
-    client::ReportE2eReady();
-  });
-}
-
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -135,18 +120,27 @@ int main(int argc, char* argv[]) {
         }}};
 
     executor->PostTask([&app, executor] {
-      app.Start()
-          .then([&app, executor] {
-            BOOST_LOG_TRIVIAL(info)
-                << "Client startup completed; entering steady-state run loop";
-            ScheduleE2eStartupReady(executor);
-            return app.Run();
-          })
-          .except([](std::exception_ptr exception) {
-            LogStartupException(exception);
-            client::ReportE2eStatusIfUnset("failure: startup");
-          })
-          .then(&QApplication::quit);
+      auto run_promise = app.Start()
+                             .then([&app] {
+                               BOOST_LOG_TRIVIAL(info)
+                                   << "Client startup completed; entering "
+                                      "steady-state run loop";
+                               client::ReportE2eStatusIfUnset("success");
+                               return app.Run();
+                             })
+                             .except([](std::exception_ptr exception) {
+                               LogStartupException(exception);
+                               client::ReportE2eStatusIfUnset("failure: startup");
+                             });
+
+      if (client::IsE2eTestMode()) {
+        run_promise.then([] {
+          BOOST_LOG_TRIVIAL(info)
+              << "E2E mode: application run loop completed";
+        });
+      } else {
+        run_promise.then(&QApplication::quit);
+      }
     });
 
     return QApplication::exec();

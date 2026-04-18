@@ -13,6 +13,5 @@ std::shared_ptr<SettingsStore> CreateE2eSettingsStore();
 
 void ReportE2eStatus(std::string_view status);
 void ReportE2eStatusIfUnset(std::string_view status);
-void ReportE2eReady();
 
 }  // namespace client

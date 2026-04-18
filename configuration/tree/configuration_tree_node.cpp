@@ -32,7 +32,7 @@ ConfigurationTreeNode::~ConfigurationTreeNode() {
   model_.tree_node_map_.erase(i);
 }
 
-void ConfigurationTreeNode::AddChildren() {
+int ConfigurationTreeNode::AddChildren() {
   auto children = model_.node_service_tree_->GetChildren(node_);
 
   int n = 0;
@@ -42,6 +42,8 @@ void ConfigurationTreeNode::AddChildren() {
     if (new_child_tree_node)
       model_.Add(*this, n++, std::move(new_child_tree_node));
   }
+
+  return n;
 }
 
 std::u16string ConfigurationTreeNode::GetText(int column_id) const {
@@ -82,23 +84,49 @@ void ConfigurationTreeNode::FetchMore() {
 
   if (node_.children_fetched()) {
     children_loaded_ = true;
-    AddChildren();
+    const auto added_child_count = AddChildren();
+    LOG_INFO(model_.logger_)
+        << "Children materialized"
+        << LOG_TAG("NodeId", NodeIdToScadaString(node_.node_id()))
+        << LOG_TAG("AddedChildCount", added_child_count)
+        << LOG_TAG("TotalChildCount", GetChildCount());
     return;
   }
 
-  node_.Fetch(NodeFetchStatus::NodeAndChildren(), [this](const NodeRef& node) {
-    LOG_INFO(model_.logger_)
-        << "Children fetched callback begin"
-        << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
+  auto lifetime_token = model_.GetLifetimeToken();
+  auto* model = &model_;
+  const auto node_id = node_.node_id();
+  const auto reference_type_id = reference_type_id_;
+  const auto forward_reference = forward_reference_;
+  node_.Fetch(NodeFetchStatus::NodeAndChildren(),
+              [lifetime_token, model, node_id, reference_type_id,
+               forward_reference](const NodeRef& node) {
+                if (lifetime_token.expired())
+                  return;
 
-    children_loaded_ = true;
-    AddChildren();
-    Changed();
+                auto* tree_node = model->FindTreeNode(node_id, reference_type_id,
+                                                      forward_reference);
+                if (!tree_node) {
+                  LOG_INFO(model->logger_)
+                      << "Ignore stale children fetched callback"
+                      << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
+                  return;
+                }
 
-    LOG_INFO(model_.logger_)
-        << "Children fetched callback completed"
-        << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
-  });
+                LOG_INFO(model->logger_)
+                    << "Children fetched callback begin"
+                    << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
+
+                tree_node->children_loaded_ = true;
+                const auto added_child_count = tree_node->AddChildren();
+                tree_node->Changed();
+
+                LOG_INFO(model->logger_)
+                    << "Children fetched callback completed"
+                    << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()))
+                    << LOG_TAG("AddedChildCount", added_child_count)
+                    << LOG_TAG("TotalChildCount", tree_node->GetChildCount());
+              });
 }
 
 // ConfigurationTreeRootNode
