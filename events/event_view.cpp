@@ -6,6 +6,7 @@
 #include "aui/prompt_dialog.h"
 #include "aui/resource_error.h"
 #include "aui/table.h"
+#include "base/awaitable_promise.h"
 #include "base/excel.h"
 #include "base/u16format.h"
 #include "base/format.h"
@@ -300,15 +301,40 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
 }
 
 promise<> EventView::SelectSeverity() {
+  return ToPromise(NetExecutorAdapter{executor_}, SelectSeverityAsync());
+}
+
+Awaitable<void> EventView::SelectSeverityAsync() {
   unsigned initial_severity = model_->current_events()
                                   ? node_event_provider_.severity_min()
                                   : model_->severity_min();
   auto prompt = Translate("Minimum severity threshold (0 = all events):");
-  return RunPromptDialog(dialog_service_, prompt, /*title=*/kFilter,
-                         WideFormat(initial_severity))
-      .then(CatchResourceError(dialog_service_, /*title=*/kFilter,
-                               &ParseSeverity))
-      .then(std::bind_front(&EventView::SetSeverityMin, this));
+
+  // Wait for the prompt dialog. A user cancel surfaces as a rejection
+  // here, which propagates out of the coroutine and rejects the
+  // `promise<>` the caller already ignored in the original code.
+  auto text = co_await AwaitPromise(
+      NetExecutorAdapter{executor_},
+      RunPromptDialog(dialog_service_, prompt, /*title=*/kFilter,
+                      WideFormat(initial_severity)));
+
+  // Parse + apply. Preserve the original behavior where a bad value
+  // pops up an error message box via `ShowResourceError` and then
+  // rejects the coroutine's promise with the same exception.
+  // MSVC rejects `co_await` inside a `catch` block, so the exception is
+  // captured here and awaited after the `try` has unwound.
+  std::exception_ptr parse_error;
+  try {
+    SetSeverityMin(ParseSeverity(text));
+  } catch (...) {
+    parse_error = std::current_exception();
+  }
+  if (parse_error) {
+    co_await AwaitPromise(
+        NetExecutorAdapter{executor_},
+        ShowResourceError<void>(dialog_service_, /*title=*/kFilter,
+                                parse_error));
+  }
 }
 
 void EventView::SetSeverityMin(scada::EventSeverity severity) {

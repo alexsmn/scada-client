@@ -1,9 +1,9 @@
-﻿#include "filesystem/filesystem_commands.h"
+#include "filesystem/filesystem_commands.h"
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/prompt_dialog.h"
-#include "base/promise_executor.h"
+#include "base/awaitable_promise.h"
 #include "resources/common_resources.h"
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
@@ -11,12 +11,11 @@
 #include "filesystem/file_registry.h"
 #include "filesystem/file_util.h"
 #include "filesystem/filesystem_util.h"
-#include "main_window/main_window.h"
-#include "main_window/main_window_util.h"
-#include "main_window/opened_view.h"
+#include "main_window/main_window_interface.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "profile/window_definition_util.h"
+#include "scada/status_exception.h"
 #include "scada/status_promise.h"
 #include "services/task_manager.h"
 
@@ -28,17 +27,16 @@ namespace {
 
 const char16_t kAddFileTitle[] = u"Add File";
 const char16_t kOpenFileTitle[] = u"Open File";
-const char16_t kAddFileDirectoryPrompt[] = u"Folder name:";
-const char16_t kAddFileDirectoryTitle[] = u"Create Folder";
 
 }  // namespace
 
-promise<void> OpenJsonFile(const std::filesystem::path& path,
-                           MainWindowInterface* main_window,
-                           DialogService& dialog_service,
-                           aui::KeyModifiers key_modifiers) {
+Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
+                                  MainWindowInterface* main_window,
+                                  DialogService& dialog_service,
+                                  aui::KeyModifiers /*key_modifiers*/,
+                                  std::shared_ptr<Executor> executor) {
   if (!main_window) {
-    return make_resolved_promise();
+    co_return;
   }
 
   std::string error_string;
@@ -50,93 +48,124 @@ promise<void> OpenJsonFile(const std::filesystem::path& path,
   }
 
   if (!window_def) {
-    return ToVoidPromise(dialog_service.RunMessageBox(
-        Translate("The file has an invalid format."), kOpenFileTitle, MessageBoxMode::Error));
+    co_await AwaitPromise(
+        NetExecutorAdapter{executor},
+        ToVoidPromise(dialog_service.RunMessageBox(
+            Translate("The file has an invalid format."), kOpenFileTitle,
+            MessageBoxMode::Error)));
+    co_return;
   }
 
-  return OpenView(main_window, *window_def);
+  co_await AwaitPromise(
+      NetExecutorAdapter{executor},
+      ToVoidPromise(main_window->OpenView(*window_def, /*activate=*/true)));
 }
 
-promise<void> OpenFileCommandImpl::OpenFile(
-    const OpenFileCommandContext& context) const {
+Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
+    OpenFileCommandContext context) const {
   if (!context.main_window) {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
+    throw scada::status_exception{scada::StatusCode::Bad};
   }
 
   auto path = GetFilePath(context.file_node);
   if (path.empty()) {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
+    throw scada::status_exception{scada::StatusCode::Bad};
   }
 
   if (path.extension() == ".workplace") {
-    return OpenJsonFile(path, context.main_window, context.dialog_service,
-                        context.key_modifiers);
+    co_await OpenJsonFileAsync(std::move(path), context.main_window,
+                               context.dialog_service, context.key_modifiers,
+                               context.executor);
+    co_return;
   }
 
   auto* file_type =
       file_registry.FindTypeByExtension(path.extension().string());
   auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
   if (!window_info) {
-    return ToVoidPromise(context.dialog_service.RunMessageBox(
-        Translate("Unknown file type."), kOpenFileTitle, MessageBoxMode::Error));
+    co_await AwaitPromise(
+        NetExecutorAdapter{context.executor},
+        ToVoidPromise(context.dialog_service.RunMessageBox(
+            Translate("Unknown file type."), kOpenFileTitle,
+            MessageBoxMode::Error)));
+    co_return;
   }
 
-  auto window_def = WindowDefinition{*window_info}.set_path(path);
+  auto window_def = WindowDefinition{*window_info}.set_path(std::move(path));
+  co_await AwaitPromise(
+      NetExecutorAdapter{context.executor},
+      ToVoidPromise(context.main_window->OpenView(std::move(window_def),
+                                                  /*activate=*/true)));
+}
 
-  return OpenView(context.main_window, std::move(window_def));
+Awaitable<void> OpenFileCommandImpl::ExecuteAsync(
+    OpenFileCommandContext context) const {
+  // MSVC rejects `co_await` inside a `catch` block, so the error-path
+  // message box is awaited after the `try` has unwound.
+  bool open_failed = false;
+  try {
+    co_await OpenFileAsync(context);
+  } catch (...) {
+    open_failed = true;
+  }
+  if (!open_failed) {
+    co_return;
+  }
+  co_await AwaitPromise(
+      NetExecutorAdapter{context.executor},
+      ToVoidPromise(context.dialog_service.RunMessageBox(
+          Translate("Failed to download file from server."), kOpenFileTitle,
+          MessageBoxMode::Error)));
+  throw scada::status_exception{scada::StatusCode::Bad};
 }
 
 promise<void> OpenFileCommandImpl::Execute(
     const OpenFileCommandContext& context) const {
-  return OpenFile(context).except(BindPromiseExecutor(
-      context.executor,
-      // TODO: `weak ptr` for main window.
-      [&dialog_service = context.dialog_service](std::exception_ptr) {
-        return dialog_service
-            .RunMessageBox(Translate("Failed to download file from server."),
-                           kOpenFileTitle, MessageBoxMode::Error)
-            .then([](MessageBoxResult) {
-              return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad);
-            });
-      }));
+  auto executor = context.executor;
+  return ToPromise(NetExecutorAdapter{executor}, ExecuteAsync(context));
 }
+
+namespace {
+
+Awaitable<void> AddFileAsync(NodeRef parent_directory,
+                             DialogService& dialog_service,
+                             TaskManager& task_manager,
+                             std::shared_ptr<Executor> executor) {
+  auto path = co_await AwaitPromise(
+      NetExecutorAdapter{executor},
+      dialog_service.SelectOpenFile(kAddFileTitle));
+
+  std::ifstream ifs{path, std::ios::binary};
+  std::string contents_string{std::istreambuf_iterator<char>{ifs}, {}};
+  if (!ifs.is_open()) {
+    co_await AwaitPromise(
+        NetExecutorAdapter{executor},
+        ToVoidPromise(dialog_service.RunMessageBox(
+            Translate("Failed to read file."), kAddFileTitle,
+            MessageBoxMode::Error)));
+    throw scada::status_exception{scada::StatusCode::Bad};
+  }
+
+  scada::LocalizedText new_file_name = path.filename().u16string();
+  scada::ByteString contents{contents_string.begin(), contents_string.end()};
+
+  co_await AwaitPromise(
+      NetExecutorAdapter{executor},
+      ToVoidPromise(task_manager.PostInsertTask(
+          {.type_definition_id = filesystem::id::FileType,
+           .parent_id = parent_directory.node_id(),
+           .attributes = {.display_name = std::move(new_file_name),
+                          .value = std::move(contents)}})));
+}
+
+}  // namespace
 
 promise<> AddFile(NodeRef parent_directory,
                   DialogService& dialog_service,
-                  TaskManager& task_manager) {
-  return dialog_service.SelectOpenFile(kAddFileTitle)
-      .then([parent_directory, &dialog_service,
-             &task_manager](const std::filesystem::path& path) {
-        std::ifstream ifs{path, std::ios::binary};
-        std::string contents_string{std::istreambuf_iterator<char>{ifs}, {}};
-        if (!ifs.is_open()) {
-          return ToRejectedPromise(dialog_service.RunMessageBox(
-              Translate("Failed to read file."), kAddFileTitle,
-              MessageBoxMode::Error));
-        }
-
-        scada::LocalizedText new_file_name = path.filename().u16string();
-        scada::ByteString contents{contents_string.begin(),
-                                   contents_string.end()};
-
-        return ToVoidPromise(task_manager.PostInsertTask(
-            {.type_definition_id = filesystem::id::FileType,
-             .parent_id = parent_directory.node_id(),
-             .attributes = {.display_name = std::move(new_file_name),
-                            .value = std::move(contents)}}));
-      });
-}
-
-promise<> CreateFileDirectory(NodeRef parent_directory,
-                              DialogService& dialog_service,
-                              TaskManager& task_manager) {
-  return RunPromptDialog(dialog_service, kAddFileDirectoryPrompt,
-                         kAddFileDirectoryTitle)
-      .then([parent_directory = std::move(parent_directory),
-             &task_manager](const std::u16string& new_directory_name) {
-        return ToVoidPromise(task_manager.PostInsertTask(
-            {.parent_id = parent_directory.node_id(),
-             .reference_type_id = filesystem::id::FileDirectoryType,
-             .attributes = {.display_name = new_directory_name}}));
-      });
+                  TaskManager& task_manager,
+                  std::shared_ptr<Executor> executor) {
+  auto exec = executor;
+  return ToPromise(NetExecutorAdapter{exec},
+                   AddFileAsync(std::move(parent_directory), dialog_service,
+                                task_manager, std::move(executor)));
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/key_codes.h"
+#include "base/awaitable.h"
 #include "base/promise.h"
 #include "controller/command_registry.h"
 #include "controller/contents_model.h"
@@ -62,7 +63,12 @@ class EventView : protected ControllerContext,
 
   void ExportToExcel();
 
+  // Public entry point keeps the `promise<>` return type; the actual
+  // dialog/parse/apply pipeline now lives in `SelectSeverityAsync` so the
+  // sequence `prompt -> parse -> apply` is expressed with straight
+  // `co_await` instead of nested `.then()` steps.
   promise<> SelectSeverity();
+  Awaitable<void> SelectSeverityAsync();
   void SetSeverityMin(scada::EventSeverity severity);
 
   NodeIdSet GetSelectedNodeIds() const;

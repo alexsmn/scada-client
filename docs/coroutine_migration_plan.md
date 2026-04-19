@@ -194,6 +194,32 @@ SCADA services or local service doubles.
   `std::shared_ptr<Executor>`; `FileSystemComponentContext` (and the
   construction site in `ClientApplication::CreateFeatureComponents`)
   were updated to thread it through.
+- **filesystem/filesystem_commands** migrated
+  (`client/filesystem/filesystem_commands.{h,cpp}`).
+  `OpenFileCommandImpl::Execute` and `::OpenFile` are now coroutine
+  bodies (`ExecuteAsync` / `OpenFileAsync`); the free helpers
+  `OpenJsonFileAsync` and the coroutine-internal `AddFileAsync` replace
+  the nested `.then(...).except(...)` pipelines that ran the download
+  branch, the unknown-extension dialog, the invalid-JSON dialog, and
+  the "add file" flow. The public `OpenFileCommandImpl::Execute`
+  surface still returns `promise<void>`, and `AddFile` still returns
+  `promise<>`; they spawn the coroutine via `ToPromise`. `AddFile`
+  gained an `std::shared_ptr<Executor>` parameter, which
+  `FileSystemComponent` threads through from its own context. The
+  unused `CreateFileDirectory` helper was removed rather than
+  migrated. The dependency on `main_window/main_window_util.h::OpenView`
+  was dropped; the coroutine bodies call `MainWindowInterface::OpenView`
+  directly so `client_filesystem` no longer compiles-in the free
+  helper. Regression coverage lives in
+  `client/filesystem/filesystem_commands_unittest.cpp`.
+- **events/EventView::SelectSeverity** migrated
+  (`client/events/event_view.{h,cpp}`). The prompt/parse/apply pipeline
+  is now a coroutine (`SelectSeverityAsync`); the public `promise<>`
+  entry spawns it via `ToPromise(NetExecutorAdapter{executor_}, ...)`.
+  The `ResourceError` handling path uses `ShowResourceError<void>` +
+  `AwaitPromise` instead of `CatchResourceError` wrapped around
+  `ParseSeverity`. No context changes were required — `EventView`
+  already receives an `Executor` via `ControllerContext::executor_`.
 
 ### Priority Order
 

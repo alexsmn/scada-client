@@ -63,7 +63,7 @@ void FileSystemComponent::AddFileCommand(
       BasicCommand<SelectionCommandContext>{command_id}
           .set_execute_handler([this](const SelectionCommandContext& context) {
             return AddFile(context.selection.node(), context.dialog_service,
-                           task_manager_);
+                           task_manager_, executor_);
           })
           .set_available_handler([this, file_type](
                                      const SelectionCommandContext& context) {

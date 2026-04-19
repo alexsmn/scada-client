@@ -1,9 +1,11 @@
 #pragma once
 
 #include "aui/key_codes.h"
-#include "node_service/node_ref.h"
+#include "base/awaitable.h"
 #include "base/promise.h"
+#include "node_service/node_ref.h"
 
+#include <filesystem>
 #include <memory>
 
 class DialogService;
@@ -27,21 +29,28 @@ using OpenFileCommand =
 
 class OpenFileCommandImpl {
  public:
-  promise<void> Execute(
-      const OpenFileCommandContext& context) const;
+  promise<void> Execute(const OpenFileCommandContext& context) const;
 
   const FileRegistry& file_registry;
   FileManager& file_manager;
 
  private:
-  promise<void> OpenFile(
-      const OpenFileCommandContext& context) const;
+  // Coroutine internals: the public `Execute` spawns `ExecuteAsync` on
+  // `context.executor` and hands back a `promise<void>` so callers don't
+  // change. `OpenFileAsync` branches on file type and dispatches to the
+  // right open flow. `OpenJsonFileAsync` loads a `.workplace` JSON window
+  // definition from disk and opens it.
+  Awaitable<void> ExecuteAsync(OpenFileCommandContext context) const;
+  Awaitable<void> OpenFileAsync(OpenFileCommandContext context) const;
 };
+
+Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
+                                  MainWindowInterface* main_window,
+                                  DialogService& dialog_service,
+                                  aui::KeyModifiers key_modifiers,
+                                  std::shared_ptr<Executor> executor);
 
 promise<> AddFile(NodeRef parent_directory,
                   DialogService& dialog_service,
-                  TaskManager& task_manager);
-
-promise<> CreateFileDirectory(NodeRef parent_directory,
-                              DialogService& dialog_service,
-                              TaskManager& task_manager);
+                  TaskManager& task_manager,
+                  std::shared_ptr<Executor> executor);
