@@ -236,7 +236,8 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
 
 void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
   filesystem_component_ = std::make_unique<FileSystemComponent>(
-      FileSystemComponentContext{.node_service_ = *node_service_,
+      FileSystemComponentContext{.executor_ = executor_,
+                                 .node_service_ = *node_service_,
                                  .task_manager_ = *task_manager_,
                                  .create_tree_ = *create_tree_,
                                  .scada_client_ = ctx.scada_client});

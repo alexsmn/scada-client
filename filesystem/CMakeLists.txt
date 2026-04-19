@@ -2,6 +2,9 @@ client_module(client_filesystem)
 
 client_module_link_libraries(client_filesystem PUBLIC
   scada_common
+  # `file_manager_impl.cpp` uses `NetExecutorAdapter` / `AwaitPromise`, which
+  # transitively pull in `transport/executor.h`.
+  transport
 )
 
 client_module_link_libraries(client_filesystem PRIVATE

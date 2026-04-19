@@ -15,6 +15,7 @@ template <typename T>
 class BasicCommandRegistry;
 
 class CreateTree;
+class Executor;
 class FileCache;
 class FileManager;
 class FileRegistry;
@@ -24,6 +25,9 @@ class TaskManager;
 struct SelectionCommandContext;
 
 struct FileSystemComponentContext {
+  // Needed by `FileManagerImpl` so its coroutine internals have an
+  // executor to resume on after `AwaitPromise`.
+  const std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;

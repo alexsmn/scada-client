@@ -181,11 +181,25 @@ wraps async work to report progress or serialize UI updates.
 Once the adapter layer is stable, migrate client modules that frequently call
 SCADA services or local service doubles.
 
+### Status
+
+- **filesystem/FileManagerImpl** migrated
+  (`client/filesystem/file_manager_impl.{h,cpp}`). `DownloadFileFromServer`
+  and the new `GetFileNodeAsync` helper are coroutine bodies that
+  `co_await AwaitPromise(executor, scada::client::...)` instead of
+  chaining `.then()` four times. The public
+  `promise<void> FileManager::DownloadFileFromServer(...)` surface is
+  unchanged — callers, mocks, and `FileSynchronizer` continue to see a
+  `promise<void>`. `FileManagerContext` now takes a
+  `std::shared_ptr<Executor>`; `FileSystemComponentContext` (and the
+  construction site in `ClientApplication::CreateFeatureComponents`)
+  were updated to thread it through.
+
 ### Priority Order
 
 1. `services/`
 2. `events/`
-3. `filesystem/`
+3. `filesystem/` — `FileManagerImpl` migrated (see Status)
 4. `profile/`
 5. `main_window/`
 6. `configuration/*`
