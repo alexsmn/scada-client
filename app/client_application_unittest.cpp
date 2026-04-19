@@ -120,23 +120,43 @@ class ClientApplicationTest : public Test {
   ~ClientApplicationTest();
 
  protected:
+  // Wait-helpers attach both a resolve and a reject callback. With the
+  // coroutine-driven startup flow, exceptions from Start()/Login()/Quit() are
+  // captured by the awaitable-to-promise adapter and surface as a promise
+  // rejection instead of an unhandled exception propagating out of the
+  // executor. Tests that use EXPECT_THROW need Wait() to rethrow the
+  // captured error.
   template <class T>
   T Wait(promise<T> pending) {
     std::optional<T> result;
-    std::move(pending).then([&](T value) { result = std::move(value); });
-    while (!result) {
+    std::exception_ptr error;
+    std::move(pending).then(
+        [&](T value) { result = std::move(value); },
+        [&](std::exception_ptr e) { error = e; });
+    while (!result && !error) {
       io_context_.poll();
       QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    if (error) {
+      std::rethrow_exception(error);
     }
     return std::move(*result);
   }
 
   void Wait(promise<void> pending) {
     bool done = false;
-    std::move(pending).then([&] { done = true; });
+    std::exception_ptr error;
+    std::move(pending).then([&] { done = true; },
+                            [&](std::exception_ptr e) {
+                              error = e;
+                              done = true;
+                            });
     while (!done) {
       io_context_.poll();
       QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    if (error) {
+      std::rethrow_exception(error);
     }
   }
 
@@ -240,6 +260,51 @@ TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
   EXPECT_NO_THROW(Wait(app_.Quit()));
 }
 
+// Start() is coroutine-driven internally. Verify that a rejection from the
+// login handler propagates out of the returned promise so upstream error
+// handling still fires.
+TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
+  struct MyError : std::runtime_error {
+    MyError() : std::runtime_error{"boom"} {}
+  };
+
+  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
+      .WillOnce(Return(make_rejected_promise<std::optional<DataServices>>(
+          std::make_exception_ptr(MyError{}))));
+
+  EXPECT_THROW(Wait(app_.Start()), MyError);
+}
+
+// PostLogin depends on login_handler_ resolving first. The coroutine-based
+// Start() must still preserve that order: no module should exist before
+// OnLoginCompleted runs. Verified by delaying the login promise and
+// checking that app_.Start() stays pending until the promise resolves.
+TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
+  promise<std::optional<DataServices>> pending_login;
+  EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
+      .WillOnce(Return(pending_login));
+
+  auto started = app_.Start();
+
+  bool done = false;
+  std::move(started).then([&] { done = true; });
+
+  // Pump the loop a few times — Start() must not resolve while login is
+  // still pending.
+  for (int i = 0; i < 5 && !done; ++i) {
+    io_context_.poll();
+    QApplication::processEvents(QEventLoop::AllEvents, 10);
+  }
+  EXPECT_FALSE(done);
+
+  // Resolve the login and verify Start() now completes.
+  pending_login.resolve(DataServices::FromUnownedServices(services_.services()));
+  while (!done) {
+    io_context_.poll();
+    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+  }
+}
+
 // Ensure that the initial page is created and all windows are defined.
 TEST_F(ClientApplicationTest, RunWithNewProfile) {
   StartApp();
@@ -310,20 +375,34 @@ class ClientApplicationConfiguratorTest : public Test {
   template <class T>
   T Wait(promise<T> pending) {
     std::optional<T> result;
-    std::move(pending).then([&](T value) { result = std::move(value); });
-    while (!result) {
+    std::exception_ptr error;
+    std::move(pending).then(
+        [&](T value) { result = std::move(value); },
+        [&](std::exception_ptr e) { error = e; });
+    while (!result && !error) {
       io_context_.poll();
       QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    if (error) {
+      std::rethrow_exception(error);
     }
     return std::move(*result);
   }
 
   void Wait(promise<void> pending) {
     bool done = false;
-    std::move(pending).then([&] { done = true; });
+    std::exception_ptr error;
+    std::move(pending).then([&] { done = true; },
+                            [&](std::exception_ptr e) {
+                              error = e;
+                              done = true;
+                            });
     while (!done) {
       io_context_.poll();
       QApplication::processEvents(QEventLoop::WaitForMoreEvents);
+    }
+    if (error) {
+      std::rethrow_exception(error);
     }
   }
 

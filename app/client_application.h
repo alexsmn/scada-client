@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/client_application_modules.h"
+#include "base/awaitable.h"
 #include "base/promise.h"
 #include "timed_data/timed_data_service.h"
 #include "configuration/configuration_module.h"
@@ -129,6 +130,16 @@ class ClientApplication : private ClientApplicationContext {
       const PostLoginContext& ctx);
 
   promise<void> Login();
+
+  // Coroutine-driven internals for the startup/login/quit flow. The public
+  // `Start()`, `Login()` and `Quit()` entry points keep returning
+  // `promise<void>` for compatibility with the rest of the client, but the
+  // actual orchestration lives in these coroutines so the sequential
+  // ordering is readable without nested `.then()` chains.
+  Awaitable<void> StartAsync();
+  Awaitable<void> LoginAsync();
+  Awaitable<void> QuitAsync();
+
   void OnLoginCompleted(const DataServices& services);
 
   std::unique_ptr<CoreModule> core_module_;

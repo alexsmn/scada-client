@@ -1,6 +1,7 @@
 #include "app/client_application.h"
 
 #include "aui/translation.h"
+#include "base/awaitable_promise.h"
 #include "base/blinker.h"
 #include "base/boost_log_adapter.h"
 #include "base/program_options.h"
@@ -122,7 +123,12 @@ MainWindowManager& ClientApplication::main_window_manager() {
 }
 
 promise<void> ClientApplication::Start() {
-  return Login().then(BindPromiseExecutor(executor_, [this] { PostLogin(); }));
+  return ToPromise(NetExecutorAdapter{executor_}, StartAsync());
+}
+
+Awaitable<void> ClientApplication::StartAsync() {
+  co_await LoginAsync();
+  PostLogin();
 }
 
 void ClientApplication::PostLogin() {
@@ -332,19 +338,22 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
 }
 
 promise<void> ClientApplication::Login() {
+  return ToPromise(NetExecutorAdapter{executor_}, LoginAsync());
+}
+
+Awaitable<void> ClientApplication::LoginAsync() {
   logger_->Write(LogSeverity::Normal, "Login");
 
   DataServicesContext services_context{logger_, executor_, *transport_factory_,
                                        ReadServiceLogParamsFromCommandLine()};
 
-  return login_handler_(std::move(services_context))
-      .then(BindPromiseExecutor(executor_,
-                                [this](std::optional<DataServices> services) {
-                                  if (!services) {
-                                    throw LoginCanceled{};
-                                  }
-                                  OnLoginCompleted(std::move(*services));
-                                }));
+  auto services = co_await AwaitPromise(
+      NetExecutorAdapter{executor_},
+      login_handler_(std::move(services_context)));
+  if (!services) {
+    throw LoginCanceled{};
+  }
+  OnLoginCompleted(std::move(*services));
 }
 
 void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
@@ -363,13 +372,16 @@ promise<void> ClientApplication::Quit() {
     return quit_promise_;
   }
 
+  quitting_ = true;
+  StartAwaitable(NetExecutorAdapter{executor_}, quit_promise_, QuitAsync());
+  return quit_promise_;
+}
+
+Awaitable<void> ClientApplication::QuitAsync() {
   logger_->Write(LogSeverity::Normal, "Quit");
 
-  quitting_ = true;
-
   if (!master_data_services_) {
-    quit_promise_.resolve();
-    return quit_promise_;
+    co_return;
   }
 
   logger_->Write(LogSeverity::Normal, "Disconnect");
@@ -378,12 +390,15 @@ promise<void> ClientApplication::Quit() {
   // TODO: Create event module unconditionally.
   if (event_module_) {
     // TODO: Localize.
-    event_module_->local_events().ReportEvent(LocalEvents::SEV_ERROR,
-                                              Translate("Disconnecting from server..."));
+    event_module_->local_events().ReportEvent(
+        LocalEvents::SEV_ERROR, Translate("Disconnecting from server..."));
   }
 
-  ForwardPromise(IgnoreResult(master_data_services_->Disconnect()),
-                 quit_promise_);
-
-  return quit_promise_;
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{executor_},
+                          master_data_services_->Disconnect());
+  } catch (...) {
+    // Matches the prior IgnoreResult(): disconnect errors must not prevent
+    // the application from quitting.
+  }
 }

@@ -395,6 +395,15 @@ Unit tests follow the `*_unittest.cpp` naming convention (33 test files). Tests 
 - `main_window/main_window_unittest.cpp`
 - `profile/page_layout_unittest.cpp`
 
+### Reusable Test Helpers
+
+Put reusable test helpers — shared fakes, fixture bases, mock-factory
+functions, and test-only utilities used by more than one module — under
+`client/test/`. Keep per-module `*_unittest.cpp` files focused on the
+tests themselves; when a helper starts getting copy-pasted across
+modules, move it into `client/test/` and link the module's test target
+against it.
+
 ### Running Tests
 
 ```bash
