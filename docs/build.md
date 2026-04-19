@@ -31,6 +31,28 @@ the whole client for unrelated assertions. The standalone exe links
 `scada_base` + `base_unittest` only, builds in seconds, and is not
 subject to the x86 link-time flakes described below.
 
+### Measured edit-compile-test cycle
+
+Observed on the `ninja-dev` / `release-dev` preset (`RelWithDebInfo`,
+x86 MSVC 14.5, ccache warm), all other dependencies already built, after
+touching the respective unittest source:
+
+| Target | Incremental build | Run | Tests |
+| --- | ---: | ---: | ---: |
+| `client_startup_exception_tests` | ~3 s | ~0.05 s | 6 |
+| `client_qt_unittests` | ~33 s | ~1.5 s | 11 |
+
+Numbers come from editing the test's own source (one `cl.exe`
+invocation plus the link of that target only) and running the resulting
+binary without filters. Treat them as order-of-magnitude — the actual
+cost moves with parallel compile load on this machine and whether the
+`client_qt_app_shared` PCH / obj cache is current.
+
+The takeaway is the ratio, not the absolute seconds: a change that
+would rebuild `client_startup_exception_tests` turns a ~30 s cycle into
+a ~3 s cycle, and the flaky heavy link is off the critical path for
+those six tests entirely.
+
 ## Why the shared lib exists
 
 `client_application.cpp`, `client_application_modules.cpp`,
