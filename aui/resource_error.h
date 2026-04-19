@@ -24,8 +24,11 @@ inline std::u16string GetResourceErrorMessage(std::exception_ptr e) {
     return e.message();
   } catch (...) {
     assert(false);
-    return u"Ошибка";
   }
+  // Reached for anything that is not a `ResourceError`. The trailing
+  // return also satisfies cppcheck's `missingReturn` checker, which does
+  // not treat `std::rethrow_exception` as terminating control flow.
+  return u"Ошибка";
 }
 
 template <typename T>

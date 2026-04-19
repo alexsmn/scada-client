@@ -335,6 +335,7 @@ Awaitable<void> EventView::SelectSeverityAsync() {
         ShowResourceError<void>(dialog_service_, /*title=*/kFilter,
                                 parse_error));
   }
+  co_return;
 }
 
 void EventView::SetSeverityMin(scada::EventSeverity severity) {

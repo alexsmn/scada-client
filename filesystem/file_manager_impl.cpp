@@ -51,6 +51,7 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
   if (!ofs) {
     throw scada::status_exception{scada::StatusCode::Bad};
   }
+  co_return;
 }
 
 Awaitable<scada::NodeId> FileManagerImpl::GetFileNodeAsync(

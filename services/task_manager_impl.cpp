@@ -331,6 +331,7 @@ Awaitable<void> TaskManagerImpl::RunTaskBody(TaskMethod method) {
     status = scada::GetExceptionStatus(std::current_exception());
   }
   ReportRequestCompletion(status, std::u16string{});
+  co_return;
 }
 
 void TaskManagerImpl::StartTask(Task&& task) {

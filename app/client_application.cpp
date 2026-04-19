@@ -129,6 +129,7 @@ promise<void> ClientApplication::Start() {
 Awaitable<void> ClientApplication::StartAsync() {
   co_await LoginAsync();
   PostLogin();
+  co_return;
 }
 
 void ClientApplication::PostLogin() {
@@ -355,6 +356,7 @@ Awaitable<void> ClientApplication::LoginAsync() {
     throw LoginCanceled{};
   }
   OnLoginCompleted(std::move(*services));
+  co_return;
 }
 
 void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
@@ -402,4 +404,5 @@ Awaitable<void> ClientApplication::QuitAsync() {
     // Matches the prior IgnoreResult(): disconnect errors must not prevent
     // the application from quitting.
   }
+  co_return;
 }

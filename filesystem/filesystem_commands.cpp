@@ -59,6 +59,7 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
   co_await AwaitPromise(
       NetExecutorAdapter{executor},
       ToVoidPromise(main_window->OpenView(*window_def, /*activate=*/true)));
+  co_return;
 }
 
 Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
@@ -96,6 +97,7 @@ Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
       NetExecutorAdapter{context.executor},
       ToVoidPromise(context.main_window->OpenView(std::move(window_def),
                                                   /*activate=*/true)));
+  co_return;
 }
 
 Awaitable<void> OpenFileCommandImpl::ExecuteAsync(
@@ -156,6 +158,7 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
            .parent_id = parent_directory.node_id(),
            .attributes = {.display_name = std::move(new_file_name),
                           .value = std::move(contents)}})));
+  co_return;
 }
 
 }  // namespace
