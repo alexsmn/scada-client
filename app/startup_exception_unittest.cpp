@@ -1,6 +1,6 @@
 #include "app/startup_exception.h"
 
-#include "app/client_application.h"
+#include "app/login_canceled.h"
 
 #include <gtest/gtest.h>
 

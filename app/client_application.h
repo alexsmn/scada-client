@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/client_application_modules.h"
+#include "app/login_canceled.h"
 #include "base/awaitable.h"
 #include "base/promise.h"
 #include "timed_data/timed_data_service.h"
@@ -66,11 +67,6 @@ class PropertyService;
 class TaskManager;
 class Speech;
 class WriteService;
-
-class LoginCanceled : public std::runtime_error {
- public:
-  LoginCanceled() : std::runtime_error{"Login canceled"} {}
-};
 
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;

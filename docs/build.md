@@ -7,16 +7,29 @@ when rebuilding `client_qt_unittests`.
 
 | Target | Produces | Purpose |
 | --- | --- | --- |
-| `client_qt_app_shared` | `.lib` | Shared Qt app object code, linked into both the exe and the tests. |
+| `client_qt_app_shared` | `.lib` | Shared Qt app object code, linked into both the exe and the heavy integration test. |
 | `client_qt` | `client.exe` | The desktop client. |
-| `client_qt_unittests` | `client_qt_unittests.exe` | Integration/UT suite that exercises `ClientApplication` end-to-end. |
+| `client_qt_unittests` | `client_qt_unittests.exe` | Heavy integration UT suite that exercises `ClientApplication` end-to-end. |
+| `client_startup_exception_tests` | `client_startup_exception_tests.exe` | Platform-neutral UT for `startup_exception.cpp` — links only `scada_base` + `base_unittest`. |
 | `client_<module>_qt_unittests` | `client_<module>_qt_unittests.exe` | Auto-generated per `client_module()` target for module-local unit tests. |
 
-`client_qt_unittests` is intentionally monolithic because
-`client_application_unittest.cpp` exercises the full `ClientApplication`
-bootstrap — it has to link the same ~130 libraries as the desktop client
-itself. Smaller, module-scoped tests belong in their module's
-`*_qt_unittests` target, not here.
+`client_qt_unittests` is intentionally monolithic *only* for
+`client_application_unittest.cpp`, which exercises the full
+`ClientApplication` bootstrap and has to link the same ~130 libraries
+as the desktop client itself. Any test that doesn't actually need the
+full app wired up should land in a separate small target (the shape of
+`client_startup_exception_tests`) or the module-local
+`client_<module>_qt_unittests` — do not bolt new cases onto
+`client_qt_unittests` out of convenience.
+
+### Why `startup_exception` is split out
+
+`startup_exception.cpp` only needs `LoginCanceled` (extracted to
+`app/login_canceled.h`) and standard library facilities. Keeping those
+six test cases inside `client_qt_unittests` paid the full link cost of
+the whole client for unrelated assertions. The standalone exe links
+`scada_base` + `base_unittest` only, builds in seconds, and is not
+subject to the x86 link-time flakes described below.
 
 ## Why the shared lib exists
 
@@ -73,9 +86,10 @@ Compile-side `C1060` on `client_application_modules.cpp` under heavy
 parallel ninja load is the same class of problem — retrying picks up
 free heap and the target compiles.
 
-Do **not** split `client_qt_unittests` across smaller executables as a
-flake workaround; the per-test link cost would dominate. The structural
-fix is to keep adding new test coverage to the per-module
-`client_<module>_qt_unittests` binaries, so that `client_qt_unittests`
-stays scoped to the handful of tests that genuinely need the whole
-application wired up.
+Do **not** split a test out of `client_qt_unittests` purely as a flake
+workaround — if the test body genuinely needs the full app link, it
+still has to pay the flake tax wherever it lives. The structural fix is
+what `client_startup_exception_tests` demonstrates: when a test doesn't
+need the app wired up, take it off the heavy link entirely. Tests that
+*do* need the full app belong in `client_qt_unittests`; module-scoped
+tests belong in their module's `client_<module>_qt_unittests`.
