@@ -1,6 +1,4 @@
 file(GLOB MAIN_WT CONFIGURE_DEPENDS
-  "../client_application.cpp"
-  "../client_application.h"
   "../app_init.cpp"
   "../app_init.h"
   "main.cpp"
@@ -14,14 +12,22 @@ list(FILTER SOURCES EXCLUDE REGEX "/vidicon/")
 list(FILTER SOURCES EXCLUDE REGEX "/web/")
 
 # Lib
+#
+# `client_application.cpp` and `startup_exception.cpp` live here (rather than
+# in `MAIN_WT`) so the test executable can pull them in through the lib,
+# avoiding a second copy of the heavy `client_application.cpp` compilation.
 
 add_library(client_wt_lib
   ${SOURCES}
   ${SOURCES_WT}
+  "../client_application.cpp"
+  "../client_application.h"
   "../client_application_modules.cpp"
   "../client_application_modules.h"
   "../opcua_services_module.cpp"
   "../opcua_services_module.h"
+  "../startup_exception.cpp"
+  "../startup_exception.h"
 )
 target_precompile_headers(client_wt_lib REUSE_FROM scada_base)
 

@@ -4,28 +4,29 @@ cmake_policy(SET CMP0020 NEW)
 file(GLOB MAIN_QT CONFIGURE_DEPENDS
   "../*.rc"
   "../../res/client.qrc"
-  "../client_application.cpp"
-  "../client_application.h"
   "../app_init.cpp"
   "../app_init.h"
-  "../startup_exception.cpp"
-  "../startup_exception.h"
   "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
 
-set(CLIENT_QT_APP_SUPPORT
+# Shared library compiled once and linked into both `client_qt` and
+# `client_qt_unittests`. Keeps the heavy `client_application.cpp` and the
+# module-wiring support files off the hot path of a test-only rebuild —
+# without it, every edit to `main.cpp` or an unrelated test source forces
+# these files to be recompiled twice.
+add_library(client_qt_app_shared STATIC
+  "../client_application.cpp"
+  "../client_application.h"
   "../client_application_modules.cpp"
   "../client_application_modules.h"
   "../opcua_services_module.cpp"
   "../opcua_services_module.h"
+  "../startup_exception.cpp"
+  "../startup_exception.h"
 )
-
-# Exe
-
-add_executable(client_qt WIN32 ${MAIN_QT} ${CLIENT_QT_APP_SUPPORT})
-target_precompile_headers(client_qt REUSE_FROM scada_base)
-target_link_libraries(client_qt PUBLIC
+target_precompile_headers(client_qt_app_shared REUSE_FROM scada_base)
+target_link_libraries(client_qt_app_shared PUBLIC
   aui_qt
   client_common
   client_configuration_qt
@@ -49,6 +50,12 @@ target_link_libraries(client_qt PUBLIC
   client_vidicon_qt
   scada_core_opcua
 )
+
+# Exe
+
+add_executable(client_qt WIN32 ${MAIN_QT})
+target_precompile_headers(client_qt REUSE_FROM scada_base)
+target_link_libraries(client_qt PUBLIC client_qt_app_shared)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
 if(COMMAND scada_add_windows_version_info)
   scada_add_windows_version_info(client_qt
@@ -98,7 +105,6 @@ install(TARGETS client_qt
 add_executable(client_qt_unittests
   ${UNITTESTS}
   ${UNITTESTS_QT}
-  ${CLIENT_QT_APP_SUPPORT}
 )
 target_precompile_headers(client_qt_unittests REUSE_FROM scada_base)
 if(MSVC)
@@ -109,29 +115,9 @@ if(MSVC)
   )
 endif()
 # Uses the custom runner from `test/qt/test_main_qt.cpp`.
+# `client_qt_app_shared` transitively supplies the Qt client link set.
 target_link_libraries(client_qt_unittests PRIVATE
-  aui_qt
-  client_common
-  client_configuration_qt
-  client_controller_qt
-  client_events_qt
-  client_export_configuration_qt
-  client_graph_qt
-  client_profile_qt
-  client_services_qt
-  ${CLIENT_QT_COMPONENT_TARGETS}
-  client_ui_common_qt
-  client_ui_dragdrop_qt
-  client_ui_progress_qt
-  client_export_csv_qt
-  client_favorites_qt
-  client_main_window_qt
-  client_modus_qt
-  client_portfolio_qt
-  client_print_service_qt
-  client_properties_qt
-  client_vidicon_qt
-  scada_core_opcua
+  client_qt_app_shared
   base_unittest
 )
 include(GoogleTest)

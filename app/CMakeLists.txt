@@ -13,11 +13,11 @@ target_link_libraries(client_common INTERFACE
   Transport::transport
 )
 
+# `client_application.cpp` and `startup_exception.cpp` are compiled once
+# into `client_qt_app_shared` / `client_wt_lib` and linked into both the
+# apps and the test binaries, so only the test sources themselves need to
+# be added here.
 list(APPEND UNITTESTS
-  "${CMAKE_CURRENT_SOURCE_DIR}/client_application.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/client_application.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/startup_exception.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/startup_exception.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/startup_exception_unittest.cpp"
 )
 

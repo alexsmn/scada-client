@@ -8,7 +8,7 @@ client_module_link_libraries(client_filesystem PRIVATE
   client_controller
 )
 
-list(APPEND UNITTESTS
-  "${CMAKE_CURRENT_SOURCE_DIR}/file_cache_unittest.cpp"
-)
-set(UNITTESTS "${UNITTESTS}" PARENT_SCOPE)
+# `file_cache_unittest.cpp` is auto-discovered by `client_module()` and
+# picked up by the per-module `client_filesystem_{qt,wt}_unittests`
+# executables; it does not need to be added to the monolithic
+# `client_{qt,wt}_unittests` target as well.
