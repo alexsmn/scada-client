@@ -141,9 +141,22 @@ to regression-test.
 The next migration slice should target the places where the client currently
 wraps async work to report progress or serialize UI updates.
 
+### Status
+
+- **TaskManagerImpl** internals migrated to coroutine bodies
+  (`client/services/task_manager_impl.{h,cpp}`). Each `Post*Task` is now a
+  coroutine lambda that `co_await`s the callback-based core services through
+  `scada::CallbackToCoroutine{Attribute,NodeManagement}ServiceAdapter`. The
+  public `TaskManager` interface still returns `promise<T>` so client callers
+  are unaffected. `StartTask` now `CoSpawn`s the task body; queue sequencing,
+  progress-dialog timing, and `ReportRequestCompletion` semantics are
+  preserved. Progress hosts / progress dialogs, command handlers, and
+  long-running export/import/file operations remain on the follow-up list
+  below.
+
 ### Target Areas
 
-- `TaskManager`
+- `TaskManager` — internals migrated (see Status)
 - progress hosts / progress dialogs
 - command handlers that queue async work
 - long-running export/import/file operations

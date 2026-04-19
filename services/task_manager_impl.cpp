@@ -1,8 +1,8 @@
-﻿#include "services/task_manager_impl.h"
+#include "services/task_manager_impl.h"
 
 #include "aui/translation.h"
+#include "base/awaitable_promise.h"
 #include "base/promise.h"
-#include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "core/progress_host.h"
 #include "events/local_events.h"
@@ -10,10 +10,10 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
-#include "scada/attribute_service_promises.h"
-#include "scada/node_management_service_promises.h"
 #include "scada/service_context.h"
+#include "scada/status_exception.h"
 #include "scada/status_or.h"
+#include "scada/status_promise.h"
 
 // Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
 #ifdef ReportEvent
@@ -68,6 +68,13 @@ scada::StatusOr<std::vector<scada::WriteValue>> PrepareUpdateInputs(
   return inputs;
 }
 
+// Maps a write batch result to a Status: first bad code wins, otherwise Good.
+scada::Status FirstBadStatus(std::span<const scada::StatusCode> codes) {
+  auto it = std::ranges::find_if(codes, &scada::IsBad);
+  return it == codes.end() ? scada::Status{scada::StatusCode::Good}
+                           : scada::Status{*it};
+}
+
 }  // namespace
 
 // TaskManagerImpl
@@ -89,26 +96,38 @@ void TaskManagerImpl::CancelProgress() {
 
 promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
                                         const TaskLauncher& launcher) {
-  return PostTaskMethod(description, [this, launcher] {
-    scada::ToExplicitStatusCodePromise(launcher())
-        .then(BindPromiseExecutor(
-            executor_, weak_from_this(), [this](scada::StatusCode status_code) {
-              ReportRequestCompletion(status_code, /*result_text=*/{});
-            }));
-  });
+  auto self = shared_from_this();
+  return PostTaskMethod(
+      description,
+      [self, launcher]() mutable -> Awaitable<scada::Status> {
+        try {
+          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
+                                launcher());
+          co_return scada::Status{scada::StatusCode::Good};
+        } catch (const scada::status_exception& e) {
+          co_return e.status();
+        } catch (...) {
+          co_return scada::GetExceptionStatus(std::current_exception());
+        }
+      });
 }
 
 promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
     const scada::NodeState& node_state) {
-  const promise<scada::NodeId> final_promise;
-  const std::shared_ptr<TaskManagerImpl> ref = shared_from_this();
+  promise<scada::NodeId> final_promise;
+  auto self = shared_from_this();
 
-  // Cannot use `PostTask` because it only accepts void promises.
-  PostTaskMethod(Translate("Insert"), [this, ref, node_state, final_promise] {
-    NodeRef type_def = node_service_.GetNode(node_state.type_definition_id);
+  // Cannot use `PostTask` because it only accepts void-returning launchers.
+  PostTaskMethod(
+      Translate("Insert"),
+      [self, node_state,
+       final_promise]() mutable -> Awaitable<scada::Status> {
+        try {
+          NodeRef type_def =
+              self->node_service_.GetNode(node_state.type_definition_id);
+          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
+                                FetchNode(type_def));
 
-    promise<scada::NodeId> add_node_promise =
-        FetchNode(type_def).then([this, ref, type_def, node_state] {
           if (type_def.node_class() != scada::NodeClass::ObjectType &&
               type_def.node_class() != scada::NodeClass::VariableType) {
             throw scada::status_exception{scada::StatusCode::Bad_WrongTypeId};
@@ -119,49 +138,72 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
                   ? scada::NodeClass::Object
                   : scada::NodeClass::Variable;
 
-          return scada::AddNode(
-              node_management_service_,
-              // Create a new node ID on copy.
-              {.parent_id = node_state.parent_id,
-               .node_class = node_class,
-               .type_definition_id = node_state.type_definition_id,
-               .attributes = node_state.attributes});
-        });
+          auto [add_status, add_results] =
+              co_await self->co_node_management_service_.AddNodes(
+                  {{.parent_id = node_state.parent_id,
+                    .node_class = node_class,
+                    .type_definition_id = node_state.type_definition_id,
+                    .attributes = node_state.attributes}});
+          if (!add_status) {
+            throw scada::status_exception{std::move(add_status)};
+          }
+          if (add_results.empty()) {
+            throw scada::status_exception{scada::StatusCode::Bad};
+          }
+          if (scada::IsBad(add_results.front().status_code)) {
+            throw scada::status_exception{add_results.front().status_code};
+          }
 
-    scada::ToExplicitStatusCodePromise(add_node_promise)
-        .then(BindExecutor(executor_, weak_from_this(),
-                           [this](scada::StatusCode status_code) {
-                             ReportRequestCompletion(status_code,
-                                                     /*result_text=*/{});
-                           }));
+          const scada::NodeId added_node_id = add_results.front().added_node_id;
 
-    promise<scada::NodeId> add_props_and_refs_promise =
-        add_node_promise.then(BindPromiseExecutor(
-            executor_, weak_from_this(),
-            [this, node_state](const scada::NodeId& added_node_id) {
-              // TODO: Combine with properties.
+          // References are fire-and-forget — they queue their own tasks.
+          for (const auto& reference : node_state.references) {
+            if (reference.forward) {
+              self->PostAddReference(reference.reference_type_id,
+                                     added_node_id, reference.node_id);
+            } else {
+              self->PostAddReference(reference.reference_type_id,
+                                     reference.node_id, added_node_id);
+            }
+          }
 
-              for (const auto& reference : node_state.references) {
-                if (reference.forward)
-                  PostAddReference(reference.reference_type_id, added_node_id,
-                                   reference.node_id);
-                else
-                  PostAddReference(reference.reference_type_id,
-                                   reference.node_id, added_node_id);
-              }
+          // Apply the initial property values inline. We cannot recurse into
+          // `PostUpdateTask` here: it would queue a second task that cannot
+          // start while we are still the running task, deadlocking the queue.
+          if (!node_state.properties.empty()) {
+            NodeRef node = self->node_service_.GetNode(added_node_id);
+            co_await AwaitPromise(NetExecutorAdapter{self->executor_},
+                                  FetchNode(node));
+            auto inputs = PrepareUpdateInputs(node, /*attributes=*/{},
+                                              node_state.properties);
+            if (!inputs.ok()) {
+              throw scada::status_exception{inputs.status()};
+            }
+            auto [write_status, write_results] =
+                co_await self->co_attribute_service_.Write(
+                    scada::ServiceContext{},
+                    std::make_shared<const std::vector<scada::WriteValue>>(
+                        std::move(*inputs)));
+            if (!write_status) {
+              throw scada::status_exception{std::move(write_status)};
+            }
+            auto bad = FirstBadStatus(write_results);
+            if (!bad) {
+              throw scada::status_exception{std::move(bad)};
+            }
+          }
 
-              if (node_state.properties.empty()) {
-                return make_resolved_promise(added_node_id);
-              }
-
-              return ToValuePromise(
-                  PostUpdateTask(added_node_id, /*attributes=*/{},
-                                 node_state.properties),
-                  added_node_id);
-            }));
-
-    ForwardPromise(add_props_and_refs_promise, final_promise);
-  });
+          final_promise.resolve(added_node_id);
+          co_return scada::Status{scada::StatusCode::Good};
+        } catch (const scada::status_exception& e) {
+          final_promise.reject(std::current_exception());
+          co_return e.status();
+        } catch (...) {
+          auto status = scada::GetExceptionStatus(std::current_exception());
+          final_promise.reject(std::current_exception());
+          co_return status;
+        }
+      });
 
   return final_promise;
 }
@@ -171,40 +213,60 @@ promise<void> TaskManagerImpl::PostUpdateTask(
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
   std::u16string title = GetDisplayName(node_service_, node_id);
-  return PostTask(
-      u16format(L"Modifying {}", title), [=]() mutable {
-        auto node = node_service_.GetNode(node_id);
-        return FetchNode(node)
-            .then([&attribute_service = attribute_service_, node, attributes,
-                   properties]() mutable {
-              assert(node.fetched());
+  auto self = shared_from_this();
+  return PostTaskMethod(
+      u16format(L"Modifying {}", title),
+      [self, node_id, attributes = std::move(attributes),
+       properties = std::move(properties)]() mutable
+      -> Awaitable<scada::Status> {
+        try {
+          NodeRef node = self->node_service_.GetNode(node_id);
+          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
+                                FetchNode(node));
 
-              auto inputs = PrepareUpdateInputs(node, std::move(attributes),
-                                                std::move(properties));
-              if (!inputs.ok()) {
-                throw scada::status_exception{inputs.status()};
-              }
+          auto inputs = PrepareUpdateInputs(node, std::move(attributes),
+                                            std::move(properties));
+          if (!inputs.ok()) {
+            throw scada::status_exception{inputs.status()};
+          }
 
-              return scada::Write(attribute_service, scada::ServiceContext{},
-                                  std::move(*inputs));
-            })
-            .then([](const std::vector<scada::StatusCode>& results) {
-              // Find any failed status.
-              auto i = std::ranges::find_if(results, &scada::IsBad);
-              if (i != results.end()) {
-                throw scada::status_exception{*i};
-              }
-            });
+          auto [status, results] =
+              co_await self->co_attribute_service_.Write(
+                  scada::ServiceContext{},
+                  std::make_shared<const std::vector<scada::WriteValue>>(
+                      std::move(*inputs)));
+          if (!status) {
+            throw scada::status_exception{std::move(status)};
+          }
+          auto bad = FirstBadStatus(results);
+          if (!bad) {
+            throw scada::status_exception{std::move(bad)};
+          }
+          co_return scada::Status{scada::StatusCode::Good};
+        } catch (const scada::status_exception& e) {
+          co_return e.status();
+        } catch (...) {
+          co_return scada::GetExceptionStatus(std::current_exception());
+        }
       });
 }
 
 promise<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
-  return PostTask(
+  auto self = shared_from_this();
+  return PostTaskMethod(
       u16format(L"Deleting {}", title),
-      [this, node_id,
-       &node_management_service = node_management_service_]() mutable {
-        return scada::DeleteNode(node_management_service, {node_id});
+      [self, node_id]() mutable -> Awaitable<scada::Status> {
+        auto [status, results] =
+            co_await self->co_node_management_service_.DeleteNodes(
+                {{.node_id = node_id, .delete_target_references = false}});
+        if (!status) {
+          co_return status;
+        }
+        if (results.empty()) {
+          co_return scada::Status{scada::StatusCode::Bad};
+        }
+        co_return scada::Status{results.front()};
       });
 }
 
@@ -214,20 +276,23 @@ promise<void> TaskManagerImpl::PostAddReference(
     const scada::NodeId& target_id) {
   auto title = FormatReference(node_service_, reference_type_id, source_id,
                                target_id, true);
-  return PostTaskMethod(title, [=, &node_management_service =
-                                       node_management_service_]() mutable {
-    scada::AddReferencesItem input{
-        source_id, reference_type_id, true, {}, target_id};
-    node_management_service.AddReferences(
-        std::vector<scada::AddReferencesItem>(1, input),
-        BindExecutor(executor_, weak_from_this(),
-                     [this](scada::Status status,
-                            std::vector<scada::StatusCode> results) mutable {
-                       auto result =
-                           status ? results.front() : std::move(status);
-                       ReportRequestCompletion(result, std::u16string());
-                     }));
-  });
+  auto self = shared_from_this();
+  return PostTaskMethod(
+      title,
+      [self, reference_type_id, source_id,
+       target_id]() mutable -> Awaitable<scada::Status> {
+        scada::AddReferencesItem input{source_id, reference_type_id, true, {},
+                                        target_id};
+        auto [status, results] =
+            co_await self->co_node_management_service_.AddReferences({input});
+        if (!status) {
+          co_return status;
+        }
+        if (results.empty()) {
+          co_return scada::Status{scada::StatusCode::Bad};
+        }
+        co_return scada::Status{results.front()};
+      });
 }
 
 promise<void> TaskManagerImpl::PostDeleteReference(
@@ -236,20 +301,36 @@ promise<void> TaskManagerImpl::PostDeleteReference(
     const scada::NodeId& target_id) {
   auto title = FormatReference(node_service_, reference_type_id, source_id,
                                target_id, false);
-  return PostTaskMethod(title, [=, &node_management_service =
-                                       node_management_service_]() mutable {
-    scada::DeleteReferencesItem input{source_id, reference_type_id, true,
-                                      target_id, true};
-    node_management_service.DeleteReferences(
-        std::vector<scada::DeleteReferencesItem>(1, input),
-        BindExecutor(executor_, weak_from_this(),
-                     [this](scada::Status status,
-                            std::vector<scada::StatusCode> results) mutable {
-                       auto result =
-                           status ? results.front() : std::move(status);
-                       ReportRequestCompletion(result, std::u16string());
-                     }));
-  });
+  auto self = shared_from_this();
+  return PostTaskMethod(
+      title,
+      [self, reference_type_id, source_id,
+       target_id]() mutable -> Awaitable<scada::Status> {
+        scada::DeleteReferencesItem input{source_id, reference_type_id, true,
+                                          target_id, true};
+        auto [status, results] =
+            co_await self->co_node_management_service_.DeleteReferences(
+                {input});
+        if (!status) {
+          co_return status;
+        }
+        if (results.empty()) {
+          co_return scada::Status{scada::StatusCode::Bad};
+        }
+        co_return scada::Status{results.front()};
+      });
+}
+
+Awaitable<void> TaskManagerImpl::RunTaskBody(TaskMethod method) {
+  scada::Status status{scada::StatusCode::Good};
+  try {
+    status = co_await method();
+  } catch (const scada::status_exception& e) {
+    status = e.status();
+  } catch (...) {
+    status = scada::GetExceptionStatus(std::current_exception());
+  }
+  ReportRequestCompletion(status, std::u16string{});
 }
 
 void TaskManagerImpl::StartTask(Task&& task) {
@@ -260,13 +341,13 @@ void TaskManagerImpl::StartTask(Task&& task) {
   if (running_progress_)
     running_progress_->SetStatus((running_task_.title + u"...").c_str());
 
-  // The running task keeps captured variables and must be alive until it's
-  // entirely completed. It cannot be deleted immediately from
-  // `ReportRequestCompletion`, since `ReportRequestCompletion` might be called
-  // from within the task.
-  auto captured_task = running_task_;
-
-  captured_task.task();
+  // Own `method` here so moving out of `running_task_` inside
+  // `ReportRequestCompletion` doesn't dangle the coroutine's captured body.
+  auto method = running_task_.method;
+  CoSpawn(executor_, [self = shared_from_this(),
+                      method = std::move(method)]() mutable {
+    return self->RunTaskBody(std::move(method));
+  });
 }
 
 void TaskManagerImpl::ReportRequestCompletion(
@@ -341,8 +422,8 @@ void TaskManagerImpl::Run() {
 }
 
 promise<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
-                                              TaskMethod task) {
-  auto promise = tasks_.emplace(std::u16string{title}, std::move(task)).promise;
+                                              TaskMethod method) {
+  auto promise = tasks_.emplace(std::u16string{title}, std::move(method)).promise;
 
   Run();
 
