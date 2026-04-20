@@ -3,6 +3,9 @@
 > Status: living document. Captures the *current* shape of the client at the
 > point of writing, not a forward-looking roadmap. The roadmap lives in
 > `client/tasks.md`.
+>
+> See also: [`web/docs/design.md`](../../web/docs/design.md) — the sibling
+> browser-based client targeting feature parity with this one.
 
 ## 1. Purpose and Scope
 
