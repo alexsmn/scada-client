@@ -45,6 +45,7 @@ The recommended approach is:
 - Rewriting all services or all UI modules at once.
 - Changing the frontend split between Qt and Wt.
 - Changing wire protocols, authentication flow, or local-service semantics.
+- Migrating code that fundamentally requires multi-wait semantics to coroutines.
 
 ## Phase 1: Shared Adapter Layer
 
