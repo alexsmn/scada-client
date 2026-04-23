@@ -100,6 +100,18 @@ install(TARGETS client_qt
   RUNTIME_DEPENDENCY_SET client_deps
   RUNTIME DESTINATION "bin" COMPONENT Client)
 
+if(EXISTS "${CMAKE_SOURCE_DIR}/dependencies/bin")
+  install(DIRECTORY "${CMAKE_SOURCE_DIR}/dependencies/bin/"
+    DESTINATION "bin"
+    COMPONENT Client)
+endif()
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/examples/schemes")
+  install(DIRECTORY "${CMAKE_SOURCE_DIR}/examples/schemes"
+    DESTINATION "examples"
+    COMPONENT Client)
+endif()
+
 # UT-s
 
 add_executable(client_qt_unittests

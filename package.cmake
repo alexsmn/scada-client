@@ -5,7 +5,7 @@ scada_register_package(
   DISPLAY_NAME "Клиент"
   VERSION "${SCADA_PACKAGING_VERSION}"
   DESCRIPTION "Client package"
-  INSTALL_DESTINATIONS "bin" "bin/translations"
+  INSTALL_DESTINATIONS "bin" "bin/translations" "examples/schemes"
   RUNTIME_DEPENDENCY_POLICY "repo-local-runtime-deps"
   ROOT_GROUPS product-client
   DEPENDS scada-common)
