@@ -56,7 +56,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_print_service_qt
   client_properties_qt
   client_vidicon_qt
-  scada_core_opcua
+  scada_core_opcua_client
   base_unittest
   graph_qt
 )

@@ -49,7 +49,7 @@ target_link_libraries(client_wt_lib PUBLIC
   client_services_wt
   client_ui_progress_wt
   ${CLIENT_WT_COMPONENT_TARGETS}
-  scada_core_opcua
+  scada_core_opcua_client
 )
 
 target_compile_options(client_wt_lib PUBLIC

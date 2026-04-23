@@ -48,7 +48,7 @@ target_link_libraries(client_qt_app_shared PUBLIC
   client_print_service_qt
   client_properties_qt
   client_vidicon_qt
-  scada_core_opcua
+  scada_core_opcua_client
 )
 
 # Exe
