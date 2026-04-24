@@ -3,6 +3,7 @@
 #include "aui/translation.h"
 #include "base/awaitable_promise.h"
 #include "base/blinker.h"
+#include "base/executor_conversions.h"
 #include "base/boost_log_adapter.h"
 #include "base/program_options.h"
 #include "base/promise_executor.h"
@@ -162,7 +163,7 @@ void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
     node_service_ = std::move(node_service_override_);
   } else {
     node_service_ = ::CreateNodeService(NodeServiceContext{
-        .executor_ = executor_,
+        .executor_ = MakeAnyExecutor(executor_),
         .session_service_ = *ctx.audited_scada_services.session_service,
         .attribute_service_ = *ctx.audited_scada_services.attribute_service,
         .view_service_ = *ctx.audited_scada_services.view_service,
@@ -192,7 +193,7 @@ void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) 
     timed_data_service_ = std::move(timed_data_service_override_);
   } else {
     timed_data_service_ = CreateTimedDataService(
-        {.executor_ = executor_,
+        {.executor_ = MakeAnyExecutor(executor_),
          .alias_resolver_ = ctx.alias_resolver,
          .node_service_ = *node_service_,
          .services_ = ctx.audited_scada_services,

@@ -4,6 +4,7 @@
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "core/selection_command_context.h"
+#include "base/executor_conversions.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "events/event_view.h"
@@ -33,7 +34,9 @@ EventModule::EventModule(EventModuleContext&& context)
     : EventModuleContext(std::move(context)) {
   event_fetcher_ =
       EventFetcherBuilder{
-          .executor_ = executor_, .logger_ = logger_, .services_ = services_}
+          .executor_ = MakeAnyExecutor(executor_),
+          .logger_ = logger_,
+          .services_ = services_}
           .Build();
 
   // TODO: Checked cast.
