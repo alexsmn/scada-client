@@ -3,9 +3,10 @@
 Low-level design of the offline screenshot generator plus the
 day-to-day workflow for managing images under `client/docs/screenshots/`.
 
-For the high-level "what is FR-21", see `design.md` §5.1 "Regenerating
-the doc screenshots". This doc is the authoritative reference when you
-are modifying the generator itself or adding new captures.
+For the high-level "what is FR-21", see `requirements.md` §3. For the
+regeneration workflow, see `design.md` §3.1 "Regenerating the doc
+screenshots". This doc is the authoritative reference when you are modifying
+the generator itself or adding new captures.
 
 ## What the generator is
 

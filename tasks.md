@@ -193,7 +193,7 @@ PR / commit):
     artifact for human review.
 
 12. **Document the workflow.** Add a "Regenerating screenshots"
-    section to `docs/design.md` §FR-21 and to scada-docs `CLAUDE.md`
+    section to `docs/requirements.md` §FR-21 and to scada-docs `CLAUDE.md`
     explaining how to run the generator, where the manifest lives,
     what's auto vs. manual, and how to add a new auto-screenshot.
 

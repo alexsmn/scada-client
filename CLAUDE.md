@@ -63,7 +63,8 @@ scada-client/
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
 ├── docs/                   # Design doc and architecture diagrams
-│   ├── design.md           # High-level design (use cases, requirements, components)
+│   ├── design.md           # High-level architecture and component design
+│   ├── requirements.md     # Use cases and FR/NFR traceability
 │   ├── *.mmd               # Mermaid diagram sources
 │   └── *.svg               # Generated diagrams referenced from design.md
 ├── .github/workflows/      # CI: cmake-multi-platform.yml, msbuild.yml
@@ -79,27 +80,28 @@ scada-client/
 
 ## Documentation
 
-The high-level design document lives at `docs/design.md`. It captures use
-cases, functional and non-functional requirements, and the layered
-component architecture, all grounded in concrete source files. Treat it as
-a living document, not a snapshot.
+The high-level design document lives at `docs/design.md`. It captures the
+layered component architecture, all grounded in concrete source files. Use
+`docs/requirements.md` for use cases, functional requirements, and
+non-functional requirements. Treat both as living documents, not snapshots.
 
 ### When to update the docs
 
-**Update `docs/design.md` (and the relevant diagram) whenever you change
-or add functionality.** Concretely, that means at minimum:
+**Update `docs/design.md`, `docs/requirements.md`, and the relevant diagram
+whenever you change or add functionality.** Concretely, that means at
+minimum:
 
 - Adding or removing a top-level module (`*_module.{h,cpp}`) — update the
   module table and `module-graph.mmd`.
 - Adding or removing a directory under `client/` that hosts a new layer or
   domain area — update the layer description and `architecture-layers.mmd`.
 - Adding or removing a back-end registered with `REGISTER_DATA_SERVICES` —
-  update FR-1 in §3.
+  update FR-1 in `docs/requirements.md` §3.
 - Changing the bootstrap order in `ClientApplication::PostLogin()` —
   update `bootstrap-sequence.mmd`.
 - Adding a new actor-facing capability that isn't covered by an existing
-  use case — add a row to the use-case table in §2 and a functional
-  requirement in §3.
+  use case — add a row to the use-case table in `docs/requirements.md` §2
+  and a functional requirement in `docs/requirements.md` §3.
 - Removing a use case (deleting a feature) — strike the row in §2 and the
   matching FR.
 
@@ -112,10 +114,10 @@ Architecture diagrams live next to `design.md` as Mermaid sources:
 
 | File | Renders to | Used in design.md §|
 |---|---|---|
-| `docs/use-cases.mmd` | `use-cases.svg` | §2 (use cases) |
-| `docs/architecture-layers.mmd` | `architecture-layers.svg` | §5 (component overview) |
-| `docs/module-graph.mmd` | `module-graph.svg` | §5.6 (domain modules) |
-| `docs/bootstrap-sequence.mmd` | `bootstrap-sequence.svg` | §5.1 (startup sequence) |
+| `docs/use-cases.mmd` | `use-cases.svg` | `requirements.md` §2 (use cases) |
+| `docs/architecture-layers.mmd` | `architecture-layers.svg` | `design.md` §3 (component overview) |
+| `docs/module-graph.mmd` | `module-graph.svg` | `design.md` §3.6 (domain modules) |
+| `docs/bootstrap-sequence.mmd` | `bootstrap-sequence.svg` | `design.md` §3.1 (startup sequence) |
 
 The `.svg` files are committed alongside the `.mmd` sources so the doc
 renders correctly on GitHub without a build step.
