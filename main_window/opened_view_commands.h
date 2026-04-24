@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aui/types.h"
+#include "base/awaitable.h"
 #include "base/cancelation.h"
 #include "base/promise.h"
 #include "base/timer/timer.h"
@@ -67,8 +68,17 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
 
  private:
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
-  promise<> CreateRecord(const scada::NodeId& type_node_id, int tag);
-  promise<> OnCreateRecordComplete(const scada::NodeId& node_id);
+  // Spawns the create + report + open-view coroutine and returns immediately.
+  // All call sites discard the previous `promise<>` return, and the coroutine
+  // lifetime is gated by `cancelation_` so it cannot outlive `this`.
+  void CreateRecord(const scada::NodeId& type_node_id, int tag);
+
+  Awaitable<void> CreateRecordAsync(scada::NodeId type_node_id,
+                                    scada::NodeId parent_id,
+                                    std::u16string title,
+                                    scada::NodeAttributes attributes,
+                                    scada::NodeProperties properties);
+  Awaitable<void> OnCreateRecordCompleteAsync(scada::NodeId node_id);
 
   promise<> PasteFromClipboard();
 

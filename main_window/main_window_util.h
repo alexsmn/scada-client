@@ -8,11 +8,6 @@ class Executor;
 class MainWindowInterface;
 struct NodeCommandContext;
 
-promise<void> OpenView(
-    MainWindowInterface* main_window,
-    promise<WindowDefinition> window_def_promise,
-    bool activate = true);
-
 promise<void> OpenView(MainWindowInterface* main_window,
                                      const WindowDefinition& window_def,
                                      bool activate = true);

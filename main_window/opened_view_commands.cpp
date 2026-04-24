@@ -1,6 +1,8 @@
 ﻿#include "opened_view_commands.h"
 
 #include "aui/dialog_service.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/program_options.h"
 #include "base/excel.h"
 #include "base/u16format.h"
@@ -28,6 +30,7 @@
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
 #include "transport/transport_string.h"
+#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "print/service/print_service.h"
@@ -193,11 +196,20 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       if (time_range->type == TimeRange::Type::Custom) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
-        ShowTimeRangeDialog(*dialog_service_, {profile_, range, time_required})
-            .then(cancelation_.Bind(
-                [model](const TimeRange& time_range) {
-                  model->SetTimeRange(time_range);
-                }));
+        auto dialog_promise = ShowTimeRangeDialog(
+            *dialog_service_, {profile_, range, time_required});
+        // `cancelation_` gates the resumption so a destroyed
+        // `OpenedViewCommands` never races the dialog completion — the prior
+        // `cancelation_.Bind(...)` callback had the same effect.
+        CoSpawn(executor_, cancelation_,
+                [executor = executor_, model,
+                 dialog_promise = std::move(dialog_promise)]() mutable
+                -> Awaitable<void> {
+                  auto picked = co_await AwaitPromise(
+                      NetExecutorAdapter{executor}, std::move(dialog_promise));
+                  model->SetTimeRange(picked);
+                  co_return;
+                });
       } else {
         model->SetTimeRange(*time_range);
       }
@@ -257,23 +269,23 @@ bool OpenedViewCommands::CanCreateRecord(
              node_service_.GetNode(type_node_id)) != nullptr;
 }
 
-promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
-                                           int tag) {
+void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
+                                      int tag) {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-    return MakeRejectedPromise();
+    return;
 
   auto node_type = node_service_.GetNode(type_node_id);
   if (!node_type)
-    return MakeRejectedPromise();
+    return;
 
   const auto* selection_model = controller_->GetSelectionModel();
   if (!selection_model)
-    return MakeRejectedPromise();
+    return;
 
   auto parent_node = create_tree_.GetCreateParentNode(
       selection_model->node(), controller_->GetRootNode(), node_type);
   if (!parent_node)
-    return MakeRejectedPromise();
+    return;
 
   scada::NodeAttributes attributes;
   scada::NodeProperties properties;
@@ -310,42 +322,67 @@ promise<> OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
 
   auto title = u16format(L"Creating \"{}\"", attributes.display_name);
 
-  auto insert_promise =
-      task_manager_.PostInsertTask({.type_definition_id = type_node_id,
-                                    .parent_id = parent_node.node_id(),
-                                    .attributes = std::move(attributes),
-                                    .properties = std::move(properties)});
-
-  ToVoidPromise(insert_promise)
-      .except(cancelation_.Bind(
-          [this, title](std::exception_ptr e) {
-            ReportRequestResult(title, scada::GetExceptionStatus(e),
-                                local_events_, profile_);
-          }));
-
-  return insert_promise.then(cancelation_.Bind(
-      [this, title](const scada::NodeId& node_id) {
-        ReportRequestResult(title, scada::StatusCode::Good, local_events_,
-                            profile_);
-        return OnCreateRecordComplete(node_id);
-      }));
+  // `cancelation_` gates the coroutine the same way `cancelation_.Bind(...)`
+  // gated the legacy `.then(...).except(...)` continuations: if `this` is
+  // destroyed before either await resumes, the body returns immediately
+  // without touching member state.
+  CoSpawn(executor_, cancelation_,
+          [this, type_node_id, parent_id = parent_node.node_id(),
+           title = std::move(title), attributes = std::move(attributes),
+           properties = std::move(properties)]() mutable -> Awaitable<void> {
+            co_await CreateRecordAsync(type_node_id, parent_id,
+                                       std::move(title), std::move(attributes),
+                                       std::move(properties));
+          });
 }
 
-promise<> OpenedViewCommands::OnCreateRecordComplete(
-    const scada::NodeId& node_id) {
+Awaitable<void> OpenedViewCommands::CreateRecordAsync(
+    scada::NodeId type_node_id,
+    scada::NodeId parent_id,
+    std::u16string title,
+    scada::NodeAttributes attributes,
+    scada::NodeProperties properties) {
+  // Single coroutine body replaces the `then(...).except(...)` split: the same
+  // `ReportRequestResult` runs on either branch, but now we only have to
+  // thread `title` once.
+  scada::NodeId node_id;
+  std::exception_ptr error;
+  try {
+    node_id = co_await AwaitPromise(
+        NetExecutorAdapter{executor_},
+        task_manager_.PostInsertTask({.type_definition_id = type_node_id,
+                                      .parent_id = parent_id,
+                                      .attributes = std::move(attributes),
+                                      .properties = std::move(properties)}));
+  } catch (...) {
+    error = std::current_exception();
+  }
+
+  if (error) {
+    ReportRequestResult(title, scada::GetExceptionStatus(error), local_events_,
+                        profile_);
+    co_return;
+  }
+
+  ReportRequestResult(title, scada::StatusCode::Good, local_events_, profile_);
+  co_await OnCreateRecordCompleteAsync(node_id);
+  co_return;
+}
+
+Awaitable<void> OpenedViewCommands::OnCreateRecordCompleteAsync(
+    scada::NodeId node_id) {
   auto node = node_service_.GetNode(node_id);
-  promise<> promise;
-  // Capture node so it doesn't release before completion.
-  node.Fetch(NodeFetchStatus::NodeOnly(),
-             cancelation_.Bind(
-                 [this, node, promise](const NodeRef& fetched_node) mutable {
-                   controller_->OnViewNodeCreated(fetched_node);
-                   auto def = MakeWindowDefinition(&kNodePropertyWindowInfo,
-                                                   fetched_node, false);
-                   ::OpenView(main_window_, def, true);
-                   promise.resolve();
-                 }));
-  return promise;
+  // Hold `node` across the suspension so it doesn't release before the fetch
+  // completes — the original callback form held the same NodeRef in its
+  // capture list for the same reason.
+  co_await AwaitPromise(NetExecutorAdapter{executor_}, FetchNode(node));
+
+  controller_->OnViewNodeCreated(node);
+  auto def = co_await AwaitPromise(
+      NetExecutorAdapter{executor_},
+      MakeWindowDefinition(&kNodePropertyWindowInfo, node, /*activate=*/false));
+  ::OpenView(main_window_, def, true);
+  co_return;
 }
 
 promise<> OpenedViewCommands::PasteFromClipboard() {

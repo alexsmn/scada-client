@@ -221,6 +221,45 @@ SCADA services or local service doubles.
   `AwaitPromise` instead of `CatchResourceError` wrapped around
   `ParseSeverity`. No context changes were required — `EventView`
   already receives an `Executor` via `ControllerContext::executor_`.
+- **events/EventModule::AddOpenCommand** migrated
+  (`client/events/event_module.cpp`). The selection-command's
+  `execute_handler` no longer chains
+  `GetOpenWindowDefinition().then(...)`; it captures
+  `EventModule::executor_` and spawns a `CoSpawn` coroutine that
+  `co_await`s the `WindowDefinition` and then calls
+  `MainWindowInterface::OpenView` with the optional `mode` item
+  injected. Regression coverage:
+  `client/events/event_module_unittest.cpp::OpenEventsCommandRoutesToMainWindowOpenView`.
+- **main_window/SelectionCommands** migrated
+  (`client/main_window/selection_commands.cpp`). The shared
+  `MakeOpenViewCommand` helper takes an
+  `std::shared_ptr<Executor>` and dispatches via `CoSpawn`/
+  `AwaitPromise`. The `ID_OPEN_DEVICE_METRICS`,
+  `ID_OPEN_GROUP_TABLE`, and `ID_DELETE` execute handlers, plus the
+  `OpenWindow(WindowInfo*)` helper, all use `CoSpawn(executor_,
+  cancelation_, ...)` (or a plain `CoSpawn` where the original lambda
+  did not gate on `cancelation_`) instead of
+  `cancelation_.Bind(...).then(...)`. `BindPromiseExecutor` is no
+  longer needed in this file.
+- **main_window/OpenedViewCommands** migrated
+  (`client/main_window/opened_view_commands.{h,cpp}`).
+  `CreateRecord` now returns `void` (every previous caller discarded
+  the `promise<>`) and spawns a `cancelation_`-gated coroutine that
+  awaits `task_manager_.PostInsertTask` once and reports success or
+  failure through `ReportRequestResult` exactly once. The follow-up
+  `OnCreateRecordComplete` is now an `Awaitable<void>`
+  (`OnCreateRecordCompleteAsync`) that `co_await`s
+  `FetchNode(...)` instead of subscribing a
+  `cancelation_.Bind`-wrapped `Fetch` callback. The custom-time-range
+  command also moved off `.then` to `CoSpawn(executor_, cancelation_,
+  ...)`. The dependency on `OpenView(promise<WindowDefinition>, ...)`
+  was dropped — `client/main_window/main_window_util.{h,cpp}` lost
+  that unused promise-input overload as part of this slice.
+- **main_window/main_window_util::ExecuteDefaultNodeCommand** migrated
+  (`client/main_window/main_window_util.cpp`). The
+  `ExpandGroupItemIds(...).then(...)` pipeline is now a `CoSpawn`
+  coroutine that awaits the `NodeIdSet` promise before mutating the
+  active `ContentsModel`.
 
 ### Priority Order
 

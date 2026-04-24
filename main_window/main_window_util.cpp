@@ -1,6 +1,8 @@
 #include "main_window/main_window_util.h"
 
 #include "aui/key_codes.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
 #include "components/node_properties/node_property_component.h"
@@ -24,17 +26,6 @@
 #endif
 
 #include <cassert>
-
-promise<void> OpenView(
-    MainWindowInterface* main_window,
-    promise<WindowDefinition> window_def_promise,
-    bool activate) {
-  // TODO: Pass |main_window| by weak pointer.
-  return window_def_promise.then(
-      [main_window, activate](const WindowDefinition& def) {
-        return OpenView(main_window, def, activate);
-      });
-}
 
 promise<void> OpenView(MainWindowInterface* main_window,
                                      const WindowDefinition& window_def,
@@ -85,24 +76,35 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
               : make_resolved_promise(MakeNodeIdSet(context.node.node_id()));
 
       // TODO: Capture weak pointer.
-      node_ids_promise.then([contents, key_modifiers = context.key_modifiers](
-                                const NodeIdSet& node_ids) {
+      CoSpawn(executor, [executor, contents,
+                         key_modifiers = context.key_modifiers,
+                         node_ids_promise = std::move(node_ids_promise)]() mutable
+                        -> Awaitable<void> {
+        auto node_ids = co_await AwaitPromise(NetExecutorAdapter{executor},
+                                              std::move(node_ids_promise));
         unsigned flags =
             (key_modifiers & aui::ControlModifier) ? ContentsModel::APPEND : 0;
         for (const auto& node_id : node_ids) {
           contents->AddContainedItem(node_id, flags);
           flags |= ContentsModel::APPEND;
         }
+        co_return;
       });
       return true;
     }
   }
 
-  auto window_definition =
-      MakeWindowDefinition(&window_info, context.node, true);
-
   // TODO: Capture |main_window| by weak pointer.
-
-  OpenView(context.main_window, window_definition);
+  auto window_def_promise =
+      MakeWindowDefinition(&window_info, context.node, /*include_default=*/true);
+  auto* main_window = context.main_window;
+  CoSpawn(executor, [executor, main_window,
+                     window_def_promise = std::move(window_def_promise)]() mutable
+                    -> Awaitable<void> {
+    auto window_definition = co_await AwaitPromise(
+        NetExecutorAdapter{executor}, std::move(window_def_promise));
+    OpenView(main_window, window_definition);
+    co_return;
+  });
   return true;
 }

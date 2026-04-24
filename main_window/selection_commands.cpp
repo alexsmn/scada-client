@@ -2,8 +2,9 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/program_options.h"
-#include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "ui/common/client_utils.h"
 #include "clipboard/clipboard_util.h"
@@ -56,18 +57,30 @@ bool CanCreateSomething(const NodeRef& node) {
 
 BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
     unsigned command_id,
-    const WindowInfo& window_info) {
+    const WindowInfo& window_info,
+    std::shared_ptr<Executor> executor) {
   return BasicCommand<SelectionCommandContext>{
       .command_id = command_id,
       .execute_handler =
-          [&window_info](const SelectionCommandContext& context) {
-            context.opened_view
-                .GetOpenWindowDefinition(&window_info)
-                // TODO: Capture `main_window` as a weak_ptr.
-                .then([&main_window = context.main_window](
-                          const WindowDefinition& window_def) {
-                  return main_window.OpenView(window_def);
-                });
+          [&window_info,
+           executor = std::move(executor)](const SelectionCommandContext& context) {
+            // Same pattern as `EventModule::AddOpenCommand`: resolve the open-
+            // window definition synchronously, then await it inside a coroutine
+            // that calls `MainWindowInterface::OpenView`. The lifetime contract
+            // for `main_window` is unchanged from the previous `.then()` form
+            // (see the existing TODO about `weak_ptr`).
+            auto window_def_promise =
+                context.opened_view.GetOpenWindowDefinition(&window_info);
+            CoSpawn(executor, [executor,
+                               &main_window = context.main_window,
+                               window_def_promise = std::move(
+                                   window_def_promise)]() mutable
+                              -> Awaitable<void> {
+              auto window_def = co_await AwaitPromise(
+                  NetExecutorAdapter{executor}, std::move(window_def_promise));
+              main_window.OpenView(window_def);
+              co_return;
+            });
           },
       .available_handler =
           [](const SelectionCommandContext& context) {
@@ -84,27 +97,35 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   // |selection_| and |dialog_service_| are never null in command handlers.
 
   selection_commands_.AddCommand(
-      MakeOpenViewCommand(ID_OPEN_TABLE, kTableWindowInfo));
+      MakeOpenViewCommand(ID_OPEN_TABLE, kTableWindowInfo, executor_));
 
   selection_commands_.AddCommand(
-      MakeOpenViewCommand(ID_OPEN_SUMMARY, kSummaryWindowInfo));
+      MakeOpenViewCommand(ID_OPEN_SUMMARY, kSummaryWindowInfo, executor_));
 
   selection_commands_.AddCommand(
-      MakeOpenViewCommand(ID_TIMED_DATA_VIEW, kTimedDataWindowInfo));
+      MakeOpenViewCommand(ID_TIMED_DATA_VIEW, kTimedDataWindowInfo, executor_));
 
 #if !defined(UI_WT)
   selection_commands_.AddCommand(
-      MakeOpenViewCommand(ID_OPEN_GRAPH, kGraphWindowInfo));
+      MakeOpenViewCommand(ID_OPEN_GRAPH, kGraphWindowInfo, executor_));
 #endif
 
   command_registry_.AddCommand(
       Command{ID_OPEN_DEVICE_METRICS}
           .set_execute_handler([this] {
-            MakeDeviceMetricsWindowDefinition(selection_->node())
-                .then(cancelation_.Bind(
-                    [this](const WindowDefinition& window_definition) {
+            // The coroutine is gated by `cancelation_` so it cannot run after
+            // this `SelectionCommands` is destroyed — equivalent to the
+            // previous `cancelation_.Bind(...)` `.then` callback.
+            auto def_promise =
+                MakeDeviceMetricsWindowDefinition(selection_->node());
+            CoSpawn(executor_, cancelation_,
+                    [this, def_promise = std::move(def_promise)]() mutable
+                    -> Awaitable<void> {
+                      auto window_definition = co_await AwaitPromise(
+                          NetExecutorAdapter{executor_}, std::move(def_promise));
                       OpenWindow(window_definition);
-                    }));
+                      co_return;
+                    });
           })
           .set_available_handler([this] {
             return IsInstanceOf(selection()->node(), devices::id::DeviceType);
@@ -124,13 +145,19 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       Command{ID_OPEN_GROUP_TABLE}
           .set_execute_handler([this] {
             // TODO: Capture |main_window_| by weak pointer.
-            MakeGroupWindowDefinition(&kTableWindowInfo, selection_->node())
-                .then([main_window = main_window_](
-                          const std::optional<WindowDefinition>& window_def) {
-                  if (window_def.has_value()) {
-                    ::OpenView(main_window, *window_def);
-                  }
-                });
+            auto def_promise =
+                MakeGroupWindowDefinition(&kTableWindowInfo, selection_->node());
+            CoSpawn(executor_, [executor = executor_,
+                                main_window = main_window_,
+                                def_promise = std::move(def_promise)]() mutable
+                               -> Awaitable<void> {
+              auto window_def = co_await AwaitPromise(
+                  NetExecutorAdapter{executor}, std::move(def_promise));
+              if (window_def.has_value()) {
+                ::OpenView(main_window, *window_def);
+              }
+              co_return;
+            });
           })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
@@ -218,11 +245,16 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
   if (selection_ && !selection_->empty()) {
     // TODO: Capture |main_window_| by weak pointer.
-    MakeWindowDefinition(window_info, selection_->node(), true)
-        .then(cancelation_.Bind(
-            [this](const WindowDefinition& window_definition) {
+    auto def_promise = MakeWindowDefinition(window_info, selection_->node(),
+                                            /*include_default=*/true);
+    CoSpawn(executor_, cancelation_,
+            [this, def_promise = std::move(def_promise)]() mutable
+            -> Awaitable<void> {
+              auto window_definition = co_await AwaitPromise(
+                  NetExecutorAdapter{executor_}, std::move(def_promise));
               OpenWindow(window_definition);
-            }));
+              co_return;
+            });
   }
 }
 
@@ -330,19 +362,22 @@ void SelectionCommands::DeleteSelection() {
           : u16format(L"Are you sure you want to delete {} items?",
                       nodes.size());
 
-  dialog_service_
-      ->RunMessageBox(message, Translate("Delete"), MessageBoxMode::QuestionYesNo)
-      .then(BindPromiseExecutor(
-          executor_, [&task_manager = task_manager_,
-                      nodes = std::move(nodes)](MessageBoxResult result) {
-            if (result != MessageBoxResult::Yes) {
-              return;
-            }
-
-            for (const NodeRef& node : nodes) {
-              DeleteTreeRecordsRecursive(task_manager, node);
-            }
-          }));
+  auto confirm_promise = dialog_service_->RunMessageBox(
+      message, Translate("Delete"), MessageBoxMode::QuestionYesNo);
+  CoSpawn(executor_, [executor = executor_, &task_manager = task_manager_,
+                      nodes = std::move(nodes),
+                      confirm_promise = std::move(confirm_promise)]() mutable
+                     -> Awaitable<void> {
+    auto result = co_await AwaitPromise(NetExecutorAdapter{executor},
+                                        std::move(confirm_promise));
+    if (result != MessageBoxResult::Yes) {
+      co_return;
+    }
+    for (const NodeRef& node : nodes) {
+      DeleteTreeRecordsRecursive(task_manager, node);
+    }
+    co_return;
+  });
 }
 
 void SelectionCommands::CopyToClipboard() {

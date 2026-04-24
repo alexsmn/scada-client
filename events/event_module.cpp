@@ -1,10 +1,12 @@
 #include "events/event_module.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "base/value_util.h"
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "core/selection_command_context.h"
-#include "base/executor_conversions.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "events/event_view.h"
@@ -81,18 +83,28 @@ void EventModule::AddOpenCommand(unsigned command_id,
   selection_commands_.AddCommand(
       {.command_id = command_id,
        .execute_handler =
-           [&window_info, mode](const SelectionCommandContext& context) {
-             context.opened_view
-                 .GetOpenWindowDefinition(&window_info)
-                 // TODO: `main_window` must be a weak pointer.
-                 .then([&main_window = context.main_window,
-                        mode](const WindowDefinition& window_def) {
-                   auto new_window_def = window_def;
-                   if (!mode.empty()) {
-                     new_window_def.AddItem("mode", mode);
-                   }
-                   main_window.OpenView(new_window_def);
-                 });
+           [&window_info, mode, executor = executor_](
+               const SelectionCommandContext& context) {
+             // Resolve the open-window definition synchronously here so the
+             // coroutine only owns the resulting promise (and the
+             // `MainWindowInterface&`, which we still rely on the existing
+             // TODO/lifetime contract for — this slice replaces the `.then`
+             // chain with `co_await`, it does not change ownership).
+             auto window_def_promise =
+                 context.opened_view.GetOpenWindowDefinition(&window_info);
+             CoSpawn(executor, [executor, mode,
+                                &main_window = context.main_window,
+                                window_def_promise = std::move(
+                                    window_def_promise)]() mutable
+                               -> Awaitable<void> {
+               auto window_def = co_await AwaitPromise(
+                   NetExecutorAdapter{executor}, std::move(window_def_promise));
+               if (!mode.empty()) {
+                 window_def.AddItem("mode", mode);
+               }
+               main_window.OpenView(window_def);
+               co_return;
+             });
            },
        .available_handler =
            [](const SelectionCommandContext& context) {
