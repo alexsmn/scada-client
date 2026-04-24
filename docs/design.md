@@ -273,7 +273,12 @@ scada-common, and are wired up at login time from one of the three
 registered back-ends:
 
 - **Scada (Telecontrol)** — default; talks to a Telecontrol Server.
-- **OPC UA** — `opc.tcp://localhost:4840` by default.
+- **OPC UA** — `opc.tcp://localhost:4840` by default. The OPC UA back-end
+  is implemented in `common/opcua/opcua_session.*` on top of the native
+  UA Binary client stack under `common/opcua/binary/client/` (no external
+  OPC UA SDK). See the `common/docs/opcua.md` design doc and the
+  `common/docs/diagrams/opcua_binary_client_architecture.svg` architecture
+  diagram.
 - **Vidicon** — Vidicon-protocol endpoint.
 
 Backends are registered statically via the `REGISTER_DATA_SERVICES` macro in
@@ -441,8 +446,14 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
   The exact wire format is implicit in `export/configuration/`. A schema
   document or version negotiation would reduce the migration risk if the
   format changes.
-- **OPC UA back-end depends on an external SDK.** `third_party/opc/` is
-  pulled from outside this repo; an SDK upgrade is a coordinated effort.
+- **OPC UA back-end uses an in-repo UA Binary client.** The client stack
+  lives in `common/opcua/binary/client/` and speaks the OPC UA Part 6
+  binary encoding directly; no external OPC UA SDK is linked into
+  common/ or client/. `Basic256Sha256` sign-and-encrypt is a tracked
+  follow-up; today's builds only support `SecurityPolicy=None`.
+- **Classic OPC (COM) still depends on an external SDK.** `third_party/opc/`
+  is pulled from outside this repo and feeds the Windows-only
+  `scada_common_opc` module; an SDK upgrade is a coordinated effort.
 - **No formal performance budget.** `TimedDataService` and the historical
   views can in principle load tens of thousands of points; there is no
   documented upper bound or a regression guard for either query latency
