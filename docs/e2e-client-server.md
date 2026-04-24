@@ -7,6 +7,45 @@ real Qt desktop client (`client.exe`) connecting to the real SCADA server
 The goal is to exercise the actual process boundary and login/session bootstrap
 path without replacing either binary with in-process mocks.
 
+## Run Instructions
+
+Run the client/server E2E tests from a Windows build environment. The examples
+below assume the repository is checked out at `C:\tc\scada` and the
+`release-dev` preset builds into `C:\tc\scada\build\ninja-dev`.
+
+Build the test executable and required child processes:
+
+```cmd
+cd /d C:\tc\scada
+cmake --build --preset release-dev --target client_server_e2e_tests
+```
+
+Run the full client/server E2E suite:
+
+```cmd
+cd /d C:\tc\scada\build\ninja-dev\bin\RelWithDebInfo
+client_server_e2e_tests.exe --gtest_brief=1
+```
+
+Run a focused test while iterating:
+
+```cmd
+client_server_e2e_tests.exe --gtest_filter=*OperatorUseCases* --gtest_brief=1
+client_server_e2e_tests.exe --gtest_filter=*Connect_Success* --gtest_brief=1
+client_server_e2e_tests.exe --gtest_filter=*Connect_BadPassword* --gtest_brief=1
+```
+
+CTest can also run the registered test target from the build tree:
+
+```cmd
+cd /d C:\tc\scada\build\ninja-dev
+ctest -C RelWithDebInfo -R client_server_e2e_tests --output-on-failure
+```
+
+On failure, the harness prints the preserved temporary workspace path. Inspect
+that directory for `ServerLogs/`, `ClientLogs/`, status marker files, and the
+operator use-case report when that test was running.
+
 ## Goals
 
 - Launch the real `server.exe` in a temporary test workspace.
@@ -216,6 +255,13 @@ Expected behavior:
 - the client exits cleanly or becomes terminable immediately after the failed
   login path resolves.
 
+Current harness details:
+
+- still requires the server listener to start normally before the client runs,
+- verifies the server does not log successful authorization,
+- holds the server alive for a 10 second post-rejection stability window so
+  failed-auth connect crashes are also caught.
+
 ### `OperatorUseCases_OpenRegisteredSurfaces`
 
 Expected behavior:
@@ -234,13 +280,6 @@ Current harness details:
 - verifies command-only and platform-specific operator capabilities through the
   same registered command/window metadata the real UI uses,
 - runs for both SCADA remote-session and OPC UA back-end parameters.
-
-Current harness details:
-
-- still requires the server listener to start normally before the client runs,
-- verifies the server does not log successful authorization,
-- holds the server alive for a 10 second post-rejection stability window so
-  failed-auth connect crashes are also caught.
 
 ## Process and Timeout Policy
 
