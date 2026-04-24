@@ -20,7 +20,8 @@ path without replacing either binary with in-process mocks.
 - Full GUI workflow automation after login.
 - Coverage for the Wt client in the same test target.
 - Screenshot/image comparison.
-- Broad protocol coverage beyond the SCADA remote-session path.
+- Full protocol matrix coverage beyond the SCADA remote-session and OPC UA
+  paths.
 
 ## Scope
 
@@ -49,8 +50,8 @@ For each test:
 2. Materialize a server fixture under that workspace.
 3. Start `server.exe --param=<workspace>/server.json`.
 4. Wait until the configured TCP session port accepts connections.
-5. Write a client test-settings file with SCADA backend, host, user, password,
-   and auto-login enabled.
+5. Write a client test-settings file with the selected backend, host, user,
+   password, and auto-login enabled.
 6. Start `client.exe` with test-only startup flags that point at:
    - the test-settings file,
    - a ready-file path,
@@ -86,12 +87,23 @@ The Qt startup path accepts these test-only flags:
 - `--test-ready-file=<path>`
 - `--test-status-file=<path>`
 - `--test-log-dir=<path>`
+- `--test-operator-use-cases-file=<path>`
 
 These are only used by the E2E harness.
 
 When `--test-log-dir` is present, the client overrides its normal
 `%LOCALAPPDATA%\Telecontrol\SCADA Client\logs` path and writes both component
 logs and crash dumps into the supplied per-test directory.
+
+When `--test-operator-use-cases-file` is present, the client runs an
+E2E-only operator use-case smoke pass after login/bootstrap and writes a
+line-oriented report. The pass opens or verifies the operator surfaces listed
+as UC-1 through UC-11 in `docs/use-cases.mmd`: watch, graph, table, summary,
+custom sheet, event panel, event journal, favourites, portfolio, file system,
+printable/exportable views, write-command registration, and Modus/Vidicon
+schematic registration. It is not pixel comparison or UI clicking; it proves
+that the launched production client can construct the registered operator
+controllers against the live server session.
 
 ### Settings behavior
 
@@ -101,8 +113,9 @@ implementation populated from the provided file.
 
 The settings file must provide at least:
 
-- `ServerType=Scada`
+- `ServerType=Scada` or `ServerType=OpcUa`
 - `Host:Scada=localhost:<port>`
+- `Host:OpcUa=127.0.0.1:<port>`
 - `User=root`
 - `Password=...`
 - `AutoLogin=true`
@@ -154,8 +167,8 @@ Required fixture contents:
 - optional certificates if the copied baseline expects them,
 - server parameter file with the SCADA session listener enabled.
 
-The harness rewrites the session port in the temp `server.json` so each run can
-use a free local TCP port.
+The harness rewrites the remote-session and OPC UA ports in the temp
+`server.json` so each run can use free local TCP ports.
 
 The harness also rewrites the server log directory into the temp workspace so
 server logs and server crash dumps stay with the rest of the test artifacts.
@@ -163,9 +176,8 @@ server logs and server crash dumps stay with the rest of the test artifacts.
 The first version uses the built-in `root` user path already exercised by the
 existing server-side tests.
 
-The current harness also disables optional subsystems such as OPC UA and
-Vidicon in the temp `server.json` so the E2E run stays focused on the SCADA
-remote-session path.
+The current harness disables optional subsystems such as Vidicon in the temp
+`server.json` while enabling the SCADA remote-session and OPC UA endpoints.
 
 ## Assertions
 
@@ -203,6 +215,25 @@ Expected behavior:
 - the server remains alive after rejecting the bad credentials,
 - the client exits cleanly or becomes terminable immediately after the failed
   login path resolves.
+
+### `OperatorUseCases_OpenRegisteredSurfaces`
+
+Expected behavior:
+
+- `server.exe` and `client.exe` complete the same real login/bootstrap path as
+  `Connect_Success`,
+- the client writes an operator use-case report with `operator-use-cases: ok`,
+- every operator use case from the diagram (`UC-1` through `UC-11`) has an
+  `ok` line in the report,
+- the client and server remain alive for the post-connect stability window.
+
+Current harness details:
+
+- opens constructible operator views inside the running Qt client rather than
+  clicking through the GUI,
+- verifies command-only and platform-specific operator capabilities through the
+  same registered command/window metadata the real UI uses,
+- runs for both SCADA remote-session and OPC UA back-end parameters.
 
 Current harness details:
 

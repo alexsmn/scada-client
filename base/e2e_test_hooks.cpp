@@ -11,6 +11,8 @@ namespace {
 
 constexpr std::string_view kTestSettingsFileOption = "test-settings-file";
 constexpr std::string_view kTestStatusFileOption = "test-status-file";
+constexpr std::string_view kTestOperatorUseCasesFileOption =
+    "test-operator-use-cases-file";
 
 std::atomic_bool& GetStatusReported() {
   static std::atomic_bool status_reported = false;
@@ -59,6 +61,10 @@ void ReportE2eStatusIfUnset(std::string_view status) {
   if (GetStatusReported().compare_exchange_strong(expected, true)) {
     WriteFile(GetOptionPath(kTestStatusFileOption), status);
   }
+}
+
+std::filesystem::path GetE2eOperatorUseCasesReportPath() {
+  return GetOptionPath(kTestOperatorUseCasesFileOption);
 }
 
 }  // namespace client

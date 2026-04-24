@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <random>
 #include <string>
@@ -39,8 +40,34 @@ constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
 constexpr auto kPostConnectStabilityTimeout = 10s;
 constexpr auto kObjectTreeLoadTimeout = 15s;
+constexpr auto kOperatorUseCasesTimeout = 30s;
 constexpr std::string_view kStartupCompletedLog =
     "Client startup completed; entering steady-state run loop";
+
+enum class E2eProtocol {
+  Remote,
+  OpcUa,
+};
+
+std::string_view ToString(E2eProtocol protocol) {
+  switch (protocol) {
+    case E2eProtocol::Remote:
+      return "Remote";
+    case E2eProtocol::OpcUa:
+      return "OpcUa";
+  }
+  return "Unknown";
+}
+
+std::string_view GetServerType(E2eProtocol protocol) {
+  switch (protocol) {
+    case E2eProtocol::Remote:
+      return "Scada";
+    case E2eProtocol::OpcUa:
+      return "OpcUa";
+  }
+  return {};
+}
 
 std::filesystem::path GetServerExePath() {
   return std::filesystem::path{SCADA_E2E_SERVER_EXE};
@@ -98,13 +125,13 @@ std::optional<int> FindLoggedObjectTreeChildCount(
     const std::filesystem::path& dir) {
   constexpr std::string_view kCompletionMarker =
       "Children fetched callback completed";
-  constexpr std::string_view kNodeIdMarker = "NodeId = SCADA.24";
   constexpr std::string_view kAddedChildCountMarker = "AddedChildCount = ";
 
   std::error_code ec;
   if (!std::filesystem::exists(dir, ec))
     return std::nullopt;
 
+  std::optional<int> result;
   for (const auto& entry : std::filesystem::directory_iterator{dir, ec}) {
     if (!entry.is_regular_file())
       continue;
@@ -119,9 +146,6 @@ std::optional<int> FindLoggedObjectTreeChildCount(
           line_end == std::string::npos ? std::string::npos : line_end - pos);
       pos = line_end == std::string::npos ? contents.size() : line_end + 1;
 
-      if (line.find(kNodeIdMarker) == std::string::npos)
-        continue;
-
       const auto count_pos = line.find(kAddedChildCountMarker);
       if (count_pos == std::string::npos)
         continue;
@@ -135,11 +159,13 @@ std::optional<int> FindLoggedObjectTreeChildCount(
       if (value_end == value_begin)
         continue;
 
-      return std::stoi(line.substr(value_begin, value_end - value_begin));
+      result = std::stoi(line.substr(value_begin, value_end - value_begin));
+      if (*result > 0)
+        return result;
     }
   }
 
-  return std::nullopt;
+  return result;
 }
 
 int FindAvailablePort() {
@@ -302,14 +328,17 @@ class TempWorkspace {
   bool preserve_ = false;
 };
 
-class ClientServerE2eTest : public ::testing::Test {
+class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
  protected:
   void SetUp() override {
     ASSERT_TRUE(std::filesystem::exists(GetServerExePath()));
     ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
     ASSERT_TRUE(std::filesystem::exists(GetServerFixtureDir()));
 
-    port_ = FindAvailablePort();
+    remote_port_ = FindAvailablePort();
+    opcua_port_ = FindAvailablePort();
+    while (opcua_port_ == remote_port_)
+      opcua_port_ = FindAvailablePort();
     PrepareWorkspace();
   }
 
@@ -334,15 +363,20 @@ class ClientServerE2eTest : public ::testing::Test {
         {"configuration",
          {{"driver", "SQLite"},
           {"dir", (workspace_.path() / "Configuration").string()}}},
-        {"history", {{"dir", (workspace_.path() / "History").string()}}},
+        {"history",
+         {{"enabled", false},
+          {"dir", (workspace_.path() / "History").string()}}},
         {"sessions",
          boost::json::array{
-             "tcp;passive;host=0.0.0.0;port=" + std::to_string(port_)}},
+             "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port_)}},
         {"opc", {{"client", {{"enabled", false}}}}},
         {"opcua",
-         {{"enabled", false},
-          {"url", "opc.tcp://localhost:4840"},
+         {{"enabled", true},
+          {"url", "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_)},
           {"trace", "none"}}},
+        {"iec60870", {{"enabled", false}}},
+        {"iec61850", {{"enabled", false}}},
+        {"modbus", {{"enabled", false}}},
         {"filesystem",
          {{"enabled", true},
           {"dir", (workspace_.path() / "FileSystem").string()}}},
@@ -352,15 +386,21 @@ class ClientServerE2eTest : public ::testing::Test {
                   boost::json::serialize(server_json));
 
     status_file_ = workspace_.path() / "client-status.txt";
+    operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
     settings_file_ = workspace_.path() / "client-settings.json";
     server_log_dir_ = workspace_.path() / "ServerLogs";
     client_log_dir_ = workspace_.path() / "ClientLogs";
   }
 
   void WriteClientSettings(std::string_view password) {
+    const auto remote_host =
+        std::string{"localhost:"} + std::to_string(remote_port_);
+    const auto opcua_host =
+        std::string{"127.0.0.1:"} + std::to_string(opcua_port_);
     boost::json::object root{
-        {"ServerType", "Scada"},
-        {"Host:Scada", std::string{"localhost:"} + std::to_string(port_)},
+        {"ServerType", std::string{GetServerType(GetParam())}},
+        {"Host:Scada", remote_host},
+        {"Host:OpcUa", opcua_host},
         {"User", "root"},
         {"Password", std::string{password}},
         {"AutoLogin", true},
@@ -375,21 +415,28 @@ class ClientServerE2eTest : public ::testing::Test {
                   job_,
                   server_);
 
-    ASSERT_TRUE(WaitUntil([this] { return CanConnectTcp(port_); },
+    const int port = GetProtocolPort();
+    ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
                           std::chrono::duration_cast<std::chrono::milliseconds>(
                               kServerStartTimeout)))
-        << "Server did not start listening on port " << port_;
+        << "Server did not start listening on " << ToString(GetParam())
+        << " port " << port;
   }
 
-  void StartClient() {
-    LaunchProcess(
-        GetClientExePath(),
-        {L"--test-settings-file=" + settings_file_.wstring(),
-         L"--test-status-file=" + status_file_.wstring(),
-         L"--test-log-dir=" + client_log_dir_.wstring()},
-        GetClientExePath().parent_path(),
-        job_,
-        client_);
+  void StartClient(std::vector<std::wstring> extra_args = {}) {
+    std::vector<std::wstring> args{
+        L"--test-settings-file=" + settings_file_.wstring(),
+        L"--test-status-file=" + status_file_.wstring(),
+        L"--test-log-dir=" + client_log_dir_.wstring()};
+    args.insert(args.end(),
+                std::make_move_iterator(extra_args.begin()),
+                std::make_move_iterator(extra_args.end()));
+
+    LaunchProcess(GetClientExePath(),
+                  args,
+                  GetClientExePath().parent_path(),
+                  job_,
+                  client_);
   }
 
   std::string WaitForStatus() {
@@ -421,6 +468,17 @@ class ClientServerE2eTest : public ::testing::Test {
         },
         std::chrono::duration_cast<std::chrono::milliseconds>(
             kObjectTreeLoadTimeout));
+  }
+
+  std::string WaitForOperatorUseCasesReport() {
+    bool ok = WaitUntil([this] {
+      return std::filesystem::exists(operator_use_cases_file_) ||
+             !client_.IsRunning();
+    },
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            kOperatorUseCasesTimeout));
+    EXPECT_TRUE(ok) << "Timed out waiting for operator use-case report";
+    return ReadFileOrEmpty(operator_use_cases_file_);
   }
 
   std::string DescribeProcessExit(const ChildProcess& process,
@@ -466,18 +524,31 @@ class ClientServerE2eTest : public ::testing::Test {
 
   TempWorkspace workspace_;
   JobObject job_;
-  int port_ = 0;
+  int remote_port_ = 0;
+  int opcua_port_ = 0;
 
   std::filesystem::path status_file_;
+  std::filesystem::path operator_use_cases_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;
   std::filesystem::path client_log_dir_;
 
   ChildProcess server_;
   ChildProcess client_;
+
+ private:
+  int GetProtocolPort() const {
+    switch (GetParam()) {
+      case E2eProtocol::Remote:
+        return remote_port_;
+      case E2eProtocol::OpcUa:
+        return opcua_port_;
+    }
+    return 0;
+  }
 };
 
-TEST_F(ClientServerE2eTest, Connect_Success) {
+TEST_P(ClientServerE2eTest, Connect_Success) {
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient();
@@ -498,7 +569,7 @@ TEST_F(ClientServerE2eTest, Connect_Success) {
       "waiting for the post-login session to remain stable");
 }
 
-TEST_F(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
+TEST_P(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient();
@@ -518,7 +589,7 @@ TEST_F(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
   const auto child_count = FindLoggedObjectTreeChildCount(client_log_dir_);
   ASSERT_TRUE(child_count)
       << "Client reported startup ready but client logs never showed a "
-         "completed first-level object tree fetch for SCADA.24";
+         "completed object tree fetch";
   EXPECT_GT(*child_count, 0)
       << "Client loaded the object tree root but did not materialize any "
          "first-level children";
@@ -530,7 +601,43 @@ TEST_F(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
       "waiting for the object tree to remain available after login");
 }
 
-TEST_F(ClientServerE2eTest, Connect_BadPassword) {
+TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {
+  WriteClientSettings(/*password=*/"");
+  StartServer();
+  StartClient(
+      {L"--test-operator-use-cases-file=" +
+       operator_use_cases_file_.wstring()});
+
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  ASSERT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
+  ASSERT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for startup: " << status;
+  ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
+
+  const auto report = WaitForOperatorUseCasesReport();
+  ASSERT_NE(report.find("operator-use-cases: ok"), std::string::npos)
+      << report;
+
+  for (std::string_view use_case :
+       {"UC-1", "UC-2", "UC-3", "UC-4", "UC-5", "UC-6",
+        "UC-7", "UC-8", "UC-9", "UC-10", "UC-11"}) {
+    EXPECT_NE(report.find(std::string{use_case} + " ok"), std::string::npos)
+        << "Missing successful operator use-case coverage for " << use_case
+        << " in report:\n"
+        << report;
+  }
+
+  ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for operator use-case surfaces to remain stable");
+}
+
+TEST_P(ClientServerE2eTest, Connect_BadPassword) {
   WriteClientSettings("wrong-password");
   StartServer();
   StartClient();
@@ -545,5 +652,13 @@ TEST_F(ClientServerE2eTest, Connect_BadPassword) {
           kPostConnectStabilityTimeout),
       "waiting for the server to remain stable after rejecting bad credentials");
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    Protocols,
+    ClientServerE2eTest,
+    ::testing::Values(E2eProtocol::Remote, E2eProtocol::OpcUa),
+    [](const ::testing::TestParamInfo<E2eProtocol>& info) {
+      return std::string{ToString(info.param)};
+    });
 
 }  // namespace

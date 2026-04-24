@@ -42,7 +42,10 @@ void InitProgramOptions() {
        "E2E-only login status marker file")
       ("test-log-dir",
        po::value<std::string>(),
-       "E2E-only client log and dump directory");
+       "E2E-only client log and dump directory")
+      ("test-operator-use-cases-file",
+       po::value<std::string>(),
+       "E2E-only operator use-case coverage report file");
 
 #ifdef _WIN32
   int argc = 0;

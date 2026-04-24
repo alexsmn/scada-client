@@ -9,7 +9,13 @@
 #include "base/executor_timer.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
+#include "controller/window_info.h"
+#include "main_window/main_window.h"
+#include "main_window/main_window_interface.h"
+#include "main_window/main_window_manager.h"
+#include "profile/window_definition.h"
 #include "project.h"
+#include "resources/common_resources.h"
 #include "scada/status_exception.h"
 #include "services/atl_module.h"
 
@@ -19,6 +25,14 @@
 #include <QTimer>
 #include <boost/asio/io_context.hpp>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
+#include <vector>
 
 using namespace std::chrono_literals;
 
@@ -82,6 +96,144 @@ void LogStartupException(std::exception_ptr exception) {
   }
 }
 
+struct OperatorUseCaseSmokeState {
+  bool ok = true;
+  std::vector<std::string> lines;
+};
+
+struct OperatorUseCaseSmokeCheck {
+  std::string_view id;
+  std::string_view description;
+  std::vector<std::string_view> open_window_types;
+  std::vector<std::string_view> registered_window_types;
+  std::vector<unsigned> registered_selection_commands;
+  std::vector<std::string_view> printable_window_types;
+};
+
+void AddSmokeResult(const std::shared_ptr<OperatorUseCaseSmokeState>& state,
+                    std::string_view id,
+                    bool ok,
+                    std::string detail) {
+  state->ok = state->ok && ok;
+  state->lines.emplace_back(std::string{id} + (ok ? " ok " : " failure ") +
+                            std::move(detail));
+}
+
+void WriteOperatorUseCaseSmokeReport(
+    const std::filesystem::path& path,
+    const OperatorUseCaseSmokeState& state) {
+  if (path.empty())
+    return;
+
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+  if (!output)
+    return;
+
+  output << "operator-use-cases: " << (state.ok ? "ok" : "failure") << "\n";
+  for (const auto& line : state.lines)
+    output << line << "\n";
+}
+
+MainWindowInterface* GetFirstMainWindow(ClientApplication& app) {
+  for (auto& main_window : app.main_window_manager().main_windows())
+    return &main_window;
+  return nullptr;
+}
+
+promise<> OpenOperatorWindow(
+    ClientApplication& app,
+    std::string window_type,
+    const std::shared_ptr<OperatorUseCaseSmokeState>& state) {
+  auto* main_window = GetFirstMainWindow(app);
+  if (!main_window) {
+    AddSmokeResult(state, window_type, false, "main window missing");
+    return make_resolved_promise();
+  }
+
+  const auto* window_info = FindWindowInfoByName(window_type);
+  if (!window_info) {
+    AddSmokeResult(state, window_type, false, "window type not registered");
+    return make_resolved_promise();
+  }
+
+  return main_window->OpenView(WindowDefinition{*window_info}, /*activate=*/true)
+      .then([state, window_type](OpenedViewInterface* opened_view) {
+        AddSmokeResult(state,
+                       window_type,
+                       opened_view != nullptr,
+                       opened_view ? "opened" : "open returned null");
+      });
+}
+
+promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
+  auto report_path = client::GetE2eOperatorUseCasesReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto state = std::make_shared<OperatorUseCaseSmokeState>();
+  const std::vector<OperatorUseCaseSmokeCheck> checks{
+      {"UC-1", "monitor live values", {"Log"}},
+      {"UC-2", "visualise time-series on a graph", {"Graph"}},
+      {"UC-3", "view tables summaries and sheets", {"Table", "Summ", "CusTable"}},
+      {"UC-4", "acknowledge events and alarms", {"Event"}},
+      {"UC-5", "browse event journals", {"EventJournal"}},
+      {"UC-6", "watch a custom spreadsheet", {"CusTable"}},
+      {"UC-7", "issue control commands", {}, {}, {ID_WRITE, ID_WRITE_MANUAL}},
+      {"UC-8", "manage favourites and portfolios", {"Favorites", "Portfolio"}},
+      {"UC-9", "print or export the active view", {}, {}, {}, {"Table", "EventJournal"}},
+      {"UC-10", "browse server files", {"FileSystemView"}},
+      {"UC-11", "view Modus and Vidicon schematics", {}, {"Modus", "VidiconDisplay"}},
+  };
+
+  promise<> sequence = make_resolved_promise();
+
+  for (const auto& check : checks) {
+    for (std::string_view window_type : check.open_window_types) {
+      sequence = sequence.then(
+          [&app, state, window_type = std::string{window_type}] {
+            return OpenOperatorWindow(app, window_type, state);
+          });
+    }
+
+    sequence = sequence.then([&app, state, check] {
+      bool ok = true;
+      std::string detail{check.description};
+
+      for (std::string_view window_type : check.registered_window_types) {
+        bool registered = FindWindowInfoByName(window_type) != nullptr;
+        ok = ok && registered;
+        detail += registered ? " registered " : " missing ";
+        detail += window_type;
+      }
+
+      for (unsigned command_id : check.registered_selection_commands) {
+        bool registered = app.HasSelectionCommandForTesting(command_id);
+        ok = ok && registered;
+        detail += registered ? " command " : " missing-command ";
+        detail += std::to_string(command_id);
+      }
+
+      for (std::string_view window_type : check.printable_window_types) {
+        const auto* window_info = FindWindowInfoByName(window_type);
+        bool printable = window_info && window_info->printable();
+        ok = ok && printable;
+        detail += printable ? " printable " : " not-printable ";
+        detail += window_type;
+      }
+
+      AddSmokeResult(state, check.id, ok, std::move(detail));
+    });
+  }
+
+  return sequence.then([report_path, state] {
+    WriteOperatorUseCaseSmokeReport(report_path, *state);
+  });
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -121,6 +273,9 @@ int main(int argc, char* argv[]) {
 
     executor->PostTask([&app, executor] {
       auto run_promise = app.Start()
+                             .then([&app] {
+                               return RunE2eOperatorUseCaseSmoke(app);
+                             })
                              .then([&app] {
                                BOOST_LOG_TRIVIAL(info)
                                    << "Client startup completed; entering "

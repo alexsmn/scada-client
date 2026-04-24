@@ -88,7 +88,7 @@ struct ClientApplication::PostLoginContext {
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
       metric_service_{
-          std::make_unique<MetricServiceImpl>(executor_,
+          std::make_unique<MetricServiceImpl>(MakeAnyExecutor(executor_),
                                               /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>()} {
@@ -121,6 +121,12 @@ ClientApplication::~ClientApplication() {
 
 MainWindowManager& ClientApplication::main_window_manager() {
   return main_window_module_->main_window_manager();
+}
+
+bool ClientApplication::HasSelectionCommandForTesting(
+    unsigned command_id) const {
+  return core_module_ &&
+         core_module_->selection_commands().FindCommand(command_id) != nullptr;
 }
 
 promise<void> ClientApplication::Start() {

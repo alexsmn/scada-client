@@ -13,6 +13,8 @@ std::optional<std::string> DescribeStartupException(
   } catch (...) {
     return std::string{"unknown exception"};
   }
+
+  return std::string{"unknown exception"};
 }
 
 std::optional<std::string> GetStartupErrorMessage(
