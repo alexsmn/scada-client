@@ -260,6 +260,14 @@ SCADA services or local service doubles.
   `ExpandGroupItemIds(...).then(...)` pipeline is now a `CoSpawn`
   coroutine that awaits the `NodeIdSet` promise before mutating the
   active `ContentsModel`.
+- **OPC UA outbound session adapter** migrated
+  (`common/opcua/opcua_session.{h,cpp}`). `OpcUaSession` now exposes
+  coroutine-native lifecycle methods (`ConnectAsync`, `DisconnectAsync`,
+  `ReconnectAsync`) plus `Coroutine{View,Attribute,Method}Service`
+  implementations. The legacy `SessionService` promises and callback-based
+  SCADA service methods remain as compatibility boundaries that delegate into
+  those `Awaitable` bodies via `ToPromise`/`CoSpawn`. Regression coverage:
+  `common/opcua/opcua_session_unittest.cpp`.
 
 ### Priority Order
 
