@@ -64,6 +64,9 @@ class DataObjectImpl : public IDataObject {
     StoredDataInfo(FORMATETC* format_etc, STGMEDIUM* medium)
         : format_etc(*format_etc), medium(medium), owns_medium(true) {}
 
+    StoredDataInfo(const StoredDataInfo&) = delete;
+    StoredDataInfo& operator=(const StoredDataInfo&) = delete;
+
     ~StoredDataInfo() {
       if (owns_medium) {
         ReleaseStgMedium(medium);
