@@ -1,7 +1,9 @@
 #include "components/login/qt/login_dialog.h"
 
+#include "base/awaitable_promise.h"
 #include "base/e2e_test_hooks.h"
 #include "components/login/login_controller.h"
+#include "net/net_executor_adapter.h"
 #include "scada/session_service.h"
 #include "scada/status.h"
 
@@ -26,6 +28,15 @@ QStringList MakeQStringList(const std::vector<std::u16string>& source) {
   for (auto& str : source)
     list.push_back(QString::fromStdU16String(str));
   return list;
+}
+
+Awaitable<std::optional<DataServices>> DeleteLoginDialogOnCompletionAsync(
+    std::shared_ptr<Executor> executor,
+    LoginDialog& login_dialog) {
+  auto result = co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                                      login_dialog.promise);
+  login_dialog.deleteLater();
+  co_return result;
 }
 
 }  // namespace
@@ -158,14 +169,14 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
 promise<std::optional<DataServices>> ExecuteLoginDialog(
     std::shared_ptr<Executor> executor,
     DataServicesContext&& services_context) {
+  auto dialog_executor = executor;
   LoginDialog* login_dialog =
       new LoginDialog{std::move(executor), std::move(services_context)};
 
-  auto promise = login_dialog->promise.then(
-      [login_dialog](const std::optional<DataServices>& services) {
-        login_dialog->deleteLater();
-        return services;
-      });
+  auto promise = ToPromise(
+      NetExecutorAdapter{dialog_executor},
+      DeleteLoginDialogOnCompletionAsync(std::move(dialog_executor),
+                                         *login_dialog));
 
   login_dialog->setModal(true);
   login_dialog->show();

@@ -413,6 +413,16 @@ SCADA services or local service doubles.
   references across service/dialog awaits, except for the error dialog path
   where the existing copied completion handler behavior is retained.
   Regression coverage: `client/components/write/write_model_unittest.cpp`.
+- **components/login controller and Qt dialog completion** migrated
+  (`client/components/login/login_controller.{h,cpp}`,
+  `client/components/login/qt/login_dialog.cpp`). Session connect, auto-login
+  info completion, force-logoff retry, and login-error reporting now run through
+  executor-pinned coroutine helpers instead of promise continuations. Controller
+  callbacks keep their previous lifetime rules: service/dialog awaits use
+  `weak_ptr` drops, while the post-success completion handler remains copied
+  across the optional auto-login message. `ExecuteLoginDialog` now awaits dialog
+  completion in a coroutine before scheduling `deleteLater()`. Regression
+  coverage: `client/components/login/login_controller_unittest.cpp`.
 
 ### Priority Order
 
@@ -426,13 +436,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the login component promise chains next:
-`client/components/login/login_controller.cpp` and
-`client/components/login/qt/login_dialog.cpp`. Convert the connection, error
-reporting, profile loading, and dialog completion continuations to
-executor-pinned coroutine bodies while preserving the current completion-handler
-and weak-lifetime behavior. Add focused tests for successful login completion,
-connection failure reporting, and late completion after controller destruction.
+Migrate `client/components/device_metrics/node_collector.cpp` next. It still
+uses recursive promise chains for type-resolution and child collection. Convert
+the node collection helpers to coroutine functions that await `FetchNode(...)`
+and `FetchChildren(...)`, preserve recursive traversal behavior, and add
+focused tests for collecting matching descendants, skipping non-matching
+branches, and surfacing fetch failures consistently with the current promise
+behavior.
 
 ### Work
 

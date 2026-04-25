@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/dialog_service.h"
+#include "base/awaitable.h"
 #include "base/settings_store.h"
 #include "base/boost_log.h"
 #include "scada/data_services_factory.h"
@@ -8,6 +10,8 @@
 #include <memory>
 
 namespace scada {
+struct SessionConnectParams;
+class SessionService;
 class Status;
 }
 
@@ -47,6 +51,24 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   void OnLoginResult(const scada::Status& status);
   void OnLoginCompleted();
   void OnLoginFailed(const scada::Status& status);
+
+  static Awaitable<void> ConnectAsync(std::shared_ptr<Executor> executor,
+                                      std::weak_ptr<LoginController> controller,
+                                      scada::SessionService& session_service,
+                                      scada::SessionConnectParams params);
+  static Awaitable<void> CompleteLoginAsync(
+      std::shared_ptr<Executor> executor,
+      std::function<void(DataServices services)> completion_handler,
+      DataServices services,
+      promise<void> message);
+  static Awaitable<void> PromptForceLogoffAsync(
+      std::shared_ptr<Executor> executor,
+      std::weak_ptr<LoginController> controller,
+      promise<MessageBoxResult> prompt);
+  static Awaitable<void> ReportLoginErrorAsync(
+      std::shared_ptr<Executor> executor,
+      std::weak_ptr<LoginController> controller,
+      promise<MessageBoxResult> prompt);
 
   const std::shared_ptr<Executor> executor_;
   DataServicesContext services_context_;

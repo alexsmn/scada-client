@@ -2,7 +2,8 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/promise_executor.h"
+#include "base/awaitable_promise.h"
+#include "net/net_executor_adapter.h"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -11,6 +12,7 @@
 #include <boost/algorithm/string/trim.hpp>
 #include "base/u16format.h"
 #include "scada/session_service.h"
+#include "scada/status_exception.h"
 #include "scada/status_promise.h"
 
 #include <algorithm>
@@ -85,6 +87,17 @@ void AppendMruList(std::vector<std::u16string>& list,
 
   if (list.size() > 10)
     list.resize(10);
+}
+
+Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
+                                      promise<void> operation) {
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                          std::move(operation));
+    co_return scada::StatusCode::Good;
+  } catch (...) {
+    co_return scada::GetExceptionStatus(std::current_exception());
+  }
 }
 
 }  // namespace
@@ -182,9 +195,13 @@ void LoginController::OnLoginCompleted() {
         Translate(kAutoLoginMessage), {}, MessageBoxMode::Info));
   }
 
-  promise.then([completion_handler = this->completion_handler,
-                services = std::move(services_)]() mutable {
-    completion_handler(std::move(services));
+  CoSpawn(executor_, [executor = executor_,
+                      completion_handler = completion_handler,
+                      services = std::move(services_),
+                      message = std::move(promise)]() mutable {
+    return CompleteLoginAsync(std::move(executor),
+                              std::move(completion_handler),
+                              std::move(services), std::move(message));
   });
 }
 
@@ -197,29 +214,23 @@ void LoginController::OnLoginFailed(const scada::Status& status) {
     return;
 
   if (status.code() == scada::StatusCode::Bad_UserIsAlreadyLoggedOn) {
-    dialog_service_
-        .RunMessageBox(Translate(kForceLogoffMessage), {}, MessageBoxMode::QuestionYesNo)
-        .then(BindPromiseExecutor(executor_, weak_from_this(),
-                                  [this](MessageBoxResult message_box_result) {
-                                    if (message_box_result ==
-                                        MessageBoxResult::Yes) {
-                                      Connect(true);
-
-                                    } else {
-                                      login_message_ = true;
-                                      error_handler();
-                                    }
-                                  }));
+    CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
+                        prompt = dialog_service_.RunMessageBox(
+                            Translate(kForceLogoffMessage), {},
+                            MessageBoxMode::QuestionYesNo)]() mutable {
+      return PromptForceLogoffAsync(std::move(executor), std::move(controller),
+                                    std::move(prompt));
+    });
 
   } else {
     std::u16string message =
         u16format(kLoginFailedMessage, ToString16(status));
-    dialog_service_.RunMessageBox(message, {}, MessageBoxMode::Error)
-        .then(BindPromiseExecutor(executor_, weak_from_this(),
-                                  [this](MessageBoxResult) {
-                                    login_message_ = true;
-                                    error_handler();
-                                  }));
+    CoSpawn(executor_, [executor = executor_, controller = weak_from_this(),
+                        prompt = dialog_service_.RunMessageBox(
+                            message, {}, MessageBoxMode::Error)]() mutable {
+      return ReportLoginErrorAsync(std::move(executor), std::move(controller),
+                                   std::move(prompt));
+    });
   }
 }
 
@@ -235,13 +246,17 @@ void LoginController::Connect(bool allow_remote_logoff) {
     return;
   }
 
-  scada::BindStatusCallback(
-      services_.session_service_->Connect(
-          {.host = server_host,
-           .user_name = scada::ToLocalizedText(user_name),
-           .password = scada::ToLocalizedText(password),
-           .allow_remote_logoff = allow_remote_logoff}),
-      [this](const scada::Status& status) { OnLoginResult(status); });
+  CoSpawn(executor_,
+          [executor = executor_, controller = weak_from_this(),
+           session_service = services_.session_service_,
+           params = scada::SessionConnectParams{
+               .host = server_host,
+               .user_name = scada::ToLocalizedText(user_name),
+               .password = scada::ToLocalizedText(password),
+               .allow_remote_logoff = allow_remote_logoff}]() mutable {
+            return ConnectAsync(std::move(executor), std::move(controller),
+                                *session_service, std::move(params));
+          });
 }
 
 void LoginController::DeleteUserName(std::u16string_view user_name) {
@@ -262,4 +277,68 @@ void LoginController::SetServerTypeIndex(int index) {
   server_type_data_[server_type_index_].host = std::move(server_host);
   server_type_index_ = index;
   server_host = server_type_data_[index].host;
+}
+
+Awaitable<void> LoginController::ConnectAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<LoginController> controller,
+    scada::SessionService& session_service,
+    scada::SessionConnectParams params) {
+  auto status = co_await AwaitStatus(std::move(executor),
+                                     session_service.Connect(params));
+  if (auto controller_ptr = controller.lock()) {
+    controller_ptr->OnLoginResult(status);
+  }
+  co_return;
+}
+
+Awaitable<void> LoginController::CompleteLoginAsync(
+    std::shared_ptr<Executor> executor,
+    std::function<void(DataServices services)> completion_handler,
+    DataServices services,
+    promise<void> message) {
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                          std::move(message));
+    completion_handler(std::move(services));
+  } catch (...) {
+  }
+  co_return;
+}
+
+Awaitable<void> LoginController::PromptForceLogoffAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<LoginController> controller,
+    promise<MessageBoxResult> prompt) {
+  try {
+    auto message_box_result =
+        co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                              std::move(prompt));
+    if (auto controller_ptr = controller.lock()) {
+      if (message_box_result == MessageBoxResult::Yes) {
+        controller_ptr->Connect(true);
+      } else {
+        controller_ptr->login_message_ = true;
+        controller_ptr->error_handler();
+      }
+    }
+  } catch (...) {
+  }
+  co_return;
+}
+
+Awaitable<void> LoginController::ReportLoginErrorAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<LoginController> controller,
+    promise<MessageBoxResult> prompt) {
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                          std::move(prompt));
+    if (auto controller_ptr = controller.lock()) {
+      controller_ptr->login_message_ = true;
+      controller_ptr->error_handler();
+    }
+  } catch (...) {
+  }
+  co_return;
 }
