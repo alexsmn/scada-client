@@ -147,11 +147,28 @@ TEST_F(PropertyDefsTest, Enum) {
 TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {
   CreateDataItem("GROUP_DEVICE!device.channel.path");
 
+  PropertyService property_service;
   auto executor = std::make_shared<TestExecutor>();
   auto property_defs = WaitAwaitable(
-      executor, PropertyService{}.GetChildPropertyDefsAsync(
+      executor, property_service.GetChildPropertyDefsAsync(
                     MakeTestAnyExecutor(executor),
                     node_service->GetNode(data_group_id)));
+
+  const auto has_input1 = std::ranges::any_of(
+      property_defs, [](const auto& property_def) {
+        return property_def.first.node_id() ==
+               data_items::id::DataItemType_Input1;
+      });
+  EXPECT_TRUE(has_input1);
+}
+
+TEST_F(PropertyDefsTest, GetChildPropertyDefs_LegacyWrapperUsesCoroutinePath) {
+  CreateDataItem("GROUP_DEVICE!device.channel.path");
+
+  PropertyService property_service{MakeTestAnyExecutor(executor)};
+  auto property_defs =
+      WaitPromise(executor, property_service.GetChildPropertyDefs(
+                                node_service->GetNode(data_group_id)));
 
   const auto has_input1 = std::ranges::any_of(
       property_defs, [](const auto& property_def) {

@@ -281,17 +281,22 @@ SCADA services or local service doubles.
   `client/components/node_table/node_table_model.cpp`).
   `PropertyService` now has coroutine-native
   `GetChildPropertyDefsAsync` / `GetAllSubtypesPropertiesAsync` helpers for
-  UI models that already own an executor, while the legacy
-  `promise<PropertyDefs> GetChildPropertyDefs(...)` entry point remains for
-  existing callers. `NodeTableModel::SetParentNode` now runs the property-def
-  load, child fetch, column update, and row update as a single
+  UI models that already own an executor. The legacy
+  `promise<PropertyDefs> GetChildPropertyDefs(...)` compatibility entry point
+  is now a thin `ToPromise` adapter over `GetChildPropertyDefsAsync`, so
+  existing promise callers use the same coroutine body.
+  `NodeTableModel::SetParentNode` now runs the property-def load, child fetch,
+  column update, and row update as a single
   cancellation-aware coroutine instead of a four-step `.then(...).except(...)`
   pipeline. The coroutine explicitly checks the current `CancelationRef` after
   each await so stale parent-node loads cannot update the table after a newer
   selection. `PropertyContext` now carries the UI executor, and the
   reference/channel dropdown choice flow uses `MakeAsyncChoiceHandler` to spawn
   `FetchNodeNamesRecursiveAsync` while preserving the callback-shaped
-  `aui::EditData::AsyncChoiceHandler` UI contract. Regression coverage:
+  `aui::EditData::AsyncChoiceHandler` UI contract.
+  `TransportPropertyDefinition::HandleEditButton` now spawns a UI-executor
+  coroutine and awaits the modal transport dialog instead of continuing with a
+  `.then(...)` callback. Regression coverage:
   `client/properties/property_defs_unittest.cpp`.
 - **OPC UA outbound session adapter** migrated
   (`common/opcua/client_session.{h,cpp}`).
@@ -315,12 +320,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Finish the remaining properties promise chains by migrating
-`TransportPropertyDefinition::HandleEditButton` and the legacy
-`PropertyService::GetChildPropertyDefs(...)` compatibility wrapper. Keep the
-public promise-returning entry point as a thin `ToPromise` adapter over
-`GetChildPropertyDefsAsync` so current callers remain source-compatible while
-new UI code uses the coroutine path directly.
+Migrate the configuration import/export command flows in
+`client/export/configuration/`. Start with
+`ExcelConfigurationCommands::Export` and `::Import`, keeping the public command
+handlers unchanged while moving save/open prompts, builder/importer work,
+confirmation prompts, and resource-error reporting into executor-pinned
+coroutine bodies.
 
 ### Work
 

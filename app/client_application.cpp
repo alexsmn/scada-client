@@ -265,7 +265,8 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
       PortfolioModuleContext{*node_service_, *profile_, *controller_registry_});
   shutdown_stack_.Push([this] { portfolio_module_.reset(); });
 
-  property_service_ = std::make_unique<PropertyService>();
+  property_service_ = std::make_unique<PropertyService>(
+      MakeAnyExecutor(executor_));
 }
 
 ClientApplicationModuleContext ClientApplication::BuildModuleContext(

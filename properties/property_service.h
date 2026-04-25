@@ -5,6 +5,7 @@
 #include "base/promise.h"
 #include "node_service/node_ref.h"
 
+#include <optional>
 #include <unordered_set>
 #include <vector>
 
@@ -15,6 +16,9 @@ using PropertyDefs =
 
 class PropertyService {
  public:
+  PropertyService() = default;
+  explicit PropertyService(AnyExecutor executor);
+
   const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl);
 
   PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition);
@@ -29,9 +33,6 @@ class PropertyService {
                          std::unordered_set<NodeRef>& property_declarations);
 
  private:
-  promise<void> GetAllSubtypesProperties(
-      const NodeRef& type_definition,
-      const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
   Awaitable<void> GetAllSubtypesPropertiesAsync(
       AnyExecutor executor,
       const NodeRef& type_definition,
@@ -39,4 +40,6 @@ class PropertyService {
 
   PropertyDefs GetPropertyDefs(
       const std::unordered_set<NodeRef>& property_decls);
+
+  std::optional<AnyExecutor> executor_;
 };

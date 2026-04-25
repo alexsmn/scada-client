@@ -13,6 +13,7 @@
 
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <stdexcept>
 
 namespace {
 
@@ -76,25 +77,20 @@ std::unordered_set<NodeRef> GetChildTypeDefinitions(
   return child_type_definitions;
 }
 
+Awaitable<PropertyDefs> GetChildPropertyDefsCompatAsync(
+    std::shared_ptr<PropertyService> service,
+    AnyExecutor executor,
+    NodeRef parent_node) {
+  co_return co_await service->GetChildPropertyDefsAsync(std::move(executor),
+                                                        parent_node);
+}
+
 }  // namespace
 
 // PropertyService
 
-promise<void> PropertyService::GetAllSubtypesProperties(
-    const NodeRef& type_definition,
-    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
-  return FetchNode(type_definition).then([=] {
-    GetTypeProperties(type_definition, *property_decls);
-
-    auto subtypes = type_definition.targets(scada::id::HasSubtype);
-    auto subtype_fetch_promises =
-        subtypes | boost::adaptors::transformed([&](const NodeRef& node) {
-          return GetAllSubtypesProperties(node, property_decls);
-        });
-
-    return make_all_promise_void(subtype_fetch_promises);
-  });
-}
+PropertyService::PropertyService(AnyExecutor executor)
+    : executor_{std::move(executor)} {}
 
 Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
     AnyExecutor executor,
@@ -182,21 +178,15 @@ PropertyDefs PropertyService::GetTypePropertyDefs(
 
 promise<PropertyDefs> PropertyService::GetChildPropertyDefs(
     const NodeRef& parent_node) {
-  auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
-  return FetchNode(parent_node)
-      .then([parent_node] { return GetChildTypeDefinitions(parent_node); })
-      .then([this, property_decls](
-                const std::unordered_set<NodeRef>& child_type_definitions) {
-        auto child_promises = child_type_definitions |
-                              boost::adaptors::transformed(
-                                  [&](const NodeRef& child_type_definition) {
-                                    return GetAllSubtypesProperties(
-                                        child_type_definition, property_decls);
-                                  });
-        return make_all_promise_void(child_promises);
-      })
-      .then(
-          [this, property_decls] { return GetPropertyDefs(*property_decls); });
+  if (!executor_) {
+    return make_rejected_promise<PropertyDefs>(
+        std::logic_error{"PropertyService executor is not configured"});
+  }
+
+  auto executor = *executor_;
+  auto service = std::make_shared<PropertyService>(*this);
+  return ToPromise(executor, GetChildPropertyDefsCompatAsync(
+                                 std::move(service), executor, parent_node));
 }
 
 Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(

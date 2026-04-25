@@ -304,9 +304,10 @@ Both are Qt-only and Windows-only (`#if !defined(UI_WT)`).
 - **Dependency injection.** Every module takes a `*Context&&` and
   privately inherits from it; no global state beyond the static command
   and data-service registries.
-- **Async / promise-based control flow.** Every I/O returns `promise<T>`
-  from scada-core. The bootstrap chain in `ClientApplication::Start()` is
-  itself a `.then()` ladder.
+- **Async / promise-based control flow.** Every public I/O boundary still
+  returns `promise<T>` from scada-core. Internals are migrating to C++20
+  coroutine bodies via `AwaitPromise`/`ToPromise`, with executor ownership kept
+  explicit at UI mutation points.
 - **Localisation.** A single `Translate()` function (`aui/qt/translation_qt.cpp`)
   routes through `QCoreApplication::translate("", text)` to match the
   empty translation context that `lupdate` writes into the `.ts` files.

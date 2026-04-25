@@ -1,6 +1,8 @@
 ﻿#include "properties/property_defs.h"
 
 #include "aui/color.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/utf_convert.h"
 #include "properties/transport/transport_dialog.h"
 #include "model/data_items_node_ids.h"
@@ -204,10 +206,14 @@ void TransportPropertyDefinition::HandleEditButton(
   auto text = GetText(context, node, prop_decl_id);
 
   transport::TransportString transport_string{UtfConvert<char>(text)};
-  ShowTransportDialog(context.dialog_service_, transport_string)
-      .then([context, node,
-             prop_decl_id](const transport::TransportString& transport_string) {
-        auto text = UtfConvert<char16_t>(transport_string.ToString());
+  CoSpawn(context.executor_,
+          [context, node, prop_decl_id,
+           transport_string = std::move(transport_string)]()
+              -> Awaitable<void> {
+        auto updated_transport_string = co_await AwaitPromise(
+            NetExecutorAdapter{context.executor_},
+            ShowTransportDialog(context.dialog_service_, transport_string));
+        auto text = UtfConvert<char16_t>(updated_transport_string.ToString());
         SetTextHelper(context, node, prop_decl_id, text);
       });
 }
