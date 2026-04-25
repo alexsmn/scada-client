@@ -66,3 +66,31 @@ TEST_F(DialogUtilTest, StartMappedModalDialogRejectsMapperException) {
   ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
   EXPECT_THROW(result.get(), std::runtime_error);
 }
+
+TEST_F(DialogUtilTest, StartFinishedModalDialogReturnsMappedResult) {
+  auto result =
+      StartFinishedModalDialog(std::make_unique<QDialog>(),
+                               [](QDialog& dialog, int finished_result) {
+                                 return dialog.isModal() ? finished_result : 0;
+                               });
+
+  aui::qt::test::ProcessEventsUntilSettled(result,
+                                           aui::qt::test::AcceptDialog);
+
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
+  EXPECT_EQ(result.get(), QDialog::Accepted);
+}
+
+TEST_F(DialogUtilTest, StartFinishedModalDialogRejectsMapperException) {
+  auto result =
+      StartFinishedModalDialog(std::make_unique<QDialog>(),
+                               [](QDialog& dialog, int finished_result) -> int {
+                                 throw std::runtime_error{"map"};
+                               });
+
+  aui::qt::test::ProcessEventsUntilSettled(result,
+                                           aui::qt::test::RejectDialog);
+
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
+  EXPECT_THROW(result.get(), std::runtime_error);
+}

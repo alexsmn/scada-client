@@ -233,6 +233,17 @@ TEST_F(DeviceMetricsCommandTest, CollectChildrenAsyncKeepsOnlyMatchingTypes) {
   EXPECT_EQ(children.front().node_id(), child->id());
 }
 
+TEST_F(DeviceMetricsCommandTest, FetchNodePromiseUsesCoroutineBody) {
+  const auto* device = CreateDevice({1, device_namespace_index}, u"Device");
+
+  auto fetched_node =
+      FetchNode(node_service_.GetNode(device->id()), NodeFetchStatus::NodeOnly())
+          .get();
+
+  EXPECT_EQ(fetched_node.node_id(), device->id());
+  EXPECT_TRUE(fetched_node.fetched());
+}
+
 TEST_F(DeviceMetricsCommandTest,
        CollectNodesRecursiveAsyncSkipsNonMatchingBranches) {
   const auto* parent = CreateDevice({1, device_namespace_index}, u"Parent");

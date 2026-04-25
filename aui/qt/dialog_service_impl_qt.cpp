@@ -45,7 +45,7 @@ QString MakeFilter(std::span<const DialogService::Filter> filters) {
   return result;
 }
 
-MessageBoxResult MapQtMesageBoxResult(int result) {
+MessageBoxResult MapQtMessageBoxResult(int result) {
   switch (result) {
     case QMessageBox::Yes:
       return MessageBoxResult::Yes;
@@ -94,16 +94,11 @@ promise<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
   if (mode == MessageBoxMode::QuestionYesNoDefaultNo)
     message_box->setDefaultButton(QMessageBox::No);
 
-  promise<MessageBoxResult> promise;
-  QObject::connect(
-      message_box.get(), &QMessageBox::finished,
-      [promise, message_box = message_box.get()](int result) mutable {
-        promise.resolve(MapQtMesageBoxResult(result));
-        message_box->deleteLater();
+  return StartFinishedModalDialog(
+      std::move(message_box),
+      [](QMessageBox& /*message_box*/, int result) {
+        return MapQtMessageBoxResult(result);
       });
-
-  message_box.release()->show();
-  return promise;
 }
 
 UiView* DialogServiceImplQt::GetDialogOwningWindow() const {

@@ -1,6 +1,7 @@
 #include "components/device_metrics/node_collector.h"
 
 #include "base/awaitable_promise.h"
+#include "base/callback_awaitable.h"
 #include "base/executor_conversions.h"
 #include "base/span_util.h"
 
@@ -25,17 +26,23 @@ std::vector<NodeRef> JoinAll(
 
 promise<NodeRef> FetchNode(const NodeRef& node,
                            const NodeFetchStatus& requested_status) {
-  auto promise = make_promise<NodeRef>();
-  node.Fetch(requested_status,
-             [promise](const NodeRef& node) mutable { promise.resolve(node); });
-  return promise;
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor, FetchNodeAsync(executor, node, requested_status));
 }
 
 Awaitable<NodeRef> FetchNodeAsync(AnyExecutor executor,
                                   const NodeRef& node,
                                   const NodeFetchStatus& requested_status) {
-  co_return co_await AwaitPromise(std::move(executor),
-                                  FetchNode(node, requested_status));
+  auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
+      std::move(executor),
+      [node, requested_status](auto callback) {
+        node.Fetch(requested_status,
+                   [callback = std::move(callback)](
+                       const NodeRef& fetched_node) mutable {
+                     callback(fetched_node);
+                   });
+      });
+  co_return fetched_node;
 }
 
 promise<std::vector<NodeRef>> CollectChildren(

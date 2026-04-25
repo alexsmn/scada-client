@@ -342,6 +342,13 @@ SCADA services or local service doubles.
   `.then(...)` implementation.
   Regression coverage:
   `client/components/device_metrics/device_metrics_command_unittest.cpp`.
+- **device metrics fetch callback bridge** migrated
+  (`client/components/device_metrics/node_collector.cpp`). The legacy
+  `promise<NodeRef> FetchNode(...)` compatibility helper now delegates to the
+  same coroutine body as `FetchNodeAsync(...)`, and that body awaits
+  `NodeRef::Fetch(..., callback)` through `CallbackToAwaitable` instead of
+  creating and resolving a local promise manually. Regression coverage:
+  `client/components/device_metrics/device_metrics_command_unittest.cpp`.
 - **properties + components/node_table** partially migrated
   (`client/properties/property_service.{h,cpp}`,
   `client/properties/property_util.{h,cpp}`,
@@ -648,9 +655,12 @@ SCADA services or local service doubles.
   return value before scheduling `deleteLater()`, rejects canceled dialogs, and
   rejects mapper exceptions. Prompt/open-file/save-file flows now use that
   helper instead of `StartModalDialog(...).then(...)`; the time range dialog was
-  folded back onto the shared helper as well. `aui_qt` now links `transport`
-  and `scada_core` for the awaitable helper surface. Regression coverage:
-  `client/aui/qt/dialog_util_unittest.cpp`.
+  folded back onto the shared helper as well. Message boxes now use
+  `StartFinishedModalDialog(...)`, a sibling coroutine helper for dialog
+  surfaces where the `finished(int)` result carries the accepted button. `aui_qt`
+  now links `transport` and `scada_core` for the awaitable helper surface.
+  Regression coverage: `client/aui/qt/dialog_util_unittest.cpp` and
+  `client/aui/qt/dialog_service_impl_qt_unittest.cpp`.
 - **resource error dialog handling** migrated
   (`client/aui/resource_error.h`). `ShowResourceError(...)` now invokes
   `DialogService::RunMessageBox(...)` synchronously as before, then awaits the
@@ -689,8 +699,11 @@ Continue the production async-surface audit outside test-only helpers: the only
 remaining direct rejected-promise production site is the documented centralized
 Wt unsupported-dialog helper (`client/aui/wt/dialog_stub.h`). Leave that helper
 as the platform boundary unless Wt gains real modal-dialog support, then
-continue with the next non-test promise-chain cluster found by
-`rg "\.then\(|\.except\(" client`.
+continue with the remaining manual promise construction audit:
+`rg "make_promise<|promise<[^>]+> [A-Za-z_]+;" client -g"*.cpp" -g"*.h"`.
+Focus first on Wt login dialog completion, then any task-manager promise
+ownership that can be safely expressed as coroutine bodies without changing the
+public `TaskManager` API.
 
 ### Work
 
