@@ -116,13 +116,12 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             // The coroutine is gated by `cancelation_` so it cannot run after
             // this `SelectionCommands` is destroyed — equivalent to the
             // previous `cancelation_.Bind(...)` `.then` callback.
-            auto def_promise =
-                MakeDeviceMetricsWindowDefinition(selection_->node());
             CoSpawn(executor_, cancelation_,
-                    [this, def_promise = std::move(def_promise)]() mutable
+                    [this]() mutable
                     -> Awaitable<void> {
-                      auto window_definition = co_await AwaitPromise(
-                          NetExecutorAdapter{executor_}, std::move(def_promise));
+                      auto window_definition =
+                          co_await MakeDeviceMetricsWindowDefinitionAsync(
+                              NetExecutorAdapter{executor_}, selection_->node());
                       OpenWindow(window_definition);
                       co_return;
                     });

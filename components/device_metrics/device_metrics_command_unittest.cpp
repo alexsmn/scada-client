@@ -1,10 +1,12 @@
 ﻿#include "components/device_metrics/device_metrics_command.h"
 
 #include "address_space/address_space_impl.h"
+#include "address_space/address_space_util.h"
 #include "address_space/generic_node_factory.h"
 #include "address_space/node_factory_util.h"
 #include "address_space/scada_address_space.h"
 #include "address_space/standard_address_space.h"
+#include "base/test/awaitable_test.h"
 #include "base/range_util.h"
 #include "common/node_state.h"
 #include "scada/attribute_service_mock.h"
@@ -44,6 +46,9 @@ class DeviceMetricsCommandTest : public Test {
   StrictMock<scada::MockAttributeService> attribute_service_;
   StrictMock<scada::MockMonitoredItemService> monitored_item_service_;
   StrictMock<scada::MockMethodService> method_service_;
+
+  const std::shared_ptr<TestExecutor> executor_ =
+      std::make_shared<TestExecutor>();
 
   v1::NodeServiceImpl node_service_{v1::NodeServiceImplContext{
       MakeAddressSpaceFetcherFactory(), address_space_, attribute_service_,
@@ -163,4 +168,38 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionSync) {
                       CellIs(u"={IEC_DEV.1!InterrogateCount}"),
                       CellIs(u"={IEC_DEV.2!InterrogateCount}"),
                       CellIs(u"={IEC_DEV.3!InterrogateCount}"))));
+}
+
+TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionAsync) {
+  const auto* device1 = CreateDevice({1, device_namespace_index}, u"Device 1");
+  const auto* device2 = CreateDevice({2, device_namespace_index}, u"Device 2");
+
+  scada::AddReference(address_space_, scada::id::Organizes, device1->id(),
+                      device2->id());
+
+  auto window_definition = WaitAwaitable(
+      executor_, MakeDeviceMetricsWindowDefinitionAsync(
+                     MakeTestAnyExecutor(executor_),
+                     node_service_.GetNode(device1->id())));
+
+  EXPECT_EQ(window_definition.title, u"Device 1");
+
+  auto header_row =
+      window_definition.items |
+      filtered([](const WindowItem& window_item) {
+        return window_item.name == "SheetCell" &&
+               window_item.GetInt("row", -1) == 1;
+      }) |
+      to_vector;
+
+  EXPECT_THAT(header_row, ElementsAre(CellIs(u"Device 1"),
+                                      CellIs(u"Device 2")));
+}
+
+TEST_F(DeviceMetricsCommandTest,
+       MakeDeviceMetricsWindowDefinitionRejectsNodeWithoutTypeDefinition) {
+  const auto promise = MakeDeviceMetricsWindowDefinition(
+      MakeTestAnyExecutor(executor_), NodeRef{});
+
+  EXPECT_THROW(WaitPromise(executor_, promise), std::runtime_error);
 }

@@ -1,5 +1,6 @@
 #include "components/device_metrics/device_metrics_command.h"
 
+#include "base/awaitable_promise.h"
 #include "aui/color.h"
 #include "ui/common/client_utils.h"
 #include "common/formula_util.h"
@@ -66,15 +67,21 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
 }
 
 promise<WindowDefinition> MakeDeviceMetricsWindowDefinition(
+    AnyExecutor executor,
+    const NodeRef& device) {
+  return ToPromise(executor,
+                   MakeDeviceMetricsWindowDefinitionAsync(executor, device));
+}
+
+Awaitable<WindowDefinition> MakeDeviceMetricsWindowDefinitionAsync(
+    AnyExecutor executor,
     const NodeRef& device) {
   if (!device.type_definition()) {
-    return make_rejected_promise<WindowDefinition>(
-        std::runtime_error{"Device type"});
+    throw std::runtime_error{"Device type"};
   }
 
-  return CollectNodesRecursive(device, devices::id::DeviceType)
-      .then([device](const std::vector<NodeRef>& devices) {
-        auto title = ToString16(device.display_name());
-        return MakeDeviceMetricsWindowDefinitionSync(std::move(title), devices);
-      });
+  auto devices = co_await CollectNodesRecursiveAsync(
+      std::move(executor), device, devices::id::DeviceType);
+  auto title = ToString16(device.display_name());
+  co_return MakeDeviceMetricsWindowDefinitionSync(std::move(title), devices);
 }

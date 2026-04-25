@@ -260,15 +260,29 @@ SCADA services or local service doubles.
   `ExpandGroupItemIds(...).then(...)` pipeline is now a `CoSpawn`
   coroutine that awaits the `NodeIdSet` promise before mutating the
   active `ContentsModel`.
+- **components/device_metrics** migrated
+  (`client/components/device_metrics/node_collector.{h,cpp}`,
+  `client/components/device_metrics/device_metrics_command.{h,cpp}`).
+  Recursive device collection now has coroutine-native
+  `FetchNodeAsync`, `CollectChildrenAsync`, and
+  `CollectNodesRecursiveAsync` helpers that await node fetch promises on the
+  caller-provided executor. `MakeDeviceMetricsWindowDefinitionAsync`
+  builds the sheet definition from those helpers, while the legacy
+  `promise<WindowDefinition> MakeDeviceMetricsWindowDefinition(...)`
+  remains as a thin `ToPromise` wrapper. The
+  `ID_OPEN_DEVICE_METRICS` selection command now awaits the coroutine
+  function directly inside its existing cancellation-gated `CoSpawn` body.
+  Regression coverage:
+  `client/components/device_metrics/device_metrics_command_unittest.cpp`.
 - **OPC UA outbound session adapter** migrated
-  (`common/opcua/client/opcua_client_session.{h,cpp}`).
-  `opcua::OpcUaClientSession` now exposes
+  (`common/opcua/client_session.{h,cpp}`).
+  `opcua::ClientSession` now exposes
   coroutine-native lifecycle methods (`ConnectAsync`, `DisconnectAsync`,
   `ReconnectAsync`) plus `Coroutine{View,Attribute,Method}Service`
   implementations. The legacy `SessionService` promises and callback-based
   SCADA service methods remain as compatibility boundaries that delegate into
   those `Awaitable` bodies via `ToPromise`/`CoSpawn`. Regression coverage:
-  `common/opcua/client/opcua_client_session_unittest.cpp`.
+  `common/opcua/client_session_unittest.cpp`.
 
 ### Priority Order
 
