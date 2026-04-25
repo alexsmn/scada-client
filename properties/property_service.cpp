@@ -1,5 +1,6 @@
 #include "properties/property_service.h"
 
+#include "base/awaitable_promise.h"
 #include "base/range_util.h"
 #include "base/u16format.h"
 #include "model/data_items_node_ids.h"
@@ -95,6 +96,19 @@ promise<void> PropertyService::GetAllSubtypesProperties(
   });
 }
 
+Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
+    AnyExecutor executor,
+    const NodeRef& type_definition,
+    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
+  co_await AwaitPromise(executor, FetchNode(type_definition));
+
+  GetTypeProperties(type_definition, *property_decls);
+
+  for (const auto& subtype : type_definition.targets(scada::id::HasSubtype)) {
+    co_await GetAllSubtypesPropertiesAsync(executor, subtype, property_decls);
+  }
+}
+
 const PropertyDefinition* PropertyService::GetPropertyDef(
     const NodeRef& prop_decl) {
   if (auto i = kPropertyDefinitionMap.find(prop_decl.node_id());
@@ -183,6 +197,22 @@ promise<PropertyDefs> PropertyService::GetChildPropertyDefs(
       })
       .then(
           [this, property_decls] { return GetPropertyDefs(*property_decls); });
+}
+
+Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
+    AnyExecutor executor,
+    const NodeRef& parent_node) {
+  auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
+
+  co_await AwaitPromise(executor, FetchNode(parent_node));
+  auto child_type_definitions = GetChildTypeDefinitions(parent_node);
+
+  for (const auto& child_type_definition : child_type_definitions) {
+    co_await GetAllSubtypesPropertiesAsync(executor, child_type_definition,
+                                           property_decls);
+  }
+
+  co_return GetPropertyDefs(*property_decls);
 }
 
 PropertyDefs PropertyService::GetPropertyDefs(

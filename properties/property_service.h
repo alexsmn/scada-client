@@ -1,5 +1,8 @@
 #pragma once
 
+#include "base/any_executor.h"
+#include "base/awaitable.h"
+#include "base/promise.h"
 #include "node_service/node_ref.h"
 
 #include <unordered_set>
@@ -16,7 +19,9 @@ class PropertyService {
 
   PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition);
 
-  promise<PropertyDefs> GetChildPropertyDefs(
+  promise<PropertyDefs> GetChildPropertyDefs(const NodeRef& parent_node);
+  Awaitable<PropertyDefs> GetChildPropertyDefsAsync(
+      AnyExecutor executor,
       const NodeRef& parent_node);
 
   // Returns property declarations and forward reference types.
@@ -25,6 +30,10 @@ class PropertyService {
 
  private:
   promise<void> GetAllSubtypesProperties(
+      const NodeRef& type_definition,
+      const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
+  Awaitable<void> GetAllSubtypesPropertiesAsync(
+      AnyExecutor executor,
       const NodeRef& type_definition,
       const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
 

@@ -5,6 +5,7 @@
 #include "address_space/generic_node_factory.h"
 #include "address_space/node_factory_util.h"
 #include "aui/dialog_service_mock.h"
+#include "base/test/awaitable_test.h"
 #include "base/u16format.h"
 #include "common/formula_util.h"
 #include "common/node_state.h"
@@ -21,6 +22,8 @@
 #include "services/task_manager_mock.h"
 
 #include "base/debug_util.h"
+
+#include <algorithm>
 
 using namespace testing;
 
@@ -136,4 +139,21 @@ TEST_F(PropertyDefsTest, Enum) {
   ASSERT_TRUE(prop_def);
   EXPECT_EQ(u"Polling",
             prop_def->GetText(property_context, link, mode_prop_def.node_id()));
+}
+
+TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {
+  CreateDataItem("GROUP_DEVICE!device.channel.path");
+
+  auto executor = std::make_shared<TestExecutor>();
+  auto property_defs = WaitAwaitable(
+      executor, PropertyService{}.GetChildPropertyDefsAsync(
+                    MakeTestAnyExecutor(executor),
+                    node_service->GetNode(data_group_id)));
+
+  const auto has_input1 = std::ranges::any_of(
+      property_defs, [](const auto& property_def) {
+        return property_def.first.node_id() ==
+               data_items::id::DataItemType_Input1;
+      });
+  EXPECT_TRUE(has_input1);
 }

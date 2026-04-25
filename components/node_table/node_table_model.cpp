@@ -1,5 +1,7 @@
 ﻿#include "components/node_table/node_table_model.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/boost_log.h"
 #include "base/executor.h"
 #include "base/range_util.h"
@@ -54,18 +56,33 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
 
   parent_node_ = parent_node;
 
-  property_service_.GetChildPropertyDefs(parent_node_)
-      .then(cancelation_.Bind([this](const PropertyDefs& property_defs) {
-        UpdateColumns(property_defs);
-      }))
-      // It's important to return promise form the callback.
-      .then([parent_node] { return FetchChildren(parent_node); })
-      .then(cancelation_.Bind([this] { UpdateRows(); }))
-      .except(cancelation_.Bind([this](std::exception_ptr exception) {
-        loading_ = false;
-        LogLoadFailure(scada::GetExceptionStatus(exception));
-        NotifyModelChanged();
-      }));
+  CoSpawn(executor_, cancelation_,
+          [this, parent_node, cancelation = cancelation_.ref()]() mutable
+              -> Awaitable<void> {
+            try {
+              auto executor = NetExecutorAdapter{executor_};
+              auto property_defs =
+                  co_await property_service_.GetChildPropertyDefsAsync(
+                      executor, parent_node_);
+              if (cancelation.canceled()) {
+                co_return;
+              }
+              UpdateColumns(property_defs);
+              co_await AwaitPromise(executor, FetchChildren(parent_node));
+              if (cancelation.canceled()) {
+                co_return;
+              }
+              UpdateRows();
+            } catch (...) {
+              if (cancelation.canceled()) {
+                co_return;
+              }
+              loading_ = false;
+              LogLoadFailure(
+                  scada::GetExceptionStatus(std::current_exception()));
+              NotifyModelChanged();
+            }
+          });
 }
 
 int NodeTableModel::GetRowCount() {

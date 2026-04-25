@@ -274,6 +274,20 @@ SCADA services or local service doubles.
   function directly inside its existing cancellation-gated `CoSpawn` body.
   Regression coverage:
   `client/components/device_metrics/device_metrics_command_unittest.cpp`.
+- **properties + components/node_table** partially migrated
+  (`client/properties/property_service.{h,cpp}`,
+  `client/components/node_table/node_table_model.cpp`).
+  `PropertyService` now has coroutine-native
+  `GetChildPropertyDefsAsync` / `GetAllSubtypesPropertiesAsync` helpers for
+  UI models that already own an executor, while the legacy
+  `promise<PropertyDefs> GetChildPropertyDefs(...)` entry point remains for
+  existing callers. `NodeTableModel::SetParentNode` now runs the property-def
+  load, child fetch, column update, and row update as a single
+  cancellation-aware coroutine instead of a four-step `.then(...).except(...)`
+  pipeline. The coroutine explicitly checks the current `CancelationRef` after
+  each await so stale parent-node loads cannot update the table after a newer
+  selection. Regression coverage:
+  `client/properties/property_defs_unittest.cpp`.
 - **OPC UA outbound session adapter** migrated
   (`common/opcua/client_session.{h,cpp}`).
   `opcua::ClientSession` now exposes
@@ -293,6 +307,15 @@ SCADA services or local service doubles.
 5. `main_window/`
 6. `configuration/*`
 7. `graph/`, `modus/`, and vidicon-specific modules
+
+### Clear Next Step
+
+Finish the properties/node-table slice by migrating
+`client/properties/property_util.cpp::MakeAsyncChoiceHandler` and the
+reference-property async choice flow to executor-backed coroutine helpers.
+That should remove the remaining recursive `FetchNodeNamesRecursive(...).then`
+pipeline in properties code while preserving the existing callback-shaped
+`aui::EditData::AsyncChoiceHandler` UI contract.
 
 ### Work
 
