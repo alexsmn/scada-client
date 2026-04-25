@@ -6,6 +6,8 @@ file(GLOB MAIN_QT CONFIGURE_DEPENDS
   "../../res/client.qrc"
   "../app_init.cpp"
   "../app_init.h"
+  "e2e_test_support.cpp"
+  "e2e_test_support.h"
   "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
@@ -117,6 +119,7 @@ endif()
 add_executable(client_qt_unittests
   ${UNITTESTS}
   ${UNITTESTS_QT}
+  "../../aui/test/qt/tree_unittest.cpp"
 )
 target_precompile_headers(client_qt_unittests REUSE_FROM scada_base)
 if(MSVC)

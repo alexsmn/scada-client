@@ -129,6 +129,11 @@ bool ClientApplication::HasSelectionCommandForTesting(
          core_module_->selection_commands().FindCommand(command_id) != nullptr;
 }
 
+bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
+  return core_module_ &&
+         core_module_->global_commands().FindCommand(command_id) != nullptr;
+}
+
 promise<void> ClientApplication::Start() {
   return ToPromise(NetExecutorAdapter{executor_}, StartAsync());
 }

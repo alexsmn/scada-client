@@ -5,6 +5,9 @@
 #include "controller/contents_observer.h"
 #include "aui/models/tree_model.h"
 
+#include <optional>
+#include <vector>
+
 class ConfigurationTreeNode;
 class ObjectTreeModel;
 
@@ -16,10 +19,14 @@ class ObjectTreeView : public ConfigurationTreeView,
                  const NodeServiceTreeFactory& node_service_tree_factory);
   virtual ~ObjectTreeView();
 
+  std::optional<std::u16string> GetFirstValueTextForTesting();
+  std::vector<std::u16string> GetExpandedLabelPathForTesting(int levels);
+
  protected:
   void UpdateNodesVisibility(ConfigurationTreeNode& parent_node, bool expanded);
 
   // TreeModelObserver
+  virtual void OnTreeNodeChanged(void* node) override;
   virtual void OnTreeNodesAdded(void* parent, int start, int count) override;
   virtual void OnTreeNodesDeleting(void* parent, int start, int count) override;
   virtual void OnTreeModelResetting() override;
@@ -38,4 +45,7 @@ class ObjectTreeView : public ConfigurationTreeView,
 
   static std::unique_ptr<ConfigurationTreeDropHandler> CreateTreeDropHandler(
       const ControllerContext& context);
+
+  ConfigurationTreeNode* value_node_for_testing_ = nullptr;
+  int value_node_change_count_for_testing_ = 0;
 };

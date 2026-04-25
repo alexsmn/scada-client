@@ -9,6 +9,8 @@ endif()
 add_executable(client_server_e2e_tests
   "client_server_e2e_test.cpp"
   "client_server_e2e_test_support.cpp"
+  "e2e_file_helpers.cpp"
+  "e2e_process.cpp"
 )
 
 target_precompile_headers(client_server_e2e_tests REUSE_FROM scada_base)

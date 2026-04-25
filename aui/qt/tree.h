@@ -33,6 +33,8 @@ class Tree : public QTreeView {
   void SetSelectionChangedHandler(SelectionChangedHandler handler);
 
   bool IsExpanded(void* node, bool up_to_root) const;
+  void ExpandNode(void* node);
+  std::vector<void*> GetChildNodes(void* parent) const;
   void SetExpandedHandler(TreeExpandedHandler handler);
 
   void StartEditing(void* node);

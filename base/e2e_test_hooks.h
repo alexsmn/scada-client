@@ -15,5 +15,7 @@ void ReportE2eStatus(std::string_view status);
 void ReportE2eStatusIfUnset(std::string_view status);
 
 std::filesystem::path GetE2eOperatorUseCasesReportPath();
+std::filesystem::path GetE2eObjectViewValuesReportPath();
+std::filesystem::path GetE2eObjectTreeLabelsReportPath();
 
 }  // namespace client

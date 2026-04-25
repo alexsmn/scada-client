@@ -105,6 +105,7 @@ class ClientApplication : private ClientApplicationContext {
   Profile& profile() { return *profile_; }
   MainWindowManager& main_window_manager();
   bool HasSelectionCommandForTesting(unsigned command_id) const;
+  bool HasGlobalCommandForTesting(unsigned command_id) const;
 
   // Load profile and start.
   [[nodiscard]] promise<void> Start();

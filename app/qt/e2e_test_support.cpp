@@ -1,0 +1,417 @@
+#include "app/qt/e2e_test_support.h"
+
+#include "app/client_application.h"
+#include "base/e2e_test_hooks.h"
+#include "base/executor_timer.h"
+#include "base/utf_convert.h"
+#include "configuration/objects/object_tree_view.h"
+#include "controller/command_handler.h"
+#include "controller/window_info.h"
+#include "main_window/main_window.h"
+#include "main_window/main_window_manager.h"
+#include "main_window/opened_view.h"
+#include "profile/window_definition.h"
+#include "resources/common_resources.h"
+
+#include <algorithm>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
+#include <vector>
+
+using namespace std::chrono_literals;
+
+namespace client {
+namespace {
+
+struct OperatorUseCaseSmokeState {
+  bool ok = true;
+  std::vector<std::string> lines;
+};
+
+struct OperatorUseCaseSmokeCheck {
+  std::string_view id;
+  std::string_view description;
+  std::vector<std::string_view> open_window_types;
+  std::vector<std::string_view> registered_window_types;
+  std::vector<unsigned> registered_selection_commands;
+  std::vector<unsigned> registered_global_commands;
+  std::vector<unsigned> main_window_commands;
+  std::vector<std::string_view> printable_window_types;
+};
+
+void AddSmokeResult(const std::shared_ptr<OperatorUseCaseSmokeState>& state,
+                    std::string_view id,
+                    bool ok,
+                    std::string detail) {
+  state->ok = state->ok && ok;
+  state->lines.emplace_back(std::string{id} + (ok ? " ok " : " failure ") +
+                            std::move(detail));
+}
+
+void WriteOperatorUseCaseSmokeReport(
+    const std::filesystem::path& path,
+    const OperatorUseCaseSmokeState& state) {
+  if (path.empty())
+    return;
+
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+  if (!output)
+    return;
+
+  output << "operator-use-cases: " << (state.ok ? "ok" : "failure") << "\n";
+  for (const auto& line : state.lines)
+    output << line << "\n";
+}
+
+void WriteObjectViewValuesReport(const std::filesystem::path& path,
+                                 bool ok,
+                                 std::string_view detail) {
+  if (path.empty())
+    return;
+
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+  if (!output)
+    return;
+
+  output << "object-view-values: " << (ok ? "ok" : "failure") << "\n";
+  output << detail << "\n";
+}
+
+void WriteObjectTreeLabelsReport(const std::filesystem::path& path,
+                                 bool ok,
+                                 const std::vector<std::u16string>& labels,
+                                 std::string_view detail) {
+  if (path.empty())
+    return;
+
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+  if (!output)
+    return;
+
+  output << "object-tree-labels: " << (ok ? "ok" : "failure") << "\n";
+  output << detail << "\n";
+  for (size_t i = 0; i < labels.size(); ++i)
+    output << "label[" << i << "]=" << UtfConvert<char>(labels[i]) << "\n";
+}
+
+MainWindow* GetFirstMainWindow(ClientApplication& app) {
+  for (auto& main_window : app.main_window_manager().main_windows())
+    return &main_window;
+  return nullptr;
+}
+
+ObjectTreeView* FindObjectTreeView(ClientApplication& app) {
+  auto* main_window = GetFirstMainWindow(app);
+  if (!main_window)
+    return nullptr;
+
+  for (auto* opened_view : main_window->opened_views()) {
+    if (opened_view->GetWindowInfo().name != std::string_view{"Struct"})
+      continue;
+
+    return dynamic_cast<ObjectTreeView*>(&opened_view->controller());
+  }
+
+  return nullptr;
+}
+
+class ObjectViewValuesCheck final
+    : public std::enable_shared_from_this<ObjectViewValuesCheck> {
+ public:
+  ObjectViewValuesCheck(ClientApplication& app,
+                        std::shared_ptr<Executor> executor,
+                        std::filesystem::path report_path)
+      : app_{app},
+        timer_{std::move(executor)},
+        report_path_{std::move(report_path)},
+        deadline_{std::chrono::steady_clock::now() + 15s} {}
+
+  promise<> Run() {
+    Poll();
+    return promise_.then([keep_alive = shared_from_this()] {});
+  }
+
+ private:
+  void Poll() {
+    if (auto* object_tree_view = FindObjectTreeView(app_)) {
+      if (auto value_text = object_tree_view->GetFirstValueTextForTesting()) {
+        WriteObjectViewValuesReport(report_path_, true, "value text present");
+        promise_.resolve();
+        return;
+      }
+    }
+
+    if (std::chrono::steady_clock::now() >= deadline_) {
+      WriteObjectViewValuesReport(report_path_, false,
+                                  "timed out waiting for value text");
+      promise_.resolve();
+      return;
+    }
+
+    timer_.StartOne(100ms, [self = shared_from_this()] { self->Poll(); });
+  }
+
+  ClientApplication& app_;
+  ExecutorTimer timer_;
+  const std::filesystem::path report_path_;
+  const std::chrono::steady_clock::time_point deadline_;
+  promise<> promise_;
+};
+
+class ObjectTreeLabelsCheck final
+    : public std::enable_shared_from_this<ObjectTreeLabelsCheck> {
+ public:
+  ObjectTreeLabelsCheck(ClientApplication& app,
+                        std::shared_ptr<Executor> executor,
+                        std::filesystem::path report_path)
+      : app_{app},
+        timer_{std::move(executor)},
+        report_path_{std::move(report_path)},
+        deadline_{std::chrono::steady_clock::now() + 15s} {}
+
+  promise<> Run() {
+    Poll();
+    return promise_.then([keep_alive = shared_from_this()] {});
+  }
+
+ private:
+  static bool IsReady(const std::vector<std::u16string>& labels) {
+    if (labels.size() != 4)
+      return false;
+    return std::ranges::all_of(labels, [](const auto& label) {
+      return !label.empty() && label.find(u"[") == std::u16string::npos;
+    });
+  }
+
+  void Poll() {
+    if (auto* object_tree_view = FindObjectTreeView(app_)) {
+      auto labels = object_tree_view->GetExpandedLabelPathForTesting(3);
+      if (IsReady(labels)) {
+        WriteObjectTreeLabelsReport(report_path_, true, labels,
+                                    "expanded first rendered path");
+        promise_.resolve();
+        return;
+      }
+    }
+
+    if (std::chrono::steady_clock::now() >= deadline_) {
+      std::vector<std::u16string> labels;
+      if (auto* object_tree_view = FindObjectTreeView(app_))
+        labels = object_tree_view->GetExpandedLabelPathForTesting(3);
+      WriteObjectTreeLabelsReport(report_path_, false, labels,
+                                  "timed out waiting for rendered labels");
+      promise_.resolve();
+      return;
+    }
+
+    timer_.StartOne(100ms, [self = shared_from_this()] { self->Poll(); });
+  }
+
+  ClientApplication& app_;
+  ExecutorTimer timer_;
+  const std::filesystem::path report_path_;
+  const std::chrono::steady_clock::time_point deadline_;
+  promise<> promise_;
+};
+
+promise<> OpenOperatorWindow(
+    ClientApplication& app,
+    std::string window_type,
+    const std::shared_ptr<OperatorUseCaseSmokeState>& state) {
+  auto* main_window = GetFirstMainWindow(app);
+  if (!main_window) {
+    AddSmokeResult(state, window_type, false, "main window missing");
+    return make_resolved_promise();
+  }
+
+  const auto* window_info = FindWindowInfoByName(window_type);
+  if (!window_info) {
+    AddSmokeResult(state, window_type, false, "window type not registered");
+    return make_resolved_promise();
+  }
+
+  return main_window->OpenView(WindowDefinition{*window_info}, /*activate=*/true)
+      .then([state, window_type](OpenedViewInterface* opened_view) {
+        AddSmokeResult(state,
+                       window_type,
+                       opened_view != nullptr,
+                       opened_view ? "opened" : "open returned null");
+      });
+}
+
+}  // namespace
+
+promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
+                                      std::shared_ptr<Executor> executor) {
+  auto report_path = GetE2eObjectViewValuesReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto check = std::make_shared<ObjectViewValuesCheck>(
+      app, std::move(executor), std::move(report_path));
+  return check->Run();
+}
+
+promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
+  auto report_path = GetE2eOperatorUseCasesReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto state = std::make_shared<OperatorUseCaseSmokeState>();
+  const std::vector<OperatorUseCaseSmokeCheck> checks{
+      {"UC-1", "monitor live values", {"Log"}},
+      {"UC-2", "visualise time-series on a graph", {"Graph"}},
+      {"UC-3", "view tables summaries and sheets", {"Table", "Summ", "CusTable"}},
+      {"UC-4", "acknowledge events and alarms", {"Event"}},
+      {"UC-5", "browse event journals", {"EventJournal"}},
+      {"UC-6", "watch a custom spreadsheet", {"CusTable"}},
+      {"UC-7", "issue control commands", {}, {}, {ID_WRITE, ID_WRITE_MANUAL}},
+      {"UC-8", "manage favourites and portfolios", {"Favorites", "Portfolio"}},
+      {"UC-9",
+       "print or export the active view",
+       {},
+       {},
+       {},
+       {},
+       {},
+       {"Table", "EventJournal"}},
+      {"UC-10", "browse server files", {"FileSystemView"}},
+      {"UC-11", "view Modus and Vidicon schematics", {}, {"Modus", "VidiconDisplay"}},
+      {"UC-12",
+       "edit device parameters limits and aliases",
+       {},
+       {"NewProps", "Params"},
+       {ID_EDIT_LIMITS}},
+      {"UC-13",
+       "bulk-create data items",
+       {},
+       {"TableEditor"}},
+      {"UC-14",
+       "export or import configuration",
+       {},
+       {},
+       {},
+       {ID_EXPORT_CONFIGURATION_TO_EXCEL, ID_IMPORT_CONFIGURATION_FROM_EXCEL}},
+      {"UC-15",
+       "inspect protocol traffic",
+       {},
+       {},
+       {ID_DUMP_DEBUG_INFO}},
+      {"UC-16",
+       "save window layouts and profiles",
+       {},
+       {},
+       {},
+       {ID_PAGE_NEW, ID_PAGE_RENAME, ID_PAGE_DELETE}},
+      {"UC-17",
+       "authenticate against a back-end",
+       {},
+       {},
+       {},
+       {},
+       {ID_LOGOFF}},
+      {"UC-18",
+       "manage users and passwords",
+       {},
+       {"Users"},
+       {ID_CHANGE_PASSWORD},
+       {},
+       {ID_USERS_VIEW}},
+      {"UC-19",
+       "configure transmission rules",
+       {},
+       {"Transmission"}},
+  };
+
+  promise<> sequence = make_resolved_promise();
+
+  for (const auto& check : checks) {
+    for (std::string_view window_type : check.open_window_types) {
+      sequence = sequence.then(
+          [&app, state, window_type = std::string{window_type}] {
+            return OpenOperatorWindow(app, window_type, state);
+          });
+    }
+
+    sequence = sequence.then([&app, state, check] {
+      bool ok = true;
+      std::string detail{check.description};
+
+      for (std::string_view window_type : check.registered_window_types) {
+        bool registered = FindWindowInfoByName(window_type) != nullptr;
+        ok = ok && registered;
+        detail += registered ? " registered " : " missing ";
+        detail += window_type;
+      }
+
+      for (unsigned command_id : check.registered_selection_commands) {
+        bool registered = app.HasSelectionCommandForTesting(command_id);
+        ok = ok && registered;
+        detail += registered ? " command " : " missing-command ";
+        detail += std::to_string(command_id);
+      }
+
+      for (unsigned command_id : check.registered_global_commands) {
+        bool registered = app.HasGlobalCommandForTesting(command_id);
+        ok = ok && registered;
+        detail += registered ? " global-command " : " missing-global-command ";
+        detail += std::to_string(command_id);
+      }
+
+      for (unsigned command_id : check.main_window_commands) {
+        auto* main_window = GetFirstMainWindow(app);
+        bool available =
+            main_window && main_window->commands().GetCommandHandler(command_id);
+        ok = ok && available;
+        detail += available ? " main-window-command "
+                            : " missing-main-window-command ";
+        detail += std::to_string(command_id);
+      }
+
+      for (std::string_view window_type : check.printable_window_types) {
+        const auto* window_info = FindWindowInfoByName(window_type);
+        bool printable = window_info && window_info->printable();
+        ok = ok && printable;
+        detail += printable ? " printable " : " not-printable ";
+        detail += window_type;
+      }
+
+      AddSmokeResult(state, check.id, ok, std::move(detail));
+    });
+  }
+
+  return sequence.then([report_path, state] {
+    WriteOperatorUseCaseSmokeReport(report_path, *state);
+  });
+}
+
+promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
+                                      std::shared_ptr<Executor> executor) {
+  auto report_path = GetE2eObjectTreeLabelsReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto check = std::make_shared<ObjectTreeLabelsCheck>(
+      app, std::move(executor), std::move(report_path));
+  return check->Run();
+}
+
+}  // namespace client

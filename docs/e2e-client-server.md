@@ -136,13 +136,13 @@ logs and crash dumps into the supplied per-test directory.
 
 When `--test-operator-use-cases-file` is present, the client runs an
 E2E-only operator use-case smoke pass after login/bootstrap and writes a
-line-oriented report. The pass opens or verifies the operator surfaces listed
-as UC-1 through UC-11 in `docs/use-cases.mmd`: watch, graph, table, summary,
-custom sheet, event panel, event journal, favourites, portfolio, file system,
-printable/exportable views, write-command registration, and Modus/Vidicon
-schematic registration. It is not pixel comparison or UI clicking; it proves
-that the launched production client can construct the registered operator
-controllers against the live server session.
+line-oriented report. The pass implements the testing instructions from
+`docs/use-cases.md` for UC-1 through UC-19. UC-1 through UC-11 open or verify
+operator surfaces against the live server session. UC-12 through UC-19 verify
+deterministic configuration, administration, authentication, layout, and
+debugging command/window registration. It is not pixel comparison or UI
+clicking; it proves that the launched production client can construct the
+registered controllers and expose the expected commands after bootstrap.
 
 ### Settings behavior
 
@@ -269,7 +269,7 @@ Expected behavior:
 - `server.exe` and `client.exe` complete the same real login/bootstrap path as
   `Connect_Success`,
 - the client writes an operator use-case report with `operator-use-cases: ok`,
-- every operator use case from the diagram (`UC-1` through `UC-11`) has an
+- every use case from the diagram (`UC-1` through `UC-19`) has an
   `ok` line in the report,
 - the client and server remain alive for the post-connect stability window.
 
@@ -279,6 +279,8 @@ Current harness details:
   clicking through the GUI,
 - verifies command-only and platform-specific operator capabilities through the
   same registered command/window metadata the real UI uses,
+- starts the client in debug mode so UC-15 can verify the debug-inspection
+  command registration,
 - runs for both SCADA remote-session and OPC UA back-end parameters.
 
 ## Process and Timeout Policy

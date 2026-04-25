@@ -1,14 +1,13 @@
 #pragma once
 
-#include "base/win/scoped_process_information.h"
+#include "test/e2e/e2e_file_helpers.h"
+#include "test/e2e/e2e_process.h"
 
 #include <gtest/gtest.h>
-#include <Windows.h>
 
 #include <chrono>
 #include <filesystem>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,35 +20,6 @@ enum class E2eProtocol {
 };
 
 std::string_view ToString(E2eProtocol protocol);
-
-class JobObject;
-
-struct ChildProcess {
-  base::win::ScopedProcessInformation process_info;
-
-  bool IsRunning() const;
-  std::optional<DWORD> ExitCode() const;
-};
-
-class TempWorkspace {
- public:
-  TempWorkspace();
-  ~TempWorkspace();
-
-  const std::filesystem::path& path() const { return path_; }
-
-  void Preserve() { preserve_ = true; }
-
- private:
-  std::filesystem::path path_;
-  bool preserve_ = false;
-};
-
-std::string ReadFileOrEmpty(const std::filesystem::path& path);
-bool ContainsInDirectory(const std::filesystem::path& dir,
-                         std::string_view needle);
-std::optional<int> FindLoggedObjectTreeChildCount(
-    const std::filesystem::path& dir);
 
 extern const std::chrono::seconds kPostConnectStabilityTimeout;
 extern const std::string_view kStartupCompletedLog;
@@ -70,6 +40,8 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   std::string WaitForStatus();
   bool WaitForStartupOrStatus();
   bool WaitForObjectTreeReady();
+  std::string WaitForObjectViewValuesReport();
+  std::string WaitForObjectTreeLabelsReport();
   std::string WaitForOperatorUseCasesReport();
 
   std::string DescribeProcessExit(const ChildProcess& process,
@@ -86,6 +58,8 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   int opcua_port_ = 0;
 
   std::filesystem::path status_file_;
+  std::filesystem::path object_view_values_file_;
+  std::filesystem::path object_tree_labels_file_;
   std::filesystem::path operator_use_cases_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;

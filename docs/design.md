@@ -168,8 +168,8 @@ registered back-ends:
 
 - **Scada (Telecontrol)** — default; talks to a Telecontrol Server.
 - **OPC UA** — `opc.tcp://localhost:4840` by default. The OPC UA back-end
-  is implemented in `common/opcua/opcua_session.*` on top of the native
-  UA Binary client stack under `common/opcua/binary/client/` (no external
+  is implemented in `common/opcua/client/opcua_client_session.*` on top of the native
+  UA Binary client stack under `common/opcua/binary/` (no external
   OPC UA SDK). See the `common/docs/opcua.md` design doc and the
   `common/docs/diagrams/opcua_binary_client_architecture.svg` architecture
   diagram.
@@ -341,7 +341,7 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
   document or version negotiation would reduce the migration risk if the
   format changes.
 - **OPC UA back-end uses an in-repo UA Binary client.** The client stack
-  lives in `common/opcua/binary/client/` and speaks the OPC UA Part 6
+  lives in `common/opcua/binary/` and speaks the OPC UA Part 6
   binary encoding directly; no external OPC UA SDK is linked into
   common/ or client/. `Basic256Sha256` sign-and-encrypt is a tracked
   follow-up; today's builds only support `SecurityPolicy=None`.

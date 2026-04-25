@@ -8,7 +8,27 @@
 #include "controller/controller_delegate.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_service.h"
+#include "node_service/node_util.h"
 #include "profile/profile.h"
+
+namespace {
+
+ConfigurationTreeNode* FindFirstValueTreeNode(ConfigurationTreeNode& node) {
+  if (IsInstanceOf(node.node(), data_items::id::DataItemType))
+    return &node;
+
+  if (node.CanFetchMore())
+    node.FetchMore();
+
+  for (int i = 0; i < node.GetChildCount(); ++i) {
+    if (auto* value_node = FindFirstValueTreeNode(node.GetChild(i)))
+      return value_node;
+  }
+
+  return nullptr;
+}
+
+}  // namespace
 
 ObjectTreeView::ObjectTreeView(
     const ControllerContext& context,
@@ -51,6 +71,63 @@ ObjectTreeView::~ObjectTreeView() {
   model().RemoveObserver(*this);
 }
 
+std::optional<std::u16string> ObjectTreeView::GetFirstValueTextForTesting() {
+  if (!value_node_for_testing_) {
+    auto* root = model().root();
+    if (!root)
+      return std::nullopt;
+
+    value_node_for_testing_ = FindFirstValueTreeNode(*root);
+    if (!value_node_for_testing_)
+      return std::nullopt;
+
+    value_node_change_count_for_testing_ = 0;
+    model().SetNodeVisible(value_node_for_testing_, true);
+  }
+
+  auto value_text = model().GetText(value_node_for_testing_, /*column_id=*/1);
+  if (value_text.empty() || value_node_change_count_for_testing_ == 0)
+    return std::nullopt;
+
+  return value_text;
+}
+
+std::vector<std::u16string> ObjectTreeView::GetExpandedLabelPathForTesting(
+    int levels) {
+  auto* node = model().root();
+  std::vector<std::u16string> labels;
+  if (!node)
+    return labels;
+
+  auto expand_path = [&](auto& self,
+                         ConfigurationTreeNode& current,
+                         int depth) -> bool {
+    if (current.CanFetchMore())
+      current.FetchMore();
+
+    tree_view().ExpandNode(&current);
+    if (&current != model().root())
+      model().SetNodeVisible(&current, true);
+    labels.emplace_back(model().GetText(&current, /*column_id=*/0));
+
+    if (depth == levels)
+      return true;
+
+    for (int i = 0; i < current.GetChildCount(); ++i) {
+      const auto previous_size = labels.size();
+      if (self(self, current.GetChild(i), depth + 1))
+        return true;
+      labels.resize(previous_size);
+    }
+
+    return false;
+  };
+
+  expand_path(expand_path, *node, /*depth=*/0);
+
+  return labels;
+}
+
 // static
 std::shared_ptr<ConfigurationTreeModel>
 ObjectTreeView::CreateConfigurationTreeModel(
@@ -89,6 +166,11 @@ void ObjectTreeView::UpdateNodesVisibility(ConfigurationTreeNode& parent_node,
     if (tree_view().IsExpanded(&child, false))
       UpdateNodesVisibility(child, expanded);
   }
+}
+
+void ObjectTreeView::OnTreeNodeChanged(void* node) {
+  if (node == value_node_for_testing_)
+    ++value_node_change_count_for_testing_;
 }
 
 void ObjectTreeView::OnTreeNodesAdded(void* parent, int start, int count) {

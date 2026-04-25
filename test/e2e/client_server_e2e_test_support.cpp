@@ -1,18 +1,13 @@
 #include "test/e2e/client_server_e2e_test_support.h"
 
-#include "base/win/scoped_handle.h"
-
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/json.hpp>
 
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
-#include <iterator>
 #include <memory>
-#include <stdexcept>
 #include <thread>
 
 using namespace std::chrono_literals;
@@ -33,6 +28,8 @@ constexpr auto kServerStartTimeout = 30s;
 constexpr auto kClientStartTimeout = 30s;
 constexpr auto kServerLogTimeout = 10s;
 constexpr auto kObjectTreeLoadTimeout = 15s;
+constexpr auto kObjectViewValuesTimeout = 30s;
+constexpr auto kObjectTreeLabelsTimeout = 30s;
 constexpr auto kOperatorUseCasesTimeout = 30s;
 
 std::string_view GetServerType(E2eProtocol protocol) {
@@ -55,24 +52,6 @@ std::filesystem::path GetClientExePath() {
 
 std::filesystem::path GetServerFixtureDir() {
   return std::filesystem::path{SCADA_E2E_SERVER_FIXTURE_DIR};
-}
-
-std::wstring QuotePathArg(const std::filesystem::path& arg) {
-  return L"\"" + arg.wstring() + L"\"";
-}
-
-std::wstring QuoteStringArg(std::wstring_view arg) {
-  return L"\"" + std::wstring{arg} + L"\"";
-}
-
-void WriteTextFile(const std::filesystem::path& path, std::string_view text) {
-  std::error_code ec;
-  if (path.has_parent_path())
-    std::filesystem::create_directories(path.parent_path(), ec);
-  std::ofstream output{path, std::ios::binary | std::ios::trunc};
-  if (!output.is_open())
-    throw std::runtime_error{"Failed to open " + path.string()};
-  output << text;
 }
 
 int FindAvailablePort() {
@@ -109,31 +88,6 @@ bool WaitUntil(Predicate&& predicate,
   return predicate();
 }
 
-void ForceTerminate(base::win::ScopedProcessInformation& process_info) {
-  if (!process_info.process_handle())
-    return;
-
-  DWORD exit_code = 0;
-  if (GetExitCodeProcess(process_info.process_handle(), &exit_code) &&
-      exit_code == STILL_ACTIVE) {
-    TerminateProcess(process_info.process_handle(), 1);
-    WaitForSingleObject(process_info.process_handle(), 5000);
-  }
-}
-
-void WaitForExit(base::win::ScopedProcessInformation& process_info,
-                 DWORD timeout_ms = 5000) {
-  if (!process_info.process_handle())
-    return;
-  WaitForSingleObject(process_info.process_handle(), timeout_ms);
-}
-
-void LaunchProcess(const std::filesystem::path& exe,
-                   const std::vector<std::wstring>& args,
-                   const std::filesystem::path& workdir,
-                   JobObject& job,
-                   ChildProcess& child);
-
 }  // namespace
 
 const std::chrono::seconds kPostConnectStabilityTimeout = 10s;
@@ -148,135 +102,6 @@ std::string_view ToString(E2eProtocol protocol) {
       return "OpcUa";
   }
   return "Unknown";
-}
-
-class JobObject {
- public:
-  JobObject() {
-    handle_.Set(CreateJobObjectW(nullptr, nullptr));
-    if (!handle_.IsValid())
-      throw std::runtime_error{"CreateJobObjectW failed"};
-
-    JOBOBJECT_EXTENDED_LIMIT_INFORMATION info{};
-    info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-    if (!SetInformationJobObject(handle_.Get(),
-                                 JobObjectExtendedLimitInformation,
-                                 &info,
-                                 sizeof(info))) {
-      throw std::runtime_error{"SetInformationJobObject failed"};
-    }
-  }
-
-  void Assign(HANDLE process) {
-    if (!AssignProcessToJobObject(handle_.Get(), process))
-      throw std::runtime_error{"AssignProcessToJobObject failed"};
-  }
-
- private:
-  base::win::ScopedHandle handle_;
-};
-
-bool ChildProcess::IsRunning() const {
-  if (!process_info.process_handle())
-    return false;
-  DWORD exit_code = 0;
-  return GetExitCodeProcess(process_info.process_handle(), &exit_code) &&
-         exit_code == STILL_ACTIVE;
-}
-
-std::optional<DWORD> ChildProcess::ExitCode() const {
-  if (!process_info.process_handle())
-    return std::nullopt;
-
-  DWORD exit_code = 0;
-  if (!GetExitCodeProcess(process_info.process_handle(), &exit_code))
-    return std::nullopt;
-  return exit_code;
-}
-
-std::string ReadFileOrEmpty(const std::filesystem::path& path) {
-  std::ifstream input{path, std::ios::binary};
-  if (!input)
-    return {};
-  return {std::istreambuf_iterator<char>{input},
-          std::istreambuf_iterator<char>{}};
-}
-
-bool ContainsInDirectory(const std::filesystem::path& dir,
-                         std::string_view needle) {
-  std::error_code ec;
-  if (!std::filesystem::exists(dir, ec))
-    return false;
-
-  for (const auto& entry : std::filesystem::directory_iterator{dir, ec}) {
-    if (!entry.is_regular_file())
-      continue;
-    if (ReadFileOrEmpty(entry.path()).find(needle) != std::string::npos)
-      return true;
-  }
-  return false;
-}
-
-std::optional<int> FindLoggedObjectTreeChildCount(
-    const std::filesystem::path& dir) {
-  constexpr std::string_view kCompletionMarker =
-      "Children fetched callback completed";
-  constexpr std::string_view kAddedChildCountMarker = "AddedChildCount = ";
-
-  std::error_code ec;
-  if (!std::filesystem::exists(dir, ec))
-    return std::nullopt;
-
-  std::optional<int> result;
-  for (const auto& entry : std::filesystem::directory_iterator{dir, ec}) {
-    if (!entry.is_regular_file())
-      continue;
-
-    const auto contents = ReadFileOrEmpty(entry.path());
-    size_t pos = 0;
-    while ((pos = contents.find(kCompletionMarker.data(), pos)) !=
-           std::string::npos) {
-      const auto line_end = contents.find('\n', pos);
-      const auto line = contents.substr(
-          pos,
-          line_end == std::string::npos ? std::string::npos : line_end - pos);
-      pos = line_end == std::string::npos ? contents.size() : line_end + 1;
-
-      const auto count_pos = line.find(kAddedChildCountMarker);
-      if (count_pos == std::string::npos)
-        continue;
-
-      const auto value_begin = count_pos + kAddedChildCountMarker.size();
-      size_t value_end = value_begin;
-      while (value_end < line.size() && line[value_end] >= '0' &&
-             line[value_end] <= '9') {
-        ++value_end;
-      }
-      if (value_end == value_begin)
-        continue;
-
-      result = std::stoi(line.substr(value_begin, value_end - value_begin));
-      if (*result > 0)
-        return result;
-    }
-  }
-
-  return result;
-}
-
-TempWorkspace::TempWorkspace() {
-  auto base = std::filesystem::temp_directory_path();
-  auto salt =
-      std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
-  path_ = base / ("scada_e2e_" + salt);
-  std::filesystem::create_directories(path_);
-}
-
-TempWorkspace::~TempWorkspace() {
-  if (preserve_)
-    return;
-  std::error_code ec;
-  std::filesystem::remove_all(path_, ec);
 }
 
 ClientServerE2eTest::ClientServerE2eTest()
@@ -339,6 +164,8 @@ void ClientServerE2eTest::PrepareWorkspace() {
                 boost::json::serialize(server_json));
 
   status_file_ = workspace_.path() / "client-status.txt";
+  object_view_values_file_ = workspace_.path() / "object-view-values.txt";
+  object_tree_labels_file_ = workspace_.path() / "object-tree-labels.txt";
   operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
   server_log_dir_ = workspace_.path() / "ServerLogs";
@@ -419,6 +246,30 @@ bool ClientServerE2eTest::WaitForObjectTreeReady() {
           kObjectTreeLoadTimeout));
 }
 
+std::string ClientServerE2eTest::WaitForObjectViewValuesReport() {
+  bool ok = WaitUntil(
+      [this] {
+        return std::filesystem::exists(object_view_values_file_) ||
+               !client_.IsRunning();
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kObjectViewValuesTimeout));
+  EXPECT_TRUE(ok) << "Timed out waiting for object-view values report";
+  return ReadFileOrEmpty(object_view_values_file_);
+}
+
+std::string ClientServerE2eTest::WaitForObjectTreeLabelsReport() {
+  bool ok = WaitUntil(
+      [this] {
+        return std::filesystem::exists(object_tree_labels_file_) ||
+               !client_.IsRunning();
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kObjectTreeLabelsTimeout));
+  EXPECT_TRUE(ok) << "Timed out waiting for object-tree labels report";
+  return ReadFileOrEmpty(object_tree_labels_file_);
+}
+
 std::string ClientServerE2eTest::WaitForOperatorUseCasesReport() {
   bool ok = WaitUntil(
       [this] {
@@ -482,40 +333,4 @@ int ClientServerE2eTest::GetProtocolPort() const {
   return 0;
 }
 
-namespace {
-
-void LaunchProcess(const std::filesystem::path& exe,
-                   const std::vector<std::wstring>& args,
-                   const std::filesystem::path& workdir,
-                   JobObject& job,
-                   ChildProcess& child) {
-  std::wstring command_line = QuotePathArg(exe);
-  for (const auto& arg : args) {
-    command_line += L" ";
-    command_line += QuoteStringArg(arg);
-  }
-
-  STARTUPINFOW startup_info{};
-  startup_info.cb = sizeof(startup_info);
-
-  std::vector<wchar_t> mutable_command(command_line.begin(), command_line.end());
-  mutable_command.push_back(L'\0');
-
-  if (!CreateProcessW(exe.c_str(),
-                      mutable_command.data(),
-                      nullptr,
-                      nullptr,
-                      FALSE,
-                      0,
-                      nullptr,
-                      workdir.c_str(),
-                      &startup_info,
-                      child.process_info.Receive())) {
-    throw std::runtime_error{"CreateProcessW failed for " + exe.string()};
-  }
-
-  job.Assign(child.process_info.process_handle());
-}
-
-}  // namespace
 }  // namespace client::test

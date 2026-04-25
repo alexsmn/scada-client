@@ -128,6 +128,19 @@ bool Tree::IsExpanded(void* node, bool up_to_root) const {
   return isExpanded(GetIndex(node, 0));
 }
 
+void Tree::ExpandNode(void* node) {
+  expand(GetIndex(node, 0));
+}
+
+std::vector<void*> Tree::GetChildNodes(void* parent) const {
+  const auto parent_index = parent ? GetIndex(parent, 0) : QModelIndex{};
+  std::vector<void*> nodes;
+  nodes.reserve(model()->rowCount(parent_index));
+  for (int row = 0; row < model()->rowCount(parent_index); ++row)
+    nodes.emplace_back(GetNode(model()->index(row, 0, parent_index)));
+  return nodes;
+}
+
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
   connect(this, &QTreeView::expanded,
           [this, handler](const QModelIndex& index) {

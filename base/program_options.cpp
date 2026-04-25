@@ -48,7 +48,10 @@ void InitProgramOptions() {
        "E2E-only operator use-case coverage report file")
       ("test-object-view-values-file",
        po::value<std::string>(),
-       "E2E-only object view values report file");
+       "E2E-only object view values report file")
+      ("test-object-tree-labels-file",
+       po::value<std::string>(),
+       "E2E-only object tree labels report file");
 
 #ifdef _WIN32
   int argc = 0;
