@@ -1,16 +1,13 @@
 #include "components/time_range/time_range_dialog.h"
 
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_test_util.h"
 #include "aui/test/app_environment.h"
 #include "profile/profile.h"
 
-#include <QApplication>
 #include <QDateTime>
 #include <QDialog>
-#include <QEventLoop>
 #include <gtest/gtest.h>
-
-#include <thread>
 
 namespace {
 
@@ -36,21 +33,6 @@ class TestDialogService : public DialogService {
   }
 };
 
-void ProcessEventsUntilSettled(promise<TimeRange>& result) {
-  for (int i = 0; i < 200 &&
-                  result.wait_for(std::chrono::milliseconds{0}) ==
-                      promise_wait_status::timeout;
-       ++i) {
-    QApplication::processEvents(QEventLoop::AllEvents |
-                                    QEventLoop::WaitForMoreEvents,
-                                20);
-    if (auto* dialog = qobject_cast<QDialog*>(QApplication::activeModalWidget())) {
-      dialog->accept();
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds{1});
-  }
-}
-
 class TimeRangeDialogTest : public testing::Test {
  protected:
   AppEnvironment app_env_;
@@ -73,10 +55,10 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
   auto result = ShowTimeRangeDialog(
       dialog_service_, TimeRangeContext{profile_, initial_range,
                                         /*time_required_=*/false});
-  ProcessEventsUntilSettled(result);
+  aui::qt::test::ProcessEventsUntilSettled(result,
+                                           aui::qt::test::AcceptDialog);
 
-  ASSERT_NE(result.wait_for(std::chrono::milliseconds{0}),
-            promise_wait_status::timeout);
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
   auto selected_range = result.get();
   EXPECT_TRUE(selected_range.dates);
   EXPECT_EQ(selected_range.start, initial_range.start);

@@ -1,20 +1,17 @@
 #include "properties/transport/transport_dialog.h"
 
 #include "aui/dialog_service.h"
+#include "aui/qt/dialog_test_util.h"
 #include "aui/test/app_environment.h"
 
 #include <transport/transport_string.h>
 
-#include <QApplication>
 #include <QComboBox>
 #include <QDialog>
-#include <QEventLoop>
 #include <QLineEdit>
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <filesystem>
-#include <thread>
 
 namespace {
 
@@ -40,27 +37,6 @@ class TestDialogService : public DialogService {
   }
 };
 
-template <class T, class DialogAction>
-void ProcessEventsUntilSettled(promise<T>& result, DialogAction action) {
-  bool acted = false;
-  for (int i = 0; i < 200 &&
-                  result.wait_for(std::chrono::milliseconds{0}) ==
-                      promise_wait_status::timeout;
-       ++i) {
-    QApplication::processEvents(QEventLoop::AllEvents |
-                                    QEventLoop::WaitForMoreEvents,
-                                20);
-    if (!acted) {
-      if (auto* dialog =
-              qobject_cast<QDialog*>(QApplication::activeModalWidget())) {
-        action(*dialog);
-        acted = true;
-      }
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds{1});
-  }
-}
-
 class TransportDialogTest : public testing::Test {
  protected:
   AppEnvironment app_env_;
@@ -78,7 +54,7 @@ TEST_F(TransportDialogTest, AcceptedDialogReturnsEditedTransportString) {
 
   auto result = ShowTransportDialog(dialog_service_, initial);
 
-  ProcessEventsUntilSettled(result, [](QDialog& dialog) {
+  aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     dialog.findChild<QComboBox*>("typeComboBox")->setCurrentIndex(2);
     dialog.findChild<QLineEdit*>("networkHostLineEdit")
         ->setText("example.test");
@@ -86,8 +62,7 @@ TEST_F(TransportDialogTest, AcceptedDialogReturnsEditedTransportString) {
     dialog.accept();
   });
 
-  ASSERT_NE(result.wait_for(std::chrono::milliseconds{0}),
-            promise_wait_status::timeout);
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
   auto updated = result.get();
   EXPECT_EQ(updated.ToString(), "UDP;Active;Host=example.test;Port=2404");
 }
@@ -101,9 +76,9 @@ TEST_F(TransportDialogTest, RejectedDialogRejectsResult) {
 
   auto result = ShowTransportDialog(dialog_service_, initial);
 
-  ProcessEventsUntilSettled(result, [](QDialog& dialog) { dialog.reject(); });
+  aui::qt::test::ProcessEventsUntilSettled(result,
+                                           aui::qt::test::RejectDialog);
 
-  ASSERT_NE(result.wait_for(std::chrono::milliseconds{0}),
-            promise_wait_status::timeout);
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
   EXPECT_THROW(result.get(), std::exception);
 }

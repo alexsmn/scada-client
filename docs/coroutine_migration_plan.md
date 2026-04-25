@@ -175,6 +175,21 @@ to regression-test.
   instead of attaching a completion callback. Regression coverage:
   `ClientApplicationPromiseWaitTest.*` plus the existing startup/shutdown
   application tests in `client_qt_unittests`.
+- **profile/** audited and marked out of scope for coroutine migration
+  (`client/profile/*`). The profile layer is synchronous persistence/model
+  code and has no `promise<T>`, callback continuation, executor, or coroutine
+  boundary that forces profile consumers onto legacy async APIs. No production
+  coroutine slice is required here.
+- **Qt modal-dialog unit-test wait helpers** consolidated
+  (`client/aui/qt/dialog_test_util.h`,
+  `client/aui/qt/dialog_util_unittest.cpp`,
+  `client/components/time_range/qt/time_range_dialog_unittest.cpp`,
+  `client/export/csv/qt/csv_export_dialog_unittest.cpp`,
+  `client/properties/transport/qt/transport_dialog_unittest.cpp`). The
+  repeated per-test `ProcessEventsUntilSettled(...)` loops now use one shared
+  test helper for promise readiness polling and active-modal dialog actions.
+  Regression coverage includes the existing accepted/rejected dialog tests plus
+  `DialogUtilTest.DialogTestUtilDoesNotInvokeActionForSettledPromise`.
 
 ### Risks
 
@@ -570,13 +585,14 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Move from callback-shape cleanup to service-interface cleanup next: audit
-`client/profile/` and the profile-facing module setup for any synchronous or
-promise compatibility boundaries that still force consumers to stay on legacy
-interfaces. If an async profile path is found, migrate that vertical slice to a
-coroutine body with a thin promise wrapper; otherwise document why `profile/`
-is already out of scope and advance the Phase 4 priority marker to the next
-module group.
+Continue Phase 4 with `main_window/` residual API cleanup. Audit the remaining
+promise-returning compatibility surfaces that are now coroutine-backed
+(`BaseMainWindow::OpenView`, `SelectionCommands::OpenViewContainingNode`,
+`PageCommands::RenameCurrentPage`, `MainWindowCommands` rename helpers, and
+`OpenedView::GetOpenWindowDefinition`) and either retire unused promise
+wrappers or document why each public boundary must remain promise-shaped for
+callers. Add focused tests for any retired wrapper or behavioral contract that
+changes.
 
 ### Work
 
