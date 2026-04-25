@@ -1,8 +1,9 @@
 ﻿#include "ui/common/client_utils.h"
 
 #include "aui/translation.h"
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "base/format_time.h"
-#include "base/range_util.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "base/win/clipboard.h"
@@ -79,25 +80,34 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
 }
 
 promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
-  return FetchChildren(node).then([node, max_count] {
-    std::vector<promise<NodeIdSet>> promises;
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor,
+                   ExpandGroupItemIdsAsync(executor, node, max_count));
+}
 
-    if (node.node_class() == scada::NodeClass::Variable) {
-      promises.emplace_back(
-          make_resolved_promise(MakeNodeIdSet(node.node_id())));
-    }
+Awaitable<NodeIdSet> ExpandGroupItemIdsAsync(AnyExecutor executor,
+                                             const NodeRef& node,
+                                             size_t max_count) {
+  co_await AwaitPromise(executor, FetchChildren(node));
 
-    for (const auto& child : node.targets(scada::id::Organizes))
-      promises.emplace_back(ExpandGroupItemIds(child, max_count));
+  NodeIdSet node_ids;
+  if (node.node_class() == scada::NodeClass::Variable) {
+    node_ids.emplace(node.node_id());
+  }
 
-    for (const auto& child : node.targets(scada::id::HasComponent))
-      promises.emplace_back(ExpandGroupItemIds(child, max_count));
+  for (const auto& child : node.targets(scada::id::Organizes)) {
+    auto child_node_ids =
+        co_await ExpandGroupItemIdsAsync(executor, child, max_count);
+    node_ids.insert(child_node_ids.begin(), child_node_ids.end());
+  }
 
-    return make_all_promise(std::move(promises))
-        .then([](const std::vector<NodeIdSet>& subsets) {
-          return Union(subsets);
-        });
-  });
+  for (const auto& child : node.targets(scada::id::HasComponent)) {
+    auto child_node_ids =
+        co_await ExpandGroupItemIdsAsync(executor, child, max_count);
+    node_ids.insert(child_node_ids.begin(), child_node_ids.end());
+  }
+
+  co_return node_ids;
 }
 
 void CompletePath(const std::u16string& text,

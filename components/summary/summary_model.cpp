@@ -1,6 +1,7 @@
 ﻿#include "components/summary/summary_model.h"
 
 #include "aui/models/grid_range.h"
+#include "base/awaitable.h"
 #include "base/format_time.h"
 #include "ui/common/client_utils.h"
 #include "common/aggregation.h"
@@ -351,11 +352,15 @@ void SummaryModel::OnColumnTitleChanged(int column) {
 void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
                                     unsigned flags) {
   // TOOD: Capture by weak pointer.
-  ExpandGroupItemIds(node_service_.GetNode(node_id))
-      .then([this](const NodeIdSet& child_ids) {
-        for (const auto& child_id : child_ids)
-          AddColumn(MakeNodeIdFormula(child_id));
-      });
+  CoSpawn(executor_, [this, executor = executor_,
+                      node = node_service_.GetNode(node_id)]()
+                         -> Awaitable<void> {
+    auto child_ids =
+        co_await ExpandGroupItemIdsAsync(NetExecutorAdapter{executor}, node);
+    for (const auto& child_id : child_ids)
+      AddColumn(MakeNodeIdFormula(child_id));
+    co_return;
+  });
 }
 
 void SummaryModel::RemoveContainedItem(const scada::NodeId& node_id) {

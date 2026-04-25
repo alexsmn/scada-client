@@ -1,5 +1,7 @@
 #include "window_definition_builder.h"
 
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "ui/common/client_utils.h"
@@ -66,6 +68,17 @@ promise<WindowDefinition> MakeWindowDefinition(
     const WindowInfo* optional_window_info,
     const NodeRef& node,
     bool expand_groups) {
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor,
+                   MakeWindowDefinitionAsync(executor, optional_window_info,
+                                             node, expand_groups));
+}
+
+Awaitable<WindowDefinition> MakeWindowDefinitionAsync(
+    AnyExecutor executor,
+    const WindowInfo* optional_window_info,
+    NodeRef node,
+    bool expand_groups) {
   const auto& window_info =
       optional_window_info ? *optional_window_info : kDefaultWindowInfo;
 
@@ -73,34 +86,43 @@ promise<WindowDefinition> MakeWindowDefinition(
                 node.node_class() == scada::NodeClass::Object &&
                 !window_info.single_item();
 
-  auto node_ids_promise =
-      expand ? ExpandGroupItemIds(node)
-             : make_resolved_promise(MakeNodeIdSet(node.node_id()));
-
-  return node_ids_promise.then([&window_info, node](const NodeIdSet& node_ids) {
-    auto window_def = MakeEmptyWindowDefinition(&window_info, node);
-    AddNodeIds(window_def, node_ids);
-    return window_def;
-  });
+  NodeIdSet node_ids;
+  if (expand) {
+    node_ids = co_await ExpandGroupItemIdsAsync(executor, node);
+  } else {
+    node_ids = MakeNodeIdSet(node.node_id());
+  }
+  auto window_def = MakeEmptyWindowDefinition(&window_info, node);
+  AddNodeIds(window_def, node_ids);
+  co_return window_def;
 }
 
 promise<WindowDefinition> MakeWindowDefinition(
     const WindowInfo* window_info,
     const OpenContext& open_context) {
-  auto promise = open_context.node ? MakeWindowDefinition(
-                                         window_info, open_context.node, true)
-                                   : make_resolved_promise(MakeWindowDefinition(
-                                         window_info, open_context.node_ids));
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(
+      executor,
+      MakeWindowDefinitionAsync(executor, window_info, open_context));
+}
 
-  return promise.then([open_context](const WindowDefinition& window_def) {
-    auto new_window_def = window_def;
+Awaitable<WindowDefinition> MakeWindowDefinitionAsync(
+    AnyExecutor executor,
+    const WindowInfo* window_info,
+    OpenContext open_context) {
+  WindowDefinition window_def;
+  if (open_context.node) {
+    window_def = co_await MakeWindowDefinitionAsync(executor, window_info,
+                                                    open_context.node, true);
+  } else {
+    window_def = MakeWindowDefinition(window_info, open_context.node_ids);
+  }
 
-    if (open_context.time_range.has_value()) {
-      SaveTimeRange(new_window_def, *open_context.time_range);
-    }
+  if (open_context.time_range.has_value()) {
+    SaveTimeRange(window_def, *open_context.time_range);
+  }
 
-    return new_window_def;
-  });
+  co_return window_def;
 }
 
 WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
@@ -155,13 +177,19 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
 promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
     const WindowInfo* window_info,
     const NodeRef& node) {
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor,
+                   MakeGroupWindowDefinitionAsync(executor, window_info, node));
+}
+
+Awaitable<std::optional<WindowDefinition>> MakeGroupWindowDefinitionAsync(
+    AnyExecutor executor,
+    const WindowInfo* window_info,
+    NodeRef node) {
   auto parent = node.parent();
   if (!IsInstanceOf(parent, data_items::id::DataGroupType))
-    return make_resolved_promise(std::optional<WindowDefinition>());
+    co_return std::optional<WindowDefinition>();
 
-  return ExpandGroupItemIds(parent).then(
-      [window_info, node](const NodeIdSet& node_ids) {
-        return std::optional<WindowDefinition>{
-            MakeWindowDefinition(window_info, node, node_ids)};
-      });
+  auto node_ids = co_await ExpandGroupItemIdsAsync(executor, parent);
+  co_return MakeWindowDefinition(window_info, node, node_ids);
 }

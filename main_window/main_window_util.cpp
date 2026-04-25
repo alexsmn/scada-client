@@ -2,7 +2,6 @@
 
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
 #include "components/node_properties/node_property_component.h"
@@ -70,18 +69,19 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
     if ((&view->GetWindowInfo() == &window_info) ||
         (context.key_modifiers & aui::ControlModifier)) {
       // insert items into active frame
-      promise<NodeIdSet> node_ids_promise =
-          IsInstanceOf(context.node, data_items::id::DataGroupType)
-              ? ExpandGroupItemIds(context.node)
-              : make_resolved_promise(MakeNodeIdSet(context.node.node_id()));
-
       // TODO: Capture weak pointer.
-      CoSpawn(executor, [executor, contents,
+      CoSpawn(executor, [executor, contents, node = context.node,
                          key_modifiers = context.key_modifiers,
-                         node_ids_promise = std::move(node_ids_promise)]() mutable
-                        -> Awaitable<void> {
-        auto node_ids = co_await AwaitPromise(NetExecutorAdapter{executor},
-                                              std::move(node_ids_promise));
+                         is_group = IsInstanceOf(context.node,
+                                                 data_items::id::DataGroupType)]()
+                            mutable -> Awaitable<void> {
+        NodeIdSet node_ids;
+        if (is_group) {
+          node_ids = co_await ExpandGroupItemIdsAsync(
+              NetExecutorAdapter{executor}, node);
+        } else {
+          node_ids = MakeNodeIdSet(node.node_id());
+        }
         unsigned flags =
             (key_modifiers & aui::ControlModifier) ? ContentsModel::APPEND : 0;
         for (const auto& node_id : node_ids) {
@@ -95,14 +95,13 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
   }
 
   // TODO: Capture |main_window| by weak pointer.
-  auto window_def_promise =
-      MakeWindowDefinition(&window_info, context.node, /*include_default=*/true);
   auto* main_window = context.main_window;
-  CoSpawn(executor, [executor, main_window,
-                     window_def_promise = std::move(window_def_promise)]() mutable
-                    -> Awaitable<void> {
-    auto window_definition = co_await AwaitPromise(
-        NetExecutorAdapter{executor}, std::move(window_def_promise));
+  const auto* window_info_ptr = &window_info;
+  CoSpawn(executor, [executor, main_window, window_info_ptr,
+                     node = context.node]() mutable -> Awaitable<void> {
+    auto window_definition = co_await MakeWindowDefinitionAsync(
+        NetExecutorAdapter{executor}, window_info_ptr, node,
+        /*expand_groups=*/true);
     OpenView(main_window, window_definition);
     co_return;
   });

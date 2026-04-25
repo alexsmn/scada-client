@@ -17,11 +17,13 @@ class DataValue;
 }
 
 class NodeService;
+class Executor;
 class TimedDataService;
 class TimedDataSpec;
 class WindowDefinition;
 
 struct SummaryModelContext {
+  std::shared_ptr<Executor> executor_;
   // The node service is only used when adding contained items.
   NodeService& node_service_;
   TimedDataService& timed_data_service_;

@@ -36,7 +36,7 @@ constexpr std::pair<unsigned, base::TimeDelta> kIntervalCommands[] = {
 SummaryView::SummaryView(const ControllerContext& context)
     : ControllerContext{context},
       model_{std::make_shared<SummaryModel>(
-          SummaryModelContext{node_service_, timed_data_service_})} {}
+          SummaryModelContext{executor_, node_service_, timed_data_service_})} {}
 
 std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
   model_->Load(definition);

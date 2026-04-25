@@ -331,6 +331,19 @@ SCADA services or local service doubles.
   of building nested `make_all_promise(...).then(...)` lists, while preserving
   namespace filtering and the exported data shape. Regression coverage:
   `client/export/configuration/export_data_builder_unittest.cpp`.
+- **ui/common `ExpandGroupItemIds` and main consumers** migrated
+  (`client/ui/common/client_utils.{h,cpp}`,
+  `client/main_window/window_definition_builder.{h,cpp}`,
+  `client/main_window/main_window_util.cpp`,
+  `client/components/summary/summary_model.{h,cpp}`). The recursive group
+  expansion now has an executor-pinned `ExpandGroupItemIdsAsync(...)`
+  coroutine, with the legacy `promise<NodeIdSet>` helper kept as a wrapper.
+  Window-definition building gained coroutine overloads, default node commands
+  await those overloads directly inside their existing `CoSpawn` bodies, and
+  `SummaryModel` now receives the controller executor so dropped group items
+  expand through the same coroutine helper. Regression coverage:
+  `client/main_window/window_definition_builder_unittest.cpp` and
+  `client/components/summary/summary_model_unittest.cpp`.
 
 ### Priority Order
 
@@ -344,14 +357,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/ui/common/client_utils.{h,cpp}` and its
-`ExpandGroupItemIds(...)` consumers. Add an executor-pinned
-`ExpandGroupItemIdsAsync(...)` coroutine helper, keep the current
-`promise<NodeIdSet>` wrapper for legacy call sites, then update
-`client/main_window/window_definition_builder.cpp`,
-`client/main_window/main_window_util.cpp`, and
-`client/components/summary/summary_model.cpp` to call the coroutine helper from
-their existing executor-owned coroutine bodies where available.
+Migrate the remaining promise chains in `client/main_window` command helpers:
+`main_window_commands.cpp`, `main_menu_model.cpp`, `page_commands.cpp`, and the
+legacy promise wrappers in `selection_commands.cpp` / `base_main_window.cpp`.
+Prefer small coroutine bodies spawned on the existing main-window executor, and
+keep public command interfaces unchanged while adding focused command tests for
+title prompts, page-title updates, and open-window completion behavior.
 
 ### Work
 

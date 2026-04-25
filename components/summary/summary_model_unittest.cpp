@@ -1,11 +1,14 @@
 #include "components/summary/summary_model.h"
 
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
 #include "base/test/test_time.h"
 #include "common/aggregation.h"
+#include "common/formula_util.h"
 #include "resources/common_resources.h"
 #include "components/summary/summary_component.h"
 #include "controller/window_info.h"
-#include "node_service/node_service_mock.h"
+#include "node_service/static/static_node_service.h"
 #include "profile/window_definition.h"
 #include "timed_data/timed_data_fake.h"
 #include "timed_data/timed_data_service_fake.h"
@@ -20,19 +23,30 @@ WindowItem MakeItem(std::string_view path) {
   return WindowItem{"Item"}.SetString("path", path).SetInt("width", 123);
 }
 
+scada::NodeState MakeNodeState(scada::NodeId node_id,
+                               scada::NodeClass node_class,
+                               scada::NodeId type_definition_id,
+                               scada::NodeId parent_id = {},
+                               scada::NodeId reference_type_id = {}) {
+  return {.node_id = std::move(node_id),
+          .node_class = node_class,
+          .type_definition_id = std::move(type_definition_id),
+          .parent_id = std::move(parent_id),
+          .reference_type_id = std::move(reference_type_id)};
+}
+
 }  // namespace
 
 class SummaryModelTest : public Test {
  protected:
   aui::GridCell GetCellAt(int column_index, base::Time time);
 
-  // The node service is only used when adding contained items.
-  StrictMock<MockNodeService> node_service_;
-
+  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  StaticNodeService node_service_;
   FakeTimedDataService timed_data_service_;
 
   SummaryModel summary_model_{
-      SummaryModelContext{node_service_, timed_data_service_}};
+      SummaryModelContext{executor_, node_service_, timed_data_service_}};
 };
 
 aui::GridCell SummaryModelTest::GetCellAt(int column_index, base::Time time) {
@@ -57,6 +71,38 @@ TEST_F(SummaryModelTest, AddColumn) {
   ASSERT_EQ(column_index, 1);
   EXPECT_EQ(summary_model_.column_model().GetCount(), 2);
   EXPECT_EQ(summary_model_.column_model().GetTitle(1), u"item2");
+}
+
+TEST_F(SummaryModelTest, AddContainedItemExpandsGroupOnExecutor) {
+  const scada::NodeId group_id{1, 1};
+  const scada::NodeId organized_item_id{2, 1};
+  const scada::NodeId component_group_id{3, 1};
+  const scada::NodeId component_item_id{4, 1};
+
+  node_service_.Add(MakeNodeState(group_id, scada::NodeClass::Object,
+                                  scada::id::BaseObjectType));
+  node_service_.Add(MakeNodeState(organized_item_id, scada::NodeClass::Variable,
+                                  scada::id::BaseVariableType, group_id,
+                                  scada::id::Organizes));
+  node_service_.Add(MakeNodeState(component_group_id, scada::NodeClass::Object,
+                                  scada::id::BaseObjectType, group_id,
+                                  scada::id::HasComponent));
+  node_service_.Add(MakeNodeState(component_item_id, scada::NodeClass::Variable,
+                                  scada::id::BaseVariableType,
+                                  component_group_id, scada::id::Organizes));
+  timed_data_service_.AddTimedData(MakeNodeIdFormula(organized_item_id));
+  timed_data_service_.AddTimedData(MakeNodeIdFormula(component_item_id));
+
+  summary_model_.AddContainedItem(group_id, 0);
+  EXPECT_EQ(summary_model_.column_model().GetCount(), 0);
+
+  Drain(executor_);
+
+  EXPECT_EQ(summary_model_.column_model().GetCount(), 2);
+  std::vector<std::u16string> titles{
+      summary_model_.column_model().GetTitle(0),
+      summary_model_.column_model().GetTitle(1)};
+  EXPECT_THAT(titles, UnorderedElementsAre(u"TS.2", u"TS.4"));
 }
 
 TEST_F(SummaryModelTest, HourlySummaryForDayShows24Rows) {

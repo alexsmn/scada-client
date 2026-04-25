@@ -28,6 +28,8 @@ target_link_libraries(client_ui_common_qt PRIVATE
   client_events_qt
   client_profile_qt
   client_services_qt
+  # `client_utils.cpp` exposes coroutine helpers and uses awaitable adapters.
+  transport
 )
 
 add_library(client_ui_common_wt ${CLIENT_UI_COMMON_SOURCES})
@@ -38,6 +40,8 @@ target_link_libraries(client_ui_common_wt PRIVATE
   client_events_wt
   client_profile_wt
   client_services_wt
+  # `client_utils.cpp` exposes coroutine helpers and uses awaitable adapters.
+  transport
 )
 
 add_library(client_ui_dragdrop_qt
