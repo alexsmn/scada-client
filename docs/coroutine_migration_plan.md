@@ -539,6 +539,16 @@ SCADA services or local service doubles.
   before recursing. `client_clipboard` now links `transport` for coroutine
   awaitable headers. Regression coverage:
   `client/clipboard/clipboard_util_unittest.cpp`.
+- **configuration tree drop task actions** migrated
+  (`client/configuration/tree/configuration_tree_drop_handler.{h,cpp}`,
+  `client/configuration/{objects,devices,nodes}`). Data-item creation,
+  channel assignment, and organize-reference moves now dispatch
+  executor-pinned coroutine bodies from the shared drop handler and await the
+  `TaskManager` promises instead of dropping them directly from the drag/drop
+  callback. The nodes, hardware, and object configuration views thread the
+  controller executor into the handler, while the UI-facing `DropAction`
+  contract remains synchronous. Regression coverage:
+  `client/configuration/tree/configuration_tree_drop_handler_unittest.cpp`.
 - **node property initial fetch/update** migrated
   (`client/components/node_properties/node_property_model.cpp`). The model
   constructor now starts an executor-pinned coroutine using
@@ -590,12 +600,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue Phase 4 with `configuration/*`. Start with configuration-tree and
-configuration-object flows that still call promise/callback service APIs
-directly from UI model code. Prefer a vertical slice that can be expressed as
-an executor-pinned coroutine body with a thin compatibility wrapper, and add
-focused model or command tests that cover success, failure, and stale-update
-suppression if the existing code has cancellation behavior.
+Continue Phase 4 in `configuration/tree` by migrating
+`ConfigurationTreeNode::FetchMore`. Replace the callback-shaped
+`NodeRef::Fetch(NodeAndChildren, callback)` path with an executor-pinned
+coroutine/awaitable helper that preserves the current lifetime-token and
+stale-node suppression behavior, then cover successful child materialization,
+pending loading text, and stale callback/update suppression in the existing
+configuration-tree model tests.
 
 ### Work
 

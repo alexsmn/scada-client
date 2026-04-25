@@ -151,7 +151,8 @@ std::unique_ptr<ConfigurationTreeDropHandler>
 ObjectTreeView::CreateTreeDropHandler(const ControllerContext& context) {
   return std::make_unique<ConfigurationTreeDropHandler>(
       ConfigurationTreeDropHandlerContext{
-          context.node_service_, context.task_manager_, context.create_tree_});
+          context.executor_, context.node_service_, context.task_manager_,
+          context.create_tree_});
 }
 
 ObjectTreeModel& ObjectTreeView::model() {

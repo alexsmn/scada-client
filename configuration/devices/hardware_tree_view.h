@@ -89,6 +89,7 @@ class HardwareTreeView : public ConfigurationTreeView {
       const ControllerContext& context) {
     return std::make_unique<ConfigurationTreeDropHandler>(
         ConfigurationTreeDropHandlerContext{
+            context.executor_,
             context.node_service_,
             context.task_manager_,
             context.create_tree_,

@@ -3,16 +3,20 @@
 #include "aui/drag_drop_types.h"
 #include "aui/handlers.h"
 
+#include <memory>
+
 namespace scada {
 class NodeId;
 }
 
 class ConfigurationTreeNode;
 class CreateTree;
+class Executor;
 class NodeService;
 class TaskManager;
 
 struct ConfigurationTreeDropHandlerContext {
+  std::shared_ptr<Executor> executor_;
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;
