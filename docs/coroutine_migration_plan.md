@@ -138,6 +138,15 @@ to regression-test.
   E2E success/failure through the existing hooks, logs E2E run completion in
   E2E mode, and invokes `QApplication::quit` only for normal-mode completion.
   Regression coverage: `client/app/qt/startup_flow_unittest.cpp`.
+- **Qt operator-use-case E2E smoke runner** migrated
+  (`client/app/qt/e2e_test_support.{h,cpp}`). The long
+  `promise<> sequence = sequence.then(...)` pipeline in
+  `RunE2eOperatorUseCaseSmoke(...)` is now a coroutine-backed runner that
+  awaits each window-open and registration-check step in order, while keeping
+  the public `promise<>` entry point and report format. `OpenOperatorWindow`
+  was folded into an awaitable helper that maps `MainWindow::OpenView(...)`
+  results without a `.then(...)` continuation. Regression coverage:
+  `client/app/qt/e2e_test_support_unittest.cpp`.
 
 ### Risks
 
@@ -533,14 +542,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the Qt E2E support helpers in
-`client/app/qt/e2e_test_support.cpp` next. `RunE2eOperatorUseCaseSmoke(...)`
-still builds a long `promise<> sequence = sequence.then(...)` chain, and
-`OpenOperatorWindow(...)` maps `MainWindow::OpenView(...)` through
-`.then(...)`. Convert the operator-use-case smoke runner to coroutine helpers
-that await each window open and check step in order, keep the public
-`promise<>` entry point, preserve report output, and add focused unit coverage
-for successful report generation and open-window failure recording.
+Migrate the remaining polling E2E support helpers in
+`client/app/qt/e2e_test_support.cpp` next. `ObjectViewValuesCheck::Run()` and
+`ObjectTreeLabelsCheck::Run()` still return `promise_.then(...)` solely to keep
+their polling state alive. Convert them to coroutine-backed polling loops using
+the existing `Delay(...)` helper, preserve timeout/report behavior, and add
+focused coverage for successful report generation and timeout/failure reports.
 
 ### Work
 

@@ -1,6 +1,7 @@
 #include "app/qt/e2e_test_support.h"
 
 #include "app/client_application.h"
+#include "aui/qt/message_loop_qt.h"
 #include "base/awaitable.h"
 #include "base/awaitable_promise.h"
 #include "base/callback_awaitable.h"
@@ -40,17 +41,6 @@ namespace {
 struct OperatorUseCaseSmokeState {
   bool ok = true;
   std::vector<std::string> lines;
-};
-
-struct OperatorUseCaseSmokeCheck {
-  std::string_view id;
-  std::string_view description;
-  std::vector<std::string_view> open_window_types;
-  std::vector<std::string_view> registered_window_types;
-  std::vector<unsigned> registered_selection_commands;
-  std::vector<unsigned> registered_global_commands;
-  std::vector<unsigned> main_window_commands;
-  std::vector<std::string_view> printable_window_types;
 };
 
 void AddSmokeResult(const std::shared_ptr<OperatorUseCaseSmokeState>& state,
@@ -382,51 +372,31 @@ class HardwareTreeDevicesCheck final
   std::vector<TimedDataSpec> activation_specs_;
 };
 
-promise<> OpenOperatorWindow(
+Awaitable<OperatorUseCaseSmokeResult> OpenOperatorWindowAsync(
     ClientApplication& app,
-    std::string window_type,
-    const std::shared_ptr<OperatorUseCaseSmokeState>& state) {
+    std::shared_ptr<Executor> executor,
+    std::string window_type) {
   auto* main_window = GetFirstMainWindow(app);
   if (!main_window) {
-    AddSmokeResult(state, window_type, false, "main window missing");
-    return make_resolved_promise();
+    co_return OperatorUseCaseSmokeResult{.ok = false,
+                                         .detail = "main window missing"};
   }
 
-  const auto* window_info = FindWindowInfoByName(window_type);
-  if (!window_info) {
-    AddSmokeResult(state, window_type, false, "window type not registered");
-    return make_resolved_promise();
+  if (const auto* window_info = FindWindowInfoByName(window_type)) {
+    auto* opened_view = co_await AwaitPromise(
+        NetExecutorAdapter{executor},
+        main_window->OpenView(WindowDefinition{*window_info}, /*activate=*/true));
+    co_return OperatorUseCaseSmokeResult{
+        .ok = opened_view != nullptr,
+        .detail = opened_view ? "opened" : "open returned null"};
+  } else {
+    co_return OperatorUseCaseSmokeResult{
+        .ok = false, .detail = "window type not registered"};
   }
-
-  return main_window->OpenView(WindowDefinition{*window_info}, /*activate=*/true)
-      .then([state, window_type](OpenedViewInterface* opened_view) {
-        AddSmokeResult(state,
-                       window_type,
-                       opened_view != nullptr,
-                       opened_view ? "opened" : "open returned null");
-      });
 }
 
-}  // namespace
-
-promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
-                                      std::shared_ptr<Executor> executor) {
-  auto report_path = GetE2eObjectViewValuesReportPath();
-  if (report_path.empty())
-    return make_resolved_promise();
-
-  auto check = std::make_shared<ObjectViewValuesCheck>(
-      app, std::move(executor), std::move(report_path));
-  return check->Run();
-}
-
-promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
-  auto report_path = GetE2eOperatorUseCasesReportPath();
-  if (report_path.empty())
-    return make_resolved_promise();
-
-  auto state = std::make_shared<OperatorUseCaseSmokeState>();
-  const std::vector<OperatorUseCaseSmokeCheck> checks{
+std::vector<OperatorUseCaseSmokeCheck> MakeOperatorUseCaseSmokeChecks() {
+  return {
       {"UC-1", "monitor live values", {"Log"}},
       {"UC-2", "visualise time-series on a graph", {"Graph"}},
       {"UC-3", "view tables summaries and sheets", {"Table", "Summ", "CusTable"}},
@@ -490,67 +460,133 @@ promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
        {},
        {"Transmission"}},
   };
+}
 
-  promise<> sequence = make_resolved_promise();
+Awaitable<void> RunE2eOperatorUseCaseSmokeAsync(
+    OperatorUseCaseSmokeContext context,
+    std::filesystem::path report_path,
+    std::vector<OperatorUseCaseSmokeCheck> checks) {
+  auto state = std::make_shared<OperatorUseCaseSmokeState>();
+  auto executor = context.executor;
 
   for (const auto& check : checks) {
     for (std::string_view window_type : check.open_window_types) {
-      sequence = sequence.then(
-          [&app, state, window_type = std::string{window_type}] {
-            return OpenOperatorWindow(app, window_type, state);
-          });
+      auto result = co_await AwaitPromise(NetExecutorAdapter{executor},
+                                          context.open_window(window_type));
+      AddSmokeResult(state, window_type, result.ok, std::move(result.detail));
     }
 
-    sequence = sequence.then([&app, state, check] {
-      bool ok = true;
-      std::string detail{check.description};
+    bool ok = true;
+    std::string detail{check.description};
 
-      for (std::string_view window_type : check.registered_window_types) {
-        bool registered = FindWindowInfoByName(window_type) != nullptr;
-        ok = ok && registered;
-        detail += registered ? " registered " : " missing ";
-        detail += window_type;
-      }
+    for (std::string_view window_type : check.registered_window_types) {
+      bool registered = context.is_window_registered(window_type);
+      ok = ok && registered;
+      detail += registered ? " registered " : " missing ";
+      detail += window_type;
+    }
 
-      for (unsigned command_id : check.registered_selection_commands) {
-        bool registered = app.HasSelectionCommandForTesting(command_id);
-        ok = ok && registered;
-        detail += registered ? " command " : " missing-command ";
-        detail += std::to_string(command_id);
-      }
+    for (unsigned command_id : check.registered_selection_commands) {
+      bool registered = context.has_selection_command(command_id);
+      ok = ok && registered;
+      detail += registered ? " command " : " missing-command ";
+      detail += std::to_string(command_id);
+    }
 
-      for (unsigned command_id : check.registered_global_commands) {
-        bool registered = app.HasGlobalCommandForTesting(command_id);
-        ok = ok && registered;
-        detail += registered ? " global-command " : " missing-global-command ";
-        detail += std::to_string(command_id);
-      }
+    for (unsigned command_id : check.registered_global_commands) {
+      bool registered = context.has_global_command(command_id);
+      ok = ok && registered;
+      detail += registered ? " global-command " : " missing-global-command ";
+      detail += std::to_string(command_id);
+    }
 
-      for (unsigned command_id : check.main_window_commands) {
-        auto* main_window = GetFirstMainWindow(app);
-        bool available =
-            main_window && main_window->commands().GetCommandHandler(command_id);
-        ok = ok && available;
-        detail += available ? " main-window-command "
-                            : " missing-main-window-command ";
-        detail += std::to_string(command_id);
-      }
+    for (unsigned command_id : check.main_window_commands) {
+      bool available = context.has_main_window_command(command_id);
+      ok = ok && available;
+      detail += available ? " main-window-command "
+                          : " missing-main-window-command ";
+      detail += std::to_string(command_id);
+    }
 
-      for (std::string_view window_type : check.printable_window_types) {
-        const auto* window_info = FindWindowInfoByName(window_type);
-        bool printable = window_info && window_info->printable();
-        ok = ok && printable;
-        detail += printable ? " printable " : " not-printable ";
-        detail += window_type;
-      }
+    for (std::string_view window_type : check.printable_window_types) {
+      bool printable = context.is_window_printable(window_type);
+      ok = ok && printable;
+      detail += printable ? " printable " : " not-printable ";
+      detail += window_type;
+    }
 
-      AddSmokeResult(state, check.id, ok, std::move(detail));
-    });
+    AddSmokeResult(state, check.id, ok, std::move(detail));
   }
 
-  return sequence.then([report_path, state] {
-    WriteOperatorUseCaseSmokeReport(report_path, *state);
-  });
+  WriteOperatorUseCaseSmokeReport(report_path, *state);
+  co_return;
+}
+
+}  // namespace
+
+promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
+                                      std::shared_ptr<Executor> executor) {
+  auto report_path = GetE2eObjectViewValuesReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto check = std::make_shared<ObjectViewValuesCheck>(
+      app, std::move(executor), std::move(report_path));
+  return check->Run();
+}
+
+promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
+  auto report_path = GetE2eOperatorUseCasesReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto executor = std::make_shared<MessageLoopQt>();
+  return RunE2eOperatorUseCaseSmoke(OperatorUseCaseSmokeContext{
+      .executor = executor,
+      .open_window =
+          [&app, executor](std::string_view window_type) {
+            return ToPromise(NetExecutorAdapter{executor},
+                             OpenOperatorWindowAsync(
+                                 app, executor, std::string{window_type}));
+          },
+      .is_window_registered =
+          [](std::string_view window_type) {
+            return FindWindowInfoByName(window_type) != nullptr;
+          },
+      .has_selection_command =
+          [&app](unsigned command_id) {
+            return app.HasSelectionCommandForTesting(command_id);
+          },
+      .has_global_command =
+          [&app](unsigned command_id) {
+            return app.HasGlobalCommandForTesting(command_id);
+          },
+      .has_main_window_command =
+          [&app](unsigned command_id) {
+            auto* main_window = GetFirstMainWindow(app);
+            return main_window &&
+                   main_window->commands().GetCommandHandler(command_id);
+          },
+      .is_window_printable =
+          [](std::string_view window_type) {
+            const auto* window_info = FindWindowInfoByName(window_type);
+            return window_info && window_info->printable();
+          },
+  }, std::move(report_path), MakeOperatorUseCaseSmokeChecks());
+}
+
+promise<> RunE2eOperatorUseCaseSmoke(
+    OperatorUseCaseSmokeContext context,
+    std::filesystem::path report_path,
+    std::vector<OperatorUseCaseSmokeCheck> checks) {
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto executor = context.executor;
+  return ToPromise(NetExecutorAdapter{executor},
+                   RunE2eOperatorUseCaseSmokeAsync(std::move(context),
+                                                   std::move(report_path),
+                                                   std::move(checks)));
 }
 
 promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,

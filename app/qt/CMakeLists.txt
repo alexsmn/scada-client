@@ -6,8 +6,6 @@ file(GLOB MAIN_QT CONFIGURE_DEPENDS
   "../../res/client.qrc"
   "../app_init.cpp"
   "../app_init.h"
-  "e2e_test_support.cpp"
-  "e2e_test_support.h"
   "main.cpp"
 )
 list(REMOVE_ITEM SOURCES_QT ${MAIN_QT})
@@ -26,6 +24,8 @@ add_library(client_qt_app_shared STATIC
   "../opcua_services_module.h"
   "../startup_exception.cpp"
   "../startup_exception.h"
+  "e2e_test_support.cpp"
+  "e2e_test_support.h"
   "startup_flow.cpp"
   "startup_flow.h"
 )

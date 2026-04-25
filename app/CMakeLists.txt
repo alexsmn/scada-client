@@ -19,6 +19,7 @@ target_link_libraries(client_common INTERFACE
 # be added here.
 list(APPEND UNITTESTS_QT
   "${CMAKE_CURRENT_SOURCE_DIR}/client_application_unittest.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/qt/e2e_test_support_unittest.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/qt/startup_flow_unittest.cpp"
 )
 
