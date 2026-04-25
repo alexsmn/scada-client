@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "base/awaitable_promise.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
@@ -410,10 +411,8 @@ namespace {
 
 Awaitable<void> RenameCurrentPageAsync(std::shared_ptr<Executor> executor,
                                        MainWindowInterface& main_window,
-                                       DialogService& dialog_service) {
-  const std::u16string& current_page_title =
-      main_window.GetCurrentPage().title;
-
+                                       DialogService& dialog_service,
+                                       std::u16string current_page_title) {
   auto title = co_await AwaitPromise(
       NetExecutorAdapter{executor},
       RunPromptDialog(dialog_service, Translate("Name:"), Translate("Rename"),
@@ -423,32 +422,40 @@ Awaitable<void> RenameCurrentPageAsync(std::shared_ptr<Executor> executor,
 }
 
 Awaitable<void> ShowRenameWindowDialogAsync(std::shared_ptr<Executor> executor,
-                                            MainWindowInterface& main_window,
-                                            DialogService& dialog_service) {
-  auto* view = main_window.GetActiveView();
-  if (!view || view->GetWindowInfo().is_pane()) {
-    throw std::runtime_error{"No active renameable view"};
-  }
-
+                                            OpenedViewInterface& view,
+                                            DialogService& dialog_service,
+                                            std::u16string current_view_title) {
   auto title = co_await AwaitPromise(
       NetExecutorAdapter{executor},
       RunPromptDialog(dialog_service, Translate("Name:"), Translate("Rename"),
-                      view->GetWindowTitle()));
+                      current_view_title));
   // TODO: Capture weak pointer.
-  view->SetWindowTitle(title);
+  view.SetWindowTitle(title);
   co_return;
 }
 
 }  // namespace
 
-promise<> MainWindowCommands::RenameCurrentPage() {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   RenameCurrentPageAsync(executor_, main_window_,
-                                          dialog_service_));
+void MainWindowCommands::RenameCurrentPage() {
+  CoSpawn(executor_,
+          [executor = executor_, &main_window = main_window_,
+           &dialog_service = dialog_service_,
+           current_page_title = main_window_.GetCurrentPage().title] {
+            return RenameCurrentPageAsync(executor, main_window, dialog_service,
+                                          current_page_title);
+          });
 }
 
-promise<> MainWindowCommands::ShowRenameWindowDialog() {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   ShowRenameWindowDialogAsync(executor_, main_window_,
-                                               dialog_service_));
+void MainWindowCommands::ShowRenameWindowDialog() {
+  auto* view = main_window_.GetActiveView();
+  if (!view || view->GetWindowInfo().is_pane()) {
+    return;
+  }
+
+  CoSpawn(executor_,
+          [executor = executor_, view, &dialog_service = dialog_service_,
+           current_view_title = view->GetWindowTitle()] {
+            return ShowRenameWindowDialogAsync(executor, *view, dialog_service,
+                                               current_view_title);
+          });
 }

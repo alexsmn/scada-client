@@ -454,10 +454,15 @@ SCADA services or local service doubles.
   public compatibility surface. The selection-command open-group,
   open-window, and "open containing node" flows now await the coroutine
   window-definition builders and `MainWindowInterface::OpenView` directly.
-  `PageCommands::RenameCurrentPage` now runs through an executor-pinned
-  coroutine helper after normalizing `page_commands.cpp` to UTF-8. Main-window
-  rename helpers were kept file-local so coroutine headers do not leak
-  `transport` includes into unrelated targets. Regression coverage lives in
+  `PageCommands::RenameCurrentPage` and the `MainWindowCommands` current-page /
+  active-window rename helpers now dispatch fire-and-forget coroutines from
+  their command handlers instead of exposing ignored promise-returning wrappers.
+  Page rename prompts gained an injectable prompt runner so the accepted and
+  rejected command paths are covered without driving a real modal dialog.
+  `BaseMainWindow::OpenView`, `SelectionCommands::OpenViewContainingNode`, and
+  `OpenedView::GetOpenWindowDefinition` remain promise-shaped compatibility
+  boundaries because callers still await their opened-view/window-definition
+  results across module interfaces. Regression coverage lives in
   `client/main_window/main_window_unittest.cpp`,
   `client/main_window/main_window_module_unittest.cpp`, and
   `client/main_window/page_commands_unittest.cpp`; the OpenView tests now poll
@@ -585,14 +590,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue Phase 4 with `main_window/` residual API cleanup. Audit the remaining
-promise-returning compatibility surfaces that are now coroutine-backed
-(`BaseMainWindow::OpenView`, `SelectionCommands::OpenViewContainingNode`,
-`PageCommands::RenameCurrentPage`, `MainWindowCommands` rename helpers, and
-`OpenedView::GetOpenWindowDefinition`) and either retire unused promise
-wrappers or document why each public boundary must remain promise-shaped for
-callers. Add focused tests for any retired wrapper or behavioral contract that
-changes.
+Continue Phase 4 with `configuration/*`. Start with configuration-tree and
+configuration-object flows that still call promise/callback service APIs
+directly from UI model code. Prefer a vertical slice that can be expressed as
+an executor-pinned coroutine body with a thin compatibility wrapper, and add
+focused model or command tests that cover success, failure, and stale-update
+suppression if the existing code has cancellation behavior.
 
 ### Work
 

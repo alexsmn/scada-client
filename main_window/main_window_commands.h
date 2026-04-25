@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/promise.h"
 #include "controller/command_handler.h"
 #include "core/global_command_context.h"
 
@@ -58,8 +57,8 @@ class MainWindowCommands : private MainWindowCommandsContext,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
-  promise<> ShowRenameWindowDialog();
-  promise<> RenameCurrentPage();
+  void ShowRenameWindowDialog();
+  void RenameCurrentPage();
 
   GlobalCommandContext command_context_;
 };

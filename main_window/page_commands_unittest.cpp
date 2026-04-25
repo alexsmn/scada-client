@@ -19,6 +19,8 @@
 
 #include <gmock/gmock.h>
 
+#include <chrono>
+
 using namespace testing;
 
 namespace {
@@ -70,12 +72,17 @@ class PageCommandsTest : public Test {
 
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
+  StrictMock<MockFunction<promise<std::u16string>(
+      DialogService& dialog_service,
+      std::u16string current_title)>>
+      rename_prompt_runner_;
 
   GlobalCommandContext command_context_{.main_window = main_window_,
                                       .dialog_service = dialog_service_};
 
   PageCommands page_commands_{
-      {executor_, commands_, profile_, main_window_manager_}};
+      {executor_, commands_, profile_, main_window_manager_,
+       rename_prompt_runner_.AsStdFunction()}};
 };
 
 TEST_F(PageCommandsTest, DeletePage) {
@@ -85,6 +92,47 @@ TEST_F(PageCommandsTest, DeletePage) {
   EXPECT_CALL(main_window_, DeleteCurrentPage());
 
   command->execute_handler(command_context_);
+}
+
+TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
+  Page page;
+  page.title = u"Old title";
+
+  auto* command = commands_.FindCommand(ID_PAGE_RENAME);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
+  EXPECT_CALL(rename_prompt_runner_,
+              Call(Ref(dialog_service_), std::u16string{u"Old title"}))
+      .WillOnce(Return(make_resolved_promise(std::u16string{u"New title"})));
+
+  promise<void> renamed;
+  EXPECT_CALL(main_window_, SetCurrentPageTitle(std::u16string_view{u"New title"}))
+      .WillOnce([&renamed](std::u16string_view) mutable { renamed.resolve(); });
+
+  command->execute_handler(command_context_);
+  Drain(executor_);
+
+  ASSERT_NE(renamed.wait_for(std::chrono::milliseconds{0}),
+            promise_wait_status::timeout);
+  EXPECT_NO_THROW(renamed.get());
+}
+
+TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
+  Page page;
+  page.title = u"Old title";
+
+  auto* command = commands_.FindCommand(ID_PAGE_RENAME);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
+  EXPECT_CALL(rename_prompt_runner_,
+              Call(Ref(dialog_service_), std::u16string{u"Old title"}))
+      .WillOnce(Return(make_rejected_promise<std::u16string>(std::exception{})));
+  EXPECT_CALL(main_window_, SetCurrentPageTitle(_)).Times(0);
+
+  command->execute_handler(command_context_);
+  Drain(executor_);
 }
 
 class PageMenuModelTest : public Test {

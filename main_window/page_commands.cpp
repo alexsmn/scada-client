@@ -1,6 +1,7 @@
 #include "main_window/page_commands.h"
 
 #include "aui/prompt_dialog.h"
+#include "base/awaitable.h"
 #include "base/awaitable_promise.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
@@ -15,13 +16,14 @@ namespace {
 
 Awaitable<void> RenameCurrentPageAsync(
     std::shared_ptr<Executor> executor,
-    const GlobalCommandContext& context) {
+    MainWindowInterface& main_window,
+    DialogService& dialog_service,
+    RenamePagePromptRunner prompt_runner,
+    std::u16string current_page_title) {
   auto title = co_await AwaitPromise(
       NetExecutorAdapter{executor},
-      RunPromptDialog(context.dialog_service, u"Имя:", u"Переименование",
-                      context.main_window.GetCurrentPage().title));
-  // TODO: Fix capture main_window.
-  context.main_window.SetCurrentPageTitle(title);
+      prompt_runner(dialog_service, std::move(current_page_title)));
+  main_window.SetCurrentPageTitle(title);
   co_return;
 }
 
@@ -29,6 +31,14 @@ Awaitable<void> RenameCurrentPageAsync(
 
 PageCommands::PageCommands(PageCommandsContext&& context)
     : PageCommandsContext{std::move(context)} {
+  if (!rename_prompt_runner_) {
+    rename_prompt_runner_ = [](DialogService& dialog_service,
+                               std::u16string current_title) {
+      return RunPromptDialog(dialog_service, u"Имя:", u"Переименование",
+                             current_title);
+    };
+  }
+
   global_commands_.AddCommand(
       {.command_id = ID_PAGE_NEW,
        .execute_handler = [this](const GlobalCommandContext& context) {
@@ -50,8 +60,14 @@ PageCommands::PageCommands(PageCommandsContext&& context)
        }});
 }
 
-promise<void> PageCommands::RenameCurrentPage(
-    const GlobalCommandContext& context) {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   RenameCurrentPageAsync(executor_, context));
+void PageCommands::RenameCurrentPage(const GlobalCommandContext& context) {
+  CoSpawn(executor_,
+          [executor = executor_, &main_window = context.main_window,
+           &dialog_service = context.dialog_service,
+           prompt_runner = rename_prompt_runner_,
+           current_page_title = context.main_window.GetCurrentPage().title] {
+            return RenameCurrentPageAsync(executor, main_window, dialog_service,
+                                          std::move(prompt_runner),
+                                          current_page_title);
+          });
 }
