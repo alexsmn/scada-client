@@ -8,14 +8,42 @@
 #include "controller/controller_delegate.h"
 #include "favorites/favourites.h"
 #include "favorites/favourites_tree_model.h"
-#include "web/web_util.h"
+#include "favorites/favourites_url.h"
 
 #if !defined(UI_WT)
-#include "components/web/web_component.h"
+#include "base/awaitable_promise.h"
+#include "net/net_executor_adapter.h"
 #endif
 
 namespace {
 const char16_t kAddUrl[] = u"Add Web Page";
+
+#if !defined(UI_WT)
+Awaitable<void> AddUrlAsync(std::shared_ptr<Executor> executor,
+                            DialogService& dialog_service,
+                            Favourites& favourites,
+                            aui::Tree& tree_view) {
+  auto url = co_await AwaitPromise(
+      NetExecutorAdapter{executor},
+      RunPromptDialog(dialog_service, Translate("URL:"), kAddUrl));
+
+  const auto* selected_node =
+      static_cast<const FavouritesNode*>(tree_view.GetSelectedNode());
+  if (AddUrlToFavourites(favourites, selected_node, url) ==
+      AddFavouriteUrlResult::Added) {
+    co_return;
+  }
+
+  co_await AwaitPromise(
+      NetExecutorAdapter{executor},
+      dialog_service.RunMessageBox(
+          Translate("A valid URL must start with \"http://\" or "
+                    "\"https://\"."),
+          kAddUrl, MessageBoxMode::Error));
+  throw std::exception{};
+}
+#endif
+
 }
 
 FavouritesView::FavouritesView(const ControllerContext& context,
@@ -89,29 +117,8 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 
 #if !defined(UI_WT)
 promise<> FavouritesView::AddUrl() {
-  return RunPromptDialog(dialog_service_, Translate("URL:"), kAddUrl)
-      .then([this](const std::u16string& url) {
-        if (!IsWebUrl(url)) {
-          return ToRejectedPromise(dialog_service_.RunMessageBox(
-              Translate("A valid URL must start with \"http://\" or "
-              "\"https://\"."),
-              kAddUrl, MessageBoxMode::Error));
-        }
-
-        const FavouritesNode* node =
-            static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
-        if (node && !node->AsFolderNode())
-          node = node->parent();
-
-        const Page& folder = node && node->AsFolderNode()
-                                 ? node->AsFolderNode()->folder()
-                                 : favourites_.GetOrAddFolder();
-
-        WindowDefinition win{kWebWindowInfo};
-        win.path = url;
-        favourites_.Add(win, folder);
-
-        return make_resolved_promise();
-      });
+  return ToPromise(NetExecutorAdapter{executor_},
+                   AddUrlAsync(executor_, dialog_service_, favourites_,
+                               *tree_view_));
 }
 #endif

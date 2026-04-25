@@ -373,6 +373,17 @@ SCADA services or local service doubles.
   `client/main_window/page_commands_unittest.cpp`; the OpenView tests now poll
   until promise readiness rather than draining forever through repeating
   `OpenedView` timers.
+- **favorites Add URL flow** migrated
+  (`client/favorites/favourites_view.cpp`,
+  `client/favorites/favourites_url.{h,cpp}`). `FavouritesView::AddUrl`
+  now awaits the prompt and invalid-URL error dialog in an executor-pinned
+  coroutine while keeping the public `promise<>` entry point. URL validation
+  and placement were split into `AddUrlToFavourites(...)` so the selected
+  folder/window/default-folder rules are covered without automating a modal
+  input dialog. Regression coverage:
+  `client/favorites/favourites_url_unittest.cpp` for invalid URLs, default
+  folder insertion, selected-folder insertion, and selected-window parent
+  insertion.
 
 ### Priority Order
 
@@ -386,13 +397,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/favorites/favourites_view.cpp::AddUrl` next. It still chains
-`RunPromptDialog(...).then(...)` and uses `ToRejectedPromise` for the invalid
-URL branch. Convert it to an executor-pinned coroutine helper, keep the public
-`promise<> AddUrl()` surface unchanged, thread an executor through the
-favorites view/module construction if needed, and add focused unit coverage for
-valid URL insertion, invalid URL error reporting, and selected-folder
-placement.
+Migrate `client/filesystem/file_synchronizer.cpp` next. It is the remaining
+filesystem promise chain after `FileManagerImpl` and filesystem commands moved
+to coroutine internals. Convert the synchronize/download sequence to an
+executor-pinned coroutine body, preserve its existing public promise contract
+and error behavior, and add focused unit coverage for successful sync,
+download failure propagation, and unchanged local-cache behavior.
 
 ### Work
 
