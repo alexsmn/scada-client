@@ -54,6 +54,10 @@ std::filesystem::path GetServerFixtureDir() {
   return std::filesystem::path{SCADA_E2E_SERVER_FIXTURE_DIR};
 }
 
+std::filesystem::path GetServerSettingsTemplatePath() {
+  return std::filesystem::path{SCADA_E2E_SERVER_SETTINGS_TEMPLATE};
+}
+
 int FindAvailablePort() {
   boost::asio::io_context io_context;
   boost::asio::ip::tcp::acceptor acceptor{
@@ -113,6 +117,7 @@ void ClientServerE2eTest::SetUp() {
   ASSERT_TRUE(std::filesystem::exists(GetServerExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetServerFixtureDir()));
+  ASSERT_TRUE(std::filesystem::exists(GetServerSettingsTemplatePath()));
 
   remote_port_ = FindAvailablePort();
   opcua_port_ = FindAvailablePort();
@@ -138,37 +143,27 @@ void ClientServerE2eTest::PrepareWorkspace() {
                         std::filesystem::copy_options::recursive |
                             std::filesystem::copy_options::overwrite_existing);
 
-  boost::json::object server_json{
-      {"configuration",
-       {{"driver", "SQLite"},
-        {"dir", (workspace_.path() / "Configuration").string()}}},
-      {"history",
-       {{"enabled", false}, {"dir", (workspace_.path() / "History").string()}}},
-      {"sessions",
-       boost::json::array{
-           "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port_)}},
-      {"opc", {{"client", {{"enabled", false}}}}},
-      {"opcua",
-       {{"enabled", true},
-        {"url", "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_)},
-        {"trace", "none"}}},
-      {"iec60870", {{"enabled", false}}},
-      {"iec61850", {{"enabled", false}}},
-      {"modbus", {{"enabled", false}}},
-      {"filesystem",
-       {{"enabled", true},
-        {"dir", (workspace_.path() / "FileSystem").string()}}},
-      {"vidicon", {{"enabled", false}}},
-      {"log", {{"dir", (workspace_.path() / "ServerLogs").string()}}}};
+  auto server_json_value =
+      boost::json::parse(ReadFileOrEmpty(GetServerSettingsTemplatePath()));
+  auto& server_json = server_json_value.as_object();
+  server_json["sessions"] = boost::json::array{
+      "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port_)};
+  auto& opcua = server_json["opcua"].is_object()
+                    ? server_json["opcua"].as_object()
+                    : server_json["opcua"].emplace_object();
+  opcua["enabled"] = true;
+  opcua["url"] = boost::json::array{
+      "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_)};
+  opcua["trace"] = "none";
   WriteTextFile(workspace_.path() / "server.json",
-                boost::json::serialize(server_json));
+                boost::json::serialize(server_json_value));
 
   status_file_ = workspace_.path() / "client-status.txt";
   object_view_values_file_ = workspace_.path() / "object-view-values.txt";
   object_tree_labels_file_ = workspace_.path() / "object-tree-labels.txt";
   operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
-  server_log_dir_ = workspace_.path() / "ServerLogs";
+  server_log_dir_ = workspace_.path() / "Logs";
   client_log_dir_ = workspace_.path() / "ClientLogs";
 }
 

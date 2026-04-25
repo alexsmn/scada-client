@@ -23,7 +23,8 @@ target_link_libraries(client_server_e2e_tests PRIVATE
 target_compile_definitions(client_server_e2e_tests PRIVATE
   SCADA_E2E_SERVER_EXE="$<TARGET_FILE:server>"
   SCADA_E2E_CLIENT_EXE="$<TARGET_FILE:client_qt>"
-  SCADA_E2E_SERVER_FIXTURE_DIR="${CMAKE_SOURCE_DIR}/server/data"
+  SCADA_E2E_SERVER_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/server-data"
+  SCADA_E2E_SERVER_SETTINGS_TEMPLATE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/server-settings.json"
 )
 
 add_dependencies(client_server_e2e_tests
