@@ -1,6 +1,10 @@
 client_module(aui)
 client_module_sources(aui PRIVATE models)
-client_module_link_libraries(aui PUBLIC scada_base)
+client_module_link_libraries(aui PUBLIC
+  scada_base
+  scada_core
+  transport
+)
 
 # QT
 
@@ -11,8 +15,6 @@ target_compile_features(aui_qt PUBLIC cxx_std_20)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 target_link_libraries(aui_qt PUBLIC
   Qt5::Widgets
-  scada_core
-  transport
 )
 
 if(WIN32)

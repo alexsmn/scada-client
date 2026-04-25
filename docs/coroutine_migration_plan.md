@@ -488,6 +488,15 @@ SCADA services or local service doubles.
   folded back onto the shared helper as well. `aui_qt` now links `transport`
   and `scada_core` for the awaitable helper surface. Regression coverage:
   `client/aui/qt/dialog_util_unittest.cpp`.
+- **resource error dialog handling** migrated
+  (`client/aui/resource_error.h`). `ShowResourceError(...)` now invokes
+  `DialogService::RunMessageBox(...)` synchronously as before, then awaits the
+  message-box promise in a coroutine and rethrows the original
+  `ResourceError`. `HandleResourceError(...)` awaits a source promise,
+  preserves success passthrough, routes failures through `ShowResourceError`,
+  and no longer uses `.then(...)` / `.except(...)`. `aui` now links
+  `transport` and `scada_core` because the public header exposes awaitable
+  adapters. Regression coverage: `client/aui/resource_error_unittest.cpp`.
 
 ### Priority Order
 
@@ -501,13 +510,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/aui/resource_error.h` next. It still uses `.then(...)` and
-`.except(...)` to route failed resource operations through
-`DialogService::RunMessageBox(...)`. Convert `HandleResourceError(...)` to a
-coroutine-backed `promise<T>` compatibility wrapper that awaits the source
-promise, displays the error dialog on failure, rethrows the original exception,
-and add tests covering success passthrough, dialog display on failure, and
-original exception propagation after the dialog is acknowledged.
+Migrate `client/export/csv/qt/csv_export_dialog.cpp` next. Its
+`ShowCsvExportDialog(...)` helper still uses `StartModalDialog(...).then(...)`
+to persist accepted CSV export parameters into the profile and return the
+selected params. Convert it to `StartMappedModalDialog(...)`, preserve the
+profile update before the dialog is deleted, and add focused Qt coverage for
+accepted parameter/profile propagation.
 
 ### Work
 
