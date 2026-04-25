@@ -79,6 +79,7 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
                                     scada::NodeAttributes attributes,
                                     scada::NodeProperties properties);
   Awaitable<void> OnCreateRecordCompleteAsync(scada::NodeId node_id);
+  Awaitable<void> PasteFromClipboardAsync();
 
   promise<> PasteFromClipboard();
 

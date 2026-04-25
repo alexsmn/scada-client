@@ -1,9 +1,12 @@
 #include "clipboard_util.h"
 
+#include "base/win/clipboard.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "services/task_manager_mock.h"
 #include "services/test/test_task_manager.h"
+
+#include <Windows.h>
 
 #include <gmock/gmock.h>
 
@@ -12,6 +15,22 @@
 using namespace testing;
 
 namespace {
+
+const UINT kNodeTreeFormat =
+    ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
+
+void ClearClipboard() {
+  Clipboard clipboard;
+  ASSERT_TRUE(clipboard.Open());
+  ASSERT_TRUE(::EmptyClipboard());
+}
+
+void SetNodeTreeClipboardData(std::string_view data) {
+  Clipboard clipboard;
+  ASSERT_TRUE(clipboard.Open());
+  ASSERT_TRUE(::EmptyClipboard());
+  ASSERT_TRUE(clipboard.SetData(kNodeTreeFormat, data.data(), data.size()));
+}
 
 void CompareRecursive(const scada::NodeState& a, const scada::NodeState& b) {
   EXPECT_EQ(a.type_definition_id, b.type_definition_id);
@@ -133,4 +152,22 @@ TEST(PasteNodesFromNodeStateRecursive,
   EXPECT_NO_THROW(
       PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state))
           .get());
+}
+
+TEST(PasteNodesFromClipboard, EmptyClipboardRejects) {
+  ClearClipboard();
+  StrictMock<MockTaskManager> task_manager;
+
+  EXPECT_THROW(
+      PasteNodesFromClipboard(task_manager, data_items::id::DataItems).get(),
+      std::runtime_error);
+}
+
+TEST(PasteNodesFromClipboard, InvalidClipboardPayloadRejects) {
+  SetNodeTreeClipboardData("not a serialized node tree");
+  StrictMock<MockTaskManager> task_manager;
+
+  EXPECT_THROW(
+      PasteNodesFromClipboard(task_manager, data_items::id::DataItems).get(),
+      std::runtime_error);
 }

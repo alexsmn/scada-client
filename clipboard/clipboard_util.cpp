@@ -15,6 +15,8 @@
 
 #include <Windows.h>
 
+#include <stdexcept>
+
 void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes);
 
 namespace {
@@ -77,6 +79,19 @@ Awaitable<void> PasteNodesFromNodeTreeAsync(
     co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
                                                    std::move(node_state));
   }
+}
+
+Awaitable<void> PasteNodesFromClipboardAsync(TaskManager& task_manager,
+                                             scada::NodeId new_parent_id,
+                                             std::string buffer) {
+  if (buffer.empty())
+    throw std::runtime_error{"Clipboard does not contain node data"};
+
+  protocol::NodeTree node_tree;
+  if (!node_tree.ParseFromString(buffer))
+    throw std::runtime_error{"Clipboard node data is invalid"};
+
+  co_await PasteNodesFromNodeTreeAsync(task_manager, new_parent_id, node_tree);
 }
 
 }  // namespace
@@ -153,15 +168,10 @@ promise<> PasteNodesFromNodeTree(TaskManager& task_manager,
 
 promise<> PasteNodesFromClipboard(TaskManager& task_manager,
                                   const scada::NodeId& new_parent_id) {
-  const auto buffer = ReadClipboard(kNodeTreeFormat);
-  if (buffer.empty())
-    return MakeRejectedPromise();
-
-  protocol::NodeTree node_tree;
-  if (!node_tree.ParseFromString(buffer))
-    return MakeRejectedPromise();
-
-  return PasteNodesFromNodeTree(task_manager, new_parent_id, node_tree);
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor, PasteNodesFromClipboardAsync(
+                                 task_manager, new_parent_id,
+                                 ReadClipboard(kNodeTreeFormat)));
 }
 
 NodeRef GetPasteParentNode(NodeService& node_service,

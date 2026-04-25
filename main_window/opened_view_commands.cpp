@@ -49,6 +49,8 @@
 #include <QMenu>
 #endif
 
+#include <stdexcept>
+
 namespace {
 
 std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
@@ -385,21 +387,27 @@ Awaitable<void> OpenedViewCommands::OnCreateRecordCompleteAsync(
   co_return;
 }
 
-promise<> OpenedViewCommands::PasteFromClipboard() {
+Awaitable<void> OpenedViewCommands::PasteFromClipboardAsync() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure))
-    return MakeRejectedPromise();
+    throw std::runtime_error{"Configure privilege is required to paste"};
 
   const auto* selection_model = controller_->GetSelectionModel();
   if (!selection_model)
-    return MakeRejectedPromise();
+    throw std::runtime_error{"Selection model is required to paste"};
 
   const auto& parent_node =
       GetPasteParentNode(node_service_, create_tree_, selection_model->node(),
                          controller_->GetRootNode());
   if (!parent_node)
-    return MakeRejectedPromise();
+    throw std::runtime_error{"No valid paste parent is available"};
 
-  return PasteNodesFromClipboard(task_manager_, parent_node.node_id());
+  co_await AwaitPromise(NetExecutorAdapter{executor_},
+                        PasteNodesFromClipboard(task_manager_,
+                                                parent_node.node_id()));
+}
+
+promise<> OpenedViewCommands::PasteFromClipboard() {
+  return ToPromise(NetExecutorAdapter{executor_}, PasteFromClipboardAsync());
 }
 
 void OpenedViewCommands::ExportToExcel() {

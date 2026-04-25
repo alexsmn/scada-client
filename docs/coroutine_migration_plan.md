@@ -539,6 +539,16 @@ SCADA services or local service doubles.
   before recursing. `client_clipboard` now links `transport` for coroutine
   awaitable headers. Regression coverage:
   `client/clipboard/clipboard_util_unittest.cpp`.
+- **clipboard/main-window paste validation** migrated
+  (`client/clipboard/clipboard_util.cpp`,
+  `client/main_window/opened_view_commands.{h,cpp}`). Clipboard payload
+  validation and opened-view paste guards no longer return immediate
+  `MakeRejectedPromise()` results. `PasteNodesFromClipboard(...)` now wraps the
+  clipboard read/parse path in a coroutine that throws for empty or malformed
+  node-tree payloads, and `OpenedViewCommands::PasteFromClipboard()` delegates
+  its privilege, selection-model, and paste-parent checks to an executor-pinned
+  coroutine before awaiting the clipboard paste promise. Regression coverage:
+  `client/clipboard/clipboard_util_unittest.cpp`.
 - **configuration tree drop task actions** migrated
   (`client/configuration/tree/configuration_tree_drop_handler.{h,cpp}`,
   `client/configuration/{objects,devices,nodes}`). Data-item creation,
@@ -662,10 +672,10 @@ SCADA services or local service doubles.
 
 Continue the production async-surface audit outside test-only helpers: review
 the remaining `MakeRejectedPromise` / `make_rejected_promise` compatibility
-sites in `client/clipboard`, `client/main_window`, `client/properties`, and the
-screenshot-generator capture helpers. Convert any real workflow surface to a
-coroutine body or document it as an intentional immediate-rejection boundary,
-then add focused success/failure or lifetime coverage.
+sites in `client/properties` and the screenshot-generator capture helpers.
+Convert any real workflow surface to a coroutine body or document it as an
+intentional immediate-rejection boundary, then add focused success/failure or
+lifetime coverage.
 
 ### Work
 
