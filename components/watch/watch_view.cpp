@@ -3,14 +3,31 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/table.h"
+#include "base/awaitable_promise.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
 #include "components/watch/watch_model.h"
 #include "components/watch/watch_model_builder.h"
 #include "controller/controller_delegate.h"
 #include "model/node_id_util.h"
+#include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
+
+namespace {
+
+Awaitable<void> SaveLogAsync(std::shared_ptr<Executor> executor,
+                             DialogService& dialog_service,
+                             std::shared_ptr<WatchModel> model,
+                             std::u16string name) {
+  auto path = co_await AwaitPromise(
+      NetExecutorAdapter{executor},
+      dialog_service.SelectSaveFile({Translate("Save As"), name}));
+  model->SaveLog(path);
+  co_return;
+}
+
+}  // namespace
 
 // WatchView
 
@@ -92,10 +109,8 @@ promise<> WatchView::SaveLog() {
                         time.wMonth, time.wDay, time.wHour,
                         time.wMinute, time.wSecond);
 
-  return dialog_service_.SelectSaveFile({Translate("Save As"), name})
-      .then([model = model_](const std::filesystem::path& path) {
-        model->SaveLog(path);
-      });
+  return ToPromise(NetExecutorAdapter{executor_},
+                   SaveLogAsync(executor_, dialog_service_, model_, name));
 }
 
 CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {

@@ -394,6 +394,16 @@ SCADA services or local service doubles.
   files skip the server read. `FileSynchronizerContext` now carries the client
   executor required by the coroutine body. Regression coverage:
   `client/filesystem/file_synchronizer_unittest.cpp`.
+- **components/watch save/export and history event source flows** migrated
+  (`client/components/watch/watch_view.cpp`,
+  `client/components/watch/watch_history_event_source.cpp`).
+  `WatchView::SaveLog` now awaits `SelectSaveFile` in an executor-pinned
+  coroutine before saving the model log, while keeping the public `promise<>`
+  command path. `WatchHistoryEventSource::Start` now spawns a coroutine that
+  awaits `read_event_history(...)`, checks `CancelationRef` after the await to
+  preserve stale-read suppression, and delivers events on the client executor.
+  Regression coverage:
+  `client/components/watch/watch_history_event_source_unittest.cpp`.
 
 ### Priority Order
 
@@ -407,13 +417,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the watch component promise chains next:
-`client/components/watch/watch_view.cpp` and
-`client/components/watch/watch_history_event_source.cpp`. Convert file-pick /
-model-update and history-read continuation paths to executor-pinned coroutine
-bodies, preserve the existing cancellation behavior, and add focused unit
-coverage for successful model update, cancellation/drop behavior, and history
-event delivery.
+Migrate `client/components/write/write_model.cpp` next. It still uses callback
+and promise continuation glue around write completion and post-write UI updates.
+Convert the write pipeline to executor-pinned coroutine bodies, preserve the
+existing weak/cancellation behavior, and add focused unit coverage for
+successful write completion, failed write reporting, and dropped update after
+model destruction or cancellation.
 
 ### Work
 
