@@ -3,11 +3,13 @@
 #include "aui/dialog_service.h"
 
 #include <boost/algorithm/string/replace.hpp>
+#include "base/awaitable_promise.h"
 #include "base/value_util.h"
 #include "base/win/win_util2.h"
 #include "export/csv/csv_export.h"
 #include "export/export_model.h"
 #include "main_window/opened_view.h"
+#include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 
 namespace {
@@ -24,9 +26,18 @@ class CsvExportCommandRun
       public std::enable_shared_from_this<CsvExportCommandRun> {
  public:
   explicit CsvExportCommandRun(CsvExportContext&& context)
-      : CsvExportContext{std::move(context)} {}
+      : CsvExportContext{std::move(context)} {
+    if (!show_csv_export_dialog)
+      show_csv_export_dialog = ShowCsvExportDialog;
+  }
 
   promise<void> Run() {
+    return ToPromise(NetExecutorAdapter{executor_},
+                     RunAsync(shared_from_this()));
+  }
+
+ private:
+  Awaitable<void> RunAsync(std::shared_ptr<CsvExportCommandRun> /*self*/) {
     const std::string_view kCsvExt[] = {"*.csv"};
     const DialogService::Filter kFilters[] = {
         {u"CSV Files", kCsvExt},
@@ -37,34 +48,32 @@ class CsvExportCommandRun
 
     auto csv_export_dir = GetString16(profile_.data(), "csvPath");
 
-    auto ref = shared_from_this();
+    path_ = co_await AwaitPromise(
+        NetExecutorAdapter{executor_},
+        dialog_service_.SelectSaveFile({.title = kExportTitle,
+                                        .default_path = csv_export_dir /
+                                                        file_name,
+                                        .filters = kFilters}));
+    SetKey(profile_.data(), "csvPath", path_.u16string());
 
-    return dialog_service_
-        .SelectSaveFile({.title = kExportTitle,
-                         .default_path = csv_export_dir / file_name,
-                         .filters = kFilters})
-        .then([this, ref](const std::filesystem::path& path) {
-          path_ = path;
-          SetKey(profile_.data(), "csvPath", path.u16string());
-        })
-        .then([this, ref] {
-          return ShowCsvExportDialog(dialog_service_, profile_);
-        })
-        .then(std::bind_front(&CsvExportCommandRun::Export, ref))
-        .then([this, ref] {
-          return dialog_service_.RunMessageBox(
-              u"Export completed. Open the file now?", kExportTitle,
-              MessageBoxMode::QuestionYesNo);
-        })
-        .then([this, ref](MessageBoxResult open_prompt_result) {
-          if (open_prompt_result == MessageBoxResult::Yes) {
-            win_util::OpenWithAssociatedProgram(path_);
-          }
-        });
+    auto params = co_await AwaitPromise(
+        NetExecutorAdapter{executor_},
+        show_csv_export_dialog(dialog_service_, profile_));
+    co_await ExportAsync(params);
+
+    auto open_prompt_result = co_await AwaitPromise(
+        NetExecutorAdapter{executor_},
+        dialog_service_.RunMessageBox(
+            u"Export completed. Open the file now?", kExportTitle,
+            MessageBoxMode::QuestionYesNo));
+    if (open_prompt_result == MessageBoxResult::Yes)
+      win_util::OpenWithAssociatedProgram(path_);
+
+    co_return;
   }
 
- private:
-  promise<void> Export(const CsvExportParams& params) {
+  Awaitable<void> ExportAsync(const CsvExportParams& params) {
+    std::exception_ptr export_exception;
     try {
       auto export_data = export_model_.GetExportData();
 
@@ -72,15 +81,18 @@ class CsvExportCommandRun
                  export_data);
 
     } catch (const std::runtime_error&) {
-      return dialog_service_
-          .RunMessageBox(u"Export failed.", kExportTitle,
-                         MessageBoxMode::Error)
-          .then([e = std::current_exception()](MessageBoxResult) {
-            return make_rejected_promise(e);
-          });
+      export_exception = std::current_exception();
     }
 
-    return make_resolved_promise();
+    if (export_exception) {
+      co_await AwaitPromise(NetExecutorAdapter{executor_},
+                            dialog_service_.RunMessageBox(
+                                u"Export failed.", kExportTitle,
+                                MessageBoxMode::Error));
+      std::rethrow_exception(export_exception);
+    }
+
+    co_return;
   }
 
   std::filesystem::path path_;

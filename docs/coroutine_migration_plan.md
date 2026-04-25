@@ -335,6 +335,17 @@ SCADA services or local service doubles.
   of building nested `make_all_promise(...).then(...)` lists, while preserving
   namespace filtering and the exported data shape. Regression coverage:
   `client/export/configuration/export_data_builder_unittest.cpp`.
+- **export/csv command flow** migrated
+  (`client/export/csv/csv_export_command.{h,cpp}`). `RunCsvExport(...)`
+  remains the public `promise<void>` compatibility entry point, but the save
+  prompt, CSV parameter dialog, file generation, failure dialog, completion
+  prompt, and optional associated-program launch now run as one
+  executor-pinned coroutine body. `CsvExportContext` gained an injectable
+  dialog runner so tests can cover the command flow without automating the
+  platform modal dialog. `client_export_csv` now links `transport` for
+  coroutine awaitable headers and its Qt/Wt unit tests link the matching AUI
+  target. Regression coverage:
+  `client/export/csv/csv_export_command_unittest.cpp`.
 - **ui/common `ExpandGroupItemIds` and main consumers** migrated
   (`client/ui/common/client_utils.{h,cpp}`,
   `client/main_window/window_definition_builder.{h,cpp}`,
@@ -440,13 +451,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/export/csv/csv_export_command.cpp` next. Its export workflow
-still runs as a linear `.then(...)` chain for save-file selection, export
-parameter dialog, CSV generation, completion prompt, and the associated-program
-launch. Convert `CsvExportCommandRun::Run` / `Export` into executor-pinned
-coroutine bodies, keep `RunCsvExport(...)` as the public `promise<void>`
-compatibility entry point, and add focused tests for successful export,
-export failure dialog/rejection, and canceled save/dialog behavior.
+Migrate `client/graph/metrix_data_source.cpp` next. Its horizontal-range
+update path still attaches a `cancelation_`-bound `.then(...)` continuation
+after the async read completes. Convert that update flow to an executor-pinned
+coroutine that awaits the read, preserves the existing cancellation/stale
+update behavior, and add focused tests for applying the fetched range and
+dropping completion after cancellation or replacement by a newer request.
 
 ### Work
 
