@@ -404,6 +404,15 @@ SCADA services or local service doubles.
   preserve stale-read suppression, and delivers events on the client executor.
   Regression coverage:
   `client/components/watch/watch_history_event_source_unittest.cpp`.
+- **components/write write pipeline** migrated
+  (`client/components/write/write_model.{h,cpp}`). Manual, two-stage select,
+  confirmation, final write, and error-dialog completion paths now use
+  executor-pinned coroutine bodies instead of `BindStatusCallback`,
+  `BindPromiseExecutor`, and weak-bound continuation glue. The coroutine
+  helpers preserve the old lifetime behavior by carrying only `weak_ptr`
+  references across service/dialog awaits, except for the error dialog path
+  where the existing copied completion handler behavior is retained.
+  Regression coverage: `client/components/write/write_model_unittest.cpp`.
 
 ### Priority Order
 
@@ -417,12 +426,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/components/write/write_model.cpp` next. It still uses callback
-and promise continuation glue around write completion and post-write UI updates.
-Convert the write pipeline to executor-pinned coroutine bodies, preserve the
-existing weak/cancellation behavior, and add focused unit coverage for
-successful write completion, failed write reporting, and dropped update after
-model destruction or cancellation.
+Migrate the login component promise chains next:
+`client/components/login/login_controller.cpp` and
+`client/components/login/qt/login_dialog.cpp`. Convert the connection, error
+reporting, profile loading, and dialog completion continuations to
+executor-pinned coroutine bodies while preserving the current completion-handler
+and weak-lifetime behavior. Add focused tests for successful login completion,
+connection failure reporting, and late completion after controller destruction.
 
 ### Work
 

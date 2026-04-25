@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aui/dialog_service.h"
+#include "base/awaitable.h"
 #include "components/write/write_dialog.h"
 #include "timed_data/timed_data_spec.h"
 
@@ -41,6 +43,20 @@ class WriteModel : private WriteContext,
 
   void StartWriting(bool second_stage);
   void StartWritingHelper();
+
+  static Awaitable<void> CompleteWriteAsync(std::shared_ptr<Executor> executor,
+                                            std::weak_ptr<WriteModel> model,
+                                            promise<void> operation);
+  static Awaitable<void> ConfirmAndStartWritingAsync(
+      std::shared_ptr<Executor> executor,
+      std::weak_ptr<WriteModel> model,
+      promise<MessageBoxResult> prompt);
+  static Awaitable<void> ReportWriteErrorAsync(
+      std::shared_ptr<Executor> executor,
+      std::function<void(bool ok)> completion_handler,
+      DialogService& dialog_service,
+      std::u16string message,
+      std::u16string title);
 
   std::u16string GetConfirmationMessage(bool second_stage) const;
 

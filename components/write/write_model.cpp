@@ -2,12 +2,15 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include "base/awaitable_promise.h"
 #include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "common/format.h"
 #include "common/formula_util.h"
 #include "model/data_items_node_ids.h"
+#include "net/net_executor_adapter.h"
 #include "profile/profile.h"
+#include "scada/status_exception.h"
 #include "scada/status_promise.h"
 
 namespace {
@@ -16,6 +19,17 @@ const wchar_t kDiscreteConfirmationQuestion[] =
 const wchar_t kAnalogConfirmationQuestion[] = L"Write value {} to {}?";
 const char16_t kSecondStagePrefix[] =
     u"The remote device is ready to execute the command.\n\n";
+
+Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
+                                      promise<void> operation) {
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                          std::move(operation));
+    co_return scada::StatusCode::Good;
+  } catch (...) {
+    co_return scada::GetExceptionStatus(std::current_exception());
+  }
+}
 }  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
@@ -92,23 +106,25 @@ void WriteModel::Write(double value, bool lock) {
   write_selecting_ = false;
 
   if (manual_) {
-    scada::BindStatusCallback(
-        spec_.scada_node().call(data_items::id::DataItemType_WriteManual,
-                                write_value_, lock),
-        BindExecutor(
-            executor_, weak_from_this(),
-            [this](const scada::Status& status) { OnWriteComplete(status); }));
+    CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
+                        operation = spec_.scada_node().call(
+                            data_items::id::DataItemType_WriteManual,
+                            write_value_, lock)]() mutable {
+      return CompleteWriteAsync(std::move(executor), std::move(model),
+                                std::move(operation));
+    });
 
   } else if (two_staged_) {
     write_selecting_ = true;
     scada::WriteFlags flags;
     flags.set_select();
-    scada::BindStatusCallback(
-        spec_.scada_node().write(scada::AttributeId::Value, write_value_,
-                                 flags),
-        BindExecutor(
-            executor_, weak_from_this(),
-            [this](const scada::Status& status) { OnWriteComplete(status); }));
+    CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
+                        operation = spec_.scada_node().write(
+                            scada::AttributeId::Value, write_value_,
+                            flags)]() mutable {
+      return CompleteWriteAsync(std::move(executor), std::move(model),
+                                std::move(operation));
+    });
 
   } else {
     StartWriting(false);
@@ -135,9 +151,15 @@ void WriteModel::OnWriteComplete(const scada::Status& status) {
     writing_ = true;
     auto title = GetWindowTitle();
     std::u16string message = ToString16(status) + u'.';
-    dialog_service_->RunMessageBox(message, title, MessageBoxMode::Error)
-        .then([completion_handler = completion_handler](
-                  MessageBoxResult result) { completion_handler(true); });
+    CoSpawn(executor_, [executor = executor_,
+                        completion_handler = completion_handler,
+                        dialog_service = dialog_service_, message,
+                        title]() mutable {
+      return ReportWriteErrorAsync(std::move(executor),
+                                   std::move(completion_handler),
+                                   *dialog_service, std::move(message),
+                                   std::move(title));
+    });
     return;
   }
 
@@ -170,19 +192,13 @@ void WriteModel::StartWriting(bool second_stage) {
   // Request confirmation from user.
   std::u16string title = spec_.GetTitle();
   auto message = GetConfirmationMessage(second_stage);
-  dialog_service_
-      ->RunMessageBox(message, title, MessageBoxMode::QuestionYesNoDefaultNo)
-      .then(BindPromiseExecutor(executor_, weak_from_this(),
-                                [this](MessageBoxResult message_box_result) {
-                                  if (message_box_result ==
-                                      MessageBoxResult::Yes) {
-                                    StartWritingHelper();
-                                  } else {
-                                    writing_ = false;
-                                    completion_handler(false);
-                                    return;
-                                  }
-                                }));
+  CoSpawn(executor_, [executor = executor_, model = weak_from_this(),
+                      prompt = dialog_service_->RunMessageBox(
+                          message, title,
+                          MessageBoxMode::QuestionYesNoDefaultNo)]() mutable {
+    return ConfirmAndStartWritingAsync(std::move(executor), std::move(model),
+                                       std::move(prompt));
+  });
 }
 
 void WriteModel::StartWritingHelper() {
@@ -190,9 +206,59 @@ void WriteModel::StartWritingHelper() {
   status_change_handler();
 
   // Execute actual write.
-  scada::BindStatusCallback(
-      spec_.scada_node().write(scada::AttributeId::Value, write_value_),
-      BindCancelation(weak_from_this(), [this](const scada::Status& status) {
-        OnWriteComplete(status);
-      }));
+  CoSpawn(executor_,
+          [executor = executor_, model = weak_from_this(),
+           operation = spec_.scada_node().write(scada::AttributeId::Value,
+                                                write_value_)]() mutable {
+            return CompleteWriteAsync(std::move(executor), std::move(model),
+                                      std::move(operation));
+          });
+}
+
+Awaitable<void> WriteModel::CompleteWriteAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<WriteModel> model,
+    promise<void> operation) {
+  auto status = co_await AwaitStatus(std::move(executor), std::move(operation));
+  if (auto model_ptr = model.lock()) {
+    model_ptr->OnWriteComplete(status);
+  }
+  co_return;
+}
+
+Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<WriteModel> model,
+    promise<MessageBoxResult> prompt) {
+  try {
+    auto message_box_result =
+        co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                              std::move(prompt));
+    if (auto model_ptr = model.lock()) {
+      if (message_box_result == MessageBoxResult::Yes) {
+        model_ptr->StartWritingHelper();
+      } else {
+        model_ptr->writing_ = false;
+        model_ptr->completion_handler(false);
+      }
+    }
+  } catch (...) {
+  }
+  co_return;
+}
+
+Awaitable<void> WriteModel::ReportWriteErrorAsync(
+    std::shared_ptr<Executor> executor,
+    std::function<void(bool ok)> completion_handler,
+    DialogService& dialog_service,
+    std::u16string message,
+    std::u16string title) {
+  try {
+    co_await AwaitPromise(
+        NetExecutorAdapter{std::move(executor)},
+        dialog_service.RunMessageBox(message, title, MessageBoxMode::Error));
+    completion_handler(true);
+  } catch (...) {
+  }
+  co_return;
 }

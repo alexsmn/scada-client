@@ -1,1 +1,8 @@
 client_component_module(client_component_write)
+
+target_link_libraries(client_component_write_qt_unittests PRIVATE
+  node_service
+)
+target_link_libraries(client_component_write_wt_unittests PRIVATE
+  node_service
+)
