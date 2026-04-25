@@ -41,6 +41,8 @@
 #include "graph/graph_component.h"
 #endif
 
+#include <exception>
+
 namespace {
 
 bool CanCreateSomething(const NodeRef& node) {
@@ -144,14 +146,11 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       Command{ID_OPEN_GROUP_TABLE}
           .set_execute_handler([this] {
             // TODO: Capture |main_window_| by weak pointer.
-            auto def_promise =
-                MakeGroupWindowDefinition(&kTableWindowInfo, selection_->node());
-            CoSpawn(executor_, [executor = executor_,
-                                main_window = main_window_,
-                                def_promise = std::move(def_promise)]() mutable
+            CoSpawn(executor_, [executor = executor_, main_window = main_window_,
+                                node = selection_->node()]() mutable
                                -> Awaitable<void> {
-              auto window_def = co_await AwaitPromise(
-                  NetExecutorAdapter{executor}, std::move(def_promise));
+              auto window_def = co_await MakeGroupWindowDefinitionAsync(
+                  NetExecutorAdapter{executor}, &kTableWindowInfo, node);
               if (window_def.has_value()) {
                 ::OpenView(main_window, *window_def);
               }
@@ -244,13 +243,12 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
   if (selection_ && !selection_->empty()) {
     // TODO: Capture |main_window_| by weak pointer.
-    auto def_promise = MakeWindowDefinition(window_info, selection_->node(),
-                                            /*include_default=*/true);
     CoSpawn(executor_, cancelation_,
-            [this, def_promise = std::move(def_promise)]() mutable
+            [this, window_info, node = selection_->node()]() mutable
             -> Awaitable<void> {
-              auto window_definition = co_await AwaitPromise(
-                  NetExecutorAdapter{executor_}, std::move(def_promise));
+              auto window_definition = co_await MakeWindowDefinitionAsync(
+                  NetExecutorAdapter{executor_}, window_info, node,
+                  /*expand_groups=*/true);
               OpenWindow(window_definition);
               co_return;
             });
@@ -283,6 +281,13 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
 promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
     int view_type_id,
     const NodeRef& node) {
+  return ToPromise(NetExecutorAdapter{executor_},
+                   OpenViewContainingNodeAsync(view_type_id, node));
+}
+
+Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
+    int view_type_id,
+    NodeRef node) {
   assert(main_window_);
   assert(dialog_service_);
 
@@ -292,30 +297,30 @@ promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
   if (cached_items.empty()) {
     auto msg = u16format(L"Display for item \"{}\" was not found.",
                          ToString16(node.display_name()));
-    return ToRejectedPromise<OpenedViewInterface*>(
-        dialog_service_->RunMessageBox(msg, Translate("Display"), MessageBoxMode::Info));
+    co_await AwaitPromise(NetExecutorAdapter{executor_},
+                          dialog_service_->RunMessageBox(
+                              msg, Translate("Display"), MessageBoxMode::Info));
+    throw std::exception{};
   }
 
   // TODO: Let user select scheme from list.
   const FileCache::DisplayItem& cached_item = cached_items.front();
   const std::filesystem::path& path = cached_item.first;
 
-  promise<OpenedViewInterface*> open_promise;
+  OpenedViewInterface* opened_view = nullptr;
 
   if (auto* view = main_window_manager_.FindOpenedViewByFilePath(path); view) {
     view->Activate();
-    open_promise = make_resolved_promise<OpenedViewInterface*>(view);
+    opened_view = view;
   } else {
     WindowDefinition win(GetWindowInfo(view_type_id));
     win.path = path;
-    open_promise = main_window_->OpenView(win);
+    opened_view = co_await AwaitPromise(NetExecutorAdapter{executor_},
+                                        main_window_->OpenView(win));
   }
 
-  return open_promise.then(
-      [node_id = node.node_id()](OpenedViewInterface* opened_view) {
-        opened_view->Select(node_id);
-        return opened_view;
-      });
+  opened_view->Select(node.node_id());
+  co_return opened_view;
 }
 
 void SelectionCommands::SetContext(MainWindowInterface* main_window,

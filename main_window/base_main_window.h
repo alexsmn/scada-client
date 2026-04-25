@@ -120,7 +120,6 @@ class BaseMainWindow : protected MainWindowContext,
   void SetActiveDataView(OpenedView* view);
 
   OpenedView* FindViewToRecycle(unsigned type);
-
   // ContentsObserver
   virtual void OnContentsChanged(
       const std::set<scada::NodeId>& item_ids) override;

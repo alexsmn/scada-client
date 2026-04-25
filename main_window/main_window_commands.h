@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/awaitable.h"
 #include "base/promise.h"
 #include "controller/command_handler.h"
 #include "core/global_command_context.h"
@@ -60,9 +59,7 @@ class MainWindowCommands : private MainWindowCommandsContext,
 
  private:
   promise<> ShowRenameWindowDialog();
-  Awaitable<void> ShowRenameWindowDialogAsync();
   promise<> RenameCurrentPage();
-  Awaitable<void> RenameCurrentPageAsync();
 
   GlobalCommandContext command_context_;
 };

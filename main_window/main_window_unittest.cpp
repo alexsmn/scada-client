@@ -32,6 +32,21 @@
 #include "base/debug_util.h"
 
 using namespace testing;
+using namespace std::chrono_literals;
+
+namespace {
+
+template <class T>
+T WaitMainWindowPromise(std::shared_ptr<TestExecutor> executor,
+                        promise<T> promise) {
+  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+    executor->Poll();
+  }
+
+  return promise.get();
+}
+
+}  // namespace
 
 class MainWindowTest : public Test {
  public:
@@ -176,7 +191,22 @@ TEST_F(MainWindowTest, OpenView_DownloadSucceeds_OpensViewNormally) {
 
   ExpectOpenView();
 
-  main_window_->OpenView(window_def, /*make_active=*/true).get();
+  WaitMainWindowPromise(
+      controller_env_.executor_,
+      main_window_->OpenView(window_def, /*make_active=*/true));
+}
+#endif
+
+// TODO: Generalize this test for all UIs.
+#if defined(UI_QT)
+TEST_F(MainWindowTest, OpenView_NoPathSkipsDownloadAndOpensView) {
+  auto window_def = WindowDefinition{ControllerEnvironment::kFakeWindowInfo};
+
+  ExpectOpenView();
+
+  WaitMainWindowPromise(
+      controller_env_.executor_,
+      main_window_->OpenView(window_def, /*make_active=*/true));
 }
 #endif
 
@@ -194,7 +224,9 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
 
   ExpectOpenView();
 
-  main_window_->OpenView(window_def, /*make_active=*/true).get();
+  WaitMainWindowPromise(
+      controller_env_.executor_,
+      main_window_->OpenView(window_def, /*make_active=*/true));
 }
 #endif
 

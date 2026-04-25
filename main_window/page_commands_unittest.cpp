@@ -74,7 +74,8 @@ class PageCommandsTest : public Test {
   GlobalCommandContext command_context_{.main_window = main_window_,
                                       .dialog_service = dialog_service_};
 
-  PageCommands page_commands_{{commands_, profile_, main_window_manager_}};
+  PageCommands page_commands_{
+      {executor_, commands_, profile_, main_window_manager_}};
 };
 
 TEST_F(PageCommandsTest, DeletePage) {

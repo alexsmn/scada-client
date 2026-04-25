@@ -91,8 +91,8 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
       executor_, node_event_provider_, local_events_, profile_,
       [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
 
-  singletons_.emplace(std::make_shared<PageCommands>(
-      PageCommandsContext{global_commands_, profile_, *main_window_manager_}));
+  singletons_.emplace(std::make_shared<PageCommands>(PageCommandsContext{
+      executor_, global_commands_, profile_, *main_window_manager_}));
 }
 
 MainWindowModule::~MainWindowModule() {}

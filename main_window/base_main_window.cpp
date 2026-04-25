@@ -1,8 +1,8 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
+#include "base/awaitable_promise.h"
 #include "base/boost_log.h"
-#include "base/promise_executor.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
 #include "controller/controller.h"
@@ -15,9 +15,35 @@
 #include "main_window/selection_commands.h"
 #include "main_window/tab_popup_menu.h"
 #include "main_window/view_manager.h"
+#include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 
 bool BaseMainWindow::g_hide_for_testing = false;
+
+namespace {
+
+Awaitable<OpenedViewInterface*> OpenViewAsync(
+    std::shared_ptr<Executor> executor,
+    FileManager& file_manager,
+    ViewManager& view_manager,
+    BaseMainWindow& main_window,
+    WindowDefinition window_def,
+    bool make_active) {
+  if (!window_def.path.empty()) {
+    co_await AwaitPromise(
+        NetExecutorAdapter{executor},
+        IgnoreResult(file_manager.DownloadFileFromServer(window_def.path)));
+  }
+
+  // TODO: Fix captured `main_window` and run under the local executor.
+  const auto* window_info = FindWindowInfoByName(window_def.type);
+  OpenedView* after_view = window_info && !window_info->is_pane()
+                               ? main_window.active_data_view()
+                               : nullptr;
+  co_return view_manager.OpenView(window_def, make_active, after_view);
+}
+
+}  // namespace
 
 BaseMainWindow::BaseMainWindow(MainWindowContext&& context,
                                DialogService& dialog_service)
@@ -166,20 +192,9 @@ OpenedView* BaseMainWindow::FindViewToRecycle(unsigned type) {
 promise<OpenedViewInterface*> BaseMainWindow::OpenView(
     const WindowDefinition& window_def,
     bool make_active) {
-  promise<void> download_promise =
-      window_def.path.empty()
-          ? make_resolved_promise()
-          : IgnoreResult(file_manager_.DownloadFileFromServer(window_def.path));
-
-  return download_promise
-      // TODO: Fix captured `this` and run under the local executor.
-      .then([this, window_def, make_active]() -> OpenedViewInterface* {
-        const auto* window_info = FindWindowInfoByName(window_def.type);
-        OpenedView* after_view = window_info && !window_info->is_pane()
-                                     ? active_data_view()
-                                     : nullptr;
-        return view_manager_->OpenView(window_def, make_active, after_view);
-      });
+  return ToPromise(NetExecutorAdapter{executor_},
+                   OpenViewAsync(executor_, file_manager_, *view_manager_,
+                                 *this, window_def, make_active));
 }
 
 void BaseMainWindow::OnViewClosed(OpenedView& view) {

@@ -20,6 +20,21 @@
 #include "base/debug_util.h"
 
 using namespace testing;
+using namespace std::chrono_literals;
+
+namespace {
+
+template <class T>
+T WaitMainWindowPromise(std::shared_ptr<TestExecutor> executor,
+                        promise<T> promise) {
+  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
+    executor->Poll();
+  }
+
+  return promise.get();
+}
+
+}  // namespace
 
 class MainWindowModuleTest : public Test {
  public:
@@ -133,7 +148,9 @@ TEST_F(MainWindowModuleTest, OpensViewWhenDownloadSucceeds) {
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);
 
-  EXPECT_THAT(main_window_->OpenView(window_def).get(), NotNull());
+  EXPECT_THAT(WaitMainWindowPromise(controller_env_.executor_,
+                                    main_window_->OpenView(window_def)),
+              NotNull());
 }
 
 TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
@@ -146,7 +163,9 @@ TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);
 
-  EXPECT_THAT(main_window_->OpenView(window_def).get(), NotNull());
+  EXPECT_THAT(WaitMainWindowPromise(controller_env_.executor_,
+                                    main_window_->OpenView(window_def)),
+              NotNull());
 }
 
 // When the current page is the last not opened, deletes the current page,

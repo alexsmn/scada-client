@@ -353,6 +353,26 @@ SCADA services or local service doubles.
   `BindPromiseExecutor(...)` continuations. The public command-handler surface
   stays unchanged, and regression coverage for the confirm/cancel page-revert
   paths lives in `client/main_window/page_commands_unittest.cpp`.
+- **remaining main_window promise wrappers** migrated
+  (`client/main_window/base_main_window.{h,cpp}`,
+  `client/main_window/page_commands.{h,cpp}`,
+  `client/main_window/selection_commands.{h,cpp}`,
+  `client/main_window/main_window_commands.{h,cpp}`,
+  `client/main_window/main_window_module.cpp`). `BaseMainWindow::OpenView`
+  now delegates to a coroutine body that awaits file download completion before
+  opening the view, while keeping `promise<OpenedViewInterface*>` as the
+  public compatibility surface. The selection-command open-group,
+  open-window, and "open containing node" flows now await the coroutine
+  window-definition builders and `MainWindowInterface::OpenView` directly.
+  `PageCommands::RenameCurrentPage` now runs through an executor-pinned
+  coroutine helper after normalizing `page_commands.cpp` to UTF-8. Main-window
+  rename helpers were kept file-local so coroutine headers do not leak
+  `transport` includes into unrelated targets. Regression coverage lives in
+  `client/main_window/main_window_unittest.cpp`,
+  `client/main_window/main_window_module_unittest.cpp`, and
+  `client/main_window/page_commands_unittest.cpp`; the OpenView tests now poll
+  until promise readiness rather than draining forever through repeating
+  `OpenedView` timers.
 
 ### Priority Order
 
@@ -366,12 +386,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Finish the remaining `client/main_window` promise chains in
-`page_commands.cpp`, `selection_commands.cpp`, and `base_main_window.cpp`.
-`page_commands.cpp` still contains legacy prompt chaining in a non-UTF-8 source
-file, so convert or normalize that file first, then migrate the prompt and
-open-window completion wrappers to executor-pinned coroutine bodies with focused
-tests for page-title updates and open-window completion behavior.
+Migrate `client/favorites/favourites_view.cpp::AddUrl` next. It still chains
+`RunPromptDialog(...).then(...)` and uses `ToRejectedPromise` for the invalid
+URL branch. Convert it to an executor-pinned coroutine helper, keep the public
+`promise<> AddUrl()` surface unchanged, thread an executor through the
+favorites view/module construction if needed, and add focused unit coverage for
+valid URL insertion, invalid URL error reporting, and selected-folder
+placement.
 
 ### Work
 
