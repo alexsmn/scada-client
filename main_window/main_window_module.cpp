@@ -64,6 +64,7 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
   configuration_commands->Register();
 
   selection_commands_.AddCommand(ChangePasswordCommandBuilder{
+      .executor_ = executor_,
       .local_events_ = local_events_,
       .profile_ = profile_,
       .session_service_ = *scada_services_.session_service}

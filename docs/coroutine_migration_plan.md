@@ -573,6 +573,17 @@ SCADA services or local service doubles.
   completions after hiding or removing a row are ignored. Empty proxy text is
   now explicitly represented as an empty string. Regression coverage:
   `client/configuration/objects/object_tree_model_unittest.cpp`.
+- **method command status reporting** migrated
+  (`client/main_window/configuration_commands.cpp` and
+  `client/components/change_password/change_password.cpp`). Device method
+  commands and user password changes now start executor-pinned coroutine bodies
+  that await the SCADA method-call promises and map success/failure back through
+  `ReportRequestResult(...)`, replacing the last direct
+  `scada::BindStatusCallback` production call sites. `ChangePasswordContext`
+  now carries the caller executor so the dialog command reports completion on
+  the UI executor. Regression coverage:
+  `client/main_window/configuration_commands_unittest.cpp` and
+  `client/components/change_password/change_password_unittest.cpp`.
 - **node property initial fetch/update** migrated
   (`client/components/node_properties/node_property_model.cpp`). The model
   constructor now starts an executor-pinned coroutine using
@@ -624,13 +635,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the remaining direct status-callback command paths:
-`ConfigurationCommands::CallMethod` in
-`client/main_window/configuration_commands.cpp` and `ChangePassword(...)` in
-`client/components/change_password/change_password.cpp`. Replace
-`scada::BindStatusCallback` with executor-pinned coroutine bodies that await
-the method-call promises, preserve `ReportRequestResult(...)` behavior, and add
-focused unit coverage for success/failure reporting and lifetime assumptions.
+Audit and close the remaining public `promise<>` compatibility boundaries in
+client UI helpers, starting with `client/ui/common/client_utils.{h,cpp}` and
+`client/favorites/favourites_view.{h,cpp}`. Confirm each boundary either
+delegates to a coroutine body or is an intentional platform stub, add focused
+coverage where missing, and update this plan with the final residual async
+surface before moving out of the client UI/helper layer.
 
 ### Work
 

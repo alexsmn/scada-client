@@ -1,5 +1,7 @@
 #include "configuration_commands.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
 #include "components/limits/limit_dialog.h"
@@ -13,8 +15,28 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "scada/session_service.h"
-#include "scada/status_promise.h"
+#include "scada/status_exception.h"
 #include "services/task_manager.h"
+
+namespace {
+
+Awaitable<void> ReportMethodCallResultAsync(std::shared_ptr<Executor> executor,
+                                            promise<> call_promise,
+                                            std::u16string title,
+                                            LocalEvents& local_events,
+                                            const Profile& profile) {
+  scada::Status status = scada::StatusCode::Good;
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
+                          std::move(call_promise));
+  } catch (...) {
+    status = scada::GetExceptionStatus(std::current_exception());
+  }
+
+  ReportRequestResult(title, status, local_events, profile);
+}
+
+}  // namespace
 
 void ConfigurationCommands::Register() {
   selection_commands_.AddCommand(
@@ -131,12 +153,16 @@ void ConfigurationCommands::CallMethod(
     const NodeRef& node,
     const scada::NodeId& method_id,
     const std::vector<scada::Variant>& arguments) {
-  scada::BindStatusCallback(node.scada_node().call_packed(method_id, arguments),
-                            [node, this](const scada::Status& status) {
-                              auto title = ToString16(node.display_name());
-                              ReportRequestResult(title, status, local_events_,
-                                                  profile_);
-                            });
+  auto call_promise = node.scada_node().call_packed(method_id, arguments);
+  CoSpawn(executor_,
+          [executor = executor_, call_promise = std::move(call_promise),
+           title = ToString16(node.display_name()),
+           &local_events = local_events_,
+           &profile = profile_]() mutable -> Awaitable<void> {
+            co_await ReportMethodCallResultAsync(
+                std::move(executor), std::move(call_promise), std::move(title),
+                local_events, profile);
+          });
 }
 
 void ConfigurationCommands::RegisterEnableDeviceCommand(unsigned command_id,

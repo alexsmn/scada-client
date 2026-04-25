@@ -11,12 +11,13 @@ BasicCommand<SelectionCommandContext> ChangePasswordCommandBuilder::Build() {
   return {
       .command_id = ID_CHANGE_PASSWORD,
       .execute_handler =
-          [&local_events = local_events_,
+          [executor = executor_,
+           &local_events = local_events_,
            &profile = profile_](const SelectionCommandContext& context) {
             ShowChangePasswordDialog(
                 context.dialog_service,
-                ChangePasswordContext{context.selection.node(), local_events,
-                                      profile});
+                ChangePasswordContext{context.selection.node(), executor,
+                                      local_events, profile});
           },
       .available_handler =
           [&session_service =
