@@ -322,6 +322,15 @@ SCADA services or local service doubles.
   headers, matching the existing coroutine-enabled client modules.
   Regression coverage:
   `client/export/configuration/export_configuration_module_unittest.cpp`.
+- **export/configuration export data builder** migrated
+  (`client/export/configuration/export_data_builder.{h,cpp}`).
+  `ExportDataBuilder::Build()` is now a thin promise compatibility wrapper over
+  value-owned coroutine helpers, so inline temporary builders used by command
+  code cannot outlive their coroutine frames. The recursive node hierarchy
+  export now awaits each `FetchNode(...)` through the caller's executor instead
+  of building nested `make_all_promise(...).then(...)` lists, while preserving
+  namespace filtering and the exported data shape. Regression coverage:
+  `client/export/configuration/export_data_builder_unittest.cpp`.
 
 ### Priority Order
 
@@ -335,12 +344,14 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/export/configuration/export_data_builder.{h,cpp}`. Convert the
-remaining nested `FetchNode(...).then(...)`, `FetchChildren(...).then(...)`,
-and `ExpandGroupItemIds(...).then(...)` hierarchy collection steps into
-executor-pinned coroutine helpers, then keep `ExportDataBuilder::Build()` as a
-thin `promise<ExportData>` compatibility wrapper for the command layer and
-existing tests.
+Migrate `client/ui/common/client_utils.{h,cpp}` and its
+`ExpandGroupItemIds(...)` consumers. Add an executor-pinned
+`ExpandGroupItemIdsAsync(...)` coroutine helper, keep the current
+`promise<NodeIdSet>` wrapper for legacy call sites, then update
+`client/main_window/window_definition_builder.cpp`,
+`client/main_window/main_window_util.cpp`, and
+`client/components/summary/summary_model.cpp` to call the coroutine helper from
+their existing executor-owned coroutine bodies where available.
 
 ### Work
 

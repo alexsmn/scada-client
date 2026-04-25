@@ -1,6 +1,8 @@
 ﻿#include "export/configuration/export_data_builder.h"
 
 #include "address_space/test/test_scada_node_states.h"
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/static/static_node_service.h"
 
@@ -56,12 +58,13 @@ TEST(ExportDataBuilder, Test) {
   StaticNodeService node_service;
   node_service.AddAll(GetScadaNodeStates());
   node_service.AddAll(nodes);
+  auto executor = std::make_shared<TestExecutor>();
 
-  ExportDataBuilder builder{node_service};
+  ExportDataBuilder builder{node_service, executor};
 
   // ACT
 
-  auto export_data = builder.Build().get();
+  auto export_data = WaitPromise(executor, builder.Build());
 
   // CHECK
 
@@ -112,4 +115,28 @@ TEST(ExportDataBuilder, Test) {
                   /*reference=*/false)));
 
   // TODO: Validate a reference.
+}
+
+TEST(ExportDataBuilder, BuildUsesExecutorPinnedCoroutine) {
+  StaticNodeService node_service;
+  node_service.AddAll(GetScadaNodeStates());
+  node_service.Add(MakeNodeState(
+      /*node_id=*/{11, NamespaceIndexes::TIT},
+      /*type_definition_id=*/data_items::id::AnalogItemType,
+      /*display_name=*/u"ТИТ 11",
+      /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "#####"}}));
+
+  auto executor = std::make_shared<TestExecutor>();
+  ExportDataBuilder builder{node_service, executor};
+
+  auto export_data_promise = builder.Build();
+  EXPECT_EQ(export_data_promise.wait_for(std::chrono::milliseconds{0}),
+            promise_wait_status::timeout);
+
+  auto export_data = WaitPromise(executor, std::move(export_data_promise));
+
+  EXPECT_THAT(
+      export_data.nodes,
+      ElementsAre(Field(&ExportData::Node::node_id,
+                       scada::NodeId{11, NamespaceIndexes::TIT})));
 }

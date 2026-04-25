@@ -32,7 +32,7 @@ const char kDefaultFileName[] = "configuration.csv";
 }  // namespace
 
 promise<ExportData> ExportConfigurationCommand::CollectExportData() const {
-  return ExportDataBuilder{node_service_}.Build();
+  return ExportDataBuilder{node_service_, executor_}.Build();
 }
 
 void ExportConfigurationCommand::SaveExportData(const ExportData& export_data,
@@ -110,7 +110,8 @@ Awaitable<void> ImportConfigurationCommand::ImportFromAsync(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
   auto old_export_data = co_await AwaitPromise(
-      MakeAnyExecutor(executor_), ExportDataBuilder{node_service_}.Build());
+      MakeAnyExecutor(executor_),
+      ExportDataBuilder{node_service_, executor_}.Build());
   ExportData new_export_data = LoadExportData(path);
   DiffData diff = BuildDiffData(old_export_data, new_export_data);
   if (diff.IsEmpty()) {

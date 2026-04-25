@@ -1,6 +1,7 @@
 #include "export/configuration/export_data_builder.h"
 
-#include "base/range_util.h"
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "export/configuration/export_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
@@ -8,7 +9,7 @@
 #include "node_service/node_service.h"
 
 #include <algorithm>
-#include <boost/range/combine.hpp>
+#include <stdexcept>
 
 namespace {
 
@@ -49,32 +50,37 @@ ExportData::Node MakeExportNode(
       .property_values = std::move(prop_values)};
 }
 
-promise<std::vector<ExportData::Node>> CollectNodeHierarchy(
+Awaitable<std::vector<ExportData::Node>> CollectNodeHierarchyAsync(
+    AnyExecutor executor,
     const NodeRef& parent_node,
     const std::vector<ExportData::Property>& props) {
-  std::vector<promise<ExportData::Node>> node_promises;
-  std::vector<promise<std::vector<ExportData::Node>>> node_list_promises;
+  std::vector<ExportData::Node> nodes;
 
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    node_promises.emplace_back(FetchNode(node).then(
-        [node, &props] { return MakeExportNode(node, props); }));
-    node_list_promises.emplace_back(CollectNodeHierarchy(node, props));
+    co_await AwaitPromise(executor, FetchNode(node));
+    nodes.emplace_back(MakeExportNode(node, props));
+
+    auto child_nodes =
+        co_await CollectNodeHierarchyAsync(executor, node, props);
+    nodes.insert(nodes.end(), std::make_move_iterator(child_nodes.begin()),
+                 std::make_move_iterator(child_nodes.end()));
   }
 
-  node_list_promises.emplace_back(make_all_promise(std::move(node_promises)));
+  std::erase_if(nodes, [](const ExportData::Node& node) {
+    return std::ranges::find(kExportedNamespaceIndexes,
+                             node.node_id.namespace_index()) ==
+           std::end(kExportedNamespaceIndexes);
+  });
+  co_return nodes;
+}
 
-  return make_all_promise(std::move(node_list_promises))
-      .then(
-          // Cannot use `&Join` because it cannot pick the proper overload.
-          [](const std::vector<std::vector<ExportData::Node>>& node_list_list) {
-            std::vector<ExportData::Node> nodes = Join(node_list_list);
-            std::erase_if(nodes, [](const ExportData::Node& node) {
-              return std::ranges::find(kExportedNamespaceIndexes,
-                                       node.node_id.namespace_index()) ==
-                     std::end(kExportedNamespaceIndexes);
-            });
-            return nodes;
-          });
+Awaitable<ExportData> BuildExportDataAsync(
+    AnyExecutor executor,
+    NodeRef root_node,
+    std::vector<ExportData::Property> props) {
+  co_await AwaitPromise(executor, FetchNode(root_node));
+  auto nodes = co_await CollectNodeHierarchyAsync(executor, root_node, props);
+  co_return ExportData{std::move(props), std::move(nodes)};
 }
 
 ExportData::Property MakeExportProperty(const NodeRef& node) {
@@ -107,14 +113,23 @@ void CollectProperties(const NodeRef& type,
 }  // namespace
 
 promise<ExportData> ExportDataBuilder::Build() const {
-  auto props = CollectProps();
-  auto root_node = node_service_.GetNode(data_items::id::DataItems);
-  return FetchNode(root_node)
-      .then(std::bind_front(&CollectNodeHierarchy, root_node, props))
-      .then([props](const std::vector<ExportData::Node>& nodes) {
-        // TODO: Avoid copying nodes.
-        return ExportData{props, nodes};
-      });
+  if (!executor_) {
+    return make_rejected_promise<ExportData>(
+        std::logic_error{"ExportDataBuilder executor is not configured"});
+  }
+
+  return ToPromise(
+      MakeAnyExecutor(executor_),
+      BuildExportDataAsync(MakeAnyExecutor(executor_),
+                           node_service_.GetNode(data_items::id::DataItems),
+                           CollectProps()));
+}
+
+Awaitable<ExportData> ExportDataBuilder::BuildAsync(
+    AnyExecutor executor) const {
+  return BuildExportDataAsync(std::move(executor),
+                              node_service_.GetNode(data_items::id::DataItems),
+                              CollectProps());
 }
 
 std::vector<ExportData::Property> ExportDataBuilder::CollectProps() const {
