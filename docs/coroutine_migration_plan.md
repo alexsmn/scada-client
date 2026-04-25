@@ -469,6 +469,14 @@ SCADA services or local service doubles.
   `node_deleted` behavior without a `.then(...)` continuation. Regression
   coverage:
   `client/components/node_properties/node_property_model_unittest.cpp`.
+- **Qt time range dialog result completion** migrated
+  (`client/components/time_range/qt/time_range_dialog.cpp`).
+  `ShowTimeRangeDialog(...)` now returns a coroutine-backed
+  `promise<TimeRange>` that runs on a `MessageLoopQt` executor, waits for the
+  modal dialog result, captures the selected range before scheduling
+  `deleteLater()`, and propagates rejection for canceled dialogs without a
+  `.then(...)` continuation. Regression coverage:
+  `client/components/time_range/qt/time_range_dialog_unittest.cpp`.
 
 ### Priority Order
 
@@ -482,13 +490,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/components/time_range/qt/time_range_dialog.cpp` next.
-`ShowTimeRangeDialog(...)` is now the only remaining `.then(...)` occurrence in
-`client/components`, wrapping `StartModalDialog(...)` before returning the
-selected `TimeRange`. Convert it to a coroutine-backed `promise<TimeRange>`
-compatibility wrapper, preserve dialog ownership/deletion behavior from
-`StartModalDialog`, and add a focused Qt unit test or existing-dialog test
-coverage for accepted dialog result propagation.
+Migrate the remaining Qt dialog helpers in `client/aui/qt/` next:
+`prompt_dialog.cpp` and `dialog_service_impl_qt.cpp` still use
+`StartModalDialog(...).then(...)` to map accepted dialogs to return values.
+Introduce or reuse a coroutine-backed modal-dialog result helper that preserves
+accepted/rejected ownership and `deleteLater()` behavior, convert prompt/open
+file/save file flows together, and add focused Qt unit coverage for accepted
+result propagation and rejected dialog cancellation where practical.
 
 ### Work
 
