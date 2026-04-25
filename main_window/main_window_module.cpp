@@ -111,7 +111,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                                    DialogService& dialog_service) {
     assert(scada_services_.session_service);
     return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
-        main_window, task_manager_, dialog_service,
+        executor_, main_window, task_manager_, dialog_service,
         *scada_services_.session_service, node_event_provider_, node_service_,
         local_events_, favourites_, speech_service_, profile_,
         *main_window_manager_, login_handler, global_commands_});

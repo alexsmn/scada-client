@@ -3,6 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
+#include "base/awaitable_promise.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
 #include "ui/common/client_utils.h"
@@ -17,6 +18,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "main_window/opened_view_commands.h"
+#include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
 #include "services/speech_service.h"
@@ -24,6 +26,7 @@
 #include <Windows.h>
 #include <shellapi.h>
 #include <filesystem>
+#include <stdexcept>
 
 #include <atlres.h>
 #include <shellapi.h>
@@ -81,21 +84,25 @@ void SetLocaleName(std::string_view locale_name) {
   settings.setValue("LocaleName", QString::fromStdString(std::string(locale_name)));
 }
 
-void ApplyLanguageSelection(const GlobalCommandContext& context,
+void ApplyLanguageSelection(const std::shared_ptr<Executor>& executor,
+                            const GlobalCommandContext& context,
                             std::string_view locale_name) {
   SetLocaleName(locale_name);
-  context.dialog_service
-      .RunMessageBox(
-          Translate("Restart the application to apply the new language now?"),
-          Translate("Language"), MessageBoxMode::QuestionYesNo)
-      .then([](MessageBoxResult result) {
-        if (result == MessageBoxResult::Yes) {
-          QApplication::quit();
-        }
-      });
+  CoSpawn(executor, [executor, &context]() -> Awaitable<void> {
+    auto result = co_await AwaitPromise(
+        NetExecutorAdapter{executor},
+        context.dialog_service.RunMessageBox(
+            Translate("Restart the application to apply the new language now?"),
+            Translate("Language"), MessageBoxMode::QuestionYesNo));
+    if (result == MessageBoxResult::Yes) {
+      QApplication::quit();
+    }
+    co_return;
+  });
 }
 
 BasicCommand<GlobalCommandContext> MakeLanguageCommand(
+    std::shared_ptr<Executor> executor,
     unsigned command_id,
     std::u16string_view title,
     std::string_view locale_name,
@@ -105,8 +112,9 @@ BasicCommand<GlobalCommandContext> MakeLanguageCommand(
       .title = std::u16string{title},
       .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
       .execute_handler =
-          [locale_name](const GlobalCommandContext& context) {
-            ApplyLanguageSelection(context, locale_name);
+          [executor = std::move(executor),
+           locale_name](const GlobalCommandContext& context) {
+            ApplyLanguageSelection(executor, context, locale_name);
           },
       .checked_handler = [is_russian](const GlobalCommandContext&) {
         return IsRussianLocale(GetSelectedLocaleName()) == is_russian;
@@ -177,9 +185,10 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
        }});
 
   global_commands_.AddCommand(MakeLanguageCommand(
-      ID_LANGUAGE_ENGLISH, Translate("English"), "en", /*is_russian=*/false));
+      executor_, ID_LANGUAGE_ENGLISH, Translate("English"), "en",
+      /*is_russian=*/false));
   global_commands_.AddCommand(MakeLanguageCommand(
-      ID_LANGUAGE_RUSSIAN, Translate("Russian"), "ru_RU",
+      executor_, ID_LANGUAGE_RUSSIAN, Translate("Russian"), "ru_RU",
       /*is_russian=*/true));
 #endif
 
@@ -398,24 +407,36 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
 }
 
 promise<> MainWindowCommands::RenameCurrentPage() {
+  return ToPromise(NetExecutorAdapter{executor_}, RenameCurrentPageAsync());
+}
+
+Awaitable<void> MainWindowCommands::RenameCurrentPageAsync() {
   const std::u16string& current_page_title =
       main_window_.GetCurrentPage().title;
 
-  return RunPromptDialog(dialog_service_, Translate("Name:"), Translate("Rename"),
-                         current_page_title)
-      .then([this](const std::u16string& title) {
-        main_window_.SetCurrentPageTitle(title);
-      });
+  auto title = co_await AwaitPromise(
+      NetExecutorAdapter{executor_},
+      RunPromptDialog(dialog_service_, Translate("Name:"), Translate("Rename"),
+                      current_page_title));
+  main_window_.SetCurrentPageTitle(title);
+  co_return;
 }
 
 promise<> MainWindowCommands::ShowRenameWindowDialog() {
+  return ToPromise(NetExecutorAdapter{executor_}, ShowRenameWindowDialogAsync());
+}
+
+Awaitable<void> MainWindowCommands::ShowRenameWindowDialogAsync() {
   auto* view = main_window_.GetActiveView();
   if (!view || view->GetWindowInfo().is_pane()) {
-    return MakeRejectedPromise();
+    throw std::runtime_error{"No active renameable view"};
   }
 
-  return RunPromptDialog(dialog_service_, Translate("Name:"), Translate("Rename"),
-                         view->GetWindowTitle())
-      // TODO: Capture weak pointer.
-      .then(std::bind_front(&OpenedViewInterface::SetWindowTitle, view));
+  auto title = co_await AwaitPromise(
+      NetExecutorAdapter{executor_},
+      RunPromptDialog(dialog_service_, Translate("Name:"), Translate("Rename"),
+                      view->GetWindowTitle()));
+  // TODO: Capture weak pointer.
+  view->SetWindowTitle(title);
+  co_return;
 }

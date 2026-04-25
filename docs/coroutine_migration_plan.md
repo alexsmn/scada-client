@@ -344,6 +344,15 @@ SCADA services or local service doubles.
   expand through the same coroutine helper. Regression coverage:
   `client/main_window/window_definition_builder_unittest.cpp` and
   `client/components/summary/summary_model_unittest.cpp`.
+- **main_window command confirmation / rename flows** partially migrated
+  (`client/main_window/main_menu_model.cpp`,
+  `client/main_window/main_window_commands.{h,cpp}`,
+  `client/main_window/main_window_module.cpp`). Page revert confirmation,
+  language-restart confirmation, current-page rename, and active-window rename
+  now run as executor-pinned coroutine bodies instead of `.then(...)` /
+  `BindPromiseExecutor(...)` continuations. The public command-handler surface
+  stays unchanged, and regression coverage for the confirm/cancel page-revert
+  paths lives in `client/main_window/page_commands_unittest.cpp`.
 
 ### Priority Order
 
@@ -357,12 +366,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the remaining promise chains in `client/main_window` command helpers:
-`main_window_commands.cpp`, `main_menu_model.cpp`, `page_commands.cpp`, and the
-legacy promise wrappers in `selection_commands.cpp` / `base_main_window.cpp`.
-Prefer small coroutine bodies spawned on the existing main-window executor, and
-keep public command interfaces unchanged while adding focused command tests for
-title prompts, page-title updates, and open-window completion behavior.
+Finish the remaining `client/main_window` promise chains in
+`page_commands.cpp`, `selection_commands.cpp`, and `base_main_window.cpp`.
+`page_commands.cpp` still contains legacy prompt chaining in a non-UTF-8 source
+file, so convert or normalize that file first, then migrate the prompt and
+open-window completion wrappers to executor-pinned coroutine bodies with focused
+tests for page-title updates and open-window completion behavior.
 
 ### Work
 

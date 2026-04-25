@@ -2,8 +2,9 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/program_options.h"
-#include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
 #include "components/debugger/debug_switch.h"
@@ -20,6 +21,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
 #include "main_window/view_manager.h"
+#include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 
@@ -205,14 +207,17 @@ void PageMenuModel::OpenPage(const Page& page) {
   std::u16string title = current_page.GetTitle();
   std::u16string message =
       u16format(L"Return to saved page {}?", title);
-  dialog_service_.RunMessageBox(message, {}, MessageBoxMode::QuestionYesNo)
-      .then(BindPromiseExecutor(
-          executor_,
-          cancelation_.Bind(
-              [this, &page](MessageBoxResult message_box_result) {
-                if (message_box_result == MessageBoxResult::Yes)
-                  OpenPageHelper(page, true);
-              })));
+  CoSpawn(executor_, cancelation_,
+          [this, page_ptr = &page, message = std::move(message)]()
+              -> Awaitable<void> {
+            auto message_box_result = co_await AwaitPromise(
+                NetExecutorAdapter{executor_},
+                dialog_service_.RunMessageBox(
+                    message, {}, MessageBoxMode::QuestionYesNo));
+            if (message_box_result == MessageBoxResult::Yes)
+              OpenPageHelper(*page_ptr, true);
+            co_return;
+          });
 }
 
 void PageMenuModel::OpenPageHelper(const Page& page, bool revert) {
