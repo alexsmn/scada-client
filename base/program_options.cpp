@@ -45,7 +45,10 @@ void InitProgramOptions() {
        "E2E-only client log and dump directory")
       ("test-operator-use-cases-file",
        po::value<std::string>(),
-       "E2E-only operator use-case coverage report file");
+       "E2E-only operator use-case coverage report file")
+      ("test-object-view-values-file",
+       po::value<std::string>(),
+       "E2E-only object view values report file");
 
 #ifdef _WIN32
   int argc = 0;
