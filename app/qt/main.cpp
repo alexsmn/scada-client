@@ -4,6 +4,7 @@
 #include "app/qt/e2e_test_support.h"
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
+#include "app/qt/startup_flow.h"
 #include "aui/qt/message_loop_qt.h"
 #include "base/e2e_test_hooks.h"
 #include "base/boost_log.h"
@@ -124,40 +125,36 @@ int main(int argc, char* argv[]) {
           return ExecuteLoginDialog(executor, std::move(services_context));
         }}};
 
-    executor->PostTask([&app, executor] {
-      auto run_promise = app.Start()
-                             .then([&app, executor] {
-                               return client::RunE2eObjectViewValuesCheck(
-                                   app, executor);
-                             })
-                             .then([&app] {
-                               return client::RunE2eOperatorUseCaseSmoke(app);
-                             })
-                             .then([&app, executor] {
-                               BOOST_LOG_TRIVIAL(info)
-                                   << "Client startup completed; entering "
-                                      "steady-state run loop";
-                               client::ReportE2eStatusIfUnset("success");
-                               client::RunE2eObjectTreeLabelsCheck(app, executor)
-                                   .then([] {});
-                               client::RunE2eHardwareTreeDevicesCheck(app,
-                                                                       executor)
-                                   .then([] {});
-                               return app.Run();
-                             })
-                             .except([](std::exception_ptr exception) {
-                               LogStartupException(exception);
-                               client::ReportE2eStatusIfUnset("failure: startup");
-                             });
-
-      if (client::IsE2eTestMode()) {
-        run_promise.then([] {
-          BOOST_LOG_TRIVIAL(info)
-              << "E2E mode: application run loop completed";
-        });
-      } else {
-        run_promise.then(&QApplication::quit);
-      }
+    client::RunQtStartupFlow(client::QtStartupFlowContext{
+        .executor = executor,
+        .start = [&app] { return app.Start(); },
+        .run_object_view_values_check =
+            [&app, executor] {
+              return client::RunE2eObjectViewValuesCheck(app, executor);
+            },
+        .run_operator_use_case_smoke =
+            [&app] { return client::RunE2eOperatorUseCaseSmoke(app); },
+        .run_object_tree_labels_check =
+            [&app, executor] {
+              return client::RunE2eObjectTreeLabelsCheck(app, executor);
+            },
+        .run_hardware_tree_devices_check =
+            [&app, executor] {
+              return client::RunE2eHardwareTreeDevicesCheck(app, executor);
+            },
+        .run_application = [&app] { return app.Run(); },
+        .log_startup_exception = &LogStartupException,
+        .report_startup_success_if_unset =
+            [] { client::ReportE2eStatusIfUnset("success"); },
+        .report_startup_failure_if_unset =
+            [] { client::ReportE2eStatusIfUnset("failure: startup"); },
+        .on_e2e_run_completed =
+            [] {
+              BOOST_LOG_TRIVIAL(info)
+                  << "E2E mode: application run loop completed";
+            },
+        .quit_application = &QApplication::quit,
+        .e2e_test_mode = client::IsE2eTestMode(),
     });
 
     return QApplication::exec();

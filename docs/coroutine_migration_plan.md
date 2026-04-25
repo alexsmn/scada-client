@@ -127,6 +127,18 @@ to regression-test.
   In particular, do not combine a disconnect promise that already waits for a
   connect-loop shutdown signal with a second explicit wait on that same signal.
 
+### Status
+
+- **Qt application startup chain** migrated
+  (`client/app/qt/main.cpp`, `client/app/qt/startup_flow.{h,cpp}`). The
+  posted `app.Start().then(...).then(...).except(...)` tree is now a
+  coroutine-backed `RunQtStartupFlow(...)` helper that awaits startup, E2E
+  checks, steady-state `Run()`, and startup failure reporting in one linear
+  sequence. The helper preserves the public `promise<void>` boundary, reports
+  E2E success/failure through the existing hooks, logs E2E run completion in
+  E2E mode, and invokes `QApplication::quit` only for normal-mode completion.
+  Regression coverage: `client/app/qt/startup_flow_unittest.cpp`.
+
 ### Risks
 
 - Startup currently encodes ordering implicitly in promise chains; coroutine
@@ -521,15 +533,14 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the Qt application startup chain in `client/app/qt/main.cpp` next.
-The posted startup task still builds a nested
-`app.Start().then(...).then(...).except(...)` pipeline, then attaches separate
-completion continuations for E2E and normal modes. Convert that orchestration
-to a small executor-pinned coroutine that awaits startup, E2E checks, `Run()`,
-and failure reporting linearly, while preserving the current E2E success/failure
-status behavior and the non-E2E `QApplication::quit` completion path. Add or
-extend Qt application unit coverage for startup success, startup failure, and
-normal quit scheduling.
+Migrate the Qt E2E support helpers in
+`client/app/qt/e2e_test_support.cpp` next. `RunE2eOperatorUseCaseSmoke(...)`
+still builds a long `promise<> sequence = sequence.then(...)` chain, and
+`OpenOperatorWindow(...)` maps `MainWindow::OpenView(...)` through
+`.then(...)`. Convert the operator-use-case smoke runner to coroutine helpers
+that await each window open and check step in order, keep the public
+`promise<>` entry point, preserve report output, and add focused unit coverage
+for successful report generation and open-window failure recording.
 
 ### Work
 

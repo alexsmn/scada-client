@@ -26,6 +26,8 @@ add_library(client_qt_app_shared STATIC
   "../opcua_services_module.h"
   "../startup_exception.cpp"
   "../startup_exception.h"
+  "startup_flow.cpp"
+  "startup_flow.h"
 )
 target_precompile_headers(client_qt_app_shared REUSE_FROM scada_base)
 target_link_libraries(client_qt_app_shared PUBLIC
