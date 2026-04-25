@@ -2,8 +2,10 @@
 
 #include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_model.h"
+#include "services/device_state_notifier.h"
 
 #include <memory>
+#include <optional>
 
 class Executor;
 class NodeService;
@@ -22,6 +24,8 @@ class HardwareTreeModel : public ConfigurationTreeModel {
   virtual ~HardwareTreeModel();
 
   TimedDataService& timed_data_service() { return timed_data_service_; }
+  std::optional<DeviceState> GetDeviceStateForTesting(
+      void* tree_node) const;
 
  protected:
   // ConfigurationTreeModel

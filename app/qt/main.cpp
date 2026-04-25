@@ -140,6 +140,9 @@ int main(int argc, char* argv[]) {
                                client::ReportE2eStatusIfUnset("success");
                                client::RunE2eObjectTreeLabelsCheck(app, executor)
                                    .then([] {});
+                               client::RunE2eHardwareTreeDevicesCheck(app,
+                                                                       executor)
+                                   .then([] {});
                                return app.Run();
                              })
                              .except([](std::exception_ptr exception) {

@@ -1,17 +1,25 @@
 #include "app/qt/e2e_test_support.h"
 
 #include "app/client_application.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
+#include "base/callback_awaitable.h"
 #include "base/e2e_test_hooks.h"
 #include "base/executor_timer.h"
+#include "base/executor_util.h"
 #include "base/utf_convert.h"
+#include "configuration/devices/hardware_tree_view.h"
 #include "configuration/objects/object_tree_view.h"
 #include "controller/command_handler.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
+#include "model/namespaces.h"
+#include "model/node_id_util.h"
 #include "main_window/opened_view.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
+#include "timed_data/timed_data_spec.h"
 
 #include <algorithm>
 #include <chrono>
@@ -112,6 +120,34 @@ void WriteObjectTreeLabelsReport(const std::filesystem::path& path,
     output << "label[" << i << "]=" << UtfConvert<char>(labels[i]) << "\n";
 }
 
+void WriteHardwareTreeDevicesReport(
+    const std::filesystem::path& path,
+    bool ok,
+    const std::vector<HardwareTreeDeviceForTesting>& devices,
+    std::string_view detail) {
+  if (path.empty())
+    return;
+
+  std::error_code ec;
+  if (path.has_parent_path())
+    std::filesystem::create_directories(path.parent_path(), ec);
+
+  std::ofstream output{path, std::ios::binary | std::ios::trunc};
+  if (!output)
+    return;
+
+  output << "hardware-tree-devices: " << (ok ? "ok" : "failure") << "\n";
+  output << detail << "\n";
+  for (size_t i = 0; i < devices.size(); ++i) {
+    output << "device[" << i << "].protocol=" << devices[i].protocol << "\n";
+    output << "device[" << i << "].label="
+           << UtfConvert<char>(devices[i].label) << "\n";
+    output << "device[" << i << "].active="
+           << (devices[i].active ? "true" : "false") << "\n";
+    output << "device[" << i << "].state=" << devices[i].state << "\n";
+  }
+}
+
 MainWindow* GetFirstMainWindow(ClientApplication& app) {
   for (auto& main_window : app.main_window_manager().main_windows())
     return &main_window;
@@ -131,6 +167,30 @@ ObjectTreeView* FindObjectTreeView(ClientApplication& app) {
   }
 
   return nullptr;
+}
+
+HardwareTreeView* FindHardwareTreeView(ClientApplication& app) {
+  auto* main_window = GetFirstMainWindow(app);
+  if (!main_window)
+    return nullptr;
+
+  for (auto* opened_view : main_window->opened_views()) {
+    if (opened_view->GetWindowInfo().name != std::string_view{"Subsystems"})
+      continue;
+
+    return dynamic_cast<HardwareTreeView*>(&opened_view->controller());
+  }
+
+  return nullptr;
+}
+
+Awaitable<void> Delay(std::shared_ptr<Executor> executor,
+                      std::chrono::milliseconds delay) {
+  co_await CallbackToAwaitable<>(
+      executor, [executor, delay](auto done) mutable {
+        PostDelayedTask(NetExecutorAdapter{executor}, delay,
+                        [done = std::move(done)]() mutable { done(); });
+      });
 }
 
 class ObjectViewValuesCheck final
@@ -230,6 +290,96 @@ class ObjectTreeLabelsCheck final
   const std::filesystem::path report_path_;
   const std::chrono::steady_clock::time_point deadline_;
   promise<> promise_;
+};
+
+class HardwareTreeDevicesCheck final
+    : public std::enable_shared_from_this<HardwareTreeDevicesCheck> {
+ public:
+  HardwareTreeDevicesCheck(ClientApplication& app,
+                           std::shared_ptr<Executor> executor,
+                           std::filesystem::path report_path)
+      : app_{app},
+        executor_{std::move(executor)},
+        report_path_{std::move(report_path)},
+        deadline_{std::chrono::steady_clock::now() + 15s} {}
+
+  Awaitable<void> RunAsync() {
+    auto* main_window = GetFirstMainWindow(app_);
+    const auto* window_info = FindWindowInfoByName("Subsystems");
+    if (!main_window || !window_info) {
+      WriteHardwareTreeDevicesReport(report_path_, false, {},
+                                     "hardware tree window missing");
+      co_return;
+    }
+
+    auto* opened_view = co_await AwaitPromise(
+        NetExecutorAdapter{executor_},
+        main_window->OpenView(WindowDefinition{*window_info},
+                              /*activate=*/true));
+    if (!opened_view) {
+      WriteHardwareTreeDevicesReport(report_path_, false, {},
+                                     "hardware tree failed to open");
+      co_return;
+    }
+
+    StartProtocolActivity();
+    co_await PollAsync();
+  }
+
+ private:
+  static bool HasActiveDevice(
+      const std::vector<HardwareTreeDeviceForTesting>& devices,
+      std::string_view protocol) {
+    return std::ranges::any_of(devices, [&](const auto& device) {
+      return device.protocol == protocol && device.active;
+    });
+  }
+
+  static bool IsReady(
+      const std::vector<HardwareTreeDeviceForTesting>& devices) {
+    return HasActiveDevice(devices, "MODBUS") &&
+           HasActiveDevice(devices, "IEC60870") &&
+           HasActiveDevice(devices, "IEC61850");
+  }
+
+  void StartProtocolActivity() {
+    activation_specs_.clear();
+
+    activation_specs_.emplace_back(
+        app_.timed_data_service(),
+        MakeNestedNodeId(scada::NodeId{2, NamespaceIndexes::MODBUS_DEVICES},
+                         "BOOL:1"));
+    activation_specs_.emplace_back(
+        app_.timed_data_service(),
+        MakeNestedNodeId(scada::NodeId{2, NamespaceIndexes::IEC60870_DEVICE},
+                         "111"));
+  }
+
+  Awaitable<void> PollAsync() {
+    while (std::chrono::steady_clock::now() < deadline_) {
+      if (auto* hardware_tree_view = FindHardwareTreeView(app_)) {
+        auto devices = hardware_tree_view->GetExpandedDevicesForTesting();
+        if (IsReady(devices)) {
+          WriteHardwareTreeDevicesReport(report_path_, true, devices,
+                                         "expanded hardware tree devices");
+          co_return;
+        }
+      }
+      co_await Delay(executor_, 100ms);
+    }
+
+    std::vector<HardwareTreeDeviceForTesting> devices;
+    if (auto* hardware_tree_view = FindHardwareTreeView(app_))
+      devices = hardware_tree_view->GetExpandedDevicesForTesting();
+    WriteHardwareTreeDevicesReport(report_path_, false, devices,
+                                   "timed out waiting for online devices");
+  }
+
+  ClientApplication& app_;
+  std::shared_ptr<Executor> executor_;
+  const std::filesystem::path report_path_;
+  const std::chrono::steady_clock::time_point deadline_;
+  std::vector<TimedDataSpec> activation_specs_;
 };
 
 promise<> OpenOperatorWindow(
@@ -412,6 +562,27 @@ promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
   auto check = std::make_shared<ObjectTreeLabelsCheck>(
       app, std::move(executor), std::move(report_path));
   return check->Run();
+}
+
+promise<> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
+                                         std::shared_ptr<Executor> executor) {
+  auto report_path = GetE2eHardwareTreeDevicesReportPath();
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto promise_executor = executor;
+  auto check = std::make_shared<HardwareTreeDevicesCheck>(
+      app, std::move(executor), std::move(report_path));
+  promise<> result;
+  CoSpawn(promise_executor, [check, result]() mutable -> Awaitable<void> {
+    try {
+      co_await check->RunAsync();
+      result.resolve();
+    } catch (...) {
+      result.reject(std::current_exception());
+    }
+  });
+  return result;
 }
 
 }  // namespace client

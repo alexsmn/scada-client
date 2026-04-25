@@ -7,6 +7,17 @@
 #include "node_service/node_util.h"
 #include "services/device_state_notifier.h"
 
+namespace {
+
+bool IsHardwareDeviceNode(const NodeRef& node) {
+  return IsInstanceOf(node, devices::id::DeviceType) ||
+         IsInstanceOf(node, devices::id::ModbusDeviceType) ||
+         IsInstanceOf(node, devices::id::Iec60870DeviceType) ||
+         IsInstanceOf(node, devices::id::Iec61850DeviceType);
+}
+
+}  // namespace
+
 // HardwareTreeModel::DeviceTreeNode
 
 class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
@@ -21,6 +32,8 @@ class HardwareTreeModel::DeviceTreeNode : public ConfigurationTreeNode {
 
   // TreeNode
   virtual int GetIcon() const override;
+
+  std::optional<DeviceState> GetDeviceStateForTesting() const;
 
  private:
   void UpdateNotifier();
@@ -39,7 +52,7 @@ HardwareTreeModel::DeviceTreeNode::DeviceTreeNode(
 }
 
 int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
-  if (IsInstanceOf(node(), devices::id::DeviceType)) {
+  if (IsHardwareDeviceNode(node())) {
     auto device_state = device_state_notifier_
                             ? device_state_notifier_->device_state()
                             : DeviceState::Unknown;
@@ -59,6 +72,13 @@ int HardwareTreeModel::DeviceTreeNode::GetIcon() const {
   return ConfigurationTreeNode::GetIcon();
 }
 
+std::optional<DeviceState>
+HardwareTreeModel::DeviceTreeNode::GetDeviceStateForTesting() const {
+  if (!device_state_notifier_)
+    return std::nullopt;
+  return device_state_notifier_->device_state();
+}
+
 void HardwareTreeModel::DeviceTreeNode::OnModelChanged() {
   ConfigurationTreeNode::OnModelChanged();
   UpdateNotifier();
@@ -66,7 +86,7 @@ void HardwareTreeModel::DeviceTreeNode::OnModelChanged() {
 
 void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
   if (!device_state_notifier_ && node().fetched() &&
-      IsInstanceOf(node(), devices::id::DeviceType)) {
+      IsHardwareDeviceNode(node())) {
     auto& model = static_cast<HardwareTreeModel&>(this->model());
     device_state_notifier_ = std::make_unique<DeviceStateNotifier>(
         model.timed_data_service(), this->node(), [this] { Changed(); });
@@ -85,6 +105,12 @@ HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
                                     {scada::id::HasComponent, true}},
               .type_definition_ids_ =
                   {devices::id::DeviceType,
+                   devices::id::LinkType,
+                   devices::id::ModbusLinkType,
+                   devices::id::ModbusDeviceType,
+                   devices::id::Iec60870LinkType,
+                   devices::id::Iec60870DeviceType,
+                   devices::id::Iec61850DeviceType,
                    devices::id::Iec61850LogicalNodeType,
                    devices::id::Iec61850ConfigurableObjectType,
                    devices::id::Iec61850DataVariableType,
@@ -94,6 +120,14 @@ HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
       timed_data_service_{context.timed_data_service_} {}
 
 HardwareTreeModel::~HardwareTreeModel() {}
+
+std::optional<DeviceState> HardwareTreeModel::GetDeviceStateForTesting(
+    void* tree_node) const {
+  auto* device_tree_node = dynamic_cast<DeviceTreeNode*>(
+      static_cast<ConfigurationTreeNode*>(tree_node));
+  return device_tree_node ? device_tree_node->GetDeviceStateForTesting()
+                          : std::nullopt;
+}
 
 std::unique_ptr<ConfigurationTreeNode> HardwareTreeModel::CreateTreeNode(
     const scada::NodeId& reference_type_id,

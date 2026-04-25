@@ -1,10 +1,31 @@
 #include "test/e2e/client_server_e2e_test_support.h"
 
 #include <chrono>
+#include <sstream>
 #include <string>
+#include <string_view>
 
 namespace client::test {
 namespace {
+
+bool HasActiveHardwareTreeDevice(std::string_view report,
+                                 std::string_view protocol) {
+  std::istringstream stream{std::string{report}};
+  std::string line;
+  bool in_matching_device = false;
+  while (std::getline(stream, line)) {
+    if (line.starts_with("device[") &&
+        line.find(".protocol=") != std::string::npos) {
+      in_matching_device =
+          line.find(std::string{".protocol="} + std::string{protocol}) !=
+          std::string::npos;
+      continue;
+    }
+    if (in_matching_device && line.find(".active=true") != std::string::npos)
+      return true;
+  }
+  return false;
+}
 
 TEST_P(ClientServerE2eTest, Connect_Success) {
   WriteClientSettings(/*password=*/"");
@@ -100,6 +121,39 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
       "waiting for expanded object tree labels to remain available");
+}
+
+TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
+  WriteClientSettings(/*password=*/"");
+  StartServer();
+  StartClient(
+      {L"--test-hardware-tree-devices-file=" +
+       hardware_tree_devices_file_.wstring()});
+
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  ASSERT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
+  ASSERT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for startup: " << status;
+  ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
+
+  const auto report = WaitForHardwareTreeDevicesReport();
+  ASSERT_NE(report.find("hardware-tree-devices: ok"), std::string::npos)
+      << report;
+  for (std::string_view protocol : {"MODBUS", "IEC60870", "IEC61850"}) {
+    EXPECT_TRUE(HasActiveHardwareTreeDevice(report, protocol))
+        << "Hardware tree device for " << protocol
+        << " was not active in report:\n"
+        << report;
+  }
+
+  ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting for expanded hardware tree devices to remain available");
 }
 
 TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {

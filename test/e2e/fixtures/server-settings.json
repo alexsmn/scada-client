@@ -15,13 +15,13 @@
     "enabled": false
   },
   "iec60870": {
-    "enabled": false
+    "enabled": true
   },
   "modbus": {
-    "enabled": false
+    "enabled": true
   },
   "iec61850": {
-    "enabled": false
+    "enabled": true
   },
   "opc": {
     "enabled": false

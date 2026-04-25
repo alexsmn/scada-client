@@ -14,6 +14,8 @@
 
 namespace client::test {
 
+class Iec61850TestServer;
+
 enum class E2eProtocol {
   Remote,
   OpcUa,
@@ -42,6 +44,7 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   bool WaitForObjectTreeReady();
   std::string WaitForObjectViewValuesReport();
   std::string WaitForObjectTreeLabelsReport();
+  std::string WaitForHardwareTreeDevicesReport();
   std::string WaitForOperatorUseCasesReport();
 
   std::string DescribeProcessExit(const ChildProcess& process,
@@ -56,10 +59,13 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   std::unique_ptr<JobObject> job_;
   int remote_port_ = 0;
   int opcua_port_ = 0;
+  int iec61850_port_ = 0;
+  std::unique_ptr<Iec61850TestServer> iec61850_server_;
 
   std::filesystem::path status_file_;
   std::filesystem::path object_view_values_file_;
   std::filesystem::path object_tree_labels_file_;
+  std::filesystem::path hardware_tree_devices_file_;
   std::filesystem::path operator_use_cases_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;

@@ -1,5 +1,7 @@
 #include "test/e2e/client_server_e2e_test_support.h"
 
+#include "test/e2e/iec61850_test_server.h"
+
 #include <boost/asio/connect.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -8,6 +10,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <process.h>
 #include <thread>
 
 using namespace std::chrono_literals;
@@ -30,6 +33,7 @@ constexpr auto kServerLogTimeout = 10s;
 constexpr auto kObjectTreeLoadTimeout = 15s;
 constexpr auto kObjectViewValuesTimeout = 30s;
 constexpr auto kObjectTreeLabelsTimeout = 30s;
+constexpr auto kHardwareTreeDevicesTimeout = 30s;
 constexpr auto kOperatorUseCasesTimeout = 30s;
 
 std::string_view GetServerType(E2eProtocol protocol) {
@@ -56,6 +60,67 @@ std::filesystem::path GetServerFixtureDir() {
 
 std::filesystem::path GetServerSettingsTemplatePath() {
   return std::filesystem::path{SCADA_E2E_SERVER_SETTINGS_TEMPLATE};
+}
+
+std::filesystem::path GetConfigurationBaseSqlPath() {
+  return std::filesystem::path{SCADA_E2E_CONFIGURATION_BASE_SQL};
+}
+
+std::filesystem::path GetConfigurationFixtureSqlPath() {
+  return std::filesystem::path{SCADA_E2E_CONFIGURATION_FIXTURE_SQL};
+}
+
+std::wstring GetSqliteExePath() {
+  wchar_t* value = nullptr;
+  size_t size = 0;
+  auto err = _wdupenv_s(&value, &size, L"SCADA_SQLITE3_EXE");
+  std::unique_ptr<wchar_t, decltype(&std::free)> holder{value, &std::free};
+  if (err == 0 && holder && *holder)
+    return holder.get();
+  return std::filesystem::path{SCADA_E2E_SQLITE3_EXE}.wstring();
+}
+
+std::string SqlitePath(const std::filesystem::path& path) {
+  auto result = path.lexically_normal().generic_string();
+  for (auto& ch : result) {
+    if (ch == '\'')
+      ch = ' ';
+  }
+  return result;
+}
+
+void GenerateConfigurationDatabase(const std::filesystem::path& workspace,
+                                   int iec61850_port) {
+  const auto configuration_dir = workspace / "Configuration";
+  const auto database_path = configuration_dir / "configuration.sqlite3";
+  const auto script_path = workspace / "generate-configuration.sql";
+  std::error_code ec;
+  std::filesystem::remove_all(configuration_dir, ec);
+  std::filesystem::create_directories(configuration_dir, ec);
+
+  WriteTextFile(script_path,
+                ".bail on\n"
+                ".read " +
+                    SqlitePath(GetConfigurationBaseSqlPath()) + "\n"
+                    ".read " +
+                    SqlitePath(GetConfigurationFixtureSqlPath()) + "\n"
+                    "UPDATE Iec61850DeviceType SET Port = " +
+                    std::to_string(iec61850_port) + ";\n");
+
+  const auto sqlite_exe = GetSqliteExePath();
+  std::vector<const wchar_t*> args{
+      sqlite_exe.c_str(),
+      L"-batch",
+      L"-init",
+      script_path.c_str(),
+      database_path.c_str(),
+      nullptr};
+  auto exit_code = _wspawnvp(_P_WAIT, sqlite_exe.c_str(), args.data());
+  if (exit_code != 0) {
+    throw std::runtime_error{"sqlite3 failed while creating " +
+                             database_path.string() + " with exit code " +
+                             std::to_string(exit_code)};
+  }
 }
 
 int FindAvailablePort() {
@@ -118,12 +183,23 @@ void ClientServerE2eTest::SetUp() {
   ASSERT_TRUE(std::filesystem::exists(GetClientExePath()));
   ASSERT_TRUE(std::filesystem::exists(GetServerFixtureDir()));
   ASSERT_TRUE(std::filesystem::exists(GetServerSettingsTemplatePath()));
+  ASSERT_TRUE(std::filesystem::exists(GetConfigurationBaseSqlPath()));
+  ASSERT_TRUE(std::filesystem::exists(GetConfigurationFixtureSqlPath()));
 
   remote_port_ = FindAvailablePort();
   opcua_port_ = FindAvailablePort();
   while (opcua_port_ == remote_port_)
     opcua_port_ = FindAvailablePort();
+  iec61850_port_ = FindAvailablePort();
+  while (iec61850_port_ == remote_port_ || iec61850_port_ == opcua_port_)
+    iec61850_port_ = FindAvailablePort();
   PrepareWorkspace();
+
+  iec61850_server_ = std::make_unique<Iec61850TestServer>(iec61850_port_);
+  ASSERT_TRUE(WaitUntil(
+      [this] { return iec61850_server_->running() || iec61850_server_->failed(); },
+      5s));
+  ASSERT_FALSE(iec61850_server_->failed());
 }
 
 void ClientServerE2eTest::TearDown() {
@@ -135,6 +211,7 @@ void ClientServerE2eTest::TearDown() {
   ForceTerminate(server_.process_info);
   WaitForExit(client_.process_info);
   WaitForExit(server_.process_info);
+  iec61850_server_.reset();
 }
 
 void ClientServerE2eTest::PrepareWorkspace() {
@@ -142,6 +219,7 @@ void ClientServerE2eTest::PrepareWorkspace() {
                         workspace_.path(),
                         std::filesystem::copy_options::recursive |
                             std::filesystem::copy_options::overwrite_existing);
+  GenerateConfigurationDatabase(workspace_.path(), iec61850_port_);
 
   auto server_json_value =
       boost::json::parse(ReadFileOrEmpty(GetServerSettingsTemplatePath()));
@@ -161,6 +239,8 @@ void ClientServerE2eTest::PrepareWorkspace() {
   status_file_ = workspace_.path() / "client-status.txt";
   object_view_values_file_ = workspace_.path() / "object-view-values.txt";
   object_tree_labels_file_ = workspace_.path() / "object-tree-labels.txt";
+  hardware_tree_devices_file_ =
+      workspace_.path() / "hardware-tree-devices.txt";
   operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
   server_log_dir_ = workspace_.path() / "Logs";
@@ -263,6 +343,18 @@ std::string ClientServerE2eTest::WaitForObjectTreeLabelsReport() {
           kObjectTreeLabelsTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for object-tree labels report";
   return ReadFileOrEmpty(object_tree_labels_file_);
+}
+
+std::string ClientServerE2eTest::WaitForHardwareTreeDevicesReport() {
+  bool ok = WaitUntil(
+      [this] {
+        return std::filesystem::exists(hardware_tree_devices_file_) ||
+               !client_.IsRunning();
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kHardwareTreeDevicesTimeout));
+  EXPECT_TRUE(ok) << "Timed out waiting for hardware-tree devices report";
+  return ReadFileOrEmpty(hardware_tree_devices_file_);
 }
 
 std::string ClientServerE2eTest::WaitForOperatorUseCasesReport() {
