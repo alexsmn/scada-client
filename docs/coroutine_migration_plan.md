@@ -154,6 +154,18 @@ to regression-test.
   loops with the shared `Delay(...)` helper, preserving success and timeout
   report contents. Regression coverage:
   `client/app/qt/e2e_test_support_unittest.cpp`.
+- **Screenshot-generator promise wait helpers** migrated
+  (`client/tools/screenshot_generator/screenshot_wait.{h,cpp}`,
+  `main.cpp`, `dialog_capture.cpp`). The offline screenshot generator no
+  longer bridges startup/shutdown or pending-node promises through local
+  `.then(...)` callbacks. The shared `WaitForPromise(...)` helper pumps the Qt
+  event loop until the promise is ready and then calls `get()`, preserving the
+  previous single-threaded `MessageLoopQt` behavior while propagating rejected
+  promises. `WaitForPendingNodeLoads(...)` now uses the same helper and keeps
+  the existing gtest failure report for rejected pending-node waits.
+  Regression coverage:
+  `client/tools/screenshot_generator/screenshot_wait_unittest.cpp` via
+  `client_qt_unittests`.
 
 ### Risks
 
@@ -549,14 +561,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the screenshot-generator promise wait helpers next
-(`client/tools/screenshot_generator/main.cpp` and
-`client/tools/screenshot_generator/dialog_capture.cpp`). They still bridge
-promises to local blocking loops with `.then(...)` callbacks. Replace those
-wait paths with a small coroutine/promise wait helper or existing awaitable
-test utility equivalent, preserve timeout/error reporting behavior, and add
-focused coverage around successful completion and rejected promises if the
-tooling target has a unit-test hook.
+Migrate the remaining client test-only promise wait loops next, starting with
+`client/app/client_application_unittest.cpp`. Those helpers still attach
+`.then(...)` callbacks to observe `ClientApplication::{Start,Quit}` completion.
+Replace them with deterministic promise readiness polling or a shared Qt test
+wait helper so test infrastructure follows the same callback-free style as the
+production and screenshot-generator paths, while preserving the existing
+startup, shutdown, and cancellation assertions.
 
 ### Work
 

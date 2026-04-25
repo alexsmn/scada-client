@@ -21,6 +21,8 @@ list(APPEND UNITTESTS_QT
   "${CMAKE_CURRENT_SOURCE_DIR}/client_application_unittest.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/qt/e2e_test_support_unittest.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/qt/startup_flow_unittest.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../tools/screenshot_generator/screenshot_wait.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../tools/screenshot_generator/screenshot_wait_unittest.cpp"
 )
 
 # Small, platform-neutral test executable for `startup_exception`. The code

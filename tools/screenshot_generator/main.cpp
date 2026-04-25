@@ -5,6 +5,7 @@
 #include "screenshot_modules.h"
 #include "screenshot_options.h"
 #include "screenshot_output.h"
+#include "screenshot_wait.h"
 #include "widget_capture.h"
 
 #include "address_space/address_space_impl3.h"
@@ -26,7 +27,6 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view.h"
-#include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"
@@ -50,27 +50,11 @@
 
 namespace {
 
+using screenshot_generator::WaitForPendingNodeLoads;
+using screenshot_generator::WaitForPromise;
+
 // Global config loaded once per test suite.
 ScreenshotConfig g_config;
-
-// `MessageLoopQt` defers tasks to a 10 ms QTimer, so blocking on
-// `promise::get()` would deadlock the only thread that drives the
-// timer. Wait by pumping the event loop until the promise resolves.
-template <class T>
-T WaitForPromise(promise<T> p) {
-  std::optional<T> result;
-  std::move(p).then([&](T value) { result = std::move(value); });
-  while (!result)
-    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-  return std::move(*result);
-}
-
-inline void WaitForPromise(promise<void> p) {
-  bool done = false;
-  std::move(p).then([&] { done = true; });
-  while (!done)
-    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-}
 
 template <class Predicate>
 bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
@@ -81,19 +65,6 @@ bool WaitUntil(Predicate&& predicate, int timeout_ms = 5000) {
       return false;
     QApplication::processEvents(QEventLoop::AllEvents, 50);
   }
-  return true;
-}
-
-bool WaitForPendingNodeLoads(NodeService& node_service) {
-  bool finished = false;
-  std::move(WaitForPendingNodes(node_service))
-      .then([&] { finished = true; }, [&](std::exception_ptr) {
-        ADD_FAILURE() << "NodeService pending-node wait failed";
-        finished = true;
-      });
-
-  while (!finished)
-    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
   return true;
 }
 

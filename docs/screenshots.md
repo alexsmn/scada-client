@@ -59,6 +59,7 @@ Everything lives under `client/tools/screenshot_generator/`:
 | `screenshot_config.{h,cpp}` | `ScreenshotSpec`, `DialogSpec`, and `ScreenshotConfig::Load()` that parses `screenshot_data.json`, resolves `--image-manifest`, and applies `--only`. |
 | `screenshot_options.{h,cpp}` | Parses `--out`, `--image-manifest`, and `--only` once from the process command line. |
 | `screenshot_output.{h,cpp}` | `GetOutputDir()` — resolves `--out`. |
+| `screenshot_wait.{h,cpp}` | Shared Qt event-loop promise waits used by window/dialog capture and covered by `client_qt_unittests`. |
 | `widget_capture.{h,cpp}` | `SaveScreenshot(QWidget*, const ScreenshotSpec&)` — the generic "resize, grab, save" helper for sub-widgets inside the MDI area. |
 | `graph_capture.{h,cpp}` | `SaveGraphScreenshot` builds a standalone `MetrixGraph` (hidden main windows don't lay out `QSplitter` children); `MakeGraphDefinition` builds the matching `WindowDefinition` for the profile path. |
 | `dialog_capture.{h,cpp}` | `CaptureDialog(spec, env)` — per-kind builders invoke the component's public `Execute…Dialog()` factory, which calls `show()` internally; we then find the visible dialog via `QApplication::topLevelWidgets()`, grab, and hide+reject. |

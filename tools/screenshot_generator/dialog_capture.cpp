@@ -2,6 +2,7 @@
 
 #include "screenshot_config.h"
 #include "screenshot_output.h"
+#include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
 #include "base/console_logger.h"
@@ -9,7 +10,6 @@
 #include "components/limits/limit_dialog.h"
 #include "components/login/login_dialog.h"
 #include "components/write/write_dialog.h"
-#include "node_service/node_promises.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_fetch_status.h"
 #include "node_service/node_service.h"
@@ -30,6 +30,8 @@
 #include <gtest/gtest.h>
 
 namespace {
+
+using screenshot_generator::WaitForPendingNodeLoads;
 
 // Dummy TransportFactory that never produces a transport. LoginDialog
 // & friends hold a `TransportFactory&` inside their DataServicesContext
@@ -75,19 +77,6 @@ class NullTaskManager : public TaskManager {
     return make_rejected_promise<void>(std::exception{});
   }
 };
-
-bool WaitForPendingNodeLoads(NodeService& node_service) {
-  bool finished = false;
-  std::move(WaitForPendingNodes(node_service))
-      .then([&] { finished = true; }, [&](std::exception_ptr) {
-        ADD_FAILURE() << "NodeService pending-node wait failed";
-        finished = true;
-      });
-
-  while (!finished)
-    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-  return true;
-}
 
 bool FetchAndWaitForPendingNodeLoads(NodeService& node_service,
                                      const NodeRef& node,

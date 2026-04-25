@@ -17,6 +17,8 @@ add_executable(client_screenshot_generator
   "screenshot_options.h"
   "screenshot_output.cpp"
   "screenshot_output.h"
+  "screenshot_wait.cpp"
+  "screenshot_wait.h"
   "screenshot_modules.cpp"
   "screenshot_modules.h"
   "widget_capture.cpp"
