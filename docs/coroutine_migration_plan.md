@@ -438,6 +438,16 @@ SCADA services or local service doubles.
   across the optional auto-login message. `ExecuteLoginDialog` now awaits dialog
   completion in a coroutine before scheduling `deleteLater()`. Regression
   coverage: `client/components/login/login_controller_unittest.cpp`.
+- **graph horizontal-range history read** migrated
+  (`client/graph/metrix_data_source.{h,cpp}`). `MetrixDataSource` now owns an
+  `AnyExecutor` (defaulting to a thread executor for existing graph
+  construction) and schedules earliest-timestamp history reads as a coroutine
+  instead of attaching a `Cancelation::Bind(...).then(...)` continuation. The
+  coroutine checks the captured `CancelationRef` before and after awaiting the
+  history read, preserving stale-read suppression when the data source changes
+  or is destroyed. `client_graph` now links `transport` for coroutine
+  awaitable headers. Regression coverage:
+  `client/graph/graph_view_unittest.cpp`.
 
 ### Priority Order
 
@@ -451,12 +461,15 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/graph/metrix_data_source.cpp` next. Its horizontal-range
-update path still attaches a `cancelation_`-bound `.then(...)` continuation
-after the async read completes. Convert that update flow to an executor-pinned
-coroutine that awaits the read, preserves the existing cancellation/stale
-update behavior, and add focused tests for applying the fetched range and
-dropping completion after cancellation or replacement by a newer request.
+Migrate `client/clipboard/clipboard_util.cpp` next. Its copy and recursive
+paste helpers still use `make_all_promise(_void)` and nested `.then(...)`
+chains around node fetches and `TaskManager::PostInsertTask`. Convert
+`CopyNodesToClipboard`, `PasteNodesFromNodeStateRecursive`, and
+`PasteNodesFromNodeTree` to coroutine-backed compatibility wrappers, preserve
+the existing public `promise<>` boundaries and clipboard behavior, and add
+tests for recursive paste ordering, child-parent assignment, rejected insert
+propagation, and copy waiting for all node fetches before writing clipboard
+data.
 
 ### Work
 

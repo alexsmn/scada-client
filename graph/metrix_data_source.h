@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "base/cancelation.h"
 #include "common/node_state.h"
 #include "timed_data/timed_data.h"
@@ -14,6 +15,7 @@
 class MetrixDataSource : public views::GraphDataSource {
  public:
   MetrixDataSource();
+  explicit MetrixDataSource(AnyExecutor executor);
   virtual ~MetrixDataSource();
 
   void SetTimedData(const TimedDataSpec& spec);
@@ -63,4 +65,5 @@ class MetrixDataSource : public views::GraphDataSource {
 
   scada::DateTime earliest_timestamp_;
   Cancelation update_horizontal_range_cancelation_;
+  AnyExecutor executor_;
 };

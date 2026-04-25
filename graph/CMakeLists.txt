@@ -6,6 +6,9 @@ client_module_link_libraries(client_graph PRIVATE
   client_controller
   graph
   timed_data
+  # `metrix_data_source.cpp` uses coroutine awaitables for executor-pinned
+  # history reads.
+  transport
 )
 
 target_link_libraries(client_graph_qt_unittests PRIVATE

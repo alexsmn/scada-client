@@ -1,5 +1,8 @@
 #include "graph/metrix_data_source.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"
 #include "model/data_items_node_ids.h"
@@ -140,7 +143,11 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
 
 // MetrixDataSource
 
-MetrixDataSource::MetrixDataSource() {
+MetrixDataSource::MetrixDataSource()
+    : MetrixDataSource{MakeThreadAnyExecutor()} {}
+
+MetrixDataSource::MetrixDataSource(AnyExecutor executor)
+    : executor_{std::move(executor)} {
   timed_data_.ready_handler = [this] { OnHistoryChanged(); };
   timed_data_.update_handler =
       [this](std::span<const scada::DataValue> values) { OnHistoryChanged(); };
@@ -302,18 +309,34 @@ void MetrixDataSource::SetCurrentValue(double value) {
 void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
   update_horizontal_range_cancelation_.Cancel();
 
-  // TODO: Bind executor.
-  timed_data_.node()
-      .scada_node()
-      .read_value_history({.from = scada::DateTime::Min(),
-                           .to = scada::DateTime::Max(),
-                           .max_count = 1})
-      .then(update_horizontal_range_cancelation_.Bind(
-          [this](const std::vector<scada::DataValue>& values) {
+  auto cancelation = update_horizontal_range_cancelation_.ref();
+  auto node = timed_data_.node().scada_node();
+  auto executor = executor_;
+
+  CoSpawn(executor_,
+          [this, cancelation, node, executor = std::move(executor)]()
+              mutable -> Awaitable<void> {
+            if (cancelation.canceled())
+              co_return;
+
+            std::vector<scada::DataValue> values;
+            try {
+              values = co_await AwaitPromise(
+                  executor, node.read_value_history(
+                                {.from = scada::DateTime::Min(),
+                                 .to = scada::DateTime::Max(),
+                                 .max_count = 1}));
+            } catch (...) {
+              co_return;
+            }
+
+            if (cancelation.canceled())
+              co_return;
+
             SetEarliestTimestamp(values.empty()
                                      ? scada::DateTime{}
                                      : values.front().source_timestamp);
-          }));
+          });
 }
 
 void MetrixDataSource::SetEarliestTimestamp(scada::DateTime timestamp) {

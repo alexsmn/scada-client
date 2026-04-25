@@ -1,9 +1,14 @@
 #include "graph/graph_view.h"
 
 #include "aui/test/app_environment.h"
+#include "base/test/awaitable_test.h"
 #include "resources/common_resources.h"
 #include "controller/test/controller_environment.h"
+#include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
+#include "node_service/node_model.h"
+#include "scada/client.h"
+#include "scada/history_service_mock.h"
 #include "timed_data/timed_data_service_fake.h"
 
 #include "base/debug_util.h"
@@ -11,6 +16,83 @@
 #include <QImage>
 
 using namespace testing;
+
+namespace {
+
+constexpr scada::NodeId kTestNodeId{1, 1};
+
+class TestNodeModel final : public NodeModel {
+ public:
+  explicit TestNodeModel(scada::node node) : node_{std::move(node)} {}
+
+  scada::Status GetStatus() const override { return scada::StatusCode::Good; }
+  NodeFetchStatus GetFetchStatus() const override {
+    return NodeFetchStatus::Max();
+  }
+  void Fetch(const NodeFetchStatus& requested_status,
+             const FetchCallback& callback) const override {
+    if (callback)
+      callback();
+  }
+  scada::Variant GetAttribute(scada::AttributeId attribute_id) const override {
+    return {};
+  }
+  NodeRef GetDataType() const override { return {}; }
+  NodeRef::Reference GetReference(const scada::NodeId& reference_type_id,
+                                  bool forward,
+                                  const scada::NodeId& node_id) const override {
+    return {};
+  }
+  std::vector<NodeRef::Reference> GetReferences(
+      const scada::NodeId& reference_type_id,
+      bool forward) const override {
+    return {};
+  }
+  NodeRef GetTarget(const scada::NodeId& reference_type_id,
+                    bool forward) const override {
+    return {};
+  }
+  std::vector<NodeRef> GetTargets(const scada::NodeId& reference_type_id,
+                                  bool forward) const override {
+    return {};
+  }
+  NodeRef GetAggregate(
+      const scada::NodeId& aggregate_declaration_id) const override {
+    return {};
+  }
+  NodeRef GetChild(const scada::QualifiedName& child_name) const override {
+    return {};
+  }
+  void Subscribe(NodeRefObserver& observer) const override {}
+  void Unsubscribe(NodeRefObserver& observer) const override {}
+  scada::node GetScadaNode() const override { return node_; }
+
+ private:
+  scada::node node_;
+};
+
+class NodeFakeTimedData final : public FakeTimedData {
+ public:
+  explicit NodeFakeTimedData(NodeRef node) : node_{std::move(node)} {}
+
+  NodeRef GetNode() const override { return node_; }
+
+ private:
+  NodeRef node_;
+};
+
+scada::DataValue MakeDataValue(double value, scada::DateTime timestamp) {
+  return {scada::Variant{value}, {}, timestamp, timestamp};
+}
+
+TimedDataSpec MakeTimedDataSpec(NodeRef node, scada::DateTime timestamp) {
+  auto timed_data = std::make_shared<NodeFakeTimedData>(std::move(node));
+  timed_data->data_values.push_back(MakeDataValue(1.0, timestamp));
+  timed_data->ready_ranges.push_back({timestamp, timestamp});
+  return TimedDataSpec{timed_data};
+}
+
+}  // namespace
 
 class GraphViewTest : public Test {
  public:
@@ -103,4 +185,80 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
 
   EXPECT_GT(colored_pixels, 10)
       << "Expected blue line pixels in the rendered graph";
+}
+
+TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
+  auto executor = std::make_shared<TestExecutor>();
+  StrictMock<scada::MockHistoryService> history_service;
+  scada::services services{.history_service = &history_service};
+  scada::client client{services};
+  NodeRef node{std::make_shared<TestNodeModel>(client.node(kTestNodeId))};
+
+  const auto earliest = scada::DateTime::FromDoubleT(100.0);
+  const auto latest = scada::DateTime::FromDoubleT(200.0);
+
+  EXPECT_CALL(history_service, HistoryReadRaw(_, _))
+      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details,
+                           const scada::HistoryReadRawCallback& callback) {
+        EXPECT_EQ(details.node_id, kTestNodeId);
+        EXPECT_EQ(details.max_count, 1u);
+        callback(scada::HistoryReadRawResult{
+            .values = {MakeDataValue(1.0, earliest)}});
+      }));
+
+  MetrixDataSource data_source{MakeTestAnyExecutor(executor)};
+  data_source.SetTimedData(MakeTimedDataSpec(node, latest));
+  Drain(executor);
+
+  auto horizontal_range = data_source.GetHorizontalRange();
+  EXPECT_EQ(horizontal_range.low(), earliest.ToDoubleT());
+  EXPECT_EQ(horizontal_range.high(), latest.ToDoubleT());
+}
+
+TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
+  auto executor = std::make_shared<TestExecutor>();
+  StrictMock<scada::MockHistoryService> history_service;
+  scada::services services{.history_service = &history_service};
+  scada::client client{services};
+  NodeRef node{std::make_shared<TestNodeModel>(client.node(kTestNodeId))};
+
+  scada::HistoryReadRawCallback first_callback;
+  scada::HistoryReadRawCallback second_callback;
+
+  EXPECT_CALL(history_service, HistoryReadRaw(_, _))
+      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details,
+                           const scada::HistoryReadRawCallback& callback) {
+        first_callback = callback;
+      }))
+      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details,
+                           const scada::HistoryReadRawCallback& callback) {
+        second_callback = callback;
+      }));
+
+  const auto stale_earliest = scada::DateTime::FromDoubleT(50.0);
+  const auto current_earliest = scada::DateTime::FromDoubleT(100.0);
+  const auto first_latest = scada::DateTime::FromDoubleT(200.0);
+  const auto second_latest = scada::DateTime::FromDoubleT(300.0);
+
+  MetrixDataSource data_source{MakeTestAnyExecutor(executor)};
+  data_source.SetTimedData(MakeTimedDataSpec(node, first_latest));
+  Drain(executor);
+  ASSERT_TRUE(first_callback);
+
+  data_source.SetTimedData(MakeTimedDataSpec(node, second_latest));
+  Drain(executor);
+  ASSERT_TRUE(second_callback);
+
+  first_callback(scada::HistoryReadRawResult{
+      .values = {MakeDataValue(1.0, stale_earliest)}});
+  Drain(executor);
+  EXPECT_TRUE(data_source.GetHorizontalRange().empty());
+
+  second_callback(scada::HistoryReadRawResult{
+      .values = {MakeDataValue(1.0, current_earliest)}});
+  Drain(executor);
+
+  auto horizontal_range = data_source.GetHorizontalRange();
+  EXPECT_EQ(horizontal_range.low(), current_earliest.ToDoubleT());
+  EXPECT_EQ(horizontal_range.high(), second_latest.ToDoubleT());
 }
