@@ -562,6 +562,17 @@ SCADA services or local service doubles.
   `client/configuration/tree/configuration_tree_model_unittest.cpp` now covers
   successful materialization, loading text while pending, model destruction,
   and removal of a tree node before the delayed fetch callback resumes.
+- **configuration object visible-node fetch** migrated
+  (`client/configuration/objects/object_tree_model.{h,cpp}` and
+  `client/configuration/objects/visible_node_model.{h,cpp}`).
+  `ObjectTreeModel::CreateVisibleNode` now keeps the proxy-visible-node public
+  behavior but starts an executor-pinned coroutine for delayed
+  `NodeRef::Fetch(NodeOnly, callback)` completion through `CallbackToAwaitable`.
+  The coroutine verifies model lifetime, current tree-node identity, and current
+  visible-row ownership before installing the fetched visible node, so stale
+  completions after hiding or removing a row are ignored. Empty proxy text is
+  now explicitly represented as an empty string. Regression coverage:
+  `client/configuration/objects/object_tree_model_unittest.cpp`.
 - **node property initial fetch/update** migrated
   (`client/components/node_properties/node_property_model.cpp`). The model
   constructor now starts an executor-pinned coroutine using
@@ -613,13 +624,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue Phase 4 in `configuration/objects` by migrating
-`ObjectTreeModel::CreateVisibleNode`. Replace its direct
-`NodeRef::Fetch(NodeOnly, callback)` proxy-visible-node update with an
-executor-pinned coroutine that preserves the proxy update behavior, handles
-model/node lifetime explicitly, and adds object-tree model coverage for fetched
-nodes, pending proxy nodes, and stale completion after the tree row is hidden
-or removed.
+Migrate the remaining direct status-callback command paths:
+`ConfigurationCommands::CallMethod` in
+`client/main_window/configuration_commands.cpp` and `ChangePassword(...)` in
+`client/components/change_password/change_password.cpp`. Replace
+`scada::BindStatusCallback` with executor-pinned coroutine bodies that await
+the method-call promises, preserve `ReportRequestResult(...)` behavior, and add
+focused unit coverage for success/failure reporting and lifetime assumptions.
 
 ### Work
 

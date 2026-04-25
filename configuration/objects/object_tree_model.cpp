@@ -1,10 +1,24 @@
 ﻿#include "configuration/objects/object_tree_model.h"
 
 #include "aui/translation.h"
+#include "base/callback_awaitable.h"
 #include "configuration/tree/node_service_tree_impl.h"
 #include "scada/standard_node_ids.h"
 #include "model/data_items_node_ids.h"
 #include "node_service/node_util.h"
+
+namespace {
+
+Awaitable<NodeRef> FetchNodeOnlyAsync(std::shared_ptr<Executor> executor,
+                                      NodeRef node) {
+  auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
+      std::move(executor), [node = std::move(node)](auto callback) {
+        node.Fetch(NodeFetchStatus::NodeOnly(), std::move(callback));
+      });
+  co_return std::move(fetched_node);
+}
+
+}  // namespace
 
 class ObjectTreeModel::ObjectTreeNode : public ConfigurationTreeNode {
  public:
@@ -27,13 +41,14 @@ ObjectTreeModel::ObjectTreeModel(ObjectTreeModelContext&& context)
     : ObjectTreeModelContext{std::move(context)},
       ConfigurationTreeModel{::ConfigurationTreeModelContext{
           .executor_ = ObjectTreeModelContext::executor_,
-          .node_service_tree_ =
-              node_service_tree_factory_(NodeServiceTreeImplContext{
-              .executor_ = ObjectTreeModelContext::executor_,
-              .node_service_ = ObjectTreeModelContext::node_service_,
-              .root_node_ = ObjectTreeModelContext::root_,
-              .reference_filter_ = {{scada::id::Organizes, true}},
-              .leaf_type_definition_ids_ = {data_items::id::DataItemType}})}},
+          .node_service_tree_ = node_service_tree_factory_(
+              NodeServiceTreeImplContext{
+                  .executor_ = ObjectTreeModelContext::executor_,
+                  .node_service_ = ObjectTreeModelContext::node_service_,
+                  .root_node_ = ObjectTreeModelContext::root_,
+                  .reference_filter_ = {{scada::id::Organizes, true}},
+                  .leaf_type_definition_ids_ = {data_items::id::DataItemType},
+              })}},
       visible_node_model_{
           timed_data_service_,
           profile_,
@@ -96,14 +111,52 @@ std::shared_ptr<VisibleNode> ObjectTreeModel::CreateVisibleNode(
     return CreateFetchedVisibleNode(node);
 
   auto proxy_visible_node = std::make_shared<ProxyVisibleNode>();
-  // TODO: shared_ptr.
-  node.Fetch(NodeFetchStatus::NodeOnly(),
-             [this, proxy_visible_node](const NodeRef& node) {
-               auto visible_node = CreateFetchedVisibleNode(node);
-               proxy_visible_node->SetUnderlyingNode(std::move(visible_node));
-             });
+  CoSpawn(ObjectTreeModelContext::executor_,
+          [executor = ObjectTreeModelContext::executor_,
+           lifetime_token = GetLifetimeToken(),
+           model = this, proxy_visible_node, tree_node, node,
+           node_id = node.node_id(),
+           reference_type_id = configuration_tree_node.reference_type_id(),
+           forward_reference = configuration_tree_node.forward_reference()]()
+              mutable -> Awaitable<void> {
+            co_await ObjectTreeModel::CompleteVisibleNodeFetchAsync(
+                std::move(executor), std::move(lifetime_token), *model,
+                std::move(proxy_visible_node), tree_node, std::move(node),
+                std::move(node_id), std::move(reference_type_id),
+                forward_reference);
+          });
 
   return proxy_visible_node;
+}
+
+Awaitable<void> ObjectTreeModel::CompleteVisibleNodeFetchAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<void> lifetime_token,
+    ObjectTreeModel& model,
+    std::shared_ptr<ProxyVisibleNode> proxy_visible_node,
+    void* tree_node,
+    NodeRef node,
+    scada::NodeId node_id,
+    scada::NodeId reference_type_id,
+    bool forward_reference) {
+  auto fetched_node =
+      co_await FetchNodeOnlyAsync(std::move(executor), std::move(node));
+
+  if (lifetime_token.expired()) {
+    co_return;
+  }
+
+  if (!model.FindTreeNode(node_id, reference_type_id, forward_reference)) {
+    co_return;
+  }
+
+  if (!model.visible_node_model_.HasNode(tree_node, proxy_visible_node)) {
+    co_return;
+  }
+
+  auto visible_node = model.CreateFetchedVisibleNode(fetched_node);
+  proxy_visible_node->SetUnderlyingNode(std::move(visible_node));
+  co_return;
 }
 
 std::shared_ptr<VisibleNode> ObjectTreeModel::CreateFetchedVisibleNode(

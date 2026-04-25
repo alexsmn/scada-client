@@ -40,9 +40,21 @@ class ObjectTreeModel : private ObjectTreeModelContext,
       const scada::NodeId& reference_type_id,
       bool forward_reference,
       const NodeRef& node) override;
+  virtual std::shared_ptr<VisibleNode> CreateFetchedVisibleNode(
+      const NodeRef& node);
 
+ private:
   std::shared_ptr<VisibleNode> CreateVisibleNode(void* tree_node);
-  std::shared_ptr<VisibleNode> CreateFetchedVisibleNode(const NodeRef& node);
+  static Awaitable<void> CompleteVisibleNodeFetchAsync(
+      std::shared_ptr<Executor> executor,
+      std::weak_ptr<void> lifetime_token,
+      ObjectTreeModel& model,
+      std::shared_ptr<ProxyVisibleNode> proxy_visible_node,
+      void* tree_node,
+      NodeRef node,
+      scada::NodeId node_id,
+      scada::NodeId reference_type_id,
+      bool forward_reference);
 
   VisibleNodeModel visible_node_model_;
 

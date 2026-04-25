@@ -41,6 +41,13 @@ void VisibleNodeModel::SetNode(void* tree_node,
   node_change_handler_(tree_node);
 }
 
+bool VisibleNodeModel::HasNode(
+    void* tree_node,
+    const std::shared_ptr<VisibleNode>& node) const {
+  auto i = nodes_.find(tree_node);
+  return i != nodes_.end() && i->second == node;
+}
+
 std::u16string VisibleNodeModel::GetText(void* tree_node) {
   auto* node = GetNode(tree_node);
   if (!node)
@@ -115,7 +122,7 @@ void ProxyVisibleNode::SetUnderlyingNode(std::shared_ptr<VisibleNode> node) {
 }
 
 std::u16string ProxyVisibleNode::GetText() const {
-  return underlying_node_ ? underlying_node_->GetText() : nullptr;
+  return underlying_node_ ? underlying_node_->GetText() : std::u16string{};
 }
 
 bool ProxyVisibleNode::IsBad() const {

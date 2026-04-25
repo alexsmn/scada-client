@@ -103,6 +103,7 @@ class VisibleNodeModel {
   ~VisibleNodeModel();
 
   void SetNode(void* tree_node, std::shared_ptr<VisibleNode> node);
+  bool HasNode(void* tree_node, const std::shared_ptr<VisibleNode>& node) const;
 
   std::u16string GetText(void* tree_node);
   aui::Color GetTextColor(void* tree_node);
