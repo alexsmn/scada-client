@@ -35,6 +35,7 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
   if (base::PathService::Get(client::DIR_PUBLIC, &public_dir)) {
     file_synchronizer_ =
         std::make_unique<FileSynchronizer>(FileSynchronizerContext{
+            executor_,
             std::make_shared<NestedLogger>(logger_, "FileSynchronizer"),
             *node_service_,
             public_dir.value(),

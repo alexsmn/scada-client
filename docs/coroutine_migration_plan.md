@@ -384,6 +384,16 @@ SCADA services or local service doubles.
   `client/favorites/favourites_url_unittest.cpp` for invalid URLs, default
   folder insertion, selected-folder insertion, and selected-window parent
   insertion.
+- **filesystem/FileSynchronizer download branch** migrated
+  (`client/filesystem/file_synchronizer.{h,cpp}`). The outdated-file read and
+  write path now runs as an executor-pinned coroutine that awaits
+  `node.scada_node().read(...)` instead of attaching success/error `.then(...)`
+  callbacks. The public observer-driven synchronizer behavior remains
+  fire-and-forget: successful downloads write bytes and update local timestamps,
+  failed downloads log and leave the local cache untouched, and already-current
+  files skip the server read. `FileSynchronizerContext` now carries the client
+  executor required by the coroutine body. Regression coverage:
+  `client/filesystem/file_synchronizer_unittest.cpp`.
 
 ### Priority Order
 
@@ -397,12 +407,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/filesystem/file_synchronizer.cpp` next. It is the remaining
-filesystem promise chain after `FileManagerImpl` and filesystem commands moved
-to coroutine internals. Convert the synchronize/download sequence to an
-executor-pinned coroutine body, preserve its existing public promise contract
-and error behavior, and add focused unit coverage for successful sync,
-download failure propagation, and unchanged local-cache behavior.
+Migrate the watch component promise chains next:
+`client/components/watch/watch_view.cpp` and
+`client/components/watch/watch_history_event_source.cpp`. Convert file-pick /
+model-update and history-read continuation paths to executor-pinned coroutine
+bodies, preserve the existing cancellation behavior, and add focused unit
+coverage for successful model update, cancellation/drop behavior, and history
+event delivery.
 
 ### Work
 

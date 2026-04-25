@@ -1,8 +1,11 @@
 #include "filesystem/file_synchronizer.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/logger.h"
 #include "filesystem/filesystem_util.h"
 #include "model/filesystem_node_ids.h"
+#include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/event.h"
@@ -40,6 +43,41 @@ std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
     return std::filesystem::file_time_type{
         std::chrono::microseconds(delta.InMicroseconds())};
   }
+}
+
+Awaitable<void> DownloadFileNodeAsync(std::shared_ptr<Executor> executor,
+                                      std::shared_ptr<const Logger> logger,
+                                      NodeRef node,
+                                      std::filesystem::path path,
+                                      std::filesystem::file_time_type
+                                          last_update_time) {
+  try {
+    auto data_value = co_await AwaitPromise(
+        NetExecutorAdapter{executor},
+        node.scada_node().read(scada::AttributeId::Value));
+
+    auto* data = data_value.value.get_if<scada::ByteString>();
+    if (!data) {
+      logger->WriteF(LogSeverity::Warning,
+                     "Wrong downloaded data for file '{}'", path.string());
+      co_return;
+    }
+
+    logger->WriteF(LogSeverity::Normal, "Download '{}' complete",
+                   path.string());
+
+    std::ofstream{path, std::ios::binary}.write(data->data(), data->size());
+
+    std::error_code ec;
+    std::filesystem::last_write_time(path, last_update_time, ec);
+
+  } catch (...) {
+    logger->WriteF(LogSeverity::Warning, "Download '{}' error: {}",
+                   path.string(),
+                   ToString(scada::GetExceptionStatus(std::current_exception())));
+  }
+
+  co_return;
 }
 
 }  // namespace
@@ -122,32 +160,11 @@ bool FileSynchronizer::ProcessFileNode(NodeRef node) {
 
   logger_->WriteF(LogSeverity::Normal, "Download outdated '{}'", path.string());
 
-  // TODO: Weak ptr.
-  node.scada_node()
-      .read(scada::AttributeId::Value)
-      .then(
-          [this, path, last_update_time](const scada::DataValue& data_value) {
-            auto* data = data_value.value.get_if<scada::ByteString>();
-            if (!data) {
-              logger_->WriteF(LogSeverity::Warning,
-                              "Wrong downloaded data for file '{}'",
-                              path.string());
-              return;
-            }
-
-            logger_->WriteF(LogSeverity::Normal, "Download '{}' complete",
-                            path.string());
-
-            std::ofstream{path, std::ios::binary}.write(data->data(),
-                                                          data->size());
-
-            std::error_code ec;
-            std::filesystem::last_write_time(path, last_update_time, ec);
-          },
-          [this, path](std::exception_ptr e) {
-            logger_->WriteF(LogSeverity::Warning, "Download '{}' error: {}",
-                            path.string(),
-                            ToString(scada::GetExceptionStatus(e)));
+  CoSpawn(executor_,
+          [executor = executor_, logger = logger_, node, path,
+           last_update_time] {
+            return DownloadFileNodeAsync(executor, logger, node, path,
+                                         last_update_time);
           });
 
   return true;
