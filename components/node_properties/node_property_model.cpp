@@ -1,7 +1,10 @@
 ﻿#include "components/node_properties/node_property_model.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "aui/translation.h"
 #include "model/scada_node_ids.h"
+#include "net/net_executor_adapter.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "properties/property_definition.h"
@@ -31,6 +34,22 @@ void SortPropertiesRecursive(
   }
 }
 
+Awaitable<bool> FetchNodeAsync(std::shared_ptr<Executor> executor,
+                               NodeRef node,
+                               CancelationRef cancelation) {
+  try {
+    co_await AwaitPromise(NetExecutorAdapter{executor}, FetchNode(node));
+  } catch (...) {
+    co_return false;
+  }
+
+  if (cancelation.canceled()) {
+    co_return false;
+  }
+
+  co_return true;
+}
+
 }  // namespace
 
 // NodePropertyModel
@@ -43,10 +62,18 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
       node_{std::move(node)} {
   node_service_.Subscribe(*this);
 
-  FetchNode(node_).then(cancelation_.Bind([this] { OnNodeFetched(); }));
+  CoSpawn(executor_, cancelation_,
+          [this, node = node_, executor = executor_,
+           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
+            if (co_await FetchNodeAsync(std::move(executor), std::move(node),
+                                        cancelation)) {
+              OnNodeFetched();
+            }
+          });
 }
 
 NodePropertyModel::~NodePropertyModel() {
+  cancelation_.Cancel();
   node_service_.Unsubscribe(*this);
 }
 
@@ -56,6 +83,7 @@ void NodePropertyModel::OnModelChanged(const scada::ModelChangeEvent& event) {
   }
 
   if (event.verb & scada::ModelChangeEvent::NodeDeleted) {
+    cancelation_.Cancel();
     node_service_.Unsubscribe(*this);
     node_ = nullptr;
     node_deleted();

@@ -459,6 +459,16 @@ SCADA services or local service doubles.
   before recursing. `client_clipboard` now links `transport` for coroutine
   awaitable headers. Regression coverage:
   `client/clipboard/clipboard_util_unittest.cpp`.
+- **node property initial fetch/update** migrated
+  (`client/components/node_properties/node_property_model.cpp`). The model
+  constructor now starts an executor-pinned coroutine using
+  `PropertyContext::executor_`, awaits `FetchNode(node_)`, and updates the
+  property tree only if its captured cancellation ref is still live. Destruction
+  and node-delete handling now cancel the pending startup fetch path before
+  unsubscribing, preserving the public `model_changed_handler` and
+  `node_deleted` behavior without a `.then(...)` continuation. Regression
+  coverage:
+  `client/components/node_properties/node_property_model_unittest.cpp`.
 
 ### Priority Order
 
@@ -472,13 +482,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/components/node_properties/node_property_model.cpp` next. Its
-constructor still calls `FetchNode(node_).then(cancelation_.Bind(...))` before
-building the property tree. Convert the initial fetch/update path to an
-executor-pinned coroutine using the existing `PropertyContext::executor_`,
-preserve cancellation on destruction and node-delete behavior, and add focused
-tests that the model updates after fetch completion and does not update after
-cancellation/destruction.
+Migrate `client/components/time_range/qt/time_range_dialog.cpp` next.
+`ShowTimeRangeDialog(...)` is now the only remaining `.then(...)` occurrence in
+`client/components`, wrapping `StartModalDialog(...)` before returning the
+selected `TimeRange`. Convert it to a coroutine-backed `promise<TimeRange>`
+compatibility wrapper, preserve dialog ownership/deletion behavior from
+`StartModalDialog`, and add a focused Qt unit test or existing-dialog test
+coverage for accepted dialog result propagation.
 
 ### Work
 
