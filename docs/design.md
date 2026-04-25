@@ -165,7 +165,7 @@ registered back-ends:
 
 - **Scada (Telecontrol)** — default; talks to a Telecontrol Server.
 - **OPC UA** — `opc.tcp://localhost:4840` by default. The OPC UA back-end
-  is implemented in `common/opcua/client/opcua_client_session.*` on top of the native
+  is implemented in `common/opcua/client_session.*` on top of the native
   UA Binary client stack under `common/opcua/binary/` (no external
   OPC UA SDK). See the `common/docs/opcua.md` design doc and the
   `common/docs/diagrams/opcua_binary_client_architecture.svg` architecture
