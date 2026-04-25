@@ -1,5 +1,6 @@
 #include "aui/wt/dialog_service_impl_wt.h"
 
+#include "aui/wt/dialog_stub.h"
 
 promise<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
     std::u16string_view message,
@@ -18,10 +19,10 @@ UiView* DialogServiceImplWt::GetParentWidget() const {
 
 promise<std::filesystem::path> DialogServiceImplWt::SelectOpenFile(
     std::u16string_view title) {
-  return MakeRejectedPromise<std::filesystem::path>();
+  return aui::wt::MakeUnsupportedDialogPromise<std::filesystem::path>();
 }
 
 promise<std::filesystem::path> DialogServiceImplWt::SelectSaveFile(
     const SaveParams& params) {
-  return MakeRejectedPromise<std::filesystem::path>();
+  return aui::wt::MakeUnsupportedDialogPromise<std::filesystem::path>();
 }

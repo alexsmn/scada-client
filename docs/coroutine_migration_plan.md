@@ -635,6 +635,18 @@ SCADA services or local service doubles.
   and no longer uses `.then(...)` / `.except(...)`. `aui` now links
   `transport` and `scada_core` because the public header exposes awaitable
   adapters. Regression coverage: `client/aui/resource_error_unittest.cpp`.
+- **Wt dialog compatibility boundaries** centralized and covered
+  (`client/aui/wt`, `client/components/time_range/wt`,
+  `client/export/csv/wt`, `client/properties/transport/wt`). The remaining Wt
+  modal-dialog surfaces are intentional unsupported platform stubs, now routed
+  through `aui::wt::MakeUnsupportedDialogPromise<T>()` instead of scattered
+  ad hoc rejected promises. Message boxes still resolve with `Ok`, while file
+  selection, prompt, time-range, CSV-params, and transport dialogs reject
+  immediately at the platform boundary. Regression coverage:
+  `client/aui/wt/dialog_stub_unittest.cpp`,
+  `client/components/time_range/wt/time_range_dialog_unittest.cpp`,
+  `client/export/csv/wt/csv_export_dialog_unittest.cpp`, and
+  `client/properties/transport/wt/transport_dialog_unittest.cpp`.
 
 ### Priority Order
 
@@ -648,12 +660,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue the compatibility-boundary audit with the remaining dialog and view
-promise surfaces: `client/aui/{qt,wt}`, `client/components/time_range`,
-`client/export/csv`, and `client/properties/transport`. Confirm Qt dialog
-helpers all delegate to coroutine bodies, document or replace Wt rejected
-stubs where appropriate, and add focused coverage for any boundary whose
-lifetime/error behavior is not already covered.
+Continue the production async-surface audit outside test-only helpers: review
+the remaining `MakeRejectedPromise` / `make_rejected_promise` compatibility
+sites in `client/clipboard`, `client/main_window`, `client/properties`, and the
+screenshot-generator capture helpers. Convert any real workflow surface to a
+coroutine body or document it as an intentional immediate-rejection boundary,
+then add focused success/failure or lifetime coverage.
 
 ### Work
 

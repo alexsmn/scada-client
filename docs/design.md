@@ -332,7 +332,9 @@ These are observations worth flagging in any future maintenance or
 roadmap discussion. They are *not* prescriptive — many are intentional.
 
 - **Wt feature parity is partial.** Modus, Vidicon, and the Qt-only paths
-  in some components are unavailable in the Wt build. There is no
+  in some components are unavailable in the Wt build. Modal file/prompt/
+  parameter dialogs that have no Wt implementation reject immediately through
+  the shared Wt dialog-stub helper; message boxes resolve as `Ok`. There is no
   parity test that ensures both UIs render the same fixture.
 - **Configuration export format is binary and undocumented in this repo.**
   The exact wire format is implicit in `export/configuration/`. A schema
