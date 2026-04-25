@@ -36,6 +36,7 @@ class FavouritesView final : protected ControllerContext, public Controller {
 #endif
 
   Favourites& favourites_;
+  std::shared_ptr<void> lifetime_token_ = std::make_shared<int>(0);
 
   const std::shared_ptr<FavouritesTreeModel> favourites_tree_model_;
 

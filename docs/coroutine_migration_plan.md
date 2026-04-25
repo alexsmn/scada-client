@@ -584,6 +584,19 @@ SCADA services or local service doubles.
   the UI executor. Regression coverage:
   `client/main_window/configuration_commands_unittest.cpp` and
   `client/components/change_password/change_password_unittest.cpp`.
+- **client UI helper compatibility wrappers** audited and tightened
+  (`client/ui/common/client_utils.{h,cpp}` and
+  `client/favorites`). `ExpandGroupItemIds(...)` remains a public
+  `promise<NodeIdSet>` compatibility wrapper over `ExpandGroupItemIdsAsync`,
+  but now enforces `max_count` during recursive traversal and returns
+  immediately for a zero limit without fetching. Favourites URL insertion now
+  uses the shared coroutine helper
+  `AddUrlToFavouritesWithPrompt{Async}(...)`; `FavouritesView` supplies a
+  lifetime token so prompt completions after view destruction do not read stale
+  selection or mutate favourites. The Wt add-favourites dialog remains an
+  intentional rejected-promise platform stub. Regression coverage:
+  `client/ui/common/client_utils_unittest.cpp` and
+  `client/favorites/favourites_add_url_unittest.cpp`.
 - **node property initial fetch/update** migrated
   (`client/components/node_properties/node_property_model.cpp`). The model
   constructor now starts an executor-pinned coroutine using
@@ -635,12 +648,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Audit and close the remaining public `promise<>` compatibility boundaries in
-client UI helpers, starting with `client/ui/common/client_utils.{h,cpp}` and
-`client/favorites/favourites_view.{h,cpp}`. Confirm each boundary either
-delegates to a coroutine body or is an intentional platform stub, add focused
-coverage where missing, and update this plan with the final residual async
-surface before moving out of the client UI/helper layer.
+Continue the compatibility-boundary audit with the remaining dialog and view
+promise surfaces: `client/aui/{qt,wt}`, `client/components/time_range`,
+`client/export/csv`, and `client/properties/transport`. Confirm Qt dialog
+helpers all delegate to coroutine bodies, document or replace Wt rejected
+stubs where appropriate, and add focused coverage for any boundary whose
+lifetime/error behavior is not already covered.
 
 ### Work
 

@@ -81,3 +81,11 @@ target_precompile_headers(client_ui_progress_wt REUSE_FROM scada_base)
 target_link_libraries(client_ui_progress_wt PRIVATE
   client_common
 )
+
+target_sources(client_base_unittests PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils_unittest.cpp"
+)
+target_link_libraries(client_base_unittests PRIVATE
+  client_ui_common_qt
+  node_service
+)

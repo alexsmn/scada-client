@@ -1,50 +1,12 @@
 ﻿#include "favorites/favourites_view.h"
 
 #include "aui/dialog_service.h"
-#include "aui/translation.h"
-#include "aui/prompt_dialog.h"
 #include "aui/tree.h"
 #include "resources/common_resources.h"
 #include "controller/controller_delegate.h"
+#include "favorites/favourites_add_url.h"
 #include "favorites/favourites.h"
 #include "favorites/favourites_tree_model.h"
-#include "favorites/favourites_url.h"
-
-#if !defined(UI_WT)
-#include "base/awaitable_promise.h"
-#include "net/net_executor_adapter.h"
-#endif
-
-namespace {
-const char16_t kAddUrl[] = u"Add Web Page";
-
-#if !defined(UI_WT)
-Awaitable<void> AddUrlAsync(std::shared_ptr<Executor> executor,
-                            DialogService& dialog_service,
-                            Favourites& favourites,
-                            aui::Tree& tree_view) {
-  auto url = co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      RunPromptDialog(dialog_service, Translate("URL:"), kAddUrl));
-
-  const auto* selected_node =
-      static_cast<const FavouritesNode*>(tree_view.GetSelectedNode());
-  if (AddUrlToFavourites(favourites, selected_node, url) ==
-      AddFavouriteUrlResult::Added) {
-    co_return;
-  }
-
-  co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      dialog_service.RunMessageBox(
-          Translate("A valid URL must start with \"http://\" or "
-                    "\"https://\"."),
-          kAddUrl, MessageBoxMode::Error));
-  throw std::exception{};
-}
-#endif
-
-}
 
 FavouritesView::FavouritesView(const ControllerContext& context,
                                Favourites& favorites)
@@ -53,7 +15,9 @@ FavouritesView::FavouritesView(const ControllerContext& context,
       favourites_tree_model_{std::make_shared<FavouritesTreeModel>(favorites)} {
 }
 
-FavouritesView::~FavouritesView() {}
+FavouritesView::~FavouritesView() {
+  lifetime_token_.reset();
+}
 
 std::unique_ptr<UiView> FavouritesView::Init(
     const WindowDefinition& definition) {
@@ -117,8 +81,9 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 
 #if !defined(UI_WT)
 promise<> FavouritesView::AddUrl() {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   AddUrlAsync(executor_, dialog_service_, favourites_,
-                               *tree_view_));
+  return AddUrlToFavouritesWithPrompt(
+      executor_, lifetime_token_, dialog_service_, favourites_, [this] {
+        return static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+      });
 }
 #endif

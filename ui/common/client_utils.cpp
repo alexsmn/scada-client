@@ -85,9 +85,24 @@ promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
                    ExpandGroupItemIdsAsync(executor, node, max_count));
 }
 
+namespace {
+
+void InsertLimited(NodeIdSet& target, const NodeIdSet& source, size_t max_count) {
+  for (const auto& node_id : source) {
+    if (target.size() >= max_count)
+      return;
+    target.emplace(node_id);
+  }
+}
+
+}  // namespace
+
 Awaitable<NodeIdSet> ExpandGroupItemIdsAsync(AnyExecutor executor,
                                              const NodeRef& node,
                                              size_t max_count) {
+  if (max_count == 0)
+    co_return NodeIdSet{};
+
   co_await AwaitPromise(executor, FetchChildren(node));
 
   NodeIdSet node_ids;
@@ -96,15 +111,21 @@ Awaitable<NodeIdSet> ExpandGroupItemIdsAsync(AnyExecutor executor,
   }
 
   for (const auto& child : node.targets(scada::id::Organizes)) {
+    if (node_ids.size() >= max_count)
+      break;
     auto child_node_ids =
-        co_await ExpandGroupItemIdsAsync(executor, child, max_count);
-    node_ids.insert(child_node_ids.begin(), child_node_ids.end());
+        co_await ExpandGroupItemIdsAsync(executor, child,
+                                         max_count - node_ids.size());
+    InsertLimited(node_ids, child_node_ids, max_count);
   }
 
   for (const auto& child : node.targets(scada::id::HasComponent)) {
+    if (node_ids.size() >= max_count)
+      break;
     auto child_node_ids =
-        co_await ExpandGroupItemIdsAsync(executor, child, max_count);
-    node_ids.insert(child_node_ids.begin(), child_node_ids.end());
+        co_await ExpandGroupItemIdsAsync(executor, child,
+                                         max_count - node_ids.size());
+    InsertLimited(node_ids, child_node_ids, max_count);
   }
 
   co_return node_ids;
