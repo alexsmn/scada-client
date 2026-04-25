@@ -31,9 +31,11 @@
 #include <QEventLoop>
 
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 using namespace ::testing;
+using namespace std::chrono_literals;
 
 namespace {
 
@@ -79,6 +81,42 @@ ClientApplicationModuleConfigurator MakeUnitTestModules() {
   return MakeDefaultClientApplicationModules(modules);
 }
 
+void PumpClientApplicationTestEvents(boost::asio::io_context& io_context,
+                                     QEventLoop::ProcessEventsFlags flags =
+                                         QEventLoop::WaitForMoreEvents,
+                                     int max_time_ms = -1) {
+  io_context.poll();
+  if (max_time_ms >= 0) {
+    QApplication::processEvents(flags, max_time_ms);
+  } else {
+    QApplication::processEvents(flags);
+  }
+}
+
+template <class T>
+bool IsReady(promise<T>& pending) {
+  return pending.wait_for(0ms) != promise_wait_status::timeout;
+}
+
+template <class T>
+T WaitForClientApplicationPromise(boost::asio::io_context& io_context,
+                                  promise<T> pending) {
+  while (!IsReady(pending)) {
+    PumpClientApplicationTestEvents(io_context);
+  }
+
+  return pending.get();
+}
+
+void WaitForClientApplicationPromise(boost::asio::io_context& io_context,
+                                     promise<void> pending) {
+  while (!IsReady(pending)) {
+    PumpClientApplicationTestEvents(io_context);
+  }
+
+  pending.get();
+}
+
 class FixedValueTimedData final : public BaseTimedData {
  public:
   explicit FixedValueTimedData(scada::DataValue value) {
@@ -120,44 +158,16 @@ class ClientApplicationTest : public Test {
   ~ClientApplicationTest();
 
  protected:
-  // Wait-helpers attach both a resolve and a reject callback. With the
-  // coroutine-driven startup flow, exceptions from Start()/Login()/Quit() are
-  // captured by the awaitable-to-promise adapter and surface as a promise
-  // rejection instead of an unhandled exception propagating out of the
-  // executor. Tests that use EXPECT_THROW need Wait() to rethrow the
-  // captured error.
+  // The coroutine-driven startup flow captures Start()/Login()/Quit()
+  // exceptions as promise rejections. Tests that use EXPECT_THROW need Wait()
+  // to rethrow the captured error after pumping the Qt/asio loops.
   template <class T>
   T Wait(promise<T> pending) {
-    std::optional<T> result;
-    std::exception_ptr error;
-    std::move(pending).then(
-        [&](T value) { result = std::move(value); },
-        [&](std::exception_ptr e) { error = e; });
-    while (!result && !error) {
-      io_context_.poll();
-      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-    }
-    if (error) {
-      std::rethrow_exception(error);
-    }
-    return std::move(*result);
+    return WaitForClientApplicationPromise(io_context_, std::move(pending));
   }
 
   void Wait(promise<void> pending) {
-    bool done = false;
-    std::exception_ptr error;
-    std::move(pending).then([&] { done = true; },
-                            [&](std::exception_ptr e) {
-                              error = e;
-                              done = true;
-                            });
-    while (!done) {
-      io_context_.poll();
-      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-    }
-    if (error) {
-      std::rethrow_exception(error);
-    }
+    WaitForClientApplicationPromise(io_context_, std::move(pending));
   }
 
   void StartApp() {
@@ -172,8 +182,7 @@ class ClientApplicationTest : public Test {
       if (timer.elapsed() >= timeout_ms) {
         return false;
       }
-      io_context_.poll();
-      QApplication::processEvents(QEventLoop::AllEvents, 50);
+      PumpClientApplicationTestEvents(io_context_, QEventLoop::AllEvents, 50);
     }
     return true;
   }
@@ -240,6 +249,36 @@ TEST(ShutdownStackTest, RunsSinglePushedAction) {
   EXPECT_TRUE(ran);
 }
 
+TEST(ClientApplicationPromiseWaitTest, ReturnsResolvedValue) {
+  boost::asio::io_context io_context;
+  EXPECT_EQ(WaitForClientApplicationPromise(io_context, make_resolved_promise(7)),
+            7);
+}
+
+TEST(ClientApplicationPromiseWaitTest, PropagatesRejectedValuePromise) {
+  boost::asio::io_context io_context;
+  EXPECT_THROW(WaitForClientApplicationPromise(
+                   io_context,
+                   make_rejected_promise<int>(
+                       std::make_exception_ptr(std::runtime_error{"value"}))),
+               std::runtime_error);
+}
+
+TEST(ClientApplicationPromiseWaitTest, CompletesResolvedVoidPromise) {
+  boost::asio::io_context io_context;
+  EXPECT_NO_THROW(
+      WaitForClientApplicationPromise(io_context, make_resolved_promise()));
+}
+
+TEST(ClientApplicationPromiseWaitTest, PropagatesRejectedVoidPromise) {
+  boost::asio::io_context io_context;
+  EXPECT_THROW(WaitForClientApplicationPromise(
+                   io_context,
+                   make_rejected_promise<void>(
+                       std::make_exception_ptr(std::runtime_error{"void"}))),
+               std::runtime_error);
+}
+
 // TODO: Enable Wt tests once `QTabWidget::removeTab` stops returning null.
 #if !defined(UI_WT)
 
@@ -286,23 +325,16 @@ TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
 
   auto started = app_.Start();
 
-  bool done = false;
-  std::move(started).then([&] { done = true; });
-
   // Pump the loop a few times — Start() must not resolve while login is
   // still pending.
-  for (int i = 0; i < 5 && !done; ++i) {
-    io_context_.poll();
-    QApplication::processEvents(QEventLoop::AllEvents, 10);
+  for (int i = 0; i < 5 && !IsReady(started); ++i) {
+    PumpClientApplicationTestEvents(io_context_, QEventLoop::AllEvents, 10);
   }
-  EXPECT_FALSE(done);
+  EXPECT_FALSE(IsReady(started));
 
   // Resolve the login and verify Start() now completes.
   pending_login.resolve(DataServices::FromUnownedServices(services_.services()));
-  while (!done) {
-    io_context_.poll();
-    QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-  }
+  Wait(std::move(started));
 }
 
 // Ensure that the initial page is created and all windows are defined.
@@ -374,36 +406,11 @@ class ClientApplicationConfiguratorTest : public Test {
  protected:
   template <class T>
   T Wait(promise<T> pending) {
-    std::optional<T> result;
-    std::exception_ptr error;
-    std::move(pending).then(
-        [&](T value) { result = std::move(value); },
-        [&](std::exception_ptr e) { error = e; });
-    while (!result && !error) {
-      io_context_.poll();
-      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-    }
-    if (error) {
-      std::rethrow_exception(error);
-    }
-    return std::move(*result);
+    return WaitForClientApplicationPromise(io_context_, std::move(pending));
   }
 
   void Wait(promise<void> pending) {
-    bool done = false;
-    std::exception_ptr error;
-    std::move(pending).then([&] { done = true; },
-                            [&](std::exception_ptr e) {
-                              error = e;
-                              done = true;
-                            });
-    while (!done) {
-      io_context_.poll();
-      QApplication::processEvents(QEventLoop::WaitForMoreEvents);
-    }
-    if (error) {
-      std::rethrow_exception(error);
-    }
+    WaitForClientApplicationPromise(io_context_, std::move(pending));
   }
 
   boost::asio::io_context io_context_;

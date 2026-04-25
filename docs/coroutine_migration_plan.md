@@ -166,6 +166,15 @@ to regression-test.
   Regression coverage:
   `client/tools/screenshot_generator/screenshot_wait_unittest.cpp` via
   `client_qt_unittests`.
+- **ClientApplication Qt test wait loops** migrated
+  (`client/app/client_application_unittest.cpp`). The test-only helpers that
+  observed `ClientApplication::{Start,Quit}` promises through local
+  `.then(...)` callbacks now poll promise readiness while pumping the same
+  Qt/asio event loops, then call `get()` to preserve rejection propagation.
+  The delayed-login assertion now checks the returned start promise directly
+  instead of attaching a completion callback. Regression coverage:
+  `ClientApplicationPromiseWaitTest.*` plus the existing startup/shutdown
+  application tests in `client_qt_unittests`.
 
 ### Risks
 
@@ -561,13 +570,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the remaining client test-only promise wait loops next, starting with
-`client/app/client_application_unittest.cpp`. Those helpers still attach
-`.then(...)` callbacks to observe `ClientApplication::{Start,Quit}` completion.
-Replace them with deterministic promise readiness polling or a shared Qt test
-wait helper so test infrastructure follows the same callback-free style as the
-production and screenshot-generator paths, while preserving the existing
-startup, shutdown, and cancellation assertions.
+Move from callback-shape cleanup to service-interface cleanup next: audit
+`client/profile/` and the profile-facing module setup for any synchronous or
+promise compatibility boundaries that still force consumers to stay on legacy
+interfaces. If an async profile path is found, migrate that vertical slice to a
+coroutine body with a thin promise wrapper; otherwise document why `profile/`
+is already out of scope and advance the Phase 4 priority marker to the next
+module group.
 
 ### Work
 
