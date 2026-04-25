@@ -90,9 +90,9 @@ promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
   auto dialog = std::make_unique<CsvExportDialog>(
       csv_export_params, dialog_service.GetParentWidget());
 
-  return StartModalDialog(std::move(dialog))
-      .then([&profile](CsvExportDialog* dialog) {
-        profile.data().as_object()["csv"] = ToJson(dialog->params_);
-        return dialog->params_;
+  return StartMappedModalDialog(
+      std::move(dialog), [&profile](CsvExportDialog& dialog) {
+        profile.data().as_object()["csv"] = ToJson(dialog.params_);
+        return dialog.params_;
       });
 }

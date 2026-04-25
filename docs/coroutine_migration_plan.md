@@ -346,6 +346,13 @@ SCADA services or local service doubles.
   coroutine awaitable headers and its Qt/Wt unit tests link the matching AUI
   target. Regression coverage:
   `client/export/csv/csv_export_command_unittest.cpp`.
+- **export/csv Qt parameter dialog result mapping** migrated
+  (`client/export/csv/qt/csv_export_dialog.cpp`). `ShowCsvExportDialog(...)`
+  now uses `StartMappedModalDialog(...)` to map accepted dialog state directly
+  to `CsvExportParams`, persist the accepted params into the profile before the
+  dialog is scheduled for deletion, and reject canceled dialogs without a
+  `.then(...)` continuation. Regression coverage:
+  `client/export/csv/qt/csv_export_dialog_unittest.cpp`.
 - **ui/common `ExpandGroupItemIds` and main consumers** migrated
   (`client/ui/common/client_utils.{h,cpp}`,
   `client/main_window/window_definition_builder.{h,cpp}`,
@@ -510,12 +517,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/export/csv/qt/csv_export_dialog.cpp` next. Its
-`ShowCsvExportDialog(...)` helper still uses `StartModalDialog(...).then(...)`
-to persist accepted CSV export parameters into the profile and return the
-selected params. Convert it to `StartMappedModalDialog(...)`, preserve the
-profile update before the dialog is deleted, and add focused Qt coverage for
-accepted parameter/profile propagation.
+Migrate `client/properties/transport/qt/transport_dialog.cpp` next. Its
+`ShowTransportDialog(...)` helper still uses `StartModalDialog(...).then(...)`
+to return the accepted `transport::TransportString`. Convert it to
+`StartMappedModalDialog(...)`, preserving the model `Save()` call performed by
+`TransportDialog::accept()`, and add focused Qt coverage for accepted transport
+string propagation plus canceled-dialog rejection.
 
 ### Work
 
