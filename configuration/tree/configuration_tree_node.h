@@ -1,16 +1,19 @@
 #pragma once
 
 #include "aui/models/tree_node_model.h"
+#include "base/awaitable.h"
 #include "node_service/node_ref.h"
 
 #include <map>
 #include <memory>
 
 namespace scada {
+class NodeId;
 struct ModelChangeEvent;
 }
 
 class ConfigurationTreeModel;
+class Executor;
 
 class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
  public:
@@ -56,6 +59,15 @@ class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
   virtual void OnModelChanged() {}
 
  private:
+  static Awaitable<void> CompleteFetchMoreAsync(
+      std::shared_ptr<Executor> executor,
+      std::weak_ptr<void> lifetime_token,
+      ConfigurationTreeModel& model,
+      NodeRef node,
+      scada::NodeId node_id,
+      scada::NodeId reference_type_id,
+      bool forward_reference);
+
   ConfigurationTreeModel& model_;
   const scada::NodeId reference_type_id_;
   const bool forward_reference_;

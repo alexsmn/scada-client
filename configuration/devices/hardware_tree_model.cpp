@@ -97,6 +97,8 @@ void HardwareTreeModel::DeviceTreeNode::UpdateNotifier() {
 
 HardwareTreeModel::HardwareTreeModel(HardwareTreeModelContext&& context)
     : ConfigurationTreeModel{::ConfigurationTreeModelContext{
+          .executor_ = context.executor_,
+          .node_service_tree_ =
           context.node_service_tree_factory_(NodeServiceTreeImplContext{
               .executor_ = context.executor_,
               .node_service_ = context.node_service_,

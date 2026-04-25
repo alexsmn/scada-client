@@ -9,7 +9,10 @@
 
 #include <memory>
 
+class Executor;
+
 struct ConfigurationTreeModelContext {
+  std::shared_ptr<Executor> executor_;
   std::unique_ptr<NodeServiceTree> node_service_tree_;
 };
 

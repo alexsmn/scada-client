@@ -1,8 +1,23 @@
 #include "configuration/tree/configuration_tree_node.h"
 
 #include "aui/translation.h"
+#include "base/awaitable.h"
+#include "base/callback_awaitable.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/node_id_util.h"
+
+namespace {
+
+Awaitable<NodeRef> FetchNodeAndChildrenAsync(std::shared_ptr<Executor> executor,
+                                             NodeRef node) {
+  auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
+      std::move(executor), [node = std::move(node)](auto callback) {
+        node.Fetch(NodeFetchStatus::NodeAndChildren(), std::move(callback));
+      });
+  co_return std::move(fetched_node);
+}
+
+}  // namespace
 
 // ConfigurationTreeNode
 
@@ -93,40 +108,56 @@ void ConfigurationTreeNode::FetchMore() {
     return;
   }
 
-  auto lifetime_token = model_.GetLifetimeToken();
-  auto* model = &model_;
-  const auto node_id = node_.node_id();
-  const auto reference_type_id = reference_type_id_;
-  const auto forward_reference = forward_reference_;
-  node_.Fetch(NodeFetchStatus::NodeAndChildren(),
-              [lifetime_token, model, node_id, reference_type_id,
-               forward_reference](const NodeRef& node) {
-                if (lifetime_token.expired())
-                  return;
+  CoSpawn(model_.executor_,
+          [executor = model_.executor_, lifetime_token = model_.GetLifetimeToken(),
+           model = &model_, node = node_, node_id = node_.node_id(),
+           reference_type_id = reference_type_id_,
+           forward_reference = forward_reference_]() mutable
+              -> Awaitable<void> {
+            co_await ConfigurationTreeNode::CompleteFetchMoreAsync(
+                std::move(executor), std::move(lifetime_token), *model,
+                std::move(node), std::move(node_id),
+                std::move(reference_type_id), forward_reference);
+          });
+}
 
-                auto* tree_node = model->FindTreeNode(node_id, reference_type_id,
-                                                      forward_reference);
-                if (!tree_node) {
-                  LOG_INFO(model->logger_)
-                      << "Ignore stale children fetched callback"
-                      << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
-                  return;
-                }
+Awaitable<void> ConfigurationTreeNode::CompleteFetchMoreAsync(
+    std::shared_ptr<Executor> executor,
+    std::weak_ptr<void> lifetime_token,
+    ConfigurationTreeModel& model,
+    NodeRef node,
+    scada::NodeId node_id,
+    scada::NodeId reference_type_id,
+    bool forward_reference) {
+  auto fetched_node =
+      co_await FetchNodeAndChildrenAsync(std::move(executor), std::move(node));
 
-                LOG_INFO(model->logger_)
-                    << "Children fetched callback begin"
-                    << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()));
+  if (lifetime_token.expired()) {
+    co_return;
+  }
 
-                tree_node->children_loaded_ = true;
-                const auto added_child_count = tree_node->AddChildren();
-                tree_node->Changed();
+  auto* tree_node =
+      model.FindTreeNode(node_id, reference_type_id, forward_reference);
+  if (!tree_node) {
+    LOG_INFO(model.logger_)
+        << "Ignore stale children fetched callback"
+        << LOG_TAG("NodeId", NodeIdToScadaString(fetched_node.node_id()));
+    co_return;
+  }
 
-                LOG_INFO(model->logger_)
-                    << "Children fetched callback completed"
-                    << LOG_TAG("NodeId", NodeIdToScadaString(node.node_id()))
-                    << LOG_TAG("AddedChildCount", added_child_count)
-                    << LOG_TAG("TotalChildCount", tree_node->GetChildCount());
-              });
+  LOG_INFO(model.logger_)
+      << "Children fetched callback begin"
+      << LOG_TAG("NodeId", NodeIdToScadaString(fetched_node.node_id()));
+
+  tree_node->children_loaded_ = true;
+  const auto added_child_count = tree_node->AddChildren();
+  tree_node->Changed();
+
+  LOG_INFO(model.logger_)
+      << "Children fetched callback completed"
+      << LOG_TAG("NodeId", NodeIdToScadaString(fetched_node.node_id()))
+      << LOG_TAG("AddedChildCount", added_child_count)
+      << LOG_TAG("TotalChildCount", tree_node->GetChildCount());
 }
 
 // ConfigurationTreeRootNode

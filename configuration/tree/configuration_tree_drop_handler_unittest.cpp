@@ -100,7 +100,7 @@ class ConfigurationTreeDropHandlerTest : public Test {
         .WillByDefault(Return(std::vector<NodeServiceTree::ChildRef>{}));
 
     model_ = std::make_unique<ConfigurationTreeModel>(
-        ConfigurationTreeModelContext{std::move(node_service_tree)});
+        ConfigurationTreeModelContext{executor_, std::move(node_service_tree)});
     model_->Init();
     return static_cast<ConfigurationTreeNode*>(model_->GetRoot());
   }

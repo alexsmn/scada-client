@@ -549,6 +549,19 @@ SCADA services or local service doubles.
   controller executor into the handler, while the UI-facing `DropAction`
   contract remains synchronous. Regression coverage:
   `client/configuration/tree/configuration_tree_drop_handler_unittest.cpp`.
+- **configuration tree lazy child fetch** migrated
+  (`client/configuration/tree/configuration_tree_model.{h,cpp}`,
+  `client/configuration/tree/configuration_tree_node.{h,cpp}`,
+  `client/configuration/{nodes,objects,devices}`, and
+  `client/filesystem`). `ConfigurationTreeNode::FetchMore` now starts an
+  executor-pinned coroutine that awaits the callback-shaped
+  `NodeRef::Fetch(NodeAndChildren, callback)` through `CallbackToAwaitable`.
+  The model owns the executor so fetched children are materialized on the UI
+  executor, and the previous lifetime-token / stale-tree-node suppression is
+  preserved before touching the model after an await. Regression coverage:
+  `client/configuration/tree/configuration_tree_model_unittest.cpp` now covers
+  successful materialization, loading text while pending, model destruction,
+  and removal of a tree node before the delayed fetch callback resumes.
 - **node property initial fetch/update** migrated
   (`client/components/node_properties/node_property_model.cpp`). The model
   constructor now starts an executor-pinned coroutine using
@@ -600,13 +613,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue Phase 4 in `configuration/tree` by migrating
-`ConfigurationTreeNode::FetchMore`. Replace the callback-shaped
-`NodeRef::Fetch(NodeAndChildren, callback)` path with an executor-pinned
-coroutine/awaitable helper that preserves the current lifetime-token and
-stale-node suppression behavior, then cover successful child materialization,
-pending loading text, and stale callback/update suppression in the existing
-configuration-tree model tests.
+Continue Phase 4 in `configuration/objects` by migrating
+`ObjectTreeModel::CreateVisibleNode`. Replace its direct
+`NodeRef::Fetch(NodeOnly, callback)` proxy-visible-node update with an
+executor-pinned coroutine that preserves the proxy update behavior, handles
+model/node lifetime explicitly, and adds object-tree model coverage for fetched
+nodes, pending proxy nodes, and stale completion after the tree row is hidden
+or removed.
 
 ### Work
 

@@ -24,6 +24,7 @@ std::shared_ptr<ConfigurationTreeModel> NodesView::CreateConfigurationTreeModel(
           .reference_filter_ = {{scada::id::HierarchicalReferences, true}}});
   auto model =
       std::make_shared<ConfigurationTreeModel>(ConfigurationTreeModelContext{
+          .executor_ = context.executor_,
           .node_service_tree_ = std::move(node_service_tree)});
   model->Init();
   return model;

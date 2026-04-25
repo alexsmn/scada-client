@@ -21,7 +21,9 @@ class FileSystemView : public ConfigurationTreeView {
       const ControllerContext& context) {
     auto model =
         std::make_shared<ConfigurationTreeModel>(ConfigurationTreeModelContext{
-            std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
+            .executor_ = context.executor_,
+            .node_service_tree_ =
+                std::make_unique<NodeServiceTreeImpl>(NodeServiceTreeImplContext{
                 .executor_ = context.executor_,
                 .node_service_ = context.node_service_,
                 .root_node_ =
@@ -36,6 +38,7 @@ class FileSystemView : public ConfigurationTreeView {
   CreateConfigurationTreeDropHandler(const ControllerContext& context) {
     return std::make_unique<ConfigurationTreeDropHandler>(
         ConfigurationTreeDropHandlerContext{
+            context.executor_,
             context.node_service_,
             context.task_manager_,
             context.create_tree_,
