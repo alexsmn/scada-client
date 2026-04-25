@@ -32,7 +32,7 @@ std::unique_ptr<UiView> NodePropertyController::Init(
 
   property_model_ = std::make_shared<NodePropertyModel>(
       property_service_,
-      PropertyContext{node_service_, task_manager_, dialog_service_},
+      PropertyContext{executor_, node_service_, task_manager_, dialog_service_},
       std::move(node));
 
   struct PropertyTreeModelHolder {

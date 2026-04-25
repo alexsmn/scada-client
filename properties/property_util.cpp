@@ -1,5 +1,7 @@
 #include "properties/property_util.h"
 
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
 #include "base/range_util.h"
 #include "common/format.h"
 #include "node_service/node_promises.h"
@@ -14,29 +16,28 @@
 
 namespace {
 
-promise<void> FetchNodeNamesRecursive(
+Awaitable<void> FetchNodeNamesRecursiveAsync(
+    std::shared_ptr<Executor> executor,
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id,
     const aui::EditData::AsyncChoiceCallback& callback) {
-  return FetchChildren(parent_node).then([=] {
-    auto children = parent_node.targets(scada::id::Organizes);
+  co_await AwaitPromise(NetExecutorAdapter{executor},
+                        FetchChildren(parent_node));
 
-    auto child_names =
-        children |
-        boost::adaptors::filtered([type_definition_id](const NodeRef& node) {
-          return IsInstanceOf(node, type_definition_id);
-        }) |
-        boost::adaptors::transformed(&GetFullDisplayName) | to_vector;
-    callback(child_names, false);
+  auto children = parent_node.targets(scada::id::Organizes);
 
-    auto recursive_promises =
-        children | boost::adaptors::transformed([type_definition_id, callback](
-                                                    const NodeRef& node) {
-          return FetchNodeNamesRecursive(node, type_definition_id, callback);
-        });
+  auto child_names =
+      children |
+      boost::adaptors::filtered([type_definition_id](const NodeRef& node) {
+        return IsInstanceOf(node, type_definition_id);
+      }) |
+      boost::adaptors::transformed(&GetFullDisplayName) | to_vector;
+  callback(child_names, false);
 
-    return make_all_promise_void(recursive_promises);
-  });
+  for (const auto& child : children) {
+    co_await FetchNodeNamesRecursiveAsync(executor, child, type_definition_id,
+                                          callback);
+  }
 }
 
 }  // namespace
@@ -77,12 +78,17 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
 }
 
 aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
+    std::shared_ptr<Executor> executor,
     const NodeRef& parent,
     const scada::NodeId& type_definition_id) {
-  return [parent, type_definition_id](
+  return [executor = std::move(executor), parent, type_definition_id](
              const aui::EditData::AsyncChoiceCallback& callback) {
     callback({std::u16string{kChoiceNone}}, false);
-    FetchNodeNamesRecursive(parent, type_definition_id, callback)
-        .then([callback] { callback({}, true); });
+    CoSpawn(executor, [executor, parent, type_definition_id,
+                       callback]() -> Awaitable<void> {
+      co_await FetchNodeNamesRecursiveAsync(executor, parent, type_definition_id,
+                                            callback);
+      callback({}, true);
+    });
   };
 }

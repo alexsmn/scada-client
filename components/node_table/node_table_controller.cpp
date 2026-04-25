@@ -42,7 +42,8 @@ NodeTableController::NodeTableController(const ControllerContext& context,
       model_{std::make_unique<NodeTableModel>(
           executor_,
           property_service_,
-          PropertyContext{context.node_service_, context.task_manager_,
+          PropertyContext{context.executor_, context.node_service_,
+                          context.task_manager_,
                           context.dialog_service_})} {
   if (parent_node)
     model_->SetParentNode(parent_node);

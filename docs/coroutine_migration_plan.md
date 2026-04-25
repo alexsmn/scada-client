@@ -276,6 +276,8 @@ SCADA services or local service doubles.
   `client/components/device_metrics/device_metrics_command_unittest.cpp`.
 - **properties + components/node_table** partially migrated
   (`client/properties/property_service.{h,cpp}`,
+  `client/properties/property_util.{h,cpp}`,
+  `client/properties/property_context.h`,
   `client/components/node_table/node_table_model.cpp`).
   `PropertyService` now has coroutine-native
   `GetChildPropertyDefsAsync` / `GetAllSubtypesPropertiesAsync` helpers for
@@ -286,7 +288,10 @@ SCADA services or local service doubles.
   cancellation-aware coroutine instead of a four-step `.then(...).except(...)`
   pipeline. The coroutine explicitly checks the current `CancelationRef` after
   each await so stale parent-node loads cannot update the table after a newer
-  selection. Regression coverage:
+  selection. `PropertyContext` now carries the UI executor, and the
+  reference/channel dropdown choice flow uses `MakeAsyncChoiceHandler` to spawn
+  `FetchNodeNamesRecursiveAsync` while preserving the callback-shaped
+  `aui::EditData::AsyncChoiceHandler` UI contract. Regression coverage:
   `client/properties/property_defs_unittest.cpp`.
 - **OPC UA outbound session adapter** migrated
   (`common/opcua/client_session.{h,cpp}`).
@@ -310,12 +315,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Finish the properties/node-table slice by migrating
-`client/properties/property_util.cpp::MakeAsyncChoiceHandler` and the
-reference-property async choice flow to executor-backed coroutine helpers.
-That should remove the remaining recursive `FetchNodeNamesRecursive(...).then`
-pipeline in properties code while preserving the existing callback-shaped
-`aui::EditData::AsyncChoiceHandler` UI contract.
+Finish the remaining properties promise chains by migrating
+`TransportPropertyDefinition::HandleEditButton` and the legacy
+`PropertyService::GetChildPropertyDefs(...)` compatibility wrapper. Keep the
+public promise-returning entry point as a thin `ToPromise` adapter over
+`GetChildPropertyDefsAsync` so current callers remain source-compatible while
+new UI code uses the coroutine path directly.
 
 ### Work
 

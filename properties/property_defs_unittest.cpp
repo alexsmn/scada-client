@@ -19,6 +19,7 @@
 #include "properties/property_context.h"
 #include "properties/property_defs.h"
 #include "properties/property_service.h"
+#include "properties/property_util.h"
 #include "services/task_manager_mock.h"
 
 #include "base/debug_util.h"
@@ -39,9 +40,11 @@ class PropertyDefsTest : public Test {
   std::shared_ptr<NodeService> node_service =
       v1::CreateTestNodeService(address_space);
 
+  std::shared_ptr<TestExecutor> executor = std::make_shared<TestExecutor>();
   StrictMock<MockTaskManager> task_manager;
   StrictMock<MockDialogService> dialog_service;
-  PropertyContext property_context{*node_service, task_manager, dialog_service};
+  PropertyContext property_context{executor, *node_service, task_manager,
+                                   dialog_service};
 
   ChannelPropertyDefinition channel_property_definition{u"Title", true};
 
@@ -156,4 +159,28 @@ TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {
                data_items::id::DataItemType_Input1;
       });
   EXPECT_TRUE(has_input1);
+}
+
+TEST_F(PropertyDefsTest, DeviceChoiceHandler_LoadsChoicesFromCoroutine) {
+  CreateDataItem("GROUP_DEVICE!device.channel.path");
+
+  auto editor = channel_property_definition.GetPropertyEditor(
+      property_context, node_service->GetNode(data_item_id),
+      data_items::id::DataItemType_Input1);
+  ASSERT_TRUE(editor.async_choice_handler);
+
+  std::vector<std::u16string> choices;
+  bool completed = false;
+  editor.async_choice_handler(
+      [&](const std::vector<std::u16string>& batch, bool last) {
+        choices.insert(choices.end(), batch.begin(), batch.end());
+        completed = last;
+      });
+  Drain(executor);
+
+  EXPECT_TRUE(completed);
+  EXPECT_THAT(choices,
+              IsSupersetOf({std::u16string{kChoiceNone},
+                            u16format(L"{} : {}", kLinkDisplayName,
+                                      kDeviceDisplayName)}));
 }

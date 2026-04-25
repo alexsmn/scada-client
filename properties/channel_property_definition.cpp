@@ -140,6 +140,7 @@ aui::EditData ChannelPropertyDefinition::GetPropertyEditor(
 
   if (device_) {
     result.async_choice_handler = MakeAsyncChoiceHandler(
+        context.executor_,
         context.node_service_.GetNode(devices::id::Devices),
         devices::id::DeviceType);
 

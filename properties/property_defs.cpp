@@ -86,6 +86,7 @@ aui::EditData ReferencePropertyDefinition::GetPropertyEditor(
       GetTargetTypeDefinition(node.type_definition(), prop_decl_id);
 
   result.async_choice_handler = MakeAsyncChoiceHandler(
+      context.executor_,
       context.node_service_.GetNode(scada::id::ObjectsFolder),
       target_type_definition.node_id());
 
