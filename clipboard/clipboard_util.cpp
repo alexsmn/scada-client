@@ -1,6 +1,8 @@
 #include "clipboard/clipboard_util.h"
 
-#include "base/range_util.h"
+#include "base/awaitable.h"
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "base/win/clipboard.h"
 #include "clipboard/node_serialization.h"
 #include "common/node_state.h"
@@ -12,8 +14,8 @@
 #include "services/task_manager.h"
 
 #include <Windows.h>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/transformed.hpp>
+
+void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes);
 
 namespace {
 
@@ -21,6 +23,61 @@ const UINT kNodeTreeHeaderFormat =
     ::RegisterClipboardFormat(L"CE4D311D-FB1C-4972-9EA8-3C2C1FB5091A");
 const UINT kNodeTreeFormat =
     ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
+
+Awaitable<void> CopyNodesToClipboardAsync(std::vector<NodeRef> nodes) {
+  auto executor = co_await boost::asio::this_coro::executor;
+
+  for (const auto& node : nodes) {
+    co_await AwaitPromise(executor, FetchNode(node));
+  }
+
+  CopyNodesToClipboardSync(nodes);
+}
+
+Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
+    TaskManager& task_manager,
+    scada::NodeState node_state);
+
+Awaitable<void> PasteChildrenAsync(TaskManager& task_manager,
+                                   std::vector<scada::NodeState> children,
+                                   const scada::NodeId& parent_id) {
+  for (auto& child : children) {
+    assert(child.reference_type_id == scada::id::Organizes);
+    child.parent_id = parent_id;
+    co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
+                                                   std::move(child));
+  }
+}
+
+Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
+    TaskManager& task_manager,
+    scada::NodeState node_state) {
+  auto executor = co_await boost::asio::this_coro::executor;
+
+  std::erase_if(
+      node_state.references,
+      [](const scada::ReferenceDescription& ref) { return !ref.forward; });
+
+  auto children = std::exchange(node_state.children, {});
+
+  // `PostInsertTask` must take a node state with no children.
+  auto node_id =
+      co_await AwaitPromise(executor, task_manager.PostInsertTask(node_state));
+  co_await PasteChildrenAsync(task_manager, std::move(children), node_id);
+}
+
+Awaitable<void> PasteNodesFromNodeTreeAsync(
+    TaskManager& task_manager,
+    const scada::NodeId& new_parent_id,
+    const protocol::NodeTree& node_tree) {
+  for (const auto& packed_node : node_tree.node()) {
+    auto node_state = ConvertTo<scada::NodeState>(packed_node);
+    assert(node_state.reference_type_id == scada::id::Organizes);
+    node_state.parent_id = new_parent_id;
+    co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
+                                                   std::move(node_state));
+  }
+}
 
 }  // namespace
 
@@ -71,49 +128,27 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
 void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
   assert(!nodes.empty());
 
-  auto fetch_promises = nodes | boost::adaptors::transformed(&FetchNode);
-
-  make_all_promise_void(std::move(fetch_promises)).then([nodes] {
-    CopyNodesToClipboardSync(nodes);
+  CoSpawn(MakeThreadAnyExecutor(), [nodes]() -> Awaitable<void> {
+    try {
+      co_await CopyNodesToClipboardAsync(nodes);
+    } catch (...) {
+    }
   });
 }
 
 promise<> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
                                            scada::NodeState&& node_state) {
-  std::erase_if(
-      node_state.references,
-      [](const scada::ReferenceDescription& ref) { return !ref.forward; });
-
-  auto children = std::exchange(node_state.children, {});
-
-  // `PostInsertTask` must take a node state with no children.
-  return task_manager.PostInsertTask(node_state)
-      .then([&task_manager, children = std::move(children)](
-                const scada::NodeId& node_id) mutable {
-        std::vector<promise<>> promises;
-        for (auto& child : children) {
-          assert(child.reference_type_id == scada::id::Organizes);
-          child.parent_id = node_id;
-          promises.emplace_back(
-              PasteNodesFromNodeStateRecursive(task_manager, std::move(child)));
-        }
-        return make_all_promise_void(std::move(promises));
-      });
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor, PasteNodesFromNodeStateRecursiveAsync(
+                                 task_manager, std::move(node_state)));
 }
 
 promise<> PasteNodesFromNodeTree(TaskManager& task_manager,
                                  const scada::NodeId& new_parent_id,
                                  const protocol::NodeTree& node_tree) {
-  std::vector<promise<>> promises;
-  for (const auto& packed_node : node_tree.node()) {
-    auto node_state = ConvertTo<scada::NodeState>(packed_node);
-    assert(node_state.reference_type_id == scada::id::Organizes);
-    node_state.parent_id = new_parent_id;
-    promises.emplace_back(
-        PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state)));
-  }
-
-  return make_all_promise_void(std::move(promises));
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor, PasteNodesFromNodeTreeAsync(
+                                 task_manager, new_parent_id, node_tree));
 }
 
 promise<> PasteNodesFromClipboard(TaskManager& task_manager,

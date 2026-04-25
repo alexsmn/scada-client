@@ -448,6 +448,17 @@ SCADA services or local service doubles.
   or is destroyed. `client_graph` now links `transport` for coroutine
   awaitable headers. Regression coverage:
   `client/graph/graph_view_unittest.cpp`.
+- **clipboard recursive paste/copy helpers** migrated
+  (`client/clipboard/clipboard_util.cpp`). `CopyNodesToClipboard` now spawns a
+  coroutine that awaits each node fetch before writing the clipboard formats,
+  while preserving the existing fire-and-forget public command surface.
+  `PasteNodesFromNodeStateRecursive(...)` and `PasteNodesFromNodeTree(...)`
+  remain `promise<>` compatibility boundaries but now delegate to recursive
+  coroutine bodies that await `TaskManager::PostInsertTask`, strip inverse
+  references before insertion, and assign inserted parent IDs to children
+  before recursing. `client_clipboard` now links `transport` for coroutine
+  awaitable headers. Regression coverage:
+  `client/clipboard/clipboard_util_unittest.cpp`.
 
 ### Priority Order
 
@@ -461,15 +472,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/clipboard/clipboard_util.cpp` next. Its copy and recursive
-paste helpers still use `make_all_promise(_void)` and nested `.then(...)`
-chains around node fetches and `TaskManager::PostInsertTask`. Convert
-`CopyNodesToClipboard`, `PasteNodesFromNodeStateRecursive`, and
-`PasteNodesFromNodeTree` to coroutine-backed compatibility wrappers, preserve
-the existing public `promise<>` boundaries and clipboard behavior, and add
-tests for recursive paste ordering, child-parent assignment, rejected insert
-propagation, and copy waiting for all node fetches before writing clipboard
-data.
+Migrate `client/components/node_properties/node_property_model.cpp` next. Its
+constructor still calls `FetchNode(node_).then(cancelation_.Bind(...))` before
+building the property tree. Convert the initial fetch/update path to an
+executor-pinned coroutine using the existing `PropertyContext::executor_`,
+preserve cancellation on destruction and node-delete behavior, and add focused
+tests that the model updates after fetch completion and does not update after
+cancellation/destruction.
 
 ### Work
 
