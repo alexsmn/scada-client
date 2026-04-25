@@ -9,6 +9,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/range_util.h"
 #include "common/node_state.h"
+#include "components/device_metrics/node_collector.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/method_service_mock.h"
 #include "scada/monitored_item_service_mock.h"
@@ -33,6 +34,9 @@ class DeviceMetricsCommandTest : public Test {
 
  protected:
   scada::Node* CreateDevice(scada::NodeId node_id,
+                            scada::LocalizedText display_name);
+  scada::Node* CreateObject(scada::NodeId node_id,
+                            scada::NodeId parent_id,
                             scada::LocalizedText display_name);
 
   scada::NodeState MakeDataVariableNode() const;
@@ -101,6 +105,22 @@ scada::Node* DeviceMetricsCommandTest::CreateDevice(
 
   CreateDataVariables(node_factory, node->id(), *node->type_definition());
 
+  return node;
+}
+
+scada::Node* DeviceMetricsCommandTest::CreateObject(
+    scada::NodeId node_id,
+    scada::NodeId parent_id,
+    scada::LocalizedText display_name) {
+  GenericNodeFactory node_factory{address_space_};
+
+  auto [status, node] = node_factory.CreateNode(scada::NodeState{
+      std::move(node_id), scada::NodeClass::Object, scada::id::BaseObjectType,
+      std::move(parent_id), scada::id::Organizes,
+      scada::NodeAttributes{}.set_display_name(std::move(display_name))});
+
+  assert(status);
+  assert(node);
   return node;
 }
 
@@ -194,6 +214,61 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionAsync) {
 
   EXPECT_THAT(header_row, ElementsAre(CellIs(u"Device 1"),
                                       CellIs(u"Device 2")));
+}
+
+TEST_F(DeviceMetricsCommandTest, CollectChildrenAsyncKeepsOnlyMatchingTypes) {
+  const auto* parent = CreateDevice({1, device_namespace_index}, u"Parent");
+  const auto* child = CreateDevice({2, device_namespace_index}, u"Child");
+  CreateObject({100, device_namespace_index}, parent->id(), u"Folder");
+
+  scada::AddReference(address_space_, scada::id::Organizes, parent->id(),
+                      child->id());
+
+  auto children = WaitAwaitable(
+      executor_, CollectChildrenAsync(MakeTestAnyExecutor(executor_),
+                                      node_service_.GetNode(parent->id()),
+                                      devices::id::DeviceType));
+
+  ASSERT_THAT(children, SizeIs(1));
+  EXPECT_EQ(children.front().node_id(), child->id());
+}
+
+TEST_F(DeviceMetricsCommandTest,
+       CollectNodesRecursiveAsyncSkipsNonMatchingBranches) {
+  const auto* parent = CreateDevice({1, device_namespace_index}, u"Parent");
+  const auto* child = CreateDevice({2, device_namespace_index}, u"Child");
+  const auto* folder =
+      CreateObject({100, device_namespace_index}, parent->id(), u"Folder");
+  const auto* skipped_child =
+      CreateDevice({3, device_namespace_index}, u"Skipped child");
+
+  scada::AddReference(address_space_, scada::id::Organizes, parent->id(),
+                      child->id());
+  scada::AddReference(address_space_, scada::id::Organizes, folder->id(),
+                      skipped_child->id());
+
+  auto nodes = WaitAwaitable(
+      executor_, CollectNodesRecursiveAsync(MakeTestAnyExecutor(executor_),
+                                            node_service_.GetNode(parent->id()),
+                                            devices::id::DeviceType));
+
+  EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,
+              ElementsAre(parent->id(), child->id()));
+}
+
+TEST_F(DeviceMetricsCommandTest, CollectNodesRecursivePromiseUsesCoroutineBody) {
+  const auto* parent = CreateDevice({1, device_namespace_index}, u"Parent");
+  const auto* child = CreateDevice({2, device_namespace_index}, u"Child");
+
+  scada::AddReference(address_space_, scada::id::Organizes, parent->id(),
+                      child->id());
+
+  auto nodes = CollectNodesRecursive(node_service_.GetNode(parent->id()),
+                                     devices::id::DeviceType)
+                   .get();
+
+  EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,
+              ElementsAre(parent->id(), child->id()));
 }
 
 TEST_F(DeviceMetricsCommandTest,

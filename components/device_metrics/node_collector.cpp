@@ -1,6 +1,7 @@
 #include "components/device_metrics/node_collector.h"
 
 #include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "base/span_util.h"
 
 #include <boost/range/adaptor/filtered.hpp>
@@ -40,22 +41,10 @@ Awaitable<NodeRef> FetchNodeAsync(AnyExecutor executor,
 promise<std::vector<NodeRef>> CollectChildren(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id) {
-  return FetchNode(parent_node, NodeFetchStatus::ChildrenOnly())
-      .then([](const NodeRef& fetched_node) {
-        return make_all_promise(
-            fetched_node.targets(scada::id::Organizes) |
-            boost::adaptors::transformed([](const NodeRef& node) {
-              return FetchNode(node, NodeFetchStatus::NodeOnly());
-            }));
-      })
-      .then([type_definition_id](const std::vector<NodeRef>& fetched_children) {
-        return fetched_children |
-               boost::adaptors::filtered(
-                   [type_definition_id](const NodeRef& node) {
-                     return IsInstanceOf(node, type_definition_id);
-                   }) |
-               to_vector;
-      });
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor,
+                   CollectChildrenAsync(executor, parent_node,
+                                        type_definition_id));
 }
 
 Awaitable<std::vector<NodeRef>> CollectChildrenAsync(
@@ -79,18 +68,10 @@ Awaitable<std::vector<NodeRef>> CollectChildrenAsync(
 promise<std::vector<NodeRef>> CollectNodesRecursive(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id) {
-  return CollectChildren(parent_node, type_definition_id)
-      .then([type_definition_id](const std::vector<NodeRef>& children) {
-        return make_all_promise(
-            children | boost::adaptors::transformed([type_definition_id](
-                                                        const NodeRef& node) {
-              return CollectNodesRecursive(node, type_definition_id);
-            }));
-      })
-      .then([parent_node](
-                const std::vector<std::vector<NodeRef>>& recursive_children) {
-        return JoinAll(parent_node, recursive_children);
-      });
+  auto executor = MakeThreadAnyExecutor();
+  return ToPromise(executor,
+                   CollectNodesRecursiveAsync(executor, parent_node,
+                                              type_definition_id));
 }
 
 Awaitable<std::vector<NodeRef>> CollectNodesRecursiveAsync(

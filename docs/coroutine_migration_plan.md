@@ -272,6 +272,10 @@ SCADA services or local service doubles.
   remains as a thin `ToPromise` wrapper. The
   `ID_OPEN_DEVICE_METRICS` selection command now awaits the coroutine
   function directly inside its existing cancellation-gated `CoSpawn` body.
+  The remaining `CollectChildren(...)` and `CollectNodesRecursive(...)`
+  promise compatibility wrappers now delegate to the same coroutine traversal
+  body through a thread executor instead of keeping a second recursive
+  `.then(...)` implementation.
   Regression coverage:
   `client/components/device_metrics/device_metrics_command_unittest.cpp`.
 - **properties + components/node_table** partially migrated
@@ -436,13 +440,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/components/device_metrics/node_collector.cpp` next. It still
-uses recursive promise chains for type-resolution and child collection. Convert
-the node collection helpers to coroutine functions that await `FetchNode(...)`
-and `FetchChildren(...)`, preserve recursive traversal behavior, and add
-focused tests for collecting matching descendants, skipping non-matching
-branches, and surfacing fetch failures consistently with the current promise
-behavior.
+Migrate `client/export/csv/csv_export_command.cpp` next. Its export workflow
+still runs as a linear `.then(...)` chain for save-file selection, export
+parameter dialog, CSV generation, completion prompt, and the associated-program
+launch. Convert `CsvExportCommandRun::Run` / `Export` into executor-pinned
+coroutine bodies, keep `RunCsvExport(...)` as the public `promise<void>`
+compatibility entry point, and add focused tests for successful export,
+export failure dialog/rejection, and canceled save/dialog behavior.
 
 ### Work
 
