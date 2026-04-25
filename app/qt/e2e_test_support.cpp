@@ -183,104 +183,58 @@ Awaitable<void> Delay(std::shared_ptr<Executor> executor,
       });
 }
 
-class ObjectViewValuesCheck final
-    : public std::enable_shared_from_this<ObjectViewValuesCheck> {
- public:
-  ObjectViewValuesCheck(ClientApplication& app,
-                        std::shared_ptr<Executor> executor,
-                        std::filesystem::path report_path)
-      : app_{app},
-        timer_{std::move(executor)},
-        report_path_{std::move(report_path)},
-        deadline_{std::chrono::steady_clock::now() + 15s} {}
-
-  promise<> Run() {
-    Poll();
-    return promise_.then([keep_alive = shared_from_this()] {});
-  }
-
- private:
-  void Poll() {
-    if (auto* object_tree_view = FindObjectTreeView(app_)) {
-      if (auto value_text = object_tree_view->GetFirstValueTextForTesting()) {
-        WriteObjectViewValuesReport(report_path_, true, "value text present");
-        promise_.resolve();
-        return;
-      }
+Awaitable<void> RunObjectViewValuesCheckAsync(
+    ObjectViewValuesCheckContext context,
+    std::filesystem::path report_path) {
+  const auto deadline = std::chrono::steady_clock::now() + context.timeout;
+  do {
+    if (auto value_text = context.get_first_value_text()) {
+      WriteObjectViewValuesReport(report_path, true, "value text present");
+      co_return;
     }
 
-    if (std::chrono::steady_clock::now() >= deadline_) {
-      WriteObjectViewValuesReport(report_path_, false,
-                                  "timed out waiting for value text");
-      promise_.resolve();
-      return;
+    if (std::chrono::steady_clock::now() >= deadline)
+      break;
+
+    co_await Delay(context.executor, context.poll_interval);
+  } while (true);
+
+  WriteObjectViewValuesReport(report_path, false,
+                              "timed out waiting for value text");
+  co_return;
+}
+
+bool IsObjectTreeLabelsReady(const std::vector<std::u16string>& labels) {
+  if (labels.size() != 4)
+    return false;
+  return std::ranges::all_of(labels, [](const auto& label) {
+    return !label.empty() && label.find(u"[") == std::u16string::npos;
+  });
+}
+
+Awaitable<void> RunObjectTreeLabelsCheckAsync(
+    ObjectTreeLabelsCheckContext context,
+    std::filesystem::path report_path) {
+  const auto deadline = std::chrono::steady_clock::now() + context.timeout;
+  std::vector<std::u16string> labels;
+  do {
+    labels = context.get_expanded_labels();
+    if (IsObjectTreeLabelsReady(labels)) {
+      WriteObjectTreeLabelsReport(report_path, true, labels,
+                                  "expanded first rendered path");
+      co_return;
     }
 
-    timer_.StartOne(100ms, [self = shared_from_this()] { self->Poll(); });
-  }
+    if (std::chrono::steady_clock::now() >= deadline)
+      break;
 
-  ClientApplication& app_;
-  ExecutorTimer timer_;
-  const std::filesystem::path report_path_;
-  const std::chrono::steady_clock::time_point deadline_;
-  promise<> promise_;
-};
+    co_await Delay(context.executor, context.poll_interval);
+  } while (true);
 
-class ObjectTreeLabelsCheck final
-    : public std::enable_shared_from_this<ObjectTreeLabelsCheck> {
- public:
-  ObjectTreeLabelsCheck(ClientApplication& app,
-                        std::shared_ptr<Executor> executor,
-                        std::filesystem::path report_path)
-      : app_{app},
-        timer_{std::move(executor)},
-        report_path_{std::move(report_path)},
-        deadline_{std::chrono::steady_clock::now() + 15s} {}
-
-  promise<> Run() {
-    Poll();
-    return promise_.then([keep_alive = shared_from_this()] {});
-  }
-
- private:
-  static bool IsReady(const std::vector<std::u16string>& labels) {
-    if (labels.size() != 4)
-      return false;
-    return std::ranges::all_of(labels, [](const auto& label) {
-      return !label.empty() && label.find(u"[") == std::u16string::npos;
-    });
-  }
-
-  void Poll() {
-    if (auto* object_tree_view = FindObjectTreeView(app_)) {
-      auto labels = object_tree_view->GetExpandedLabelPathForTesting(3);
-      if (IsReady(labels)) {
-        WriteObjectTreeLabelsReport(report_path_, true, labels,
-                                    "expanded first rendered path");
-        promise_.resolve();
-        return;
-      }
-    }
-
-    if (std::chrono::steady_clock::now() >= deadline_) {
-      std::vector<std::u16string> labels;
-      if (auto* object_tree_view = FindObjectTreeView(app_))
-        labels = object_tree_view->GetExpandedLabelPathForTesting(3);
-      WriteObjectTreeLabelsReport(report_path_, false, labels,
-                                  "timed out waiting for rendered labels");
-      promise_.resolve();
-      return;
-    }
-
-    timer_.StartOne(100ms, [self = shared_from_this()] { self->Poll(); });
-  }
-
-  ClientApplication& app_;
-  ExecutorTimer timer_;
-  const std::filesystem::path report_path_;
-  const std::chrono::steady_clock::time_point deadline_;
-  promise<> promise_;
-};
+  WriteObjectTreeLabelsReport(report_path, false, labels,
+                              "timed out waiting for rendered labels");
+  co_return;
+}
 
 class HardwareTreeDevicesCheck final
     : public std::enable_shared_from_this<HardwareTreeDevicesCheck> {
@@ -530,9 +484,26 @@ promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
   if (report_path.empty())
     return make_resolved_promise();
 
-  auto check = std::make_shared<ObjectViewValuesCheck>(
-      app, std::move(executor), std::move(report_path));
-  return check->Run();
+  return RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext{
+      .executor = executor,
+      .get_first_value_text =
+          [&app]() -> std::optional<std::u16string> {
+            if (auto* object_tree_view = FindObjectTreeView(app))
+              return object_tree_view->GetFirstValueTextForTesting();
+            return std::nullopt;
+          },
+  }, std::move(report_path));
+}
+
+promise<> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
+                                      std::filesystem::path report_path) {
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto executor = context.executor;
+  return ToPromise(NetExecutorAdapter{executor},
+                   RunObjectViewValuesCheckAsync(std::move(context),
+                                                 std::move(report_path)));
 }
 
 promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
@@ -595,9 +566,26 @@ promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
   if (report_path.empty())
     return make_resolved_promise();
 
-  auto check = std::make_shared<ObjectTreeLabelsCheck>(
-      app, std::move(executor), std::move(report_path));
-  return check->Run();
+  return RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext{
+      .executor = executor,
+      .get_expanded_labels =
+          [&app] {
+            if (auto* object_tree_view = FindObjectTreeView(app))
+              return object_tree_view->GetExpandedLabelPathForTesting(3);
+            return std::vector<std::u16string>{};
+          },
+  }, std::move(report_path));
+}
+
+promise<> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,
+                                      std::filesystem::path report_path) {
+  if (report_path.empty())
+    return make_resolved_promise();
+
+  auto executor = context.executor;
+  return ToPromise(NetExecutorAdapter{executor},
+                   RunObjectTreeLabelsCheckAsync(std::move(context),
+                                                 std::move(report_path)));
 }
 
 promise<> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,

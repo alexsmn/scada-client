@@ -2,9 +2,11 @@
 
 #include "base/promise.h"
 
+#include <chrono>
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -41,14 +43,32 @@ struct OperatorUseCaseSmokeContext {
   std::function<bool(std::string_view)> is_window_printable;
 };
 
+struct ObjectViewValuesCheckContext {
+  std::shared_ptr<Executor> executor;
+  std::function<std::optional<std::u16string>()> get_first_value_text;
+  std::chrono::milliseconds timeout{15000};
+  std::chrono::milliseconds poll_interval{100};
+};
+
+struct ObjectTreeLabelsCheckContext {
+  std::shared_ptr<Executor> executor;
+  std::function<std::vector<std::u16string>()> get_expanded_labels;
+  std::chrono::milliseconds timeout{15000};
+  std::chrono::milliseconds poll_interval{100};
+};
+
 promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
                                       std::shared_ptr<Executor> executor);
+promise<> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
+                                      std::filesystem::path report_path);
 promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app);
 promise<> RunE2eOperatorUseCaseSmoke(OperatorUseCaseSmokeContext context,
                                      std::filesystem::path report_path,
                                      std::vector<OperatorUseCaseSmokeCheck> checks);
 promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
                                       std::shared_ptr<Executor> executor);
+promise<> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,
+                                      std::filesystem::path report_path);
 promise<> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
                                          std::shared_ptr<Executor> executor);
 

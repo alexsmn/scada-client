@@ -147,6 +147,13 @@ to regression-test.
   was folded into an awaitable helper that maps `MainWindow::OpenView(...)`
   results without a `.then(...)` continuation. Regression coverage:
   `client/app/qt/e2e_test_support_unittest.cpp`.
+- **Qt object-view/object-tree E2E polling reports** migrated
+  (`client/app/qt/e2e_test_support.{h,cpp}`). `ObjectViewValuesCheck::Run()`
+  and `ObjectTreeLabelsCheck::Run()` no longer retain polling objects through
+  `promise_.then(...)`; both report flows now use coroutine-backed polling
+  loops with the shared `Delay(...)` helper, preserving success and timeout
+  report contents. Regression coverage:
+  `client/app/qt/e2e_test_support_unittest.cpp`.
 
 ### Risks
 
@@ -542,12 +549,14 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the remaining polling E2E support helpers in
-`client/app/qt/e2e_test_support.cpp` next. `ObjectViewValuesCheck::Run()` and
-`ObjectTreeLabelsCheck::Run()` still return `promise_.then(...)` solely to keep
-their polling state alive. Convert them to coroutine-backed polling loops using
-the existing `Delay(...)` helper, preserve timeout/report behavior, and add
-focused coverage for successful report generation and timeout/failure reports.
+Migrate the screenshot-generator promise wait helpers next
+(`client/tools/screenshot_generator/main.cpp` and
+`client/tools/screenshot_generator/dialog_capture.cpp`). They still bridge
+promises to local blocking loops with `.then(...)` callbacks. Replace those
+wait paths with a small coroutine/promise wait helper or existing awaitable
+test utility equivalent, preserve timeout/error reporting behavior, and add
+focused coverage around successful completion and rejected promises if the
+tooling target has a unit-test hook.
 
 ### Work
 

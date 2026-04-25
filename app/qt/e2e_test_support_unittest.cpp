@@ -8,6 +8,7 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -121,6 +122,79 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
   EXPECT_NE(report.find("BrokenWindow failure open returned null"),
             std::string::npos);
   EXPECT_NE(report.find("UC-Y ok window open failure"), std::string::npos);
+}
+
+TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
+  WaitPromise(executor_, RunE2eObjectViewValuesCheck(
+                             ObjectViewValuesCheckContext{
+                                 .executor = executor_,
+                                 .get_first_value_text =
+                                     [] { return std::optional{u"value"}; },
+                                 .timeout = std::chrono::milliseconds{0},
+                                 .poll_interval = std::chrono::milliseconds{0},
+                             },
+                             report_path_));
+
+  const auto report = ReadFile(report_path_);
+  EXPECT_NE(report.find("object-view-values: ok"), std::string::npos);
+  EXPECT_NE(report.find("value text present"), std::string::npos);
+}
+
+TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
+  WaitPromise(executor_, RunE2eObjectViewValuesCheck(
+                             ObjectViewValuesCheckContext{
+                                 .executor = executor_,
+                                 .get_first_value_text =
+                                     [] { return std::optional<std::u16string>{}; },
+                                 .timeout = std::chrono::milliseconds{0},
+                                 .poll_interval = std::chrono::milliseconds{0},
+                             },
+                             report_path_));
+
+  const auto report = ReadFile(report_path_);
+  EXPECT_NE(report.find("object-view-values: failure"), std::string::npos);
+  EXPECT_NE(report.find("timed out waiting for value text"), std::string::npos);
+}
+
+TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
+  WaitPromise(executor_, RunE2eObjectTreeLabelsCheck(
+                             ObjectTreeLabelsCheckContext{
+                                 .executor = executor_,
+                                 .get_expanded_labels =
+                                     [] {
+                                       return std::vector<std::u16string>{
+                                           u"Root", u"Area", u"Device", u"Point"};
+                                     },
+                                 .timeout = std::chrono::milliseconds{0},
+                                 .poll_interval = std::chrono::milliseconds{0},
+                             },
+                             report_path_));
+
+  const auto report = ReadFile(report_path_);
+  EXPECT_NE(report.find("object-tree-labels: ok"), std::string::npos);
+  EXPECT_NE(report.find("expanded first rendered path"), std::string::npos);
+  EXPECT_NE(report.find("label[3]=Point"), std::string::npos);
+}
+
+TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesTimeoutReport) {
+  WaitPromise(executor_, RunE2eObjectTreeLabelsCheck(
+                             ObjectTreeLabelsCheckContext{
+                                 .executor = executor_,
+                                 .get_expanded_labels =
+                                     [] {
+                                       return std::vector<std::u16string>{
+                                           u"Root", u"[loading]"};
+                                     },
+                                 .timeout = std::chrono::milliseconds{0},
+                                 .poll_interval = std::chrono::milliseconds{0},
+                             },
+                             report_path_));
+
+  const auto report = ReadFile(report_path_);
+  EXPECT_NE(report.find("object-tree-labels: failure"), std::string::npos);
+  EXPECT_NE(report.find("timed out waiting for rendered labels"),
+            std::string::npos);
+  EXPECT_NE(report.find("label[1]=[loading]"), std::string::npos);
 }
 
 }  // namespace client
