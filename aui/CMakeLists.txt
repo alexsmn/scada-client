@@ -11,6 +11,8 @@ target_compile_features(aui_qt PUBLIC cxx_std_20)
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 target_link_libraries(aui_qt PUBLIC
   Qt5::Widgets
+  scada_core
+  transport
 )
 
 if(WIN32)

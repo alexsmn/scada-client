@@ -1,10 +1,7 @@
 #include "components/time_range/time_range_dialog.h"
 
-#include "aui/qt/message_loop_qt.h"
 #include "aui/dialog_service.h"
-#include "base/awaitable.h"
-#include "base/awaitable_promise.h"
-#include "net/net_executor_adapter.h"
+#include "aui/qt/dialog_util.h"
 #include "ui_time_range_dialog.h"
 
 namespace {
@@ -65,38 +62,12 @@ void TimeRangeDialog::accept() {
   QDialog::accept();
 }
 
-namespace {
-
-Awaitable<TimeRange> RunTimeRangeDialogAsync(
-    std::unique_ptr<TimeRangeDialog> dialog) {
-  auto executor = co_await boost::asio::this_coro::executor;
-  promise<TimeRange> result;
-
-  QObject::connect(dialog.get(), &QDialog::accepted,
-                   [&dialog = *dialog, result]() mutable {
-                     result.resolve(dialog.time_range());
-                     dialog.deleteLater();
-                   });
-
-  QObject::connect(dialog.get(), &QDialog::rejected,
-                   [&dialog = *dialog, result]() mutable {
-                     result.reject(std::exception{});
-                     dialog.deleteLater();
-                   });
-
-  dialog->setModal(true);
-  dialog.release()->show();
-
-  co_return co_await AwaitPromise(executor, std::move(result));
-}
-
-}  // namespace
-
 promise<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
                                        TimeRangeContext&& context) {
   auto dialog = std::make_unique<TimeRangeDialog>(
       std::move(context), dialog_service.GetParentWidget());
-  auto executor = std::make_shared<MessageLoopQt>();
-  return ToPromise(NetExecutorAdapter{executor},
-                   RunTimeRangeDialogAsync(std::move(dialog)));
+  return StartMappedModalDialog(std::move(dialog),
+                                [](TimeRangeDialog& dialog) {
+                                  return dialog.time_range();
+                                });
 }

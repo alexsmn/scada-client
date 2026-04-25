@@ -477,6 +477,17 @@ SCADA services or local service doubles.
   `deleteLater()`, and propagates rejection for canceled dialogs without a
   `.then(...)` continuation. Regression coverage:
   `client/components/time_range/qt/time_range_dialog_unittest.cpp`.
+- **Qt modal dialog result mapping helpers** migrated
+  (`client/aui/qt/dialog_util.h`, `client/aui/qt/prompt_dialog.cpp`,
+  `client/aui/qt/dialog_service_impl_qt.cpp`). A shared coroutine-backed
+  `StartMappedModalDialog(...)` helper now waits for accepted/rejected dialog
+  completion on a `MessageLoopQt` executor, maps accepted dialogs to the public
+  return value before scheduling `deleteLater()`, rejects canceled dialogs, and
+  rejects mapper exceptions. Prompt/open-file/save-file flows now use that
+  helper instead of `StartModalDialog(...).then(...)`; the time range dialog was
+  folded back onto the shared helper as well. `aui_qt` now links `transport`
+  and `scada_core` for the awaitable helper surface. Regression coverage:
+  `client/aui/qt/dialog_util_unittest.cpp`.
 
 ### Priority Order
 
@@ -490,13 +501,13 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the remaining Qt dialog helpers in `client/aui/qt/` next:
-`prompt_dialog.cpp` and `dialog_service_impl_qt.cpp` still use
-`StartModalDialog(...).then(...)` to map accepted dialogs to return values.
-Introduce or reuse a coroutine-backed modal-dialog result helper that preserves
-accepted/rejected ownership and `deleteLater()` behavior, convert prompt/open
-file/save file flows together, and add focused Qt unit coverage for accepted
-result propagation and rejected dialog cancellation where practical.
+Migrate `client/aui/resource_error.h` next. It still uses `.then(...)` and
+`.except(...)` to route failed resource operations through
+`DialogService::RunMessageBox(...)`. Convert `HandleResourceError(...)` to a
+coroutine-backed `promise<T>` compatibility wrapper that awaits the source
+promise, displays the error dialog on failure, rethrows the original exception,
+and add tests covering success passthrough, dialog display on failure, and
+original exception propagation after the dialog is acknowledged.
 
 ### Work
 

@@ -120,8 +120,8 @@ promise<std::filesystem::path> DialogServiceImplQt::SelectOpenFile(
   auto dialog =
       std::make_unique<QFileDialog>(parent_widget, std::move(caption));
   dialog->setAcceptMode(QFileDialog::AcceptOpen);
-  return StartModalDialog(std::move(dialog)).then([](QFileDialog* dialog) {
-    auto files = dialog->selectedFiles();
+  return StartMappedModalDialog(std::move(dialog), [](QFileDialog& dialog) {
+    auto files = dialog.selectedFiles();
     if (files.size() != 1) {
       // Unexpected.
       throw std::exception{};
@@ -142,8 +142,8 @@ promise<std::filesystem::path> DialogServiceImplQt::SelectSaveFile(
       QString::fromStdU16String(params.default_path.u16string()));
   dialog->selectNameFilter(MakeFilter(params.filters));
 
-  return StartModalDialog(std::move(dialog)).then([](QFileDialog* dialog) {
-    auto files = dialog->selectedFiles();
+  return StartMappedModalDialog(std::move(dialog), [](QFileDialog& dialog) {
+    auto files = dialog.selectedFiles();
     if (files.size() != 1) {
       // Unexpected.
       throw std::exception{};

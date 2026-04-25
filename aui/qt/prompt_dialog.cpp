@@ -14,7 +14,7 @@ promise<std::u16string> RunPromptDialog(DialogService& dialog_service,
   dialog->setWindowTitle(QString::fromStdU16String(title));
   dialog->setLabelText(QString::fromStdU16String(prompt));
   dialog->setTextValue(QString::fromStdU16String(initial_value));
-  return StartModalDialog(std::move(dialog)).then([](QInputDialog* dialog) {
-    return dialog->textValue().toStdU16String();
+  return StartMappedModalDialog(std::move(dialog), [](QInputDialog& dialog) {
+    return dialog.textValue().toStdU16String();
   });
 }
