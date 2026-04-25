@@ -300,8 +300,12 @@ SCADA services or local service doubles.
   `aui::EditData::AsyncChoiceHandler` UI contract.
   `TransportPropertyDefinition::HandleEditButton` now spawns a UI-executor
   coroutine and awaits the modal transport dialog instead of continuing with a
-  `.then(...)` callback. Regression coverage:
-  `client/properties/property_defs_unittest.cpp`.
+  `.then(...)` callback. The Qt transport dialog result path now uses
+  `StartMappedModalDialog(...)` to return the accepted
+  `transport::TransportString` after `TransportDialog::accept()` saves the
+  model, and rejects canceled dialogs without a `.then(...)` continuation.
+  Regression coverage: `client/properties/property_defs_unittest.cpp` and
+  `client/properties/transport/qt/transport_dialog_unittest.cpp`.
 - **OPC UA outbound session adapter** migrated
   (`common/opcua/client_session.{h,cpp}`).
   `opcua::ClientSession` now exposes
@@ -517,12 +521,15 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate `client/properties/transport/qt/transport_dialog.cpp` next. Its
-`ShowTransportDialog(...)` helper still uses `StartModalDialog(...).then(...)`
-to return the accepted `transport::TransportString`. Convert it to
-`StartMappedModalDialog(...)`, preserving the model `Save()` call performed by
-`TransportDialog::accept()`, and add focused Qt coverage for accepted transport
-string propagation plus canceled-dialog rejection.
+Migrate the Qt application startup chain in `client/app/qt/main.cpp` next.
+The posted startup task still builds a nested
+`app.Start().then(...).then(...).except(...)` pipeline, then attaches separate
+completion continuations for E2E and normal modes. Convert that orchestration
+to a small executor-pinned coroutine that awaits startup, E2E checks, `Run()`,
+and failure reporting linearly, while preserving the current E2E success/failure
+status behavior and the non-E2E `QApplication::quit` completion path. Add or
+extend Qt application unit coverage for startup success, startup failure, and
+normal quit scheduling.
 
 ### Work
 

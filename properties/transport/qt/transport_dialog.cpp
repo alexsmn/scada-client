@@ -103,7 +103,7 @@ promise<transport::TransportString> ShowTransportDialog(
   auto model = std::make_unique<TransportDialogModel>(transport_string);
   auto dialog = std::make_unique<TransportDialog>(
       std::move(model), dialog_service.GetParentWidget());
-  return StartModalDialog(std::move(dialog)).then([](TransportDialog* dialog) {
-    return dialog->transport_string();
+  return StartMappedModalDialog(std::move(dialog), [](TransportDialog& dialog) {
+    return dialog.transport_string();
   });
 }
