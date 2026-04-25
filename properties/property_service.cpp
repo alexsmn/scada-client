@@ -1,6 +1,7 @@
 #include "properties/property_service.h"
 
 #include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "base/range_util.h"
 #include "base/u16format.h"
 #include "model/data_items_node_ids.h"
@@ -79,9 +80,13 @@ std::unordered_set<NodeRef> GetChildTypeDefinitions(
 
 Awaitable<PropertyDefs> GetChildPropertyDefsCompatAsync(
     std::shared_ptr<PropertyService> service,
-    AnyExecutor executor,
+    std::optional<AnyExecutor> configured_executor,
     NodeRef parent_node) {
-  co_return co_await service->GetChildPropertyDefsAsync(std::move(executor),
+  if (!configured_executor) {
+    throw std::logic_error{"PropertyService executor is not configured"};
+  }
+
+  co_return co_await service->GetChildPropertyDefsAsync(*configured_executor,
                                                         parent_node);
 }
 
@@ -178,15 +183,13 @@ PropertyDefs PropertyService::GetTypePropertyDefs(
 
 promise<PropertyDefs> PropertyService::GetChildPropertyDefs(
     const NodeRef& parent_node) {
-  if (!executor_) {
-    return make_rejected_promise<PropertyDefs>(
-        std::logic_error{"PropertyService executor is not configured"});
-  }
-
-  auto executor = *executor_;
+  auto configured_executor = executor_;
+  auto executor =
+      configured_executor ? *configured_executor : MakeThreadAnyExecutor();
   auto service = std::make_shared<PropertyService>(*this);
   return ToPromise(executor, GetChildPropertyDefsCompatAsync(
-                                 std::move(service), executor, parent_node));
+                                 std::move(service), configured_executor,
+                                 parent_node));
 }
 
 Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(

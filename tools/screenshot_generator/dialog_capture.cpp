@@ -5,7 +5,9 @@
 #include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
+#include "base/awaitable_promise.h"
 #include "base/console_logger.h"
+#include "base/executor_conversions.h"
 #include "base/promise.h"
 #include "components/limits/limit_dialog.h"
 #include "components/login/login_dialog.h"
@@ -28,6 +30,7 @@
 #include <transport/transport_factory.h>
 
 #include <gtest/gtest.h>
+#include <stdexcept>
 
 namespace {
 
@@ -46,35 +49,47 @@ class NullTransportFactory : public transport::TransportFactory {
   }
 };
 
+Awaitable<void> RejectTaskManagerCallAsync() {
+  throw std::runtime_error{"Screenshot capture task manager is not available"};
+  co_return;
+}
+
+template <typename T>
+Awaitable<T> RejectTaskManagerCallAsync() {
+  throw std::runtime_error{"Screenshot capture task manager is not available"};
+  co_return T{};
+}
+
 // Dummy TaskManager. We never press OK on captured dialogs, so no
-// task is ever posted — every method returns a rejected promise just
-// in case something slips through.
+// task is ever posted. Each method still rejects through a coroutine-backed
+// promise in case something slips through.
 class NullTaskManager : public TaskManager {
  public:
   promise<void> PostTask(std::u16string_view,
                          const TaskLauncher&) override {
-    return make_rejected_promise<void>(std::exception{});
+    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
   }
   promise<scada::NodeId> PostInsertTask(const scada::NodeState&) override {
-    return make_rejected_promise<scada::NodeId>(std::exception{});
+    return ToPromise(MakeThreadAnyExecutor(),
+                     RejectTaskManagerCallAsync<scada::NodeId>());
   }
   promise<void> PostUpdateTask(const scada::NodeId&,
                                scada::NodeAttributes,
                                scada::NodeProperties) override {
-    return make_rejected_promise<void>(std::exception{});
+    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
   }
   promise<void> PostDeleteTask(const scada::NodeId&) override {
-    return make_rejected_promise<void>(std::exception{});
+    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
   }
   promise<void> PostAddReference(const scada::NodeId&,
                                  const scada::NodeId&,
                                  const scada::NodeId&) override {
-    return make_rejected_promise<void>(std::exception{});
+    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
   }
   promise<void> PostDeleteReference(const scada::NodeId&,
                                     const scada::NodeId&,
                                     const scada::NodeId&) override {
-    return make_rejected_promise<void>(std::exception{});
+    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
   }
 };
 

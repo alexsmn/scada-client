@@ -140,3 +140,13 @@ TEST(ExportDataBuilder, BuildUsesExecutorPinnedCoroutine) {
       ElementsAre(Field(&ExportData::Node::node_id,
                        scada::NodeId{11, NamespaceIndexes::TIT})));
 }
+
+TEST(ExportDataBuilder, BuildRejectsViaCoroutineWhenExecutorMissing) {
+  StaticNodeService node_service;
+  node_service.AddAll(GetScadaNodeStates());
+
+  auto executor = std::make_shared<TestExecutor>();
+  ExportDataBuilder builder{node_service, nullptr};
+
+  EXPECT_THROW(WaitPromise(executor, builder.Build()), std::logic_error);
+}

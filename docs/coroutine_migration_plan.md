@@ -403,6 +403,21 @@ SCADA services or local service doubles.
   of building nested `make_all_promise(...).then(...)` lists, while preserving
   namespace filtering and the exported data shape. Regression coverage:
   `client/export/configuration/export_data_builder_unittest.cpp`.
+- **production rejected-promise compatibility audit** migrated
+  (`client/properties/property_service.cpp`,
+  `client/export/configuration/export_data_builder.cpp`,
+  `client/tools/screenshot_generator/dialog_capture.cpp`). The remaining
+  real workflow surfaces that rejected before entering coroutine code now
+  reject from coroutine-backed promise bodies instead: missing executors in
+  `PropertyService::GetChildPropertyDefs(...)` and `ExportDataBuilder::Build()`
+  are reported by their compatibility coroutines, and screenshot capture's
+  defensive `NullTaskManager` methods reject through coroutine-backed promises
+  if a captured dialog unexpectedly posts a task. The Wt add-favourites dialog
+  stub now uses the centralized Wt unsupported-dialog helper instead of its own
+  direct rejection. Regression coverage:
+  `client/properties/property_defs_unittest.cpp`,
+  `client/export/configuration/export_data_builder_unittest.cpp`, and
+  `client/favorites/wt/add_favourites_dialog_unittest.cpp`.
 - **export/csv command flow** migrated
   (`client/export/csv/csv_export_command.{h,cpp}`). `RunCsvExport(...)`
   remains the public `promise<void>` compatibility entry point, but the save
@@ -670,12 +685,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue the production async-surface audit outside test-only helpers: review
-the remaining `MakeRejectedPromise` / `make_rejected_promise` compatibility
-sites in `client/properties` and the screenshot-generator capture helpers.
-Convert any real workflow surface to a coroutine body or document it as an
-intentional immediate-rejection boundary, then add focused success/failure or
-lifetime coverage.
+Continue the production async-surface audit outside test-only helpers: the only
+remaining direct rejected-promise production site is the documented centralized
+Wt unsupported-dialog helper (`client/aui/wt/dialog_stub.h`). Leave that helper
+as the platform boundary unless Wt gains real modal-dialog support, then
+continue with the next non-test promise-chain cluster found by
+`rg "\.then\(|\.except\(" client`.
 
 ### Work
 

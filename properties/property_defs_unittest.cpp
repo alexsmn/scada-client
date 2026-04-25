@@ -178,6 +178,14 @@ TEST_F(PropertyDefsTest, GetChildPropertyDefs_LegacyWrapperUsesCoroutinePath) {
   EXPECT_TRUE(has_input1);
 }
 
+TEST_F(PropertyDefsTest, GetChildPropertyDefs_LegacyWrapperRejectsViaCoroutine) {
+  PropertyService property_service;
+
+  EXPECT_THROW(WaitPromise(executor, property_service.GetChildPropertyDefs(
+                                         node_service->GetNode(data_group_id))),
+               std::logic_error);
+}
+
 TEST_F(PropertyDefsTest, DeviceChoiceHandler_LoadsChoicesFromCoroutine) {
   CreateDataItem("GROUP_DEVICE!device.channel.path");
 

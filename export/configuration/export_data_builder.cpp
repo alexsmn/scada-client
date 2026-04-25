@@ -83,6 +83,16 @@ Awaitable<ExportData> BuildExportDataAsync(
   co_return ExportData{std::move(props), std::move(nodes)};
 }
 
+Awaitable<ExportData> BuildExportDataCompatAsync(
+    std::shared_ptr<ExportDataBuilder> builder,
+    std::shared_ptr<Executor> executor) {
+  if (!executor) {
+    throw std::logic_error{"ExportDataBuilder executor is not configured"};
+  }
+
+  co_return co_await builder->BuildAsync(MakeAnyExecutor(std::move(executor)));
+}
+
 ExportData::Property MakeExportProperty(const NodeRef& node) {
   return {
       node.node_id(),
@@ -113,16 +123,11 @@ void CollectProperties(const NodeRef& type,
 }  // namespace
 
 promise<ExportData> ExportDataBuilder::Build() const {
-  if (!executor_) {
-    return make_rejected_promise<ExportData>(
-        std::logic_error{"ExportDataBuilder executor is not configured"});
-  }
-
-  return ToPromise(
-      MakeAnyExecutor(executor_),
-      BuildExportDataAsync(MakeAnyExecutor(executor_),
-                           node_service_.GetNode(data_items::id::DataItems),
-                           CollectProps()));
+  auto executor =
+      executor_ ? MakeAnyExecutor(executor_) : MakeThreadAnyExecutor();
+  auto builder = std::make_shared<ExportDataBuilder>(*this);
+  return ToPromise(executor,
+                   BuildExportDataCompatAsync(std::move(builder), executor_));
 }
 
 Awaitable<ExportData> ExportDataBuilder::BuildAsync(
