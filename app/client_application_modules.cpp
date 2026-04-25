@@ -68,6 +68,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     if (modules.export_configuration) {
       context.singletons_.emplace(std::make_shared<ExportConfigurationModule>(
           ExportConfigurationModuleContext{
+              .executor_ = context.executor_,
               .node_service_ = context.node_service_,
               .task_manager_ = context.task_manager_,
               .global_commands_ = context.global_commands_}));

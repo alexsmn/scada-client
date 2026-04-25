@@ -5,8 +5,10 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/resource_error.h"
+#include "base/awaitable_promise.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
+#include "base/executor_conversions.h"
 #include "base/u16format.h"
 #include "base/win/win_util2.h"
 #include "export/configuration/diff_builder.h"
@@ -42,67 +44,88 @@ void ExportConfigurationCommand::SaveExportData(const ExportData& export_data,
 promise<void> ExportConfigurationCommand::ExportTo(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
+  return ToPromise(MakeAnyExecutor(executor_),
+                   ExportToAsync(path, dialog_service));
+}
+
+Awaitable<void> ExportConfigurationCommand::ExportToAsync(
+    const std::filesystem::path& path,
+    DialogService& dialog_service) const {
   std::ofstream stream{path};
   if (!stream) {
     throw ResourceError{Translate("Failed to open file.")};
   }
 
-  return CollectExportData()
-      .then([this, stream = std::make_shared<std::ofstream>(std::move(stream))](
-                const ExportData& export_data) {
-        SaveExportData(export_data, *stream);
-      })
-      .then([&dialog_service] {
-        return dialog_service.RunMessageBox(
-            Translate("Export complete. Open the file now?"), kExportTitle,
-            MessageBoxMode::QuestionYesNo);
-      })
-      .then([path](MessageBoxResult open_prompt) {
-        if (open_prompt == MessageBoxResult::Yes) {
-          win_util::OpenWithAssociatedProgram(path);
-        }
-      });
+  auto export_data = co_await AwaitPromise(MakeAnyExecutor(executor_),
+                                           CollectExportData());
+  SaveExportData(export_data, stream);
+
+  auto open_prompt = co_await AwaitPromise(
+      MakeAnyExecutor(executor_),
+      dialog_service.RunMessageBox(
+          Translate("Export complete. Open the file now?"), kExportTitle,
+          MessageBoxMode::QuestionYesNo));
+  if (open_prompt == MessageBoxResult::Yes) {
+    win_util::OpenWithAssociatedProgram(path);
+  }
+  co_return;
 }
 
 promise<void> ExportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
-  return FetchTypeSystem(node_service_)
-      .then([&dialog_service] {
-        return dialog_service.SelectSaveFile(
-            {.title = kExportTitle, .default_path = kDefaultFileName});
-      })
-      .then(CatchResourceError(
-          dialog_service, kExportTitle,
-          [this, &dialog_service](const std::filesystem::path& path) {
-            return ExportTo(path, dialog_service);
-          }));
+  return ToPromise(MakeAnyExecutor(executor_), ExecuteAsync(dialog_service));
+}
+
+Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
+    DialogService& dialog_service) const {
+  co_await AwaitPromise(MakeAnyExecutor(executor_),
+                        FetchTypeSystem(node_service_));
+  auto path = co_await AwaitPromise(
+      MakeAnyExecutor(executor_),
+      dialog_service.SelectSaveFile(
+          {.title = kExportTitle, .default_path = kDefaultFileName}));
+
+  std::exception_ptr resource_error;
+  try {
+    co_await ExportToAsync(path, dialog_service);
+  } catch (const ResourceError&) {
+    resource_error = std::current_exception();
+  }
+  if (resource_error) {
+    co_await AwaitPromise(
+        MakeAnyExecutor(executor_),
+        ShowResourceError<void>(dialog_service, kExportTitle, resource_error));
+  }
+  co_return;
 }
 
 promise<void> ImportConfigurationCommand::ImportFrom(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
-  auto diff_promise = ExportDataBuilder{node_service_}.Build().then(
-      [this, path](const ExportData& old_export_data) {
-        ExportData new_export_data = LoadExportData(path);
-        DiffData diff = BuildDiffData(old_export_data, new_export_data);
-        if (diff.IsEmpty()) {
-          throw ResourceError{Translate("No changes found")};
-        }
-        ShowDiffReport(diff, node_service_);
-        return diff;
-      });
+  return ToPromise(MakeAnyExecutor(executor_),
+                   ImportFromAsync(path, dialog_service));
+}
 
-  return diff_promise
-      .then([&dialog_service](const DiffData& diff) {
-        return dialog_service.RunMessageBox(
-            Translate("Apply changes?"), kImportTitle,
-            MessageBoxMode::QuestionYesNoDefaultNo);
-      })
-      .then([this, diff_promise](MessageBoxResult apply_prompt) {
-        if (apply_prompt == MessageBoxResult::Yes) {
-          ApplyDiffData(diff_promise.get(), task_manager_);
-        }
-      });
+Awaitable<void> ImportConfigurationCommand::ImportFromAsync(
+    const std::filesystem::path& path,
+    DialogService& dialog_service) const {
+  auto old_export_data = co_await AwaitPromise(
+      MakeAnyExecutor(executor_), ExportDataBuilder{node_service_}.Build());
+  ExportData new_export_data = LoadExportData(path);
+  DiffData diff = BuildDiffData(old_export_data, new_export_data);
+  if (diff.IsEmpty()) {
+    throw ResourceError{Translate("No changes found")};
+  }
+  ShowDiffReport(diff, node_service_);
+
+  auto apply_prompt = co_await AwaitPromise(
+      MakeAnyExecutor(executor_),
+      dialog_service.RunMessageBox(Translate("Apply changes?"), kImportTitle,
+                                   MessageBoxMode::QuestionYesNoDefaultNo));
+  if (apply_prompt == MessageBoxResult::Yes) {
+    ApplyDiffData(diff, task_manager_);
+  }
+  co_return;
 }
 
 ExportData ImportConfigurationCommand::LoadExportData(
@@ -126,13 +149,26 @@ ExportData ImportConfigurationCommand::LoadExportData(
 
 promise<> ImportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
-  return FetchTypeSystem(node_service_)
-      .then([&dialog_service] {
-        return dialog_service.SelectOpenFile(kImportTitle);
-      })
-      .then(CatchResourceError(
-          dialog_service, kImportTitle,
-          [this, &dialog_service](const std::filesystem::path& path) {
-            return ImportFrom(path, dialog_service);
-          }));
+  return ToPromise(MakeAnyExecutor(executor_), ExecuteAsync(dialog_service));
+}
+
+Awaitable<void> ImportConfigurationCommand::ExecuteAsync(
+    DialogService& dialog_service) const {
+  co_await AwaitPromise(MakeAnyExecutor(executor_),
+                        FetchTypeSystem(node_service_));
+  auto path = co_await AwaitPromise(MakeAnyExecutor(executor_),
+                                    dialog_service.SelectOpenFile(kImportTitle));
+
+  std::exception_ptr resource_error;
+  try {
+    co_await ImportFromAsync(path, dialog_service);
+  } catch (const ResourceError&) {
+    resource_error = std::current_exception();
+  }
+  if (resource_error) {
+    co_await AwaitPromise(
+        MakeAnyExecutor(executor_),
+        ShowResourceError<void>(dialog_service, kImportTitle, resource_error));
+  }
+  co_return;
 }

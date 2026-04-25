@@ -307,6 +307,21 @@ SCADA services or local service doubles.
   SCADA service methods remain as compatibility boundaries that delegate into
   those `Awaitable` bodies via `ToPromise`/`CoSpawn`. Regression coverage:
   `common/opcua/client_session_unittest.cpp`.
+- **export/configuration Excel command flows** migrated
+  (`client/export/configuration/excel_configuration_commands.{h,cpp}`).
+  `ExportConfigurationCommand::Execute` / `ExportTo` and
+  `ImportConfigurationCommand::Execute` / `ImportFrom` remain
+  promise-returning compatibility entry points, but now delegate to
+  executor-pinned coroutine bodies (`ExecuteAsync`, `ExportToAsync`,
+  `ImportFromAsync`). Save/open prompts, export-data collection,
+  import diff building, confirmation prompts, `ApplyDiffData`, and
+  `ResourceError` reporting now run as linear `co_await` flows instead of
+  `.then(...).then(CatchResourceError(...))` chains. The
+  `ExportConfigurationModuleContext` now carries the client executor, and
+  `client_export_configuration` links `transport` for coroutine awaitable
+  headers, matching the existing coroutine-enabled client modules.
+  Regression coverage:
+  `client/export/configuration/export_configuration_module_unittest.cpp`.
 
 ### Priority Order
 
@@ -320,12 +335,12 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Migrate the configuration import/export command flows in
-`client/export/configuration/`. Start with
-`ExcelConfigurationCommands::Export` and `::Import`, keeping the public command
-handlers unchanged while moving save/open prompts, builder/importer work,
-confirmation prompts, and resource-error reporting into executor-pinned
-coroutine bodies.
+Migrate `client/export/configuration/export_data_builder.{h,cpp}`. Convert the
+remaining nested `FetchNode(...).then(...)`, `FetchChildren(...).then(...)`,
+and `ExpandGroupItemIds(...).then(...)` hierarchy collection steps into
+executor-pinned coroutine helpers, then keep `ExportDataBuilder::Build()` as a
+thin `promise<ExportData>` compatibility wrapper for the command layer and
+existing tests.
 
 ### Work
 

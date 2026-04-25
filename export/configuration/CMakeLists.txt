@@ -2,6 +2,9 @@ client_module(client_export_configuration)
 
 client_module_link_libraries(client_export_configuration PUBLIC
   scada_common
+  # `excel_configuration_commands.cpp` uses coroutine awaitables, which
+  # transitively pull in `transport/executor.h`.
+  transport
 )
 
 client_module_link_libraries(client_export_configuration PRIVATE

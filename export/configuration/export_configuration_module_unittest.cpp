@@ -3,6 +3,8 @@
 #include "address_space/test/test_scada_node_states.h"
 #include "aui/dialog_service_mock.h"
 #include "base/csv_writer.h"
+#include "base/test/awaitable_test.h"
+#include "base/test/test_executor.h"
 #include "common/test/node_state_matcher.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
@@ -35,6 +37,7 @@ class ExportConfigurationModuleTest : public Test {
       const ExportData& export_data) const;
 
   StaticNodeService node_service_;
+  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
   StrictMock<MockTaskManager> task_manager_;
   BasicCommandRegistry<GlobalCommandContext> global_commands_;
 
@@ -44,7 +47,8 @@ class ExportConfigurationModuleTest : public Test {
   GlobalCommandContext main_command_context_{.main_window = main_window_,
                                              .dialog_service = dialog_service_};
 
-  ExportConfigurationModule module_{{.node_service_ = node_service_,
+  ExportConfigurationModule module_{{.executor_ = executor_,
+                                     .node_service_ = node_service_,
                                      .task_manager_ = task_manager_,
                                      .global_commands_ = global_commands_}};
 
@@ -135,6 +139,45 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
   ScopedImportReportSuppressor import_report_suppressor;
 
   command->execute_handler(main_command_context_);
+  Drain(executor_);
+}
+
+TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
+  const auto export_file_path = temp_dir_ / "configuration.csv";
+
+  auto* command =
+      global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(dialog_service_, SelectSaveFile(/*params=*/_))
+      .WillOnce(Return(make_resolved_promise(export_file_path)));
+
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::QuestionYesNo))
+      .WillOnce(Return(make_resolved_promise(MessageBoxResult::No)));
+
+  command->execute_handler(main_command_context_);
+  Drain(executor_);
+
+  EXPECT_TRUE(std::filesystem::exists(export_file_path));
+}
+
+TEST_F(ExportConfigurationModuleTest, ImportCommandOpenFailureShowsErrorDialog) {
+  auto* command =
+      global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
+  ASSERT_THAT(command, NotNull());
+
+  EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
+      .WillOnce(Return(make_resolved_promise(temp_dir_ / "missing.csv")));
+
+  EXPECT_CALL(dialog_service_,
+              RunMessageBox(/*message=*/_, /*title=*/_,
+                            MessageBoxMode::Error))
+      .WillOnce(Return(make_resolved_promise(MessageBoxResult::Ok)));
+
+  command->execute_handler(main_command_context_);
+  Drain(executor_);
 }
 
 std::filesystem::path ExportConfigurationModuleTest::WriteExportDataToTempFile(

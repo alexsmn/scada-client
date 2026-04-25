@@ -12,7 +12,7 @@ ExportConfigurationModule::ExportConfigurationModule(
   // Export command.
 
   auto export_command =
-      std::make_shared<ExportConfigurationCommand>(node_service_);
+      std::make_shared<ExportConfigurationCommand>(node_service_, executor_);
 
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_EXPORT_CONFIGURATION_TO_EXCEL}
@@ -24,7 +24,7 @@ ExportConfigurationModule::ExportConfigurationModule(
   // Import command.
 
   auto import_command = std::make_shared<ImportConfigurationCommand>(
-      node_service_, task_manager_);
+      node_service_, task_manager_, executor_);
 
   global_commands_.AddCommand(
       BasicCommand<GlobalCommandContext>{ID_IMPORT_CONFIGURATION_FROM_EXCEL}
