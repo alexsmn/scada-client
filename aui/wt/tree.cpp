@@ -79,6 +79,10 @@ bool Tree::IsExpanded(void* node, bool up_to_root) const {
   return isExpanded(GetIndex(node, 0));
 }
 
+void Tree::ExpandNode(void* node) {
+  expand(GetIndex(node, 0));
+}
+
 void Tree::SetExpandedHandler(TreeExpandedHandler handler) {
   expanded().connect([this, handler](const Wt::WModelIndex& index) {
     handler(GetNode(index), true);

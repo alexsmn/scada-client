@@ -82,6 +82,7 @@ REGISTER_DATA_SERVICES("Vidicon",
 struct ClientApplication::PostLoginContext {
   scada::services audited_scada_services;
   scada::client scada_client;
+  std::shared_ptr<scada::CoroutineHistoryService> coroutine_history_service;
   AliasResolver alias_resolver;
 };
 
@@ -148,6 +149,9 @@ void ClientApplication::PostLogin() {
   PostLoginContext ctx{
       .audited_scada_services = master_data_services_->as_services(),
       .scada_client = scada::client{master_data_services_->as_services()},
+      .coroutine_history_service =
+          std::static_pointer_cast<scada::CoroutineHistoryService>(
+              master_data_services_),
       .alias_resolver = {}};
 
   CreateNodeService(ctx);
@@ -203,12 +207,12 @@ void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) 
   if (timed_data_service_override_) {
     timed_data_service_ = std::move(timed_data_service_override_);
   } else {
-    timed_data_service_ = CreateTimedDataService(
-        {.executor_ = MakeAnyExecutor(executor_),
-         .alias_resolver_ = ctx.alias_resolver,
-         .node_service_ = *node_service_,
-         .services_ = ctx.audited_scada_services,
-         .node_event_provider_ = event_module_->node_event_provider()});
+    timed_data_service_ = CreateTimedDataService(CoroutineTimedDataContext{
+        .executor_ = MakeAnyExecutor(executor_),
+        .alias_resolver_ = ctx.alias_resolver,
+        .node_service_ = *node_service_,
+        .history_service_ = ctx.coroutine_history_service,
+        .node_event_provider_ = event_module_->node_event_provider()});
   }
   shutdown_stack_.Push([this] { timed_data_service_.reset(); });
 }

@@ -31,6 +31,7 @@ class Tree : public Wt::WTreeView {
   void SetSelectionChangedHandler(SelectionChangedHandler handler);
 
   bool IsExpanded(void* node, bool up_to_root) const;
+  void ExpandNode(void* node);
   void SetExpandedHandler(TreeExpandedHandler handler);
 
   void StartEditing(void* node);
