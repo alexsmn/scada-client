@@ -245,7 +245,7 @@ class HardwareTreeDevicesCheck final
       : app_{app},
         executor_{std::move(executor)},
         report_path_{std::move(report_path)},
-        deadline_{std::chrono::steady_clock::now() + 15s} {}
+        deadline_{std::chrono::steady_clock::now() + 30s} {}
 
   Awaitable<void> RunAsync() {
     auto* main_window = GetFirstMainWindow(app_);

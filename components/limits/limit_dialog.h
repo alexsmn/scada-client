@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "node_service/node_ref.h"
 
 class DialogService;
@@ -10,5 +11,5 @@ struct LimitDialogContext {
   TaskManager& task_manager_;
 };
 
-void ShowLimitsDialog(DialogService& dialog_service,
-                      LimitDialogContext&& context);
+promise<void> ShowLimitsDialog(DialogService& dialog_service,
+                               LimitDialogContext&& context);

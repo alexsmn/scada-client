@@ -30,6 +30,7 @@
 #include <transport/transport_factory.h>
 
 #include <gtest/gtest.h>
+#include <optional>
 #include <stdexcept>
 
 namespace {
@@ -109,11 +110,14 @@ bool FetchAndWaitForPendingNodeLoads(NodeService& node_service,
 // `show()` can finish the cleanup path (deleteLater in most factories).
 bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   QDialog* dialog = nullptr;
-  for (QWidget* w : QApplication::topLevelWidgets()) {
-    if (w->isVisible()) {
-      if (auto* d = qobject_cast<QDialog*>(w)) {
-        dialog = d;
-        break;
+  for (int attempt = 0; attempt < 50 && !dialog; ++attempt) {
+    QApplication::processEvents();
+    for (QWidget* w : QApplication::topLevelWidgets()) {
+      if (w->isVisible()) {
+        if (auto* d = qobject_cast<QDialog*>(w)) {
+          dialog = d;
+          break;
+        }
       }
     }
   }
@@ -144,6 +148,13 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   return true;
 }
 
+bool GrabAndCloseVisibleDialogOrReport(const DialogSpec& spec) {
+  if (GrabAndCloseVisibleDialog(spec))
+    return true;
+  ADD_FAILURE() << "No visible dialog for kind: " << spec.kind;
+  return false;
+}
+
 // --- Per-kind builders. Each invokes the component's public factory
 // (which calls show() internally) and returns; the generic
 // GrabAndCloseVisibleDialog then picks the dialog up from the
@@ -152,17 +163,17 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
 // Adding a new dialog = add a new `Build*Dialog` here and a new arm in
 // the `Dispatch` switch below.
 
-void BuildLoginDialog(DialogEnvironment& env,
-                      NullTransportFactory& transport_factory,
-                      const std::shared_ptr<Logger>& logger) {
+std::optional<promise<void>> BuildLoginDialog(
+    DialogEnvironment& env,
+    NullTransportFactory& transport_factory,
+    const std::shared_ptr<Logger>& logger) {
   DataServicesContext services_context{logger, env.executor,
                                        transport_factory,
                                        scada::ServiceLogParams{}};
-  // Returned promise is intentionally discarded — it resolves when the
-  // user dismisses, which GrabAndCloseVisibleDialog does via reject().
-  [[maybe_unused]] auto p =
-      ExecuteLoginDialog(env.executor, std::move(services_context));
+  auto dialog_lifetime =
+      ToVoidPromise(ExecuteLoginDialog(env.executor, std::move(services_context)));
   QApplication::processEvents();
+  return dialog_lifetime;
 }
 
 // Limits dialog: needs a NodeRef to an analog variable plus a
@@ -171,26 +182,28 @@ void BuildLoginDialog(DialogEnvironment& env,
 // "Температура нагрева", the analog node the docs images target. Limit
 // values still render empty until the fixture grows
 // HasProperty support for AnalogItemType_Limit{Hi,Lo,HiHi,LoLo} (gap #2).
-void BuildLimitsDialog(DialogEnvironment& env,
-                       NullTaskManager& task_manager,
-                       DialogServiceImplQt& dialog_service) {
+std::optional<promise<void>> BuildLimitsDialog(
+    DialogEnvironment& env,
+    NullTaskManager& task_manager,
+    DialogServiceImplQt& dialog_service) {
   if (!env.node_service) {
     ADD_FAILURE() << "LimitsDialog needs a node_service in DialogEnvironment";
-    return;
+    return std::nullopt;
   }
   auto node = env.node_service->GetNode(env.dialog_analog_node_id);
   if (!node) {
     ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
-    return;
+    return std::nullopt;
   }
   if (!FetchAndWaitForPendingNodeLoads(
           *env.node_service, node, NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
-    return;
+    return std::nullopt;
   }
-  ShowLimitsDialog(dialog_service,
-                   LimitDialogContext{node, task_manager});
+  auto dialog_lifetime =
+      ShowLimitsDialog(dialog_service, LimitDialogContext{node, task_manager});
   QApplication::processEvents();
+  return dialog_lifetime;
 }
 
 // Write dialog family. `manual` picks between "Manual Input" (TI
@@ -206,33 +219,34 @@ void BuildLimitsDialog(DialogEnvironment& env,
 // through TestExecutor and Qt's event loop, and the UI only updates via
 // current_change_handler once the DataValue lands. Too few pumps leaves
 // the "Current value:" label blank in the grab.
-void BuildWriteDialog(DialogEnvironment& env,
-                      DialogServiceImplQt& dialog_service,
-                      bool manual) {
+std::optional<promise<void>> BuildWriteDialog(DialogEnvironment& env,
+                                             DialogServiceImplQt& dialog_service,
+                                             bool manual) {
   if (!env.timed_data_service || !env.profile || !env.node_service) {
     ADD_FAILURE()
         << "WriteDialog needs timed_data_service + profile + node_service in env";
-    return;
+    return std::nullopt;
   }
   auto node = env.node_service->GetNode(env.dialog_analog_node_id);
   if (!node) {
     ADD_FAILURE() << "WriteDialog: configured fixture node not found";
-    return;
+    return std::nullopt;
   }
   if (!FetchAndWaitForPendingNodeLoads(
           *env.node_service, node, NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
-    return;
+    return std::nullopt;
   }
-  ExecuteWriteDialog(dialog_service,
-                     WriteContext{.executor_ = env.executor,
-                                  .timed_data_service_ =
-                                      *env.timed_data_service,
-                                  .node_id_ = env.dialog_analog_node_id,
-                                  .profile_ = *env.profile,
-                                  .manual_ = manual});
+  auto dialog_lifetime = ExecuteWriteDialog(
+      dialog_service, WriteContext{.executor_ = env.executor,
+                                   .timed_data_service_ =
+                                       *env.timed_data_service,
+                                   .node_id_ = env.dialog_analog_node_id,
+                                   .profile_ = *env.profile,
+                                   .manual_ = manual});
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
+  return dialog_lifetime;
 }
 
 }  // namespace
@@ -245,21 +259,23 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
   auto logger = std::make_shared<ConsoleLogger>();
 
   if (spec.kind == "login") {
-    BuildLoginDialog(env, transport_factory, logger);
+    [[maybe_unused]] auto dialog_lifetime =
+        BuildLoginDialog(env, transport_factory, logger);
+    return GrabAndCloseVisibleDialogOrReport(spec);
   } else if (spec.kind == "limits") {
-    BuildLimitsDialog(env, task_manager, dialog_service);
+    [[maybe_unused]] auto dialog_lifetime =
+        BuildLimitsDialog(env, task_manager, dialog_service);
+    return GrabAndCloseVisibleDialogOrReport(spec);
   } else if (spec.kind == "write-manual") {
-    BuildWriteDialog(env, dialog_service, /*manual=*/true);
+    [[maybe_unused]] auto dialog_lifetime =
+        BuildWriteDialog(env, dialog_service, /*manual=*/true);
+    return GrabAndCloseVisibleDialogOrReport(spec);
   } else if (spec.kind == "write-remote") {
-    BuildWriteDialog(env, dialog_service, /*manual=*/false);
+    [[maybe_unused]] auto dialog_lifetime =
+        BuildWriteDialog(env, dialog_service, /*manual=*/false);
+    return GrabAndCloseVisibleDialogOrReport(spec);
   } else {
     ADD_FAILURE() << "Unknown dialog kind: " << spec.kind;
     return false;
   }
-
-  if (!GrabAndCloseVisibleDialog(spec)) {
-    ADD_FAILURE() << "No visible dialog for kind: " << spec.kind;
-    return false;
-  }
-  return true;
 }

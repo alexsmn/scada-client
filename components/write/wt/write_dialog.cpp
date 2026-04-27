@@ -2,5 +2,7 @@
 
 #include "components/write/write_model.h"
 
-void ExecuteWriteDialog(DialogService& dialog_service, WriteContext&& context) {
+promise<void> ExecuteWriteDialog(DialogService& dialog_service,
+                                 WriteContext&& context) {
+  return make_resolved_promise();
 }

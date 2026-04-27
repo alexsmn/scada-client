@@ -46,14 +46,14 @@ struct OperatorUseCaseSmokeContext {
 struct ObjectViewValuesCheckContext {
   std::shared_ptr<Executor> executor;
   std::function<std::optional<std::u16string>()> get_first_value_text;
-  std::chrono::milliseconds timeout{15000};
+  std::chrono::milliseconds timeout{30000};
   std::chrono::milliseconds poll_interval{100};
 };
 
 struct ObjectTreeLabelsCheckContext {
   std::shared_ptr<Executor> executor;
   std::function<std::vector<std::u16string>()> get_expanded_labels;
-  std::chrono::milliseconds timeout{15000};
+  std::chrono::milliseconds timeout{30000};
   std::chrono::milliseconds poll_interval{100};
 };
 

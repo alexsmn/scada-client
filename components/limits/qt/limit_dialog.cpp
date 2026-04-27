@@ -48,10 +48,10 @@ void LimitDialog::accept() {
   QDialog::accept();
 }
 
-void ShowLimitsDialog(DialogService& dialog_service,
-                      LimitDialogContext&& context) {
+promise<void> ShowLimitsDialog(DialogService& dialog_service,
+                               LimitDialogContext&& context) {
   auto model = std::make_unique<LimitModel>(std::move(context));
   auto dialog = std::make_unique<LimitDialog>(std::move(model),
                                               dialog_service.GetParentWidget());
-  StartModalDialog(std::move(dialog));
+  return StartOwnedModalDialog(std::move(dialog));
 }

@@ -4,6 +4,7 @@
 #include "aui/test/app_environment.h"
 
 #include <QDialog>
+#include <QPointer>
 #include <gtest/gtest.h>
 
 #include <stdexcept>
@@ -40,6 +41,39 @@ TEST_F(DialogUtilTest, StartMappedModalDialogReturnsAcceptedMappedResult) {
 
   ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
   EXPECT_EQ(result.get(), 42);
+}
+
+TEST_F(DialogUtilTest, StartOwnedModalDialogShowsDialogUntilAccepted) {
+  auto dialog = std::make_unique<QDialog>();
+  QPointer<QDialog> dialog_ptr = dialog.get();
+
+  auto result = StartOwnedModalDialog(std::move(dialog));
+
+  ASSERT_TRUE(dialog_ptr);
+  EXPECT_TRUE(dialog_ptr->isModal());
+  EXPECT_TRUE(dialog_ptr->isVisible());
+
+  aui::qt::test::AcceptDialog(*dialog_ptr);
+  aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog&) {});
+
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
+  EXPECT_NO_THROW(result.get());
+}
+
+TEST_F(DialogUtilTest, StartOwnedModalDialogRejectsCanceledDialog) {
+  auto dialog = std::make_unique<QDialog>();
+  QPointer<QDialog> dialog_ptr = dialog.get();
+
+  auto result = StartOwnedModalDialog(std::move(dialog));
+
+  ASSERT_TRUE(dialog_ptr);
+  EXPECT_TRUE(dialog_ptr->isVisible());
+
+  aui::qt::test::RejectDialog(*dialog_ptr);
+  aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog&) {});
+
+  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
+  EXPECT_THROW(result.get(), std::exception);
 }
 
 TEST_F(DialogUtilTest, StartMappedModalDialogRejectsCanceledDialog) {

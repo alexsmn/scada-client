@@ -96,10 +96,10 @@ class ControllableAddressSpaceFetcher : public v1::AddressSpaceFetcher {
 
 class NodePropertyModelTest : public Test {
  protected:
-  NodePropertyModelTest()
-      : node_service_{v1::NodeServiceImplContext{
-            MakeAddressSpaceFetcherFactory(), address_space_,
-            attribute_service_, monitored_item_service_, method_service_}} {
+	  NodePropertyModelTest()
+	      : node_service_{v1::NodeServiceImplContext{
+	            MakeAddressSpaceFetcherFactory(), address_space_,
+	            scada::client{services_}}} {
     GenericNodeFactory node_factory{address_space_};
     auto [status, node] = node_factory.CreateNode(
         scada::NodeState{}
@@ -144,6 +144,10 @@ class NodePropertyModelTest : public Test {
   NiceMock<scada::MockAttributeService> attribute_service_;
   NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
   NiceMock<scada::MockMethodService> method_service_;
+  scada::services services_{.attribute_service = &attribute_service_,
+                            .monitored_item_service =
+                                &monitored_item_service_,
+                            .method_service = &method_service_};
   v1::NodeServiceImpl node_service_;
   std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
   StrictMock<MockTaskManager> task_manager_;

@@ -118,9 +118,10 @@ void WriteDialog::accept() {
   model_->Write(value, lock);
 }
 
-void ExecuteWriteDialog(DialogService& dialog_service, WriteContext&& context) {
+promise<void> ExecuteWriteDialog(DialogService& dialog_service,
+                                 WriteContext&& context) {
   auto model = std::make_shared<WriteModel>(std::move(context));
   auto dialog =
       std::make_unique<WriteDialog>(model, dialog_service.GetParentWidget());
-  StartModalDialog(std::move(dialog));
+  return StartOwnedModalDialog(std::move(dialog));
 }

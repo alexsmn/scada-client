@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/promise.h"
 #include "scada/node_id.h"
 
 class DialogService;
@@ -18,4 +19,5 @@ struct WriteContext {
   const bool manual_ = false;
 };
 
-void ExecuteWriteDialog(DialogService& dialog_service, WriteContext&& context);
+promise<void> ExecuteWriteDialog(DialogService& dialog_service,
+                                 WriteContext&& context);

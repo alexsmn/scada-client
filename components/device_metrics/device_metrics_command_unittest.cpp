@@ -50,13 +50,16 @@ class DeviceMetricsCommandTest : public Test {
   StrictMock<scada::MockAttributeService> attribute_service_;
   StrictMock<scada::MockMonitoredItemService> monitored_item_service_;
   StrictMock<scada::MockMethodService> method_service_;
+  scada::services services_{.attribute_service = &attribute_service_,
+                            .monitored_item_service =
+                                &monitored_item_service_,
+                            .method_service = &method_service_};
 
   const std::shared_ptr<TestExecutor> executor_ =
       std::make_shared<TestExecutor>();
 
   v1::NodeServiceImpl node_service_{v1::NodeServiceImplContext{
-      MakeAddressSpaceFetcherFactory(), address_space_, attribute_service_,
-      monitored_item_service_, method_service_}};
+      MakeAddressSpaceFetcherFactory(), address_space_, scada::client{services_}}};
 
   const scada::NodeId device_type_definition_id =
       devices::id::Iec60870DeviceType;

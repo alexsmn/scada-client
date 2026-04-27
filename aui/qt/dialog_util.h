@@ -61,6 +61,28 @@ inline promise<T*> StartModalDialog(std::unique_ptr<T> dialog) {
                                 [](T& dialog) { return &dialog; });
 }
 
+template <class T>
+inline promise<void> StartOwnedModalDialog(std::unique_ptr<T> dialog) {
+  promise<void> result;
+  T* dialog_ptr = dialog.release();
+
+  QObject::connect(dialog_ptr, &QDialog::accepted,
+                   [result, dialog_ptr]() mutable {
+                     result.resolve();
+                     dialog_ptr->deleteLater();
+                   });
+
+  QObject::connect(dialog_ptr, &QDialog::rejected,
+                   [result, dialog_ptr]() mutable {
+                     result.reject(std::exception{});
+                     dialog_ptr->deleteLater();
+                   });
+
+  dialog_ptr->setModal(true);
+  dialog_ptr->show();
+  return result;
+}
+
 template <class T, class Mapper>
 using FinishedDialogResult = std::invoke_result_t<Mapper&, T&, int>;
 

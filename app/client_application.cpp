@@ -92,7 +92,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
           std::make_unique<MetricServiceImpl>(MakeAnyExecutor(executor_),
                                               /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
-      master_data_services_{std::make_shared<MasterDataServices>()} {
+      master_data_services_{
+          std::make_shared<MasterDataServices>(MakeAnyExecutor(executor_))} {
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
   metric_service_->RegisterSink(
@@ -380,11 +381,9 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
   logger_->Write(LogSeverity::Normal, "Login completed");
 
   auto audited_services =
-      AuditScadaServices(data_services.CreateSharedServices(), *metric_service_,
-                         core_module_->tracer());
-
-  master_data_services_->SetServices(
-      DataServices::FromSharedServices(audited_services));
+      *AuditDataServices(data_services, *metric_service_, core_module_->tracer(),
+                         MakeAnyExecutor(executor_));
+  master_data_services_->SetServices(std::move(audited_services));
 }
 
 promise<void> ClientApplication::Quit() {
