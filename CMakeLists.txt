@@ -4,7 +4,7 @@ if(POLICY CMP0167)
 endif()
 
 project(scada-client
-  VERSION 2.5.6
+  VERSION 2.6.0
   LANGUAGES CXX
 )
 
