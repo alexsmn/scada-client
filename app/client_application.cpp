@@ -93,7 +93,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
                                               /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       master_data_services_{
-          std::make_shared<MasterDataServices>(MakeAnyExecutor(executor_))} {
+          std::make_shared<MasterDataServices>(MakeAnyExecutor(executor_))},
+      quit_completion_{NetExecutorAdapter{executor_}} {
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
   metric_service_->RegisterSink(
@@ -388,12 +389,23 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
 
 promise<void> ClientApplication::Quit() {
   if (quitting_) {
-    return quit_promise_;
+    return Run();
   }
 
   quitting_ = true;
-  StartAwaitable(NetExecutorAdapter{executor_}, quit_promise_, QuitAsync());
-  return quit_promise_;
+  CoSpawn(executor_, [this]() -> Awaitable<void> {
+    try {
+      co_await QuitAsync();
+      quit_completion_.Complete();
+    } catch (...) {
+      quit_completion_.Fail(std::current_exception());
+    }
+  });
+  return Run();
+}
+
+promise<void> ClientApplication::Run() {
+  return ToPromise(NetExecutorAdapter{executor_}, quit_completion_.Wait());
 }
 
 Awaitable<void> ClientApplication::QuitAsync() {

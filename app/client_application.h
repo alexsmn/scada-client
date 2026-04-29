@@ -2,6 +2,7 @@
 
 #include "app/client_application_modules.h"
 #include "app/login_canceled.h"
+#include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "base/promise.h"
 #include "timed_data/timed_data_service.h"
@@ -110,7 +111,7 @@ class ClientApplication : private ClientApplicationContext {
   // Load profile and start.
   [[nodiscard]] promise<void> Start();
   // Enter the main loop.
-  [[nodiscard]] promise<void> Run() { return quit_promise_; }
+  [[nodiscard]] promise<void> Run();
   [[nodiscard]] promise<void> Quit();
 
  private:
@@ -183,7 +184,7 @@ class ClientApplication : private ClientApplicationContext {
 
   // Sets on `Quit` and never resets. Allows multiple `Quit` calls.
   bool quitting_ = false;
-  promise<void> quit_promise_;
+  base::AsyncCompletion quit_completion_;
 
   // Must be the last member so it is destroyed first, running registered
   // teardown callbacks before the other members are torn down.

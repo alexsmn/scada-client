@@ -175,6 +175,14 @@ to regression-test.
   instead of attaching a completion callback. Regression coverage:
   `ClientApplicationPromiseWaitTest.*` plus the existing startup/shutdown
   application tests in `client_qt_unittests`.
+- **ClientApplication quit lifecycle gate** migrated
+  (`client/app/client_application.{h,cpp}`). The main-loop completion state no
+  longer stores a raw `promise<void>` member. `Run()` now returns a thin
+  promise compatibility wrapper over a `base::AsyncCompletion` gate, and
+  `Quit()` starts the existing coroutine once before completing/failing that
+  gate. Repeated `Quit()` calls and `Run()` calls after shutdown still observe
+  the completed lifecycle boundary. Regression coverage:
+  `ClientApplicationTest.RunWaitsUntilQuitCompletes`.
 - **profile/** audited and marked out of scope for coroutine migration
   (`client/profile/*`). The profile layer is synchronous persistence/model
   code and has no `promise<T>`, callback continuation, executor, or coroutine
@@ -225,6 +233,13 @@ wraps async work to report progress or serialize UI updates.
   insert path is a coroutine returning `NodeId` and the shared queue helper
   maps success, exceptions, status reporting, and queued-task cancellation back
   to the legacy `promise<NodeId>` boundary.
+- **TaskManagerImpl queued void completion** migrated
+  (`client/services/task_manager_impl.{h,cpp}`). Queued void task completion no
+  longer stores a mutable `promise<void>` on each queued `Task`. `PostTaskMethod`
+  now creates a `base::AsyncCompletion` gate and exposes it through the
+  existing `promise<void>` compatibility return, while
+  `ReportRequestCompletion` and queued-task cancellation complete or fail the
+  gate from the shared status path.
 
 ### Target Areas
 
@@ -301,6 +316,15 @@ SCADA services or local service doubles.
   `MainWindowInterface::OpenView` with the optional `mode` item
   injected. Regression coverage:
   `client/events/event_module_unittest.cpp::OpenEventsCommandRoutesToMainWindowOpenView`.
+- **events/HistoricalEventModel history read** migrated
+  (`client/events/historical_event_model.h`). The historical event refresh path
+  no longer calls callback-style `HistoryService::HistoryReadEvents(...)`
+  directly. The model keeps the legacy `HistoryService&` constructor boundary
+  for existing wiring and tests, wraps it once with
+  `scada::CallbackToCoroutineHistoryServiceAdapter`, and refreshes through an
+  executor-pinned coroutine that awaits `CoroutineHistoryService`. The
+  coroutine checks the captured `CancelationRef` after the await so canceled
+  reads cannot repopulate the model after `CancelRequest()`.
 - **main_window/SelectionCommands** migrated
   (`client/main_window/selection_commands.cpp`). The shared
   `MakeOpenViewCommand` helper takes an
@@ -720,11 +744,14 @@ SCADA services or local service doubles.
 Continue the production async-surface audit outside test-only helpers: the only
 remaining direct rejected-promise production site is the documented centralized
 Wt unsupported-dialog helper (`client/aui/wt/dialog_stub.h`). Leave that helper
-as the platform boundary unless Wt gains real modal-dialog support, then
-continue with the remaining manual promise construction audit:
+as the platform boundary unless Wt gains real modal-dialog support. Direct
+production `.then(...)` / `.except(...)` continuations and the remaining direct
+callback-style `HistoryService::HistoryReadEvents(...)` consumer have been
+migrated; continue with the remaining manual promise construction audit:
 `rg "make_promise<|promise<[^>]+> [A-Za-z_]+;" client -g"*.cpp" -g"*.h"`.
-Focus next on remaining production application lifecycle state promises; keep
-intentional queue/public-boundary promises until the public API evaluation phase.
+The remaining production audit hit is the intentional typed public-boundary
+promise in `TaskManagerImpl::PostTypedTaskMethod(...)`, plus test-only promise
+fixtures. Keep those until the public API evaluation phase.
 
 ### Work
 

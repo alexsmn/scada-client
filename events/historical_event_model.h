@@ -1,10 +1,12 @@
 #pragma once
 
+#include "base/awaitable.h"
 #include "base/boost_log.h"
 #include "base/format_time.h"
 #include "base/cancelation.h"
 #include "base/time_range.h"
 #include "scada/event.h"
+#include "scada/coroutine_services.h"
 #include "scada/history_service.h"
 
 #include <boost/signals2/signal.hpp>
@@ -16,7 +18,9 @@ class HistoricalEventModel {
  public:
   HistoricalEventModel(std::shared_ptr<Executor> executor,
                        scada::HistoryService& history_service)
-      : executor_{std::move(executor)}, history_service_{history_service} {}
+      : executor_{std::move(executor)},
+        history_service_{history_service},
+        co_history_service_{executor_, history_service_} {}
 
   void Init(const TimeRange& range) { time_range_ = range; }
 
@@ -41,12 +45,17 @@ class HistoricalEventModel {
   boost::signals2::signal<void()> refilter_now;
 
  private:
+  Awaitable<void> UpdateAsync(CancelationRef request_cancelation,
+                              base::Time from,
+                              base::Time to);
+
   void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
   // The current executor used to sync `history_service_` responses.
   const std::shared_ptr<Executor> executor_;
 
   scada::HistoryService& history_service_;
+  scada::CallbackToCoroutineHistoryServiceAdapter co_history_service_;
 
   // Filter.
   TimeRange time_range_;
@@ -71,14 +80,29 @@ inline void HistoricalEventModel::Update() {
   assert(!request_running_);
   request_running_ = true;
 
-  history_service_.HistoryReadEvents(
+  CoSpawn(executor_,
+          [this, request_cancelation = cancelation_.ref(), from,
+           to]() mutable -> Awaitable<void> {
+            if (request_cancelation.canceled()) {
+              co_return;
+            }
+
+            co_await UpdateAsync(request_cancelation, from, to);
+          });
+}
+
+inline Awaitable<void> HistoricalEventModel::UpdateAsync(
+    CancelationRef request_cancelation,
+    base::Time from,
+    base::Time to) {
+  auto result = co_await co_history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
-      scada::EventFilter{scada::EventFilter::ACKED},
-      BindExecutor(executor_,
-                   cancelation_.Bind(
-                       [this](scada::HistoryReadEventsResult result) {
-                         OnHistoryReadEventsCompleted(std::move(result));
-                       })));
+      scada::EventFilter{scada::EventFilter::ACKED});
+  if (request_cancelation.canceled()) {
+    co_return;
+  }
+
+  OnHistoryReadEventsCompleted(std::move(result));
 }
 
 inline void HistoricalEventModel::OnHistoryReadEventsCompleted(

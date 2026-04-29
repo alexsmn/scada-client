@@ -75,6 +75,16 @@ scada::Status FirstBadStatus(std::span<const scada::StatusCode> codes) {
                            : scada::Status{*it};
 }
 
+void CompleteTaskCompletion(base::AsyncCompletion& completion,
+                            const scada::Status& status) {
+  if (status) {
+    completion.Complete();
+  } else {
+    completion.Fail(
+        std::make_exception_ptr(scada::status_exception{status}));
+  }
+}
+
 }  // namespace
 
 // TaskManagerImpl
@@ -357,7 +367,9 @@ void TaskManagerImpl::ReportRequestCompletion(
     local_events_.ReportEvent(severity, message);
   }
 
-  scada::CompleteStatusPromise(task.promise, status);
+  if (task.completion) {
+    CompleteTaskCompletion(*task.completion, status);
+  }
 }
 
 bool TaskManagerImpl::IsRunning() const {
@@ -370,11 +382,13 @@ void TaskManagerImpl::Run() {
     CancelProgress();
 
     while (!tasks_.empty()) {
+      auto bad_status = scada::Status{scada::StatusCode::Bad};
       if (tasks_.front().cancel) {
-        tasks_.front().cancel(scada::Status{scada::StatusCode::Bad});
+        tasks_.front().cancel(bad_status);
       }
-      scada::RejectStatusPromise(tasks_.front().promise,
-                                 scada::StatusCode::Bad);
+      if (tasks_.front().completion) {
+        CompleteTaskCompletion(*tasks_.front().completion, bad_status);
+      }
       tasks_.pop();
     }
 
@@ -416,11 +430,15 @@ void TaskManagerImpl::Run() {
 
 promise<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
                                               TaskMethod method) {
-  auto promise = tasks_.emplace(std::u16string{title}, std::move(method)).promise;
+  auto completion = base::AsyncCompletion{NetExecutorAdapter{executor_}};
+  auto result = ToPromise(NetExecutorAdapter{executor_}, completion.Wait());
+  tasks_.push(Task{.title = std::u16string{title},
+                   .method = std::move(method),
+                   .completion = std::move(completion)});
 
   Run();
 
-  return promise;
+  return result;
 }
 
 template <class T>
@@ -429,6 +447,7 @@ promise<T> TaskManagerImpl::PostTypedTaskMethod(
     std::function<Awaitable<T>()> method) {
   promise<T> result;
   auto result_completion = result;
+  auto task_completion = base::AsyncCompletion{NetExecutorAdapter{executor_}};
 
   Task task{
       .title = std::u16string{title},
@@ -447,6 +466,7 @@ promise<T> TaskManagerImpl::PostTypedTaskMethod(
           co_return status;
         }
       },
+      .completion = std::move(task_completion),
       .cancel =
           [result_completion](const scada::Status& status) mutable {
             scada::RejectStatusPromise(result_completion, status.code());

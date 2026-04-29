@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/async_completion.h"
 #include "base/awaitable.h"
 #include "base/executor_timer.h"
 #include "scada/coroutine_services.h"
@@ -7,6 +8,7 @@
 #include "services/task_manager.h"
 
 #include <functional>
+#include <optional>
 #include <queue>
 
 namespace scada {
@@ -73,7 +75,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
     std::u16string title;
     TaskMethod method;
-    promise<void> promise;
+    std::optional<base::AsyncCompletion> completion;
     std::function<void(const scada::Status&)> cancel;
   };
 

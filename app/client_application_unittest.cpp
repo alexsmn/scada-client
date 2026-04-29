@@ -299,6 +299,16 @@ TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
   EXPECT_NO_THROW(Wait(app_.Quit()));
 }
 
+TEST_F(ClientApplicationTest, RunWaitsUntilQuitCompletes) {
+  auto running = app_.Run();
+  EXPECT_FALSE(IsReady(running));
+
+  Wait(app_.Quit());
+  Wait(std::move(running));
+
+  EXPECT_NO_THROW(Wait(app_.Run()));
+}
+
 // Start() is coroutine-driven internally. Verify that a rejection from the
 // login handler propagates out of the returned promise so upstream error
 // handling still fires.
