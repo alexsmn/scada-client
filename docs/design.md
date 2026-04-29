@@ -355,10 +355,10 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
 - **Translation coverage is one language.** Only `client_ru.ts` ships.
   Adding another language is a matter of running `lupdate` and shipping
   the new `.qm`, but the workflow is not documented end-to-end.
-- **`promise<T>` and executor pinning are subtle.** Forgetting
-  `BindPromiseExecutor` on a continuation can move work to the wrong
-  thread without an obvious symptom. The `tasks.md` entry on dependency
-  injection hints at moving toward a more declarative style.
+- **`promise<T>` compatibility boundaries and executor pinning are subtle.**
+  Public APIs still expose promises, but migrated implementation code should
+  stay coroutine-first and use `AwaitPromise(...)` / `ToPromise(...)` at
+  explicit boundaries so thread affinity remains visible.
 - **A handful of view-bearing modules predate the `components/`
   convention** (Graph, Event Journal, Configuration trees, Favourites,
   File system) and live at the top level. Their layout is consistent but

@@ -374,8 +374,11 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
 
 - `boost::asio::io_context` for async I/O
 - `Executor` abstraction for task scheduling
-- `BindPromiseExecutor` to pin continuations to the correct executor
-- `promise<T>` for async result chaining
+- Public and module-crossing async APIs keep returning `promise<T>` for
+  compatibility.
+- New or touched async implementation code should use coroutine bodies,
+  `AwaitPromise(...)`, and `ToPromise(...)` at legacy boundaries instead of
+  adding `.then()` chains.
 
 ### Localization
 
@@ -447,6 +450,6 @@ Logging-related switches (pass as `--switch-name`):
 
 11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
 
-10. **Async code** uses `promise<T>` with `.then()` chaining and `BindPromiseExecutor` to stay on the correct executor thread.
+10. **Async code** keeps `promise<T>` at public/module boundaries, but new or touched implementation code should use coroutine bodies with `co_await`. Use `AwaitPromise(...)` to await legacy promises and `ToPromise(...)` only at compatibility boundaries; do not add new `.then()` chains for client workflows.
 
 12. **Add a regression unit test for every fixed bug.** When fixing a bug, add a `*_unittest.cpp` test that fails against the pre-fix code and passes after the fix — it locks in the fix and documents the failure mode in an executable form. If writing the test would require a major redesign (e.g., a new mock layer, restructuring the class under test, splitting a module), confirm the scope with the user before embarking; a targeted regression test on existing seams is always preferable to invasive test plumbing.
