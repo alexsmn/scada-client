@@ -103,7 +103,7 @@ Awaitable<NodeIdSet> ExpandGroupItemIdsAsync(AnyExecutor executor,
   if (max_count == 0)
     co_return NodeIdSet{};
 
-  co_await AwaitPromise(executor, FetchChildren(node));
+  co_await FetchChildren(node);
 
   NodeIdSet node_ids;
   if (node.node_class() == scada::NodeClass::Variable) {

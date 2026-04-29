@@ -131,8 +131,7 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
       [self, node_state]() mutable -> Awaitable<scada::NodeId> {
         NodeRef type_def =
             self->node_service_.GetNode(node_state.type_definition_id);
-        co_await AwaitPromise(NetExecutorAdapter{self->executor_},
-                              FetchNode(type_def));
+        co_await FetchNode(type_def);
 
         if (type_def.node_class() != scada::NodeClass::ObjectType &&
             type_def.node_class() != scada::NodeClass::VariableType) {
@@ -179,8 +178,7 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
         // start while we are still the running task, deadlocking the queue.
         if (!node_state.properties.empty()) {
           NodeRef node = self->node_service_.GetNode(added_node_id);
-          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
-                                FetchNode(node));
+          co_await FetchNode(node);
           auto inputs = PrepareUpdateInputs(node, /*attributes=*/{},
                                             node_state.properties);
           if (!inputs.ok()) {
@@ -217,8 +215,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
       -> Awaitable<scada::Status> {
         try {
           NodeRef node = self->node_service_.GetNode(node_id);
-          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
-                                FetchNode(node));
+          co_await FetchNode(node);
 
           auto inputs = PrepareUpdateInputs(node, std::move(attributes),
                                             std::move(properties));

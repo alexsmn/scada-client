@@ -68,7 +68,7 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
                 co_return;
               }
               UpdateColumns(property_defs);
-              co_await AwaitPromise(executor, FetchChildren(parent_node));
+              co_await FetchChildren(parent_node);
               if (cancelation.canceled()) {
                 co_return;
               }

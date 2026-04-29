@@ -21,8 +21,7 @@ Awaitable<void> FetchNodeNamesRecursiveAsync(
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id,
     const aui::EditData::AsyncChoiceCallback& callback) {
-  co_await AwaitPromise(NetExecutorAdapter{executor},
-                        FetchChildren(parent_node));
+  co_await FetchChildren(parent_node);
 
   auto children = parent_node.targets(scada::id::Organizes);
 

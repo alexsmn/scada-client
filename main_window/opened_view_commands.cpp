@@ -324,10 +324,8 @@ void OpenedViewCommands::CreateRecord(const scada::NodeId& type_node_id,
 
   auto title = u16format(L"Creating \"{}\"", attributes.display_name);
 
-  // `cancelation_` gates the coroutine the same way `cancelation_.Bind(...)`
-  // gated the legacy `.then(...).except(...)` continuations: if `this` is
-  // destroyed before either await resumes, the body returns immediately
-  // without touching member state.
+  // `cancelation_` gates the coroutine: if `this` is destroyed before either
+  // await resumes, the body returns immediately without touching member state.
   CoSpawn(executor_, cancelation_,
           [this, type_node_id, parent_id = parent_node.node_id(),
            title = std::move(title), attributes = std::move(attributes),
@@ -344,9 +342,8 @@ Awaitable<void> OpenedViewCommands::CreateRecordAsync(
     std::u16string title,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
-  // Single coroutine body replaces the `then(...).except(...)` split: the same
-  // `ReportRequestResult` runs on either branch, but now we only have to
-  // thread `title` once.
+  // Keep request execution and error reporting in one coroutine body so
+  // `title` is only threaded once.
   scada::NodeId node_id;
   std::exception_ptr error;
   try {
@@ -377,7 +374,7 @@ Awaitable<void> OpenedViewCommands::OnCreateRecordCompleteAsync(
   // Hold `node` across the suspension so it doesn't release before the fetch
   // completes — the original callback form held the same NodeRef in its
   // capture list for the same reason.
-  co_await AwaitPromise(NetExecutorAdapter{executor_}, FetchNode(node));
+  co_await FetchNode(node);
 
   controller_->OnViewNodeCreated(node);
   auto def = co_await AwaitPromise(

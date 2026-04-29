@@ -38,7 +38,7 @@ Awaitable<bool> FetchNodeAsync(std::shared_ptr<Executor> executor,
                                NodeRef node,
                                CancelationRef cancelation) {
   try {
-    co_await AwaitPromise(NetExecutorAdapter{executor}, FetchNode(node));
+    co_await FetchNode(node);
   } catch (...) {
     co_return false;
   }

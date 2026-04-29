@@ -1,5 +1,7 @@
 #include "screenshot_wait.h"
 
+#include "base/awaitable_promise.h"
+#include "base/executor_conversions.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 
@@ -20,7 +22,8 @@ void WaitForPromise(promise<void> promise) {
 
 bool WaitForPendingNodeLoads(NodeService& node_service) {
   try {
-    WaitForPromise(WaitForPendingNodes(node_service));
+    WaitForPromise(ToPromise(MakeThreadAnyExecutor(),
+                             WaitForPendingNodes(node_service)));
     return true;
   } catch (...) {
     ADD_FAILURE() << "NodeService pending-node wait failed";

@@ -78,8 +78,7 @@ promise<void> ExportConfigurationCommand::Execute(
 
 Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
     DialogService& dialog_service) const {
-  co_await AwaitPromise(MakeAnyExecutor(executor_),
-                        FetchTypeSystem(node_service_));
+  co_await FetchTypeSystem(node_service_);
   auto path = co_await AwaitPromise(
       MakeAnyExecutor(executor_),
       dialog_service.SelectSaveFile(
@@ -155,8 +154,7 @@ promise<> ImportConfigurationCommand::Execute(
 
 Awaitable<void> ImportConfigurationCommand::ExecuteAsync(
     DialogService& dialog_service) const {
-  co_await AwaitPromise(MakeAnyExecutor(executor_),
-                        FetchTypeSystem(node_service_));
+  co_await FetchTypeSystem(node_service_);
   auto path = co_await AwaitPromise(MakeAnyExecutor(executor_),
                                     dialog_service.SelectOpenFile(kImportTitle));
 

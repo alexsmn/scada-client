@@ -27,10 +27,8 @@ const UINT kNodeTreeFormat =
     ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
 
 Awaitable<void> CopyNodesToClipboardAsync(std::vector<NodeRef> nodes) {
-  auto executor = co_await boost::asio::this_coro::executor;
-
   for (const auto& node : nodes) {
-    co_await AwaitPromise(executor, FetchNode(node));
+    co_await FetchNode(node);
   }
 
   CopyNodesToClipboardSync(nodes);

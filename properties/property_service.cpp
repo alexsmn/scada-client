@@ -98,10 +98,10 @@ PropertyService::PropertyService(AnyExecutor executor)
     : executor_{std::move(executor)} {}
 
 Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
-    AnyExecutor executor,
-    const NodeRef& type_definition,
-    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
-  co_await AwaitPromise(executor, FetchNode(type_definition));
+  AnyExecutor executor,
+  const NodeRef& type_definition,
+  const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
+  co_await FetchNode(type_definition);
 
   GetTypeProperties(type_definition, *property_decls);
 
@@ -197,7 +197,7 @@ Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
     const NodeRef& parent_node) {
   auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
 
-  co_await AwaitPromise(executor, FetchNode(parent_node));
+  co_await FetchNode(parent_node);
   auto child_type_definitions = GetChildTypeDefinitions(parent_node);
 
   for (const auto& child_type_definition : child_type_definitions) {

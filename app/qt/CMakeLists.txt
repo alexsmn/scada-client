@@ -30,6 +30,11 @@ add_library(client_qt_app_shared STATIC
   "startup_flow.h"
 )
 target_precompile_headers(client_qt_app_shared REUSE_FROM scada_base)
+if(MSVC)
+  target_compile_options(client_qt_app_shared PRIVATE
+    /wd4702 # unreachable code in exception/test-support control flow
+  )
+endif()
 target_link_libraries(client_qt_app_shared PUBLIC
   aui_qt
   client_common

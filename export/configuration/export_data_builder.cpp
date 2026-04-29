@@ -57,7 +57,7 @@ Awaitable<std::vector<ExportData::Node>> CollectNodeHierarchyAsync(
   std::vector<ExportData::Node> nodes;
 
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
-    co_await AwaitPromise(executor, FetchNode(node));
+    co_await FetchNode(node);
     nodes.emplace_back(MakeExportNode(node, props));
 
     auto child_nodes =
@@ -78,7 +78,7 @@ Awaitable<ExportData> BuildExportDataAsync(
     AnyExecutor executor,
     NodeRef root_node,
     std::vector<ExportData::Property> props) {
-  co_await AwaitPromise(executor, FetchNode(root_node));
+  co_await FetchNode(root_node);
   auto nodes = co_await CollectNodeHierarchyAsync(executor, root_node, props);
   co_return ExportData{std::move(props), std::move(nodes)};
 }
