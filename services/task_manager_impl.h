@@ -65,9 +65,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
  private:
   // A queued task's body. The coroutine runs to completion (or throws); the
   // returned Status drives the single local event written by
-  // `ReportRequestCompletion`. Callers that need to hand back a typed value
-  // (e.g. an inserted node id) resolve their own `promise<T>` from inside the
-  // coroutine before `co_return`ing a success status.
+  // `ReportRequestCompletion`.
   using TaskMethod = std::function<Awaitable<scada::Status>()>;
 
   struct Task {
@@ -76,12 +74,18 @@ class TaskManagerImpl : private TaskManagerImplContext,
     std::u16string title;
     TaskMethod method;
     promise<void> promise;
+    std::function<void(const scada::Status&)> cancel;
   };
 
   void Run();
   void CancelProgress();
 
   promise<void> PostTaskMethod(std::u16string_view title, TaskMethod method);
+
+  template <class T>
+  promise<T> PostTypedTaskMethod(std::u16string_view title,
+                                 std::function<Awaitable<T>()> method);
+
   void StartTask(Task&& task);
   Awaitable<void> RunTaskBody(TaskMethod method);
 

@@ -114,99 +114,84 @@ promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
 
 promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
     const scada::NodeState& node_state) {
-  promise<scada::NodeId> final_promise;
   auto self = shared_from_this();
 
-  // Cannot use `PostTask` because it only accepts void-returning launchers.
-  PostTaskMethod(
+  return PostTypedTaskMethod<scada::NodeId>(
       Translate("Insert"),
-      [self, node_state,
-       final_promise]() mutable -> Awaitable<scada::Status> {
-        try {
-          NodeRef type_def =
-              self->node_service_.GetNode(node_state.type_definition_id);
-          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
-                                FetchNode(type_def));
+      [self, node_state]() mutable -> Awaitable<scada::NodeId> {
+        NodeRef type_def =
+            self->node_service_.GetNode(node_state.type_definition_id);
+        co_await AwaitPromise(NetExecutorAdapter{self->executor_},
+                              FetchNode(type_def));
 
-          if (type_def.node_class() != scada::NodeClass::ObjectType &&
-              type_def.node_class() != scada::NodeClass::VariableType) {
-            throw scada::status_exception{scada::StatusCode::Bad_WrongTypeId};
-          }
-
-          const scada::NodeClass node_class =
-              type_def.node_class() == scada::NodeClass::ObjectType
-                  ? scada::NodeClass::Object
-                  : scada::NodeClass::Variable;
-
-          auto add_result =
-              co_await self->co_node_management_service_.AddNodes(
-                  {{.parent_id = node_state.parent_id,
-                    .node_class = node_class,
-                    .type_definition_id = node_state.type_definition_id,
-                    .attributes = node_state.attributes}});
-          if (!add_result.ok()) {
-            throw scada::status_exception{add_result.status()};
-          }
-          auto& add_results = *add_result;
-          if (add_results.empty()) {
-            throw scada::status_exception{scada::StatusCode::Bad};
-          }
-          if (scada::IsBad(add_results.front().status_code)) {
-            throw scada::status_exception{add_results.front().status_code};
-          }
-
-          const scada::NodeId added_node_id = add_results.front().added_node_id;
-
-          // References are fire-and-forget — they queue their own tasks.
-          for (const auto& reference : node_state.references) {
-            if (reference.forward) {
-              self->PostAddReference(reference.reference_type_id,
-                                     added_node_id, reference.node_id);
-            } else {
-              self->PostAddReference(reference.reference_type_id,
-                                     reference.node_id, added_node_id);
-            }
-          }
-
-          // Apply the initial property values inline. We cannot recurse into
-          // `PostUpdateTask` here: it would queue a second task that cannot
-          // start while we are still the running task, deadlocking the queue.
-          if (!node_state.properties.empty()) {
-            NodeRef node = self->node_service_.GetNode(added_node_id);
-            co_await AwaitPromise(NetExecutorAdapter{self->executor_},
-                                  FetchNode(node));
-            auto inputs = PrepareUpdateInputs(node, /*attributes=*/{},
-                                              node_state.properties);
-            if (!inputs.ok()) {
-              throw scada::status_exception{inputs.status()};
-            }
-            auto write_result =
-                co_await self->co_attribute_service_.Write(
-                    scada::ServiceContext{},
-                    std::make_shared<const std::vector<scada::WriteValue>>(
-                        std::move(*inputs)));
-            if (!write_result.ok()) {
-              throw scada::status_exception{write_result.status()};
-            }
-            auto bad = FirstBadStatus(*write_result);
-            if (!bad) {
-              throw scada::status_exception{std::move(bad)};
-            }
-          }
-
-          final_promise.resolve(added_node_id);
-          co_return scada::Status{scada::StatusCode::Good};
-        } catch (const scada::status_exception& e) {
-          final_promise.reject(std::current_exception());
-          co_return e.status();
-        } catch (...) {
-          auto status = scada::GetExceptionStatus(std::current_exception());
-          final_promise.reject(std::current_exception());
-          co_return status;
+        if (type_def.node_class() != scada::NodeClass::ObjectType &&
+            type_def.node_class() != scada::NodeClass::VariableType) {
+          throw scada::status_exception{scada::StatusCode::Bad_WrongTypeId};
         }
-      });
 
-  return final_promise;
+        const scada::NodeClass node_class =
+            type_def.node_class() == scada::NodeClass::ObjectType
+                ? scada::NodeClass::Object
+                : scada::NodeClass::Variable;
+
+        auto add_result =
+            co_await self->co_node_management_service_.AddNodes(
+                {{.parent_id = node_state.parent_id,
+                  .node_class = node_class,
+                  .type_definition_id = node_state.type_definition_id,
+                  .attributes = node_state.attributes}});
+        if (!add_result.ok()) {
+          throw scada::status_exception{add_result.status()};
+        }
+        auto& add_results = *add_result;
+        if (add_results.empty()) {
+          throw scada::status_exception{scada::StatusCode::Bad};
+        }
+        if (scada::IsBad(add_results.front().status_code)) {
+          throw scada::status_exception{add_results.front().status_code};
+        }
+
+        const scada::NodeId added_node_id = add_results.front().added_node_id;
+
+        // References are fire-and-forget — they queue their own tasks.
+        for (const auto& reference : node_state.references) {
+          if (reference.forward) {
+            self->PostAddReference(reference.reference_type_id,
+                                   added_node_id, reference.node_id);
+          } else {
+            self->PostAddReference(reference.reference_type_id,
+                                   reference.node_id, added_node_id);
+          }
+        }
+
+        // Apply the initial property values inline. We cannot recurse into
+        // `PostUpdateTask` here: it would queue a second task that cannot
+        // start while we are still the running task, deadlocking the queue.
+        if (!node_state.properties.empty()) {
+          NodeRef node = self->node_service_.GetNode(added_node_id);
+          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
+                                FetchNode(node));
+          auto inputs = PrepareUpdateInputs(node, /*attributes=*/{},
+                                            node_state.properties);
+          if (!inputs.ok()) {
+            throw scada::status_exception{inputs.status()};
+          }
+          auto write_result =
+              co_await self->co_attribute_service_.Write(
+                  scada::ServiceContext{},
+                  std::make_shared<const std::vector<scada::WriteValue>>(
+                      std::move(*inputs)));
+          if (!write_result.ok()) {
+            throw scada::status_exception{write_result.status()};
+          }
+          auto bad = FirstBadStatus(*write_result);
+          if (!bad) {
+            throw scada::status_exception{std::move(bad)};
+          }
+        }
+
+        co_return added_node_id;
+      });
 }
 
 promise<void> TaskManagerImpl::PostUpdateTask(
@@ -385,6 +370,9 @@ void TaskManagerImpl::Run() {
     CancelProgress();
 
     while (!tasks_.empty()) {
+      if (tasks_.front().cancel) {
+        tasks_.front().cancel(scada::Status{scada::StatusCode::Bad});
+      }
       scada::RejectStatusPromise(tasks_.front().promise,
                                  scada::StatusCode::Bad);
       tasks_.pop();
@@ -433,4 +421,39 @@ promise<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
   Run();
 
   return promise;
+}
+
+template <class T>
+promise<T> TaskManagerImpl::PostTypedTaskMethod(
+    std::u16string_view title,
+    std::function<Awaitable<T>()> method) {
+  promise<T> result;
+  auto result_completion = result;
+
+  Task task{
+      .title = std::u16string{title},
+      .method =
+          [method = std::move(method),
+           result_completion]() mutable -> Awaitable<scada::Status> {
+        try {
+          result_completion.resolve(co_await method());
+          co_return scada::Status{scada::StatusCode::Good};
+        } catch (const scada::status_exception& e) {
+          result_completion.reject(std::current_exception());
+          co_return e.status();
+        } catch (...) {
+          auto status = scada::GetExceptionStatus(std::current_exception());
+          result_completion.reject(std::current_exception());
+          co_return status;
+        }
+      },
+      .cancel =
+          [result_completion](const scada::Status& status) mutable {
+            scada::RejectStatusPromise(result_completion, status.code());
+          }};
+
+  tasks_.push(std::move(task));
+  Run();
+
+  return result;
 }

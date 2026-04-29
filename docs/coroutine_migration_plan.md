@@ -218,6 +218,13 @@ wraps async work to report progress or serialize UI updates.
   preserved. Progress hosts / progress dialogs, command handlers, and
   long-running export/import/file operations remain on the follow-up list
   below.
+- **TaskManagerImpl typed task completion** migrated
+  (`client/services/task_manager_impl.{h,cpp}`). `PostInsertTask` no longer
+  owns and resolves a local `promise<NodeId>` from inside its task body. Typed
+  queue result handling now goes through `PostTypedTaskMethod(...)`, so the
+  insert path is a coroutine returning `NodeId` and the shared queue helper
+  maps success, exceptions, status reporting, and queued-task cancellation back
+  to the legacy `promise<NodeId>` boundary.
 
 ### Target Areas
 
@@ -661,6 +668,13 @@ SCADA services or local service doubles.
   now links `transport` and `scada_core` for the awaitable helper surface.
   Regression coverage: `client/aui/qt/dialog_util_unittest.cpp` and
   `client/aui/qt/dialog_service_impl_qt_unittest.cpp`.
+- **Qt modal dialog signal waits** migrated
+  (`client/aui/qt/dialog_util.h`). `RunModalDialogAsync(...)`,
+  `StartOwnedModalDialog(...)`, and `RunFinishedModalDialogAsync(...)` no
+  longer allocate local promises and resolve/reject them from Qt signal slots.
+  Accepted, rejected, and finished signals now resume coroutine bodies through
+  `CallbackToAwaitable`, while the public promise-returning helpers remain as
+  compatibility wrappers via `ToPromise`.
 - **resource error dialog handling** migrated
   (`client/aui/resource_error.h`). `ShowResourceError(...)` now invokes
   `DialogService::RunMessageBox(...)` synchronously as before, then awaits the
@@ -682,6 +696,14 @@ SCADA services or local service doubles.
   `client/components/time_range/wt/time_range_dialog_unittest.cpp`,
   `client/export/csv/wt/csv_export_dialog_unittest.cpp`, and
   `client/properties/transport/wt/transport_dialog_unittest.cpp`.
+- **Wt login dialog completion** migrated
+  (`client/components/login/wt/login_dialog.cpp`). The Wt login surface keeps
+  the public `promise<std::optional<DataServices>>` boundary, but dialog
+  completion now runs through a coroutine-backed `RunAsync()` body that awaits
+  the Wt `finished()` signal and returns either connected services or
+  `std::nullopt` for cancel/close. The local Wt login message-box service now
+  maps `buttonClicked()` through `CallbackToAwaitable` instead of constructing
+  and resolving a local promise by hand.
 
 ### Priority Order
 
@@ -701,9 +723,8 @@ Wt unsupported-dialog helper (`client/aui/wt/dialog_stub.h`). Leave that helper
 as the platform boundary unless Wt gains real modal-dialog support, then
 continue with the remaining manual promise construction audit:
 `rg "make_promise<|promise<[^>]+> [A-Za-z_]+;" client -g"*.cpp" -g"*.h"`.
-Focus first on Wt login dialog completion, then any task-manager promise
-ownership that can be safely expressed as coroutine bodies without changing the
-public `TaskManager` API.
+Focus next on remaining production application lifecycle state promises; keep
+intentional queue/public-boundary promises until the public API evaluation phase.
 
 ### Work
 
