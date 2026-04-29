@@ -710,14 +710,18 @@ SCADA services or local service doubles.
   adapters. Regression coverage: `client/aui/resource_error_unittest.cpp`.
 - **Wt dialog compatibility boundaries** centralized and covered
   (`client/aui/wt`, `client/components/time_range/wt`,
+  `client/components/write/wt`, `client/components/limits/wt`,
   `client/export/csv/wt`, `client/properties/transport/wt`). The remaining Wt
   modal-dialog surfaces are intentional unsupported platform stubs, now routed
   through `aui::wt::MakeUnsupportedDialogPromise<T>()` instead of scattered
-  ad hoc rejected promises. Message boxes still resolve with `Ok`, while file
-  selection, prompt, time-range, CSV-params, and transport dialogs reject
-  immediately at the platform boundary. Regression coverage:
+  ad hoc resolved/rejected promises. Message boxes still resolve with `Ok`,
+  while file selection, prompt, time-range, write, limits, CSV-params, and
+  transport dialogs reject immediately at the platform boundary. Regression
+  coverage:
   `client/aui/wt/dialog_stub_unittest.cpp`,
   `client/components/time_range/wt/time_range_dialog_unittest.cpp`,
+  `client/components/write/wt/write_dialog_unittest.cpp`,
+  `client/components/limits/wt/limit_dialog_unittest.cpp`,
   `client/export/csv/wt/csv_export_dialog_unittest.cpp`, and
   `client/properties/transport/wt/transport_dialog_unittest.cpp`.
 - **Wt login dialog completion** migrated
@@ -741,13 +745,14 @@ SCADA services or local service doubles.
 
 ### Clear Next Step
 
-Continue the production async-surface audit outside test-only helpers: the only
-remaining direct rejected-promise production site is the documented centralized
-Wt unsupported-dialog helper (`client/aui/wt/dialog_stub.h`). Leave that helper
-as the platform boundary unless Wt gains real modal-dialog support. Direct
-production `.then(...)` / `.except(...)` continuations and the remaining direct
-callback-style `HistoryService::HistoryReadEvents(...)` consumer have been
-migrated; continue with the remaining manual promise construction audit:
+The production async-surface audit outside test-only helpers is complete for
+the first migration pass: the only remaining direct rejected-promise production
+site is the documented centralized Wt unsupported-dialog helper
+(`client/aui/wt/dialog_stub.h`). Leave that helper as the platform boundary
+unless Wt gains real modal-dialog support. Direct production `.then(...)` /
+`.except(...)` continuations and the remaining direct callback-style
+`HistoryService::HistoryReadEvents(...)` consumer have been migrated. The
+remaining manual promise construction audit command is:
 `rg "make_promise<|promise<[^>]+> [A-Za-z_]+;" client -g"*.cpp" -g"*.h"`.
 The remaining production audit hit is the intentional typed public-boundary
 promise in `TaskManagerImpl::PostTypedTaskMethod(...)`, plus test-only promise
