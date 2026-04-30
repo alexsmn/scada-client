@@ -47,20 +47,16 @@ class ChangePasswordTest : public Test {
 };
 
 TEST_F(ChangePasswordTest, ReportsSuccessAfterMethodCallCompletes) {
-  scada::StatusCallback callback;
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kUserNodeId, 1},
-                   security::id::UserType_ChangePassword, SizeIs(2), _, _))
-      .WillOnce(SaveArg<4>(&callback));
+                   security::id::UserType_ChangePassword, SizeIs(2), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Good);
+      }));
 
   ChangePassword(ChangePasswordContext{user_node_, executor_, local_events_,
                                        profile_},
                  u"old", u"new");
-  PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(callback));
-  EXPECT_TRUE(local_events_.events().empty());
-
-  callback(scada::StatusCode::Good);
   PollExecutor();
 
   ASSERT_EQ(local_events_.events().size(), 1);
@@ -71,19 +67,17 @@ TEST_F(ChangePasswordTest, ReportsSuccessAfterMethodCallCompletes) {
 }
 
 TEST_F(ChangePasswordTest, ReportsFailureAfterMethodCallCompletes) {
-  scada::StatusCallback callback;
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kUserNodeId, 1},
-                   security::id::UserType_ChangePassword, SizeIs(2), _, _))
-      .WillOnce(SaveArg<4>(&callback));
+                   security::id::UserType_ChangePassword, SizeIs(2), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(
+            scada::StatusCode::Bad_WrongMethodId);
+      }));
 
   ChangePassword(ChangePasswordContext{user_node_, executor_, local_events_,
                                        profile_},
                  u"old", u"new");
-  PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(callback));
-
-  callback(scada::StatusCode::Bad_WrongMethodId);
   PollExecutor();
 
   ASSERT_EQ(local_events_.events().size(), 1);

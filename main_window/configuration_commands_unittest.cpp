@@ -103,18 +103,14 @@ class ConfigurationCommandsTest : public Test {
 };
 
 TEST_F(ConfigurationCommandsTest, ReportsMethodCallSuccessAfterCompletion) {
-  scada::StatusCallback callback;
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
-                   devices::id::DeviceType_Interrogate, IsEmpty(), _, _))
-      .WillOnce(SaveArg<4>(&callback));
+                   devices::id::DeviceType_Interrogate, IsEmpty(), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(scada::StatusCode::Good);
+      }));
 
   ExecuteInterrogateCommand();
-  PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(callback));
-  EXPECT_TRUE(local_events_.events().empty());
-
-  callback(scada::StatusCode::Good);
   PollExecutor();
 
   ASSERT_EQ(local_events_.events().size(), 1);
@@ -124,17 +120,15 @@ TEST_F(ConfigurationCommandsTest, ReportsMethodCallSuccessAfterCompletion) {
 }
 
 TEST_F(ConfigurationCommandsTest, ReportsMethodCallFailureAfterCompletion) {
-  scada::StatusCallback callback;
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
-                   devices::id::DeviceType_Interrogate, IsEmpty(), _, _))
-      .WillOnce(SaveArg<4>(&callback));
+                   devices::id::DeviceType_Interrogate, IsEmpty(), _))
+      .WillOnce(Invoke([](auto, auto, auto, auto) {
+        return scada::MakeMethodCallResult(
+            scada::StatusCode::Bad_WrongMethodId);
+      }));
 
   ExecuteInterrogateCommand();
-  PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(callback));
-
-  callback(scada::StatusCode::Bad_WrongMethodId);
   PollExecutor();
 
   ASSERT_EQ(local_events_.events().size(), 1);
