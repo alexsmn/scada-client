@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 
 #include <functional>
 #include <memory>
@@ -16,8 +16,8 @@ class Profile;
 struct GlobalCommandContext;
 
 using RenamePagePromptRunner =
-    std::function<promise<std::u16string>(DialogService& dialog_service,
-                                          std::u16string current_title)>;
+    std::function<Awaitable<std::u16string>(DialogService& dialog_service,
+                                            std::u16string current_title)>;
 
 struct PageCommandsContext {
   std::shared_ptr<Executor> executor_;

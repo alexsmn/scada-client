@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/awaitable.h"
 #include "common/node_state.h"
 #include "base/promise.h"
 
@@ -9,7 +10,7 @@ class TaskManager {
  public:
   virtual ~TaskManager() {}
 
-  using TaskLauncher = std::function<promise<void>()>;
+  using TaskLauncher = std::function<Awaitable<void>()>;
 
   virtual promise<void> PostTask(
       std::u16string_view description,

@@ -30,6 +30,20 @@ constexpr WindowInfo kEventJournalWindowInfo = {
     .title = u"Event Journal",
     .flags = WIN_INS | WIN_CAN_PRINT};
 
+Awaitable<void> OpenWindowDefinition(
+    std::shared_ptr<Executor> executor,
+    std::string_view mode,
+    MainWindowInterface& main_window,
+    promise<WindowDefinition> window_def_promise) {
+  auto window_def = co_await AwaitPromise(
+      NetExecutorAdapter{std::move(executor)}, std::move(window_def_promise));
+  if (!mode.empty()) {
+    window_def.AddItem("mode", mode);
+  }
+  main_window.OpenView(window_def);
+  co_return;
+}
+
 }  // namespace
 
 EventModule::EventModule(EventModuleContext&& context)
@@ -95,15 +109,10 @@ void EventModule::AddOpenCommand(unsigned command_id,
              CoSpawn(executor, [executor, mode,
                                 &main_window = context.main_window,
                                 window_def_promise = std::move(
-                                    window_def_promise)]() mutable
-                               -> Awaitable<void> {
-               auto window_def = co_await AwaitPromise(
-                   NetExecutorAdapter{executor}, std::move(window_def_promise));
-               if (!mode.empty()) {
-                 window_def.AddItem("mode", mode);
-               }
-               main_window.OpenView(window_def);
-               co_return;
+                                    window_def_promise)]() mutable {
+               return OpenWindowDefinition(
+                   std::move(executor), mode, main_window,
+                   std::move(window_def_promise));
              });
            },
        .available_handler =

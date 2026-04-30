@@ -134,7 +134,7 @@ class ClientApplication : private ClientApplicationContext {
   // `Start()`, `Login()` and `Quit()` entry points keep returning
   // `promise<void>` for compatibility with the rest of the client, but the
   // actual orchestration lives in these coroutines so the sequential
-  // ordering is readable without nested `.then()` chains.
+  // ordering is explicit.
   Awaitable<void> StartAsync();
   Awaitable<void> LoginAsync();
   Awaitable<void> QuitAsync();

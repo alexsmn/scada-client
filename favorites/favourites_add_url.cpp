@@ -21,8 +21,7 @@ Awaitable<void> AddUrlToFavouritesWithPromptAsync(
     Favourites& favourites,
     FavouritesUrlPrompt prompt_runner,
     FavouritesSelectedNodeProvider selected_node_provider) {
-  auto url = co_await AwaitPromise(NetExecutorAdapter{executor},
-                                   prompt_runner());
+  auto url = co_await prompt_runner();
 
   if (lifetime_token.expired())
     co_return;
@@ -36,28 +35,23 @@ Awaitable<void> AddUrlToFavouritesWithPromptAsync(
   if (lifetime_token.expired())
     co_return;
 
-  co_await AwaitPromise(
-      NetExecutorAdapter{std::move(executor)},
-      dialog_service.RunMessageBox(
-          Translate("A valid URL must start with \"http://\" or "
-                    "\"https://\"."),
-          kAddUrl, MessageBoxMode::Error));
+  co_await dialog_service.RunMessageBox(
+      Translate("A valid URL must start with \"http://\" or "
+                "\"https://\"."),
+      kAddUrl, MessageBoxMode::Error);
   throw std::exception{};
 }
 
-promise<> AddUrlToFavouritesWithPrompt(
+Awaitable<void> AddUrlToFavouritesWithPrompt(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<void> lifetime_token,
     DialogService& dialog_service,
     Favourites& favourites,
     std::function<const FavouritesNode*()> selected_node_provider) {
-  return ToPromise(NetExecutorAdapter{executor},
-                   AddUrlToFavouritesWithPromptAsync(
-                       executor, std::move(lifetime_token), dialog_service,
-                       favourites,
-                       [&dialog_service] {
-                         return RunPromptDialog(dialog_service,
-                                                Translate("URL:"), kAddUrl);
-                       },
-                       std::move(selected_node_provider)));
+  return AddUrlToFavouritesWithPromptAsync(
+      executor, std::move(lifetime_token), dialog_service, favourites,
+      [&dialog_service] {
+        return RunPromptDialog(dialog_service, Translate("URL:"), kAddUrl);
+      },
+      std::move(selected_node_provider));
 }

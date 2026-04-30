@@ -60,15 +60,15 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
       std::shared_ptr<Executor> executor,
       std::function<void(DataServices services)> completion_handler,
       DataServices services,
-      promise<void> message);
+      Awaitable<void> message);
   static Awaitable<void> PromptForceLogoffAsync(
       std::shared_ptr<Executor> executor,
       std::weak_ptr<LoginController> controller,
-      promise<MessageBoxResult> prompt);
+      Awaitable<MessageBoxResult> prompt);
   static Awaitable<void> ReportLoginErrorAsync(
       std::shared_ptr<Executor> executor,
       std::weak_ptr<LoginController> controller,
-      promise<MessageBoxResult> prompt);
+      Awaitable<MessageBoxResult> prompt);
 
   const std::shared_ptr<Executor> executor_;
   DataServicesContext services_context_;

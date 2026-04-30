@@ -1,6 +1,6 @@
 #include "components/watch/watch_history_event_source.h"
 
-#include "base/awaitable_promise.h"
+#include "base/awaitable.h"
 #include "base/executor.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
@@ -17,11 +17,9 @@ Awaitable<void> ReadHistoryEventsAsync(std::shared_ptr<Executor> executor,
                                        CancelationRef cancelation,
                                        WatchEventSource::Delegate& delegate) {
   try {
-    auto events = co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        device.scada_node().read_event_history(
-            {.from = SanitizeTimeBound(time_range.first),
-             .to = SanitizeTimeBound(time_range.second)}));
+    auto events = co_await device.scada_node().read_event_history(
+        {.from = SanitizeTimeBound(time_range.first),
+         .to = SanitizeTimeBound(time_range.second)});
 
     if (cancelation.canceled()) {
       co_return;

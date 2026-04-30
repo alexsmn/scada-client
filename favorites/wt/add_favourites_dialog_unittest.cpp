@@ -1,6 +1,7 @@
 #include "favorites/add_favourites_dialog.h"
 
 #include "aui/wt/dialog_service_impl_wt.h"
+#include "base/test/awaitable_test.h"
 #include "favorites/favourites.h"
 
 #include <gtest/gtest.h>
@@ -9,8 +10,11 @@ TEST(AddFavouritesDialogWt, RejectsUnsupportedDialog) {
   DialogServiceImplWt dialog_service;
   Favourites favourites;
 
-  auto promise = ShowAddFavouritesDialog(
-      dialog_service, AddFavouritesContext{favourites, WindowDefinition{}});
+  auto executor = std::make_shared<TestExecutor>();
+  auto result = StartAwaitable(
+      executor,
+      ShowAddFavouritesDialog(
+          dialog_service, AddFavouritesContext{favourites, WindowDefinition{}}));
 
-  EXPECT_THROW(promise.get(), std::exception);
+  EXPECT_THROW(WaitResult(executor, result), std::exception);
 }

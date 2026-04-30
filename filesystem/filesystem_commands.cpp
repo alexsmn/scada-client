@@ -48,11 +48,9 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
   }
 
   if (!window_def) {
-    co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        ToVoidPromise(dialog_service.RunMessageBox(
-            Translate("The file has an invalid format."), kOpenFileTitle,
-            MessageBoxMode::Error)));
+    co_await dialog_service.RunMessageBox(
+        Translate("The file has an invalid format."), kOpenFileTitle,
+        MessageBoxMode::Error);
     co_return;
   }
 
@@ -84,11 +82,8 @@ Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
       file_registry.FindTypeByExtension(path.extension().string());
   auto* window_info = file_type ? FindWindowInfo(file_type->type_id) : nullptr;
   if (!window_info) {
-    co_await AwaitPromise(
-        NetExecutorAdapter{context.executor},
-        ToVoidPromise(context.dialog_service.RunMessageBox(
-            Translate("Unknown file type."), kOpenFileTitle,
-            MessageBoxMode::Error)));
+    co_await context.dialog_service.RunMessageBox(
+        Translate("Unknown file type."), kOpenFileTitle, MessageBoxMode::Error);
     co_return;
   }
 
@@ -113,11 +108,9 @@ Awaitable<void> OpenFileCommandImpl::ExecuteAsync(
   if (!open_failed) {
     co_return;
   }
-  co_await AwaitPromise(
-      NetExecutorAdapter{context.executor},
-      ToVoidPromise(context.dialog_service.RunMessageBox(
-          Translate("Failed to download file from server."), kOpenFileTitle,
-          MessageBoxMode::Error)));
+  co_await context.dialog_service.RunMessageBox(
+      Translate("Failed to download file from server."), kOpenFileTitle,
+      MessageBoxMode::Error);
   throw scada::status_exception{scada::StatusCode::Bad};
 }
 
@@ -133,18 +126,14 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
                              DialogService& dialog_service,
                              TaskManager& task_manager,
                              std::shared_ptr<Executor> executor) {
-  auto path = co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      dialog_service.SelectOpenFile(kAddFileTitle));
+  auto path = co_await dialog_service.SelectOpenFile(kAddFileTitle);
 
   std::ifstream ifs{path, std::ios::binary};
   std::string contents_string{std::istreambuf_iterator<char>{ifs}, {}};
   if (!ifs.is_open()) {
-    co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        ToVoidPromise(dialog_service.RunMessageBox(
-            Translate("Failed to read file."), kAddFileTitle,
-            MessageBoxMode::Error)));
+    co_await dialog_service.RunMessageBox(Translate("Failed to read file."),
+                                          kAddFileTitle,
+                                          MessageBoxMode::Error);
     throw scada::status_exception{scada::StatusCode::Bad};
   }
 

@@ -7,6 +7,7 @@
 #include "common/aggregation.h"
 #include "common/formula_util.h"
 #include "components/summary/summary_model_util.h"
+#include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition.h"
@@ -17,6 +18,20 @@
 #include "base/utf_convert.h"
 
 #include "base/debug_util.h"
+
+namespace {
+
+Awaitable<void> AddContainedItemAsync(SummaryModel& model,
+                                      AnyExecutor executor,
+                                      NodeRef node) {
+  auto child_ids = co_await ExpandGroupItemIdsAsync(std::move(executor), node);
+  for (const auto& child_id : child_ids) {
+    model.AddColumn(MakeNodeIdFormula(child_id));
+  }
+  co_return;
+}
+
+}  // namespace
 
 // SummaryModel::Column -------------------------------------------------------
 
@@ -355,11 +370,7 @@ void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
   CoSpawn(executor_, [this, executor = executor_,
                       node = node_service_.GetNode(node_id)]()
                          -> Awaitable<void> {
-    auto child_ids =
-        co_await ExpandGroupItemIdsAsync(NetExecutorAdapter{executor}, node);
-    for (const auto& child_id : child_ids)
-      AddColumn(MakeNodeIdFormula(child_id));
-    co_return;
+    return AddContainedItemAsync(*this, NetExecutorAdapter{executor}, node);
   });
 }
 

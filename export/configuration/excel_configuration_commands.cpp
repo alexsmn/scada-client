@@ -60,11 +60,9 @@ Awaitable<void> ExportConfigurationCommand::ExportToAsync(
                                            CollectExportData());
   SaveExportData(export_data, stream);
 
-  auto open_prompt = co_await AwaitPromise(
-      MakeAnyExecutor(executor_),
-      dialog_service.RunMessageBox(
-          Translate("Export complete. Open the file now?"), kExportTitle,
-          MessageBoxMode::QuestionYesNo));
+  auto open_prompt = co_await dialog_service.RunMessageBox(
+      Translate("Export complete. Open the file now?"), kExportTitle,
+      MessageBoxMode::QuestionYesNo);
   if (open_prompt == MessageBoxResult::Yes) {
     win_util::OpenWithAssociatedProgram(path);
   }
@@ -79,10 +77,8 @@ promise<void> ExportConfigurationCommand::Execute(
 Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
     DialogService& dialog_service) const {
   co_await FetchTypeSystem(node_service_);
-  auto path = co_await AwaitPromise(
-      MakeAnyExecutor(executor_),
-      dialog_service.SelectSaveFile(
-          {.title = kExportTitle, .default_path = kDefaultFileName}));
+  auto path = co_await dialog_service.SelectSaveFile(
+      {.title = kExportTitle, .default_path = kDefaultFileName});
 
   std::exception_ptr resource_error;
   try {
@@ -91,9 +87,8 @@ Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
     resource_error = std::current_exception();
   }
   if (resource_error) {
-    co_await AwaitPromise(
-        MakeAnyExecutor(executor_),
-        ShowResourceError<void>(dialog_service, kExportTitle, resource_error));
+    co_await ShowResourceError<void>(dialog_service, kExportTitle,
+                                     resource_error);
   }
   co_return;
 }
@@ -118,10 +113,9 @@ Awaitable<void> ImportConfigurationCommand::ImportFromAsync(
   }
   ShowDiffReport(diff, node_service_);
 
-  auto apply_prompt = co_await AwaitPromise(
-      MakeAnyExecutor(executor_),
-      dialog_service.RunMessageBox(Translate("Apply changes?"), kImportTitle,
-                                   MessageBoxMode::QuestionYesNoDefaultNo));
+  auto apply_prompt = co_await dialog_service.RunMessageBox(
+      Translate("Apply changes?"), kImportTitle,
+      MessageBoxMode::QuestionYesNoDefaultNo);
   if (apply_prompt == MessageBoxResult::Yes) {
     ApplyDiffData(diff, task_manager_);
   }
@@ -155,8 +149,7 @@ promise<> ImportConfigurationCommand::Execute(
 Awaitable<void> ImportConfigurationCommand::ExecuteAsync(
     DialogService& dialog_service) const {
   co_await FetchTypeSystem(node_service_);
-  auto path = co_await AwaitPromise(MakeAnyExecutor(executor_),
-                                    dialog_service.SelectOpenFile(kImportTitle));
+  auto path = co_await dialog_service.SelectOpenFile(kImportTitle);
 
   std::exception_ptr resource_error;
   try {
@@ -165,9 +158,8 @@ Awaitable<void> ImportConfigurationCommand::ExecuteAsync(
     resource_error = std::current_exception();
   }
   if (resource_error) {
-    co_await AwaitPromise(
-        MakeAnyExecutor(executor_),
-        ShowResourceError<void>(dialog_service, kImportTitle, resource_error));
+    co_await ShowResourceError<void>(dialog_service, kImportTitle,
+                                     resource_error);
   }
   co_return;
 }

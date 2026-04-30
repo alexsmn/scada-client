@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base/awaitable.h"
-#include "base/promise.h"
 
 #include <functional>
 #include <memory>
@@ -12,7 +11,7 @@ class Executor;
 class Favourites;
 class FavouritesNode;
 
-using FavouritesUrlPrompt = std::function<promise<std::u16string>()>;
+using FavouritesUrlPrompt = std::function<Awaitable<std::u16string>()>;
 using FavouritesSelectedNodeProvider =
     std::function<const FavouritesNode*()>;
 
@@ -24,7 +23,7 @@ Awaitable<void> AddUrlToFavouritesWithPromptAsync(
     FavouritesUrlPrompt prompt_runner,
     FavouritesSelectedNodeProvider selected_node_provider);
 
-promise<> AddUrlToFavouritesWithPrompt(
+Awaitable<void> AddUrlToFavouritesWithPrompt(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<void> lifetime_token,
     DialogService& dialog_service,

@@ -69,8 +69,7 @@ BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
             // Same pattern as `EventModule::AddOpenCommand`: resolve the open-
             // window definition synchronously, then await it inside a coroutine
             // that calls `MainWindowInterface::OpenView`. The lifetime contract
-            // for `main_window` is unchanged from the previous `.then()` form
-            // (see the existing TODO about `weak_ptr`).
+            // for `main_window` follows the existing TODO about `weak_ptr`.
             auto window_def_promise =
                 context.opened_view.GetOpenWindowDefinition(&window_info);
             CoSpawn(executor, [executor,
@@ -116,8 +115,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       Command{ID_OPEN_DEVICE_METRICS}
           .set_execute_handler([this] {
             // The coroutine is gated by `cancelation_` so it cannot run after
-            // this `SelectionCommands` is destroyed — equivalent to the
-            // previous `cancelation_.Bind(...)` `.then` callback.
+            // this `SelectionCommands` is destroyed.
             CoSpawn(executor_, cancelation_,
                     [this]() mutable
                     -> Awaitable<void> {
@@ -297,9 +295,8 @@ Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
   if (cached_items.empty()) {
     auto msg = u16format(L"Display for item \"{}\" was not found.",
                          ToString16(node.display_name()));
-    co_await AwaitPromise(NetExecutorAdapter{executor_},
-                          dialog_service_->RunMessageBox(
-                              msg, Translate("Display"), MessageBoxMode::Info));
+    co_await dialog_service_->RunMessageBox(msg, Translate("Display"),
+                                            MessageBoxMode::Info);
     throw std::exception{};
   }
 
@@ -366,14 +363,13 @@ void SelectionCommands::DeleteSelection() {
           : u16format(L"Are you sure you want to delete {} items?",
                       nodes.size());
 
-  auto confirm_promise = dialog_service_->RunMessageBox(
-      message, Translate("Delete"), MessageBoxMode::QuestionYesNo);
   CoSpawn(executor_, [executor = executor_, &task_manager = task_manager_,
-                      nodes = std::move(nodes),
-                      confirm_promise = std::move(confirm_promise)]() mutable
+                      &dialog_service = *dialog_service_,
+                      message = std::move(message),
+                      nodes = std::move(nodes)]() mutable
                      -> Awaitable<void> {
-    auto result = co_await AwaitPromise(NetExecutorAdapter{executor},
-                                        std::move(confirm_promise));
+    auto result = co_await dialog_service.RunMessageBox(
+        message, Translate("Delete"), MessageBoxMode::QuestionYesNo);
     if (result != MessageBoxResult::Yes) {
       co_return;
     }

@@ -66,7 +66,7 @@ class EventView : protected ControllerContext,
   // Public entry point keeps the `promise<>` return type; the actual
   // dialog/parse/apply pipeline now lives in `SelectSeverityAsync` so the
   // sequence `prompt -> parse -> apply` is expressed with straight
-  // `co_await` instead of nested `.then()` steps.
+  // `co_await`.
   promise<> SelectSeverity();
   Awaitable<void> SelectSeverityAsync();
   void SetSeverityMin(scada::EventSeverity severity);

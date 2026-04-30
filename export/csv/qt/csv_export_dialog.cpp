@@ -81,8 +81,8 @@ void CsvExportDialog::accept() {
   QDialog::accept();
 }
 
-promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
-                                             Profile& profile) {
+Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
+                                               Profile& profile) {
   auto csv_export_params =
       FromJson<CsvExportParams>(GetKey(profile.data(), "csv"))
           .value_or(CsvExportParams{});

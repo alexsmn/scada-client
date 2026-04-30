@@ -3,9 +3,7 @@
 #include "aui/qt/message_loop_qt.h"
 #include "base/async_completion.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/callback_awaitable.h"
-#include "base/promise.h"
 #include "net/net_executor_adapter.h"
 
 #include <QDialog>
@@ -75,24 +73,22 @@ inline Awaitable<ModalDialogResult<T, Mapper>> RunModalDialogAsync(
 }
 
 template <class T, class Mapper>
-inline promise<ModalDialogResult<T, Mapper>> StartMappedModalDialog(
+inline Awaitable<ModalDialogResult<T, Mapper>> StartMappedModalDialog(
     std::unique_ptr<T> dialog,
     Mapper mapper) {
-  auto executor = std::make_shared<MessageLoopQt>();
-  return ToPromise(NetExecutorAdapter{executor},
-                   RunModalDialogAsync(std::move(dialog), std::move(mapper)));
+  return RunModalDialogAsync(std::move(dialog), std::move(mapper));
 }
 
 template <class T>
-inline promise<T*> StartModalDialog(std::unique_ptr<T> dialog) {
+inline Awaitable<T*> StartModalDialog(std::unique_ptr<T> dialog) {
   return StartMappedModalDialog(std::move(dialog),
                                 [](T& dialog) { return &dialog; });
 }
 
 template <class T>
-inline promise<void> StartOwnedModalDialog(std::unique_ptr<T> dialog) {
-  auto executor = std::make_shared<MessageLoopQt>();
-  base::AsyncCompletion completion{NetExecutorAdapter{executor}};
+inline Awaitable<void> StartOwnedModalDialog(std::unique_ptr<T> dialog) {
+  auto executor = co_await boost::asio::this_coro::executor;
+  base::AsyncCompletion completion{executor};
   T* dialog_ptr = dialog.release();
 
   QObject::connect(dialog_ptr, &QDialog::accepted,
@@ -110,7 +106,8 @@ inline promise<void> StartOwnedModalDialog(std::unique_ptr<T> dialog) {
   dialog_ptr->setModal(true);
   dialog_ptr->show();
 
-  return ToPromise(NetExecutorAdapter{executor}, completion.Wait());
+  co_await completion.Wait();
+  co_return;
 }
 
 template <class T, class Mapper>
@@ -157,11 +154,8 @@ inline Awaitable<FinishedDialogResult<T, Mapper>> RunFinishedModalDialogAsync(
 }
 
 template <class T, class Mapper>
-inline promise<FinishedDialogResult<T, Mapper>> StartFinishedModalDialog(
+inline Awaitable<FinishedDialogResult<T, Mapper>> StartFinishedModalDialog(
     std::unique_ptr<T> dialog,
     Mapper mapper) {
-  auto executor = std::make_shared<MessageLoopQt>();
-  return ToPromise(
-      NetExecutorAdapter{executor},
-      RunFinishedModalDialogAsync(std::move(dialog), std::move(mapper)));
+  return RunFinishedModalDialogAsync(std::move(dialog), std::move(mapper));
 }

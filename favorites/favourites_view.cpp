@@ -4,6 +4,7 @@
 #include "aui/tree.h"
 #include "resources/common_resources.h"
 #include "controller/controller_delegate.h"
+#include "base/awaitable.h"
 #include "favorites/favourites_add_url.h"
 #include "favorites/favourites.h"
 #include "favorites/favourites_tree_model.h"
@@ -80,10 +81,18 @@ CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
 }
 
 #if !defined(UI_WT)
-promise<> FavouritesView::AddUrl() {
-  return AddUrlToFavouritesWithPrompt(
-      executor_, lifetime_token_, dialog_service_, favourites_, [this] {
-        return static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
-      });
+void FavouritesView::AddUrl() {
+  CoSpawn(executor_,
+          [executor = executor_, lifetime_token = std::weak_ptr<void>{
+                                   lifetime_token_},
+           &dialog_service = dialog_service_, &favourites = favourites_,
+           tree_view = tree_view_]() mutable {
+            return AddUrlToFavouritesWithPrompt(
+                executor, std::move(lifetime_token), dialog_service,
+                favourites, [tree_view] {
+                  return static_cast<const FavouritesNode*>(
+                      tree_view->GetSelectedNode());
+                });
+          });
 }
 #endif

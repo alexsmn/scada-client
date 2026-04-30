@@ -229,7 +229,7 @@ GitHub Actions workflow (`.github/workflows/cmake-multi-platform.yml`) triggered
 
 **Matrix:** Windows x64, Windows x86, Ubuntu GCC, Ubuntu Clang.
 
-**How it works:** CI checks out dependency repos (`scada-core`, `scada-common`, `transport`, `chromebase`, `express`, `promise.hpp`, `graph-qt`, `opcuapp`, `UA-AnsiC`) as sibling directories and uses `cmake --preset ninja` with `-D` overrides for `CMAKE_MODULE_PATH` and other settings. Modules requiring proprietary SDKs (`BUILD_MODUS=OFF`, `BUILD_OPC=OFF`, `BUILD_VIDICON=OFF`) are disabled.
+**How it works:** CI checks out dependency repos (`scada-core`, `scada-common`, `transport`, `chromebase`, `express`, `graph-qt`, `opcuapp`, `UA-AnsiC`) as sibling directories and uses `cmake --preset ninja` with `-D` overrides for `CMAKE_MODULE_PATH` and other settings. Modules requiring proprietary SDKs (`BUILD_MODUS=OFF`, `BUILD_OPC=OFF`, `BUILD_VIDICON=OFF`) are disabled. The legacy promise dependency is resolved by `scada-core`, not by the client preset.
 
 ```bash
 # CI build commands (for reference):
@@ -366,7 +366,8 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
 
 ### Error Handling
 
-- Async operations return `promise<T>` (custom promise type)
+- Async operations use coroutine bodies; legacy/public boundaries may still
+  return `promise<T>` from `scada-core`.
 - Exceptions for fatal errors (`std::runtime_error`)
 - Local event system (`LocalEvents`) for user-visible errors/warnings
 
@@ -374,11 +375,10 @@ Ordered as: project headers, then third-party/standard headers, separated by bla
 
 - `boost::asio::io_context` for async I/O
 - `Executor` abstraction for task scheduling
-- Public and module-crossing async APIs keep returning `promise<T>` for
-  compatibility.
-- New or touched async implementation code should use coroutine bodies,
-  `AwaitPromise(...)`, and `ToPromise(...)` at legacy boundaries instead of
-  adding `.then()` chains.
+- Public and module-crossing async APIs may keep returning `promise<T>` for
+  compatibility, but client implementation code should be coroutine-first.
+- Use `AwaitPromise(...)` and `ToPromise(...)` only at legacy boundaries
+  instead of adding `.then()` chains.
 
 ### Localization
 

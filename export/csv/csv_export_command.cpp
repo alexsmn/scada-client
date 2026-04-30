@@ -48,24 +48,19 @@ class CsvExportCommandRun
 
     auto csv_export_dir = GetString16(profile_.data(), "csvPath");
 
-    path_ = co_await AwaitPromise(
-        NetExecutorAdapter{executor_},
-        dialog_service_.SelectSaveFile({.title = kExportTitle,
-                                        .default_path = csv_export_dir /
-                                                        file_name,
-                                        .filters = kFilters}));
+    path_ = co_await dialog_service_.SelectSaveFile({
+        .title = kExportTitle,
+        .default_path = csv_export_dir / file_name,
+        .filters = kFilters,
+    });
     SetKey(profile_.data(), "csvPath", path_.u16string());
 
-    auto params = co_await AwaitPromise(
-        NetExecutorAdapter{executor_},
-        show_csv_export_dialog(dialog_service_, profile_));
+    auto params = co_await show_csv_export_dialog(dialog_service_, profile_);
     co_await ExportAsync(params);
 
-    auto open_prompt_result = co_await AwaitPromise(
-        NetExecutorAdapter{executor_},
-        dialog_service_.RunMessageBox(
-            u"Export completed. Open the file now?", kExportTitle,
-            MessageBoxMode::QuestionYesNo));
+    auto open_prompt_result = co_await dialog_service_.RunMessageBox(
+        u"Export completed. Open the file now?", kExportTitle,
+        MessageBoxMode::QuestionYesNo);
     if (open_prompt_result == MessageBoxResult::Yes)
       win_util::OpenWithAssociatedProgram(path_);
 
@@ -85,10 +80,8 @@ class CsvExportCommandRun
     }
 
     if (export_exception) {
-      co_await AwaitPromise(NetExecutorAdapter{executor_},
-                            dialog_service_.RunMessageBox(
-                                u"Export failed.", kExportTitle,
-                                MessageBoxMode::Error));
+      co_await dialog_service_.RunMessageBox(u"Export failed.", kExportTitle,
+                                             MessageBoxMode::Error);
       std::rethrow_exception(export_exception);
     }
 

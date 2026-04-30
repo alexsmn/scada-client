@@ -2,7 +2,7 @@
 
 #include "aui/wt/dialog_stub.h"
 
-promise<> ShowAddFavouritesDialog(DialogService& dialog_service,
-                                  AddFavouritesContext&& context) {
-  return aui::wt::MakeUnsupportedDialogPromise<void>();
+Awaitable<void> ShowAddFavouritesDialog(DialogService& dialog_service,
+                                        AddFavouritesContext&& context) {
+  return aui::wt::MakeUnsupportedDialogAwaitable<void>();
 }

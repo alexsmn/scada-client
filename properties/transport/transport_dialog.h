@@ -1,11 +1,11 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 
 #include <transport/transport_string.h>
 
 class DialogService;
 
-promise<transport::TransportString> ShowTransportDialog(
+Awaitable<transport::TransportString> ShowTransportDialog(
     DialogService& dialog_service,
     const transport::TransportString& transport_string);

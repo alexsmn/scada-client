@@ -198,17 +198,15 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
       if (time_range->type == TimeRange::Type::Custom) {
         auto range = model->GetTimeRange();
         bool time_required = model->IsTimeRequired();
-        auto dialog_promise = ShowTimeRangeDialog(
-            *dialog_service_, {profile_, range, time_required});
         // `cancelation_` gates the resumption so a destroyed
         // `OpenedViewCommands` never races the dialog completion — the prior
         // `cancelation_.Bind(...)` callback had the same effect.
         CoSpawn(executor_, cancelation_,
-                [executor = executor_, model,
-                 dialog_promise = std::move(dialog_promise)]() mutable
+                [model, &dialog_service = *dialog_service_, &profile = profile_,
+                 range, time_required]() mutable
                 -> Awaitable<void> {
-                  auto picked = co_await AwaitPromise(
-                      NetExecutorAdapter{executor}, std::move(dialog_promise));
+                  auto picked = co_await ShowTimeRangeDialog(
+                      dialog_service, {profile, range, time_required});
                   model->SetTimeRange(picked);
                   co_return;
                 });

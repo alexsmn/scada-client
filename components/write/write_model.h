@@ -46,11 +46,11 @@ class WriteModel : private WriteContext,
 
   static Awaitable<void> CompleteWriteAsync(std::shared_ptr<Executor> executor,
                                             std::weak_ptr<WriteModel> model,
-                                            promise<void> operation);
+                                            Awaitable<void> operation);
   static Awaitable<void> ConfirmAndStartWritingAsync(
       std::shared_ptr<Executor> executor,
       std::weak_ptr<WriteModel> model,
-      promise<MessageBoxResult> prompt);
+      Awaitable<MessageBoxResult> prompt);
   static Awaitable<void> ReportWriteErrorAsync(
       std::shared_ptr<Executor> executor,
       std::function<void(bool ok)> completion_handler,

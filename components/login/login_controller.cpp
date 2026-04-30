@@ -90,10 +90,9 @@ void AppendMruList(std::vector<std::u16string>& list,
 }
 
 Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
-                                      promise<void> operation) {
+                                      Awaitable<void> operation) {
   try {
-    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                          std::move(operation));
+    co_await std::move(operation);
     co_return scada::StatusCode::Good;
   } catch (...) {
     co_return scada::GetExceptionStatus(std::current_exception());
@@ -189,16 +188,18 @@ void LoginController::OnLoginCompleted() {
   if (auto_login)
     settings_store_->Write("Password", password);
 
-  auto promise = make_resolved_promise();
+  Awaitable<void> message = []() -> Awaitable<void> { co_return; }();
   if (auto_login && login_message_) {
-    promise = ToVoidPromise(dialog_service_.RunMessageBox(
-        Translate(kAutoLoginMessage), {}, MessageBoxMode::Info));
+    message = [&]() -> Awaitable<void> {
+      co_await dialog_service_.RunMessageBox(Translate(kAutoLoginMessage), {},
+                                             MessageBoxMode::Info);
+    }();
   }
 
   CoSpawn(executor_, [executor = executor_,
                       completion_handler = completion_handler,
                       services = std::move(services_),
-                      message = std::move(promise)]() mutable {
+                      message = std::move(message)]() mutable {
     return CompleteLoginAsync(std::move(executor),
                               std::move(completion_handler),
                               std::move(services), std::move(message));
@@ -296,10 +297,9 @@ Awaitable<void> LoginController::CompleteLoginAsync(
     std::shared_ptr<Executor> executor,
     std::function<void(DataServices services)> completion_handler,
     DataServices services,
-    promise<void> message) {
+    Awaitable<void> message) {
   try {
-    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                          std::move(message));
+    co_await std::move(message);
     completion_handler(std::move(services));
   } catch (...) {
   }
@@ -309,11 +309,9 @@ Awaitable<void> LoginController::CompleteLoginAsync(
 Awaitable<void> LoginController::PromptForceLogoffAsync(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<LoginController> controller,
-    promise<MessageBoxResult> prompt) {
+    Awaitable<MessageBoxResult> prompt) {
   try {
-    auto message_box_result =
-        co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                              std::move(prompt));
+    auto message_box_result = co_await std::move(prompt);
     if (auto controller_ptr = controller.lock()) {
       if (message_box_result == MessageBoxResult::Yes) {
         controller_ptr->Connect(true);
@@ -330,10 +328,9 @@ Awaitable<void> LoginController::PromptForceLogoffAsync(
 Awaitable<void> LoginController::ReportLoginErrorAsync(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<LoginController> controller,
-    promise<MessageBoxResult> prompt) {
+    Awaitable<MessageBoxResult> prompt) {
   try {
-    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                          std::move(prompt));
+    co_await std::move(prompt);
     if (auto controller_ptr = controller.lock()) {
       controller_ptr->login_message_ = true;
       controller_ptr->error_handler();

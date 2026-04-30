@@ -90,11 +90,9 @@ void ApplyLanguageSelection(const std::shared_ptr<Executor>& executor,
                             std::string_view locale_name) {
   SetLocaleName(locale_name);
   CoSpawn(executor, [executor, &context]() -> Awaitable<void> {
-    auto result = co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        context.dialog_service.RunMessageBox(
-            Translate("Restart the application to apply the new language now?"),
-            Translate("Language"), MessageBoxMode::QuestionYesNo));
+    auto result = co_await context.dialog_service.RunMessageBox(
+        Translate("Restart the application to apply the new language now?"),
+        Translate("Language"), MessageBoxMode::QuestionYesNo);
     if (result == MessageBoxResult::Yes) {
       QApplication::quit();
     }
@@ -413,10 +411,9 @@ Awaitable<void> RenameCurrentPageAsync(std::shared_ptr<Executor> executor,
                                        MainWindowInterface& main_window,
                                        DialogService& dialog_service,
                                        std::u16string current_page_title) {
-  auto title = co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      RunPromptDialog(dialog_service, Translate("Name:"), Translate("Rename"),
-                      current_page_title));
+  auto title = co_await RunPromptDialog(
+      dialog_service, Translate("Name:"), Translate("Rename"),
+      current_page_title);
   main_window.SetCurrentPageTitle(title);
   co_return;
 }
@@ -425,10 +422,9 @@ Awaitable<void> ShowRenameWindowDialogAsync(std::shared_ptr<Executor> executor,
                                             OpenedViewInterface& view,
                                             DialogService& dialog_service,
                                             std::u16string current_view_title) {
-  auto title = co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      RunPromptDialog(dialog_service, Translate("Name:"), Translate("Rename"),
-                      current_view_title));
+  auto title = co_await RunPromptDialog(
+      dialog_service, Translate("Name:"), Translate("Rename"),
+      current_view_title);
   // TODO: Capture weak pointer.
   view.SetWindowTitle(title);
   co_return;

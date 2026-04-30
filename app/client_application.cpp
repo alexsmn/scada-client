@@ -426,8 +426,7 @@ Awaitable<void> ClientApplication::QuitAsync() {
   }
 
   try {
-    co_await AwaitPromise(NetExecutorAdapter{executor_},
-                          master_data_services_->Disconnect());
+    co_await master_data_services_->Disconnect();
   } catch (...) {
     // Matches the prior IgnoreResult(): disconnect errors must not prevent
     // the application from quitting.

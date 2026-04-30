@@ -85,6 +85,19 @@ void CompleteTaskCompletion(base::AsyncCompletion& completion,
   }
 }
 
+Awaitable<scada::Status> RunTaskLauncher(
+    std::shared_ptr<Executor> executor,
+    TaskManager::TaskLauncher launcher) {
+  try {
+    co_await launcher();
+    co_return scada::Status{scada::StatusCode::Good};
+  } catch (const scada::status_exception& e) {
+    co_return e.status();
+  } catch (...) {
+    co_return scada::GetExceptionStatus(std::current_exception());
+  }
+}
+
 }  // namespace
 
 // TaskManagerImpl
@@ -110,15 +123,7 @@ promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
   return PostTaskMethod(
       description,
       [self, launcher]() mutable -> Awaitable<scada::Status> {
-        try {
-          co_await AwaitPromise(NetExecutorAdapter{self->executor_},
-                                launcher());
-          co_return scada::Status{scada::StatusCode::Good};
-        } catch (const scada::status_exception& e) {
-          co_return e.status();
-        } catch (...) {
-          co_return scada::GetExceptionStatus(std::current_exception());
-        }
+        return RunTaskLauncher(self->executor_, std::move(launcher));
       });
 }
 

@@ -2,6 +2,8 @@
 
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
+#include "base/awaitable_promise.h"
+#include "net/net_executor_adapter.h"
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
 #include "components/node_properties/node_property_component.h"
@@ -26,11 +28,14 @@
 
 #include <cassert>
 
-promise<void> OpenView(MainWindowInterface* main_window,
-                                     const WindowDefinition& window_def,
-                                     bool activate) {
+Awaitable<void> OpenView(MainWindowInterface* main_window,
+                         const WindowDefinition& window_def,
+                         bool activate) {
   assert(main_window);
-  return ToVoidPromise(main_window->OpenView(window_def, activate));
+  auto executor = co_await boost::asio::this_coro::executor;
+  co_await AwaitPromise(std::move(executor),
+                        main_window->OpenView(window_def, activate));
+  co_return;
 }
 
 const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
@@ -102,7 +107,7 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
     auto window_definition = co_await MakeWindowDefinitionAsync(
         NetExecutorAdapter{executor}, window_info_ptr, node,
         /*expand_groups=*/true);
-    OpenView(main_window, window_definition);
+    co_await OpenView(main_window, window_definition);
     co_return;
   });
   return true;

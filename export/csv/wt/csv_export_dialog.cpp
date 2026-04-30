@@ -2,7 +2,7 @@
 
 #include "aui/wt/dialog_stub.h"
 
-promise<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
-                                             Profile& profile) {
-  return aui::wt::MakeUnsupportedDialogPromise<CsvExportParams>();
+Awaitable<CsvExportParams> ShowCsvExportDialog(DialogService& dialog_service,
+                                               Profile& profile) {
+  return aui::wt::MakeUnsupportedDialogAwaitable<CsvExportParams>();
 }

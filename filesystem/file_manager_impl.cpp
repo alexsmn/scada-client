@@ -34,9 +34,8 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
     std::filesystem::path path) const {
   const scada::NodeId file_node_id = co_await GetFileNodeAsync(path);
   // TODO: Check cache.
-  const scada::DataValue file_value = co_await AwaitPromise(
-      NetExecutorAdapter{executor_},
-      scada_client_.node(file_node_id).read_value());
+  const scada::DataValue file_value =
+      co_await scada_client_.node(file_node_id).read_value();
 
   const auto* contents = file_value.value.get_if<scada::ByteString>();
   if (!contents) {
@@ -67,9 +66,7 @@ Awaitable<scada::NodeId> FileManagerImpl::GetFileNodeAsync(
         .target_name = UtfConvert<char>(c.wstring())});
   }
 
-  auto targets = co_await AwaitPromise(
-      NetExecutorAdapter{executor_},
-      scada_client_.node(filesystem::id::FileSystem)
-          .translate_browse_path(relative_path));
+  auto targets = co_await scada_client_.node(filesystem::id::FileSystem)
+                     .translate_browse_path(relative_path);
   co_return GetOnlyTargetId(targets);
 }

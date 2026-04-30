@@ -1,12 +1,14 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
+
+#include <exception>
 
 namespace aui::wt {
 
 template <class T>
-promise<T> MakeUnsupportedDialogPromise() {
-  return MakeRejectedPromise<T>();
+Awaitable<T> MakeUnsupportedDialogAwaitable() {
+  throw std::exception{};
 }
 
 }  // namespace aui::wt

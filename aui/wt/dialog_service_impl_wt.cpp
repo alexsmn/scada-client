@@ -2,11 +2,11 @@
 
 #include "aui/wt/dialog_stub.h"
 
-promise<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
+Awaitable<MessageBoxResult> DialogServiceImplWt::RunMessageBox(
     std::u16string_view message,
     std::u16string_view title,
     MessageBoxMode mode) {
-  return make_resolved_promise(MessageBoxResult::Ok);
+  co_return MessageBoxResult::Ok;
 }
 
 UiView* DialogServiceImplWt::GetDialogOwningWindow() const {
@@ -17,12 +17,12 @@ UiView* DialogServiceImplWt::GetParentWidget() const {
   return parent_widget;
 }
 
-promise<std::filesystem::path> DialogServiceImplWt::SelectOpenFile(
+Awaitable<std::filesystem::path> DialogServiceImplWt::SelectOpenFile(
     std::u16string_view title) {
-  return aui::wt::MakeUnsupportedDialogPromise<std::filesystem::path>();
+  return aui::wt::MakeUnsupportedDialogAwaitable<std::filesystem::path>();
 }
 
-promise<std::filesystem::path> DialogServiceImplWt::SelectSaveFile(
+Awaitable<std::filesystem::path> DialogServiceImplWt::SelectSaveFile(
     const SaveParams& params) {
-  return aui::wt::MakeUnsupportedDialogPromise<std::filesystem::path>();
+  return aui::wt::MakeUnsupportedDialogAwaitable<std::filesystem::path>();
 }

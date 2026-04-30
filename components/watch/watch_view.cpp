@@ -3,7 +3,7 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/table.h"
-#include "base/awaitable_promise.h"
+#include "base/awaitable.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
 #include "components/watch/watch_model.h"
@@ -20,9 +20,8 @@ Awaitable<void> SaveLogAsync(std::shared_ptr<Executor> executor,
                              DialogService& dialog_service,
                              std::shared_ptr<WatchModel> model,
                              std::u16string name) {
-  auto path = co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      dialog_service.SelectSaveFile({Translate("Save As"), name}));
+  auto path = co_await dialog_service.SelectSaveFile({Translate("Save As"),
+                                                      name});
   model->SaveLog(path);
   co_return;
 }
@@ -101,7 +100,7 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
   return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
 }
 
-promise<> WatchView::SaveLog() {
+void WatchView::SaveLog() {
   SYSTEMTIME time;
   GetLocalTime(&time);
 
@@ -109,8 +108,10 @@ promise<> WatchView::SaveLog() {
                         time.wMonth, time.wDay, time.wHour,
                         time.wMinute, time.wSecond);
 
-  return ToPromise(NetExecutorAdapter{executor_},
-                   SaveLogAsync(executor_, dialog_service_, model_, name));
+  CoSpawn(executor_, [executor = executor_, &dialog_service = dialog_service_,
+                      model = model_, name = std::move(name)] {
+    return SaveLogAsync(executor, dialog_service, model, name);
+  });
 }
 
 CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {

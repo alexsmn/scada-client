@@ -47,9 +47,10 @@ void AddFavouritesDialog::accept() {
   QDialog::accept();
 }
 
-promise<> ShowAddFavouritesDialog(DialogService& dialog_service,
-                                  AddFavouritesContext&& context) {
+Awaitable<void> ShowAddFavouritesDialog(DialogService& dialog_service,
+                                        AddFavouritesContext&& context) {
   auto dialog = std::make_unique<AddFavouritesDialog>(
       std::move(context), dialog_service.GetParentWidget());
-  return ToVoidPromise(StartModalDialog(std::move(dialog)));
+  co_await StartModalDialog(std::move(dialog));
+  co_return;
 }

@@ -210,10 +210,8 @@ void PageMenuModel::OpenPage(const Page& page) {
   CoSpawn(executor_, cancelation_,
           [this, page_ptr = &page, message = std::move(message)]()
               -> Awaitable<void> {
-            auto message_box_result = co_await AwaitPromise(
-                NetExecutorAdapter{executor_},
-                dialog_service_.RunMessageBox(
-                    message, {}, MessageBoxMode::QuestionYesNo));
+            auto message_box_result = co_await dialog_service_.RunMessageBox(
+                message, {}, MessageBoxMode::QuestionYesNo);
             if (message_box_result == MessageBoxResult::Yes)
               OpenPageHelper(*page_ptr, true);
             co_return;

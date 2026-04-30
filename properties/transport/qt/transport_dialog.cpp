@@ -97,7 +97,7 @@ void TransportDialog::SetTypeIndex(int index) {
   ui.stackedWidget->setCurrentIndex(serial_port ? 1 : 0);
 }
 
-promise<transport::TransportString> ShowTransportDialog(
+Awaitable<transport::TransportString> ShowTransportDialog(
     DialogService& dialog_service,
     const transport::TransportString& transport_string) {
   auto model = std::make_unique<TransportDialogModel>(transport_string);

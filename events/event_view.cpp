@@ -313,10 +313,9 @@ Awaitable<void> EventView::SelectSeverityAsync() {
   // Wait for the prompt dialog. A user cancel surfaces as a rejection
   // here, which propagates out of the coroutine and rejects the
   // `promise<>` the caller already ignored in the original code.
-  auto text = co_await AwaitPromise(
-      NetExecutorAdapter{executor_},
-      RunPromptDialog(dialog_service_, prompt, /*title=*/kFilter,
-                      WideFormat(initial_severity)));
+  auto text = co_await RunPromptDialog(dialog_service_, prompt,
+                                       /*title=*/kFilter,
+                                       WideFormat(initial_severity));
 
   // Parse + apply. Preserve the original behavior where a bad value
   // pops up an error message box via `ShowResourceError` and then
@@ -330,10 +329,8 @@ Awaitable<void> EventView::SelectSeverityAsync() {
     parse_error = std::current_exception();
   }
   if (parse_error) {
-    co_await AwaitPromise(
-        NetExecutorAdapter{executor_},
-        ShowResourceError<void>(dialog_service_, /*title=*/kFilter,
-                                parse_error));
+    co_await ShowResourceError<void>(dialog_service_, /*title=*/kFilter,
+                                     parse_error);
   }
   co_return;
 }

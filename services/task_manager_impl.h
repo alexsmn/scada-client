@@ -107,8 +107,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
   // Coroutine adapters over the callback-based core services supplied via
   // `TaskManagerImplContext`. Built once at construction so task coroutines can
-  // `co_await` them directly instead of chaining `.then()` on the legacy
-  // promise wrappers.
+  // `co_await` them directly.
   scada::CallbackToCoroutineAttributeServiceAdapter co_attribute_service_{
       executor_, attribute_service_};
   scada::CallbackToCoroutineNodeManagementServiceAdapter

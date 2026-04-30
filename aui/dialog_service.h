@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/types.h"
-#include "base/promise.h"
+#include "base/awaitable.h"
 
 #include <filesystem>
 #include <span>
@@ -33,11 +33,12 @@ class DialogService {
 
   virtual UiView* GetParentWidget() const = 0;
 
-  virtual promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
-                                                  std::u16string_view title,
-                                                  MessageBoxMode mode) = 0;
+  virtual Awaitable<MessageBoxResult> RunMessageBox(
+      std::u16string_view message,
+      std::u16string_view title,
+      MessageBoxMode mode) = 0;
 
-  virtual promise<std::filesystem::path> SelectOpenFile(
+  virtual Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) = 0;
 
   struct Filter {
@@ -51,6 +52,6 @@ class DialogService {
     std::span<const Filter> filters;
   };
 
-  virtual promise<std::filesystem::path> SelectSaveFile(
+  virtual Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) = 0;
 };

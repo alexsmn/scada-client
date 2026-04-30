@@ -52,9 +52,8 @@ Awaitable<void> DownloadFileNodeAsync(std::shared_ptr<Executor> executor,
                                       std::filesystem::file_time_type
                                           last_update_time) {
   try {
-    auto data_value = co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        node.scada_node().read(scada::AttributeId::Value));
+    auto data_value =
+        co_await node.scada_node().read(scada::AttributeId::Value);
 
     auto* data = data_value.value.get_if<scada::ByteString>();
     if (!data) {

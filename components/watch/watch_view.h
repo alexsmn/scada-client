@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aui/models/table_model_observer.h"
-#include "base/promise.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -43,7 +42,7 @@ class WatchView : protected ControllerContext,
  private:
   std::u16string MakeTitle() const;
 
-  promise<> SaveLog();
+  void SaveLog();
 
   // aui::TableModelObserver
   virtual void OnItemsAdded(int first, int count) override;

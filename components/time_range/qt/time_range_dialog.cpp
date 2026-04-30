@@ -62,8 +62,8 @@ void TimeRangeDialog::accept() {
   QDialog::accept();
 }
 
-promise<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
-                                       TimeRangeContext&& context) {
+Awaitable<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
+                                         TimeRangeContext&& context) {
   auto dialog = std::make_unique<TimeRangeDialog>(
       std::move(context), dialog_service.GetParentWidget());
   return StartMappedModalDialog(std::move(dialog),

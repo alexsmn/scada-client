@@ -20,20 +20,20 @@ class TestDialogService : public DialogService {
   UiView* GetDialogOwningWindow() const override { return nullptr; }
   UiView* GetParentWidget() const override { return nullptr; }
 
-  promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
-                                          std::u16string_view title,
-                                          MessageBoxMode mode) override {
-    return make_rejected_promise<MessageBoxResult>(std::exception{});
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                            std::u16string_view title,
+                                            MessageBoxMode mode) override {
+    throw std::exception{};
   }
 
-  promise<std::filesystem::path> SelectOpenFile(
+  Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
   }
 
-  promise<std::filesystem::path> SelectSaveFile(
+  Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
   }
 };
 
@@ -52,7 +52,8 @@ TEST_F(TransportDialogTest, AcceptedDialogReturnsEditedTransportString) {
   initial.SetParam(transport::TransportString::kParamHost, "old-host");
   initial.SetParam(transport::TransportString::kParamPort, 1200);
 
-  auto result = ShowTransportDialog(dialog_service_, initial);
+  auto result = aui::qt::test::StartAwaitable(
+      ShowTransportDialog(dialog_service_, initial));
 
   aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     dialog.findChild<QComboBox*>("typeComboBox")->setCurrentIndex(2);
@@ -62,8 +63,8 @@ TEST_F(TransportDialogTest, AcceptedDialogReturnsEditedTransportString) {
     dialog.accept();
   });
 
-  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
-  auto updated = result.get();
+  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
+  auto updated = aui::qt::test::GetAwaitableResult(result);
   EXPECT_EQ(updated.ToString(), "UDP;Active;Host=example.test;Port=2404");
 }
 
@@ -74,11 +75,12 @@ TEST_F(TransportDialogTest, RejectedDialogRejectsResult) {
   initial.SetParam(transport::TransportString::kParamHost, "old-host");
   initial.SetParam(transport::TransportString::kParamPort, 1200);
 
-  auto result = ShowTransportDialog(dialog_service_, initial);
+  auto result = aui::qt::test::StartAwaitable(
+      ShowTransportDialog(dialog_service_, initial));
 
   aui::qt::test::ProcessEventsUntilSettled(result,
                                            aui::qt::test::RejectDialog);
 
-  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
-  EXPECT_THROW(result.get(), std::exception);
+  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
+  EXPECT_THROW(aui::qt::test::GetAwaitableResult(result), std::exception);
 }

@@ -21,10 +21,9 @@ const char16_t kSecondStagePrefix[] =
     u"The remote device is ready to execute the command.\n\n";
 
 Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
-                                      promise<void> operation) {
+                                      Awaitable<void> operation) {
   try {
-    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                          std::move(operation));
+    co_await std::move(operation);
     co_return scada::StatusCode::Good;
   } catch (...) {
     co_return scada::GetExceptionStatus(std::current_exception());
@@ -218,7 +217,7 @@ void WriteModel::StartWritingHelper() {
 Awaitable<void> WriteModel::CompleteWriteAsync(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<WriteModel> model,
-    promise<void> operation) {
+    Awaitable<void> operation) {
   auto status = co_await AwaitStatus(std::move(executor), std::move(operation));
   if (auto model_ptr = model.lock()) {
     model_ptr->OnWriteComplete(status);
@@ -229,11 +228,9 @@ Awaitable<void> WriteModel::CompleteWriteAsync(
 Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
     std::shared_ptr<Executor> executor,
     std::weak_ptr<WriteModel> model,
-    promise<MessageBoxResult> prompt) {
+    Awaitable<MessageBoxResult> prompt) {
   try {
-    auto message_box_result =
-        co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                              std::move(prompt));
+    auto message_box_result = co_await std::move(prompt);
     if (auto model_ptr = model.lock()) {
       if (message_box_result == MessageBoxResult::Yes) {
         model_ptr->StartWritingHelper();
@@ -254,9 +251,7 @@ Awaitable<void> WriteModel::ReportWriteErrorAsync(
     std::u16string message,
     std::u16string title) {
   try {
-    co_await AwaitPromise(
-        NetExecutorAdapter{std::move(executor)},
-        dialog_service.RunMessageBox(message, title, MessageBoxMode::Error));
+    co_await dialog_service.RunMessageBox(message, title, MessageBoxMode::Error);
     completion_handler(true);
   } catch (...) {
   }

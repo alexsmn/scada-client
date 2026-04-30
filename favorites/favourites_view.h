@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "controller/controller.h"
@@ -32,7 +32,7 @@ class FavouritesView final : protected ControllerContext, public Controller {
   void DeleteSelection();
 
 #if !defined(UI_WT)
-  promise<> AddUrl();
+  void AddUrl();
 #endif
 
   Favourites& favourites_;

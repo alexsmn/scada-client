@@ -21,19 +21,19 @@
 namespace {
 
 Awaitable<void> ReportMethodCallResultAsync(std::shared_ptr<Executor> executor,
-                                            promise<> call_promise,
+                                            Awaitable<void> call,
                                             std::u16string title,
                                             LocalEvents& local_events,
                                             const Profile& profile) {
   scada::Status status = scada::StatusCode::Good;
   try {
-    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                          std::move(call_promise));
+    co_await std::move(call);
   } catch (...) {
     status = scada::GetExceptionStatus(std::current_exception());
   }
 
   ReportRequestResult(title, status, local_events, profile);
+  co_return;
 }
 
 }  // namespace
@@ -88,8 +88,7 @@ void ConfigurationCommands::Register() {
            [this](const SelectionCommandContext& context) {
              const auto& node = context.selection.node();
              task_manager_.PostTask(
-                 u16format(L"Снятие блокировки с {}",
-                                    node.display_name()),
+                 u16format(L"Unlocking {}", node.display_name()),
                  [node] {
                    return node.scada_node().call(
                        data_items::id::DataItemType_Unlock);
@@ -153,14 +152,14 @@ void ConfigurationCommands::CallMethod(
     const NodeRef& node,
     const scada::NodeId& method_id,
     const std::vector<scada::Variant>& arguments) {
-  auto call_promise = node.scada_node().call_packed(method_id, arguments);
+  auto call = node.scada_node().call_packed(method_id, arguments);
   CoSpawn(executor_,
-          [executor = executor_, call_promise = std::move(call_promise),
+          [executor = executor_, call = std::move(call),
            title = ToString16(node.display_name()),
            &local_events = local_events_,
            &profile = profile_]() mutable -> Awaitable<void> {
             co_await ReportMethodCallResultAsync(
-                std::move(executor), std::move(call_promise), std::move(title),
+                std::move(executor), std::move(call), std::move(title),
                 local_events, profile);
           });
 }

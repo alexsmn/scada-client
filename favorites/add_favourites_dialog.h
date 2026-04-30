@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 #include "profile/window_definition.h"
 
 class DialogService;
@@ -11,5 +11,5 @@ struct AddFavouritesContext {
   WindowDefinition window_def_;
 };
 
-promise<> ShowAddFavouritesDialog(DialogService& dialog_service,
-                                  AddFavouritesContext&& context);
+Awaitable<void> ShowAddFavouritesDialog(DialogService& dialog_service,
+                                        AddFavouritesContext&& context);

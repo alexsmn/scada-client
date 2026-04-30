@@ -152,10 +152,9 @@ class FixedValueTimedDataService final : public TimedDataService {
 
 }  // namespace
 
-class ClientApplicationTest : public Test {
+class ClientApplicationTestBase : public Test {
  public:
-  ClientApplicationTest();
-  ~ClientApplicationTest();
+  ClientApplicationTestBase();
 
  protected:
   // The coroutine-driven startup flow captures Start()/Login()/Quit()
@@ -168,10 +167,6 @@ class ClientApplicationTest : public Test {
 
   void Wait(promise<void> pending) {
     WaitForClientApplicationPromise(io_context_, std::move(pending));
-  }
-
-  void StartApp() {
-    Wait(app_.Start());
   }
 
   template <class Predicate>
@@ -200,6 +195,15 @@ class ClientApplicationTest : public Test {
   NiceMock<MockFunction<promise<std::optional<DataServices>>(
       DataServicesContext&& services_context)>>
       login_handler_;
+};
+
+class ClientApplicationTest : public ClientApplicationTestBase {
+ public:
+  ClientApplicationTest();
+  ~ClientApplicationTest();
+
+ protected:
+  void StartApp() { Wait(app_.Start()); }
 
   ClientApplication app_{ClientApplicationContext{
       .io_context_ = io_context_,
@@ -209,13 +213,15 @@ class ClientApplicationTest : public Test {
       .module_configurator_ = MakeUnitTestModules()}};
 };
 
-ClientApplicationTest::ClientApplicationTest() {
+ClientApplicationTestBase::ClientApplicationTestBase() {
   MainWindow::SetHideForTesting();
 
   ON_CALL(login_handler_, Call(/*services_context=*/_))
       .WillByDefault(Return(make_resolved_promise(std::optional{
           DataServices::FromUnownedServices(services_.services())})));
 }
+
+ClientApplicationTest::ClientApplicationTest() = default;
 
 ClientApplicationTest::~ClientApplicationTest() {
   Wait(app_.Quit());
@@ -374,7 +380,7 @@ TEST_F(ClientApplicationTest, OpensKnownWindows) {
 
 // Ensures that Modus displays show the actual server data when the application
 // starts.
-TEST_F(ClientApplicationTest, DisplaysActualDataOnStart) {
+TEST_F(ClientApplicationTestBase, DisplaysActualDataOnStart) {
   auto node_id = scada::NodeId{1, 1};
   auto initial_timestamp = scada::DateTime::Now();
   auto initial_data_value =

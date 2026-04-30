@@ -2,9 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/executor_conversions.h"
-#include "base/promise.h"
 
 #include <stdexcept>
 #include <string>
@@ -33,7 +31,7 @@ inline std::u16string GetResourceErrorMessage(std::exception_ptr e) {
   // Reached for anything that is not a `ResourceError`. The trailing
   // return also satisfies cppcheck's `missingReturn` checker, which does
   // not treat `std::rethrow_exception` as terminating control flow.
-  return u"Œ¯Ë·Í‡";
+  return u"Error";
 }
 
 template <typename T>
@@ -43,10 +41,9 @@ T RethrowResourceError(std::exception_ptr e) {
 
 template <typename T>
 inline Awaitable<T> ShowResourceErrorAsync(
-    promise<MessageBoxResult> message_box_promise,
+    Awaitable<MessageBoxResult> message_box,
     std::exception_ptr e) {
-  auto executor = co_await boost::asio::this_coro::executor;
-  co_await AwaitPromise(executor, std::move(message_box_promise));
+  co_await std::move(message_box);
   if constexpr (std::is_void_v<T>) {
     std::rethrow_exception(e);
     co_return;
@@ -56,53 +53,45 @@ inline Awaitable<T> ShowResourceErrorAsync(
 }
 
 template <typename T>
-inline promise<T> ShowResourceError(DialogService& dialog_service,
-                                    std::u16string_view title,
-                                    std::exception_ptr e) {
+inline Awaitable<T> ShowResourceError(DialogService& dialog_service,
+                                      std::u16string_view title,
+                                      std::exception_ptr e) {
   auto message = GetResourceErrorMessage(e) + u".";
-  auto message_box_promise =
-      dialog_service.RunMessageBox(message, title, MessageBoxMode::Error);
-  return ToPromise(MakeThreadAnyExecutor(),
-                   ShowResourceErrorAsync<T>(std::move(message_box_promise),
-                                             e));
+  return ShowResourceErrorAsync<T>(
+      dialog_service.RunMessageBox(message, title, MessageBoxMode::Error), e);
 }
 
 template <typename T>
 inline Awaitable<T> HandleResourceErrorAsync(
-    promise<T> source_promise,
+    Awaitable<T> source,
     DialogService& dialog_service,
     std::u16string title) {
-  auto executor = co_await boost::asio::this_coro::executor;
   std::exception_ptr error;
   try {
     if constexpr (std::is_void_v<T>) {
-      co_await AwaitPromise(executor, std::move(source_promise));
+      co_await std::move(source);
       co_return;
     } else {
-      co_return co_await AwaitPromise(executor, std::move(source_promise));
+      co_return co_await std::move(source);
     }
   } catch (...) {
     error = std::current_exception();
   }
 
   if constexpr (std::is_void_v<T>) {
-    co_await AwaitPromise(executor,
-                          ShowResourceError<T>(dialog_service, title, error));
+    co_await ShowResourceError<T>(dialog_service, title, error);
     co_return;
   } else {
-    co_return co_await AwaitPromise(
-        executor, ShowResourceError<T>(dialog_service, title, error));
+    co_return co_await ShowResourceError<T>(dialog_service, title, error);
   }
 }
 
 template <typename T>
-inline promise<T> HandleResourceError(promise<T> source_promise,
-                                      DialogService& dialog_service,
-                                      std::u16string_view title) {
-  return ToPromise(
-      MakeThreadAnyExecutor(),
-      HandleResourceErrorAsync(std::move(source_promise), dialog_service,
-                               std::u16string{title}));
+inline Awaitable<T> HandleResourceError(Awaitable<T> source,
+                                        DialogService& dialog_service,
+                                        std::u16string_view title) {
+  return HandleResourceErrorAsync(std::move(source), dialog_service,
+                                  std::u16string{title});
 }
 
 template <typename F>
@@ -113,16 +102,10 @@ inline auto CatchResourceError(DialogService& dialog_service,
           func = std::forward<decltype(func)>(func)](auto&&... args) {
     using FuncResult = std::invoke_result_t<decltype(func), decltype(args)...>;
     try {
-      auto p = func(std::forward<decltype(args)>(args)...);
-      if constexpr (is_promise_v<FuncResult>) {
-        return HandleResourceError(std::move(p), dialog_service, title);
-      } else {
-        return make_resolved_promise(std::move(p));
-      }
+      return HandleResourceError(func(std::forward<decltype(args)>(args)...),
+                                 dialog_service, title);
     } catch (...) {
-      using Result =
-          std::conditional_t<is_promise_v<FuncResult>,
-                             remove_promise_t<FuncResult>, FuncResult>;
+      using Result = typename FuncResult::value_type;
       return ShowResourceError<Result>(dialog_service, title,
                                        std::current_exception());
     }

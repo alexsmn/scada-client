@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 #include "base/time_range.h"
 
 class DialogService;
@@ -12,5 +12,5 @@ struct TimeRangeContext {
   bool time_required_;
 };
 
-promise<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
-                                       TimeRangeContext&& context);
+Awaitable<TimeRange> ShowTimeRangeDialog(DialogService& dialog_service,
+                                         TimeRangeContext&& context);

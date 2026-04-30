@@ -5,10 +5,10 @@
 
 #include <QInputDialog>
 
-promise<std::u16string> RunPromptDialog(DialogService& dialog_service,
-                                        const std::u16string& prompt,
-                                        const std::u16string& title,
-                                        const std::u16string& initial_value) {
+Awaitable<std::u16string> RunPromptDialog(DialogService& dialog_service,
+                                          const std::u16string& prompt,
+                                          const std::u16string& title,
+                                          const std::u16string& initial_value) {
   auto dialog =
       std::make_unique<QInputDialog>(dialog_service.GetParentWidget());
   dialog->setWindowTitle(QString::fromStdU16String(title));

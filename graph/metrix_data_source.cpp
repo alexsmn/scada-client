@@ -321,11 +321,10 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
 
             std::vector<scada::DataValue> values;
             try {
-              values = co_await AwaitPromise(
-                  executor, node.read_value_history(
-                                {.from = scada::DateTime::Min(),
-                                 .to = scada::DateTime::Max(),
-                                 .max_count = 1}));
+              values = co_await node.read_value_history(
+                  {.from = scada::DateTime::Min(),
+                   .to = scada::DateTime::Max(),
+                   .max_count = 1});
             } catch (...) {
               co_return;
             }

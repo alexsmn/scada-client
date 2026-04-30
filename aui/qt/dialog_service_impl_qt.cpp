@@ -62,7 +62,7 @@ MessageBoxResult MapQtMessageBoxResult(int result) {
 
 }  // namespace
 
-promise<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
+Awaitable<MessageBoxResult> DialogServiceImplQt::RunMessageBox(
     std::u16string_view message,
     std::u16string_view title,
     MessageBoxMode mode) {
@@ -109,7 +109,7 @@ UiView* DialogServiceImplQt::GetParentWidget() const {
   return parent_widget;
 }
 
-promise<std::filesystem::path> DialogServiceImplQt::SelectOpenFile(
+Awaitable<std::filesystem::path> DialogServiceImplQt::SelectOpenFile(
     std::u16string_view title) {
   auto caption = QString::fromUtf16(title.data(), title.size());
   auto dialog =
@@ -125,7 +125,7 @@ promise<std::filesystem::path> DialogServiceImplQt::SelectOpenFile(
   });
 }
 
-promise<std::filesystem::path> DialogServiceImplQt::SelectSaveFile(
+Awaitable<std::filesystem::path> DialogServiceImplQt::SelectSaveFile(
     const SaveParams& params) {
   auto caption = QString::fromUtf16(params.title.data(), params.title.size());
 

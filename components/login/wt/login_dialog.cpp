@@ -69,23 +69,22 @@ class TestDialogService : public DialogService {
 
   virtual UiView* GetParentWidget() const override { return nullptr; }
 
-  virtual promise<MessageBoxResult> RunMessageBox(
+  virtual Awaitable<MessageBoxResult> RunMessageBox(
       std::u16string_view message,
       std::u16string_view title,
       MessageBoxMode mode) override {
-    return ToPromise(NetExecutorAdapter{executor_},
-                     RunMessageBoxAsync(std::u16string{message},
-                                        std::u16string{title}, mode));
+    return RunMessageBoxAsync(std::u16string{message}, std::u16string{title},
+                              mode);
   }
 
-  virtual promise<std::filesystem::path> SelectOpenFile(
+  virtual Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
-    return {};
+    throw std::exception{};
   }
 
-  virtual promise<std::filesystem::path> SelectSaveFile(
+  virtual Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
-    return {};
+    throw std::exception{};
   }
 
  private:

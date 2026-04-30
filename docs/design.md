@@ -304,10 +304,10 @@ Both are Qt-only and Windows-only (`#if !defined(UI_WT)`).
 - **Dependency injection.** Every module takes a `*Context&&` and
   privately inherits from it; no global state beyond the static command
   and data-service registries.
-- **Async / promise-based control flow.** Every public I/O boundary still
-  returns `promise<T>` from scada-core. Internals are migrating to C++20
+- **Async / coroutine control flow.** Client implementations use C++20
   coroutine bodies via `AwaitPromise`/`ToPromise`, with executor ownership kept
-  explicit at UI mutation points.
+  explicit at UI mutation points. Public I/O boundaries may still return
+  `promise<T>` from scada-core for compatibility.
 - **Localisation.** A single `Translate()` function (`aui/qt/translation_qt.cpp`)
   routes through `QCoreApplication::translate("", text)` to match the
   empty translation context that `lupdate` writes into the `.ts` files.
@@ -355,10 +355,10 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
 - **Translation coverage is one language.** Only `client_ru.ts` ships.
   Adding another language is a matter of running `lupdate` and shipping
   the new `.qm`, but the workflow is not documented end-to-end.
-- **`promise<T>` compatibility boundaries and executor pinning are subtle.**
-  Public APIs still expose promises, but migrated implementation code should
-  stay coroutine-first and use `AwaitPromise(...)` / `ToPromise(...)` at
-  explicit boundaries so thread affinity remains visible.
+- **Compatibility boundaries and executor pinning are subtle.** Public APIs
+  may still expose promises, but implementation code should stay
+  coroutine-first and use `AwaitPromise(...)` / `ToPromise(...)` at explicit
+  boundaries so thread affinity remains visible.
 - **A handful of view-bearing modules predate the `components/`
   convention** (Graph, Event Journal, Configuration trees, Favourites,
   File system) and live at the top level. Their layout is consistent but

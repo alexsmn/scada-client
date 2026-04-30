@@ -2,7 +2,6 @@
 
 #include "aui/prompt_dialog.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
@@ -20,9 +19,8 @@ Awaitable<void> RenameCurrentPageAsync(
     DialogService& dialog_service,
     RenamePagePromptRunner prompt_runner,
     std::u16string current_page_title) {
-  auto title = co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      prompt_runner(dialog_service, std::move(current_page_title)));
+  auto title =
+      co_await prompt_runner(dialog_service, std::move(current_page_title));
   main_window.SetCurrentPageTitle(title);
   co_return;
 }
