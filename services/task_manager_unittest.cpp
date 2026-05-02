@@ -79,11 +79,14 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
       AddNodes(/*inputs=*/ElementsAre(FieldsAre(
                    /*requested_id=*/scada::NodeId{}, parent_id,
                    /*node_class=*/scada::NodeClass::Variable, type_def_id,
-                   /*attributes=*/_)),
-               /*callback=*/_))
-      .WillOnce(InvokeArgument<1>(scada::StatusCode::Good,
-                                  std::vector<scada::AddNodesResult>{
-                                      {.added_node_id = added_node_id}}));
+                   /*attributes=*/_))))
+      .WillOnce(Invoke([&](std::vector<scada::AddNodesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::AddNodesResult>>> {
+        return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+            std::vector<scada::AddNodesResult>{
+                {.added_node_id = added_node_id}});
+      }));
 
   const scada::NodeId node_id =
       Wait(task_manager_->PostInsertTask(
@@ -110,10 +113,13 @@ TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
       AddNodes(/*inputs=*/ElementsAre(FieldsAre(
                    /*requested_id=*/scada::NodeId{}, parent_id,
                    /*node_class=*/scada::NodeClass::Variable, type_def_id,
-                   /*attributes=*/_)),
-               /*callback=*/_))
-      .WillOnce(InvokeArgument<1>(scada::StatusCode::Bad,
-                                  std::vector<scada::AddNodesResult>{}));
+                   /*attributes=*/_))))
+      .WillOnce(Invoke([](std::vector<scada::AddNodesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::AddNodesResult>>> {
+        return scada::MakeNodeManagementResult<scada::AddNodesResult>(
+            scada::Status{scada::StatusCode::Bad});
+      }));
 
   EXPECT_THROW(
       Wait(task_manager_->PostInsertTask({.type_definition_id = type_def_id,
@@ -146,11 +152,14 @@ TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {
   const auto& node_id = scada::NodeId{1, NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_,
-              DeleteNodes(/*inputs=*/ElementsAre(
-                              FieldsAre(node_id, /*delete_target_refs=*/false)),
-                          /*callback=*/_))
-      .WillOnce(InvokeArgument<1>(scada::StatusCode::Bad,
-                                  std::vector<scada::StatusCode>{}));
+              DeleteNodes(/*inputs=*/ElementsAre(FieldsAre(
+                  node_id, /*delete_target_refs=*/false))))
+      .WillOnce(Invoke([](std::vector<scada::DeleteNodesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::StatusCode>>> {
+        return scada::MakeNodeManagementResult<scada::StatusCode>(
+            scada::Status{scada::StatusCode::Bad});
+      }));
 
   EXPECT_THROW(Wait(task_manager_->PostDeleteTask(node_id)),
                scada::status_exception);
@@ -166,12 +175,14 @@ TEST_F(TaskManagerTest, PostDeleteTask_Succeeds) {
   const auto& node_id = scada::NodeId{1, NamespaceIndexes::TS};
 
   EXPECT_CALL(node_management_service_,
-              DeleteNodes(/*inputs=*/ElementsAre(
-                              FieldsAre(node_id, /*delete_target_refs=*/false)),
-                          /*callback=*/_))
-      .WillOnce(InvokeArgument<1>(
-          scada::StatusCode::Good,
-          std::vector<scada::StatusCode>{scada::StatusCode::Good}));
+              DeleteNodes(/*inputs=*/ElementsAre(FieldsAre(
+                  node_id, /*delete_target_refs=*/false))))
+      .WillOnce(Invoke([](std::vector<scada::DeleteNodesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::StatusCode>>> {
+        return scada::MakeNodeManagementResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
+      }));
 
   Wait(task_manager_->PostDeleteTask(node_id));
 
@@ -188,17 +199,16 @@ TEST_F(TaskManagerTest, PostAddReference_Succeeds) {
   const auto src = scada::NodeId{1, NamespaceIndexes::TS};
   const auto dst = scada::NodeId{2, NamespaceIndexes::TS};
 
-  // `AddReferencesCallback` is `std::function<void(Status&&, vector<StatusCode>&&)>`.
-  // gmock's `InvokeArgument` cannot bind to the rvalue-reference parameters,
-  // so we invoke the captured callback by hand.
-  EXPECT_CALL(node_management_service_, AddReferences(_, _))
-      .WillOnce(Invoke([&](const std::vector<scada::AddReferencesItem>& inputs,
-                           const scada::AddReferencesCallback& callback) {
-        ASSERT_EQ(inputs.size(), 1u);
+  EXPECT_CALL(node_management_service_, AddReferences(_))
+      .WillOnce(Invoke([&](std::vector<scada::AddReferencesItem> inputs)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::StatusCode>>> {
+        EXPECT_EQ(inputs.size(), 1u);
         EXPECT_EQ(inputs[0].source_node_id, src);
         EXPECT_EQ(inputs[0].reference_type_id, ref_type);
         EXPECT_EQ(inputs[0].target_node_id, dst);
-        callback(scada::StatusCode::Good, {scada::StatusCode::Good});
+        return scada::MakeNodeManagementResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
       }));
 
   Wait(task_manager_->PostAddReference(ref_type, src, dst));
@@ -211,10 +221,12 @@ TEST_F(TaskManagerTest, PostAddReference_ServiceFails) {
   const auto src = scada::NodeId{1, NamespaceIndexes::TS};
   const auto dst = scada::NodeId{2, NamespaceIndexes::TS};
 
-  EXPECT_CALL(node_management_service_, AddReferences(_, _))
-      .WillOnce(Invoke([](const std::vector<scada::AddReferencesItem>&,
-                          const scada::AddReferencesCallback& callback) {
-        callback(scada::StatusCode::Bad, {});
+  EXPECT_CALL(node_management_service_, AddReferences(_))
+      .WillOnce(Invoke([](std::vector<scada::AddReferencesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::StatusCode>>> {
+        return scada::MakeNodeManagementResult<scada::StatusCode>(
+            scada::Status{scada::StatusCode::Bad});
       }));
 
   EXPECT_THROW(Wait(task_manager_->PostAddReference(ref_type, src, dst)),
@@ -232,15 +244,16 @@ TEST_F(TaskManagerTest, PostDeleteReference_Succeeds) {
   const auto src = scada::NodeId{1, NamespaceIndexes::TS};
   const auto dst = scada::NodeId{2, NamespaceIndexes::TS};
 
-  EXPECT_CALL(node_management_service_, DeleteReferences(_, _))
+  EXPECT_CALL(node_management_service_, DeleteReferences(_))
       .WillOnce(Invoke(
-          [&](const std::vector<scada::DeleteReferencesItem>& inputs,
-              const scada::DeleteReferencesCallback& callback) {
-            ASSERT_EQ(inputs.size(), 1u);
+          [&](std::vector<scada::DeleteReferencesItem> inputs)
+              -> Awaitable<scada::StatusOr<std::vector<scada::StatusCode>>> {
+            EXPECT_EQ(inputs.size(), 1u);
             EXPECT_EQ(inputs[0].source_node_id, src);
             EXPECT_EQ(inputs[0].reference_type_id, ref_type);
             EXPECT_EQ(inputs[0].target_node_id, dst);
-            callback(scada::StatusCode::Good, {scada::StatusCode::Good});
+            return scada::MakeNodeManagementResult<scada::StatusCode>(
+                std::vector{scada::StatusCode::Good});
           }));
 
   Wait(task_manager_->PostDeleteReference(ref_type, src, dst));
@@ -290,15 +303,21 @@ TEST_F(TaskManagerTest, BackToBackPostDeleteTasksRunSequentially) {
 
   InSequence seq;
   EXPECT_CALL(node_management_service_,
-              DeleteNodes(ElementsAre(FieldsAre(first, _)), _))
-      .WillOnce(InvokeArgument<1>(
-          scada::StatusCode::Good,
-          std::vector<scada::StatusCode>{scada::StatusCode::Good}));
+              DeleteNodes(ElementsAre(FieldsAre(first, _))))
+      .WillOnce(Invoke([](std::vector<scada::DeleteNodesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::StatusCode>>> {
+        return scada::MakeNodeManagementResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
+      }));
   EXPECT_CALL(node_management_service_,
-              DeleteNodes(ElementsAre(FieldsAre(second, _)), _))
-      .WillOnce(InvokeArgument<1>(
-          scada::StatusCode::Good,
-          std::vector<scada::StatusCode>{scada::StatusCode::Good}));
+              DeleteNodes(ElementsAre(FieldsAre(second, _))))
+      .WillOnce(Invoke([](std::vector<scada::DeleteNodesItem>)
+                           -> Awaitable<scada::StatusOr<
+                               std::vector<scada::StatusCode>>> {
+        return scada::MakeNodeManagementResult<scada::StatusCode>(
+            std::vector{scada::StatusCode::Good});
+      }));
 
   auto first_task = task_manager_->PostDeleteTask(first);
   auto second_task = task_manager_->PostDeleteTask(second);

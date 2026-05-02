@@ -88,6 +88,28 @@ class TaskManagerImpl : private TaskManagerImplContext,
   Awaitable<T> PostTypedTaskMethod(std::u16string_view title,
                                    std::function<Awaitable<T>()> method);
 
+  [[nodiscard]] static Awaitable<scada::NodeId> RunInsertTask(
+      std::shared_ptr<TaskManagerImpl> self,
+      scada::NodeState node_state);
+  [[nodiscard]] static Awaitable<scada::Status> RunUpdateTask(
+      std::shared_ptr<TaskManagerImpl> self,
+      scada::NodeId node_id,
+      scada::NodeAttributes attributes,
+      scada::NodeProperties properties);
+  [[nodiscard]] static Awaitable<scada::Status> RunDeleteTask(
+      std::shared_ptr<TaskManagerImpl> self,
+      scada::NodeId node_id);
+  [[nodiscard]] static Awaitable<scada::Status> RunAddReferenceTask(
+      std::shared_ptr<TaskManagerImpl> self,
+      scada::NodeId reference_type_id,
+      scada::NodeId source_id,
+      scada::NodeId target_id);
+  [[nodiscard]] static Awaitable<scada::Status> RunDeleteReferenceTask(
+      std::shared_ptr<TaskManagerImpl> self,
+      scada::NodeId reference_type_id,
+      scada::NodeId source_id,
+      scada::NodeId target_id);
+
   void StartTask(Task&& task);
   Awaitable<void> RunTaskBody(TaskMethod method);
 
@@ -105,11 +127,6 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
   Task running_task_;
 
-  // Coroutine adapters over the callback-based core services supplied via
-  // `TaskManagerImplContext`. Built once at construction so task coroutines can
-  // `co_await` them directly.
   scada::CallbackToCoroutineAttributeServiceAdapter co_attribute_service_{
       executor_, attribute_service_};
-  scada::CallbackToCoroutineNodeManagementServiceAdapter
-      co_node_management_service_{executor_, node_management_service_};
 };
