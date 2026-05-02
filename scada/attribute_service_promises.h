@@ -1,3 +1,3 @@
 #pragma once
 
-#include "../../legacy_promise/scada/attribute_service_promises.h"
+#include "../../common/scada/attribute_service_promises.h"

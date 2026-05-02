@@ -1,5 +1,6 @@
 #include "app/qt/startup_flow.h"
 
+#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 
@@ -12,6 +13,13 @@
 
 namespace client {
 namespace {
+
+void WaitPromiseForTest(std::shared_ptr<TestExecutor> executor,
+                        promise<void> pending) {
+  WaitAwaitable(
+      executor,
+      AwaitPromise(MakeTestAnyExecutor(executor), std::move(pending)));
+}
 
 class QtStartupFlowTest : public testing::Test {
  protected:
@@ -71,7 +79,7 @@ class QtStartupFlowTest : public testing::Test {
 TEST_F(QtStartupFlowTest, SuccessfulNormalStartupRunsChecksAndQuits) {
   auto context = MakeContext();
 
-  WaitPromise(executor_, RunQtStartupFlow(std::move(context)));
+  WaitPromiseForTest(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start",
@@ -92,7 +100,7 @@ TEST_F(QtStartupFlowTest, StartupFailureReportsFailureAndQuits) {
     return make_rejected_promise<void>(std::runtime_error{"start failed"});
   };
 
-  WaitPromise(executor_, RunQtStartupFlow(std::move(context)));
+  WaitPromiseForTest(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start", "failure", "quit"));
@@ -103,7 +111,7 @@ TEST_F(QtStartupFlowTest, E2eModeReportsRunCompletionInsteadOfQuitting) {
   auto context = MakeContext();
   context.e2e_test_mode = true;
 
-  WaitPromise(executor_, RunQtStartupFlow(std::move(context)));
+  WaitPromiseForTest(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start",

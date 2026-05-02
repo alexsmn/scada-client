@@ -20,7 +20,9 @@
 #include "aui/tree.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
+#include "base/awaitable_promise.h"
 #include "base/client_paths.h"
+#include "base/executor_conversions.h"
 #include "base/test/scoped_path_override.h"
 #include "aui/translation.h"
 #include "controller/window_info.h"
@@ -139,8 +141,12 @@ class ScreenshotGenerator : public ::testing::Test {
       .executor_ = executor_,
       .login_handler_ =
           [this](DataServicesContext&&) {
-            return make_resolved_promise(std::optional{
-                DataServices::FromUnownedServices(services_)});
+            return ToPromise(
+                NetExecutorAdapter{executor_},
+                [this]() -> Awaitable<std::optional<DataServices>> {
+                  co_return std::optional{
+                      DataServices::FromUnownedServices(services_)};
+                }());
           },
       // Intentionally no node_service/timed_data_service/tree-factory
       // overrides: we let ClientApplication build the production

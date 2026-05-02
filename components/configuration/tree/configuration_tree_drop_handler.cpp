@@ -1,7 +1,6 @@
 #include "configuration/tree/configuration_tree_drop_handler.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "common/formula_util.h"
 #include "configuration/tree/configuration_tree_node.h"
 #include "aui/dragdrop/item_drag_data.h"
@@ -22,17 +21,13 @@ Awaitable<void> RunMoveDropTask(std::shared_ptr<Executor> executor,
                                 const scada::NodeId& new_parent_id) {
   try {
     if (!old_parent_id.is_null()) {
-      co_await AwaitPromise(
-          NetExecutorAdapter{executor},
-          task_manager.PostDeleteReference(scada::id::Organizes, old_parent_id,
-                                           node_id));
+      co_await task_manager.PostDeleteReference(scada::id::Organizes,
+                                                old_parent_id, node_id);
     }
 
     if (!new_parent_id.is_null()) {
-      co_await AwaitPromise(
-          NetExecutorAdapter{std::move(executor)},
-          task_manager.PostAddReference(scada::id::Organizes, new_parent_id,
-                                        node_id));
+      co_await task_manager.PostAddReference(scada::id::Organizes,
+                                             new_parent_id, node_id);
     }
   } catch (...) {
   }
@@ -43,8 +38,7 @@ Awaitable<void> RunCreateDataItemTask(std::shared_ptr<Executor> executor,
                                       TaskManager& task_manager,
                                       scada::NodeState node_state) {
   try {
-    co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                          task_manager.PostInsertTask(node_state));
+    (void)co_await task_manager.PostInsertTask(node_state);
   } catch (...) {
   }
   co_return;
@@ -55,9 +49,7 @@ Awaitable<void> RunAssignChannelTask(std::shared_ptr<Executor> executor,
                                      const scada::NodeId& node_id,
                                      scada::NodeProperties properties) {
   try {
-    co_await AwaitPromise(
-        NetExecutorAdapter{std::move(executor)},
-        task_manager.PostUpdateTask(node_id, {}, std::move(properties)));
+    co_await task_manager.PostUpdateTask(node_id, {}, std::move(properties));
   } catch (...) {
   }
   co_return;

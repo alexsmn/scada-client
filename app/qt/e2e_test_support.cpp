@@ -38,6 +38,10 @@ using namespace std::chrono_literals;
 namespace client {
 namespace {
 
+Awaitable<void> NoOpAsync() {
+  co_return;
+}
+
 struct OperatorUseCaseSmokeState {
   bool ok = true;
   std::vector<std::string> lines;
@@ -425,8 +429,7 @@ Awaitable<void> RunE2eOperatorUseCaseSmokeAsync(
 
   for (const auto& check : checks) {
     for (std::string_view window_type : check.open_window_types) {
-      auto result = co_await AwaitPromise(NetExecutorAdapter{executor},
-                                          context.open_window(window_type));
+      auto result = co_await context.open_window(window_type);
       AddSmokeResult(state, window_type, result.ok, std::move(result.detail));
     }
 
@@ -482,7 +485,7 @@ promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
                                       std::shared_ptr<Executor> executor) {
   auto report_path = GetE2eObjectViewValuesReportPath();
   if (report_path.empty())
-    return make_resolved_promise();
+    return ToPromise(NetExecutorAdapter{executor}, NoOpAsync());
 
   return RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext{
       .executor = executor,
@@ -498,7 +501,7 @@ promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
 promise<> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
                                       std::filesystem::path report_path) {
   if (report_path.empty())
-    return make_resolved_promise();
+    return ToPromise(NetExecutorAdapter{context.executor}, NoOpAsync());
 
   auto executor = context.executor;
   return ToPromise(NetExecutorAdapter{executor},
@@ -506,19 +509,18 @@ promise<> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
                                                  std::move(report_path)));
 }
 
-promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
+Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
   auto report_path = GetE2eOperatorUseCasesReportPath();
   if (report_path.empty())
-    return make_resolved_promise();
+    co_return;
 
   auto executor = std::make_shared<MessageLoopQt>();
-  return RunE2eOperatorUseCaseSmoke(OperatorUseCaseSmokeContext{
+  co_await RunE2eOperatorUseCaseSmoke(OperatorUseCaseSmokeContext{
       .executor = executor,
       .open_window =
           [&app, executor](std::string_view window_type) {
-            return ToPromise(NetExecutorAdapter{executor},
-                             OpenOperatorWindowAsync(
-                                 app, executor, std::string{window_type}));
+            return OpenOperatorWindowAsync(app, executor,
+                                           std::string{window_type});
           },
       .is_window_registered =
           [](std::string_view window_type) {
@@ -546,25 +548,23 @@ promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
   }, std::move(report_path), MakeOperatorUseCaseSmokeChecks());
 }
 
-promise<> RunE2eOperatorUseCaseSmoke(
+Awaitable<void> RunE2eOperatorUseCaseSmoke(
     OperatorUseCaseSmokeContext context,
     std::filesystem::path report_path,
     std::vector<OperatorUseCaseSmokeCheck> checks) {
   if (report_path.empty())
-    return make_resolved_promise();
+    co_return;
 
-  auto executor = context.executor;
-  return ToPromise(NetExecutorAdapter{executor},
-                   RunE2eOperatorUseCaseSmokeAsync(std::move(context),
-                                                   std::move(report_path),
-                                                   std::move(checks)));
+  co_await RunE2eOperatorUseCaseSmokeAsync(std::move(context),
+                                           std::move(report_path),
+                                           std::move(checks));
 }
 
 promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
                                       std::shared_ptr<Executor> executor) {
   auto report_path = GetE2eObjectTreeLabelsReportPath();
   if (report_path.empty())
-    return make_resolved_promise();
+    return ToPromise(NetExecutorAdapter{executor}, NoOpAsync());
 
   return RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext{
       .executor = executor,
@@ -580,7 +580,7 @@ promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
 promise<> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,
                                       std::filesystem::path report_path) {
   if (report_path.empty())
-    return make_resolved_promise();
+    return ToPromise(NetExecutorAdapter{context.executor}, NoOpAsync());
 
   auto executor = context.executor;
   return ToPromise(NetExecutorAdapter{executor},
@@ -592,21 +592,13 @@ promise<> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
                                          std::shared_ptr<Executor> executor) {
   auto report_path = GetE2eHardwareTreeDevicesReportPath();
   if (report_path.empty())
-    return make_resolved_promise();
+    return ToPromise(NetExecutorAdapter{executor}, NoOpAsync());
 
   auto promise_executor = executor;
   auto check = std::make_shared<HardwareTreeDevicesCheck>(
       app, std::move(executor), std::move(report_path));
-  promise<> result;
-  CoSpawn(promise_executor, [check, result]() mutable -> Awaitable<void> {
-    try {
-      co_await check->RunAsync();
-      result.resolve();
-    } catch (...) {
-      result.reject(std::current_exception());
-    }
-  });
-  return result;
+  return ToPromise(NetExecutorAdapter{std::move(promise_executor)},
+                   check->RunAsync());
 }
 
 }  // namespace client

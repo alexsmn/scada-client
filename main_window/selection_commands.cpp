@@ -66,20 +66,12 @@ BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
       .execute_handler =
           [&window_info,
            executor = std::move(executor)](const SelectionCommandContext& context) {
-            // Same pattern as `EventModule::AddOpenCommand`: resolve the open-
-            // window definition synchronously, then await it inside a coroutine
-            // that calls `MainWindowInterface::OpenView`. The lifetime contract
-            // for `main_window` follows the existing TODO about `weak_ptr`.
-            auto window_def_promise =
+            auto window_def =
                 context.opened_view.GetOpenWindowDefinition(&window_info);
-            CoSpawn(executor, [executor,
-                               &main_window = context.main_window,
-                               window_def_promise = std::move(
-                                   window_def_promise)]() mutable
+            CoSpawn(executor, [&main_window = context.main_window,
+                               window_def = std::move(window_def)]() mutable
                               -> Awaitable<void> {
-              auto window_def = co_await AwaitPromise(
-                  NetExecutorAdapter{executor}, std::move(window_def_promise));
-              main_window.OpenView(window_def);
+              main_window.OpenView(co_await std::move(window_def));
               co_return;
             });
           },

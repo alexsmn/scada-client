@@ -1,7 +1,6 @@
 #include "clipboard/clipboard_util.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/executor_conversions.h"
 #include "base/win/clipboard.h"
 #include "clipboard/node_serialization.h"
@@ -61,8 +60,7 @@ Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
   auto children = std::exchange(node_state.children, {});
 
   // `PostInsertTask` must take a node state with no children.
-  auto node_id =
-      co_await AwaitPromise(executor, task_manager.PostInsertTask(node_state));
+  auto node_id = co_await task_manager.PostInsertTask(node_state);
   co_await PasteChildrenAsync(task_manager, std::move(children), node_id);
 }
 
@@ -149,27 +147,22 @@ void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
   });
 }
 
-promise<> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
-                                           scada::NodeState&& node_state) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor, PasteNodesFromNodeStateRecursiveAsync(
-                                 task_manager, std::move(node_state)));
+Awaitable<void> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
+                                                 scada::NodeState&& node_state) {
+  co_await PasteNodesFromNodeStateRecursiveAsync(task_manager,
+                                                std::move(node_state));
 }
 
-promise<> PasteNodesFromNodeTree(TaskManager& task_manager,
-                                 const scada::NodeId& new_parent_id,
-                                 const protocol::NodeTree& node_tree) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor, PasteNodesFromNodeTreeAsync(
-                                 task_manager, new_parent_id, node_tree));
+Awaitable<void> PasteNodesFromNodeTree(TaskManager& task_manager,
+                                       const scada::NodeId& new_parent_id,
+                                       const protocol::NodeTree& node_tree) {
+  co_await PasteNodesFromNodeTreeAsync(task_manager, new_parent_id, node_tree);
 }
 
-promise<> PasteNodesFromClipboard(TaskManager& task_manager,
-                                  const scada::NodeId& new_parent_id) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor, PasteNodesFromClipboardAsync(
-                                 task_manager, new_parent_id,
-                                 ReadClipboard(kNodeTreeFormat)));
+Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
+                                        const scada::NodeId& new_parent_id) {
+  co_await PasteNodesFromClipboardAsync(task_manager, new_parent_id,
+                                       ReadClipboard(kNodeTreeFormat));
 }
 
 NodeRef GetPasteParentNode(NodeService& node_service,

@@ -152,15 +152,17 @@ void ConfigurationCommands::CallMethod(
     const NodeRef& node,
     const scada::NodeId& method_id,
     const std::vector<scada::Variant>& arguments) {
-  auto call = node.scada_node().call_packed(method_id, arguments);
+  auto scada_node = node.scada_node();
   CoSpawn(executor_,
-          [executor = executor_, call = std::move(call),
+          [executor = executor_, scada_node = std::move(scada_node),
+           method_id, arguments,
            title = ToString16(node.display_name()),
            &local_events = local_events_,
            &profile = profile_]() mutable -> Awaitable<void> {
             co_await ReportMethodCallResultAsync(
-                std::move(executor), std::move(call), std::move(title),
-                local_events, profile);
+                std::move(executor),
+                scada_node.call_packed(method_id, std::move(arguments)),
+                std::move(title), local_events, profile);
           });
 }
 

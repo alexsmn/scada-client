@@ -1,7 +1,6 @@
 ﻿#include "ui/common/client_utils.h"
 
 #include "aui/translation.h"
-#include "base/awaitable_promise.h"
 #include "base/executor_conversions.h"
 #include "base/format_time.h"
 #include "base/u16format.h"
@@ -79,10 +78,9 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
   return str;
 }
 
-promise<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
+Awaitable<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
   auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor,
-                   ExpandGroupItemIdsAsync(executor, node, max_count));
+  co_return co_await ExpandGroupItemIdsAsync(executor, node, max_count);
 }
 
 namespace {

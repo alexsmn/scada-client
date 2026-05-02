@@ -1,6 +1,7 @@
 ﻿#include "main_window/opened_view.h"
 
 #include "aui/translation.h"
+#include "base/executor_conversions.h"
 #include "base/utf_convert.h"
 #include "resources/common_resources.h"
 #include "controller/command_handler.h"
@@ -9,6 +10,7 @@
 #include "controller/window_info.h"
 #include "export/export_model.h"
 #include "main_window/main_window.h"
+#include "net/net_executor_adapter.h"
 #include "print/service/print_util.h"
 #include "window_definition_builder.h"
 
@@ -182,29 +184,34 @@ void OpenedView::ShowPopupMenu(aui::MenuModel* merge_menu,
   popup_menu_handler_(merge_menu, resource_id, point, right_click);
 }
 
-promise<WindowDefinition> OpenedView::GetOpenWindowDefinition(
+Awaitable<WindowDefinition> OpenedView::GetOpenWindowDefinition(
     const WindowInfo* window_info) const {
   if (auto open_context = controller_->GetOpenContext();
       open_context.has_value()) {
-    return MakeWindowDefinition(window_info, *open_context);
+    co_return co_await MakeWindowDefinitionAsync(NetExecutorAdapter{executor_},
+                                                 window_info, *open_context);
   }
 
   const SelectionModel* selection = controller_->GetSelectionModel();
   if (!selection) {
-    return make_resolved_promise(WindowDefinition{*window_info});
+    co_return WindowDefinition{*window_info};
+  }
+  // cppcheck-suppress nullPointerRedundantCheck
+  const SelectionModel& selected = *selection;
+
+  if (selected.multiple()) {
+    const std::u16string& title = selected.GetTitle();
+    const NodeIdSet& node_ids = selected.GetMultipleNodeIds();
+    co_return MakeWindowDefinition(window_info,
+                                   {node_ids.begin(), node_ids.end()}, title);
   }
 
-  if (selection->multiple()) {
-    const std::u16string& title = selection->GetTitle();
-    const NodeIdSet& node_ids = selection->GetMultipleNodeIds();
-    return make_resolved_promise(MakeWindowDefinition(
-        window_info, {node_ids.begin(), node_ids.end()}, title));
+  if (!selected.node() && selected.timed_data().connected()) {
+    const std::string& formula = selected.timed_data().formula();
+    co_return MakeWindowDefinition(window_info, formula);
   }
 
-  if (!selection->node() && selection->timed_data().connected()) {
-    const std::string& formula = selection->timed_data().formula();
-    return make_resolved_promise(MakeWindowDefinition(window_info, formula));
-  }
-
-  return MakeWindowDefinition(window_info, selection->node(), true);
+  co_return co_await MakeWindowDefinitionAsync(NetExecutorAdapter{executor_},
+                                               window_info, selected.node(),
+                                               true);
 }

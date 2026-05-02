@@ -44,22 +44,22 @@ class TaskManagerImpl : private TaskManagerImplContext,
   bool IsRunning() const;
 
   // TaskManager
-  virtual promise<void> PostTask(
+  virtual Awaitable<void> PostTask(
       std::u16string_view description,
       const TaskLauncher& launcher) override;
-  virtual promise<scada::NodeId> PostInsertTask(
+  virtual Awaitable<scada::NodeId> PostInsertTask(
       const scada::NodeState& node_state) override;
-  virtual promise<void> PostUpdateTask(
+  virtual Awaitable<void> PostUpdateTask(
       const scada::NodeId& node_id,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties) override;
-  virtual promise<void> PostDeleteTask(
+  virtual Awaitable<void> PostDeleteTask(
       const scada::NodeId& node_id) override;
-  virtual promise<void> PostAddReference(
+  virtual Awaitable<void> PostAddReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
-  virtual promise<void> PostDeleteReference(
+  virtual Awaitable<void> PostDeleteReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
@@ -82,11 +82,11 @@ class TaskManagerImpl : private TaskManagerImplContext,
   void Run();
   void CancelProgress();
 
-  promise<void> PostTaskMethod(std::u16string_view title, TaskMethod method);
+  Awaitable<void> PostTaskMethod(std::u16string_view title, TaskMethod method);
 
   template <class T>
-  promise<T> PostTypedTaskMethod(std::u16string_view title,
-                                 std::function<Awaitable<T>()> method);
+  Awaitable<T> PostTypedTaskMethod(std::u16string_view title,
+                                   std::function<Awaitable<T>()> method);
 
   void StartTask(Task&& task);
   Awaitable<void> RunTaskBody(TaskMethod method);

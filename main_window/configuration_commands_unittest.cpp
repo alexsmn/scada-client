@@ -1,9 +1,12 @@
 #include "main_window/configuration_commands.h"
 
 #include "aui/dialog_service_mock.h"
+#include "base/awaitable.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
 #include "controller/selection_model.h"
+#include "controller/window_info.h"
 #include "core/selection_command_context.h"
 #include "events/local_events.h"
 #include "main_window/main_window_mock.h"
@@ -26,18 +29,22 @@ namespace {
 
 constexpr scada::NumericId kItemNodeId = 6001;
 
-class MockOpenedView : public OpenedViewInterface {
+class FakeOpenedView : public OpenedViewInterface {
  public:
-  MOCK_METHOD(const WindowInfo&, GetWindowInfo, (), (const override));
-  MOCK_METHOD(std::u16string, GetWindowTitle, (), (const override));
-  MOCK_METHOD(void, SetWindowTitle, (std::u16string_view title), (override));
-  MOCK_METHOD(WindowDefinition, Save, (), (override));
-  MOCK_METHOD(ContentsModel*, GetContents, (), (override));
-  MOCK_METHOD(void, Select, (const scada::NodeId& node_id), (override));
-  MOCK_METHOD(promise<WindowDefinition>,
-              GetOpenWindowDefinition,
-              (const WindowInfo* window_info),
-              (const override));
+  const WindowInfo& GetWindowInfo() const override { return window_info_; }
+  std::u16string GetWindowTitle() const override { return {}; }
+  void SetWindowTitle(std::u16string_view title) override {}
+  WindowDefinition Save() override { return {}; }
+  ContentsModel* GetContents() override { return nullptr; }
+  void Select(const scada::NodeId& node_id) override {}
+
+  Awaitable<WindowDefinition> GetOpenWindowDefinition(
+      const WindowInfo* window_info) const override {
+    co_return WindowDefinition{*window_info};
+  }
+
+ private:
+  WindowInfo window_info_;
 };
 
 NodeRef MakeCommandNode(scada::node scada_node) {
@@ -83,7 +90,7 @@ class ConfigurationCommandsTest : public Test {
     command->execute_handler(context);
   }
 
-  void PollExecutor() { executor_->Poll(); }
+  void DrainExecutor() { Drain(executor_); }
 
   std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
   StrictMock<scada::MockMethodService> method_service_;
@@ -98,7 +105,7 @@ class ConfigurationCommandsTest : public Test {
   SelectionModel selection_;
   NiceMock<MockDialogService> dialog_service_;
   NiceMock<MockMainWindow> main_window_;
-  NiceMock<MockOpenedView> opened_view_;
+  FakeOpenedView opened_view_;
   ConfigurationCommands commands_;
 };
 
@@ -111,7 +118,7 @@ TEST_F(ConfigurationCommandsTest, ReportsMethodCallSuccessAfterCompletion) {
       }));
 
   ExecuteInterrogateCommand();
-  PollExecutor();
+  DrainExecutor();
 
   ASSERT_EQ(local_events_.events().size(), 1);
   const auto& event = *local_events_.events().front();
@@ -129,7 +136,7 @@ TEST_F(ConfigurationCommandsTest, ReportsMethodCallFailureAfterCompletion) {
       }));
 
   ExecuteInterrogateCommand();
-  PollExecutor();
+  DrainExecutor();
 
   ASSERT_EQ(local_events_.events().size(), 1);
   const auto& event = *local_events_.events().front();

@@ -31,12 +31,10 @@ constexpr WindowInfo kEventJournalWindowInfo = {
     .flags = WIN_INS | WIN_CAN_PRINT};
 
 Awaitable<void> OpenWindowDefinition(
-    std::shared_ptr<Executor> executor,
     std::string_view mode,
     MainWindowInterface& main_window,
-    promise<WindowDefinition> window_def_promise) {
-  auto window_def = co_await AwaitPromise(
-      NetExecutorAdapter{std::move(executor)}, std::move(window_def_promise));
+    Awaitable<WindowDefinition> window_def_awaitable) {
+  auto window_def = co_await std::move(window_def_awaitable);
   if (!mode.empty()) {
     window_def.AddItem("mode", mode);
   }
@@ -99,20 +97,13 @@ void EventModule::AddOpenCommand(unsigned command_id,
        .execute_handler =
            [&window_info, mode, executor = executor_](
                const SelectionCommandContext& context) {
-             // Resolve the open-window definition synchronously here so the
-             // coroutine only owns the resulting promise (and the
-             // `MainWindowInterface&`, which we still rely on the existing
-             // TODO/lifetime contract for — this slice replaces the `.then`
-             // chain with `co_await`, it does not change ownership).
-             auto window_def_promise =
+             auto window_def =
                  context.opened_view.GetOpenWindowDefinition(&window_info);
-             CoSpawn(executor, [executor, mode,
+             CoSpawn(executor, [mode,
                                 &main_window = context.main_window,
-                                window_def_promise = std::move(
-                                    window_def_promise)]() mutable {
-               return OpenWindowDefinition(
-                   std::move(executor), mode, main_window,
-                   std::move(window_def_promise));
+                                window_def = std::move(window_def)]() mutable {
+               return OpenWindowDefinition(mode, main_window,
+                                           std::move(window_def));
              });
            },
        .available_handler =

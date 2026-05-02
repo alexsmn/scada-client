@@ -1,6 +1,7 @@
 #include "task_manager_impl.h"
 
 #include "address_space/test/test_scada_node_states.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "core/progress_host_impl.h"
 #include "events/local_events.h"
@@ -10,7 +11,6 @@
 #include "scada/attribute_service_mock.h"
 #include "scada/node_management_service_mock.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 
 #include <gmock/gmock.h>
 
@@ -24,22 +24,24 @@ class TaskManagerTest : public Test {
 
  protected:
   template <class T>
-  T Wait(promise<T> pending) {
-    using namespace std::chrono_literals;
-    while (pending.wait_for(1ms) == promise_wait_status::timeout) {
+  T Wait(Awaitable<T> pending) {
+    auto result = StartAwaitable(executor_, std::move(pending));
+    while (!result->done) {
       executor_->Advance(10ms);
+      Drain(executor_);
     }
     executor_->Poll();
-    return pending.get();
+    return WaitResult(executor_, std::move(result));
   }
 
-  void Wait(promise<void> pending) {
-    using namespace std::chrono_literals;
-    while (pending.wait_for(1ms) == promise_wait_status::timeout) {
+  void Wait(Awaitable<void> pending) {
+    auto result = StartAwaitable(executor_, std::move(pending));
+    while (!result->done) {
       executor_->Advance(10ms);
+      Drain(executor_);
     }
     executor_->Poll();
-    pending.get();
+    WaitResult(executor_, std::move(result));
   }
 
   const std::shared_ptr<TestExecutor> executor_ =
@@ -247,8 +249,9 @@ TEST_F(TaskManagerTest, PostDeleteReference_Succeeds) {
 }
 
 TEST_F(TaskManagerTest, PostTask_LauncherFailurePropagates) {
-  auto failing_launcher = []() -> promise<void> {
-    return scada::MakeRejectedStatusPromise(scada::StatusCode::Bad_Disconnected);
+  auto failing_launcher = []() -> Awaitable<void> {
+    throw scada::status_exception{scada::StatusCode::Bad_Disconnected};
+    co_return;
   };
 
   EXPECT_THROW(Wait(task_manager_->PostTask(u"Custom", failing_launcher)),
@@ -263,8 +266,8 @@ TEST_F(TaskManagerTest, PostTask_LauncherFailurePropagates) {
 }
 
 TEST_F(TaskManagerTest, PostTask_LauncherSucceeds) {
-  auto resolving_launcher = []() -> promise<void> {
-    return make_resolved_promise();
+  auto resolving_launcher = []() -> Awaitable<void> {
+    co_return;
   };
 
   Wait(task_manager_->PostTask(u"Custom", resolving_launcher));
@@ -297,11 +300,11 @@ TEST_F(TaskManagerTest, BackToBackPostDeleteTasksRunSequentially) {
           scada::StatusCode::Good,
           std::vector<scada::StatusCode>{scada::StatusCode::Good}));
 
-  auto first_promise = task_manager_->PostDeleteTask(first);
-  auto second_promise = task_manager_->PostDeleteTask(second);
+  auto first_task = task_manager_->PostDeleteTask(first);
+  auto second_task = task_manager_->PostDeleteTask(second);
 
-  Wait(std::move(first_promise));
-  Wait(std::move(second_promise));
+  Wait(std::move(first_task));
+  Wait(std::move(second_task));
 
   EXPECT_FALSE(task_manager_->IsRunning());
 }

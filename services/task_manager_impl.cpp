@@ -1,11 +1,10 @@
 #include "services/task_manager_impl.h"
 
 #include "aui/translation.h"
-#include "base/awaitable_promise.h"
-#include "base/promise.h"
 #include "base/u16format.h"
 #include "core/progress_host.h"
 #include "events/local_events.h"
+#include "net/net_executor_adapter.h"
 #include "node_service/node_promises.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -13,7 +12,6 @@
 #include "scada/service_context.h"
 #include "scada/status_exception.h"
 #include "scada/status_or.h"
-#include "scada/status_promise.h"
 
 // Windows.h #defines ReportEvent to ReportEventA/W. Undo it.
 #ifdef ReportEvent
@@ -98,6 +96,12 @@ Awaitable<scada::Status> RunTaskLauncher(
   }
 }
 
+template <class T>
+struct TaskResultState {
+  std::optional<T> value;
+  std::exception_ptr error;
+};
+
 }  // namespace
 
 // TaskManagerImpl
@@ -117,8 +121,8 @@ void TaskManagerImpl::CancelProgress() {
   running_progress_.reset();
 }
 
-promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
-                                        const TaskLauncher& launcher) {
+Awaitable<void> TaskManagerImpl::PostTask(std::u16string_view description,
+                                          const TaskLauncher& launcher) {
   auto self = shared_from_this();
   return PostTaskMethod(
       description,
@@ -127,7 +131,7 @@ promise<void> TaskManagerImpl::PostTask(std::u16string_view description,
       });
 }
 
-promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
+Awaitable<scada::NodeId> TaskManagerImpl::PostInsertTask(
     const scada::NodeState& node_state) {
   auto self = shared_from_this();
 
@@ -207,7 +211,7 @@ promise<scada::NodeId> TaskManagerImpl::PostInsertTask(
       });
 }
 
-promise<void> TaskManagerImpl::PostUpdateTask(
+Awaitable<void> TaskManagerImpl::PostUpdateTask(
     const scada::NodeId& node_id,
     scada::NodeAttributes attributes,
     scada::NodeProperties properties) {
@@ -249,7 +253,7 @@ promise<void> TaskManagerImpl::PostUpdateTask(
       });
 }
 
-promise<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
+Awaitable<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
   std::u16string title = GetDisplayName(node_service_, node_id);
   auto self = shared_from_this();
   return PostTaskMethod(
@@ -269,7 +273,7 @@ promise<void> TaskManagerImpl::PostDeleteTask(const scada::NodeId& node_id) {
       });
 }
 
-promise<void> TaskManagerImpl::PostAddReference(
+Awaitable<void> TaskManagerImpl::PostAddReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
@@ -295,7 +299,7 @@ promise<void> TaskManagerImpl::PostAddReference(
       });
 }
 
-promise<void> TaskManagerImpl::PostDeleteReference(
+Awaitable<void> TaskManagerImpl::PostDeleteReference(
     const scada::NodeId& reference_type_id,
     const scada::NodeId& source_id,
     const scada::NodeId& target_id) {
@@ -430,10 +434,10 @@ void TaskManagerImpl::Run() {
   }
 }
 
-promise<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
-                                              TaskMethod method) {
+Awaitable<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
+                                                TaskMethod method) {
   auto completion = base::AsyncCompletion{NetExecutorAdapter{executor_}};
-  auto result = ToPromise(NetExecutorAdapter{executor_}, completion.Wait());
+  auto result = completion.Wait();
   tasks_.push(Task{.title = std::u16string{title},
                    .method = std::move(method),
                    .completion = std::move(completion)});
@@ -444,38 +448,45 @@ promise<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
 }
 
 template <class T>
-promise<T> TaskManagerImpl::PostTypedTaskMethod(
+Awaitable<T> TaskManagerImpl::PostTypedTaskMethod(
     std::u16string_view title,
     std::function<Awaitable<T>()> method) {
-  promise<T> result;
-  auto result_completion = result;
+  auto result = std::make_shared<TaskResultState<T>>();
   auto task_completion = base::AsyncCompletion{NetExecutorAdapter{executor_}};
+  auto waiter = task_completion.Wait();
 
   Task task{
       .title = std::u16string{title},
       .method =
           [method = std::move(method),
-           result_completion]() mutable -> Awaitable<scada::Status> {
+           result]() mutable -> Awaitable<scada::Status> {
         try {
-          result_completion.resolve(co_await method());
+          result->value.emplace(co_await method());
           co_return scada::Status{scada::StatusCode::Good};
         } catch (const scada::status_exception& e) {
-          result_completion.reject(std::current_exception());
+          result->error = std::current_exception();
           co_return e.status();
         } catch (...) {
           auto status = scada::GetExceptionStatus(std::current_exception());
-          result_completion.reject(std::current_exception());
+          result->error = std::current_exception();
           co_return status;
         }
       },
       .completion = std::move(task_completion),
       .cancel =
-          [result_completion](const scada::Status& status) mutable {
-            scada::RejectStatusPromise(result_completion, status.code());
+          [result](const scada::Status& status) mutable {
+            result->error =
+                std::make_exception_ptr(scada::status_exception{status});
           }};
 
   tasks_.push(std::move(task));
   Run();
 
-  return result;
+  return [result, waiter = std::move(waiter)]() mutable -> Awaitable<T> {
+    co_await std::move(waiter);
+    if (result->error) {
+      std::rethrow_exception(result->error);
+    }
+    co_return std::move(*result->value);
+  }();
 }

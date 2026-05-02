@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 #include "node_service/node_ref.h"
 
 #include <vector>
@@ -15,11 +15,11 @@ class TaskManager;
 
 void CopyNodesToClipboard(const std::vector<NodeRef>& nodes);
 
-promise<> PasteNodesFromClipboard(TaskManager& task_manager,
-                                  const scada::NodeId& new_parent_id);
+Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
+                                        const scada::NodeId& new_parent_id);
 
-promise<> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
-                                           scada::NodeState&& node_state);
+Awaitable<void> PasteNodesFromNodeStateRecursive(TaskManager& task_manager,
+                                                 scada::NodeState&& node_state);
 
 NodeRef GetPasteParentNode(NodeService& node_service,
                            CreateTree& create_tree,

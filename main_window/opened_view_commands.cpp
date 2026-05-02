@@ -345,12 +345,11 @@ Awaitable<void> OpenedViewCommands::CreateRecordAsync(
   scada::NodeId node_id;
   std::exception_ptr error;
   try {
-    node_id = co_await AwaitPromise(
-        NetExecutorAdapter{executor_},
-        task_manager_.PostInsertTask({.type_definition_id = type_node_id,
-                                      .parent_id = parent_id,
-                                      .attributes = std::move(attributes),
-                                      .properties = std::move(properties)}));
+    node_id = co_await task_manager_.PostInsertTask(
+        {.type_definition_id = type_node_id,
+         .parent_id = parent_id,
+         .attributes = std::move(attributes),
+         .properties = std::move(properties)});
   } catch (...) {
     error = std::current_exception();
   }
@@ -396,9 +395,7 @@ Awaitable<void> OpenedViewCommands::PasteFromClipboardAsync() {
   if (!parent_node)
     throw std::runtime_error{"No valid paste parent is available"};
 
-  co_await AwaitPromise(NetExecutorAdapter{executor_},
-                        PasteNodesFromClipboard(task_manager_,
-                                                parent_node.node_id()));
+  co_await PasteNodesFromClipboard(task_manager_, parent_node.node_id());
 }
 
 promise<> OpenedViewCommands::PasteFromClipboard() {

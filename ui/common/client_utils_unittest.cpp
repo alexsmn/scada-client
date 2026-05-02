@@ -1,15 +1,13 @@
 #include "ui/common/client_utils.h"
 
-#include "base/awaitable_promise.h"
 #include "base/executor_conversions.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "node_service/node_model_mock.h"
 
 #include <gmock/gmock.h>
 
 using namespace testing;
-using namespace std::chrono_literals;
-
 namespace {
 
 std::shared_ptr<NiceMock<MockNodeModel>> MakeNodeModel(
@@ -25,15 +23,6 @@ std::shared_ptr<NiceMock<MockNodeModel>> MakeNodeModel(
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
       .WillByDefault(Return(static_cast<scada::Int32>(node_class)));
   return node_model;
-}
-
-template <class T>
-T WaitForPromise(std::shared_ptr<TestExecutor> executor, promise<T> promise) {
-  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-    executor->Poll();
-  }
-
-  return promise.get();
 }
 
 }  // namespace
@@ -60,12 +49,11 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
                                                 NodeRef{third}}));
 
   auto executor = std::make_shared<TestExecutor>();
-  auto promise = ToPromise(MakeAnyExecutor(executor),
-                           ExpandGroupItemIdsAsync(MakeAnyExecutor(executor),
-                                                   NodeRef{root},
-                                                   /*max_count=*/2));
-
-  auto node_ids = WaitForPromise(executor, std::move(promise));
+  auto node_ids =
+      WaitAwaitable(executor,
+                    ExpandGroupItemIdsAsync(MakeAnyExecutor(executor),
+                                            NodeRef{root},
+                                            /*max_count=*/2));
 
   EXPECT_THAT(node_ids, UnorderedElementsAre(first_id, second_id));
 }
@@ -77,12 +65,11 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
   EXPECT_CALL(*root, Fetch(_, _)).Times(0);
 
   auto executor = std::make_shared<TestExecutor>();
-  auto promise = ToPromise(MakeAnyExecutor(executor),
-                           ExpandGroupItemIdsAsync(MakeAnyExecutor(executor),
-                                                   NodeRef{root},
-                                                   /*max_count=*/0));
-
-  auto node_ids = WaitForPromise(executor, std::move(promise));
+  auto node_ids =
+      WaitAwaitable(executor,
+                    ExpandGroupItemIdsAsync(MakeAnyExecutor(executor),
+                                            NodeRef{root},
+                                            /*max_count=*/0));
 
   EXPECT_TRUE(node_ids.empty());
 }

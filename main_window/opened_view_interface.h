@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 #include "profile/window_definition.h"
 
 class ContentsModel;
@@ -21,7 +21,7 @@ class OpenedViewInterface {
 
   virtual void Select(const scada::NodeId& node_id) = 0;
 
-  [[nodiscard]] virtual promise<WindowDefinition> GetOpenWindowDefinition(
+  [[nodiscard]] virtual Awaitable<WindowDefinition> GetOpenWindowDefinition(
       const WindowInfo* window_info) const = 0;
 
  protected:

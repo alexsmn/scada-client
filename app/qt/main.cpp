@@ -6,8 +6,10 @@
 #include "app/qt/installed_translation.h"
 #include "app/qt/startup_flow.h"
 #include "aui/qt/message_loop_qt.h"
+#include "base/awaitable_promise.h"
 #include "base/e2e_test_hooks.h"
 #include "base/boost_log.h"
+#include "base/executor_conversions.h"
 #include "base/executor_timer.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
@@ -133,7 +135,10 @@ int main(int argc, char* argv[]) {
               return client::RunE2eObjectViewValuesCheck(app, executor);
             },
         .run_operator_use_case_smoke =
-            [&app] { return client::RunE2eOperatorUseCaseSmoke(app); },
+            [&app, executor] {
+              return ToPromise(MakeAnyExecutor(executor),
+                               client::RunE2eOperatorUseCaseSmoke(app));
+            },
         .run_object_tree_labels_check =
             [&app, executor] {
               return client::RunE2eObjectTreeLabelsCheck(app, executor);

@@ -1,5 +1,6 @@
 #include "app/qt/e2e_test_support.h"
 
+#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 
@@ -19,6 +20,18 @@ std::string ReadFile(const std::filesystem::path& path) {
   std::ifstream input{path, std::ios::binary};
   return {std::istreambuf_iterator<char>{input},
           std::istreambuf_iterator<char>{}};
+}
+
+Awaitable<OperatorUseCaseSmokeResult> MakeSmokeResultAsync(
+    OperatorUseCaseSmokeResult result) {
+  co_return std::move(result);
+}
+
+void WaitPromiseForTest(std::shared_ptr<TestExecutor> executor,
+                        promise<void> pending) {
+  WaitAwaitable(
+      executor,
+      AwaitPromise(MakeTestAnyExecutor(executor), std::move(pending)));
 }
 
 class E2eTestSupportTest : public testing::Test {
@@ -44,7 +57,7 @@ class E2eTestSupportTest : public testing::Test {
         .open_window =
             [this](std::string_view window_type) {
               opened_windows_.emplace_back(window_type);
-              return make_resolved_promise(
+              return MakeSmokeResultAsync(
                   OperatorUseCaseSmokeResult{.ok = true, .detail = "opened"});
             },
         .is_window_registered = [](std::string_view window_type) {
@@ -83,8 +96,8 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeWritesSuccessfulReport) {
        .main_window_commands = {33},
        .printable_window_types = {"Printable"}}};
 
-  WaitPromise(executor_, RunE2eOperatorUseCaseSmoke(
-                             MakeContext(), report_path_, std::move(checks)));
+  WaitAwaitable(executor_, RunE2eOperatorUseCaseSmoke(
+                               MakeContext(), report_path_, std::move(checks)));
 
   EXPECT_EQ(opened_windows_, std::vector<std::string>{"OpenMe"});
   const auto report = ReadFile(report_path_);
@@ -100,11 +113,11 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeWritesSuccessfulReport) {
 
 TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
   auto context = MakeContext();
-  context.open_window = [this](std::string_view window_type) {
+  context.open_window = [this](std::string_view window_type)
+      -> Awaitable<OperatorUseCaseSmokeResult> {
     opened_windows_.emplace_back(window_type);
-    return make_resolved_promise(
-        OperatorUseCaseSmokeResult{.ok = false,
-                                   .detail = "open returned null"});
+    co_return OperatorUseCaseSmokeResult{.ok = false,
+                                         .detail = "open returned null"};
   };
 
   std::vector<OperatorUseCaseSmokeCheck> checks{
@@ -112,9 +125,9 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
        .description = "window open failure",
        .open_window_types = {"BrokenWindow"}}};
 
-  WaitPromise(executor_, RunE2eOperatorUseCaseSmoke(
-                             std::move(context), report_path_,
-                             std::move(checks)));
+  WaitAwaitable(executor_, RunE2eOperatorUseCaseSmoke(
+                               std::move(context), report_path_,
+                               std::move(checks)));
 
   EXPECT_EQ(opened_windows_, std::vector<std::string>{"BrokenWindow"});
   const auto report = ReadFile(report_path_);
@@ -125,15 +138,16 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
-  WaitPromise(executor_, RunE2eObjectViewValuesCheck(
-                             ObjectViewValuesCheckContext{
-                                 .executor = executor_,
-                                 .get_first_value_text =
-                                     [] { return std::optional{u"value"}; },
-                                 .timeout = std::chrono::milliseconds{0},
-                                 .poll_interval = std::chrono::milliseconds{0},
-                             },
-                             report_path_));
+  WaitPromiseForTest(executor_, RunE2eObjectViewValuesCheck(
+                                    ObjectViewValuesCheckContext{
+                                        .executor = executor_,
+                                        .get_first_value_text =
+                                            [] { return std::optional{u"value"}; },
+                                        .timeout = std::chrono::milliseconds{0},
+                                        .poll_interval =
+                                            std::chrono::milliseconds{0},
+                                    },
+                                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-view-values: ok"), std::string::npos);
@@ -141,15 +155,19 @@ TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
-  WaitPromise(executor_, RunE2eObjectViewValuesCheck(
-                             ObjectViewValuesCheckContext{
-                                 .executor = executor_,
-                                 .get_first_value_text =
-                                     [] { return std::optional<std::u16string>{}; },
-                                 .timeout = std::chrono::milliseconds{0},
-                                 .poll_interval = std::chrono::milliseconds{0},
-                             },
-                             report_path_));
+  WaitPromiseForTest(executor_, RunE2eObjectViewValuesCheck(
+                                    ObjectViewValuesCheckContext{
+                                        .executor = executor_,
+                                        .get_first_value_text =
+                                            [] {
+                                              return std::optional<
+                                                  std::u16string>{};
+                                            },
+                                        .timeout = std::chrono::milliseconds{0},
+                                        .poll_interval =
+                                            std::chrono::milliseconds{0},
+                                    },
+                                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-view-values: failure"), std::string::npos);
@@ -157,18 +175,20 @@ TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
-  WaitPromise(executor_, RunE2eObjectTreeLabelsCheck(
-                             ObjectTreeLabelsCheckContext{
-                                 .executor = executor_,
-                                 .get_expanded_labels =
-                                     [] {
-                                       return std::vector<std::u16string>{
-                                           u"Root", u"Area", u"Device", u"Point"};
-                                     },
-                                 .timeout = std::chrono::milliseconds{0},
-                                 .poll_interval = std::chrono::milliseconds{0},
-                             },
-                             report_path_));
+  WaitPromiseForTest(executor_, RunE2eObjectTreeLabelsCheck(
+                                    ObjectTreeLabelsCheckContext{
+                                        .executor = executor_,
+                                        .get_expanded_labels =
+                                            [] {
+                                              return std::vector<std::u16string>{
+                                                  u"Root", u"Area", u"Device",
+                                                  u"Point"};
+                                            },
+                                        .timeout = std::chrono::milliseconds{0},
+                                        .poll_interval =
+                                            std::chrono::milliseconds{0},
+                                    },
+                                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-tree-labels: ok"), std::string::npos);
@@ -177,18 +197,19 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesTimeoutReport) {
-  WaitPromise(executor_, RunE2eObjectTreeLabelsCheck(
-                             ObjectTreeLabelsCheckContext{
-                                 .executor = executor_,
-                                 .get_expanded_labels =
-                                     [] {
-                                       return std::vector<std::u16string>{
-                                           u"Root", u"[loading]"};
-                                     },
-                                 .timeout = std::chrono::milliseconds{0},
-                                 .poll_interval = std::chrono::milliseconds{0},
-                             },
-                             report_path_));
+  WaitPromiseForTest(executor_, RunE2eObjectTreeLabelsCheck(
+                                    ObjectTreeLabelsCheckContext{
+                                        .executor = executor_,
+                                        .get_expanded_labels =
+                                            [] {
+                                              return std::vector<std::u16string>{
+                                                  u"Root", u"[loading]"};
+                                            },
+                                        .timeout = std::chrono::milliseconds{0},
+                                        .poll_interval =
+                                            std::chrono::milliseconds{0},
+                                    },
+                                    report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-tree-labels: failure"), std::string::npos);

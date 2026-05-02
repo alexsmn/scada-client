@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service_mock.h"
 #include "aui/test/app_environment.h"
+#include "base/awaitable.h"
 #include "base/logger.h"
 #include "controller/selection_model.h"
 #include "controller/test/controller_environment.h"
@@ -54,10 +55,13 @@ class FakeOpenedView : public OpenedViewInterface {
   ContentsModel* GetContents() override { return nullptr; }
   void Select(const scada::NodeId&) override {}
 
-  promise<WindowDefinition> GetOpenWindowDefinition(
+  Awaitable<WindowDefinition> GetOpenWindowDefinition(
       const WindowInfo* /*window_info*/) const override {
-    return make_resolved_promise(open_def_);
+    ++open_definition_await_count;
+    co_return open_def_;
   }
+
+  mutable int open_definition_await_count = 0;
 
  private:
   const WindowDefinition open_def_;
@@ -66,11 +70,9 @@ class FakeOpenedView : public OpenedViewInterface {
 
 }  // namespace
 
-// Regression coverage for the `AddOpenCommand` coroutine migration:
-// dispatching the command must (a) await the `GetOpenWindowDefinition`
-// promise, (b) inject the configured `mode` item, and (c) call
-// `MainWindowInterface::OpenView` with the resulting definition. The
-// pre-migration `.then(...)` chain provided the same end-to-end behavior.
+// Regression coverage for the `AddOpenCommand` coroutine path: dispatching
+// the command must await `GetOpenWindowDefinition`, inject the configured
+// `mode` item, and call `MainWindowInterface::OpenView` with the result.
 TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
   WindowDefinition base_def{"EventJournal"};
   base_def.set_title(u"Events Journal");
@@ -100,6 +102,9 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
       .main_window = main_window,
       .opened_view = opened_view});
 
+  EXPECT_EQ(opened_view.open_definition_await_count, 0);
+  EXPECT_TRUE(opened.type.empty());
+
   // Drain the executor so the spawned coroutine runs to completion. Two
   // polls are enough: one for the initial co_spawn dispatch, one for the
   // post-await resumption. Pump a few extras for safety against
@@ -108,6 +113,7 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
     controller_env_.executor_->Poll();
   }
 
+  EXPECT_EQ(opened_view.open_definition_await_count, 1);
   EXPECT_EQ(opened.type, base_def.type);
   const auto* mode_item = opened.FindItem("mode");
   ASSERT_THAT(mode_item, NotNull());

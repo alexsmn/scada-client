@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/awaitable.h"
 #include "base/promise.h"
 
 #include <chrono>
@@ -34,7 +35,7 @@ struct OperatorUseCaseSmokeResult {
 
 struct OperatorUseCaseSmokeContext {
   std::shared_ptr<Executor> executor;
-  std::function<promise<OperatorUseCaseSmokeResult>(std::string_view)>
+  std::function<Awaitable<OperatorUseCaseSmokeResult>(std::string_view)>
       open_window;
   std::function<bool(std::string_view)> is_window_registered;
   std::function<bool(unsigned)> has_selection_command;
@@ -61,10 +62,11 @@ promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
                                       std::shared_ptr<Executor> executor);
 promise<> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
                                       std::filesystem::path report_path);
-promise<> RunE2eOperatorUseCaseSmoke(ClientApplication& app);
-promise<> RunE2eOperatorUseCaseSmoke(OperatorUseCaseSmokeContext context,
-                                     std::filesystem::path report_path,
-                                     std::vector<OperatorUseCaseSmokeCheck> checks);
+Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app);
+Awaitable<void> RunE2eOperatorUseCaseSmoke(
+    OperatorUseCaseSmokeContext context,
+    std::filesystem::path report_path,
+    std::vector<OperatorUseCaseSmokeCheck> checks);
 promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
                                       std::shared_ptr<Executor> executor);
 promise<> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,

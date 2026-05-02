@@ -1,3 +1,3 @@
 #pragma once
 
-#include "../../legacy_promise/scada/status_promise.h"
+#include "../../common/scada/status_promise.h"

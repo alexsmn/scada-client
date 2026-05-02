@@ -140,13 +140,11 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
   scada::LocalizedText new_file_name = path.filename().u16string();
   scada::ByteString contents{contents_string.begin(), contents_string.end()};
 
-  co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      ToVoidPromise(task_manager.PostInsertTask(
-          {.type_definition_id = filesystem::id::FileType,
-           .parent_id = parent_directory.node_id(),
-           .attributes = {.display_name = std::move(new_file_name),
-                          .value = std::move(contents)}})));
+  (void)co_await task_manager.PostInsertTask(
+      {.type_definition_id = filesystem::id::FileType,
+       .parent_id = parent_directory.node_id(),
+       .attributes = {.display_name = std::move(new_file_name),
+                      .value = std::move(contents)}});
   co_return;
 }
 

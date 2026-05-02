@@ -53,6 +53,20 @@ class DummyViewManager : public ViewManager {
   void AddView(OpenedView& view) override {}
 };
 
+Awaitable<std::u16string> ReturnTitleAsync(std::u16string title) {
+  co_return title;
+}
+
+Awaitable<std::u16string> RejectTitleAsync() {
+  throw std::exception{};
+  co_return std::u16string{};
+}
+
+Awaitable<MessageBoxResult> ReturnMessageBoxResultAsync(
+    MessageBoxResult result) {
+  co_return result;
+}
+
 }  // namespace
 
 class PageCommandsTest : public Test {
@@ -72,7 +86,7 @@ class PageCommandsTest : public Test {
 
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
-  StrictMock<MockFunction<promise<std::u16string>(
+  StrictMock<MockFunction<Awaitable<std::u16string>(
       DialogService& dialog_service,
       std::u16string current_title)>>
       rename_prompt_runner_;
@@ -104,7 +118,9 @@ TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
   EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
   EXPECT_CALL(rename_prompt_runner_,
               Call(Ref(dialog_service_), std::u16string{u"Old title"}))
-      .WillOnce(Return(make_resolved_promise(std::u16string{u"New title"})));
+      .WillOnce([](DialogService&, std::u16string) {
+        return ReturnTitleAsync(u"New title");
+      });
 
   promise<void> renamed;
   EXPECT_CALL(main_window_, SetCurrentPageTitle(std::u16string_view{u"New title"}))
@@ -128,7 +144,9 @@ TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
   EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
   EXPECT_CALL(rename_prompt_runner_,
               Call(Ref(dialog_service_), std::u16string{u"Old title"}))
-      .WillOnce(Return(make_rejected_promise<std::u16string>(std::exception{})));
+      .WillOnce([](DialogService&, std::u16string) {
+        return RejectTitleAsync();
+      });
   EXPECT_CALL(main_window_, SetCurrentPageTitle(_)).Times(0);
 
   command->execute_handler(command_context_);
@@ -182,7 +200,9 @@ TEST_F(PageMenuModelTest, RevertCurrentPageConfirmedOpensSavedPage) {
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::QuestionYesNo))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::Yes)));
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::Yes);
+      });
   EXPECT_CALL(main_window_, OpenPage(Ref(page)));
 
   PageMenuModel menu{menu_context_};
@@ -201,7 +221,9 @@ TEST_F(PageMenuModelTest, RevertCurrentPageCanceledDoesNotOpenPage) {
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::QuestionYesNo))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::No)));
+      .WillOnce([](std::u16string_view, std::u16string_view, MessageBoxMode) {
+        return ReturnMessageBoxResultAsync(MessageBoxResult::No);
+      });
 
   PageMenuModel menu{menu_context_};
   menu.MenuWillShow();
