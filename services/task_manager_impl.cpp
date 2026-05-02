@@ -5,7 +5,7 @@
 #include "core/progress_host.h"
 #include "events/local_events.h"
 #include "net/net_executor_adapter.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"

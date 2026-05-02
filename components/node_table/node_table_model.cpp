@@ -12,7 +12,7 @@
 #include "scada/status_exception.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "properties/property_definition.h"

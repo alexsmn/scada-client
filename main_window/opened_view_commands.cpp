@@ -30,7 +30,7 @@
 #include "model/devices_node_ids.h"
 #include "model/static_types.h"
 #include "transport/transport_string.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "print/service/print_service.h"

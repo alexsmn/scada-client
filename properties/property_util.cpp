@@ -4,7 +4,7 @@
 #include "base/awaitable_promise.h"
 #include "base/range_util.h"
 #include "common/format.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "properties/property_context.h"

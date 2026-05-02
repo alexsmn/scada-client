@@ -17,7 +17,7 @@
 #include "export/configuration/export_data_reader.h"
 #include "export/configuration/export_data_writer.h"
 #include "export/configuration/importer.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 
 #include <algorithm>

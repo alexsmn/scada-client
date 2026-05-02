@@ -2,7 +2,7 @@
 
 #include "base/awaitable_promise.h"
 #include "base/executor_conversions.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 
 #include <gtest/gtest.h>

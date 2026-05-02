@@ -5,7 +5,7 @@
 #include "aui/translation.h"
 #include "model/scada_node_ids.h"
 #include "net/net_executor_adapter.h"
-#include "node_service/node_promises.h"
+#include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
 #include "properties/property_definition.h"
 #include "properties/property_service.h"
