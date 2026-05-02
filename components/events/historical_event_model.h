@@ -19,8 +19,7 @@ class HistoricalEventModel {
   HistoricalEventModel(std::shared_ptr<Executor> executor,
                        scada::HistoryService& history_service)
       : executor_{std::move(executor)},
-        history_service_{history_service},
-        co_history_service_{executor_, history_service_} {}
+        history_service_{history_service} {}
 
   void Init(const TimeRange& range) { time_range_ = range; }
 
@@ -51,11 +50,9 @@ class HistoricalEventModel {
 
   void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
-  // The current executor used to sync `history_service_` responses.
   const std::shared_ptr<Executor> executor_;
 
   scada::HistoryService& history_service_;
-  scada::CallbackToCoroutineHistoryServiceAdapter co_history_service_;
 
   // Filter.
   TimeRange time_range_;
@@ -95,7 +92,7 @@ inline Awaitable<void> HistoricalEventModel::UpdateAsync(
     CancelationRef request_cancelation,
     base::Time from,
     base::Time to) {
-  auto result = co_await co_history_service_.HistoryReadEvents(
+  auto result = co_await history_service_.HistoryReadEvents(
       scada::id::Server, from, to,
       scada::EventFilter{scada::EventFilter::ACKED});
   if (request_cancelation.canceled()) {

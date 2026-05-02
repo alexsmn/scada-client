@@ -1,7 +1,7 @@
 #include "screenshot_modules.h"
 
 #include "configuration/configuration_module.h"
-#include "services/ui/node_service_progress_tracker.h"
+#include "components/node_service_progress_tracker/node_service_progress_tracker.h"
 
 ClientApplicationModuleConfigurator MakeScreenshotModules() {
   return [](ClientApplicationModuleContext& context) {

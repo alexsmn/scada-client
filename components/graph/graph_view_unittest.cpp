@@ -1,5 +1,6 @@
 #include "graph/graph_view.h"
 
+#include "base/async_completion.h"
 #include "aui/test/app_environment.h"
 #include "base/test/awaitable_test.h"
 #include "resources/common_resources.h"
@@ -197,13 +198,13 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
   const auto earliest = scada::DateTime::FromDoubleT(100.0);
   const auto latest = scada::DateTime::FromDoubleT(200.0);
 
-  EXPECT_CALL(history_service, HistoryReadRaw(_, _))
-      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details,
-                           const scada::HistoryReadRawCallback& callback) {
+  EXPECT_CALL(history_service, HistoryReadRaw(_))
+      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details)
+                           -> Awaitable<scada::HistoryReadRawResult> {
         EXPECT_EQ(details.node_id, kTestNodeId);
         EXPECT_EQ(details.max_count, 1u);
-        callback(scada::HistoryReadRawResult{
-            .values = {MakeDataValue(1.0, earliest)}});
+        co_return scada::HistoryReadRawResult{
+            .values = {MakeDataValue(1.0, earliest)}};
       }));
 
   MetrixDataSource data_source{MakeTestAnyExecutor(executor)};
@@ -222,17 +223,27 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   scada::client client{services};
   NodeRef node{std::make_shared<TestNodeModel>(client.node(kTestNodeId))};
 
-  scada::HistoryReadRawCallback first_callback;
-  scada::HistoryReadRawCallback second_callback;
+  base::AsyncCompletion first_completion{MakeTestAnyExecutor(executor)};
+  base::AsyncCompletion second_completion{MakeTestAnyExecutor(executor)};
+  scada::HistoryReadRawResult first_result;
+  scada::HistoryReadRawResult second_result;
+  bool first_started = false;
+  bool second_started = false;
 
-  EXPECT_CALL(history_service, HistoryReadRaw(_, _))
-      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details,
-                           const scada::HistoryReadRawCallback& callback) {
-        first_callback = callback;
+  EXPECT_CALL(history_service, HistoryReadRaw(_))
+      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details)
+                           -> Awaitable<scada::HistoryReadRawResult> {
+        EXPECT_EQ(details.node_id, kTestNodeId);
+        first_started = true;
+        co_await first_completion.Wait();
+        co_return first_result;
       }))
-      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details,
-                           const scada::HistoryReadRawCallback& callback) {
-        second_callback = callback;
+      .WillOnce(Invoke([&](const scada::HistoryReadRawDetails& details)
+                           -> Awaitable<scada::HistoryReadRawResult> {
+        EXPECT_EQ(details.node_id, kTestNodeId);
+        second_started = true;
+        co_await second_completion.Wait();
+        co_return second_result;
       }));
 
   const auto stale_earliest = scada::DateTime::FromDoubleT(50.0);
@@ -243,19 +254,21 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   MetrixDataSource data_source{MakeTestAnyExecutor(executor)};
   data_source.SetTimedData(MakeTimedDataSpec(node, first_latest));
   Drain(executor);
-  ASSERT_TRUE(first_callback);
+  ASSERT_TRUE(first_started);
 
   data_source.SetTimedData(MakeTimedDataSpec(node, second_latest));
   Drain(executor);
-  ASSERT_TRUE(second_callback);
+  ASSERT_TRUE(second_started);
 
-  first_callback(scada::HistoryReadRawResult{
-      .values = {MakeDataValue(1.0, stale_earliest)}});
+  first_result = scada::HistoryReadRawResult{
+      .values = {MakeDataValue(1.0, stale_earliest)}};
+  first_completion.Complete();
   Drain(executor);
   EXPECT_TRUE(data_source.GetHorizontalRange().empty());
 
-  second_callback(scada::HistoryReadRawResult{
-      .values = {MakeDataValue(1.0, current_earliest)}});
+  second_result = scada::HistoryReadRawResult{
+      .values = {MakeDataValue(1.0, current_earliest)}};
+  second_completion.Complete();
   Drain(executor);
 
   auto horizontal_range = data_source.GetHorizontalRange();

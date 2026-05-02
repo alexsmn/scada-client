@@ -31,6 +31,7 @@ find_package(ScadaCommon REQUIRED)
 
 include_directories(client
   "."
+  "components"
 )
 
 add_subdirectory(base)
@@ -41,27 +42,9 @@ add_subdirectory(profile)
 # `controller` depends on `profile`.
 add_subdirectory(controller)
 add_subdirectory(services)
-add_subdirectory(events)
-add_subdirectory(portfolio)
-add_subdirectory(filesystem)
-add_subdirectory(favorites)
 add_subdirectory(web)
-add_subdirectory(print)
 add_subdirectory(properties)
 option(BUILD_MODUS "Build Modus module (requires Modus and Schematic SDKs)" ON)
-
-if(BUILD_MODUS)
-  add_subdirectory(modus)
-endif()
-
-# vidicon depends on scada_common_opc and scada_common_vidicon.
-if(TARGET scada_common_opc AND TARGET scada_common_vidicon)
-  add_subdirectory(vidicon)
-endif()
-
-add_subdirectory(configuration)
-add_subdirectory(graph)
-add_subdirectory(export)
 
 file(GLOB_RECURSE PATHS CONFIGURE_DEPENDS
   "*.cpp"
@@ -76,23 +59,13 @@ list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/client/base/")
 list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
 list(FILTER PATHS EXCLUDE REGEX "/client/components/")
-list(FILTER PATHS EXCLUDE REGEX "/client/configuration/")
 list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
 list(FILTER PATHS EXCLUDE REGEX "/client/core/")
-list(FILTER PATHS EXCLUDE REGEX "/client/events/")
-list(FILTER PATHS EXCLUDE REGEX "/client/export/")
-list(FILTER PATHS EXCLUDE REGEX "/client/favorites/")
-list(FILTER PATHS EXCLUDE REGEX "/client/filesystem/")
-list(FILTER PATHS EXCLUDE REGEX "/client/graph/")
 list(FILTER PATHS EXCLUDE REGEX "/client/main_window/")
-list(FILTER PATHS EXCLUDE REGEX "/client/modus/")
-list(FILTER PATHS EXCLUDE REGEX "/client/portfolio/")
-list(FILTER PATHS EXCLUDE REGEX "/client/print/")
 list(FILTER PATHS EXCLUDE REGEX "/client/profile/")
 list(FILTER PATHS EXCLUDE REGEX "/client/properties/")
 list(FILTER PATHS EXCLUDE REGEX "/client/services/")
 list(FILTER PATHS EXCLUDE REGEX "/client/test/e2e/")
-list(FILTER PATHS EXCLUDE REGEX "/client/vidicon/")
 # `tools/` hosts standalone utility executables (e.g. the screenshot
 # generator); each manages its own sources via its own CMakeLists.
 list(FILTER PATHS EXCLUDE REGEX "/client/tools/")

@@ -1,4 +1,4 @@
-#include "app/opcua_services_module.h"
+#include "components/opcua_services/opcua_services_module.h"
 
 #include "scada/data_services_factory.h"
 

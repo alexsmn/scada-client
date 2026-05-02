@@ -192,15 +192,15 @@ with the central registries. There are 12 of them today:
 |---|---|---|
 | `CoreModule` | `core/` | Registries, tracer, progress host (§3.2). |
 | `MainWindowModule` | `main_window/` | Window/page lifecycle (§3.7). |
-| `ConfigurationModule` | `configuration/` | Object tree, hardware tree, raw nodes view. |
-| `EventModule` | `events/` | Event fetching, journaling, local error events. |
-| `ExportConfigurationModule` | `export/configuration/` | Configuration snapshot export/import. |
-| `CsvExportModule` | `export/csv/` | CSV export for tabular views. |
-| `FavoritesModule` | `favorites/` | Favourite nodes. |
-| `PortfolioModule` | `portfolio/` | Named groupings of favourites. |
+| `ConfigurationModule` | `components/configuration/` | Object tree, hardware tree, raw nodes view. |
+| `EventModule` | `components/events/` | Event fetching, journaling, local error events. |
+| `ExportConfigurationModule` | `components/export/configuration/` | Configuration snapshot export/import. |
+| `CsvExportModule` | `components/export/csv/` | CSV export for tabular views. |
+| `FavoritesModule` | `components/favorites/` | Favourite nodes. |
+| `PortfolioModule` | `components/portfolio/` | Named groupings of favourites. |
 | `DebuggerModule` | `components/debugger/` | Protocol-level request/response inspector. |
-| `ModusModule` *(Qt only)* | `modus/` | Modus 6.30 ActiveX schematic embedding. |
-| `VidiconModule` *(Qt only)* | `vidicon/` | Vidicon display embedding. |
+| `ModusModule` *(Qt only)* | `components/modus/` | Modus 6.30 ActiveX schematic embedding. |
+| `VidiconModule` *(Qt only)* | `components/vidicon/` | Vidicon display embedding. |
 | `WebModule` | `components/web/` | Embedded web view component. |
 
 Modules' `*Context` structs make their dependencies explicit; `ClientApplication`
@@ -272,31 +272,29 @@ and split into `qt/` and `wt/` subdirs:
 | `web/` | Embedded web view. |
 | `write/` | Write-value / control-command dialog. |
 
-Other view-bearing modules (Graph, Event Journal, Configuration trees,
-Favourites, File system, Modus, Vidicon) live outside `components/` because
-they predate the components convention or are too large to fit it; the
-plan in `tasks.md` is to keep extracting them.
+Other view-bearing modules, pluggable modules, and platform integrations live
+under `components/`.
 
-### 3.10 Platform integrations — `modus/`, `vidicon/`
+### 3.10 Platform integrations — `components/modus/`, `components/vidicon/`
 
 Both are Qt-only and Windows-only (`#if !defined(UI_WT)`).
 
-- `modus/` wraps the Modus 6.30 ActiveX control. The Russian-language
+- `components/modus/` wraps the Modus 6.30 ActiveX control. The Russian-language
   OLESTR parameter names (`"ключ_привязки"`, `"положение"`, `"уставки"`)
   are part of the external protocol and **must not be renamed**.
-- `vidicon/` embeds the Vidicon display protocol via a `VidiconClient`
+- `components/vidicon/` embeds the Vidicon display protocol via a `VidiconClient`
   that bridges Telecontrol's `TimedDataService` to the Vidicon side.
 
 ### 3.11 Filesystem, export, print, graph
 
-- `filesystem/` — async file I/O wrapper with a local cache, used for
+- `components/filesystem/` — async file I/O wrapper with a local cache, used for
   uploads/downloads against the server-side file system.
-- `export/configuration/` — configuration tree snapshot exporter and
+- `components/export/configuration/` — configuration tree snapshot exporter and
   importer (binary format).
-- `export/csv/` — CSV writer used by tables, summaries, and journals.
-- `print/` — print preview and printing for any view that exposes a
+- `components/export/csv/` — CSV writer used by tables, summaries, and journals.
+- `components/print/` — print preview and printing for any view that exposes a
   printable model.
-- `graph/` — multi-pane time-series chart, built on top of the external
+- `components/graph/` — multi-pane time-series chart, built on top of the external
   `graph-qt` package.
 
 ## 4. Cross-Cutting Concerns
@@ -337,7 +335,7 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
   the shared Wt dialog-stub helper; message boxes resolve as `Ok`. There is no
   parity test that ensures both UIs render the same fixture.
 - **Configuration export format is binary and undocumented in this repo.**
-  The exact wire format is implicit in `export/configuration/`. A schema
+  The exact wire format is implicit in `components/export/configuration/`. A schema
   document or version negotiation would reduce the migration risk if the
   format changes.
 - **OPC UA back-end uses an in-repo UA Binary client.** The client stack

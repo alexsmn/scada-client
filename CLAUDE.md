@@ -34,31 +34,27 @@ scada-client/
 │   ├── timed_data/         # Time-series data view
 │   ├── watch/              # Real-time value watch
 │   ├── write/              # Write values to devices
+│   ├── configuration/      # Device/node configuration management
+│   ├── events/             # Event system, event journal, local events
+│   ├── export/             # Export functionality
+│   ├── favorites/          # Bookmarks/favorites management
+│   ├── filesystem/         # File system operations and caching
+│   ├── graph/              # Graph/chart visualization
+│   ├── modus/              # Modus 6.30 ActiveX/COM integration (Qt only)
+│   ├── node_service_progress_tracker/
+│   ├── opcua_services/
+│   ├── portfolio/          # Portfolio management
+│   ├── print/              # Print and print preview
+│   ├── vidicon/            # Vidicon protocol integration (Qt only)
 │   └── ...                 # (select_item, node_properties, node_table, etc.)
-├── configuration/          # Device/node configuration management
-│   ├── devices/
-│   ├── nodes/
-│   ├── objects/
-│   └── tree/
 ├── controller/             # MVC controller layer, view management, command registry
 │   └── test/
 ├── core/                   # Core module: command registries, tracer, progress host
-├── events/                 # Event system, event journal, local events
-├── export/                 # Export functionality
-│   ├── configuration/      # Configuration export/import
-│   └── csv/                # CSV export
-├── favorites/              # Bookmarks/favorites management
-├── filesystem/             # File system operations and caching
-├── graph/                  # Graph/chart visualization
 ├── main_window/            # Main window management and page/view lifecycle
-├── modus/                  # Modus 6.30 ActiveX/COM protocol integration (Qt only)
-├── portfolio/              # Portfolio management
-├── print/                  # Print and print preview
 ├── profile/                # User profiles, window definitions, page layouts
 ├── properties/             # Property management and dialogs
 ├── services/               # Shared services (speech, task management, telemetry)
 ├── timed_data/             # Time-series data service
-├── vidicon/                # Vidicon protocol integration (Qt only)
 ├── web/                    # Web component
 ├── res/                    # Resources and settings
 ├── test/                   # Integration tests and display tester
@@ -275,7 +271,7 @@ class EventModule : private EventModuleContext {
 | `ClientApplication` | `app/client_application.h` | Top-level orchestrator; owns all modules |
 | `CoreModule` | `core/core_module.h` | Command registries, tracer, progress host |
 | `MainWindowModule` | `main_window/` | Window lifecycle, view management, page navigation |
-| `EventModule` | `events/event_module.h` | Event fetching, journaling, local events |
+| `EventModule` | `components/events/event_module.h` | Event fetching, journaling, local events |
 | `ControllerRegistry` | `controller/controller_registry.h` | Maps command IDs to controller factories |
 | `Profile` | `profile/profile.h` | User preferences, window layouts, page definitions |
 | `NodeService` | via factory | Device/node browsing and monitoring |
@@ -396,7 +392,7 @@ Unit tests follow the `*_unittest.cpp` naming convention (33 test files). Tests 
 
 - `app/client_application_unittest.cpp`
 - `components/table/table_model_unittest.cpp`
-- `events/event_table_model_unittest.cpp`
+- `components/events/event_table_model_unittest.cpp`
 - `main_window/main_window_unittest.cpp`
 - `profile/page_layout_unittest.cpp`
 
@@ -448,7 +444,7 @@ Logging-related switches (pass as `--switch-name`):
 
 9. **Conditional compilation** — Use `#if !defined(UI_WT)` to guard Qt-only features (Modus, Vidicon, etc.).
 
-11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
+11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `components/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
 
 10. **Async code** keeps `promise<T>` at public/module boundaries, but new or touched implementation code should use coroutine bodies with `co_await`. Use `AwaitPromise(...)` to await legacy promises and `ToPromise(...)` only at compatibility boundaries; do not add new `.then()` chains for client workflows.
 

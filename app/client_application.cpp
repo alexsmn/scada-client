@@ -26,7 +26,7 @@
 #include "metrics/boost_log_metric_reporter.h"
 #include "metrics/metric_service_impl.h"
 #include "node_service/node_service_factory.h"
-#include "services/ui/node_service_progress_tracker.h"
+#include "components/node_service_progress_tracker/node_service_progress_tracker.h"
 #include "portfolio/portfolio_module.h"
 #include "print/service/print_module.h"
 #include "profile/profile.h"
@@ -82,7 +82,7 @@ REGISTER_DATA_SERVICES("Vidicon",
 struct ClientApplication::PostLoginContext {
   scada::services audited_scada_services;
   scada::client scada_client;
-  std::shared_ptr<scada::CoroutineHistoryService> coroutine_history_service;
+  std::shared_ptr<scada::HistoryService> coroutine_history_service;
   AliasResolver alias_resolver;
 };
 
@@ -152,7 +152,7 @@ void ClientApplication::PostLogin() {
       .audited_scada_services = master_data_services_->as_services(),
       .scada_client = scada::client{master_data_services_->as_services()},
       .coroutine_history_service =
-          std::static_pointer_cast<scada::CoroutineHistoryService>(
+          std::static_pointer_cast<scada::HistoryService>(
               master_data_services_),
       .alias_resolver = {}};
 

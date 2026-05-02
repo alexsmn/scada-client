@@ -24,6 +24,25 @@ function(client_component_module module_name)
   )
 endfunction()
 
+add_subdirectory(configuration)
+add_subdirectory(export)
+add_subdirectory(events)
+add_subdirectory(favorites)
+add_subdirectory(filesystem)
+add_subdirectory(graph)
+add_subdirectory(print)
+
+if(BUILD_MODUS)
+  add_subdirectory(modus)
+endif()
+
+# vidicon depends on scada_common_opc and scada_common_vidicon.
+if(TARGET scada_common_opc AND TARGET scada_common_vidicon)
+  add_subdirectory(vidicon)
+endif()
+
 foreach(component_name IN LISTS CLIENT_COMPONENTS)
   add_subdirectory(${component_name})
 endforeach()
+
+add_subdirectory(portfolio)

@@ -30,8 +30,8 @@ add_executable(client_screenshot_generator
   "fixture_builder.cpp"
   "fixture_builder.h"
   ${SCREENSHOT_GENERATOR_WIN32_RESOURCES}
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/opcua_services_module.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/opcua_services_module.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../components/opcua_services/opcua_services_module.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../components/opcua_services/opcua_services_module.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.h"
 )

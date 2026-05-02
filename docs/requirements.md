@@ -46,19 +46,19 @@ implementation.
 | # | Actor | Use case | Source |
 |---|---|---|---|
 | UC-1 | Operator | Monitor live values from devices on the configured object tree, with periodic refresh and quality/limit indicators. | `components/watch/`, `components/timed_data/` |
-| UC-2 | Operator | Visualise multiple time-series on a single chart with configurable time range, panes, colours, dots/steps, and legends. | `graph/`, `components/timed_data/` |
+| UC-2 | Operator | Visualise multiple time-series on a single chart with configurable time range, panes, colours, dots/steps, and legends. | `components/graph/`, `components/timed_data/` |
 | UC-3 | Operator | View tabular real-time and historical data with sorting, filtering, and limit highlighting. | `components/table/`, `components/sheet/`, `components/summary/` |
-| UC-4 | Operator | Receive and acknowledge events / alarms, with auto-flash, sound, and severity-based colour. | `events/`, `components/watch/` |
-| UC-5 | Operator | Browse historical event journals over a chosen time range, filter by severity / item / area. | `events/event_module.cpp` (`EventJournal` window) |
+| UC-4 | Operator | Receive and acknowledge events / alarms, with auto-flash, sound, and severity-based colour. | `components/events/`, `components/watch/` |
+| UC-5 | Operator | Browse historical event journals over a chosen time range, filter by severity / item / area. | `components/events/event_module.cpp` (`EventJournal` window) |
 | UC-6 | Operator | Watch a custom user-defined spreadsheet of cells bound to live values. | `components/sheet/` |
 | UC-7 | Operator | Issue control commands (write set-points, switch states) with optional two-stage confirmation. | `components/write/` |
-| UC-8 | Operator | Track favourite nodes for fast navigation, organise them into portfolios. | `favorites/`, `portfolio/` |
-| UC-9 | Operator | Print or export the contents of the active view (table, graph, summary, journal). | `print/`, `export/csv/` |
-| UC-10 | Operator | Locate, transfer and view files exchanged with the server (file system view, file cache). | `filesystem/`, `components/web/` |
-| UC-11 | Operator | View Modus 6.30 schematics with click-to-navigate hot-spots overlaid with live values. *(Qt / Windows only)* | `modus/`, `vidicon/display/` |
-| UC-12 | Engineer | Browse the device hardware tree, edit per-device parameters, set limits and aliases. | `configuration/devices/`, `components/limits/`, `components/node_properties/` |
+| UC-8 | Operator | Track favourite nodes for fast navigation, organise them into portfolios. | `components/favorites/`, `components/portfolio/` |
+| UC-9 | Operator | Print or export the contents of the active view (table, graph, summary, journal). | `components/print/`, `components/export/csv/` |
+| UC-10 | Operator | Locate, transfer and view files exchanged with the server (file system view, file cache). | `components/filesystem/`, `components/web/` |
+| UC-11 | Operator | View Modus 6.30 schematics with click-to-navigate hot-spots overlaid with live values. *(Qt / Windows only)* | `components/modus/`, `components/vidicon/display/` |
+| UC-12 | Engineer | Browse the device hardware tree, edit per-device parameters, set limits and aliases. | `components/configuration/devices/`, `components/limits/`, `components/node_properties/` |
 | UC-13 | Engineer | Create and delete data items in bulk via multi-create dialogs and the table editor. | `components/multi_create/`, `components/node_table/` |
-| UC-14 | Engineer | Export a configuration snapshot to disk, edit it externally, and import it back. | `export/configuration/` |
+| UC-14 | Engineer | Export a configuration snapshot to disk, edit it externally, and import it back. | `components/export/configuration/` |
 | UC-15 | Engineer | Inspect raw protocol traffic for a connected device (request / response inspector). | `components/debugger/`, `components/device_metrics/` |
 | UC-16 | Engineer | Save the current window layout as a personal profile and restore it on next launch. | `profile/`, `main_window/` |
 | UC-17 | Administrator | Authenticate with username / password against a chosen back-end (Scada, OPC UA, Vidicon). | `components/login/`, `app/client_application.cpp` |
@@ -82,11 +82,11 @@ it today.
 ### Data plane
 
 - **FR-1.** Speak to **at least three pluggable back-ends**: native Telecontrol/SCADA, OPC UA, and Vidicon. Each back-end supplies the same set of services (attribute, monitored item, view/browse, history, session, method, node management). — `app/client_application.cpp:77-90` (`REGISTER_DATA_SERVICES`).
-- **FR-2.** Browse the OPC-UA-style address space, expose hierarchical node trees with lazy fetching and progress reporting. — `configuration/`, `node_service_progress_tracker.{h,cpp}`.
+- **FR-2.** Browse the OPC-UA-style address space, expose hierarchical node trees with lazy fetching and progress reporting. — `components/configuration/`, `components/node_service_progress_tracker/`.
 - **FR-3.** Read attribute values either on demand or via long-lived subscriptions (monitored items). — `components/watch/`, `aui/models/`.
 - **FR-4.** Read historical samples for any node over a user-chosen time range, with cancellation support. — `components/timed_data/`, history service via `master_data_services.h`.
 - **FR-5.** Write values back to nodes (control commands, set-points, manual entry) with optional two-stage confirmation. — `components/write/`.
-- **FR-6.** Receive event/alarm streams, store them in a journal, allow filtering, and acknowledge. — `events/event_module.cpp`, `events/event_fetcher.h`.
+- **FR-6.** Receive event/alarm streams, store them in a journal, allow filtering, and acknowledge. — `components/events/event_module.cpp`, `components/events/event_fetcher.h`.
 - **FR-7.** Detect connection loss and reconnect with backoff, surface connection state to the UI. — `services/connection_state_reporter.{h,cpp}`.
 
 ### Presentation
@@ -94,9 +94,9 @@ it today.
 - **FR-8.** Render a configurable **multi-window, multi-page** layout. A user has one or more main windows, each with one or more named pages, each containing one or more docked or tabbed views. — `main_window/`, `profile/page.h`, `profile/window_definition.h`.
 - **FR-9.** Provide ~20 reusable **view types**: graph, table, summary, sheet, watch, event journal, file system, debugger, device metrics, parameters, transmission, write, table editor, users, formats, simulation signals, historical databases, web, and a few others. Each is a `components/<name>/` module that registers a `WindowInfo` and a controller factory. — `components/`.
 - **FR-10.** Persist user **profile** (window layouts, page definitions, favourites, colour preferences, alarm settings) to disk and restore it on next launch. — `profile/profile.{h,cpp}`.
-- **FR-11.** Bookmark frequently used nodes and group them into named **portfolios**. — `favorites/`, `portfolio/`.
-- **FR-12.** Print the active view (table, graph, summary, …) with print preview. — `print/`.
-- **FR-13.** Export tabular data to **CSV** and the configuration tree to a **portable file format** that can be re-imported. — `export/csv/`, `export/configuration/`.
+- **FR-11.** Bookmark frequently used nodes and group them into named **portfolios**. — `components/favorites/`, `components/portfolio/`.
+- **FR-12.** Print the active view (table, graph, summary, …) with print preview. — `components/print/`.
+- **FR-13.** Export tabular data to **CSV** and the configuration tree to a **portable file format** that can be re-imported. — `components/export/csv/`, `components/export/configuration/`.
 
 ### Authentication and access control
 
@@ -111,8 +111,8 @@ it today.
 
 ### Platform-specific integrations
 
-- **FR-19.** Embed **Modus 6.30** schematics via ActiveX, exposing live values on top of static drawings, with click-to-navigate. *Qt + Windows only.* — `modus/libmodus/`, `modus/activex/`.
-- **FR-20.** Embed the **Vidicon** display protocol for sites running mixed Telecontrol + Vidicon stacks. *Qt + Windows only.* — `vidicon/display/`, `vidicon/teleclient/`.
+- **FR-19.** Embed **Modus 6.30** schematics via ActiveX, exposing live values on top of static drawings, with click-to-navigate. *Qt + Windows only.* — `components/modus/libmodus/`, `components/modus/activex/`.
+- **FR-20.** Embed the **Vidicon** display protocol for sites running mixed Telecontrol + Vidicon stacks. *Qt + Windows only.* — `components/vidicon/display/`, `components/vidicon/teleclient/`.
 
 ### Tooling and operations
 

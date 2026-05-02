@@ -1,5 +1,6 @@
 #include "components/watch/watch_history_event_source.h"
 
+#include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "node_service/static/static_node_service.h"
@@ -57,11 +58,14 @@ TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
   const auto from = scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(1);
   const auto to = scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(2);
 
-  EXPECT_CALL(history_service_,
-              HistoryReadEvents(kDeviceId, from, to, _, _))
-      .WillOnce(InvokeArgument<4>(scada::HistoryReadEventsResult{
-          .status = scada::StatusCode::Good,
-          .events = {MakeEvent(1), MakeEvent(2)}}));
+  EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, from, to, _))
+      .WillOnce([](scada::NodeId, scada::DateTime, scada::DateTime,
+                   scada::EventFilter)
+                    -> Awaitable<scada::HistoryReadEventsResult> {
+        co_return scada::HistoryReadEventsResult{
+            .status = scada::StatusCode::Good,
+            .events = {MakeEvent(1), MakeEvent(2)}};
+      });
 
   source_.Start(kDeviceId, {from, to}, delegate_);
   Drain(executor_);
@@ -73,10 +77,18 @@ TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
 }
 
 TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
-  scada::HistoryReadEventsCallback callback;
+  base::AsyncCompletion completion{MakeTestAnyExecutor(executor_)};
+  scada::HistoryReadEventsResult result;
+  bool history_read_started = false;
 
-  EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, _, _, _, _))
-      .WillOnce(SaveArg<4>(&callback));
+  EXPECT_CALL(history_service_, HistoryReadEvents(kDeviceId, _, _, _))
+      .WillOnce([&](scada::NodeId, scada::DateTime, scada::DateTime,
+                    scada::EventFilter)
+                    -> Awaitable<scada::HistoryReadEventsResult> {
+        history_read_started = true;
+        co_await completion.Wait();
+        co_return result;
+      });
 
   source_.Start(kDeviceId,
                 {scada::DateTime::UnixEpoch(),
@@ -84,12 +96,13 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
                 delegate_);
   Drain(executor_);
 
-  ASSERT_TRUE(callback);
+  ASSERT_TRUE(history_read_started);
   source_.Start(scada::NodeId{}, {scada::DateTime::UnixEpoch(),
                                   scada::DateTime::UnixEpoch()},
                 delegate_);
-  callback(scada::HistoryReadEventsResult{.status = scada::StatusCode::Good,
-                                          .events = {MakeEvent(1)}});
+  result = scada::HistoryReadEventsResult{.status = scada::StatusCode::Good,
+                                          .events = {MakeEvent(1)}};
+  completion.Complete();
   Drain(executor_);
 
   EXPECT_TRUE(delegate_.events.empty());
