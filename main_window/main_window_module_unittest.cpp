@@ -2,6 +2,7 @@
 
 #include "aui/test/app_environment.h"
 #include "base/logger.h"
+#include "base/promise.h"
 #include "components/web/web_component.h"
 #include "controller/controller_fake.h"
 #include "controller/test/controller_environment.h"
@@ -12,7 +13,7 @@
 #include "main_window/main_window_manager.h"
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
-#include "scada/status_promise.h"
+#include "scada/status_exception.h"
 #include "services/speech_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -158,7 +159,8 @@ TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
 
   EXPECT_CALL(controller_env_.file_manager_, DownloadFileFromServer(path))
       .WillOnce(
-          Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
+          Return(make_rejected_promise(
+              scada::status_exception{scada::StatusCode::Bad})));
 
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);

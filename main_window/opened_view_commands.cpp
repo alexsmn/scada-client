@@ -36,7 +36,6 @@
 #include "print/service/print_service.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
-#include "scada/status_promise.h"
 #include "services/create_tree.h"
 #include "services/task_manager.h"
 #include "window_definition_builder.h"

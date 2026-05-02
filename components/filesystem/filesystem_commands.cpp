@@ -16,7 +16,6 @@
 #include "model/devices_node_ids.h"
 #include "profile/window_definition_util.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 #include "services/task_manager.h"
 
 #include <cassert>

@@ -2,12 +2,12 @@
 
 #include "aui/dialog_service_mock.h"
 #include "base/memory_settings_store.h"
+#include "base/promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/data_services_factory.h"
 #include "scada/session_service_mock.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 
 #include <gmock/gmock.h>
 #include <transport/transport_factory.h>

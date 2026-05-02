@@ -127,6 +127,4 @@ class TaskManagerImpl : private TaskManagerImplContext,
 
   Task running_task_;
 
-  scada::CallbackToCoroutineAttributeServiceAdapter co_attribute_service_{
-      executor_, attribute_service_};
 };

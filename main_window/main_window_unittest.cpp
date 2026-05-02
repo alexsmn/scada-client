@@ -3,6 +3,7 @@
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model_mock.h"
 #include "aui/test/app_environment.h"
+#include "base/promise.h"
 #include "base/test/test_executor.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
@@ -13,7 +14,7 @@
 #include "main_window/opened_view.h"
 #include "main_window/status/status_bar_model_impl.h"
 #include "profile/profile.h"
-#include "scada/status_promise.h"
+#include "scada/status_exception.h"
 
 #if defined(UI_QT)
 #include "main_window/qt/main_window_qt.h"
@@ -220,7 +221,8 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
   EXPECT_CALL(controller_env_.file_manager_,
               DownloadFileFromServer(window_def.path))
       .WillOnce(
-          Return(scada::MakeRejectedStatusPromise(scada::StatusCode::Bad)));
+          Return(make_rejected_promise(
+              scada::status_exception{scada::StatusCode::Bad})));
 
   ExpectOpenView();
 

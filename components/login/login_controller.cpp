@@ -13,7 +13,6 @@
 #include "base/u16format.h"
 #include "scada/session_service.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 
 #include <algorithm>
 #include <format>

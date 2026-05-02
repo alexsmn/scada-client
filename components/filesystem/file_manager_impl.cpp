@@ -4,7 +4,6 @@
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 
 #include "base/utf_convert.h"
 

@@ -222,7 +222,7 @@ Awaitable<scada::NodeId> TaskManagerImpl::RunInsertTask(
     if (!inputs.ok()) {
       throw scada::status_exception{inputs.status()};
     }
-    auto write_result = co_await self->co_attribute_service_.Write(
+    auto write_result = co_await self->attribute_service_.Write(
         scada::ServiceContext{},
         std::make_shared<const std::vector<scada::WriteValue>>(
             std::move(*inputs)));
@@ -268,7 +268,7 @@ Awaitable<scada::Status> TaskManagerImpl::RunUpdateTask(
       throw scada::status_exception{inputs.status()};
     }
 
-    auto result = co_await self->co_attribute_service_.Write(
+    auto result = co_await self->attribute_service_.Write(
         scada::ServiceContext{},
         std::make_shared<const std::vector<scada::WriteValue>>(
             std::move(*inputs)));

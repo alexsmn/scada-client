@@ -11,7 +11,6 @@
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "scada/status_exception.h"
-#include "scada/status_promise.h"
 
 namespace {
 const wchar_t kDiscreteConfirmationQuestion[] =
