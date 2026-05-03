@@ -22,7 +22,7 @@ scada-client/
 │   └── test/
 ├── base/                   # Foundation utilities (command line, blinker, JSON, filesystem)
 ├── clipboard/              # Clipboard and node serialization
-├── components/             # ~22 reusable UI components
+├── modules/             # ~22 reusable UI components
 │   ├── about/              # About dialog
 │   ├── debugger/           # Request/response protocol debugger
 │   ├── device_metrics/     # Device performance metrics
@@ -271,7 +271,7 @@ class EventModule : private EventModuleContext {
 | `ClientApplication` | `app/client_application.h` | Top-level orchestrator; owns all modules |
 | `CoreModule` | `core/core_module.h` | Command registries, tracer, progress host |
 | `MainWindowModule` | `main_window/` | Window lifecycle, view management, page navigation |
-| `EventModule` | `components/events/event_module.h` | Event fetching, journaling, local events |
+| `EventModule` | `modules/events/event_module.h` | Event fetching, journaling, local events |
 | `ControllerRegistry` | `controller/controller_registry.h` | Maps command IDs to controller factories |
 | `Profile` | `profile/profile.h` | User preferences, window layouts, page definitions |
 | `NodeService` | via factory | Device/node browsing and monitoring |
@@ -391,8 +391,8 @@ Unit tests follow the `*_unittest.cpp` naming convention (33 test files). Tests 
 ### Test Locations (examples)
 
 - `app/client_application_unittest.cpp`
-- `components/table/table_model_unittest.cpp`
-- `components/events/event_table_model_unittest.cpp`
+- `modules/table/table_model_unittest.cpp`
+- `modules/events/event_table_model_unittest.cpp`
 - `main_window/main_window_unittest.cpp`
 - `profile/page_layout_unittest.cpp`
 
@@ -444,7 +444,7 @@ Logging-related switches (pass as `--switch-name`):
 
 9. **Conditional compilation** — Use `#if !defined(UI_WT)` to guard Qt-only features (Modus, Vidicon, etc.).
 
-11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `components/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
+11. **Modus/Vidicon ActiveX parameter names** — Never rename OLESTR parameter names in `modules/modus/` (e.g., `"ключ_привязки"`, `"положение"`, `"уставки"`). These Russian-language identifiers are part of the external Vidicon ActiveX protocol interface and must remain unchanged.
 
 10. **Async code** keeps `promise<T>` at public/module boundaries, but new or touched implementation code should use coroutine bodies with `co_await`. Use `AwaitPromise(...)` to await legacy promises and `ToPromise(...)` only at compatibility boundaries; do not add new `.then()` chains for client workflows.
 

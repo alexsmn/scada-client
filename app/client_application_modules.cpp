@@ -1,8 +1,8 @@
 #include "app/client_application_modules.h"
 
-#include "components/debugger/debugger_module.h"
-#include "components/node_service_progress_tracker/node_service_progress_tracker.h"
-#include "components/opcua_services/opcua_services_module.h"
+#include "modules/debugger/debugger_module.h"
+#include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
+#include "modules/opcua_services/opcua_services_module.h"
 #include "configuration/configuration_module.h"
 #include "export/configuration/export_configuration_module.h"
 #include "filesystem/filesystem_component.h"

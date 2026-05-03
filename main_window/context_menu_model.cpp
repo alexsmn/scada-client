@@ -1,8 +1,8 @@
 #include "main_window/context_menu_model.h"
 
-#include "main_window/action_manager.h"
+#include "controller/action_manager.h"
 #include "main_window/main_window.h"
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 
 ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
                                    ActionManager& action_manager,

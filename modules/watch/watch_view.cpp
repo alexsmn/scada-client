@@ -1,0 +1,139 @@
+﻿#include "modules/watch/watch_view.h"
+
+#include "aui/dialog_service.h"
+#include "aui/translation.h"
+#include "aui/table.h"
+#include "base/awaitable.h"
+#include "base/u16format.h"
+#include "resources/common_resources.h"
+#include "modules/watch/watch_model.h"
+#include "modules/watch/watch_model_builder.h"
+#include "controller/controller_delegate.h"
+#include "model/node_id_util.h"
+#include "net/net_executor_adapter.h"
+#include "node_service/node_service.h"
+#include "profile/window_definition.h"
+
+namespace {
+
+Awaitable<void> SaveLogAsync(AnyExecutor executor,
+                             DialogService& dialog_service,
+                             std::shared_ptr<WatchModel> model,
+                             std::u16string name) {
+  auto path = co_await dialog_service.SelectSaveFile({Translate("Save As"),
+                                                      name});
+  model->SaveLog(path);
+  co_return;
+}
+
+}  // namespace
+
+// WatchView
+
+WatchView::WatchView(const ControllerContext& context)
+    : ControllerContext{context},
+      model_{WatchModelBuilder{executor_, context.node_service_}
+                 .CreateWatchModel()} {}
+
+WatchView::~WatchView() {
+  model_->observers().RemoveObserver(this);
+}
+
+void WatchView::Save(WindowDefinition& definition) {
+  WindowItem& item = definition.AddItem("Item");
+  item.SetString("path", NodeIdToScadaString(model_->device().node_id()));
+  SaveTimeRange(definition, model_->time_range());
+}
+
+std::u16string WatchView::MakeTitle() const {
+  std::u16string title = ToString16(model_->device().display_name());
+  if (model_->paused())
+    title += u" [Pause]";
+  return title;
+}
+
+std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
+  const aui::TableColumn columns[] = {
+      {0, Translate("Time"), 100, aui::TableColumn::LEFT,
+       aui::TableColumn::DataType::DateTime},
+      {1, Translate("Device"), 100, aui::TableColumn::LEFT},
+      {2, Translate("Event"), 400, aui::TableColumn::LEFT},
+  };
+
+  if (const WindowItem* item = definition.FindItem("Item")) {
+    auto path = item->GetString("path");
+    auto device_id = NodeIdFromScadaString(path);
+    model_->SetDevice(node_service_.GetNode(device_id));
+  }
+
+  if (auto time_range = RestoreTimeRange(definition)) {
+    model_->SetTimeRange(*time_range);
+  }
+
+  table_ = new aui::Table(model_, {columns, columns + _countof(columns)});
+
+  table_->SetSelectionChangeHandler([this] {
+    auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;
+  });
+
+  table_->SetContextMenuHandler([this](const aui::Point& point) {
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_LOG_POPUP, point, true);
+  });
+
+  // Must be after |table_| is bound.
+  model_->observers().AddObserver(this);
+
+  command_registry_.AddCommand(
+      Command{ID_PAUSE}
+          .set_execute_handler([this] {
+            model_->set_paused(!model_->paused());
+            controller_delegate_.SetTitle(MakeTitle());
+          })
+          .set_checked_handler([this] { return model_->paused(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_SAVE_AS}.set_execute_handler([this] { SaveLog(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_CLEAR_ALL}.set_execute_handler([this] { model_->Clear(); }));
+
+  return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
+}
+
+void WatchView::SaveLog() {
+  SYSTEMTIME time;
+  GetLocalTime(&time);
+
+  auto name = u16format(L"{:04}{:02}{:02}_{:02}{:02}{:02}.log", time.wYear,
+                        time.wMonth, time.wDay, time.wHour,
+                        time.wMinute, time.wSecond);
+
+  CoSpawn(executor_, [executor = executor_, &dialog_service = dialog_service_,
+                      model = model_, name = std::move(name)] {
+    return SaveLogAsync(executor, dialog_service, model, name);
+  });
+}
+
+CommandHandler* WatchView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
+}
+
+void WatchView::OnItemsAdded(int first, int count) {
+  if (!auto_scroll_)
+    return;
+
+  auto last_row = first + count - 1;
+  table_->SelectRow(last_row);
+}
+
+ExportModel::ExportData WatchView::GetExportData() {
+  return TableExportData{*model_, table_->columns()};
+}
+
+TimeRange WatchView::GetTimeRange() const {
+  return model_->time_range();
+}
+
+void WatchView::SetTimeRange(const TimeRange& time_range) {
+  model_->SetTimeRange(time_range);
+}

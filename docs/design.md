@@ -106,7 +106,7 @@ and `users.png`.
 To add a new auto-screenshot:
 
 1. Register (or locate) a `WindowInfo` for the view in its component
-   (`components/*/`, `main_window/`, etc.).
+   (`modules/*/`, `main_window/`, etc.).
 2. Add an entry to the `screenshots:` array in
    `app/screenshot_data.json` — `type` must match `WindowInfo::name`,
    `filename` matches the scada-docs filename from the manifest, and
@@ -192,16 +192,16 @@ with the central registries. There are 12 of them today:
 |---|---|---|
 | `CoreModule` | `core/` | Registries, tracer, progress host (§3.2). |
 | `MainWindowModule` | `main_window/` | Window/page lifecycle (§3.7). |
-| `ConfigurationModule` | `components/configuration/` | Object tree, hardware tree, raw nodes view. |
-| `EventModule` | `components/events/` | Event fetching, journaling, local error events. |
-| `ExportConfigurationModule` | `components/export/configuration/` | Configuration snapshot export/import. |
-| `CsvExportModule` | `components/export/csv/` | CSV export for tabular views. |
-| `FavoritesModule` | `components/favorites/` | Favourite nodes. |
-| `PortfolioModule` | `components/portfolio/` | Named groupings of favourites. |
-| `DebuggerModule` | `components/debugger/` | Protocol-level request/response inspector. |
-| `ModusModule` *(Qt only)* | `components/modus/` | Modus 6.30 ActiveX schematic embedding. |
-| `VidiconModule` *(Qt only)* | `components/vidicon/` | Vidicon display embedding. |
-| `WebModule` | `components/web/` | Embedded web view component. |
+| `ConfigurationModule` | `modules/configuration/` | Object tree, hardware tree, raw nodes view. |
+| `EventModule` | `modules/events/` | Event fetching, journaling, local error events. |
+| `ExportConfigurationModule` | `modules/export/configuration/` | Configuration snapshot export/import. |
+| `CsvExportModule` | `modules/export/csv/` | CSV export for tabular views. |
+| `FavoritesModule` | `modules/favorites/` | Favourite nodes. |
+| `PortfolioModule` | `modules/portfolio/` | Named groupings of favourites. |
+| `DebuggerModule` | `modules/debugger/` | Protocol-level request/response inspector. |
+| `ModusModule` *(Qt only)* | `modules/modus/` | Modus 6.30 ActiveX schematic embedding. |
+| `VidiconModule` *(Qt only)* | `modules/vidicon/` | Vidicon display embedding. |
+| `WebModule` | `modules/web/` | Embedded web view component. |
 
 Modules' `*Context` structs make their dependencies explicit; `ClientApplication`
 constructs them in an order that satisfies the graph:
@@ -243,7 +243,7 @@ Action commands (main menu, toolbar, page commands, selection commands)
 are registered into `GlobalCommandRegistry` and `SelectionCommandRegistry`
 from `core/`.
 
-### 3.9 UI components — `components/`
+### 3.9 UI components — `modules/`
 
 Twenty self-contained component subdirectories, each describing a single
 view type or dialog. Most define a `WindowInfo`, register a controller,
@@ -273,28 +273,28 @@ and split into `qt/` and `wt/` subdirs:
 | `write/` | Write-value / control-command dialog. |
 
 Other view-bearing modules, pluggable modules, and platform integrations live
-under `components/`.
+under `modules/`.
 
-### 3.10 Platform integrations — `components/modus/`, `components/vidicon/`
+### 3.10 Platform integrations — `modules/modus/`, `modules/vidicon/`
 
 Both are Qt-only and Windows-only (`#if !defined(UI_WT)`).
 
-- `components/modus/` wraps the Modus 6.30 ActiveX control. The Russian-language
+- `modules/modus/` wraps the Modus 6.30 ActiveX control. The Russian-language
   OLESTR parameter names (`"ключ_привязки"`, `"положение"`, `"уставки"`)
   are part of the external protocol and **must not be renamed**.
-- `components/vidicon/` embeds the Vidicon display protocol via a `VidiconClient`
+- `modules/vidicon/` embeds the Vidicon display protocol via a `VidiconClient`
   that bridges Telecontrol's `TimedDataService` to the Vidicon side.
 
 ### 3.11 Filesystem, export, print, graph
 
-- `components/filesystem/` — async file I/O wrapper with a local cache, used for
+- `modules/filesystem/` — async file I/O wrapper with a local cache, used for
   uploads/downloads against the server-side file system.
-- `components/export/configuration/` — configuration tree snapshot exporter and
+- `modules/export/configuration/` — configuration tree snapshot exporter and
   importer (binary format).
-- `components/export/csv/` — CSV writer used by tables, summaries, and journals.
-- `components/print/` — print preview and printing for any view that exposes a
+- `modules/export/csv/` — CSV writer used by tables, summaries, and journals.
+- `modules/print/` — print preview and printing for any view that exposes a
   printable model.
-- `components/graph/` — multi-pane time-series chart, built on top of the external
+- `modules/graph/` — multi-pane time-series chart, built on top of the external
   `graph-qt` package.
 
 ## 4. Cross-Cutting Concerns
@@ -335,7 +335,7 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
   the shared Wt dialog-stub helper; message boxes resolve as `Ok`. There is no
   parity test that ensures both UIs render the same fixture.
 - **Configuration export format is binary and undocumented in this repo.**
-  The exact wire format is implicit in `components/export/configuration/`. A schema
+  The exact wire format is implicit in `modules/export/configuration/`. A schema
   document or version negotiation would reduce the migration risk if the
   format changes.
 - **OPC UA back-end uses an in-repo UA Binary client.** The client stack
@@ -357,7 +357,7 @@ roadmap discussion. They are *not* prescriptive — many are intentional.
   may still expose promises, but implementation code should stay
   coroutine-first and use `AwaitPromise(...)` / `ToPromise(...)` at explicit
   boundaries so thread affinity remains visible.
-- **A handful of view-bearing modules predate the `components/`
+- **A handful of view-bearing modules predate the `modules/`
   convention** (Graph, Event Journal, Configuration trees, Favourites,
   File system) and live at the top level. Their layout is consistent but
   inhomogeneous with the components folder.

@@ -9,17 +9,17 @@
 #include "controller/controller_mock.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
-#include "main_window/action_manager.h"
+#include "controller/action_manager.h"
 #include "main_window/main_window_manager.h"
-#include "main_window/opened_view.h"
-#include "main_window/status/status_bar_model_impl.h"
+#include "main_window/opened_view/opened_view.h"
+#include "main_window/status_bar/status_bar_model_impl.h"
 #include "profile/profile.h"
 #include "scada/status_exception.h"
 
 #if defined(UI_QT)
-#include "main_window/qt/main_window_qt.h"
+#include "main_window/main_window_qt.h"
 #elif defined(UI_WT)
-#include "main_window/wt/main_window_wt.h"
+#include "main_window/main_window_wt.h"
 #endif
 
 #include <gmock/gmock.h>

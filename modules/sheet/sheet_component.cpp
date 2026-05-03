@@ -1,0 +1,11 @@
+﻿#include "modules/sheet/sheet_component.h"
+
+#include "modules/sheet/sheet_view.h"
+#include "controller/controller_registry.h"
+
+// NOTE: Context menu depends on edit mode.
+const WindowInfo kSheetWindowInfo = {
+    ID_SHEET_VIEW, "CusTable", u"Custom Table", WIN_INS, 0, 0,
+    IDR_ITEM_POPUP};
+
+REGISTER_CONTROLLER(SheetController, kSheetWindowInfo);

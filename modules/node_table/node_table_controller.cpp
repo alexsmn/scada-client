@@ -1,0 +1,149 @@
+﻿#include "modules/node_table/node_table_controller.h"
+
+#include "aui/grid.h"
+#include "aui/models/header_model.h"
+#include "ui/common/client_utils.h"
+#include "resources/common_resources.h"
+#include "modules/node_table/node_table_model.h"
+#include "controller/controller_delegate.h"
+#include "model/data_items_node_ids.h"
+#include "model/node_id_util.h"
+#include "node_service/node_service.h"
+#include "profile/profile.h"
+#include "remote/session_proxy.h"
+#include "services/task_manager.h"
+
+#include <span>
+
+#if defined(UI_QT)
+#include "aui/qt/grid.h"
+#endif
+
+namespace {
+
+std::span<
+    const std::pair<unsigned /*command_id*/, scada::NodeId /*prop_decl_id*/>>
+GetSortCommands() {
+  static std::pair<unsigned, scada::NodeId> kSortCommands[] = {
+      {ID_SORT_NONE, scada::NodeId{}},
+      {ID_SORT_ALIAS, data_items::id::DataItemType_Alias},
+      {ID_SORT_CHANNEL, data_items::id::DataItemType_Input1},
+  };
+  return kSortCommands;
+}
+
+}  // namespace
+
+// NodeTableController
+
+NodeTableController::NodeTableController(const ControllerContext& context,
+                                         const NodeRef& parent_node)
+    : ControllerContext{context},
+      model_{std::make_unique<NodeTableModel>(
+          executor_,
+          property_service_,
+          PropertyContext{context.executor_, context.node_service_,
+                          context.task_manager_,
+                          context.dialog_service_})} {
+  if (parent_node)
+    model_->SetParentNode(parent_node);
+}
+
+NodeTableController::~NodeTableController() = default;
+
+std::unique_ptr<UiView> NodeTableController::Init(
+    const WindowDefinition& definition) {
+  if (const WindowItem* item = definition.FindItem("Item")) {
+    auto path = item->GetString("path");
+    auto node_id = NodeIdFromScadaString(path);
+    model_->SetParentNode(node_service_.GetNode(node_id));
+  }
+
+  model_->SetSorting(profile_.node_table.default_sort_property_id);
+
+  grid_ = new aui::Grid{
+      model_, std::shared_ptr<aui::HeaderModel>(model_, &model_->row_model()),
+      std::shared_ptr<aui::HeaderModel>(model_, &model_->column_model())};
+
+  grid_->SetExpandAllowed(true);
+  grid_->SetRowHeaderVisible(true);
+  grid_->SetColumnHeaderHeight(19);
+  grid_->SetRowHeaderWidth(70);
+
+  grid_->SetSelectionChangeHandler([this] {
+    auto rows = grid_->GetSelectedRows();
+    if (rows.empty()) {
+      selection_.Clear();
+      return;
+    }
+
+    if (rows.size() >= 2) {
+      selection_.SelectMultiple();
+      return;
+    }
+
+    // TODO: Investigate why `rows.front()` is not valid in some cases.
+    NodeRef node = model_->node(rows.front());
+    assert(node);
+
+    selection_.SelectNode(node);
+  });
+
+  grid_->SetContextMenuHandler([this](const aui::Point& point) {
+    controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
+  });
+
+  selection_.multiple_handler = [this] {
+    NodeIdSet node_ids;
+    for (auto row : grid_->GetSelectedRows())
+      node_ids.emplace(model_->node(row).node_id());
+    return node_ids;
+  };
+
+  if (auto* state = definition.FindItem("State"))
+    grid_->RestoreState(state->attributes);
+
+  command_registry_.AddCommand(Command{ID_RENAME}.set_execute_handler([this] {
+    if (auto index = grid_->GetCurrentIndex(); index.is_valid())
+      grid_->OpenEditor(index);
+  }));
+
+  for (const auto& [command_id, prop_decl_id] : GetSortCommands()) {
+    command_registry_.AddCommand(
+        Command{command_id}
+            .set_execute_handler([this, prop_decl_id = prop_decl_id] {
+              SetSorting(prop_decl_id);
+            })
+            .set_checked_handler([this, prop_decl_id = prop_decl_id] {
+              return model_->sort_property_id() == prop_decl_id;
+            }));
+  }
+
+  return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
+}
+
+void NodeTableController::Save(WindowDefinition& definition) {
+  if (auto parent_node = model_->parent_node()) {
+    auto path = NodeIdToScadaString(parent_node.node_id());
+    definition.AddItem("Item").SetString("path", path);
+  }
+
+  definition.AddItem("State").attributes = grid_->SaveState();
+}
+
+CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
+}
+
+NodeRef NodeTableController::GetRootNode() const {
+  return model_->parent_node();
+}
+
+void NodeTableController::SetSorting(const scada::NodeId& property_id) {
+  profile_.node_table.default_sort_property_id = property_id;
+  model_->SetSorting(property_id);
+}
+
+bool NodeTableController::IsWorking() const {
+  return model_->loading();
+}

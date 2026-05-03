@@ -27,7 +27,7 @@
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_service.h"

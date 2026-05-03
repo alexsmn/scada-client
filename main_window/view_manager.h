@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/view_manager.h"
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 #include "profile/page_layout.h"
 
 #include <cstdint>

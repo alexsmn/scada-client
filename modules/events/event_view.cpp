@@ -1,0 +1,366 @@
+﻿#include "events/event_view.h"
+
+#include "aui/dialog_service.h"
+#include "aui/translation.h"
+#include "aui/models/table_column.h"
+#include "aui/prompt_dialog.h"
+#include "aui/resource_error.h"
+#include "aui/table.h"
+#include "base/awaitable.h"
+#include "base/excel.h"
+#include "base/u16format.h"
+#include "base/format.h"
+#include "base/utf_convert.h"
+#include "ui/common/client_utils.h"
+#include "resources/common_resources.h"
+#include "modules/time_range/time_range_dialog.h"
+#include "controller/contents_observer.h"
+#include "controller/controller_delegate.h"
+#include "controller/selection_model.h"
+#include "events/current_event_model.h"
+#include "events/event_table_model.h"
+#include "events/historical_event_model.h"
+#include "events/local_event_model.h"
+#include "model/node_id_util.h"
+#include "node_service/node_service.h"
+#include "profile/profile.h"
+#include "profile/window_definition_util.h"
+
+namespace {
+
+const char16_t kFilter[] = u"Filter";
+
+struct EventTableModelHolder {
+  EventTableModelHolder(const ControllerContext& context,
+                        LocalEvents& local_events,
+                        bool is_panel)
+      : current_event_model{context.node_event_provider_},
+        historical_event_model{context.executor_, context.history_service_},
+        local_event_model{local_events},
+        event_table_model{{context.executor_, context.node_service_,
+                           current_event_model, historical_event_model,
+                           local_event_model, is_panel}} {}
+
+  CurrentEventModel current_event_model;
+  HistoricalEventModel historical_event_model;
+  LocalEventModel local_event_model;
+  EventTableModel event_table_model;
+};
+
+std::shared_ptr<EventTableModel> CreateEventTableModel(
+    const ControllerContext& context,
+    LocalEvents& local_events,
+    bool is_panel) {
+  auto holder =
+      std::make_shared<EventTableModelHolder>(context, local_events, is_panel);
+  return {holder, &holder->event_table_model};
+}
+
+scada::EventSeverity ParseSeverity(std::u16string_view str) {
+  unsigned severity = 0;
+  if (!Parse(str, severity) || severity > scada::kSeverityMax) {
+    throw ResourceError{u16format(L"Enter a number from {} to {}.",
+                                    scada::kSeverityMin,
+                                    scada::kSeverityMax)};
+  }
+
+  // TODO: Checked cast.
+  return static_cast<scada::EventSeverity>(severity);
+}
+
+}  // namespace
+
+// EventView
+
+EventView::EventView(const ControllerContext& context,
+                     LocalEvents& local_events,
+                     bool is_panel)
+    : ControllerContext{context},
+      is_panel_{is_panel},
+      model_{CreateEventTableModel(context, local_events, is_panel)} {
+  const aui::TableColumn kEventViewColumns[] = {
+      {EventColumnTime, Translate("Time"), 150, aui::TableColumn::LEFT,
+       aui::TableColumn::DataType::DateTime},
+      {EventColumnItem, Translate("Item"), 170, aui::TableColumn::LEFT},
+      {EventColumnSeverity, Translate("Severity"), 45, aui::TableColumn::RIGHT},
+      {EventColumnValue, Translate("Value"), 100, aui::TableColumn::RIGHT},
+      {EventColumnMessage, Translate("Message"), 300, aui::TableColumn::LEFT},
+      {EventColumnUser, Translate("User"), 100, aui::TableColumn::LEFT},
+      {EventColumnAckUser, Translate("Acknowledged By"), 100, aui::TableColumn::LEFT},
+      {EventColumnAckTime, Translate("Acknowledge Time"), 150, aui::TableColumn::LEFT,
+       aui::TableColumn::DataType::DateTime},
+  };
+
+  size_t count = std::size(kEventViewColumns);
+  if (is_panel)
+    count -= 2;
+
+  // cppcheck-suppress noCopyConstructor
+  // cppcheck-suppress noOperatorEq
+  table_ = new aui::Table{model_,
+                          std::vector<aui::TableColumn>(
+                              kEventViewColumns, kEventViewColumns + count),
+                          true};
+
+#if defined(UI_QT)
+  table_->sortByColumn(0, Qt::DescendingOrder);
+#endif
+
+  table_->SetContextMenuHandler([this](const aui::Point& point) {
+    controller_delegate_.ShowPopupMenu(nullptr, IDR_EVENT_POPUP, point, true);
+  });
+
+  table_->SetSelectionChangeHandler([this] { OnSelectionChanged(); });
+
+  table_->SetDoubleClickHandler([this] { AcknowledgeSelection(); });
+
+  table_->SetKeyPressHandler(
+      [this](aui::KeyCode key_code) { return OnKeyPressed(key_code); });
+
+  selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
+
+  command_registry_.AddCommand(
+      Command{ID_ACKNOWLEDGE_CURRENT}
+          .set_execute_handler([this] { AcknowledgeSelection(); })
+          .set_enabled_handler([this] { return CanAcknowledgeSelection(); }));
+
+  command_registry_.AddCommand(
+      Command{ID_SEVERITY_ALL}
+          .set_execute_handler([this] {
+            model_->SetSeverityMin(0);
+            controller_delegate_.SetTitle(MakeTitle());
+          })
+          .set_checked_handler([this] { return model_->severity_min() == 0; }));
+
+  command_registry_.AddCommand(
+      Command{ID_SEVERITY_CUSTOM}
+          .set_execute_handler([this] { SelectSeverity(); })
+          .set_checked_handler([this] { return model_->severity_min() != 0; }));
+}
+
+EventView::~EventView() {}
+
+NodeIdSet EventView::GetContainedItems() const {
+  return model_->filter_items();
+}
+
+void EventView::AcknowledgeSelection() {
+  auto rows = table_->GetSelectedRows();
+  for (auto i = rows.rbegin(); i != rows.rend(); ++i)
+    model_->AcknowledgeRow(*i);
+}
+
+void EventView::OnSelectionChanged() {
+  auto rows = table_->GetSelectedRows();
+  if (rows.empty())
+    selection_.Clear();
+  else if (rows.size() >= 2)
+    selection_.SelectMultiple();
+  else {
+    const scada::Event& event = model_->event_at(rows.front());
+    selection_.SelectNode(node_service_.GetNode(event.node_id));
+  }
+}
+
+bool EventView::CanAcknowledgeSelection() const {
+  auto rows = table_->GetSelectedRows();
+  for (auto i = rows.begin(); i != rows.end(); ++i) {
+    const scada::Event& event = model_->event_at(*i);
+    if (!event.acked)
+      return true;
+  }
+  return false;
+}
+
+std::unique_ptr<UiView> EventView::Init(const WindowDefinition& definition) {
+  model_->LockUpdate();
+  model_->Update();
+
+  for (auto& window_item : definition.items) {
+    if (window_item.name_is("Item")) {
+      auto path = window_item.GetString("path");
+      auto item_id = NodeIdFromScadaString(path);
+      if (!item_id.is_null())
+        model_->AddFilteredItem(item_id);
+    }
+  }
+
+  if (!is_panel_) {
+    if (auto time_range = RestoreTimeRange(definition))
+      model_->SetTimeRange(*time_range);
+  }
+
+  if (auto* state = definition.FindItem("State"))
+    table_->RestoreState(state->attributes);
+  else if (!is_panel_)
+    table_->RestoreState(profile_.event_journal.default_state);
+
+  model_->UnlockUpdate();
+
+  if (!is_panel_)
+    controller_delegate_.SetTitle(MakeTitle());
+
+  return std::unique_ptr<UiView>{table_->CreateParentIfNecessary()};
+}
+
+bool EventView::OnKeyPressed(aui::KeyCode key_code) {
+  switch (key_code) {
+    case aui::KeyCode::Escape:
+      model_->CancelRequest();
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+bool EventView::IsWorking() const {
+  return model_->IsWorking();
+}
+
+std::u16string EventView::MakeTitle() const {
+  return model_->MakeTitle();
+}
+
+void EventView::Save(WindowDefinition& definition) {
+  definition.AddItem("State").attributes = table_->SaveState();
+
+  if (!is_panel_)
+    SaveTimeRange(definition, model_->time_range());
+
+  for (auto& item : model_->filter_items()) {
+    WindowItem& window_item = definition.AddItem("Item");
+    window_item.SetString("path", NodeIdToScadaString(item));
+  }
+
+  if (!is_panel_)
+    profile_.event_journal.default_state = table_->SaveState();
+}
+
+void EventView::ExportToExcel() {
+  int rows = model_->GetRowCount();
+  if (!rows) {
+    dialog_service_.RunMessageBox(Translate("No data to export."), Translate("Export"),
+                                  MessageBoxMode::Info);
+    return;
+  }
+
+  try {
+    ExcelSheetModel sheet{rows + 1, EventColumnCount};
+
+    const auto& columns = table_->columns();
+
+    for (size_t i = 0; i < columns.size(); ++i)
+      sheet.SetData(1, i + 1, UtfConvert<wchar_t>(columns[i].title));
+
+    for (int row = 0; row < model_->GetRowCount(); ++row) {
+      for (size_t col = 0; col < columns.size(); ++col) {
+        auto text = model_->GetCellText(row, columns[col].id);
+        sheet.SetData(2 + row, col + 1, UtfConvert<wchar_t>(text));
+      }
+    }
+
+    Excel excel;
+    excel.NewWorkbook();
+    excel.NewSheet(sheet);
+    excel.SetVisible();
+
+  } catch (HRESULT /*err*/) {
+    dialog_service_.RunMessageBox(Translate("Export error."), Translate("Export"),
+                                  MessageBoxMode::Error);
+  }
+}
+
+void EventView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
+  if (is_panel_)
+    return;
+
+  if (model_->AddFilteredItem(node_id))
+    NotifyContainedItemChanged(node_id, true);
+}
+
+void EventView::RemoveContainedItem(const scada::NodeId& node_id) {
+  if (is_panel_)
+    return;
+
+  if (model_->RemoveFilteredItem(node_id))
+    NotifyContainedItemChanged(node_id, false);
+}
+
+TimeRange EventView::GetTimeRange() const {
+  return model_->time_range();
+}
+
+CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
+}
+
+void EventView::SetTimeRange(const TimeRange& time_range) {
+  model_->SetTimeRange(time_range);
+  controller_delegate_.SetTitle(MakeTitle());
+}
+
+void EventView::SelectSeverity() {
+  CoSpawn(executor_, [this]() -> Awaitable<void> {
+    co_await SelectSeverityAsync();
+    co_return;
+  });
+}
+
+Awaitable<void> EventView::SelectSeverityAsync() {
+  unsigned initial_severity = model_->current_events()
+                                  ? node_event_provider_.severity_min()
+                                  : model_->severity_min();
+  auto prompt = Translate("Minimum severity threshold (0 = all events):");
+
+  // Wait for the prompt dialog. A user cancel surfaces as a rejection here,
+  // matching the old ignored asynchronous result.
+  auto text = co_await RunPromptDialog(dialog_service_, prompt,
+                                       /*title=*/kFilter,
+                                       WideFormat(initial_severity));
+
+  // Parse + apply. Preserve the original behavior where a bad value
+  // pops up an error message box via `ShowResourceError` and then
+  // rejects the coroutine with the same exception.
+  // MSVC rejects `co_await` inside a `catch` block, so the exception is
+  // captured here and awaited after the `try` has unwound.
+  std::exception_ptr parse_error;
+  try {
+    SetSeverityMin(ParseSeverity(text));
+  } catch (...) {
+    parse_error = std::current_exception();
+  }
+  if (parse_error) {
+    co_await ShowResourceError<void>(dialog_service_, /*title=*/kFilter,
+                                     parse_error);
+  }
+  co_return;
+}
+
+void EventView::SetSeverityMin(scada::EventSeverity severity) {
+  if (model_->current_events()) {
+    node_event_provider_.SetSeverityMin(severity);
+    profile_.NotifyChange();
+  } else {
+    model_->SetSeverityMin(severity);
+    controller_delegate_.SetTitle(MakeTitle());
+  }
+}
+
+NodeIdSet EventView::GetSelectedNodeIds() const {
+  NodeIdSet node_ids;
+  for (auto row : table_->GetSelectedRows()) {
+    const scada::Event& event = model_->event_at(row);
+    if (!event.node_id.is_null())
+      node_ids.insert(event.node_id);
+  }
+  return node_ids;
+}
+
+TimeModel* EventView::GetTimeModel() {
+  return model_->current_events() ? nullptr : this;
+}
+
+ExportModel::ExportData EventView::GetExportData() {
+  return TableExportData{*model_, table_->columns()};
+}

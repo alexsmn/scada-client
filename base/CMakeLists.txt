@@ -16,8 +16,8 @@ set(CLIENT_UI_COMMON_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../resources/common_resources.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../app/string_const.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../web/web_util.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../web/web_util.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/web_util.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/web_util.h"
 )
 
 add_library(client_ui_common_qt ${CLIENT_UI_COMMON_SOURCES})
@@ -65,8 +65,8 @@ target_link_libraries(client_ui_dragdrop_wt PRIVATE
 )
 
 add_library(client_ui_progress_qt
-  "${CMAKE_CURRENT_SOURCE_DIR}/../components/node_service_progress_tracker/node_service_progress_tracker.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../components/node_service_progress_tracker/node_service_progress_tracker.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.h"
 )
 target_precompile_headers(client_ui_progress_qt REUSE_FROM scada_base)
 target_link_libraries(client_ui_progress_qt PRIVATE
@@ -74,8 +74,8 @@ target_link_libraries(client_ui_progress_qt PRIVATE
 )
 
 add_library(client_ui_progress_wt
-  "${CMAKE_CURRENT_SOURCE_DIR}/../components/node_service_progress_tracker/node_service_progress_tracker.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../components/node_service_progress_tracker/node_service_progress_tracker.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.h"
 )
 target_precompile_headers(client_ui_progress_wt REUSE_FROM scada_base)
 target_link_libraries(client_ui_progress_wt PRIVATE

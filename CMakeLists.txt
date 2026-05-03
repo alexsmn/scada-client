@@ -31,7 +31,7 @@ find_package(ScadaCommon REQUIRED)
 
 include_directories(client
   "."
-  "components"
+  "modules"
 )
 
 add_subdirectory(base)
@@ -58,7 +58,7 @@ list(FILTER PATHS EXCLUDE REGEX "/client/app/")
 list(FILTER PATHS EXCLUDE REGEX "/client/aui/")
 list(FILTER PATHS EXCLUDE REGEX "/client/base/")
 list(FILTER PATHS EXCLUDE REGEX "/client/clipboard/")
-list(FILTER PATHS EXCLUDE REGEX "/client/components/")
+list(FILTER PATHS EXCLUDE REGEX "/client/modules/")
 list(FILTER PATHS EXCLUDE REGEX "/client/controller/")
 list(FILTER PATHS EXCLUDE REGEX "/client/core/")
 list(FILTER PATHS EXCLUDE REGEX "/client/main_window/")
@@ -126,7 +126,7 @@ foreach(component_name IN LISTS CLIENT_COMPONENTS)
   endif()
 endforeach()
 
-add_subdirectory(components)
+add_subdirectory(modules)
 add_subdirectory(main_window)
 add_subdirectory(app)
 add_subdirectory(test)

@@ -3,7 +3,7 @@
 #include "base/boost_log.h"
 #include "base/auto_reset.h"
 #include "controller/window_info.h"
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 #include "main_window/view_manager_delegate.h"
 #include "profile/page.h"
 #include "profile/window_definition.h"
@@ -151,9 +151,9 @@ aui::ViewManagerSavedLayout ViewManager::ToComponentLayout(
     const PageLayout& layout) const {
   aui::ViewManagerSavedLayout component_layout;
   component_layout.main = ToComponentLayoutNode(layout.main);
-  if constexpr (requires { component_layout.dock_state_blob; }) {
-    component_layout.dock_state_blob = layout.blob;
-  }
+#if defined(UI_QT)
+  component_layout.dock_state_blob = layout.blob;
+#endif
   return component_layout;
 }
 
@@ -184,9 +184,9 @@ void ViewManager::FromComponentLayout(
     const aui::ViewManagerSavedLayout& component_layout,
     PageLayout& layout) const {
   FromComponentLayoutNode(component_layout.main, layout.main);
-  if constexpr (requires { component_layout.dock_state_blob; }) {
-    layout.blob = component_layout.dock_state_blob;
-  }
+#if defined(UI_QT)
+  layout.blob = component_layout.dock_state_blob;
+#endif
 }
 
 void ViewManager::FromComponentLayoutNode(

@@ -3,7 +3,7 @@
 #include "base/any_executor.h"
 
 #include "core/node_command_context.h"
-#include "main_window/opened_view_factory.h"
+#include "main_window/opened_view/opened_view_factory.h"
 
 #include <memory>
 #include <string>

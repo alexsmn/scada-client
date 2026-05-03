@@ -1,0 +1,79 @@
+#include "modules/device_metrics/device_metrics_command.h"
+
+#include "aui/color.h"
+#include "ui/common/client_utils.h"
+#include "common/formula_util.h"
+#include "resources/common_resources.h"
+#include "modules/device_metrics/node_collector.h"
+#include "modules/sheet/sheet_component.h"
+#include "controller/window_info.h"
+#include "model/devices_node_ids.h"
+#include "node_service/node_service.h"
+#include "node_service/node_util.h"
+
+WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
+    std::u16string title,
+    std::span<const NodeRef> devices) {
+  WindowDefinition win(kSheetWindowInfo);
+  win.title = std::move(title);
+
+  // Header column.
+  {
+    WindowItem& cell = win.AddItem("Column");
+    cell.SetInt("ix", 1);
+    cell.SetInt("width", 200);
+  }
+
+  const aui::Color kHeaderColor = aui::Rgba{227, 227, 227};
+
+  // Header.
+  auto data_variable_decls = CollectVariables(devices) | to_vector;
+  for (size_t i = 0; i < data_variable_decls.size(); ++i) {
+    WindowItem& cell = win.AddItem("SheetCell");
+    cell.SetInt("row", i + 2);
+    cell.SetInt("col", 1);
+    cell.SetString("text", ToString16(data_variable_decls[i].display_name()));
+    cell.SetString("color", aui::ColorToString(kHeaderColor));
+    cell.SetString("align", "right");
+  }
+
+  // Items.
+  for (size_t i = 0; i < devices.size(); ++i) {
+    const auto& device = devices[i];
+
+    // Item header.
+    {
+      WindowItem& cell = win.AddItem("SheetCell");
+      cell.SetInt("row", 1);
+      cell.SetInt("col", i + 2);
+      cell.SetString("text", ToString16(device.display_name()));
+      cell.SetString("color", aui::ColorToString(kHeaderColor));
+    }
+
+    // Metric cells.
+    for (size_t j = 0; j < data_variable_decls.size(); ++j) {
+      if (auto data_variable = device[data_variable_decls[j].browse_name()]) {
+        auto& cell = win.AddItem("SheetCell");
+        cell.SetInt("row", j + 2);
+        cell.SetInt("col", i + 2);
+        auto formula = MakeNodeIdFormula(data_variable.node_id());
+        cell.SetString("text", '=' + formula);
+      }
+    }
+  }
+
+  return win;
+}
+
+Awaitable<WindowDefinition> MakeDeviceMetricsWindowDefinitionAsync(
+    AnyExecutor executor,
+    const NodeRef& device) {
+  if (!device.type_definition()) {
+    throw std::runtime_error{"Device type"};
+  }
+
+  auto devices = co_await CollectNodesRecursiveAsync(
+      std::move(executor), device, devices::id::DeviceType);
+  auto title = ToString16(device.display_name());
+  co_return MakeDeviceMetricsWindowDefinitionSync(std::move(title), devices);
+}

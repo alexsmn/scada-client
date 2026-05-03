@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 #include "aui/point.h"
 
 #include <memory>

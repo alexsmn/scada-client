@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/qt/dialog_service_impl_qt.h"
-#include "components/write/write_service.h"
+#include "modules/write/write_service.h"
 #include "controller/controller_delegate.h"
 #include "test/display_tester/qt/variable_timed_data_service.h"
 

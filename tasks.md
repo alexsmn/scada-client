@@ -186,7 +186,7 @@ PR / commit):
     docs-side entry point operators use.
 
 11. **CI integration.** Run the generator on every PR that touches
-    `components/`, `aui/`, `main_window/`, or `app/qt/`, diff the
+    `modules/`, `aui/`, `main_window/`, or `app/qt/`, diff the
     output against `scada-docs/img/`, and fail the build if there's
     an unexpected drift. Either auto-commit the regenerated images
     to scada-docs in a follow-up PR or surface the diff as a CI
@@ -278,7 +278,7 @@ no rows. Needs: add user nodes under the Users folder (`7.29`) in
 the fixture tree, each with the scada-specific attributes the Users
 table model reads (likely a `security::UserType` node with
 properties for rights and multi-session). Find the read path in
-`components/node_table/` and work backwards.
+`modules/node_table/` and work backwards.
 
 #### Gap: `Transmission` view — populated rows
 

@@ -10,7 +10,7 @@
 #include "core/selection_command_context.h"
 #include "events/local_events.h"
 #include "main_window/main_window_mock.h"
-#include "main_window/opened_view_interface.h"
+#include "main_window/opened_view/opened_view_interface.h"
 #include "model/devices_node_ids.h"
 #include "node_service/node_model_mock.h"
 #include "profile/profile.h"

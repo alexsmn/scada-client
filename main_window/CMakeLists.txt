@@ -1,6 +1,9 @@
 client_module(client_main_window)
 
-client_module_sources(client_main_window PRIVATE status)
+add_subdirectory(main_menu)
+add_subdirectory(opened_view)
+add_subdirectory(pages)
+add_subdirectory(status_bar)
 
 client_module_include_directories(client_main_window PUBLIC "..")
 
@@ -41,7 +44,7 @@ target_link_libraries(client_main_window_qt PRIVATE
   winmm
 )
 
-client_qt_translations(client_main_window_qt "qt/main_window_ru.ts")
+client_qt_translations(client_main_window_qt "main_window_ru_qt.ts")
 
 # Wt.
 

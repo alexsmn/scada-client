@@ -11,7 +11,7 @@
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
 #include "base/win/gdiplus_initializer.h"
-#include "components/login/login_dialog.h"
+#include "modules/login/login_dialog.h"
 #include "project.h"
 #include "scada/status_exception.h"
 #include "services/atl_module.h"

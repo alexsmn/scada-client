@@ -16,7 +16,7 @@
 #include "main_window/main_window_manager.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 #include "profile/window_definition.h"
 #include "resources/common_resources.h"
 #include "timed_data/timed_data_spec.h"

@@ -4,7 +4,7 @@
 #include "base/boost_log.h"
 #include "aui/wt/message_loop_wt.h"
 #include "base/any_executor_dispatch.h"
-#include "components/login/wt/login_dialog.h"
+#include "modules/login/wt/login_dialog.h"
 
 #include <wt/WApplication.h>
 #include <wt/WBootstrapTheme.h>

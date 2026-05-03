@@ -70,7 +70,7 @@ scada-client/
 ├── aui/                # Abstract UI layer (platform-agnostic models)
 ├── base/               # Foundation utilities
 ├── clipboard/          # Clipboard and node serialization
-├── components/         # ~22 reusable UI components
+├── modules/         # ~22 reusable UI components
 ├── configuration/      # Device/node configuration management
 ├── controller/         # MVC controller layer and command registry
 ├── core/               # Core module: command registries, tracer, progress

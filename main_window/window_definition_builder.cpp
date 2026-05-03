@@ -6,7 +6,7 @@
 #include "ui/common/client_utils.h"
 #include "common/formula_util.h"
 #include "resources/common_resources.h"
-#include "components/table/table_component.h"
+#include "modules/table/table_component.h"
 #include "controller/controller.h"
 #include "controller/window_info.h"
 #include "model/data_items_node_ids.h"

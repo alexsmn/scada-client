@@ -4,7 +4,7 @@
 #include "resources/common_resources.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
-#include "main_window/action_manager.h"
+#include "controller/action_manager.h"
 #include "profile/profile.h"
 
 #if !defined(UI_WT)

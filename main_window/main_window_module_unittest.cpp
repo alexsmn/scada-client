@@ -3,7 +3,7 @@
 #include "aui/test/app_environment.h"
 #include "base/logger.h"
 #include "base/test/awaitable_test.h"
-#include "components/web/web_component.h"
+#include "modules/web/web_component.h"
 #include "controller/controller_fake.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"

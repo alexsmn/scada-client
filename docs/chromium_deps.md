@@ -19,8 +19,8 @@ Remaining chromium-base headers used in the client module.
 - `base/memory_istream.h` — `modus/activex/modus_document.cpp`
 
 ## Windows COM / GDI
-- `base/win/scoped_variant.h` — `base/excel.h`, `components/web/qt/web_view.cpp`, `modus/activex/modus_element.h`
-- `base/win/scoped_bstr.h` — `vidicon/teleclient/vidicon_client_unittest.cpp`, `vidicon/display/activex/qt/vidicon_display_activex_view.cpp`, `components/web/qt/web_view.cpp`, `modus/activex/modus_element.h`, `modus/activex/modus_element.cpp`, `modus/activex/modus_document.cpp`
+- `base/win/scoped_variant.h` — `base/excel.h`, `modules/web/qt/web_view.cpp`, `modus/activex/modus_element.h`
+- `base/win/scoped_bstr.h` — `vidicon/teleclient/vidicon_client_unittest.cpp`, `vidicon/display/activex/qt/vidicon_display_activex_view.cpp`, `modules/web/qt/web_view.cpp`, `modus/activex/modus_element.h`, `modus/activex/modus_element.cpp`, `modus/activex/modus_document.cpp`
 - `base/win/scoped_gdi_object.h` — `aui/qt/tree_model_adapter.cpp`, `aui/wt/tree_model_adapter.cpp`, `aui/qt/image_util.h`, `modus/qt/modus_view2.cpp`, `vidicon/display/native/qt/gdi_widget2.h`
 - `base/win/scoped_hdc.h` — `modus/qt/modus_view2.cpp`, `vidicon/display/native/qt/gdi_widget2.h`
 - `base/win/scoped_select_object.h` — `vidicon/display/native/qt/gdi_widget2.h`

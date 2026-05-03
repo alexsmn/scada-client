@@ -22,8 +22,8 @@
 flowchart LR
     subgraph Surface["UI surface"]
         direction TB
-        PLAT["<b>Platform integrations</b><br/><i>components/modus/, components/vidicon/</i><br/>(Qt + Windows only)"]
-        UI["<b>UI components (~20)</b><br/><i>components/*</i>"]
+        PLAT["<b>Platform integrations</b><br/><i>modules/modus/, modules/vidicon/</i><br/>(Qt + Windows only)"]
+        UI["<b>UI components (~20)</b><br/><i>modules/*</i>"]
         MW["<b>Main window &amp; view manager</b><br/><i>main_window/</i>"]
         PLAT --> UI --> MW
     end
@@ -31,7 +31,7 @@ flowchart LR
     subgraph Logic["Application logic"]
         direction TB
         CTRL["<b>Controllers / commands</b><br/><i>controller/</i>"]
-        DOM["<b>Domain modules</b><br/><i>components/configuration/, components/events/,</i><br/><i>components/favorites/, components/portfolio/,</i><br/><i>components/filesystem/, components/graph/,</i><br/><i>components/export/, components/print/, properties/</i>"]
+        DOM["<b>Domain modules</b><br/><i>modules/configuration/, modules/events/,</i><br/><i>modules/favorites/, modules/portfolio/,</i><br/><i>modules/filesystem/, modules/graph/,</i><br/><i>modules/export/, modules/print/, properties/</i>"]
         PROF["<b>Profile &amp; persistence</b><br/><i>profile/</i>"]
         CTRL --> DOM --> PROF
     end

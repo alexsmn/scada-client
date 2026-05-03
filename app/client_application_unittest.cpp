@@ -14,7 +14,7 @@
 #include "controller/controller_registry.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
-#include "main_window/opened_view.h"
+#include "main_window/opened_view/opened_view.h"
 #include "node_service/node_service.h"
 #include "profile/profile.h"
 #include "scada/monitoring_parameters.h"

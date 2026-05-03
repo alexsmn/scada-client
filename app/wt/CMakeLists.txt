@@ -24,8 +24,8 @@ add_library(client_wt_lib
   "../client_application.h"
   "../client_application_modules.cpp"
   "../client_application_modules.h"
-  "../../components/opcua_services/opcua_services_module.cpp"
-  "../../components/opcua_services/opcua_services_module.h"
+  "../../modules/opcua_services/opcua_services_module.cpp"
+  "../../modules/opcua_services/opcua_services_module.h"
   "../startup_exception.cpp"
   "../startup_exception.h"
 )
@@ -64,6 +64,7 @@ target_precompile_headers(client_wt REUSE_FROM scada_base)
 
 if(MSVC)
   target_link_options(client_wt PRIVATE
+    "$<$<CONFIG:Debug>:/PDB:NONE>"
     "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
   )
 endif()
