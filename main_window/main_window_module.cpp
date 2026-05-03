@@ -79,6 +79,22 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
               },
           .quit_handler_ = quit_handler_});
 
+  auto login_handler = [this](bool login) {
+    if (login) {
+      login_handler_();
+    } else {
+      // TODO: Logoff.
+    }
+  };
+
+  singletons_.emplace(std::make_shared<MainWindowCommands>(
+      MainWindowCommandsContext{executor_, task_manager_,
+                                *scada_services_.session_service,
+                                node_event_provider_, node_service_,
+                                local_events_, favourites_, speech_service_,
+                                profile_, *main_window_manager_,
+                                login_handler, global_commands_}));
+
   selection_commands_object_ =
       std::make_shared<SelectionCommands>(SelectionCommandsContext{
           executor_, task_manager_, *scada_services_.session_service,
@@ -99,23 +115,14 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 MainWindowModule::~MainWindowModule() {}
 
 MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
-  auto login_handler = [this](bool login) {
-    if (login) {
-      login_handler_();
-    } else {
-      // TODO: Logoff.
-    }
-  };
-
-  auto main_commands_factory = [this, login_handler](
+  auto main_commands_factory = [this](
                                    MainWindowInterface& main_window,
                                    DialogService& dialog_service) {
     assert(scada_services_.session_service);
-    return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
-        executor_, main_window, task_manager_, dialog_service,
-        *scada_services_.session_service, node_event_provider_, node_service_,
-        local_events_, favourites_, speech_service_, profile_,
-        *main_window_manager_, login_handler, global_commands_});
+    return std::make_unique<MainWindowCommandHandler>(
+        MainWindowCommandHandlerContext{executor_, main_window, dialog_service,
+                                        *scada_services_.session_service,
+                                        global_commands_});
   };
 
   auto main_menu_factory =
@@ -222,11 +229,10 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   auto opened_view_commands =
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
-          executor_, selection_commands_object_, task_manager_,
-          *scada_services_.session_service, timed_data_service_, node_service_,
-          print_service_,
-          *action_manager_, local_events_, file_cache_, profile_,
-          *main_window_manager_, create_tree_});
+          executor_, selection_commands_object_, selection_commands_,
+          task_manager_, *scada_services_.session_service, timed_data_service_,
+          node_service_, print_service_, *action_manager_, local_events_,
+          file_cache_, profile_, *main_window_manager_, create_tree_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the
   // controller.

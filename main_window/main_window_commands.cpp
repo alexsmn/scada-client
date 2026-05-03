@@ -54,15 +54,6 @@ const Option options[] = {
     {ID_EVENT_PLAY_SOUND, &Profile::event_play_sound},
     {0, nullptr}};
 
-static bool Profile::*GetOption(UINT id) {
-  for (const auto& opt : options) {
-    if (opt.id == id) {
-      return opt.option;
-    }
-  }
-  return nullptr;
-}
-
 #if defined(UI_QT)
 QString GetSelectedLocaleName() {
   QSettings settings;
@@ -153,14 +144,151 @@ BasicCommand<GlobalCommandContext> MakeOptionCommand(
             const MainWindowDef* prefs =
                 profile.FindMainWindow(context.main_window.GetMainWindowId());
             return prefs && prefs->*option;
-          }};
+      }};
+}
+
+Awaitable<void> ShowRenameWindowDialogAsync(AnyExecutor executor,
+                                            OpenedViewInterface& view,
+                                            DialogService& dialog_service,
+                                            std::u16string current_view_title) {
+  auto title = co_await RunPromptDialog(
+      dialog_service, Translate("Name:"), Translate("Rename"),
+      current_view_title);
+  // TODO: Capture weak pointer.
+  view.SetWindowTitle(title);
+  co_return;
+}
+
+void ShowRenameWindowDialog(AnyExecutor executor,
+                            MainWindowInterface& main_window,
+                            DialogService& dialog_service) {
+  auto* view = main_window.GetActiveView();
+  if (!view || view->GetWindowInfo().is_pane()) {
+    return;
+  }
+
+  CoSpawn(executor,
+          [executor, view, &dialog_service,
+           current_view_title = view->GetWindowTitle()] {
+            return ShowRenameWindowDialogAsync(executor, *view, dialog_service,
+                                               current_view_title);
+          });
 }
 
 }  // namespace
 
 MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
-    : MainWindowCommandsContext{std::move(context)},
-      command_context_{main_window_, dialog_service_} {
+    : MainWindowCommandsContext{std::move(context)} {
+  global_commands_.AddCommand(
+      {.command_id = ID_ACKNOWLEDGE_ALL,
+       .execute_handler =
+           [this](const GlobalCommandContext&) {
+             node_event_provider_.AcknowledgeAllEvents();
+             local_events_.AcknowledgeAll();
+           },
+       .enabled_handler =
+           [this](const GlobalCommandContext&) {
+             return !node_event_provider_.unacked_events().empty() ||
+                    !local_events_.events().empty();
+           }});
+
+  global_commands_.AddCommand(
+      {.command_id = ID_WINDOW_NEW,
+       .execute_handler =
+           [this](const GlobalCommandContext&) {
+             main_window_manager_.CreateMainWindow();
+           }});
+
+  global_commands_.AddCommand(
+      {.command_id = ID_VIEW_CHANGE_TITLE,
+       .execute_handler =
+           [executor = executor_](const GlobalCommandContext& context) {
+             ShowRenameWindowDialog(executor, context.main_window,
+                                    context.dialog_service);
+           },
+       .enabled_handler =
+           [](const GlobalCommandContext& context) {
+             auto* active_view = context.main_window.GetActiveView();
+             return active_view && !active_view->GetWindowInfo().is_pane();
+           },
+       .available_handler =
+           [](const GlobalCommandContext& context) {
+             return context.main_window.GetActiveView() != nullptr;
+           }});
+
+  global_commands_.AddCommand(
+      {.command_id = ID_VIEW_PUBLIC_FOLDER,
+       .execute_handler =
+           [](const GlobalCommandContext&) { OpenPublicFolder(); }});
+
+  global_commands_.AddCommand(
+      {.command_id = ID_LOGIN,
+       .execute_handler =
+           [this](const GlobalCommandContext&) { login_handler_(true); },
+       .enabled_handler =
+           [this](const GlobalCommandContext&) {
+             return !session_service_.IsConnected();
+           }});
+
+  global_commands_.AddCommand(
+      {.command_id = ID_LOGOFF,
+       .execute_handler =
+           [this](const GlobalCommandContext&) { login_handler_(false); },
+       .enabled_handler =
+           [this](const GlobalCommandContext&) {
+             return session_service_.IsConnected();
+           }});
+
+#if defined(UI_QT)
+  global_commands_.AddCommand(
+      {.command_id = ID_WINDOW_SPLIT_HORZ,
+       .execute_handler =
+           [](const GlobalCommandContext& context) {
+             if (auto* active_view = context.main_window.GetActiveView()) {
+               context.main_window.SplitView(*active_view, true);
+             }
+           },
+       .available_handler =
+           [](const GlobalCommandContext& context) {
+             return context.main_window.GetActiveView() != nullptr;
+           }});
+
+  global_commands_.AddCommand(
+      {.command_id = ID_WINDOW_SPLIT_VERT,
+       .execute_handler =
+           [](const GlobalCommandContext& context) {
+             if (auto* active_view = context.main_window.GetActiveView()) {
+               context.main_window.SplitView(*active_view, false);
+             }
+           },
+       .available_handler =
+           [](const GlobalCommandContext& context) {
+             return context.main_window.GetActiveView() != nullptr;
+           }});
+#endif
+
+  for (const auto& opt : options) {
+    if (!opt.id) {
+      continue;
+    }
+
+    global_commands_.AddCommand(
+        {.command_id = opt.id,
+         .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
+         .execute_handler =
+             [this, option = opt.option](const GlobalCommandContext&) {
+               profile_.*option = !(profile_.*option);
+             },
+         .enabled_handler =
+             [this, command_id = opt.id](const GlobalCommandContext&) {
+               return command_id != ID_OPT_SPEECH || speech_service_.is_ok();
+             },
+         .checked_handler =
+             [this, option = opt.option](const GlobalCommandContext&) {
+               return profile_.*option;
+             }});
+  }
+
   global_commands_.AddCommand(
       MakeOptionCommand(ID_VIEW_TOOLBAR, Translate("Toolbar"), profile_,
                         &MainWindowDef::toolbar));
@@ -209,7 +337,15 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
 
 MainWindowCommands::~MainWindowCommands() {}
 
-CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
+MainWindowCommandHandler::MainWindowCommandHandler(
+    MainWindowCommandHandlerContext&& context)
+    : MainWindowCommandHandlerContext{std::move(context)},
+      command_context_{main_window_, dialog_service_} {}
+
+MainWindowCommandHandler::~MainWindowCommandHandler() {}
+
+CommandHandler* MainWindowCommandHandler::GetCommandHandler(
+    unsigned command_id) {
   auto* active_view = main_window_.GetActiveView();
   if (active_view) {
     // TODO: Refactor to remove the static cast.
@@ -220,34 +356,6 @@ CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
   }
 
   switch (command_id) {
-    case ID_ACKNOWLEDGE_ALL:
-    case ID_VIEW_PUBLIC_FOLDER:
-    case ID_WINDOW_NEW:
-
-    case ID_VIEW_ADD_TO_FAVOURITES:
-    case ID_VIEW_CHANGE_TITLE:
-    case ID_VIEW_CLOSE:
-#if defined(UI_QT)
-    case ID_WINDOW_SPLIT_HORZ:
-    case ID_WINDOW_SPLIT_VERT:
-#endif
-      return active_view ? this : nullptr;
-
-      /*case ID_PRINT:
-        return active_view && active_view->window_info().printable() ? this
-                                                                     :
-        nullptr;*/
-
-    case ID_LOGIN:
-    case ID_LOGOFF:
-      return this;
-
-#ifdef NDEBUG
-    case ID_NODES_VIEW:
-      // Hide NodeView for Release build.
-      return nullptr;
-#endif
-
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
       break;
@@ -262,6 +370,13 @@ CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
       break;
   }
 
+#ifdef NDEBUG
+  if (command_id == ID_NODES_VIEW) {
+    // Hide NodeView for Release build.
+    return nullptr;
+  }
+#endif
+
   if (const WindowInfo* win_info = FindWindowInfo(command_id)) {
     if (!win_info->createable()) {
       return nullptr;
@@ -273,36 +388,23 @@ CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
     return this;
   }
 
-  if (GetOption(command_id)) {
-    return this;
-  }
-
   if (const auto* command = global_commands_.FindCommand(command_id)) {
-    return this;
+    if (command_id == ID_VIEW_ADD_TO_FAVOURITES && !active_view) {
+      return nullptr;
+    }
+    if (!command->available_handler ||
+        command->available_handler(command_context_)) {
+      return this;
+    }
   }
 
   return nullptr;
 }
 
-bool MainWindowCommands::IsCommandEnabled(unsigned command_id) const {
-  auto* active_view = main_window_.GetActiveView();
-
-  switch (command_id) {
-    case ID_ACKNOWLEDGE_ALL:
-      return !node_event_provider_.unacked_events().empty() ||
-             !local_events_.events().empty();
-
-    case ID_OPT_SPEECH:
-      return speech_service_.is_ok();
-
-    case ID_VIEW_ADD_TO_FAVOURITES:
-    case ID_VIEW_CHANGE_TITLE:
-      return active_view && !active_view->GetWindowInfo().is_pane();
-
-    case ID_LOGIN:
-      return !session_service_.IsConnected();
-    case ID_LOGOFF:
-      return session_service_.IsConnected();
+bool MainWindowCommandHandler::IsCommandEnabled(unsigned command_id) const {
+  if (command_id == ID_VIEW_ADD_TO_FAVOURITES) {
+    auto* active_view = main_window_.GetActiveView();
+    return active_view && !active_view->GetWindowInfo().is_pane();
   }
 
   if (const auto* command = global_commands_.FindCommand(command_id)) {
@@ -313,14 +415,11 @@ bool MainWindowCommands::IsCommandEnabled(unsigned command_id) const {
   return true;
 }
 
-bool MainWindowCommands::IsCommandChecked(unsigned command_id) const {
+bool MainWindowCommandHandler::IsCommandChecked(unsigned command_id) const {
   if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
     return (window_info->flags & WIN_SING) &&
            main_window_.FindViewByType(window_info->name);
   }
-
-  if (bool Profile::*option = GetOption(command_id))
-    return profile_.*option;
 
   if (const auto* command = global_commands_.FindCommand(command_id)) {
     return command->checked_handler &&
@@ -330,40 +429,8 @@ bool MainWindowCommands::IsCommandChecked(unsigned command_id) const {
   return false;
 }
 
-void MainWindowCommands::ExecuteCommand(unsigned command_id) {
+void MainWindowCommandHandler::ExecuteCommand(unsigned command_id) {
   switch (command_id) {
-    case ID_ACKNOWLEDGE_ALL:
-      node_event_provider_.AcknowledgeAllEvents();
-      local_events_.AcknowledgeAll();
-      return;
-
-    case ID_WINDOW_NEW:
-      main_window_manager_.CreateMainWindow();
-      return;
-
-    case ID_VIEW_CHANGE_TITLE:
-      ShowRenameWindowDialog();
-      return;
-
-    case ID_VIEW_PUBLIC_FOLDER:
-      OpenPublicFolder();
-      return;
-
-    case ID_LOGIN:
-    case ID_LOGOFF:
-      login_handler_(command_id == ID_LOGIN);
-      return;
-
-#if defined(UI_QT)
-    case ID_WINDOW_SPLIT_HORZ:
-    case ID_WINDOW_SPLIT_VERT:
-      if (auto* active_view = main_window_.GetActiveView()) {
-        main_window_.SplitView(*active_view,
-                               command_id == ID_WINDOW_SPLIT_HORZ);
-      }
-      return;
-#endif
-
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
       break;
@@ -395,12 +462,6 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  // Check option command.
-  if (bool Profile::*option = GetOption(command_id)) {
-    profile_.*option = !(profile_.*option);
-    return;
-  }
-
   if (const auto* command = global_commands_.FindCommand(command_id)) {
     if (command->execute_handler) {
       command->execute_handler(command_context_);
@@ -409,55 +470,4 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
   }
 
   assert(false);
-}
-
-namespace {
-
-Awaitable<void> RenameCurrentPageAsync(AnyExecutor executor,
-                                       MainWindowInterface& main_window,
-                                       DialogService& dialog_service,
-                                       std::u16string current_page_title) {
-  auto title = co_await RunPromptDialog(
-      dialog_service, Translate("Name:"), Translate("Rename"),
-      current_page_title);
-  main_window.SetCurrentPageTitle(title);
-  co_return;
-}
-
-Awaitable<void> ShowRenameWindowDialogAsync(AnyExecutor executor,
-                                            OpenedViewInterface& view,
-                                            DialogService& dialog_service,
-                                            std::u16string current_view_title) {
-  auto title = co_await RunPromptDialog(
-      dialog_service, Translate("Name:"), Translate("Rename"),
-      current_view_title);
-  // TODO: Capture weak pointer.
-  view.SetWindowTitle(title);
-  co_return;
-}
-
-}  // namespace
-
-void MainWindowCommands::RenameCurrentPage() {
-  CoSpawn(executor_,
-          [executor = executor_, &main_window = main_window_,
-           &dialog_service = dialog_service_,
-           current_page_title = main_window_.GetCurrentPage().title] {
-            return RenameCurrentPageAsync(executor, main_window, dialog_service,
-                                          current_page_title);
-          });
-}
-
-void MainWindowCommands::ShowRenameWindowDialog() {
-  auto* view = main_window_.GetActiveView();
-  if (!view || view->GetWindowInfo().is_pane()) {
-    return;
-  }
-
-  CoSpawn(executor_,
-          [executor = executor_, view, &dialog_service = dialog_service_,
-           current_view_title = view->GetWindowTitle()] {
-            return ShowRenameWindowDialogAsync(executor, *view, dialog_service,
-                                               current_view_title);
-          });
 }

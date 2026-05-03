@@ -13,9 +13,11 @@
 #include "modules/node_properties/node_property_component.h"
 #include "modules/time_range/time_range_dialog.h"
 #include "controller/controller.h"
+#include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
+#include "core/selection_command_context.h"
 #include "events/local_event_util.h"
 #include "export/csv/csv_export_command.h"
 #include "export/csv/csv_export_util.h"
@@ -96,8 +98,16 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
     return handler;
   }
 
-  if (auto* handler = selection_commands_->GetCommandHandler(command_id)) {
-    return handler;
+  if (auto* selection_model = controller_->GetSelectionModel();
+      selection_model && dialog_service_ && main_window_) {
+    if (const auto* command =
+            selection_command_registry_.FindCommand(command_id)) {
+      auto context = selection_command_context();
+      if (!command->available_handler ||
+          command->available_handler(context)) {
+        return this;
+      }
+    }
   }
 
   switch (command_id) {
@@ -140,6 +150,14 @@ CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
 
 void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
   assert(opened_view_);
+
+  if (const auto* command =
+          selection_command_registry_.FindCommand(command_id)) {
+    if (command->execute_handler) {
+      command->execute_handler(selection_command_context());
+      return;
+    }
+  }
 
   switch (command_id) {
     case ID_PASTE:
@@ -236,6 +254,12 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
 }
 
 bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
+  if (const auto* command =
+          selection_command_registry_.FindCommand(command_id)) {
+    return command->checked_handler &&
+           command->checked_handler(selection_command_context());
+  }
+
   if (auto time_range = GetTimeRangeCommand(command_id)) {
     if (auto* model = controller_->GetTimeModel()) {
       auto current_time_range = model->GetTimeRange();
@@ -250,6 +274,12 @@ bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
 }
 
 bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {
+  if (const auto* command =
+          selection_command_registry_.FindCommand(command_id)) {
+    return !command->enabled_handler ||
+           command->enabled_handler(selection_command_context());
+  }
+
   switch (command_id) {
     case ID_PASTE: {
       auto* selection_model = controller_->GetSelectionModel();
@@ -262,6 +292,20 @@ bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {
     default:
       return true;
   }
+}
+
+SelectionCommandContext OpenedViewCommands::selection_command_context() const {
+  assert(opened_view_);
+  assert(dialog_service_);
+  assert(main_window_);
+
+  auto* selection_model = controller_->GetSelectionModel();
+  assert(selection_model);
+
+  return {.selection = *selection_model,
+          .dialog_service = *dialog_service_,
+          .main_window = *main_window_,
+          .opened_view = *opened_view_};
 }
 
 bool OpenedViewCommands::CanCreateRecord(
