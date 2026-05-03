@@ -2,7 +2,7 @@
 
 #include "main_window/wt/main_menu_controller.h"
 #include "main_window/wt/toolbar_controller.h"
-#include "main_window/wt/view_manager_wt.h"
+#include "main_window/view_manager.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
@@ -28,7 +28,7 @@ MainWindow::MainWindow(Wt::WContainerWidget& parent,
       ToolbarControllerContext{executor_, action_manager_, *commands_});
   root_layout->addWidget(toolbar_controller_->CreateToolbar());
 
-  view_manager_ = std::make_unique<ViewManagerWt>(delegate);
+  view_manager_ = std::make_unique<ViewManager>(delegate);
 
   auto* root_layout_widget =
       root_layout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);

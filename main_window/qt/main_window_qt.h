@@ -11,7 +11,7 @@ class QAction;
 class QMenu;
 class QWidget;
 class StatusBarController;
-class ViewManagerQt;
+class ViewManager;
 
 class MainWindow final : public QMainWindow,
                          public BaseMainWindow,
@@ -61,7 +61,7 @@ class MainWindow final : public QMainWindow,
   virtual void OnActionChanged(Action& action,
                                ActionChangeMask change_mask) override;
 
-  std::unique_ptr<ViewManagerQt> view_manager_;
+  std::unique_ptr<ViewManager> view_manager_;
 
   std::map<unsigned /*command_id*/, QAction*> action_map_;
   std::map<QAction*, unsigned /*command_id*/> action_command_ids_;

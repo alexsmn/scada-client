@@ -226,8 +226,8 @@ Important responsibilities:
   translation.
 - `EventDispatcher` drives the auto-show / auto-hide / flash / sound
   behaviour for incoming alarms.
-- `view_manager_qt.cpp` / `view_manager_wt.cpp` adapt the platform-agnostic
-  layout to Qt docks vs Wt panels.
+- `ViewManager` adapts the platform-agnostic layout to Qt docks vs Wt panels
+  through backend-specific AUI view-manager component aliases.
 
 ### 3.8 Controllers and commands — `controller/`
 

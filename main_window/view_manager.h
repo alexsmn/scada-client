@@ -1,19 +1,36 @@
 #pragma once
 
+#include "aui/view_manager.h"
+#include "main_window/opened_view.h"
+#include "profile/page_layout.h"
+
+#include <cstdint>
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
 class OpenedView;
 class Page;
 class PageLayout;
 class PageLayoutBlock;
+class QMainWindow;
 class ViewManagerDelegate;
 class WindowDefinition;
 struct WindowInfo;
+namespace Wt {
+class WLayout;
+}
 
 class ViewManager {
  public:
+#if defined(UI_QT)
+  ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate);
+#elif defined(UI_WT)
+  explicit ViewManager(ViewManagerDelegate& delegate);
+#endif
+
   virtual ~ViewManager();
 
   ViewManager(const ViewManager&) = delete;
@@ -38,17 +55,19 @@ class ViewManager {
   void SavePage();
   void ClosePage();
 
-  virtual OpenedView* GetActiveView() = 0;
-  virtual void ActivateView(const OpenedView& view) = 0;
-  virtual void CloseView(OpenedView& view) = 0;
+  OpenedView* GetActiveView();
+  void ActivateView(const OpenedView& view);
+  void CloseView(OpenedView& view);
 
-  virtual void SetViewTitle(OpenedView& view, const std::u16string& title) = 0;
+  void SetViewTitle(OpenedView& view, const std::u16string& title);
 
-  virtual void SplitView(OpenedView& view, bool vertically) = 0;
+  void SplitView(OpenedView& view, bool vertically);
+
+#if defined(UI_WT)
+  Wt::WLayout& root_layout();
+#endif
 
  protected:
-  explicit ViewManager(ViewManagerDelegate& delegate);
-
   void SetActiveView(OpenedView* view);
   void DestroyView(OpenedView& view);
 
@@ -56,10 +75,23 @@ class ViewManager {
 
   bool IsViewAdded(OpenedView& opened_view) const;
 
-  virtual void OpenLayout(Page& page, const PageLayout& layout) = 0;
-  virtual void SaveLayout(PageLayout& layout) = 0;
+  aui::ViewManagerViewId GetComponentViewId(const OpenedView& view) const;
+  aui::ViewManagerViewInfo GetComponentViewInfo(OpenedView& view) const;
+  OpenedView* FindViewByComponentId(aui::ViewManagerViewId view_id) const;
+  std::vector<aui::ViewManagerViewInfo> GetComponentViewInfos() const;
+  aui::ViewManagerSavedLayout ToComponentLayout(const PageLayout& layout) const;
+  aui::ViewManagerLayoutNode ToComponentLayoutNode(
+      const PageLayoutBlock& block) const;
+  void FromComponentLayout(const aui::ViewManagerSavedLayout& component_layout,
+                           PageLayout& layout) const;
+  void FromComponentLayoutNode(
+      const aui::ViewManagerLayoutNode& component_block,
+      PageLayoutBlock& block) const;
 
-  virtual void AddView(OpenedView& view) = 0;
+  void OpenLayout(Page& page, const PageLayout& layout);
+  void SaveLayout(PageLayout& layout);
+
+  void AddView(OpenedView& view);
 
   ViewManagerDelegate& delegate_;
 
@@ -73,4 +105,6 @@ class ViewManager {
   bool closing_page_ = false;
 
   std::unique_ptr<Page> current_page_;
+
+  aui::ViewManagerComponent component_;
 };

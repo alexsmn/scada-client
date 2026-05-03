@@ -1,5 +1,3 @@
-#include "main_window/qt/view_manager_qt.h"
-
 #include "aui/dialog_service_mock.h"
 #include "aui/test/app_environment.h"
 #include "base/test/test_executor.h"
@@ -8,7 +6,9 @@
 #include "controller/controller_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
+#include "main_window/view_manager.h"
 #include "main_window/view_manager_delegate_mock.h"
+#include "view_manager_qt_component.h"
 
 #include <QMainWindow>
 #include <gmock/gmock.h>
@@ -47,7 +47,7 @@ struct ViewState {
   OpenedView* opened_view = nullptr;
 };
 
-class ViewManagerQtTest : public Test {
+class ViewManagerTest : public Test {
  public:
   virtual void SetUp() override;
   virtual void TearDown() override;
@@ -67,12 +67,12 @@ class ViewManagerQtTest : public Test {
   StrictMock<MockViewManagerDelegate> view_manager_delegate_;
   StrictMock<MockControllerFactory> controller_factory_;
 
-  ViewManagerQt view_manager_qt_{main_window_, view_manager_delegate_};
+  ViewManager view_manager_qt_{main_window_, view_manager_delegate_};
 
   inline static const WindowInfo& kWindowInfo = kWebWindowInfo;
 };
 
-void ViewManagerQtTest::SetUp() {
+void ViewManagerTest::SetUp() {
   controller_registry_.AddControllerFactory(kWindowInfo,
                                             [](const ControllerContext&) {
                                               // This handler is intercepted by
@@ -83,9 +83,9 @@ void ViewManagerQtTest::SetUp() {
                                             });
 }
 
-void ViewManagerQtTest::TearDown() {}
+void ViewManagerTest::TearDown() {}
 
-std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
+std::unique_ptr<ViewState> ViewManagerTest::ExpectOpenView() {
   auto view_state =
       std::make_unique<ViewState>(kWindowInfo.name, view_manager_qt_);
 
@@ -113,13 +113,13 @@ std::unique_ptr<ViewState> ViewManagerQtTest::ExpectOpenView() {
   return view_state;
 }
 
-TEST_F(ViewManagerQtTest, CloseView_DeletesNativeView) {
+TEST_F(ViewManagerTest, CloseView_DeletesNativeView) {
   auto view_state = ExpectOpenView();
   view_manager_qt_.OpenView(view_state->window_definition, /*make_active=*/true,
                             /*after_view=*/nullptr);
 }
 
-TEST_F(ViewManagerQtTest, SplitAndClose) {
+TEST_F(ViewManagerTest, SplitAndClose) {
   auto view_state1 = ExpectOpenView();
   view_manager_qt_.OpenView(view_state1->window_definition,
                             /*make_active=*/true, /*after_view=*/nullptr);

@@ -7,15 +7,208 @@
 #include "main_window/view_manager_delegate.h"
 #include "profile/page.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
+
+#if defined(UI_WT)
+#include <wt/WApplication.h>
+#endif
 
 #include <algorithm>
 
+#if defined(UI_QT)
+ViewManager::ViewManager(QMainWindow& main_window, ViewManagerDelegate& delegate)
+    : delegate_{delegate},
+      current_page_{std::make_unique<Page>()},
+      component_{main_window} {
+  component_.SetCloseViewHandler([this](aui::ViewManagerViewId view_id) {
+    if (auto* view = FindViewByComponentId(view_id))
+      CloseView(*view);
+  });
+
+  component_.SetActiveViewChangedHandler(
+      [this](std::optional<aui::ViewManagerViewId> view_id) {
+        SetActiveView(view_id ? FindViewByComponentId(*view_id) : nullptr);
+      });
+
+  component_.SetTabPopupMenuHandler(
+      [this](aui::ViewManagerViewId view_id, const aui::Point& point) {
+        if (auto* view = FindViewByComponentId(view_id))
+          delegate_.OnShowTabPopupMenu(*view, point);
+      });
+}
+#elif defined(UI_WT)
 ViewManager::ViewManager(ViewManagerDelegate& delegate)
-    : current_page_{std::make_unique<Page>()}, delegate_{delegate} {}
+    : delegate_{delegate}, current_page_{std::make_unique<Page>()} {
+  component_.SetCloseViewHandler([this](aui::ViewManagerViewId view_id) {
+    if (auto* view = FindViewByComponentId(view_id))
+      CloseView(*view);
+  });
+}
+#endif
 
 ViewManager::~ViewManager() {
   // Page must be closed before destruction, as closing calls delegate.
   assert(views_.empty());
+}
+
+#if defined(UI_WT)
+Wt::WLayout& ViewManager::root_layout() {
+  return component_.root_layout();
+}
+#endif
+
+OpenedView* ViewManager::GetActiveView() {
+  auto view_id = component_.GetActiveViewId();
+  return view_id ? FindViewByComponentId(*view_id) : nullptr;
+}
+
+void ViewManager::SetViewTitle(OpenedView& view,
+                               const std::u16string& title) {
+  component_.SetViewTitle(GetComponentViewId(view), title);
+}
+
+void ViewManager::ActivateView(const OpenedView& view) {
+  component_.ActivateView(GetComponentViewId(view));
+}
+
+void ViewManager::CloseView(OpenedView& view) {
+  if (component_.RemoveView(GetComponentViewId(view))) {
+#if defined(UI_WT)
+    view.ReleaseView();
+#endif
+  }
+  DestroyView(view);
+}
+
+void ViewManager::SplitView(OpenedView& view, bool vertically) {
+  component_.SplitView(GetComponentViewId(view), vertically);
+}
+
+void ViewManager::OpenLayout(Page& page, const PageLayout& layout) {
+#if defined(UI_WT)
+  Wt::WApplication::UpdateLock update_lock{Wt::WApplication::instance()};
+#endif
+
+  auto views = GetComponentViewInfos();
+  auto component_layout = ToComponentLayout(layout);
+  component_.OpenLayout(views, component_layout);
+}
+
+void ViewManager::SaveLayout(PageLayout& layout) {
+  auto views = GetComponentViewInfos();
+  FromComponentLayout(component_.SaveLayout(views), layout);
+}
+
+void ViewManager::AddView(OpenedView& view) {
+  component_.AddView(
+      GetComponentViewInfo(view),
+      active_view_ ? std::optional{
+                         GetComponentViewId(*active_view_)}
+                   : std::nullopt);
+}
+
+aui::ViewManagerViewId ViewManager::GetComponentViewId(
+    const OpenedView& view) const {
+  return reinterpret_cast<aui::ViewManagerViewId>(&view);
+}
+
+aui::ViewManagerViewInfo ViewManager::GetComponentViewInfo(
+    OpenedView& view) const {
+  const auto& window_info = view.window_info();
+  return aui::ViewManagerViewInfo{
+      .id = GetComponentViewId(view),
+      .widget = view.view(),
+      .title = view.GetWindowTitle(),
+#if defined(UI_QT)
+      .state_name = "dock-" + std::to_string(view.window_id()),
+#endif
+      .dock = window_info.is_pane(),
+      .dock_bottom = window_info.dock_bottom(),
+      .tabify_existing_dock = window_info.command_id != ID_HARDWARE_VIEW};
+}
+
+OpenedView* ViewManager::FindViewByComponentId(
+    aui::ViewManagerViewId view_id) const {
+  for (auto* view : views_) {
+    if (GetComponentViewId(*view) == view_id) {
+      return view;
+    }
+  }
+  return nullptr;
+}
+
+std::vector<aui::ViewManagerViewInfo> ViewManager::GetComponentViewInfos()
+    const {
+  std::vector<aui::ViewManagerViewInfo> result;
+  result.reserve(views_.size());
+  for (auto* view : views_) {
+    result.emplace_back(GetComponentViewInfo(*view));
+  }
+  return result;
+}
+
+aui::ViewManagerSavedLayout ViewManager::ToComponentLayout(
+    const PageLayout& layout) const {
+  aui::ViewManagerSavedLayout component_layout;
+  component_layout.main = ToComponentLayoutNode(layout.main);
+  if constexpr (requires { component_layout.dock_state_blob; }) {
+    component_layout.dock_state_blob = layout.blob;
+  }
+  return component_layout;
+}
+
+aui::ViewManagerLayoutNode ViewManager::ToComponentLayoutNode(
+    const PageLayoutBlock& block) const {
+  aui::ViewManagerLayoutNode component_block;
+  if (block.type == PageLayoutBlock::PANE) {
+    component_block.type = aui::ViewManagerLayoutNode::Type::Tabs;
+    for (int window_id : block.wins) {
+      if (auto* view = FindViewByID(window_id)) {
+        component_block.tabs.emplace_back(GetComponentViewId(*view));
+      }
+    }
+    return component_block;
+  }
+
+  component_block.type = aui::ViewManagerLayoutNode::Type::Split;
+  component_block.split_vertical = block.horz;
+  component_block.split_pos = block.pos;
+  component_block.left = std::make_unique<aui::ViewManagerLayoutNode>(
+      ToComponentLayoutNode(*block.left));
+  component_block.right = std::make_unique<aui::ViewManagerLayoutNode>(
+      ToComponentLayoutNode(*block.right));
+  return component_block;
+}
+
+void ViewManager::FromComponentLayout(
+    const aui::ViewManagerSavedLayout& component_layout,
+    PageLayout& layout) const {
+  FromComponentLayoutNode(component_layout.main, layout.main);
+  if constexpr (requires { component_layout.dock_state_blob; }) {
+    layout.blob = component_layout.dock_state_blob;
+  }
+}
+
+void ViewManager::FromComponentLayoutNode(
+    const aui::ViewManagerLayoutNode& component_block,
+    PageLayoutBlock& block) const {
+  if (component_block.type == aui::ViewManagerLayoutNode::Type::Tabs) {
+    for (aui::ViewManagerViewId view_id : component_block.tabs) {
+      if (auto* view = FindViewByComponentId(view_id)) {
+        block.add(view->window_id());
+      }
+    }
+    return;
+  }
+
+  block.split(component_block.split_vertical);
+  block.pos = component_block.split_pos;
+  if (component_block.left) {
+    FromComponentLayoutNode(*component_block.left, *block.left);
+  }
+  if (component_block.right) {
+    FromComponentLayoutNode(*component_block.right, *block.right);
+  }
 }
 
 OpenedView* ViewManager::FindViewByID(int id) const {

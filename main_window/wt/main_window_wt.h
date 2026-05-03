@@ -10,7 +10,7 @@ class WContainerWidget;
 class MainMenuController;
 class DialogServiceImplWt;
 class ToolbarController;
-class ViewManagerWt;
+class ViewManager;
 
 class MainWindow final : public BaseMainWindow {
  public:
@@ -40,5 +40,5 @@ class MainWindow final : public BaseMainWindow {
 
   std::unique_ptr<ToolbarController> toolbar_controller_;
 
-  std::unique_ptr<ViewManagerWt> view_manager_;
+  std::unique_ptr<ViewManager> view_manager_;
 };
