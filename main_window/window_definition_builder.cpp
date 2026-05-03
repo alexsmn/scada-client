@@ -1,7 +1,6 @@
 #include "window_definition_builder.h"
 
-#include "base/awaitable_promise.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
 #include "ui/common/client_utils.h"
@@ -63,17 +62,6 @@ void AddNodeIds(WindowDefinition& window_def, const NodeIdSet& node_ids) {
   }
 }
 
-// TODO: Combine with |MakeSingleWindowDefinition()|.
-promise<WindowDefinition> MakeWindowDefinition(
-    const WindowInfo* optional_window_info,
-    const NodeRef& node,
-    bool expand_groups) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor,
-                   MakeWindowDefinitionAsync(executor, optional_window_info,
-                                             node, expand_groups));
-}
-
 Awaitable<WindowDefinition> MakeWindowDefinitionAsync(
     AnyExecutor executor,
     const WindowInfo* optional_window_info,
@@ -95,15 +83,6 @@ Awaitable<WindowDefinition> MakeWindowDefinitionAsync(
   auto window_def = MakeEmptyWindowDefinition(&window_info, node);
   AddNodeIds(window_def, node_ids);
   co_return window_def;
-}
-
-promise<WindowDefinition> MakeWindowDefinition(
-    const WindowInfo* window_info,
-    const OpenContext& open_context) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(
-      executor,
-      MakeWindowDefinitionAsync(executor, window_info, open_context));
 }
 
 Awaitable<WindowDefinition> MakeWindowDefinitionAsync(
@@ -172,14 +151,6 @@ WindowDefinition MakeWindowDefinition(const WindowInfo* window_info,
   item.SetString("path", std::move(formula));
 
   return window_def;
-}
-
-promise<std::optional<WindowDefinition>> MakeGroupWindowDefinition(
-    const WindowInfo* window_info,
-    const NodeRef& node) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor,
-                   MakeGroupWindowDefinitionAsync(executor, window_info, node));
 }
 
 Awaitable<std::optional<WindowDefinition>> MakeGroupWindowDefinitionAsync(

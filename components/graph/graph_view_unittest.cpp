@@ -189,7 +189,7 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
 }
 
 TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
   scada::client client{services};
@@ -207,7 +207,7 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
             .values = {MakeDataValue(1.0, earliest)}};
       }));
 
-  MetrixDataSource data_source{MakeTestAnyExecutor(executor)};
+  MetrixDataSource data_source{executor};
   data_source.SetTimedData(MakeTimedDataSpec(node, latest));
   Drain(executor);
 
@@ -217,14 +217,14 @@ TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {
 }
 
 TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<scada::MockHistoryService> history_service;
   scada::services services{.history_service = &history_service};
   scada::client client{services};
   NodeRef node{std::make_shared<TestNodeModel>(client.node(kTestNodeId))};
 
-  base::AsyncCompletion first_completion{MakeTestAnyExecutor(executor)};
-  base::AsyncCompletion second_completion{MakeTestAnyExecutor(executor)};
+  base::AsyncCompletion first_completion{executor};
+  base::AsyncCompletion second_completion{executor};
   scada::HistoryReadRawResult first_result;
   scada::HistoryReadRawResult second_result;
   bool first_started = false;
@@ -251,7 +251,7 @@ TEST(MetrixDataSourceTest, DropsCanceledEarliestTimestampRead) {
   const auto first_latest = scada::DateTime::FromDoubleT(200.0);
   const auto second_latest = scada::DateTime::FromDoubleT(300.0);
 
-  MetrixDataSource data_source{MakeTestAnyExecutor(executor)};
+  MetrixDataSource data_source{executor};
   data_source.SetTimedData(MakeTimedDataSpec(node, first_latest));
   Drain(executor);
   ASSERT_TRUE(first_started);

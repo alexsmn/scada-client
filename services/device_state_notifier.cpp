@@ -37,7 +37,6 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
 
   for (size_t i = 0; i < FIELD_COUNT; ++i) {
     auto component = device[kComponentIds[i]];
-    assert(component);
     if (!component)
       continue;
 

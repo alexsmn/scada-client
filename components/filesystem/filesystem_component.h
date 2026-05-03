@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "filesystem/filesystem_commands.h"
 #include "scada/client.h"
 
@@ -15,7 +17,6 @@ template <typename T>
 class BasicCommandRegistry;
 
 class CreateTree;
-class Executor;
 class FileCache;
 class FileManager;
 class FileRegistry;
@@ -26,8 +27,8 @@ struct SelectionCommandContext;
 
 struct FileSystemComponentContext {
   // Needed by `FileManagerImpl` so its coroutine internals have an
-  // executor to resume on after `AwaitPromise`.
-  const std::shared_ptr<Executor> executor_;
+  // executor to resume on after asynchronous filesystem work.
+  const AnyExecutor executor_;
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;

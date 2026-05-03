@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/qt/message_loop_qt.h"
 #include "base/awaitable.h"
 
@@ -31,7 +33,7 @@ struct AwaitableResult<void> {
 
 template <class T>
 std::shared_ptr<AwaitableResult<T>> StartAwaitable(Awaitable<T> awaitable) {
-  auto executor = std::make_shared<MessageLoopQt>();
+  auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   auto result = std::make_shared<AwaitableResult<T>>();
   CoSpawn(executor, [result, awaitable = std::move(awaitable)]() mutable
                        -> Awaitable<void> {

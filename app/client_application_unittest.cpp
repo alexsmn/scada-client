@@ -7,6 +7,8 @@
 #include "address_space/variable.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
+#include "base/async_completion.h"
+#include "base/awaitable.h"
 #include "base/client_paths.h"
 #include "base/test/scoped_path_override.h"
 #include "controller/controller_registry.h"
@@ -94,27 +96,59 @@ void PumpClientApplicationTestEvents(boost::asio::io_context& io_context,
 }
 
 template <class T>
-bool IsReady(promise<T>& pending) {
-  return pending.wait_for(0ms) != promise_wait_status::timeout;
+struct AwaitableResult {
+  std::optional<T> value;
+  std::exception_ptr error;
+  bool done = false;
+};
+
+template <>
+struct AwaitableResult<void> {
+  std::exception_ptr error;
+  bool done = false;
+};
+
+template <class T>
+std::shared_ptr<AwaitableResult<T>> StartClientApplicationAwaitable(
+    AnyExecutor executor,
+    Awaitable<T> awaitable) {
+  auto result = std::make_shared<AwaitableResult<T>>();
+  CoSpawn(std::move(executor),
+          [result, awaitable = std::move(awaitable)]() mutable
+              -> Awaitable<void> {
+            try {
+              if constexpr (std::is_void_v<T>) {
+                co_await std::move(awaitable);
+              } else {
+                result->value.emplace(co_await std::move(awaitable));
+              }
+            } catch (...) {
+              result->error = std::current_exception();
+            }
+            result->done = true;
+          });
+  return result;
 }
 
 template <class T>
-T WaitForClientApplicationPromise(boost::asio::io_context& io_context,
-                                  promise<T> pending) {
-  while (!IsReady(pending)) {
-    PumpClientApplicationTestEvents(io_context);
-  }
-
-  return pending.get();
+bool IsReady(const std::shared_ptr<AwaitableResult<T>>& pending) {
+  return pending->done;
 }
 
-void WaitForClientApplicationPromise(boost::asio::io_context& io_context,
-                                     promise<void> pending) {
+template <class T>
+T WaitForClientApplicationAwaitable(
+    boost::asio::io_context& io_context,
+    const std::shared_ptr<AwaitableResult<T>>& pending) {
   while (!IsReady(pending)) {
     PumpClientApplicationTestEvents(io_context);
   }
 
-  pending.get();
+  if (pending->error) {
+    std::rethrow_exception(pending->error);
+  }
+  if constexpr (!std::is_void_v<T>) {
+    return std::move(*pending->value);
+  }
 }
 
 class FixedValueTimedData final : public BaseTimedData {
@@ -157,16 +191,19 @@ class ClientApplicationTestBase : public Test {
   ClientApplicationTestBase();
 
  protected:
-  // The coroutine-driven startup flow captures Start()/Login()/Quit()
-  // exceptions as promise rejections. Tests that use EXPECT_THROW need Wait()
-  // to rethrow the captured error after pumping the Qt/asio loops.
+  // Coroutine startup exceptions are captured by the spawned awaitable and
+  // rethrown here after pumping the Qt/asio loops.
   template <class T>
-  T Wait(promise<T> pending) {
-    return WaitForClientApplicationPromise(io_context_, std::move(pending));
+  T Wait(Awaitable<T> pending) {
+    return WaitForClientApplicationAwaitable(
+        io_context_,
+        StartClientApplicationAwaitable(executor_, std::move(pending)));
   }
 
-  void Wait(promise<void> pending) {
-    WaitForClientApplicationPromise(io_context_, std::move(pending));
+  void Wait(Awaitable<void> pending) {
+    WaitForClientApplicationAwaitable(
+        io_context_,
+        StartClientApplicationAwaitable(executor_, std::move(pending)));
   }
 
   template <class Predicate>
@@ -184,7 +221,7 @@ class ClientApplicationTestBase : public Test {
 
   boost::asio::io_context io_context_;
   AppEnvironment app_env_;
-  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
+  AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   AddressSpaceImpl3 address_space_;
   std::shared_ptr<NodeService> node_service_override_ =
       MakeClientTestNodeService(address_space_);
@@ -192,7 +229,7 @@ class ClientApplicationTestBase : public Test {
 
   base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
 
-  NiceMock<MockFunction<promise<std::optional<DataServices>>(
+  NiceMock<MockFunction<Awaitable<std::optional<DataServices>>(
       DataServicesContext&& services_context)>>
       login_handler_;
 };
@@ -217,8 +254,11 @@ ClientApplicationTestBase::ClientApplicationTestBase() {
   MainWindow::SetHideForTesting();
 
   ON_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillByDefault(Return(make_resolved_promise(std::optional{
-          DataServices::FromUnownedServices(services_.services())})));
+      .WillByDefault(Invoke([this](DataServicesContext&&)
+                                -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional{
+            DataServices::FromUnownedServices(services_.services())};
+      }));
 }
 
 ClientApplicationTest::ClientApplicationTest() = default;
@@ -255,42 +295,15 @@ TEST(ShutdownStackTest, RunsSinglePushedAction) {
   EXPECT_TRUE(ran);
 }
 
-TEST(ClientApplicationPromiseWaitTest, ReturnsResolvedValue) {
-  boost::asio::io_context io_context;
-  EXPECT_EQ(WaitForClientApplicationPromise(io_context, make_resolved_promise(7)),
-            7);
-}
-
-TEST(ClientApplicationPromiseWaitTest, PropagatesRejectedValuePromise) {
-  boost::asio::io_context io_context;
-  EXPECT_THROW(WaitForClientApplicationPromise(
-                   io_context,
-                   make_rejected_promise<int>(
-                       std::make_exception_ptr(std::runtime_error{"value"}))),
-               std::runtime_error);
-}
-
-TEST(ClientApplicationPromiseWaitTest, CompletesResolvedVoidPromise) {
-  boost::asio::io_context io_context;
-  EXPECT_NO_THROW(
-      WaitForClientApplicationPromise(io_context, make_resolved_promise()));
-}
-
-TEST(ClientApplicationPromiseWaitTest, PropagatesRejectedVoidPromise) {
-  boost::asio::io_context io_context;
-  EXPECT_THROW(WaitForClientApplicationPromise(
-                   io_context,
-                   make_rejected_promise<void>(
-                       std::make_exception_ptr(std::runtime_error{"void"}))),
-               std::runtime_error);
-}
-
 // TODO: Enable Wt tests once `QTabWidget::removeTab` stops returning null.
 #if !defined(UI_WT)
 
 TEST_F(ClientApplicationTest, LoginFailed) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Return(make_resolved_promise(std::optional<DataServices>{})));
+      .WillOnce(Invoke([](DataServicesContext&&)
+                           -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional<DataServices>{};
+      }));
 
   auto started = app_.Start();
   EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
@@ -298,7 +311,10 @@ TEST_F(ClientApplicationTest, LoginFailed) {
 
 TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Return(make_resolved_promise(std::optional<DataServices>{})));
+      .WillOnce(Invoke([](DataServicesContext&&)
+                           -> Awaitable<std::optional<DataServices>> {
+        co_return std::optional<DataServices>{};
+      }));
 
   auto started = app_.Start();
   EXPECT_THROW(Wait(std::move(started)), LoginCanceled);
@@ -307,16 +323,18 @@ TEST_F(ClientApplicationTest, QuitAfterCanceledLoginResolves) {
 
 TEST_F(ClientApplicationTest, RunWaitsUntilQuitCompletes) {
   auto running = app_.Run();
-  EXPECT_FALSE(IsReady(running));
+  auto running_result =
+      StartClientApplicationAwaitable(executor_, std::move(running));
+  EXPECT_FALSE(IsReady(running_result));
 
   Wait(app_.Quit());
-  Wait(std::move(running));
+  WaitForClientApplicationAwaitable(io_context_, running_result);
 
   EXPECT_NO_THROW(Wait(app_.Run()));
 }
 
 // Start() is coroutine-driven internally. Verify that a rejection from the
-// login handler propagates out of the returned promise so upstream error
+// login handler propagates out of the returned awaitable so upstream error
 // handling still fires.
 TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
   struct MyError : std::runtime_error {
@@ -324,22 +342,30 @@ TEST_F(ClientApplicationTest, LoginHandlerRejectionPropagates) {
   };
 
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Return(make_rejected_promise<std::optional<DataServices>>(
-          std::make_exception_ptr(MyError{}))));
+      .WillOnce(Invoke([](DataServicesContext&&)
+                           -> Awaitable<std::optional<DataServices>> {
+        throw MyError{};
+        co_return std::optional<DataServices>{};
+      }));
 
   EXPECT_THROW(Wait(app_.Start()), MyError);
 }
 
 // PostLogin depends on login_handler_ resolving first. The coroutine-based
 // Start() must still preserve that order: no module should exist before
-// OnLoginCompleted runs. Verified by delaying the login promise and
-// checking that app_.Start() stays pending until the promise resolves.
+// OnLoginCompleted runs. Verified by delaying the login coroutine and
+// checking that app_.Start() stays pending until login resumes.
 TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
-  promise<std::optional<DataServices>> pending_login;
+  base::AsyncCompletion pending_login{executor_};
   EXPECT_CALL(login_handler_, Call(/*services_context=*/_))
-      .WillOnce(Return(pending_login));
+      .WillOnce(Invoke([&](DataServicesContext&&)
+                           -> Awaitable<std::optional<DataServices>> {
+        co_await pending_login.Wait();
+        co_return std::optional{
+            DataServices::FromUnownedServices(services_.services())};
+      }));
 
-  auto started = app_.Start();
+  auto started = StartClientApplicationAwaitable(executor_, app_.Start());
 
   // Pump the loop a few times — Start() must not resolve while login is
   // still pending.
@@ -349,8 +375,8 @@ TEST_F(ClientApplicationTest, StartWaitsForLoginBeforePostLogin) {
   EXPECT_FALSE(IsReady(started));
 
   // Resolve the login and verify Start() now completes.
-  pending_login.resolve(DataServices::FromUnownedServices(services_.services()));
-  Wait(std::move(started));
+  pending_login.Complete();
+  WaitForClientApplicationAwaitable(io_context_, started);
 }
 
 // Ensure that the initial page is created and all windows are defined.
@@ -415,29 +441,36 @@ class ClientApplicationConfiguratorTest : public Test {
   ClientApplicationConfiguratorTest() {
     MainWindow::SetHideForTesting();
     ON_CALL(login_handler_, Call(/*services_context=*/_))
-        .WillByDefault(Return(make_resolved_promise(std::optional{
-            DataServices::FromUnownedServices(services_.services())})));
+        .WillByDefault(Invoke([this](DataServicesContext&&)
+                                  -> Awaitable<std::optional<DataServices>> {
+          co_return std::optional{
+              DataServices::FromUnownedServices(services_.services())};
+        }));
   }
 
  protected:
   template <class T>
-  T Wait(promise<T> pending) {
-    return WaitForClientApplicationPromise(io_context_, std::move(pending));
+  T Wait(Awaitable<T> pending) {
+    return WaitForClientApplicationAwaitable(
+        io_context_,
+        StartClientApplicationAwaitable(executor_, std::move(pending)));
   }
 
-  void Wait(promise<void> pending) {
-    WaitForClientApplicationPromise(io_context_, std::move(pending));
+  void Wait(Awaitable<void> pending) {
+    WaitForClientApplicationAwaitable(
+        io_context_,
+        StartClientApplicationAwaitable(executor_, std::move(pending)));
   }
 
   boost::asio::io_context io_context_;
   AppEnvironment app_env_;
-  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
+  AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   AddressSpaceImpl3 address_space_;
   std::shared_ptr<NodeService> node_service_override_ =
       MakeClientTestNodeService(address_space_);
   scada::MockServices services_;
   base::ScopedPathOverride private_dir_override_{client::DIR_PRIVATE};
-  NiceMock<MockFunction<promise<std::optional<DataServices>>(
+  NiceMock<MockFunction<Awaitable<std::optional<DataServices>>(
       DataServicesContext&& services_context)>>
       login_handler_;
 };
@@ -454,7 +487,7 @@ TEST_F(ClientApplicationConfiguratorTest,
   TaskManager* captured_task_manager = nullptr;
   TimedDataService* captured_timed_data = nullptr;
   ControllerRegistry* captured_controller_registry = nullptr;
-  Executor* captured_executor = nullptr;
+  AnyExecutor captured_executor;
 
   auto capturing_configurator =
       [&, default_configurator = MakeUnitTestModules()](
@@ -465,7 +498,7 @@ TEST_F(ClientApplicationConfiguratorTest,
         captured_task_manager = &ctx.task_manager_;
         captured_timed_data = &ctx.timed_data_service_;
         captured_controller_registry = &ctx.controller_registry_;
-        captured_executor = ctx.executor_.get();
+        captured_executor = ctx.executor_;
         default_configurator(ctx);
       };
 
@@ -483,7 +516,7 @@ TEST_F(ClientApplicationConfiguratorTest,
   EXPECT_EQ(captured_profile, &app.profile());
   EXPECT_EQ(captured_timed_data, &app.timed_data_service());
   EXPECT_EQ(captured_controller_registry, &app.controller_registry());
-  EXPECT_EQ(captured_executor, executor_.get());
+  EXPECT_EQ(captured_executor, executor_);
   EXPECT_NE(captured_node_service, nullptr);
   EXPECT_NE(captured_task_manager, nullptr);
 

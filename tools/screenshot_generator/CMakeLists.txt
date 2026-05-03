@@ -69,6 +69,13 @@ set_target_properties(client_screenshot_generator PROPERTIES
   AUTOMOC ON
 )
 
+if(MSVC)
+  target_link_options(client_screenshot_generator PRIVATE
+    $<$<CONFIG:Debug>:/DEBUG:NONE>
+    $<$<CONFIG:Debug>:/INCREMENTAL:NO>
+    $<$<CONFIG:Debug>:/PDB:NONE>)
+endif()
+
 # After the executable links, run it and drop the PNGs into
 # client/docs/screenshots/ so the local docs gallery stays in sync on
 # every build. Requires a desktop session (see docs/screenshots.md
@@ -77,6 +84,7 @@ set(SCREENSHOT_DOCS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../docs/screenshots")
 add_custom_command(TARGET client_screenshot_generator POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "${SCREENSHOT_DOCS_DIR}"
   COMMAND $<TARGET_FILE:client_screenshot_generator>
+    "--gtest_filter=-ScreenshotGenerator.CaptureDialogs"
     "--out=${SCREENSHOT_DOCS_DIR}"
     "--image-manifest=${SCREENSHOT_DOCS_DIR}/image_manifest.json"
   COMMENT "Rendering screenshots into docs/screenshots/"

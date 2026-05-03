@@ -2,7 +2,7 @@
 
 #include "aui/test/app_environment.h"
 #include "base/logger.h"
-#include "base/promise.h"
+#include "base/test/awaitable_test.h"
 #include "components/web/web_component.h"
 #include "controller/controller_fake.h"
 #include "controller/test/controller_environment.h"
@@ -21,18 +21,11 @@
 #include "base/debug_util.h"
 
 using namespace testing;
-using namespace std::chrono_literals;
-
 namespace {
 
-template <class T>
-T WaitMainWindowPromise(std::shared_ptr<TestExecutor> executor,
-                        promise<T> promise) {
-  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-    executor->Poll();
-  }
-
-  return promise.get();
+Awaitable<void> RejectDownloadAsync() {
+  throw scada::status_exception{scada::StatusCode::Bad};
+  co_return;
 }
 
 }  // namespace
@@ -149,8 +142,8 @@ TEST_F(MainWindowModuleTest, OpensViewWhenDownloadSucceeds) {
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);
 
-  EXPECT_THAT(WaitMainWindowPromise(controller_env_.executor_,
-                                    main_window_->OpenView(window_def)),
+  EXPECT_THAT(WaitAwaitable(controller_env_.executor_,
+                            main_window_->OpenView(window_def)),
               NotNull());
 }
 
@@ -158,15 +151,15 @@ TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
   auto path = std::filesystem::path("some/path");
 
   EXPECT_CALL(controller_env_.file_manager_, DownloadFileFromServer(path))
-      .WillOnce(
-          Return(make_rejected_promise(
-              scada::status_exception{scada::StatusCode::Bad})));
+      .WillOnce([](const std::filesystem::path&) {
+        return RejectDownloadAsync();
+      });
 
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);
 
-  EXPECT_THAT(WaitMainWindowPromise(controller_env_.executor_,
-                                    main_window_->OpenView(window_def)),
+  EXPECT_THAT(WaitAwaitable(controller_env_.executor_,
+                            main_window_->OpenView(window_def)),
               NotNull());
 }
 

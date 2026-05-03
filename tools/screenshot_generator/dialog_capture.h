@@ -1,11 +1,12 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "scada/node_id.h"
 
 #include <memory>
 
 struct DialogSpec;
-class Executor;
 class NodeService;
 class Profile;
 class TimedDataService;
@@ -14,7 +15,7 @@ class TimedDataService;
 // continuations to, plus whatever services each kind happens to need.
 // Owned by `main.cpp`'s test fixture and passed in by reference.
 struct DialogEnvironment {
-  std::shared_ptr<Executor> executor;
+  AnyExecutor executor;
   // NodeService from the running application — dialogs that operate on
   // a node (limits, write, …) pull NodeRefs from here. Null is fine for
   // kinds that don't need it.

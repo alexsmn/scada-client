@@ -4,7 +4,7 @@ using namespace std::chrono_literals;
 
 // BlinkerManagerImpl
 
-BlinkerManagerImpl::BlinkerManagerImpl(std::shared_ptr<Executor> executor)
+BlinkerManagerImpl::BlinkerManagerImpl(AnyExecutor executor)
     : timer_{std::move(executor)} {
   timer_.StartRepeating(300ms, [this] { Blink(); });
 }

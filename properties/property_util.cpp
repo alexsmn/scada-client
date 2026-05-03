@@ -1,7 +1,6 @@
 #include "properties/property_util.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/range_util.h"
 #include "common/format.h"
 #include "node_service/node_awaitable.h"
@@ -17,7 +16,7 @@
 namespace {
 
 Awaitable<void> FetchNodeNamesRecursiveAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     const NodeRef& parent_node,
     const scada::NodeId& type_definition_id,
     const aui::EditData::AsyncChoiceCallback& callback) {
@@ -77,7 +76,7 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
 }
 
 aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     const NodeRef& parent,
     const scada::NodeId& type_definition_id) {
   return [executor = std::move(executor), parent, type_definition_id](

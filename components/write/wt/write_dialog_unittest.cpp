@@ -13,7 +13,7 @@ TEST(WtWriteDialogTest, ExecuteWriteDialogRejectsUnsupportedDialog) {
   testing::NiceMock<MockTimedDataService> timed_data_service;
   Profile profile;
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto result = StartAwaitable(
       executor, ExecuteWriteDialog(
                     dialog_service,

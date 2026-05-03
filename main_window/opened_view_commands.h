@@ -1,9 +1,10 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/types.h"
 #include "base/awaitable.h"
 #include "base/cancelation.h"
-#include "base/promise.h"
 #include "base/timer/timer.h"
 #include "common/node_state.h"
 #include "controller/command_handler.h"
@@ -23,7 +24,6 @@ class ActionManager;
 class Controller;
 class CreateTree;
 class DialogService;
-class Executor;
 class FileCache;
 class LocalEvents;
 class MainWindow;
@@ -37,7 +37,7 @@ class TaskManager;
 class TimedDataService;
 
 struct OpenedViewCommandsContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const std::shared_ptr<SelectionCommands> selection_commands_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
@@ -69,8 +69,8 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
  private:
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
   // Spawns the create + report + open-view coroutine and returns immediately.
-  // All call sites discard the previous `promise<>` return, and the coroutine
-  // lifetime is gated by `cancelation_` so it cannot outlive `this`.
+  // The coroutine lifetime is gated by `cancelation_` so it cannot outlive
+  // `this`.
   void CreateRecord(const scada::NodeId& type_node_id, int tag);
 
   Awaitable<void> CreateRecordAsync(scada::NodeId type_node_id,
@@ -81,7 +81,7 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   Awaitable<void> OnCreateRecordCompleteAsync(scada::NodeId node_id);
   Awaitable<void> PasteFromClipboardAsync();
 
-  promise<> PasteFromClipboard();
+  Awaitable<void> PasteFromClipboard();
 
   void ExportToExcel();
 

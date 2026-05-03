@@ -3,7 +3,7 @@
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model_mock.h"
 #include "aui/test/app_environment.h"
-#include "base/promise.h"
+#include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
@@ -33,18 +33,11 @@
 #include "base/debug_util.h"
 
 using namespace testing;
-using namespace std::chrono_literals;
-
 namespace {
 
-template <class T>
-T WaitMainWindowPromise(std::shared_ptr<TestExecutor> executor,
-                        promise<T> promise) {
-  while (promise.wait_for(1ms) == promise_wait_status::timeout) {
-    executor->Poll();
-  }
-
-  return promise.get();
+Awaitable<void> RejectDownloadAsync() {
+  throw scada::status_exception{scada::StatusCode::Bad};
+  co_return;
 }
 
 }  // namespace
@@ -192,9 +185,8 @@ TEST_F(MainWindowTest, OpenView_DownloadSucceeds_OpensViewNormally) {
 
   ExpectOpenView();
 
-  WaitMainWindowPromise(
-      controller_env_.executor_,
-      main_window_->OpenView(window_def, /*make_active=*/true));
+  WaitAwaitable(controller_env_.executor_,
+                main_window_->OpenView(window_def, /*make_active=*/true));
 }
 #endif
 
@@ -205,9 +197,8 @@ TEST_F(MainWindowTest, OpenView_NoPathSkipsDownloadAndOpensView) {
 
   ExpectOpenView();
 
-  WaitMainWindowPromise(
-      controller_env_.executor_,
-      main_window_->OpenView(window_def, /*make_active=*/true));
+  WaitAwaitable(controller_env_.executor_,
+                main_window_->OpenView(window_def, /*make_active=*/true));
 }
 #endif
 
@@ -220,15 +211,14 @@ TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
 
   EXPECT_CALL(controller_env_.file_manager_,
               DownloadFileFromServer(window_def.path))
-      .WillOnce(
-          Return(make_rejected_promise(
-              scada::status_exception{scada::StatusCode::Bad})));
+      .WillOnce([](const std::filesystem::path&) {
+        return RejectDownloadAsync();
+      });
 
   ExpectOpenView();
 
-  WaitMainWindowPromise(
-      controller_env_.executor_,
-      main_window_->OpenView(window_def, /*make_active=*/true));
+  WaitAwaitable(controller_env_.executor_,
+                main_window_->OpenView(window_def, /*make_active=*/true));
 }
 #endif
 

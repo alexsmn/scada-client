@@ -1,7 +1,7 @@
 #include "components/watch/watch_history_event_source.h"
 
 #include "base/awaitable.h"
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "net/net_executor_adapter.h"
 #include "node_service/node_service.h"
 
@@ -11,7 +11,7 @@ scada::DateTime SanitizeTimeBound(scada::DateTime time) {
   return time.is_min() || time.is_max() ? scada::DateTime{} : time;
 }
 
-Awaitable<void> ReadHistoryEventsAsync(std::shared_ptr<Executor> executor,
+Awaitable<void> ReadHistoryEventsAsync(AnyExecutor executor,
                                        NodeRef device,
                                        scada::DateTimeRange time_range,
                                        CancelationRef cancelation,

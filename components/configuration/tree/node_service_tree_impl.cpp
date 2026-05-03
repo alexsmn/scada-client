@@ -1,7 +1,7 @@
 #include "configuration/tree/node_service_tree_impl.h"
 
 #include <algorithm>
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "scada/event.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -71,7 +71,7 @@ void NodeServiceTreeImpl::SetObserver(Observer* observer) {
 
 void NodeServiceTreeImpl::OnModelChanged(const scada::ModelChangeEvent& event) {
   // TODO: weak_ptr
-  Dispatch(*executor_, [this, event] {
+  Dispatch(executor_, [this, event] {
     if (!observer_)
       return;
 
@@ -90,7 +90,7 @@ void NodeServiceTreeImpl::OnModelChanged(const scada::ModelChangeEvent& event) {
 
 void NodeServiceTreeImpl::OnNodeSemanticChanged(const scada::NodeId& node_id) {
   // TODO: weak_ptr
-  Dispatch(*executor_, [this, node_id] {
+  Dispatch(executor_, [this, node_id] {
     if (observer_)
       observer_->OnNodeSemanticsChanged(node_id);
   });

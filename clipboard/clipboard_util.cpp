@@ -1,7 +1,8 @@
 #include "clipboard/clipboard_util.h"
 
 #include "base/awaitable.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "base/win/clipboard.h"
 #include "clipboard/node_serialization.h"
 #include "common/node_state.h"
@@ -139,7 +140,7 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
 void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
   assert(!nodes.empty());
 
-  CoSpawn(MakeThreadAnyExecutor(), [nodes]() -> Awaitable<void> {
+  CoSpawn(ThreadExecutor{}, [nodes]() -> Awaitable<void> {
     try {
       co_await CopyNodesToClipboardAsync(nodes);
     } catch (...) {

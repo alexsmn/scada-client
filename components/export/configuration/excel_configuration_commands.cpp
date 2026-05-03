@@ -5,10 +5,9 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/resource_error.h"
-#include "base/awaitable_promise.h"
 #include "base/csv_reader.h"
 #include "base/csv_writer.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/u16format.h"
 #include "base/win/win_util2.h"
 #include "export/configuration/diff_builder.h"
@@ -31,8 +30,9 @@ const char kDefaultFileName[] = "configuration.csv";
 
 }  // namespace
 
-promise<ExportData> ExportConfigurationCommand::CollectExportData() const {
-  return ExportDataBuilder{node_service_, executor_}.Build();
+Awaitable<ExportData> ExportConfigurationCommand::CollectExportData() const {
+  co_return co_await ExportDataBuilder{node_service_, executor_}.BuildAsync(
+      executor_);
 }
 
 void ExportConfigurationCommand::SaveExportData(const ExportData& export_data,
@@ -41,14 +41,7 @@ void ExportConfigurationCommand::SaveExportData(const ExportData& export_data,
   WriteExportData(export_data, writer);
 }
 
-promise<void> ExportConfigurationCommand::ExportTo(
-    const std::filesystem::path& path,
-    DialogService& dialog_service) const {
-  return ToPromise(MakeAnyExecutor(executor_),
-                   ExportToAsync(path, dialog_service));
-}
-
-Awaitable<void> ExportConfigurationCommand::ExportToAsync(
+Awaitable<void> ExportConfigurationCommand::ExportTo(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
   std::ofstream stream{path};
@@ -56,8 +49,7 @@ Awaitable<void> ExportConfigurationCommand::ExportToAsync(
     throw ResourceError{Translate("Failed to open file.")};
   }
 
-  auto export_data = co_await AwaitPromise(MakeAnyExecutor(executor_),
-                                           CollectExportData());
+  auto export_data = co_await CollectExportData();
   SaveExportData(export_data, stream);
 
   auto open_prompt = co_await dialog_service.RunMessageBox(
@@ -69,12 +61,7 @@ Awaitable<void> ExportConfigurationCommand::ExportToAsync(
   co_return;
 }
 
-promise<void> ExportConfigurationCommand::Execute(
-    DialogService& dialog_service) const {
-  return ToPromise(MakeAnyExecutor(executor_), ExecuteAsync(dialog_service));
-}
-
-Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
+Awaitable<void> ExportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
   co_await FetchTypeSystem(node_service_);
   auto path = co_await dialog_service.SelectSaveFile(
@@ -82,7 +69,7 @@ Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
 
   std::exception_ptr resource_error;
   try {
-    co_await ExportToAsync(path, dialog_service);
+    co_await ExportTo(path, dialog_service);
   } catch (const ResourceError&) {
     resource_error = std::current_exception();
   }
@@ -93,19 +80,12 @@ Awaitable<void> ExportConfigurationCommand::ExecuteAsync(
   co_return;
 }
 
-promise<void> ImportConfigurationCommand::ImportFrom(
+Awaitable<void> ImportConfigurationCommand::ImportFrom(
     const std::filesystem::path& path,
     DialogService& dialog_service) const {
-  return ToPromise(MakeAnyExecutor(executor_),
-                   ImportFromAsync(path, dialog_service));
-}
-
-Awaitable<void> ImportConfigurationCommand::ImportFromAsync(
-    const std::filesystem::path& path,
-    DialogService& dialog_service) const {
-  auto old_export_data = co_await AwaitPromise(
-      MakeAnyExecutor(executor_),
-      ExportDataBuilder{node_service_, executor_}.Build());
+  auto old_export_data =
+      co_await ExportDataBuilder{node_service_, executor_}.BuildAsync(
+          executor_);
   ExportData new_export_data = LoadExportData(path);
   DiffData diff = BuildDiffData(old_export_data, new_export_data);
   if (diff.IsEmpty()) {
@@ -141,19 +121,14 @@ ExportData ImportConfigurationCommand::LoadExportData(
   }
 }
 
-promise<> ImportConfigurationCommand::Execute(
-    DialogService& dialog_service) const {
-  return ToPromise(MakeAnyExecutor(executor_), ExecuteAsync(dialog_service));
-}
-
-Awaitable<void> ImportConfigurationCommand::ExecuteAsync(
+Awaitable<void> ImportConfigurationCommand::Execute(
     DialogService& dialog_service) const {
   co_await FetchTypeSystem(node_service_);
   auto path = co_await dialog_service.SelectOpenFile(kImportTitle);
 
   std::exception_ptr resource_error;
   try {
-    co_await ImportFromAsync(path, dialog_service);
+    co_await ImportFrom(path, dialog_service);
   } catch (const ResourceError&) {
     resource_error = std::current_exception();
   }

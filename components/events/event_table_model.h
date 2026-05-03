@@ -1,7 +1,9 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/models/table_model.h"
-#include "base/executor_timer.h"
+#include "base/any_executor_timer.h"
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
@@ -10,7 +12,6 @@
 #include <span>
 
 class CurrentEventModel;
-class Executor;
 class HistoricalEventModel;
 class LocalEventModel;
 class NodeService;
@@ -30,7 +31,7 @@ enum EventColumnId {
 
 struct EventTableModelContext {
   // The executor is used for delayed update timer.
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   NodeService& node_service_;
   CurrentEventModel& current_event_model_;
   HistoricalEventModel& historical_event_model_;
@@ -131,7 +132,7 @@ class EventTableModel : public aui::TableModel,
   bool lock_update_ = false;
   bool pending_update_ = false;
 
-  ExecutorTimer refilter_delay_timer_{executor_};
+  AnyExecutorTimer refilter_delay_timer_{executor_};
 
   std::vector<boost::signals2::scoped_connection> connections_;
 };

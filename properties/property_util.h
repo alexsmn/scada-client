@@ -1,11 +1,12 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/models/edit_data.h"
 #include "node_service/node_ref.h"
 
 #include <memory>
 
-class Executor;
 struct PropertyContext;
 
 extern const std::u16string_view kChoiceNone;
@@ -20,6 +21,6 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
                               const scada::NodeId& node_type_id);
 
 aui::EditData::AsyncChoiceHandler MakeAsyncChoiceHandler(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     const NodeRef& parent,
     const scada::NodeId& type_definition_id);

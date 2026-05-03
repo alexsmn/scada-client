@@ -1,8 +1,7 @@
 #include "app/qt/startup_flow.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/boost_log.h"
 
 #include <exception>
@@ -13,23 +12,18 @@ namespace {
 
 Awaitable<void> RunQtStartupFlowAsync(QtStartupFlowContext context) {
   try {
-    co_await AwaitPromise(MakeAnyExecutor(context.executor), context.start());
-    co_await AwaitPromise(MakeAnyExecutor(context.executor),
-                          context.run_object_view_values_check());
-    co_await AwaitPromise(MakeAnyExecutor(context.executor),
-                          context.run_operator_use_case_smoke());
+    co_await context.start();
+    co_await context.run_object_view_values_check();
+    co_await context.run_operator_use_case_smoke();
 
     BOOST_LOG_TRIVIAL(info)
         << "Client startup completed; entering steady-state run loop";
     context.report_startup_success_if_unset();
 
-    co_await AwaitPromise(MakeAnyExecutor(context.executor),
-                          context.run_object_tree_labels_check());
-    co_await AwaitPromise(MakeAnyExecutor(context.executor),
-                          context.run_hardware_tree_devices_check());
+    co_await context.run_object_tree_labels_check();
+    co_await context.run_hardware_tree_devices_check();
 
-    co_await AwaitPromise(MakeAnyExecutor(context.executor),
-                          context.run_application());
+    co_await context.run_application();
   } catch (...) {
     context.log_startup_exception(std::current_exception());
     context.report_startup_failure_if_unset();
@@ -46,10 +40,8 @@ Awaitable<void> RunQtStartupFlowAsync(QtStartupFlowContext context) {
 
 }  // namespace
 
-promise<void> RunQtStartupFlow(QtStartupFlowContext context) {
-  auto executor = context.executor;
-  return ToPromise(MakeAnyExecutor(std::move(executor)),
-                   RunQtStartupFlowAsync(std::move(context)));
+Awaitable<void> RunQtStartupFlow(QtStartupFlowContext context) {
+  return RunQtStartupFlowAsync(std::move(context));
 }
 
 }  // namespace client

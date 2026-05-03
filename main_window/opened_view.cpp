@@ -1,7 +1,7 @@
 ﻿#include "main_window/opened_view.h"
 
 #include "aui/translation.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/utf_convert.h"
 #include "resources/common_resources.h"
 #include "controller/command_handler.h"
@@ -137,7 +137,9 @@ WindowDefinition OpenedView::Save() {
 
 void OpenedView::OpenView(const WindowDefinition& def) {
   assert(main_window_);
-  main_window_->OpenView(def, true);
+  CoSpawn(executor_, [this, def]() -> Awaitable<void> {
+    co_await main_window_->OpenView(def, true);
+  });
 }
 
 void OpenedView::ExecuteDefaultNodeCommand(const NodeRef& node) {
@@ -188,7 +190,7 @@ Awaitable<WindowDefinition> OpenedView::GetOpenWindowDefinition(
     const WindowInfo* window_info) const {
   if (auto open_context = controller_->GetOpenContext();
       open_context.has_value()) {
-    co_return co_await MakeWindowDefinitionAsync(NetExecutorAdapter{executor_},
+    co_return co_await MakeWindowDefinitionAsync(executor_,
                                                  window_info, *open_context);
   }
 
@@ -211,7 +213,7 @@ Awaitable<WindowDefinition> OpenedView::GetOpenWindowDefinition(
     co_return MakeWindowDefinition(window_info, formula);
   }
 
-  co_return co_await MakeWindowDefinitionAsync(NetExecutorAdapter{executor_},
+  co_return co_await MakeWindowDefinitionAsync(executor_,
                                                window_info, selected.node(),
                                                true);
 }

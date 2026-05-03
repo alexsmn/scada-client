@@ -66,6 +66,13 @@ add_executable(client_qt WIN32 ${MAIN_QT})
 target_precompile_headers(client_qt REUSE_FROM scada_base)
 target_link_libraries(client_qt PUBLIC client_qt_app_shared)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
+if(MSVC)
+  target_link_options(client_qt PRIVATE
+    "$<$<CONFIG:Debug>:/DEBUG:NONE>"
+    "$<$<CONFIG:Debug>:/INCREMENTAL:NO>"
+    "$<$<CONFIG:Debug>:/PDB:NONE>"
+  )
+endif()
 if(COMMAND scada_add_windows_version_info)
   scada_add_windows_version_info(client_qt
     DESCRIPTION "Telecontrol SCADA Client"
@@ -131,6 +138,9 @@ add_executable(client_qt_unittests
 target_precompile_headers(client_qt_unittests REUSE_FROM scada_base)
 if(MSVC)
   target_link_options(client_qt_unittests PRIVATE
+    "$<$<CONFIG:Debug>:/DEBUG:NONE>"
+    "$<$<CONFIG:Debug>:/INCREMENTAL:NO>"
+    "$<$<CONFIG:Debug>:/PDB:NONE>"
     "$<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>"
     "$<$<CONFIG:RelWithDebInfo>:/INCREMENTAL:NO>"
     "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"

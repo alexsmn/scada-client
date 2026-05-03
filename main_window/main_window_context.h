@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "core/node_command_context.h"
 #include "main_window/opened_view_factory.h"
 
@@ -14,7 +16,6 @@ class StatusBarModel;
 class ActionManager;
 class CommandHandler;
 class DialogService;
-class Executor;
 class FileManager;
 class MainWindowInterface;
 class MainWindowManager;
@@ -24,7 +25,7 @@ class SelectionCommands;
 class ViewManager;
 
 struct MainWindowContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   ActionManager& action_manager_;
   int window_id_;
   NodeCommandHandler node_command_handler_;

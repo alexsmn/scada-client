@@ -2,7 +2,6 @@
 
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "net/net_executor_adapter.h"
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
@@ -32,9 +31,7 @@ Awaitable<void> OpenView(MainWindowInterface* main_window,
                          const WindowDefinition& window_def,
                          bool activate) {
   assert(main_window);
-  auto executor = co_await boost::asio::this_coro::executor;
-  co_await AwaitPromise(std::move(executor),
-                        main_window->OpenView(window_def, activate));
+  co_await main_window->OpenView(window_def, activate);
   co_return;
 }
 
@@ -53,15 +50,20 @@ const WindowInfo& GetDefaultNodeWindowInfo(const NodeRef& node,
                                                   : kNodePropertyWindowInfo;
 }
 
-bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
+bool ExecuteDefaultNodeCommand(const AnyExecutor& executor,
                                const OpenFileCommand& file_command,
                                const NodeCommandContext& context) {
   assert(context.main_window);
 
   if (IsInstanceOf(context.node, filesystem::id::FileType)) {
-    file_command(OpenFileCommandContext{context.main_window,
-                                        context.dialog_service, executor,
-                                        context.node, context.key_modifiers});
+    CoSpawn(executor, [file_command, main_window = context.main_window,
+                       &dialog_service = context.dialog_service, executor,
+                       node = context.node,
+                       key_modifiers = context.key_modifiers]() mutable
+                         -> Awaitable<void> {
+      co_await file_command(OpenFileCommandContext{
+          main_window, dialog_service, executor, node, key_modifiers});
+    });
     return true;
   }
 
@@ -83,7 +85,7 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
         NodeIdSet node_ids;
         if (is_group) {
           node_ids = co_await ExpandGroupItemIdsAsync(
-              NetExecutorAdapter{executor}, node);
+              executor, node);
         } else {
           node_ids = MakeNodeIdSet(node.node_id());
         }
@@ -105,7 +107,7 @@ bool ExecuteDefaultNodeCommand(const std::shared_ptr<Executor>& executor,
   CoSpawn(executor, [executor, main_window, window_info_ptr,
                      node = context.node]() mutable -> Awaitable<void> {
     auto window_definition = co_await MakeWindowDefinitionAsync(
-        NetExecutorAdapter{executor}, window_info_ptr, node,
+        executor, window_info_ptr, node,
         /*expand_groups=*/true);
     co_await OpenView(main_window, window_definition);
     co_return;

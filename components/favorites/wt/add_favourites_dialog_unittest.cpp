@@ -10,7 +10,7 @@ TEST(AddFavouritesDialogWt, RejectsUnsupportedDialog) {
   DialogServiceImplWt dialog_service;
   Favourites favourites;
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto result = StartAwaitable(
       executor,
       ShowAddFavouritesDialog(

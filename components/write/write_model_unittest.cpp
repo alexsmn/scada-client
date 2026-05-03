@@ -1,5 +1,6 @@
 #include "components/write/write_model.h"
 
+#include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "common/node_state.h"
@@ -11,6 +12,8 @@
 
 #include <gmock/gmock.h>
 
+#include <optional>
+
 using namespace testing;
 
 namespace {
@@ -20,44 +23,57 @@ constexpr scada::NodeId kDataItemId{9002, 1};
 
 class RecordingDialogService : public DialogService {
  public:
+  explicit RecordingDialogService(AnyExecutor executor)
+      : executor_{std::move(executor)} {}
+
   UiView* GetDialogOwningWindow() const override { return nullptr; }
   UiView* GetParentWidget() const override { return nullptr; }
 
-  promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
-                                          std::u16string_view title,
-                                          MessageBoxMode mode) override {
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                            std::u16string_view title,
+                                            MessageBoxMode mode) override {
     messages.emplace_back(message);
     titles.emplace_back(title);
     modes.emplace_back(mode);
-    message_box = promise<MessageBoxResult>{};
-    return message_box;
+    message_box_completion_ =
+        std::make_unique<base::AsyncCompletion>(executor_);
+    co_await message_box_completion_->Wait();
+    co_return message_box_result_;
   }
 
-  promise<std::filesystem::path> SelectOpenFile(
+  Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
+    co_return std::filesystem::path{};
   }
 
-  promise<std::filesystem::path> SelectSaveFile(
+  Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
+    co_return std::filesystem::path{};
   }
 
   void CompleteMessageBox(MessageBoxResult result = MessageBoxResult::Ok) {
-    message_box.resolve(result);
+    message_box_result_ = result;
+    message_box_completion_->Complete();
   }
 
   std::vector<std::u16string> messages;
   std::vector<std::u16string> titles;
   std::vector<MessageBoxMode> modes;
-  promise<MessageBoxResult> message_box;
+
+ private:
+  AnyExecutor executor_;
+  MessageBoxResult message_box_result_ = MessageBoxResult::Ok;
+  std::unique_ptr<base::AsyncCompletion> message_box_completion_;
 };
 
 class WriteModelTest : public Test {
  protected:
   WriteModelTest()
       : node_service_{scada::services{.attribute_service =
-                                          &attribute_service_}} {
+                                          &attribute_service_}},
+        dialog_service_{executor_} {
     node_service_.Add(scada::NodeState{}
                           .set_node_id(kDataItemTypeId)
                           .set_node_class(scada::NodeClass::VariableType)
@@ -88,8 +104,7 @@ class WriteModelTest : public Test {
     return model;
   }
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<scada::MockAttributeService> attribute_service_;
   NiceMock<MockTimedDataService> timed_data_service_;
   std::shared_ptr<NiceMock<MockTimedData>> timed_data_ =
@@ -105,9 +120,10 @@ class WriteModelTest : public Test {
 
 TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
   profile_.control_confirmation = false;
-  scada::WriteCallback callback;
+  base::AsyncCompletion completion{executor_};
+  std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
-  EXPECT_CALL(attribute_service_, Write(_, _, _))
+  EXPECT_CALL(attribute_service_, Write(_, _))
       .WillOnce(DoAll(
           WithArg<1>([](const auto& inputs) {
             ASSERT_EQ(inputs->size(), 1u);
@@ -116,16 +132,22 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
             EXPECT_DOUBLE_EQ((*inputs)[0].value.template get<double>(), 42.0);
             EXPECT_FALSE((*inputs)[0].flags.select());
           }),
-          SaveArg<2>(&callback)));
+          Invoke([&](scada::ServiceContext,
+                     std::shared_ptr<const std::vector<scada::WriteValue>>)
+                     -> Awaitable<scada::StatusOr<
+                         std::vector<scada::StatusCode>>> {
+            co_await completion.Wait();
+            co_return std::move(*result);
+          })));
 
   auto model = CreateModel();
   model->Write(42.0, /*lock=*/false);
   Drain(executor_);
 
   EXPECT_FALSE(completion_.has_value());
-  ASSERT_TRUE(callback);
 
-  callback(scada::StatusCode::Good, {scada::StatusCode::Good});
+  result = std::vector{scada::StatusCode::Good};
+  completion.Complete();
   Drain(executor_);
 
   EXPECT_EQ(completion_, true);
@@ -135,16 +157,24 @@ TEST_F(WriteModelTest, SuccessfulWriteCompletesAfterAttributeCallback) {
 
 TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
   profile_.control_confirmation = false;
-  scada::WriteCallback callback;
+  base::AsyncCompletion completion{executor_};
+  std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
-  EXPECT_CALL(attribute_service_, Write(_, _, _)).WillOnce(SaveArg<2>(&callback));
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([&](scada::ServiceContext,
+                    std::shared_ptr<const std::vector<scada::WriteValue>>)
+                    -> Awaitable<scada::StatusOr<
+                        std::vector<scada::StatusCode>>> {
+        co_await completion.Wait();
+        co_return std::move(*result);
+      });
 
   auto model = CreateModel();
   model->Write(7.0, /*lock=*/false);
   Drain(executor_);
 
-  ASSERT_TRUE(callback);
-  callback(scada::StatusCode::Good, {scada::StatusCode::Bad});
+  result = std::vector{scada::StatusCode::Bad};
+  completion.Complete();
   Drain(executor_);
 
   ASSERT_THAT(dialog_service_.modes, ElementsAre(MessageBoxMode::Error));
@@ -158,17 +188,25 @@ TEST_F(WriteModelTest, FailedWriteReportsErrorThenCompletes) {
 
 TEST_F(WriteModelTest, DestroyedModelDropsPendingWriteCompletion) {
   profile_.control_confirmation = false;
-  scada::WriteCallback callback;
+  base::AsyncCompletion completion{executor_};
+  std::optional<scada::StatusOr<std::vector<scada::StatusCode>>> result;
 
-  EXPECT_CALL(attribute_service_, Write(_, _, _)).WillOnce(SaveArg<2>(&callback));
+  EXPECT_CALL(attribute_service_, Write(_, _))
+      .WillOnce([&](scada::ServiceContext,
+                    std::shared_ptr<const std::vector<scada::WriteValue>>)
+                    -> Awaitable<scada::StatusOr<
+                        std::vector<scada::StatusCode>>> {
+        co_await completion.Wait();
+        co_return std::move(*result);
+      });
 
   auto model = CreateModel();
   model->Write(9.0, /*lock=*/false);
   Drain(executor_);
 
-  ASSERT_TRUE(callback);
   model.reset();
-  callback(scada::StatusCode::Good, {scada::StatusCode::Good});
+  result = std::vector{scada::StatusCode::Good};
+  completion.Complete();
   Drain(executor_);
 
   EXPECT_FALSE(completion_.has_value());

@@ -92,7 +92,7 @@ class ConfigurationCommandsTest : public Test {
 
   void DrainExecutor() { Drain(executor_); }
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<scada::MockMethodService> method_service_;
   scada::client scada_client_;
   NodeRef command_node_;

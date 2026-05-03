@@ -1,109 +1,130 @@
 #include "aui/resource_error.h"
 
+#include "base/async_completion.h"
+#include "base/test/awaitable_test.h"
+
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <exception>
 #include <filesystem>
+#include <memory>
 #include <thread>
 #include <vector>
 
 namespace {
 
-using namespace std::chrono_literals;
+template <class T>
+Awaitable<T> MakeResolvedAwaitable(T value) {
+  co_return std::move(value);
+}
+
+template <class T>
+Awaitable<T> MakeRejectedAwaitable(std::exception_ptr error) {
+  std::rethrow_exception(std::move(error));
+  co_return T{};
+}
 
 class RecordingDialogService : public DialogService {
  public:
+  explicit RecordingDialogService(AnyExecutor executor)
+      : executor_{std::move(executor)} {}
+
   UiView* GetDialogOwningWindow() const override { return nullptr; }
   UiView* GetParentWidget() const override { return nullptr; }
 
-  promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
-                                          std::u16string_view title,
-                                          MessageBoxMode mode) override {
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                            std::u16string_view title,
+                                            MessageBoxMode mode) override {
     messages.emplace_back(message);
     titles.emplace_back(title);
     modes.emplace_back(mode);
-    message_box_promise = promise<MessageBoxResult>{};
-    return message_box_promise;
+    message_box_completion = std::make_unique<base::AsyncCompletion>(executor_);
+    co_await message_box_completion->Wait();
+    co_return message_box_result;
   }
 
-  promise<std::filesystem::path> SelectOpenFile(
+  Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    return MakeRejectedAwaitable<std::filesystem::path>(
+        std::make_exception_ptr(std::exception{}));
   }
 
-  promise<std::filesystem::path> SelectSaveFile(
+  Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    return MakeRejectedAwaitable<std::filesystem::path>(
+        std::make_exception_ptr(std::exception{}));
   }
 
   void CompleteMessageBox(
       MessageBoxResult result = MessageBoxResult::Ok) {
-    message_box_promise.resolve(result);
+    message_box_result = result;
+    message_box_completion->Complete();
   }
 
+ private:
+  AnyExecutor executor_;
+  MessageBoxResult message_box_result = MessageBoxResult::Ok;
+  std::unique_ptr<base::AsyncCompletion> message_box_completion;
+
+ public:
   std::vector<std::u16string> messages;
   std::vector<std::u16string> titles;
   std::vector<MessageBoxMode> modes;
-  promise<MessageBoxResult> message_box_promise;
 };
 
 template <typename Predicate>
-void WaitUntil(Predicate predicate) {
+void WaitUntil(TestExecutor executor, Predicate predicate) {
   for (int i = 0; i < 200 && !predicate(); ++i) {
-    std::this_thread::sleep_for(1ms);
+    Drain(executor);
+    std::this_thread::yield();
   }
-}
-
-template <typename T>
-T WaitForPromise(promise<T> promise) {
-  WaitUntil([&] { return promise.wait_for(0ms) != promise_wait_status::timeout; });
-  return promise.get();
-}
-
-void WaitForPromise(promise<void> promise) {
-  WaitUntil([&] { return promise.wait_for(0ms) != promise_wait_status::timeout; });
-  promise.get();
 }
 
 }  // namespace
 
 TEST(ResourceError, HandleResourceErrorPassesThroughSuccessfulValue) {
-  RecordingDialogService dialog_service;
+  TestExecutor executor;
+  RecordingDialogService dialog_service{executor};
 
-  auto result = HandleResourceError(make_resolved_promise(42), dialog_service,
+  auto result = HandleResourceError(MakeResolvedAwaitable(42), dialog_service,
                                     u"Title");
 
-  EXPECT_EQ(WaitForPromise(std::move(result)), 42);
+  EXPECT_EQ(WaitAwaitable(executor, std::move(result)), 42);
   EXPECT_TRUE(dialog_service.messages.empty());
 }
 
 TEST(ResourceError, HandleResourceErrorShowsDialogAndRethrowsOriginalError) {
-  RecordingDialogService dialog_service;
-  auto source = make_rejected_promise<int>(ResourceError{u"Load failed"});
+  TestExecutor executor;
+  RecordingDialogService dialog_service{executor};
+  auto source = MakeRejectedAwaitable<int>(
+      std::make_exception_ptr(ResourceError{u"Load failed"}));
 
   auto result = HandleResourceError(std::move(source), dialog_service,
                                     u"Import");
+  auto result_state = StartAwaitable(executor, std::move(result));
 
-  WaitUntil([&] { return !dialog_service.messages.empty(); });
+  WaitUntil(executor, [&] { return !dialog_service.messages.empty(); });
   ASSERT_EQ(dialog_service.messages, std::vector<std::u16string>{u"Load failed."});
   ASSERT_EQ(dialog_service.titles, std::vector<std::u16string>{u"Import"});
   ASSERT_EQ(dialog_service.modes, std::vector<MessageBoxMode>{MessageBoxMode::Error});
 
   dialog_service.CompleteMessageBox();
 
-  EXPECT_THROW(WaitForPromise(std::move(result)), ResourceError);
+  EXPECT_THROW(WaitResult(executor, result_state), ResourceError);
 }
 
 TEST(ResourceError, ShowResourceErrorRethrowsAfterDialogAcknowledged) {
-  RecordingDialogService dialog_service;
+  TestExecutor executor;
+  RecordingDialogService dialog_service{executor};
   auto error = std::make_exception_ptr(ResourceError{u"Save failed"});
 
   auto result = ShowResourceError<void>(dialog_service, u"Export", error);
+  auto result_state = StartAwaitable(executor, std::move(result));
+  WaitUntil(executor, [&] { return !dialog_service.messages.empty(); });
 
   ASSERT_EQ(dialog_service.messages, std::vector<std::u16string>{u"Save failed."});
   ASSERT_EQ(dialog_service.titles, std::vector<std::u16string>{u"Export"});
   dialog_service.CompleteMessageBox();
 
-  EXPECT_THROW(WaitForPromise(std::move(result)), ResourceError);
+  EXPECT_THROW(WaitResult(executor, result_state), ResourceError);
 }

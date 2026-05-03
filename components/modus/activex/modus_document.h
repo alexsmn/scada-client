@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/handlers.h"
 #include "common/aliases.h"
 
@@ -9,7 +11,6 @@
 #include <unordered_map>
 #include <wrl/client.h>
 
-class Executor;
 class FileCache;
 class Profile;
 class TimedDataService;
@@ -34,7 +35,7 @@ class ModusEventSink;
 class ModusObject;
 
 struct ModusDocumentContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const AliasResolver alias_resolver_;
   TimedDataService& timed_data_service_;
   FileCache& file_cache_;

@@ -1,7 +1,11 @@
 #pragma once
 
-#include "base/executor.h"
+#include "base/any_executor.h"
+#include "base/any_executor_adapter.h"
+#include "base/common_types.h"
 
+#include <functional>
+#include <source_location>
 #include <string>
 
 #pragma warning(push)
@@ -13,17 +17,18 @@ namespace boost::asio {
 class io_context;
 }
 
-class MessageLoopWt final : public Executor {
+class MessageLoopWt final {
  public:
+  using Task = std::function<void()>;
+
   explicit MessageLoopWt(boost::asio::io_context& io_context);
   ~MessageLoopWt();
 
-  // Executor
-  virtual void PostDelayedTask(Duration delay,
-                               Task task,
-                               const std::source_location& location =
-                                   std::source_location::current()) override;
-  virtual size_t GetTaskCount() const override;
+  void PostDelayedTask(Duration delay,
+                       Task task,
+                       const std::source_location& location =
+                           std::source_location::current());
+  size_t GetTaskCount() const;
 
  private:
   boost::asio::io_context& io_context_;

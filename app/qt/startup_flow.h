@@ -1,23 +1,24 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/any_executor.h"
+
+#include "base/awaitable.h"
 
 #include <functional>
 #include <memory>
 
-class Executor;
 
 namespace client {
 
 struct QtStartupFlowContext {
-  std::shared_ptr<Executor> executor;
+  AnyExecutor executor;
 
-  std::function<promise<void>()> start;
-  std::function<promise<void>()> run_object_view_values_check;
-  std::function<promise<void>()> run_operator_use_case_smoke;
-  std::function<promise<void>()> run_object_tree_labels_check;
-  std::function<promise<void>()> run_hardware_tree_devices_check;
-  std::function<promise<void>()> run_application;
+  std::function<Awaitable<void>()> start;
+  std::function<Awaitable<void>()> run_object_view_values_check;
+  std::function<Awaitable<void>()> run_operator_use_case_smoke;
+  std::function<Awaitable<void>()> run_object_tree_labels_check;
+  std::function<Awaitable<void>()> run_hardware_tree_devices_check;
+  std::function<Awaitable<void>()> run_application;
 
   std::function<void(std::exception_ptr)> log_startup_exception;
   std::function<void()> report_startup_success_if_unset;
@@ -28,6 +29,6 @@ struct QtStartupFlowContext {
   bool e2e_test_mode = false;
 };
 
-promise<void> RunQtStartupFlow(QtStartupFlowContext context);
+Awaitable<void> RunQtStartupFlow(QtStartupFlowContext context);
 
 }  // namespace client

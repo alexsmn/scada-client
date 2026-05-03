@@ -1,11 +1,16 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/any_executor.h"
+#include "base/awaitable.h"
 
 #include <QApplication>
 #include <QEventLoop>
 
 #include <chrono>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <type_traits>
 #include <utility>
 
 class NodeService;
@@ -19,19 +24,49 @@ inline void ProcessPostedEvents() {
 }
 
 template <class T>
-T WaitForPromise(promise<T> promise) {
-  using namespace std::chrono_literals;
+struct AwaitableResult {
+  std::optional<T> value;
+  std::exception_ptr error;
+  bool done = false;
+};
 
-  while (promise.wait_for(0ms) == promise_wait_status::timeout) {
+template <>
+struct AwaitableResult<void> {
+  std::exception_ptr error;
+  bool done = false;
+};
+
+template <class T>
+T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
+  auto result = std::make_shared<AwaitableResult<T>>();
+  CoSpawn(std::move(executor),
+          [result, awaitable = std::move(awaitable)]() mutable
+              -> Awaitable<void> {
+            try {
+              if constexpr (std::is_void_v<T>) {
+                co_await std::move(awaitable);
+              } else {
+                result->value.emplace(co_await std::move(awaitable));
+              }
+            } catch (...) {
+              result->error = std::current_exception();
+            }
+            result->done = true;
+          });
+
+  while (!result->done) {
     QApplication::processEvents(QEventLoop::WaitForMoreEvents);
   }
 
-  auto result = promise.get();
-  ProcessPostedEvents();
-  return std::move(result);
-}
+  if (result->error) {
+    std::rethrow_exception(result->error);
+  }
 
-void WaitForPromise(promise<void> promise);
+  ProcessPostedEvents();
+  if constexpr (!std::is_void_v<T>) {
+    return std::move(*result->value);
+  }
+}
 
 bool WaitForPendingNodeLoads(NodeService& node_service);
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/qt/message_loop_qt.h"
 
 #include <QApplication>
@@ -10,5 +12,5 @@ class AppEnvironment {
   QApplication app_{argc_, nullptr};
 
   // QApplication must be created.
-  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
+  AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
 };

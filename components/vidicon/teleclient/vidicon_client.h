@@ -1,9 +1,10 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include <memory>
 #include <wrl/client.h>
 
-class Executor;
 class TimedDataService;
 
 interface IClient;
@@ -15,7 +16,7 @@ class ComDataPointManager;
 class DataPointManager;
 
 struct VidiconClientContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   TimedDataService& timed_data_service_;
 };
 

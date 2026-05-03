@@ -14,7 +14,7 @@ TEST(WtLimitDialogTest, ShowLimitsDialogRejectsUnsupportedDialog) {
   TestStorage storage{scada::NodeId{scada::id::RootFolder}};
   TestTaskManager task_manager{storage};
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto result = StartAwaitable(
       executor, ShowLimitsDialog(
                     dialog_service,

@@ -1,6 +1,7 @@
 #include "clipboard_util.h"
 
 #include "base/win/clipboard.h"
+#include "base/test/awaitable_test.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "services/task_manager_mock.h"
@@ -48,6 +49,7 @@ void CompareRecursive(const scada::NodeState& a, const scada::NodeState& b) {
 }  // namespace
 
 TEST(PasteNodesFromNodeStateRecursive, Test) {
+  TestExecutor executor;
   TestStorage storage{data_items::id::DataItems};
   TestTaskManager task_manager{storage};
 
@@ -71,8 +73,9 @@ TEST(PasteNodesFromNodeStateRecursive, Test) {
                          .attributes = {.browse_name = "DataItem1",
                                         .display_name = u"DataItem1"}}}}}};
 
-  PasteNodesFromNodeStateRecursive(task_manager, scada::NodeState{top_node})
-      .get();
+  WaitAwaitable(
+      executor,
+      PasteNodesFromNodeStateRecursive(task_manager, scada::NodeState{top_node}));
 
   auto* storage_root_node = storage.FindNode(data_items::id::DataItems);
   ASSERT_THAT(storage_root_node, NotNull());
@@ -82,6 +85,7 @@ TEST(PasteNodesFromNodeStateRecursive, Test) {
 }
 
 TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
+  TestExecutor executor;
   StrictMock<MockTaskManager> task_manager;
 
   scada::NodeState node_state{
@@ -92,17 +96,20 @@ TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"}};
 
   EXPECT_CALL(task_manager, PostInsertTask(_))
-      .WillOnce(Return(
-          make_rejected_promise<scada::NodeId>(std::runtime_error{"insert"})));
+      .WillOnce(Invoke([](const scada::NodeState&) -> Awaitable<scada::NodeId> {
+        throw std::runtime_error{"insert"};
+        co_return scada::NodeId{};
+      }));
 
   EXPECT_THROW(
-      PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state))
-          .get(),
+      WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
+                                  task_manager, std::move(node_state))),
       std::runtime_error);
 }
 
 TEST(PasteNodesFromNodeStateRecursive,
      RemovesInverseReferencesAndAssignsChildParent) {
+  TestExecutor executor;
   StrictMock<MockTaskManager> task_manager;
 
   const scada::NodeId inserted_parent_id{10, NamespaceIndexes::GROUP};
@@ -131,43 +138,51 @@ TEST(PasteNodesFromNodeStateRecursive,
     InSequence sequence;
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
-        .WillOnce(Invoke([&](const scada::NodeState& inserted) {
+        .WillOnce(Invoke([&](const scada::NodeState& inserted)
+                             -> Awaitable<scada::NodeId> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_THAT(inserted.references, SizeIs(1));
           if (!inserted.references.empty())
             EXPECT_TRUE(inserted.references.front().forward);
-          return make_resolved_promise(inserted_parent_id);
+          co_return inserted_parent_id;
         }));
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
-        .WillOnce(Invoke([&](const scada::NodeState& inserted) {
+        .WillOnce(Invoke([&](const scada::NodeState& inserted)
+                             -> Awaitable<scada::NodeId> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_EQ(inserted.parent_id, inserted_parent_id);
           EXPECT_EQ(inserted.type_definition_id,
                     data_items::id::DiscreteItemType);
-          return make_resolved_promise(inserted_child_id);
+          co_return inserted_child_id;
         }));
   }
 
   EXPECT_NO_THROW(
-      PasteNodesFromNodeStateRecursive(task_manager, std::move(node_state))
-          .get());
+      WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
+                                  task_manager, std::move(node_state))));
 }
 
 TEST(PasteNodesFromClipboard, EmptyClipboardRejects) {
+  TestExecutor executor;
   ClearClipboard();
   StrictMock<MockTaskManager> task_manager;
 
   EXPECT_THROW(
-      PasteNodesFromClipboard(task_manager, data_items::id::DataItems).get(),
+      WaitAwaitable(executor,
+                    PasteNodesFromClipboard(task_manager,
+                                            data_items::id::DataItems)),
       std::runtime_error);
 }
 
 TEST(PasteNodesFromClipboard, InvalidClipboardPayloadRejects) {
+  TestExecutor executor;
   SetNodeTreeClipboardData("not a serialized node tree");
   StrictMock<MockTaskManager> task_manager;
 
   EXPECT_THROW(
-      PasteNodesFromClipboard(task_manager, data_items::id::DataItems).get(),
+      WaitAwaitable(executor,
+                    PasteNodesFromClipboard(task_manager,
+                                            data_items::id::DataItems)),
       std::runtime_error);
 }

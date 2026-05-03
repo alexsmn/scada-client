@@ -30,7 +30,7 @@ class ModusDocumentTest : public Test {
 
   void InitModusDocument();
 
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  AnyExecutor executor_ = TestExecutor{};
 
   StrictMock<MockAliasResolver> alias_resolver_;
   StrictMock<MockTimedDataService> timed_data_service_;

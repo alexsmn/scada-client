@@ -1,10 +1,10 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "vidicon/teleclient/data_point_manager.h"
 
 #include <memory>
 
-class Executor;
 class TimedDataService;
 
 namespace vidicon {
@@ -12,7 +12,7 @@ namespace vidicon {
 // Must be constructed and destructed from the main thread.
 class DataPointManagerImpl : public DataPointManager {
  public:
-  DataPointManagerImpl(std::shared_ptr<Executor> executor,
+  DataPointManagerImpl(AnyExecutor executor,
                        TimedDataService& timed_data_service);
   ~DataPointManagerImpl();
 
@@ -24,7 +24,7 @@ class DataPointManagerImpl : public DataPointManager {
   // Constructs and runs under `executor_`.
   struct Backend;
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   std::unique_ptr<Backend> backend_;
 };
 

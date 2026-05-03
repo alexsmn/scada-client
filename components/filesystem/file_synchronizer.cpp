@@ -1,7 +1,6 @@
 #include "filesystem/file_synchronizer.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/logger.h"
 #include "filesystem/filesystem_util.h"
 #include "model/filesystem_node_ids.h"
@@ -45,7 +44,7 @@ std::filesystem::file_time_type ToFileTime(scada::DateTime time) {
   }
 }
 
-Awaitable<void> DownloadFileNodeAsync(std::shared_ptr<Executor> executor,
+Awaitable<void> DownloadFileNodeAsync(AnyExecutor executor,
                                       std::shared_ptr<const Logger> logger,
                                       NodeRef node,
                                       std::filesystem::path path,

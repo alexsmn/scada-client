@@ -36,7 +36,7 @@ class MockMainWindow : public MainWindowInterface {
               (),
               (const override));
 
-  MOCK_METHOD(promise<OpenedViewInterface*>,
+  MOCK_METHOD(Awaitable<OpenedViewInterface*>,
               OpenView,
               (const WindowDefinition& window_definition, bool make_active),
               (override));

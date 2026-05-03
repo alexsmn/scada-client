@@ -1,6 +1,8 @@
 #pragma once
 
-#include "base/executor_timer.h"
+#include "base/any_executor.h"
+
+#include "base/any_executor_timer.h"
 
 #include <functional>
 #include <string>
@@ -13,7 +15,7 @@ class SessionStatusProvider {
  public:
   using ChangeNotifier = std::function<void()>;
 
-  SessionStatusProvider(const std::shared_ptr<Executor> executor,
+  SessionStatusProvider(const AnyExecutor executor,
                         scada::SessionService& session_service)
       : session_service_{session_service}, session_poll_timer_{executor} {}
 
@@ -27,5 +29,5 @@ class SessionStatusProvider {
 
   ChangeNotifier change_notifier_;
 
-  ExecutorTimer session_poll_timer_;
+  AnyExecutorTimer session_poll_timer_;
 };

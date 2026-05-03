@@ -1,7 +1,8 @@
 ﻿#include "ui/common/client_utils.h"
 
 #include "aui/translation.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "base/format_time.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
@@ -79,7 +80,7 @@ std::u16string GetTimedDataTooltipText(const TimedDataSpec& timed_data) {
 }
 
 Awaitable<NodeIdSet> ExpandGroupItemIds(const NodeRef& node, size_t max_count) {
-  auto executor = MakeThreadAnyExecutor();
+  auto executor = ThreadExecutor{};
   co_return co_await ExpandGroupItemIdsAsync(executor, node, max_count);
 }
 

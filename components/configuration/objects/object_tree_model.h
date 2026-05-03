@@ -1,16 +1,17 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "configuration/objects/visible_node_model.h"
 
 #include <memory>
 
-class Executor;
 class NodeService;
 
 struct ObjectTreeModelContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   NodeService& node_service_;
   const NodeRef root_;
   TimedDataService& timed_data_service_;
@@ -46,7 +47,7 @@ class ObjectTreeModel : private ObjectTreeModelContext,
  private:
   std::shared_ptr<VisibleNode> CreateVisibleNode(void* tree_node);
   static Awaitable<void> CompleteVisibleNodeFetchAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::weak_ptr<void> lifetime_token,
       ObjectTreeModel& model,
       std::shared_ptr<ProxyVisibleNode> proxy_visible_node,

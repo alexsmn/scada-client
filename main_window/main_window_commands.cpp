@@ -4,7 +4,6 @@
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
 #include "ui/common/client_utils.h"
@@ -85,7 +84,7 @@ void SetLocaleName(std::string_view locale_name) {
   settings.setValue("LocaleName", QString::fromStdString(std::string(locale_name)));
 }
 
-void ApplyLanguageSelection(const std::shared_ptr<Executor>& executor,
+void ApplyLanguageSelection(const AnyExecutor& executor,
                             const GlobalCommandContext& context,
                             std::string_view locale_name) {
   SetLocaleName(locale_name);
@@ -101,7 +100,7 @@ void ApplyLanguageSelection(const std::shared_ptr<Executor>& executor,
 }
 
 BasicCommand<GlobalCommandContext> MakeLanguageCommand(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     unsigned command_id,
     std::u16string_view title,
     std::string_view locale_name,
@@ -194,12 +193,16 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
 #if !defined(UI_WT)
   global_commands_.AddCommand(
       {.command_id = ID_HELP_MANUAL,
-       .execute_handler = [](const GlobalCommandContext& context) {
+       .execute_handler = [executor = executor_](
+                              const GlobalCommandContext& context) {
          WindowDefinition def(kWebWindowInfo);
          def.title = Translate("Documentation");
          def.path = std::filesystem::path(
              L"http://www.telecontrol.ru/workplace_manual");
-         context.main_window.OpenView(def, true);
+         CoSpawn(executor, [&main_window = context.main_window,
+                            def = std::move(def)]() -> Awaitable<void> {
+           co_await main_window.OpenView(def, true);
+         });
        }});
 #endif
 }
@@ -385,7 +388,10 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
         return;
       }
     }*/
-    main_window_.OpenView(WindowDefinition(*win_info), true);
+    CoSpawn(executor_, [this, def = WindowDefinition(*win_info)]()
+                         -> Awaitable<void> {
+      co_await main_window_.OpenView(def, true);
+    });
     return;
   }
 
@@ -407,7 +413,7 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
 
 namespace {
 
-Awaitable<void> RenameCurrentPageAsync(std::shared_ptr<Executor> executor,
+Awaitable<void> RenameCurrentPageAsync(AnyExecutor executor,
                                        MainWindowInterface& main_window,
                                        DialogService& dialog_service,
                                        std::u16string current_page_title) {
@@ -418,7 +424,7 @@ Awaitable<void> RenameCurrentPageAsync(std::shared_ptr<Executor> executor,
   co_return;
 }
 
-Awaitable<void> ShowRenameWindowDialogAsync(std::shared_ptr<Executor> executor,
+Awaitable<void> ShowRenameWindowDialogAsync(AnyExecutor executor,
                                             OpenedViewInterface& view,
                                             DialogService& dialog_service,
                                             std::u16string current_view_title) {

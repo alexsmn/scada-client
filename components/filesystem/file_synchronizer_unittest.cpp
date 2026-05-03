@@ -102,8 +102,7 @@ class FileSynchronizerTest : public Test {
   }
 
   ScopedTempDir temp_dir_;
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<scada::MockAttributeService> attribute_service_;
   StaticNodeService node_service_;
   std::optional<FileSynchronizer> synchronizer_;
@@ -121,12 +120,13 @@ TEST_F(FileSynchronizerTest, DownloadsOutdatedFile) {
               Read(/*context=*/_,
                    /*inputs=*/Pointee(ElementsAre(scada::ReadValueId{
                        .node_id = kFileNodeId,
-                       .attribute_id = scada::AttributeId::Value})),
-                   /*callback=*/_))
-      .WillOnce(InvokeArgument<2>(
-          scada::StatusCode::Good,
-          std::vector{scada::MakeReadResult(scada::ByteString(
-              contents.begin(), contents.end()))}));
+                       .attribute_id = scada::AttributeId::Value}))))
+      .WillOnce([&](scada::ServiceContext,
+                    std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
+        co_return std::vector{scada::MakeReadResult(scada::ByteString(
+            contents.begin(), contents.end()))};
+      });
 
   StartSynchronizer();
   Drain(executor_);
@@ -141,9 +141,12 @@ TEST_F(FileSynchronizerTest, DownloadFailureDoesNotCreateFile) {
       scada::DateTime::UnixEpoch() + scada::Duration::FromSeconds(10);
   AddFile(last_update_time);
 
-  EXPECT_CALL(attribute_service_, Read(_, _, _))
-      .WillOnce(InvokeArgument<2>(scada::StatusCode::Bad,
-                                  std::vector<scada::DataValue>{}));
+  EXPECT_CALL(attribute_service_, Read(_, _))
+      .WillOnce([](scada::ServiceContext,
+                   std::shared_ptr<const std::vector<scada::ReadValueId>>)
+                    -> Awaitable<scada::StatusOr<std::vector<scada::DataValue>>> {
+        co_return scada::StatusCode::Bad;
+      });
 
   StartSynchronizer();
   Drain(executor_);
@@ -161,7 +164,7 @@ TEST_F(FileSynchronizerTest, ActualFileSkipsDownload) {
                                                     contents.size());
   std::filesystem::last_write_time(FilePath(), ToFileTime(last_update_time));
 
-  EXPECT_CALL(attribute_service_, Read(_, _, _)).Times(0);
+  EXPECT_CALL(attribute_service_, Read(_, _)).Times(0);
 
   StartSynchronizer();
   Drain(executor_);

@@ -27,25 +27,24 @@ class TaskManagerTest : public Test {
   T Wait(Awaitable<T> pending) {
     auto result = StartAwaitable(executor_, std::move(pending));
     while (!result->done) {
-      executor_->Advance(10ms);
+      executor_.Advance(10ms);
       Drain(executor_);
     }
-    executor_->Poll();
+    executor_.Poll();
     return WaitResult(executor_, std::move(result));
   }
 
   void Wait(Awaitable<void> pending) {
     auto result = StartAwaitable(executor_, std::move(pending));
     while (!result->done) {
-      executor_->Advance(10ms);
+      executor_.Advance(10ms);
       Drain(executor_);
     }
-    executor_->Poll();
+    executor_.Poll();
     WaitResult(executor_, std::move(result));
   }
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
 
   StaticNodeService node_service_;
   scada::MockAttributeService attribute_service_;

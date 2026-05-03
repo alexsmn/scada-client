@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/models/tree_node_model.h"
 #include "base/awaitable.h"
 #include "node_service/node_ref.h"
@@ -13,7 +15,6 @@ struct ModelChangeEvent;
 }
 
 class ConfigurationTreeModel;
-class Executor;
 
 class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
  public:
@@ -60,7 +61,7 @@ class ConfigurationTreeNode : public aui::TreeNode<ConfigurationTreeNode> {
 
  private:
   static Awaitable<void> CompleteFetchMoreAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::weak_ptr<void> lifetime_token,
       ConfigurationTreeModel& model,
       NodeRef node,

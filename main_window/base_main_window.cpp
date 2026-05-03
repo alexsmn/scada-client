@@ -1,7 +1,6 @@
 ﻿#include "main_window/main_window.h"
 
 #include "aui/key_codes.h"
-#include "base/awaitable_promise.h"
 #include "base/boost_log.h"
 #include "controller/contents_model.h"
 #include "controller/contents_observer.h"
@@ -23,16 +22,14 @@ bool BaseMainWindow::g_hide_for_testing = false;
 namespace {
 
 Awaitable<OpenedViewInterface*> OpenViewAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     FileManager& file_manager,
     ViewManager& view_manager,
     BaseMainWindow& main_window,
     WindowDefinition window_def,
     bool make_active) {
   if (!window_def.path.empty()) {
-    co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        IgnoreResult(file_manager.DownloadFileFromServer(window_def.path)));
+    co_await file_manager.DownloadFileFromServer(window_def.path);
   }
 
   // TODO: Fix captured `main_window` and run under the local executor.
@@ -133,7 +130,10 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
 }
 
 void BaseMainWindow::OpenPane(const WindowInfo& window_info, bool activate) {
-  OpenView(WindowDefinition(window_info), activate);
+  CoSpawn(executor_, [this, window_def = WindowDefinition(window_info),
+                      activate]() -> Awaitable<void> {
+    co_await OpenView(window_def, activate);
+  });
 }
 
 void BaseMainWindow::ClosePane(const WindowInfo& window_info) {
@@ -189,12 +189,11 @@ OpenedView* BaseMainWindow::FindViewToRecycle(unsigned type) {
   return i != views.end() ? *i : nullptr;
 }
 
-promise<OpenedViewInterface*> BaseMainWindow::OpenView(
+Awaitable<OpenedViewInterface*> BaseMainWindow::OpenView(
     const WindowDefinition& window_def,
     bool make_active) {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   OpenViewAsync(executor_, file_manager_, *view_manager_,
-                                 *this, window_def, make_active));
+  co_return co_await OpenViewAsync(executor_, file_manager_, *view_manager_,
+                                   *this, window_def, make_active);
 }
 
 void BaseMainWindow::OnViewClosed(OpenedView& view) {

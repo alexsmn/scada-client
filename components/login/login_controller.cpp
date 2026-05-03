@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/awaitable_promise.h"
+#include "base/any_executor_dispatch.h"
 #include "net/net_executor_adapter.h"
 
 #include <boost/algorithm/string/classification.hpp>
@@ -88,7 +88,7 @@ void AppendMruList(std::vector<std::u16string>& list,
     list.resize(10);
 }
 
-Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
+Awaitable<scada::Status> AwaitStatus(AnyExecutor executor,
                                       Awaitable<void> operation) {
   try {
     co_await std::move(operation);
@@ -100,7 +100,7 @@ Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
 
 }  // namespace
 
-LoginController::LoginController(std::shared_ptr<Executor> executor,
+LoginController::LoginController(AnyExecutor executor,
                                  DataServicesContext&& services_context,
                                  DialogService& dialog_service,
                                  std::shared_ptr<SettingsStore> settings_store)
@@ -162,7 +162,7 @@ void LoginController::OnLoginResult(const scada::Status& status) {
   LOG_INFO(logger_) << "Connect completed"
                     << LOG_TAG("Status", ToString(status));
 
-  Dispatch(*executor_, weak_from_this(), [this, status] {
+  Dispatch(executor_, weak_from_this(), [this, status] {
     if (status)
       OnLoginCompleted();
     else
@@ -280,7 +280,7 @@ void LoginController::SetServerTypeIndex(int index) {
 }
 
 Awaitable<void> LoginController::ConnectAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<LoginController> controller,
     scada::SessionService& session_service,
     scada::SessionConnectParams params) {
@@ -293,7 +293,7 @@ Awaitable<void> LoginController::ConnectAsync(
 }
 
 Awaitable<void> LoginController::CompleteLoginAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::function<void(DataServices services)> completion_handler,
     DataServices services,
     Awaitable<void> message) {
@@ -306,7 +306,7 @@ Awaitable<void> LoginController::CompleteLoginAsync(
 }
 
 Awaitable<void> LoginController::PromptForceLogoffAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<LoginController> controller,
     Awaitable<MessageBoxResult> prompt) {
   try {
@@ -325,7 +325,7 @@ Awaitable<void> LoginController::PromptForceLogoffAsync(
 }
 
 Awaitable<void> LoginController::ReportLoginErrorAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<LoginController> controller,
     Awaitable<MessageBoxResult> prompt) {
   try {

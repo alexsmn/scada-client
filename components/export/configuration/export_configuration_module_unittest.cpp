@@ -27,6 +27,13 @@
 
 using namespace testing;
 
+template <class T>
+auto ReturnAwaitable(T value) {
+  return [value = std::move(value)](auto&&...) mutable -> Awaitable<T> {
+    co_return std::move(value);
+  };
+}
+
 class ExportConfigurationModuleTest : public Test {
  public:
   void SetUp() override;
@@ -37,7 +44,7 @@ class ExportConfigurationModuleTest : public Test {
       const ExportData& export_data) const;
 
   StaticNodeService node_service_;
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<MockTaskManager> task_manager_;
   BasicCommandRegistry<GlobalCommandContext> global_commands_;
 
@@ -107,12 +114,12 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
-      .WillOnce(Return(make_resolved_promise(export_file_path)));
+      .WillOnce(ReturnAwaitable(export_file_path));
 
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::QuestionYesNoDefaultNo))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::Yes)));
+      .WillOnce(ReturnAwaitable(MessageBoxResult::Yes));
 
   EXPECT_CALL(
       task_manager_,
@@ -122,8 +129,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
           .parent_id = data_items::id::DataItems,
           .attributes = {.display_name = u"TS 1"},
           .properties = {{data_items::id::DiscreteItemType_Inversion, true}}})))
-      .WillOnce(Return(
-          make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TS})));
+      .WillOnce(ReturnAwaitable(scada::NodeId{1, NamespaceIndexes::TS}));
 
   EXPECT_CALL(task_manager_,
               PostInsertTask(NodeStateIs(scada::NodeState{
@@ -133,8 +139,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
                   .attributes = {.display_name = u"TIT 1"},
                   .properties = {{data_items::id::AnalogItemType_DisplayFormat,
                                   "#####"}}})))
-      .WillOnce(Return(
-          make_resolved_promise(scada::NodeId{1, NamespaceIndexes::TIT})));
+      .WillOnce(ReturnAwaitable(scada::NodeId{1, NamespaceIndexes::TIT}));
 
   ScopedImportReportSuppressor import_report_suppressor;
 
@@ -150,12 +155,12 @@ TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(/*params=*/_))
-      .WillOnce(Return(make_resolved_promise(export_file_path)));
+      .WillOnce(ReturnAwaitable(export_file_path));
 
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::QuestionYesNo))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::No)));
+      .WillOnce(ReturnAwaitable(MessageBoxResult::No));
 
   command->execute_handler(main_command_context_);
   Drain(executor_);
@@ -169,12 +174,12 @@ TEST_F(ExportConfigurationModuleTest, ImportCommandOpenFailureShowsErrorDialog) 
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
-      .WillOnce(Return(make_resolved_promise(temp_dir_ / "missing.csv")));
+      .WillOnce(ReturnAwaitable(temp_dir_ / "missing.csv"));
 
   EXPECT_CALL(dialog_service_,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::Error))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::Ok)));
+      .WillOnce(ReturnAwaitable(MessageBoxResult::Ok));
 
   command->execute_handler(main_command_context_);
   Drain(executor_);

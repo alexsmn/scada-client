@@ -149,7 +149,7 @@ class NodePropertyModelTest : public Test {
                                 &monitored_item_service_,
                             .method_service = &method_service_};
   v1::NodeServiceImpl node_service_;
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<MockTaskManager> task_manager_;
   StrictMock<MockDialogService> dialog_service_;
   PropertyService property_service_;

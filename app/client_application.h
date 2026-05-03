@@ -1,10 +1,11 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "app/client_application_modules.h"
 #include "app/login_canceled.h"
 #include "base/async_completion.h"
 #include "base/awaitable.h"
-#include "base/promise.h"
 #include "timed_data/timed_data_service.h"
 #include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
@@ -51,7 +52,6 @@ class ControllerRegistry;
 class CoreModule;
 class CreateTree;
 class EventModule;
-class Executor;
 class FavoritesModule;
 class FileSystemComponent;
 class Logger;
@@ -71,10 +71,10 @@ class WriteService;
 
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
 
   // TODO: Remove the `DataServicesContext` parameter.
-  const std::function<promise<std::optional<DataServices>>(
+  const std::function<Awaitable<std::optional<DataServices>>(
       DataServicesContext&& services_context)>
       login_handler_;
 
@@ -109,10 +109,10 @@ class ClientApplication : private ClientApplicationContext {
   bool HasGlobalCommandForTesting(unsigned command_id) const;
 
   // Load profile and start.
-  [[nodiscard]] promise<void> Start();
+  [[nodiscard]] Awaitable<void> Start();
   // Enter the main loop.
-  [[nodiscard]] promise<void> Run();
-  [[nodiscard]] promise<void> Quit();
+  [[nodiscard]] Awaitable<void> Run();
+  [[nodiscard]] Awaitable<void> Quit();
 
  private:
   struct PostLoginContext;
@@ -128,15 +128,10 @@ class ClientApplication : private ClientApplicationContext {
   ClientApplicationModuleContext BuildModuleContext(
       const PostLoginContext& ctx);
 
-  promise<void> Login();
-
-  // Coroutine-driven internals for the startup/login/quit flow. The public
-  // `Start()`, `Login()` and `Quit()` entry points keep returning
-  // `promise<void>` for compatibility with the rest of the client, but the
-  // actual orchestration lives in these coroutines so the sequential
-  // ordering is explicit.
   Awaitable<void> StartAsync();
+  Awaitable<void> Login();
   Awaitable<void> LoginAsync();
+  Awaitable<void> RunAsync();
   Awaitable<void> QuitAsync();
 
   void OnLoginCompleted(const DataServices& services);

@@ -2,7 +2,7 @@
 
 #include "aui/dialog_service_mock.h"
 #include "base/memory_settings_store.h"
-#include "base/promise.h"
+#include "base/callback_awaitable.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "scada/data_services_factory.h"
@@ -27,6 +27,50 @@ class NullTransportFactory final : public transport::TransportFactory {
       const transport::log_source&) override {
     return transport::ERR_NOT_IMPLEMENTED;
   }
+};
+
+class DeferredVoid {
+ public:
+  Awaitable<void> Wait(AnyExecutor executor) {
+    auto [error] =
+        co_await CallbackToAwaitable<std::exception_ptr>(
+            std::move(executor),
+            [this](auto callback) { callback_ = std::move(callback); });
+    if (error) {
+      std::rethrow_exception(error);
+    }
+    co_return;
+  }
+
+  void Resolve() { callback_(nullptr); }
+
+  template <class E>
+  void Reject(E exception) {
+    callback_(std::make_exception_ptr(std::move(exception)));
+  }
+
+ private:
+  std::function<void(std::exception_ptr)> callback_;
+};
+
+template <class T>
+class DeferredValue {
+ public:
+  Awaitable<T> Wait(AnyExecutor executor) {
+    auto [error, value] =
+        co_await CallbackToAwaitable<std::exception_ptr, T>(
+            std::move(executor),
+            [this](auto callback) { callback_ = std::move(callback); });
+    if (error) {
+      std::rethrow_exception(error);
+    }
+    co_return std::move(value);
+  }
+
+  void Resolve(T value) { callback_(nullptr, std::move(value)); }
+
+ private:
+  std::function<void(std::exception_ptr, T)> callback_;
 };
 
 scada::SessionService* scada_session_service = nullptr;
@@ -66,7 +110,7 @@ int FindServerTypeIndex(std::string_view name) {
 }
 
 DataServicesContext MakeServicesContext(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     transport::TransportFactory& transport_factory) {
   return {.logger = {},
           .executor = std::move(executor),
@@ -75,7 +119,7 @@ DataServicesContext MakeServicesContext(
 }
 
 std::shared_ptr<TestLoginController> CreateController(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     DialogService& dialog_service,
     std::shared_ptr<SettingsStore> settings_store,
     transport::TransportFactory& transport_factory) {
@@ -108,7 +152,7 @@ TEST(LoginControllerTest, PersistsEnglishServerTypeAndHostKey) {
   settings_store->SetString("ServerType", "Scada");
   settings_store->SetString("Host:Scada", "localhost");
 
-  auto executor = std::make_shared<TestExecutor>(true);
+  TestExecutor executor{true};
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
 
@@ -146,7 +190,7 @@ TEST(LoginControllerTest, ReadsStoredEnglishServerTypeIntoSelectedIndex) {
   settings_store->SetString("Host:Scada", "scada-host");
   settings_store->SetString("Host:Vidicon", "vidicon-host");
 
-  auto executor = std::make_shared<TestExecutor>(true);
+  TestExecutor executor{true};
   StrictMock<MockDialogService> dialog_service;
   NullTransportFactory transport_factory;
 
@@ -166,22 +210,23 @@ TEST(LoginControllerTest, ReadsStoredEnglishServerTypeIntoSelectedIndex) {
 
 TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  promise<void> connect;
+  DeferredVoid connect;
   bool completed = false;
 
   EXPECT_CALL(session_service, Connect(_))
-      .WillOnce(DoAll(WithArg<0>([](const scada::SessionConnectParams& params) {
-                        EXPECT_EQ(params.host, "scada-host");
-                        EXPECT_EQ(params.user_name, u"ivan");
-                        EXPECT_EQ(params.password, u"secret");
-                        EXPECT_FALSE(params.allow_remote_logoff);
-                      }),
-                      Return(connect)));
+      .WillOnce([executor, &connect](scada::SessionConnectParams params)
+                    -> Awaitable<void> {
+        EXPECT_EQ(params.host, "scada-host");
+        EXPECT_EQ(params.user_name, u"ivan");
+        EXPECT_EQ(params.password, u"secret");
+        EXPECT_FALSE(params.allow_remote_logoff);
+        co_await connect.Wait(executor);
+      });
 
   auto controller = CreateController(executor, dialog_service, settings_store,
                                      transport_factory);
@@ -194,7 +239,7 @@ TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {
   Drain(executor);
   EXPECT_FALSE(completed);
 
-  connect.resolve();
+  connect.Resolve();
   Drain(executor);
 
   EXPECT_TRUE(completed);
@@ -204,20 +249,29 @@ TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {
 
 TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  promise<void> connect;
-  promise<MessageBoxResult> error_message;
+  DeferredVoid connect;
+  DeferredValue<MessageBoxResult> error_message;
   bool error_reported = false;
 
-  EXPECT_CALL(session_service, Connect(_)).WillOnce(Return(connect));
+  EXPECT_CALL(session_service, Connect(_))
+      .WillOnce([executor, &connect](scada::SessionConnectParams)
+                    -> Awaitable<void> {
+        co_await connect.Wait(executor);
+      });
   EXPECT_CALL(dialog_service,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::Error))
-      .WillOnce(Return(error_message));
+      .WillOnce([executor, &error_message](std::u16string_view,
+                                           std::u16string_view,
+                                           MessageBoxMode)
+                    -> Awaitable<MessageBoxResult> {
+        co_return co_await error_message.Wait(executor);
+      });
 
   auto controller = CreateController(executor, dialog_service, settings_store,
                                      transport_factory);
@@ -225,12 +279,12 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
 
   controller->Login();
   Drain(executor);
-  connect.reject(scada::status_exception{scada::StatusCode::Bad});
+  connect.Reject(scada::status_exception{scada::StatusCode::Bad});
   Drain(executor);
 
   EXPECT_FALSE(error_reported);
 
-  error_message.resolve(MessageBoxResult::Ok);
+  error_message.Resolve(MessageBoxResult::Ok);
   Drain(executor);
 
   EXPECT_TRUE(error_reported);
@@ -238,29 +292,36 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
 
 TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  promise<void> first_connect;
-  promise<void> second_connect;
-  promise<MessageBoxResult> force_logoff_message;
+  DeferredVoid first_connect;
+  DeferredVoid second_connect;
+  DeferredValue<MessageBoxResult> force_logoff_message;
   bool completed = false;
 
   EXPECT_CALL(session_service, Connect(_))
-      .WillOnce(DoAll(WithArg<0>([](const scada::SessionConnectParams& params) {
-                        EXPECT_FALSE(params.allow_remote_logoff);
-                      }),
-                      Return(first_connect)))
-      .WillOnce(DoAll(WithArg<0>([](const scada::SessionConnectParams& params) {
-                        EXPECT_TRUE(params.allow_remote_logoff);
-                      }),
-                      Return(second_connect)));
+      .WillOnce([executor, &first_connect](scada::SessionConnectParams params)
+                    -> Awaitable<void> {
+        EXPECT_FALSE(params.allow_remote_logoff);
+        co_await first_connect.Wait(executor);
+      })
+      .WillOnce([executor, &second_connect](scada::SessionConnectParams params)
+                    -> Awaitable<void> {
+        EXPECT_TRUE(params.allow_remote_logoff);
+        co_await second_connect.Wait(executor);
+      });
   EXPECT_CALL(dialog_service,
               RunMessageBox(/*message=*/_, /*title=*/_,
                             MessageBoxMode::QuestionYesNo))
-      .WillOnce(Return(force_logoff_message));
+      .WillOnce([executor, &force_logoff_message](std::u16string_view,
+                                                  std::u16string_view,
+                                                  MessageBoxMode)
+                    -> Awaitable<MessageBoxResult> {
+        co_return co_await force_logoff_message.Wait(executor);
+      });
 
   auto controller = CreateController(executor, dialog_service, settings_store,
                                      transport_factory);
@@ -268,15 +329,15 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
 
   controller->Login();
   Drain(executor);
-  first_connect.reject(scada::status_exception{
+  first_connect.Reject(scada::status_exception{
       scada::StatusCode::Bad_UserIsAlreadyLoggedOn});
   Drain(executor);
 
-  force_logoff_message.resolve(MessageBoxResult::Yes);
+  force_logoff_message.Resolve(MessageBoxResult::Yes);
   Drain(executor);
   EXPECT_FALSE(completed);
 
-  second_connect.resolve();
+  second_connect.Resolve();
   Drain(executor);
 
   EXPECT_TRUE(completed);
@@ -284,15 +345,19 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
 
 TEST(LoginControllerTest, DestroyedControllerDropsPendingConnectCompletion) {
   auto settings_store = std::make_shared<MemorySettingsStore>();
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockDialogService> dialog_service;
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  promise<void> connect;
+  DeferredVoid connect;
   bool completed = false;
 
-  EXPECT_CALL(session_service, Connect(_)).WillOnce(Return(connect));
+  EXPECT_CALL(session_service, Connect(_))
+      .WillOnce([executor, &connect](scada::SessionConnectParams)
+                    -> Awaitable<void> {
+        co_await connect.Wait(executor);
+      });
 
   auto controller = CreateController(executor, dialog_service, settings_store,
                                      transport_factory);
@@ -302,7 +367,7 @@ TEST(LoginControllerTest, DestroyedControllerDropsPendingConnectCompletion) {
   Drain(executor);
   controller.reset();
 
-  connect.resolve();
+  connect.Resolve();
   Drain(executor);
 
   EXPECT_FALSE(completed);

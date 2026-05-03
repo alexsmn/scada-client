@@ -10,7 +10,7 @@ TEST(WtTimeRangeDialogTest, UnsupportedDialogRejects) {
   DialogServiceImplWt dialog_service;
   Profile profile;
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto result = StartAwaitable(
       executor,
       ShowTimeRangeDialog(dialog_service, {.profile_ = profile,

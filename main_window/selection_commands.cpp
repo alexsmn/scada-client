@@ -3,7 +3,6 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/program_options.h"
 #include "base/u16format.h"
 #include "ui/common/client_utils.h"
@@ -60,7 +59,7 @@ bool CanCreateSomething(const NodeRef& node) {
 BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
     unsigned command_id,
     const WindowInfo& window_info,
-    std::shared_ptr<Executor> executor) {
+    AnyExecutor executor) {
   return BasicCommand<SelectionCommandContext>{
       .command_id = command_id,
       .execute_handler =
@@ -71,7 +70,7 @@ BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
             CoSpawn(executor, [&main_window = context.main_window,
                                window_def = std::move(window_def)]() mutable
                               -> Awaitable<void> {
-              main_window.OpenView(co_await std::move(window_def));
+              co_await main_window.OpenView(co_await std::move(window_def));
               co_return;
             });
           },
@@ -113,7 +112,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                     -> Awaitable<void> {
                       auto window_definition =
                           co_await MakeDeviceMetricsWindowDefinitionAsync(
-                              NetExecutorAdapter{executor_}, selection_->node());
+                              executor_, selection_->node());
                       OpenWindow(window_definition);
                       co_return;
                     });
@@ -126,7 +125,12 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_OPEN_DISPLAY}
           .set_execute_handler([this] {
-            OpenViewContainingNode(ID_MODUS_VIEW, selection_->node());
+            CoSpawn(executor_, cancelation_,
+                    [this, node = selection_->node()]() mutable
+                    -> Awaitable<void> {
+                      co_await OpenViewContainingNode(ID_MODUS_VIEW, node);
+                      co_return;
+                    });
           })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
@@ -140,9 +144,9 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
                                 node = selection_->node()]() mutable
                                -> Awaitable<void> {
               auto window_def = co_await MakeGroupWindowDefinitionAsync(
-                  NetExecutorAdapter{executor}, &kTableWindowInfo, node);
+                  executor, &kTableWindowInfo, node);
               if (window_def.has_value()) {
-                ::OpenView(main_window, *window_def);
+                co_await ::OpenView(main_window, *window_def);
               }
               co_return;
             });
@@ -153,8 +157,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_ITEM_PARAMS}
           .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       MakeSingleWindowDefinition(&kNodePropertyWindowInfo,
+            OpenWindow(MakeSingleWindowDefinition(&kNodePropertyWindowInfo,
                                                   selection_->node()));
           })
           .set_available_handler([this] {
@@ -165,8 +168,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_TABLE_CONFIG}
           .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       MakeSingleWindowDefinition(&kTableEditorWindowInfo,
+            OpenWindow(MakeSingleWindowDefinition(&kTableEditorWindowInfo,
                                                   selection_->node()));
           })
           .set_available_handler([this] {
@@ -177,8 +179,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_OPEN_WATCH}
           .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       MakeSingleWindowDefinition(&kWatchWindowInfo,
+            OpenWindow(MakeSingleWindowDefinition(&kWatchWindowInfo,
                                                   selection_->node()));
           })
           .set_available_handler([this] {
@@ -189,8 +190,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_TRANSMISSION_VIEW}
           .set_execute_handler([this] {
-            ::OpenView(main_window_,
-                       MakeSingleWindowDefinition(&kTransmissionWindowInfo,
+            OpenWindow(MakeSingleWindowDefinition(&kTransmissionWindowInfo,
                                                   selection_->node()));
           })
           .set_available_handler([this] {
@@ -237,16 +237,18 @@ void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
             [this, window_info, node = selection_->node()]() mutable
             -> Awaitable<void> {
               auto window_definition = co_await MakeWindowDefinitionAsync(
-                  NetExecutorAdapter{executor_}, window_info, node,
+                  executor_, window_info, node,
                   /*expand_groups=*/true);
-              OpenWindow(window_definition);
+              co_await ::OpenView(main_window_, window_definition);
               co_return;
             });
   }
 }
 
 void SelectionCommands::OpenWindow(const WindowDefinition& window_definition) {
-  ::OpenView(main_window_, window_definition, true);
+  CoSpawn(executor_, [this, window_definition]() -> Awaitable<void> {
+    co_await ::OpenView(main_window_, window_definition, true);
+  });
 }
 
 CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
@@ -268,11 +270,10 @@ CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
   return nullptr;
 }
 
-promise<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
+Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
     int view_type_id,
     const NodeRef& node) {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   OpenViewContainingNodeAsync(view_type_id, node));
+  co_return co_await OpenViewContainingNodeAsync(view_type_id, node);
 }
 
 Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
@@ -304,8 +305,7 @@ Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
   } else {
     WindowDefinition win(GetWindowInfo(view_type_id));
     win.path = path;
-    opened_view = co_await AwaitPromise(NetExecutorAdapter{executor_},
-                                        main_window_->OpenView(win));
+    opened_view = co_await main_window_->OpenView(win);
   }
 
   opened_view->Select(node.node_id());

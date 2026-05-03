@@ -12,7 +12,7 @@
 #include <QApplication>
 
 struct State : DisplayTesterState {
-  std::shared_ptr<Executor> executor = std::make_shared<TestExecutor>();
+  AnyExecutor executor = TestExecutor{};
   vidicon::VidiconClient vidicon_client{
       {.executor_ = executor, .timed_data_service_ = timed_data_service}};
 };
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
 
   QApplication qapp(argc, argv);
-  auto executor = std::make_shared<MessageLoopQt>();
+  auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   State state;
 
   DisplayTesterWindow tester_window{

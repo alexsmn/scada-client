@@ -1,6 +1,6 @@
 #include "ui/common/client_utils.h"
 
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "node_service/node_model_mock.h"
@@ -48,10 +48,10 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncRespectsMaxCount) {
       .WillByDefault(Return(std::vector<NodeRef>{NodeRef{second},
                                                 NodeRef{third}}));
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto node_ids =
       WaitAwaitable(executor,
-                    ExpandGroupItemIdsAsync(MakeAnyExecutor(executor),
+                    ExpandGroupItemIdsAsync(executor,
                                             NodeRef{root},
                                             /*max_count=*/2));
 
@@ -64,10 +64,10 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
                             NodeFetchStatus::None());
   EXPECT_CALL(*root, Fetch(_, _)).Times(0);
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto node_ids =
       WaitAwaitable(executor,
-                    ExpandGroupItemIdsAsync(MakeAnyExecutor(executor),
+                    ExpandGroupItemIdsAsync(executor,
                                             NodeRef{root},
                                             /*max_count=*/0));
 

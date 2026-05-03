@@ -1,10 +1,12 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "components/write/write_dialog.h"
 #include "components/write/write_service.h"
 
 struct WriteServiceImplContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   TimedDataService& timed_data_service_;
   Profile& profile_;
 };

@@ -14,7 +14,7 @@
 
 namespace {
 
-Awaitable<void> RunMoveDropTask(std::shared_ptr<Executor> executor,
+Awaitable<void> RunMoveDropTask(AnyExecutor executor,
                                 TaskManager& task_manager,
                                 const scada::NodeId& node_id,
                                 const scada::NodeId& old_parent_id,
@@ -34,7 +34,7 @@ Awaitable<void> RunMoveDropTask(std::shared_ptr<Executor> executor,
   co_return;
 }
 
-Awaitable<void> RunCreateDataItemTask(std::shared_ptr<Executor> executor,
+Awaitable<void> RunCreateDataItemTask(AnyExecutor executor,
                                       TaskManager& task_manager,
                                       scada::NodeState node_state) {
   try {
@@ -44,7 +44,7 @@ Awaitable<void> RunCreateDataItemTask(std::shared_ptr<Executor> executor,
   co_return;
 }
 
-Awaitable<void> RunAssignChannelTask(std::shared_ptr<Executor> executor,
+Awaitable<void> RunAssignChannelTask(AnyExecutor executor,
                                      TaskManager& task_manager,
                                      const scada::NodeId& node_id,
                                      scada::NodeProperties properties) {
@@ -55,7 +55,7 @@ Awaitable<void> RunAssignChannelTask(std::shared_ptr<Executor> executor,
   co_return;
 }
 
-DropAction MakeMoveDropAction(std::shared_ptr<Executor> executor,
+DropAction MakeMoveDropAction(AnyExecutor executor,
                               TaskManager& task_manager,
                               const scada::NodeId& node_id,
                               const scada::NodeId& old_parent_id,
@@ -70,7 +70,7 @@ DropAction MakeMoveDropAction(std::shared_ptr<Executor> executor,
   };
 }
 
-DropAction MakeCreateDataItemAction(std::shared_ptr<Executor> executor,
+DropAction MakeCreateDataItemAction(AnyExecutor executor,
                                     TaskManager& task_manager,
                                     const scada::NodeId& parent_id,
                                     scada::NodeAttributes attributes,
@@ -103,7 +103,7 @@ DropAction MakeCreateDataItemAction(std::shared_ptr<Executor> executor,
   };
 }
 
-DropAction MakeAssignChannelAction(std::shared_ptr<Executor> executor,
+DropAction MakeAssignChannelAction(AnyExecutor executor,
                                    TaskManager& task_manager,
                                    const scada::NodeId& node_id,
                                    std::string formula,

@@ -18,8 +18,9 @@ class DialogServiceImplQtTest : public testing::Test {
 }  // namespace
 
 TEST_F(DialogServiceImplQtTest, RunMessageBoxMapsNoButtonResult) {
-  auto result = dialog_service_.RunMessageBox(
-      u"Confirm?", u"Title", MessageBoxMode::QuestionYesNoDefaultNo);
+  auto result = aui::qt::test::StartAwaitable(
+      dialog_service_.RunMessageBox(
+          u"Confirm?", u"Title", MessageBoxMode::QuestionYesNoDefaultNo));
 
   aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     auto* message_box = qobject_cast<QMessageBox*>(&dialog);
@@ -30,6 +31,6 @@ TEST_F(DialogServiceImplQtTest, RunMessageBoxMapsNoButtonResult) {
     no_button->click();
   });
 
-  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
-  EXPECT_EQ(result.get(), MessageBoxResult::No);
+  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
+  EXPECT_EQ(aui::qt::test::GetAwaitableResult(result), MessageBoxResult::No);
 }

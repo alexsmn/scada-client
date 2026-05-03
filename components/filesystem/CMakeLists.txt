@@ -2,8 +2,8 @@ client_module(client_filesystem)
 
 client_module_link_libraries(client_filesystem PUBLIC
   scada_common
-  # `file_manager_impl.cpp` uses `NetExecutorAdapter` / `AwaitPromise`, which
-  # transitively pull in `transport/executor.h`.
+  # `file_manager_impl.cpp` uses `NetExecutorAdapter`, which transitively pulls
+  # in `transport/executor.h`.
   transport
 )
 
@@ -22,4 +22,3 @@ client_module_link_libraries(client_filesystem PRIVATE
 # `UiView` type are visible.
 target_link_libraries(client_filesystem_qt_unittests PRIVATE aui_qt)
 target_link_libraries(client_filesystem_wt_unittests PRIVATE aui_wt)
-

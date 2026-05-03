@@ -14,7 +14,7 @@
 namespace {
 
 Awaitable<void> RenameCurrentPageAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     MainWindowInterface& main_window,
     DialogService& dialog_service,
     RenamePagePromptRunner prompt_runner,

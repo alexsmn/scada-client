@@ -2,7 +2,6 @@
 
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/program_options.h"
 #include "base/excel.h"
 #include "base/u16format.h"
@@ -144,7 +143,11 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
 
   switch (command_id) {
     case ID_PASTE:
-      PasteFromClipboard();
+      CoSpawn(executor_, cancelation_,
+              [this]() mutable -> Awaitable<void> {
+                co_await PasteFromClipboard();
+                co_return;
+              });
       return;
     case ID_VIEW_CLOSE:
       opened_view_->Close();
@@ -152,8 +155,15 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
     case ID_EXPORT_CSV:
       assert(dialog_service_);
       if (auto* export_model = controller_->GetExportModel()) {
-        RunCsvExport({executor_, *dialog_service_, profile_, *export_model,
-                      /*window_title=*/opened_view_->GetWindowTitle()});
+        CoSpawn(executor_, cancelation_,
+                [this, export_model,
+                 window_title = opened_view_->GetWindowTitle()]() mutable
+                -> Awaitable<void> {
+                  co_await RunCsvExport(
+                      {executor_, *dialog_service_, profile_, *export_model,
+                       std::move(window_title)});
+                  co_return;
+                });
       }
       return;
     case ID_EXPORT_EXCEL:
@@ -373,10 +383,9 @@ Awaitable<void> OpenedViewCommands::OnCreateRecordCompleteAsync(
   co_await FetchNode(node);
 
   controller_->OnViewNodeCreated(node);
-  auto def = co_await AwaitPromise(
-      NetExecutorAdapter{executor_},
-      MakeWindowDefinition(&kNodePropertyWindowInfo, node, /*activate=*/false));
-  ::OpenView(main_window_, def, true);
+  auto def = co_await MakeWindowDefinitionAsync(
+      executor_, &kNodePropertyWindowInfo, node, /*expand_groups=*/false);
+  co_await ::OpenView(main_window_, def, true);
   co_return;
 }
 
@@ -397,8 +406,8 @@ Awaitable<void> OpenedViewCommands::PasteFromClipboardAsync() {
   co_await PasteNodesFromClipboard(task_manager_, parent_node.node_id());
 }
 
-promise<> OpenedViewCommands::PasteFromClipboard() {
-  return ToPromise(NetExecutorAdapter{executor_}, PasteFromClipboardAsync());
+Awaitable<void> OpenedViewCommands::PasteFromClipboard() {
+  co_await PasteFromClipboardAsync();
 }
 
 void OpenedViewCommands::ExportToExcel() {

@@ -1,7 +1,6 @@
 ﻿#include "components/node_properties/node_property_model.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "aui/translation.h"
 #include "model/scada_node_ids.h"
 #include "net/net_executor_adapter.h"
@@ -34,7 +33,7 @@ void SortPropertiesRecursive(
   }
 }
 
-Awaitable<bool> FetchNodeAsync(std::shared_ptr<Executor> executor,
+Awaitable<bool> FetchNodeAsync(AnyExecutor executor,
                                NodeRef node,
                                CancelationRef cancelation) {
   try {

@@ -8,7 +8,7 @@
 TEST(WtTransportDialogTest, UnsupportedDialogRejects) {
   DialogServiceImplWt dialog_service;
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto result = StartAwaitable(
       executor, ShowTransportDialog(dialog_service, transport::TransportString{}));
 

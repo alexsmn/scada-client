@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "controller/command_handler.h"
 #include "core/global_command_context.h"
 
@@ -15,7 +17,6 @@ template <class T>
 class BasicCommandRegistry;
 
 class DialogService;
-class Executor;
 class Favourites;
 class LocalEvents;
 class MainWindowInterface;
@@ -28,7 +29,7 @@ class TaskManager;
 struct GlobalCommandContext;
 
 struct MainWindowCommandsContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   MainWindowInterface& main_window_;
   TaskManager& task_manager_;
   DialogService& dialog_service_;

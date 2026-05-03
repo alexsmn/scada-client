@@ -370,7 +370,7 @@ void SummaryModel::AddContainedItem(const scada::NodeId& node_id,
   CoSpawn(executor_, [this, executor = executor_,
                       node = node_service_.GetNode(node_id)]()
                          -> Awaitable<void> {
-    return AddContainedItemAsync(*this, NetExecutorAdapter{executor}, node);
+    return AddContainedItemAsync(*this, executor, node);
   });
 }
 

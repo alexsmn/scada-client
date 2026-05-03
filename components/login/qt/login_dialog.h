@@ -1,5 +1,8 @@
 #pragma once
 
+#include "base/any_executor.h"
+
+#include "base/async_completion.h"
 #include "components/login/login_dialog.h"
 #include "scada/data_services_factory.h"
 #include "aui/qt/dialog_service_impl_qt.h"
@@ -18,11 +21,11 @@ class LoginDialog : public QDialog {
   Q_OBJECT
 
  public:
-  LoginDialog(std::shared_ptr<Executor> executor,
+  LoginDialog(AnyExecutor executor,
               DataServicesContext&& services_context);
   ~LoginDialog();
 
-  promise<std::optional<DataServices>> promise;
+  Awaitable<std::optional<DataServices>> Wait();
 
  protected:
   virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -31,6 +34,7 @@ class LoginDialog : public QDialog {
 
  private:
   void Login();
+  void Complete(std::optional<DataServices> services);
 
   void EnableControls(bool enable);
 
@@ -39,4 +43,7 @@ class LoginDialog : public QDialog {
   DialogServiceImplQt dialog_service_;
 
   const std::shared_ptr<LoginController> controller_;
+  base::AsyncCompletion completion_;
+  std::optional<DataServices> result_;
+  bool completed_ = false;
 };

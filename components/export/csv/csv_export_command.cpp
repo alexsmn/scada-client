@@ -3,7 +3,6 @@
 #include "aui/dialog_service.h"
 
 #include <boost/algorithm/string/replace.hpp>
-#include "base/awaitable_promise.h"
 #include "base/value_util.h"
 #include "base/win/win_util2.h"
 #include "export/csv/csv_export.h"
@@ -31,10 +30,7 @@ class CsvExportCommandRun
       show_csv_export_dialog = ShowCsvExportDialog;
   }
 
-  promise<void> Run() {
-    return ToPromise(NetExecutorAdapter{executor_},
-                     RunAsync(shared_from_this()));
-  }
+  Awaitable<void> Run() { return RunAsync(shared_from_this()); }
 
  private:
   Awaitable<void> RunAsync(std::shared_ptr<CsvExportCommandRun> /*self*/) {
@@ -93,6 +89,6 @@ class CsvExportCommandRun
 
 }  // namespace
 
-promise<void> RunCsvExport(CsvExportContext&& context) {
+Awaitable<void> RunCsvExport(CsvExportContext&& context) {
   return std::make_shared<CsvExportCommandRun>(std::move(context))->Run();
 }

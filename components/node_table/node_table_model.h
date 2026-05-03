@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/models/fixed_row_model.h"
 #include "aui/models/grid_model.h"
 #include "base/cancelation.h"
@@ -9,7 +11,6 @@
 
 #include <span>
 
-class Executor;
 class NodeService;
 class PropertyDefinition;
 class PropertyService;
@@ -19,7 +20,7 @@ class NodeTableModel : private PropertyContext,
                        private aui::FixedRowModel::Delegate,
                        public NodeRefObserver {
  public:
-  NodeTableModel(std::shared_ptr<Executor> executor,
+  NodeTableModel(AnyExecutor executor,
                  PropertyService& property_service,
                  PropertyContext&& context);
   virtual ~NodeTableModel() override;
@@ -82,7 +83,7 @@ class NodeTableModel : private PropertyContext,
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   PropertyService& property_service_;
 
   aui::FixedRowModel row_model_{*this};

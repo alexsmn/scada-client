@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "core/selection_command_context.h"
@@ -7,13 +8,12 @@
 #include <memory>
 #include <stack>
 
-class Executor;
 class ProgressHost;
 class Tracer;
 
 class CoreModule {
  public:
-  explicit CoreModule(std::shared_ptr<Executor> executor);
+  explicit CoreModule(AnyExecutor executor);
   ~CoreModule();
 
   Tracer& tracer() { return *tracer_; }

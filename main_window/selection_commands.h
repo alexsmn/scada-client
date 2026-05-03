@@ -1,8 +1,9 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/cancelation.h"
 #include "base/awaitable.h"
-#include "base/promise.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
 #include "profile/window_definition.h"
@@ -15,7 +16,6 @@ class SessionService;
 
 class Controller;
 class DialogService;
-class Executor;
 class FileCache;
 class MainWindowInterface;
 class MainWindowManager;
@@ -29,7 +29,7 @@ class TaskManager;
 struct SelectionCommandContext;
 
 struct SelectionCommandsContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   NodeEventProvider& node_event_provider_;
@@ -72,8 +72,8 @@ class SelectionCommands : private SelectionCommandsContext,
   void DeleteSelection();
   void CopyToClipboard();
 
-  promise<OpenedViewInterface*> OpenViewContainingNode(int view_type_id,
-                                                       const NodeRef& node);
+  Awaitable<OpenedViewInterface*> OpenViewContainingNode(int view_type_id,
+                                                         const NodeRef& node);
   Awaitable<OpenedViewInterface*> OpenViewContainingNodeAsync(
       int view_type_id,
       NodeRef node);

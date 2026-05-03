@@ -1,29 +1,53 @@
 #include "screenshot_wait.h"
 
+#include "aui/qt/message_loop_qt.h"
+
 #include <gtest/gtest.h>
 
 #include <stdexcept>
 
 namespace screenshot_generator {
 
-TEST(ScreenshotWaitTest, WaitForPromiseReturnsResolvedValue) {
-  EXPECT_EQ(WaitForPromise(make_resolved_promise(42)), 42);
+namespace {
+
+Awaitable<int> ResolveInt() {
+  co_return 42;
 }
 
-TEST(ScreenshotWaitTest, WaitForPromisePropagatesRejectedValuePromise) {
-  EXPECT_THROW(WaitForPromise(make_rejected_promise<int>(
-                   std::runtime_error{"value failure"})),
-               std::runtime_error);
+Awaitable<int> RejectInt() {
+  throw std::runtime_error{"value failure"};
+  co_return 0;
 }
 
-TEST(ScreenshotWaitTest, WaitForPromiseCompletesResolvedVoidPromise) {
-  EXPECT_NO_THROW(WaitForPromise(make_resolved_promise()));
+Awaitable<void> ResolveVoid() {
+  co_return;
 }
 
-TEST(ScreenshotWaitTest, WaitForPromisePropagatesRejectedVoidPromise) {
-  EXPECT_THROW(WaitForPromise(make_rejected_promise<void>(
-                   std::runtime_error{"void failure"})),
-               std::runtime_error);
+Awaitable<void> RejectVoid() {
+  throw std::runtime_error{"void failure"};
+  co_return;
+}
+
+AnyExecutor MakeExecutor() {
+  return MakeAnyExecutor(std::make_shared<MessageLoopQt>());
+}
+
+}  // namespace
+
+TEST(ScreenshotWaitTest, WaitForAwaitableReturnsResolvedValue) {
+  EXPECT_EQ(WaitForAwaitable(MakeExecutor(), ResolveInt()), 42);
+}
+
+TEST(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedValue) {
+  EXPECT_THROW(WaitForAwaitable(MakeExecutor(), RejectInt()), std::runtime_error);
+}
+
+TEST(ScreenshotWaitTest, WaitForAwaitableCompletesResolvedVoid) {
+  EXPECT_NO_THROW(WaitForAwaitable(MakeExecutor(), ResolveVoid()));
+}
+
+TEST(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedVoid) {
+  EXPECT_THROW(WaitForAwaitable(MakeExecutor(), RejectVoid()), std::runtime_error);
 }
 
 }  // namespace screenshot_generator

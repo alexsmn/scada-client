@@ -5,7 +5,6 @@
 #include <functional>
 #include <memory>
 
-class Executor;
 class DialogService;
 class NodeRef;
 class MainWindowInterface;

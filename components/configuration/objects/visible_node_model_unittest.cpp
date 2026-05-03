@@ -11,7 +11,7 @@ using namespace testing;
 class VisibleNodeModelTest : public Test {
  public:
  protected:
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  AnyExecutor executor_ = TestExecutor{};
   MockTimedDataService timed_data_service_;
   Profile profile_;
   VisibleNodeModel::NodeChangeHandler node_change_handler_ =

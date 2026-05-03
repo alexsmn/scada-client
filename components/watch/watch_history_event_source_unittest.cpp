@@ -44,8 +44,7 @@ class WatchHistoryEventSourceTest : public Test {
                        .type_definition_id = kDeviceTypeId});
   }
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<scada::MockHistoryService> history_service_;
   StaticNodeService node_service_;
   WatchHistoryEventSource source_;
@@ -77,7 +76,7 @@ TEST_F(WatchHistoryEventSourceTest, StartDeliversHistoryEvents) {
 }
 
 TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
-  base::AsyncCompletion completion{MakeTestAnyExecutor(executor_)};
+  base::AsyncCompletion completion{executor_};
   scada::HistoryReadEventsResult result;
   bool history_read_started = false;
 
@@ -110,7 +109,7 @@ TEST_F(WatchHistoryEventSourceTest, NewStartCancelsStaleHistoryDelivery) {
 }
 
 TEST_F(WatchHistoryEventSourceTest, NullDeviceDoesNotReadHistory) {
-  EXPECT_CALL(history_service_, HistoryReadEvents(_, _, _, _, _)).Times(0);
+  EXPECT_CALL(history_service_, HistoryReadEvents(_, _, _, _)).Times(0);
 
   source_.Start(scada::NodeId{}, {scada::DateTime::UnixEpoch(),
                                   scada::DateTime::UnixEpoch()},

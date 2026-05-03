@@ -3,7 +3,6 @@
 #include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
-#include "base/awaitable_promise.h"
 #include "favorites/favourites.h"
 #include "favorites/favourites_url.h"
 #include "net/net_executor_adapter.h"
@@ -15,7 +14,7 @@ const char16_t kAddUrl[] = u"Add Web Page";
 }  // namespace
 
 Awaitable<void> AddUrlToFavouritesWithPromptAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<void> lifetime_token,
     DialogService& dialog_service,
     Favourites& favourites,
@@ -43,7 +42,7 @@ Awaitable<void> AddUrlToFavouritesWithPromptAsync(
 }
 
 Awaitable<void> AddUrlToFavouritesWithPrompt(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<void> lifetime_token,
     DialogService& dialog_service,
     Favourites& favourites,

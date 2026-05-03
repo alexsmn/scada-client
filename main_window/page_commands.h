@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/awaitable.h"
 
 #include <functional>
@@ -10,7 +12,6 @@ template <class T>
 class BasicCommandRegistry;
 
 class DialogService;
-class Executor;
 class MainWindowManager;
 class Profile;
 struct GlobalCommandContext;
@@ -20,7 +21,7 @@ using RenamePagePromptRunner =
                                             std::u16string current_title)>;
 
 struct PageCommandsContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;

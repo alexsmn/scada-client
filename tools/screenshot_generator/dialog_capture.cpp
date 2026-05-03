@@ -5,10 +5,8 @@
 #include "screenshot_wait.h"
 
 #include "aui/qt/dialog_service_impl_qt.h"
-#include "base/awaitable_promise.h"
 #include "base/console_logger.h"
-#include "base/executor_conversions.h"
-#include "base/promise.h"
+#include "base/any_executor.h"
 #include "components/limits/limit_dialog.h"
 #include "components/login/login_dialog.h"
 #include "components/write/write_dialog.h"
@@ -32,10 +30,60 @@
 #include <gtest/gtest.h>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 
 namespace {
 
 using screenshot_generator::WaitForPendingNodeLoads;
+
+template <class T>
+struct DialogAwaitableResult {
+  std::optional<T> value;
+  std::exception_ptr error;
+  bool done = false;
+};
+
+template <>
+struct DialogAwaitableResult<void> {
+  std::exception_ptr error;
+  bool done = false;
+};
+
+template <class T>
+std::shared_ptr<DialogAwaitableResult<T>> StartDialogAwaitable(
+    AnyExecutor executor,
+    Awaitable<T> awaitable) {
+  auto result = std::make_shared<DialogAwaitableResult<T>>();
+  CoSpawn(std::move(executor),
+          [result, awaitable = std::move(awaitable)]() mutable
+              -> Awaitable<void> {
+            try {
+              if constexpr (std::is_void_v<T>) {
+                co_await std::move(awaitable);
+              } else {
+                result->value.emplace(co_await std::move(awaitable));
+              }
+            } catch (...) {
+              result->error = std::current_exception();
+            }
+            result->done = true;
+          });
+  return result;
+}
+
+template <class T>
+bool IsDialogAwaitableReady(
+    const std::shared_ptr<DialogAwaitableResult<T>>& result) {
+  return result->done;
+}
+
+template <class T>
+void GetDialogAwaitableResult(
+    const std::shared_ptr<DialogAwaitableResult<T>>& result) {
+  if (result->error) {
+    std::rethrow_exception(result->error);
+  }
+}
 
 // Dummy TransportFactory that never produces a transport. LoginDialog
 // & friends hold a `TransportFactory&` inside their DataServicesContext
@@ -62,35 +110,35 @@ Awaitable<T> RejectTaskManagerCallAsync() {
 }
 
 // Dummy TaskManager. We never press OK on captured dialogs, so no
-// task is ever posted. Each method still rejects through a coroutine-backed
-// promise in case something slips through.
+// task is ever posted. Each method still rejects through a coroutine in case
+// something slips through.
 class NullTaskManager : public TaskManager {
  public:
-  promise<void> PostTask(std::u16string_view,
-                         const TaskLauncher&) override {
-    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
+  Awaitable<void> PostTask(std::u16string_view,
+                           const TaskLauncher&) override {
+    return RejectTaskManagerCallAsync();
   }
-  promise<scada::NodeId> PostInsertTask(const scada::NodeState&) override {
-    return ToPromise(MakeThreadAnyExecutor(),
-                     RejectTaskManagerCallAsync<scada::NodeId>());
+  Awaitable<scada::NodeId> PostInsertTask(
+      const scada::NodeState&) override {
+    return RejectTaskManagerCallAsync<scada::NodeId>();
   }
-  promise<void> PostUpdateTask(const scada::NodeId&,
-                               scada::NodeAttributes,
-                               scada::NodeProperties) override {
-    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
+  Awaitable<void> PostUpdateTask(const scada::NodeId&,
+                                 scada::NodeAttributes,
+                                 scada::NodeProperties) override {
+    return RejectTaskManagerCallAsync();
   }
-  promise<void> PostDeleteTask(const scada::NodeId&) override {
-    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
+  Awaitable<void> PostDeleteTask(const scada::NodeId&) override {
+    return RejectTaskManagerCallAsync();
   }
-  promise<void> PostAddReference(const scada::NodeId&,
-                                 const scada::NodeId&,
-                                 const scada::NodeId&) override {
-    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
+  Awaitable<void> PostAddReference(const scada::NodeId&,
+                                   const scada::NodeId&,
+                                   const scada::NodeId&) override {
+    return RejectTaskManagerCallAsync();
   }
-  promise<void> PostDeleteReference(const scada::NodeId&,
-                                    const scada::NodeId&,
-                                    const scada::NodeId&) override {
-    return ToPromise(MakeThreadAnyExecutor(), RejectTaskManagerCallAsync());
+  Awaitable<void> PostDeleteReference(const scada::NodeId&,
+                                      const scada::NodeId&,
+                                      const scada::NodeId&) override {
+    return RejectTaskManagerCallAsync();
   }
 };
 
@@ -136,7 +184,7 @@ bool GrabAndCloseVisibleDialog(const DialogSpec& spec) {
   pixmap.save(QString::fromStdString(path.string()));
 
   // Hide *before* reject(). LoginDialog overrides reject() to resolve
-  // its promise and deliberately doesn't call QDialog::reject(), which
+  // its completion and deliberately doesn't call QDialog::reject(), which
   // means reject() alone leaves the dialog visible — and the next
   // capture's top-level-widgets scan finds the login again instead of
   // the dialog just shown. An explicit hide() clears isVisible() for
@@ -155,6 +203,24 @@ bool GrabAndCloseVisibleDialogOrReport(const DialogSpec& spec) {
   return false;
 }
 
+void WaitForDialogCompletion(
+    const std::shared_ptr<DialogAwaitableResult<void>>& result) {
+  for (int i = 0; i < 200 && !IsDialogAwaitableReady(result); ++i)
+    QApplication::processEvents(QEventLoop::AllEvents |
+                                    QEventLoop::WaitForMoreEvents,
+                                20);
+
+  if (!IsDialogAwaitableReady(result))
+    ADD_FAILURE() << "Dialog coroutine did not complete";
+
+  try {
+    GetDialogAwaitableResult(result);
+  } catch (const std::exception&) {
+    // Captures close dialogs through reject(), so modal-dialog awaitables
+    // normally finish by throwing the cancellation exception.
+  }
+}
+
 // --- Per-kind builders. Each invokes the component's public factory
 // (which calls show() internally) and returns; the generic
 // GrabAndCloseVisibleDialog then picks the dialog up from the
@@ -163,15 +229,17 @@ bool GrabAndCloseVisibleDialogOrReport(const DialogSpec& spec) {
 // Adding a new dialog = add a new `Build*Dialog` here and a new arm in
 // the `Dispatch` switch below.
 
-std::optional<promise<void>> BuildLoginDialog(
+std::shared_ptr<DialogAwaitableResult<std::optional<DataServices>>>
+BuildLoginDialog(
     DialogEnvironment& env,
     NullTransportFactory& transport_factory,
     const std::shared_ptr<Logger>& logger) {
   DataServicesContext services_context{logger, env.executor,
                                        transport_factory,
                                        scada::ServiceLogParams{}};
-  auto dialog_lifetime =
-      ToVoidPromise(ExecuteLoginDialog(env.executor, std::move(services_context)));
+  auto dialog_lifetime = StartDialogAwaitable(
+      env.executor,
+      ExecuteLoginDialog(env.executor, std::move(services_context)));
   QApplication::processEvents();
   return dialog_lifetime;
 }
@@ -182,26 +250,27 @@ std::optional<promise<void>> BuildLoginDialog(
 // "Температура нагрева", the analog node the docs images target. Limit
 // values still render empty until the fixture grows
 // HasProperty support for AnalogItemType_Limit{Hi,Lo,HiHi,LoLo} (gap #2).
-std::optional<promise<void>> BuildLimitsDialog(
+std::shared_ptr<DialogAwaitableResult<void>> BuildLimitsDialog(
     DialogEnvironment& env,
     NullTaskManager& task_manager,
     DialogServiceImplQt& dialog_service) {
   if (!env.node_service) {
     ADD_FAILURE() << "LimitsDialog needs a node_service in DialogEnvironment";
-    return std::nullopt;
+    return {};
   }
   auto node = env.node_service->GetNode(env.dialog_analog_node_id);
   if (!node) {
     ADD_FAILURE() << "LimitsDialog: configured fixture node not found";
-    return std::nullopt;
+    return {};
   }
   if (!FetchAndWaitForPendingNodeLoads(
           *env.node_service, node, NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "LimitsDialog: failed to fetch configured fixture node";
-    return std::nullopt;
+    return {};
   }
-  auto dialog_lifetime =
-      ShowLimitsDialog(dialog_service, LimitDialogContext{node, task_manager});
+  auto dialog_lifetime = StartDialogAwaitable(
+      env.executor,
+      ShowLimitsDialog(dialog_service, LimitDialogContext{node, task_manager}));
   QApplication::processEvents();
   return dialog_lifetime;
 }
@@ -219,31 +288,32 @@ std::optional<promise<void>> BuildLimitsDialog(
 // through TestExecutor and Qt's event loop, and the UI only updates via
 // current_change_handler once the DataValue lands. Too few pumps leaves
 // the "Current value:" label blank in the grab.
-std::optional<promise<void>> BuildWriteDialog(DialogEnvironment& env,
-                                             DialogServiceImplQt& dialog_service,
-                                             bool manual) {
+std::shared_ptr<DialogAwaitableResult<void>> BuildWriteDialog(
+    DialogEnvironment& env,
+    DialogServiceImplQt& dialog_service,
+    bool manual) {
   if (!env.timed_data_service || !env.profile || !env.node_service) {
     ADD_FAILURE()
         << "WriteDialog needs timed_data_service + profile + node_service in env";
-    return std::nullopt;
+    return {};
   }
   auto node = env.node_service->GetNode(env.dialog_analog_node_id);
   if (!node) {
     ADD_FAILURE() << "WriteDialog: configured fixture node not found";
-    return std::nullopt;
+    return {};
   }
   if (!FetchAndWaitForPendingNodeLoads(
           *env.node_service, node, NodeFetchStatus::NodeOnly())) {
     ADD_FAILURE() << "WriteDialog: failed to fetch configured fixture node";
-    return std::nullopt;
+    return {};
   }
-  auto dialog_lifetime = ExecuteWriteDialog(
+  auto dialog_lifetime = StartDialogAwaitable(env.executor, ExecuteWriteDialog(
       dialog_service, WriteContext{.executor_ = env.executor,
                                    .timed_data_service_ =
                                        *env.timed_data_service,
                                    .node_id_ = env.dialog_analog_node_id,
                                    .profile_ = *env.profile,
-                                   .manual_ = manual});
+                                   .manual_ = manual}));
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();
   return dialog_lifetime;
@@ -263,17 +333,29 @@ bool CaptureDialog(const DialogSpec& spec, DialogEnvironment& env) {
         BuildLoginDialog(env, transport_factory, logger);
     return GrabAndCloseVisibleDialogOrReport(spec);
   } else if (spec.kind == "limits") {
-    [[maybe_unused]] auto dialog_lifetime =
+    auto dialog_lifetime =
         BuildLimitsDialog(env, task_manager, dialog_service);
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    if (!dialog_lifetime)
+      return false;
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
   } else if (spec.kind == "write-manual") {
-    [[maybe_unused]] auto dialog_lifetime =
+    auto dialog_lifetime =
         BuildWriteDialog(env, dialog_service, /*manual=*/true);
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    if (!dialog_lifetime)
+      return false;
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
   } else if (spec.kind == "write-remote") {
-    [[maybe_unused]] auto dialog_lifetime =
+    auto dialog_lifetime =
         BuildWriteDialog(env, dialog_service, /*manual=*/false);
-    return GrabAndCloseVisibleDialogOrReport(spec);
+    if (!dialog_lifetime)
+      return false;
+    bool captured = GrabAndCloseVisibleDialogOrReport(spec);
+    WaitForDialogCompletion(dialog_lifetime);
+    return captured;
   } else {
     ADD_FAILURE() << "Unknown dialog kind: " << spec.kind;
     return false;

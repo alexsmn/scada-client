@@ -1,8 +1,7 @@
 #include "components/device_metrics/node_collector.h"
 
-#include "base/awaitable_promise.h"
 #include "base/callback_awaitable.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/span_util.h"
 
 #include <boost/range/adaptor/filtered.hpp>
@@ -24,12 +23,6 @@ std::vector<NodeRef> JoinAll(
 
 }  // namespace
 
-promise<NodeRef> FetchNode(const NodeRef& node,
-                           const NodeFetchStatus& requested_status) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor, FetchNodeAsync(executor, node, requested_status));
-}
-
 Awaitable<NodeRef> FetchNodeAsync(AnyExecutor executor,
                                   const NodeRef& node,
                                   const NodeFetchStatus& requested_status) {
@@ -43,15 +36,6 @@ Awaitable<NodeRef> FetchNodeAsync(AnyExecutor executor,
                    });
       });
   co_return fetched_node;
-}
-
-promise<std::vector<NodeRef>> CollectChildren(
-    const NodeRef& parent_node,
-    const scada::NodeId& type_definition_id) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor,
-                   CollectChildrenAsync(executor, parent_node,
-                                        type_definition_id));
 }
 
 Awaitable<std::vector<NodeRef>> CollectChildrenAsync(
@@ -70,15 +54,6 @@ Awaitable<std::vector<NodeRef>> CollectChildrenAsync(
   }
 
   co_return children;
-}
-
-promise<std::vector<NodeRef>> CollectNodesRecursive(
-    const NodeRef& parent_node,
-    const scada::NodeId& type_definition_id) {
-  auto executor = MakeThreadAnyExecutor();
-  return ToPromise(executor,
-                   CollectNodesRecursiveAsync(executor, parent_node,
-                                              type_definition_id));
 }
 
 Awaitable<std::vector<NodeRef>> CollectNodesRecursiveAsync(

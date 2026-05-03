@@ -66,7 +66,7 @@ class BaseMainWindow : protected MainWindowContext,
   virtual void DeleteCurrentPage() override;
   virtual OpenedView* GetActiveView() const override;
   virtual OpenedView* GetActiveDataView() const override;
-  virtual promise<OpenedViewInterface*> OpenView(
+  virtual Awaitable<OpenedViewInterface*> OpenView(
       const WindowDefinition& window_definition,
       bool activate = true) override;
   OpenedView* FindOpenedViewByFilePath(const std::filesystem::path& path);

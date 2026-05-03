@@ -251,7 +251,7 @@ Each module defines a `*Context` struct and privately inherits from it:
 
 ```cpp
 struct EventModuleContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   Profile& profile_;
   scada::services services_;
   // ...

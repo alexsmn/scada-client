@@ -58,13 +58,13 @@ TEST(ExportDataBuilder, Test) {
   StaticNodeService node_service;
   node_service.AddAll(GetScadaNodeStates());
   node_service.AddAll(nodes);
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
 
   ExportDataBuilder builder{node_service, executor};
 
   // ACT
 
-  auto export_data = WaitPromise(executor, builder.Build());
+  auto export_data = WaitAwaitable(executor, builder.BuildAsync(executor));
 
   // CHECK
 
@@ -117,7 +117,7 @@ TEST(ExportDataBuilder, Test) {
   // TODO: Validate a reference.
 }
 
-TEST(ExportDataBuilder, BuildUsesExecutorPinnedCoroutine) {
+TEST(ExportDataBuilder, BuildAsyncUsesExecutorPinnedCoroutine) {
   StaticNodeService node_service;
   node_service.AddAll(GetScadaNodeStates());
   node_service.Add(MakeNodeState(
@@ -126,27 +126,13 @@ TEST(ExportDataBuilder, BuildUsesExecutorPinnedCoroutine) {
       /*display_name=*/u"ТИТ 11",
       /*props=*/{{data_items::id::AnalogItemType_DisplayFormat, "#####"}}));
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   ExportDataBuilder builder{node_service, executor};
 
-  auto export_data_promise = builder.Build();
-  EXPECT_EQ(export_data_promise.wait_for(std::chrono::milliseconds{0}),
-            promise_wait_status::timeout);
-
-  auto export_data = WaitPromise(executor, std::move(export_data_promise));
+  auto export_data = WaitAwaitable(executor, builder.BuildAsync(executor));
 
   EXPECT_THAT(
       export_data.nodes,
       ElementsAre(Field(&ExportData::Node::node_id,
                        scada::NodeId{11, NamespaceIndexes::TIT})));
-}
-
-TEST(ExportDataBuilder, BuildRejectsViaCoroutineWhenExecutorMissing) {
-  StaticNodeService node_service;
-  node_service.AddAll(GetScadaNodeStates());
-
-  auto executor = std::make_shared<TestExecutor>();
-  ExportDataBuilder builder{node_service, nullptr};
-
-  EXPECT_THROW(WaitPromise(executor, builder.Build()), std::logic_error);
 }

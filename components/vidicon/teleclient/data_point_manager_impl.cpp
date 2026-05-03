@@ -1,6 +1,6 @@
 #include "vidicon/teleclient/data_point_manager_impl.h"
 
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "opc/opc_convertions.h"
 #include "timed_data/timed_data_property.h"
 #include "timed_data/timed_data_spec.h"
@@ -66,7 +66,7 @@ struct DataPointManagerImpl::Backend {
 
 // DataPointManagerImpl
 
-DataPointManagerImpl::DataPointManagerImpl(std::shared_ptr<Executor> executor,
+DataPointManagerImpl::DataPointManagerImpl(AnyExecutor executor,
                                            TimedDataService& timed_data_service)
     : executor_{std::move(executor)},
       backend_{std::make_unique<Backend>(timed_data_service)} {}
@@ -76,7 +76,7 @@ DataPointManagerImpl ::~DataPointManagerImpl() = default;
 void DataPointManagerImpl::Subscribe(const DataPointAddress& address,
                                      std::stop_token cancelation,
                                      const DataChangeHandler& handler) {
-  Dispatch(*executor_,
+  Dispatch(executor_,
            [=, this] { backend_->Subscribe(address, cancelation, handler); });
 }
 

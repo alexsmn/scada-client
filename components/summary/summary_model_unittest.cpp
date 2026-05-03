@@ -41,7 +41,7 @@ class SummaryModelTest : public Test {
  protected:
   aui::GridCell GetCellAt(int column_index, base::Time time);
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StaticNodeService node_service_;
   FakeTimedDataService timed_data_service_;
 

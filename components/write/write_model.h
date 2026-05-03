@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
 #include "components/write/write_dialog.h"
@@ -44,15 +46,15 @@ class WriteModel : private WriteContext,
   void StartWriting(bool second_stage);
   void StartWritingHelper();
 
-  static Awaitable<void> CompleteWriteAsync(std::shared_ptr<Executor> executor,
+  static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
                                             Awaitable<void> operation);
   static Awaitable<void> ConfirmAndStartWritingAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::weak_ptr<WriteModel> model,
       Awaitable<MessageBoxResult> prompt);
   static Awaitable<void> ReportWriteErrorAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::function<void(bool ok)> completion_handler,
       DialogService& dialog_service,
       std::u16string message,

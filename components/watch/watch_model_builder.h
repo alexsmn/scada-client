@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "components/watch/watch_combined_event_source.h"
 #include "components/watch/watch_current_event_source.h"
 #include "components/watch/watch_history_event_source.h"
@@ -8,11 +10,11 @@
 namespace {
 
 struct WatchModelHolder {
-  explicit WatchModelHolder(std::shared_ptr<Executor> executor,
+  explicit WatchModelHolder(AnyExecutor executor,
                             NodeService& node_service)
       : executor_{std::move(executor)}, node_service{node_service} {}
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   NodeService& node_service;
 
   WatchCombinedEventSource combined_event_source{
@@ -32,6 +34,6 @@ struct WatchModelBuilder {
     return std::shared_ptr<WatchModel>(holder, &holder->model);
   }
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   NodeService& node_service;
 };

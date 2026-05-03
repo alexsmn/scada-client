@@ -1,7 +1,6 @@
 ﻿#include "components/change_password/change_password.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/u16format.h"
 #include "components/change_password/change_password_dialog.h"
 #include "events/local_event_util.h"
@@ -12,7 +11,7 @@
 namespace {
 
 Awaitable<void> ReportPasswordChangeResultAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     Awaitable<void> call,
     std::u16string title,
     LocalEvents& local_events,

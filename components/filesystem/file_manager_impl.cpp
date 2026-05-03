@@ -1,6 +1,5 @@
 #include "filesystem/file_manager_impl.h"
 
-#include "base/awaitable_promise.h"
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
 #include "scada/status_exception.h"
@@ -23,10 +22,9 @@ scada::NodeId GetOnlyTargetId(
 
 }  // namespace
 
-promise<void> FileManagerImpl::DownloadFileFromServer(
+Awaitable<void> FileManagerImpl::DownloadFileFromServer(
     const std::filesystem::path& path) const {
-  return ToPromise(NetExecutorAdapter{executor_},
-                   DownloadFileFromServerAsync(path));
+  co_await DownloadFileFromServerAsync(path);
 }
 
 Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(

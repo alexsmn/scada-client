@@ -2,7 +2,6 @@
 
 #include "components/login/login_controller.h"
 #include "aui/dialog_service.h"
-#include "base/awaitable_promise.h"
 #include "base/callback_awaitable.h"
 #include "net/net_executor_adapter.h"
 
@@ -62,7 +61,7 @@ Wt::WFlags<Wt::StandardButton> ToStandardButtons(MessageBoxMode mode) {
 
 class TestDialogService : public DialogService {
  public:
-  TestDialogService(std::shared_ptr<Executor> executor, Wt::WWidget& parent)
+  TestDialogService(AnyExecutor executor, Wt::WWidget& parent)
       : executor_{std::move(executor)}, parent_{parent} {}
 
   virtual UiView* GetDialogOwningWindow() const override { return nullptr; }
@@ -99,7 +98,7 @@ class TestDialogService : public DialogService {
     message_box->show();
 
     auto [button] = co_await CallbackToAwaitable<Wt::StandardButton>(
-        NetExecutorAdapter{executor_}, [message_box](auto callback) mutable {
+        executor_, [message_box](auto callback) mutable {
           auto completion =
               std::make_shared<std::decay_t<decltype(callback)>>(
                   std::move(callback));
@@ -112,13 +111,13 @@ class TestDialogService : public DialogService {
     co_return ToMessageBoxResult(button);
   }
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   Wt::WWidget& parent_;
 };
 
 class LoginDialog : public std::enable_shared_from_this<LoginDialog> {
  public:
-  LoginDialog(std::shared_ptr<Executor> task_runner,
+  LoginDialog(AnyExecutor task_runner,
               Wt::WWidget& parent,
               DataServicesContext services_context)
       : executor_{std::move(task_runner)},
@@ -172,7 +171,7 @@ class LoginDialog : public std::enable_shared_from_this<LoginDialog> {
     dialog_->show();
 
     co_await CallbackToAwaitable<>(
-        NetExecutorAdapter{executor_}, [dialog = dialog_](auto callback) {
+        executor_, [dialog = dialog_](auto callback) {
           auto completion =
               std::make_shared<std::decay_t<decltype(callback)>>(
                   std::move(callback));
@@ -193,7 +192,7 @@ class LoginDialog : public std::enable_shared_from_this<LoginDialog> {
       dialog_->disable();
   }
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   Wt::WWidget& parent_;
   std::optional<DataServices> result_;
 
@@ -209,12 +208,11 @@ Awaitable<std::optional<DataServices>> RunLoginDialogAsync(
   co_return co_await login_dialog->RunAsync();
 }
 
-promise<std::optional<DataServices>> ExecuteLoginDialog(
-    std::shared_ptr<Executor> executor,
+Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
+    AnyExecutor executor,
     Wt::WWidget& parent,
     DataServicesContext&& services_context) {
   auto login_dialog = std::make_shared<LoginDialog>(
       executor, parent, std::move(services_context));
-  return ToPromise(NetExecutorAdapter{std::move(executor)},
-                   RunLoginDialogAsync(std::move(login_dialog)));
+  co_return co_await RunLoginDialogAsync(std::move(login_dialog));
 }

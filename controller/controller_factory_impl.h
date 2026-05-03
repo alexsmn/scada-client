@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
@@ -11,7 +13,6 @@ class CreateTree;
 class Controller;
 class ControllerDelegate;
 class DialogService;
-class Executor;
 class FileCache;
 class NodeEventProvider;
 class NodeService;
@@ -25,7 +26,7 @@ struct ControllerFactoryImpl {
                                                ControllerDelegate& delegate,
                                                DialogService& dialog_service);
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   Profile& profile_;
   scada::services scada_services_;
   TaskManager& task_manager_;

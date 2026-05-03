@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/wt/message_loop_wt.h"
 
 #include <Wt/Test/WTestEnvironment.h>
@@ -14,6 +16,6 @@ class AppEnvironment {
   boost::asio::io_context io_context_;
 
   // Application must be created.
-  std::shared_ptr<Executor> executor_ =
-      std::make_shared<MessageLoopWt>(io_context_);
+  AnyExecutor executor_ =
+      MakeAnyExecutor(std::make_shared<MessageLoopWt>(io_context_));
 };

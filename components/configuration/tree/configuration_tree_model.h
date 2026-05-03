@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/boost_log.h"
 #include "configuration/tree/configuration_tree_node.h"
 #include "configuration/tree/node_service_tree.h"
@@ -9,10 +11,9 @@
 
 #include <memory>
 
-class Executor;
 
 struct ConfigurationTreeModelContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   std::unique_ptr<NodeServiceTree> node_service_tree_;
 };
 

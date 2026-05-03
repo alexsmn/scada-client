@@ -6,11 +6,10 @@
 #include "app/qt/installed_translation.h"
 #include "app/qt/startup_flow.h"
 #include "aui/qt/message_loop_qt.h"
-#include "base/awaitable_promise.h"
 #include "base/e2e_test_hooks.h"
 #include "base/boost_log.h"
-#include "base/executor_conversions.h"
-#include "base/executor_timer.h"
+#include "base/any_executor.h"
+#include "base/any_executor_timer.h"
 #include "base/win/gdiplus_initializer.h"
 #include "components/login/login_dialog.h"
 #include "project.h"
@@ -114,10 +113,10 @@ int main(int argc, char* argv[]) {
     InstalledStyle installed_style{settings};
 
     // `QApplication` must be created.
-    auto executor = std::make_shared<MessageLoopQt>();
+    auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
 
     boost::asio::io_context io_context;
-    ExecutorTimer io_context_poll{executor};
+    AnyExecutorTimer io_context_poll{executor};
     io_context_poll.StartRepeating(10ms, [&io_context] { io_context.poll(); });
 
     ClientApplication app{ClientApplicationContext{
@@ -127,7 +126,7 @@ int main(int argc, char* argv[]) {
           return ExecuteLoginDialog(executor, std::move(services_context));
         }}};
 
-    client::RunQtStartupFlow(client::QtStartupFlowContext{
+    auto startup_flow_context = client::QtStartupFlowContext{
         .executor = executor,
         .start = [&app] { return app.Start(); },
         .run_object_view_values_check =
@@ -135,9 +134,8 @@ int main(int argc, char* argv[]) {
               return client::RunE2eObjectViewValuesCheck(app, executor);
             },
         .run_operator_use_case_smoke =
-            [&app, executor] {
-              return ToPromise(MakeAnyExecutor(executor),
-                               client::RunE2eOperatorUseCaseSmoke(app));
+            [&app] {
+              return client::RunE2eOperatorUseCaseSmoke(app);
             },
         .run_object_tree_labels_check =
             [&app, executor] {
@@ -160,6 +158,9 @@ int main(int argc, char* argv[]) {
             },
         .quit_application = &QApplication::quit,
         .e2e_test_mode = client::IsE2eTestMode(),
+    };
+    CoSpawn(executor, [context = std::move(startup_flow_context)]() mutable {
+      return client::RunQtStartupFlow(std::move(context));
     });
 
     return QApplication::exec();

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "controller/controller_factory.h"
 #include "core/node_command_context.h"
 
@@ -13,7 +15,6 @@ class BasicCommandRegistry;
 class ActionManager;
 class CreateTree;
 class EventDispatcher;
-class Executor;
 class Favourites;
 class FileCache;
 class FileManager;
@@ -39,7 +40,7 @@ using LoginHandler = std::function<void()>;
 using QuitHandler = std::function<void()>;
 
 struct MainWindowModuleContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   Profile& profile_;
   QuitHandler quit_handler_;
   scada::services scada_services_;

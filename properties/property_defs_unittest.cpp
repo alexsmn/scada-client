@@ -40,7 +40,7 @@ class PropertyDefsTest : public Test {
   std::shared_ptr<NodeService> node_service =
       v1::CreateTestNodeService(address_space);
 
-  std::shared_ptr<TestExecutor> executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   StrictMock<MockTaskManager> task_manager;
   StrictMock<MockDialogService> dialog_service;
   PropertyContext property_context{executor, *node_service, task_manager,
@@ -148,10 +148,10 @@ TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {
   CreateDataItem("GROUP_DEVICE!device.channel.path");
 
   PropertyService property_service;
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   auto property_defs = WaitAwaitable(
       executor, property_service.GetChildPropertyDefsAsync(
-                    MakeTestAnyExecutor(executor),
+                    executor,
                     node_service->GetNode(data_group_id)));
 
   const auto has_input1 = std::ranges::any_of(
@@ -160,30 +160,6 @@ TEST_F(PropertyDefsTest, GetChildPropertyDefsAsync_ReturnsChildTypeProperties) {
                data_items::id::DataItemType_Input1;
       });
   EXPECT_TRUE(has_input1);
-}
-
-TEST_F(PropertyDefsTest, GetChildPropertyDefs_LegacyWrapperUsesCoroutinePath) {
-  CreateDataItem("GROUP_DEVICE!device.channel.path");
-
-  PropertyService property_service{MakeTestAnyExecutor(executor)};
-  auto property_defs =
-      WaitPromise(executor, property_service.GetChildPropertyDefs(
-                                node_service->GetNode(data_group_id)));
-
-  const auto has_input1 = std::ranges::any_of(
-      property_defs, [](const auto& property_def) {
-        return property_def.first.node_id() ==
-               data_items::id::DataItemType_Input1;
-      });
-  EXPECT_TRUE(has_input1);
-}
-
-TEST_F(PropertyDefsTest, GetChildPropertyDefs_LegacyWrapperRejectsViaCoroutine) {
-  PropertyService property_service;
-
-  EXPECT_THROW(WaitPromise(executor, property_service.GetChildPropertyDefs(
-                                         node_service->GetNode(data_group_id))),
-               std::logic_error);
 }
 
 TEST_F(PropertyDefsTest, DeviceChoiceHandler_LoadsChoicesFromCoroutine) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/awaitable.h"
 
 #include <functional>
@@ -7,7 +9,6 @@
 #include <string>
 
 class DialogService;
-class Executor;
 class Favourites;
 class FavouritesNode;
 
@@ -16,7 +17,7 @@ using FavouritesSelectedNodeProvider =
     std::function<const FavouritesNode*()>;
 
 Awaitable<void> AddUrlToFavouritesWithPromptAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<void> lifetime_token,
     DialogService& dialog_service,
     Favourites& favourites,
@@ -24,7 +25,7 @@ Awaitable<void> AddUrlToFavouritesWithPromptAsync(
     FavouritesSelectedNodeProvider selected_node_provider);
 
 Awaitable<void> AddUrlToFavouritesWithPrompt(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<void> lifetime_token,
     DialogService& dialog_service,
     Favourites& favourites,

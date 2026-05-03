@@ -1,6 +1,6 @@
 #include "main_window/event_dispatcher.h"
 
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "resources/common_resources.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
@@ -43,9 +43,9 @@ void EventDispatcher::OnAllEventsAcknowledged() {
 void EventDispatcher::ShowEventsDelayed(bool added) {
   if (!showing_events_) {
     showing_events_ = true;
-    executor_->PostDelayedTask(
-      kDelay,
-      cancelation_.Bind([this] { ShowEvents(showing_events_added_); }));
+    PostDelayedTask(
+        executor_, kDelay,
+        cancelation_.Bind([this] { ShowEvents(showing_events_added_); }));
   }
   showing_events_added_ = added;
 }

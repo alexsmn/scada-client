@@ -20,9 +20,8 @@
 #include "aui/tree.h"
 #include "aui/qt/message_loop_qt.h"
 #include "aui/test/app_environment.h"
-#include "base/awaitable_promise.h"
 #include "base/client_paths.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/test/scoped_path_override.h"
 #include "aui/translation.h"
 #include "controller/window_info.h"
@@ -53,7 +52,7 @@
 namespace {
 
 using screenshot_generator::WaitForPendingNodeLoads;
-using screenshot_generator::WaitForPromise;
+using screenshot_generator::WaitForAwaitable;
 
 // Global config loaded once per test suite.
 ScreenshotConfig g_config;
@@ -102,7 +101,7 @@ class ScreenshotGenerator : public ::testing::Test {
   // QApplication must exist before MessageLoopQt — the latter wires a
   // QTimer in its ctor — so app_env_ is declared first.
   AppEnvironment app_env_;
-  std::shared_ptr<Executor> executor_ = std::make_shared<MessageLoopQt>();
+  AnyExecutor executor_ = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
 
   // Russian translator, installed in the constructor body. Must outlive
   // the QApplication inside `app_env_`, hence declared right after it.
@@ -140,13 +139,10 @@ class ScreenshotGenerator : public ::testing::Test {
       .io_context_ = io_context_,
       .executor_ = executor_,
       .login_handler_ =
-          [this](DataServicesContext&&) {
-            return ToPromise(
-                NetExecutorAdapter{executor_},
-                [this]() -> Awaitable<std::optional<DataServices>> {
-                  co_return std::optional{
-                      DataServices::FromUnownedServices(services_)};
-                }());
+          [this](DataServicesContext&&)
+              -> Awaitable<std::optional<DataServices>> {
+            co_return std::optional{
+                DataServices::FromUnownedServices(services_)};
           },
       // Intentionally no node_service/timed_data_service/tree-factory
       // overrides: we let ClientApplication build the production
@@ -201,7 +197,7 @@ ScreenshotGenerator::ScreenshotGenerator() {
 }
 
 ScreenshotGenerator::~ScreenshotGenerator() {
-  WaitForPromise(app_.Quit());
+  WaitForAwaitable(executor_, app_.Quit());
 }
 
 #if !defined(UI_WT)
@@ -221,7 +217,7 @@ TEST_F(ScreenshotGenerator, CaptureAllWindows) {
     profile.Save();
   }
 
-  WaitForPromise(app_.Start());
+  WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   // Let async data loads and model updates complete.
@@ -287,7 +283,7 @@ TEST_F(ScreenshotGenerator, CaptureMainWindow) {
     profile.Save();
   }
 
-  WaitForPromise(app_.Start());
+  WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
 
   for (int i = 0; i < 20; ++i)
@@ -475,7 +471,7 @@ TEST_F(ScreenshotGenerator, BootWithStructPageDoesNotOverflowStack) {
     profile.Save();
   }
 
-  WaitForPromise(app_.Start());
+  WaitForAwaitable(executor_, app_.Start());
 
   // Let the initial address-space fetch cascade complete.
   for (int i = 0; i < 20; ++i)
@@ -494,7 +490,7 @@ TEST_F(ScreenshotGenerator, CaptureDialogs) {
   // Start the app so the real TimedDataServiceImpl is wired up; the
   // WriteDialog family reads current values, formula titles, and
   // engineering units through it.
-  WaitForPromise(app_.Start());
+  WaitForAwaitable(executor_, app_.Start());
   ASSERT_TRUE(WaitForPendingNodeLoads(app_.node_service()));
   for (int i = 0; i < 20; ++i)
     QApplication::processEvents();

@@ -1,12 +1,10 @@
 #include "app/client_application.h"
 
 #include "aui/translation.h"
-#include "base/awaitable_promise.h"
 #include "base/blinker.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/boost_log_adapter.h"
 #include "base/program_options.h"
-#include "base/promise_executor.h"
 #include "common/audit.h"
 #include "common/master_data_services.h"
 #include "resources/common_resources.h"
@@ -89,12 +87,12 @@ struct ClientApplication::PostLoginContext {
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
       metric_service_{
-          std::make_unique<MetricServiceImpl>(MakeAnyExecutor(executor_),
+          std::make_unique<MetricServiceImpl>(executor_,
                                               /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       master_data_services_{
-          std::make_shared<MasterDataServices>(MakeAnyExecutor(executor_))},
-      quit_completion_{NetExecutorAdapter{executor_}} {
+          std::make_shared<MasterDataServices>(executor_)},
+      quit_completion_{executor_} {
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
   metric_service_->RegisterSink(
@@ -137,8 +135,8 @@ bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
          core_module_->global_commands().FindCommand(command_id) != nullptr;
 }
 
-promise<void> ClientApplication::Start() {
-  return ToPromise(NetExecutorAdapter{executor_}, StartAsync());
+Awaitable<void> ClientApplication::Start() {
+  return StartAsync();
 }
 
 Awaitable<void> ClientApplication::StartAsync() {
@@ -180,7 +178,7 @@ void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
     node_service_ = std::move(node_service_override_);
   } else {
     node_service_ = ::CreateNodeService(NodeServiceContext{
-        .executor_ = MakeAnyExecutor(executor_),
+        .executor_ = executor_,
         .session_service_ = *ctx.audited_scada_services.session_service,
         .attribute_service_ = *ctx.audited_scada_services.attribute_service,
         .view_service_ = *ctx.audited_scada_services.view_service,
@@ -210,7 +208,7 @@ void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) 
     timed_data_service_ = std::move(timed_data_service_override_);
   } else {
     timed_data_service_ = CreateTimedDataService(CoroutineTimedDataContext{
-        .executor_ = MakeAnyExecutor(executor_),
+        .executor_ = executor_,
         .alias_resolver_ = ctx.alias_resolver,
         .node_service_ = *node_service_,
         .history_service_ = ctx.coroutine_history_service,
@@ -272,7 +270,7 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
   shutdown_stack_.Push([this] { portfolio_module_.reset(); });
 
   property_service_ = std::make_unique<PropertyService>(
-      MakeAnyExecutor(executor_));
+      executor_);
 }
 
 ClientApplicationModuleContext ClientApplication::BuildModuleContext(
@@ -331,9 +329,11 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
       std::make_unique<MainWindowModule>(MainWindowModuleContext{
           .executor_ = executor_,
           .profile_ = *profile_,
-          .quit_handler_ = std::bind_front(&ClientApplication::Quit, this),
+          .quit_handler_ =
+              [this] { CoSpawn(executor_, [this] { return Quit(); }); },
           .scada_services_ = ctx.audited_scada_services,
-          .login_handler_ = std::bind_front(&ClientApplication::Login, this),
+          .login_handler_ =
+              [this] { CoSpawn(executor_, [this] { return Login(); }); },
           .task_manager_ = *task_manager_,
           .node_event_provider_ = event_module_->node_event_provider(),
           .timed_data_service_ = *timed_data_service_,
@@ -358,8 +358,8 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
   shutdown_stack_.Push([this] { main_window_module_.reset(); });
 }
 
-promise<void> ClientApplication::Login() {
-  return ToPromise(NetExecutorAdapter{executor_}, LoginAsync());
+Awaitable<void> ClientApplication::Login() {
+  return LoginAsync();
 }
 
 Awaitable<void> ClientApplication::LoginAsync() {
@@ -368,9 +368,7 @@ Awaitable<void> ClientApplication::LoginAsync() {
   DataServicesContext services_context{logger_, executor_, *transport_factory_,
                                        ReadServiceLogParamsFromCommandLine()};
 
-  auto services = co_await AwaitPromise(
-      NetExecutorAdapter{executor_},
-      login_handler_(std::move(services_context)));
+  auto services = co_await login_handler_(std::move(services_context));
   if (!services) {
     throw LoginCanceled{};
   }
@@ -383,13 +381,14 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
 
   auto audited_services =
       *AuditDataServices(data_services, *metric_service_, core_module_->tracer(),
-                         MakeAnyExecutor(executor_));
+                         executor_);
   master_data_services_->SetServices(std::move(audited_services));
 }
 
-promise<void> ClientApplication::Quit() {
+Awaitable<void> ClientApplication::Quit() {
   if (quitting_) {
-    return Run();
+    co_await RunAsync();
+    co_return;
   }
 
   quitting_ = true;
@@ -401,11 +400,15 @@ promise<void> ClientApplication::Quit() {
       quit_completion_.Fail(std::current_exception());
     }
   });
-  return Run();
+  co_await RunAsync();
 }
 
-promise<void> ClientApplication::Run() {
-  return ToPromise(NetExecutorAdapter{executor_}, quit_completion_.Wait());
+Awaitable<void> ClientApplication::Run() {
+  return RunAsync();
+}
+
+Awaitable<void> ClientApplication::RunAsync() {
+  co_await quit_completion_.Wait();
 }
 
 Awaitable<void> ClientApplication::QuitAsync() {

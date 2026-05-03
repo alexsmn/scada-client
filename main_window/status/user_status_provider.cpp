@@ -1,6 +1,6 @@
 #include "main_window/status/user_status_provider.h"
 
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "events/node_event_provider.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
@@ -8,7 +8,7 @@
 #include "scada/session_service.h"
 
 UserStatusProvider::UserStatusProvider(
-    const std::shared_ptr<Executor>& executor,
+    const AnyExecutor& executor,
     NodeService& node_service,
     scada::SessionService& session_service)
     : executor_{executor},

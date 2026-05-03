@@ -1,6 +1,6 @@
 ﻿#include "modus/qt/modus_view.h"
 
-#include "base/executor.h"
+#include "base/awaitable.h"
 #include "filesystem/file_util.h"
 #include "modus/activex/modus.h"
 #include "profile/window_definition.h"
@@ -90,8 +90,10 @@ void ModusView::Open(const WindowDefinition& definition) {
   title_callback_(document_->title());
 
   // TODO: Describe why the delay is needed.
-  executor_->PostTask(cancelation_.Bind(
-      std::bind_front(&ModusView::DelayedOpen, this, definition)));
+  CoSpawn(executor_, cancelation_, [this, definition]() -> Awaitable<void> {
+    DelayedOpen(definition);
+    co_return;
+  });
 }
 
 void ModusView::DelayedOpen(const WindowDefinition& definition) {

@@ -6,7 +6,7 @@
 using namespace std::chrono_literals;
 
 NodeServiceProgressTracker::NodeServiceProgressTracker(
-    const std::shared_ptr<Executor> executor,
+    const AnyExecutor executor,
     NodeService& node_service,
     ProgressHost& progress_host)
     : node_service_{node_service},

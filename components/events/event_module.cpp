@@ -1,8 +1,7 @@
 #include "events/event_module.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "base/value_util.h"
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
@@ -38,7 +37,7 @@ Awaitable<void> OpenWindowDefinition(
   if (!mode.empty()) {
     window_def.AddItem("mode", mode);
   }
-  main_window.OpenView(window_def);
+  co_await main_window.OpenView(window_def);
   co_return;
 }
 
@@ -48,7 +47,7 @@ EventModule::EventModule(EventModuleContext&& context)
     : EventModuleContext(std::move(context)) {
   event_fetcher_ =
       EventFetcherBuilder{
-          .executor_ = MakeAnyExecutor(executor_),
+          .executor_ = executor_,
           .logger_ = logger_,
           .services_ = services_}
           .Build();

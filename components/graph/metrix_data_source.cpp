@@ -1,8 +1,8 @@
 #include "graph/metrix_data_source.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
+#include "base/thread_executor.h"
 #include "common/data_value_traits.h"
 #include "common/timed_data_util.h"
 #include "model/data_items_node_ids.h"
@@ -144,7 +144,7 @@ bool MetrixPointEnum::EnumNext(views::GraphPoint& point) {
 // MetrixDataSource
 
 MetrixDataSource::MetrixDataSource()
-    : MetrixDataSource{MakeThreadAnyExecutor()} {}
+    : MetrixDataSource{ThreadExecutor{}} {}
 
 MetrixDataSource::MetrixDataSource(AnyExecutor executor)
     : executor_{std::move(executor)} {

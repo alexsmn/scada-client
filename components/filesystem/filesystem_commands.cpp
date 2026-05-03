@@ -3,7 +3,6 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "aui/prompt_dialog.h"
-#include "base/awaitable_promise.h"
 #include "resources/common_resources.h"
 #include "controller/contents_model.h"
 #include "controller/window_info.h"
@@ -33,7 +32,7 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
                                   MainWindowInterface* main_window,
                                   DialogService& dialog_service,
                                   aui::KeyModifiers /*key_modifiers*/,
-                                  std::shared_ptr<Executor> executor) {
+                                  AnyExecutor executor) {
   if (!main_window) {
     co_return;
   }
@@ -53,9 +52,7 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
     co_return;
   }
 
-  co_await AwaitPromise(
-      NetExecutorAdapter{executor},
-      ToVoidPromise(main_window->OpenView(*window_def, /*activate=*/true)));
+  co_await main_window->OpenView(*window_def, /*activate=*/true);
   co_return;
 }
 
@@ -87,10 +84,8 @@ Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
   }
 
   auto window_def = WindowDefinition{*window_info}.set_path(std::move(path));
-  co_await AwaitPromise(
-      NetExecutorAdapter{context.executor},
-      ToVoidPromise(context.main_window->OpenView(std::move(window_def),
-                                                  /*activate=*/true)));
+  co_await context.main_window->OpenView(std::move(window_def),
+                                         /*activate=*/true);
   co_return;
 }
 
@@ -113,10 +108,9 @@ Awaitable<void> OpenFileCommandImpl::ExecuteAsync(
   throw scada::status_exception{scada::StatusCode::Bad};
 }
 
-promise<void> OpenFileCommandImpl::Execute(
+Awaitable<void> OpenFileCommandImpl::Execute(
     const OpenFileCommandContext& context) const {
-  auto executor = context.executor;
-  return ToPromise(NetExecutorAdapter{executor}, ExecuteAsync(context));
+  co_await ExecuteAsync(context);
 }
 
 namespace {
@@ -124,7 +118,7 @@ namespace {
 Awaitable<void> AddFileAsync(NodeRef parent_directory,
                              DialogService& dialog_service,
                              TaskManager& task_manager,
-                             std::shared_ptr<Executor> executor) {
+                             AnyExecutor executor) {
   auto path = co_await dialog_service.SelectOpenFile(kAddFileTitle);
 
   std::ifstream ifs{path, std::ios::binary};
@@ -149,12 +143,10 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
 
 }  // namespace
 
-promise<> AddFile(NodeRef parent_directory,
-                  DialogService& dialog_service,
-                  TaskManager& task_manager,
-                  std::shared_ptr<Executor> executor) {
-  auto exec = executor;
-  return ToPromise(NetExecutorAdapter{exec},
-                   AddFileAsync(std::move(parent_directory), dialog_service,
-                                task_manager, std::move(executor)));
+Awaitable<void> AddFile(NodeRef parent_directory,
+                        DialogService& dialog_service,
+                        TaskManager& task_manager,
+                        AnyExecutor executor) {
+  co_await AddFileAsync(std::move(parent_directory), dialog_service,
+                        task_manager, std::move(executor));
 }

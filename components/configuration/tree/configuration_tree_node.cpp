@@ -8,7 +8,7 @@
 
 namespace {
 
-Awaitable<NodeRef> FetchNodeAndChildrenAsync(std::shared_ptr<Executor> executor,
+Awaitable<NodeRef> FetchNodeAndChildrenAsync(AnyExecutor executor,
                                              NodeRef node) {
   auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
       std::move(executor), [node = std::move(node)](auto callback) {
@@ -122,7 +122,7 @@ void ConfigurationTreeNode::FetchMore() {
 }
 
 Awaitable<void> ConfigurationTreeNode::CompleteFetchMoreAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<void> lifetime_token,
     ConfigurationTreeModel& model,
     NodeRef node,

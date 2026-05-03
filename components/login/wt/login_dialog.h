@@ -1,6 +1,8 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/any_executor.h"
+
+#include "base/awaitable.h"
 #include "scada/data_services.h"
 
 #include <functional>
@@ -10,10 +12,9 @@ namespace Wt {
 class WWidget;
 }
 
-class Executor;
 struct DataServicesContext;
 
-promise<std::optional<DataServices>> ExecuteLoginDialog(
-    std::shared_ptr<Executor> executor,
+Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
+    AnyExecutor executor,
     Wt::WWidget& parent,
     DataServicesContext&& services_context);

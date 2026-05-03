@@ -16,20 +16,23 @@ class TestDialogService : public DialogService {
   UiView* GetDialogOwningWindow() const override { return nullptr; }
   UiView* GetParentWidget() const override { return nullptr; }
 
-  promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
-                                          std::u16string_view title,
-                                          MessageBoxMode mode) override {
-    return make_rejected_promise<MessageBoxResult>(std::exception{});
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                            std::u16string_view title,
+                                            MessageBoxMode mode) override {
+    throw std::exception{};
+    co_return MessageBoxResult::Ok;
   }
 
-  promise<std::filesystem::path> SelectOpenFile(
+  Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
+    co_return std::filesystem::path{};
   }
 
-  promise<std::filesystem::path> SelectSaveFile(
+  Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
+    co_return std::filesystem::path{};
   }
 };
 
@@ -52,14 +55,14 @@ TEST_F(TimeRangeDialogTest, AcceptedDialogReturnsSelectedInitialRange) {
       ToBaseTime({QDate{2024, 1, 2}, QTime{0, 0}}),
       ToBaseTime({QDate{2024, 1, 3}, QTime{0, 0}}), /*dates=*/true};
 
-  auto result = ShowTimeRangeDialog(
+  auto result = aui::qt::test::StartAwaitable(ShowTimeRangeDialog(
       dialog_service_, TimeRangeContext{profile_, initial_range,
-                                        /*time_required_=*/false});
+                                        /*time_required_=*/false}));
   aui::qt::test::ProcessEventsUntilSettled(result,
                                            aui::qt::test::AcceptDialog);
 
-  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
-  auto selected_range = result.get();
+  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
+  auto selected_range = aui::qt::test::GetAwaitableResult(result);
   EXPECT_TRUE(selected_range.dates);
   EXPECT_EQ(selected_range.start, initial_range.start);
   EXPECT_EQ(selected_range.end,

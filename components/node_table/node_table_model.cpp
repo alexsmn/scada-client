@@ -1,9 +1,8 @@
 ﻿#include "components/node_table/node_table_model.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/boost_log.h"
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "base/range_util.h"
 #include "base/utf_convert.h"
 #include "base/utils.h"
@@ -38,7 +37,7 @@ void LogLoadFailure(const scada::Status& status) {
 
 }  // namespace
 
-NodeTableModel::NodeTableModel(std::shared_ptr<Executor> executor,
+NodeTableModel::NodeTableModel(AnyExecutor executor,
                                PropertyService& property_service,
                                PropertyContext&& context)
     : PropertyContext{std::move(context)},
@@ -60,7 +59,7 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
           [this, parent_node, cancelation = cancelation_.ref()]() mutable
               -> Awaitable<void> {
             try {
-              auto executor = NetExecutorAdapter{executor_};
+              auto executor = executor_;
               auto property_defs =
                   co_await property_service_.GetChildPropertyDefsAsync(
                       executor, parent_node_);
@@ -315,8 +314,8 @@ void NodeTableModel::ScheduleSort() {
 
   sort_scheduled_ = true;
 
-  executor_->PostDelayedTask(
-      kSortDelay, cancelation_.Bind([this]() { ScheduleSortHelper(); }));
+  PostDelayedTask(
+      executor_, kSortDelay, cancelation_.Bind([this]() { ScheduleSortHelper(); }));
 }
 
 void NodeTableModel::ScheduleSortHelper() {

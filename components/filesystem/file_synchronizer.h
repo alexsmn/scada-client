@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
@@ -9,11 +11,10 @@
 #include <queue>
 
 class Logger;
-class Executor;
 class NodeService;
 
 struct FileSynchronizerContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   const std::shared_ptr<const Logger> logger_;
   NodeService& node_service_;
   const std::filesystem::path root_dir_;

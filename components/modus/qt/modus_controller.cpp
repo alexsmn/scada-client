@@ -2,6 +2,7 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
+#include "base/awaitable.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
 #include "components/web/web_component.h"
@@ -37,10 +38,12 @@ QWidget* ModusController::CreateModusView() {
       [executor = executor_, cancelation = cancelation_.weak_ptr(),
        this](std::u16string_view hyperlink) {
         // Intentionally delay open to exit from the Modus handler.
-        executor->PostTask(BindCancelation(
-            cancelation, [this, hyperlink = std::u16string{hyperlink}] {
-              OpenHyperlink(hyperlink);
-            }));
+        CoSpawn(executor, cancelation,
+                [this, hyperlink = std::u16string{hyperlink}]
+                    () -> Awaitable<void> {
+                  OpenHyperlink(hyperlink);
+                  co_return;
+                });
       };
 
   auto selection_callback = [this](const TimedDataSpec& spec) {
@@ -87,8 +90,10 @@ QWidget* ModusController::CreateModusView2() {
       [executor = executor_, cancelation = cancelation_.weak_ptr(),
        this](const std::filesystem::path& path) {
         // Intentionally delay open to exit from the Modus handler.
-        executor->PostTask(
-            BindCancelation(cancelation, [this, path] { OpenPath(path); }));
+        CoSpawn(executor, cancelation, [this, path]() -> Awaitable<void> {
+          OpenPath(path);
+          co_return;
+        });
       });
 
   view2_->set_double_click_signal(

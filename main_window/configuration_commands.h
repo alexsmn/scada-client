@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include <memory>
 #include <vector>
 
@@ -12,7 +14,6 @@ class Variant;
 template <class T>
 class BasicCommandRegistry;
 
-class Executor;
 class LocalEvents;
 class NodeRef;
 class Profile;
@@ -25,7 +26,7 @@ class ConfigurationCommands {
   void Register();
 
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   TimedDataService& timed_data_service_;
   scada::SessionService& session_service_;
   Profile& profile_;

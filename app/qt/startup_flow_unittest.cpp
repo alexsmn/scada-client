@@ -1,6 +1,5 @@
 #include "app/qt/startup_flow.h"
 
-#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 
@@ -14,11 +13,13 @@
 namespace client {
 namespace {
 
-void WaitPromiseForTest(std::shared_ptr<TestExecutor> executor,
-                        promise<void> pending) {
-  WaitAwaitable(
-      executor,
-      AwaitPromise(MakeTestAnyExecutor(executor), std::move(pending)));
+Awaitable<void> Resolve() {
+  co_return;
+}
+
+Awaitable<void> Reject(std::exception_ptr error) {
+  std::rethrow_exception(error);
+  co_return;
 }
 
 class QtStartupFlowTest : public testing::Test {
@@ -28,32 +29,32 @@ class QtStartupFlowTest : public testing::Test {
         .executor = executor_,
         .start = [this] {
           order_.push_back("start");
-          return make_resolved_promise();
+          return Resolve();
         },
         .run_object_view_values_check =
             [this] {
               order_.push_back("object-view");
-              return make_resolved_promise();
+              return Resolve();
             },
         .run_operator_use_case_smoke =
             [this] {
               order_.push_back("operator-smoke");
-              return make_resolved_promise();
+              return Resolve();
             },
         .run_object_tree_labels_check =
             [this] {
               order_.push_back("object-tree");
-              return make_resolved_promise();
+              return Resolve();
             },
         .run_hardware_tree_devices_check =
             [this] {
               order_.push_back("hardware-tree");
-              return make_resolved_promise();
+              return Resolve();
             },
         .run_application =
             [this] {
               order_.push_back("run");
-              return make_resolved_promise();
+              return Resolve();
             },
         .log_startup_exception =
             [this](std::exception_ptr exception) {
@@ -69,7 +70,7 @@ class QtStartupFlowTest : public testing::Test {
     };
   }
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   std::vector<std::string> order_;
   bool logged_exception_ = false;
 };
@@ -79,7 +80,7 @@ class QtStartupFlowTest : public testing::Test {
 TEST_F(QtStartupFlowTest, SuccessfulNormalStartupRunsChecksAndQuits) {
   auto context = MakeContext();
 
-  WaitPromiseForTest(executor_, RunQtStartupFlow(std::move(context)));
+  WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start",
@@ -97,10 +98,10 @@ TEST_F(QtStartupFlowTest, StartupFailureReportsFailureAndQuits) {
   auto context = MakeContext();
   context.start = [this] {
     order_.push_back("start");
-    return make_rejected_promise<void>(std::runtime_error{"start failed"});
+    return Reject(std::make_exception_ptr(std::runtime_error{"start failed"}));
   };
 
-  WaitPromiseForTest(executor_, RunQtStartupFlow(std::move(context)));
+  WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start", "failure", "quit"));
@@ -111,7 +112,7 @@ TEST_F(QtStartupFlowTest, E2eModeReportsRunCompletionInsteadOfQuitting) {
   auto context = MakeContext();
   context.e2e_test_mode = true;
 
-  WaitPromiseForTest(executor_, RunQtStartupFlow(std::move(context)));
+  WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start",

@@ -6,7 +6,7 @@
 #include "aui/prompt_dialog.h"
 #include "aui/resource_error.h"
 #include "aui/table.h"
-#include "base/awaitable_promise.h"
+#include "base/awaitable.h"
 #include "base/excel.h"
 #include "base/u16format.h"
 #include "base/format.h"
@@ -300,8 +300,11 @@ void EventView::SetTimeRange(const TimeRange& time_range) {
   controller_delegate_.SetTitle(MakeTitle());
 }
 
-promise<> EventView::SelectSeverity() {
-  return ToPromise(NetExecutorAdapter{executor_}, SelectSeverityAsync());
+void EventView::SelectSeverity() {
+  CoSpawn(executor_, [this]() -> Awaitable<void> {
+    co_await SelectSeverityAsync();
+    co_return;
+  });
 }
 
 Awaitable<void> EventView::SelectSeverityAsync() {
@@ -310,16 +313,15 @@ Awaitable<void> EventView::SelectSeverityAsync() {
                                   : model_->severity_min();
   auto prompt = Translate("Minimum severity threshold (0 = all events):");
 
-  // Wait for the prompt dialog. A user cancel surfaces as a rejection
-  // here, which propagates out of the coroutine and rejects the
-  // `promise<>` the caller already ignored in the original code.
+  // Wait for the prompt dialog. A user cancel surfaces as a rejection here,
+  // matching the old ignored asynchronous result.
   auto text = co_await RunPromptDialog(dialog_service_, prompt,
                                        /*title=*/kFilter,
                                        WideFormat(initial_severity));
 
   // Parse + apply. Preserve the original behavior where a bad value
   // pops up an error message box via `ShowResourceError` and then
-  // rejects the coroutine's promise with the same exception.
+  // rejects the coroutine with the same exception.
   // MSVC rejects `co_await` inside a `catch` block, so the exception is
   // captured here and awaited after the `try` has unwound.
   std::exception_ptr parse_error;

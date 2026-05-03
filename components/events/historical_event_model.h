@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/awaitable.h"
 #include "base/boost_log.h"
 #include "base/format_time.h"
@@ -12,11 +14,10 @@
 #include <boost/signals2/signal.hpp>
 #include <list>
 
-class Executor;
 
 class HistoricalEventModel {
  public:
-  HistoricalEventModel(std::shared_ptr<Executor> executor,
+  HistoricalEventModel(AnyExecutor executor,
                        scada::HistoryService& history_service)
       : executor_{std::move(executor)},
         history_service_{history_service} {}
@@ -50,7 +51,7 @@ class HistoricalEventModel {
 
   void OnHistoryReadEventsCompleted(scada::HistoryReadEventsResult&& result);
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
 
   scada::HistoryService& history_service_;
 

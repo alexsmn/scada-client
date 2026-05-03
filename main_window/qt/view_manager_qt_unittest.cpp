@@ -57,8 +57,7 @@ class ViewManagerQtTest : public Test {
 
   AppEnvironment app_env_;
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
 
   ControllerRegistry controller_registry_;
 

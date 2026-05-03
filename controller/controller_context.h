@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 namespace scada {
 class MonitoredItemService;
 class HistoryService;
@@ -11,7 +13,6 @@ class ControllerDelegate;
 class CreateTree;
 class DialogService;
 class NodeEventProvider;
-class Executor;
 class ExportModel;
 class FileCache;
 class NodeService;
@@ -21,7 +22,7 @@ class TaskManager;
 class TimedDataService;
 
 struct ControllerContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   ControllerDelegate& controller_delegate_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;

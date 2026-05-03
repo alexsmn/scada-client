@@ -1,7 +1,6 @@
 #include "export/configuration/export_data_builder.h"
 
-#include "base/awaitable_promise.h"
-#include "base/executor_conversions.h"
+#include "base/any_executor.h"
 #include "export/configuration/export_data.h"
 #include "model/data_items_node_ids.h"
 #include "model/node_id_util.h"
@@ -83,16 +82,6 @@ Awaitable<ExportData> BuildExportDataAsync(
   co_return ExportData{std::move(props), std::move(nodes)};
 }
 
-Awaitable<ExportData> BuildExportDataCompatAsync(
-    std::shared_ptr<ExportDataBuilder> builder,
-    std::shared_ptr<Executor> executor) {
-  if (!executor) {
-    throw std::logic_error{"ExportDataBuilder executor is not configured"};
-  }
-
-  co_return co_await builder->BuildAsync(MakeAnyExecutor(std::move(executor)));
-}
-
 ExportData::Property MakeExportProperty(const NodeRef& node) {
   return {
       node.node_id(),
@@ -121,14 +110,6 @@ void CollectProperties(const NodeRef& type,
 }
 
 }  // namespace
-
-promise<ExportData> ExportDataBuilder::Build() const {
-  auto executor =
-      executor_ ? MakeAnyExecutor(executor_) : MakeThreadAnyExecutor();
-  auto builder = std::make_shared<ExportDataBuilder>(*this);
-  return ToPromise(executor,
-                   BuildExportDataCompatAsync(std::move(builder), executor_));
-}
 
 Awaitable<ExportData> ExportDataBuilder::BuildAsync(
     AnyExecutor executor) const {

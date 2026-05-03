@@ -29,6 +29,19 @@ class TestTableModel : public aui::TableModel {
   }
 };
 
+template <class T>
+auto ReturnAwaitable(T value) {
+  return [value = std::move(value)](auto&&...) mutable -> Awaitable<T> {
+    co_return std::move(value);
+  };
+}
+
+template <class T>
+Awaitable<T> ThrowAwaitable(std::exception_ptr error) {
+  std::rethrow_exception(std::move(error));
+  co_return T{};
+}
+
 class TestExportModel : public ExportModel {
  public:
   ExportData GetExportData() override {
@@ -57,7 +70,7 @@ class CsvExportCommandTest : public Test {
   void TearDown() override { std::filesystem::remove_all(temp_dir_); }
 
  protected:
-  promise<void> Run() {
+  Awaitable<void> Run() {
     return RunCsvExport({.executor_ = executor_,
                          .dialog_service_ = dialog_service_,
                          .profile_ = profile_,
@@ -72,13 +85,13 @@ class CsvExportCommandTest : public Test {
             std::istreambuf_iterator<char>{}};
   }
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<MockDialogService> dialog_service_;
   Profile profile_;
   TestExportModel export_model_;
   CsvExportDialogRunner show_csv_export_dialog_ =
-      [](DialogService&, Profile&) {
-        return make_resolved_promise(CsvExportParams{});
+      [](DialogService&, Profile&) -> Awaitable<CsvExportParams> {
+        co_return CsvExportParams{};
       };
   std::filesystem::path temp_dir_;
 };
@@ -89,22 +102,22 @@ TEST_F(CsvExportCommandTest, WritesCsvAndPromptsToOpen) {
   const auto export_file_path = temp_dir_ / "export.csv";
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
-      .WillOnce(DoAll(
-          WithArg<0>([&](const DialogService::SaveParams& params) {
-            EXPECT_EQ(params.title, u"Export");
-            EXPECT_EQ(params.default_path.filename().u16string(),
-                      u"Test- Window.csv");
-          }),
-          Return(make_resolved_promise(export_file_path))));
+      .WillOnce([&](const DialogService::SaveParams& params)
+                    -> Awaitable<std::filesystem::path> {
+        EXPECT_EQ(params.title, u"Export");
+        EXPECT_EQ(params.default_path.filename().u16string(),
+                  u"Test- Window.csv");
+        co_return export_file_path;
+      });
 
   EXPECT_CALL(dialog_service_,
               RunMessageBox(
                   std::u16string_view{u"Export completed. Open the file now?"},
                   std::u16string_view{u"Export"},
                   MessageBoxMode::QuestionYesNo))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::No)));
+      .WillOnce(ReturnAwaitable(MessageBoxResult::No));
 
-  WaitPromise(executor_, Run());
+  WaitAwaitable(executor_, Run());
 
   EXPECT_EQ(GetString16(profile_.data(), "csvPath"),
             export_file_path.u16string());
@@ -116,42 +129,48 @@ TEST_F(CsvExportCommandTest, ExportFailureShowsErrorDialogAndRejects) {
   export_model_.throw_on_export = true;
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
-      .WillOnce(Return(make_resolved_promise(export_file_path)));
+      .WillOnce(ReturnAwaitable(export_file_path));
 
   EXPECT_CALL(dialog_service_,
               RunMessageBox(std::u16string_view{u"Export failed."},
                             std::u16string_view{u"Export"},
                             MessageBoxMode::Error))
-      .WillOnce(Return(make_resolved_promise(MessageBoxResult::Ok)));
+      .WillOnce(ReturnAwaitable(MessageBoxResult::Ok));
 
-  EXPECT_THROW(WaitPromise(executor_, Run()), std::runtime_error);
+  EXPECT_THROW(WaitAwaitable(executor_, Run()), std::runtime_error);
   EXPECT_FALSE(std::filesystem::exists(export_file_path));
 }
 
 TEST_F(CsvExportCommandTest, RejectedSaveDialogStopsExportFlow) {
   bool export_dialog_shown = false;
-  show_csv_export_dialog_ = [&](DialogService&, Profile&) {
+  show_csv_export_dialog_ = [&](DialogService&, Profile&)
+      -> Awaitable<CsvExportParams> {
     export_dialog_shown = true;
-    return make_resolved_promise(CsvExportParams{});
+    co_return CsvExportParams{};
   };
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
-      .WillOnce(Return(
-          make_rejected_promise<std::filesystem::path>(std::exception{})));
+      .WillOnce([](const DialogService::SaveParams&)
+                    -> Awaitable<std::filesystem::path> {
+        return ThrowAwaitable<std::filesystem::path>(
+            std::make_exception_ptr(std::exception{}));
+      });
 
-  EXPECT_THROW(WaitPromise(executor_, Run()), std::exception);
+  EXPECT_THROW(WaitAwaitable(executor_, Run()), std::exception);
   EXPECT_FALSE(export_dialog_shown);
 }
 
 TEST_F(CsvExportCommandTest, RejectedExportDialogStopsBeforeWritingFile) {
   const auto export_file_path = temp_dir_ / "export.csv";
-  show_csv_export_dialog_ = [](DialogService&, Profile&) {
-    return make_rejected_promise<CsvExportParams>(std::exception{});
+  show_csv_export_dialog_ = [](DialogService&, Profile&)
+      -> Awaitable<CsvExportParams> {
+    return ThrowAwaitable<CsvExportParams>(
+        std::make_exception_ptr(std::exception{}));
   };
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(_))
-      .WillOnce(Return(make_resolved_promise(export_file_path)));
+      .WillOnce(ReturnAwaitable(export_file_path));
 
-  EXPECT_THROW(WaitPromise(executor_, Run()), std::exception);
+  EXPECT_THROW(WaitAwaitable(executor_, Run()), std::exception);
   EXPECT_FALSE(std::filesystem::exists(export_file_path));
 }

@@ -46,8 +46,9 @@ TEST(MakeWindowDefinition, OpenContext_Node) {
 
   const auto& window_info = WindowInfo{.title = u"Журнал событий"};
 
-  auto window_definition =
-      MakeWindowDefinition(&window_info, open_context).get();
+  TestExecutor executor;
+  auto window_definition = WaitAwaitable(
+      executor, MakeWindowDefinitionAsync(executor, &window_info, open_context));
 
   const auto kExpectedWindowDefinition =
       WindowDefinition{window_info}
@@ -69,12 +70,12 @@ TEST(MakeWindowDefinition, AsyncExpandsGroupItemsOnExecutor) {
                                  scada::id::BaseVariableType, group_id,
                                  scada::id::Organizes));
 
-  auto executor = std::make_shared<TestExecutor>();
+  TestExecutor executor;
   const auto& window_info = WindowInfo{.title = u"Title"};
 
   auto window_definition = WaitAwaitable(
       executor,
-      MakeWindowDefinitionAsync(MakeTestAnyExecutor(executor), &window_info,
+      MakeWindowDefinitionAsync(executor, &window_info,
                                 node_service.GetNode(group_id),
                                 /*expand_groups=*/true));
 
@@ -96,8 +97,9 @@ TEST(MakeWindowDefinition, OpenContext_NodeIds_TimeRange) {
 
   const auto& window_info = WindowInfo{.title = u"Title"};
 
-  auto window_definition =
-      MakeWindowDefinition(&window_info, open_context).get();
+  TestExecutor executor;
+  auto window_definition = WaitAwaitable(
+      executor, MakeWindowDefinitionAsync(executor, &window_info, open_context));
 
   const auto kExpectedWindowDefinition =
       WindowDefinition{window_info}

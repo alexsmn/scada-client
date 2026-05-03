@@ -1,6 +1,5 @@
 #include "components/device_metrics/device_metrics_command.h"
 
-#include "base/awaitable_promise.h"
 #include "aui/color.h"
 #include "ui/common/client_utils.h"
 #include "common/formula_util.h"
@@ -64,13 +63,6 @@ WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
   }
 
   return win;
-}
-
-promise<WindowDefinition> MakeDeviceMetricsWindowDefinition(
-    AnyExecutor executor,
-    const NodeRef& device) {
-  return ToPromise(executor,
-                   MakeDeviceMetricsWindowDefinitionAsync(executor, device));
 }
 
 Awaitable<WindowDefinition> MakeDeviceMetricsWindowDefinitionAsync(

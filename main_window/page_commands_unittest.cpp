@@ -71,7 +71,7 @@ Awaitable<MessageBoxResult> ReturnMessageBoxResultAsync(
 
 class PageCommandsTest : public Test {
  protected:
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   BasicCommandRegistry<GlobalCommandContext> commands_;
   Profile profile_;
 
@@ -122,16 +122,14 @@ TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
         return ReturnTitleAsync(u"New title");
       });
 
-  promise<void> renamed;
+  bool renamed = false;
   EXPECT_CALL(main_window_, SetCurrentPageTitle(std::u16string_view{u"New title"}))
-      .WillOnce([&renamed](std::u16string_view) mutable { renamed.resolve(); });
+      .WillOnce([&renamed](std::u16string_view) { renamed = true; });
 
   command->execute_handler(command_context_);
   Drain(executor_);
 
-  ASSERT_NE(renamed.wait_for(std::chrono::milliseconds{0}),
-            promise_wait_status::timeout);
-  EXPECT_NO_THROW(renamed.get());
+  EXPECT_TRUE(renamed);
 }
 
 TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
@@ -155,7 +153,7 @@ TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
 
 class PageMenuModelTest : public Test {
  protected:
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   Profile profile_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>

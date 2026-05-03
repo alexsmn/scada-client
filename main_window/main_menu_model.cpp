@@ -3,7 +3,6 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/program_options.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
@@ -111,7 +110,9 @@ void DisplayMenuModel::ActivatedAt(int index) {
     assert(item.window_info);
     WindowDefinition def(*item.window_info);
     def.path = item.path;
-    main_window_.OpenView(def, true);
+    CoSpawn(executor_, [this, def = std::move(def)]() -> Awaitable<void> {
+      co_await main_window_.OpenView(def, true);
+    });
   }
 }
 
@@ -161,7 +162,9 @@ void FavouritesMenuModel::MenuWillShow() {
 }
 
 void FavouritesMenuModel::ActivatedAt(int index) {
-  main_window_.OpenView(*windows_[index], true);
+  CoSpawn(executor_, [this, window = *windows_[index]]() -> Awaitable<void> {
+    co_await main_window_.OpenView(window, true);
+  });
 }
 
 bool FavouritesMenuModel::IsEnabledAt(int index) const {
@@ -290,8 +293,11 @@ void TrashMenuModel::MenuWillShow() {
 void TrashMenuModel::ActivatedAt(int index) {
   Page& trash = profile_.trash;
   assert(index < trash.GetWindowCount());
-  main_window_.OpenView(trash.GetWindow(index), true);
+  auto window = trash.GetWindow(index);
   trash.DeleteWindow(index);
+  CoSpawn(executor_, [this, window = std::move(window)]() -> Awaitable<void> {
+    co_await main_window_.OpenView(window, true);
+  });
 }
 
 bool TrashMenuModel::IsEnabledAt(int index) const {

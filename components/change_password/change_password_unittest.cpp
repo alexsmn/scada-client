@@ -36,9 +36,9 @@ class ChangePasswordTest : public Test {
       : scada_client_{scada::services{.method_service = &method_service_}},
         user_node_{MakeUserNode(scada_client_.node({kUserNodeId, 1}))} {}
 
-  void PollExecutor() { executor_->Poll(); }
+  void PollExecutor() { executor_.Poll(); }
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StrictMock<scada::MockMethodService> method_service_;
   scada::client scada_client_;
   NodeRef user_node_;

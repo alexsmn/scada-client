@@ -1,6 +1,5 @@
 #include "app/qt/e2e_test_support.h"
 
-#include "base/awaitable_promise.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 
@@ -25,13 +24,6 @@ std::string ReadFile(const std::filesystem::path& path) {
 Awaitable<OperatorUseCaseSmokeResult> MakeSmokeResultAsync(
     OperatorUseCaseSmokeResult result) {
   co_return std::move(result);
-}
-
-void WaitPromiseForTest(std::shared_ptr<TestExecutor> executor,
-                        promise<void> pending) {
-  WaitAwaitable(
-      executor,
-      AwaitPromise(MakeTestAnyExecutor(executor), std::move(pending)));
 }
 
 class E2eTestSupportTest : public testing::Test {
@@ -78,7 +70,7 @@ class E2eTestSupportTest : public testing::Test {
     };
   }
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   std::filesystem::path report_path_;
   std::vector<std::string> opened_windows_;
 };
@@ -138,16 +130,16 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
-  WaitPromiseForTest(executor_, RunE2eObjectViewValuesCheck(
-                                    ObjectViewValuesCheckContext{
-                                        .executor = executor_,
-                                        .get_first_value_text =
-                                            [] { return std::optional{u"value"}; },
-                                        .timeout = std::chrono::milliseconds{0},
-                                        .poll_interval =
-                                            std::chrono::milliseconds{0},
-                                    },
-                                    report_path_));
+  WaitAwaitable(executor_, RunE2eObjectViewValuesCheck(
+                               ObjectViewValuesCheckContext{
+                                   .executor = executor_,
+                                   .get_first_value_text =
+                                       [] { return std::optional{u"value"}; },
+                                   .timeout = std::chrono::milliseconds{0},
+                                   .poll_interval =
+                                       std::chrono::milliseconds{0},
+                               },
+                               report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-view-values: ok"), std::string::npos);
@@ -155,19 +147,19 @@ TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
-  WaitPromiseForTest(executor_, RunE2eObjectViewValuesCheck(
-                                    ObjectViewValuesCheckContext{
-                                        .executor = executor_,
-                                        .get_first_value_text =
-                                            [] {
-                                              return std::optional<
-                                                  std::u16string>{};
-                                            },
-                                        .timeout = std::chrono::milliseconds{0},
-                                        .poll_interval =
-                                            std::chrono::milliseconds{0},
-                                    },
-                                    report_path_));
+  WaitAwaitable(executor_, RunE2eObjectViewValuesCheck(
+                               ObjectViewValuesCheckContext{
+                                   .executor = executor_,
+                                   .get_first_value_text =
+                                       [] {
+                                         return std::optional<
+                                             std::u16string>{};
+                                       },
+                                   .timeout = std::chrono::milliseconds{0},
+                                   .poll_interval =
+                                       std::chrono::milliseconds{0},
+                               },
+                               report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-view-values: failure"), std::string::npos);
@@ -175,20 +167,20 @@ TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesTimeoutReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
-  WaitPromiseForTest(executor_, RunE2eObjectTreeLabelsCheck(
-                                    ObjectTreeLabelsCheckContext{
-                                        .executor = executor_,
-                                        .get_expanded_labels =
-                                            [] {
-                                              return std::vector<std::u16string>{
-                                                  u"Root", u"Area", u"Device",
-                                                  u"Point"};
-                                            },
-                                        .timeout = std::chrono::milliseconds{0},
-                                        .poll_interval =
-                                            std::chrono::milliseconds{0},
-                                    },
-                                    report_path_));
+  WaitAwaitable(executor_, RunE2eObjectTreeLabelsCheck(
+                               ObjectTreeLabelsCheckContext{
+                                   .executor = executor_,
+                                   .get_expanded_labels =
+                                       [] {
+                                         return std::vector<std::u16string>{
+                                             u"Root", u"Area", u"Device",
+                                             u"Point"};
+                                       },
+                                   .timeout = std::chrono::milliseconds{0},
+                                   .poll_interval =
+                                       std::chrono::milliseconds{0},
+                               },
+                               report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-tree-labels: ok"), std::string::npos);
@@ -197,19 +189,19 @@ TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesSuccessfulReport) {
 }
 
 TEST_F(E2eTestSupportTest, ObjectTreeLabelsCheckWritesTimeoutReport) {
-  WaitPromiseForTest(executor_, RunE2eObjectTreeLabelsCheck(
-                                    ObjectTreeLabelsCheckContext{
-                                        .executor = executor_,
-                                        .get_expanded_labels =
-                                            [] {
-                                              return std::vector<std::u16string>{
-                                                  u"Root", u"[loading]"};
-                                            },
-                                        .timeout = std::chrono::milliseconds{0},
-                                        .poll_interval =
-                                            std::chrono::milliseconds{0},
-                                    },
-                                    report_path_));
+  WaitAwaitable(executor_, RunE2eObjectTreeLabelsCheck(
+                               ObjectTreeLabelsCheckContext{
+                                   .executor = executor_,
+                                   .get_expanded_labels =
+                                       [] {
+                                         return std::vector<std::u16string>{
+                                             u"Root", u"[loading]"};
+                                       },
+                                   .timeout = std::chrono::milliseconds{0},
+                                   .poll_interval =
+                                       std::chrono::milliseconds{0},
+                               },
+                               report_path_));
 
   const auto report = ReadFile(report_path_);
   EXPECT_NE(report.find("object-tree-labels: failure"), std::string::npos);

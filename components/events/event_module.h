@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/any_executor.h"
 #include "scada/services.h"
 
 #include <memory>
@@ -9,7 +10,6 @@ template <class T>
 class BasicCommandRegistry;
 
 class ControllerRegistry;
-class Executor;
 class EventFetcher;
 class LocalEvents;
 class Logger;
@@ -19,7 +19,7 @@ struct SelectionCommandContext;
 struct WindowInfo;
 
 struct EventModuleContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   std::shared_ptr<const Logger> logger_;
   Profile& profile_;
   scada::services services_;

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "base/executor_timer.h"
+#include "base/any_executor.h"
+
+#include "base/any_executor_timer.h"
 
 #include <boost/signals2/signal.hpp>
 
@@ -18,7 +20,7 @@ class BlinkerManager {
 
 class BlinkerManagerImpl : public BlinkerManager {
  public:
-  explicit BlinkerManagerImpl(std::shared_ptr<Executor> executor);
+  explicit BlinkerManagerImpl(AnyExecutor executor);
 
   // BlinkerManager
   virtual bool GetState() const override { return state_; }
@@ -32,7 +34,7 @@ class BlinkerManagerImpl : public BlinkerManager {
 
   boost::signals2::signal<void(bool state)> signal_;
 
-  ExecutorTimer timer_;
+  AnyExecutorTimer timer_;
 };
 
 class Blinker {

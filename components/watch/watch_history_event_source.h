@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/cancelation.h"
 #include "base/time_range.h"
 #include "components/watch/watch_event_source.h"
@@ -7,11 +9,10 @@
 
 #include <memory>
 
-class Executor;
 class NodeService;
 
 struct WatchHistorySourceContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   NodeService& node_service_;
 };
 

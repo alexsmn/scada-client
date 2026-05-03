@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "common/aliases.h"
 #include "configuration/tree/node_service_tree.h"
 #include "configuration/tree/node_service_tree_impl.h"
@@ -15,7 +17,6 @@ class BasicCommandRegistry;
 
 class BlinkerManager;
 class ControllerRegistry;
-class Executor;
 class FileSystemComponent;
 class NodeService;
 class Profile;
@@ -41,7 +42,7 @@ struct ClientApplicationModules {
 };
 
 struct ClientApplicationModuleContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   scada::services scada_services_;
   AliasResolver alias_resolver_;
   ControllerRegistry& controller_registry_;

@@ -3,11 +3,10 @@
 #include "app/client_application.h"
 #include "aui/qt/message_loop_qt.h"
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/callback_awaitable.h"
 #include "base/e2e_test_hooks.h"
-#include "base/executor_timer.h"
-#include "base/executor_util.h"
+#include "base/any_executor_timer.h"
+#include "base/any_executor.h"
 #include "base/utf_convert.h"
 #include "configuration/devices/hardware_tree_view.h"
 #include "configuration/objects/object_tree_view.h"
@@ -37,10 +36,6 @@ using namespace std::chrono_literals;
 
 namespace client {
 namespace {
-
-Awaitable<void> NoOpAsync() {
-  co_return;
-}
 
 struct OperatorUseCaseSmokeState {
   bool ok = true;
@@ -178,11 +173,11 @@ HardwareTreeView* FindHardwareTreeView(ClientApplication& app) {
   return nullptr;
 }
 
-Awaitable<void> Delay(std::shared_ptr<Executor> executor,
+Awaitable<void> Delay(AnyExecutor executor,
                       std::chrono::milliseconds delay) {
   co_await CallbackToAwaitable<>(
       executor, [executor, delay](auto done) mutable {
-        PostDelayedTask(NetExecutorAdapter{executor}, delay,
+        PostDelayedTask(executor, delay,
                         [done = std::move(done)]() mutable { done(); });
       });
 }
@@ -244,7 +239,7 @@ class HardwareTreeDevicesCheck final
     : public std::enable_shared_from_this<HardwareTreeDevicesCheck> {
  public:
   HardwareTreeDevicesCheck(ClientApplication& app,
-                           std::shared_ptr<Executor> executor,
+                           AnyExecutor executor,
                            std::filesystem::path report_path)
       : app_{app},
         executor_{std::move(executor)},
@@ -260,10 +255,9 @@ class HardwareTreeDevicesCheck final
       co_return;
     }
 
-    auto* opened_view = co_await AwaitPromise(
-        NetExecutorAdapter{executor_},
-        main_window->OpenView(WindowDefinition{*window_info},
-                              /*activate=*/true));
+    auto* opened_view =
+        co_await main_window->OpenView(WindowDefinition{*window_info},
+                                       /*activate=*/true);
     if (!opened_view) {
       WriteHardwareTreeDevicesReport(report_path_, false, {},
                                      "hardware tree failed to open");
@@ -324,7 +318,7 @@ class HardwareTreeDevicesCheck final
   }
 
   ClientApplication& app_;
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   const std::filesystem::path report_path_;
   const std::chrono::steady_clock::time_point deadline_;
   std::vector<TimedDataSpec> activation_specs_;
@@ -332,7 +326,7 @@ class HardwareTreeDevicesCheck final
 
 Awaitable<OperatorUseCaseSmokeResult> OpenOperatorWindowAsync(
     ClientApplication& app,
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::string window_type) {
   auto* main_window = GetFirstMainWindow(app);
   if (!main_window) {
@@ -341,9 +335,9 @@ Awaitable<OperatorUseCaseSmokeResult> OpenOperatorWindowAsync(
   }
 
   if (const auto* window_info = FindWindowInfoByName(window_type)) {
-    auto* opened_view = co_await AwaitPromise(
-        NetExecutorAdapter{executor},
-        main_window->OpenView(WindowDefinition{*window_info}, /*activate=*/true));
+    auto* opened_view =
+        co_await main_window->OpenView(WindowDefinition{*window_info},
+                                       /*activate=*/true);
     co_return OperatorUseCaseSmokeResult{
         .ok = opened_view != nullptr,
         .detail = opened_view ? "opened" : "open returned null"};
@@ -481,13 +475,13 @@ Awaitable<void> RunE2eOperatorUseCaseSmokeAsync(
 
 }  // namespace
 
-promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
-                                      std::shared_ptr<Executor> executor) {
+Awaitable<void> RunE2eObjectViewValuesCheck(ClientApplication& app,
+                                            AnyExecutor executor) {
   auto report_path = GetE2eObjectViewValuesReportPath();
   if (report_path.empty())
-    return ToPromise(NetExecutorAdapter{executor}, NoOpAsync());
+    co_return;
 
-  return RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext{
+  co_await RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext{
       .executor = executor,
       .get_first_value_text =
           [&app]() -> std::optional<std::u16string> {
@@ -498,15 +492,13 @@ promise<> RunE2eObjectViewValuesCheck(ClientApplication& app,
   }, std::move(report_path));
 }
 
-promise<> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
-                                      std::filesystem::path report_path) {
+Awaitable<void> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
+                                            std::filesystem::path report_path) {
   if (report_path.empty())
-    return ToPromise(NetExecutorAdapter{context.executor}, NoOpAsync());
+    co_return;
 
-  auto executor = context.executor;
-  return ToPromise(NetExecutorAdapter{executor},
-                   RunObjectViewValuesCheckAsync(std::move(context),
-                                                 std::move(report_path)));
+  co_await RunObjectViewValuesCheckAsync(std::move(context),
+                                         std::move(report_path));
 }
 
 Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
@@ -514,7 +506,7 @@ Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
   if (report_path.empty())
     co_return;
 
-  auto executor = std::make_shared<MessageLoopQt>();
+  auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   co_await RunE2eOperatorUseCaseSmoke(OperatorUseCaseSmokeContext{
       .executor = executor,
       .open_window =
@@ -560,13 +552,13 @@ Awaitable<void> RunE2eOperatorUseCaseSmoke(
                                            std::move(checks));
 }
 
-promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
-                                      std::shared_ptr<Executor> executor) {
+Awaitable<void> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
+                                            AnyExecutor executor) {
   auto report_path = GetE2eObjectTreeLabelsReportPath();
   if (report_path.empty())
-    return ToPromise(NetExecutorAdapter{executor}, NoOpAsync());
+    co_return;
 
-  return RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext{
+  co_await RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext{
       .executor = executor,
       .get_expanded_labels =
           [&app] {
@@ -577,28 +569,24 @@ promise<> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
   }, std::move(report_path));
 }
 
-promise<> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,
-                                      std::filesystem::path report_path) {
+Awaitable<void> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,
+                                            std::filesystem::path report_path) {
   if (report_path.empty())
-    return ToPromise(NetExecutorAdapter{context.executor}, NoOpAsync());
+    co_return;
 
-  auto executor = context.executor;
-  return ToPromise(NetExecutorAdapter{executor},
-                   RunObjectTreeLabelsCheckAsync(std::move(context),
-                                                 std::move(report_path)));
+  co_await RunObjectTreeLabelsCheckAsync(std::move(context),
+                                         std::move(report_path));
 }
 
-promise<> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
-                                         std::shared_ptr<Executor> executor) {
+Awaitable<void> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
+                                               AnyExecutor executor) {
   auto report_path = GetE2eHardwareTreeDevicesReportPath();
   if (report_path.empty())
-    return ToPromise(NetExecutorAdapter{executor}, NoOpAsync());
+    co_return;
 
-  auto promise_executor = executor;
   auto check = std::make_shared<HardwareTreeDevicesCheck>(
       app, std::move(executor), std::move(report_path));
-  return ToPromise(NetExecutorAdapter{std::move(promise_executor)},
-                   check->RunAsync());
+  co_await check->RunAsync();
 }
 
 }  // namespace client

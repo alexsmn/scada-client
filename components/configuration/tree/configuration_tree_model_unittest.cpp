@@ -42,7 +42,7 @@ class ConfigurationTreeModelTest : public Test {
 
   const NodeRef root_node_ = MakeTestNodeRef(scada::id::RootFolder);
 
-  std::shared_ptr<TestExecutor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   MockNodeServiceTree* node_service_tree_ = nullptr;
   NodeServiceTree::Observer* observer_ = nullptr;
   std::unique_ptr<ConfigurationTreeModel> model_;

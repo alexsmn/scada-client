@@ -16,7 +16,7 @@
 
 namespace {
 
-Awaitable<void> SaveLogAsync(std::shared_ptr<Executor> executor,
+Awaitable<void> SaveLogAsync(AnyExecutor executor,
                              DialogService& dialog_service,
                              std::shared_ptr<WatchModel> model,
                              std::u16string name) {

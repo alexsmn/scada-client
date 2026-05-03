@@ -2,8 +2,8 @@ client_module(client_events)
 
 client_module_link_libraries(client_events PUBLIC
   scada_common
-  # `event_view.cpp` uses `NetExecutorAdapter` / `AwaitPromise`, which
-  # transitively pull in `transport/executor.h`.
+  # `event_view.cpp` uses `NetExecutorAdapter`, which transitively pulls in
+  # `transport/executor.h`.
   transport
 )
 

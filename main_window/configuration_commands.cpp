@@ -1,7 +1,6 @@
 #include "configuration_commands.h"
 
 #include "base/awaitable.h"
-#include "base/awaitable_promise.h"
 #include "base/u16format.h"
 #include "resources/common_resources.h"
 #include "components/limits/limit_dialog.h"
@@ -20,7 +19,7 @@
 
 namespace {
 
-Awaitable<void> ReportMethodCallResultAsync(std::shared_ptr<Executor> executor,
+Awaitable<void> ReportMethodCallResultAsync(AnyExecutor executor,
                                             Awaitable<void> call,
                                             std::u16string title,
                                             LocalEvents& local_events,

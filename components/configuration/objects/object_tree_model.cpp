@@ -9,7 +9,7 @@
 
 namespace {
 
-Awaitable<NodeRef> FetchNodeOnlyAsync(std::shared_ptr<Executor> executor,
+Awaitable<NodeRef> FetchNodeOnlyAsync(AnyExecutor executor,
                                       NodeRef node) {
   auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
       std::move(executor), [node = std::move(node)](auto callback) {
@@ -130,7 +130,7 @@ std::shared_ptr<VisibleNode> ObjectTreeModel::CreateVisibleNode(
 }
 
 Awaitable<void> ObjectTreeModel::CompleteVisibleNodeFetchAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<void> lifetime_token,
     ObjectTreeModel& model,
     std::shared_ptr<ProxyVisibleNode> proxy_visible_node,

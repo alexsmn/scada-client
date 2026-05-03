@@ -20,20 +20,23 @@ class TestDialogService : public DialogService {
   UiView* GetDialogOwningWindow() const override { return nullptr; }
   UiView* GetParentWidget() const override { return nullptr; }
 
-  promise<MessageBoxResult> RunMessageBox(std::u16string_view message,
-                                          std::u16string_view title,
-                                          MessageBoxMode mode) override {
-    return make_rejected_promise<MessageBoxResult>(std::exception{});
+  Awaitable<MessageBoxResult> RunMessageBox(std::u16string_view message,
+                                            std::u16string_view title,
+                                            MessageBoxMode mode) override {
+    throw std::exception{};
+    co_return MessageBoxResult::Ok;
   }
 
-  promise<std::filesystem::path> SelectOpenFile(
+  Awaitable<std::filesystem::path> SelectOpenFile(
       std::u16string_view title) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
+    co_return std::filesystem::path{};
   }
 
-  promise<std::filesystem::path> SelectSaveFile(
+  Awaitable<std::filesystem::path> SelectSaveFile(
       const SaveParams& params) override {
-    return make_rejected_promise<std::filesystem::path>(std::exception{});
+    throw std::exception{};
+    co_return std::filesystem::path{};
   }
 };
 
@@ -58,7 +61,9 @@ class CsvExportDialogTest : public testing::Test {
 }  // namespace
 
 TEST_F(CsvExportDialogTest, AcceptedDialogReturnsParamsAndStoresProfile) {
-  auto result = ShowCsvExportDialog(dialog_service_, profile_);
+  auto result =
+      aui::qt::test::StartAwaitable(ShowCsvExportDialog(dialog_service_,
+                                                        profile_));
 
   aui::qt::test::ProcessEventsUntilSettled(result, [](QDialog& dialog) {
     dialog.findChild<QComboBox*>("encodingComboBox")->setCurrentIndex(1);
@@ -67,11 +72,11 @@ TEST_F(CsvExportDialogTest, AcceptedDialogReturnsParamsAndStoresProfile) {
     dialog.accept();
   });
 
-  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
+  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
   const CsvExportParams expected{.unicode = true,
                                  .delimiter = ';',
                                  .quote = '\''};
-  ExpectParamsEq(result.get(), expected);
+  ExpectParamsEq(aui::qt::test::GetAwaitableResult(result), expected);
   ExpectParamsEq(ReadProfileParams(profile_), expected);
 }
 
@@ -79,13 +84,15 @@ TEST_F(CsvExportDialogTest, RejectedDialogDoesNotStoreProfileParams) {
   profile_.data().as_object()["csv"] =
       ToJson(CsvExportParams{.unicode = true, .delimiter = ';', .quote = '\''});
 
-  auto result = ShowCsvExportDialog(dialog_service_, profile_);
+  auto result =
+      aui::qt::test::StartAwaitable(ShowCsvExportDialog(dialog_service_,
+                                                        profile_));
 
   aui::qt::test::ProcessEventsUntilSettled(result,
                                            aui::qt::test::RejectDialog);
 
-  ASSERT_TRUE(aui::qt::test::IsPromiseReady(result));
-  EXPECT_THROW(result.get(), std::exception);
+  ASSERT_TRUE(aui::qt::test::IsAwaitableReady(result));
+  EXPECT_THROW(aui::qt::test::GetAwaitableResult(result), std::exception);
   ExpectParamsEq(ReadProfileParams(profile_),
                  CsvExportParams{.unicode = true,
                                  .delimiter = ';',

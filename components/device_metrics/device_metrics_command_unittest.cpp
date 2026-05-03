@@ -55,8 +55,7 @@ class DeviceMetricsCommandTest : public Test {
                                 &monitored_item_service_,
                             .method_service = &method_service_};
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
 
   v1::NodeServiceImpl node_service_{v1::NodeServiceImplContext{
       MakeAddressSpaceFetcherFactory(), address_space_, scada::client{services_}}};
@@ -202,7 +201,7 @@ TEST_F(DeviceMetricsCommandTest, MakeDeviceMetricsWindowDefinitionAsync) {
 
   auto window_definition = WaitAwaitable(
       executor_, MakeDeviceMetricsWindowDefinitionAsync(
-                     MakeTestAnyExecutor(executor_),
+                     executor_,
                      node_service_.GetNode(device1->id())));
 
   EXPECT_EQ(window_definition.title, u"Device 1");
@@ -228,7 +227,7 @@ TEST_F(DeviceMetricsCommandTest, CollectChildrenAsyncKeepsOnlyMatchingTypes) {
                       child->id());
 
   auto children = WaitAwaitable(
-      executor_, CollectChildrenAsync(MakeTestAnyExecutor(executor_),
+      executor_, CollectChildrenAsync(executor_,
                                       node_service_.GetNode(parent->id()),
                                       devices::id::DeviceType));
 
@@ -240,8 +239,9 @@ TEST_F(DeviceMetricsCommandTest, FetchNodePromiseUsesCoroutineBody) {
   const auto* device = CreateDevice({1, device_namespace_index}, u"Device");
 
   auto fetched_node =
-      FetchNode(node_service_.GetNode(device->id()), NodeFetchStatus::NodeOnly())
-          .get();
+      WaitAwaitable(executor_, FetchNodeAsync(executor_,
+                                              node_service_.GetNode(device->id()),
+                                              NodeFetchStatus::NodeOnly()));
 
   EXPECT_EQ(fetched_node.node_id(), device->id());
   EXPECT_TRUE(fetched_node.fetched());
@@ -262,7 +262,7 @@ TEST_F(DeviceMetricsCommandTest,
                       skipped_child->id());
 
   auto nodes = WaitAwaitable(
-      executor_, CollectNodesRecursiveAsync(MakeTestAnyExecutor(executor_),
+      executor_, CollectNodesRecursiveAsync(executor_,
                                             node_service_.GetNode(parent->id()),
                                             devices::id::DeviceType));
 
@@ -270,16 +270,17 @@ TEST_F(DeviceMetricsCommandTest,
               ElementsAre(parent->id(), child->id()));
 }
 
-TEST_F(DeviceMetricsCommandTest, CollectNodesRecursivePromiseUsesCoroutineBody) {
+TEST_F(DeviceMetricsCommandTest, CollectNodesRecursiveAsyncUsesCoroutineBody) {
   const auto* parent = CreateDevice({1, device_namespace_index}, u"Parent");
   const auto* child = CreateDevice({2, device_namespace_index}, u"Child");
 
   scada::AddReference(address_space_, scada::id::Organizes, parent->id(),
                       child->id());
 
-  auto nodes = CollectNodesRecursive(node_service_.GetNode(parent->id()),
-                                     devices::id::DeviceType)
-                   .get();
+  auto nodes = WaitAwaitable(
+      executor_, CollectNodesRecursiveAsync(executor_,
+                                            node_service_.GetNode(parent->id()),
+                                            devices::id::DeviceType));
 
   EXPECT_THAT(nodes | transformed(std::mem_fn(&NodeRef::node_id)) | to_vector,
               ElementsAre(parent->id(), child->id()));
@@ -287,8 +288,8 @@ TEST_F(DeviceMetricsCommandTest, CollectNodesRecursivePromiseUsesCoroutineBody) 
 
 TEST_F(DeviceMetricsCommandTest,
        MakeDeviceMetricsWindowDefinitionRejectsNodeWithoutTypeDefinition) {
-  const auto promise = MakeDeviceMetricsWindowDefinition(
-      MakeTestAnyExecutor(executor_), NodeRef{});
-
-  EXPECT_THROW(WaitPromise(executor_, promise), std::runtime_error);
+  EXPECT_THROW(WaitAwaitable(
+                   executor_,
+                   MakeDeviceMetricsWindowDefinitionAsync(executor_, NodeRef{})),
+               std::runtime_error);
 }

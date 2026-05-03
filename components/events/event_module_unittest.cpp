@@ -86,9 +86,9 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
   EXPECT_CALL(main_window, OpenView(_, _))
       .WillOnce(Invoke(
           [&opened](const WindowDefinition& def, bool /*activate*/)
-              -> promise<OpenedViewInterface*> {
+              -> Awaitable<OpenedViewInterface*> {
             opened = def;
-            return make_resolved_promise<OpenedViewInterface*>(nullptr);
+            co_return nullptr;
           }));
 
   const auto* command =
@@ -110,7 +110,7 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
   // post-await resumption. Pump a few extras for safety against
   // implementation-detail churn in the helpers.
   for (int i = 0; i < 4; ++i) {
-    controller_env_.executor_->Poll();
+    controller_env_.executor_.Poll();
   }
 
   EXPECT_EQ(opened_view.open_definition_await_count, 1);

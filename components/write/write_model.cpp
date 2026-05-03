@@ -2,8 +2,6 @@
 
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
-#include "base/awaitable_promise.h"
-#include "base/promise_executor.h"
 #include "base/u16format.h"
 #include "common/format.h"
 #include "common/formula_util.h"
@@ -19,7 +17,7 @@ const wchar_t kAnalogConfirmationQuestion[] = L"Write value {} to {}?";
 const char16_t kSecondStagePrefix[] =
     u"The remote device is ready to execute the command.\n\n";
 
-Awaitable<scada::Status> AwaitStatus(std::shared_ptr<Executor> executor,
+Awaitable<scada::Status> AwaitStatus(AnyExecutor executor,
                                       Awaitable<void> operation) {
   try {
     co_await std::move(operation);
@@ -214,7 +212,7 @@ void WriteModel::StartWritingHelper() {
 }
 
 Awaitable<void> WriteModel::CompleteWriteAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<WriteModel> model,
     Awaitable<void> operation) {
   auto status = co_await AwaitStatus(std::move(executor), std::move(operation));
@@ -225,7 +223,7 @@ Awaitable<void> WriteModel::CompleteWriteAsync(
 }
 
 Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::weak_ptr<WriteModel> model,
     Awaitable<MessageBoxResult> prompt) {
   try {
@@ -244,7 +242,7 @@ Awaitable<void> WriteModel::ConfirmAndStartWritingAsync(
 }
 
 Awaitable<void> WriteModel::ReportWriteErrorAsync(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     std::function<void(bool ok)> completion_handler,
     DialogService& dialog_service,
     std::u16string message,

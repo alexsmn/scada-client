@@ -22,11 +22,15 @@ TEST(Importer, UnorderedCreatedNodes) {
 
   EXPECT_CALL(task_manager,
               PostInsertTask(Field(&scada::NodeState::node_id, data_group_id)))
-      .WillOnce(Return(make_resolved_promise(data_group_id)));
+      .WillOnce([&](const scada::NodeState&) -> Awaitable<scada::NodeId> {
+        co_return data_group_id;
+      });
 
   EXPECT_CALL(task_manager,
               PostInsertTask(Field(&scada::NodeState::node_id, data_item_id)))
-      .WillOnce(Return(make_resolved_promise(data_item_id)));
+      .WillOnce([&](const scada::NodeState&) -> Awaitable<scada::NodeId> {
+        co_return data_item_id;
+      });
 
   ApplyDiffData(
       {.create_nodes = {{.node_id = data_item_id,

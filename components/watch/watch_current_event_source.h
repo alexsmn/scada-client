@@ -1,15 +1,16 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "components/watch/watch_event_source.h"
 #include "scada/client_monitored_item.h"
 
 #include <memory>
 
-class Executor;
 class NodeService;
 
 struct WatchCurrentEventSourceContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   NodeService& node_service_;
 };
 

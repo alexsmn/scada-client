@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/models/grid_model.h"
 #include "base/boost_log.h"
 #include "base/time/time.h"
@@ -17,13 +19,12 @@ class DataValue;
 }
 
 class NodeService;
-class Executor;
 class TimedDataService;
 class TimedDataSpec;
 class WindowDefinition;
 
 struct SummaryModelContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   // The node service is only used when adding contained items.
   NodeService& node_service_;
   TimedDataService& timed_data_service_;

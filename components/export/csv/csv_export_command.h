@@ -1,14 +1,14 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/awaitable.h"
-#include "base/promise.h"
 #include "export/csv/csv_export_util.h"
 
 #include <functional>
 #include <string>
 
 class DialogService;
-class Executor;
 class ExportModel;
 class Profile;
 
@@ -16,7 +16,7 @@ using CsvExportDialogRunner =
     std::function<Awaitable<CsvExportParams>(DialogService&, Profile&)>;
 
 struct CsvExportContext {
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   DialogService& dialog_service_;
   Profile& profile_;
   ExportModel& export_model_;
@@ -24,4 +24,4 @@ struct CsvExportContext {
   CsvExportDialogRunner show_csv_export_dialog;
 };
 
-promise<void> RunCsvExport(CsvExportContext&& context);
+Awaitable<void> RunCsvExport(CsvExportContext&& context);

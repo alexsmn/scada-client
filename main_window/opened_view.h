@@ -1,7 +1,9 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/types.h"
-#include "base/executor_timer.h"
+#include "base/any_executor_timer.h"
 #include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_factory.h"
@@ -28,7 +30,7 @@ using PopupMenuHandler = std::function<void(aui::MenuModel* merge_menu,
 using DefaultNodeCommandHandler = std::function<void(const NodeRef& node)>;
 
 struct OpenedViewContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   MainWindow* main_window_ = nullptr;
   const WindowInfo& window_info_;
   WindowDefinition& window_def_;
@@ -104,7 +106,7 @@ class OpenedView final : private OpenedViewContext,
   std::u16string title_;
 
   bool working_ = false;
-  ExecutorTimer update_working_timer_;
+  AnyExecutorTimer update_working_timer_;
 
   std::unique_ptr<UiView> view_;
 

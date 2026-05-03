@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
 #include "base/settings_store.h"
@@ -15,12 +17,11 @@ class SessionService;
 class Status;
 }
 
-class Executor;
 class DialogService;
 
 class LoginController : public std::enable_shared_from_this<LoginController> {
  public:
-  LoginController(std::shared_ptr<Executor> executor,
+  LoginController(AnyExecutor executor,
                   DataServicesContext&& services_context,
                   DialogService& dialog_service,
                   std::shared_ptr<SettingsStore> settings_store = {});
@@ -52,25 +53,25 @@ class LoginController : public std::enable_shared_from_this<LoginController> {
   void OnLoginCompleted();
   void OnLoginFailed(const scada::Status& status);
 
-  static Awaitable<void> ConnectAsync(std::shared_ptr<Executor> executor,
+  static Awaitable<void> ConnectAsync(AnyExecutor executor,
                                       std::weak_ptr<LoginController> controller,
                                       scada::SessionService& session_service,
                                       scada::SessionConnectParams params);
   static Awaitable<void> CompleteLoginAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::function<void(DataServices services)> completion_handler,
       DataServices services,
       Awaitable<void> message);
   static Awaitable<void> PromptForceLogoffAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::weak_ptr<LoginController> controller,
       Awaitable<MessageBoxResult> prompt);
   static Awaitable<void> ReportLoginErrorAsync(
-      std::shared_ptr<Executor> executor,
+      AnyExecutor executor,
       std::weak_ptr<LoginController> controller,
       Awaitable<MessageBoxResult> prompt);
 
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   DataServicesContext services_context_;
   DialogService& dialog_service_;
   std::shared_ptr<SettingsStore> settings_store_;

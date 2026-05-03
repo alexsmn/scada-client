@@ -63,8 +63,7 @@ class EventTableModelTest : public Test {
   void Init();
   void ValidateEvents();
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
 
   StaticNodeService node_service_;
 

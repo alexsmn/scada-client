@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base/promise.h"
+#include "base/awaitable.h"
 
 class OpenedViewInterface;
 class Page;
@@ -27,7 +27,7 @@ class MainWindowInterface {
   [[nodiscard]] virtual std::vector<OpenedViewInterface*> GetOpenedViews()
       const = 0;
 
-  virtual promise<OpenedViewInterface*> OpenView(
+  virtual Awaitable<OpenedViewInterface*> OpenView(
       const WindowDefinition& window_definition,
       bool activate = true) = 0;
 

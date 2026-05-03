@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/cancelation.h"
 #include "events/event_observer.h"
 
@@ -7,13 +9,12 @@
 #include <functional>
 
 class ActionManager;
-class Executor;
 class LocalEvents;
 class NodeEventProvider;
 class Profile;
 
 struct EventDispatcherContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   NodeEventProvider& node_event_provider_;
   LocalEvents& local_events_;
   Profile& profile_;

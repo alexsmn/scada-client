@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "configuration/configuration_module.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "services/device_state_notifier.h"
@@ -7,12 +9,11 @@
 #include <memory>
 #include <optional>
 
-class Executor;
 class NodeService;
 class TimedDataService;
 
 struct HardwareTreeModelContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   NodeService& node_service_;
   TimedDataService& timed_data_service_;
   const NodeServiceTreeFactory& node_service_tree_factory_;

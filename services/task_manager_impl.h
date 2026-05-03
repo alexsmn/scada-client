@@ -1,8 +1,10 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "base/async_completion.h"
 #include "base/awaitable.h"
-#include "base/executor_timer.h"
+#include "base/any_executor_timer.h"
 #include "scada/coroutine_services.h"
 #include "scada/status.h"
 #include "services/task_manager.h"
@@ -16,7 +18,6 @@ class AttributeService;
 class NodeManagementService;
 }  // namespace scada
 
-class Executor;
 class LocalEvents;
 class NodeService;
 class Profile;
@@ -24,7 +25,7 @@ class ProgressHost;
 class RunningProgress;
 
 struct TaskManagerImplContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   NodeService& node_service_;
   scada::AttributeService& attribute_service_;
   scada::NodeManagementService& node_management_service_;
@@ -123,7 +124,7 @@ class TaskManagerImpl : private TaskManagerImplContext,
   std::optional<std::chrono::steady_clock::time_point> start_time_;
   std::unique_ptr<RunningProgress> running_progress_;
 
-  ExecutorTimer timer_{executor_};
+  AnyExecutorTimer timer_{executor_};
 
   Task running_task_;
 

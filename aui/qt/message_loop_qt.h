@@ -1,22 +1,27 @@
 #pragma once
 
-#include "base/executor.h"
+#include "base/any_executor.h"
+#include "base/any_executor_adapter.h"
+#include "base/common_types.h"
 
 #include <QTimer>
+#include <functional>
 #include <mutex>
 #include <queue>
+#include <source_location>
 
-class MessageLoopQt final : public Executor {
+class MessageLoopQt final {
  public:
+  using Task = std::function<void()>;
+
   MessageLoopQt();
   ~MessageLoopQt();
 
-  // Executor
-  virtual void PostDelayedTask(Duration delay,
-                               Task task,
-                               const std::source_location& location =
-                                   std::source_location::current()) override;
-  virtual size_t GetTaskCount() const override;
+  void PostDelayedTask(Duration delay,
+                       Task task,
+                       const std::source_location& location =
+                           std::source_location::current());
+  size_t GetTaskCount() const;
 
  private:
   struct PendingTask {

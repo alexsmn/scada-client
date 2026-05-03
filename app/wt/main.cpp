@@ -3,7 +3,7 @@
 #include "app/app_init.h"
 #include "base/boost_log.h"
 #include "aui/wt/message_loop_wt.h"
-#include "base/executor.h"
+#include "base/any_executor_dispatch.h"
 #include "components/login/wt/login_dialog.h"
 
 #include <wt/WApplication.h>
@@ -24,8 +24,8 @@ class HelloApplication : public Wt::WApplication {
 
  private:
   boost::asio::io_context& io_context_;
-  const std::shared_ptr<Executor> executor_ =
-      std::make_shared<MessageLoopWt>(io_context_);
+  const AnyExecutor executor_ =
+      MakeAnyExecutor(std::make_shared<MessageLoopWt>(io_context_));
 
   ClientApplication client_application_{ClientApplicationContext{
       .io_context_ = io_context_,
@@ -42,7 +42,7 @@ HelloApplication::HelloApplication(const Wt::WEnvironment& env,
   setTheme(std::make_shared<Wt::WBootstrapTheme>());
 
   BOOST_LOG_TRIVIAL(info) << "Connect";
-  // TODO: Handle quit request when the returned promise is resolved.
+  // TODO: Handle quit request when the returned awaitable completes.
   auto _ = client_application_.Start();
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "main_window/action_manager.h"
 
 #include <map>
@@ -17,10 +19,9 @@ class WToolBar;
 }  // namespace Wt
 
 class CommandHandler;
-class Executor;
 
 struct ToolbarControllerContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   ActionManager& action_manager_;
   CommandHandler& commands_;
 };

@@ -1,6 +1,5 @@
 #include "components/login/qt/login_dialog.h"
 
-#include "base/awaitable_promise.h"
 #include "base/e2e_test_hooks.h"
 #include "components/login/login_controller.h"
 #include "net/net_executor_adapter.h"
@@ -31,29 +30,28 @@ QStringList MakeQStringList(const std::vector<std::u16string>& source) {
 }
 
 Awaitable<std::optional<DataServices>> DeleteLoginDialogOnCompletionAsync(
-    std::shared_ptr<Executor> executor,
     LoginDialog& login_dialog) {
-  auto result = co_await AwaitPromise(NetExecutorAdapter{std::move(executor)},
-                                      login_dialog.promise);
+  auto result = co_await login_dialog.Wait();
   login_dialog.deleteLater();
   co_return result;
 }
 
 }  // namespace
 
-LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
+LoginDialog::LoginDialog(AnyExecutor executor,
                          DataServicesContext&& services_context)
     : controller_{std::make_shared<LoginController>(
-          std::move(executor),
+          executor,
           std::move(services_context),
           dialog_service_,
-          client::CreateE2eSettingsStore())} {
+          client::CreateE2eSettingsStore())},
+      completion_{std::move(executor)} {
   ui.setupUi(this);
 
   dialog_service_.parent_widget = this;
 
   controller_->completion_handler = [this](DataServices services) {
-    promise.resolve(std::move(services));
+    Complete(std::move(services));
   };
 
   controller_->login_failed_handler = [this](const scada::Status& status) {
@@ -62,7 +60,7 @@ LoginDialog::LoginDialog(std::shared_ptr<Executor> executor,
 
     client::ReportE2eStatus(
         std::string{"failure: "} + ToString(status));
-    promise.resolve(std::nullopt);
+    Complete(std::nullopt);
     close();
     return true;
   };
@@ -121,7 +119,21 @@ void LoginDialog::reject() {
   if (client::IsE2eTestMode()) {
     client::ReportE2eStatusIfUnset("canceled");
   }
-  promise.resolve(std::nullopt);
+  Complete(std::nullopt);
+}
+
+Awaitable<std::optional<DataServices>> LoginDialog::Wait() {
+  co_await completion_.Wait();
+  co_return std::move(result_);
+}
+
+void LoginDialog::Complete(std::optional<DataServices> services) {
+  if (completed_) {
+    return;
+  }
+  completed_ = true;
+  result_ = std::move(services);
+  completion_.Complete();
 }
 
 void LoginDialog::Login() {
@@ -166,19 +178,13 @@ bool LoginDialog::eventFilter(QObject* object, QEvent* event) {
   return QDialog::eventFilter(object, event);
 }
 
-promise<std::optional<DataServices>> ExecuteLoginDialog(
-    std::shared_ptr<Executor> executor,
+Awaitable<std::optional<DataServices>> ExecuteLoginDialog(
+    AnyExecutor executor,
     DataServicesContext&& services_context) {
-  auto dialog_executor = executor;
   LoginDialog* login_dialog =
       new LoginDialog{std::move(executor), std::move(services_context)};
 
-  auto promise = ToPromise(
-      NetExecutorAdapter{dialog_executor},
-      DeleteLoginDialogOnCompletionAsync(std::move(dialog_executor),
-                                         *login_dialog));
-
   login_dialog->setModal(true);
   login_dialog->show();
-  return promise;
+  co_return co_await DeleteLoginDialogOnCompletionAsync(*login_dialog);
 }

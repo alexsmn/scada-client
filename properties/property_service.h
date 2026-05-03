@@ -2,10 +2,8 @@
 
 #include "base/any_executor.h"
 #include "base/awaitable.h"
-#include "base/promise.h"
 #include "node_service/node_ref.h"
 
-#include <optional>
 #include <unordered_set>
 #include <vector>
 
@@ -17,13 +15,12 @@ using PropertyDefs =
 class PropertyService {
  public:
   PropertyService() = default;
-  explicit PropertyService(AnyExecutor executor);
+  explicit PropertyService(AnyExecutor) {}
 
   const PropertyDefinition* GetPropertyDef(const NodeRef& prop_decl);
 
   PropertyDefs GetTypePropertyDefs(const NodeRef& type_definition);
 
-  promise<PropertyDefs> GetChildPropertyDefs(const NodeRef& parent_node);
   Awaitable<PropertyDefs> GetChildPropertyDefsAsync(
       AnyExecutor executor,
       const NodeRef& parent_node);
@@ -41,5 +38,4 @@ class PropertyService {
   PropertyDefs GetPropertyDefs(
       const std::unordered_set<NodeRef>& property_decls);
 
-  std::optional<AnyExecutor> executor_;
 };

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/models/simple_menu_model.h"
 #include "base/cancelation.h"
 #include "controller/command_registry.h"
@@ -10,7 +12,6 @@
 
 class CommandHandler;
 class DialogService;
-class Executor;
 class Favourites;
 class MainWindowInterface;
 class MainWindowManager;
@@ -25,7 +26,7 @@ void RegisterDisplayMenuWindowInfo(const WindowInfo& window_info);
 void UnregisterDisplayMenuWindowInfo(const WindowInfo& window_info);
 
 struct MainMenuContext {
-  const std::shared_ptr<Executor> executor_;
+  const AnyExecutor executor_;
   MainWindowManager& main_window_manager_;
   MainWindowInterface& main_window_;
   Favourites& favourites_;

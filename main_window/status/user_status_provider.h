@@ -1,11 +1,12 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "node_service/node_observer.h"
 #include "node_service/node_ref.h"
 
 #include <boost/signals2/connection.hpp>
 
-class Executor;
 class NodeService;
 
 class UserStatusProvider final
@@ -14,7 +15,7 @@ class UserStatusProvider final
  public:
   using ChangeNotifier = std::function<void()>;
 
-  UserStatusProvider(const std::shared_ptr<Executor>& executor,
+  UserStatusProvider(const AnyExecutor& executor,
                      NodeService& node_service,
                      scada::SessionService& session_service);
 
@@ -30,7 +31,7 @@ class UserStatusProvider final
   // NodeRefObserver
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
 
-  std::shared_ptr<Executor> executor_;
+  AnyExecutor executor_;
   NodeService& node_service_;
   scada::SessionService& session_service_;
 

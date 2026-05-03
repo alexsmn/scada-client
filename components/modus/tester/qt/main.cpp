@@ -15,7 +15,7 @@
 #include <atlbase.h>
 
 struct State : DisplayTesterState {
-  std::shared_ptr<Executor> executor = std::make_shared<TestExecutor>();
+  AnyExecutor executor = TestExecutor{};
   AliasResolver alias_resolver = [](std::string_view alias,
                                     const AliasResolveCallback& callback) {};
   FileRegistry file_registry;
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   client::RegisterPathProvider();
 
   QApplication qapp(argc, argv);
-  auto executor = std::make_shared<MessageLoopQt>();
+  auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   State state;
 
   DisplayTesterWindow tester_window{

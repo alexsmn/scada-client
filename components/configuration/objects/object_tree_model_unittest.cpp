@@ -132,7 +132,7 @@ class ObjectTreeModelTest : public ::testing::Test {
   static inline const scada::NodeId kDataGroupId{1001, 1};
   static inline const scada::NodeId kDataItemId{1002, 1};
 
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   StaticNodeService node_service_;
   FakeTimedDataService timed_data_service_;
   Profile profile_;
@@ -216,7 +216,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   }
 
   void PollExecutor() {
-    std::static_pointer_cast<TestExecutor>(executor_)->Poll();
+    executor_.Poll();
   }
 
   void CompleteFetch() {
@@ -230,7 +230,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
 
   static inline const scada::NodeId kDataItemId{2001, 1};
 
-  std::shared_ptr<Executor> executor_ = std::make_shared<TestExecutor>();
+  TestExecutor executor_;
   NiceMock<MockNodeService> node_service_;
   NiceMock<MockTimedDataService> timed_data_service_;
   Profile profile_;

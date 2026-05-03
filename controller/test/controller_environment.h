@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/any_executor.h"
+
 #include "aui/dialog_service_mock.h"
 #include "aui/types.h"
 #include "base/blinker_mock.h"
@@ -67,8 +69,7 @@ struct ControllerEnvironment {
   // NOTE: Consider `ControllerTest`.
   void TestController(unsigned command_id);
 
-  const std::shared_ptr<TestExecutor> executor_ =
-      std::make_shared<TestExecutor>();
+  TestExecutor executor_;
 
   testing::NiceMock<scada::MockSessionService> session_service_;
   testing::NiceMock<scada::MockHistoryService> history_service_;

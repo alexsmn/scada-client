@@ -84,7 +84,7 @@ void CompleteTaskCompletion(base::AsyncCompletion& completion,
 }
 
 Awaitable<scada::Status> RunTaskLauncher(
-    std::shared_ptr<Executor> executor,
+    AnyExecutor executor,
     TaskManager::TaskLauncher launcher) {
   try {
     co_await launcher();
@@ -489,13 +489,13 @@ void TaskManagerImpl::Run() {
 
 Awaitable<void> TaskManagerImpl::PostTaskMethod(std::u16string_view title,
                                                 TaskMethod method) {
-  auto completion = base::AsyncCompletion{NetExecutorAdapter{executor_}};
+  auto completion = base::AsyncCompletion{executor_};
   auto result = completion.Wait();
   tasks_.push(Task{.title = std::u16string{title},
                    .method = std::move(method),
                    .completion = std::move(completion)});
 
-  executor_->PostDelayedTask(1ms, [self = shared_from_this()] { self->Run(); });
+  PostDelayedTask(executor_, 1ms, [self = shared_from_this()] { self->Run(); });
 
   return result;
 }
@@ -505,7 +505,7 @@ Awaitable<T> TaskManagerImpl::PostTypedTaskMethod(
     std::u16string_view title,
     std::function<Awaitable<T>()> method) {
   auto result = std::make_shared<TaskResultState<T>>();
-  auto task_completion = base::AsyncCompletion{NetExecutorAdapter{executor_}};
+  auto task_completion = base::AsyncCompletion{executor_};
   auto waiter = task_completion.Wait();
 
   Task task{
@@ -522,7 +522,7 @@ Awaitable<T> TaskManagerImpl::PostTypedTaskMethod(
           }};
 
   tasks_.push(std::move(task));
-  executor_->PostDelayedTask(1ms, [self = shared_from_this()] { self->Run(); });
+  PostDelayedTask(executor_, 1ms, [self = shared_from_this()] { self->Run(); });
 
   return WaitTypedTaskResult(std::move(result), std::move(waiter));
 }
