@@ -1,10 +1,11 @@
 #pragma once
 
-#include "aui/qt/dock_tab_widget.h"
+#include "main_window/qt/view_manager_qt_component.h"
 #include "main_window/view_manager.h"
 
+#include <vector>
+
 class QMainWindow;
-class QWidget;
 
 class ViewManagerQt final : public QObject, public ViewManager {
   Q_OBJECT
@@ -28,24 +29,24 @@ class ViewManagerQt final : public QObject, public ViewManager {
   virtual void AddView(OpenedView& view) override;
 
  private:
-  void AddTabView(OpenedView& view);
-  void AddDockView(OpenedView& view);
+  using ComponentLayoutNode = ViewManagerQtComponent::LayoutNode;
+  using ComponentSavedLayout = ViewManagerQtComponent::SavedLayout;
+  using ComponentViewInfo = ViewManagerQtComponent::ViewInfo;
 
-  std::unique_ptr<DockTabWidget> CreateTabBlock();
-  void DeleteTabBlock(DockTabWidget& tabs, bool later);
-  DockTabWidget& SplitTabBlock(DockTabWidget& tabs,
-                               DockTabWidget::DropSide side);
+  ComponentViewInfo GetComponentViewInfo(OpenedView& view) const;
+  std::vector<ComponentViewInfo> GetComponentViewInfos() const;
+  ViewManagerQtComponent::ViewId GetComponentViewId(
+      const OpenedView& view) const;
+  OpenedView* FindViewByComponentId(
+      ViewManagerQtComponent::ViewId view_id) const;
 
-  std::unique_ptr<QWidget> OpenLayoutBlock(const Page& page,
-                                           const PageLayoutBlock& block);
-  void SaveLayoutBlock(PageLayoutBlock& block, QWidget& widget);
+  ComponentSavedLayout ToComponentLayout(const PageLayout& layout) const;
+  ComponentLayoutNode ToComponentLayoutNode(
+      const PageLayoutBlock& block) const;
+  void FromComponentLayout(const ComponentSavedLayout& component_layout,
+                           PageLayout& layout) const;
+  void FromComponentLayoutNode(const ComponentLayoutNode& component_block,
+                               PageLayoutBlock& block) const;
 
-  OpenedView* FindViewByWidget(const QWidget* widget);
-
-  void OnFocusChanged(QObject* focus_object);
-
-  void SetRootWidget(QWidget* widget);
-
-  QMainWindow& main_window_;
-  QWidget* root_widget_ = nullptr;
+  ViewManagerQtComponent component_;
 };

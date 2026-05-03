@@ -131,3 +131,34 @@ TEST_F(ViewManagerQtTest, SplitAndClose) {
 
   view_manager_qt_.SplitView(*opened_view2, /*vertically=*/false);
 }
+
+TEST(ViewManagerQtComponentTest, AddSplitSaveAndRemovePlainWidgets) {
+  AppEnvironment app_env;
+  QMainWindow main_window;
+  ViewManagerQtComponent component{main_window};
+
+  auto widget1 = std::make_unique<QWidget>();
+  auto widget2 = std::make_unique<QWidget>();
+
+  std::vector<ViewManagerQtComponent::ViewInfo> views{
+      {.id = 1, .widget = widget1.get(), .title = u"One"},
+      {.id = 2, .widget = widget2.get(), .title = u"Two"}};
+
+  component.AddView(views[0], std::nullopt);
+  component.AddView(views[1], views[0].id);
+  component.SplitView(views[1].id, /*vertically=*/false);
+
+  auto layout = component.SaveLayout(views);
+  EXPECT_EQ(layout.main.type,
+            ViewManagerQtComponent::LayoutNode::Type::Split);
+  EXPECT_TRUE(layout.main.split_vertical);
+  ASSERT_TRUE(layout.main.left);
+  ASSERT_TRUE(layout.main.right);
+  EXPECT_THAT(layout.main.left->tabs, ElementsAre(views[0].id));
+  EXPECT_THAT(layout.main.right->tabs, ElementsAre(views[1].id));
+
+  ASSERT_TRUE(component.RemoveView(views[0].id));
+  ASSERT_TRUE(component.RemoveView(views[1].id));
+  widget1->setParent(nullptr);
+  widget2->setParent(nullptr);
+}
