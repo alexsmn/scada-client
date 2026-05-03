@@ -8,9 +8,7 @@
 #include <memory>
 #include <string>
 
-template <class T>
-class BasicCommandRegistry;
-
+class ActionManager;
 class DialogService;
 class MainWindowManager;
 class Profile;
@@ -22,7 +20,7 @@ using RenamePagePromptRunner =
 
 struct PageCommandsContext {
   AnyExecutor executor_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  ActionManager& action_manager_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   RenamePagePromptRunner rename_prompt_runner_;

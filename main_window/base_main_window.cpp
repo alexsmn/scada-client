@@ -9,6 +9,7 @@
 #include "controller/window_info.h"
 #include "filesystem/file_manager.h"
 #include "main_window/pages/initial_page.h"
+#include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/selection_commands.h"

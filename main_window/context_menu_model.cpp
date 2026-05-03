@@ -2,11 +2,12 @@
 
 #include "controller/action_manager.h"
 #include "main_window/main_window.h"
+#include "main_window/main_window_commands.h"
 #include "main_window/opened_view/opened_view.h"
 
 ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
                                    ActionManager& action_manager,
-                                   CommandHandler& command_handler)
+                                   MainWindowCommandHandler& command_handler)
     : aui::SimpleMenuModel{&command_handler_},
       main_window_{main_window},
       action_manager_{action_manager},
@@ -42,7 +43,7 @@ void ContextMenuModel::Rebuild() {
   std::vector<unsigned> all_commands;
   for (const Action* action : action_manager_.actions()) {
     // TODO: Remove the static cast.
-    if (active_view->commands->GetCommandHandler(action->command_id())) {
+    if (active_view->commands->FindAction(action->command_id())) {
       all_commands.push_back(action->command_id());
     }
   }

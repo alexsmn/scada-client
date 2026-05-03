@@ -4,10 +4,7 @@
 
 #include <memory>
 
-template <typename T>
-class BasicCommandRegistry;
-
-class CommandRegistry;
+class ActionManager;
 class DialogService;
 class NodeService;
 class TaskManager;
@@ -17,7 +14,7 @@ struct ExportConfigurationModuleContext {
   AnyExecutor executor_;
   NodeService& node_service_;
   TaskManager& task_manager_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  ActionManager& action_manager_;
 };
 
 class ExportConfigurationModule : private ExportConfigurationModuleContext {

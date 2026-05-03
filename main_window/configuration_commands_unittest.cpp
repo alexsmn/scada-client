@@ -4,7 +4,7 @@
 #include "base/awaitable.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
@@ -65,7 +65,7 @@ class ConfigurationCommandsTest : public Test {
       : scada_client_{scada::services{.method_service = &method_service_}},
         command_node_{MakeCommandNode(scada_client_.node({kItemNodeId, 1}))},
         selection_{SelectionModelContext{timed_data_service_}},
-        commands_{selection_commands_,
+        commands_{action_manager_,
                   executor_,
                   timed_data_service_,
                   session_service_,
@@ -84,10 +84,10 @@ class ConfigurationCommandsTest : public Test {
   }
 
   void ExecuteInterrogateCommand() {
-    auto* command = selection_commands_.FindCommand(ID_DEV1_REFR);
+    auto* command = action_manager_.FindAction(ID_DEV1_REFR);
     ASSERT_NE(command, nullptr);
     auto context = MakeCommandContext();
-    command->execute_handler(context);
+    command->execute_handler_(&context);
   }
 
   void DrainExecutor() { Drain(executor_); }
@@ -97,7 +97,7 @@ class ConfigurationCommandsTest : public Test {
   scada::client scada_client_;
   NodeRef command_node_;
   FakeTimedDataService timed_data_service_;
-  BasicCommandRegistry<SelectionCommandContext> selection_commands_;
+  ActionManager action_manager_;
   NiceMock<scada::MockSessionService> session_service_;
   Profile profile_;
   LocalEvents local_events_;

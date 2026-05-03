@@ -4,7 +4,6 @@
 #include "resources/common_resources.h"
 #include "modules/debugger/debugger_context.h"
 #include "modules/debugger/request_table_model.h"
-#include "controller/command_registry.h"
 #include "scada/session_service.h"
 
 #include <QHBoxLayout>

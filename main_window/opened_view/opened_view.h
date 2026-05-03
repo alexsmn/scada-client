@@ -4,7 +4,6 @@
 
 #include "aui/types.h"
 #include "base/any_executor_timer.h"
-#include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_factory.h"
 #include "main_window/opened_view/opened_view_interface.h"
@@ -13,13 +12,13 @@
 #include <memory>
 #include <string>
 
-class CommandHandler;
 class ContentsModel;
 class Controller;
 class DialogService;
 class MainWindow;
 class WindowDefinition;
 class PrintService;
+class OpenedViewCommands;
 struct WindowInfo;
 
 using PopupMenuHandler = std::function<void(aui::MenuModel* merge_menu,
@@ -80,7 +79,7 @@ class OpenedView final : private OpenedViewContext,
   Awaitable<WindowDefinition> GetOpenWindowDefinition(
       const WindowInfo* window_info) const override;
 
-  std::unique_ptr<CommandHandler> commands;
+  std::unique_ptr<OpenedViewCommands> commands;
 
  private:
   void UpdateWorking();

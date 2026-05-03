@@ -2,7 +2,7 @@
 
 #include "aui/key_codes.h"
 #include "resources/common_resources.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -32,7 +32,7 @@ class TableView : protected ControllerContext,
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual ExportModel* GetExportModel() override { return this; }
-  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+  virtual ActionManager* GetActionManager() override;
 
   // ContentsModel
   virtual void AddContainedItem(const scada::NodeId& node_id,
@@ -58,12 +58,12 @@ class TableView : protected ControllerContext,
 
   aui::Table* view_ = nullptr;
 
-  CommandRegistry command_registry_;
-  Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
-  Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
-  Command& move_up_command_ = command_registry_.AddCommand(ID_MOVE_UP);
-  Command& move_down_command_ = command_registry_.AddCommand(ID_MOVE_DOWN);
-  Command& sort_name_command_ = command_registry_.AddCommand(ID_SORT_NAME);
-  Command& sort_channel_command_ =
-      command_registry_.AddCommand(ID_SORT_CHANNEL);
+  ActionManager command_registry_;
+  Action& delete_command_ = command_registry_.AddAction(ID_DELETE);
+  Action& rename_command_ = command_registry_.AddAction(ID_RENAME);
+  Action& move_up_command_ = command_registry_.AddAction(ID_MOVE_UP);
+  Action& move_down_command_ = command_registry_.AddAction(ID_MOVE_DOWN);
+  Action& sort_name_command_ = command_registry_.AddAction(ID_SORT_NAME);
+  Action& sort_channel_command_ =
+      command_registry_.AddAction(ID_SORT_CHANNEL);
 };

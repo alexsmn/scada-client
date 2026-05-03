@@ -1,28 +1,28 @@
 #pragma once
 
-#include "controller/command_handler.h"
 #include "aui/models/simple_menu_model.h"
+#include "main_window/main_window_commands.h"
 
 class SimpleMenuCommandHandler : public aui::SimpleMenuModel::Delegate {
  public:
-  explicit SimpleMenuCommandHandler(CommandHandler& commands)
+  explicit SimpleMenuCommandHandler(MainWindowCommandHandler& commands)
       : commands_{commands} {}
 
   // ui::SimpleMenuModel::Delegate
   virtual bool IsCommandIdChecked(int command_id) const override {
-    auto* handler = commands_.GetCommandHandler(command_id);
-    return handler && handler->IsCommandChecked(command_id);
+    return commands_.FindAction(command_id) &&
+           commands_.IsActionChecked(command_id);
   }
 
   virtual bool IsCommandIdEnabled(int command_id) const override {
-    auto* handler = commands_.GetCommandHandler(command_id);
-    return handler && handler->IsCommandEnabled(command_id);
+    return commands_.FindAction(command_id) &&
+           commands_.IsActionEnabled(command_id);
   }
 
   virtual void ExecuteCommand(int command_id) override {
-    if (auto* handler = commands_.GetCommandHandler(command_id))
-      handler->ExecuteCommand(command_id);
+    if (commands_.FindAction(command_id))
+      commands_.ExecuteAction(command_id);
   }
 
-  CommandHandler& commands_;
+  MainWindowCommandHandler& commands_;
 };

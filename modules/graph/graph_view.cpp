@@ -48,86 +48,89 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
     controller_delegate_.ShowPopupMenu(nullptr, 0, point, true);
   });
 
-  command_registry_.AddCommand(
-      Command{ID_NOW}
-          .set_execute_handler([this] { ScrollToNow(); })
-          .set_checked_handler(
-              [this] { return graph_->horizontal_axis().time_fit(); }));
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_NOW}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { ScrollToNow(); }))
+          .SetCheckedHandler(MakeContextHandler<void>(
+              [this] { return graph_->horizontal_axis().time_fit(); })));
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_ADD_PANE}.set_execute_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_ADD_PANE}.SetExecuteHandler(MakeContextHandler<void>([this] {
         controller_delegate_.SetModified(true);
         graph_->NewPane();
         // TODO: Recover prompt.
         //      PromptBegin(views::View::GetWindowHandle(),
         //          pane.rect_.left + 10, pane.rect_.top + 10);
-      }));
+      })));
 
-  const Command::EnabledHandler selected_pane_enabled_handler = [this] {
+  const auto selected_pane_enabled_handler = [this] {
     return !!graph_->selected_pane();
   };
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_DELETE_PANE}
-          .set_execute_handler([this] { DeleteSelectedPane(); })
-          .set_enabled_handler(selected_pane_enabled_handler));
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_DELETE_PANE}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { DeleteSelectedPane(); }))
+          .SetEnabledHandler(MakeContextHandler<void>(
+              selected_pane_enabled_handler)));
 
-  command_registry_.AddCommand(
-      Command{ID_VIEW_LEGEND}
-          .set_execute_handler([this] { ToggleLegend(); })
-          .set_enabled_handler(selected_pane_enabled_handler)
-          .set_checked_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_VIEW_LEGEND}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { ToggleLegend(); }))
+          .SetEnabledHandler(MakeContextHandler<void>(
+              selected_pane_enabled_handler))
+          .SetCheckedHandler(MakeContextHandler<void>([this] {
             return graph_->selected_pane() &&
                    graph_->selected_pane()->show_legend();
-          }));
+          })));
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_ZOOM}
-          .set_execute_handler([this] { ToggleZoom(); })
-          .set_enabled_handler(selected_pane_enabled_handler)
-          .set_checked_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_ZOOM}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { ToggleZoom(); }))
+          .SetEnabledHandler(MakeContextHandler<void>(
+              selected_pane_enabled_handler))
+          .SetCheckedHandler(MakeContextHandler<void>([this] {
             return graph_->selected_pane() &&
                    graph_->selected_pane()->plot().zooming();
-          }));
+          })));
 
-  const Command::EnabledHandler line_enabled_handler = [this] {
+  const auto line_enabled_handler = [this] {
     return !!graph_->selected_pane();
   };
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_COLOR}
-          .set_execute_handler([this] { ChooseLineColor(); })
-          .set_enabled_handler(line_enabled_handler));
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_COLOR}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { ChooseLineColor(); }))
+          .SetEnabledHandler(MakeContextHandler<void>(line_enabled_handler)));
 
-  command_registry_.AddCommand(Command{ID_GRAPH_BK_COLOR}.set_execute_handler(
-      [this] { ChooseGraphColor(); }));
+  command_registry_.AddAction(Action{.command_id_ = ID_GRAPH_BK_COLOR}.SetExecuteHandler(MakeContextHandler<void>(
+      [this] { ChooseGraphColor(); })));
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_DOTS}
-          .set_execute_handler([this] { ToggleLineProperty(ID_GRAPH_DOTS); })
-          .set_enabled_handler(line_enabled_handler)
-          .set_checked_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_DOTS}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { ToggleLineProperty(ID_GRAPH_DOTS); }))
+          .SetEnabledHandler(MakeContextHandler<void>(line_enabled_handler))
+          .SetCheckedHandler(MakeContextHandler<void>([this] {
             return graph_->primary_line() &&
                    graph_->primary_line()->dots_shown();
-          }));
+          })));
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_STEPS}
-          .set_execute_handler([this] { ToggleLineProperty(ID_GRAPH_STEPS); })
-          .set_enabled_handler(line_enabled_handler)
-          .set_checked_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_STEPS}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { ToggleLineProperty(ID_GRAPH_STEPS); }))
+          .SetEnabledHandler(MakeContextHandler<void>(line_enabled_handler))
+          .SetCheckedHandler(MakeContextHandler<void>([this] {
             return graph_->primary_line() && graph_->primary_line()->stepped();
-          }));
+          })));
 
-  command_registry_.AddCommand(
-      Command{ID_GRAPH_SCROLL_BAR}
-          .set_execute_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_GRAPH_SCROLL_BAR}
+          .SetExecuteHandler(MakeContextHandler<void>([this] {
             bool new_visible = !graph_->horizontal_scroll_bar_visible();
             graph_->SetHorizontalScrollBarVisible(new_visible);
             profile_.graph_view.default_scroll_bar = new_visible;
-          })
-          .set_checked_handler(
-              [this] { return graph_->horizontal_scroll_bar_visible(); }));
+          }))
+          .SetCheckedHandler(MakeContextHandler<void>(
+              [this] { return graph_->horizontal_scroll_bar_visible(); })));
 
   return std::unique_ptr<UiView>{graph_};
 }
@@ -307,8 +310,8 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
   NotifyContainedItemChanged(node_id, false);
 }
 
-CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
-  return command_registry_.GetCommandHandler(command_id);
+ActionManager* GraphView::GetActionManager() {
+  return &command_registry_;
 }
 
 void GraphView::ScrollToNow() {

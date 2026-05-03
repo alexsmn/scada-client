@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/win/dragdrop.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
@@ -23,7 +23,7 @@ class NodeTableController : protected ControllerContext,
   // Controller events
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
-  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+  virtual ActionManager* GetActionManager() override;
   virtual void Save(WindowDefinition& definition) override;
   virtual NodeRef GetRootNode() const override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
@@ -37,5 +37,5 @@ class NodeTableController : protected ControllerContext,
   const std::shared_ptr<NodeTableModel> model_;
   aui::Grid* grid_ = nullptr;
 
-  CommandRegistry command_registry_;
+  ActionManager command_registry_;
 };

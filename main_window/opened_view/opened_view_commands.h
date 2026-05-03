@@ -7,7 +7,6 @@
 #include "base/cancelation.h"
 #include "base/timer/timer.h"
 #include "common/node_state.h"
-#include "controller/command_handler.h"
 #include "controller/controller_delegate.h"
 #include "controller/controller_registry.h"
 #include "profile/window_definition.h"
@@ -20,9 +19,8 @@ namespace scada {
 class SessionService;
 }
 
+struct Action;
 class ActionManager;
-template <class T>
-class BasicCommandRegistry;
 class Controller;
 class CreateTree;
 class DialogService;
@@ -42,13 +40,12 @@ struct SelectionCommandContext;
 struct OpenedViewCommandsContext {
   const AnyExecutor executor_;
   const std::shared_ptr<SelectionCommands> selection_commands_;
-  BasicCommandRegistry<SelectionCommandContext>& selection_command_registry_;
+  ActionManager& action_manager_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   TimedDataService& timed_data_service_;
   NodeService& node_service_;
   PrintService* print_service_;
-  ActionManager& action_manager_;
   LocalEvents& local_events_;
   FileCache& file_cache_;
   Profile& profile_;
@@ -56,19 +53,17 @@ struct OpenedViewCommandsContext {
   CreateTree& create_tree_;
 };
 
-class OpenedViewCommands : private OpenedViewCommandsContext,
-                           public CommandHandler {
+class OpenedViewCommands : private OpenedViewCommandsContext {
  public:
   explicit OpenedViewCommands(OpenedViewCommandsContext&& context);
   ~OpenedViewCommands();
 
   void SetContext(OpenedView* opened_view, DialogService* dialog_service);
 
-  // CommandHandler
-  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
-  virtual void ExecuteCommand(unsigned command_id) override;
-  virtual bool IsCommandChecked(unsigned command_id) const override;
-  virtual bool IsCommandEnabled(unsigned command_id) const override;
+  Action* FindAction(unsigned command_id) const;
+  void ExecuteAction(unsigned command_id);
+  bool IsActionChecked(unsigned command_id) const;
+  bool IsActionEnabled(unsigned command_id) const;
 
  private:
   SelectionCommandContext selection_command_context() const;

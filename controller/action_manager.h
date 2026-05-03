@@ -38,7 +38,19 @@ class ActionManager {
   const ActionList& actions() const { return actions_; }
 
   Action& AddAction(Action action);
+  Action& AddAction(unsigned command_id) {
+    return AddAction(Action{.command_id_ = command_id});
+  }
   Action* FindAction(unsigned command) const;
+
+  bool IsActionAvailable(unsigned command_id,
+                         ActionContext context = nullptr) const;
+  bool IsActionEnabled(unsigned command_id,
+                       ActionContext context = nullptr) const;
+  bool IsActionChecked(unsigned command_id,
+                       ActionContext context = nullptr) const;
+  void ExecuteAction(unsigned command_id,
+                     ActionContext context = nullptr) const;
 
   void Subscribe(ActionObserver& observer);
   void Unsubscribe(ActionObserver& observer);

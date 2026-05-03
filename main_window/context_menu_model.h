@@ -8,13 +8,13 @@
 
 class ActionManager;
 class MainWindowInterface;
-class CommandHandler;
+class MainWindowCommandHandler;
 
 class ContextMenuModel final : public aui::SimpleMenuModel {
  public:
   ContextMenuModel(MainWindowInterface& main_window,
                    ActionManager& action_manager,
-                   CommandHandler& command_handler);
+                   MainWindowCommandHandler& command_handler);
 
   // views::MenuModel
   virtual void MenuWillShow() override;

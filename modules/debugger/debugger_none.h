@@ -2,7 +2,7 @@
 
 #include "modules/debugger/debugger_context.h"
 
-class CommandRegistry;
+class ActionManager;
 
 class Debugger {
  public:
@@ -10,5 +10,5 @@ class Debugger {
 
   void Open() {}
 
-  void RegisterCommands(CommandRegistry& global_commands) {}
+  void RegisterCommands(ActionManager& action_manager) {}
 };

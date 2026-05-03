@@ -2,9 +2,7 @@
 
 #include <memory>
 
-template <class T>
-class BasicCommandRegistry;
-
+class ActionManager;
 class ControllerRegistry;
 class Favourites;
 class Profile;
@@ -12,7 +10,7 @@ struct GlobalCommandContext;
 
 struct FavoritesModuleContext {
   Profile& profile_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  ActionManager& action_manager_;
   ControllerRegistry& controller_registry_;
 };
 

@@ -119,23 +119,23 @@ EventView::EventView(const ControllerContext& context,
 
   selection_.multiple_handler = [this] { return GetSelectedNodeIds(); };
 
-  command_registry_.AddCommand(
-      Command{ID_ACKNOWLEDGE_CURRENT}
-          .set_execute_handler([this] { AcknowledgeSelection(); })
-          .set_enabled_handler([this] { return CanAcknowledgeSelection(); }));
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_ACKNOWLEDGE_CURRENT}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { AcknowledgeSelection(); }))
+          .SetEnabledHandler(MakeContextHandler<void>([this] { return CanAcknowledgeSelection(); })));
 
-  command_registry_.AddCommand(
-      Command{ID_SEVERITY_ALL}
-          .set_execute_handler([this] {
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_SEVERITY_ALL}
+          .SetExecuteHandler(MakeContextHandler<void>([this] {
             model_->SetSeverityMin(0);
             controller_delegate_.SetTitle(MakeTitle());
-          })
-          .set_checked_handler([this] { return model_->severity_min() == 0; }));
+          }))
+          .SetCheckedHandler(MakeContextHandler<void>([this] { return model_->severity_min() == 0; })));
 
-  command_registry_.AddCommand(
-      Command{ID_SEVERITY_CUSTOM}
-          .set_execute_handler([this] { SelectSeverity(); })
-          .set_checked_handler([this] { return model_->severity_min() != 0; }));
+  command_registry_.AddAction(
+      Action{.command_id_ = ID_SEVERITY_CUSTOM}
+          .SetExecuteHandler(MakeContextHandler<void>([this] { SelectSeverity(); }))
+          .SetCheckedHandler(MakeContextHandler<void>([this] { return model_->severity_min() != 0; })));
 }
 
 EventView::~EventView() {}
@@ -291,8 +291,8 @@ TimeRange EventView::GetTimeRange() const {
   return model_->time_range();
 }
 
-CommandHandler* EventView::GetCommandHandler(unsigned command_id) {
-  return command_registry_.GetCommandHandler(command_id);
+ActionManager* EventView::GetActionManager() {
+  return &command_registry_;
 }
 
 void EventView::SetTimeRange(const TimeRange& time_range) {

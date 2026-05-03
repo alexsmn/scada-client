@@ -6,9 +6,7 @@
 #include <memory>
 #include <string_view>
 
-template <class T>
-class BasicCommandRegistry;
-
+class ActionManager;
 class ControllerRegistry;
 class EventFetcher;
 class LocalEvents;
@@ -24,7 +22,7 @@ struct EventModuleContext {
   Profile& profile_;
   scada::services services_;
   ControllerRegistry& controller_registry_;
-  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  ActionManager& action_manager_;
 };
 
 class EventModule : private EventModuleContext {

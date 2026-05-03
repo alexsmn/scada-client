@@ -103,20 +103,20 @@ std::unique_ptr<UiView> NodeTableController::Init(
   if (auto* state = definition.FindItem("State"))
     grid_->RestoreState(state->attributes);
 
-  command_registry_.AddCommand(Command{ID_RENAME}.set_execute_handler([this] {
+  command_registry_.AddAction(Action{.command_id_ = ID_RENAME}.SetExecuteHandler(MakeContextHandler<void>([this] {
     if (auto index = grid_->GetCurrentIndex(); index.is_valid())
       grid_->OpenEditor(index);
-  }));
+  })));
 
   for (const auto& [command_id, prop_decl_id] : GetSortCommands()) {
-    command_registry_.AddCommand(
-        Command{command_id}
-            .set_execute_handler([this, prop_decl_id = prop_decl_id] {
+    command_registry_.AddAction(
+        Action{.command_id_ = command_id}
+            .SetExecuteHandler(MakeContextHandler<void>([this, prop_decl_id = prop_decl_id] {
               SetSorting(prop_decl_id);
-            })
-            .set_checked_handler([this, prop_decl_id = prop_decl_id] {
+            }))
+            .SetCheckedHandler(MakeContextHandler<void>([this, prop_decl_id = prop_decl_id] {
               return model_->sort_property_id() == prop_decl_id;
-            }));
+            })));
   }
 
   return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
@@ -131,8 +131,8 @@ void NodeTableController::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = grid_->SaveState();
 }
 
-CommandHandler* NodeTableController::GetCommandHandler(unsigned command_id) {
-  return command_registry_.GetCommandHandler(command_id);
+ActionManager* NodeTableController::GetActionManager() {
+  return &command_registry_;
 }
 
 NodeRef NodeTableController::GetRootNode() const {

@@ -126,8 +126,8 @@ void TimedDataController::AddContainedItem(const scada::NodeId& node_id,
   model_->SetFormula(MakeNodeIdFormula(node_id));
 }
 
-CommandHandler* TimedDataController::GetCommandHandler(unsigned command_id) {
-  return command_registry_.GetCommandHandler(command_id);
+ActionManager* TimedDataController::GetActionManager() {
+  return &command_registry_;
 }
 
 bool TimedDataController::IsWorking() const {

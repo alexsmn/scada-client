@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 
@@ -21,7 +21,7 @@ class TransmissionView : protected ControllerContext, public Controller {
   // Controller events
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
-  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
+  virtual ActionManager* GetActionManager() override;
   virtual ContentsModel* GetContentsModel() override;
 
  private:
@@ -32,5 +32,5 @@ class TransmissionView : protected ControllerContext, public Controller {
 
   aui::Grid* grid_ = nullptr;
 
-  CommandRegistry command_registry_;
+  ActionManager command_registry_;
 };

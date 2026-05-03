@@ -14,6 +14,7 @@ class MenuModel;
 
 class ContentsObserver;
 class DialogService;
+class MainWindowCommandHandler;
 class MainWindowCommands;
 class OpenedView;
 class Page;
@@ -79,7 +80,7 @@ class BaseMainWindow : protected MainWindowContext,
 
   virtual void SetWindowFlashing(bool flashing) = 0;
 
-  CommandHandler& commands() { return *commands_; }
+  MainWindowCommandHandler& commands() { return *commands_; }
 
   void CleanupForTesting();
 
@@ -107,7 +108,7 @@ class BaseMainWindow : protected MainWindowContext,
   virtual void OnViewClosed(OpenedView& view) override;
   virtual void OnActiveViewChanged(OpenedView* view) override;
 
-  std::unique_ptr<CommandHandler> commands_;
+  std::unique_ptr<MainWindowCommandHandler> commands_;
 
   std::unique_ptr<aui::MenuModel> context_menu_model_;
 

@@ -10,6 +10,7 @@
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
 #include "controller/action_manager.h"
+#include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
@@ -114,18 +115,25 @@ MainWindowContext MainWindowTest::MakeMainWindowContext() {
       .profile_ = controller_env_.profile_,
       .opened_view_factory_ = opened_view_factory_.AsStdFunction(),
       .main_commands_factory_ =
-          [](MainWindowInterface& main_window, DialogService& dialog_service) {
-            return std::make_unique<CommandHandler>();
+          [this](MainWindowInterface& main_window,
+                 DialogService& dialog_service) {
+            return std::make_unique<MainWindowCommandHandler>(
+                MainWindowCommandHandlerContext{
+                    .executor_ = controller_env_.executor_,
+                    .main_window_ = main_window,
+                    .dialog_service_ = dialog_service,
+                    .session_service_ = controller_env_.session_service_,
+                    .action_manager_ = action_manager_});
           },
       .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
       .context_menu_factory_ =
           [](MainWindowInterface& main_window,
-             CommandHandler& global_commands) {
+             MainWindowCommandHandler& global_commands) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
           },
       .main_menu_factory_ =
           [](MainWindowInterface& main_window, DialogService& dialog_service,
-             ViewManager& view_manager, CommandHandler& global_commands,
+             ViewManager& view_manager, MainWindowCommandHandler& global_commands,
              aui::MenuModel& context_menu_model) {
             return std::make_unique<aui::SimpleMenuModel>(nullptr);
           },

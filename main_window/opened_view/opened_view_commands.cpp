@@ -13,7 +13,7 @@
 #include "modules/node_properties/node_property_component.h"
 #include "modules/time_range/time_range_dialog.h"
 #include "controller/controller.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
 #include "controller/time_model.h"
@@ -91,72 +91,83 @@ void OpenedViewCommands::SetContext(OpenedView* opened_view,
   controller_ = opened_view ? &opened_view->controller() : nullptr;
 }
 
-CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
+Action* OpenedViewCommands::FindAction(unsigned command_id) const {
   assert(controller_);
 
-  if (auto* handler = controller_->GetCommandHandler(command_id)) {
-    return handler;
+  if (auto* controller_actions = controller_->GetActionManager()) {
+    if (auto* action = controller_actions->FindAction(command_id)) {
+      return controller_actions->IsActionAvailable(command_id) ? action
+                                                               : nullptr;
+    }
   }
 
   if (auto* selection_model = controller_->GetSelectionModel();
       selection_model && dialog_service_ && main_window_) {
-    if (const auto* command =
-            selection_command_registry_.FindCommand(command_id)) {
+    if (auto* action = action_manager_.FindAction(command_id);
+        action && selection_commands_->IsSelectionAction(command_id)) {
       auto context = selection_command_context();
-      if (!command->available_handler ||
-          command->available_handler(context)) {
-        return this;
+      if (action_manager_.IsActionAvailable(command_id, &context)) {
+        return action;
       }
     }
   }
 
+  auto* action = action_manager_.FindAction(command_id);
+
   switch (command_id) {
     case ID_PASTE:
       return session_service_.HasPrivilege(scada::Privilege::Configure)
-                 ? this
+                 ? action
                  : nullptr;
     case ID_VIEW_CLOSE:
-      return this;
+      return action;
 
     case ID_EXPORT_EXCEL:
       if (!excel_enabled_)
         return nullptr;
 #if defined(UI_QT)
     case ID_PRINT:
-      return print_service_ && controller_->GetExportModel() ? this : nullptr;
+      return print_service_ && controller_->GetExportModel() ? action : nullptr;
 #endif
     case ID_EXPORT_CSV:
-      return controller_->GetExportModel() ? this : nullptr;
+      return controller_->GetExportModel() ? action : nullptr;
 
     case ID_NEW_SERVICE_ITEMS:
     case ID_ADD_MULTIPLE_ITEMS:
-      return CanCreateRecord(data_items::id::DiscreteItemType) ? this : nullptr;
+      return CanCreateRecord(data_items::id::DiscreteItemType) ? action
+                                                               : nullptr;
 
     case ID_NEW_IEC60870_LINK101:
     case ID_NEW_IEC60870_LINK104:
-      return CanCreateRecord(devices::id::Iec60870LinkType) ? this : nullptr;
+      return CanCreateRecord(devices::id::Iec60870LinkType) ? action : nullptr;
   }
 
   if (GetTimeRangeCommand(command_id)) {
-    return controller_->GetTimeModel() != nullptr ? this : nullptr;
+    return controller_->GetTimeModel() != nullptr ? action : nullptr;
   }
 
   if (auto node_id = GetNewCommandTypeId(command_id); !node_id.is_null()) {
-    return CanCreateRecord(node_id) ? this : nullptr;
+    return CanCreateRecord(node_id) ? action : nullptr;
   }
 
   return nullptr;
 }
 
-void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
+void OpenedViewCommands::ExecuteAction(unsigned command_id) {
   assert(opened_view_);
 
-  if (const auto* command =
-          selection_command_registry_.FindCommand(command_id)) {
-    if (command->execute_handler) {
-      command->execute_handler(selection_command_context());
+  if (auto* controller_actions = controller_->GetActionManager()) {
+    if (controller_actions->FindAction(command_id)) {
+      controller_actions->ExecuteAction(command_id);
       return;
     }
+  }
+
+  if (auto* action = action_manager_.FindAction(command_id);
+      action && selection_commands_->IsSelectionAction(command_id)) {
+    auto context = selection_command_context();
+    action_manager_.ExecuteAction(command_id, &context);
+    return;
   }
 
   switch (command_id) {
@@ -253,11 +264,17 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
   assert(false);
 }
 
-bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
-  if (const auto* command =
-          selection_command_registry_.FindCommand(command_id)) {
-    return command->checked_handler &&
-           command->checked_handler(selection_command_context());
+bool OpenedViewCommands::IsActionChecked(unsigned command_id) const {
+  if (auto* controller_actions = controller_->GetActionManager()) {
+    if (controller_actions->FindAction(command_id)) {
+      return controller_actions->IsActionChecked(command_id);
+    }
+  }
+
+  if (auto* action = action_manager_.FindAction(command_id);
+      action && selection_commands_->IsSelectionAction(command_id)) {
+    auto context = selection_command_context();
+    return action_manager_.IsActionChecked(command_id, &context);
   }
 
   if (auto time_range = GetTimeRangeCommand(command_id)) {
@@ -273,11 +290,17 @@ bool OpenedViewCommands::IsCommandChecked(unsigned command_id) const {
   return false;
 }
 
-bool OpenedViewCommands::IsCommandEnabled(unsigned command_id) const {
-  if (const auto* command =
-          selection_command_registry_.FindCommand(command_id)) {
-    return !command->enabled_handler ||
-           command->enabled_handler(selection_command_context());
+bool OpenedViewCommands::IsActionEnabled(unsigned command_id) const {
+  if (auto* controller_actions = controller_->GetActionManager()) {
+    if (controller_actions->FindAction(command_id)) {
+      return controller_actions->IsActionEnabled(command_id);
+    }
+  }
+
+  if (auto* action = action_manager_.FindAction(command_id);
+      action && selection_commands_->IsSelectionAction(command_id)) {
+    auto context = selection_command_context();
+    return action_manager_.IsActionEnabled(command_id, &context);
   }
 
   switch (command_id) {

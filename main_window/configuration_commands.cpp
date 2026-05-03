@@ -5,7 +5,7 @@
 #include "resources/common_resources.h"
 #include "modules/limits/limit_dialog.h"
 #include "modules/write/write_dialog.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "events/local_event_util.h"
@@ -38,16 +38,16 @@ Awaitable<void> ReportMethodCallResultAsync(AnyExecutor executor,
 }  // namespace
 
 void ConfigurationCommands::Register() {
-  selection_commands_.AddCommand(
-      {.command_id = ID_WRITE,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_WRITE}
+          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              ExecuteWriteDialog(context.dialog_service,
                                 WriteContext{executor_, timed_data_service_,
                                              context.selection.node().node_id(),
                                              profile_, false});
-           },
-       .enabled_handler =
+           }))
+          .SetEnabledHandler(MakeContextHandler<SelectionCommandContext>(
            [](const SelectionCommandContext& context) {
              // TODO: Use `scada::AttributeId::UserWriteMask` when available.
              // Allow writing to all variables. Except for data items: check
@@ -57,33 +57,33 @@ void ConfigurationCommands::Register() {
                     !node[data_items::id::DataItemType_Output]
                          .value()
                          .is_null();
-           },
-       .available_handler =
+           }))
+          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     context.selection.node().node_class() ==
                         scada::NodeClass::Variable;
-           }});
+           })));
 
-  selection_commands_.AddCommand(
-      {.command_id = ID_WRITE_MANUAL,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_WRITE_MANUAL}
+          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              ExecuteWriteDialog(context.dialog_service,
                                 WriteContext{executor_, timed_data_service_,
                                              context.selection.node().node_id(),
                                              profile_, true});
-           },
-       .available_handler =
+           }))
+          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
                                  data_items::id::DataItemType);
-           }});
+           })));
 
-  selection_commands_.AddCommand(
-      {.command_id = ID_UNLOCK_ITEM,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_UNLOCK_ITEM}
+          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              const auto& node = context.selection.node();
              task_manager_.PostTask(
@@ -92,34 +92,34 @@ void ConfigurationCommands::Register() {
                    return node.scada_node().call(
                        data_items::id::DataItemType_Unlock);
                  });
-           },
-       .enabled_handler =
+           }))
+          .SetEnabledHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return context.selection
                  .node()[data_items::id::DataItemType_Locked]
                  .value()
                  .get_or(false);
-           },
-       .available_handler =
+           }))
+          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
                                  data_items::id::DataItemType);
-           }});
+           })));
 
-  selection_commands_.AddCommand(
-      {.command_id = ID_EDIT_LIMITS,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_EDIT_LIMITS}
+          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              ShowLimitsDialog(context.dialog_service,
                               {context.selection.node(), task_manager_});
-           },
-       .available_handler =
+           }))
+          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
                                  data_items::id::AnalogItemType);
-           }});
+           })));
 
   // TODO: Rename contants.
   RegisterEnableDeviceCommand(ID_ITEM_ENABLE, true);
@@ -133,18 +133,18 @@ void ConfigurationCommands::Register() {
 void ConfigurationCommands::RegisterMethodCommand(
     unsigned command_id,
     const scada::NodeId& method_id) {
-  selection_commands_.AddCommand(
-      {.command_id = command_id,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = command_id}
+          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this, method_id](const SelectionCommandContext& context) {
              CallMethod(context.selection.node(), method_id, /*args=*/{});
-           },
-       .available_handler =
+           }))
+          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(scada::Privilege::Control) &&
                     IsInstanceOf(context.selection.node(),
                                  data_items::id::DataItemType);
-           }});
+           })));
 }
 
 void ConfigurationCommands::CallMethod(
@@ -167,24 +167,24 @@ void ConfigurationCommands::CallMethod(
 
 void ConfigurationCommands::RegisterEnableDeviceCommand(unsigned command_id,
                                                         bool enable) {
-  selection_commands_.AddCommand(
-      {.command_id = command_id,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = command_id}
+          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this, enable](const SelectionCommandContext& context) {
              task_manager_.PostUpdateTask(
                  context.selection.node().node_id(), /*attrs=*/{}, /*props=*/
                  {{devices::id::DeviceType_Disabled, !enable}});
-           },
-       .enabled_handler =
+           }))
+          .SetEnabledHandler(MakeContextHandler<SelectionCommandContext>(
            [enable](const SelectionCommandContext& context) {
              return context.selection.node()[devices::id::DeviceType_Disabled]
                         .value()
                         .get_or(false) == enable;
-           },
-       .available_handler =
+           }))
+          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
              return session_service_.HasPrivilege(
                         scada::Privilege::Configure) &&
                     context.selection.node()[devices::id::DeviceType_Disabled];
-           }});
+           })));
 }

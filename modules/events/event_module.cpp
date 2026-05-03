@@ -3,7 +3,7 @@
 #include "base/awaitable.h"
 #include "base/any_executor.h"
 #include "base/value_util.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/controller_registry.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
@@ -91,9 +91,9 @@ NodeEventProvider& EventModule::node_event_provider() {
 void EventModule::AddOpenCommand(unsigned command_id,
                                  const WindowInfo& window_info,
                                  const std::string_view& mode) {
-  selection_commands_.AddCommand(
-      {.command_id = command_id,
-       .execute_handler =
+  action_manager_.AddAction(
+      Action{.command_id_ = command_id,
+             .execute_handler_ = MakeContextHandler<SelectionCommandContext>(
            [&window_info, mode, executor = executor_](
                const SelectionCommandContext& context) {
              auto window_def =
@@ -104,9 +104,9 @@ void EventModule::AddOpenCommand(unsigned command_id,
                return OpenWindowDefinition(mode, main_window,
                                            std::move(window_def));
              });
-           },
-       .available_handler =
+           }),
+       .available_handler_ = MakeContextHandler<SelectionCommandContext>(
            [](const SelectionCommandContext& context) {
              return !context.selection.empty();
-           }});
+           })});
 }

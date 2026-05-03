@@ -13,9 +13,7 @@ class NodeId;
 class ViewService;
 }  // namespace scada
 
-template <typename T>
-class BasicCommandRegistry;
-
+class ActionManager;
 class CreateTree;
 class FileCache;
 class FileManager;
@@ -46,9 +44,8 @@ class FileSystemComponent : private FileSystemComponentContext {
   FileManager& file_manager() { return *file_manager_; }
   const OpenFileCommand& file_command() const { return open_file_command_; }
 
-  void set_selection_commands(
-      BasicCommandRegistry<SelectionCommandContext>* selection_commands) {
-    selection_commands_ = selection_commands;
+  void set_action_manager(ActionManager* action_manager) {
+    action_manager_ = action_manager;
   }
 
   // Must be called after:
@@ -60,7 +57,7 @@ class FileSystemComponent : private FileSystemComponentContext {
   void AddFileCommand(unsigned command_id,
                       const scada::NodeId& type_definition_id);
 
-  BasicCommandRegistry<SelectionCommandContext>* selection_commands_ = nullptr;
+  ActionManager* action_manager_ = nullptr;
 
   std::unique_ptr<FileRegistry> file_registry_;
   std::unique_ptr<FileCache> file_cache_;

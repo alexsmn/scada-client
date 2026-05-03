@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 enum CommandCategory {
@@ -24,6 +25,8 @@ enum CommandCategory {
   CATEGORY_COUNT,
 };
 
+enum class MenuGroup { DEBUG, MAIN_WINDOW_SETTINGS, DISPLAY_SETTINGS };
+
 class Shortcut {
  public:
   Shortcut(aui::KeyCode key_code) : key_code_{key_code} {}
@@ -38,6 +41,21 @@ class Shortcut {
   aui::KeyCode key_code_ = aui::KeyCode::Unknown;
   aui::KeyModifiers modifiers_{};
 };
+
+using ActionContext = const void*;
+using ActionExecuteHandler = std::function<void(ActionContext)>;
+using ActionStateHandler = std::function<bool(ActionContext)>;
+
+template <class C, class F>
+auto MakeContextHandler(F handler) {
+  return [handler = std::move(handler)](ActionContext context) {
+    if constexpr (std::is_void_v<C>) {
+      return handler();
+    } else {
+      return handler(*static_cast<const C*>(context));
+    }
+  };
+}
 
 struct Action {
   enum Flag {
@@ -55,7 +73,12 @@ struct Action {
   int image_id_ = 0;
   unsigned flags_ = 0;
   std::optional<Shortcut> shortcut_;
+  std::optional<MenuGroup> menu_group_;
   std::function<std::u16string()> title_provider_;
+  ActionExecuteHandler execute_handler_;
+  ActionStateHandler available_handler_;
+  ActionStateHandler enabled_handler_;
+  ActionStateHandler checked_handler_;
 
   void set_enabled(bool enabled) { SetFlag(ENABLED, enabled); }
   void set_checkable(bool checkable) { SetFlag(CHECKABLE, checkable); }
@@ -86,5 +109,25 @@ struct Action {
       flags_ |= flag;
     else
       flags_ &= ~flag;
+  }
+
+  Action& SetExecuteHandler(ActionExecuteHandler handler) {
+    execute_handler_ = std::move(handler);
+    return *this;
+  }
+
+  Action& SetAvailableHandler(ActionStateHandler handler) {
+    available_handler_ = std::move(handler);
+    return *this;
+  }
+
+  Action& SetEnabledHandler(ActionStateHandler handler) {
+    enabled_handler_ = std::move(handler);
+    return *this;
+  }
+
+  Action& SetCheckedHandler(ActionStateHandler handler) {
+    checked_handler_ = std::move(handler);
+    return *this;
   }
 };

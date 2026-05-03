@@ -10,7 +10,7 @@
 #include "resources/common_resources.h"
 #include "modules/about/about_dialog.h"
 #include "modules/web/web_component.h"
-#include "controller/command_registry.h"
+#include "controller/action_manager.h"
 #include "controller/window_info.h"
 #include "events/local_events.h"
 #include "events/node_event_provider.h"
@@ -90,24 +90,25 @@ void ApplyLanguageSelection(const AnyExecutor& executor,
   });
 }
 
-BasicCommand<GlobalCommandContext> MakeLanguageCommand(
+Action MakeLanguageCommand(
     AnyExecutor executor,
     unsigned command_id,
     std::u16string_view title,
     std::string_view locale_name,
     bool is_russian) {
-  return {
-      .command_id = command_id,
-      .title = std::u16string{title},
-      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
-      .execute_handler =
+  return Action{.command_id_ = command_id,
+                .category_ = CATEGORY_SETUP,
+                .title_ = std::u16string{title},
+                .menu_group_ = MenuGroup::MAIN_WINDOW_SETTINGS}
+      .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
           [executor = std::move(executor),
            locale_name](const GlobalCommandContext& context) {
             ApplyLanguageSelection(executor, context, locale_name);
-          },
-      .checked_handler = [is_russian](const GlobalCommandContext&) {
+          }))
+      .SetCheckedHandler(MakeContextHandler<GlobalCommandContext>(
+          [is_russian](const GlobalCommandContext&) {
         return IsRussianLocale(GetSelectedLocaleName()) == is_russian;
-      }};
+      }));
 }
 #endif
 
@@ -123,28 +124,28 @@ void OpenPublicFolder() {
                 /*nShowCmd=*/SW_SHOWNORMAL);
 }
 
-BasicCommand<GlobalCommandContext> MakeOptionCommand(
+Action MakeOptionCommand(
     unsigned command_id,
     std::u16string_view title,
     Profile& profile,
     bool MainWindowDef::*option) {
-  return {
-      .command_id = command_id,
-      .title = std::u16string{title},
-      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
-      .execute_handler =
+  return Action{.command_id_ = command_id,
+                .category_ = CATEGORY_SETUP,
+                .title_ = std::u16string{title},
+                .menu_group_ = MenuGroup::MAIN_WINDOW_SETTINGS}
+      .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
           [&profile, option](const GlobalCommandContext& context) {
             MainWindowDef& prefs =
                 profile.GetMainWindow(context.main_window.GetMainWindowId());
             prefs.*option = !(prefs.*option);
             profile.NotifyChange();
-          },
-      .checked_handler =
+          }))
+      .SetCheckedHandler(MakeContextHandler<GlobalCommandContext>(
           [&profile, option](const GlobalCommandContext& context) {
             const MainWindowDef* prefs =
                 profile.FindMainWindow(context.main_window.GetMainWindowId());
             return prefs && prefs->*option;
-      }};
+          }));
 }
 
 Awaitable<void> ShowRenameWindowDialogAsync(AnyExecutor executor,
@@ -179,92 +180,92 @@ void ShowRenameWindowDialog(AnyExecutor executor,
 
 MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
     : MainWindowCommandsContext{std::move(context)} {
-  global_commands_.AddCommand(
-      {.command_id = ID_ACKNOWLEDGE_ALL,
-       .execute_handler =
-           [this](const GlobalCommandContext&) {
-             node_event_provider_.AcknowledgeAllEvents();
-             local_events_.AcknowledgeAll();
-           },
-       .enabled_handler =
-           [this](const GlobalCommandContext&) {
-             return !node_event_provider_.unacked_events().empty() ||
-                    !local_events_.events().empty();
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_ACKNOWLEDGE_ALL}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) {
+                node_event_provider_.AcknowledgeAllEvents();
+                local_events_.AcknowledgeAll();
+              }))
+          .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) {
+                return !node_event_provider_.unacked_events().empty() ||
+                       !local_events_.events().empty();
+              })));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_WINDOW_NEW,
-       .execute_handler =
-           [this](const GlobalCommandContext&) {
-             main_window_manager_.CreateMainWindow();
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_WINDOW_NEW}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) {
+                main_window_manager_.CreateMainWindow();
+              })));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_VIEW_CHANGE_TITLE,
-       .execute_handler =
-           [executor = executor_](const GlobalCommandContext& context) {
-             ShowRenameWindowDialog(executor, context.main_window,
-                                    context.dialog_service);
-           },
-       .enabled_handler =
-           [](const GlobalCommandContext& context) {
-             auto* active_view = context.main_window.GetActiveView();
-             return active_view && !active_view->GetWindowInfo().is_pane();
-           },
-       .available_handler =
-           [](const GlobalCommandContext& context) {
-             return context.main_window.GetActiveView() != nullptr;
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_VIEW_CHANGE_TITLE}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [executor = executor_](const GlobalCommandContext& context) {
+                ShowRenameWindowDialog(executor, context.main_window,
+                                       context.dialog_service);
+              }))
+          .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                auto* active_view = context.main_window.GetActiveView();
+                return active_view && !active_view->GetWindowInfo().is_pane();
+              }))
+          .SetAvailableHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                return context.main_window.GetActiveView() != nullptr;
+              })));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_VIEW_PUBLIC_FOLDER,
-       .execute_handler =
-           [](const GlobalCommandContext&) { OpenPublicFolder(); }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_VIEW_PUBLIC_FOLDER}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext&) { OpenPublicFolder(); }));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_LOGIN,
-       .execute_handler =
-           [this](const GlobalCommandContext&) { login_handler_(true); },
-       .enabled_handler =
-           [this](const GlobalCommandContext&) {
-             return !session_service_.IsConnected();
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_LOGIN}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) { login_handler_(true); })
+          .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) {
+                return !session_service_.IsConnected();
+              })));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_LOGOFF,
-       .execute_handler =
-           [this](const GlobalCommandContext&) { login_handler_(false); },
-       .enabled_handler =
-           [this](const GlobalCommandContext&) {
-             return session_service_.IsConnected();
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_LOGOFF}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) { login_handler_(false); })
+          .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
+              [this](const GlobalCommandContext&) {
+                return session_service_.IsConnected();
+              })));
 
 #if defined(UI_QT)
-  global_commands_.AddCommand(
-      {.command_id = ID_WINDOW_SPLIT_HORZ,
-       .execute_handler =
-           [](const GlobalCommandContext& context) {
-             if (auto* active_view = context.main_window.GetActiveView()) {
-               context.main_window.SplitView(*active_view, true);
-             }
-           },
-       .available_handler =
-           [](const GlobalCommandContext& context) {
-             return context.main_window.GetActiveView() != nullptr;
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_WINDOW_SPLIT_HORZ}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                if (auto* active_view = context.main_window.GetActiveView()) {
+                  context.main_window.SplitView(*active_view, true);
+                }
+              }))
+          .SetAvailableHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                return context.main_window.GetActiveView() != nullptr;
+              })));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_WINDOW_SPLIT_VERT,
-       .execute_handler =
-           [](const GlobalCommandContext& context) {
-             if (auto* active_view = context.main_window.GetActiveView()) {
-               context.main_window.SplitView(*active_view, false);
-             }
-           },
-       .available_handler =
-           [](const GlobalCommandContext& context) {
-             return context.main_window.GetActiveView() != nullptr;
-           }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_WINDOW_SPLIT_VERT}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                if (auto* active_view = context.main_window.GetActiveView()) {
+                  context.main_window.SplitView(*active_view, false);
+                }
+              }))
+          .SetAvailableHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                return context.main_window.GetActiveView() != nullptr;
+              })));
 #endif
 
   for (const auto& opt : options) {
@@ -272,66 +273,70 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
       continue;
     }
 
-    global_commands_.AddCommand(
-        {.command_id = opt.id,
-         .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
-         .execute_handler =
-             [this, option = opt.option](const GlobalCommandContext&) {
-               profile_.*option = !(profile_.*option);
-             },
-         .enabled_handler =
-             [this, command_id = opt.id](const GlobalCommandContext&) {
-               return command_id != ID_OPT_SPEECH || speech_service_.is_ok();
-             },
-         .checked_handler =
-             [this, option = opt.option](const GlobalCommandContext&) {
-               return profile_.*option;
-             }});
+    action_manager_.AddAction(
+        Action{.command_id_ = opt.id,
+               .category_ = CATEGORY_SETUP,
+               .menu_group_ = MenuGroup::MAIN_WINDOW_SETTINGS}
+            .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+                [this, option = opt.option](const GlobalCommandContext&) {
+                  profile_.*option = !(profile_.*option);
+                }))
+            .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
+                [this, command_id = opt.id](const GlobalCommandContext&) {
+                  return command_id != ID_OPT_SPEECH || speech_service_.is_ok();
+                }))
+            .SetCheckedHandler(MakeContextHandler<GlobalCommandContext>(
+                [this, option = opt.option](const GlobalCommandContext&) {
+                  return profile_.*option;
+                })));
   }
 
-  global_commands_.AddCommand(
+  action_manager_.AddAction(
       MakeOptionCommand(ID_VIEW_TOOLBAR, Translate("Toolbar"), profile_,
                         &MainWindowDef::toolbar));
 
-  global_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
+  action_manager_.AddAction(MakeOptionCommand(ID_VIEW_STATUS_BAR,
                                                 Translate("Status Bar"), profile_,
                                                 &MainWindowDef::status_bar));
 
-  global_commands_.AddCommand(
-      {.command_id = ID_APP_ABOUT,
-       .execute_handler = [](const GlobalCommandContext& context) {
-         ShowAboutDialog(context.dialog_service);
-       }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_APP_ABOUT}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                ShowAboutDialog(context.dialog_service);
+              })));
 
 #if defined(UI_QT)
-  global_commands_.AddCommand(
-      {.command_id = ID_ABOUT_QT,
-       .execute_handler = [](const GlobalCommandContext& context) {
-         QMessageBox::aboutQt(context.dialog_service.GetParentWidget());
-       }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_ABOUT_QT}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [](const GlobalCommandContext& context) {
+                QMessageBox::aboutQt(context.dialog_service.GetParentWidget());
+              })));
 
-  global_commands_.AddCommand(MakeLanguageCommand(
+  action_manager_.AddAction(MakeLanguageCommand(
       executor_, ID_LANGUAGE_ENGLISH, Translate("English"), "en",
       /*is_russian=*/false));
-  global_commands_.AddCommand(MakeLanguageCommand(
+  action_manager_.AddAction(MakeLanguageCommand(
       executor_, ID_LANGUAGE_RUSSIAN, Translate("Russian"), "ru_RU",
       /*is_russian=*/true));
 #endif
 
 #if !defined(UI_WT)
-  global_commands_.AddCommand(
-      {.command_id = ID_HELP_MANUAL,
-       .execute_handler = [executor = executor_](
-                              const GlobalCommandContext& context) {
-         WindowDefinition def(kWebWindowInfo);
-         def.title = Translate("Documentation");
-         def.path = std::filesystem::path(
-             L"http://www.telecontrol.ru/workplace_manual");
-         CoSpawn(executor, [&main_window = context.main_window,
-                            def = std::move(def)]() -> Awaitable<void> {
-           co_await main_window.OpenView(def, true);
-         });
-       }});
+  action_manager_.AddAction(
+      Action{.command_id_ = ID_HELP_MANUAL}
+          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
+              [executor = executor_](const GlobalCommandContext& context) {
+                WindowDefinition def(kWebWindowInfo);
+                def.title = Translate("Documentation");
+                def.path = std::filesystem::path(
+                    L"http://www.telecontrol.ru/workplace_manual");
+                CoSpawn(executor,
+                        [&main_window = context.main_window,
+                         def = std::move(def)]() -> Awaitable<void> {
+                          co_await main_window.OpenView(def, true);
+                        });
+              })));
 #endif
 }
 
@@ -344,14 +349,15 @@ MainWindowCommandHandler::MainWindowCommandHandler(
 
 MainWindowCommandHandler::~MainWindowCommandHandler() {}
 
-CommandHandler* MainWindowCommandHandler::GetCommandHandler(
-    unsigned command_id) {
+Action* MainWindowCommandHandler::FindAction(unsigned command_id) {
+  const unsigned original_command_id = command_id;
   auto* active_view = main_window_.GetActiveView();
   if (active_view) {
     // TODO: Refactor to remove the static cast.
-    if (auto* handler = static_cast<OpenedView*>(active_view)
-                            ->commands->GetCommandHandler(command_id)) {
-      return handler;
+    if (auto* action =
+            static_cast<OpenedView*>(active_view)->commands->FindAction(
+                command_id)) {
+      return action;
     }
   }
 
@@ -385,51 +391,79 @@ CommandHandler* MainWindowCommandHandler::GetCommandHandler(
         !session_service_.HasPrivilege(scada::Privilege::Configure)) {
       return nullptr;
     }
-    return this;
+    if (auto* action = action_manager_.FindAction(original_command_id)) {
+      return action;
+    }
+    return action_manager_.FindAction(command_id);
   }
 
-  if (const auto* command = global_commands_.FindCommand(command_id)) {
+  if (action_manager_.FindAction(command_id)) {
     if (command_id == ID_VIEW_ADD_TO_FAVOURITES && !active_view) {
       return nullptr;
     }
-    if (!command->available_handler ||
-        command->available_handler(command_context_)) {
-      return this;
+    if (action_manager_.IsActionAvailable(command_id, &command_context_)) {
+      return action_manager_.FindAction(command_id);
     }
   }
 
   return nullptr;
 }
 
-bool MainWindowCommandHandler::IsCommandEnabled(unsigned command_id) const {
+bool MainWindowCommandHandler::IsActionEnabled(unsigned command_id) const {
+  auto* active_view = main_window_.GetActiveView();
+  if (active_view) {
+    if (static_cast<OpenedView*>(active_view)->commands->FindAction(
+            command_id)) {
+      return static_cast<OpenedView*>(active_view)
+          ->commands->IsActionEnabled(command_id);
+    }
+  }
+
   if (command_id == ID_VIEW_ADD_TO_FAVOURITES) {
     auto* active_view = main_window_.GetActiveView();
     return active_view && !active_view->GetWindowInfo().is_pane();
   }
 
-  if (const auto* command = global_commands_.FindCommand(command_id)) {
-    return !command->enabled_handler ||
-           command->enabled_handler(command_context_);
+  if (action_manager_.FindAction(command_id)) {
+    return action_manager_.IsActionEnabled(command_id, &command_context_);
   }
 
   return true;
 }
 
-bool MainWindowCommandHandler::IsCommandChecked(unsigned command_id) const {
+bool MainWindowCommandHandler::IsActionChecked(unsigned command_id) const {
+  auto* active_view = main_window_.GetActiveView();
+  if (active_view) {
+    if (static_cast<OpenedView*>(active_view)->commands->FindAction(
+            command_id)) {
+      return static_cast<OpenedView*>(active_view)
+          ->commands->IsActionChecked(command_id);
+    }
+  }
+
   if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
     return (window_info->flags & WIN_SING) &&
            main_window_.FindViewByType(window_info->name);
   }
 
-  if (const auto* command = global_commands_.FindCommand(command_id)) {
-    return command->checked_handler &&
-           command->checked_handler(command_context_);
+  if (action_manager_.FindAction(command_id)) {
+    return action_manager_.IsActionChecked(command_id, &command_context_);
   }
 
   return false;
 }
 
-void MainWindowCommandHandler::ExecuteCommand(unsigned command_id) {
+void MainWindowCommandHandler::ExecuteAction(unsigned command_id) {
+  auto* active_view = main_window_.GetActiveView();
+  if (active_view) {
+    if (static_cast<OpenedView*>(active_view)->commands->FindAction(
+            command_id)) {
+      static_cast<OpenedView*>(active_view)->commands->ExecuteAction(
+          command_id);
+      return;
+    }
+  }
+
   switch (command_id) {
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
@@ -462,10 +496,8 @@ void MainWindowCommandHandler::ExecuteCommand(unsigned command_id) {
     return;
   }
 
-  if (const auto* command = global_commands_.FindCommand(command_id)) {
-    if (command->execute_handler) {
-      command->execute_handler(command_context_);
-    }
+  if (action_manager_.FindAction(command_id)) {
+    action_manager_.ExecuteAction(command_id, &command_context_);
     return;
   }
 

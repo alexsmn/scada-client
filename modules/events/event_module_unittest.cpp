@@ -29,7 +29,7 @@ class EventModuleTest : public Test {
       .profile_ = controller_env_.profile_,
       .services_ = controller_env_.services(),
       .controller_registry_ = controller_env_.controller_registry_,
-      .selection_commands_ = controller_env_.selection_commands_}};
+      .action_manager_ = controller_env_.action_manager_}};
 };
 
 TEST_F(EventModuleTest, CreateControllers) {
@@ -92,15 +92,16 @@ TEST_F(EventModuleTest, OpenEventsCommandRoutesToMainWindowOpenView) {
           }));
 
   const auto* command =
-      controller_env_.selection_commands_.FindCommand(ID_OPEN_EVENTS);
+      controller_env_.action_manager_.FindAction(ID_OPEN_EVENTS);
   ASSERT_THAT(command, NotNull());
-  ASSERT_TRUE(command->execute_handler);
+  ASSERT_TRUE(command->execute_handler_);
 
-  command->execute_handler(SelectionCommandContext{
+  auto context = SelectionCommandContext{
       .selection = selection,
       .dialog_service = dialog_service,
       .main_window = main_window,
-      .opened_view = opened_view});
+      .opened_view = opened_view};
+  command->execute_handler_(&context);
 
   EXPECT_EQ(opened_view.open_definition_await_count, 0);
   EXPECT_TRUE(opened.type.empty());

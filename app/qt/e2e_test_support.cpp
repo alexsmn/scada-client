@@ -10,7 +10,6 @@
 #include "base/utf_convert.h"
 #include "configuration/devices/hardware_tree_view.h"
 #include "configuration/objects/object_tree_view.h"
-#include "controller/command_handler.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
@@ -530,7 +529,7 @@ Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app) {
           [&app](unsigned command_id) {
             auto* main_window = GetFirstMainWindow(app);
             return main_window &&
-                   main_window->commands().GetCommandHandler(command_id);
+                   main_window->commands().FindAction(command_id);
           },
       .is_window_printable =
           [](std::string_view window_type) {

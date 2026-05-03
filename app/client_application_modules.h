@@ -12,9 +12,7 @@
 #include <memory>
 #include <stack>
 
-template <class T>
-class BasicCommandRegistry;
-
+class ActionManager;
 class BlinkerManager;
 class ControllerRegistry;
 class FileSystemComponent;
@@ -24,8 +22,6 @@ class PrintModule;
 class TaskManager;
 class TimedDataService;
 class WriteService;
-struct GlobalCommandContext;
-struct SelectionCommandContext;
 
 using NodeServiceTreeFactory = std::function<
     std::unique_ptr<NodeServiceTree>(NodeServiceTreeImplContext&&)>;
@@ -56,8 +52,7 @@ struct ClientApplicationModuleContext {
   FileSystemComponent& filesystem_component_;
   BlinkerManager& blinker_manager_;
   ProgressHost& progress_host_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
-  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  ActionManager& action_manager_;
   std::stack<std::shared_ptr<void>>& singletons_;
 };
 

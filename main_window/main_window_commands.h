@@ -2,7 +2,6 @@
 
 #include "base/any_executor.h"
 
-#include "controller/command_handler.h"
 #include "core/global_command_context.h"
 
 #include <functional>
@@ -13,9 +12,7 @@ namespace scada {
 class SessionService;
 }
 
-template <class T>
-class BasicCommandRegistry;
-
+class ActionManager;
 class DialogService;
 class Favourites;
 class LocalEvents;
@@ -40,7 +37,7 @@ struct MainWindowCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   std::function<void(bool login)> login_handler_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  ActionManager& action_manager_;
 };
 
 class MainWindowCommands : private MainWindowCommandsContext {
@@ -54,20 +51,20 @@ struct MainWindowCommandHandlerContext {
   MainWindowInterface& main_window_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  ActionManager& action_manager_;
 };
 
-class MainWindowCommandHandler : private MainWindowCommandHandlerContext,
-                                 public CommandHandler {
+struct Action;
+
+class MainWindowCommandHandler : private MainWindowCommandHandlerContext {
  public:
   explicit MainWindowCommandHandler(MainWindowCommandHandlerContext&& context);
   ~MainWindowCommandHandler();
 
-  // CommandHandler
-  virtual CommandHandler* GetCommandHandler(unsigned command_id);
-  virtual bool IsCommandEnabled(unsigned command_id) const;
-  virtual bool IsCommandChecked(unsigned command_id) const;
-  virtual void ExecuteCommand(unsigned command_id);
+  Action* FindAction(unsigned command_id);
+  bool IsActionEnabled(unsigned command_id) const;
+  bool IsActionChecked(unsigned command_id) const;
+  void ExecuteAction(unsigned command_id);
 
  private:
   GlobalCommandContext command_context_;

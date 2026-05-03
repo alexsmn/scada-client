@@ -10,12 +10,11 @@
 #include "modules/sheet/sheet_component.h"
 #include "modules/table/table_component.h"
 #include "modules/timed_data/timed_data_component.h"
-#include "controller/command_handler.h"
-#include "controller/command_registry.h"
 #include "controller/window_info.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
 #include "main_window/context_menu_model.h"
+#include "main_window/main_window_commands.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -41,17 +40,17 @@
 namespace {
 
 void AddMenuCommands(aui::SimpleMenuModel& menu,
-                     const BasicCommandRegistry<GlobalCommandContext>& commands,
+                     const ActionManager& commands,
                      MenuGroup menu_group) {
-  for (const auto& command : commands.commands()) {
-    if (command.menu_group == menu_group) {
-      assert(command.command_id != 0);
-      assert(!command.title.empty());
+  for (const auto* command : commands.actions()) {
+    if (command->menu_group_ == menu_group) {
+      assert(command->command_id() != 0);
+      assert(!command->GetTitle().empty());
 
-      if (command.checked_handler) {
-        menu.AddCheckItem(command.command_id, command.title);
+      if (command->checked_handler_) {
+        menu.AddCheckItem(command->command_id(), command->GetTitle());
       } else {
-        menu.AddItem(command.command_id, command.title);
+        menu.AddItem(command->command_id(), command->GetTitle());
       }
     }
   }
@@ -476,17 +475,17 @@ void MainMenuModel::Rebuild() {
 }
 
 bool MainMenuModel::IsCommandIdChecked(int command_id) const {
-  const auto* handler = command_handler_.GetCommandHandler(command_id);
-  return handler && handler->IsCommandChecked(command_id);
+  return command_handler_.FindAction(command_id) &&
+         command_handler_.IsActionChecked(command_id);
 }
 
 bool MainMenuModel::IsCommandIdEnabled(int command_id) const {
-  const auto* handler = command_handler_.GetCommandHandler(command_id);
-  return handler && handler->IsCommandEnabled(command_id);
+  return command_handler_.FindAction(command_id) &&
+         command_handler_.IsActionEnabled(command_id);
 }
 
 void MainMenuModel::ExecuteCommand(int command_id) {
-  if (auto* handler = command_handler_.GetCommandHandler(command_id)) {
-    handler->ExecuteCommand(command_id);
+  if (command_handler_.FindAction(command_id)) {
+    command_handler_.ExecuteAction(command_id);
   }
 }
