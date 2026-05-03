@@ -1,16 +1,12 @@
 #pragma once
 
 #include "main_window/view_manager.h"
+#include "aui/wt/view_manager_wt_component.h"
 
-#include <unordered_map>
+#include <vector>
 
 namespace Wt {
-class WBorderLayout;
-class WBoxLayout;
-class WContainerWidget;
 class WLayout;
-class WTabWidget;
-class WWidget;
 }  // namespace Wt
 
 class ViewManagerWt final : public ViewManager {
@@ -35,130 +31,24 @@ class ViewManagerWt final : public ViewManager {
   virtual void AddView(OpenedView& view) override;
 
  private:
-  class Block;
+  using ComponentLayoutNode = ViewManagerWtComponent::LayoutNode;
+  using ComponentSavedLayout = ViewManagerWtComponent::SavedLayout;
+  using ComponentViewInfo = ViewManagerWtComponent::ViewInfo;
 
-  OpenedView* FindViewByWidget(const Wt::WWidget* widget);
+  ComponentViewInfo GetComponentViewInfo(OpenedView& view) const;
+  std::vector<ComponentViewInfo> GetComponentViewInfos() const;
+  ViewManagerWtComponent::ViewId GetComponentViewId(
+      const OpenedView& view) const;
+  OpenedView* FindViewByComponentId(
+      ViewManagerWtComponent::ViewId view_id) const;
 
-  std::unique_ptr<Block> OpenLayoutBlock(const Page& page,
-                                         const PageLayoutBlock& block);
+  ComponentSavedLayout ToComponentLayout(const PageLayout& layout) const;
+  ComponentLayoutNode ToComponentLayoutNode(
+      const PageLayoutBlock& block) const;
+  void FromComponentLayout(const ComponentSavedLayout& component_layout,
+                           PageLayout& layout) const;
+  void FromComponentLayoutNode(const ComponentLayoutNode& component_block,
+                               PageLayoutBlock& block) const;
 
-  enum class DockSide { Left, Top, Right, Bottom, Count };
-
-  class Pane {
-   public:
-    virtual ~Pane() = default;
-
-    virtual void AddView(OpenedView& view) = 0;
-    virtual std::unique_ptr<Wt::WWidget> RemoveView(OpenedView& view) = 0;
-  };
-
-  class RootPane;
-  class DockPane;
-
-  class DockSubPane : public Pane {
-   public:
-    DockSubPane(ViewManagerWt& view_manager,
-                RootPane& root_pane,
-                DockPane& dock_pane);
-
-    ~DockSubPane();
-
-    void ClosePane();
-
-    virtual void AddView(OpenedView& view) override;
-    virtual std::unique_ptr<Wt::WWidget> RemoveView(OpenedView& view) override;
-
-   private:
-    ViewManagerWt& view_manager_;
-    RootPane& root_pane_;
-    DockPane& dock_pane_;
-
-    Wt::WTabWidget* tab_widget_ = nullptr;
-  };
-
-  class DockPane : public Pane {
-   public:
-    DockPane(ViewManagerWt& view_manager, RootPane& root_pane, DockSide side);
-
-    void ClosePane();
-
-    virtual void AddView(OpenedView& view) override;
-    virtual std::unique_ptr<Wt::WWidget> RemoveView(OpenedView& view) override;
-
-   private:
-    ViewManagerWt& view_manager_;
-    RootPane& root_pane_;
-    const DockSide side_;
-
-    Wt::WBoxLayout* layout_ = nullptr;
-
-    // A pane address must be stable.
-    std::vector<std::unique_ptr<DockSubPane>> subpanes_;
-
-    friend class DockSubPane;
-  };
-
-  class CenterPane : public Pane {
-   public:
-    CenterPane(ViewManagerWt& view_manager, RootPane& root_pane)
-        : view_manager_{view_manager}, root_pane_{root_pane} {}
-
-    virtual void AddView(OpenedView& view) override;
-    virtual std::unique_ptr<Wt::WWidget> RemoveView(OpenedView& view) override;
-
-   private:
-    ViewManagerWt& view_manager_;
-    RootPane& root_pane_;
-  };
-
-  class RootPane : public Pane {
-   public:
-    explicit RootPane(ViewManagerWt& view_manager);
-    RootPane(const RootPane&) = delete;
-    RootPane& operator=(const RootPane&) = delete;
-
-    DockPane& GetOrCreateDockPane(DockSide side);
-
-    Wt::WTabWidget* GetTabWidget(OpenedView& opened_view);
-    Pane* FindWidgetPane(Wt::WWidget& widget);
-
-    std::unique_ptr<Wt::WTabWidget> CreateTabWidget();
-
-    void SetRootBlock(std::unique_ptr<Block> block);
-
-    Wt::WLayout* GetParentLayout(Wt::WTabWidget& tab_widget);
-
-    // Pane
-    virtual void AddView(OpenedView& view) override;
-    virtual std::unique_ptr<Wt::WWidget> RemoveView(OpenedView& view) override;
-
-   private:
-    std::unique_ptr<DockPane>& dock_pane(DockSide side) {
-      return dock_panes_[static_cast<size_t>(side)];
-    }
-
-    ViewManagerWt& view_manager_;
-
-    CenterPane center_pane_{view_manager_, *this};
-
-    std::unique_ptr<DockPane> dock_panes_[static_cast<size_t>(DockSide::Count)];
-
-   public:
-    struct WidgetData {
-      Wt::WTabWidget* tab_widget = nullptr;
-      Pane* pane = nullptr;
-    };
-
-    std::unordered_map<Wt::WWidget*, WidgetData> widget_data_;
-
-    struct TabWidgetData {
-      Wt::WLayout* parent_layout_ = nullptr;
-    };
-
-    std::unordered_map<Wt::WTabWidget*, TabWidgetData> tab_widget_data_;
-
-    Wt::WBorderLayout* root_layout_ = nullptr;
-  };
-
-  RootPane root_pane_{*this};
+  ViewManagerWtComponent component_;
 };
