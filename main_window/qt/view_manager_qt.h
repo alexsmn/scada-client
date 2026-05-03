@@ -1,7 +1,7 @@
 #pragma once
 
-#include "main_window/qt/view_manager_qt_component.h"
 #include "main_window/view_manager.h"
+#include "view_manager_qt_component.h"
 
 #include <vector>
 

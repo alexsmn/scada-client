@@ -25,6 +25,15 @@ client_module_link_libraries(client_main_window PRIVATE
 
 # Qt.
 
+list(APPEND CMAKE_MODULE_PATH
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/view_manager_qt"
+)
+find_package(ViewManagerQt REQUIRED)
+
+target_link_libraries(client_main_window_qt PUBLIC
+  view_manager_qt
+)
+
 target_link_libraries(client_main_window_qt PRIVATE
   client_ui_common_qt
   client_ui_dragdrop_qt
