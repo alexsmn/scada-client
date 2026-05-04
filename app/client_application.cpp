@@ -140,6 +140,7 @@ Awaitable<void> ClientApplication::Start() {
 }
 
 Awaitable<void> ClientApplication::StartAsync() {
+  RegisterClientApplicationModules();
   co_await LoginAsync();
   PostLogin();
   co_return;

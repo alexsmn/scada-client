@@ -64,5 +64,7 @@ struct ClientApplicationModuleContext {
 using ClientApplicationModuleConfigurator =
     std::function<void(ClientApplicationModuleContext&)>;
 
+void RegisterClientApplicationModules(ClientApplicationModules modules = {});
+
 ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     ClientApplicationModules modules = {});

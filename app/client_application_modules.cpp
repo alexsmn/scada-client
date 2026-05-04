@@ -13,6 +13,14 @@
 #include "vidicon/vidicon_module.h"
 #endif
 
+void RegisterClientApplicationModules(ClientApplicationModules modules) {
+  if (modules.opcua_services) {
+    static auto opcua_services_module =
+        std::make_shared<OpcUaServicesModule>(OpcUaServicesModuleContext{});
+    (void)opcua_services_module;
+  }
+}
+
 ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     ClientApplicationModules modules) {
   return [modules](ClientApplicationModuleContext& context) {
