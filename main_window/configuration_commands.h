@@ -11,7 +11,7 @@ class SessionService;
 class Variant;
 }  // namespace scada
 
-class ActionManager;
+class ActionGroup;
 class LocalEvents;
 class NodeRef;
 class Profile;
@@ -23,7 +23,7 @@ class ConfigurationCommands {
  public:
   void Register();
 
-  ActionManager& action_manager_;
+  ActionGroup& action_group_;
   AnyExecutor executor_;
   TimedDataService& timed_data_service_;
   scada::SessionService& session_service_;

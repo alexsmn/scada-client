@@ -7,6 +7,7 @@
 #include "controller/controller_registry.h"
 #include "events/event_fetcher.h"
 #include "controller/action_manager.h"
+#include "resources/common_resources.h"
 #include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
@@ -55,20 +56,6 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 
   assert(scada_services_.session_service);
 
-  auto configuration_commands = std::make_shared<ConfigurationCommands>(
-      action_manager_, executor_, timed_data_service_,
-      *scada_services_.session_service, profile_, local_events_, task_manager_);
-
-  singletons_.emplace(configuration_commands);
-  configuration_commands->Register();
-
-  action_manager_.AddAction(ChangePasswordCommandBuilder{
-      .executor_ = executor_,
-      .local_events_ = local_events_,
-      .profile_ = profile_,
-      .session_service_ = *scada_services_.session_service}
-                                     .Build());
-
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{
           .profile_ = profile_,
@@ -77,6 +64,34 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
                 return CreateMainWindow(MakeMainWindowContext(window_id));
               },
           .quit_handler_ = quit_handler_});
+
+  selection_commands_object_ =
+      std::make_shared<SelectionCommands>(SelectionCommandsContext{
+          executor_, task_manager_, *scada_services_.session_service,
+          node_event_provider_, file_cache_, profile_, *main_window_manager_,
+          node_service_, action_manager_});
+  auto& selection_actions = selection_commands_object_->action_group();
+
+  auto configuration_commands = std::make_shared<ConfigurationCommands>(
+      selection_actions, executor_, timed_data_service_,
+      *scada_services_.session_service, profile_, local_events_,
+      task_manager_);
+
+  singletons_.emplace(configuration_commands);
+  configuration_commands->Register();
+
+  selection_actions.AddAction(ChangePasswordCommandBuilder{
+      .executor_ = executor_,
+      .local_events_ = local_events_,
+      .profile_ = profile_,
+      .session_service_ = *scada_services_.session_service}
+                                     .Build());
+
+  selection_actions.AddActionId(ID_OPEN_EVENTS);
+  selection_actions.AddActionId(ID_HISTORICAL_EVENTS);
+  selection_actions.AddActionId(ID_DUMP_DEBUG_INFO);
+  selection_actions.AddActionId(ID_CREATE_FILE_DIRECTORY);
+  selection_actions.AddActionId(ID_ADD_FILE);
 
   auto login_handler = [this](bool login) {
     if (login) {
@@ -93,12 +108,6 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
                                 local_events_, favourites_, speech_service_,
                                 profile_, *main_window_manager_,
                                 login_handler, action_manager_}));
-
-  selection_commands_object_ =
-      std::make_shared<SelectionCommands>(SelectionCommandsContext{
-          executor_, task_manager_, *scada_services_.session_service,
-          node_event_provider_, file_cache_, profile_, *main_window_manager_,
-          node_service_, action_manager_});
 
   // Opens windows.
   main_window_manager_->Init();
@@ -121,7 +130,8 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
     return std::make_unique<MainWindowCommandHandler>(
         MainWindowCommandHandlerContext{executor_, main_window, dialog_service,
                                         *scada_services_.session_service,
-                                        action_manager_});
+                                        action_manager_,
+                                        selection_commands_object_});
   };
 
   auto main_menu_factory =
@@ -230,8 +240,8 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
           executor_, selection_commands_object_, action_manager_,
           task_manager_, *scada_services_.session_service, timed_data_service_,
-          node_service_, print_service_, action_manager_, local_events_,
-          file_cache_, profile_, *main_window_manager_, create_tree_});
+          node_service_, print_service_, local_events_, file_cache_, profile_,
+          *main_window_manager_, create_tree_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the
   // controller.

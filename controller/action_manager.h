@@ -4,6 +4,8 @@
 #include "controller/action.h"
 
 #include <map>
+#include <memory>
+#include <unordered_set>
 #include <vector>
 
 using ActionList = std::vector<Action*>;
@@ -63,6 +65,38 @@ class ActionManager {
   ActionMap action_map_;
   ActionList actions_;
   base::ObserverList<ActionObserver> observers_;
+};
+
+struct ActionGroupState {
+  std::unordered_set<unsigned> action_ids_;
+};
+
+class ActionGroup {
+ public:
+  explicit ActionGroup(ActionManager& action_manager);
+  ActionGroup(ActionManager& action_manager,
+              std::shared_ptr<ActionGroupState> state);
+
+  ActionGroup WithContext(ActionContext context) const;
+
+  void SetContext(ActionContext context) { context_ = context; }
+  bool Contains(unsigned command_id) const;
+
+  Action& AddAction(Action action);
+  Action& AddAction(unsigned command_id) {
+    return AddAction(Action{.command_id_ = command_id});
+  }
+  void AddActionId(unsigned command_id);
+
+  Action* FindAction(unsigned command_id) const;
+  bool IsActionEnabled(unsigned command_id) const;
+  bool IsActionChecked(unsigned command_id) const;
+  void ExecuteAction(unsigned command_id) const;
+
+ private:
+  ActionManager& action_manager_;
+  std::shared_ptr<ActionGroupState> state_;
+  ActionContext context_ = nullptr;
 };
 
 typedef std::map<CommandCategory, ActionList> GroupedActions;

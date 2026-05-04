@@ -65,7 +65,7 @@ class ConfigurationCommandsTest : public Test {
       : scada_client_{scada::services{.method_service = &method_service_}},
         command_node_{MakeCommandNode(scada_client_.node({kItemNodeId, 1}))},
         selection_{SelectionModelContext{timed_data_service_}},
-        commands_{action_manager_,
+        commands_{action_group_,
                   executor_,
                   timed_data_service_,
                   session_service_,
@@ -98,6 +98,7 @@ class ConfigurationCommandsTest : public Test {
   NodeRef command_node_;
   FakeTimedDataService timed_data_service_;
   ActionManager action_manager_;
+  ActionGroup action_group_{action_manager_};
   NiceMock<scada::MockSessionService> session_service_;
   Profile profile_;
   LocalEvents local_events_;

@@ -273,14 +273,11 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
 }
 
 Action& SelectionCommands::AddAction(Action action) {
-  auto command_id = action.command_id_;
-  auto& registered_action = action_manager_.AddAction(std::move(action));
-  selection_action_ids_.insert(command_id);
-  return registered_action;
+  return action_group_.AddAction(std::move(action));
 }
 
 bool SelectionCommands::IsSelectionAction(unsigned command_id) const {
-  return selection_action_ids_.contains(command_id);
+  return action_group_.Contains(command_id);
 }
 
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
@@ -359,6 +356,17 @@ void SelectionCommands::SetContext(MainWindowInterface* main_window,
   opened_view_ = opened_view;
   controller_ = controller;
   selection_ = selection;
+
+  if (main_window_ && dialog_service_ && opened_view_ && selection_) {
+    command_context_.emplace(SelectionCommandContext{*selection_,
+                                                     *dialog_service_,
+                                                     *main_window_,
+                                                     *opened_view_});
+    action_group_.SetContext(&*command_context_);
+  } else {
+    action_group_.SetContext(nullptr);
+    command_context_.reset();
+  }
 }
 
 void SelectionCommands::DeleteSelection(const SelectionCommandContext& context) {

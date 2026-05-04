@@ -5,10 +5,11 @@
 #include "base/cancelation.h"
 #include "base/awaitable.h"
 #include "controller/action_manager.h"
+#include "core/selection_command_context.h"
 #include "profile/window_definition.h"
 
+#include <optional>
 #include <vector>
-#include <unordered_set>
 
 namespace scada {
 class SessionService;
@@ -26,7 +27,6 @@ class OpenedViewInterface;
 class Profile;
 class SelectionModel;
 class TaskManager;
-struct SelectionCommandContext;
 
 struct SelectionCommandsContext {
   const AnyExecutor executor_;
@@ -49,6 +49,8 @@ class SelectionCommands : private SelectionCommandsContext {
   SelectionModel* selection() { return selection_; }
   DialogService* dialog_service() { return dialog_service_; }
   MainWindowInterface* main_window() { return main_window_; }
+  ActionGroup& action_group() { return action_group_; }
+  const ActionGroup& action_group() const { return action_group_; }
 
   void SetContext(MainWindowInterface* main_window,
                   DialogService* dialog_service,
@@ -82,7 +84,8 @@ class SelectionCommands : private SelectionCommandsContext {
   OpenedViewInterface* opened_view_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
-  std::unordered_set<unsigned> selection_action_ids_;
+  ActionGroup action_group_{action_manager_};
+  std::optional<SelectionCommandContext> command_context_;
 
   Cancelation cancelation_;
 };

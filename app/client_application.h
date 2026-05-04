@@ -137,6 +137,7 @@ class ClientApplication : private ClientApplicationContext {
   void OnLoginCompleted(const DataServices& services);
 
   std::unique_ptr<CoreModule> core_module_;
+  std::unique_ptr<ActionManager> action_manager_;
 
   std::shared_ptr<Logger> logger_;
   std::unique_ptr<MetricService> metric_service_;

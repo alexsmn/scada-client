@@ -17,7 +17,7 @@ ModusModule::ModusModule(ModusModuleContext&& context)
   controller_registry_.AddControllerFactory(
       kModusWindowInfo, [this](const ControllerContext& context) {
         return std::make_unique<ModusController>(context, alias_resolver_);
-      }));
+      });
 
   file_registry_.RegisterType(kModusWindowInfo.command_id,
                               kModusWindowInfo.name, ".sde;.xsde");

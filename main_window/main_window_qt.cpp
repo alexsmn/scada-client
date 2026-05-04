@@ -3,6 +3,7 @@
 #include "aui/models/menu_model.h"
 #include "aui/models/simple_menu_model.h"
 #include "aui/qt/client_utils_qt.h"
+#include "base/boost_log.h"
 #include "base/utf_convert.h"
 #include "base/win/win_util2.h"
 #include "ui/common/client_utils.h"
@@ -96,18 +97,24 @@ QRect GetDefaultBounds(const QWidget* window) {
 
 MainWindow::MainWindow(MainWindowContext&& context)
     : BaseMainWindow{std::move(context), dialog_service_} {
+  BOOST_LOG_TRIVIAL(info) << "MainWindow Qt constructor begin";
   const MainWindowDef& prefs = GetPrefs();
 
   setGeometry(prefs.bounds.isNull() ? GetDefaultBounds(this) : prefs.bounds);
+  BOOST_LOG_TRIVIAL(info) << "MainWindow geometry set";
 
   view_manager_ = std::make_unique<ViewManager>(
       *this, *static_cast<ViewManagerDelegate*>(this));
+  BOOST_LOG_TRIVIAL(info) << "MainWindow view manager created";
 
   dialog_service_.parent_widget = this;
 
   CreateMenuBar();
+  BOOST_LOG_TRIVIAL(info) << "MainWindow menu created";
   CreateToolbar();
+  BOOST_LOG_TRIVIAL(info) << "MainWindow toolbar created";
   CreateStatusBar();
+  BOOST_LOG_TRIVIAL(info) << "MainWindow status bar created";
 
   if (!g_hide_for_testing) {
     // Must show window before loading layout to let |restoreState()| work
@@ -126,14 +133,17 @@ MainWindow::MainWindow(MainWindowContext&& context)
   }
 
   Init(*view_manager_);
+  BOOST_LOG_TRIVIAL(info) << "MainWindow base init completed";
 
   action_manager_.Subscribe(*this);
+  BOOST_LOG_TRIVIAL(info) << "MainWindow action manager subscribed";
 
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
     statusBar()->setVisible(prefs.status_bar);
     toolbar_->setVisible(prefs.toolbar);
   });
+  BOOST_LOG_TRIVIAL(info) << "MainWindow Qt constructor completed";
 }
 
 MainWindow::~MainWindow() {
@@ -254,15 +264,22 @@ void MainWindow::SetWindowFlashing(bool flashing) {}
 
 void MainWindow::OnSelectionChanged() {
   for (const auto& [command_id, action] : action_map_) {
+    BOOST_LOG_TRIVIAL(info) << "Update selection action begin"
+                            << LOG_TAG("CommandId", command_id);
     UpdateAction(*action, command_id, ActionChangeMask::AllButTitle);
+    BOOST_LOG_TRIVIAL(info) << "Update selection action completed"
+                            << LOG_TAG("CommandId", command_id);
   }
 
+  BOOST_LOG_TRIVIAL(info) << "Update selection categories begin";
   for (const auto& [_, category] : category_actions_) {
     bool has_visible_actions =
         std::ranges::any_of(category.menu->actions(), &QAction::isVisible);
     category.toolbar_action->setVisible(has_visible_actions);
   }
+  BOOST_LOG_TRIVIAL(info) << "Update selection categories completed";
 
+  BOOST_LOG_TRIVIAL(info) << "Update selection separators begin";
   bool adjacent_separator = false;
   for (auto* toolbar_action : toolbar_->actions()) {
     if (toolbar_action->isSeparator()) {
@@ -272,6 +289,7 @@ void MainWindow::OnSelectionChanged() {
       adjacent_separator = false;
     }
   }
+  BOOST_LOG_TRIVIAL(info) << "Selection changed completed";
 }
 
 void MainWindow::SetToolbarPosition(unsigned position) {}

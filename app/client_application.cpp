@@ -10,6 +10,7 @@
 #include "resources/common_resources.h"
 #include "modules/write/write_service_impl.h"
 #include "configuration/tree/node_service_tree_impl.h"
+#include "controller/action_manager.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
 #include "core/core_module.h"
@@ -66,6 +67,15 @@ scada::ServiceLogParams ReadServiceLogParamsFromCommandLine() {
 extern bool CreateVidiconServices(const DataServicesContext& context,
                                   DataServices& services);
 
+namespace opcua {
+bool CreateServices(const DataServicesContext& context, DataServices& services);
+}
+
+bool CreateOpcUaServices(const DataServicesContext& context,
+                         DataServices& services) {
+  return opcua::CreateServices(context, services);
+}
+
 REGISTER_DATA_SERVICES("Scada",
                        u"Telecontrol",
                        CreateRemoteServices,
@@ -75,6 +85,11 @@ REGISTER_DATA_SERVICES("Vidicon",
                        u"Vidicon",
                        CreateVidiconServices,
                        "localhost");
+
+REGISTER_DATA_SERVICES("OpcUa",
+                       u"OPC UA",
+                       CreateOpcUaServices,
+                       "opc.tcp://localhost:4840");
 
 // Locals shared across the PostLogin() phase helpers.
 struct ClientApplication::PostLoginContext {
@@ -103,8 +118,10 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
   transport_factory_ = transport::CreateTransportFactory();
 
   core_module_ = std::make_unique<CoreModule>(executor_);
+  action_manager_ = std::make_unique<ActionManager>();
 
   shutdown_stack_.Push([this] { transport_factory_.reset(); });
+  shutdown_stack_.Push([this] { action_manager_.reset(); });
   shutdown_stack_.Push([this] { core_module_.reset(); });
   shutdown_stack_.Push([this] { master_data_services_ = nullptr; });
 }
@@ -126,13 +143,11 @@ MainWindowManager& ClientApplication::main_window_manager() {
 
 bool ClientApplication::HasSelectionCommandForTesting(
     unsigned command_id) const {
-  return core_module_ &&
-         core_module_->action_manager().FindAction(command_id) != nullptr;
+  return action_manager_ && action_manager_->FindAction(command_id) != nullptr;
 }
 
 bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
-  return core_module_ &&
-         core_module_->action_manager().FindAction(command_id) != nullptr;
+  return action_manager_ && action_manager_->FindAction(command_id) != nullptr;
 }
 
 Awaitable<void> ClientApplication::Start() {
@@ -146,6 +161,7 @@ Awaitable<void> ClientApplication::StartAsync() {
 }
 
 void ClientApplication::PostLogin() {
+  BOOST_LOG_TRIVIAL(info) << "PostLogin begin";
   PostLoginContext ctx{
       .audited_scada_services = master_data_services_->as_services(),
       .scada_client = scada::client{master_data_services_->as_services()},
@@ -155,20 +171,29 @@ void ClientApplication::PostLogin() {
       .alias_resolver = {}};
 
   CreateNodeService(ctx);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin node service created";
   ctx.alias_resolver = CreateAliasResolver(*node_service_, logger_);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin alias resolver created";
 
   singletons_.emplace(
       std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
 
   CreateEventAndDataServices(ctx);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin event/data services created";
   CreateUserServices(ctx);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin user services created";
   CreateFeatureComponents(ctx);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin feature components created";
   RunModuleConfigurator(ctx);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin modules configured";
   CreateMainWindow(ctx);
+  BOOST_LOG_TRIVIAL(info) << "PostLogin main window created";
 
-  filesystem_component_->set_action_manager(&core_module_->action_manager());
+  filesystem_component_->set_action_manager(action_manager_.get());
 
+  BOOST_LOG_TRIVIAL(info) << "PostLogin filesystem startup begin";
   filesystem_component_->StartUp();
+  BOOST_LOG_TRIVIAL(info) << "PostLogin completed";
 }
 
 void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
@@ -200,7 +225,7 @@ void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) 
       .profile_ = *profile_,
       .services_ = ctx.audited_scada_services,
       .controller_registry_ = *controller_registry_,
-      .action_manager_ = core_module_->action_manager()});
+      .action_manager_ = *action_manager_});
 
   if (timed_data_service_override_) {
     timed_data_service_ = std::move(timed_data_service_override_);
@@ -259,7 +284,7 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,
-      .action_manager_ = core_module_->action_manager(),
+      .action_manager_ = *action_manager_,
       .controller_registry_ = *controller_registry_});
   shutdown_stack_.Push([this] { favorites_module_.reset(); });
 
@@ -293,7 +318,7 @@ ClientApplicationModuleContext ClientApplication::BuildModuleContext(
       .filesystem_component_ = *filesystem_component_,
       .blinker_manager_ = *blinker_manager_,
       .progress_host_ = core_module_->progress_host(),
-      .action_manager_ = core_module_->action_manager(),
+      .action_manager_ = *action_manager_,
       .singletons_ = singletons_};
 }
 
@@ -348,7 +373,7 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
                               filesystem_component_->file_command()),
           .progress_host_ = core_module_->progress_host(),
           .create_tree_ = *create_tree_,
-          .action_manager_ = core_module_->action_manager(),
+          .action_manager_ = *action_manager_,
           .controller_factory_ = std::bind_front(
               &ControllerFactoryImpl::CreateController, controller_factory)});
   shutdown_stack_.Push([this] { main_window_module_.reset(); });

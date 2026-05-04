@@ -18,6 +18,7 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/opened_view/opened_view_commands.h"
+#include "main_window/selection_commands.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
@@ -220,12 +221,12 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
   action_manager_.AddAction(
       Action{.command_id_ = ID_VIEW_PUBLIC_FOLDER}
           .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [](const GlobalCommandContext&) { OpenPublicFolder(); }));
+              [](const GlobalCommandContext&) { OpenPublicFolder(); })));
 
   action_manager_.AddAction(
       Action{.command_id_ = ID_LOGIN}
           .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [this](const GlobalCommandContext&) { login_handler_(true); })
+              [this](const GlobalCommandContext&) { login_handler_(true); }))
           .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
               [this](const GlobalCommandContext&) {
                 return !session_service_.IsConnected();
@@ -234,7 +235,7 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
   action_manager_.AddAction(
       Action{.command_id_ = ID_LOGOFF}
           .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [this](const GlobalCommandContext&) { login_handler_(false); })
+              [this](const GlobalCommandContext&) { login_handler_(false); }))
           .SetEnabledHandler(MakeContextHandler<GlobalCommandContext>(
               [this](const GlobalCommandContext&) {
                 return session_service_.IsConnected();
@@ -361,6 +362,11 @@ Action* MainWindowCommandHandler::FindAction(unsigned command_id) {
     }
   }
 
+  if (selection_commands_ &&
+      selection_commands_->IsSelectionAction(command_id)) {
+    return nullptr;
+  }
+
   switch (command_id) {
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
@@ -419,8 +425,12 @@ bool MainWindowCommandHandler::IsActionEnabled(unsigned command_id) const {
     }
   }
 
+  if (selection_commands_ &&
+      selection_commands_->IsSelectionAction(command_id)) {
+    return false;
+  }
+
   if (command_id == ID_VIEW_ADD_TO_FAVOURITES) {
-    auto* active_view = main_window_.GetActiveView();
     return active_view && !active_view->GetWindowInfo().is_pane();
   }
 
@@ -439,6 +449,11 @@ bool MainWindowCommandHandler::IsActionChecked(unsigned command_id) const {
       return static_cast<OpenedView*>(active_view)
           ->commands->IsActionChecked(command_id);
     }
+  }
+
+  if (selection_commands_ &&
+      selection_commands_->IsSelectionAction(command_id)) {
+    return false;
   }
 
   if (const WindowInfo* window_info = FindWindowInfo(command_id)) {
@@ -462,6 +477,11 @@ void MainWindowCommandHandler::ExecuteAction(unsigned command_id) {
           command_id);
       return;
     }
+  }
+
+  if (selection_commands_ &&
+      selection_commands_->IsSelectionAction(command_id)) {
+    return;
   }
 
   switch (command_id) {
