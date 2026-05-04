@@ -1,11 +1,11 @@
 #pragma once
 
 #include "common/aliases.h"
+#include "controller/command_registry.h"
 #include "core/global_command_context.h"
 
 #include <memory>
 
-class ActionManager;
 class BlinkerManager;
 class ControllerRegistry;
 class FileRegistry;
@@ -16,7 +16,7 @@ struct ModusModuleContext {
   ControllerRegistry& controller_registry_;
   BlinkerManager& blinker_manager_;
   FileRegistry& file_registry_;
-  ActionManager& action_manager_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   Profile& profile_;
   AliasResolver alias_resolver_;
 };

@@ -127,12 +127,12 @@ MainWindowManager& ClientApplication::main_window_manager() {
 bool ClientApplication::HasSelectionCommandForTesting(
     unsigned command_id) const {
   return core_module_ &&
-         core_module_->action_manager().FindAction(command_id) != nullptr;
+         core_module_->selection_commands().FindCommand(command_id) != nullptr;
 }
 
 bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
   return core_module_ &&
-         core_module_->action_manager().FindAction(command_id) != nullptr;
+         core_module_->global_commands().FindCommand(command_id) != nullptr;
 }
 
 Awaitable<void> ClientApplication::Start() {
@@ -166,7 +166,9 @@ void ClientApplication::PostLogin() {
   RunModuleConfigurator(ctx);
   CreateMainWindow(ctx);
 
-  filesystem_component_->set_action_manager(&core_module_->action_manager());
+  // TODO: Move selection command registry out of `MainWindowModule`.
+  filesystem_component_->set_selection_commands(
+      &core_module_->selection_commands());
 
   filesystem_component_->StartUp();
 }
@@ -200,7 +202,7 @@ void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) 
       .profile_ = *profile_,
       .services_ = ctx.audited_scada_services,
       .controller_registry_ = *controller_registry_,
-      .action_manager_ = core_module_->action_manager()});
+      .selection_commands_ = core_module_->selection_commands()});
 
   if (timed_data_service_override_) {
     timed_data_service_ = std::move(timed_data_service_override_);
@@ -259,7 +261,7 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,
-      .action_manager_ = core_module_->action_manager(),
+      .global_commands_ = core_module_->global_commands(),
       .controller_registry_ = *controller_registry_});
   shutdown_stack_.Push([this] { favorites_module_.reset(); });
 
@@ -293,7 +295,8 @@ ClientApplicationModuleContext ClientApplication::BuildModuleContext(
       .filesystem_component_ = *filesystem_component_,
       .blinker_manager_ = *blinker_manager_,
       .progress_host_ = core_module_->progress_host(),
-      .action_manager_ = core_module_->action_manager(),
+      .global_commands_ = core_module_->global_commands(),
+      .selection_commands_ = core_module_->selection_commands(),
       .singletons_ = singletons_};
 }
 
@@ -348,7 +351,8 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
                               filesystem_component_->file_command()),
           .progress_host_ = core_module_->progress_host(),
           .create_tree_ = *create_tree_,
-          .action_manager_ = core_module_->action_manager(),
+          .global_commands_ = core_module_->global_commands(),
+          .selection_commands_ = core_module_->selection_commands(),
           .controller_factory_ = std::bind_front(
               &ControllerFactoryImpl::CreateController, controller_factory)});
   shutdown_stack_.Push([this] { main_window_module_.reset(); });

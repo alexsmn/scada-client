@@ -1,7 +1,9 @@
 #pragma once
 
 #include "base/any_executor.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
+#include "core/global_command_context.h"
+#include "core/selection_command_context.h"
 
 #include <memory>
 #include <stack>
@@ -16,7 +18,13 @@ class CoreModule {
 
   Tracer& tracer() { return *tracer_; }
 
-  ActionManager& action_manager() { return action_manager_; }
+  BasicCommandRegistry<GlobalCommandContext>& global_commands() {
+    return global_commands_;
+  }
+
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands() {
+    return selection_commands_;
+  }
 
   ProgressHost& progress_host() { return *progress_host_; }
 
@@ -25,7 +33,8 @@ class CoreModule {
 
   std::unique_ptr<Tracer> tracer_;
 
-  ActionManager action_manager_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
+  BasicCommandRegistry<SelectionCommandContext> selection_commands_;
 
   std::unique_ptr<ProgressHost> progress_host_;
 };

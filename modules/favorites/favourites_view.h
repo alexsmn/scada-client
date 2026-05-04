@@ -2,7 +2,7 @@
 
 #include "base/awaitable.h"
 #include "resources/common_resources.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 
@@ -25,7 +25,7 @@ class FavouritesView final : protected ControllerContext, public Controller {
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
 
  private:
   void OpenSelection();
@@ -42,13 +42,13 @@ class FavouritesView final : protected ControllerContext, public Controller {
 
   aui::Tree* tree_view_ = nullptr;
 
-  ActionManager command_registry_;
-  Action& open_command_ = command_registry_.AddAction(ID_OPEN);
-  Action& rename_command_ = command_registry_.AddAction(ID_RENAME);
-  Action& delete_command_ = command_registry_.AddAction(ID_DELETE);
+  CommandRegistry command_registry_;
+  Command& open_command_ = command_registry_.AddCommand(ID_OPEN);
+  Command& rename_command_ = command_registry_.AddCommand(ID_RENAME);
+  Command& delete_command_ = command_registry_.AddCommand(ID_DELETE);
 
 #if !defined(UI_WT)
-  Action& add_url_command_ =
-      command_registry_.AddAction(ID_FAVOURITES_ADD_URL);
+  Command& add_url_command_ =
+      command_registry_.AddCommand(ID_FAVOURITES_ADD_URL);
 #endif
 };

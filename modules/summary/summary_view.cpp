@@ -77,24 +77,24 @@ std::unique_ptr<UiView> SummaryView::Init(const WindowDefinition& definition) {
     grid_->RestoreState(state->attributes);
 
   for (const auto& [command_id, interval] : kIntervalCommands) {
-    command_registry_.AddAction(Action{.command_id_ = command_id}
-                                     .SetExecuteHandler(MakeContextHandler<void>([this, interval] {
+    command_registry_.AddCommand(Command{command_id}
+                                     .set_execute_handler([this, interval] {
                                        model_->SetInterval(interval);
-                                     }))
-                                     .SetCheckedHandler(MakeContextHandler<void>([this, interval] {
+                                     })
+                                     .set_checked_handler([this, interval] {
                                        return model_->interval() == interval;
-                                     })));
+                                     }));
   }
 
   for (const auto& [command_id, aggregate_type] : kAggregateCommands) {
-    command_registry_.AddAction(
-        Action{.command_id_ = command_id}
-            .SetExecuteHandler(MakeContextHandler<void>([this, aggregate_type = aggregate_type] {
+    command_registry_.AddCommand(
+        Command{command_id}
+            .set_execute_handler([this, aggregate_type = aggregate_type] {
               model_->SetAggregateType(aggregate_type);
-            }))
-            .SetCheckedHandler(MakeContextHandler<void>([this, aggregate_type = aggregate_type] {
+            })
+            .set_checked_handler([this, aggregate_type = aggregate_type] {
               return model_->aggregate_type() == aggregate_type;
-            })));
+            }));
   }
 
   return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
@@ -106,8 +106,8 @@ void SummaryView::Save(WindowDefinition& definition) {
   definition.AddItem("State").attributes = grid_->SaveState();
 }
 
-ActionManager* SummaryView::GetActionManager() {
-  return &command_registry_;
+CommandHandler* SummaryView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 ContentsModel* SummaryView::GetContentsModel() {

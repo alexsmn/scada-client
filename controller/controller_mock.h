@@ -30,7 +30,10 @@ class MockController : public Controller {
               (const scada::NodeId& item_id),
               (override));
 
-  MOCK_METHOD(ActionManager*, GetActionManager, (), (override));
+  MOCK_METHOD(CommandHandler*,
+              GetCommandHandler,
+              (unsigned command_id),
+              (override));
 
   MOCK_METHOD(ContentsModel*, GetContentsModel, (), (override));
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/models/table_model_observer.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/time_model.h"
@@ -28,7 +28,7 @@ class WatchView : protected ControllerContext,
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual TimeModel* GetTimeModel() override { return this; }
   virtual ExportModel* GetExportModel() override { return this; }
 
@@ -53,5 +53,5 @@ class WatchView : protected ControllerContext,
 
   aui::Table* table_ = nullptr;
 
-  ActionManager command_registry_;
+  CommandRegistry command_registry_;
 };

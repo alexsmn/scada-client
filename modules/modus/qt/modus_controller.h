@@ -2,7 +2,7 @@
 
 #include "base/cancelation.h"
 #include "common/aliases.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
@@ -26,7 +26,7 @@ class ModusController : protected ControllerContext, public Controller {
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual bool ShowContainedItem(const scada::NodeId& item_id) override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
 
  private:
@@ -46,7 +46,7 @@ class ModusController : protected ControllerContext, public Controller {
   ModusView3* view3_ = nullptr;
   ModusViewWrapper* wrapper_ = nullptr;
 
-  ActionManager command_registry_;
+  CommandRegistry command_registry_;
 
   Cancelation cancelation_;
 };

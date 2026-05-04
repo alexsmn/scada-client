@@ -6,7 +6,7 @@
 #include "aui/types.h"
 #include "base/blinker_mock.h"
 #include "base/test/test_executor.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller_context.h"
 #include "controller/controller_delegate_mock.h"
 #include "controller/controller_registry.h"
@@ -77,7 +77,8 @@ struct ControllerEnvironment {
   testing::NiceMock<scada::MockMonitoredItemService> monitored_item_service_;
 
   ControllerRegistry controller_registry_;
-  ActionManager action_manager_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
+  BasicCommandRegistry<SelectionCommandContext> selection_commands_;
   testing::NiceMock<MockControllerDelegate> controller_delegate_;
   testing::NiceMock<MockTaskManager> task_manager_;
   testing::NiceMock<MockNodeEventProvider> node_event_provider_;

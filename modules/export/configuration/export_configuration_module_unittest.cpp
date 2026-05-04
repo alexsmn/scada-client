@@ -7,7 +7,7 @@
 #include "base/test/test_executor.h"
 #include "common/test/node_state_matcher.h"
 #include "resources/common_resources.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "diff_data.h"
 #include "diff_report.h"
@@ -46,7 +46,7 @@ class ExportConfigurationModuleTest : public Test {
   StaticNodeService node_service_;
   TestExecutor executor_;
   StrictMock<MockTaskManager> task_manager_;
-  ActionManager action_manager_;
+  BasicCommandRegistry<GlobalCommandContext> global_commands_;
 
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
@@ -57,7 +57,7 @@ class ExportConfigurationModuleTest : public Test {
   ExportConfigurationModule module_{{.executor_ = executor_,
                                      .node_service_ = node_service_,
                                      .task_manager_ = task_manager_,
-                                     .action_manager_ = action_manager_}};
+                                     .global_commands_ = global_commands_}};
 
   std::filesystem::path temp_dir_;
 };
@@ -78,8 +78,8 @@ void ExportConfigurationModuleTest::TearDown() {
 }
 
 TEST_F(ExportConfigurationModuleTest, Construct_RegistersCommands) {
-  EXPECT_TRUE(action_manager_.FindAction(ID_IMPORT_CONFIGURATION_FROM_EXCEL));
-  EXPECT_TRUE(action_manager_.FindAction(ID_EXPORT_CONFIGURATION_TO_EXCEL));
+  EXPECT_TRUE(global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL));
+  EXPECT_TRUE(global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL));
 }
 
 TEST_F(ExportConfigurationModuleTest, ImportCommand) {
@@ -110,7 +110,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
       WriteExportDataToTempFile(export_data);
 
   auto* command =
-      action_manager_.FindAction(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
+      global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
@@ -143,7 +143,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
 
   ScopedImportReportSuppressor import_report_suppressor;
 
-  command->execute_handler_(&main_command_context_);
+  command->execute_handler(main_command_context_);
   Drain(executor_);
 }
 
@@ -151,7 +151,7 @@ TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
   const auto export_file_path = temp_dir_ / "configuration.csv";
 
   auto* command =
-      action_manager_.FindAction(ID_EXPORT_CONFIGURATION_TO_EXCEL);
+      global_commands_.FindCommand(ID_EXPORT_CONFIGURATION_TO_EXCEL);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectSaveFile(/*params=*/_))
@@ -162,7 +162,7 @@ TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
                             MessageBoxMode::QuestionYesNo))
       .WillOnce(ReturnAwaitable(MessageBoxResult::No));
 
-  command->execute_handler_(&main_command_context_);
+  command->execute_handler(main_command_context_);
   Drain(executor_);
 
   EXPECT_TRUE(std::filesystem::exists(export_file_path));
@@ -170,7 +170,7 @@ TEST_F(ExportConfigurationModuleTest, ExportCommandWritesFileAndPromptsToOpen) {
 
 TEST_F(ExportConfigurationModuleTest, ImportCommandOpenFailureShowsErrorDialog) {
   auto* command =
-      action_manager_.FindAction(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
+      global_commands_.FindCommand(ID_IMPORT_CONFIGURATION_FROM_EXCEL);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(dialog_service_, SelectOpenFile(/*title=*/_))
@@ -181,7 +181,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommandOpenFailureShowsErrorDialog) 
                             MessageBoxMode::Error))
       .WillOnce(ReturnAwaitable(MessageBoxResult::Ok));
 
-  command->execute_handler_(&main_command_context_);
+  command->execute_handler(main_command_context_);
   Drain(executor_);
 }
 

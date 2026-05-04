@@ -52,31 +52,31 @@ std::unique_ptr<UiView> PortfolioView::Init(
     controller_delegate_.ShowPopupMenu(nullptr, IDR_PFOLIO_POPUP, point, true);
   });
 
-  command_registry_.AddAction(
-      Action{.command_id_ = ID_RENAME}
-          .SetExecuteHandler(MakeContextHandler<void>([this] {
+  command_registry_.AddCommand(
+      Command{ID_RENAME}
+          .set_execute_handler([this] {
             PortfolioTreeNode* node = model_->AsNode(tree_->GetSelectedNode());
             if (node->is_portfolio())
               tree_->StartEditing(node);
-          }))
-          .SetEnabledHandler(MakeContextHandler<void>([this] {
+          })
+          .set_enabled_handler([this] {
             const PortfolioTreeNode* node =
                 model_->AsNode(tree_->GetSelectedNode());
             return node && node->is_portfolio();
-          })));
+          }));
 
-  command_registry_.AddAction(
-      Action{.command_id_ = ID_DELETE}
-          .SetExecuteHandler(MakeContextHandler<void>([this] { DeleteSelection(); }))
-          .SetEnabledHandler(MakeContextHandler<void>([this] { return !!tree_->GetSelectedNode(); })));
+  command_registry_.AddCommand(
+      Command{ID_DELETE}
+          .set_execute_handler([this] { DeleteSelection(); })
+          .set_enabled_handler([this] { return !!tree_->GetSelectedNode(); }));
 
-  command_registry_.AddAction(Action{.command_id_ = ID_NEW_PORTFOLIO}.SetExecuteHandler(MakeContextHandler<void>(
-      [this] { NewPortfolio(); })));
+  command_registry_.AddCommand(Command{ID_NEW_PORTFOLIO}.set_execute_handler(
+      [this] { NewPortfolio(); }));
 
-  command_registry_.AddAction(
-      Action{.command_id_ = ID_ADD_ITEMS}
-          .SetExecuteHandler(MakeContextHandler<void>([this] { AddItemsToPortfolio(); }))
-          .SetEnabledHandler(MakeContextHandler<void>([this] { return !!GetSelectedPortfolio(); })));
+  command_registry_.AddCommand(
+      Command{ID_ADD_ITEMS}
+          .set_execute_handler([this] { AddItemsToPortfolio(); })
+          .set_enabled_handler([this] { return !!GetSelectedPortfolio(); }));
 
   return std::unique_ptr<UiView>{tree_};
 }
@@ -159,6 +159,6 @@ void PortfolioView::NewPortfolio() {
   tree_->StartEditing(node);
 }
 
-ActionManager* PortfolioView::GetActionManager() {
-  return &command_registry_;
+CommandHandler* PortfolioView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }

@@ -4,13 +4,16 @@ namespace scada {
 class SessionService;
 }
 
-class ActionManager;
+template <class T>
+class BasicCommandRegistry;
+
 struct GlobalCommandContext;
 struct SelectionCommandContext;
 
 struct DebuggerModuleContext {
   scada::SessionService& session_service_;
-  ActionManager& action_manager_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
 };
 
 class DebuggerModule : private DebuggerModuleContext {

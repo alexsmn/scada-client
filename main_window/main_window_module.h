@@ -9,6 +9,9 @@
 #include <memory>
 #include <stack>
 
+template <class T>
+class BasicCommandRegistry;
+
 class ActionManager;
 class CreateTree;
 class EventDispatcher;
@@ -56,7 +59,8 @@ struct MainWindowModuleContext {
   NodeCommandHandler node_command_handler_;
   ProgressHost& progress_host_;
   CreateTree& create_tree_;
-  ActionManager& action_manager_;
+  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   // TODO: Keep either controller factory or controller registry.
   ControllerFactory controller_factory_;
 };
@@ -76,6 +80,7 @@ class MainWindowModule : private MainWindowModuleContext {
 
   void OnEvents(bool has_events);
 
+  std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<MainWindowManager> main_window_manager_;
   std::unique_ptr<EventDispatcher> event_dispatcher_;
   std::shared_ptr<SelectionCommands> selection_commands_object_;

@@ -2,7 +2,7 @@
 
 #include "aui/key_codes.h"
 #include "base/awaitable.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -38,7 +38,7 @@ class EventView : protected ControllerContext,
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
@@ -81,5 +81,5 @@ class EventView : protected ControllerContext,
   // Owned by the parent widget.
   aui::Table* table_ = nullptr;
 
-  ActionManager command_registry_;
+  CommandRegistry command_registry_;
 };

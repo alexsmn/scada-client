@@ -1,6 +1,6 @@
 ﻿#include "filesystem/filesystem_component.h"
 
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_impl.h"
@@ -55,21 +55,19 @@ void FileSystemComponent::StartUp() {
 void FileSystemComponent::AddFileCommand(
     unsigned command_id,
     const scada::NodeId& type_definition_id) {
-  assert(action_manager_);
+  assert(selection_commands_);
 
   const auto& file_type = node_service_.GetNode(type_definition_id);
   file_type.Fetch(NodeFetchStatus::NodeOnly());
 
-  action_manager_->AddAction(
-      Action{.command_id_ = command_id}
-          .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
-              [this](const SelectionCommandContext& context) {
-                return AddFile(context.selection.node(), context.dialog_service,
-                               task_manager_, executor_);
-              }))
-          .SetAvailableHandler(MakeContextHandler<SelectionCommandContext>(
-              [this, file_type](const SelectionCommandContext& context) {
-                return create_tree_.CanCreate(context.selection.node(),
-                                              file_type);
-              })));
+  selection_commands_->AddCommand(
+      BasicCommand<SelectionCommandContext>{command_id}
+          .set_execute_handler([this](const SelectionCommandContext& context) {
+            return AddFile(context.selection.node(), context.dialog_service,
+                           task_manager_, executor_);
+          })
+          .set_available_handler([this, file_type](
+                                     const SelectionCommandContext& context) {
+            return create_tree_.CanCreate(context.selection.node(), file_type);
+          }));
 }

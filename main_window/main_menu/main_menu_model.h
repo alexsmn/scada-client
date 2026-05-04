@@ -4,16 +4,16 @@
 
 #include "aui/models/simple_menu_model.h"
 #include "base/cancelation.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "filesystem/file_cache.h"
 
 #include <filesystem>
 #include <span>
 
+class CommandHandler;
 class DialogService;
 class Favourites;
 class MainWindowInterface;
-class MainWindowCommandHandler;
 class MainWindowManager;
 class Page;
 class Profile;
@@ -34,10 +34,10 @@ struct MainMenuContext {
   const bool admin_;
   Profile& profile_;
   ViewManager& view_manager_;
-  MainWindowCommandHandler& command_handler_;
+  CommandHandler& command_handler_;
   DialogService& dialog_service_;
   aui::MenuModel& context_menu_model_;
-  ActionManager& commands_;
+  BasicCommandRegistry<GlobalCommandContext>& commands_;
 };
 
 class DisplayMenuModel : private MainMenuContext, public aui::SimpleMenuModel {

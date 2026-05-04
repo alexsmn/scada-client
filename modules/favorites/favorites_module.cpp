@@ -1,7 +1,7 @@
 #include "favorites/favorites_module.h"
 
 #include "resources/common_resources.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "core/global_command_context.h"
@@ -39,10 +39,9 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
     data.as_object()["favorites"] = favourites_->Save();
   });
 
-  action_manager_.AddAction(
-      Action{.command_id_ = ID_VIEW_ADD_TO_FAVOURITES}
-          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [this](const GlobalCommandContext& context) {
+  global_commands_.AddCommand(
+      BasicCommand<GlobalCommandContext>{ID_VIEW_ADD_TO_FAVOURITES}
+          .set_execute_handler([this](const GlobalCommandContext& context) {
             auto* view = context.main_window.GetActiveView();
             if (!view || view->GetWindowInfo().is_pane()) {
               return;
@@ -53,7 +52,7 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
 
             ShowAddFavouritesDialog(context.dialog_service,
                                     {*favourites_, std::move(definition)});
-          })));
+          }));
 }
 
 FavoritesModule::~FavoritesModule() {}

@@ -86,21 +86,21 @@ std::unique_ptr<UiView> SheetController::Init(
         nullptr, model_->is_editing() ? IDR_SHEET_POPUP : 0, point, true);
   });
 
-  command_registry_.AddAction(
-      Action{.command_id_ = ID_EDIT}
-          .SetExecuteHandler(MakeContextHandler<void>([this] {
+  command_registry_.AddCommand(
+      Command{ID_EDIT}
+          .set_execute_handler([this] {
             model_->SetEditing(!model_->is_editing());
             UpdateEditing();
-          }))
-          .SetEnabledHandler(MakeContextHandler<void>([this] {
+          })
+          .set_enabled_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure);
-          }))
-          .SetCheckedHandler(MakeContextHandler<void>([this] { return model_->is_editing(); })));
+          })
+          .set_checked_handler([this] { return model_->is_editing(); }));
 
-  command_registry_.AddAction(
-      Action{.command_id_ = ID_GRAPH_COLOR}
-          .SetExecuteHandler(MakeContextHandler<void>([this] { ChooseSelectionColor(); }))
-          .SetEnabledHandler(MakeContextHandler<void>([this] { return model_->is_editing(); })));
+  command_registry_.AddCommand(
+      Command{ID_GRAPH_COLOR}
+          .set_execute_handler([this] { ChooseSelectionColor(); })
+          .set_enabled_handler([this] { return model_->is_editing(); }));
 
   UpdateEditing();
 
@@ -130,8 +130,8 @@ void SheetController::UpdateEditing() {
   UpdateFormulaRow();
 }
 
-ActionManager* SheetController::GetActionManager() {
-  return &command_registry_;
+CommandHandler* SheetController::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void SheetController::ChooseSelectionColor() {

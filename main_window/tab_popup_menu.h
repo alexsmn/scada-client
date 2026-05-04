@@ -6,7 +6,7 @@
 
 class TabPopupMenu : public aui::SimpleMenuModel {
  public:
-  explicit TabPopupMenu(MainWindowCommandHandler& commands)
+  explicit TabPopupMenu(CommandHandler& commands)
       : aui::SimpleMenuModel{&handler_}, handler_{commands} {
     AddItem(ID_VIEW_ADD_TO_FAVOURITES, u"В избранное");
     AddItem(ID_VIEW_CHANGE_TITLE, u"Переименовать");

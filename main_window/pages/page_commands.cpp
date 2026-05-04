@@ -3,7 +3,7 @@
 #include "aui/prompt_dialog.h"
 #include "base/awaitable.h"
 #include "resources/common_resources.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "main_window/pages/initial_page.h"
 #include "main_window/main_window_interface.h"
@@ -37,28 +37,25 @@ PageCommands::PageCommands(PageCommandsContext&& context)
     };
   }
 
-  action_manager_.AddAction(
-      Action{.command_id_ = ID_PAGE_NEW}
-          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [this](const GlobalCommandContext& context) {
-                context.main_window.SaveCurrentPage();
-                auto& page = profile_.AddPage(CreateInitialPage());
-                context.main_window.OpenPage(page);
-              })));
+  global_commands_.AddCommand(
+      {.command_id = ID_PAGE_NEW,
+       .execute_handler = [this](const GlobalCommandContext& context) {
+         context.main_window.SaveCurrentPage();
+         auto& page = profile_.AddPage(CreateInitialPage());
+         context.main_window.OpenPage(page);
+       }});
 
-  action_manager_.AddAction(
-      Action{.command_id_ = ID_PAGE_RENAME}
-          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [this](const GlobalCommandContext& context) {
-                RenameCurrentPage(context);
-              })));
+  global_commands_.AddCommand(
+      {.command_id = ID_PAGE_RENAME,
+       .execute_handler = [this](const GlobalCommandContext& context) {
+         RenameCurrentPage(context);
+       }});
 
-  action_manager_.AddAction(
-      Action{.command_id_ = ID_PAGE_DELETE}
-          .SetExecuteHandler(MakeContextHandler<GlobalCommandContext>(
-              [this](const GlobalCommandContext& context) {
-                context.main_window.DeleteCurrentPage();
-              })));
+  global_commands_.AddCommand(
+      {.command_id = ID_PAGE_DELETE,
+       .execute_handler = [this](const GlobalCommandContext& context) {
+         context.main_window.DeleteCurrentPage();
+       }});
 }
 
 void PageCommands::RenameCurrentPage(const GlobalCommandContext& context) {

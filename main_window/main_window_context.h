@@ -14,10 +14,10 @@ class StatusBarModel;
 }  // namespace aui
 
 class ActionManager;
+class CommandHandler;
 class DialogService;
 class FileManager;
 class MainWindowInterface;
-class MainWindowCommandHandler;
 class MainWindowManager;
 class Profile;
 class ProgressHost;
@@ -34,7 +34,7 @@ struct MainWindowContext {
   Profile& profile_;
   OpenedViewFactory opened_view_factory_;
 
-  std::function<std::unique_ptr<MainWindowCommandHandler>(
+  std::function<std::unique_ptr<CommandHandler>(
       MainWindowInterface& main_window,
       DialogService& dialog_service)>
       main_commands_factory_;
@@ -44,14 +44,14 @@ struct MainWindowContext {
 
   std::function<std::unique_ptr<aui::MenuModel>(
       MainWindowInterface& main_window,
-      MainWindowCommandHandler& command_handler)>
+      CommandHandler& command_handler)>
       context_menu_factory_;
 
   std::function<std::unique_ptr<aui::MenuModel>(
       MainWindowInterface& main_window,
       DialogService& dialog_service,
       ViewManager& view_manager,
-      MainWindowCommandHandler& command_handler,
+      CommandHandler& command_handler,
       aui::MenuModel& context_menu_model)>
       main_menu_factory_;
 

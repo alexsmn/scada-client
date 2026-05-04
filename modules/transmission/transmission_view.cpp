@@ -39,8 +39,8 @@ std::unique_ptr<UiView> TransmissionView::Init(
   grid_->SetRowHeaderWidth(15);
   grid_->SetExpandAllowed(true);
 
-  command_registry_.AddAction(
-      Action{.command_id_ = ID_DELETE}.SetExecuteHandler(MakeContextHandler<void>([this] { DeleteSelection(); })));
+  command_registry_.AddCommand(
+      Command{ID_DELETE}.set_execute_handler([this] { DeleteSelection(); }));
 
   return std::unique_ptr<UiView>{grid_->CreateParentIfNecessary()};
 }
@@ -53,8 +53,8 @@ void TransmissionView::DeleteSelection() {
     task_manager_.PostDeleteTask(model_->row(row_index).transmission.node_id());
 }
 
-ActionManager* TransmissionView::GetActionManager() {
-  return &command_registry_;
+CommandHandler* TransmissionView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 ContentsModel* TransmissionView::GetContentsModel() {

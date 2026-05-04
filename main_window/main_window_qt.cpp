@@ -204,9 +204,9 @@ void MainWindow::CreateToolbar() {
     auto command_id = action_info->command_id();
     QObject::connect(action, &QAction::triggered,
                      [this, command_id](bool checked) {
-                       if (commands_->FindAction(command_id) &&
-                           commands_->IsActionEnabled(command_id))
-                         commands_->ExecuteAction(command_id);
+                       auto* handler = commands_->GetCommandHandler(command_id);
+                       if (handler && handler->IsCommandEnabled(command_id))
+                         handler->ExecuteCommand(command_id);
                      });
     action_map_.emplace(action_info->command_id(), action);
     action_command_ids_.emplace(action, action_info->command_id());
@@ -303,13 +303,13 @@ void MainWindow::UpdateAction(QAction& action,
     }
   }
 
-  auto* command_action = commands_->FindAction(command_id);
-  action.setVisible(!!command_action);
-  if (command_action) {
-    bool enabled = commands_->IsActionEnabled(command_id);
+  const CommandHandler* handler = commands_->GetCommandHandler(command_id);
+  action.setVisible(!!handler);
+  if (handler) {
+    bool enabled = handler->IsCommandEnabled(command_id);
     action.setEnabled(enabled);
     if (enabled)
-      action.setChecked(commands_->IsActionChecked(command_id));
+      action.setChecked(handler->IsCommandChecked(command_id));
   }
 }
 

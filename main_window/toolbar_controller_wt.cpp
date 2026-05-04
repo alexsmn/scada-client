@@ -1,7 +1,7 @@
 #include "main_window/toolbar_controller_wt.h"
 
 #include "base/any_executor_dispatch.h"
-#include "main_window/main_window_commands.h"
+#include "controller/command_handler.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
@@ -26,9 +26,9 @@ std::unique_ptr<Wt::WToolBar> ToolbarController::CreateToolbar() {
     action->setCheckable(action_info->checkable());
     auto command_id = action_info->command_id();
     action->clicked().connect([this, command_id] {
-      if (commands_.FindAction(command_id) &&
-          commands_.IsActionEnabled(command_id))
-        commands_.ExecuteAction(command_id);
+      auto* handler = commands_.GetCommandHandler(command_id);
+      if (handler && handler->IsCommandEnabled(command_id))
+        handler->ExecuteCommand(command_id);
     });
     auto* action_ptr = action.get();
     toolbar->addButton(std::move(action));
@@ -90,15 +90,15 @@ void ToolbarController::UpdateAction(Wt::WPushButton& action,
       action.setText(a->GetTitle());
   }
 
-  auto* command_action = commands_.FindAction(command_id);
-  if (command_action)
+  auto* handler = commands_.GetCommandHandler(command_id);
+  if (handler)
     action.show();
   else
     action.hide();
-  if (command_action) {
-    bool enabled = commands_.IsActionEnabled(command_id);
+  if (handler) {
+    bool enabled = handler->IsCommandEnabled(command_id);
     action.setEnabled(enabled);
     if (enabled)
-      action.setChecked(commands_.IsActionChecked(command_id));
+      action.setChecked(handler->IsCommandChecked(command_id));
   }
 }

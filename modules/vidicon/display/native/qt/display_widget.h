@@ -57,11 +57,10 @@ class DisplayWidget : public GdiWidget2 {
   ShapeClickHandler shape_click_handler;
 
   // TODO: Should pass `QVariantList` instead of `std::span<const VARIANT>`.
-  using DisplayCommandHandler =
-      std::function<void(const QString& command_name,
-                         const QVariantList& arguments)>;
+  using CommandHandler = std::function<void(const QString& command_name,
+                                            const QVariantList& arguments)>;
 
-  DisplayCommandHandler command_handler;
+  CommandHandler command_handler;
 
  protected:
   vidicon::display_viewport viewport() const {

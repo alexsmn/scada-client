@@ -29,33 +29,28 @@ std::unique_ptr<UiView> FavouritesView::Init(
     controller_delegate_.ShowPopupMenu(nullptr, IDR_FAVOR_POPUP, point, true);
   });
 
-  open_command_
-      .SetEnabledHandler(MakeContextHandler<void>([this] {
-        auto* node =
-            static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
-        return node && node->AsWindowNode();
-      }))
-      .SetExecuteHandler(MakeContextHandler<void>([this] { OpenSelection(); }));
+  open_command_.enabled_handler = [this] {
+    auto* node =
+        static_cast<const FavouritesNode*>(tree_view_->GetSelectedNode());
+    return node && node->AsWindowNode();
+  };
+  open_command_.execute_handler = [this] { OpenSelection(); };
 
-  auto selection_enabled_handler = [this] {
+  Command::EnabledHandler selection_enabled_handler = [this] {
     return tree_view_->GetSelectedNode() != nullptr;
   };
 
-  rename_command_
-      .SetEnabledHandler(MakeContextHandler<void>(selection_enabled_handler))
-      .SetExecuteHandler(MakeContextHandler<void>([this] {
-        if (void* node = tree_view_->GetSelectedNode())
-          tree_view_->StartEditing(node);
-      }));
+  rename_command_.enabled_handler = selection_enabled_handler;
+  rename_command_.execute_handler = [this] {
+    if (void* node = tree_view_->GetSelectedNode())
+      tree_view_->StartEditing(node);
+  };
 
-  delete_command_
-      .SetEnabledHandler(MakeContextHandler<void>(selection_enabled_handler))
-      .SetExecuteHandler(
-          MakeContextHandler<void>([this] { DeleteSelection(); }));
+  delete_command_.enabled_handler = selection_enabled_handler;
+  delete_command_.execute_handler = [this] { DeleteSelection(); };
 
 #if !defined(UI_WT)
-  add_url_command_.SetExecuteHandler(
-      MakeContextHandler<void>([this] { AddUrl(); }));
+  add_url_command_.execute_handler = [this] { AddUrl(); };
 #endif
 
   return std::unique_ptr<UiView>{tree_view_};
@@ -81,8 +76,8 @@ void FavouritesView::OpenSelection() {
   }
 }
 
-ActionManager* FavouritesView::GetActionManager() {
-  return &command_registry_;
+CommandHandler* FavouritesView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 #if !defined(UI_WT)

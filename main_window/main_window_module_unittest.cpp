@@ -57,7 +57,7 @@ class MainWindowModuleTest : public Test {
        .profile_ = controller_env_.profile_,
        .services_ = controller_env_.services(),
        .controller_registry_ = controller_env_.controller_registry_,
-       .action_manager_ = controller_env_.action_manager_}};
+       .selection_commands_ = controller_env_.selection_commands_}};
 
   PortfolioModule portfolio_module_{
       {.node_service_ = controller_env_.node_service_,
@@ -66,7 +66,7 @@ class MainWindowModuleTest : public Test {
 
   FavoritesModule favorites_module{
       {.profile_ = controller_env_.profile_,
-       .action_manager_ = controller_env_.action_manager_,
+       .global_commands_ = controller_env_.global_commands_,
        .controller_registry_ = controller_env_.controller_registry_}};
 
   std::optional<MainWindowModule> main_window_module_;
@@ -108,7 +108,8 @@ void MainWindowModuleTest::SetUp() {
       .node_command_handler_ = node_command_handler_.AsStdFunction(),
       .progress_host_ = progress_host_,
       .create_tree_ = controller_env_.create_tree_,
-      .action_manager_ = controller_env_.action_manager_,
+      .global_commands_ = controller_env_.global_commands_,
+      .selection_commands_ = controller_env_.selection_commands_,
       .controller_factory_ = controller_factory});
 
   const auto& main_windows =

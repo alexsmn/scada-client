@@ -1,7 +1,7 @@
 #pragma once
 
 #include "modules/timed_data/timed_data_model.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -29,7 +29,7 @@ class TimedDataController : protected ControllerContext,
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
   virtual bool IsWorking() const override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
   virtual TimeModel* GetTimeModel() override;
@@ -54,5 +54,5 @@ class TimedDataController : protected ControllerContext,
 
   aui::Table* view_ = nullptr;
 
-  ActionManager command_registry_;
+  CommandRegistry command_registry_;
 };

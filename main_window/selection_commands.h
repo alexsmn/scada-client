@@ -4,11 +4,10 @@
 
 #include "base/cancelation.h"
 #include "base/awaitable.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "profile/window_definition.h"
 
 #include <vector>
-#include <unordered_set>
 
 namespace scada {
 class SessionService;
@@ -37,7 +36,7 @@ struct SelectionCommandsContext {
   Profile& profile_;
   MainWindowManager& main_window_manager_;
   NodeService& node_service_;
-  ActionManager& action_manager_;
+  BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
 };
 
 // A singleton shared between |OpenedView|s. Once an |OpenView| is focused, it
@@ -58,11 +57,8 @@ class SelectionCommands : private SelectionCommandsContext {
 
   void OpenWindow(const WindowInfo* window_info);
   void OpenWindow(const WindowDefinition& window_definition);
-  bool IsSelectionAction(unsigned command_id) const;
 
  private:
-  Action& AddAction(Action action);
-
   void DeleteSelection(const SelectionCommandContext& context);
   void CopyToClipboard(const SelectionCommandContext& context);
 
@@ -82,7 +78,6 @@ class SelectionCommands : private SelectionCommandsContext {
   OpenedViewInterface* opened_view_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
-  std::unordered_set<unsigned> selection_action_ids_;
 
   Cancelation cancelation_;
 };

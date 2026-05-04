@@ -61,25 +61,22 @@ TableView::TableView(const ControllerContext& context)
 
   selection_.multiple_handler = [this] { return GetMultipleSelection(); };
 
-  delete_command_.SetExecuteHandler(MakeContextHandler<void>([this] {
+  delete_command_.execute_handler = [this] {
     view_->CloseEditor();
     DeleteSelection();
-  }));
+  };
 
-  rename_command_.SetExecuteHandler(MakeContextHandler<void>([this] {
+  rename_command_.execute_handler = [this] {
     view_->OpenEditor(view_->GetCurrentRow());
-  }));
+  };
 
-  move_up_command_.SetExecuteHandler(
-      MakeContextHandler<void>([this] { MoveRow(true); }));
-  move_down_command_.SetExecuteHandler(
-      MakeContextHandler<void>([this] { MoveRow(false); }));
+  move_up_command_.execute_handler = [this] { MoveRow(true); };
+  move_down_command_.execute_handler = [this] { MoveRow(false); };
 
-  sort_name_command_.SetExecuteHandler(
-      MakeContextHandler<void>([this] { model_->Sort(ID_SORT_NAME); }));
-  sort_channel_command_.SetExecuteHandler(MakeContextHandler<void>([this] {
+  sort_name_command_.execute_handler = [this] { model_->Sort(ID_SORT_NAME); };
+  sort_channel_command_.execute_handler = [this] {
     model_->Sort(ID_SORT_CHANNEL);
-  }));
+  };
 }
 
 TableView::~TableView() {}
@@ -232,8 +229,8 @@ NodeIdSet TableView::GetContainedItems() const {
   return items;
 }
 
-ActionManager* TableView::GetActionManager() {
-  return &command_registry_;
+CommandHandler* TableView::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void TableView::MoveRow(bool up) {

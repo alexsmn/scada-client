@@ -74,8 +74,8 @@ QWidget* ModusController::CreateModusView() {
 
   wrapper_ = view_;
 
-  command_registry_.AddAction(Action{.command_id_ = ID_SETUP}.SetExecuteHandler(MakeContextHandler<void>(
-      [this] { view_->ShowSetupDialog(); })));
+  command_registry_.AddCommand(Command{ID_SETUP}.set_execute_handler(
+      [this] { view_->ShowSetupDialog(); }));
 
   return view_;
 }
@@ -139,8 +139,8 @@ bool ModusController::ShowContainedItem(const scada::NodeId& item_id) {
   return wrapper_->ShowContainedItem(item_id);
 }
 
-ActionManager* ModusController::GetActionManager() {
-  return &command_registry_;
+CommandHandler* ModusController::GetCommandHandler(unsigned command_id) {
+  return command_registry_.GetCommandHandler(command_id);
 }
 
 void ModusController::OpenHyperlink(std::u16string_view hyperlink) {

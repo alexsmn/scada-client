@@ -1,6 +1,6 @@
 #pragma once
 
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
 #include "controller/selection_model.h"
@@ -22,7 +22,7 @@ class SummaryView : protected ControllerContext, public Controller {
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override;
   virtual TimeModel* GetTimeModel() override;
@@ -35,5 +35,5 @@ class SummaryView : protected ControllerContext, public Controller {
   const std::shared_ptr<SummaryModel> model_;
   aui::Grid* grid_ = nullptr;
 
-  ActionManager command_registry_;
+  CommandRegistry command_registry_;
 };

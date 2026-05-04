@@ -18,12 +18,12 @@ class WPushButton;
 class WToolBar;
 }  // namespace Wt
 
-class MainWindowCommandHandler;
+class CommandHandler;
 
 struct ToolbarControllerContext {
   const AnyExecutor executor_;
   ActionManager& action_manager_;
-  MainWindowCommandHandler& commands_;
+  CommandHandler& commands_;
 };
 
 class ToolbarController : private ToolbarControllerContext,

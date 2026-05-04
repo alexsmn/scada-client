@@ -4,20 +4,18 @@
 #include "aui/models/simple_menu_model.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "core/global_command_context.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_registry.h"
 #include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window.h"
-#include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_mock.h"
 #include "main_window/view_manager.h"
 #include "main_window/view_manager_delegate.h"
 #include "profile/profile.h"
-#include "scada/session_service_mock.h"
 
 #include <gmock/gmock.h>
 
@@ -74,7 +72,7 @@ Awaitable<MessageBoxResult> ReturnMessageBoxResultAsync(
 class PageCommandsTest : public Test {
  protected:
   TestExecutor executor_;
-  ActionManager commands_;
+  BasicCommandRegistry<GlobalCommandContext> commands_;
   Profile profile_;
 
   StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
@@ -102,19 +100,19 @@ class PageCommandsTest : public Test {
 };
 
 TEST_F(PageCommandsTest, DeletePage) {
-  auto* command = commands_.FindAction(ID_PAGE_DELETE);
+  auto* command = commands_.FindCommand(ID_PAGE_DELETE);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(main_window_, DeleteCurrentPage());
 
-  command->execute_handler_(&command_context_);
+  command->execute_handler(command_context_);
 }
 
 TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
   Page page;
   page.title = u"Old title";
 
-  auto* command = commands_.FindAction(ID_PAGE_RENAME);
+  auto* command = commands_.FindCommand(ID_PAGE_RENAME);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
@@ -128,7 +126,7 @@ TEST_F(PageCommandsTest, RenamePageAcceptedUpdatesCurrentPageTitle) {
   EXPECT_CALL(main_window_, SetCurrentPageTitle(std::u16string_view{u"New title"}))
       .WillOnce([&renamed](std::u16string_view) { renamed = true; });
 
-  command->execute_handler_(&command_context_);
+  command->execute_handler(command_context_);
   Drain(executor_);
 
   EXPECT_TRUE(renamed);
@@ -138,7 +136,7 @@ TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
   Page page;
   page.title = u"Old title";
 
-  auto* command = commands_.FindAction(ID_PAGE_RENAME);
+  auto* command = commands_.FindCommand(ID_PAGE_RENAME);
   ASSERT_THAT(command, NotNull());
 
   EXPECT_CALL(main_window_, GetCurrentPage()).WillOnce(ReturnRef(page));
@@ -149,7 +147,7 @@ TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
       });
   EXPECT_CALL(main_window_, SetCurrentPageTitle(_)).Times(0);
 
-  command->execute_handler_(&command_context_);
+  command->execute_handler(command_context_);
   Drain(executor_);
 }
 
@@ -172,12 +170,9 @@ class PageMenuModelTest : public Test {
   FileCache file_cache_{file_registry_};
   DummyViewManagerDelegate view_manager_delegate_;
   DummyViewManager view_manager_{view_manager_delegate_};
+  CommandHandler command_handler_;
   aui::SimpleMenuModel context_menu_{nullptr};
-  ActionManager commands_;
-  NiceMock<scada::MockSessionService> session_service_;
-  MainWindowCommandHandler command_handler_{
-      MainWindowCommandHandlerContext{executor_, main_window_, dialog_service_,
-                                      session_service_, commands_}};
+  BasicCommandRegistry<GlobalCommandContext> commands_;
 
   MainMenuContext menu_context_{.executor_ = executor_,
                                 .main_window_manager_ = main_window_manager_,

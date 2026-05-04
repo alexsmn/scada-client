@@ -6,7 +6,7 @@
 #include <cassert>
 #include <optional>
 
-class ActionManager;
+class CommandHandler;
 class ContentsModel;
 class ExportModel;
 class SelectionModel;
@@ -28,7 +28,9 @@ class Controller {
 
   virtual bool ShowContainedItem(const scada::NodeId& node_id) { return false; }
 
-  virtual ActionManager* GetActionManager() { return nullptr; }
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) {
+    return nullptr;
+  }
 
   virtual ContentsModel* GetContentsModel() { return nullptr; }
 

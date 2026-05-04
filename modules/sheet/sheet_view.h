@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aui/color.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/contents_model.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -37,7 +37,7 @@ class SheetController : protected ControllerContext,
   virtual std::unique_ptr<UiView> Init(
       const WindowDefinition& definition) override;
   virtual void Save(WindowDefinition& definition) override;
-  virtual ActionManager* GetActionManager() override;
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual SelectionModel* GetSelectionModel() override { return &selection_; }
   virtual ContentsModel* GetContentsModel() override { return this; }
 
@@ -73,7 +73,7 @@ class SheetController : protected ControllerContext,
 
   aui::Grid* grid_ = nullptr;
 
-  ActionManager command_registry_;
+  CommandRegistry command_registry_;
 
   friend class SheetCell;
 };

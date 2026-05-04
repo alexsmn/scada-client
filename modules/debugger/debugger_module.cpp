@@ -9,7 +9,7 @@
 #include "base/win/clipboard.h"
 #include "resources/common_resources.h"
 #include "modules/debugger/debug_switch.h"
-#include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "debugger.h"
@@ -23,26 +23,23 @@ DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
     auto debugger = std::make_shared<Debugger>(
         DebuggerContext{.session_service_ = session_service_});
 
-    action_manager_.AddAction(
-        Action{.category_ = CATEGORY_SPECIFIC,
-               .title_ = Translate("Debugger"),
-               .menu_group_ = MenuGroup::DEBUG,
-               .execute_handler_ =
-                   MakeContextHandler<GlobalCommandContext>(
-                       [debugger](const GlobalCommandContext& context) {
-                         debugger->Open();
-                       })});
+    global_commands_.AddCommand(
+        {.title = Translate("Debugger"),
+         .menu_group = MenuGroup::DEBUG,
+         .execute_handler = [debugger](const GlobalCommandContext& context) {
+           debugger->Open();
+         }});
 
-    action_manager_.AddAction(
-        Action{.command_id_ = ID_DUMP_DEBUG_INFO,
-         .execute_handler_ = MakeContextHandler<SelectionCommandContext>(
+    selection_commands_.AddCommand(
+        {.command_id = ID_DUMP_DEBUG_INFO,
+         .execute_handler =
              [this](const SelectionCommandContext& context) {
                DumpDebugInfo(context);
-             }),
-         .available_handler_ = MakeContextHandler<SelectionCommandContext>(
+             },
+         .available_handler =
              [this](const SelectionCommandContext& context) {
                return context.selection.timed_data().connected();
-             })});
+             }});
   }
 }
 
