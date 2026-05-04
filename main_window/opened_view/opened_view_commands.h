@@ -21,8 +21,6 @@ class SessionService;
 }
 
 class ActionManager;
-template <class T>
-class BasicCommandRegistry;
 class Controller;
 class CreateTree;
 class DialogService;
@@ -37,12 +35,10 @@ class PrintService;
 class SelectionCommands;
 class TaskManager;
 class TimedDataService;
-struct SelectionCommandContext;
 
 struct OpenedViewCommandsContext {
   const AnyExecutor executor_;
   const std::shared_ptr<SelectionCommands> selection_commands_;
-  BasicCommandRegistry<SelectionCommandContext>& selection_command_registry_;
   TaskManager& task_manager_;
   scada::SessionService& session_service_;
   TimedDataService& timed_data_service_;
@@ -71,8 +67,6 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   virtual bool IsCommandEnabled(unsigned command_id) const override;
 
  private:
-  SelectionCommandContext selection_command_context() const;
-
   bool CanCreateRecord(const scada::NodeId& type_node_id) const;
   // Spawns the create + report + open-view coroutine and returns immediately.
   // The coroutine lifetime is gated by `cancelation_` so it cannot outlive

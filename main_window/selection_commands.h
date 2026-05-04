@@ -4,6 +4,7 @@
 
 #include "base/cancelation.h"
 #include "base/awaitable.h"
+#include "controller/command_handler.h"
 #include "controller/command_registry.h"
 #include "profile/window_definition.h"
 
@@ -41,7 +42,8 @@ struct SelectionCommandsContext {
 
 // A singleton shared between |OpenedView|s. Once an |OpenView| is focused, it
 // calls |SetContext|.
-class SelectionCommands : private SelectionCommandsContext {
+class SelectionCommands : private SelectionCommandsContext,
+                          public CommandHandler {
  public:
   explicit SelectionCommands(SelectionCommandsContext&& context);
 
@@ -58,26 +60,32 @@ class SelectionCommands : private SelectionCommandsContext {
   void OpenWindow(const WindowInfo* window_info);
   void OpenWindow(const WindowDefinition& window_definition);
 
- private:
-  void DeleteSelection(const SelectionCommandContext& context);
-  void CopyToClipboard(const SelectionCommandContext& context);
+  // CommandHandler
+  virtual CommandHandler* GetCommandHandler(unsigned command_id);
+  virtual bool IsCommandEnabled(unsigned command_id) const override;
+  virtual bool IsCommandChecked(unsigned command_id) const override;
+  virtual void ExecuteCommand(unsigned command_id) override;
 
-  Awaitable<OpenedViewInterface*> OpenViewContainingNode(
-      int view_type_id,
-      const NodeRef& node,
-      MainWindowInterface& main_window,
-      DialogService& dialog_service);
+ private:
+  SelectionCommandContext command_context() const;
+
+  void DeleteSelection();
+  void CopyToClipboard();
+
+  Awaitable<OpenedViewInterface*> OpenViewContainingNode(int view_type_id,
+                                                         const NodeRef& node);
   Awaitable<OpenedViewInterface*> OpenViewContainingNodeAsync(
       int view_type_id,
-      NodeRef node,
-      MainWindowInterface& main_window,
-      DialogService& dialog_service);
+      NodeRef node);
 
   SelectionModel* selection_ = nullptr;
   MainWindowInterface* main_window_ = nullptr;
   OpenedViewInterface* opened_view_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
+
+  // TODO: Replace with |selection_commands_|.
+  CommandRegistry command_registry_;
 
   Cancelation cancelation_;
 };

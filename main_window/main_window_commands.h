@@ -30,7 +30,9 @@ struct GlobalCommandContext;
 
 struct MainWindowCommandsContext {
   AnyExecutor executor_;
+  MainWindowInterface& main_window_;
   TaskManager& task_manager_;
+  DialogService& dialog_service_;
   scada::SessionService& session_service_;
   NodeEventProvider& node_event_provider_;
   NodeService& node_service_;
@@ -43,25 +45,11 @@ struct MainWindowCommandsContext {
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
 };
 
-class MainWindowCommands : private MainWindowCommandsContext {
+class MainWindowCommands : private MainWindowCommandsContext,
+                           public CommandHandler {
  public:
   explicit MainWindowCommands(MainWindowCommandsContext&& context);
   ~MainWindowCommands();
-};
-
-struct MainWindowCommandHandlerContext {
-  AnyExecutor executor_;
-  MainWindowInterface& main_window_;
-  DialogService& dialog_service_;
-  scada::SessionService& session_service_;
-  BasicCommandRegistry<GlobalCommandContext>& global_commands_;
-};
-
-class MainWindowCommandHandler : private MainWindowCommandHandlerContext,
-                                 public CommandHandler {
- public:
-  explicit MainWindowCommandHandler(MainWindowCommandHandlerContext&& context);
-  ~MainWindowCommandHandler();
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id);
@@ -70,5 +58,8 @@ class MainWindowCommandHandler : private MainWindowCommandHandlerContext,
   virtual void ExecuteCommand(unsigned command_id);
 
  private:
+  void ShowRenameWindowDialog();
+  void RenameCurrentPage();
+
   GlobalCommandContext command_context_;
 };

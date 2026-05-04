@@ -102,53 +102,46 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       MakeOpenViewCommand(ID_OPEN_GRAPH, kGraphWindowInfo, executor_));
 #endif
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_OPEN_DEVICE_METRICS}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_OPEN_DEVICE_METRICS}
+          .set_execute_handler([this] {
             // The coroutine is gated by `cancelation_` so it cannot run after
             // this `SelectionCommands` is destroyed.
             CoSpawn(executor_, cancelation_,
-                    [this, node = context.selection.node()]() mutable
+                    [this]() mutable
                     -> Awaitable<void> {
                       auto window_definition =
                           co_await MakeDeviceMetricsWindowDefinitionAsync(
-                              executor_, node);
+                              executor_, selection_->node());
                       OpenWindow(window_definition);
                       co_return;
                     });
           })
-          .set_available_handler([](const SelectionCommandContext& context) {
-            return IsInstanceOf(context.selection.node(),
-                                devices::id::DeviceType);
+          .set_available_handler([this] {
+            return IsInstanceOf(selection()->node(), devices::id::DeviceType);
           }));
 
 #if !defined(UI_WT)
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_OPEN_DISPLAY}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_OPEN_DISPLAY}
+          .set_execute_handler([this] {
             CoSpawn(executor_, cancelation_,
-                    [this, node = context.selection.node(),
-                     main_window = &context.main_window,
-                     dialog_service = &context.dialog_service]() mutable
+                    [this, node = selection_->node()]() mutable
                     -> Awaitable<void> {
-                      co_await OpenViewContainingNode(ID_MODUS_VIEW, node,
-                                                      *main_window,
-                                                      *dialog_service);
+                      co_await OpenViewContainingNode(ID_MODUS_VIEW, node);
                       co_return;
                     });
           })
           .set_available_handler(
-              [](const SelectionCommandContext& context) {
-                return context.selection.timed_data().connected();
-              }));
+              [this] { return selection_->timed_data().connected(); }));
 #endif
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_OPEN_GROUP_TABLE}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
-            CoSpawn(executor_, [executor = executor_,
-                                main_window = &context.main_window,
-                                node = context.selection.node()]() mutable
+  command_registry_.AddCommand(
+      Command{ID_OPEN_GROUP_TABLE}
+          .set_execute_handler([this] {
+            // TODO: Capture |main_window_| by weak pointer.
+            CoSpawn(executor_, [executor = executor_, main_window = main_window_,
+                                node = selection_->node()]() mutable
                                -> Awaitable<void> {
               auto window_def = co_await MakeGroupWindowDefinitionAsync(
                   executor, &kTableWindowInfo, node);
@@ -159,97 +152,82 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             });
           })
           .set_available_handler(
-              [](const SelectionCommandContext& context) {
-                return context.selection.timed_data().connected();
-              }));
+              [this] { return selection_->timed_data().connected(); }));
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_ITEM_PARAMS}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_ITEM_PARAMS}
+          .set_execute_handler([this] {
             OpenWindow(MakeSingleWindowDefinition(&kNodePropertyWindowInfo,
-                                                  context.selection.node()));
+                                                  selection_->node()));
           })
-          .set_available_handler([this](const SelectionCommandContext& context) {
+          .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-                   context.selection.node();
+                   selection_->node();
           }));
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_TABLE_CONFIG}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_TABLE_CONFIG}
+          .set_execute_handler([this] {
             OpenWindow(MakeSingleWindowDefinition(&kTableEditorWindowInfo,
-                                                  context.selection.node()));
+                                                  selection_->node()));
           })
-          .set_available_handler([this](const SelectionCommandContext& context) {
+          .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-                   CanCreateSomething(context.selection.node());
+                   CanCreateSomething(selection_->node());
           }));
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_OPEN_WATCH}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_OPEN_WATCH}
+          .set_execute_handler([this] {
             OpenWindow(MakeSingleWindowDefinition(&kWatchWindowInfo,
-                                                  context.selection.node()));
+                                                  selection_->node()));
           })
-          .set_available_handler([](const SelectionCommandContext& context) {
-            return IsInstanceOf(context.selection.node(),
-                                devices::id::DeviceType);
+          .set_available_handler([this] {
+            return IsInstanceOf(selection_->node(), devices::id::DeviceType);
           }));
 
   // ID_TRANSMISSION_VIEW
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_TRANSMISSION_VIEW}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_TRANSMISSION_VIEW}
+          .set_execute_handler([this] {
             OpenWindow(MakeSingleWindowDefinition(&kTransmissionWindowInfo,
-                                                  context.selection.node()));
+                                                  selection_->node()));
           })
-          .set_available_handler([this](const SelectionCommandContext& context) {
+          .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-                   IsInstanceOf(context.selection.node(),
-                                devices::id::DeviceType) &&
-                   !IsInstanceOf(context.selection.node(),
-                                 devices::id::LinkType);
+                   IsInstanceOf(selection_->node(), devices::id::DeviceType) &&
+                   !IsInstanceOf(selection_->node(), devices::id::LinkType);
           }));
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_COPY}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
-            CopyToClipboard(context);
-          })
-          .set_enabled_handler([](const SelectionCommandContext& context) {
-            return !context.selection.empty();
-          })
-          .set_available_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_COPY}
+          .set_execute_handler([this] { CopyToClipboard(); })
+          .set_enabled_handler([this] { return !selection_->empty(); })
+          .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-                   !context.selection.empty();
+                   !selection_->empty();
           }));
 
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_DELETE}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
-            DeleteSelection(context);
-          })
-          .set_enabled_handler([](const SelectionCommandContext& context) {
-            return !context.selection.empty();
-          })
-          .set_available_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_DELETE}
+          .set_execute_handler([this] { DeleteSelection(); })
+          .set_enabled_handler([this] { return !selection_->empty(); })
+          .set_available_handler([this] {
             return session_service_.HasPrivilege(scada::Privilege::Configure) &&
-                   !context.selection.empty();
+                   !selection_->empty();
           }));
 
   // TODO: Move to the event module.
-  selection_commands_.AddCommand(
-      BasicCommand<SelectionCommandContext>{ID_ACKNOWLEDGE_CURRENT}
-          .set_execute_handler([this](const SelectionCommandContext& context) {
+  command_registry_.AddCommand(
+      Command{ID_ACKNOWLEDGE_CURRENT}
+          .set_execute_handler([this] {
             node_event_provider_.AcknowledgeItemEvents(
-                context.selection.node().node_id());
+                selection_->node().node_id());
           })
-          .set_enabled_handler([](const SelectionCommandContext& context) {
-            return context.selection.timed_data().alerting();
-          })
-          .set_available_handler([](const SelectionCommandContext& context) {
-            return context.selection.timed_data().connected();
-          }));
+          .set_enabled_handler(
+              [this] { return selection_->timed_data().alerting(); })
+          .set_available_handler(
+              [this] { return selection_->timed_data().connected(); }));
 }
 
 void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
@@ -273,20 +251,36 @@ void SelectionCommands::OpenWindow(const WindowDefinition& window_definition) {
   });
 }
 
+CommandHandler* SelectionCommands::GetCommandHandler(unsigned command_id) {
+  if (!selection_ || !dialog_service_) {
+    return nullptr;
+  }
+
+  if (auto* handler = command_registry_.GetCommandHandler(command_id)) {
+    return handler;
+  }
+
+  if (const auto* command = selection_commands_.FindCommand(command_id)) {
+    if (!command->available_handler ||
+        command->available_handler(command_context())) {
+      return this;
+    }
+  }
+
+  return nullptr;
+}
+
 Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNode(
     int view_type_id,
-    const NodeRef& node,
-    MainWindowInterface& main_window,
-    DialogService& dialog_service) {
-  co_return co_await OpenViewContainingNodeAsync(view_type_id, node, main_window,
-                                                dialog_service);
+    const NodeRef& node) {
+  co_return co_await OpenViewContainingNodeAsync(view_type_id, node);
 }
 
 Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
     int view_type_id,
-    NodeRef node,
-    MainWindowInterface& main_window,
-    DialogService& dialog_service) {
+    NodeRef node) {
+  assert(main_window_);
+  assert(dialog_service_);
 
   auto cached_items =
       file_cache_.GetList(view_type_id).GetFilesContainingItem(node.node_id());
@@ -294,8 +288,8 @@ Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
   if (cached_items.empty()) {
     auto msg = u16format(L"Display for item \"{}\" was not found.",
                          ToString16(node.display_name()));
-    co_await dialog_service.RunMessageBox(msg, Translate("Display"),
-                                          MessageBoxMode::Info);
+    co_await dialog_service_->RunMessageBox(msg, Translate("Display"),
+                                            MessageBoxMode::Info);
     throw std::exception{};
   }
 
@@ -311,7 +305,7 @@ Awaitable<OpenedViewInterface*> SelectionCommands::OpenViewContainingNodeAsync(
   } else {
     WindowDefinition win(GetWindowInfo(view_type_id));
     win.path = path;
-    opened_view = co_await main_window.OpenView(win);
+    opened_view = co_await main_window_->OpenView(win);
   }
 
   opened_view->Select(node.node_id());
@@ -330,15 +324,15 @@ void SelectionCommands::SetContext(MainWindowInterface* main_window,
   selection_ = selection;
 }
 
-void SelectionCommands::DeleteSelection(const SelectionCommandContext& context) {
+void SelectionCommands::DeleteSelection() {
   if (!session_service_.HasPrivilege(scada::Privilege::Configure)) {
     return;
   }
 
   std::vector<NodeRef> nodes;
 
-  if (context.selection.multiple()) {
-    auto node_ids = context.selection.GetMultipleNodeIds();
+  if (selection_->multiple()) {
+    auto node_ids = selection_->GetMultipleNodeIds();
     nodes.reserve(node_ids.size());
     std::ranges::transform(
         node_ids, std::back_inserter(nodes),
@@ -346,7 +340,7 @@ void SelectionCommands::DeleteSelection(const SelectionCommandContext& context) 
           return node_service.GetNode(node_id);
         });
 
-  } else if (auto node = context.selection.node()) {
+  } else if (auto node = selection_->node()) {
     nodes.emplace_back(std::move(node));
   }
 
@@ -362,7 +356,7 @@ void SelectionCommands::DeleteSelection(const SelectionCommandContext& context) 
                       nodes.size());
 
   CoSpawn(executor_, [executor = executor_, &task_manager = task_manager_,
-                      &dialog_service = context.dialog_service,
+                      &dialog_service = *dialog_service_,
                       message = std::move(message),
                       nodes = std::move(nodes)]() mutable
                      -> Awaitable<void> {
@@ -378,20 +372,53 @@ void SelectionCommands::DeleteSelection(const SelectionCommandContext& context) 
   });
 }
 
-void SelectionCommands::CopyToClipboard(const SelectionCommandContext& context) {
+void SelectionCommands::CopyToClipboard() {
   std::vector<NodeRef> nodes;
 
-  if (context.selection.multiple()) {
-    for (const auto& node_id : context.selection.GetMultipleNodeIds()) {
+  if (selection_->multiple()) {
+    for (const auto& node_id : selection_->GetMultipleNodeIds()) {
       const auto& node = node_service_.GetNode(node_id);
       nodes.emplace_back(node);
       GetNodesRecursive(node, nodes);
     }
 
-  } else if (const auto& node = context.selection.node()) {
+  } else if (const auto& node = selection_->node()) {
     nodes.emplace_back(node);
   }
 
   if (!nodes.empty())
     CopyNodesToClipboard(nodes);
+}
+
+bool SelectionCommands::IsCommandEnabled(unsigned command_id) const {
+  const auto* command = selection_commands_.FindCommand(command_id);
+  return command && (!command->enabled_handler ||
+                     command->enabled_handler(command_context()));
+}
+
+bool SelectionCommands::IsCommandChecked(unsigned command_id) const {
+  const auto* command = selection_commands_.FindCommand(command_id);
+  return command && command->checked_handler &&
+         command->checked_handler(command_context());
+}
+
+void SelectionCommands::ExecuteCommand(unsigned command_id) {
+  if (const auto* command = selection_commands_.FindCommand(command_id)) {
+    if (command->execute_handler) {
+      command->execute_handler(command_context());
+    }
+  }
+}
+
+SelectionCommandContext SelectionCommands::command_context() const {
+  // |selection_| and |dialog_service_| are never null in command handlers.
+  assert(selection_);
+  assert(dialog_service_);
+  assert(main_window_);
+  assert(opened_view_);
+
+  return {.selection = *selection_,
+          .dialog_service = *dialog_service_,
+          .main_window = *main_window_,
+          .opened_view = *opened_view_};
 }
