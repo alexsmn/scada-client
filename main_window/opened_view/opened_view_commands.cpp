@@ -101,9 +101,15 @@ Action* OpenedViewCommands::FindAction(unsigned command_id) const {
     }
   }
 
-  if (auto* action = selection_commands_->action_group().FindAction(command_id);
-      action) {
-    return action;
+  if (auto* selection_model = controller_->GetSelectionModel();
+      selection_model && dialog_service_ && main_window_) {
+    if (auto* action = action_manager_.FindAction(command_id);
+        action && selection_commands_->IsSelectionAction(command_id)) {
+      auto context = selection_command_context();
+      if (action_manager_.IsActionAvailable(command_id, &context)) {
+        return action;
+      }
+    }
   }
 
   auto* action = action_manager_.FindAction(command_id);
@@ -157,8 +163,10 @@ void OpenedViewCommands::ExecuteAction(unsigned command_id) {
     }
   }
 
-  if (selection_commands_->action_group().FindAction(command_id)) {
-    selection_commands_->action_group().ExecuteAction(command_id);
+  if (auto* action = action_manager_.FindAction(command_id);
+      action && selection_commands_->IsSelectionAction(command_id)) {
+    auto context = selection_command_context();
+    action_manager_.ExecuteAction(command_id, &context);
     return;
   }
 
@@ -263,8 +271,10 @@ bool OpenedViewCommands::IsActionChecked(unsigned command_id) const {
     }
   }
 
-  if (selection_commands_->action_group().Contains(command_id)) {
-    return selection_commands_->action_group().IsActionChecked(command_id);
+  if (auto* action = action_manager_.FindAction(command_id);
+      action && selection_commands_->IsSelectionAction(command_id)) {
+    auto context = selection_command_context();
+    return action_manager_.IsActionChecked(command_id, &context);
   }
 
   if (auto time_range = GetTimeRangeCommand(command_id)) {
@@ -287,8 +297,10 @@ bool OpenedViewCommands::IsActionEnabled(unsigned command_id) const {
     }
   }
 
-  if (selection_commands_->action_group().Contains(command_id)) {
-    return selection_commands_->action_group().IsActionEnabled(command_id);
+  if (auto* action = action_manager_.FindAction(command_id);
+      action && selection_commands_->IsSelectionAction(command_id)) {
+    auto context = selection_command_context();
+    return action_manager_.IsActionEnabled(command_id, &context);
   }
 
   switch (command_id) {

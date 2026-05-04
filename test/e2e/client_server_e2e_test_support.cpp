@@ -401,15 +401,8 @@ void ClientServerE2eTest::ExpectServerRemainsRunningFor(
 
 void ClientServerE2eTest::ExpectServerAuthLog() {
   EXPECT_TRUE(WaitUntil([this] {
-    switch (GetParam()) {
-      case E2eProtocol::Remote:
-        return ContainsInDirectory(server_log_dir_, "Authorization succeeded") ||
-               ContainsInDirectory(server_log_dir_, "CreateSession completed");
-      case E2eProtocol::OpcUa:
-        return ContainsInDirectory(server_log_dir_,
-                                   "OPC UA session activated");
-    }
-    return false;
+    return ContainsInDirectory(server_log_dir_, "Authorization succeeded") ||
+           ContainsInDirectory(server_log_dir_, "CreateSession completed");
   },
                         std::chrono::duration_cast<std::chrono::milliseconds>(
                             kServerLogTimeout)))

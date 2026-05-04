@@ -12,7 +12,6 @@
 #include "configuration/objects/object_tree_view.h"
 #include "controller/window_info.h"
 #include "main_window/main_window.h"
-#include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "model/namespaces.h"
 #include "model/node_id_util.h"

@@ -96,18 +96,11 @@ void BaseMainWindow::Close() {
 }
 
 void BaseMainWindow::SetActiveView(OpenedView* view) {
-  BOOST_LOG_TRIVIAL(info) << "Set active view begin"
-                          << LOG_TAG("WindowId", view ? view->window_id() : 0)
-                          << LOG_TAG("Type", view ? view->window_info().name
-                                                   : std::string_view{});
   if (active_view_ == view) {
-    BOOST_LOG_TRIVIAL(info) << "Set active view unchanged";
     return;
   }
 
   if (active_view_) {
-    BOOST_LOG_TRIVIAL(info) << "Set active view clear previous"
-                            << LOG_TAG("WindowId", active_view_->window_id());
     if (auto* selection_model =
             active_view_->controller().GetSelectionModel()) {
       selection_model->change_handler = nullptr;
@@ -119,15 +112,11 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
   active_view_ = view;
 
   if (active_view_) {
-    BOOST_LOG_TRIVIAL(info) << "Set active view context begin"
-                            << LOG_TAG("WindowId", active_view_->window_id());
     auto* selection_model = active_view_->controller().GetSelectionModel();
 
     selection_commands_->SetContext(this, &GetDialogService(), active_view_,
                                     &active_view_->controller(),
                                     selection_model);
-    BOOST_LOG_TRIVIAL(info) << "Set active view context completed"
-                            << LOG_TAG("WindowId", active_view_->window_id());
 
     if (selection_model) {
       selection_model->change_handler = [this] { OnSelectionChanged(); };
@@ -135,16 +124,10 @@ void BaseMainWindow::SetActiveView(OpenedView* view) {
   }
 
   if (view && !view->window_info().is_pane()) {
-    BOOST_LOG_TRIVIAL(info) << "Set active data view begin"
-                            << LOG_TAG("WindowId", view->window_id());
     SetActiveDataView(view);
-    BOOST_LOG_TRIVIAL(info) << "Set active data view completed"
-                            << LOG_TAG("WindowId", view->window_id());
   }
 
-  BOOST_LOG_TRIVIAL(info) << "Selection changed begin";
   OnSelectionChanged();
-  BOOST_LOG_TRIVIAL(info) << "Set active view completed";
 }
 
 void BaseMainWindow::OpenPane(const WindowInfo& window_info, bool activate) {
@@ -248,20 +231,12 @@ void BaseMainWindow::OpenPage(const Page& page) {
   BOOST_LOG_TRIVIAL(info) << "Open page " << page.id;
 
   view_manager_->OpenPage(page);
-  BOOST_LOG_TRIVIAL(info) << "Base open page view manager completed"
-                          << LOG_TAG("PageId", page.id);
 
   GetPrefs().page_id = page.id;
-  BOOST_LOG_TRIVIAL(info) << "Base open page prefs updated"
-                          << LOG_TAG("PageId", page.id);
 
   UpdateTitle();
-  BOOST_LOG_TRIVIAL(info) << "Base open page title updated"
-                          << LOG_TAG("PageId", page.id);
 
   OnSelectionChanged();
-  BOOST_LOG_TRIVIAL(info) << "Base open page completed"
-                          << LOG_TAG("PageId", page.id);
 }
 
 void BaseMainWindow::DeleteCurrentPage() {

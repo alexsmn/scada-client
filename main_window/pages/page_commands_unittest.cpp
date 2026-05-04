@@ -177,7 +177,7 @@ class PageMenuModelTest : public Test {
   NiceMock<scada::MockSessionService> session_service_;
   MainWindowCommandHandler command_handler_{
       MainWindowCommandHandlerContext{executor_, main_window_, dialog_service_,
-                                      session_service_, commands_, nullptr}};
+                                      session_service_, commands_}};
 
   MainMenuContext menu_context_{.executor_ = executor_,
                                 .main_window_manager_ = main_window_manager_,

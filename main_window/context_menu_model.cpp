@@ -4,7 +4,6 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_commands.h"
 #include "main_window/opened_view/opened_view.h"
-#include "main_window/opened_view/opened_view_commands.h"
 
 ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
                                    ActionManager& action_manager,

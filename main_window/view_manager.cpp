@@ -253,30 +253,18 @@ void ViewManager::DestroyView(OpenedView& view) {
 
 OpenedView* ViewManager::CreateView(WindowDefinition& def,
                                     const OpenedView* after_view) {
-  BOOST_LOG_TRIVIAL(info) << "Create view begin"
-                          << LOG_TAG("WindowId", def.id)
-                          << LOG_TAG("Type", def.type);
   std::unique_ptr<OpenedView> opened_view;
   try {
     opened_view = delegate_.OnCreateView(def);
   } catch (const std::exception&) {
-    BOOST_LOG_TRIVIAL(error) << "Create view failed"
-                             << LOG_TAG("WindowId", def.id)
-                             << LOG_TAG("Type", def.type);
     return nullptr;
   }
 
   if (!opened_view) {
-    BOOST_LOG_TRIVIAL(error) << "Create view returned null"
-                             << LOG_TAG("WindowId", def.id)
-                             << LOG_TAG("Type", def.type);
     return nullptr;
   }
 
   auto& opened_view_ref = *views_.emplace_back(opened_view.release());
-  BOOST_LOG_TRIVIAL(info) << "Create view completed"
-                          << LOG_TAG("WindowId", def.id)
-                          << LOG_TAG("Type", def.type);
 
   // TODO: Process |after_view|.
 
@@ -288,12 +276,7 @@ OpenedView* ViewManager::CreateView(WindowDefinition& def,
 }
 
 void ViewManager::OpenPage(const Page& page) {
-  BOOST_LOG_TRIVIAL(info) << "ViewManager open page begin"
-                          << LOG_TAG("PageId", page.id)
-                          << LOG_TAG("WindowCount", page.GetWindowCount());
   ClosePage();
-  BOOST_LOG_TRIVIAL(info) << "ViewManager close page completed"
-                          << LOG_TAG("PageId", page.id);
 
   *current_page_ = page;
 
@@ -310,19 +293,10 @@ void ViewManager::OpenPage(const Page& page) {
       }
     }
 
-    BOOST_LOG_TRIVIAL(info) << "ViewManager open layout begin"
-                            << LOG_TAG("PageId", page.id)
-                            << LOG_TAG("ViewCount", views_.size());
     OpenLayout(*current_page_, current_page_->layout);
-    BOOST_LOG_TRIVIAL(info) << "ViewManager open layout completed"
-                            << LOG_TAG("PageId", page.id);
   }
 
-  BOOST_LOG_TRIVIAL(info) << "ViewManager set active view begin"
-                          << LOG_TAG("PageId", page.id);
   SetActiveView(GetActiveView());
-  BOOST_LOG_TRIVIAL(info) << "ViewManager open page completed"
-                          << LOG_TAG("PageId", page.id);
 }
 
 void ViewManager::SavePage() {

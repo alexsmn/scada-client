@@ -21,7 +21,6 @@ class MainWindowManager;
 class NodeEventProvider;
 class NodeService;
 class Profile;
-class SelectionCommands;
 class SpeechService;
 class TaskManager;
 struct GlobalCommandContext;
@@ -53,7 +52,6 @@ struct MainWindowCommandHandlerContext {
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
   ActionManager& action_manager_;
-  std::shared_ptr<SelectionCommands> selection_commands_;
 };
 
 struct Action;

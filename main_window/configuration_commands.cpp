@@ -38,7 +38,7 @@ Awaitable<void> ReportMethodCallResultAsync(AnyExecutor executor,
 }  // namespace
 
 void ConfigurationCommands::Register() {
-  action_group_.AddAction(
+  action_manager_.AddAction(
       Action{.command_id_ = ID_WRITE}
           .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
@@ -65,7 +65,7 @@ void ConfigurationCommands::Register() {
                         scada::NodeClass::Variable;
            })));
 
-  action_group_.AddAction(
+  action_manager_.AddAction(
       Action{.command_id_ = ID_WRITE_MANUAL}
           .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
@@ -81,7 +81,7 @@ void ConfigurationCommands::Register() {
                                  data_items::id::DataItemType);
            })));
 
-  action_group_.AddAction(
+  action_manager_.AddAction(
       Action{.command_id_ = ID_UNLOCK_ITEM}
           .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
@@ -107,7 +107,7 @@ void ConfigurationCommands::Register() {
                                  data_items::id::DataItemType);
            })));
 
-  action_group_.AddAction(
+  action_manager_.AddAction(
       Action{.command_id_ = ID_EDIT_LIMITS}
           .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this](const SelectionCommandContext& context) {
@@ -133,7 +133,7 @@ void ConfigurationCommands::Register() {
 void ConfigurationCommands::RegisterMethodCommand(
     unsigned command_id,
     const scada::NodeId& method_id) {
-  action_group_.AddAction(
+  action_manager_.AddAction(
       Action{.command_id_ = command_id}
           .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this, method_id](const SelectionCommandContext& context) {
@@ -167,7 +167,7 @@ void ConfigurationCommands::CallMethod(
 
 void ConfigurationCommands::RegisterEnableDeviceCommand(unsigned command_id,
                                                         bool enable) {
-  action_group_.AddAction(
+  action_manager_.AddAction(
       Action{.command_id_ = command_id}
           .SetExecuteHandler(MakeContextHandler<SelectionCommandContext>(
            [this, enable](const SelectionCommandContext& context) {

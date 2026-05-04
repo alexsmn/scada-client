@@ -1,3 +1,5 @@
-scada_module(client_web INTERFACE)
+scada_module(client_web)
 
-target_link_libraries(client_web INTERFACE scada_base)
+target_precompile_headers(client_web REUSE_FROM scada_base)
+
+target_link_libraries(client_web PRIVATE scada_base)

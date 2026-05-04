@@ -2,7 +2,6 @@
 
 #include "aui/translation.h"
 #include "base/any_executor.h"
-#include "base/boost_log.h"
 #include "base/utf_convert.h"
 #include "resources/common_resources.h"
 #include "controller/controller.h"
@@ -31,9 +30,6 @@ OpenedView::~OpenedView() {}
 
 void OpenedView::Init() {
   assert(controller_factory_);
-  BOOST_LOG_TRIVIAL(info) << "Opened view init begin"
-                          << LOG_TAG("WindowId", window_def_.id)
-                          << LOG_TAG("Type", window_def_.type);
   controller_ =
       controller_factory_(window_info_.command_id, *this, dialog_service_);
   if (!controller_) {
@@ -42,16 +38,10 @@ void OpenedView::Init() {
 
   title_ = user_title_ = window_def_.title;
 
-  BOOST_LOG_TRIVIAL(info) << "Opened view controller init begin"
-                          << LOG_TAG("WindowId", window_def_.id)
-                          << LOG_TAG("Type", window_def_.type);
   view_ = controller_->Init(window_def_);
   if (!view_) {
     throw std::runtime_error{"Can't create widget"};
   }
-  BOOST_LOG_TRIVIAL(info) << "Opened view init completed"
-                          << LOG_TAG("WindowId", window_def_.id)
-                          << LOG_TAG("Type", window_def_.type);
 
   update_working_timer_.StartRepeating(100ms, [this] { UpdateWorking(); });
 
