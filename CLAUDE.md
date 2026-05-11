@@ -213,7 +213,7 @@ Not managed by vcpkg:
 
 | Option | Default | Description |
 | ------ | ------- | ----------- |
-| `BUILD_MODUS` | `ON` | Build Modus module (requires Modus and Schematic SDKs) |
+| `BUILD_MODUS` | `ON` | Build Modus module (requires Modus SDK) |
 | `BUILD_OPC` | `ON` | Build Classic OPC modules in scada-common (Windows only) |
 | `BUILD_VIDICON` | `ON` | Build Vidicon modules in scada-common (Windows only) |
 

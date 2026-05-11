@@ -3,13 +3,10 @@ client_module_sources(client_modus PRIVATE activex libmodus)
 
 client_module_link_libraries(client_modus PRIVATE
   client_controller
-  client_web
 )
 
 find_package(Modus REQUIRED)
 target_compile_definitions(modus PUBLIC MODUS_GDIP)
-
-find_package(Schematic REQUIRED)
 
 file(GLOB_RECURSE MODUS_IDLS CONFIGURE_DEPENDS
   "."
@@ -30,7 +27,6 @@ set_target_properties(client_modus_qt PROPERTIES
 target_link_libraries(client_modus_qt PRIVATE
   gdiplus
   modus
-  schematic
 )
 
 # UTs

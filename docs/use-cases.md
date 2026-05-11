@@ -83,8 +83,8 @@ file-system surface.
 
 ### UC-11 View Modus / Vidicon schematics
 
-Test on a workstation with the required schematic dependencies installed by
-opening a Modus or Vidicon schematic and confirming the diagram renders.
+Test on a workstation with the required external display components installed
+by opening a Modus or Vidicon schematic and confirming the diagram renders.
 Automated coverage verifies the Modus and Vidicon window registrations without
 requiring the external display components.
 

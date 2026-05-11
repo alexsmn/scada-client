@@ -16,7 +16,6 @@
 #include "modus/modus_util.h"
 #include "modus/qt/modus_view.h"
 #include "modus/qt/modus_view2.h"
-#include "modus/qt/modus_view3.h"
 #include "profile/profile.h"
 #include "profile/window_definition.h"
 #include "base/web_util.h"
@@ -108,21 +107,10 @@ QWidget* ModusController::CreateModusView2() {
   return scroll_area;
 }
 
-QWidget* ModusController::CreateModusView3() {
-  view3_ = new ModusView3{timed_data_service_};
-
-  wrapper_ = view3_;
-
-  return view3_;
-}
-
 std::unique_ptr<UiView> ModusController::Init(
     const WindowDefinition& definition) {
   std::unique_ptr<QWidget> result;
-  if (IsModus2(definition, profile_))
-    result.reset(CreateModusView3());
-  else
-    result.reset(CreateModusView());
+  result.reset(CreateModusView());
 
   wrapper_->Open(definition);
 

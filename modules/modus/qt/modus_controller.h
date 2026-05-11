@@ -12,7 +12,6 @@
 
 class ModusView;
 class ModusView2;
-class ModusView3;
 class ModusViewWrapper;
 
 class ModusController : protected ControllerContext, public Controller {
@@ -32,7 +31,6 @@ class ModusController : protected ControllerContext, public Controller {
  private:
   QWidget* CreateModusView();
   QWidget* CreateModusView2();
-  QWidget* CreateModusView3();
 
   void OpenPath(const std::filesystem::path& path);
   void OpenHyperlink(std::u16string_view hyperlink);
@@ -43,7 +41,6 @@ class ModusController : protected ControllerContext, public Controller {
 
   ModusView* view_ = nullptr;
   ModusView2* view2_ = nullptr;
-  ModusView3* view3_ = nullptr;
   ModusViewWrapper* wrapper_ = nullptr;
 
   CommandRegistry command_registry_;
