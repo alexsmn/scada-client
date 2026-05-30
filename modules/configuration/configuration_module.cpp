@@ -3,8 +3,11 @@
 #include "configuration/devices/hardware_tree_view.h"
 #include "configuration/nodes/nodes_view.h"
 #include "configuration/objects/object_tree_view.h"
+#include "aui/translation.h"
 #include "controller/controller_registry.h"
+#include "controller/command_ui_registry.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 namespace {
 
@@ -39,6 +42,27 @@ ConfigurationModule::ConfigurationModule(ConfigurationModuleContext&& context)
       [f = node_service_tree_factory_](const ControllerContext& context) {
         return std::make_unique<NodesView>(context, f);
       });
+
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 100,
+       .command_id = ID_OBJECT_VIEW,
+       .title = Translate("Items"),
+       .checkable = true});
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 150,
+       .command_id = ID_HARDWARE_VIEW,
+       .title = Translate("Hardware"),
+       .checkable = true});
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 200,
+       .command_id = ID_NODES_VIEW,
+       .title = Translate("Nodes"),
+       .checkable = true,
+       .separator_before = true,
+       .admin_only = true});
 
   profile_.RegisterWriter([](Profile& profile) {
     // TODO: Add writers.

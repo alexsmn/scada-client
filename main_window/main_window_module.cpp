@@ -7,6 +7,7 @@
 #include "controller/controller_registry.h"
 #include "events/event_fetcher.h"
 #include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
@@ -50,9 +51,9 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 }  // namespace
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
-    : MainWindowModuleContext{std::move(context)},
-      action_manager_{std::make_unique<ActionManager>()} {
-  AddGlobalActions(*action_manager_, node_service_);
+    : MainWindowModuleContext{std::move(context)} {
+  AddGlobalActions(ui_command_registry_.action_manager(), node_service_);
+  AddDefaultMenuContributions(ui_command_registry_);
 
   assert(scada_services_.session_service);
 
@@ -90,7 +91,8 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
 
   event_dispatcher_ = std::make_unique<EventDispatcher>(EventDispatcherContext{
       executor_, node_event_provider_, local_events_, profile_,
-      [this](bool has_events) { OnEvents(has_events); }, *action_manager_});
+      [this](bool has_events) { OnEvents(has_events); },
+      ui_command_registry_.action_manager()});
 
   singletons_.emplace(std::make_shared<PageCommands>(PageCommandsContext{
       executor_, global_commands_, profile_, *main_window_manager_}));
@@ -137,13 +139,14 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
             .command_handler_ = global_commands,
             .dialog_service_ = dialog_service,
             .context_menu_model_ = context_menu_model,
-            .commands_ = global_commands_});
+            .commands_ = global_commands_,
+            .ui_command_registry_ = ui_command_registry_});
       };
 
   auto context_menu_factory = [this](MainWindowInterface& main_window,
                                      CommandHandler& command_handler) {
-    return std::make_unique<ContextMenuModel>(main_window, *action_manager_,
-                                              command_handler);
+    return std::make_unique<ContextMenuModel>(
+        main_window, ui_command_registry_.action_manager(), command_handler);
   };
 
   assert(scada_services_.session_service);
@@ -163,7 +166,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   };
 
   return MainWindowContext{
-      executor_, *action_manager_, window_id, node_command_handler_,
+      executor_, ui_command_registry_, window_id, node_command_handler_,
       file_manager_, *main_window_manager_, profile_,
       /*opened_view_factory=*/
       std::bind_front(&MainWindowModule::CreateOpenedView, this),
@@ -225,7 +228,7 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
           executor_, selection_commands_object_, task_manager_,
           *scada_services_.session_service, timed_data_service_, node_service_,
           print_service_,
-          *action_manager_, local_events_, file_cache_, profile_,
+          ui_command_registry_.action_manager(), local_events_, file_cache_, profile_,
           *main_window_manager_, create_tree_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the

@@ -32,6 +32,7 @@ class SelectionCommands;
 class SpeechService;
 class TaskManager;
 class TimedDataService;
+class UiCommandRegistry;
 struct GlobalCommandContext;
 struct MainWindowContext;
 struct SelectionCommandContext;
@@ -61,6 +62,7 @@ struct MainWindowModuleContext {
   CreateTree& create_tree_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  UiCommandRegistry& ui_command_registry_;
   // TODO: Keep either controller factory or controller registry.
   ControllerFactory controller_factory_;
 };
@@ -80,7 +82,6 @@ class MainWindowModule : private MainWindowModuleContext {
 
   void OnEvents(bool has_events);
 
-  std::unique_ptr<ActionManager> action_manager_;
   std::unique_ptr<MainWindowManager> main_window_manager_;
   std::unique_ptr<EventDispatcher> event_dispatcher_;
   std::shared_ptr<SelectionCommands> selection_commands_object_;

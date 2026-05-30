@@ -12,6 +12,7 @@
 #include "configuration/tree/node_service_tree_impl.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
+#include "controller/command_ui_registry.h"
 #include "core/core_module.h"
 #include "events/event_module.h"
 #include "events/local_events.h"
@@ -90,6 +91,7 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
           std::make_unique<MetricServiceImpl>(executor_,
                                               /*report_metric_period*/ 1min)},
       controller_registry_{std::make_unique<ControllerRegistry>()},
+      ui_command_registry_{std::make_unique<UiCommandRegistry>()},
       master_data_services_{
           std::make_shared<MasterDataServices>(executor_)},
       quit_completion_{executor_} {
@@ -203,7 +205,8 @@ void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) 
       .profile_ = *profile_,
       .services_ = ctx.audited_scada_services,
       .controller_registry_ = *controller_registry_,
-      .selection_commands_ = core_module_->selection_commands()});
+      .selection_commands_ = core_module_->selection_commands(),
+      .ui_command_registry_ = *ui_command_registry_});
 
   if (timed_data_service_override_) {
     timed_data_service_ = std::move(timed_data_service_override_);
@@ -258,16 +261,19 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
                                  .node_service_ = *node_service_,
                                  .task_manager_ = *task_manager_,
                                  .create_tree_ = *create_tree_,
+                                 .ui_command_registry_ = *ui_command_registry_,
                                  .scada_client_ = ctx.scada_client});
 
   favorites_module_ = std::make_unique<FavoritesModule>(FavoritesModuleContext{
       .profile_ = *profile_,
       .global_commands_ = core_module_->global_commands(),
-      .controller_registry_ = *controller_registry_});
+      .controller_registry_ = *controller_registry_,
+      .ui_command_registry_ = *ui_command_registry_});
   shutdown_stack_.Push([this] { favorites_module_.reset(); });
 
   portfolio_module_ = std::make_unique<PortfolioModule>(
-      PortfolioModuleContext{*node_service_, *profile_, *controller_registry_});
+      PortfolioModuleContext{*node_service_, *profile_, *controller_registry_,
+                             *ui_command_registry_});
   shutdown_stack_.Push([this] { portfolio_module_.reset(); });
 
   property_service_ = std::make_unique<PropertyService>(
@@ -298,6 +304,7 @@ ClientApplicationModuleContext ClientApplication::BuildModuleContext(
       .progress_host_ = core_module_->progress_host(),
       .global_commands_ = core_module_->global_commands(),
       .selection_commands_ = core_module_->selection_commands(),
+      .ui_command_registry_ = *ui_command_registry_,
       .singletons_ = singletons_};
 }
 
@@ -354,6 +361,7 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .create_tree_ = *create_tree_,
           .global_commands_ = core_module_->global_commands(),
           .selection_commands_ = core_module_->selection_commands(),
+          .ui_command_registry_ = *ui_command_registry_,
           .controller_factory_ = std::bind_front(
               &ControllerFactoryImpl::CreateController, controller_factory)});
   shutdown_stack_.Push([this] { main_window_module_.reset(); });

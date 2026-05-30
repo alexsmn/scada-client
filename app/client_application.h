@@ -67,6 +67,7 @@ class PrintModule;
 class PropertyService;
 class TaskManager;
 class Speech;
+class UiCommandRegistry;
 class WriteService;
 
 struct ClientApplicationContext {
@@ -144,6 +145,7 @@ class ClientApplication : private ClientApplicationContext {
   std::shared_ptr<transport::TransportFactory> transport_factory_;
 
   std::unique_ptr<ControllerRegistry> controller_registry_;
+  std::unique_ptr<UiCommandRegistry> ui_command_registry_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
 

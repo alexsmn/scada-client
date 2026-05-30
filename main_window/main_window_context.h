@@ -22,11 +22,12 @@ class MainWindowManager;
 class Profile;
 class ProgressHost;
 class SelectionCommands;
+class UiCommandRegistry;
 class ViewManager;
 
 struct MainWindowContext {
   AnyExecutor executor_;
-  ActionManager& action_manager_;
+  UiCommandRegistry& ui_command_registry_;
   int window_id_;
   NodeCommandHandler node_command_handler_;
   FileManager& file_manager_;

@@ -11,6 +11,7 @@
 #include "modules/debugger/debug_switch.h"
 #include "controller/command_registry.h"
 #include "controller/selection_model.h"
+#include "controller/command_ui_registry.h"
 #include "core/selection_command_context.h"
 #include "debugger.h"
 #include "node_debug_info.h"
@@ -23,12 +24,18 @@ DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
     auto debugger = std::make_shared<Debugger>(
         DebuggerContext{.session_service_ = session_service_});
 
-    global_commands_.AddCommand(
+    auto& debugger_command = global_commands_.AddCommand(
         {.title = Translate("Debugger"),
          .menu_group = MenuGroup::DEBUG,
          .execute_handler = [debugger](const GlobalCommandContext& context) {
            debugger->Open();
          }});
+    ui_command_registry_.AddMenuItem(
+        {.menu_id = MainMenuId::Help,
+         .order = 100,
+         .command_id = debugger_command.command_id,
+         .title = debugger_command.title,
+         .debug_only = true});
 
     selection_commands_.AddCommand(
         {.command_id = ID_DUMP_DEBUG_INFO,

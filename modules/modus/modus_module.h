@@ -11,12 +11,14 @@ class ControllerRegistry;
 class FileRegistry;
 class ModusModule2;
 class Profile;
+class UiCommandRegistry;
 
 struct ModusModuleContext {
   ControllerRegistry& controller_registry_;
   BlinkerManager& blinker_manager_;
   FileRegistry& file_registry_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
+  UiCommandRegistry& ui_command_registry_;
   Profile& profile_;
   AliasResolver alias_resolver_;
 };

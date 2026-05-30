@@ -6,6 +6,7 @@
 #include "base/logger.h"
 #include "controller/selection_model.h"
 #include "controller/test/controller_environment.h"
+#include "controller/command_ui_registry.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
 #include "main_window/main_window_mock.h"
@@ -22,6 +23,7 @@ class EventModuleTest : public Test {
  protected:
   AppEnvironment app_env_;
   ControllerEnvironment controller_env_;
+  UiCommandRegistry ui_command_registry_;
 
   EventModule event_module_{EventModuleContext{
       .executor_ = controller_env_.executor_,
@@ -29,7 +31,8 @@ class EventModuleTest : public Test {
       .profile_ = controller_env_.profile_,
       .services_ = controller_env_.services(),
       .controller_registry_ = controller_env_.controller_registry_,
-      .selection_commands_ = controller_env_.selection_commands_}};
+      .selection_commands_ = controller_env_.selection_commands_,
+      .ui_command_registry_ = ui_command_registry_}};
 };
 
 TEST_F(EventModuleTest, CreateControllers) {

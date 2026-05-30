@@ -1,7 +1,10 @@
 #include "portfolio/portfolio_module.h"
 
 #include "base/value_util.h"
+#include "aui/translation.h"
 #include "controller/controller_registry.h"
+#include "controller/command_ui_registry.h"
+#include "resources/common_resources.h"
 #include "model/node_id_util.h"
 #include "portfolio/portfolio.h"
 #include "portfolio/portfolio_manager.h"
@@ -28,6 +31,13 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
                                 const ControllerContext& context) {
         return std::make_unique<PortfolioView>(context, portfolio_manager);
       });
+
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 140,
+       .command_id = ID_PORTFOLIO_VIEW,
+       .title = Translate("Portfolio"),
+       .checkable = true});
 
   // portfolios
   if (const auto* pfoliose = GetList(profile_.data(), "portfolios")) {

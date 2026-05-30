@@ -6,11 +6,13 @@ class ControllerRegistry;
 class NodeService;
 class PortfolioManager;
 class Profile;
+class UiCommandRegistry;
 
 struct PortfolioModuleContext {
   NodeService& node_service_;
   Profile& profile_;
   ControllerRegistry& controller_registry_;
+  UiCommandRegistry& ui_command_registry_;
 };
 
 class PortfolioModule : private PortfolioModuleContext {

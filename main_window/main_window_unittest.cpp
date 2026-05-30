@@ -10,6 +10,7 @@
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
 #include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
@@ -55,7 +56,7 @@ class MainWindowTest : public Test {
 
   MainWindowContext MakeMainWindowContext();
 
-  ActionManager action_manager_;
+  UiCommandRegistry ui_command_registry_;
 
   StrictMock<MockFunction<void(const NodeCommandContext& context)>>
       node_command_handler_;
@@ -106,7 +107,7 @@ MainWindowTest::MainWindowTest() {
 MainWindowContext MainWindowTest::MakeMainWindowContext() {
   return {
       .executor_ = controller_env_.executor_,
-      .action_manager_ = action_manager_,
+      .ui_command_registry_ = ui_command_registry_,
       .window_id_ = kWindowId,
       .node_command_handler_ = node_command_handler_.AsStdFunction(),
       .file_manager_ = controller_env_.file_manager_,

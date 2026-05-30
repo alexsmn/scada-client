@@ -27,7 +27,6 @@ class CoreModule {
   }
 
   ProgressHost& progress_host() { return *progress_host_; }
-
  private:
   std::stack<std::shared_ptr<void>> singletons_;
 

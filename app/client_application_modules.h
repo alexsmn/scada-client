@@ -23,6 +23,7 @@ class Profile;
 class PrintModule;
 class TaskManager;
 class TimedDataService;
+class UiCommandRegistry;
 class WriteService;
 struct GlobalCommandContext;
 struct SelectionCommandContext;
@@ -58,6 +59,7 @@ struct ClientApplicationModuleContext {
   ProgressHost& progress_host_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  UiCommandRegistry& ui_command_registry_;
   std::stack<std::shared_ptr<void>>& singletons_;
 };
 

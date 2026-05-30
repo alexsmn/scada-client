@@ -8,12 +8,14 @@ class BasicCommandRegistry;
 class ControllerRegistry;
 class Favourites;
 class Profile;
+class UiCommandRegistry;
 struct GlobalCommandContext;
 
 struct FavoritesModuleContext {
   Profile& profile_;
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   ControllerRegistry& controller_registry_;
+  UiCommandRegistry& ui_command_registry_;
 };
 
 class FavoritesModule : private FavoritesModuleContext {

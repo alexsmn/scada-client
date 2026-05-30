@@ -2,9 +2,11 @@
 
 #include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "aui/translation.h"
 #include "base/value_util.h"
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
+#include "controller/command_ui_registry.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
@@ -80,6 +82,19 @@ EventModule::EventModule(EventModuleContext&& context)
 
   AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
+
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 110,
+       .command_id = ID_EVENT_VIEW,
+       .title = Translate("Events"),
+       .checkable = true});
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 160,
+       .command_id = ID_EVENT_JOURNAL_VIEW,
+       .title = Translate("Event Journal"),
+       .checkable = true});
 }
 
 EventModule::~EventModule() {}

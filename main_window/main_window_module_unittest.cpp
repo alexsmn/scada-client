@@ -5,6 +5,7 @@
 #include "base/test/awaitable_test.h"
 #include "modules/web/web_component.h"
 #include "controller/controller_fake.h"
+#include "controller/command_ui_registry.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
 #include "events/event_module.h"
@@ -46,6 +47,7 @@ class MainWindowModuleTest : public Test {
   StrictMock<MockFunction<void()>> login_handler_;
   StrictMock<MockSpeechService> speech_service_;
   ProgressHostImpl progress_host_;
+  UiCommandRegistry ui_command_registry_;
 
   StrictMock<MockFunction<std::unique_ptr<
       OpenedView>(MainWindow& main_window, WindowDefinition& window_def)>>
@@ -57,17 +59,20 @@ class MainWindowModuleTest : public Test {
        .profile_ = controller_env_.profile_,
        .services_ = controller_env_.services(),
        .controller_registry_ = controller_env_.controller_registry_,
-       .selection_commands_ = controller_env_.selection_commands_}};
+       .selection_commands_ = controller_env_.selection_commands_,
+       .ui_command_registry_ = ui_command_registry_}};
 
   PortfolioModule portfolio_module_{
       {.node_service_ = controller_env_.node_service_,
        .profile_ = controller_env_.profile_,
-       .controller_registry_ = controller_env_.controller_registry_}};
+       .controller_registry_ = controller_env_.controller_registry_,
+       .ui_command_registry_ = ui_command_registry_}};
 
   FavoritesModule favorites_module{
       {.profile_ = controller_env_.profile_,
        .global_commands_ = controller_env_.global_commands_,
-       .controller_registry_ = controller_env_.controller_registry_}};
+       .controller_registry_ = controller_env_.controller_registry_,
+       .ui_command_registry_ = ui_command_registry_}};
 
   std::optional<MainWindowModule> main_window_module_;
 
@@ -110,6 +115,7 @@ void MainWindowModuleTest::SetUp() {
       .create_tree_ = controller_env_.create_tree_,
       .global_commands_ = controller_env_.global_commands_,
       .selection_commands_ = controller_env_.selection_commands_,
+      .ui_command_registry_ = ui_command_registry_,
       .controller_factory_ = controller_factory});
 
   const auto& main_windows =

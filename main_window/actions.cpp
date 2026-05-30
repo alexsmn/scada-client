@@ -5,6 +5,7 @@
 #include "resources/common_resources.h"
 #include "controller/action.h"
 #include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
@@ -409,4 +410,63 @@ void AddGlobalActions(ActionManager& action_manager,
   RegisterCreateActions(action_manager, node_service);
 
   RegisterFileSystemActions(action_manager);
+}
+
+void AddDefaultMenuContributions(UiCommandRegistry& ui_command_registry) {
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::Table,
+       .order = 100,
+       .command_id = ID_TABLE_VIEW,
+       .title = Translate("New Table")});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::Table,
+       .order = 110,
+       .command_id = ID_SHEET_VIEW,
+       .title = Translate("New Custom Table")});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::Table,
+       .order = 120,
+       .command_id = ID_TIMED_DATA_VIEW,
+       .title = Translate("New Data Table")});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::Table,
+       .order = 200,
+       .command_id = ID_OPEN_GROUP_TABLE,
+       .title = Translate("Group Table"),
+       .separator_before = true});
+
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::Graph,
+       .order = 100,
+       .command_id = ID_GRAPH_VIEW,
+       .title = Translate("New")});
+
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 210,
+       .command_id = ID_TS_FORMATS_VIEW,
+       .title = Translate("Formats"),
+       .checkable = true,
+       .admin_only = true});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 220,
+       .command_id = ID_SIMULATION_ITEMS_VIEW,
+       .title = Translate("Simulated Signals"),
+       .checkable = true,
+       .admin_only = true});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 230,
+       .command_id = ID_USERS_VIEW,
+       .title = Translate("Users"),
+       .checkable = true,
+       .admin_only = true});
+  ui_command_registry.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 240,
+       .command_id = ID_HISTORICAL_DB_VIEW,
+       .title = Translate("Databases"),
+       .checkable = true,
+       .admin_only = true});
 }

@@ -29,7 +29,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
           ConfigurationModuleContext{
               .controller_registry_ = context.controller_registry_,
               .profile_ = context.profile_,
-              .node_service_tree_factory_ = context.node_service_tree_factory_}));
+              .node_service_tree_factory_ = context.node_service_tree_factory_,
+              .ui_command_registry_ = context.ui_command_registry_}));
     }
 
     if (modules.debugger) {
@@ -37,7 +38,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
           DebuggerModuleContext{
               .session_service_ = *context.scada_services_.session_service,
               .global_commands_ = context.global_commands_,
-              .selection_commands_ = context.selection_commands_}));
+              .selection_commands_ = context.selection_commands_,
+              .ui_command_registry_ = context.ui_command_registry_}));
     }
 
 #if !defined(UI_WT)
@@ -48,6 +50,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
               .blinker_manager_ = context.blinker_manager_,
               .file_registry_ = context.filesystem_component_.file_registry(),
               .global_commands_ = context.global_commands_,
+              .ui_command_registry_ = context.ui_command_registry_,
               .profile_ = context.profile_,
               .alias_resolver_ = context.alias_resolver_}));
     }
@@ -79,7 +82,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
               .executor_ = context.executor_,
               .node_service_ = context.node_service_,
               .task_manager_ = context.task_manager_,
-              .global_commands_ = context.global_commands_}));
+              .global_commands_ = context.global_commands_,
+              .ui_command_registry_ = context.ui_command_registry_}));
     }
 
     if (modules.node_service_progress_tracker) {

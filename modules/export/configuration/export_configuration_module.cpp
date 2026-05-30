@@ -1,8 +1,10 @@
 #include "export/configuration/export_configuration_module.h"
 
 #include "resources/common_resources.h"
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "core/global_command_context.h"
 #include "export/configuration/diff_report.h"
 #include "export/configuration/excel_configuration_commands.h"
@@ -27,6 +29,13 @@ ExportConfigurationModule::ExportConfigurationModule(
                           co_return;
                         });
               }));
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 300,
+       .command_id = ID_EXPORT_CONFIGURATION_TO_EXCEL,
+       .title = Translate("Export Configuration to Excel..."),
+       .separator_before = true,
+       .admin_only = true});
 
   // Import command.
 
@@ -45,4 +54,10 @@ ExportConfigurationModule::ExportConfigurationModule(
                           co_return;
                         });
               }));
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 310,
+       .command_id = ID_IMPORT_CONFIGURATION_FROM_EXCEL,
+       .title = Translate("Import Configuration from Excel..."),
+       .admin_only = true});
 }

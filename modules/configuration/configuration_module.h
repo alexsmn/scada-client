@@ -7,6 +7,7 @@
 
 class ControllerRegistry;
 class Profile;
+class UiCommandRegistry;
 
 using NodeServiceTreeFactory = std::function<
     std::unique_ptr<NodeServiceTree>(NodeServiceTreeImplContext&&)>;
@@ -15,6 +16,7 @@ struct ConfigurationModuleContext {
   ControllerRegistry& controller_registry_;
   Profile& profile_;
   NodeServiceTreeFactory node_service_tree_factory_;
+  UiCommandRegistry& ui_command_registry_;
 };
 
 class ConfigurationModule : private ConfigurationModuleContext {

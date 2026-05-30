@@ -9,7 +9,8 @@ ClientApplicationModuleConfigurator MakeScreenshotModules() {
         ConfigurationModuleContext{
             .controller_registry_ = context.controller_registry_,
             .profile_ = context.profile_,
-            .node_service_tree_factory_ = context.node_service_tree_factory_}));
+            .node_service_tree_factory_ = context.node_service_tree_factory_,
+            .ui_command_registry_ = context.ui_command_registry_}));
 
     context.singletons_.emplace(std::make_shared<NodeServiceProgressTracker>(
         context.executor_, context.node_service_, context.progress_host_));

@@ -12,6 +12,7 @@
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
 #include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -127,7 +128,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
 
   Init(*view_manager_);
 
-  action_manager_.Subscribe(*this);
+  ui_command_registry_.action_manager().Subscribe(*this);
 
   change_profile_connection_ = profile_.AddChangeObserver([this] {
     const MainWindowDef& prefs = GetPrefs();
@@ -137,7 +138,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
 }
 
 MainWindow::~MainWindow() {
-  action_manager_.Unsubscribe(*this);
+  ui_command_registry_.action_manager().Unsubscribe(*this);
 
   view_manager_->ClosePage();
   // TODO: Comment why explicit reset is needed.
@@ -189,7 +190,8 @@ void MainWindow::CreateStatusBar() {
 }
 
 void MainWindow::CreateToolbar() {
-  for (auto* action_info : action_manager_.actions()) {
+  auto& action_manager = ui_command_registry_.action_manager();
+  for (auto* action_info : action_manager.actions()) {
     bool collapsible = !CanExpandCommandCategory(action_info->category_);
     auto* action = new QAction(
         QString::fromStdU16String(action_info->GetShortTitle()), this);
@@ -219,7 +221,7 @@ void MainWindow::CreateToolbar() {
   {
     // Action order is important.
     int last_category = -1;
-    for (auto* action_info : action_manager_.actions()) {
+    for (auto* action_info : action_manager.actions()) {
       auto* action = FindAction(action_info->command_id());
       if (CanExpandCommandCategory(action_info->category_)) {
         toolbar_->addAction(action);
@@ -298,7 +300,8 @@ void MainWindow::UpdateAction(QAction& action,
                               ActionChangeMask change_mask) {
   if (static_cast<unsigned>(change_mask) &
       static_cast<unsigned>(ActionChangeMask::Title)) {
-    if (const auto* a = action_manager_.FindAction(command_id)) {
+    if (const auto* a =
+            ui_command_registry_.action_manager().FindAction(command_id)) {
       action.setText(QString::fromStdU16String(a->GetTitle()));
     }
   }

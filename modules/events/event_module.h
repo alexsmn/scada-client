@@ -15,6 +15,7 @@ class LocalEvents;
 class Logger;
 class NodeEventProvider;
 class Profile;
+class UiCommandRegistry;
 struct SelectionCommandContext;
 struct WindowInfo;
 
@@ -25,6 +26,7 @@ struct EventModuleContext {
   scada::services services_;
   ControllerRegistry& controller_registry_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
+  UiCommandRegistry& ui_command_registry_;
 };
 
 class EventModule : private EventModuleContext {

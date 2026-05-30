@@ -1,7 +1,9 @@
 ﻿#include "filesystem/filesystem_component.h"
 
+#include "aui/translation.h"
 #include "controller/command_registry.h"
 #include "controller/controller_registry.h"
+#include "controller/command_ui_registry.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_impl.h"
 #include "filesystem/file_registry.h"
@@ -10,6 +12,7 @@
 #include "filesystem/filesystem_view.h"
 #include "core/selection_command_context.h"
 #include "node_service/node_service.h"
+#include "resources/common_resources.h"
 #include "services/create_tree.h"
 
 const WindowInfo kWindowInfo = {
@@ -26,6 +29,13 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
 
   file_manager_ = std::make_unique<FileManagerImpl>(
       FileManagerContext{.executor_ = executor_, .scada_client_ = scada_client_});
+
+  ui_command_registry_.AddMenuItem(
+      {.menu_id = MainMenuId::More,
+       .order = 130,
+       .command_id = ID_FILE_SYSTEM_VIEW,
+       .title = Translate("Files"),
+       .checkable = true});
 
   open_file_command_ = std::bind_front(
       &OpenFileCommandImpl::Execute,

@@ -23,6 +23,7 @@ class FileRegistry;
 class FileSynchronizer;
 class NodeService;
 class TaskManager;
+class UiCommandRegistry;
 struct SelectionCommandContext;
 
 struct FileSystemComponentContext {
@@ -32,6 +33,7 @@ struct FileSystemComponentContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
   CreateTree& create_tree_;
+  UiCommandRegistry& ui_command_registry_;
   scada::client scada_client_;
 };
 

@@ -12,6 +12,7 @@
 #include "modules/timed_data/timed_data_component.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "controller/window_info.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
@@ -53,6 +54,47 @@ void AddMenuCommands(aui::SimpleMenuModel& menu,
       } else {
         menu.AddItem(command.command_id, command.title);
       }
+    }
+  }
+}
+
+void AddMenuContributions(aui::SimpleMenuModel& menu,
+                          const UiCommandRegistry& ui_command_registry,
+                          const BasicCommandRegistry<GlobalCommandContext>&
+                              commands,
+                          MainMenuId menu_id,
+                          bool admin) {
+  for (const auto& contribution :
+       ui_command_registry.GetMenuContributions(menu_id)) {
+    if (contribution.admin_only && !admin) {
+      continue;
+    }
+    if (contribution.debug_only && !client::HasOption(kDebugSwitch)) {
+      continue;
+    }
+
+    if (contribution.separator_before) {
+      menu.AddSeparator(aui::NORMAL_SEPARATOR);
+    }
+
+    auto title = contribution.title;
+    if (title.empty()) {
+      if (const auto* action = ui_command_registry.action_manager().FindAction(
+              contribution.command_id)) {
+        title = action->GetTitle();
+      }
+    }
+    if (title.empty()) {
+      if (const auto* command = commands.FindCommand(contribution.command_id)) {
+        title = command->title;
+      }
+    }
+    assert(!title.empty());
+
+    if (contribution.checkable) {
+      menu.AddCheckItem(contribution.command_id, title);
+    } else {
+      menu.AddItem(contribution.command_id, title);
     }
   }
 }
@@ -357,16 +399,14 @@ MainMenuModel::MainMenuModel(const MainMenuContext& context)
 void MainMenuModel::Rebuild() {
   AddSubMenu(0, Translate("Display"), &display_menu_model_);
 
-  table_submenu_.AddItem(ID_TABLE_VIEW, Translate("New Table"));
-  table_submenu_.AddItem(ID_SHEET_VIEW, Translate("New Custom Table"));
-  table_submenu_.AddItem(ID_TIMED_DATA_VIEW, Translate("New Data Table"));
-  table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-  table_submenu_.AddItem(ID_OPEN_GROUP_TABLE, Translate("Group Table"));
+  AddMenuContributions(table_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Table, admin_);
   table_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   table_submenu_.AddInplaceMenu(&table_favourites_);
   AddSubMenu(0, Translate("Table"), &table_submenu_);
 
-  graph_submenu_.AddItem(ID_GRAPH_VIEW, Translate("New"));
+  AddMenuContributions(graph_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Graph, admin_);
   graph_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   if (graph_favourites_)
     graph_submenu_.AddInplaceMenu(graph_favourites_.get());
@@ -374,27 +414,8 @@ void MainMenuModel::Rebuild() {
 
   AddSubMenu(0, Translate("Item"), &context_menu_model_);
 
-  more_submenu_.AddCheckItem(ID_OBJECT_VIEW, Translate("Items"));
-  more_submenu_.AddCheckItem(ID_EVENT_VIEW, Translate("Events"));
-  more_submenu_.AddCheckItem(ID_FAVOURITES_VIEW, Translate("Favourites"));
-  more_submenu_.AddCheckItem(ID_FILE_SYSTEM_VIEW, Translate("Files"));
-  more_submenu_.AddCheckItem(ID_PORTFOLIO_VIEW, Translate("Portfolio"));
-  more_submenu_.AddCheckItem(ID_HARDWARE_VIEW, Translate("Hardware"));
-  more_submenu_.AddCheckItem(ID_EVENT_JOURNAL_VIEW, Translate("Event Journal"));
-  if (admin_) {
-    more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-    more_submenu_.AddCheckItem(ID_NODES_VIEW, Translate("Nodes"));
-    more_submenu_.AddCheckItem(ID_TS_FORMATS_VIEW, Translate("Formats"));
-    more_submenu_.AddCheckItem(ID_SIMULATION_ITEMS_VIEW,
-                               Translate("Simulated Signals"));
-    more_submenu_.AddCheckItem(ID_USERS_VIEW, Translate("Users"));
-    more_submenu_.AddCheckItem(ID_HISTORICAL_DB_VIEW, Translate("Databases"));
-    more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
-    more_submenu_.AddItem(ID_EXPORT_CONFIGURATION_TO_EXCEL,
-                          Translate("Export Configuration to Excel..."));
-    more_submenu_.AddItem(ID_IMPORT_CONFIGURATION_FROM_EXCEL,
-                          Translate("Import Configuration from Excel..."));
-  }
+  AddMenuContributions(more_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::More, admin_);
 #if !defined(NDEBUG)
   more_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   more_submenu_.AddItem(ID_LOGIN, Translate("Connect to Server..."));
@@ -429,6 +450,8 @@ void MainMenuModel::Rebuild() {
 
   AddMenuCommands(settings_submenu_, commands_,
                   MenuGroup::MAIN_WINDOW_SETTINGS);
+  AddMenuContributions(settings_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Settings, admin_);
 
   settings_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   settings_submenu_.AddCheckItem(ID_WRITE_CONFIRMATION,
@@ -463,8 +486,9 @@ void MainMenuModel::Rebuild() {
 
   help_submenu_.AddItem(ID_HELP_MANUAL, Translate("Documentation"));
   help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
+  AddMenuContributions(help_submenu_, ui_command_registry_, commands_,
+                       MainMenuId::Help, admin_);
   if (client::HasOption(kDebugSwitch)) {
-    AddMenuCommands(help_submenu_, commands_, MenuGroup::DEBUG);
     help_submenu_.AddItem(ID_DUMP_DEBUG_INFO, Translate("Debug Information"));
     help_submenu_.AddSeparator(aui::NORMAL_SEPARATOR);
   }
