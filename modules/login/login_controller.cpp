@@ -3,21 +3,26 @@
 #include "aui/dialog_service.h"
 #include "aui/translation.h"
 #include "base/any_executor_dispatch.h"
+#include "base/file_settings_store.h"
+#include "base/string_util.h"
 #include "net/net_executor_adapter.h"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include "base/u16format.h"
 #include "scada/session_service.h"
 #include "scada/status_exception.h"
 
 #include <algorithm>
+#include <cstdlib>
+#include <filesystem>
 #include <format>
 #include <span>
+#ifdef _WIN32
 #include <windows.h>  // for VK_CONTROL
+#endif
 
 namespace {
 
@@ -40,7 +45,7 @@ std::vector<std::string> ParseListString(std::string_view users) {
   std::vector<std::string> result;
   boost::split(result, users, boost::is_any_of(","));
   for (auto& s : result)
-    boost::trim(s);
+    TrimAsciiWhitespace(s);
   std::erase_if(result, [](const auto& s) { return s.empty(); });
   return result;
 }
@@ -49,7 +54,7 @@ std::vector<std::u16string> ParseListString(std::u16string_view users) {
   std::vector<std::u16string> result;
   boost::split(result, users, boost::is_any_of(u","));
   for (auto& s : result)
-    boost::trim(s);
+    TrimAsciiWhitespace(s);
   std::erase_if(result, [](const auto& s) { return s.empty(); });
   return result;
 }
@@ -98,6 +103,18 @@ Awaitable<scada::Status> AwaitStatus(AnyExecutor executor,
   }
 }
 
+std::shared_ptr<SettingsStore> CreateDefaultSettingsStore() {
+#ifdef _WIN32
+  return std::make_shared<RegistrySettingsStore>(HKEY_CURRENT_USER,
+                                                 kRegistryKey);
+#else
+  std::filesystem::path base_dir =
+      std::getenv("HOME") ? std::getenv("HOME") : ".";
+  return std::make_shared<FileSettingsStore>(
+      base_dir / "Library/Application Support/Telecontrol/SCADA Client/settings.json");
+#endif
+}
+
 }  // namespace
 
 LoginController::LoginController(AnyExecutor executor,
@@ -109,8 +126,7 @@ LoginController::LoginController(AnyExecutor executor,
       dialog_service_{dialog_service},
       settings_store_{std::move(settings_store)} {
   if (!settings_store_)
-    settings_store_ =
-        std::make_shared<RegistrySettingsStore>(HKEY_CURRENT_USER, kRegistryKey);
+    settings_store_ = CreateDefaultSettingsStore();
 
   user_name = settings_store_->ReadString16("User");
   std::u16string users = settings_store_->ReadString16("UserList");
@@ -144,9 +160,11 @@ LoginController::LoginController(AnyExecutor executor,
 
   server_host = server_type_data_[server_type_index_].host;
 
+#ifdef _WIN32
   // Don't perform automatic login if Shift is pressed.
   if (GetAsyncKeyState(VK_CONTROL) < 0)
     auto_login = false;
+#endif
   login_message_ = !auto_login;
 }
 

@@ -4,6 +4,12 @@
 #include "conditional_format.h"
 #include "aui/color.h"
 
+#ifndef DT_LEFT
+constexpr unsigned char DT_LEFT = 0x0000;
+constexpr unsigned char DT_CENTER = 0x0001;
+constexpr unsigned char DT_RIGHT = 0x0002;
+#endif
+
 struct SheetFormatBase {
   bool operator<(const SheetFormatBase& other) const {
     if (color != other.color)

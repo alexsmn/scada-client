@@ -2,9 +2,20 @@
 
 #include "base/path_service.h"
 
+#include <cstdlib>
 #include <filesystem>
 
 namespace client {
+
+namespace {
+
+std::filesystem::path GetHomeDir() {
+  if (const char* home = std::getenv("HOME"))
+    return home;
+  return std::filesystem::temp_directory_path();
+}
+
+}  // namespace
 
 bool PathProvider(int key, std::filesystem::path* result) {
   // Assume that we will not need to create the directory if it does not exist.
@@ -28,16 +39,24 @@ bool PathProvider(int key, std::filesystem::path* result) {
       break;
 
     case DIR_PUBLIC:
+#ifdef _WIN32
       if (!base::PathService::Get(base::DIR_COMMON_APP_DATA, &cur))
         return false;
       cur = cur / "Telecontrol/SCADA Client";
+#else
+      cur = GetHomeDir() / "Library/Application Support/Telecontrol/SCADA Client";
+#endif
       create_dir = true;
       break;
 
     case DIR_PRIVATE:
+#ifdef _WIN32
       if (!base::PathService::Get(base::DIR_APP_DATA, &cur))
         return false;
       cur = cur / "Telecontrol/SCADA Client";
+#else
+      cur = GetHomeDir() / "Library/Application Support/Telecontrol/SCADA Client";
+#endif
       create_dir = true;
       break;
 
@@ -49,9 +68,13 @@ bool PathProvider(int key, std::filesystem::path* result) {
       break;
 
     case DIR_LOG:
+#ifdef _WIN32
       if (!base::PathService::Get(base::DIR_LOCAL_APP_DATA, &cur))
         return false;
       cur = cur / "Telecontrol/SCADA Client/logs";
+#else
+      cur = GetHomeDir() / "Library/Logs/Telecontrol/SCADA Client";
+#endif
       create_dir = true;
       break;
 

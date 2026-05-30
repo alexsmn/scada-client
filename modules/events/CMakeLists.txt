@@ -13,12 +13,16 @@ client_module_link_libraries(client_events PRIVATE
 
 # UTs
 
-target_link_libraries(client_events_qt_unittests PRIVATE
-  client_controller_test_qt
-)
+if(TARGET client_events_qt_unittests)
+  target_link_libraries(client_events_qt_unittests PRIVATE
+    client_controller_test_qt
+  )
+endif()
 
 
-target_link_libraries(client_events_wt_unittests PRIVATE
-  aui_test_wt
-  client_controller_test_wt
-)
+if(TARGET client_events_wt_unittests)
+  target_link_libraries(client_events_wt_unittests PRIVATE
+    aui_test_wt
+    client_controller_test_wt
+  )
+endif()

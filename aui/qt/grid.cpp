@@ -3,8 +3,6 @@
 #include "base/value_util.h"
 #include "aui/models/grid_model_util.h"
 
-#include <windows.h>
-
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QHeaderView>
@@ -270,7 +268,8 @@ void Grid::Expand(const QItemSelectionRange& range,
   if (!range.isValid() || !expand_range.isValid())
     return;
 
-  const bool ctrl_pressed = GetAsyncKeyState(VK_CONTROL) < 0;
+  const bool ctrl_pressed =
+      QGuiApplication::keyboardModifiers() & Qt::ControlModifier;
   ExpandGridRange(*model_, ToUiGridRange(range), ToUiGridRange(expand_range),
                   !ctrl_pressed);
 }

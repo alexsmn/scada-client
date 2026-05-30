@@ -64,18 +64,20 @@ scada::ServiceLogParams ReadServiceLogParamsFromCommandLine() {
 
 }  // namespace
 
-extern bool CreateVidiconServices(const DataServicesContext& context,
-                                  DataServices& services);
-
 REGISTER_DATA_SERVICES("Scada",
                        u"Telecontrol",
                        CreateRemoteServices,
                        "localhost");
 
+#if CLIENT_HAS_VIDICON
+extern bool CreateVidiconServices(const DataServicesContext& context,
+                                  DataServices& services);
+
 REGISTER_DATA_SERVICES("Vidicon",
                        u"Vidicon",
                        CreateVidiconServices,
                        "localhost");
+#endif
 
 // Locals shared across the PostLogin() phase helpers.
 struct ClientApplication::PostLoginContext {

@@ -3,7 +3,9 @@
 #include "base/awaitable.h"
 #include "base/any_executor.h"
 #include "base/thread_executor.h"
+#ifdef _WIN32
 #include "base/win/clipboard.h"
+#endif
 #include "clipboard/node_serialization.h"
 #include "common/node_state.h"
 #include "node_service/node_awaitable.h"
@@ -13,7 +15,9 @@
 #include "services/create_tree.h"
 #include "services/task_manager.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <stdexcept>
 
@@ -21,10 +25,12 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes);
 
 namespace {
 
+#ifdef _WIN32
 const UINT kNodeTreeHeaderFormat =
     ::RegisterClipboardFormat(L"CE4D311D-FB1C-4972-9EA8-3C2C1FB5091A");
 const UINT kNodeTreeFormat =
     ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
+#endif
 
 Awaitable<void> CopyNodesToClipboardAsync(std::vector<NodeRef> nodes) {
   for (const auto& node : nodes) {
@@ -93,7 +99,14 @@ Awaitable<void> PasteNodesFromClipboardAsync(TaskManager& task_manager,
 
 }  // namespace
 
-std::string ReadClipboard(UINT format) {
+std::string ReadClipboard(
+#ifdef _WIN32
+    UINT format
+#else
+    unsigned
+#endif
+) {
+#ifdef _WIN32
   size_t size = 0;
   char* data = nullptr;
   if (!Clipboard().GetData(format, data, size))
@@ -102,6 +115,9 @@ std::string ReadClipboard(UINT format) {
   std::string v(data, data + size);
   delete[] data;
   return v;
+#else
+  return {};
+#endif
 }
 
 protocol::NodeTree BuildNodeTree(const std::vector<NodeRef>& nodes) {
@@ -119,6 +135,7 @@ protocol::NodeTree BuildNodeTree(const std::vector<NodeRef>& nodes) {
 }
 
 void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
+#ifdef _WIN32
   Clipboard clipboard;
 
   {
@@ -135,6 +152,9 @@ void CopyNodesToClipboardSync(const std::vector<NodeRef>& nodes) {
     auto buffer = node_tree.SerializePartialAsString();
     clipboard.SetData(kNodeTreeFormat, buffer.data(), buffer.size());
   }
+#else
+  (void)nodes;
+#endif
 }
 
 void CopyNodesToClipboard(const std::vector<NodeRef>& nodes) {
@@ -162,14 +182,21 @@ Awaitable<void> PasteNodesFromNodeTree(TaskManager& task_manager,
 
 Awaitable<void> PasteNodesFromClipboard(TaskManager& task_manager,
                                         const scada::NodeId& new_parent_id) {
+#ifdef _WIN32
   co_await PasteNodesFromClipboardAsync(task_manager, new_parent_id,
                                        ReadClipboard(kNodeTreeFormat));
+#else
+  (void)task_manager;
+  (void)new_parent_id;
+  throw std::runtime_error{"Clipboard is not supported on this platform"};
+#endif
 }
 
 NodeRef GetPasteParentNode(NodeService& node_service,
                            CreateTree& create_tree,
                            const NodeRef& selected_node,
                            const NodeRef& root_node) {
+#ifdef _WIN32
   const auto buffer = ReadClipboard(kNodeTreeHeaderFormat);
   if (buffer.empty())
     return nullptr;
@@ -191,4 +218,11 @@ NodeRef GetPasteParentNode(NodeService& node_service,
   }
 
   return nullptr;
+#else
+  (void)node_service;
+  (void)create_tree;
+  (void)selected_node;
+  (void)root_node;
+  return nullptr;
+#endif
 }

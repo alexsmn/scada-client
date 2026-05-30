@@ -1,5 +1,7 @@
 #include "graph/graph_setup_dialog.h"
 
+#ifdef _WIN32
+
 #include "aui/color_win.h"
 #include "base/utf_convert.h"
 
@@ -69,3 +71,5 @@ void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
   dc.DrawText(text.data(), text.size(), &rect,
               DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
+
+#endif

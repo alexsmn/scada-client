@@ -52,13 +52,19 @@ target_link_libraries(client_qt_app_shared PUBLIC
   client_export_csv_qt
   client_favorites_qt
   client_main_window_qt
-  client_modus_qt
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
-  client_vidicon_qt
   scada_core_opcua_client
 )
+if(TARGET client_modus_qt)
+  target_link_libraries(client_qt_app_shared PUBLIC client_modus_qt)
+  target_compile_definitions(client_qt_app_shared PUBLIC CLIENT_HAS_MODUS=1)
+endif()
+if(TARGET client_vidicon_qt)
+  target_link_libraries(client_qt_app_shared PUBLIC client_vidicon_qt)
+  target_compile_definitions(client_qt_app_shared PUBLIC CLIENT_HAS_VIDICON=1)
+endif()
 
 # Exe
 

@@ -1,10 +1,12 @@
 #include "main_window/pages/page_commands.h"
 
 #include "aui/dialog_service_mock.h"
+#include "aui/test/app_environment.h"
 #include "aui/models/simple_menu_model.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "core/global_command_context.h"
 #include "favorites/favourites.h"
 #include "filesystem/file_cache.h"
@@ -18,6 +20,7 @@
 #include "profile/profile.h"
 
 #include <gmock/gmock.h>
+#include <QMainWindow>
 
 #include <chrono>
 
@@ -34,23 +37,6 @@ class DummyViewManagerDelegate : public ViewManagerDelegate {
   void OnViewClosed(OpenedView& view) override {}
   void OnActiveViewChanged(OpenedView* view) override {}
   void OnShowTabPopupMenu(OpenedView& view, const aui::Point& point) override {}
-};
-
-class DummyViewManager : public ViewManager {
- public:
-  explicit DummyViewManager(ViewManagerDelegate& delegate)
-      : ViewManager{delegate} {}
-
-  OpenedView* GetActiveView() override { return nullptr; }
-  void ActivateView(const OpenedView& view) override {}
-  void CloseView(OpenedView& view) override {}
-  void SetViewTitle(OpenedView& view, const std::u16string& title) override {}
-  void SplitView(OpenedView& view, bool vertically) override {}
-
- private:
-  void OpenLayout(Page& page, const PageLayout& layout) override {}
-  void SaveLayout(PageLayout& layout) override {}
-  void AddView(OpenedView& view) override {}
 };
 
 Awaitable<std::u16string> ReturnTitleAsync(std::u16string title) {
@@ -153,6 +139,7 @@ TEST_F(PageCommandsTest, RenamePageRejectedDoesNotUpdateCurrentPageTitle) {
 
 class PageMenuModelTest : public Test {
  protected:
+  AppEnvironment app_env_;
   TestExecutor executor_;
   Profile profile_;
 
@@ -169,10 +156,12 @@ class PageMenuModelTest : public Test {
   FileRegistry file_registry_;
   FileCache file_cache_{file_registry_};
   DummyViewManagerDelegate view_manager_delegate_;
-  DummyViewManager view_manager_{view_manager_delegate_};
+  QMainWindow qt_main_window_;
+  ViewManager view_manager_{qt_main_window_, view_manager_delegate_};
   CommandHandler command_handler_;
   aui::SimpleMenuModel context_menu_{nullptr};
   BasicCommandRegistry<GlobalCommandContext> commands_;
+  UiCommandRegistry ui_command_registry_;
 
   MainMenuContext menu_context_{.executor_ = executor_,
                                 .main_window_manager_ = main_window_manager_,
@@ -185,7 +174,8 @@ class PageMenuModelTest : public Test {
                                 .command_handler_ = command_handler_,
                                 .dialog_service_ = dialog_service_,
                                 .context_menu_model_ = context_menu_,
-                                .commands_ = commands_};
+                                .commands_ = commands_,
+                                .ui_command_registry_ = ui_command_registry_};
 };
 
 TEST_F(PageMenuModelTest, RevertCurrentPageConfirmedOpensSavedPage) {

@@ -9,7 +9,9 @@
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
 #include "modules/about/about_dialog.h"
+#ifdef _WIN32
 #include "modules/web/web_component.h"
+#endif
 #include "controller/command_registry.h"
 #include "controller/window_info.h"
 #include "events/local_events.h"
@@ -18,18 +20,19 @@
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/opened_view/opened_view_commands.h"
+#include "main_window/standard_command_ids.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 #include "scada/session_service.h"
 #include "services/speech_service.h"
 
+#ifdef _WIN32
 #include <Windows.h>
 #include <shellapi.h>
+#endif
+#include <cstdlib>
 #include <filesystem>
 #include <stdexcept>
-
-#include <atlres.h>
-#include <shellapi.h>
 
 #if defined(UI_QT)
 #include <QApplication>
@@ -54,7 +57,7 @@ const Option options[] = {
     {ID_EVENT_PLAY_SOUND, &Profile::event_play_sound},
     {0, nullptr}};
 
-static bool Profile::*GetOption(UINT id) {
+static bool Profile::*GetOption(unsigned id) {
   for (const auto& opt : options) {
     if (opt.id == id) {
       return opt.option;
@@ -126,10 +129,22 @@ void OpenPublicFolder() {
     return;
   }
 
+#ifdef _WIN32
   ShellExecuteW(/*hwnd=*/nullptr, /*lpOperation=*/L"open",
                 /*lpFile=*/path.wstring().c_str(), /*lpParameters=*/nullptr,
                 /*lpDirectory=*/nullptr,
                 /*nShowCmd=*/SW_SHOWNORMAL);
+#else
+  std::string command = "open '";
+  for (char ch : path.string()) {
+    if (ch == '\'')
+      command += "'\\''";
+    else
+      command += ch;
+  }
+  command += "'";
+  std::system(command.c_str());
+#endif
 }
 
 BasicCommand<GlobalCommandContext> MakeOptionCommand(
@@ -190,7 +205,7 @@ MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
       /*is_russian=*/true));
 #endif
 
-#if !defined(UI_WT)
+#if defined(_WIN32) && !defined(UI_WT)
   global_commands_.AddCommand(
       {.command_id = ID_HELP_MANUAL,
        .execute_handler = [executor = executor_](

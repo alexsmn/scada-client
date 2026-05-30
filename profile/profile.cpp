@@ -3,6 +3,7 @@
 #include "aui/translation.h"
 #include "base/boost_log.h"
 #include "base/client_paths.h"
+#include "base/excel.h"
 #include "base/path_service.h"
 #include "base/format.h"
 #include "base/time_utils.h"
@@ -11,7 +12,6 @@
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 
-#include <ATLComTime.h>
 #include <stdexcept>
 
 namespace {

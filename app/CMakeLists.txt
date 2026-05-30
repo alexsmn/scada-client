@@ -7,11 +7,13 @@ target_link_libraries(client_common INTERFACE
   client_clipboard
   client_core
   scada_common_events
-  scada_common_vidicon_services
   scada_core_remote
   timed_data
   Transport::transport
 )
+if(TARGET scada_common_vidicon_services)
+  target_link_libraries(client_common INTERFACE scada_common_vidicon_services)
+endif()
 
 # `client_application.cpp` is compiled once into `client_qt_app_shared` /
 # `client_wt_lib` and linked into both the apps and the heavy
@@ -53,5 +55,9 @@ endif()
 include(GoogleTest)
 gtest_discover_tests(client_startup_exception_tests DISCOVERY_MODE PRE_TEST)
 
-add_subdirectory(qt)
-add_subdirectory(wt)
+if(BUILD_CLIENT_QT)
+  add_subdirectory(qt)
+endif()
+if(BUILD_CLIENT_WT)
+  add_subdirectory(wt)
+endif()

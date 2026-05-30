@@ -4,7 +4,6 @@
 #include "aui/models/simple_menu_model.h"
 #include "aui/qt/client_utils_qt.h"
 #include "base/utf_convert.h"
-#include "base/win/win_util2.h"
 #include "ui/common/client_utils.h"
 #include "resources/common_resources.h"
 #include "controller/controller.h"
@@ -35,11 +34,11 @@
 #include <QToolBar>
 #include <QToolButton>
 
+#ifdef _WIN32
 #include <atlbase.h>
-
 #include <atlapp.h>
-
 #include <atluser.h>
+#endif
 
 namespace {
 
@@ -48,6 +47,7 @@ inline QKeySequence ToQKeySequence(const Shortcut& shortcut) {
                       static_cast<int>(shortcut.modifiers())};
 }
 
+#ifdef _WIN32
 void BuildMenuModel(CMenuHandle menu_handle,
                     aui::MenuModel& context_menu_model,
                     aui::SimpleMenuModel& menu_model,
@@ -85,6 +85,7 @@ void BuildMenuModel(CMenuHandle menu_handle,
     }
   }
 }
+#endif
 
 QRect GetDefaultBounds(const QWidget* window) {
   auto desktop_bounds = QDesktopWidget{}.availableGeometry(window);
@@ -358,12 +359,16 @@ void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
   aui::SimpleMenuModel menu_model{&command_handler};
   std::vector<std::unique_ptr<aui::MenuModel>> submenus;
 
+#ifdef _WIN32
   {
     CMenu resource_menu;
     resource_menu.LoadMenu(resource_id);
     BuildMenuModel(resource_menu.GetSubMenu(0), *context_menu_model_,
                    menu_model, submenus);
   }
+#else
+  return;
+#endif
 
   QMenu menu;
   // TODO: Combine with the same above.

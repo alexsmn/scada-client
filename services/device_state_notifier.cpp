@@ -13,8 +13,10 @@ std::string ToString(DeviceState device_state) {
 }
 
 std::u16string_view ToLocalizedString(DeviceState device_state) {
-  static const std::u16string_view kStrings[] = {u"", u"Отключено",
-                                                 u"Нет связи", u"Есть связь"};
+  static const std::u16string_view kStrings[] = {
+      u"", u"\u041e\u0442\u043a\u043b\u044e\u0447\u0435\u043d\u043e",
+      u"\u041d\u0435\u0442 \u0441\u0432\u044f\u0437\u0438",
+      u"\u0415\u0441\u0442\u044c \u0441\u0432\u044f\u0437\u044c"};
   static_assert(std::size(kStrings) == static_cast<size_t>(DeviceState::Count));
   return kStrings[static_cast<size_t>(device_state)];
 }
@@ -32,7 +34,7 @@ DeviceStateNotifier::DeviceStateNotifier(TimedDataService& timed_data_service,
 
   const scada::NodeId kComponentIds[] = {devices::id::DeviceType_Disabled,
                                          devices::id::DeviceType_Online};
-  static_assert(_countof(kComponentIds) == FIELD_COUNT,
+  static_assert(std::size(kComponentIds) == FIELD_COUNT,
                 "NotEnoughFieldChannelNames");
 
   for (size_t i = 0; i < FIELD_COUNT; ++i) {

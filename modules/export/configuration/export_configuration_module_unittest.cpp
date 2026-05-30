@@ -8,6 +8,7 @@
 #include "common/test/node_state_matcher.h"
 #include "resources/common_resources.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "core/global_command_context.h"
 #include "diff_data.h"
 #include "diff_report.h"
@@ -47,6 +48,7 @@ class ExportConfigurationModuleTest : public Test {
   TestExecutor executor_;
   StrictMock<MockTaskManager> task_manager_;
   BasicCommandRegistry<GlobalCommandContext> global_commands_;
+  UiCommandRegistry ui_command_registry_;
 
   StrictMock<MockMainWindow> main_window_;
   StrictMock<MockDialogService> dialog_service_;
@@ -57,7 +59,8 @@ class ExportConfigurationModuleTest : public Test {
   ExportConfigurationModule module_{{.executor_ = executor_,
                                      .node_service_ = node_service_,
                                      .task_manager_ = task_manager_,
-                                     .global_commands_ = global_commands_}};
+                                     .global_commands_ = global_commands_,
+                                     .ui_command_registry_ = ui_command_registry_}};
 
   std::filesystem::path temp_dir_;
 };

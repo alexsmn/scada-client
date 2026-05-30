@@ -1,13 +1,17 @@
 #include "clipboard_util.h"
 
+#ifdef _WIN32
 #include "base/win/clipboard.h"
+#endif
 #include "base/test/awaitable_test.h"
 #include "model/data_items_node_ids.h"
 #include "model/namespaces.h"
 #include "services/task_manager_mock.h"
 #include "services/test/test_task_manager.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <gmock/gmock.h>
 
@@ -17,6 +21,7 @@ using namespace testing;
 
 namespace {
 
+#ifdef _WIN32
 const UINT kNodeTreeFormat =
     ::RegisterClipboardFormat(L"EFCAD60E-2623-4eef-8DE9-9B030DCD3AFE");
 
@@ -32,6 +37,7 @@ void SetNodeTreeClipboardData(std::string_view data) {
   ASSERT_TRUE(::EmptyClipboard());
   ASSERT_TRUE(clipboard.SetData(kNodeTreeFormat, data.data(), data.size()));
 }
+#endif
 
 void CompareRecursive(const scada::NodeState& a, const scada::NodeState& b) {
   EXPECT_EQ(a.type_definition_id, b.type_definition_id);
@@ -163,6 +169,7 @@ TEST(PasteNodesFromNodeStateRecursive,
                                   task_manager, std::move(node_state))));
 }
 
+#ifdef _WIN32
 TEST(PasteNodesFromClipboard, EmptyClipboardRejects) {
   TestExecutor executor;
   ClearClipboard();
@@ -186,3 +193,4 @@ TEST(PasteNodesFromClipboard, InvalidClipboardPayloadRejects) {
                                             data_items::id::DataItems)),
       std::runtime_error);
 }
+#endif

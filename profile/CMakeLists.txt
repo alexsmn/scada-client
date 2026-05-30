@@ -14,5 +14,9 @@ client_module_link_libraries(client_profile PRIVATE
 #   client_controller
 # )
 
-target_link_libraries(client_profile_qt_unittests PRIVATE client_controller_qt)
-target_link_libraries(client_profile_wt_unittests PRIVATE client_controller_wt)
+if(TARGET client_profile_qt_unittests)
+  target_link_libraries(client_profile_qt_unittests PRIVATE client_controller_qt)
+endif()
+if(TARGET client_profile_wt_unittests)
+  target_link_libraries(client_profile_wt_unittests PRIVATE client_controller_wt)
+endif()

@@ -1,5 +1,7 @@
 #include "aui/os_exchange_data.h"
 
+#ifdef _WIN32
+
 #include <cassert>
 
 #include "base/pickle.h"
@@ -485,3 +487,42 @@ OSExchangeData::CustomFormat OSExchangeData::RegisterCustomFormat(
 }
 
 }  // namespace aui
+
+#else
+
+#include "base/pickle.h"
+
+#include <atomic>
+
+namespace aui {
+
+OSExchangeData::OSExchangeData() = default;
+
+OSExchangeData::~OSExchangeData() = default;
+
+bool OSExchangeData::HasCustomFormat(CustomFormat format) const {
+  return data_.contains(format);
+}
+
+bool OSExchangeData::GetPickledData(CustomFormat format,
+                                    base::Pickle& data) const {
+  auto it = data_.find(format);
+  if (it == data_.end())
+    return false;
+  data = base::Pickle{it->second.data(), static_cast<int>(it->second.size())};
+  return true;
+}
+
+void OSExchangeData::SetPickledData(CustomFormat format, base::Pickle& data) {
+  data_[format] = std::vector<char>{data.data(), data.data() + data.size()};
+}
+
+OSExchangeData::CustomFormat OSExchangeData::RegisterCustomFormat(
+    const char*) {
+  static std::atomic<CustomFormat> next_format{1};
+  return next_format++;
+}
+
+}  // namespace aui
+
+#endif

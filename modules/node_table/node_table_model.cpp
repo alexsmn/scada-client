@@ -28,6 +28,7 @@ namespace {
 const char16_t kFetching[] = u"Loading...";
 const auto kParentReferenceTypeId = scada::id::Organizes;
 const auto kSortDelay = 300ms;
+const aui::Color kReadOnlyCellColor = aui::Rgba{0xF0, 0xF0, 0xF0};
 
 void LogLoadFailure(const scada::Status& status) {
   BOOST_LOG_TRIVIAL(error)
@@ -98,7 +99,7 @@ std::u16string NodeTableModel::GetRowTitle(int row) {
 void NodeTableModel::GetCell(aui::GridCell& cell) {
   if (loading_) {
     cell.text = kFetching;
-    cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = kReadOnlyCellColor;
     return;
   }
 
@@ -110,14 +111,14 @@ void NodeTableModel::GetCell(aui::GridCell& cell) {
 
   if (column.attr_id == scada::AttributeId::NodeId) {
     cell.text = UtfConvert<char16_t>(NodeIdToScadaString(node.node_id()));
-    cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = kReadOnlyCellColor;
   } else if (column.attr_id == scada::AttributeId::BrowseName)
     cell.text = UtfConvert<char16_t>(node.browse_name().name());
   else if (column.attr_id == scada::AttributeId::DisplayName)
     cell.text = node.display_name();
   else if (column.prop_def->IsReadOnly(node,
                                        column.property_declaration.node_id()))
-    cell.cell_color = aui::COLORREFToColor(::GetSysColor(COLOR_3DFACE));
+    cell.cell_color = kReadOnlyCellColor;
   else
     cell.text = column.prop_def->GetText(*this, node,
                                          column.property_declaration.node_id());

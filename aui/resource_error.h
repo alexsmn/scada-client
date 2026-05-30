@@ -41,9 +41,11 @@ T RethrowResourceError(std::exception_ptr e) {
 
 template <typename T>
 inline Awaitable<T> ShowResourceErrorAsync(
-    Awaitable<MessageBoxResult> message_box,
+    DialogService& dialog_service,
+    std::u16string message,
+    std::u16string title,
     std::exception_ptr e) {
-  co_await std::move(message_box);
+  co_await dialog_service.RunMessageBox(message, title, MessageBoxMode::Error);
   if constexpr (std::is_void_v<T>) {
     std::rethrow_exception(e);
     co_return;
@@ -57,8 +59,8 @@ inline Awaitable<T> ShowResourceError(DialogService& dialog_service,
                                       std::u16string_view title,
                                       std::exception_ptr e) {
   auto message = GetResourceErrorMessage(e) + u".";
-  return ShowResourceErrorAsync<T>(
-      dialog_service.RunMessageBox(message, title, MessageBoxMode::Error), e);
+  return ShowResourceErrorAsync<T>(dialog_service, std::move(message),
+                                   std::u16string{title}, e);
 }
 
 template <typename T>

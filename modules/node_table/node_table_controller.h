@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef _WIN32
 #include "base/win/dragdrop.h"
+#endif
 #include "controller/command_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_context.h"
@@ -13,8 +15,12 @@ class Grid;
 class NodeTableModel;
 
 class NodeTableController : protected ControllerContext,
-                            public Controller,
-                            public DataObject {
+                            public Controller
+#ifdef _WIN32
+                            ,
+                            public DataObject
+#endif
+{
  public:
   NodeTableController(const ControllerContext& context,
                       const NodeRef& parent_node);

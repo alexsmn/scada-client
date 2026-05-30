@@ -1,5 +1,7 @@
 #include "services/speech_service_impl.h"
 
+#ifdef _WIN32
+
 #include "profile/profile.h"
 #include "scada/monitored_item_service.h"
 
@@ -48,3 +50,13 @@ void Speech::Speak(const std::wstring_view& text) {
   voice_->Speak(const_cast<LPWSTR>(std::wstring{text}.c_str()),
                 SPF_ASYNC | SPF_PURGEBEFORESPEAK, nullptr);
 }
+
+#else
+
+Speech::Speech() = default;
+
+Speech::~Speech() = default;
+
+void Speech::Speak(const std::wstring_view& text) {}
+
+#endif

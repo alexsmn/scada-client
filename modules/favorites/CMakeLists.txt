@@ -7,5 +7,9 @@ client_module_link_libraries(client_favorites PRIVATE
   transport
 )
 
-target_link_libraries(client_favorites_qt_unittests PRIVATE aui_qt)
-target_link_libraries(client_favorites_wt_unittests PRIVATE aui_wt)
+if(TARGET client_favorites_qt_unittests)
+  target_link_libraries(client_favorites_qt_unittests PRIVATE aui_qt)
+endif()
+if(TARGET client_favorites_wt_unittests)
+  target_link_libraries(client_favorites_wt_unittests PRIVATE aui_wt)
+endif()

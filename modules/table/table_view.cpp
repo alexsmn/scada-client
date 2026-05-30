@@ -135,10 +135,12 @@ bool TableView::OnKeyPressed(aui::KeyCode key_code) {
 
     case aui::KeyCode::Up:
     case aui::KeyCode::Down:
+#ifdef _WIN32
       if (GetAsyncKeyState(VK_CONTROL) < 0) {
         MoveRow(key_code == aui::KeyCode::Up);
         return true;
       }
+#endif
       break;
   }
 

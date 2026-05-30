@@ -53,15 +53,21 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_export_csv_qt
   client_favorites_qt
   client_main_window_qt
-  client_modus_qt
   client_portfolio_qt
   client_print_service_qt
   client_properties_qt
-  client_vidicon_qt
   scada_core_opcua_client
   base_unittest
   graph_qt
 )
+if(TARGET client_modus_qt)
+  target_link_libraries(client_screenshot_generator PRIVATE client_modus_qt)
+  target_compile_definitions(client_screenshot_generator PRIVATE CLIENT_HAS_MODUS=1)
+endif()
+if(TARGET client_vidicon_qt)
+  target_link_libraries(client_screenshot_generator PRIVATE client_vidicon_qt)
+  target_compile_definitions(client_screenshot_generator PRIVATE CLIENT_HAS_VIDICON=1)
+endif()
 
 add_dependencies(client_screenshot_generator client_qt_copy_translations)
 

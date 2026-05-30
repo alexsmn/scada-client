@@ -1,5 +1,7 @@
 #include "base/excel.h"
 
+#ifdef _WIN32
+
 #include <cassert>
 #include <vector>
 
@@ -177,3 +179,32 @@ void Excel::NewSheet(const ExcelSheetModel& sheet) {
   // Tell Excel to quit (i.e. App.Quit)
   AutoWrap(DISPATCH_METHOD, NULL, pXlApp, L"Quit");*/
 }
+
+#else
+
+void ExcelSheetModel::SetDataSize(int rows, int cols) {
+  this->rows = rows;
+  this->cols = cols;
+}
+
+void ExcelSheetModel::SetData(int, int, base::win::ScopedVariant&&) {}
+
+void ExcelSheetModel::SetData(int, int, const VARIANT&) {}
+
+void ExcelSheetModel::SetData(int, int, const std::wstring&) {}
+
+Excel::Excel() {
+  throw HRESULT{};
+}
+
+void Excel::SetVisible(bool) {}
+
+void Excel::NewWorkbook() {}
+
+void Excel::NewSheet(const ExcelSheetModel&) {}
+
+Microsoft::WRL::ComPtr<IDispatch> Excel::GetRange(const wchar_t*) {
+  return {};
+}
+
+#endif

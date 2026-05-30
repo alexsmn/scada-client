@@ -1,5 +1,7 @@
 #include "base/settings_store.h"
 
+#ifdef _WIN32
+
 #include "base/utf_convert.h"
 #include "base/win/registry.h"
 
@@ -86,3 +88,5 @@ bool RegistrySettingsStore::Write(std::string_view name,
   base::win::RegKey reg(root_, subkey_.c_str(), KEY_SET_VALUE | KEY_QUERY_VALUE);
   return RegHelper{reg}.Write(name, string16_value);
 }
+
+#endif

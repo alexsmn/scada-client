@@ -4,7 +4,6 @@
 #include "aui/models/mirror_table_model.h"
 #include "aui/table.h"
 #include "base/time/default_clock.h"
-#include "base/win/win_util2.h"
 #include "common/formula_util.h"
 #include "resources/common_resources.h"
 #include "controller/controller_delegate.h"

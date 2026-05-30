@@ -10,25 +10,29 @@ client_module_link_libraries(client_services PUBLIC
 
 # UTs.
 
-target_link_libraries(client_services_qt_unittests PRIVATE
-  address_space
-  client_core
-  client_events_qt
-  client_profile_qt
-  node_service
-)
-if(MSVC)
-  target_link_options(client_services_qt_unittests PRIVATE
-    "$<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>"
-    "$<$<CONFIG:RelWithDebInfo>:/INCREMENTAL:NO>"
-    "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
+if(TARGET client_services_qt_unittests)
+  target_link_libraries(client_services_qt_unittests PRIVATE
+    address_space
+    client_core
+    client_events_qt
+    client_profile_qt
+    node_service
   )
+  if(MSVC)
+    target_link_options(client_services_qt_unittests PRIVATE
+      "$<$<CONFIG:RelWithDebInfo>:/DEBUG:NONE>"
+      "$<$<CONFIG:RelWithDebInfo>:/INCREMENTAL:NO>"
+      "$<$<CONFIG:RelWithDebInfo>:/PDB:NONE>"
+    )
+  endif()
 endif()
 
-target_link_libraries(client_services_wt_unittests PRIVATE
-  address_space
-  client_core
-  client_events_wt
-  client_profile_wt
-  node_service
-)
+if(TARGET client_services_wt_unittests)
+  target_link_libraries(client_services_wt_unittests PRIVATE
+    address_space
+    client_core
+    client_events_wt
+    client_profile_wt
+    node_service
+  )
+endif()

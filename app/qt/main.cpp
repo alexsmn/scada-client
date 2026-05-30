@@ -10,13 +10,17 @@
 #include "base/boost_log.h"
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
+#ifdef _WIN32
 #include "base/win/gdiplus_initializer.h"
+#endif
 #include "modules/login/login_dialog.h"
 #include "project.h"
 #include "scada/status_exception.h"
 #include "services/atl_module.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <QApplication>
 #include <QSettings>
 #include <QTimer>
@@ -78,9 +82,16 @@ class SafeApplication final : public QApplication {
 };
 
 void ShowStartupTrace(const wchar_t* message) {
+#ifdef _WIN32
   OutputDebugStringW(message);
   OutputDebugStringW(L"\n");
   MessageBoxW(nullptr, message, L"SCADA Client Startup", MB_OK | MB_ICONERROR);
+#else
+  std::wstring wide_message{message};
+  BOOST_LOG_TRIVIAL(error)
+      << "SCADA Client Startup: "
+      << std::string{wide_message.begin(), wide_message.end()};
+#endif
 }
 
 void LogStartupException(std::exception_ptr exception) {
@@ -96,7 +107,9 @@ int main(int argc, char* argv[]) {
     AppInit app_init;
     std::set_terminate(&OnTerminate);
 
+#ifdef _WIN32
     GdiplusInitializer gdiplus;
+#endif
 
     SafeApplication qapp(argc, argv);
 

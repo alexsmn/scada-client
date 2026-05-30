@@ -19,10 +19,26 @@ endif()
 
 enable_testing()
 
+option(BUILD_CLIENT_QT "Build the Qt desktop client" ON)
+option(BUILD_CLIENT_WT "Build the Wt web client" ON)
+
+set(CLIENT_UI_CONFIGS)
+if(BUILD_CLIENT_QT)
+  list(APPEND CLIENT_UI_CONFIGS qt)
+endif()
+if(BUILD_CLIENT_WT)
+  list(APPEND CLIENT_UI_CONFIGS wt)
+endif()
+if(NOT CLIENT_UI_CONFIGS)
+  message(FATAL_ERROR "At least one client UI must be enabled")
+endif()
+
 # Required for `AUTOMOC`, `AUTOUIC`, and `AUTORCC` added to all
 # `client_module` targets.
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
-find_package(Qt5LinguistTools REQUIRED)
+if(BUILD_CLIENT_QT)
+  find_package(Qt5 COMPONENTS Widgets REQUIRED)
+  find_package(Qt5LinguistTools REQUIRED)
+endif()
 
 include(client_module.cmake)
 include(translation.cmake)
@@ -111,9 +127,11 @@ set(CLIENT_COMPONENTS
   timed_data
   transmission
   watch
-  web
   write
 )
+if(WIN32)
+  list(APPEND CLIENT_COMPONENTS web)
+endif()
 
 set(CLIENT_COMPONENT_MODULES)
 set(CLIENT_QT_COMPONENT_TARGETS)
@@ -130,4 +148,6 @@ add_subdirectory(modules)
 add_subdirectory(main_window)
 add_subdirectory(app)
 add_subdirectory(test)
-add_subdirectory(tools)
+if(BUILD_CLIENT_QT)
+  add_subdirectory(tools)
+endif()

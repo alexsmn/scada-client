@@ -4,7 +4,6 @@
 #include <charconv>
 #include <format>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <cassert>
 #include <string.h>
 
@@ -63,7 +62,7 @@ std::string_view GetColorDebugName(int index) {
 
 int FindColorName(std::u16string_view str) {
   for (size_t i = 0; i < std::size(kColorEntries); i++) {
-    if (boost::algorithm::iequals(str, kColorEntries[i].name)) {
+    if (IsAsciiCaseInsensitiveEqual(str, kColorEntries[i].name)) {
       return i;
     }
   }

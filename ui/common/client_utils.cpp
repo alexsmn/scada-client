@@ -6,7 +6,6 @@
 #include "base/format_time.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "base/win/clipboard.h"
 #include "ui/common/client_utils.h"
 #include "common/formula_util.h"
 #include "resources/common_resources.h"

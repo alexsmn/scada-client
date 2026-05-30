@@ -3,8 +3,10 @@
 #include "aui/resource_error.h"
 #include "base/path_service.h"
 #include "base/utf_convert.h"
+#ifdef _WIN32
 #include "base/win/scoped_process_information.h"
 #include "base/win/win_util2.h"
+#endif
 #include "common/node_state.h"
 #include "export/configuration/diff_data.h"
 #include "model/node_id_util.h"
@@ -14,8 +16,38 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#ifndef _WIN32
+#include <cstdlib>
+#include <string>
+#endif
 
-using u16ostream = std::basic_ostream<char16_t>;
+class u16ostream {
+ public:
+  u16ostream& operator<<(std::u16string_view value) {
+    buffer_.append(value);
+    return *this;
+  }
+
+  u16ostream& operator<<(const std::u16string& value) {
+    buffer_.append(value);
+    return *this;
+  }
+
+  u16ostream& operator<<(const char16_t* value) {
+    buffer_.append(value);
+    return *this;
+  }
+
+  u16ostream& operator<<(char16_t value) {
+    buffer_.push_back(value);
+    return *this;
+  }
+
+  const std::u16string& str() const { return buffer_; }
+
+ private:
+  std::u16string buffer_;
+};
 
 bool s_import_report_enabled = true;
 
@@ -33,7 +65,7 @@ void PrintProps(NodeService& node_service,
   for (const auto& [prop_decl_id, value] : props) {
     const auto& prop = node_service.GetNode(prop_decl_id);
     report << u"  " << ToString16(prop.display_name()) << u" = "
-           << ToString16(value) << std::endl;
+           << ToString16(value) << u'\n';
   }
 }
 
@@ -45,7 +77,7 @@ void PrintRefs(NodeService& node_service,
                            ? u"(None)"
                            : GetDisplayName(node_service, r.add_target_id);
     report << ToString16(GetDisplayName(node_service, r.reference_type_id))
-           << u" = " << ToString16(target_name) << std::endl;
+           << u" = " << ToString16(target_name) << u'\n';
   }
 }
 
@@ -58,7 +90,7 @@ void PrintRefs(NodeService& node_service,
     auto ref_name = GetDisplayName(node_service, r.reference_type_id);
     auto target_name = GetDisplayName(node_service, r.node_id);
     report << ToString16(ref_name) << u" = " << ToString16(target_name)
-           << std::endl;
+           << u'\n';
   }
 }
 
@@ -71,42 +103,43 @@ WARNING: Incorrect use of this operation may lead to configuration loss.)";
 void PrintDiffReport(u16ostream& report,
                      const DiffData& diff,
                      NodeService& node_service) {
-  report << kDiffReportHeader << std::endl << std::endl;
+  report << kDiffReportHeader << u'\n' << u'\n';
 
   for (auto& node_state : diff.create_nodes) {
     auto type_definition = node_service.GetNode(node_state.type_definition_id);
     report << u"Create: " << ToString16(type_definition.display_name())
-           << std::endl;
+           << u'\n';
     if (!node_state.node_id.is_null()) {
       report << u"  Id = "
              << UtfConvert<char16_t>(NodeIdToScadaString(node_state.node_id))
-             << std::endl;
+             << u'\n';
     }
     report << u"  Parent = "
            << UtfConvert<char16_t>(NodeIdToScadaString(node_state.parent_id))
-           << std::endl;
+           << u'\n';
     report << u"  Name = " << ToString16(node_state.attributes.display_name)
-           << std::endl;
+           << u'\n';
     PrintProps(node_service, node_state.properties, report);
     PrintRefs(node_service, node_state.references, report);
   }
 
   for (auto& p : diff.modify_nodes) {
     auto node = node_service.GetNode(p.id);
-    report << u"Modify: " << ToString16(node.display_name()) << std::endl;
+    report << u"Modify: " << ToString16(node.display_name()) << u'\n';
     if (!p.attrs.browse_name.empty())
-      report << u"  Name = " << ToString16(p.attrs.browse_name) << std::endl;
+      report << u"  Name = " << ToString16(p.attrs.browse_name) << u'\n';
     PrintProps(node_service, p.props, report);
     PrintRefs(node_service, p.refs, report);
   }
 
   for (auto& p : diff.delete_nodes) {
     auto node = node_service.GetNode(p);
-    report << u"Delete: " << ToString16(node.display_name()) << std::endl;
+    report << u"Delete: " << ToString16(node.display_name()) << u'\n';
   }
 }
 
 void OpenNotepad(const std::filesystem::path& path) {
+#ifdef _WIN32
   std::filesystem::path system_path;
   if (!base::PathService::Get(base::DIR_WINDOWS, &system_path)) {
     return;
@@ -130,6 +163,19 @@ void OpenNotepad(const std::filesystem::path& path) {
 
   base::win::ScopedProcessInformation proc_info{raw_process_info};
   ::WaitForSingleObject(proc_info.process_handle(), INFINITE);
+#else
+  std::string command = "open -W '";
+  for (char ch : path.string()) {
+    if (ch == '\'')
+      command += "'\\''";
+    else
+      command += ch;
+  }
+  command += "'";
+  if (std::system(command.c_str()) != 0) {
+    throw ResourceError{u"Failed to open report"};
+  }
+#endif
 }
 
 void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
@@ -141,7 +187,7 @@ void ShowDiffReport(const DiffData& diff, NodeService& node_service) {
 
   auto report_path = temp_dir / "report.txt";
 
-  std::basic_ostringstream<char16_t> report;
+  u16ostream report;
   PrintDiffReport(report, diff, node_service);
 
   std::ofstream report_file{report_path, std::ios::binary};

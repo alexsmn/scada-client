@@ -7,7 +7,7 @@
 #include "controller/action_manager.h"
 #include "profile/profile.h"
 
-#if !defined(UI_WT)
+#if defined(_WIN32) && !defined(UI_WT)
 #include <mmsystem.h>
 #endif
 
@@ -67,7 +67,7 @@ void EventDispatcher::ShowEvents(bool added) {
 
   events_handler_(has_events);
 
-#if !defined(UI_WT)
+#if defined(_WIN32) && !defined(UI_WT)
   bool play_sound = has_events && profile_.event_play_sound;
   if (playing_alarm_sound_ != play_sound) {
     playing_alarm_sound_ = play_sound;

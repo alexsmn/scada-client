@@ -6,7 +6,9 @@
 #include "base/program_options.h"
 #include <boost/algorithm/string/join.hpp>
 #include "base/utf_convert.h"
+#ifdef _WIN32
 #include "base/win/clipboard.h"
+#endif
 #include "resources/common_resources.h"
 #include "modules/debugger/debug_switch.h"
 #include "controller/command_registry.h"
@@ -17,6 +19,11 @@
 #include "node_debug_info.h"
 
 #include <memory>
+#if defined(UI_QT) && !defined(_WIN32)
+#include <QApplication>
+#include <QClipboard>
+#include <QString>
+#endif
 
 DebuggerModule::DebuggerModule(DebuggerModuleContext&& context)
     : DebuggerModuleContext{std::move(context)} {
@@ -61,15 +68,17 @@ void DebuggerModule::DumpDebugInfo(const SelectionCommandContext& context) {
 
   auto debug_text = boost::algorithm::join(debug_info, "\n\n");
 
+#ifdef _WIN32
   Clipboard clipboard;
-
-  if (!clipboard.SetText(debug_text)) {
+  if (!clipboard.SetText(debug_text))
     BOOST_LOG_TRIVIAL(warning) << "Can't set clipboard data";
-  }
-
-  if (!clipboard.SetText(UtfConvert<wchar_t>(debug_text))) {
+  if (!clipboard.SetText(UtfConvert<wchar_t>(debug_text)))
     BOOST_LOG_TRIVIAL(warning) << "Can't set clipboard data";
-  }
+#elif defined(UI_QT)
+  QApplication::clipboard()->setText(QString::fromStdString(debug_text));
+#else
+  BOOST_LOG_TRIVIAL(warning) << "Clipboard is not supported";
+#endif
 
   context.dialog_service.RunMessageBox(
       Translate("Debug information copied to clipboard."), {},

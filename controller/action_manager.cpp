@@ -33,7 +33,7 @@ std::u16string GetCommandCategoryTitle(CommandCategory category) {
       "Interval",   // CATEGORY_INTERVAL
   };
   static_assert(std::size(kTitles) == static_cast<size_t>(CATEGORY_COUNT));
-  assert(category >= 0 && category < _countof(kTitles));
+  assert(category >= 0 && category < std::size(kTitles));
   return Translate(kTitles[category]);
 }
 

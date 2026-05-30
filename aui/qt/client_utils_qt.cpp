@@ -3,7 +3,10 @@
 #include "aui/models/menu_model.h"
 
 #include <QMenu>
+
+#ifdef _WIN32
 #include <wtypes.h>
+#endif
 
 void BuildMenu(QMenu& menu, aui::MenuModel& model) {
   model.MenuWillShow();
@@ -50,6 +53,7 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
 }
 
 QPixmap LoadPixmap(unsigned resource_id) {
+#ifdef _WIN32
   HRSRC hres = FindResource(NULL, MAKEINTRESOURCE(resource_id), L"PNG");
   DWORD size = SizeofResource(NULL, hres);
 
@@ -60,4 +64,8 @@ QPixmap LoadPixmap(unsigned resource_id) {
   QPixmap pixmap;
   pixmap.loadFromData(static_cast<const uchar*>(resource_data), size);
   return pixmap;
+#else
+  (void)resource_id;
+  return {};
+#endif
 }

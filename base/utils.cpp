@@ -1,8 +1,9 @@
 #include "base/utils.h"
 
 #include "base/format.h"
+#include "base/string_util.h"
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <algorithm>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -13,9 +14,22 @@ namespace {
 template <class T>
 int CompareCaseInsensitiveASCII(std::basic_string_view<T> a,
                                 std::basic_string_view<T> b) {
-  if (boost::iequals(a, b))
+  auto lower = [](T ch) {
+    return ToLowerAscii(ch);
+  };
+
+  const size_t count = std::min(a.size(), b.size());
+  for (size_t i = 0; i < count; ++i) {
+    const auto left = lower(a[i]);
+    const auto right = lower(b[i]);
+    if (left < right)
+      return -1;
+    if (right < left)
+      return 1;
+  }
+  if (a.size() == b.size())
     return 0;
-  return boost::ilexicographical_compare(a, b) ? -1 : 1;
+  return a.size() < b.size() ? -1 : 1;
 }
 
 }  // namespace

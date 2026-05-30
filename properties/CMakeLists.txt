@@ -14,12 +14,16 @@ client_module_link_libraries(client_properties PRIVATE
 
 # UTs.
 
-target_link_libraries(client_properties_qt_unittests PRIVATE
-  address_space
-  node_service_v1
-)
+if(TARGET client_properties_qt_unittests)
+  target_link_libraries(client_properties_qt_unittests PRIVATE
+    address_space
+    node_service_v1
+  )
+endif()
 
-target_link_libraries(client_properties_wt_unittests PRIVATE
-  address_space
-  node_service_v1
-)
+if(TARGET client_properties_wt_unittests)
+  target_link_libraries(client_properties_wt_unittests PRIVATE
+    address_space
+    node_service_v1
+  )
+endif()

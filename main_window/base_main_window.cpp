@@ -17,6 +17,10 @@
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
 
+#if defined(UI_QT)
+#include <QGuiApplication>
+#endif
+
 bool BaseMainWindow::g_hide_for_testing = false;
 
 namespace {
@@ -29,7 +33,12 @@ Awaitable<OpenedViewInterface*> OpenViewAsync(
     WindowDefinition window_def,
     bool make_active) {
   if (!window_def.path.empty()) {
-    co_await file_manager.DownloadFileFromServer(window_def.path);
+    try {
+      co_await file_manager.DownloadFileFromServer(window_def.path);
+    } catch (...) {
+      // Open the cached/local view definition when the server-side refresh
+      // fails. The caller can still work with the last available file.
+    }
   }
 
   // TODO: Fix captured `main_window` and run under the local executor.
@@ -340,12 +349,22 @@ void BaseMainWindow::SplitView(OpenedViewInterface& view, bool vertically) {
 
 void BaseMainWindow::ExecuteDefaultNodeCommand(const NodeRef& node) {
   aui::KeyModifiers key_modifiers{};
+#if defined(UI_QT)
+  auto modifiers = QGuiApplication::keyboardModifiers();
+  if (modifiers & Qt::ShiftModifier) {
+    key_modifiers |= aui::ShiftModifier;
+  }
+  if (modifiers & Qt::ControlModifier) {
+    key_modifiers |= aui::ControlModifier;
+  }
+#elif defined(_WIN32)
   if (::GetAsyncKeyState(VK_SHIFT)) {
     key_modifiers |= aui::ShiftModifier;
   }
   if (::GetAsyncKeyState(VK_CONTROL)) {
     key_modifiers |= aui::ControlModifier;
   }
+#endif
 
   node_command_handler_(
       NodeCommandContext{this, GetDialogService(), node, key_modifiers});

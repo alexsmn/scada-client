@@ -71,7 +71,7 @@ static int FindStringPair(const StringPair pairs[],
 TransportDialogModel::TransportDialogModel(
     const transport::TransportString& transport_string)
     : transport_string_{transport_string} {
-  static_assert(_countof(kConnectionTypeStrings) == CONNECTION_TYPE_COUNT,
+  static_assert(std::size(kConnectionTypeStrings) == CONNECTION_TYPE_COUNT,
                 "NotEnoughConnectionTypeStrings");
   for (const auto& str : kConnectionTypeStrings)
     type_items.emplace_back(str);

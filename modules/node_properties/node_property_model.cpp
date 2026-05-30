@@ -11,6 +11,8 @@
 #include "scada/event.h"
 #include "app/string_const.h"
 
+#include <boost/asio/post.hpp>
+
 #include <span>
 
 namespace {
@@ -33,22 +35,6 @@ void SortPropertiesRecursive(
   }
 }
 
-Awaitable<bool> FetchNodeAsync(AnyExecutor executor,
-                               NodeRef node,
-                               CancelationRef cancelation) {
-  try {
-    co_await FetchNode(node);
-  } catch (...) {
-    co_return false;
-  }
-
-  if (cancelation.canceled()) {
-    co_return false;
-  }
-
-  co_return true;
-}
-
 }  // namespace
 
 // NodePropertyModel
@@ -61,14 +47,16 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
       node_{std::move(node)} {
   node_service_.Subscribe(*this);
 
-  CoSpawn(executor_, cancelation_,
-          [this, node = node_, executor = executor_,
-           cancelation = cancelation_.ref()]() mutable -> Awaitable<void> {
-            if (co_await FetchNodeAsync(std::move(executor), std::move(node),
-                                        cancelation)) {
-              OnNodeFetched();
-            }
-          });
+  node_.Fetch(
+      NodeFetchStatus::NodeOnly(),
+      cancelation_.Bind([this](const NodeRef& node) {
+        if (node.status().bad()) {
+          return;
+        }
+
+        boost::asio::post(executor_,
+                          cancelation_.Bind([this] { OnNodeFetched(); }));
+      }));
 }
 
 NodePropertyModel::~NodePropertyModel() {

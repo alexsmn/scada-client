@@ -4,12 +4,19 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include "base/value_util.h"
+#ifdef _WIN32
 #include "base/win/win_util2.h"
+#endif
 #include "export/csv/csv_export.h"
 #include "export/export_model.h"
 #include "main_window/opened_view/opened_view.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
+
+#ifndef _WIN32
+#include <cstdlib>
+#include <string>
+#endif
 
 namespace {
 
@@ -18,6 +25,22 @@ const char16_t kExportTitle[] = u"Export";
 std::filesystem::path MakeFileName(std::u16string_view text) {
   auto result = boost::replace_all_copy(std::u16string{text}, u":", u"-");
   return result;
+}
+
+void OpenWithAssociatedProgram(const std::filesystem::path& path) {
+#ifdef _WIN32
+  win_util::OpenWithAssociatedProgram(path);
+#else
+  std::string command = "open '";
+  for (char ch : path.string()) {
+    if (ch == '\'')
+      command += "'\\''";
+    else
+      command += ch;
+  }
+  command += "'";
+  std::system(command.c_str());
+#endif
 }
 
 class CsvExportCommandRun
@@ -58,7 +81,7 @@ class CsvExportCommandRun
         u"Export completed. Open the file now?", kExportTitle,
         MessageBoxMode::QuestionYesNo);
     if (open_prompt_result == MessageBoxResult::Yes)
-      win_util::OpenWithAssociatedProgram(path_);
+      OpenWithAssociatedProgram(path_);
 
     co_return;
   }

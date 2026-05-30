@@ -8,8 +8,10 @@
 #include "filesystem/filesystem_component.h"
 #include "print/service/print_module.h"
 
-#if !defined(UI_WT)
+#if CLIENT_HAS_MODUS
 #include "modus/modus_module.h"
+#endif
+#if CLIENT_HAS_VIDICON
 #include "vidicon/vidicon_module.h"
 #endif
 
@@ -42,7 +44,7 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
               .ui_command_registry_ = context.ui_command_registry_}));
     }
 
-#if !defined(UI_WT)
+#if CLIENT_HAS_MODUS
     if (modules.modus) {
       context.singletons_.emplace(std::make_shared<ModusModule>(
           ModusModuleContext{
@@ -54,7 +56,9 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
               .profile_ = context.profile_,
               .alias_resolver_ = context.alias_resolver_}));
     }
+#endif
 
+#if CLIENT_HAS_VIDICON
     if (modules.vidicon) {
       context.singletons_.emplace(std::make_shared<VidiconModule>(
           VidiconModuleContext{

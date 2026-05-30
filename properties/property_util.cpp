@@ -2,6 +2,7 @@
 
 #include "base/awaitable.h"
 #include "base/range_util.h"
+#include "base/string_util.h"
 #include "common/format.h"
 #include "node_service/node_awaitable.h"
 #include "node_service/node_service.h"
@@ -9,7 +10,6 @@
 #include "properties/property_context.h"
 #include "services/task_manager.h"
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -40,7 +40,7 @@ Awaitable<void> FetchNodeNamesRecursiveAsync(
 
 }  // namespace
 
-const std::u16string_view kChoiceNone = u"<Нет>";
+const std::u16string_view kChoiceNone = u"<\u041d\u0435\u0442>";
 
 void SetTextHelper(const PropertyContext& context,
                    const NodeRef& node,
@@ -66,7 +66,7 @@ NodeRef FindNodeByNameAndType(const NodeRef& parent_node,
   for (const auto& node : parent_node.targets(scada::id::Organizes)) {
     if (IsInstanceOf(node, node_type_id)) {
       const auto& node_name = GetFullDisplayName(node);
-      if (boost::algorithm::iequals(node_name, name))
+      if (IsAsciiCaseInsensitiveEqual(node_name, name))
         return node;
     }
     if (auto n = FindNodeByNameAndType(node, name, node_type_id))

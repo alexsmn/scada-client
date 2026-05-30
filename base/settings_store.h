@@ -1,10 +1,12 @@
 #pragma once
 
-#include <windows.h>
-
 #include <memory>
 #include <string>
 #include <string_view>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 class SettingsStore {
  public:
@@ -20,6 +22,7 @@ class SettingsStore {
                      std::u16string_view string16_value) = 0;
 };
 
+#ifdef _WIN32
 class RegistrySettingsStore final : public SettingsStore {
  public:
   RegistrySettingsStore(HKEY root, std::wstring subkey);
@@ -37,3 +40,4 @@ class RegistrySettingsStore final : public SettingsStore {
   HKEY root_;
   std::wstring subkey_;
 };
+#endif

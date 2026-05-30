@@ -8,6 +8,7 @@
 using std::max;
 using std::min;
 
+#ifdef _WIN32
 #include <atlbase.h>
 
 #include <atlapp.h>
@@ -44,3 +45,10 @@ class GraphSetupDialog : public ATL::CDialogImpl<GraphSetupDialog>,
                      HWND /*hWndCtl*/,
                      BOOL& /*bHandled*/);
 };
+#else
+class GraphSetupDialog {
+ public:
+  aui::Color color;
+  int line_weight_ = 1;
+};
+#endif

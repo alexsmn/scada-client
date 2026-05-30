@@ -4,10 +4,14 @@ client_module_link_libraries(client_component_change_password PUBLIC
   node_service
 )
 
-target_link_libraries(client_component_change_password_qt_unittests PRIVATE
-  client_core
-)
+if(TARGET client_component_change_password_qt_unittests)
+  target_link_libraries(client_component_change_password_qt_unittests PRIVATE
+    client_core
+  )
+endif()
 
-target_link_libraries(client_component_change_password_wt_unittests PRIVATE
-  client_core
-)
+if(TARGET client_component_change_password_wt_unittests)
+  target_link_libraries(client_component_change_password_wt_unittests PRIVATE
+    client_core
+  )
+endif()

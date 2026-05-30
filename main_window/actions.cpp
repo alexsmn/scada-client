@@ -95,7 +95,7 @@ void RegisterCreateActions(ActionManager& action_manager,
                                        .category_ = CATEGORY_CREATE,
                                        .title_ = Translate("IEC 60870-104 Link")});
 
-  for (size_t i = 0; i < _countof(kNewCommandTypeIds); ++i) {
+  for (size_t i = 0; i < std::size(kNewCommandTypeIds); ++i) {
     action_manager.AddAction(MakeNodeAction(
         action_manager, ID_NEW + i, CATEGORY_CREATE,
         node_service.GetNode(kNewCommandTypeIds[i])));
@@ -121,7 +121,7 @@ scada::NodeId GetNewCommandTypeId(unsigned command_id) {
     return scada::NodeId();
 
   auto index = command_id - ID_NEW;
-  if (index >= _countof(kNewCommandTypeIds))
+  if (index >= std::size(kNewCommandTypeIds))
     return scada::NodeId();
 
   return kNewCommandTypeIds[index];

@@ -1,6 +1,5 @@
 #include "aui/qt/tree_model_adapter.h"
 
-#include "base/win/scoped_gdi_object.h"
 #include "aui/color.h"
 #include "aui/drag_drop_types.h"
 #include "aui/models/tree_model.h"
@@ -9,11 +8,6 @@
 #include <QMimeData>
 #include <QSize>
 #include <cassert>
-#include <windows.h>
-
-#ifdef _WIN32
-#include <QtWin>
-#endif
 
 namespace aui {
 

@@ -14,6 +14,8 @@
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace {
 
 Awaitable<void> SaveLogAsync(AnyExecutor executor,
@@ -70,7 +72,7 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
     model_->SetTimeRange(*time_range);
   }
 
-  table_ = new aui::Table(model_, {columns, columns + _countof(columns)});
+  table_ = new aui::Table(model_, {columns, columns + std::size(columns)});
 
   table_->SetSelectionChangeHandler([this] {
     auto_scroll_ = table_->GetCurrentRow() == model_->GetRowCount() - 1;
@@ -101,12 +103,17 @@ std::unique_ptr<UiView> WatchView::Init(const WindowDefinition& definition) {
 }
 
 void WatchView::SaveLog() {
-  SYSTEMTIME time;
-  GetLocalTime(&time);
+  auto time = boost::posix_time::second_clock::local_time();
+  auto date = time.date();
+  auto time_of_day = time.time_of_day();
 
-  auto name = u16format(L"{:04}{:02}{:02}_{:02}{:02}{:02}.log", time.wYear,
-                        time.wMonth, time.wDay, time.wHour,
-                        time.wMinute, time.wSecond);
+  auto name = u16format(L"{:04}{:02}{:02}_{:02}{:02}{:02}.log",
+                        static_cast<int>(date.year()),
+                        static_cast<int>(date.month()),
+                        static_cast<int>(date.day()),
+                        static_cast<int>(time_of_day.hours()),
+                        static_cast<int>(time_of_day.minutes()),
+                        static_cast<int>(time_of_day.seconds()));
 
   CoSpawn(executor_, [executor = executor_, &dialog_service = dialog_service_,
                       model = model_, name = std::move(name)] {

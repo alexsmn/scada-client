@@ -31,38 +31,53 @@ client_module_link_libraries(client_main_window PRIVATE
 list(APPEND CMAKE_MODULE_PATH
   "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/view_manager_qt"
 )
-find_package(ViewManagerQt REQUIRED)
+if(TARGET client_main_window_qt)
+  find_package(ViewManagerQt REQUIRED)
 
-target_link_libraries(client_main_window_qt PUBLIC
-  view_manager_qt
-)
+  target_link_libraries(client_main_window_qt PUBLIC
+    view_manager_qt
+  )
 
-target_link_libraries(client_main_window_qt PRIVATE
-  client_ui_common_qt
-  client_ui_dragdrop_qt
-  client_ui_progress_qt
-  winmm
-)
+  target_link_libraries(client_main_window_qt PRIVATE
+    client_ui_common_qt
+    client_ui_dragdrop_qt
+    client_ui_progress_qt
+  )
+  if(WIN32)
+    target_link_libraries(client_main_window_qt PRIVATE winmm)
+  endif()
+  if(TARGET client_modus_qt)
+    target_compile_definitions(client_main_window_qt PUBLIC CLIENT_HAS_MODUS=1)
+  else()
+    target_compile_definitions(client_main_window_qt PUBLIC CLIENT_HAS_MODUS=0)
+  endif()
 
-client_qt_translations(client_main_window_qt "main_window_ru_qt.ts")
+  client_qt_translations(client_main_window_qt "main_window_ru_qt.ts")
+endif()
 
 # Wt.
 
 # TODO: Remove dependency on `client_wt_lib`.
-target_link_libraries(client_main_window_wt PRIVATE client_wt_lib)
+if(TARGET client_main_window_wt)
+  target_link_libraries(client_main_window_wt PRIVATE client_wt_lib)
+endif()
 
 # UTs.
 
-target_link_libraries(client_main_window_qt_unittests PRIVATE
-  aui_test_qt
-  client_controller_test_qt
-  client_core
-  client_properties_qt
-)
+if(TARGET client_main_window_qt_unittests)
+  target_link_libraries(client_main_window_qt_unittests PRIVATE
+    aui_test_qt
+    client_controller_test_qt
+    client_core
+    client_properties_qt
+  )
+endif()
 
-target_link_libraries(client_main_window_wt_unittests PRIVATE
-  aui_test_wt
-  client_controller_test_wt
-  client_core
-  client_properties_wt
-)
+if(TARGET client_main_window_wt_unittests)
+  target_link_libraries(client_main_window_wt_unittests PRIVATE
+    aui_test_wt
+    client_controller_test_wt
+    client_core
+    client_properties_wt
+  )
+endif()

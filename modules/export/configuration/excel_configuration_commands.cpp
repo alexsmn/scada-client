@@ -9,7 +9,9 @@
 #include "base/csv_writer.h"
 #include "base/any_executor.h"
 #include "base/u16format.h"
+#ifdef _WIN32
 #include "base/win/win_util2.h"
+#endif
 #include "export/configuration/diff_builder.h"
 #include "export/configuration/diff_report.h"
 #include "export/configuration/export_data_builder.h"
@@ -20,6 +22,10 @@
 #include "node_service/node_service.h"
 
 #include <algorithm>
+#ifndef _WIN32
+#include <cstdlib>
+#include <string>
+#endif
 #include <fstream>
 
 namespace {
@@ -27,6 +33,22 @@ namespace {
 const char16_t kImportTitle[] = u"Import";
 const char16_t kExportTitle[] = u"Export";
 const char kDefaultFileName[] = "configuration.csv";
+
+void OpenWithAssociatedProgram(const std::filesystem::path& path) {
+#ifdef _WIN32
+  win_util::OpenWithAssociatedProgram(path);
+#else
+  std::string command = "open '";
+  for (char ch : path.string()) {
+    if (ch == '\'')
+      command += "'\\''";
+    else
+      command += ch;
+  }
+  command += "'";
+  std::system(command.c_str());
+#endif
+}
 
 }  // namespace
 
@@ -56,7 +78,7 @@ Awaitable<void> ExportConfigurationCommand::ExportTo(
       Translate("Export complete. Open the file now?"), kExportTitle,
       MessageBoxMode::QuestionYesNo);
   if (open_prompt == MessageBoxResult::Yes) {
-    win_util::OpenWithAssociatedProgram(path);
+    OpenWithAssociatedProgram(path);
   }
   co_return;
 }

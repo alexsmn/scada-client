@@ -24,12 +24,12 @@ std::u16string EventStatusProvider::GetEventCountText() const {
   size_t event_count = node_event_provider_.unacked_events().size() +
                        local_events_.events().size();
 
-  return event_count != 0 ? u16format(L"События: {}", event_count)
-                          : u"Нет событий";
+  return event_count != 0 ? u16format(L"\u0421\u043e\u0431\u044b\u0442\u0438\u044f: {}", event_count)
+                          : u"\u041d\u0435\u0442 \u0441\u043e\u0431\u044b\u0442\u0438\u0439";
 }
 
 std::u16string EventStatusProvider::GetSeverityText() const {
-  return u16format(L"Важность: {}",
+  return u16format(L"\u0412\u0430\u0436\u043d\u043e\u0441\u0442\u044c: {}",
                             node_event_provider_.severity_min());
 }
 

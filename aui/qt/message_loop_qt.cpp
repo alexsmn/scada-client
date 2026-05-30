@@ -38,11 +38,14 @@ bool MessageLoopQt::PendingTask::operator<(const PendingTask& other) const {
 // MessageLoopQt
 
 MessageLoopQt::MessageLoopQt() {
-  QObject::connect(&timer_, &QTimer::timeout, [this] { Run(); });
+  QObject::connect(&timer_, &QTimer::timeout, &timer_, [this] { Run(); });
   timer_.start(10);
 }
 
-MessageLoopQt::~MessageLoopQt() {}
+MessageLoopQt::~MessageLoopQt() {
+  timer_.stop();
+  QObject::disconnect(&timer_, nullptr, nullptr, nullptr);
+}
 
 void MessageLoopQt::PostDelayedTask(Duration delay,
                                     Task task,

@@ -20,6 +20,7 @@
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "main_window/standard_command_ids.h"
 #include "main_window/view_manager.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
@@ -27,10 +28,11 @@
 
 #if !defined(UI_WT)
 #include "graph/graph_component.h"
+#if CLIENT_HAS_MODUS
 #include "modus/modus_component.h"
 #endif
+#endif
 
-#include <atlres.h>
 #include <ranges>
 
 #if defined(UI_QT)
@@ -135,7 +137,9 @@ void DisplayMenuModel::MenuWillShow() {
   items_.clear();
 
 #if !defined(UI_WT)
+#if CLIENT_HAS_MODUS
   AddItems(kModusWindowInfo);
+#endif
   for (const WindowInfo* window_info : GetDisplayMenuWindowInfos()) {
     AddItems(*window_info);
   }

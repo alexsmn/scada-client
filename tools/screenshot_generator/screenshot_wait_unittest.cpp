@@ -1,6 +1,7 @@
 #include "screenshot_wait.h"
 
 #include "aui/qt/message_loop_qt.h"
+#include "aui/test/app_environment.h"
 
 #include <gtest/gtest.h>
 
@@ -34,19 +35,24 @@ AnyExecutor MakeExecutor() {
 
 }  // namespace
 
-TEST(ScreenshotWaitTest, WaitForAwaitableReturnsResolvedValue) {
+class ScreenshotWaitTest : public testing::Test {
+ protected:
+  AppEnvironment app_env_;
+};
+
+TEST_F(ScreenshotWaitTest, WaitForAwaitableReturnsResolvedValue) {
   EXPECT_EQ(WaitForAwaitable(MakeExecutor(), ResolveInt()), 42);
 }
 
-TEST(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedValue) {
+TEST_F(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedValue) {
   EXPECT_THROW(WaitForAwaitable(MakeExecutor(), RejectInt()), std::runtime_error);
 }
 
-TEST(ScreenshotWaitTest, WaitForAwaitableCompletesResolvedVoid) {
+TEST_F(ScreenshotWaitTest, WaitForAwaitableCompletesResolvedVoid) {
   EXPECT_NO_THROW(WaitForAwaitable(MakeExecutor(), ResolveVoid()));
 }
 
-TEST(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedVoid) {
+TEST_F(ScreenshotWaitTest, WaitForAwaitablePropagatesRejectedVoid) {
   EXPECT_THROW(WaitForAwaitable(MakeExecutor(), RejectVoid()), std::runtime_error);
 }
 

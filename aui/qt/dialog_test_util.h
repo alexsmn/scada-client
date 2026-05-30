@@ -20,6 +20,7 @@ namespace aui::qt::test {
 
 template <class T>
 struct AwaitableResult {
+  AnyExecutor executor;
   std::optional<T> value;
   std::exception_ptr error;
   bool done = false;
@@ -27,16 +28,17 @@ struct AwaitableResult {
 
 template <>
 struct AwaitableResult<void> {
+  AnyExecutor executor;
   std::exception_ptr error;
   bool done = false;
 };
 
 template <class T>
 std::shared_ptr<AwaitableResult<T>> StartAwaitable(Awaitable<T> awaitable) {
-  auto executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
   auto result = std::make_shared<AwaitableResult<T>>();
-  CoSpawn(executor, [result, awaitable = std::move(awaitable)]() mutable
-                       -> Awaitable<void> {
+  result->executor = MakeAnyExecutor(std::make_shared<MessageLoopQt>());
+  CoSpawn(result->executor, [result, awaitable = std::move(awaitable)]() mutable
+                            -> Awaitable<void> {
     try {
       if constexpr (std::is_void_v<T>) {
         co_await std::move(awaitable);

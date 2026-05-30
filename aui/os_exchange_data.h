@@ -1,7 +1,7 @@
 #pragma once
 
-#include <objidl.h>
 #include <atomic>
+#include <map>
 #include <vector>
 
 namespace base {
@@ -9,6 +9,8 @@ class Pickle;
 }
 
 namespace aui {
+
+#ifdef _WIN32
 
 class DataObjectImpl : public IDataObject {
  public:
@@ -107,5 +109,30 @@ class OSExchangeData {
   DataObjectImpl* data_object_impl_ = nullptr;
   IDataObject* data_object_ = nullptr;
 };
+
+#else
+
+class OSExchangeData {
+ public:
+  using CustomFormat = unsigned;
+
+  OSExchangeData();
+  ~OSExchangeData();
+
+  OSExchangeData(const OSExchangeData&) = delete;
+  OSExchangeData& operator=(const OSExchangeData&) = delete;
+
+  bool HasCustomFormat(CustomFormat format) const;
+
+  bool GetPickledData(CustomFormat format, base::Pickle& data) const;
+  void SetPickledData(CustomFormat format, base::Pickle& data);
+
+  static CustomFormat RegisterCustomFormat(const char* name);
+
+ private:
+  std::map<CustomFormat, std::vector<char>> data_;
+};
+
+#endif
 
 }  // namespace aui

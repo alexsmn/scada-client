@@ -1,9 +1,31 @@
 #pragma once
 
-#include "base/win/scoped_variant.h"
-
 #include <string>
+
+#ifdef _WIN32
+#include "base/win/scoped_variant.h"
 #include <wrl/client.h>
+#else
+using HRESULT = int;
+using DATE = double;
+struct VARIANT {};
+struct IDispatch {};
+namespace base::win {
+class ScopedVariant {
+ public:
+  void Reset() {}
+  template <class T>
+  void Set(const T&) {}
+};
+}  // namespace base::win
+namespace Microsoft::WRL {
+template <class T>
+class ComPtr {
+ public:
+  T* Get() const { return nullptr; }
+};
+}  // namespace Microsoft::WRL
+#endif
 
 class ExcelSheetModel {
  public:

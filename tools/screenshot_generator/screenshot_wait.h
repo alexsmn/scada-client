@@ -39,7 +39,7 @@ struct AwaitableResult<void> {
 template <class T>
 T WaitForAwaitable(AnyExecutor executor, Awaitable<T> awaitable) {
   auto result = std::make_shared<AwaitableResult<T>>();
-  CoSpawn(std::move(executor),
+  CoSpawn(executor,
           [result, awaitable = std::move(awaitable)]() mutable
               -> Awaitable<void> {
             try {

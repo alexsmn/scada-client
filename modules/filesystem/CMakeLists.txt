@@ -20,5 +20,9 @@ client_module_link_libraries(client_filesystem PRIVATE
 # which relies on the `UI_QT`/`UI_WT` compile flag published by the
 # `aui_{qt,wt}` targets. Link those so the flag and forward-declared
 # `UiView` type are visible.
-target_link_libraries(client_filesystem_qt_unittests PRIVATE aui_qt)
-target_link_libraries(client_filesystem_wt_unittests PRIVATE aui_wt)
+if(TARGET client_filesystem_qt_unittests)
+  target_link_libraries(client_filesystem_qt_unittests PRIVATE aui_qt)
+endif()
+if(TARGET client_filesystem_wt_unittests)
+  target_link_libraries(client_filesystem_wt_unittests PRIVATE aui_wt)
+endif()

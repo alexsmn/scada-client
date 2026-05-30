@@ -4,10 +4,14 @@
 #include "base/client_paths.h"
 #include "base/program_options.h"
 #include "base/path_service.h"
+#ifdef _WIN32
 #include "base/win/dump.h"
+#endif
 #include "common/common_paths.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <filesystem>
 #include <stdexcept>
 
@@ -22,6 +26,7 @@ void InitE2eLogPathOverride() {
   base::PathService::Override(client::DIR_LOG, log_dir);
 }
 
+#ifdef _WIN32
 LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
   auto name = GetDumpFileName("client");
 
@@ -33,11 +38,14 @@ LONG WINAPI ProcessUnhandledException(_EXCEPTION_POINTERS* exception) {
 
   return EXCEPTION_EXECUTE_HANDLER;
 }
+#endif
 
 }  // namespace
 
 void InitCrashDump() {
+#ifdef _WIN32
   SetUnhandledExceptionFilter(ProcessUnhandledException);
+#endif
 }
 
 // Path service must be initialized before calling this function.
