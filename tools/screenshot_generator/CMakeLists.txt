@@ -5,6 +5,8 @@
 # base-owned helper target, so it and the shared app-support wiring are
 # compiled in directly here — same arrangement as the regular `client_qt` exe.
 
+find_package(Boost REQUIRED COMPONENTS program_options)
+
 file(GLOB SCREENSHOT_GENERATOR_WIN32_RESOURCES CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/*.rc"
 )
@@ -59,6 +61,7 @@ target_link_libraries(client_screenshot_generator PRIVATE
   client_print_service_qt
   client_properties_qt
   scada_core_opcua_client
+  Boost::program_options
   base_unittest
   graph_qt
 )

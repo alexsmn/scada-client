@@ -86,12 +86,17 @@ void InitScreenshotOptions() {
 
   namespace po = boost::program_options;
 
-  po::options_description desc;
+  std::string output_dir;
+  std::string image_manifest;
+  std::string only;
+
+  po::options_description desc{"Screenshot generator options"};
   desc.add_options()
-      ("out", po::value<std::string>(), "Output directory for screenshots")
-      ("image-manifest", po::value<std::string>(),
+      ("out", po::value(&output_dir)->required(),
+       "Output directory for screenshots")
+      ("image-manifest", po::value(&image_manifest),
        "Path to screenshot image manifest")
-      ("only", po::value<std::string>(),
+      ("only", po::value(&only),
        "Comma/semicolon/newline-separated filenames to capture");
 
   po::variables_map vm;
@@ -100,19 +105,14 @@ void InitScreenshotOptions() {
             vm);
   po::notify(vm);
 
-  if (!vm.count("out")) {
-    throw std::runtime_error{
-        "--out must be provided for screenshot_generator"};
-  }
-
-  g_options.output_dir = vm["out"].as<std::string>();
+  g_options.output_dir = std::move(output_dir);
 
   if (vm.count("image-manifest")) {
-    g_options.image_manifest = vm["image-manifest"].as<std::string>();
+    g_options.image_manifest = std::move(image_manifest);
   }
 
   if (vm.count("only")) {
-    g_options.only_filenames = ParseOnlyList(vm["only"].as<std::string>());
+    g_options.only_filenames = ParseOnlyList(only);
   }
 
   g_options_initialized = true;
