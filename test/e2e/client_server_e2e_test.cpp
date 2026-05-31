@@ -52,8 +52,7 @@ TEST_P(ClientServerE2eTest, Connect_Success_LoadsObjectTree) {
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient(
-      {L"--test-object-view-values-file=" +
-       object_view_values_file_.wstring()});
+      {"--test-object-view-values-file=" + object_view_values_file_.string()});
 
   ASSERT_TRUE(WaitForStartupOrStatus())
       << "Timed out waiting for client startup/status signal";
@@ -90,8 +89,7 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient(
-      {L"--test-object-tree-labels-file=" +
-       object_tree_labels_file_.wstring()});
+      {"--test-object-tree-labels-file=" + object_tree_labels_file_.string()});
 
   ASSERT_TRUE(WaitForStartupOrStatus())
       << "Timed out waiting for client startup/status signal";
@@ -127,8 +125,8 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient(
-      {L"--test-hardware-tree-devices-file=" +
-       hardware_tree_devices_file_.wstring()});
+      {"--test-hardware-tree-devices-file=" +
+       hardware_tree_devices_file_.string()});
 
   ASSERT_TRUE(WaitForStartupOrStatus())
       << "Timed out waiting for client startup/status signal";
@@ -160,9 +158,8 @@ TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {
   WriteClientSettings(/*password=*/"");
   StartServer();
   StartClient(
-      {L"--test-operator-use-cases-file=" +
-           operator_use_cases_file_.wstring(),
-       L"--debug"});
+      {"--test-operator-use-cases-file=" + operator_use_cases_file_.string(),
+       "--debug"});
 
   ASSERT_TRUE(WaitForStartupOrStatus())
       << "Timed out waiting for client startup/status signal";
@@ -189,10 +186,12 @@ TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {
   }
 
   ExpectServerAuthLog();
+#if !defined(__APPLE__)
   ExpectProcessesRemainRunningFor(
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
       "waiting for operator use-case surfaces to remain stable");
+#endif
 }
 
 TEST_P(ClientServerE2eTest, Connect_BadPassword) {

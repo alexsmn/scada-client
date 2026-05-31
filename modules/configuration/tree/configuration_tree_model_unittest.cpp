@@ -1,6 +1,7 @@
 #include "configuration/tree/configuration_tree_model.h"
 
 #include "aui/translation.h"
+#include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "configuration/tree/node_service_tree_mock.h"
@@ -8,6 +9,8 @@
 #include "node_service/node_model_mock.h"
 
 #include <gmock/gmock.h>
+
+#include <optional>
 
 using namespace testing;
 
@@ -19,6 +22,10 @@ NodeRef MakeTestNodeRef(const scada::NodeId& node_id) {
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+  ON_CALL(*node_model, Fetch(_))
+      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
+        co_return;
+      });
   return node_model;
 }
 
@@ -29,6 +36,10 @@ std::shared_ptr<NiceMock<MockNodeModel>> MakeTestNodeModel(
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeAndChildren()));
+  ON_CALL(*node_model, Fetch(_))
+      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
+        co_return;
+      });
   return node_model;
 }
 
@@ -141,7 +152,7 @@ TEST_F(ConfigurationTreeModelTest, CreatingChildrenDoesNotFetchNodesInCtor) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
 
-  EXPECT_CALL(*child_model, Fetch(_, _)).Times(0);
+  EXPECT_CALL(*child_model, Fetch(_)).Times(0);
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
       .WillOnce(Return(std::vector<NodeServiceTree::ChildRef>{
@@ -193,10 +204,10 @@ TEST_F(ConfigurationTreeModelTest,
                                 : NodeFetchStatus::NodeOnly();
       });
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
-      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+      .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         children_fetched = true;
-        cb();
+        co_return;
       });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
@@ -227,16 +238,17 @@ TEST_F(ConfigurationTreeModelTest,
        FetchMoreShowsTranslatedLoadingSuffixWithoutDotsWhilePending) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
-  NodeModel::FetchCallback delayed_callback;
+  std::optional<base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
   ON_CALL(*child_model, GetAttribute(scada::AttributeId::DisplayName))
       .WillByDefault(Return(scada::LocalizedText{u"Loading node"}));
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
-      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
-        delayed_callback = cb;
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+      .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
+        delayed_completion.emplace(executor_);
+        co_await delayed_completion->Wait();
       });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
@@ -258,8 +270,8 @@ TEST_F(ConfigurationTreeModelTest,
   EXPECT_EQ(child->GetText(0),
             u"Loading node [" + Translate("Loading") + u"]");
 
-  ASSERT_TRUE(static_cast<bool>(delayed_callback));
-  delayed_callback();
+  ASSERT_TRUE(delayed_completion.has_value());
+  delayed_completion->Complete();
   Drain(executor_);
 }
 
@@ -275,10 +287,10 @@ TEST_F(ConfigurationTreeModelTest, RootFetchesChildrenWhenNotPrefetched) {
                                      : NodeFetchStatus::NodeOnly();
       });
 
-  EXPECT_CALL(*root_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
-      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
+  EXPECT_CALL(*root_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+      .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
         root_children_fetched = true;
-        cb();
+        co_return;
       });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
@@ -301,14 +313,15 @@ TEST_F(ConfigurationTreeModelTest,
        DelayedFetchMoreCallbackAfterModelDestructionIsIgnored) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
-  NodeModel::FetchCallback delayed_callback;
+  std::optional<base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
-      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
-        delayed_callback = cb;
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+      .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
+        delayed_completion.emplace(executor_);
+        co_await delayed_completion->Wait();
       });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
@@ -325,11 +338,11 @@ TEST_F(ConfigurationTreeModelTest,
       static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
   child->FetchMore();
   Drain(executor_);
-  ASSERT_TRUE(static_cast<bool>(delayed_callback));
+  ASSERT_TRUE(delayed_completion.has_value());
 
   model_.reset();
 
-  EXPECT_NO_THROW(delayed_callback());
+  EXPECT_NO_THROW(delayed_completion->Complete());
   Drain(executor_);
 }
 
@@ -337,14 +350,15 @@ TEST_F(ConfigurationTreeModelTest,
        DelayedFetchMoreCallbackAfterTreeNodeRemovalIsIgnored) {
   auto node_service_tree = std::make_unique<NiceMock<MockNodeServiceTree>>();
   auto child_model = MakeTestNodeModel(kNodeId1);
-  NodeModel::FetchCallback delayed_callback;
+  std::optional<base::AsyncCompletion> delayed_completion;
 
   ON_CALL(*child_model, GetFetchStatus())
       .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
 
-  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren(), _))
-      .WillOnce([&](const NodeFetchStatus&, const NodeModel::FetchCallback& cb) {
-        delayed_callback = cb;
+  EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeAndChildren()))
+      .WillOnce([&](const NodeFetchStatus&) -> Awaitable<void> {
+        delayed_completion.emplace(executor_);
+        co_await delayed_completion->Wait();
       });
 
   EXPECT_CALL(*node_service_tree, GetChildren(_))
@@ -363,12 +377,12 @@ TEST_F(ConfigurationTreeModelTest,
       static_cast<ConfigurationTreeNode*>(model_->GetChild(root, 0));
   child->FetchMore();
   Drain(executor_);
-  ASSERT_TRUE(static_cast<bool>(delayed_callback));
+  ASSERT_TRUE(delayed_completion.has_value());
 
   observer_->OnNodeChildrenChanged(scada::id::RootFolder);
   ASSERT_EQ(0, model_->GetChildCount(root));
 
-  EXPECT_NO_THROW(delayed_callback());
+  EXPECT_NO_THROW(delayed_completion->Complete());
   Drain(executor_);
   EXPECT_EQ(0, model_->GetChildCount(root));
 }

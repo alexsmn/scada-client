@@ -104,7 +104,7 @@ void LogStartupException(std::exception_ptr exception) {
 
 int main(int argc, char* argv[]) {
   try {
-    AppInit app_init;
+    AppInit app_init{argc, argv};
     std::set_terminate(&OnTerminate);
 
 #ifdef _WIN32

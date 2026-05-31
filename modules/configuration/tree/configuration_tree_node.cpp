@@ -2,7 +2,6 @@
 
 #include "aui/translation.h"
 #include "base/awaitable.h"
-#include "base/callback_awaitable.h"
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/node_id_util.h"
 
@@ -10,11 +9,7 @@ namespace {
 
 Awaitable<NodeRef> FetchNodeAndChildrenAsync(AnyExecutor executor,
                                              NodeRef node) {
-  auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
-      std::move(executor), [node = std::move(node)](auto callback) {
-        node.Fetch(NodeFetchStatus::NodeAndChildren(), std::move(callback));
-      });
-  co_return std::move(fetched_node);
+  co_return co_await node.Fetch(NodeFetchStatus::NodeAndChildren());
 }
 
 }  // namespace

@@ -211,7 +211,7 @@ std::vector<std::pair<int, int>> NodeTableModel::FindUpdatedRanges(
 }
 
 void NodeTableModel::FetchRow(Row& row) const {
-  row.node.Fetch();
+  row.node.StartFetch();
 
   row.additional_targets.clear();
   std::ranges::for_each(columns_, [&](const auto& column) {
@@ -223,7 +223,7 @@ void NodeTableModel::FetchRow(Row& row) const {
   });
 
   std::ranges::for_each(row.additional_targets, [&](const auto& target_id) {
-    node_service_.GetNode(target_id).Fetch();
+    node_service_.GetNode(target_id).StartFetch();
   });
 }
 

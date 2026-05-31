@@ -1,9 +1,16 @@
-if(NOT WIN32)
+if(NOT WIN32 AND NOT APPLE)
   return()
 endif()
 
 if(NOT TARGET server OR NOT TARGET client_qt)
   return()
+endif()
+
+if(APPLE)
+  find_program(SCADA_E2E_SQLITE3_PROGRAM sqlite3 REQUIRED)
+  set(SCADA_E2E_SQLITE3_EXE "${SCADA_E2E_SQLITE3_PROGRAM}")
+else()
+  set(SCADA_E2E_SQLITE3_EXE "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sqlite3.exe")
 endif()
 
 add_executable(client_server_e2e_tests
@@ -29,7 +36,7 @@ target_compile_definitions(client_server_e2e_tests PRIVATE
   SCADA_E2E_SERVER_SETTINGS_TEMPLATE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/server-settings.json"
   SCADA_E2E_CONFIGURATION_BASE_SQL="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/configuration-base.sql"
   SCADA_E2E_CONFIGURATION_FIXTURE_SQL="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/configuration-fixture.sql"
-  SCADA_E2E_SQLITE3_EXE="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sqlite3.exe"
+  SCADA_E2E_SQLITE3_EXE="${SCADA_E2E_SQLITE3_EXE}"
 )
 
 add_dependencies(client_server_e2e_tests

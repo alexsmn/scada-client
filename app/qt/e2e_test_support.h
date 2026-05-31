@@ -26,6 +26,7 @@ struct OperatorUseCaseSmokeCheck {
   std::vector<unsigned> registered_global_commands;
   std::vector<unsigned> main_window_commands;
   std::vector<std::string_view> printable_window_types;
+  bool optional_when_unavailable = false;
 };
 
 struct OperatorUseCaseSmokeResult {

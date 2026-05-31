@@ -4,7 +4,7 @@
 
 namespace client {
 
-void InitProgramOptions();
+void InitProgramOptions(int argc, char* argv[]);
 bool HasOption(std::string_view name);
 std::string GetOptionValue(std::string_view name);
 

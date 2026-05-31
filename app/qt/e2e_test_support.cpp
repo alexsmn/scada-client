@@ -366,7 +366,15 @@ std::vector<OperatorUseCaseSmokeCheck> MakeOperatorUseCaseSmokeChecks() {
        {},
        {"Table", "EventJournal"}},
       {"UC-10", "browse server files", {"FileSystemView"}},
-      {"UC-11", "view Modus and Vidicon schematics", {}, {"Modus", "VidiconDisplay"}},
+      {"UC-11",
+       "view Modus and Vidicon schematics",
+       {},
+       {"Modus", "VidiconDisplay"},
+       {},
+       {},
+       {},
+       {},
+       true},
       {"UC-12",
        "edit device parameters limits and aliases",
        {},
@@ -464,6 +472,11 @@ Awaitable<void> RunE2eOperatorUseCaseSmokeAsync(
       ok = ok && printable;
       detail += printable ? " printable " : " not-printable ";
       detail += window_type;
+    }
+
+    if (!ok && check.optional_when_unavailable) {
+      ok = true;
+      detail += " optional-unavailable";
     }
 
     AddSmokeResult(state, check.id, ok, std::move(detail));

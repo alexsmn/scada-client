@@ -27,6 +27,9 @@ class AliasService final : private AliasServiceContext,
  private:
   void OnFetchCompleted();
 
+  // NodeRefObserver
+  virtual void OnNodeFetched(const NodeFetchedEvent& event) override;
+
   scada::NodeId ResolveNow(const std::string& alias) const;
 
   NodeRef aliases_;

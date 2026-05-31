@@ -1,7 +1,6 @@
 ﻿#include "configuration/objects/object_tree_model.h"
 
 #include "aui/translation.h"
-#include "base/callback_awaitable.h"
 #include "configuration/tree/node_service_tree_impl.h"
 #include "scada/standard_node_ids.h"
 #include "model/data_items_node_ids.h"
@@ -11,11 +10,7 @@ namespace {
 
 Awaitable<NodeRef> FetchNodeOnlyAsync(AnyExecutor executor,
                                       NodeRef node) {
-  auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
-      std::move(executor), [node = std::move(node)](auto callback) {
-        node.Fetch(NodeFetchStatus::NodeOnly(), std::move(callback));
-      });
-  co_return std::move(fetched_node);
+  co_return co_await node.Fetch(NodeFetchStatus::NodeOnly());
 }
 
 }  // namespace

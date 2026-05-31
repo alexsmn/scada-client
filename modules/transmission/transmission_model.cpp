@@ -44,9 +44,9 @@ void TransmissionModel::Init(NodeRef device) {
 
   node_service_.Subscribe(*this);
 
-  device_.Fetch(NodeFetchStatus::ChildrenOnly(),
-                BindCancelation(weak_from_this(),
-                                [this](const NodeRef& device) { Refresh(); }));
+  device_.StartFetch(NodeFetchStatus::ChildrenOnly());
+  if (device_.children_fetched())
+    Refresh();
 }
 
 int TransmissionModel::GetRowCount() {
@@ -130,7 +130,7 @@ void TransmissionModel::Refresh() {
   GridModel::NotifyModelChanged();
 
   for (auto& row : rows_)
-    row.transmission.Fetch(NodeFetchStatus::NodeOnly());
+    row.transmission.StartFetch(NodeFetchStatus::NodeOnly());
 
   auto source_ids = rows_ | boost::adaptors::filtered([](const Row& row) {
                       return !row.source_id.is_null();
@@ -157,10 +157,15 @@ void TransmissionModel::OnNodeSemanticChanged(const scada::NodeId& node_id) {
     Update(node);
 }
 
+void TransmissionModel::OnNodeFetched(const NodeFetchedEvent& event) {
+  if (event.node_id == device_.node_id() && device_.children_fetched())
+    Refresh();
+}
+
 void TransmissionModel::Update(NodeRef transmission) {
   assert(IsInstanceOf(transmission, devices::id::TransmissionItemType));
 
-  transmission.Fetch(NodeFetchStatus::NodeOnly());
+  transmission.StartFetch(NodeFetchStatus::NodeOnly());
 
   auto source_id =
       transmission.target(devices::id::HasTransmissionSource).node_id();

@@ -22,6 +22,10 @@ std::shared_ptr<NiceMock<MockNodeModel>> MakeNodeModel(
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
       .WillByDefault(Return(static_cast<scada::Int32>(node_class)));
+  ON_CALL(*node_model, Fetch(_))
+      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
+        co_return;
+      });
   return node_model;
 }
 
@@ -62,7 +66,7 @@ TEST(ClientUtilsTest, ExpandGroupItemIdsAsyncZeroLimitDoesNotFetch) {
   const scada::NodeId root_id{7100, 1};
   auto root = MakeNodeModel(root_id, scada::NodeClass::Object,
                             NodeFetchStatus::None());
-  EXPECT_CALL(*root, Fetch(_, _)).Times(0);
+  EXPECT_CALL(*root, Fetch(_)).Times(0);
 
   TestExecutor executor;
   auto node_ids =

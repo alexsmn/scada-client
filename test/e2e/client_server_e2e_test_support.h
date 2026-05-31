@@ -37,7 +37,7 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   void PrepareWorkspace();
   void WriteClientSettings(std::string_view password);
   void StartServer();
-  void StartClient(std::vector<std::wstring> extra_args = {});
+  void StartClient(std::vector<std::string> extra_args = {});
 
   std::string WaitForStatus();
   bool WaitForStartupOrStatus();

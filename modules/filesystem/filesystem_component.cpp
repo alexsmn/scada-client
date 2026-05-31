@@ -68,7 +68,7 @@ void FileSystemComponent::AddFileCommand(
   assert(selection_commands_);
 
   const auto& file_type = node_service_.GetNode(type_definition_id);
-  file_type.Fetch(NodeFetchStatus::NodeOnly());
+  file_type.StartFetch(NodeFetchStatus::NodeOnly());
 
   selection_commands_->AddCommand(
       BasicCommand<SelectionCommandContext>{command_id}

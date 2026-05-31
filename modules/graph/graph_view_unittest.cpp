@@ -30,11 +30,10 @@ class TestNodeModel final : public NodeModel {
   NodeFetchStatus GetFetchStatus() const override {
     return NodeFetchStatus::Max();
   }
-  void Fetch(const NodeFetchStatus& requested_status,
-             const FetchCallback& callback) const override {
-    if (callback)
-      callback();
+  Awaitable<void> Fetch(const NodeFetchStatus& requested_status) const override {
+    co_return;
   }
+  void StartFetch(const NodeFetchStatus& requested_status) const override {}
   scada::Variant GetAttribute(scada::AttributeId attribute_id) const override {
     return {};
   }

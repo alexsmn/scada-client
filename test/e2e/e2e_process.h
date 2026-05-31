@@ -1,9 +1,7 @@
 #pragma once
 
-#include "base/win/scoped_handle.h"
-#include "base/win/scoped_process_information.h"
-
-#include <Windows.h>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/group.hpp>
 
 #include <filesystem>
 #include <optional>
@@ -12,28 +10,30 @@
 
 namespace client::test {
 
+namespace process = boost::process::v1;
+
 class JobObject {
  public:
   JobObject();
+  ~JobObject();
 
-  void Assign(HANDLE process);
+  process::group& group() { return group_; }
 
  private:
-  base::win::ScopedHandle handle_;
+  process::group group_;
 };
 
 struct ChildProcess {
-  base::win::ScopedProcessInformation process_info;
+  mutable process::child process;
 
   bool IsRunning() const;
-  std::optional<DWORD> ExitCode() const;
+  std::optional<int> ExitCode() const;
 };
 
-void ForceTerminate(base::win::ScopedProcessInformation& process_info);
-void WaitForExit(base::win::ScopedProcessInformation& process_info,
-                 DWORD timeout_ms = 5000);
+void ForceTerminate(ChildProcess& child);
+void WaitForExit(ChildProcess& child, int timeout_ms = 5000);
 void LaunchProcess(const std::filesystem::path& exe,
-                   const std::vector<std::wstring>& args,
+                   const std::vector<std::string>& args,
                    const std::filesystem::path& workdir,
                    JobObject& job,
                    ChildProcess& child);

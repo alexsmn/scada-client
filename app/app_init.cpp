@@ -62,8 +62,8 @@ void InitLogging() {
   }
 }
 
-AppInit::AppInit() {
-  client::InitProgramOptions();
+AppInit::AppInit(int argc, char* argv[]) {
+  client::InitProgramOptions(argc, argv);
 
   scada::RegisterPathProvider();
   client::RegisterPathProvider();

@@ -47,7 +47,7 @@ void UserStatusProvider::UpdateUser() {
   user_node_.Unsubscribe(*this);
 
   user_node_ = node_service_.GetNode(user_id);
-  user_node_.Fetch(NodeFetchStatus::NodeOnly());
+  user_node_.StartFetch(NodeFetchStatus::NodeOnly());
   user_node_.Subscribe(*this);
 
   change_notifier_();

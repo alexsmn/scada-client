@@ -1,12 +1,5 @@
 #include "base/program_options.h"
 
-#ifdef _WIN32
-#include <Windows.h>
-#include <shellapi.h>
-#endif
-
-#include "base/utf_convert.h"
-
 namespace client {
 
 namespace {
@@ -16,7 +9,7 @@ boost::program_options::variables_map& GetVariablesMap() {
 }
 }  // namespace
 
-void InitProgramOptions() {
+void InitProgramOptions(int argc, char* argv[]) {
   namespace po = boost::program_options;
 
   po::options_description desc;
@@ -56,20 +49,13 @@ void InitProgramOptions() {
        po::value<std::string>(),
        "E2E-only hardware tree devices report file");
 
-#ifdef _WIN32
-  int argc = 0;
-  LPWSTR* wargv = CommandLineToArgvW(GetCommandLineW(), &argc);
-  if (!wargv) return;
-
-  std::vector<std::string> args;
-  for (int i = 1; i < argc; ++i)
-    args.push_back(UtfConvert<char>(wargv[i]));
-  LocalFree(wargv);
-
   auto& vm = GetVariablesMap();
-  po::store(po::command_line_parser(args).options(desc).allow_unregistered().run(), vm);
+  po::store(po::command_line_parser(argc, argv)
+                .options(desc)
+                .allow_unregistered()
+                .run(),
+            vm);
   po::notify(vm);
-#endif
 }
 
 bool HasOption(std::string_view name) {

@@ -129,6 +129,23 @@ TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeRecordsOpenWindowFailure) {
   EXPECT_NE(report.find("UC-Y ok window open failure"), std::string::npos);
 }
 
+TEST_F(E2eTestSupportTest, OperatorUseCaseSmokeAllowsOptionalMissingItems) {
+  std::vector<OperatorUseCaseSmokeCheck> checks{
+      {.id = "UC-Z",
+       .description = "optional integration",
+       .registered_window_types = {"Missing"},
+       .optional_when_unavailable = true}};
+
+  WaitAwaitable(executor_, RunE2eOperatorUseCaseSmoke(
+                               MakeContext(), report_path_, std::move(checks)));
+
+  const auto report = ReadFile(report_path_);
+  EXPECT_NE(report.find("operator-use-cases: ok"), std::string::npos);
+  EXPECT_NE(report.find("UC-Z ok optional integration missing Missing "
+                        "optional-unavailable"),
+            std::string::npos);
+}
+
 TEST_F(E2eTestSupportTest, ObjectViewValuesCheckWritesSuccessfulReport) {
   WaitAwaitable(executor_, RunE2eObjectViewValuesCheck(
                                ObjectViewValuesCheckContext{

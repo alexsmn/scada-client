@@ -51,7 +51,7 @@ HelloApplication::~HelloApplication() {
 }
 
 int main(int argc, char** argv) {
-  AppInit app_init;
+  AppInit app_init{argc, argv};
 
   Wt::WIOService io_context;
   io_context.setThreadCount(1);

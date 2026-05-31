@@ -87,7 +87,8 @@ FileSynchronizer::FileSynchronizer(FileSynchronizerContext&& context)
   node_service_.Subscribe(*this);
 
   const auto& root = node_service_.GetNode(filesystem::id::FileSystem);
-  FetchTree(root, [this, root] {
+  CoSpawn(executor_, [this, root]() -> Awaitable<void> {
+    co_await FetchTree(root);
     if (root.status()) {
       logger_->WriteF(LogSeverity::Normal, "Fetch file tree completed");
       ProcessNodesRecursively(root);

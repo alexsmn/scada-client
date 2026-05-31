@@ -69,6 +69,7 @@ class TransmissionModel
   // NodeRefObserver
   virtual void OnModelChanged(const scada::ModelChangeEvent& event) override;
   virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override;
+  virtual void OnNodeFetched(const NodeFetchedEvent& event) override;
 
   NodeService& node_service_;
   TaskManager& task_manager_;

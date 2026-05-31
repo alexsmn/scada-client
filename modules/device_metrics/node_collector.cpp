@@ -1,6 +1,5 @@
 #include "modules/device_metrics/node_collector.h"
 
-#include "base/callback_awaitable.h"
 #include "base/any_executor.h"
 #include "base/span_util.h"
 
@@ -26,16 +25,7 @@ std::vector<NodeRef> JoinAll(
 Awaitable<NodeRef> FetchNodeAsync(AnyExecutor executor,
                                   const NodeRef& node,
                                   const NodeFetchStatus& requested_status) {
-  auto [fetched_node] = co_await CallbackToAwaitable<NodeRef>(
-      std::move(executor),
-      [node, requested_status](auto callback) {
-        node.Fetch(requested_status,
-                   [callback = std::move(callback)](
-                       const NodeRef& fetched_node) mutable {
-                     callback(fetched_node);
-                   });
-      });
-  co_return fetched_node;
+  co_return co_await node.Fetch(requested_status);
 }
 
 Awaitable<std::vector<NodeRef>> CollectChildrenAsync(

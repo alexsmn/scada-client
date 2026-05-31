@@ -7,10 +7,10 @@ class CreateTree {
  public:
   bool CanCreate(const NodeRef& parent,
                  const NodeRef& component_type_definition) {
-    parent.Fetch(NodeFetchStatus::NodeOnly());
+    parent.StartFetch(NodeFetchStatus::NodeOnly());
 
     for (const auto& creates : parent.targets(scada::id::Creates)) {
-      component_type_definition.Fetch(NodeFetchStatus::NodeOnly());
+      component_type_definition.StartFetch(NodeFetchStatus::NodeOnly());
       if (IsSubtypeOf(component_type_definition, creates.node_id()))
         return true;
     }

@@ -12,14 +12,10 @@ AliasService::AliasService(AliasServiceContext&& context)
 
   logger_->WriteF(LogSeverity::Normal, "Fetching");
 
-  // TODO: weak ptr.
-  aliases_.Fetch(NodeFetchStatus::NodeAndChildren(),
-                 [this](const NodeRef& aliases) {
-                   if (aliases.children_fetched())
-                     OnFetchCompleted();
-                 });
-
   node_service_.Subscribe(*this);
+  aliases_.StartFetch(NodeFetchStatus::NodeAndChildren());
+  if (aliases_.children_fetched())
+    OnFetchCompleted();
 }
 
 AliasService::~AliasService() {
@@ -59,6 +55,13 @@ void AliasService::OnFetchCompleted() {
   }
 
   pending_aliases_.clear();
+}
+
+void AliasService::OnNodeFetched(const NodeFetchedEvent& event) {
+  if (!fetched_ && event.node_id == aliases_.node_id() &&
+      aliases_.children_fetched()) {
+    OnFetchCompleted();
+  }
 }
 
 scada::NodeId AliasService::ResolveNow(const std::string& alias) const {

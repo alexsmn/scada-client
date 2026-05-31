@@ -19,8 +19,9 @@ namespace {
 
 void FetchNodes(NodeService& node_service,
                 std::span<const scada::NodeId> node_ids) {
-  std::ranges::for_each(
-      node_ids, [&](auto& node_id) { node_service.GetNode(node_id).Fetch(); });
+  std::ranges::for_each(node_ids, [&](auto& node_id) {
+    node_service.GetNode(node_id).StartFetch();
+  });
 }
 
 void SortPropertiesRecursive(
@@ -47,16 +48,15 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
       node_{std::move(node)} {
   node_service_.Subscribe(*this);
 
-  node_.Fetch(
-      NodeFetchStatus::NodeOnly(),
-      cancelation_.Bind([this](const NodeRef& node) {
-        if (node.status().bad()) {
-          return;
-        }
+  CoSpawn(executor_, cancelation_, [this]() -> Awaitable<void> {
+    co_await node_.Fetch(NodeFetchStatus::NodeOnly());
+    if (node_.status().bad()) {
+      co_return;
+    }
 
-        boost::asio::post(executor_,
-                          cancelation_.Bind([this] { OnNodeFetched(); }));
-      }));
+    boost::asio::post(executor_,
+                      cancelation_.Bind([this] { OnNodeFetched(); }));
+  });
 }
 
 NodePropertyModel::~NodePropertyModel() {

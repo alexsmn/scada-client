@@ -1,6 +1,7 @@
 #include "configuration/objects/object_tree_model.h"
 
 #include "address_space/test/test_scada_node_states.h"
+#include "base/async_completion.h"
 #include "base/blinker.h"
 #include "base/test/test_executor.h"
 #include "common/node_state.h"
@@ -15,6 +16,8 @@
 #include "timed_data/timed_data_service_fake.h"
 
 #include <gmock/gmock.h>
+
+#include <optional>
 
 using namespace testing;
 
@@ -36,6 +39,10 @@ NodeRef MakeObjectTreeNodeModel(const scada::NodeId& node_id,
   const NodeRef type_node{type_model};
 
   ON_CALL(*node_model, GetFetchStatus()).WillByDefault(Return(fetch_status));
+  ON_CALL(*node_model, Fetch(_))
+      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
+        co_return;
+      });
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(node_id));
   ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeClass))
@@ -47,6 +54,10 @@ NodeRef MakeObjectTreeNodeModel(const scada::NodeId& node_id,
 
   ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
       .WillByDefault(Return(data_items::id::DataItemType));
+  ON_CALL(*type_model, Fetch(_))
+      .WillByDefault([](const NodeFetchStatus&) -> Awaitable<void> {
+        co_return;
+      });
   ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
       .WillByDefault(Return(NodeRef{}));
 
@@ -208,10 +219,10 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   void ExpectDelayedFetch() {
     auto child_model =
         std::static_pointer_cast<const MockNodeModel>(child_node_.model());
-    EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeOnly(), _))
-        .WillOnce([this](const NodeFetchStatus&,
-                         const NodeModel::FetchCallback& callback) {
-          delayed_fetch_callback_ = callback;
+    EXPECT_CALL(*child_model, Fetch(NodeFetchStatus::NodeOnly()))
+        .WillOnce([this](const NodeFetchStatus&) -> Awaitable<void> {
+          delayed_fetch_completion_.emplace(executor_);
+          co_await delayed_fetch_completion_->Wait();
         });
   }
 
@@ -224,7 +235,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
         std::static_pointer_cast<const MockNodeModel>(child_node_.model());
     ON_CALL(*child_model, GetFetchStatus())
         .WillByDefault(Return(NodeFetchStatus::NodeOnly()));
-    delayed_fetch_callback_();
+    delayed_fetch_completion_->Complete();
     PollExecutor();
   }
 
@@ -242,7 +253,7 @@ class ObjectTreeModelAsyncVisibleNodeTest : public ::testing::Test {
   NodeRef root_node_;
   NodeRef child_node_;
   void* child_tree_node_ = nullptr;
-  NodeModel::FetchCallback delayed_fetch_callback_;
+  std::optional<base::AsyncCompletion> delayed_fetch_completion_;
   std::unique_ptr<TestObjectTreeModel> model_;
 };
 
@@ -253,7 +264,7 @@ TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
 
   model_->SetNodeVisible(child_tree_node_, true);
   PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(delayed_fetch_callback_));
+  ASSERT_TRUE(delayed_fetch_completion_.has_value());
   EXPECT_EQ(model_->fetched_visible_node_count(), 0);
   EXPECT_TRUE(model_->GetText(child_tree_node_, 1).empty());
 
@@ -269,7 +280,7 @@ TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
 
   model_->SetNodeVisible(child_tree_node_, true);
   PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(delayed_fetch_callback_));
+  ASSERT_TRUE(delayed_fetch_completion_.has_value());
 
   model_->SetNodeVisible(child_tree_node_, false);
   CompleteFetch();
@@ -284,7 +295,7 @@ TEST_F(ObjectTreeModelAsyncVisibleNodeTest,
 
   model_->SetNodeVisible(child_tree_node_, true);
   PollExecutor();
-  ASSERT_TRUE(static_cast<bool>(delayed_fetch_callback_));
+  ASSERT_TRUE(delayed_fetch_completion_.has_value());
 
   ASSERT_NE(node_service_tree_observer_, nullptr);
   node_service_tree_observer_->OnNodeChildrenChanged(scada::id::RootFolder);

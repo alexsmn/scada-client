@@ -4,7 +4,7 @@
 
 class AppInit {
  public:
-  AppInit();
+  AppInit(int argc, char* argv[]);
   ~AppInit();
 
 private:

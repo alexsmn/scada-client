@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
-#include <process.h>
 #include <thread>
 
 using namespace std::chrono_literals;
@@ -19,11 +18,8 @@ namespace client::test {
 namespace {
 
 bool IsKeepWorkspaceEnabled() {
-  char* value = nullptr;
-  size_t size = 0;
-  auto err = _dupenv_s(&value, &size, "SCADA_E2E_KEEP_WORKSPACE");
-  std::unique_ptr<char, decltype(&std::free)> holder{value, &std::free};
-  return err == 0 && holder && *holder;
+  auto* value = std::getenv("SCADA_E2E_KEEP_WORKSPACE");
+  return value && *value;
 }
 
 constexpr auto kWaitStep = 100ms;
@@ -70,14 +66,11 @@ std::filesystem::path GetConfigurationFixtureSqlPath() {
   return std::filesystem::path{SCADA_E2E_CONFIGURATION_FIXTURE_SQL};
 }
 
-std::wstring GetSqliteExePath() {
-  wchar_t* value = nullptr;
-  size_t size = 0;
-  auto err = _wdupenv_s(&value, &size, L"SCADA_SQLITE3_EXE");
-  std::unique_ptr<wchar_t, decltype(&std::free)> holder{value, &std::free};
-  if (err == 0 && holder && *holder)
-    return holder.get();
-  return std::filesystem::path{SCADA_E2E_SQLITE3_EXE}.wstring();
+std::filesystem::path GetSqliteExePath() {
+  auto* value = std::getenv("SCADA_SQLITE3_EXE");
+  if (value && *value)
+    return value;
+  return std::filesystem::path{SCADA_E2E_SQLITE3_EXE};
 }
 
 std::string SqlitePath(const std::filesystem::path& path) {
@@ -108,18 +101,21 @@ void GenerateConfigurationDatabase(const std::filesystem::path& workspace,
                     std::to_string(iec61850_port) + ";\n");
 
   const auto sqlite_exe = GetSqliteExePath();
-  std::vector<const wchar_t*> args{
-      sqlite_exe.c_str(),
-      L"-batch",
-      L"-init",
-      script_path.c_str(),
-      database_path.c_str(),
-      nullptr};
-  auto exit_code = _wspawnvp(_P_WAIT, sqlite_exe.c_str(), args.data());
-  if (exit_code != 0) {
+  JobObject job;
+  ChildProcess sqlite;
+  LaunchProcess(sqlite_exe,
+                {"-batch", "-init", script_path.string(), database_path.string()},
+                workspace,
+                job,
+                sqlite);
+  WaitForExit(sqlite, 30000);
+  auto exit_code = sqlite.ExitCode();
+  if (!exit_code || *exit_code != 0) {
+    ForceTerminate(sqlite);
     throw std::runtime_error{"sqlite3 failed while creating " +
                              database_path.string() + " with exit code " +
-                             std::to_string(exit_code)};
+                             (exit_code ? std::to_string(*exit_code)
+                                        : std::string{"unavailable"})};
   }
 }
 
@@ -207,10 +203,10 @@ void ClientServerE2eTest::TearDown() {
     workspace_.Preserve();
     std::cerr << "Preserved E2E workspace: " << workspace_.path() << '\n';
   }
-  ForceTerminate(client_.process_info);
-  ForceTerminate(server_.process_info);
-  WaitForExit(client_.process_info);
-  WaitForExit(server_.process_info);
+  ForceTerminate(client_);
+  ForceTerminate(server_);
+  WaitForExit(client_);
+  WaitForExit(server_);
   iec61850_server_.reset();
 }
 
@@ -265,7 +261,7 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password) {
 
 void ClientServerE2eTest::StartServer() {
   LaunchProcess(GetServerExePath(),
-                {L"--param=" + (workspace_.path() / "server.json").wstring()},
+                {"--param=" + (workspace_.path() / "server.json").string()},
                 workspace_.path(),
                 *job_,
                 server_);
@@ -278,11 +274,11 @@ void ClientServerE2eTest::StartServer() {
       << port;
 }
 
-void ClientServerE2eTest::StartClient(std::vector<std::wstring> extra_args) {
-  std::vector<std::wstring> args{
-      L"--test-settings-file=" + settings_file_.wstring(),
-      L"--test-status-file=" + status_file_.wstring(),
-      L"--test-log-dir=" + client_log_dir_.wstring()};
+void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
+  std::vector<std::string> args{
+      "--test-settings-file=" + settings_file_.string(),
+      "--test-status-file=" + status_file_.string(),
+      "--test-log-dir=" + client_log_dir_.string()};
   args.insert(args.end(),
               std::make_move_iterator(extra_args.begin()),
               std::make_move_iterator(extra_args.end()));
@@ -375,10 +371,10 @@ std::string ClientServerE2eTest::DescribeProcessExit(
   auto exit_code = process.ExitCode();
   if (!exit_code)
     return std::string{name} + " process exit code unavailable";
-  if (*exit_code == STILL_ACTIVE)
+  if (process.IsRunning())
     return std::string{name} + " is still running";
   return std::string{name} + " exited with code " +
-         std::to_string(static_cast<unsigned long>(*exit_code));
+         std::to_string(*exit_code);
 }
 
 void ClientServerE2eTest::ExpectProcessesRemainRunningFor(
