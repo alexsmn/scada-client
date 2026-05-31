@@ -20,6 +20,13 @@ constexpr auto kWaitStep = std::chrono::milliseconds{50};
 JobObject::JobObject() = default;
 
 JobObject::~JobObject() {
+  Terminate();
+}
+
+void JobObject::Terminate() {
+  if (!group_.valid())
+    return;
+
   std::error_code ec;
   group_.terminate(ec);
 }
@@ -56,8 +63,11 @@ void WaitForExit(ChildProcess& child, int timeout_ms) {
   const auto deadline = std::chrono::steady_clock::now() +
                         std::chrono::milliseconds{timeout_ms};
   while (std::chrono::steady_clock::now() < deadline) {
-    if (!child.IsRunning())
+    if (!child.IsRunning()) {
+      std::error_code ec;
+      child.process.wait(ec);
       return;
+    }
     std::this_thread::sleep_for(kWaitStep);
   }
 }

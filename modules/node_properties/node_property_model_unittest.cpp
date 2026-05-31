@@ -184,6 +184,17 @@ TEST_F(NodePropertyModelTest, DestroyedModelDoesNotUpdateAfterFetchCompletes) {
   EXPECT_EQ(model_changed_count_, 0);
 }
 
+TEST_F(NodePropertyModelTest,
+       DestroyedModelDoesNotUpdateWhenFetchCompletesBeforeCoroutineRuns) {
+  auto model = CreateModel();
+  model.reset();
+
+  fetcher_->CompleteFetch(kNodeId);
+  Drain(executor_);
+
+  EXPECT_EQ(model_changed_count_, 0);
+}
+
 TEST_F(NodePropertyModelTest, DeletedNodeCancelsPendingFetchUpdate) {
   auto model = CreateModel();
   Drain(executor_);

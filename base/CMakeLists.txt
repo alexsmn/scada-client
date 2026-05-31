@@ -32,17 +32,19 @@ target_link_libraries(client_ui_common_qt PRIVATE
   transport
 )
 
-add_library(client_ui_common_wt ${CLIENT_UI_COMMON_SOURCES})
-target_precompile_headers(client_ui_common_wt REUSE_FROM scada_base)
-target_link_libraries(client_ui_common_wt PRIVATE
-  aui_wt
-  client_common
-  client_events_wt
-  client_profile_wt
-  client_services_wt
-  # `client_utils.cpp` exposes coroutine helpers and uses awaitable adapters.
-  transport
-)
+if("wt" IN_LIST CLIENT_UI_CONFIGS)
+  add_library(client_ui_common_wt ${CLIENT_UI_COMMON_SOURCES})
+  target_precompile_headers(client_ui_common_wt REUSE_FROM scada_base)
+  target_link_libraries(client_ui_common_wt PRIVATE
+    aui_wt
+    client_common
+    client_events_wt
+    client_profile_wt
+    client_services_wt
+    # `client_utils.cpp` exposes coroutine helpers and uses awaitable adapters.
+    transport
+  )
+endif()
 
 add_library(client_ui_dragdrop_qt
   "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.cpp"
@@ -54,15 +56,17 @@ target_link_libraries(client_ui_dragdrop_qt PRIVATE
   client_common
 )
 
-add_library(client_ui_dragdrop_wt
-  "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.h"
-)
-target_precompile_headers(client_ui_dragdrop_wt REUSE_FROM scada_base)
-target_link_libraries(client_ui_dragdrop_wt PRIVATE
-  aui_wt
-  client_common
-)
+if("wt" IN_LIST CLIENT_UI_CONFIGS)
+  add_library(client_ui_dragdrop_wt
+    "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../aui/dragdrop/item_drag_data.h"
+  )
+  target_precompile_headers(client_ui_dragdrop_wt REUSE_FROM scada_base)
+  target_link_libraries(client_ui_dragdrop_wt PRIVATE
+    aui_wt
+    client_common
+  )
+endif()
 
 add_library(client_ui_progress_qt
   "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.cpp"
@@ -73,14 +77,16 @@ target_link_libraries(client_ui_progress_qt PRIVATE
   client_common
 )
 
-add_library(client_ui_progress_wt
-  "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.h"
-)
-target_precompile_headers(client_ui_progress_wt REUSE_FROM scada_base)
-target_link_libraries(client_ui_progress_wt PRIVATE
-  client_common
-)
+if("wt" IN_LIST CLIENT_UI_CONFIGS)
+  add_library(client_ui_progress_wt
+    "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../modules/node_service_progress_tracker/node_service_progress_tracker.h"
+  )
+  target_precompile_headers(client_ui_progress_wt REUSE_FROM scada_base)
+  target_link_libraries(client_ui_progress_wt PRIVATE
+    client_common
+  )
+endif()
 
 target_sources(client_base_unittests PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/../ui/common/client_utils_unittest.cpp"

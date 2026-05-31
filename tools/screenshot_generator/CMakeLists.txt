@@ -34,6 +34,8 @@ add_executable(client_screenshot_generator
   "${CMAKE_CURRENT_SOURCE_DIR}/../../modules/opcua_services/opcua_services_module.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application_modules.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../app/client_application_modules.h"
 )
 
 target_link_libraries(client_screenshot_generator PRIVATE

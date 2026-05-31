@@ -13,6 +13,8 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <shellapi.h>
+#elif defined(__APPLE__)
+#include <crt_externs.h>
 #endif
 
 namespace {
@@ -42,6 +44,14 @@ std::vector<std::string> GetProcessArgs() {
   for (int i = 1; i < argc; ++i)
     args.push_back(UtfConvert<char>(wargv[i]));
   LocalFree(wargv);
+#elif defined(__APPLE__)
+  auto* argc = _NSGetArgc();
+  auto*** argv = _NSGetArgv();
+  if (!argc || !argv || !*argv)
+    return args;
+
+  for (int i = 1; i < *argc; ++i)
+    args.emplace_back((*argv)[i]);
 #endif
 
   return args;

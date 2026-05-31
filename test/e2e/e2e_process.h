@@ -18,6 +18,7 @@ class JobObject {
   ~JobObject();
 
   process::group& group() { return group_; }
+  void Terminate();
 
  private:
   process::group group_;

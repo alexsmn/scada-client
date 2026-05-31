@@ -48,14 +48,17 @@ NodePropertyModel::NodePropertyModel(PropertyService& property_service,
       node_{std::move(node)} {
   node_service_.Subscribe(*this);
 
-  CoSpawn(executor_, cancelation_, [this]() -> Awaitable<void> {
-    co_await node_.Fetch(NodeFetchStatus::NodeOnly());
-    if (node_.status().bad()) {
+  CoSpawn(executor_, [this, executor = executor_, node = node_,
+                      cancelation = cancelation_.weak_ptr()]() mutable
+                         -> Awaitable<void> {
+    co_await node.Fetch(NodeFetchStatus::NodeOnly());
+    if (cancelation.expired() || node.status().bad()) {
       co_return;
     }
 
-    boost::asio::post(executor_,
-                      cancelation_.Bind([this] { OnNodeFetched(); }));
+    boost::asio::post(executor,
+                      BindCancelation(cancelation,
+                                      [this] { OnNodeFetched(); }));
   });
 }
 

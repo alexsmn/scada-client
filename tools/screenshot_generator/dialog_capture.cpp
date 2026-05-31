@@ -99,11 +99,11 @@ class NullTransportFactory : public transport::TransportFactory {
 };
 
 Awaitable<scada::Status> RejectTaskManagerCallAsync() {
-  co_return scada::StatusCode::Bad_NotImplemented;
+  co_return scada::StatusCode::Bad;
 }
 
 Awaitable<scada::StatusOr<scada::NodeId>> RejectPostInsertTaskAsync() {
-  co_return scada::StatusCode::Bad_NotImplemented;
+  co_return scada::StatusCode::Bad;
 }
 
 // Dummy TaskManager. We never press OK on captured dialogs, so no

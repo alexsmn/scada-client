@@ -203,6 +203,7 @@ void ClientServerE2eTest::TearDown() {
     workspace_.Preserve();
     std::cerr << "Preserved E2E workspace: " << workspace_.path() << '\n';
   }
+  job_->Terminate();
   ForceTerminate(client_);
   ForceTerminate(server_);
   WaitForExit(client_);
