@@ -22,8 +22,7 @@
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
-#include "metrics/boost_log_metric_reporter.h"
-#include "metrics/metric_service_impl.h"
+#include "metrics/otel_metrics.h"
 #include "node_service/node_service_factory.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
 #include "portfolio/portfolio_module.h"
@@ -89,20 +88,16 @@ struct ClientApplication::PostLoginContext {
 
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
-      metric_service_{
-          std::make_unique<MetricServiceImpl>(executor_,
-                                              /*report_metric_period*/ 1min)},
+      metrics_runtime_{std::make_unique<metrics::OpenTelemetryMetrics>(
+          metrics::OpenTelemetryMetricsOptions{
+              .service_name = "scada-client",
+              .export_interval = 1min})},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       ui_command_registry_{std::make_unique<UiCommandRegistry>()},
       master_data_services_{
           std::make_shared<MasterDataServices>(executor_)},
       quit_completion_{executor_} {
   logger_ = std::make_shared<BoostLogAdapter>("client");
-
-  metric_service_->RegisterSink(
-      [reporter = BoostLogMetricReporter{}](const Metrics& metrics) mutable {
-        reporter.Report(metrics);
-      });
 
   transport_factory_ = transport::CreateTransportFactory();
 
@@ -391,8 +386,7 @@ void ClientApplication::OnLoginCompleted(const DataServices& data_services) {
   logger_->Write(LogSeverity::Normal, "Login completed");
 
   auto audited_services =
-      *AuditDataServices(data_services, *metric_service_, core_module_->tracer(),
-                         executor_);
+      *AuditDataServices(data_services, core_module_->tracer(), executor_);
   master_data_services_->SetServices(std::move(audited_services));
 }
 

@@ -22,6 +22,12 @@
     "grpc",
     "gtest",
     "icu",
+    {
+      "name": "opentelemetry-cpp",
+      "features": [
+        "otlp-grpc"
+      ]
+    },
     "openssl",
     "protobuf",
     "pugixml",

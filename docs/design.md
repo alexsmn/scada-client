@@ -155,7 +155,7 @@ Cross-cutting per-session services:
 - `TimedDataService` — combines real-time and historical data behind one
   interface, used by graph/summary/timed-data views.
 - `SpeechService` — text-to-speech for alarm notifications.
-- `MetricService` (via `metrics/`) — collects per-operation latencies.
+- OpenTelemetry metrics (via `metrics/`) — records per-operation latencies.
 
 The actual data-service interfaces (`AttributeService`, `MonitoredItemService`,
 `ViewService`, `HistoryService`, `SessionService`, `MethodService`,
@@ -321,8 +321,8 @@ Both are Qt-only and Windows-only (`#if !defined(UI_WT)`).
   check; back-end services enforce again. The `change_password/` and
   `node_table/` (Users) components are the admin surface area.
 - **Observability.** `Tracer` is created first by `CoreModule` and
-  threaded through every other module; `MetricService` collects timings;
-  `BoostLogMetricReporter` flushes them to the log on a periodic timer.
+  threaded through every other module; OpenTelemetry instruments record timings
+  and export them through OTLP.
 
 ## 5. Known Limitations and Open Questions
 

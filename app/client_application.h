@@ -58,7 +58,6 @@ class Logger;
 class MainWindowManager;
 class MainWindowModule;
 class MasterDataServices;
-class MetricService;
 class NodeService;
 class NodeServiceProgressTracker;
 class PortfolioModule;
@@ -69,6 +68,10 @@ class TaskManager;
 class Speech;
 class UiCommandRegistry;
 class WriteService;
+
+namespace metrics {
+class OpenTelemetryMetrics;
+}
 
 struct ClientApplicationContext {
   boost::asio::io_context& io_context_;
@@ -140,7 +143,7 @@ class ClientApplication : private ClientApplicationContext {
   std::unique_ptr<CoreModule> core_module_;
 
   std::shared_ptr<Logger> logger_;
-  std::unique_ptr<MetricService> metric_service_;
+  std::unique_ptr<metrics::OpenTelemetryMetrics> metrics_runtime_;
 
   std::shared_ptr<transport::TransportFactory> transport_factory_;
 
