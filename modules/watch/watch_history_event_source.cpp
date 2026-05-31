@@ -16,19 +16,19 @@ Awaitable<void> ReadHistoryEventsAsync(AnyExecutor executor,
                                        scada::DateTimeRange time_range,
                                        CancelationRef cancelation,
                                        WatchEventSource::Delegate& delegate) {
-  try {
-    auto events = co_await device.scada_node().read_event_history(
-        {.from = SanitizeTimeBound(time_range.first),
-         .to = SanitizeTimeBound(time_range.second)});
+  auto events = co_await device.scada_node().read_event_history(
+      {.from = SanitizeTimeBound(time_range.first),
+       .to = SanitizeTimeBound(time_range.second)});
+  if (!events.ok()) {
+    co_return;
+  }
 
-    if (cancelation.canceled()) {
-      co_return;
-    }
+  if (cancelation.canceled()) {
+    co_return;
+  }
 
-    for (const auto& event : events) {
-      delegate.OnEvent(event);
-    }
-  } catch (...) {
+  for (const auto& event : *events) {
+    delegate.OnEvent(event);
   }
 
   co_return;

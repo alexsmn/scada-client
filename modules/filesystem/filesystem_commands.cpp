@@ -14,7 +14,6 @@
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "profile/window_definition_util.h"
-#include "scada/status_exception.h"
 #include "services/task_manager.h"
 
 #include <cassert>
@@ -59,12 +58,12 @@ Awaitable<void> OpenJsonFileAsync(std::filesystem::path path,
 Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
     OpenFileCommandContext context) const {
   if (!context.main_window) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return;
   }
 
   auto path = GetFilePath(context.file_node);
   if (path.empty()) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return;
   }
 
   if (path.extension() == ".workplace") {
@@ -91,21 +90,7 @@ Awaitable<void> OpenFileCommandImpl::OpenFileAsync(
 
 Awaitable<void> OpenFileCommandImpl::ExecuteAsync(
     OpenFileCommandContext context) const {
-  // MSVC rejects `co_await` inside a `catch` block, so the error-path
-  // message box is awaited after the `try` has unwound.
-  bool open_failed = false;
-  try {
-    co_await OpenFileAsync(context);
-  } catch (...) {
-    open_failed = true;
-  }
-  if (!open_failed) {
-    co_return;
-  }
-  co_await context.dialog_service.RunMessageBox(
-      Translate("Failed to download file from server."), kOpenFileTitle,
-      MessageBoxMode::Error);
-  throw scada::status_exception{scada::StatusCode::Bad};
+  co_await OpenFileAsync(context);
 }
 
 Awaitable<void> OpenFileCommandImpl::Execute(
@@ -127,7 +112,7 @@ Awaitable<void> AddFileAsync(NodeRef parent_directory,
     co_await dialog_service.RunMessageBox(Translate("Failed to read file."),
                                           kAddFileTitle,
                                           MessageBoxMode::Error);
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return;
   }
 
   scada::LocalizedText new_file_name = path.filename().u16string();

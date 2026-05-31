@@ -8,7 +8,6 @@
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "scada/event.h"
-#include "scada/status_exception.h"
 
 #include <fstream>
 
@@ -50,30 +49,26 @@ Awaitable<void> DownloadFileNodeAsync(AnyExecutor executor,
                                       std::filesystem::path path,
                                       std::filesystem::file_time_type
                                           last_update_time) {
-  try {
-    auto data_value =
-        co_await node.scada_node().read(scada::AttributeId::Value);
-
-    auto* data = data_value.value.get_if<scada::ByteString>();
-    if (!data) {
-      logger->WriteF(LogSeverity::Warning,
-                     "Wrong downloaded data for file '{}'", path.string());
-      co_return;
-    }
-
-    logger->WriteF(LogSeverity::Normal, "Download '{}' complete",
-                   path.string());
-
-    std::ofstream{path, std::ios::binary}.write(data->data(), data->size());
-
-    std::error_code ec;
-    std::filesystem::last_write_time(path, last_update_time, ec);
-
-  } catch (...) {
+  auto data_value = co_await node.scada_node().read(scada::AttributeId::Value);
+  if (!data_value.ok()) {
     logger->WriteF(LogSeverity::Warning, "Download '{}' error: {}",
-                   path.string(),
-                   ToString(scada::GetExceptionStatus(std::current_exception())));
+                   path.string(), ToString(data_value.status()));
+    co_return;
   }
+
+  auto* data = data_value->value.get_if<scada::ByteString>();
+  if (!data) {
+    logger->WriteF(LogSeverity::Warning,
+                   "Wrong downloaded data for file '{}'", path.string());
+    co_return;
+  }
+
+  logger->WriteF(LogSeverity::Normal, "Download '{}' complete", path.string());
+
+  std::ofstream{path, std::ios::binary}.write(data->data(), data->size());
+
+  std::error_code ec;
+  std::filesystem::last_write_time(path, last_update_time, ec);
 
   co_return;
 }

@@ -15,7 +15,6 @@
 #endif
 #include "modules/login/login_dialog.h"
 #include "project.h"
-#include "scada/status_exception.h"
 #include "services/atl_module.h"
 
 #ifdef _WIN32
@@ -40,11 +39,6 @@ namespace {
 void LogQtEventException(std::exception_ptr exception) {
   try {
     std::rethrow_exception(exception);
-  } catch (const scada::status_exception& e) {
-    BOOST_LOG_TRIVIAL(error)
-        << "Unhandled exception in Qt event handler"
-        << " | Status = " << ToString(e.status());
-    client::ReportE2eStatusIfUnset("failure: qt-event");
   } catch (const std::exception& e) {
     BOOST_LOG_TRIVIAL(error)
         << "Unhandled exception in Qt event handler"

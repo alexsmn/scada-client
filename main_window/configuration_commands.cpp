@@ -14,23 +14,16 @@
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
 #include "scada/session_service.h"
-#include "scada/status_exception.h"
 #include "services/task_manager.h"
 
 namespace {
 
 Awaitable<void> ReportMethodCallResultAsync(AnyExecutor executor,
-                                            Awaitable<void> call,
+                                            Awaitable<scada::Status> call,
                                             std::u16string title,
                                             LocalEvents& local_events,
                                             const Profile& profile) {
-  scada::Status status = scada::StatusCode::Good;
-  try {
-    co_await std::move(call);
-  } catch (...) {
-    status = scada::GetExceptionStatus(std::current_exception());
-  }
-
+  auto status = co_await std::move(call);
   ReportRequestResult(title, status, local_events, profile);
   co_return;
 }
@@ -88,8 +81,8 @@ void ConfigurationCommands::Register() {
              const auto& node = context.selection.node();
              task_manager_.PostTask(
                  u16format(L"Unlocking {}", node.display_name()),
-                 [node] {
-                   return node.scada_node().call(
+                 [node]() -> Awaitable<scada::Status> {
+                   co_return co_await node.scada_node().call(
                        data_items::id::DataItemType_Unlock);
                  });
            },

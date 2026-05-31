@@ -8,7 +8,6 @@
 #include "model/data_items_node_ids.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
-#include "scada/status_exception.h"
 
 namespace {
 const wchar_t kDiscreteConfirmationQuestion[] =
@@ -16,16 +15,6 @@ const wchar_t kDiscreteConfirmationQuestion[] =
 const wchar_t kAnalogConfirmationQuestion[] = L"Write value {} to {}?";
 const char16_t kSecondStagePrefix[] =
     u"The remote device is ready to execute the command.\n\n";
-
-Awaitable<scada::Status> AwaitStatus(AnyExecutor executor,
-                                      Awaitable<void> operation) {
-  try {
-    co_await std::move(operation);
-    co_return scada::StatusCode::Good;
-  } catch (...) {
-    co_return scada::GetExceptionStatus(std::current_exception());
-  }
-}
 }  // namespace
 
 WriteModel::WriteModel(WriteContext&& context)
@@ -214,8 +203,8 @@ void WriteModel::StartWritingHelper() {
 Awaitable<void> WriteModel::CompleteWriteAsync(
     AnyExecutor executor,
     std::weak_ptr<WriteModel> model,
-    Awaitable<void> operation) {
-  auto status = co_await AwaitStatus(std::move(executor), std::move(operation));
+    Awaitable<scada::Status> operation) {
+  auto status = co_await std::move(operation);
   if (auto model_ptr = model.lock()) {
     model_ptr->OnWriteComplete(status);
   }

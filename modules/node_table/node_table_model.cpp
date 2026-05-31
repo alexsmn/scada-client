@@ -8,7 +8,6 @@
 #include "base/utils.h"
 #include "aui/translation.h"
 #include "scada/event.h"
-#include "scada/status_exception.h"
 #include "model/node_id_util.h"
 #include "model/scada_node_ids.h"
 #include "node_service/node_awaitable.h"
@@ -59,29 +58,34 @@ void NodeTableModel::SetParentNode(const NodeRef& parent_node) {
   CoSpawn(executor_, cancelation_,
           [this, parent_node, cancelation = cancelation_.ref()]() mutable
               -> Awaitable<void> {
-            try {
-              auto executor = executor_;
-              auto property_defs =
-                  co_await property_service_.GetChildPropertyDefsAsync(
-                      executor, parent_node_);
-              if (cancelation.canceled()) {
-                co_return;
-              }
-              UpdateColumns(property_defs);
-              co_await FetchChildren(parent_node);
-              if (cancelation.canceled()) {
-                co_return;
-              }
-              UpdateRows();
-            } catch (...) {
+            auto executor = executor_;
+            auto property_defs =
+                co_await property_service_.GetChildPropertyDefsStatusAsync(
+                    executor, parent_node_);
+            if (cancelation.canceled()) {
+              co_return;
+            }
+            if (!property_defs.ok()) {
               if (cancelation.canceled()) {
                 co_return;
               }
               loading_ = false;
-              LogLoadFailure(
-                  scada::GetExceptionStatus(std::current_exception()));
+              LogLoadFailure(property_defs.status());
               NotifyModelChanged();
+              co_return;
             }
+            UpdateColumns(*property_defs);
+            auto fetch_status = co_await FetchChildrenStatus(parent_node);
+            if (cancelation.canceled()) {
+              co_return;
+            }
+            if (!fetch_status) {
+              loading_ = false;
+              LogLoadFailure(fetch_status);
+              NotifyModelChanged();
+              co_return;
+            }
+            UpdateRows();
           });
 }
 

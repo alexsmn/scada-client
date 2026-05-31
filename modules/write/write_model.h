@@ -5,6 +5,7 @@
 #include "aui/dialog_service.h"
 #include "base/awaitable.h"
 #include "modules/write/write_dialog.h"
+#include "scada/status.h"
 #include "timed_data/timed_data_spec.h"
 
 class WriteModel : private WriteContext,
@@ -48,7 +49,7 @@ class WriteModel : private WriteContext,
 
   static Awaitable<void> CompleteWriteAsync(AnyExecutor executor,
                                             std::weak_ptr<WriteModel> model,
-                                            Awaitable<void> operation);
+                                            Awaitable<scada::Status> operation);
   static Awaitable<void> ConfirmAndStartWritingAsync(
       AnyExecutor executor,
       std::weak_ptr<WriteModel> model,

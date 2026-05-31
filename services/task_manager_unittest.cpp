@@ -10,7 +10,6 @@
 #include "profile/profile.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/node_management_service_mock.h"
-#include "scada/status_exception.h"
 
 #include <gmock/gmock.h>
 
@@ -87,14 +86,15 @@ TEST_F(TaskManagerTest, PostInsertTask_Succeeds) {
                 {.added_node_id = added_node_id}});
       }));
 
-  const scada::NodeId node_id =
+  auto node_id =
       Wait(task_manager_->PostInsertTask(
           // Provide the node ID similar to how it's provided on paste.
           {.node_id = scada::NodeId{1, NamespaceIndexes::TS},
            .type_definition_id = type_def_id,
            .parent_id = parent_id}));
 
-  EXPECT_EQ(node_id, added_node_id);
+  ASSERT_TRUE(node_id.ok());
+  EXPECT_EQ(*node_id, added_node_id);
 
   EXPECT_THAT(
       local_events_.events(),
@@ -120,10 +120,10 @@ TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
             scada::Status{scada::StatusCode::Bad});
       }));
 
-  EXPECT_THROW(
-      Wait(task_manager_->PostInsertTask({.type_definition_id = type_def_id,
-                                          .parent_id = parent_id})),
-      scada::status_exception);
+  auto result = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = type_def_id, .parent_id = parent_id}));
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), scada::StatusCode::Bad);
 
   EXPECT_THAT(
       local_events_.events(),
@@ -134,11 +134,11 @@ TEST_F(TaskManagerTest, PostInsertTask_ServiceFails) {
 
 TEST_F(TaskManagerTest, PostInsertTask_BadTypeDefId) {
   // Intentionally specify wrong type definition ID, so add node fails.
-  EXPECT_THROW(
-      Wait(task_manager_->PostInsertTask(
-          {.type_definition_id = scada::id::References,
-           .parent_id = data_items::id::DataItems})),
-      scada::status_exception);
+  auto result = Wait(task_manager_->PostInsertTask(
+      {.type_definition_id = scada::id::References,
+       .parent_id = data_items::id::DataItems}));
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), scada::StatusCode::Bad_WrongTypeId);
 
   EXPECT_THAT(
       local_events_.events(),
@@ -160,8 +160,8 @@ TEST_F(TaskManagerTest, PostDeleteTask_ServiceFails) {
             scada::Status{scada::StatusCode::Bad});
       }));
 
-  EXPECT_THROW(Wait(task_manager_->PostDeleteTask(node_id)),
-               scada::status_exception);
+  auto status = Wait(task_manager_->PostDeleteTask(node_id));
+  EXPECT_EQ(status.code(), scada::StatusCode::Bad);
 
   EXPECT_THAT(
       local_events_.events(),
@@ -183,7 +183,8 @@ TEST_F(TaskManagerTest, PostDeleteTask_Succeeds) {
             std::vector{scada::StatusCode::Good});
       }));
 
-  Wait(task_manager_->PostDeleteTask(node_id));
+  auto status = Wait(task_manager_->PostDeleteTask(node_id));
+  EXPECT_TRUE(status);
 
   // Profile::show_write_ok defaults to true, so successful deletes still emit
   // an info-severity event.
@@ -210,7 +211,8 @@ TEST_F(TaskManagerTest, PostAddReference_Succeeds) {
             std::vector{scada::StatusCode::Good});
       }));
 
-  Wait(task_manager_->PostAddReference(ref_type, src, dst));
+  auto status = Wait(task_manager_->PostAddReference(ref_type, src, dst));
+  EXPECT_TRUE(status);
 
   EXPECT_FALSE(task_manager_->IsRunning());
 }
@@ -228,8 +230,8 @@ TEST_F(TaskManagerTest, PostAddReference_ServiceFails) {
             scada::Status{scada::StatusCode::Bad});
       }));
 
-  EXPECT_THROW(Wait(task_manager_->PostAddReference(ref_type, src, dst)),
-               scada::status_exception);
+  auto status = Wait(task_manager_->PostAddReference(ref_type, src, dst));
+  EXPECT_EQ(status.code(), scada::StatusCode::Bad);
 
   EXPECT_THAT(
       local_events_.events(),
@@ -255,19 +257,19 @@ TEST_F(TaskManagerTest, PostDeleteReference_Succeeds) {
                 std::vector{scada::StatusCode::Good});
           }));
 
-  Wait(task_manager_->PostDeleteReference(ref_type, src, dst));
+  auto status = Wait(task_manager_->PostDeleteReference(ref_type, src, dst));
+  EXPECT_TRUE(status);
 
   EXPECT_FALSE(task_manager_->IsRunning());
 }
 
 TEST_F(TaskManagerTest, PostTask_LauncherFailurePropagates) {
-  auto failing_launcher = []() -> Awaitable<void> {
-    throw scada::status_exception{scada::StatusCode::Bad_Disconnected};
-    co_return;
+  auto failing_launcher = []() -> Awaitable<scada::Status> {
+    co_return scada::StatusCode::Bad_Disconnected;
   };
 
-  EXPECT_THROW(Wait(task_manager_->PostTask(u"Custom", failing_launcher)),
-               scada::status_exception);
+  auto status = Wait(task_manager_->PostTask(u"Custom", failing_launcher));
+  EXPECT_EQ(status.code(), scada::StatusCode::Bad_Disconnected);
 
   // The coroutine body reports a single failure event for the custom task.
   EXPECT_THAT(
@@ -278,11 +280,12 @@ TEST_F(TaskManagerTest, PostTask_LauncherFailurePropagates) {
 }
 
 TEST_F(TaskManagerTest, PostTask_LauncherSucceeds) {
-  auto resolving_launcher = []() -> Awaitable<void> {
-    co_return;
+  auto resolving_launcher = []() -> Awaitable<scada::Status> {
+    co_return scada::StatusCode::Good;
   };
 
-  Wait(task_manager_->PostTask(u"Custom", resolving_launcher));
+  auto status = Wait(task_manager_->PostTask(u"Custom", resolving_launcher));
+  EXPECT_TRUE(status);
 
   // Profile::show_write_ok defaults to true, so a successful custom task emits
   // an info-severity completion event.
@@ -321,8 +324,8 @@ TEST_F(TaskManagerTest, BackToBackPostDeleteTasksRunSequentially) {
   auto first_task = task_manager_->PostDeleteTask(first);
   auto second_task = task_manager_->PostDeleteTask(second);
 
-  Wait(std::move(first_task));
-  Wait(std::move(second_task));
+  EXPECT_TRUE(Wait(std::move(first_task)));
+  EXPECT_TRUE(Wait(std::move(second_task)));
 
   EXPECT_FALSE(task_manager_->IsRunning());
 }

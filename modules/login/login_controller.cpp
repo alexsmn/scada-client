@@ -13,7 +13,6 @@
 #include <boost/algorithm/string/split.hpp>
 #include "base/u16format.h"
 #include "scada/session_service.h"
-#include "scada/status_exception.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -91,16 +90,6 @@ void AppendMruList(std::vector<std::u16string>& list,
 
   if (list.size() > 10)
     list.resize(10);
-}
-
-Awaitable<scada::Status> AwaitStatus(AnyExecutor executor,
-                                      Awaitable<void> operation) {
-  try {
-    co_await std::move(operation);
-    co_return scada::StatusCode::Good;
-  } catch (...) {
-    co_return scada::GetExceptionStatus(std::current_exception());
-  }
 }
 
 std::shared_ptr<SettingsStore> CreateDefaultSettingsStore() {
@@ -302,8 +291,7 @@ Awaitable<void> LoginController::ConnectAsync(
     std::weak_ptr<LoginController> controller,
     scada::SessionService& session_service,
     scada::SessionConnectParams params) {
-  auto status = co_await AwaitStatus(std::move(executor),
-                                     session_service.Connect(params));
+  auto status = co_await session_service.ConnectStatus(std::move(params));
   if (auto controller_ptr = controller.lock()) {
     controller_ptr->OnLoginResult(status);
   }

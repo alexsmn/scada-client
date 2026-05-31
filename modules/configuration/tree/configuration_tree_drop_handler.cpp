@@ -19,17 +19,14 @@ Awaitable<void> RunMoveDropTask(AnyExecutor executor,
                                 const scada::NodeId& node_id,
                                 const scada::NodeId& old_parent_id,
                                 const scada::NodeId& new_parent_id) {
-  try {
-    if (!old_parent_id.is_null()) {
-      co_await task_manager.PostDeleteReference(scada::id::Organizes,
-                                                old_parent_id, node_id);
-    }
+  if (!old_parent_id.is_null()) {
+    co_await task_manager.PostDeleteReference(scada::id::Organizes,
+                                              old_parent_id, node_id);
+  }
 
-    if (!new_parent_id.is_null()) {
-      co_await task_manager.PostAddReference(scada::id::Organizes,
-                                             new_parent_id, node_id);
-    }
-  } catch (...) {
+  if (!new_parent_id.is_null()) {
+    co_await task_manager.PostAddReference(scada::id::Organizes, new_parent_id,
+                                           node_id);
   }
   co_return;
 }
@@ -37,10 +34,8 @@ Awaitable<void> RunMoveDropTask(AnyExecutor executor,
 Awaitable<void> RunCreateDataItemTask(AnyExecutor executor,
                                       TaskManager& task_manager,
                                       scada::NodeState node_state) {
-  try {
-    (void)co_await task_manager.PostInsertTask(node_state);
-  } catch (...) {
-  }
+  auto result = co_await task_manager.PostInsertTask(node_state);
+  (void)result;
   co_return;
 }
 
@@ -48,10 +43,7 @@ Awaitable<void> RunAssignChannelTask(AnyExecutor executor,
                                      TaskManager& task_manager,
                                      const scada::NodeId& node_id,
                                      scada::NodeProperties properties) {
-  try {
-    co_await task_manager.PostUpdateTask(node_id, {}, std::move(properties));
-  } catch (...) {
-  }
+  co_await task_manager.PostUpdateTask(node_id, {}, std::move(properties));
   co_return;
 }
 

@@ -319,22 +319,20 @@ void MetrixDataSource::ScheduleUpdateEarliestTimestamp() {
             if (cancelation.canceled())
               co_return;
 
-            std::vector<scada::DataValue> values;
-            try {
-              values = co_await node.read_value_history(
-                  {.from = scada::DateTime::Min(),
-                   .to = scada::DateTime::Max(),
-                   .max_count = 1});
-            } catch (...) {
+            auto values = co_await node.read_value_history(
+                {.from = scada::DateTime::Min(),
+                 .to = scada::DateTime::Max(),
+                 .max_count = 1});
+            if (!values.ok()) {
               co_return;
             }
 
             if (cancelation.canceled())
               co_return;
 
-            SetEarliestTimestamp(values.empty()
+            SetEarliestTimestamp(values->empty()
                                      ? scada::DateTime{}
-                                     : values.front().source_timestamp);
+                                     : values->front().source_timestamp);
           });
 }
 

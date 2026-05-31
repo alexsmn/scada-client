@@ -1,7 +1,6 @@
 #include "aui/qt/message_loop_qt.h"
 
 #include "base/boost_log.h"
-#include "scada/status_exception.h"
 
 #include <cassert>
 #include <exception>
@@ -11,10 +10,6 @@ namespace {
 void LogUnhandledTaskException(std::exception_ptr exception) {
   try {
     std::rethrow_exception(exception);
-  } catch (const scada::status_exception& e) {
-    BOOST_LOG_TRIVIAL(error)
-        << "Unhandled exception in Qt message loop task"
-        << " | Status = " << ToString(e.status());
   } catch (const std::exception& e) {
     BOOST_LOG_TRIVIAL(error)
         << "Unhandled exception in Qt message loop task"

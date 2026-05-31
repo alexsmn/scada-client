@@ -98,15 +98,12 @@ class NullTransportFactory : public transport::TransportFactory {
   }
 };
 
-Awaitable<void> RejectTaskManagerCallAsync() {
-  throw std::runtime_error{"Screenshot capture task manager is not available"};
-  co_return;
+Awaitable<scada::Status> RejectTaskManagerCallAsync() {
+  co_return scada::StatusCode::Bad_NotImplemented;
 }
 
-template <typename T>
-Awaitable<T> RejectTaskManagerCallAsync() {
-  throw std::runtime_error{"Screenshot capture task manager is not available"};
-  co_return T{};
+Awaitable<scada::StatusOr<scada::NodeId>> RejectPostInsertTaskAsync() {
+  co_return scada::StatusCode::Bad_NotImplemented;
 }
 
 // Dummy TaskManager. We never press OK on captured dialogs, so no
@@ -114,30 +111,30 @@ Awaitable<T> RejectTaskManagerCallAsync() {
 // something slips through.
 class NullTaskManager : public TaskManager {
  public:
-  Awaitable<void> PostTask(std::u16string_view,
-                           const TaskLauncher&) override {
+  Awaitable<scada::Status> PostTask(std::u16string_view,
+                                    const TaskLauncher&) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<scada::NodeId> PostInsertTask(
+  Awaitable<scada::StatusOr<scada::NodeId>> PostInsertTask(
       const scada::NodeState&) override {
-    return RejectTaskManagerCallAsync<scada::NodeId>();
+    return RejectPostInsertTaskAsync();
   }
-  Awaitable<void> PostUpdateTask(const scada::NodeId&,
-                                 scada::NodeAttributes,
-                                 scada::NodeProperties) override {
+  Awaitable<scada::Status> PostUpdateTask(const scada::NodeId&,
+                                          scada::NodeAttributes,
+                                          scada::NodeProperties) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<void> PostDeleteTask(const scada::NodeId&) override {
+  Awaitable<scada::Status> PostDeleteTask(const scada::NodeId&) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<void> PostAddReference(const scada::NodeId&,
-                                   const scada::NodeId&,
-                                   const scada::NodeId&) override {
+  Awaitable<scada::Status> PostAddReference(const scada::NodeId&,
+                                            const scada::NodeId&,
+                                            const scada::NodeId&) override {
     return RejectTaskManagerCallAsync();
   }
-  Awaitable<void> PostDeleteReference(const scada::NodeId&,
-                                      const scada::NodeId&,
-                                      const scada::NodeId&) override {
+  Awaitable<scada::Status> PostDeleteReference(const scada::NodeId&,
+                                               const scada::NodeId&,
+                                               const scada::NodeId&) override {
     return RejectTaskManagerCallAsync();
   }
 };

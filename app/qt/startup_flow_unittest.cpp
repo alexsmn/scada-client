@@ -84,9 +84,9 @@ TEST_F(QtStartupFlowTest, SuccessfulNormalStartupRunsChecksAndQuits) {
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start",
+                                           "success",
                                            "object-view",
                                            "operator-smoke",
-                                           "success",
                                            "object-tree",
                                            "hardware-tree",
                                            "run",
@@ -116,9 +116,9 @@ TEST_F(QtStartupFlowTest, E2eModeReportsRunCompletionInsteadOfQuitting) {
   Drain(executor_);
 
   EXPECT_THAT(order_, testing::ElementsAre("start",
+                                           "success",
                                            "object-view",
                                            "operator-smoke",
-                                           "success",
                                            "object-tree",
                                            "hardware-tree",
                                            "run",

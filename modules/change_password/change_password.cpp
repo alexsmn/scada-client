@@ -6,23 +6,16 @@
 #include "events/local_event_util.h"
 #include "model/security_node_ids.h"
 #include "node_service/node_ref.h"
-#include "scada/status_exception.h"
 
 namespace {
 
 Awaitable<void> ReportPasswordChangeResultAsync(
     AnyExecutor executor,
-    Awaitable<void> call,
+    Awaitable<scada::Status> call,
     std::u16string title,
     LocalEvents& local_events,
     const Profile& profile) {
-  scada::Status status = scada::StatusCode::Good;
-  try {
-    co_await std::move(call);
-  } catch (...) {
-    status = scada::GetExceptionStatus(std::current_exception());
-  }
-
+  auto status = co_await std::move(call);
   ReportRequestResult(title, status, local_events, profile);
   co_return;
 }

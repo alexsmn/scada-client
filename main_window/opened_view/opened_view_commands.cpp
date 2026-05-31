@@ -350,26 +350,19 @@ Awaitable<void> OpenedViewCommands::CreateRecordAsync(
     scada::NodeProperties properties) {
   // Keep request execution and error reporting in one coroutine body so
   // `title` is only threaded once.
-  scada::NodeId node_id;
-  std::exception_ptr error;
-  try {
-    node_id = co_await task_manager_.PostInsertTask(
-        {.type_definition_id = type_node_id,
-         .parent_id = parent_id,
-         .attributes = std::move(attributes),
-         .properties = std::move(properties)});
-  } catch (...) {
-    error = std::current_exception();
-  }
+  auto node_id = co_await task_manager_.PostInsertTask(
+      {.type_definition_id = type_node_id,
+       .parent_id = parent_id,
+       .attributes = std::move(attributes),
+       .properties = std::move(properties)});
 
-  if (error) {
-    ReportRequestResult(title, scada::GetExceptionStatus(error), local_events_,
-                        profile_);
+  if (!node_id.ok()) {
+    ReportRequestResult(title, node_id.status(), local_events_, profile_);
     co_return;
   }
 
   ReportRequestResult(title, scada::StatusCode::Good, local_events_, profile_);
-  co_await OnCreateRecordCompleteAsync(node_id);
+  co_await OnCreateRecordCompleteAsync(*node_id);
   co_return;
 }
 

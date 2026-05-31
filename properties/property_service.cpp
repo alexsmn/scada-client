@@ -94,6 +94,27 @@ Awaitable<void> PropertyService::GetAllSubtypesPropertiesAsync(
   }
 }
 
+Awaitable<scada::Status> PropertyService::GetAllSubtypesPropertiesStatusAsync(
+    AnyExecutor executor,
+    const NodeRef& type_definition,
+    const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls) {
+  auto status = co_await FetchNodeStatus(type_definition);
+  if (!status) {
+    co_return status;
+  }
+
+  GetTypeProperties(type_definition, *property_decls);
+
+  for (const auto& subtype : type_definition.targets(scada::id::HasSubtype)) {
+    status = co_await GetAllSubtypesPropertiesStatusAsync(executor, subtype,
+                                                          property_decls);
+    if (!status) {
+      co_return status;
+    }
+  }
+  co_return scada::StatusCode::Good;
+}
+
 const PropertyDefinition* PropertyService::GetPropertyDef(
     const NodeRef& prop_decl) {
   if (auto i = kPropertyDefinitionMap.find(prop_decl.node_id());
@@ -176,6 +197,28 @@ Awaitable<PropertyDefs> PropertyService::GetChildPropertyDefsAsync(
   for (const auto& child_type_definition : child_type_definitions) {
     co_await GetAllSubtypesPropertiesAsync(executor, child_type_definition,
                                            property_decls);
+  }
+
+  co_return GetPropertyDefs(*property_decls);
+}
+
+Awaitable<scada::StatusOr<PropertyDefs>>
+PropertyService::GetChildPropertyDefsStatusAsync(AnyExecutor executor,
+                                                 const NodeRef& parent_node) {
+  auto property_decls = std::make_shared<std::unordered_set<NodeRef>>();
+
+  auto status = co_await FetchNodeStatus(parent_node);
+  if (!status) {
+    co_return status;
+  }
+  auto child_type_definitions = GetChildTypeDefinitions(parent_node);
+
+  for (const auto& child_type_definition : child_type_definitions) {
+    status = co_await GetAllSubtypesPropertiesStatusAsync(
+        executor, child_type_definition, property_decls);
+    if (!status) {
+      co_return status;
+    }
   }
 
   co_return GetPropertyDefs(*property_decls);

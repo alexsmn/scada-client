@@ -2,7 +2,6 @@
 
 #include "filesystem/file_util.h"
 #include "model/filesystem_node_ids.h"
-#include "scada/status_exception.h"
 
 #include "base/utf_convert.h"
 
@@ -11,10 +10,10 @@
 
 namespace {
 
-scada::NodeId GetOnlyTargetId(
+scada::StatusOr<scada::NodeId> GetOnlyTargetId(
     std::span<const scada::BrowsePathTarget> targets) {
   if (targets.size() != 1) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    return scada::StatusCode::Bad;
   }
 
   return targets[0].target_id.node_id();
@@ -31,12 +30,15 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
     std::filesystem::path path) const {
   const scada::NodeId file_node_id = co_await GetFileNodeAsync(path);
   // TODO: Check cache.
-  const scada::DataValue file_value =
+  const auto file_value =
       co_await scada_client_.node(file_node_id).read_value();
+  if (!file_value.ok()) {
+    co_return;
+  }
 
-  const auto* contents = file_value.value.get_if<scada::ByteString>();
+  const auto* contents = file_value->value.get_if<scada::ByteString>();
   if (!contents) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return;
   }
 
   const auto public_path = GetPublicFilePath(path);
@@ -45,7 +47,7 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
   std::ofstream ofs{public_path, std::ios::binary};
   ofs.write(contents->data(), contents->size());
   if (!ofs) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return;
   }
   co_return;
 }
@@ -53,7 +55,7 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
 Awaitable<scada::NodeId> FileManagerImpl::GetFileNodeAsync(
     std::filesystem::path path) const {
   if (path.empty()) {
-    throw scada::status_exception{scada::StatusCode::Bad};
+    co_return scada::NodeId{};
   }
 
   scada::RelativePath relative_path;
@@ -65,5 +67,9 @@ Awaitable<scada::NodeId> FileManagerImpl::GetFileNodeAsync(
 
   auto targets = co_await scada_client_.node(filesystem::id::FileSystem)
                      .translate_browse_path(relative_path);
-  co_return GetOnlyTargetId(targets);
+  if (!targets.ok()) {
+    co_return scada::NodeId{};
+  }
+  auto node_id = GetOnlyTargetId(*targets);
+  co_return node_id.ok() ? *node_id : scada::NodeId{};
 }

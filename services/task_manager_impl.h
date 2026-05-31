@@ -45,22 +45,22 @@ class TaskManagerImpl : private TaskManagerImplContext,
   bool IsRunning() const;
 
   // TaskManager
-  virtual Awaitable<void> PostTask(
+  virtual Awaitable<scada::Status> PostTask(
       std::u16string_view description,
       const TaskLauncher& launcher) override;
-  virtual Awaitable<scada::NodeId> PostInsertTask(
+  virtual Awaitable<scada::StatusOr<scada::NodeId>> PostInsertTask(
       const scada::NodeState& node_state) override;
-  virtual Awaitable<void> PostUpdateTask(
+  virtual Awaitable<scada::Status> PostUpdateTask(
       const scada::NodeId& node_id,
       scada::NodeAttributes attributes,
       scada::NodeProperties properties) override;
-  virtual Awaitable<void> PostDeleteTask(
+  virtual Awaitable<scada::Status> PostDeleteTask(
       const scada::NodeId& node_id) override;
-  virtual Awaitable<void> PostAddReference(
+  virtual Awaitable<scada::Status> PostAddReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
-  virtual Awaitable<void> PostDeleteReference(
+  virtual Awaitable<scada::Status> PostDeleteReference(
       const scada::NodeId& reference_type_id,
       const scada::NodeId& source_id,
       const scada::NodeId& target_id) override;
@@ -83,13 +83,15 @@ class TaskManagerImpl : private TaskManagerImplContext,
   void Run();
   void CancelProgress();
 
-  Awaitable<void> PostTaskMethod(std::u16string_view title, TaskMethod method);
+  Awaitable<scada::Status> PostTaskMethod(std::u16string_view title,
+                                          TaskMethod method);
 
   template <class T>
-  Awaitable<T> PostTypedTaskMethod(std::u16string_view title,
-                                   std::function<Awaitable<T>()> method);
+  Awaitable<scada::StatusOr<T>> PostTypedTaskMethod(
+      std::u16string_view title,
+      std::function<Awaitable<scada::StatusOr<T>>()> method);
 
-  [[nodiscard]] static Awaitable<scada::NodeId> RunInsertTask(
+  [[nodiscard]] static Awaitable<scada::StatusOr<scada::NodeId>> RunInsertTask(
       std::shared_ptr<TaskManagerImpl> self,
       scada::NodeState node_state);
   [[nodiscard]] static Awaitable<scada::Status> RunUpdateTask(

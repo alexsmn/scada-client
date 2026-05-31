@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 #include "base/awaitable.h"
 #include "node_service/node_ref.h"
+#include "scada/status_or.h"
 
 #include <unordered_set>
 #include <vector>
@@ -24,6 +25,9 @@ class PropertyService {
   Awaitable<PropertyDefs> GetChildPropertyDefsAsync(
       AnyExecutor executor,
       const NodeRef& parent_node);
+  Awaitable<scada::StatusOr<PropertyDefs>> GetChildPropertyDefsStatusAsync(
+      AnyExecutor executor,
+      const NodeRef& parent_node);
 
   // Returns property declarations and forward reference types.
   void GetTypeProperties(const NodeRef& type_definition,
@@ -31,6 +35,10 @@ class PropertyService {
 
  private:
   Awaitable<void> GetAllSubtypesPropertiesAsync(
+      AnyExecutor executor,
+      const NodeRef& type_definition,
+      const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);
+  Awaitable<scada::Status> GetAllSubtypesPropertiesStatusAsync(
       AnyExecutor executor,
       const NodeRef& type_definition,
       const std::shared_ptr<std::unordered_set<NodeRef>>& property_decls);

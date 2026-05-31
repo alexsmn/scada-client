@@ -16,42 +16,41 @@ class MockTaskManager : public TaskManager {
   }
 
  private:
-  static Awaitable<scada::NodeId> RejectPostInsertTaskAsync() {
-    throw std::exception{};
-    co_return scada::NodeId{};
+  static Awaitable<scada::StatusOr<scada::NodeId>> RejectPostInsertTaskAsync() {
+    co_return scada::StatusCode::Bad;
   }
 
  public:
-  MOCK_METHOD(Awaitable<void>,
+  MOCK_METHOD(Awaitable<scada::Status>,
               PostTask,
               (std::u16string_view description, const TaskLauncher& launcher),
               (override));
 
-  MOCK_METHOD(Awaitable<scada::NodeId>,
+  MOCK_METHOD(Awaitable<scada::StatusOr<scada::NodeId>>,
               PostInsertTask,
               (const scada::NodeState& new_node_state),
               (override));
 
-  MOCK_METHOD(Awaitable<void>,
+  MOCK_METHOD(Awaitable<scada::Status>,
               PostUpdateTask,
               (const scada::NodeId& node_id,
                scada::NodeAttributes attributes,
                scada::NodeProperties properties),
               (override));
 
-  MOCK_METHOD(Awaitable<void>,
+  MOCK_METHOD(Awaitable<scada::Status>,
               PostDeleteTask,
               (const scada::NodeId& node_id),
               (override));
 
-  MOCK_METHOD(Awaitable<void>,
+  MOCK_METHOD(Awaitable<scada::Status>,
               PostAddReference,
               (const scada::NodeId& reference_type_id,
                const scada::NodeId& source_id,
                const scada::NodeId& target_id),
               (override));
 
-  MOCK_METHOD(Awaitable<void>,
+  MOCK_METHOD(Awaitable<scada::Status>,
               PostDeleteReference,
               (const scada::NodeId& reference_type_id,
                const scada::NodeId& source_id,

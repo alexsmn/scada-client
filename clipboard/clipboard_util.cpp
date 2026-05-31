@@ -68,7 +68,10 @@ Awaitable<void> PasteNodesFromNodeStateRecursiveAsync(
 
   // `PostInsertTask` must take a node state with no children.
   auto node_id = co_await task_manager.PostInsertTask(node_state);
-  co_await PasteChildrenAsync(task_manager, std::move(children), node_id);
+  if (!node_id.ok()) {
+    co_return;
+  }
+  co_await PasteChildrenAsync(task_manager, std::move(children), *node_id);
 }
 
 Awaitable<void> PasteNodesFromNodeTreeAsync(
