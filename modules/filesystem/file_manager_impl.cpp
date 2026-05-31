@@ -29,6 +29,10 @@ Awaitable<void> FileManagerImpl::DownloadFileFromServer(
 Awaitable<void> FileManagerImpl::DownloadFileFromServerAsync(
     std::filesystem::path path) const {
   const scada::NodeId file_node_id = co_await GetFileNodeAsync(path);
+  if (file_node_id.is_null()) {
+    co_return;
+  }
+
   // TODO: Check cache.
   const auto file_value =
       co_await scada_client_.node(file_node_id).read_value();

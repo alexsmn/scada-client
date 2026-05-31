@@ -35,6 +35,13 @@ auto ReturnAwaitable(T value) {
   };
 }
 
+auto ReturnNodeId(scada::NodeId value) {
+  return [value = std::move(value)](auto&&...)
+             mutable -> Awaitable<scada::StatusOr<scada::NodeId>> {
+    co_return std::move(value);
+  };
+}
+
 class ExportConfigurationModuleTest : public Test {
  public:
   void SetUp() override;
@@ -132,7 +139,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
           .parent_id = data_items::id::DataItems,
           .attributes = {.display_name = u"TS 1"},
           .properties = {{data_items::id::DiscreteItemType_Inversion, true}}})))
-      .WillOnce(ReturnAwaitable(scada::NodeId{1, NamespaceIndexes::TS}));
+      .WillOnce(ReturnNodeId(scada::NodeId{1, NamespaceIndexes::TS}));
 
   EXPECT_CALL(task_manager_,
               PostInsertTask(NodeStateIs(scada::NodeState{
@@ -142,7 +149,7 @@ TEST_F(ExportConfigurationModuleTest, ImportCommand) {
                   .attributes = {.display_name = u"TIT 1"},
                   .properties = {{data_items::id::AnalogItemType_DisplayFormat,
                                   "#####"}}})))
-      .WillOnce(ReturnAwaitable(scada::NodeId{1, NamespaceIndexes::TIT}));
+      .WillOnce(ReturnNodeId(scada::NodeId{1, NamespaceIndexes::TIT}));
 
   ScopedImportReportSuppressor import_report_suppressor;
 

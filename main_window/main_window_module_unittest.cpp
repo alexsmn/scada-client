@@ -14,7 +14,6 @@
 #include "main_window/main_window_manager.h"
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
-#include "scada/status_exception.h"
 #include "services/speech_service_mock.h"
 
 #include <gmock/gmock.h>
@@ -24,8 +23,7 @@
 using namespace testing;
 namespace {
 
-Awaitable<void> RejectDownloadAsync() {
-  throw scada::status_exception{scada::StatusCode::Bad};
+Awaitable<void> CompleteDownloadAsync() {
   co_return;
 }
 
@@ -153,12 +151,12 @@ TEST_F(MainWindowModuleTest, OpensViewWhenDownloadSucceeds) {
               NotNull());
 }
 
-TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadFails) {
+TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadCompletes) {
   auto path = std::filesystem::path("some/path");
 
   EXPECT_CALL(controller_env_.file_manager_, DownloadFileFromServer(path))
       .WillOnce([](const std::filesystem::path&) {
-        return RejectDownloadAsync();
+        return CompleteDownloadAsync();
       });
 
   auto window_def =

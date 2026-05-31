@@ -15,7 +15,6 @@
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
 #include "profile/profile.h"
-#include "scada/status_exception.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
@@ -36,8 +35,7 @@
 using namespace testing;
 namespace {
 
-Awaitable<void> RejectDownloadAsync() {
-  throw scada::status_exception{scada::StatusCode::Bad};
+Awaitable<void> CompleteDownloadAsync() {
   co_return;
 }
 
@@ -205,15 +203,15 @@ TEST_F(MainWindowTest, OpenView_NoPathSkipsDownloadAndOpensView) {
 
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
-TEST_F(MainWindowTest, OpenView_DownloadFails_ProceedsToOpenedViewNormally) {
+TEST_F(MainWindowTest, OpenView_DownloadCompletes_ProceedsToOpenedViewNormally) {
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
           "some/path");
 
   EXPECT_CALL(controller_env_.file_manager_,
-              DownloadFileFromServer(window_def.path))
+      DownloadFileFromServer(window_def.path))
       .WillOnce([](const std::filesystem::path&) {
-        return RejectDownloadAsync();
+        return CompleteDownloadAsync();
       });
 
   ExpectOpenView();

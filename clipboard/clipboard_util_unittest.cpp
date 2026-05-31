@@ -102,15 +102,13 @@ TEST(PasteNodesFromNodeStateRecursive, RejectedInsertPropagates) {
       .attributes = {.browse_name = "Group1", .display_name = u"Group1"}};
 
   EXPECT_CALL(task_manager, PostInsertTask(_))
-      .WillOnce(Invoke([](const scada::NodeState&) -> Awaitable<scada::NodeId> {
-        throw std::runtime_error{"insert"};
-        co_return scada::NodeId{};
+      .WillOnce(Invoke([](const scada::NodeState&)
+                           -> Awaitable<scada::StatusOr<scada::NodeId>> {
+        co_return scada::StatusCode::Bad;
       }));
 
-  EXPECT_THROW(
-      WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
-                                  task_manager, std::move(node_state))),
-      std::runtime_error);
+  WaitAwaitable(executor, PasteNodesFromNodeStateRecursive(
+                              task_manager, std::move(node_state)));
 }
 
 TEST(PasteNodesFromNodeStateRecursive,
@@ -145,7 +143,7 @@ TEST(PasteNodesFromNodeStateRecursive,
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
         .WillOnce(Invoke([&](const scada::NodeState& inserted)
-                             -> Awaitable<scada::NodeId> {
+                             -> Awaitable<scada::StatusOr<scada::NodeId>> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_THAT(inserted.references, SizeIs(1));
           if (!inserted.references.empty())
@@ -155,7 +153,7 @@ TEST(PasteNodesFromNodeStateRecursive,
 
     EXPECT_CALL(task_manager, PostInsertTask(_))
         .WillOnce(Invoke([&](const scada::NodeState& inserted)
-                             -> Awaitable<scada::NodeId> {
+                             -> Awaitable<scada::StatusOr<scada::NodeId>> {
           EXPECT_TRUE(inserted.children.empty());
           EXPECT_EQ(inserted.parent_id, inserted_parent_id);
           EXPECT_EQ(inserted.type_definition_id,

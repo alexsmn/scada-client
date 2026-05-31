@@ -7,7 +7,6 @@
 #include "base/test/test_executor.h"
 #include "scada/data_services_factory.h"
 #include "scada/session_service_mock.h"
-#include "scada/status_exception.h"
 
 #include <gmock/gmock.h>
 #include <transport/transport_factory.h>
@@ -29,28 +28,21 @@ class NullTransportFactory final : public transport::TransportFactory {
   }
 };
 
-class DeferredVoid {
+class DeferredStatus {
  public:
-  Awaitable<void> Wait(AnyExecutor executor) {
-    auto [error] =
-        co_await CallbackToAwaitable<std::exception_ptr>(
-            std::move(executor),
-            [this](auto callback) { callback_ = std::move(callback); });
-    if (error) {
-      std::rethrow_exception(error);
-    }
-    co_return;
+  Awaitable<scada::Status> Wait(AnyExecutor executor) {
+    auto [status] = co_await CallbackToAwaitable<scada::Status>(
+        std::move(executor),
+        [this](auto callback) { callback_ = std::move(callback); });
+    co_return status;
   }
 
-  void Resolve() { callback_(nullptr); }
-
-  template <class E>
-  void Reject(E exception) {
-    callback_(std::make_exception_ptr(std::move(exception)));
+  void Resolve(scada::Status status = scada::StatusCode::Good) {
+    callback_(std::move(status));
   }
 
  private:
-  std::function<void(std::exception_ptr)> callback_;
+  std::function<void(scada::Status)> callback_;
 };
 
 template <class T>
@@ -215,17 +207,17 @@ TEST(LoginControllerTest, LoginCompletesAfterSessionConnect) {
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  DeferredVoid connect;
+  DeferredStatus connect;
   bool completed = false;
 
-  EXPECT_CALL(session_service, Connect(_))
+  EXPECT_CALL(session_service, ConnectStatus(_))
       .WillOnce([executor, &connect](scada::SessionConnectParams params)
-                    -> Awaitable<void> {
+                    -> Awaitable<scada::Status> {
         EXPECT_EQ(params.host, "scada-host");
         EXPECT_EQ(params.user_name, u"ivan");
         EXPECT_EQ(params.password, u"secret");
         EXPECT_FALSE(params.allow_remote_logoff);
-        co_await connect.Wait(executor);
+        co_return co_await connect.Wait(executor);
       });
 
   auto controller = CreateController(executor, dialog_service, settings_store,
@@ -254,14 +246,14 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  DeferredVoid connect;
+  DeferredStatus connect;
   DeferredValue<MessageBoxResult> error_message;
   bool error_reported = false;
 
-  EXPECT_CALL(session_service, Connect(_))
+  EXPECT_CALL(session_service, ConnectStatus(_))
       .WillOnce([executor, &connect](scada::SessionConnectParams)
-                    -> Awaitable<void> {
-        co_await connect.Wait(executor);
+                    -> Awaitable<scada::Status> {
+        co_return co_await connect.Wait(executor);
       });
   EXPECT_CALL(dialog_service,
               RunMessageBox(/*message=*/_, /*title=*/_,
@@ -279,7 +271,7 @@ TEST(LoginControllerTest, FailedLoginReportsErrorAfterMessageBox) {
 
   controller->Login();
   Drain(executor);
-  connect.Reject(scada::status_exception{scada::StatusCode::Bad});
+  connect.Resolve(scada::StatusCode::Bad);
   Drain(executor);
 
   EXPECT_FALSE(error_reported);
@@ -297,21 +289,21 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  DeferredVoid first_connect;
-  DeferredVoid second_connect;
+  DeferredStatus first_connect;
+  DeferredStatus second_connect;
   DeferredValue<MessageBoxResult> force_logoff_message;
   bool completed = false;
 
-  EXPECT_CALL(session_service, Connect(_))
+  EXPECT_CALL(session_service, ConnectStatus(_))
       .WillOnce([executor, &first_connect](scada::SessionConnectParams params)
-                    -> Awaitable<void> {
+                    -> Awaitable<scada::Status> {
         EXPECT_FALSE(params.allow_remote_logoff);
-        co_await first_connect.Wait(executor);
+        co_return co_await first_connect.Wait(executor);
       })
       .WillOnce([executor, &second_connect](scada::SessionConnectParams params)
-                    -> Awaitable<void> {
+                    -> Awaitable<scada::Status> {
         EXPECT_TRUE(params.allow_remote_logoff);
-        co_await second_connect.Wait(executor);
+        co_return co_await second_connect.Wait(executor);
       });
   EXPECT_CALL(dialog_service,
               RunMessageBox(/*message=*/_, /*title=*/_,
@@ -329,8 +321,7 @@ TEST(LoginControllerTest, ForceLogoffPromptRetriesConnectWhenAccepted) {
 
   controller->Login();
   Drain(executor);
-  first_connect.Reject(scada::status_exception{
-      scada::StatusCode::Bad_UserIsAlreadyLoggedOn});
+  first_connect.Resolve(scada::StatusCode::Bad_UserIsAlreadyLoggedOn);
   Drain(executor);
 
   force_logoff_message.Resolve(MessageBoxResult::Yes);
@@ -350,13 +341,13 @@ TEST(LoginControllerTest, DestroyedControllerDropsPendingConnectCompletion) {
   StrictMock<scada::MockSessionService> session_service;
   ScopedScadaSessionService scoped_session_service{session_service};
   NullTransportFactory transport_factory;
-  DeferredVoid connect;
+  DeferredStatus connect;
   bool completed = false;
 
-  EXPECT_CALL(session_service, Connect(_))
+  EXPECT_CALL(session_service, ConnectStatus(_))
       .WillOnce([executor, &connect](scada::SessionConnectParams)
-                    -> Awaitable<void> {
-        co_await connect.Wait(executor);
+                    -> Awaitable<scada::Status> {
+        co_return co_await connect.Wait(executor);
       });
 
   auto controller = CreateController(executor, dialog_service, settings_store,

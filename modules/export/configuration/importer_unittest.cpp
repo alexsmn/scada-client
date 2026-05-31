@@ -22,13 +22,15 @@ TEST(Importer, UnorderedCreatedNodes) {
 
   EXPECT_CALL(task_manager,
               PostInsertTask(Field(&scada::NodeState::node_id, data_group_id)))
-      .WillOnce([&](const scada::NodeState&) -> Awaitable<scada::NodeId> {
+      .WillOnce([&](const scada::NodeState&)
+                    -> Awaitable<scada::StatusOr<scada::NodeId>> {
         co_return data_group_id;
       });
 
   EXPECT_CALL(task_manager,
               PostInsertTask(Field(&scada::NodeState::node_id, data_item_id)))
-      .WillOnce([&](const scada::NodeState&) -> Awaitable<scada::NodeId> {
+      .WillOnce([&](const scada::NodeState&)
+                    -> Awaitable<scada::StatusOr<scada::NodeId>> {
         co_return data_item_id;
       });
 

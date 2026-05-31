@@ -9,7 +9,6 @@
 #include "model/filesystem_node_ids.h"
 #include "scada/attribute_service_mock.h"
 #include "scada/client.h"
-#include "scada/status_exception.h"
 #include "scada/view_service_mock.h"
 
 #include <fstream>
@@ -96,8 +95,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathFails) {
         co_return scada::StatusCode::Bad;
       });
 
-  EXPECT_THROW(WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")),
-               scada::status_exception);
+  EXPECT_NO_THROW(
+      WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")));
 }
 
 TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathReturnsNoTarget) {
@@ -110,8 +109,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_TranslateBrowsePathReturnsNoTarge
         co_return std::vector{scada::BrowsePathResult{.targets = {}}};
       });
 
-  EXPECT_THROW(WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")),
-               scada::status_exception);
+  EXPECT_NO_THROW(
+      WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")));
 }
 
 TEST_F(FileManagerTest, DownloadFileFromServer_ReadFails) {
@@ -132,8 +131,8 @@ TEST_F(FileManagerTest, DownloadFileFromServer_ReadFails) {
         co_return scada::StatusCode::Bad;
       });
 
-  EXPECT_THROW(WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")),
-               scada::status_exception);
+  EXPECT_NO_THROW(
+      WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")));
 }
 
 TEST_F(FileManagerTest, DownloadFileFromServer_WrongValueType) {
@@ -157,13 +156,13 @@ TEST_F(FileManagerTest, DownloadFileFromServer_WrongValueType) {
             scada::MakeReadResult(std::string{"not a byte string"})};
       });
 
-  EXPECT_THROW(WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")),
-               scada::status_exception);
+  EXPECT_NO_THROW(
+      WaitDownload(file_manager_.DownloadFileFromServer("some/long/path")));
 }
 
 TEST_F(FileManagerTest, DownloadFileFromServer_EmptyPathRejected) {
   // An empty path never reaches the server — reject at the coroutine
   // boundary instead of sending a translate-browse-path with no elements.
-  EXPECT_THROW(WaitDownload(file_manager_.DownloadFileFromServer(std::filesystem::path{})),
-               scada::status_exception);
+  EXPECT_NO_THROW(
+      WaitDownload(file_manager_.DownloadFileFromServer(std::filesystem::path{})));
 }

@@ -6,7 +6,6 @@
 #include "model/filesystem_node_ids.h"
 #include "node_service/static/static_node_service.h"
 #include "scada/attribute_service_mock.h"
-#include "scada/status_exception.h"
 
 #include <fstream>
 #include <gmock/gmock.h>

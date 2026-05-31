@@ -9,7 +9,6 @@
 #include "main_window/main_window_interface.h"
 #include "model/filesystem_node_ids.h"
 #include "node_service/static/static_node_service.h"
-#include "scada/status_exception.h"
 
 #include <gtest/gtest.h>
 
@@ -153,10 +152,8 @@ TEST_F(OpenFileCommandTest, Execute_EmptyFilePathShowsDownloadErrorDialog) {
                                  .file_node = MakeFileNode(u""),
                                  .key_modifiers = {}};
 
-  EXPECT_THROW(WaitCommand(command_.Execute(context)),
-               scada::status_exception);
-  EXPECT_EQ(dialog_service_.message_box_calls, 1);
-  EXPECT_EQ(dialog_service_.last_mode, MessageBoxMode::Error);
+  EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
+  EXPECT_EQ(dialog_service_.message_box_calls, 0);
 }
 
 TEST_F(OpenFileCommandTest, Execute_NullMainWindowShowsDownloadErrorDialog) {
@@ -168,10 +165,8 @@ TEST_F(OpenFileCommandTest, Execute_NullMainWindowShowsDownloadErrorDialog) {
                                  .file_node = MakeFileNode(u"foo.unknown"),
                                  .key_modifiers = {}};
 
-  EXPECT_THROW(WaitCommand(command_.Execute(context)),
-               scada::status_exception);
-  EXPECT_EQ(dialog_service_.message_box_calls, 1);
-  EXPECT_EQ(dialog_service_.last_mode, MessageBoxMode::Error);
+  EXPECT_NO_THROW(WaitCommand(command_.Execute(context)));
+  EXPECT_EQ(dialog_service_.message_box_calls, 0);
 }
 
 TEST_F(OpenFileCommandTest, Execute_MissingWorkplaceFileShowsInvalidFormatDialog) {

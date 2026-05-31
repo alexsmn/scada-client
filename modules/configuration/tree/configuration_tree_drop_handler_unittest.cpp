@@ -138,7 +138,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
       .WillOnce(Return(dragging_node));
   EXPECT_CALL(task_manager_, PostInsertTask(_))
       .WillOnce([&](const scada::NodeState& node_state)
-                    -> Awaitable<scada::NodeId> {
+                    -> Awaitable<scada::StatusOr<scada::NodeId>> {
         EXPECT_EQ(node_state.type_definition_id,
                   data_items::id::DiscreteItemType);
         EXPECT_EQ(node_state.parent_id, data_group_id_);
@@ -179,7 +179,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
       .WillOnce(Return(dragging_node));
   EXPECT_CALL(task_manager_, PostUpdateTask(data_item_id_, _, _))
       .WillOnce([&](const scada::NodeId&, scada::NodeAttributes attributes,
-                    scada::NodeProperties properties) -> Awaitable<void> {
+                    scada::NodeProperties properties) -> Awaitable<scada::Status> {
         EXPECT_TRUE(attributes.empty());
         EXPECT_THAT(properties, SizeIs(1));
         if (!properties.empty()) {
@@ -187,7 +187,7 @@ TEST_F(ConfigurationTreeDropHandlerTest,
           EXPECT_EQ(properties[0].second.as_string(),
                     MakeNodeIdFormula(channel_id_));
         }
-        co_return;
+        co_return scada::StatusCode::Good;
       });
 
   DropAction action;
@@ -219,15 +219,15 @@ TEST_F(ConfigurationTreeDropHandlerTest, MoveDropPostsReferenceCoroutine) {
                 PostDeleteReference(scada::NodeId{scada::id::Organizes},
                                     old_parent_id_, channel_id_))
         .WillOnce([](const scada::NodeId&, const scada::NodeId&,
-                     const scada::NodeId&) -> Awaitable<void> {
-          co_return;
+                     const scada::NodeId&) -> Awaitable<scada::Status> {
+          co_return scada::StatusCode::Good;
         });
     EXPECT_CALL(task_manager_,
                 PostAddReference(scada::NodeId{scada::id::Organizes},
                                  new_parent_id_, channel_id_))
         .WillOnce([](const scada::NodeId&, const scada::NodeId&,
-                     const scada::NodeId&) -> Awaitable<void> {
-          co_return;
+                     const scada::NodeId&) -> Awaitable<scada::Status> {
+          co_return scada::StatusCode::Good;
         });
   }
 
