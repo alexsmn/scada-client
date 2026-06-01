@@ -94,6 +94,16 @@ QRect GetDefaultBounds(const QWidget* window) {
           desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};
 }
 
+void BuildDefaultPopupMenu(QMenu& menu,
+                           aui::MenuModel* merge_menu,
+                           aui::MenuModel& context_menu_model) {
+  if (merge_menu && merge_menu->GetItemCount() != 0) {
+    BuildMenu(menu, *merge_menu);
+    menu.addSeparator();
+  }
+  BuildMenu(menu, context_menu_model);
+}
+
 }  // namespace
 
 MainWindow::MainWindow(MainWindowContext&& context)
@@ -365,11 +375,7 @@ void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
                                bool right_click) {
   if (resource_id == 0) {
     QMenu menu;
-    if (merge_menu && merge_menu->GetItemCount() != 0) {
-      BuildMenu(menu, *merge_menu);
-      menu.addSeparator();
-    }
-    BuildMenu(menu, *context_menu_model_);
+    BuildDefaultPopupMenu(menu, merge_menu, *context_menu_model_);
     menu.exec(point);
     return;
   }
@@ -386,7 +392,12 @@ void MainWindow::ShowPopupMenu(aui::MenuModel* merge_menu,
                    menu_model, submenus);
   }
 #else
-  return;
+  {
+    QMenu menu;
+    BuildDefaultPopupMenu(menu, merge_menu, *context_menu_model_);
+    menu.exec(point);
+    return;
+  }
 #endif
 
   QMenu menu;
