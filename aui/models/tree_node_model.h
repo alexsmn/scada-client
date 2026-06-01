@@ -36,7 +36,9 @@ class TreeNode {
   virtual EditData GetEditData(int column_id) const { return {}; };
   virtual void HandleEditButton(int column_id) const {}
 
-  virtual Color GetTextColor(int column_id) const { return ColorCode::Black; }
+  virtual Color GetTextColor(int column_id) const {
+    return ColorCode::Transparent;
+  }
 
   virtual Color GetBackgroundColor(int column_id) const {
     return ColorCode::Transparent;

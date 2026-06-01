@@ -13,6 +13,10 @@ namespace aui {
 
 namespace {
 
+bool IsTransparent(Color color) {
+  return color.rgba().a == 0;
+}
+
 std::unique_ptr<QMimeData> CreateMimeData(const DragData& drag_data) {
   if (drag_data.empty())
     return nullptr;
@@ -152,10 +156,14 @@ QVariant TreeModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::DisplayRole:
     case Qt::EditRole:
       return QString::fromStdU16String(model_->GetText(node, index.column()));
-    case Qt::ForegroundRole:
-      return model_->GetTextColor(node, index.column()).qcolor();
-    case Qt::BackgroundRole:
-      return model_->GetBackgroundColor(node, index.column()).qcolor();
+    case Qt::ForegroundRole: {
+      auto color = model_->GetTextColor(node, index.column());
+      return IsTransparent(color) ? QVariant{} : color.qcolor();
+    }
+    case Qt::BackgroundRole: {
+      auto color = model_->GetBackgroundColor(node, index.column());
+      return IsTransparent(color) ? QVariant{} : color.qcolor();
+    }
     case Qt::DecorationRole: {
       auto icon_index = index.column() == 0 ? model_->GetIcon(node) : -1;
       return (icon_index >= 0 && icon_index < static_cast<int>(icons_.size()))

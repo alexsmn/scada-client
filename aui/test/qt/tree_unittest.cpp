@@ -10,13 +10,19 @@ namespace {
 class TestTreeNode : public aui::TreeNode<TestTreeNode> {
  public:
   explicit TestTreeNode(std::u16string text) : text_{std::move(text)} {}
+  TestTreeNode(std::u16string text, aui::Color text_color)
+      : text_{std::move(text)}, text_color_{text_color} {}
 
   std::u16string GetText(int /*column_id*/) const override { return text_; }
+  aui::Color GetTextColor(int /*column_id*/) const override {
+    return text_color_;
+  }
 
   bool HasChildren() const override { return GetChildCount() != 0; }
 
  private:
   std::u16string text_;
+  aui::Color text_color_ = aui::ColorCode::Transparent;
 };
 
 std::shared_ptr<aui::TreeNodeModel<TestTreeNode>> MakeTreeModel() {
@@ -26,6 +32,14 @@ std::shared_ptr<aui::TreeNodeModel<TestTreeNode>> MakeTreeModel() {
   root->Add(0, std::make_unique<TestTreeNode>(u"First"));
   root->Add(1, std::move(child));
   root->Add(2, std::make_unique<TestTreeNode>(u"Last"));
+  return std::make_shared<aui::TreeNodeModel<TestTreeNode>>(std::move(root));
+}
+
+std::shared_ptr<aui::TreeNodeModel<TestTreeNode>> MakeColoredTreeModel() {
+  auto root = std::make_unique<TestTreeNode>(u"Root");
+  root->Add(0, std::make_unique<TestTreeNode>(u"Default"));
+  root->Add(1,
+            std::make_unique<TestTreeNode>(u"Explicit", aui::ColorCode::White));
   return std::make_shared<aui::TreeNodeModel<TestTreeNode>>(std::move(root));
 }
 
@@ -77,4 +91,25 @@ TEST(TreeTest, ExpandNodeExpandsMatchingTreeIndex) {
   tree.ExpandNode(child);
 
   EXPECT_TRUE(tree.isExpanded(child_index));
+}
+
+TEST(TreeTest, DefaultTextColorUsesPaletteForeground) {
+  AppEnvironment app_env;
+
+  aui::Tree tree{MakeColoredTreeModel()};
+  const auto default_index = tree.model()->index(0, 0, tree.rootIndex());
+
+  EXPECT_FALSE(tree.model()->data(default_index, Qt::ForegroundRole).isValid());
+}
+
+TEST(TreeTest, ExplicitTextColorOverridesPaletteForeground) {
+  AppEnvironment app_env;
+
+  aui::Tree tree{MakeColoredTreeModel()};
+  const auto explicit_index = tree.model()->index(1, 0, tree.rootIndex());
+
+  ASSERT_TRUE(tree.model()->data(explicit_index, Qt::ForegroundRole).isValid());
+  EXPECT_EQ(
+      tree.model()->data(explicit_index, Qt::ForegroundRole).value<QColor>(),
+      QColor(Qt::white));
 }

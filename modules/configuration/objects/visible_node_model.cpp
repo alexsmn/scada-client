@@ -2,8 +2,8 @@
 
 #include "configuration/tree/configuration_tree_model.h"
 #include "model/data_items_node_ids.h"
-#include "services/device_state_notifier.h"
 #include "profile/profile.h"
+#include "services/device_state_notifier.h"
 #include "timed_data/timed_data_property.h"
 
 VisibleNodeModel::VisibleNodeModel(TimedDataService& timed_data_service,
@@ -41,9 +41,8 @@ void VisibleNodeModel::SetNode(void* tree_node,
   node_change_handler_(tree_node);
 }
 
-bool VisibleNodeModel::HasNode(
-    void* tree_node,
-    const std::shared_ptr<VisibleNode>& node) const {
+bool VisibleNodeModel::HasNode(void* tree_node,
+                               const std::shared_ptr<VisibleNode>& node) const {
   auto i = nodes_.find(tree_node);
   return i != nodes_.end() && i->second == node;
 }
@@ -60,7 +59,7 @@ aui::Color VisibleNodeModel::GetTextColor(void* tree_node) {
   if (!node || node->IsBad())
     return profile_.bad_value_color;
 
-  return aui::ColorCode::Black;
+  return aui::ColorCode::Transparent;
 }
 
 aui::Color VisibleNodeModel::GetBackgroundColor(void* tree_node) {

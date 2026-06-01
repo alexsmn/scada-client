@@ -39,7 +39,7 @@ class TreeModel {
   }
   virtual int GetIcon(void* node) { return -1; }
   virtual Color GetTextColor(void* node, int column_id) {
-    return ColorCode::Black;
+    return ColorCode::Transparent;
   }
   virtual Color GetBackgroundColor(void* node, int column_id) {
     return ColorCode::Transparent;
