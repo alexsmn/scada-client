@@ -72,6 +72,21 @@ add_executable(client_qt WIN32 ${MAIN_QT})
 target_precompile_headers(client_qt REUSE_FROM scada_base)
 target_link_libraries(client_qt PUBLIC client_qt_app_shared)
 set_property(TARGET client_qt PROPERTY OUTPUT_NAME "client")
+if(APPLE)
+  set(CLIENT_MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/../../res/client.icns")
+  target_sources(client_qt PRIVATE "${CLIENT_MACOS_ICON}")
+  set_source_files_properties("${CLIENT_MACOS_ICON}" PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources")
+  set_target_properties(client_qt PROPERTIES
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_BUNDLE_NAME "Telecontrol SCADA Client"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "ru.telecontrol.scada.client"
+    MACOSX_BUNDLE_ICON_FILE "client.icns"
+    MACOSX_BUNDLE_INFO_STRING "Telecontrol SCADA Client"
+    MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+endif()
 if(MSVC)
   target_link_options(client_qt PRIVATE
     "$<$<CONFIG:Debug>:/DEBUG:NONE>"
@@ -120,6 +135,7 @@ install(FILES ${TRANSLATIONS_OUT}
 
 install(TARGETS client_qt
   RUNTIME_DEPENDENCY_SET client_deps
+  BUNDLE DESTINATION "." COMPONENT Client
   RUNTIME DESTINATION "bin" COMPONENT Client)
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/dependencies/bin")

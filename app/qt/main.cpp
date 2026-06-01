@@ -21,6 +21,7 @@
 #include <Windows.h>
 #endif
 #include <QApplication>
+#include <QIcon>
 #include <QSettings>
 #include <QTimer>
 #include <boost/asio/io_context.hpp>
@@ -113,6 +114,7 @@ int main(int argc, char* argv[]) {
     QApplication::setApplicationVersion(PROJECT_VERSION_DOTTED_STRING);
     QApplication::setApplicationDisplayName(
         QObject::tr("Telecontrol SCADA Client"));
+    QApplication::setWindowIcon(QIcon{":/client.ico"});
     QApplication::setQuitOnLastWindowClosed(false);
 
     QSettings settings;

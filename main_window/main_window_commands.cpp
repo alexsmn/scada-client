@@ -257,12 +257,6 @@ CommandHandler* MainWindowCommands::GetCommandHandler(unsigned command_id) {
     case ID_LOGOFF:
       return this;
 
-#ifdef NDEBUG
-    case ID_NODES_VIEW:
-      // Hide NodeView for Release build.
-      return nullptr;
-#endif
-
     case ID_OPEN_TABLE:
       command_id = ID_TABLE_VIEW;
       break;

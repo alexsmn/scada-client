@@ -128,6 +128,7 @@ MainWindow::MainWindow(MainWindowContext&& context)
   }
 
   Init(*view_manager_);
+  RebuildMenuBar();
 
   ui_command_registry_.action_manager().Subscribe(*this);
 
@@ -179,6 +180,24 @@ void MainWindow::CreateMenuBar() {
                        submenu->clear();
                        BuildMenu(*submenu, *submenu_model);
                      });
+#ifdef __APPLE__
+    auto* loading_action = submenu->addAction(tr("Loading..."));
+    loading_action->setEnabled(false);
+#endif
+  }
+}
+
+void MainWindow::RebuildMenuBar() {
+  const auto top_level_actions = menuBar()->actions();
+  assert(top_level_actions.size() == main_menu_model_->GetItemCount());
+
+  for (int i = 0; i < main_menu_model_->GetItemCount(); ++i) {
+    auto* submenu = top_level_actions[i]->menu();
+    auto* submenu_model = main_menu_model_->GetSubmenuModelAt(i);
+    assert(submenu);
+    assert(submenu_model);
+    submenu->clear();
+    BuildMenu(*submenu, *submenu_model);
   }
 }
 

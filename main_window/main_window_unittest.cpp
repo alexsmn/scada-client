@@ -26,6 +26,7 @@
 
 #if defined(UI_QT)
 #include <QLabel>
+#include <QMenuBar>
 #elif defined(UI_WT)
 #include <wt/WContainerWidget.h>
 #endif
@@ -38,6 +39,17 @@ namespace {
 Awaitable<void> CompleteDownloadAsync() {
   co_return;
 }
+
+class TestMainMenuModel final : public aui::SimpleMenuModel {
+ public:
+  TestMainMenuModel() : aui::SimpleMenuModel{nullptr}, submenu_{nullptr} {
+    submenu_.AddItem(1, u"Action");
+    AddSubMenu(0, u"Top", &submenu_);
+  }
+
+ private:
+  aui::SimpleMenuModel submenu_;
+};
 
 }  // namespace
 
@@ -171,6 +183,67 @@ TEST_F(MainWindowTest, Close_InvokesQuitHandler) {
 
   main_window_->Close();
 }
+
+#if defined(UI_QT)
+TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
+  MainWindow::SetHideForTesting();
+
+  AppEnvironment app_env;
+  ControllerEnvironment controller_env;
+  controller_env.profile_.AddPage({});
+  UiCommandRegistry ui_command_registry;
+  StrictMock<MockFunction<void(const NodeCommandContext& context)>>
+      node_command_handler;
+  StrictMock<MockFunction<std::unique_ptr<MainWindow>(int window_id)>>
+      main_window_factory;
+  StrictMock<MockFunction<void()>> quit_handler;
+  MainWindowManager main_window_manager{
+      {.profile_ = controller_env.profile_,
+       .main_window_factory_ = main_window_factory.AsStdFunction(),
+       .quit_handler_ = quit_handler.AsStdFunction()}};
+  StrictMock<MockFunction<std::unique_ptr<
+      OpenedView>(MainWindow& main_window, WindowDefinition& window_def)>>
+      opened_view_factory;
+  NiceMock<MockFunction<std::string()>> connection_info_provider;
+  ProgressHostImpl progress_host;
+
+  MainWindow main_window{
+      {.executor_ = controller_env.executor_,
+       .ui_command_registry_ = ui_command_registry,
+       .window_id_ = 111,
+       .node_command_handler_ = node_command_handler.AsStdFunction(),
+       .file_manager_ = controller_env.file_manager_,
+       .main_window_manager_ = main_window_manager,
+       .profile_ = controller_env.profile_,
+       .opened_view_factory_ = opened_view_factory.AsStdFunction(),
+       .main_commands_factory_ =
+           [](MainWindowInterface& main_window,
+              DialogService& dialog_service) {
+             return std::make_unique<CommandHandler>();
+           },
+       .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
+       .context_menu_factory_ =
+           [](MainWindowInterface& main_window,
+              CommandHandler& global_commands) {
+             return std::make_unique<aui::SimpleMenuModel>(nullptr);
+           },
+       .main_menu_factory_ =
+           [](MainWindowInterface& main_window, DialogService& dialog_service,
+              ViewManager& view_manager, CommandHandler& global_commands,
+              aui::MenuModel& context_menu_model) {
+             return std::make_unique<TestMainMenuModel>();
+           },
+       .connection_info_provider_ = connection_info_provider.AsStdFunction(),
+       .progress_host_ = progress_host}};
+
+  ASSERT_THAT(main_window.menuBar()->actions(), SizeIs(1));
+  auto* top_menu = main_window.menuBar()->actions().front()->menu();
+  ASSERT_NE(top_menu, nullptr);
+  EXPECT_THAT(top_menu->actions(), SizeIs(1));
+
+  main_window.CleanupForTesting();
+}
+#endif
 
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)

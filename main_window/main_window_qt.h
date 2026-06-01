@@ -49,6 +49,7 @@ class MainWindow final : public QMainWindow,
   void CreateMenuBar();
   void CreateToolbar();
   void CreateStatusBar();
+  void RebuildMenuBar();
 
   QAction* FindAction(unsigned command_id);
 
