@@ -152,9 +152,6 @@ void TableRow::GetEventCell(TableCellEx& cell) const {
 void TableRow::GetCellEx(TableCellEx& cell) const {
   cell.text.clear();
 
-  if (cell.column_id == TableModel::COLUMN_TITLE)
-    cell.cell_color = aui::Rgba{0xF8, 0xF8, 0xF8};
-
   switch (cell.column_id) {
     case TableModel::COLUMN_TITLE:
       cell.text = GetTitle();

@@ -11,7 +11,7 @@ struct TableCell {
   int row = 0;
   int column_id = 0;
   std::u16string text;
-  Color text_color = ColorCode::Black;
+  Color text_color = ColorCode::Transparent;
   Color cell_color = ColorCode::Transparent;
   int icon_index = -1;
 };

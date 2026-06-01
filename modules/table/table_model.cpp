@@ -63,9 +63,6 @@ void TableModel::GetCellEx(TableCellEx& cell) const {
 
   cell.text.clear();
 
-  if (cell.column_id == TableModel::COLUMN_TITLE)
-    cell.cell_color = aui::Rgba{0xF8, 0xF8, 0xF8};
-
   if (cell.row == static_cast<int>(rows_.size())) {
     if (cell.column_id == 0) {
       cell.text = Translate("Enter expression");

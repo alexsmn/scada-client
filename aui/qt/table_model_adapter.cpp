@@ -23,6 +23,10 @@ Qt::AlignmentFlag AuiAligmentToQt(TableColumn::Alignment alignment) {
   }
 }
 
+bool IsTransparent(Color color) {
+  return color.rgba().a == 0;
+}
+
 }  // namespace
 
 TableModelAdapter::TableModelAdapter(std::shared_ptr<TableModel> model,
@@ -70,9 +74,11 @@ QVariant TableModelAdapter::data(const QModelIndex& index, int role) const {
     case Qt::EditRole:
       return QString::fromStdU16String(cell.text);
     case Qt::ForegroundRole:
-      return cell.text_color.qcolor();
+      return IsTransparent(cell.text_color) ? QVariant{}
+                                            : cell.text_color.qcolor();
     case Qt::BackgroundRole:
-      return cell.cell_color.qcolor();
+      return IsTransparent(cell.cell_color) ? QVariant{}
+                                            : cell.cell_color.qcolor();
     case Qt::DecorationRole:
       return (cell.icon_index >= 0 &&
               cell.icon_index < static_cast<int>(icons_.size()))

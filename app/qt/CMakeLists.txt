@@ -155,6 +155,7 @@ endif()
 add_executable(client_qt_unittests
   ${UNITTESTS}
   ${UNITTESTS_QT}
+  "../../aui/test/qt/table_unittest.cpp"
   "../../aui/test/qt/tree_unittest.cpp"
 )
 target_precompile_headers(client_qt_unittests REUSE_FROM scada_base)
