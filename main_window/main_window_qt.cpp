@@ -4,14 +4,12 @@
 #include "aui/models/simple_menu_model.h"
 #include "aui/qt/client_utils_qt.h"
 #include "base/utf_convert.h"
-#include "ui/common/client_utils.h"
-#include "resources/common_resources.h"
+#include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "filesystem/file_cache.h"
-#include "controller/action_manager.h"
-#include "controller/command_ui_registry.h"
 #include "main_window/main_window_commands.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -20,14 +18,17 @@
 #include "main_window/status_bar/status_bar_controller_qt.h"
 #include "main_window/view_manager.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
+#include "ui/common/client_utils.h"
 
 #include <QAction>
 #include <QApplication>
-#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QEvent>
+#include <QGuiApplication>
 #include <QLayout>
 #include <QMenuBar>
+#include <QScreen>
 #include <QStatusBar>
 #include <QStyleFactory>
 #include <QTabWidget>
@@ -35,8 +36,8 @@
 #include <QToolButton>
 
 #ifdef _WIN32
-#include <atlbase.h>
 #include <atlapp.h>
+#include <atlbase.h>
 #include <atluser.h>
 #endif
 
@@ -88,7 +89,12 @@ void BuildMenuModel(CMenuHandle menu_handle,
 #endif
 
 QRect GetDefaultBounds(const QWidget* window) {
-  auto desktop_bounds = QDesktopWidget{}.availableGeometry(window);
+  QScreen* screen =
+      window ? window->screen() : QGuiApplication::primaryScreen();
+  if (!screen)
+    screen = QGuiApplication::primaryScreen();
+  const QRect desktop_bounds =
+      screen ? screen->availableGeometry() : QRect{0, 0, 1024, 768};
   return {desktop_bounds.left() + desktop_bounds.width() / 8,
           desktop_bounds.top() + desktop_bounds.height() / 8,
           desktop_bounds.width() * 3 / 4, desktop_bounds.height() * 3 / 4};

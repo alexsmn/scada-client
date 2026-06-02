@@ -6,7 +6,7 @@
 #ifdef _WIN32
 #include "base/win/scoped_gdi_object.h"
 #include <QBitmap>
-#include <qwinfunctions.h>
+#include <QImage>
 #endif
 
 inline std::vector<QIcon> LoadIcons(unsigned resource_id,
@@ -16,7 +16,7 @@ inline std::vector<QIcon> LoadIcons(unsigned resource_id,
   base::win::ScopedBitmap bitmap{
       ::LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(resource_id))};
 
-  QPixmap tile = QtWin::fromHBITMAP(bitmap.get());
+  QPixmap tile = QPixmap::fromImage(QImage::fromHBITMAP(bitmap.get()));
   tile.setMask(tile.createMaskFromColor(mask_color));
 
   std::vector<QIcon> icons;

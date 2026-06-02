@@ -2,7 +2,6 @@
 
 #include "base/win/scoped_gdi_object.h"
 #include "base/win/scoped_hdc.h"
-#include "profile/window_definition.h"
 #include "filesystem/file_util.h"
 #include "libmodus/gfx/canvas.h"
 #include "libmodus/render/renderer.h"
@@ -14,11 +13,13 @@
 #include "libmodus/scheme/value.h"
 #include "modus/libmodus/modus_binding2.h"
 #include "modus/libmodus/modus_module2.h"
+#include "profile/window_definition.h"
 
+#include <QImage>
 #include <QMouseEvent>
 #include <QPaintEngine>
 #include <QPainter>
-#include <QtWinExtras/qwinfunctions.h>
+#include <QRegion>
 
 namespace {
 const int kSelectionInset = 3;
@@ -89,7 +90,7 @@ void ModusView2::paintEvent(QPaintEvent* e) {
     Gdiplus::Graphics graphics(dc.Get());
     // graphics.SetSmoothingMode(Gdiplus::SmoothingModeHighQuality);
 
-    base::win::ScopedRegion clip_region(QtWin::toHRGN(painter.clipRegion()));
+    base::win::ScopedRegion clip_region(painter.clipRegion().toHRGN());
     graphics.SetClip(clip_region.get());
 
     graphics.Clear(static_cast<Gdiplus::ARGB>(Gdiplus::Color::White));
@@ -105,7 +106,7 @@ void ModusView2::paintEvent(QPaintEvent* e) {
     for (auto& p : bindings_)
       p.second->Paint(graphics, false);
 
-    auto pixmap = QtWin::fromHBITMAP(bitmap.get());
+    auto pixmap = QPixmap::fromImage(QImage::fromHBITMAP(bitmap.get()));
     painter.drawPixmap(0, 0, pixmap);
   }
 

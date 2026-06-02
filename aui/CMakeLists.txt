@@ -13,16 +13,15 @@ if(TARGET aui_qt)
 
   target_compile_features(aui_qt PUBLIC cxx_std_20)
 
-  find_package(Qt5 COMPONENTS Widgets REQUIRED)
+  find_package(Qt6 COMPONENTS Widgets REQUIRED)
   target_link_libraries(aui_qt PUBLIC
-    Qt5::Widgets
+    Qt6::Widgets
   )
 
   if(WIN32)
-    find_package(Qt5 COMPONENTS AxContainer WinExtras REQUIRED)
+    find_package(Qt6 COMPONENTS AxContainer REQUIRED)
     target_link_libraries(aui_qt PUBLIC
-      Qt5::AxContainer
-      Qt5::WinExtras
+      Qt6::AxContainer
     )
   endif()
 

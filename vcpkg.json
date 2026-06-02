@@ -31,15 +31,14 @@
     "openssl",
     "protobuf",
     "pugixml",
-    "qt5-base",
-    "qt5-tools",
-    "wt",
+    "qtbase",
     {
-      "name": "qt5-activeqt",
+      "name": "qttools",
       "platform": "windows"
     },
+    "wt",
     {
-      "name": "qt5-winextras",
+      "name": "qtactiveqt",
       "platform": "windows"
     }
   ]

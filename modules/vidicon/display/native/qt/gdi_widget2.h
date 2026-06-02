@@ -6,11 +6,11 @@
 #include "vidicon/display/native/qt/window_util.h"
 
 #include <QGraphicsView>
+#include <QImage>
 #include <QPaintEvent>
 #include <QPainter>
 #include <QToolTip>
 #include <Windows.h>
-#include <qwinfunctions.h>
 
 class GdiWidget2 : public QWidget {
  public:
@@ -40,7 +40,7 @@ class GdiWidget2 : public QWidget {
     ::FillRect(dc.Get(), &paint_rect, (HBRUSH)(COLOR_WINDOW + 1));
     paint(dc.Get(), paint_rect);
 
-    QPixmap tile = QtWin::fromHBITMAP(bitmap.get());
+    QPixmap tile = QPixmap::fromImage(QImage::fromHBITMAP(bitmap.get()));
     painter.drawPixmap(rect.x(), rect.y(), tile);
   }
 

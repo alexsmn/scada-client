@@ -111,27 +111,36 @@ add_custom_command(
   COMMAND "lconvert -i ${CLIENT_QT_TRANSLATIONS} -o ${CMAKE_CURRENT_BINARY_DIR}/client_ru.ts"
   COMMENT "Merge all translation files into ${CMAKE_CURRENT_BINARY_DIR}/client_ru.ts")
 
-find_package(Qt5LinguistTools REQUIRED)
-qt5_add_translation(TRANSLATIONS_OUT "client_ru.ts")
+find_package(Qt6 COMPONENTS LinguistTools QUIET)
+if(COMMAND qt_add_translation)
+  qt_add_translation(TRANSLATIONS_OUT "client_ru.ts")
 
-add_custom_command(
-  OUTPUT "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
-  DEPENDS ${TRANSLATIONS_OUT}
-  COMMAND ${CMAKE_COMMAND} -E make_directory
-    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations"
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${TRANSLATIONS_OUT}
-    "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
-  COMMENT "Copy translations to output directory")
+  add_custom_command(
+    OUTPUT "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
+    DEPENDS ${TRANSLATIONS_OUT}
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      ${TRANSLATIONS_OUT}
+      "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm"
+    COMMENT "Copy translations to output directory")
 
-add_custom_target(client_qt_copy_translations
-  DEPENDS "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm")
+  add_custom_target(client_qt_copy_translations
+    DEPENDS "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/translations/client_ru.qm")
+else()
+  add_custom_target(client_qt_copy_translations
+    COMMAND ${CMAKE_COMMAND} -E echo
+            "Qt LinguistTools were not found; skipping client translations."
+    VERBATIM)
+endif()
 
 add_dependencies(client_qt client_qt_copy_translations)
 
-install(FILES ${TRANSLATIONS_OUT}
-  DESTINATION "bin/translations"
-  COMPONENT Client)
+if(TRANSLATIONS_OUT)
+  install(FILES ${TRANSLATIONS_OUT}
+    DESTINATION "bin/translations"
+    COMPONENT Client)
+endif()
 
 install(TARGETS client_qt
   RUNTIME_DEPENDENCY_SET client_deps

@@ -36,8 +36,8 @@ endif()
 # Required for `AUTOMOC`, `AUTOUIC`, and `AUTORCC` added to all
 # `client_module` targets.
 if(BUILD_CLIENT_QT)
-  find_package(Qt5 COMPONENTS Widgets REQUIRED)
-  find_package(Qt5LinguistTools REQUIRED)
+  find_package(Qt6 REQUIRED COMPONENTS Widgets)
+  find_package(Qt6 COMPONENTS LinguistTools QUIET)
 endif()
 
 include(client_module.cmake)

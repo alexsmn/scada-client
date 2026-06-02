@@ -5,8 +5,8 @@ client_module_link_libraries(client_print_service PUBLIC aui)
 
 # Qt.
 
-find_package(Qt5 COMPONENTS PrintSupport REQUIRED)
+find_package(Qt6 COMPONENTS PrintSupport REQUIRED)
 
 target_link_libraries(client_print_service_qt PUBLIC
-  Qt5::PrintSupport
+  Qt6::PrintSupport
 )

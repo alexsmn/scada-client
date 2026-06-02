@@ -198,7 +198,7 @@ Qt targets get `AUTOMOC`, `AUTOUIC`, `AUTORCC` enabled and `.ts` translation fil
 
 Managed via `vcpkg.json` manifest:
 
-- **Qt 5** — `qt5-base` (Widgets, PrintSupport), `qt5-tools` (LinguistTools), `qt5-activeqt` (Windows), `qt5-winextras` (Windows)
+- **Qt 6** — `qtbase` (Widgets, PrintSupport), `qttools` (LinguistTools), `qtactiveqt` (Windows)
 - **Boost** — `boost-asio`, `boost-beast`, `boost-signals2`, `boost-locale`, `boost-range`, `boost-algorithm`
 - **Google Test** — `gtest`
 - **Wt** — `wt` (web framework for alternative UI)

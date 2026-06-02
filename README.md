@@ -21,7 +21,7 @@ A C++ industrial SCADA (Supervisory Control and Data Acquisition) client applica
 - C++17 compiler (MSVC, GCC, or Clang)
 - CMake 3.x+
 - [vcpkg](https://vcpkg.io/) (recommended for dependency management)
-- Qt 5 (Widgets, LinguistTools, PrintSupport; ActiveQt and WinExtras on Windows)
+- Qt 6 (Widgets, LinguistTools, PrintSupport; ActiveQt on Windows)
 - Boost (ASIO, Beast, Signals2, Locale, Range, Algorithm)
 - Google Test
 - Wt (web UI framework)
