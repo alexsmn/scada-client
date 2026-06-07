@@ -95,6 +95,7 @@ class BaseMainWindow : protected MainWindowContext,
   static void SetHideForTesting(bool hide = true) { g_hide_for_testing = hide; }
 
  protected:
+  void AttachViewManager(ViewManager& view_manager);
   void Init(ViewManager& view_manager);
   void BeforeClose();
 

@@ -58,8 +58,12 @@ BaseMainWindow::BaseMainWindow(MainWindowContext&& context,
       context_menu_model_{context_menu_factory_(*this, *commands_)},
       tab_popup_menu_{std::make_unique<TabPopupMenu>(*commands_)} {}
 
-void BaseMainWindow::Init(ViewManager& view_manager) {
+void BaseMainWindow::AttachViewManager(ViewManager& view_manager) {
   view_manager_ = &view_manager;
+}
+
+void BaseMainWindow::Init(ViewManager& view_manager) {
+  AttachViewManager(view_manager);
 
   const Page* page = nullptr;
   const auto& pages = profile_.pages;

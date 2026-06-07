@@ -1,21 +1,21 @@
 ﻿#include "modules/sheet/sheet_view.h"
 
 #include "aui/color.h"
+#include "aui/dragdrop/item_drag_data.h"
 #include "aui/grid.h"
 #include "aui/os_exchange_data.h"
 #include "base/utf_convert.h"
-#include "ui/common/client_utils.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
-#include "modules/sheet/sheet_cell.h"
-#include "modules/sheet/sheet_model.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
-#include "aui/dragdrop/item_drag_data.h"
 #include "model/scada_node_ids.h"
+#include "modules/sheet/sheet_cell.h"
+#include "modules/sheet/sheet_model.h"
 #include "node_service/node_service.h"
 #include "profile/window_definition.h"
+#include "resources/common_resources.h"
 #include "scada/session_service.h"
+#include "ui/common/client_utils.h"
 
 #if defined(UI_QT)
 #include <QColorDialog>
@@ -58,7 +58,7 @@ std::unique_ptr<UiView> SheetController::Init(
                    [this] { OnFormulaEdited(); });
 
   auto* layout = new QVBoxLayout;
-  layout->setMargin(0);
+  layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
   layout->addWidget(formula_row_);
   layout->addWidget(grid_);

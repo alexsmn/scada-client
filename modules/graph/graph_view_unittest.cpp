@@ -1,13 +1,13 @@
 #include "graph/graph_view.h"
 
-#include "base/async_completion.h"
 #include "aui/test/app_environment.h"
+#include "base/async_completion.h"
 #include "base/test/awaitable_test.h"
-#include "resources/common_resources.h"
 #include "controller/test/controller_environment.h"
 #include "graph/metrix_data_source.h"
 #include "graph/metrix_graph.h"
 #include "node_service/node_model.h"
+#include "resources/common_resources.h"
 #include "scada/client.h"
 #include "scada/history_service_mock.h"
 #include "timed_data/timed_data_service_fake.h"
@@ -30,7 +30,8 @@ class TestNodeModel final : public NodeModel {
   NodeFetchStatus GetFetchStatus() const override {
     return NodeFetchStatus::Max();
   }
-  Awaitable<void> Fetch(const NodeFetchStatus& requested_status) const override {
+  Awaitable<void> Fetch(
+      const NodeFetchStatus& requested_status) const override {
     co_return;
   }
   void StartFetch(const NodeFetchStatus& requested_status) const override {}
@@ -185,6 +186,17 @@ TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
 
   EXPECT_GT(colored_pixels, 10)
       << "Expected blue line pixels in the rendered graph";
+}
+
+TEST_F(GraphViewTest, NewColorSkipsLowContrastColorOnDarkBackground) {
+  graph_view_.SetGraphColor(QColor{20, 20, 20});
+
+  const QColor color = graph_view_.NewColor().qcolor();
+
+  EXPECT_NE(color, QColor(Qt::black));
+  EXPECT_NE(color, QColor(Qt::white));
+  EXPECT_NE(color, QColor(Qt::transparent));
+  EXPECT_GT(color.red() + color.green() + color.blue(), 120);
 }
 
 TEST(MetrixDataSourceTest, AppliesEarliestTimestampFromHistoryRead) {

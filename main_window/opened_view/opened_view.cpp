@@ -3,16 +3,16 @@
 #include "aui/translation.h"
 #include "base/any_executor.h"
 #include "base/utf_convert.h"
-#include "resources/common_resources.h"
 #include "controller/command_handler.h"
 #include "controller/controller.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "export/export_model.h"
 #include "main_window/main_window.h"
+#include "main_window/window_definition_builder.h"
 #include "net/net_executor_adapter.h"
 #include "print/service/print_util.h"
-#include "main_window/window_definition_builder.h"
+#include "resources/common_resources.h"
 
 #if defined(UI_QT)
 #include <QWidget>
@@ -67,7 +67,8 @@ std::u16string OpenedView::GetWindowTitle() const {
   // WindowInfo::title is stored as an English literal in the source; run it
   // through Translate() so localized builds show the translated title.
   auto translated_info_title = [this] {
-    return Translate(UtfConvert<char>(std::u16string_view{window_info().title}));
+    return Translate(
+        UtfConvert<char>(std::u16string_view{window_info().title}));
   };
 
   // don't allow custom titles for predefined windows
@@ -170,7 +171,7 @@ void OpenedView::Print(PrintService& print_service) {
 }
 
 void OpenedView::Focus() {
-  main_window_->SetActiveView(this);
+  Activate();
 }
 
 void OpenedView::ShowPopupMenu(aui::MenuModel* merge_menu,
@@ -190,8 +191,8 @@ Awaitable<WindowDefinition> OpenedView::GetOpenWindowDefinition(
     const WindowInfo* window_info) const {
   if (auto open_context = controller_->GetOpenContext();
       open_context.has_value()) {
-    co_return co_await MakeWindowDefinitionAsync(executor_,
-                                                 window_info, *open_context);
+    co_return co_await MakeWindowDefinitionAsync(executor_, window_info,
+                                                 *open_context);
   }
 
   const SelectionModel* selection = controller_->GetSelectionModel();
@@ -213,7 +214,6 @@ Awaitable<WindowDefinition> OpenedView::GetOpenWindowDefinition(
     co_return MakeWindowDefinition(window_info, formula);
   }
 
-  co_return co_await MakeWindowDefinitionAsync(executor_,
-                                               window_info, selected.node(),
-                                               true);
+  co_return co_await MakeWindowDefinitionAsync(executor_, window_info,
+                                               selected.node(), true);
 }

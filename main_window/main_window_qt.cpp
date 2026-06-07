@@ -118,10 +118,11 @@ MainWindow::MainWindow(MainWindowContext&& context)
 
   setGeometry(prefs.bounds.isNull() ? GetDefaultBounds(this) : prefs.bounds);
 
+  dialog_service_.parent_widget = this;
+
   view_manager_ = std::make_unique<ViewManager>(
       *this, *static_cast<ViewManagerDelegate*>(this));
-
-  dialog_service_.parent_widget = this;
+  AttachViewManager(*view_manager_);
 
   CreateMenuBar();
   CreateToolbar();

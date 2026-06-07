@@ -17,6 +17,9 @@ MainWindow::MainWindow(Wt::WContainerWidget& parent,
                        MainWindowContext&& context)
     : BaseMainWindow{std::move(context), dialog_service_}, parent_{parent} {
   auto* root_layout = parent.setLayout(std::make_unique<Wt::WVBoxLayout>());
+  ViewManagerDelegate& delegate = *this;
+  view_manager_ = std::make_unique<ViewManager>(delegate);
+  AttachViewManager(*view_manager_);
 
   auto main_menu_model = main_menu_factory_(
       *this, dialog_service_, *view_manager_, *commands_, *context_menu_model_);
@@ -24,13 +27,10 @@ MainWindow::MainWindow(Wt::WContainerWidget& parent,
       MainMenuControllerContext{std::move(main_menu_model)});
   root_layout->addWidget(main_menu_controller_->CreateWidget());
 
-  ViewManagerDelegate& delegate = *this;
   toolbar_controller_ = std::make_unique<ToolbarController>(
       ToolbarControllerContext{executor_, ui_command_registry_.action_manager(),
                                *commands_});
   root_layout->addWidget(toolbar_controller_->CreateToolbar());
-
-  view_manager_ = std::make_unique<ViewManager>(delegate);
 
   auto* root_layout_widget =
       root_layout->addWidget(std::make_unique<Wt::WContainerWidget>(), 1);

@@ -1,18 +1,45 @@
 ﻿#include "graph/graph_view.h"
 
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
-#include "modules/time_range/time_range_dialog.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
 #include "graph/graph_view_loader.h"
 #include "graph/graph_view_saver.h"
+#include "modules/time_range/time_range_dialog.h"
 #include "node_service/node_service.h"
+#include "resources/common_resources.h"
+
+#include <algorithm>
+#include <cmath>
 
 #if defined(UI_QT)
 #include <QColorDialog>
 #include <QScrollBar>
 #endif
+
+namespace {
+
+double RelativeLuminance(const QColor& color) {
+  auto channel = [](int value) {
+    const double c = value / 255.0;
+    return c <= 0.03928 ? c / 12.92 : std::pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(color.red()) + 0.7152 * channel(color.green()) +
+         0.0722 * channel(color.blue());
+}
+
+double ContrastRatio(const QColor& a, const QColor& b) {
+  const double lighter = std::max(RelativeLuminance(a), RelativeLuminance(b));
+  const double darker = std::min(RelativeLuminance(a), RelativeLuminance(b));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+bool IsReadableOnBackground(const QColor& color, const QColor& background) {
+  constexpr double kMinimumLineContrast = 2.2;
+  return ContrastRatio(color, background) >= kMinimumLineContrast;
+}
+
+}  // namespace
 
 // GraphView
 
@@ -142,13 +169,27 @@ bool GraphView::FindColor(aui::Color color) const {
 }
 
 aui::Color GraphView::NewColor() const {
+  const auto background_color =
+      graph_->palette().color(graph_->backgroundRole());
+
   for (unsigned i = 0; i < aui::GetColorCount(); i++) {
     const auto color = aui::GetColor(i);
     if (color == aui::ColorCode::White || color == aui::ColorCode::Transparent)
       continue;
+    if (!IsReadableOnBackground(color.native_color(), background_color))
+      continue;
     if (!FindColor(color))
       return color;
   }
+
+  for (unsigned i = 0; i < aui::GetColorCount(); i++) {
+    const auto color = aui::GetColor(i);
+    if (color == aui::ColorCode::Transparent)
+      continue;
+    if (IsReadableOnBackground(color.native_color(), background_color))
+      return color;
+  }
+
   return aui::GetColor(rand() % aui::GetColorCount());
 }
 
@@ -444,4 +485,8 @@ void GraphView::SetGraphColor(aui::Color color) {
 
 void GraphView::OnSelectedCursorChanged() {
   graph_->UpdateCurBox();
+}
+
+void GraphView::OnGraphActivated() {
+  controller_delegate_.Focus();
 }
