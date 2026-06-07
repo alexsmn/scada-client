@@ -2,19 +2,25 @@
 
 #include "aui/models/simple_menu_model.h"
 #include "aui/models/status_bar_model_mock.h"
+#include "aui/qt/client_utils_qt.h"
 #include "aui/test/app_environment.h"
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
+#include "controller/action_manager.h"
+#include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "controller/controller_factory_mock.h"
 #include "controller/controller_mock.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
-#include "controller/action_manager.h"
-#include "controller/command_ui_registry.h"
+#include "main_window/actions.h"
+#include "main_window/context_menu_model.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
+#include "profile/page.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
@@ -25,13 +31,17 @@
 #include <gmock/gmock.h>
 
 #if defined(UI_QT)
+#include <QAction>
 #include <QLabel>
+#include <QMenu>
 #include <QMenuBar>
 #elif defined(UI_WT)
 #include <wt/WContainerWidget.h>
 #endif
 
 #include "base/debug_util.h"
+
+#include <span>
 
 using namespace testing;
 namespace {
@@ -50,6 +60,180 @@ class TestMainMenuModel final : public aui::SimpleMenuModel {
  private:
   aui::SimpleMenuModel submenu_;
 };
+
+class TestActionController final : public Controller {
+ public:
+  explicit TestActionController(std::vector<unsigned> command_ids) {
+    for (unsigned command_id : command_ids) {
+      command_registry_.AddCommand(
+          Command{command_id}.set_execute_handler([] {}));
+    }
+  }
+
+  std::unique_ptr<UiView> Init(const WindowDefinition& definition) override {
+#if defined(UI_QT)
+    return std::make_unique<QWidget>();
+#else
+    return nullptr;
+#endif
+  }
+
+  CommandHandler* GetCommandHandler(unsigned command_id) override {
+    return command_registry_.GetCommandHandler(command_id);
+  }
+
+ private:
+  CommandRegistry command_registry_;
+};
+
+class TestOpenedViewCommands final : public CommandHandler {
+ public:
+  explicit TestOpenedViewCommands(Controller& controller)
+      : controller_{controller} {}
+
+  CommandHandler* GetCommandHandler(unsigned command_id) override {
+    return controller_.GetCommandHandler(command_id);
+  }
+
+  bool IsCommandEnabled(unsigned command_id) const override {
+    auto* handler =
+        const_cast<Controller&>(controller_).GetCommandHandler(command_id);
+    return handler && handler->IsCommandEnabled(command_id);
+  }
+
+  bool IsCommandChecked(unsigned command_id) const override {
+    auto* handler =
+        const_cast<Controller&>(controller_).GetCommandHandler(command_id);
+    return handler && handler->IsCommandChecked(command_id);
+  }
+
+  void ExecuteCommand(unsigned command_id) override {
+    auto* handler = controller_.GetCommandHandler(command_id);
+    ASSERT_NE(handler, nullptr);
+    handler->ExecuteCommand(command_id);
+  }
+
+ private:
+  Controller& controller_;
+};
+
+class TestMainWindowInterface final : public MainWindowInterface {
+ public:
+  int GetMainWindowId() const override { return 1; }
+
+  const Page& GetCurrentPage() const override { return page_; }
+  void OpenPage(const Page& page) override { page_ = page; }
+  void SetCurrentPageTitle(std::u16string_view title) override {}
+  void SaveCurrentPage() override {}
+  void DeleteCurrentPage() override {}
+
+  OpenedViewInterface* GetActiveView() const override { return active_view_; }
+
+  OpenedViewInterface* GetActiveDataView() const override {
+    return active_view_;
+  }
+
+  void ActivateView(const OpenedViewInterface& view) override {
+    active_view_ = const_cast<OpenedViewInterface*>(&view);
+  }
+
+  std::vector<OpenedViewInterface*> GetOpenedViews() const override {
+    return active_view_ ? std::vector<OpenedViewInterface*>{active_view_}
+                        : std::vector<OpenedViewInterface*>{};
+  }
+
+  Awaitable<OpenedViewInterface*> OpenView(
+      const WindowDefinition& window_definition,
+      bool activate = true) override {
+    co_return nullptr;
+  }
+
+  OpenedViewInterface* FindViewByType(
+      std::string_view window_type) const override {
+    return nullptr;
+  }
+
+  void SplitView(OpenedViewInterface& view, bool vertically) override {}
+
+ private:
+  Page page_;
+  OpenedViewInterface* active_view_ = nullptr;
+};
+
+struct TestOpenedViewState {
+  explicit TestOpenedViewState(const WindowInfo& window_info)
+      : definition{window_info} {}
+
+  WindowDefinition definition;
+  std::unique_ptr<OpenedView> view;
+};
+
+std::unique_ptr<TestOpenedViewState> MakeOpenedViewWithCommands(
+    AnyExecutor executor,
+    DialogService& dialog_service,
+    std::vector<unsigned> command_ids) {
+  auto state = std::make_unique<TestOpenedViewState>(
+      ControllerEnvironment::kFakeWindowInfo);
+  auto command_ids_ptr =
+      std::make_shared<std::vector<unsigned>>(std::move(command_ids));
+
+  state->view = std::make_unique<OpenedView>(OpenedViewContext{
+      .executor_ = executor,
+      .window_info_ = ControllerEnvironment::kFakeWindowInfo,
+      .window_def_ = state->definition,
+      .dialog_service_ = dialog_service,
+      .controller_factory_ = [command_ids_ptr](
+                                 unsigned command_id,
+                                 ControllerDelegate& controller_delegate,
+                                 DialogService& dialog_service) {
+        return std::make_unique<TestActionController>(*command_ids_ptr);
+      }});
+  state->view->Init();
+  state->view->commands =
+      std::make_unique<TestOpenedViewCommands>(state->view->controller());
+
+  return state;
+}
+
+bool MenuContainsCommand(aui::MenuModel& menu_model, unsigned command_id) {
+  auto* model = &menu_model;
+  int index = -1;
+  return aui::MenuModel::GetModelAndIndexForCommandId(command_id, &model,
+                                                      &index);
+}
+
+void ExpectMenuContainsCommands(aui::MenuModel& menu_model,
+                                std::span<const unsigned> command_ids) {
+  for (unsigned command_id : command_ids) {
+    SCOPED_TRACE(command_id);
+    EXPECT_TRUE(MenuContainsCommand(menu_model, command_id));
+  }
+}
+
+#if defined(UI_QT)
+bool NativeMenuContainsCommand(const QMenu& menu, unsigned command_id) {
+  for (auto* action : menu.actions()) {
+    if (action->data().isValid() && action->data().toUInt() == command_id) {
+      return true;
+    }
+
+    if (auto* submenu = action->menu();
+        submenu && NativeMenuContainsCommand(*submenu, command_id)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void ExpectNativeMenuContainsCommands(const QMenu& menu,
+                                      std::span<const unsigned> command_ids) {
+  for (unsigned command_id : command_ids) {
+    SCOPED_TRACE(command_id);
+    EXPECT_TRUE(NativeMenuContainsCommand(menu, command_id));
+  }
+}
+#endif
 
 }  // namespace
 
@@ -201,8 +385,8 @@ TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
       {.profile_ = controller_env.profile_,
        .main_window_factory_ = main_window_factory.AsStdFunction(),
        .quit_handler_ = quit_handler.AsStdFunction()}};
-  StrictMock<MockFunction<std::unique_ptr<
-      OpenedView>(MainWindow& main_window, WindowDefinition& window_def)>>
+  StrictMock<MockFunction<std::unique_ptr<OpenedView>(
+      MainWindow & main_window, WindowDefinition & window_def)>>
       opened_view_factory;
   NiceMock<MockFunction<std::string()>> connection_info_provider;
   ProgressHostImpl progress_host;
@@ -217,8 +401,7 @@ TEST(MainWindowQtTest, MenuBarPopulatesTopLevelMenusImmediately) {
        .profile_ = controller_env.profile_,
        .opened_view_factory_ = opened_view_factory.AsStdFunction(),
        .main_commands_factory_ =
-           [](MainWindowInterface& main_window,
-              DialogService& dialog_service) {
+           [](MainWindowInterface& main_window, DialogService& dialog_service) {
              return std::make_unique<CommandHandler>();
            },
        .status_bar_model_ = std::make_shared<StatusBarModelImpl>(),
@@ -276,21 +459,85 @@ TEST_F(MainWindowTest, OpenView_NoPathSkipsDownloadAndOpensView) {
 
 // TODO: Generalize this test for all UIs.
 #if defined(UI_QT)
-TEST_F(MainWindowTest, OpenView_DownloadCompletes_ProceedsToOpenedViewNormally) {
+TEST_F(MainWindowTest,
+       OpenView_DownloadCompletes_ProceedsToOpenedViewNormally) {
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(
           "some/path");
 
   EXPECT_CALL(controller_env_.file_manager_,
-      DownloadFileFromServer(window_def.path))
-      .WillOnce([](const std::filesystem::path&) {
-        return CompleteDownloadAsync();
-      });
+              DownloadFileFromServer(window_def.path))
+      .WillOnce(
+          [](const std::filesystem::path&) { return CompleteDownloadAsync(); });
 
   ExpectOpenView();
 
   WaitAwaitable(controller_env_.executor_,
                 main_window_->OpenView(window_def, /*make_active=*/true));
+}
+#endif
+
+#if defined(UI_QT)
+TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
+  AddGlobalActions(ui_command_registry_.action_manager(),
+                   controller_env_.node_service_);
+
+  constexpr unsigned kGraphActions[] = {
+      ID_VIEW_LEGEND,       ID_GRAPH_DOTS,  ID_GRAPH_STEPS,
+      ID_GRAPH_SCROLL_BAR,  ID_GRAPH_COLOR, ID_GRAPH_SETUP,
+      ID_GRAPH_BK_COLOR,    ID_NOW,         ID_GRAPH_ADD_PANE,
+      ID_GRAPH_DELETE_PANE,
+  };
+
+  constexpr unsigned kTableActions[] = {
+      ID_TABLE_CONFIG,
+      ID_ADD_ITEMS,
+      ID_EXPORT_CSV,
+      ID_PRINT,
+  };
+
+  auto graph_view = MakeOpenedViewWithCommands(
+      controller_env_.executor_, controller_env_.dialog_service_,
+      {std::begin(kGraphActions), std::end(kGraphActions)});
+  auto table_view = MakeOpenedViewWithCommands(
+      controller_env_.executor_, controller_env_.dialog_service_,
+      {std::begin(kTableActions), std::end(kTableActions)});
+
+  TestMainWindowInterface main_window;
+  CommandHandler global_commands;
+  ContextMenuModel context_menu{
+      main_window, ui_command_registry_.action_manager(), global_commands};
+
+  main_window.ActivateView(*graph_view->view);
+
+  context_menu.MenuWillShow();
+  ExpectMenuContainsCommands(context_menu, kGraphActions);
+  EXPECT_FALSE(MenuContainsCommand(context_menu, ID_TABLE_CONFIG));
+  QMenu graph_menu;
+  BuildMenu(graph_menu, context_menu);
+  ExpectNativeMenuContainsCommands(graph_menu, kGraphActions);
+  EXPECT_FALSE(NativeMenuContainsCommand(graph_menu, ID_TABLE_CONFIG));
+
+  main_window.ActivateView(*table_view->view);
+
+  context_menu.MenuWillShow();
+  ExpectMenuContainsCommands(context_menu, kTableActions);
+  EXPECT_FALSE(MenuContainsCommand(context_menu, ID_GRAPH_SETUP));
+  QMenu table_menu;
+  BuildMenu(table_menu, context_menu);
+  ExpectNativeMenuContainsCommands(table_menu, kTableActions);
+  EXPECT_FALSE(NativeMenuContainsCommand(table_menu, ID_GRAPH_SETUP));
+
+  main_window.ActivateView(*graph_view->view);
+
+  context_menu.MenuWillShow();
+  ExpectMenuContainsCommands(context_menu, kGraphActions);
+  EXPECT_FALSE(MenuContainsCommand(context_menu, ID_TABLE_CONFIG));
+  QMenu reactivated_graph_menu;
+  BuildMenu(reactivated_graph_menu, context_menu);
+  ExpectNativeMenuContainsCommands(reactivated_graph_menu, kGraphActions);
+  EXPECT_FALSE(
+      NativeMenuContainsCommand(reactivated_graph_menu, ID_TABLE_CONFIG));
 }
 #endif
 

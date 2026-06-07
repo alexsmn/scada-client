@@ -22,6 +22,7 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
         if (auto* submenu_model = model.GetSubmenuModelAt(i)) {
           auto* submenu =
               menu.addMenu(QString::fromStdU16String(model.GetLabelAt(i)));
+          BuildMenu(*submenu, *submenu_model);
           QObject::connect(submenu, &QMenu::aboutToShow,
                            [submenu, submenu_model] {
                              submenu->clear();
@@ -38,6 +39,7 @@ void BuildMenu(QMenu& menu, aui::MenuModel& model) {
       default: {
         auto* action =
             menu.addAction(QString::fromStdU16String(model.GetLabelAt(i)));
+        action->setData(model.GetCommandIdAt(i));
         action->setEnabled(model.IsEnabledAt(i));
         if (item_type == aui::MenuModel::TYPE_CHECK ||
             item_type == aui::MenuModel::TYPE_RADIO) {
