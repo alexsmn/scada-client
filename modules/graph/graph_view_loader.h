@@ -69,6 +69,7 @@ struct GraphViewLoader {
     MetrixGraph::MetrixLine& line =
         graph_.NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
     line.SetColor(color.native_color());
+    line.SetLineWeight(item.GetInt("width", profile_.graph_view.default_width));
     line.set_dots_shown(dots);
     line.set_stepped(stepped);
   }

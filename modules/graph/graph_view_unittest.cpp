@@ -121,6 +121,45 @@ TEST_F(GraphViewTest, Test) {
   // EXPECT_THAT(time_model->GetTimeRange(), Eq(TimeRange::Type::Day));
 }
 
+TEST_F(GraphViewTest, GraphSetupCommandRegistered) {
+  EXPECT_THAT(graph_view_.GetCommandHandler(ID_GRAPH_SETUP), NotNull());
+}
+
+TEST_F(GraphViewTest, GraphSetupCommandEnabledWhenGraphHasLine) {
+  auto* command_handler = graph_view_.GetCommandHandler(ID_GRAPH_SETUP);
+  ASSERT_THAT(command_handler, NotNull());
+  EXPECT_TRUE(command_handler->IsCommandEnabled(ID_GRAPH_SETUP));
+
+  int selection_change_count = 0;
+  graph_view_.GetSelectionModel()->change_handler = [&] {
+    ++selection_change_count;
+  };
+
+  graph_view_.AddContainedItem(kTestNodeId, 0);
+
+  EXPECT_TRUE(command_handler->IsCommandEnabled(ID_GRAPH_SETUP));
+  EXPECT_GT(selection_change_count, 0);
+}
+
+TEST_F(GraphViewTest, NewLineUsesDefaultLineWidth) {
+  env_.profile_.graph_view.default_width = 4;
+
+  graph_view_.AddContainedItem(kTestNodeId, 0);
+
+  WindowDefinition definition;
+  graph_view_.Save(definition);
+
+  const WindowItem* graph_item = nullptr;
+  for (const auto& item : definition.items) {
+    if (item.name_is("Item")) {
+      graph_item = &item;
+      break;
+    }
+  }
+  ASSERT_THAT(graph_item, NotNull());
+  EXPECT_EQ(graph_item->GetInt("width"), 4);
+}
+
 TEST_F(GraphViewTest, FakeTimedDataRendersLines) {
   // Set up FakeTimedDataService with pre-populated data.
   FakeTimedDataService fake_service;

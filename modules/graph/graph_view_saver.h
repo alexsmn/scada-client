@@ -52,6 +52,7 @@ struct GraphViewSaver {
     item.SetInt("pane", pane_ix);
     item.SetString("path", line.data_source().GetPath());
     item.SetString("clr", aui::ColorToString(line.color()));
+    item.SetInt("width", line.line_weight());
     item.SetInt("dots", line.dots_shown() ? 1 : 0);
     item.SetInt("stepped", line.stepped() ? 1 : 0);
   }

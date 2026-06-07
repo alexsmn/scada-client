@@ -199,6 +199,11 @@ void AddGlobalActions(ActionManager& action_manager,
   action_manager.AddAction(Action{.command_id_ = ID_SETUP,
                                        .category_ = CATEGORY_SETUP,
                                        .title_ = Translate("Options")});
+  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_SETUP,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Graph Setup..."),
+                                       .short_title_ = Translate("Setup"),
+                                       .image_id_ = ID_GRAPH_VIEW});
   action_manager.AddAction(Action{.command_id_ = ID_PRINT,
                                        .category_ = CATEGORY_SETUP,
                                        .title_ = Translate("Print"),

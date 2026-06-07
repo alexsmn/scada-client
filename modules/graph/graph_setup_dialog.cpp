@@ -1,75 +1,80 @@
 #include "graph/graph_setup_dialog.h"
 
-#ifdef _WIN32
+#include "aui/dialog_service.h"
 
-#include "aui/color_win.h"
-#include "base/utf_convert.h"
+#include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QFormLayout>
+#include <QIcon>
+#include <QPixmap>
+#include <QSpinBox>
+#include <QString>
+#include <QVBoxLayout>
 
-LRESULT GraphSetupDialog::OnInitDialog(UINT /*uMsg*/,
-                                       WPARAM /*wParam*/,
-                                       LPARAM /*lParam*/,
-                                       BOOL& /*bHandled*/) {
-  CenterWindow(GetParent());
+namespace {
 
-  wnd_color = GetDlgItem(IDC_COLOR);
-  for (size_t i = 1; i <= aui::GetColorCount(); i++)
-    wnd_color.AddString((LPCTSTR)i);
-  int col = aui::FindColor(color);
-  wnd_color.SetCurSel(col != 0 ? col - 1 : 0);
-
-  WTL::CUpDownCtrl(GetDlgItem(IDC_LINE_WEIGHT_UPDOWN)).SetRange(1, 10);
-
-  SetDlgItemInt(IDC_LINE_WEIGHT, line_weight_, FALSE);
-
-  return TRUE;
+QString ToQString(std::u16string_view text) {
+  return QString::fromUtf16(text.data(), text.size());
 }
 
-LRESULT GraphSetupDialog::OnCloseCmd(WORD /*wNotifyCode*/,
-                                     WORD wID,
-                                     HWND /*hWndCtl*/,
-                                     BOOL& /*bHandled*/) {
-  if (wID == IDOK) {
-    int i = wnd_color.GetCurSel();
-    color = i != -1 ? aui::GetColor(i) : aui::ColorCode::Black;
+QIcon MakeColorIcon(const QColor& color) {
+  QPixmap pixmap{16, 16};
+  pixmap.fill(color);
+  return QIcon{pixmap};
+}
 
-    line_weight_ = GetDlgItemInt(IDC_LINE_WEIGHT, NULL, FALSE);
+class GraphSetupDialogQt final : public QDialog {
+ public:
+  GraphSetupDialogQt(const GraphSetupDialog& setup, QWidget* parent)
+      : QDialog{parent} {
+    setWindowTitle("Graph Setup");
+
+    color_combo_ = new QComboBox{this};
+    for (int i = 0; i < static_cast<int>(aui::GetColorCount()); ++i) {
+      color_combo_->addItem(MakeColorIcon(aui::GetColor(i).qcolor()),
+                            ToQString(aui::GetColorName(i)), i);
+    }
+    int color_index = aui::FindColor(setup.color);
+    color_combo_->setCurrentIndex(color_index >= 0 ? color_index : 0);
+
+    line_weight_spin_ = new QSpinBox{this};
+    line_weight_spin_->setRange(1, 10);
+    line_weight_spin_->setValue(setup.line_weight_);
+
+    auto* form_layout = new QFormLayout;
+    form_layout->addRow("Color:", color_combo_);
+    form_layout->addRow("Line weight:", line_weight_spin_);
+
+    auto* button_box = new QDialogButtonBox{
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this};
+    connect(button_box, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(button_box, &QDialogButtonBox::rejected, this, &QDialog::reject);
+
+    auto* layout = new QVBoxLayout{this};
+    layout->addLayout(form_layout);
+    layout->addWidget(button_box);
   }
 
-  EndDialog(wID);
-  return 0;
-}
-
-void GraphSetupDialog::DrawItem(LPDRAWITEMSTRUCT dis) {
-  _ASSERT(dis->CtlID == IDC_COLOR);
-  WTL::CDCHandle dc(dis->hDC);
-
-  BOOL sel = dis->itemState & ODS_SELECTED;
-  HBRUSH brush = GetSysColorBrush(sel ? COLOR_HIGHLIGHT : COLOR_WINDOW);
-
-  RECT rect = dis->rcItem;
-  dc.FillRect(&rect, brush);
-
-  InflateRect(&rect, -3, -2);
-  std::wstring text;
-
-  if (dis->itemID >= 0 && dis->itemID < aui::GetColorCount()) {
-    // draw color
-    RECT crect = rect;
-    crect.right = crect.left + crect.bottom - crect.top;
-    dc.SelectStockBrush(DC_BRUSH);
-    dc.SetDCBrushColor(aui::ToCOLORREF(aui::GetColor(dis->itemID)));
-    dc.SelectStockPen(BLACK_PEN);
-    dc.Rectangle(&crect);
-    // draw text
-    text = UtfConvert<wchar_t>(aui::GetColorName(dis->itemID));
-    rect.left = crect.right + 3;
+  void Save(GraphSetupDialog& setup) const {
+    setup.color = aui::GetColor(color_combo_->currentData().toInt());
+    setup.line_weight_ = line_weight_spin_->value();
   }
 
-  COLORREF color = GetSysColor(sel ? COLOR_HIGHLIGHTTEXT : COLOR_WINDOWTEXT);
-  dc.SetTextColor(color);
-  dc.SetBkMode(TRANSPARENT);
-  dc.DrawText(text.data(), text.size(), &rect,
-              DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-}
+ private:
+  QComboBox* color_combo_ = nullptr;
+  QSpinBox* line_weight_spin_ = nullptr;
+};
 
-#endif
+}  // namespace
+
+bool RunGraphSetupDialog(DialogService& dialog_service,
+                         GraphSetupDialog& setup) {
+  GraphSetupDialogQt dialog{setup, dialog_service.GetParentWidget()};
+  if (dialog.exec() != QDialog::Accepted) {
+    return false;
+  }
+
+  dialog.Save(setup);
+  return true;
+}

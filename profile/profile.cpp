@@ -107,6 +107,8 @@ void Profile::Load(const boost::json::value& data) {
 
   if (auto* graphe = FindDict(data, "graph")) {
     Deserialize(GetString(*graphe, "def_span"), graph_view.default_span);
+    if (auto default_color = GetString(*graphe, "def_color"); !default_color.empty())
+      graph_view.default_color = aui::StringToColor(default_color);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
     graph_view.default_scroll_bar = GetBool(*graphe, "def_scroll_bar", 1);
   }
@@ -197,6 +199,7 @@ boost::json::value Profile::SaveToValue() const {
   {
     boost::json::value graphe{boost::json::object{}};
     SetKey(graphe, "def_span", SerializeToString(graph_view.default_span));
+    SetKey(graphe, "def_color", aui::ColorToString(graph_view.default_color));
     SetKey(graphe, "def_weight", graph_view.default_width);
     SetKey(graphe, "def_scroll_bar", graph_view.default_scroll_bar);
     data.as_object()["graph"] = std::move(graphe);

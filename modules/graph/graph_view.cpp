@@ -3,6 +3,7 @@
 #include "common/formula_util.h"
 #include "controller/controller_delegate.h"
 #include "controller/selection_model.h"
+#include "graph/graph_setup_dialog.h"
 #include "graph/graph_view_loader.h"
 #include "graph/graph_view_saver.h"
 #include "modules/time_range/time_range_dialog.h"
@@ -126,6 +127,9 @@ std::unique_ptr<UiView> GraphView::Init(const WindowDefinition& definition) {
           .set_execute_handler([this] { ChooseLineColor(); })
           .set_enabled_handler(line_enabled_handler));
 
+  command_registry_.AddCommand(
+      Command{ID_GRAPH_SETUP}.set_execute_handler([this] { SetupLine(); }));
+
   command_registry_.AddCommand(Command{ID_GRAPH_BK_COLOR}.set_execute_handler(
       [this] { ChooseGraphColor(); }));
 
@@ -171,6 +175,14 @@ bool GraphView::FindColor(aui::Color color) const {
 aui::Color GraphView::NewColor() const {
   const auto background_color =
       graph_->palette().color(graph_->backgroundRole());
+
+  const auto default_color = profile_.graph_view.default_color;
+  if (default_color != aui::ColorCode::White &&
+      default_color != aui::ColorCode::Transparent &&
+      IsReadableOnBackground(default_color.native_color(), background_color) &&
+      !FindColor(default_color)) {
+    return default_color;
+  }
 
   for (unsigned i = 0; i < aui::GetColorCount(); i++) {
     const auto color = aui::GetColor(i);
@@ -230,6 +242,19 @@ void GraphView::ClearPane(MetrixGraph::MetrixPane& pane) {
   }
 }
 
+MetrixGraph::MetrixLine* GraphView::GetConfigurableLine() const {
+  if (MetrixGraph::MetrixLine* line = graph_->primary_line())
+    return line;
+
+  for (auto* pane : graph_->panes()) {
+    if (auto* line =
+            static_cast<MetrixGraph::MetrixPane*>(pane)->primary_line())
+      return line;
+  }
+
+  return nullptr;
+}
+
 void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   auto color = NewColor();
 
@@ -261,12 +286,14 @@ void GraphView::AddContainedItem(const scada::NodeId& node_id, unsigned flags) {
   auto& line =
       graph_->NewLine(path, *static_cast<MetrixGraph::MetrixPane*>(pane));
   line.SetColor(color.native_color());
+  line.SetLineWeight(profile_.graph_view.default_width);
   line.UpdateTimeRange();
   graph_->horizontal_axis().Fit();
 
   NotifyContainedItemChanged(line.data_source().node_id(), true);
 
   pane->ShowLegend(true);
+  OnGraphSelectPane();
 
   controller_delegate_.SetTitle(MakeTitle());
   controller_delegate_.SetModified(true);
@@ -346,6 +373,7 @@ void GraphView::RemoveContainedItem(const scada::NodeId& node_id) {
 
   // All lines corresponding to |item| were removed.
   NotifyContainedItemChanged(node_id, false);
+  OnGraphSelectPane();
 }
 
 CommandHandler* GraphView::GetCommandHandler(unsigned command_id) {
@@ -464,6 +492,27 @@ void GraphView::ChooseLineColor() {
     line->SetColor(new_color);
   }
 #endif
+}
+
+void GraphView::SetupLine() {
+  MetrixGraph::MetrixLine* line = GetConfigurableLine();
+
+  GraphSetupDialog setup{
+      .color =
+          line ? aui::Color{line->color()} : profile_.graph_view.default_color,
+      .line_weight_ =
+          line ? line->line_weight() : profile_.graph_view.default_width};
+  if (!RunGraphSetupDialog(dialog_service_, setup))
+    return;
+
+  profile_.graph_view.default_color = setup.color;
+  profile_.graph_view.default_width = setup.line_weight_;
+
+  if (line) {
+    line->SetColor(setup.color.qcolor());
+    line->SetLineWeight(setup.line_weight_);
+    controller_delegate_.SetModified(true);
+  }
 }
 
 void GraphView::ChooseGraphColor() {

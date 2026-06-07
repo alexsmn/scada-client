@@ -125,6 +125,7 @@
 #define IDR_STRUCT_POPUP                201
 #define ID_GRAPH_COLOR                  201
 #define ID_GRAPH_BK_COLOR               4035
+#define ID_GRAPH_SETUP                  4036
 #define ID_LANGUAGE_ENGLISH             4042
 #define ID_LANGUAGE_RUSSIAN             4043
 #define IDD_LOGIN                       202
@@ -462,7 +463,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
-#define _APS_NEXT_COMMAND_VALUE         4036
+#define _APS_NEXT_COMMAND_VALUE         4037
 #define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           205
 #endif

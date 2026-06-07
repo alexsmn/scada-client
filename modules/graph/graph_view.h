@@ -51,7 +51,10 @@ class GraphView : protected ControllerContext,
 
   void DeleteSelectedPane();
 
+  MetrixGraph::MetrixLine* GetConfigurableLine() const;
+
   void ChooseLineColor();
+  void SetupLine();
   void ChooseGraphColor();
 
   void UndoZoom();
