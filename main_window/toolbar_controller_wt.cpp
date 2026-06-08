@@ -16,15 +16,15 @@ ToolbarController::ToolbarController(ToolbarControllerContext&& context)
 std::unique_ptr<Wt::WToolBar> ToolbarController::CreateToolbar() {
   auto toolbar = std::make_unique<Wt::WToolBar>();
 
-  for (auto* action_info : action_manager_.actions()) {
-    // bool collapsible = !CanExpandCommandCategory(action_info->category_);
+  for (auto* command_info : command_manager_.commands()) {
+    // bool collapsible = !CanExpandCommandCategory(command_info->category);
     auto action = std::make_unique<Wt::WPushButton>();
-    action->setText(action_info->GetShortTitle());
+    action->setText(command_info->GetShortTitle());
     action->hide();
-    /*if (action_info->image_id() != 0)
-      action->setIcon(QIcon(LoadPixmap(action_info->image_id())));*/
-    action->setCheckable(action_info->checkable());
-    auto command_id = action_info->command_id();
+    /*if (command_info->image_id != 0)
+      action->setIcon(QIcon(LoadPixmap(command_info->image_id)));*/
+    action->setCheckable(command_info->checkable());
+    auto command_id = command_info->command_id;
     action->clicked().connect([this, command_id] {
       auto* handler = commands_.GetCommandHandler(command_id);
       if (handler && handler->IsCommandEnabled(command_id))
@@ -32,8 +32,8 @@ std::unique_ptr<Wt::WToolBar> ToolbarController::CreateToolbar() {
     });
     auto* action_ptr = action.get();
     toolbar->addButton(std::move(action));
-    action_command_ids_.emplace(action_ptr, action_info->command_id());
-    action_map_.emplace(action_info->command_id(), action_ptr);
+    action_command_ids_.emplace(action_ptr, command_info->command_id);
+    action_map_.emplace(command_info->command_id, action_ptr);
   }
 
   /*{

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "controller/action_manager.h"
+#include "controller/command_manager.h"
 
 #include <optional>
 #include <string>
@@ -34,6 +35,9 @@ class UiCommandRegistry {
   ActionManager& action_manager() { return action_manager_; }
   const ActionManager& action_manager() const { return action_manager_; }
 
+  CommandManager& command_manager() { return command_manager_; }
+  const CommandManager& command_manager() const { return command_manager_; }
+
   void AddAction(Action action);
   void AddMenuItem(MenuContribution contribution);
 
@@ -41,5 +45,6 @@ class UiCommandRegistry {
 
  private:
   ActionManager action_manager_;
+  CommandManager command_manager_;
   std::vector<MenuContribution> menu_contributions_;
 };

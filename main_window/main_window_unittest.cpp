@@ -479,8 +479,7 @@ TEST_F(MainWindowTest,
 
 #if defined(UI_QT)
 TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
-  AddGlobalActions(ui_command_registry_.action_manager(),
-                   controller_env_.node_service_);
+  AddGlobalActions(ui_command_registry_, controller_env_.node_service_);
 
   constexpr unsigned kGraphActions[] = {
       ID_VIEW_LEGEND,       ID_GRAPH_DOTS,  ID_GRAPH_STEPS,
@@ -506,7 +505,7 @@ TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
   TestMainWindowInterface main_window;
   CommandHandler global_commands;
   ContextMenuModel context_menu{
-      main_window, ui_command_registry_.action_manager(), global_commands};
+      main_window, ui_command_registry_.command_manager(), global_commands};
 
   main_window.ActivateView(*graph_view->view);
 

@@ -3,6 +3,7 @@
 #include <algorithm>
 
 void UiCommandRegistry::AddAction(Action action) {
+  command_manager_.RegisterCommand(ToCommandDescriptor(action));
   action_manager_.AddAction(std::move(action));
 }
 

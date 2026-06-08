@@ -1,31 +1,32 @@
 #include "main_window/context_menu_model.h"
 
 #include "controller/action_manager.h"
+#include "controller/command_manager.h"
 #include "main_window/main_window.h"
 #include "main_window/opened_view/opened_view.h"
 
 ContextMenuModel::ContextMenuModel(MainWindowInterface& main_window,
-                                   ActionManager& action_manager,
+                                   CommandManager& command_manager,
                                    CommandHandler& command_handler)
     : aui::SimpleMenuModel{&command_handler_},
       main_window_{main_window},
-      action_manager_{action_manager},
+      command_manager_{command_manager},
       command_handler_{command_handler} {}
 
 void AddMenuActions(aui::SimpleMenuModel& menu,
-                    const ActionList& actions,
+                    const CommandDescriptorList& commands,
                     OpenedView* view) {
-  for (const auto* action : actions) {
+  for (const auto* command : commands) {
     // Item state is updated on WM_INIMENUPOPUP.
     /*    UINT state = 0;
         if (!view.IsCommandEnabled(action.command_id()))
           state |= MFS_DISABLED;
         if (view.IsCommandChecked(action.command_id()))
           state |= MFS_CHECKED;*/
-    if (action->checkable()) {
-      menu.AddCheckItem(action->command_id(), action->GetTitle());
+    if (command->checkable()) {
+      menu.AddCheckItem(command->command_id, command->GetTitle());
     } else {
-      menu.AddItem(action->command_id(), action->GetTitle());
+      menu.AddItem(command->command_id, command->GetTitle());
     }
   }
 }
@@ -40,14 +41,14 @@ void ContextMenuModel::Rebuild() {
   }
 
   std::vector<unsigned> all_commands;
-  for (const Action* action : action_manager_.actions()) {
+  for (const CommandDescriptor* command : command_manager_.commands()) {
     // TODO: Remove the static cast.
-    if (active_view->commands->GetCommandHandler(action->command_id())) {
-      all_commands.push_back(action->command_id());
+    if (active_view->commands->GetCommandHandler(command->command_id)) {
+      all_commands.push_back(command->command_id);
     }
   }
 
-  auto grouped_commands = GroupCommands(action_manager_, all_commands);
+  auto grouped_commands = GroupCommands(command_manager_, all_commands);
 
   bool separated = true;
   for (const auto& [category, commands] : grouped_commands) {

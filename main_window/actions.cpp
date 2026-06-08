@@ -78,38 +78,43 @@ Action MakeNodeAction(ActionManager& action_manager,
   };
 }
 
-void RegisterCreateActions(ActionManager& action_manager,
+void RegisterCreateActions(UiCommandRegistry& ui_command_registry,
                            NodeService& node_service) {
-  action_manager.AddAction(Action{.command_id_ = ID_ADD_MULTIPLE_ITEMS,
-                                  .category_ = CATEGORY_CREATE,
-                                  .title_ = Translate("Multiple Create...")});
-  action_manager.AddAction(Action{.command_id_ = ID_NEW_SERVICE_ITEMS,
-                                  .category_ = CATEGORY_CREATE,
-                                  .title_ = Translate("Service Items...")});
-  action_manager.AddAction(Action{.command_id_ = ID_NEW_IEC60870_LINK101,
-                                  .category_ = CATEGORY_CREATE,
-                                  .title_ = Translate("IEC 60870-101 Link")});
-  action_manager.AddAction(Action{.command_id_ = ID_NEW_IEC60870_LINK104,
-                                  .category_ = CATEGORY_CREATE,
-                                  .title_ = Translate("IEC 60870-104 Link")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_ADD_MULTIPLE_ITEMS,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("Multiple Create...")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_SERVICE_ITEMS,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("Service Items...")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_IEC60870_LINK101,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("IEC 60870-101 Link")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_IEC60870_LINK104,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("IEC 60870-104 Link")});
 
   for (size_t i = 0; i < std::size(kNewCommandTypeIds); ++i) {
-    action_manager.AddAction(
-        MakeNodeAction(action_manager, ID_NEW + i, CATEGORY_CREATE,
-                       node_service.GetNode(kNewCommandTypeIds[i])));
+    ui_command_registry.AddAction(MakeNodeAction(
+        ui_command_registry.action_manager(), ID_NEW + i, CATEGORY_CREATE,
+        node_service.GetNode(kNewCommandTypeIds[i])));
   }
 }
 
-void RegisterFileSystemActions(ActionManager& action_manager) {
-  action_manager.AddAction(
+void RegisterFileSystemActions(UiCommandRegistry& ui_command_registry) {
+  ui_command_registry.AddAction(
       Action{.command_id_ = ID_CREATE_FILE_DIRECTORY,
              .category_ = CATEGORY_CREATE,
              .title_ = Translate("Folder"),
              .short_title_ = Translate("Create Folder...")});
-  action_manager.AddAction(Action{.command_id_ = ID_ADD_FILE,
-                                  .category_ = CATEGORY_CREATE,
-                                  .title_ = Translate("File"),
-                                  .short_title_ = Translate("Add File...")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_ADD_FILE,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("File"),
+             .short_title_ = Translate("Add File...")});
 }
 
 }  // namespace
@@ -125,318 +130,327 @@ scada::NodeId GetNewCommandTypeId(unsigned command_id) {
   return kNewCommandTypeIds[index];
 }
 
-void AddGlobalActions(ActionManager& action_manager,
+void AddGlobalActions(UiCommandRegistry& ui_command_registry,
                       NodeService& node_service) {
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_GRAPH,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Graph"),
-                                  .image_id_ = ID_GRAPH_VIEW,
-                                  .flags_ = Action::ALWAYS_VISIBLE});
-  action_manager.AddAction(Action{.command_id_ = ID_TIMED_DATA_VIEW,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Data"),
-                                  .image_id_ = IDB_TIMED_DATA,
-                                  .flags_ = Action::ALWAYS_VISIBLE});
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_DISPLAY,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Display"),
-                                  .image_id_ = ID_MODUS_VIEW,
-                                  .flags_ = Action::ALWAYS_VISIBLE});
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_TABLE,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Table"),
-                                  .image_id_ = ID_TABLE_VIEW,
-                                  .flags_ = Action::ALWAYS_VISIBLE});
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_SUMMARY,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Summary"),
-                                  .image_id_ = IDB_SUMMARY,
-                                  .flags_ = Action::ALWAYS_VISIBLE});
-  action_manager.AddAction(Action{.command_id_ = ID_HISTORICAL_EVENTS,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Events"),
-                                  .image_id_ = IDB_OPEN_EVENTS,
-                                  .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_GRAPH,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Graph"),
+                                       .image_id_ = ID_GRAPH_VIEW,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIMED_DATA_VIEW,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Data"),
+                                       .image_id_ = IDB_TIMED_DATA,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_DISPLAY,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Display"),
+                                       .image_id_ = ID_MODUS_VIEW,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_TABLE,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Table"),
+                                       .image_id_ = ID_TABLE_VIEW,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_SUMMARY,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Summary"),
+                                       .image_id_ = IDB_SUMMARY,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_HISTORICAL_EVENTS,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Events"),
+                                       .image_id_ = IDB_OPEN_EVENTS,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_GROUP_TABLE,
-                                  .category_ = CATEGORY_OPEN,
-                                  .title_ = Translate("Group Table"),
-                                  .flags_ = Action::VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_GROUP_TABLE,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Group Table"),
+                                       .flags_ = Action::VISIBLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_CURRENT,
-                                  .category_ = CATEGORY_ITEM,
-                                  .title_ = Translate("Acknowledge")});
-  action_manager.AddAction(Action{.command_id_ = ID_UNLOCK_ITEM,
-                                  .category_ = CATEGORY_ITEM,
-                                  .title_ = Translate("Unlock"),
-                                  .image_id_ = IDB_UNLOCK});
-  action_manager.AddAction(Action{.command_id_ = ID_WRITE,
-                                  .category_ = CATEGORY_ITEM,
-                                  .title_ = Translate("Control..."),
-                                  .short_title_ = Translate("Control"),
-                                  .image_id_ = IDB_WRITE});
-  action_manager.AddAction(Action{.command_id_ = ID_WRITE_MANUAL,
-                                  .category_ = CATEGORY_ITEM,
-                                  .title_ = Translate("Manual Input..."),
-                                  .short_title_ = Translate("Manual Input"),
-                                  .image_id_ = IDB_WRITE_MANUAL});
-  action_manager.AddAction(Action{.command_id_ = ID_EDIT_LIMITS,
-                                  .category_ = CATEGORY_ITEM,
-                                  .title_ = Translate("Limits..."),
-                                  .short_title_ = Translate("Limits")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_CURRENT,
+                                       .category_ = CATEGORY_ITEM,
+                                       .title_ = Translate("Acknowledge")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_UNLOCK_ITEM,
+                                       .category_ = CATEGORY_ITEM,
+                                       .title_ = Translate("Unlock"),
+                                       .image_id_ = IDB_UNLOCK});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_WRITE,
+                                       .category_ = CATEGORY_ITEM,
+                                       .title_ = Translate("Control..."),
+                                       .short_title_ = Translate("Control"),
+                                       .image_id_ = IDB_WRITE});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_WRITE_MANUAL,
+             .category_ = CATEGORY_ITEM,
+             .title_ = Translate("Manual Input..."),
+             .short_title_ = Translate("Manual Input"),
+             .image_id_ = IDB_WRITE_MANUAL});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EDIT_LIMITS,
+                                       .category_ = CATEGORY_ITEM,
+                                       .title_ = Translate("Limits..."),
+                                       .short_title_ = Translate("Limits")});
 
-  action_manager.AddAction(Action{.command_id_ = ID_DEV1_REFR,
-                                  .category_ = CATEGORY_DEVICE,
-                                  .title_ = Translate("Poll Device")});
-  action_manager.AddAction(Action{.command_id_ = ID_DEV1_SYNC,
-                                  .category_ = CATEGORY_DEVICE,
-                                  .title_ = Translate("Synchronize Clock")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_DEV1_REFR,
+                                       .category_ = CATEGORY_DEVICE,
+                                       .title_ = Translate("Poll Device")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_DEV1_SYNC,
+             .category_ = CATEGORY_DEVICE,
+             .title_ = Translate("Synchronize Clock")});
 
-  action_manager.AddAction(Action{.command_id_ = ID_SETUP,
-                                  .category_ = CATEGORY_SETUP,
-                                  .title_ = Translate("Options")});
-  action_manager.AddAction(Action{.command_id_ = ID_VIEW_LEGEND,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Legend"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_DOTS,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Dots"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_STEPS,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Steps"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_SCROLL_BAR,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Scroll Bar"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_NOW,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Scroll to Now"),
-                                  .short_title_ = Translate("Now"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_COLOR,
-                                  .category_ = CATEGORY_SETUP,
-                                  .title_ = Translate("Line Color..."),
-                                  .short_title_ = Translate("Color")});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_SETUP,
-                                  .category_ = CATEGORY_SETUP,
-                                  .title_ = Translate("Graph Setup..."),
-                                  .short_title_ = Translate("Setup"),
-                                  .image_id_ = ID_GRAPH_VIEW});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_BK_COLOR,
-                                  .category_ = CATEGORY_SETUP,
-                                  .title_ = Translate("Background Color..."),
-                                  .short_title_ = Translate("Background")});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_ADD_PANE,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Add Pane")});
-  action_manager.AddAction(Action{.command_id_ = ID_GRAPH_DELETE_PANE,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Delete Pane")});
-  action_manager.AddAction(Action{.command_id_ = ID_PRINT,
-                                  .category_ = CATEGORY_SETUP,
-                                  .title_ = Translate("Print"),
-                                  .image_id_ = IDB_PRINTER});
-  action_manager.AddAction(Action{.command_id_ = ID_EDIT,
-                                  .category_ = CATEGORY_SETUP,
-                                  .title_ = Translate("Edit"),
-                                  .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SETUP,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Options")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_VIEW_LEGEND,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Legend"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_DOTS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Dots"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_STEPS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Steps"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_SCROLL_BAR,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Scroll Bar"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_NOW,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Scroll to Now"),
+                                       .short_title_ = Translate("Now"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_COLOR,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Line Color..."),
+                                       .short_title_ = Translate("Color")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_SETUP,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Graph Setup..."),
+                                       .short_title_ = Translate("Setup"),
+                                       .image_id_ = ID_GRAPH_VIEW});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_GRAPH_BK_COLOR,
+             .category_ = CATEGORY_SETUP,
+             .title_ = Translate("Background Color..."),
+             .short_title_ = Translate("Background")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_ADD_PANE,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Add Pane")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_DELETE_PANE,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Delete Pane")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_PRINT,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Print"),
+                                       .image_id_ = IDB_PRINTER});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EDIT,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Edit"),
+                                       .flags_ = Action::CHECKABLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_EXPORT_CSV,
-                                  .category_ = CATEGORY_EXPORT,
-                                  .title_ = Translate("Export to CSV")});
-  action_manager.AddAction(Action{.command_id_ = ID_EXPORT_EXCEL,
-                                  .category_ = CATEGORY_EXPORT,
-                                  .title_ = Translate("Export to Excel")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EXPORT_CSV,
+                                       .category_ = CATEGORY_EXPORT,
+                                       .title_ = Translate("Export to CSV")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EXPORT_EXCEL,
+                                       .category_ = CATEGORY_EXPORT,
+                                       .title_ = Translate("Export to Excel")});
 
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_WATCH,
-                                  .category_ = CATEGORY_SPECIFIC,
-                                  .title_ = Translate("Watch")});
-  action_manager.AddAction(Action{.command_id_ = ID_OPEN_DEVICE_METRICS,
-                                  .category_ = CATEGORY_SPECIFIC,
-                                  .title_ = Translate("Metrics")});
-  action_manager.AddAction(Action{.command_id_ = ID_CHANGE_PASSWORD,
-                                  .category_ = CATEGORY_SPECIFIC,
-                                  .title_ = Translate("Set Password..."),
-                                  .short_title_ = Translate("Password")});
-  action_manager.AddAction(Action{.command_id_ = ID_ITEM_ENABLE,
-                                  .category_ = CATEGORY_SPECIFIC,
-                                  .title_ = Translate("Enable")});
-  action_manager.AddAction(Action{.command_id_ = ID_ITEM_DISABLE,
-                                  .category_ = CATEGORY_SPECIFIC,
-                                  .title_ = Translate("Disable")});
-  action_manager.AddAction(Action{.command_id_ = ID_PAUSE,
-                                  .category_ = CATEGORY_SPECIFIC,
-                                  .title_ = Translate("Pause")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_WATCH,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Watch")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_DEVICE_METRICS,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Metrics")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_CHANGE_PASSWORD,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Set Password..."),
+                                       .short_title_ = Translate("Password")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ITEM_ENABLE,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Enable")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ITEM_DISABLE,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Disable")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_PAUSE,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Pause")});
 
-  action_manager.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_ALL,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Acknowledge All"),
-                                  .image_id_ = IDB_ACKNOWLEDGE_ALL});
-  action_manager.AddAction(Action{.command_id_ = ID_SEVERITY_CUSTOM,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Severity..."),
-                                  .short_title_ = Translate("Severity")});
-  action_manager.AddAction(Action{.command_id_ = ID_FAVOURITES_ADD_URL,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Add Web Page..."),
-                                  .short_title_ = Translate("Add Web Page")});
-  action_manager.AddAction(Action{.command_id_ = ID_MODUS_TOOLBAR,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Toolbar")});
-  action_manager.AddAction(Action{.command_id_ = ID_MODUS_STATUSBAR,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Status Bar")});
-  action_manager.AddAction(Action{.command_id_ = ID_EVENT_VIEW,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Event Panel"),
-                                  .image_id_ = ID_EVENT_VIEW});
-  action_manager.AddAction(Action{.command_id_ = ID_SAVE,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Save")});
-  action_manager.AddAction(Action{.command_id_ = ID_SAVE_AS,
-                                  .category_ = CATEGORY_VIEW,
-                                  .title_ = Translate("Save As..."),
-                                  .short_title_ = Translate("Save")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_ALL,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Acknowledge All"),
+                                       .image_id_ = IDB_ACKNOWLEDGE_ALL});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SEVERITY_CUSTOM,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Severity..."),
+                                       .short_title_ = Translate("Severity")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_FAVOURITES_ADD_URL,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Add Web Page..."),
+             .short_title_ = Translate("Add Web Page")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_MODUS_TOOLBAR,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Toolbar")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_MODUS_STATUSBAR,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Status Bar")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EVENT_VIEW,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Event Panel"),
+                                       .image_id_ = ID_EVENT_VIEW});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SAVE,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Save")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SAVE_AS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Save As..."),
+                                       .short_title_ = Translate("Save")});
 
-  action_manager.AddAction(Action{.command_id_ = ID_CURRENT_EVENTS,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("Current"),
-                                  .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_CURRENT_EVENTS,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Current"),
+                                       .flags_ = Action::CHECKABLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_TIME_RANGE_15M,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("15 min"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_TIME_RANGE_HOUR,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("Hour"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_TIME_RANGE_DAY,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("Day"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_TIME_RANGE_WEEK,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("Week"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_TIME_RANGE_MONTH,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("Month"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_TIME_RANGE_CUSTOM,
-                                  .category_ = CATEGORY_PERIOD,
-                                  .title_ = Translate("Custom..."),
-                                  .short_title_ = Translate("Custom"),
-                                  .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_15M,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("15 min"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_HOUR,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Hour"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_DAY,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Day"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_WEEK,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Week"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_MONTH,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Month"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_CUSTOM,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Custom..."),
+                                       .short_title_ = Translate("Custom"),
+                                       .flags_ = Action::CHECKABLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_1M,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("1-Minute"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_5M,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("5 min"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_15M,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("15 min"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_30M,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("30 min"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_1H,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("1-Hour"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_12H,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("12 hours"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_INTERVAL_1D,
-                                  .category_ = CATEGORY_INTERVAL,
-                                  .title_ = Translate("1-Day"),
-                                  .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_1M,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("1-Minute"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_5M,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("5 min"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_15M,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("15 min"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_30M,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("30 min"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_1H,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("1-Hour"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_12H,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("12 hours"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_INTERVAL_1D,
+                                       .category_ = CATEGORY_INTERVAL,
+                                       .title_ = Translate("1-Day"),
+                                       .flags_ = Action::CHECKABLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_START,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("First"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_END,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("Last"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_COUNT,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("Count"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_MIN,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("Minimum"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_MAX,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("Maximum"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_SUM,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("Sum"),
-                                  .flags_ = Action::CHECKABLE});
-  action_manager.AddAction(Action{.command_id_ = ID_AGGREGATION_AVG,
-                                  .category_ = CATEGORY_AGGREGATION,
-                                  .title_ = Translate("Average"),
-                                  .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_START,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("First"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_END,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("Last"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_COUNT,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("Count"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_MIN,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("Minimum"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_MAX,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("Maximum"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_SUM,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("Sum"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_AGGREGATION_AVG,
+                                       .category_ = CATEGORY_AGGREGATION,
+                                       .title_ = Translate("Average"),
+                                       .flags_ = Action::CHECKABLE});
 
-  action_manager.AddAction(Action{.command_id_ = ID_ITEM_PARAMS,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Properties"),
-                                  .image_id_ = IDB_RECORD_EDITOR});
-  action_manager.AddAction(Action{.command_id_ = ID_TABLE_CONFIG,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Element Properties"),
-                                  .short_title_ = Translate("Elements")});
-  action_manager.AddAction(Action{.command_id_ = ID_TRANSMISSION_VIEW,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Transmission Table"),
-                                  .short_title_ = Translate("Transmission")});
-  action_manager.AddAction(Action{.command_id_ = ID_NEW_PORTFOLIO,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Create Portfolio")});
-  action_manager.AddAction(Action{.command_id_ = ID_ADD_ITEMS,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Add Items..."),
-                                  .short_title_ = Translate("Add Items")});
-  action_manager.AddAction(Action{.command_id_ = ID_RENAME,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Rename"),
-                                  .shortcut_ = Shortcut{aui::KeyCode::F2}});
-  action_manager.AddAction(
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ITEM_PARAMS,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Properties"),
+                                       .image_id_ = IDB_RECORD_EDITOR});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_TABLE_CONFIG,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Element Properties"),
+             .short_title_ = Translate("Elements")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_TRANSMISSION_VIEW,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Transmission Table"),
+             .short_title_ = Translate("Transmission")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_PORTFOLIO,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Create Portfolio")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ADD_ITEMS,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Add Items..."),
+                                       .short_title_ = Translate("Add Items")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_RENAME,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Rename"),
+             .shortcut_ = Shortcut{aui::KeyCode::F2}});
+  ui_command_registry.AddAction(
       Action{.command_id_ = ID_COPY,
              .category_ = CATEGORY_EDIT,
              .title_ = Translate("Copy"),
              .image_id_ = IDB_COPY,
              .shortcut_ = Shortcut{aui::ControlModifier, aui::KeyCode::C}});
-  action_manager.AddAction(
+  ui_command_registry.AddAction(
       Action{.command_id_ = ID_PASTE,
              .category_ = CATEGORY_EDIT,
              .title_ = Translate("Paste"),
              .image_id_ = IDB_PASTE,
              .shortcut_ = Shortcut{aui::ControlModifier, aui::KeyCode::V}});
-  action_manager.AddAction(Action{.command_id_ = ID_DELETE,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Delete"),
-                                  .image_id_ = IDB_DELETE,
-                                  .shortcut_ = Shortcut{aui::KeyCode::Delete}});
-  action_manager.AddAction(Action{.command_id_ = ID_CLEAR_ALL,
-                                  .category_ = CATEGORY_EDIT,
-                                  .title_ = Translate("Clear")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_DELETE,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Delete"),
+             .image_id_ = IDB_DELETE,
+             .shortcut_ = Shortcut{aui::KeyCode::Delete}});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_CLEAR_ALL,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Clear")});
 
-  RegisterCreateActions(action_manager, node_service);
+  RegisterCreateActions(ui_command_registry, node_service);
 
-  RegisterFileSystemActions(action_manager);
+  RegisterFileSystemActions(ui_command_registry);
 }
 
 void AddDefaultMenuContributions(UiCommandRegistry& ui_command_registry) {

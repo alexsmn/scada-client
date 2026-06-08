@@ -6,14 +6,14 @@
 #include <memory>
 #include <vector>
 
-class ActionManager;
+class CommandManager;
 class MainWindowInterface;
 class CommandHandler;
 
 class ContextMenuModel final : public aui::SimpleMenuModel {
  public:
   ContextMenuModel(MainWindowInterface& main_window,
-                   ActionManager& action_manager,
+                   CommandManager& command_manager,
                    CommandHandler& command_handler);
 
   // views::MenuModel
@@ -23,7 +23,7 @@ class ContextMenuModel final : public aui::SimpleMenuModel {
   void Rebuild();
 
   MainWindowInterface& main_window_;
-  ActionManager& action_manager_;
+  CommandManager& command_manager_;
 
   SimpleMenuCommandHandler command_handler_;
   std::vector<std::unique_ptr<aui::MenuModel>> submenus_;

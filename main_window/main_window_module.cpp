@@ -2,12 +2,11 @@
 
 #include "base/boost_log.h"
 #include "common/master_data_services.h"
-#include "modules/change_password/change_password_command_builder.h"
+#include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 #include "events/event_fetcher.h"
-#include "controller/action_manager.h"
-#include "controller/command_ui_registry.h"
 #include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
@@ -21,6 +20,7 @@
 #include "main_window/pages/page_commands.h"
 #include "main_window/selection_commands.h"
 #include "main_window/status_bar/status_bar_model_builder.h"
+#include "modules/change_password/change_password_command_builder.h"
 #include "profile/profile.h"
 
 #if defined(UI_QT)
@@ -52,7 +52,7 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  AddGlobalActions(ui_command_registry_.action_manager(), node_service_);
+  AddGlobalActions(ui_command_registry_, node_service_);
   AddDefaultMenuContributions(ui_command_registry_);
 
   assert(scada_services_.session_service);
@@ -146,7 +146,7 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
   auto context_menu_factory = [this](MainWindowInterface& main_window,
                                      CommandHandler& command_handler) {
     return std::make_unique<ContextMenuModel>(
-        main_window, ui_command_registry_.action_manager(), command_handler);
+        main_window, ui_command_registry_.command_manager(), command_handler);
   };
 
   assert(scada_services_.session_service);
@@ -198,7 +198,8 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   const auto* window_info = FindWindowInfoByName(window_def.type);
   if (!window_info) {
-    BOOST_LOG_TRIVIAL(error) << "Window type " << window_def.type << " not found.";
+    BOOST_LOG_TRIVIAL(error)
+        << "Window type " << window_def.type << " not found.";
     return nullptr;
   }
 
@@ -227,9 +228,8 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
           executor_, selection_commands_object_, task_manager_,
           *scada_services_.session_service, timed_data_service_, node_service_,
-          print_service_,
-          ui_command_registry_.action_manager(), local_events_, file_cache_, profile_,
-          *main_window_manager_, create_tree_});
+          print_service_, ui_command_registry_.action_manager(), local_events_,
+          file_cache_, profile_, *main_window_manager_, create_tree_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the
   // controller.

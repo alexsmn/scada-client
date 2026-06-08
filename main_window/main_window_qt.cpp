@@ -227,28 +227,28 @@ void MainWindow::CreateStatusBar() {
 }
 
 void MainWindow::CreateToolbar() {
-  auto& action_manager = ui_command_registry_.action_manager();
-  for (auto* action_info : action_manager.actions()) {
-    bool collapsible = !CanExpandCommandCategory(action_info->category_);
+  auto& command_manager = ui_command_registry_.command_manager();
+  for (auto* command_info : command_manager.commands()) {
+    bool collapsible = !CanExpandCommandCategory(command_info->category);
     auto* action = new QAction(
-        QString::fromStdU16String(action_info->GetShortTitle()), this);
+        QString::fromStdU16String(command_info->GetShortTitle()), this);
     action->setPriority(collapsible ? QAction::LowPriority
                                     : QAction::NormalPriority);
     action->setVisible(false);
-    if (action_info->image_id() != 0)
-      action->setIcon(QIcon(LoadPixmap(action_info->image_id())));
-    action->setCheckable(action_info->checkable());
-    if (action_info->shortcut_.has_value())
-      action->setShortcut(ToQKeySequence(*action_info->shortcut_));
-    auto command_id = action_info->command_id();
+    if (command_info->image_id != 0)
+      action->setIcon(QIcon(LoadPixmap(command_info->image_id)));
+    action->setCheckable(command_info->checkable());
+    if (command_info->shortcut.has_value())
+      action->setShortcut(ToQKeySequence(*command_info->shortcut));
+    auto command_id = command_info->command_id;
     QObject::connect(action, &QAction::triggered,
                      [this, command_id](bool checked) {
                        auto* handler = commands_->GetCommandHandler(command_id);
                        if (handler && handler->IsCommandEnabled(command_id))
                          handler->ExecuteCommand(command_id);
                      });
-    action_map_.emplace(action_info->command_id(), action);
-    action_command_ids_.emplace(action, action_info->command_id());
+    action_map_.emplace(command_info->command_id, action);
+    action_command_ids_.emplace(action, command_info->command_id);
   }
 
   toolbar_ = new QToolBar(this);
@@ -258,19 +258,19 @@ void MainWindow::CreateToolbar() {
   {
     // Action order is important.
     int last_category = -1;
-    for (auto* action_info : action_manager.actions()) {
-      auto* action = FindAction(action_info->command_id());
-      if (CanExpandCommandCategory(action_info->category_)) {
+    for (auto* command_info : command_manager.commands()) {
+      auto* action = FindAction(command_info->command_id);
+      if (CanExpandCommandCategory(command_info->category)) {
         toolbar_->addAction(action);
-        if (last_category != -1 && last_category != action_info->category_) {
+        if (last_category != -1 && last_category != command_info->category) {
           toolbar_->addSeparator();
         }
       } else {
-        auto& category_action = category_actions_[action_info->category_];
+        auto& category_action = category_actions_[command_info->category];
         if (!category_action.menu) {
           auto* button = new QToolButton(toolbar_);
           auto* menu = new QMenu(this);
-          auto title = GetCommandCategoryTitle(action_info->category_);
+          auto title = GetCommandCategoryTitle(command_info->category);
           auto text = QString::fromUtf16(title.data(), title.size());
           button->setMenu(menu);
           button->setPopupMode(QToolButton::InstantPopup);
@@ -282,7 +282,7 @@ void MainWindow::CreateToolbar() {
         }
         category_action.menu->addAction(action);
       }
-      last_category = action_info->category_;
+      last_category = command_info->category;
     }
   }
 

@@ -3,6 +3,7 @@
 #include "base/any_executor.h"
 
 #include "controller/action_manager.h"
+#include "controller/command_manager.h"
 
 #include <map>
 
@@ -23,6 +24,7 @@ class CommandHandler;
 struct ToolbarControllerContext {
   const AnyExecutor executor_;
   ActionManager& action_manager_;
+  CommandManager& command_manager_;
   CommandHandler& commands_;
 };
 

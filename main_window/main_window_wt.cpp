@@ -1,9 +1,9 @@
 ﻿#include "main_window/main_window_wt.h"
 
+#include "controller/command_ui_registry.h"
 #include "main_window/main_menu/main_menu_controller_wt.h"
 #include "main_window/toolbar_controller_wt.h"
 #include "main_window/view_manager.h"
-#include "controller/command_ui_registry.h"
 
 #pragma warning(push)
 #pragma warning(disable : 4251 4275)
@@ -27,9 +27,10 @@ MainWindow::MainWindow(Wt::WContainerWidget& parent,
       MainMenuControllerContext{std::move(main_menu_model)});
   root_layout->addWidget(main_menu_controller_->CreateWidget());
 
-  toolbar_controller_ = std::make_unique<ToolbarController>(
-      ToolbarControllerContext{executor_, ui_command_registry_.action_manager(),
-                               *commands_});
+  toolbar_controller_ =
+      std::make_unique<ToolbarController>(ToolbarControllerContext{
+          executor_, ui_command_registry_.action_manager(),
+          ui_command_registry_.command_manager(), *commands_});
   root_layout->addWidget(toolbar_controller_->CreateToolbar());
 
   auto* root_layout_widget =
