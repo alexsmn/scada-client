@@ -5,6 +5,8 @@
 #include "base/blinker_mock.h"
 #include "base/observer_list.h"
 #include "events/node_event_provider_mock.h"
+#include "model/data_items_node_ids.h"
+#include "node_service/node_model_mock.h"
 #include "node_service/test/test_node_model.h"
 #include "profile/profile.h"
 #include "timed_data/timed_data_mock.h"
@@ -53,6 +55,37 @@ aui::Color GetCellColor(const TableModel& table_model, int row, int column_id) {
   cell.column_id = column_id;
   table_model.GetCellEx(cell);
   return cell.cell_color;
+}
+
+aui::Color GetTextColor(const TableModel& table_model, int row, int column_id) {
+  TableCellEx cell = {};
+  cell.row = row;
+  cell.column_id = column_id;
+  table_model.GetCellEx(cell);
+  return cell.text_color;
+}
+
+NodeRef MakeDiscreteItemNode() {
+  auto node_model = std::make_shared<NiceMock<MockNodeModel>>();
+  auto type_model = std::make_shared<NiceMock<MockNodeModel>>();
+
+  NodeRef type_node{type_model};
+
+  ON_CALL(*node_model, GetAttribute(scada::AttributeId::NodeId))
+      .WillByDefault(Return(scada::NodeId{1, 1}));
+  ON_CALL(*node_model,
+          GetTarget(scada::NodeId{scada::id::HasTypeDefinition}, true))
+      .WillByDefault(Return(type_node));
+  ON_CALL(*node_model,
+          GetTarget(scada::NodeId{data_items::id::HasTsFormat}, true))
+      .WillByDefault(Return(NodeRef{}));
+
+  ON_CALL(*type_model, GetAttribute(scada::AttributeId::NodeId))
+      .WillByDefault(Return(data_items::id::DiscreteItemType));
+  ON_CALL(*type_model, GetTarget(scada::NodeId{scada::id::HasSubtype}, false))
+      .WillByDefault(Return(NodeRef{}));
+
+  return node_model;
 }
 
 }  // namespace
@@ -166,6 +199,20 @@ TEST_F(TableModelTest, GetValue) {
       .Times(AnyNumber())
       .WillRepeatedly(Return(data_value));
   EXPECT_EQ(value, table_model_.GetCellText(0, TableModel::COLUMN_VALUE));
+}
+
+TEST_F(TableModelTest, DiscreteOpenValueUsesPaletteTextColor) {
+  const auto& row_context = SetFormula();
+
+  EXPECT_CALL(row_context->timed_data, GetDataValue())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(scada::DataValue{false, {}, {}, {}}));
+  EXPECT_CALL(row_context->timed_data, GetNode())
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(MakeDiscreteItemNode()));
+
+  EXPECT_EQ(aui::Color{aui::ColorCode::Transparent},
+            GetTextColor(table_model_, 0, TableModel::COLUMN_VALUE));
 }
 
 TEST_F(TableModelTest, ValueBlinking) {

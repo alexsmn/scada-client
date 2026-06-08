@@ -4,13 +4,13 @@
 #include "base/format_time.h"
 #include "base/u16format.h"
 #include "base/utf_convert.h"
-#include "ui/common/client_utils.h"
-#include "modules/table/table_model.h"
 #include "events/event_set.h"
 #include "events/node_event_provider.h"
 #include "model/data_items_node_ids.h"
+#include "modules/table/table_model.h"
 #include "node_service/node_util.h"
 #include "profile/profile.h"
+#include "ui/common/client_utils.h"
 
 int g_time_format = TIME_FORMAT_DATE | TIME_FORMAT_TIME | TIME_FORMAT_MSEC;
 
@@ -39,7 +39,10 @@ std::optional<aui::Color> GetNodeColor(const NodeRef& node,
   if (color_index >= 0 && color_index < static_cast<int>(aui::GetColorCount()))
     return aui::GetColor(color_index);
 
-  return bool_value ? aui::ColorCode::Red : aui::ColorCode::Black;
+  if (bool_value)
+    return aui::ColorCode::Red;
+
+  return std::nullopt;
 }
 
 std::u16string FormatCellTime(scada::DateTime time) {
