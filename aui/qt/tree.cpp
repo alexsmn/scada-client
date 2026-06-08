@@ -1,13 +1,15 @@
 #include "aui/qt/tree.h"
 
-#include "base/value_util.h"
 #include "aui/color.h"
 #include "aui/models/tree_model.h"
 #include "aui/qt/item_delegate.h"
 #include "aui/qt/tree_model_adapter.h"
+#include "base/value_util.h"
 
+#include <QEvent>
 #include <QHeaderView>
 #include <QPainter>
+#include <QPalette>
 #include <QSortFilterProxyModel>
 
 namespace aui {
@@ -47,6 +49,21 @@ bool TreeProxyModel::lessThan(const QModelIndex& source_left,
   return QSortFilterProxyModel::lessThan(source_left, source_right);
 }
 
+namespace {
+
+void SetDefaultItemColors(QPalette& palette) {
+  for (auto group :
+       {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
+    const auto window = palette.brush(group, QPalette::Window);
+    const auto window_text = palette.brush(group, QPalette::WindowText);
+    palette.setBrush(group, QPalette::Base, window);
+    palette.setBrush(group, QPalette::AlternateBase, window);
+    palette.setBrush(group, QPalette::Text, window_text);
+  }
+}
+
+}  // namespace
+
 // Tree
 
 Tree::Tree(std::shared_ptr<TreeModel> model)
@@ -68,6 +85,7 @@ Tree::Tree(std::shared_ptr<TreeModel> model)
 
   setHeaderHidden(true);
   setItemDelegate(item_delegate_.get());
+  ApplyThemePalette();
 
   // Prevent from editing when double-clicked.
   setEditTriggers(QTreeView::EditTrigger::SelectedClicked);
@@ -158,6 +176,27 @@ void Tree::StartEditing(void* node) {
 
 void Tree::SetDoubleClickHandler(DoubleClickHandler handler) {
   connect(this, &QTreeView::doubleClicked, handler);
+}
+
+void Tree::ApplyThemePalette() {
+  QPalette themed_palette = palette();
+  SetDefaultItemColors(themed_palette);
+  if (themed_palette != palette())
+    setPalette(themed_palette);
+}
+
+void Tree::changeEvent(QEvent* event) {
+  QTreeView::changeEvent(event);
+
+  switch (event->type()) {
+    case QEvent::ApplicationPaletteChange:
+    case QEvent::PaletteChange:
+    case QEvent::StyleChange:
+      ApplyThemePalette();
+      break;
+    default:
+      break;
+  }
 }
 
 void Tree::SetSelectionChangedHandler(SelectionChangedHandler handler) {

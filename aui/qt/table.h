@@ -1,12 +1,13 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include "aui/color.h"
 #include "aui/handlers.h"
+#include <boost/json.hpp>
 
 #include <QTableView>
 
 class QSortFilterProxyModel;
+class QEvent;
 
 namespace aui {
 
@@ -57,9 +58,12 @@ class Table : public QTableView {
 
  protected:
   // QTableView
+  virtual void changeEvent(QEvent* event) override;
   virtual void keyPressEvent(QKeyEvent* event) override;
 
  private:
+  void ApplyThemePalette();
+
   QModelIndex RowToIndex(int row) const;
   int IndexToRow(const QModelIndex& index) const;
 

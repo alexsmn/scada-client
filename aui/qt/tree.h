@@ -1,11 +1,13 @@
 #pragma once
 
-#include <boost/json.hpp>
 #include "aui/color.h"
 #include "aui/handlers.h"
+#include <boost/json.hpp>
 
 #include <QTreeView>
 #include <set>
+
+class QEvent;
 
 namespace aui {
 
@@ -63,11 +65,14 @@ class Tree : public QTreeView {
 
  protected:
   // QTreeView
+  virtual void changeEvent(QEvent* event) override;
   virtual void drawBranches(QPainter* painter,
                             const QRect& rect,
                             const QModelIndex& index) const override;
 
  private:
+  void ApplyThemePalette();
+
   void* GetNode(const QModelIndex& index) const;
   QModelIndex GetIndex(void* node, int column_id) const;
 

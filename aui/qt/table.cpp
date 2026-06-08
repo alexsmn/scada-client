@@ -6,9 +6,11 @@
 #include "profile/window_definition_util.h"
 
 #include <QClipboard>
+#include <QEvent>
 #include <QGuiApplication>
 #include <QHeaderView>
 #include <QKeyEvent>
+#include <QPalette>
 #include <QSortFilterProxyModel>
 
 namespace aui {
@@ -35,6 +37,17 @@ bool TableProxyModel::lessThan(const QModelIndex& source_left,
   int column_id = columns_[source_left.column()].id;
   return model_.CompareCells(source_left.row(), source_right.row(), column_id) <
          0;
+}
+
+void SetDefaultItemColors(QPalette& palette) {
+  for (auto group :
+       {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
+    const auto window = palette.brush(group, QPalette::Window);
+    const auto window_text = palette.brush(group, QPalette::WindowText);
+    palette.setBrush(group, QPalette::Base, window);
+    palette.setBrush(group, QPalette::AlternateBase, window);
+    palette.setBrush(group, QPalette::Text, window_text);
+  }
 }
 
 }  // namespace
@@ -65,6 +78,7 @@ Table::Table(std::shared_ptr<TableModel> model,
   setWordWrap(false);
   setShowGrid(false);
   setSelectionBehavior(SelectRows);
+  ApplyThemePalette();
   connect(horizontalHeader(), &QHeaderView::sectionResized,
           [this](int index, int old_size, int new_size) {
             model_adapter_->columns()[index].width = new_size;
@@ -97,6 +111,13 @@ void Table::SetContextMenuHandler(ContextMenuHandler handler) {
 
 void Table::SetKeyPressHandler(KeyPressHandler handler) {
   key_press_handler_ = std::move(handler);
+}
+
+void Table::ApplyThemePalette() {
+  QPalette themed_palette = palette();
+  SetDefaultItemColors(themed_palette);
+  if (themed_palette != palette())
+    setPalette(themed_palette);
 }
 
 std::vector<int> Table::GetSelectedRows() const {
@@ -167,6 +188,20 @@ int Table::IndexToRow(const QModelIndex& index) const {
 
 void Table::SetDoubleClickHandler(DoubleClickHandler handler) {
   QObject::connect(this, &Table::doubleClicked, handler);
+}
+
+void Table::changeEvent(QEvent* event) {
+  QTableView::changeEvent(event);
+
+  switch (event->type()) {
+    case QEvent::ApplicationPaletteChange:
+    case QEvent::PaletteChange:
+    case QEvent::StyleChange:
+      ApplyThemePalette();
+      break;
+    default:
+      break;
+  }
 }
 
 void Table::keyPressEvent(QKeyEvent* event) {

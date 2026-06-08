@@ -3,6 +3,9 @@
 #include "aui/models/tree_node_model.h"
 #include "aui/test/qt/app_environment.h"
 
+#include <QApplication>
+#include <QColor>
+#include <QPalette>
 #include <gtest/gtest.h>
 
 namespace {
@@ -100,6 +103,26 @@ TEST(TreeTest, DefaultTextColorUsesPaletteForeground) {
   const auto default_index = tree.model()->index(0, 0, tree.rootIndex());
 
   EXPECT_FALSE(tree.model()->data(default_index, Qt::ForegroundRole).isValid());
+}
+
+TEST(TreeTest, DefaultItemPaletteUsesWindowThemeColors) {
+  AppEnvironment app_env;
+
+  QPalette palette = QApplication::palette();
+  for (auto group :
+       {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
+    palette.setColor(group, QPalette::Window, QColor{32, 33, 36});
+    palette.setColor(group, QPalette::WindowText, QColor{232, 234, 237});
+    palette.setColor(group, QPalette::Base, Qt::white);
+    palette.setColor(group, QPalette::Text, Qt::black);
+  }
+  QApplication::setPalette(palette);
+
+  aui::Tree tree{MakeColoredTreeModel()};
+
+  EXPECT_EQ(tree.palette().color(QPalette::Base), QColor(32, 33, 36));
+  EXPECT_EQ(tree.palette().color(QPalette::Text), QColor(232, 234, 237));
+  EXPECT_EQ(tree.palette().color(QPalette::AlternateBase), QColor(32, 33, 36));
 }
 
 TEST(TreeTest, ExplicitTextColorOverridesPaletteForeground) {
