@@ -1,43 +1,17 @@
 #pragma once
 
-#include "base/any_executor.h"
-
-#include "base/awaitable.h"
-#include "base/cancelation.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
-#include "profile/window_definition.h"
-
-#include <vector>
-
-namespace scada {
-class SessionService;
-}  // namespace scada
 
 class Controller;
 class DialogService;
-class FileCache;
 class MainWindowInterface;
-class MainWindowManager;
-class NodeEventProvider;
 class NodeRef;
-class NodeService;
 class OpenedViewInterface;
-class Profile;
 class SelectionModel;
-class TaskManager;
-class UiCommandRegistry;
 struct SelectionCommandContext;
 
 struct SelectionCommandsContext {
-  const AnyExecutor executor_;
-  TaskManager& task_manager_;
-  scada::SessionService& session_service_;
-  NodeEventProvider& node_event_provider_;
-  FileCache& file_cache_;
-  Profile& profile_;
-  MainWindowManager& main_window_manager_;
-  NodeService& node_service_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
 };
 
@@ -58,11 +32,8 @@ class SelectionCommands : private SelectionCommandsContext,
                   Controller* controller,
                   SelectionModel* selection);
 
-  void OpenWindow(const WindowInfo* window_info);
-  void OpenWindow(const WindowDefinition& window_definition);
-
   // CommandHandler
-  virtual CommandHandler* GetCommandHandler(unsigned command_id);
+  virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
   virtual bool IsCommandEnabled(unsigned command_id) const override;
   virtual bool IsCommandChecked(unsigned command_id) const override;
   virtual void ExecuteCommand(unsigned command_id) override;
@@ -70,24 +41,9 @@ class SelectionCommands : private SelectionCommandsContext,
  private:
   SelectionCommandContext command_context() const;
 
-  void DeleteSelection();
-  void CopyToClipboard();
-
-  Awaitable<OpenedViewInterface*> OpenViewContainingNode(int view_type_id,
-                                                         const NodeRef& node);
-  Awaitable<OpenedViewInterface*> OpenViewContainingNodeAsync(int view_type_id,
-                                                              NodeRef node);
-
   SelectionModel* selection_ = nullptr;
   MainWindowInterface* main_window_ = nullptr;
   OpenedViewInterface* opened_view_ = nullptr;
   DialogService* dialog_service_ = nullptr;
   Controller* controller_ = nullptr;
-
-  // TODO: Replace with |selection_commands_|.
-  CommandRegistry command_registry_;
-
-  Cancelation cancelation_;
 };
-
-void RegisterSelectionCommandActions(UiCommandRegistry& ui_command_registry);

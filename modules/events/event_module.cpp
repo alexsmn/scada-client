@@ -7,11 +7,13 @@
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
+#include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
 #include "events/event_view.h"
 #include "events/local_events.h"
+#include "events/node_event_provider.h"
 #include "main_window/main_window_interface.h"
 #include "main_window/opened_view/opened_view_interface.h"
 #include "profile/profile.h"
@@ -80,6 +82,21 @@ EventModule::EventModule(EventModuleContext&& context)
 
   AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
+  selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
+      .command_id = ID_ACKNOWLEDGE_CURRENT,
+      .execute_handler =
+          [this](const SelectionCommandContext& context) {
+            node_event_provider().AcknowledgeItemEvents(
+                context.selection.node().node_id());
+          },
+      .enabled_handler =
+          [](const SelectionCommandContext& context) {
+            return context.selection.timed_data().alerting();
+          },
+      .available_handler =
+          [](const SelectionCommandContext& context) {
+            return context.selection.timed_data().connected();
+          }});
 
   ui_command_registry_.AddAction(Action{.command_id_ = ID_HISTORICAL_EVENTS,
                                         .category_ = CATEGORY_OPEN,

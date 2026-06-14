@@ -485,16 +485,25 @@ TEST_F(MainWindowTest,
 
 #if defined(UI_QT)
 TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
-  GraphModule graph_module{
-      GraphModuleContext{.ui_command_registry_ = ui_command_registry_}};
-  TableModule table_module{
-      TableModuleContext{.ui_command_registry_ = ui_command_registry_}};
-  SummaryModule summary_module{
-      SummaryModuleContext{.ui_command_registry_ = ui_command_registry_}};
-  TimedDataModule timed_data_module{
-      TimedDataModuleContext{.ui_command_registry_ = ui_command_registry_}};
+  GraphModule graph_module{GraphModuleContext{
+      .executor_ = controller_env_.executor_,
+      .file_cache_ = controller_env_.file_cache_,
+      .selection_commands_ = controller_env_.selection_commands_,
+      .ui_command_registry_ = ui_command_registry_}};
+  TableModule table_module{TableModuleContext{
+      .executor_ = controller_env_.executor_,
+      .session_service_ = controller_env_.session_service_,
+      .selection_commands_ = controller_env_.selection_commands_,
+      .ui_command_registry_ = ui_command_registry_}};
+  SummaryModule summary_module{SummaryModuleContext{
+      .executor_ = controller_env_.executor_,
+      .selection_commands_ = controller_env_.selection_commands_,
+      .ui_command_registry_ = ui_command_registry_}};
+  TimedDataModule timed_data_module{TimedDataModuleContext{
+      .executor_ = controller_env_.executor_,
+      .selection_commands_ = controller_env_.selection_commands_,
+      .ui_command_registry_ = ui_command_registry_}};
   RegisterPortfolioCommandActions(ui_command_registry_);
-  RegisterSelectionCommandActions(ui_command_registry_);
   RegisterOpenedViewCommandActions(ui_command_registry_,
                                    controller_env_.node_service_);
 

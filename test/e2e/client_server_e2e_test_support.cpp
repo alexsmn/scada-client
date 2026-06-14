@@ -91,6 +91,24 @@ std::filesystem::path GetSqliteExePath() {
   return ::testing::AssertionSuccess();
 }
 
+void ConfigureSignedLicense(boost::json::object& server_json) {
+  auto* license_file = std::getenv("SCADA_SERVER_LICENSE_FILE");
+  if (!license_file || !*license_file)
+    return;
+
+  boost::json::object license{{"file", license_file}};
+
+  if (auto* require_gcp_binding =
+          std::getenv("SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING");
+      require_gcp_binding && *require_gcp_binding) {
+    license["require_gcp_binding"] =
+        std::string_view{require_gcp_binding} == "true" ||
+        std::string_view{require_gcp_binding} == "1";
+  }
+
+  server_json["license"] = std::move(license);
+}
+
 std::string SqlitePath(const std::filesystem::path& path) {
   auto result = path.lexically_normal().generic_string();
   for (auto& ch : result) {
@@ -112,28 +130,29 @@ void GenerateConfigurationDatabase(const std::filesystem::path& workspace,
   WriteTextFile(script_path,
                 ".bail on\n"
                 ".read " +
-                    SqlitePath(GetConfigurationBaseSqlPath()) + "\n"
+                    SqlitePath(GetConfigurationBaseSqlPath()) +
+                    "\n"
                     ".read " +
-                    SqlitePath(GetConfigurationFixtureSqlPath()) + "\n"
+                    SqlitePath(GetConfigurationFixtureSqlPath()) +
+                    "\n"
                     "UPDATE Iec61850DeviceType SET Port = " +
                     std::to_string(iec61850_port) + ";\n");
 
   const auto sqlite_exe = GetSqliteExePath();
   JobObject job;
   ChildProcess sqlite;
-  LaunchProcess(sqlite_exe,
-                {"-batch", "-init", script_path.string(), database_path.string()},
-                workspace,
-                job,
-                sqlite);
+  LaunchProcess(
+      sqlite_exe,
+      {"-batch", "-init", script_path.string(), database_path.string()},
+      workspace, job, sqlite);
   WaitForExit(sqlite, 30000);
   auto exit_code = sqlite.ExitCode();
   if (!exit_code || *exit_code != 0) {
     ForceTerminate(sqlite);
-    throw std::runtime_error{"sqlite3 failed while creating " +
-                             database_path.string() + " with exit code " +
-                             (exit_code ? std::to_string(*exit_code)
-                                        : std::string{"unavailable"})};
+    throw std::runtime_error{
+        "sqlite3 failed while creating " + database_path.string() +
+        " with exit code " +
+        (exit_code ? std::to_string(*exit_code) : std::string{"unavailable"})};
   }
 }
 
@@ -212,7 +231,9 @@ void ClientServerE2eTest::SetUp() {
 
   iec61850_server_ = std::make_unique<Iec61850TestServer>(iec61850_port_);
   ASSERT_TRUE(WaitUntil(
-      [this] { return iec61850_server_->running() || iec61850_server_->failed(); },
+      [this] {
+        return iec61850_server_->running() || iec61850_server_->failed();
+      },
       5s));
   ASSERT_FALSE(iec61850_server_->failed());
 }
@@ -231,8 +252,7 @@ void ClientServerE2eTest::TearDown() {
 }
 
 void ClientServerE2eTest::PrepareWorkspace() {
-  std::filesystem::copy(GetServerFixtureDir(),
-                        workspace_.path(),
+  std::filesystem::copy(GetServerFixtureDir(), workspace_.path(),
                         std::filesystem::copy_options::recursive |
                             std::filesystem::copy_options::overwrite_existing);
   GenerateConfigurationDatabase(workspace_.path(), iec61850_port_);
@@ -240,14 +260,15 @@ void ClientServerE2eTest::PrepareWorkspace() {
   auto server_json_value =
       boost::json::parse(ReadFileOrEmpty(GetServerSettingsTemplatePath()));
   auto& server_json = server_json_value.as_object();
+  ConfigureSignedLicense(server_json);
   server_json["sessions"] = boost::json::array{
       "tcp;passive;host=0.0.0.0;port=" + std::to_string(remote_port_)};
   auto& opcua = server_json["opcua"].is_object()
                     ? server_json["opcua"].as_object()
                     : server_json["opcua"].emplace_object();
   opcua["enabled"] = true;
-  opcua["url"] = boost::json::array{
-      "opc.tcp://127.0.0.1:" + std::to_string(opcua_port_)};
+  opcua["url"] =
+      boost::json::array{"opc.tcp://127.0.0.1:" + std::to_string(opcua_port_)};
   opcua["trace"] = "none";
   WriteTextFile(workspace_.path() / "server.json",
                 boost::json::serialize(server_json_value));
@@ -255,8 +276,7 @@ void ClientServerE2eTest::PrepareWorkspace() {
   status_file_ = workspace_.path() / "client-status.txt";
   object_view_values_file_ = workspace_.path() / "object-view-values.txt";
   object_tree_labels_file_ = workspace_.path() / "object-tree-labels.txt";
-  hardware_tree_devices_file_ =
-      workspace_.path() / "hardware-tree-devices.txt";
+  hardware_tree_devices_file_ = workspace_.path() / "hardware-tree-devices.txt";
   operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
   server_log_dir_ = workspace_.path() / "Logs";
@@ -282,16 +302,14 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password) {
 void ClientServerE2eTest::StartServer() {
   LaunchProcess(GetServerExePath(),
                 {"--param=" + (workspace_.path() / "server.json").string()},
-                workspace_.path(),
-                *job_,
-                server_);
+                workspace_.path(), *job_, server_);
 
   const int port = GetProtocolPort();
   ASSERT_TRUE(WaitUntil([port] { return CanConnectTcp(port); },
                         std::chrono::duration_cast<std::chrono::milliseconds>(
                             kServerStartTimeout)))
-      << "Server did not start listening on " << ToString(GetParam()) << " port "
-      << port;
+      << "Server did not start listening on " << ToString(GetParam())
+      << " port " << port;
 }
 
 void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
@@ -299,21 +317,20 @@ void ClientServerE2eTest::StartClient(std::vector<std::string> extra_args) {
       "--test-settings-file=" + settings_file_.string(),
       "--test-status-file=" + status_file_.string(),
       "--test-log-dir=" + client_log_dir_.string()};
-  args.insert(args.end(),
-              std::make_move_iterator(extra_args.begin()),
+  args.insert(args.end(), std::make_move_iterator(extra_args.begin()),
               std::make_move_iterator(extra_args.end()));
 
-  LaunchProcess(GetClientExePath(),
-                args,
-                GetClientExePath().parent_path(),
-                *job_,
-                client_);
+  LaunchProcess(GetClientExePath(), args, GetClientExePath().parent_path(),
+                *job_, client_);
 }
 
 std::string ClientServerE2eTest::WaitForStatus() {
   bool ok = WaitUntil(
-      [this] { return std::filesystem::exists(status_file_) || !client_.IsRunning(); },
-      std::chrono::duration_cast<std::chrono::milliseconds>(kClientStartTimeout));
+      [this] {
+        return std::filesystem::exists(status_file_) || !client_.IsRunning();
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kClientStartTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for client status file";
   return ReadFileOrEmpty(status_file_);
 }
@@ -324,7 +341,8 @@ bool ClientServerE2eTest::WaitForStartupOrStatus() {
         return ContainsInDirectory(client_log_dir_, kStartupCompletedLog) ||
                std::filesystem::exists(status_file_) || !client_.IsRunning();
       },
-      std::chrono::duration_cast<std::chrono::milliseconds>(kClientStartTimeout));
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kClientStartTimeout));
 }
 
 bool ClientServerE2eTest::WaitForObjectTreeReady() {
@@ -393,15 +411,14 @@ std::string ClientServerE2eTest::DescribeProcessExit(
     return std::string{name} + " process exit code unavailable";
   if (process.IsRunning())
     return std::string{name} + " is still running";
-  return std::string{name} + " exited with code " +
-         std::to_string(*exit_code);
+  return std::string{name} + " exited with code " + std::to_string(*exit_code);
 }
 
 void ClientServerE2eTest::ExpectProcessesRemainRunningFor(
     std::chrono::milliseconds timeout,
     std::string_view context) {
-  auto ok = WaitUntil([this] { return !server_.IsRunning() || !client_.IsRunning(); },
-                      timeout);
+  auto ok = WaitUntil(
+      [this] { return !server_.IsRunning() || !client_.IsRunning(); }, timeout);
   EXPECT_FALSE(ok) << "Unexpected process exit while " << context << ": "
                    << DescribeProcessExit(server_, "server") << ", "
                    << DescribeProcessExit(client_, "client");
@@ -416,19 +433,21 @@ void ClientServerE2eTest::ExpectServerRemainsRunningFor(
 }
 
 void ClientServerE2eTest::ExpectServerAuthLog() {
-  EXPECT_TRUE(WaitUntil([this] {
-    switch (GetParam()) {
-      case E2eProtocol::Remote:
-        return ContainsInDirectory(server_log_dir_, "Authorization succeeded") ||
-               ContainsInDirectory(server_log_dir_, "CreateSession completed");
-      case E2eProtocol::OpcUa:
-        return ContainsInDirectory(server_log_dir_,
-                                   "OPC UA session activated");
-    }
-    return false;
-  },
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            kServerLogTimeout)))
+  EXPECT_TRUE(WaitUntil(
+      [this] {
+        switch (GetParam()) {
+          case E2eProtocol::Remote:
+            return ContainsInDirectory(server_log_dir_,
+                                       "Authorization succeeded") ||
+                   ContainsInDirectory(server_log_dir_,
+                                       "CreateSession completed");
+          case E2eProtocol::OpcUa:
+            return ContainsInDirectory(server_log_dir_,
+                                       "OPC UA session activated");
+        }
+        return false;
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(kServerLogTimeout)))
       << "Server logs did not record a successful session in "
       << server_log_dir_;
 }

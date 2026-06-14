@@ -2,8 +2,10 @@
 
 #include "aui/translation.h"
 #include "controller/action.h"
+#include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
+#include "modules/selection_command_helpers.h"
 #include "modules/summary/summary_view.h"
 #include "resources/common_resources.h"
 
@@ -17,6 +19,8 @@ REGISTER_CONTROLLER(SummaryView, kSummaryWindowInfo);
 SummaryModule::SummaryModule(SummaryModuleContext&& context)
     : SummaryModuleContext{std::move(context)} {
   RegisterSummaryCommandActions(ui_command_registry_);
+  selection_commands_.AddCommand(MakeOpenViewSelectionCommand(
+      ID_OPEN_SUMMARY, kSummaryWindowInfo, executor_));
 }
 
 void RegisterSummaryCommandActions(UiCommandRegistry& ui_command_registry) {

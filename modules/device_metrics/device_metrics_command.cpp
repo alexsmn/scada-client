@@ -1,15 +1,52 @@
 #include "modules/device_metrics/device_metrics_command.h"
 
 #include "aui/color.h"
-#include "ui/common/client_utils.h"
+#include "aui/translation.h"
+#include "base/awaitable.h"
 #include "common/formula_util.h"
-#include "resources/common_resources.h"
+#include "controller/action.h"
+#include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
+#include "controller/selection_model.h"
+#include "controller/window_info.h"
+#include "core/selection_command_context.h"
+#include "main_window/main_window_interface.h"
+#include "model/devices_node_ids.h"
 #include "modules/device_metrics/node_collector.h"
 #include "modules/sheet/sheet_component.h"
-#include "controller/window_info.h"
-#include "model/devices_node_ids.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
+#include "resources/common_resources.h"
+#include "ui/common/client_utils.h"
+
+#include <utility>
+
+DeviceMetricsModule::DeviceMetricsModule(DeviceMetricsModuleContext&& context)
+    : DeviceMetricsModuleContext{std::move(context)} {
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_OPEN_DEVICE_METRICS,
+                                        .category_ = CATEGORY_SPECIFIC,
+                                        .title_ = Translate("Metrics")});
+  selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
+      .command_id = ID_OPEN_DEVICE_METRICS,
+      .execute_handler =
+          [executor = executor_](const SelectionCommandContext& context) {
+            CoSpawn(
+                executor,
+                [executor, &main_window = context.main_window,
+                 node = context.selection.node()]() mutable -> Awaitable<void> {
+                  auto window_definition =
+                      co_await MakeDeviceMetricsWindowDefinitionAsync(executor,
+                                                                      node);
+                  co_await main_window.OpenView(window_definition);
+                  co_return;
+                });
+          },
+      .available_handler =
+          [](const SelectionCommandContext& context) {
+            return IsInstanceOf(context.selection.node(),
+                                devices::id::DeviceType);
+          }});
+}
 
 WindowDefinition MakeDeviceMetricsWindowDefinitionSync(
     std::u16string title,

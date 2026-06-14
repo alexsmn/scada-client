@@ -120,6 +120,7 @@ set(CLIENT_COMPONENTS
   node_properties
   node_table
   select_item
+  selection_edit
   sheet
   summary
   table

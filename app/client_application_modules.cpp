@@ -4,15 +4,20 @@
 #include "export/configuration/export_configuration_module.h"
 #include "filesystem/filesystem_component.h"
 #include "modules/debugger/debugger_module.h"
+#include "modules/device_metrics/device_metrics_command.h"
 #if defined(UI_QT)
 #include "modules/graph/graph_component.h"
 #endif
+#include "modules/change_password/change_password_module.h"
+#include "modules/node_properties/node_property_component.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
 #include "modules/opcua_services/opcua_services_module.h"
+#include "modules/selection_edit/selection_edit_module.h"
 #include "modules/sheet/sheet_component.h"
 #include "modules/summary/summary_component.h"
 #include "modules/table/table_component.h"
 #include "modules/timed_data/timed_data_component.h"
+#include "modules/transmission/transmission_component.h"
 #include "modules/watch/watch_component.h"
 #include "print/service/print_module.h"
 
@@ -37,22 +42,67 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
 #if defined(UI_QT)
     context.singletons_.emplace(
         std::make_shared<GraphModule>(GraphModuleContext{
+            .executor_ = context.executor_,
+            .file_cache_ = context.filesystem_component_.file_cache(),
+            .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
 #endif
     context.singletons_.emplace(
         std::make_shared<TableModule>(TableModuleContext{
+            .executor_ = context.executor_,
+            .session_service_ = *context.scada_services_.session_service,
+            .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
         std::make_shared<SheetModule>(SheetModuleContext{
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
         std::make_shared<SummaryModule>(SummaryModuleContext{
+            .executor_ = context.executor_,
+            .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
         std::make_shared<TimedDataModule>(TimedDataModuleContext{
+            .executor_ = context.executor_,
+            .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
         std::make_shared<WatchModule>(WatchModuleContext{
+            .executor_ = context.executor_,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<TransmissionModule>(TransmissionModuleContext{
+            .executor_ = context.executor_,
+            .session_service_ = *context.scada_services_.session_service,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<NodePropertyModule>(NodePropertyModuleContext{
+            .executor_ = context.executor_,
+            .session_service_ = *context.scada_services_.session_service,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<DeviceMetricsModule>(DeviceMetricsModuleContext{
+            .executor_ = context.executor_,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<SelectionEditModule>(SelectionEditModuleContext{
+            .executor_ = context.executor_,
+            .session_service_ = *context.scada_services_.session_service,
+            .node_service_ = context.node_service_,
+            .task_manager_ = context.task_manager_,
+            .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<ChangePasswordModule>(ChangePasswordModuleContext{
+            .executor_ = context.executor_,
+            .local_events_ = context.local_events_,
+            .profile_ = context.profile_,
+            .session_service_ = *context.scada_services_.session_service,
+            .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
 
     if (modules.configuration) {

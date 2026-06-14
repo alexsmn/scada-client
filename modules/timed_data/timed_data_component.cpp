@@ -2,8 +2,10 @@
 
 #include "aui/translation.h"
 #include "controller/action.h"
+#include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_registry.h"
+#include "modules/selection_command_helpers.h"
 #include "modules/timed_data/timed_data_controller.h"
 #include "resources/common_resources.h"
 
@@ -23,6 +25,8 @@ REGISTER_CONTROLLER(TimedDataController, kTimedDataWindowInfo);
 TimedDataModule::TimedDataModule(TimedDataModuleContext&& context)
     : TimedDataModuleContext{std::move(context)} {
   RegisterTimedDataCommandActions(ui_command_registry_);
+  selection_commands_.AddCommand(MakeOpenViewSelectionCommand(
+      ID_TIMED_DATA_VIEW, kTimedDataWindowInfo, executor_));
 }
 
 void RegisterTimedDataCommandActions(UiCommandRegistry& ui_command_registry) {

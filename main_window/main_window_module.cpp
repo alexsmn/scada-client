@@ -18,7 +18,6 @@
 #include "main_window/pages/page_commands.h"
 #include "main_window/selection_commands.h"
 #include "main_window/status_bar/status_bar_model_builder.h"
-#include "modules/change_password/change_password_command_builder.h"
 #include "profile/profile.h"
 
 #if defined(UI_QT)
@@ -50,18 +49,9 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  RegisterSelectionCommandActions(ui_command_registry_);
   RegisterOpenedViewCommandActions(ui_command_registry_, node_service_);
-  RegisterChangePasswordCommandActions(ui_command_registry_);
 
   assert(scada_services_.session_service);
-
-  selection_commands_.AddCommand(ChangePasswordCommandBuilder{
-      .executor_ = executor_,
-      .local_events_ = local_events_,
-      .profile_ = profile_,
-      .session_service_ = *scada_services_.session_service}
-                                     .Build());
 
   main_window_manager_ =
       std::make_unique<MainWindowManager>(MainWindowManagerContext{
@@ -72,11 +62,8 @@ MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
               },
           .quit_handler_ = quit_handler_});
 
-  selection_commands_object_ =
-      std::make_shared<SelectionCommands>(SelectionCommandsContext{
-          executor_, task_manager_, *scada_services_.session_service,
-          node_event_provider_, file_cache_, profile_, *main_window_manager_,
-          node_service_, selection_commands_});
+  selection_commands_object_ = std::make_shared<SelectionCommands>(
+      SelectionCommandsContext{.selection_commands_ = selection_commands_});
 
   // Opens windows.
   main_window_manager_->Init();
