@@ -1,10 +1,10 @@
 #include "window_definition_util.h"
 
 #include "base/json.h"
-#include "resources/common_resources.h"
 #include "controller/controller_mock.h"
 #include "controller/controller_registry.h"
 #include "controller/window_info.h"
+#include "resources/common_resources.h"
 
 #include <gmock/gmock.h>
 
@@ -75,8 +75,10 @@ boost::json::value ValueOf(boost::json::value&& value) {
   return std::move(value);
 }
 
-boost::json::value DictOf(std::string key1, int val1,
-                           std::string key2, int val2) {
+boost::json::value DictOf(std::string key1,
+                          int val1,
+                          std::string key2,
+                          int val2) {
   boost::json::object obj;
   obj[key1] = val1;
   obj[key2] = val2;
@@ -186,4 +188,25 @@ TEST(FromToJson, TimeRange_Day) {
 TEST(FromToJson, TimeRange_Interval) {
   TimeRange time_range{base::TimeDelta::FromHours(3)};
   EXPECT_EQ(time_range, FromJson<TimeRange>(ToJson(time_range)));
+}
+
+TEST(FromToJson, TimeRange_CustomOpenEnd) {
+  TimeRange time_range{base::Time::UnixEpoch(), base::Time{}};
+
+  auto json = ToJson(time_range);
+  ASSERT_TRUE(json.is_object());
+  auto* end = json.as_object().if_contains("end");
+  ASSERT_TRUE(end);
+  EXPECT_TRUE(end->is_null());
+
+  EXPECT_EQ(time_range, FromJson<TimeRange>(json));
+}
+
+TEST(FromToJson, TimeRange_CustomMaxEndIsOpenEnd) {
+  TimeRange time_range{base::Time::UnixEpoch(), base::Time::Max()};
+
+  auto restored = FromJson<TimeRange>(ToJson(time_range));
+  ASSERT_TRUE(restored);
+  EXPECT_EQ(time_range.start, restored->start);
+  EXPECT_TRUE(restored->end.is_null());
 }

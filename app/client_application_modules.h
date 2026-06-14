@@ -18,6 +18,7 @@ class BasicCommandRegistry;
 class BlinkerManager;
 class ControllerRegistry;
 class FileSystemComponent;
+class LocalEvents;
 class NodeService;
 class Profile;
 class PrintModule;
@@ -28,8 +29,8 @@ class WriteService;
 struct GlobalCommandContext;
 struct SelectionCommandContext;
 
-using NodeServiceTreeFactory = std::function<
-    std::unique_ptr<NodeServiceTree>(NodeServiceTreeImplContext&&)>;
+using NodeServiceTreeFactory = std::function<std::unique_ptr<NodeServiceTree>(
+    NodeServiceTreeImplContext&&)>;
 
 struct ClientApplicationModules {
   bool configuration = true;
@@ -51,6 +52,7 @@ struct ClientApplicationModuleContext {
   NodeService& node_service_;
   TaskManager& task_manager_;
   TimedDataService& timed_data_service_;
+  LocalEvents& local_events_;
   WriteService& write_service_;
   std::unique_ptr<PrintModule>& print_module_;
   NodeServiceTreeFactory node_service_tree_factory_;

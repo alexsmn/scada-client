@@ -7,10 +7,17 @@
 #include "modules/summary/summary_view.h"
 #include "resources/common_resources.h"
 
+#include <utility>
+
 const WindowInfo kSummaryWindowInfo = {ID_SUMMARY_VIEW, "Summ", u"Summary",
                                        WIN_INS | WIN_CAN_PRINT};
 
 REGISTER_CONTROLLER(SummaryView, kSummaryWindowInfo);
+
+SummaryModule::SummaryModule(SummaryModuleContext&& context)
+    : SummaryModuleContext{std::move(context)} {
+  RegisterSummaryCommandActions(ui_command_registry_);
+}
 
 void RegisterSummaryCommandActions(UiCommandRegistry& ui_command_registry) {
   ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_SUMMARY,

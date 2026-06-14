@@ -1,18 +1,16 @@
 #include "app/client_application.h"
 
 #include "aui/translation.h"
-#include "base/blinker.h"
 #include "base/any_executor.h"
+#include "base/blinker.h"
 #include "base/boost_log_adapter.h"
 #include "base/program_options.h"
 #include "common/audit.h"
 #include "common/master_data_services.h"
-#include "resources/common_resources.h"
-#include "modules/write/write_service_impl.h"
 #include "configuration/tree/node_service_tree_impl.h"
+#include "controller/command_ui_registry.h"
 #include "controller/controller_factory_impl.h"
 #include "controller/controller_registry.h"
-#include "controller/command_ui_registry.h"
 #include "core/core_module.h"
 #include "events/event_module.h"
 #include "events/local_events.h"
@@ -23,14 +21,18 @@
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
 #include "metrics/otel_metrics.h"
-#include "node_service/node_service_factory.h"
+#include "modules/limits/limits_module.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
+#include "modules/write/write_module.h"
+#include "modules/write/write_service_impl.h"
+#include "node_service/node_service_factory.h"
 #include "portfolio/portfolio_module.h"
 #include "print/service/print_module.h"
 #include "profile/profile.h"
 #include "project.h"
 #include "properties/property_service.h"
 #include "remote/remote_services.h"
+#include "resources/common_resources.h"
 #include "scada/service_context.h"
 #include "services/alias_resolver_factory.h"
 #include "services/connection_state_reporter.h"
@@ -89,13 +91,11 @@ struct ClientApplication::PostLoginContext {
 ClientApplication::ClientApplication(ClientApplicationContext&& context)
     : ClientApplicationContext{std::move(context)},
       metrics_runtime_{std::make_unique<metrics::OpenTelemetryMetrics>(
-          metrics::OpenTelemetryMetricsOptions{
-              .service_name = "scada-client",
-              .export_interval = 1min})},
+          metrics::OpenTelemetryMetricsOptions{.service_name = "scada-client",
+                                               .export_interval = 1min})},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       ui_command_registry_{std::make_unique<UiCommandRegistry>()},
-      master_data_services_{
-          std::make_shared<MasterDataServices>(executor_)},
+      master_data_services_{std::make_shared<MasterDataServices>(executor_)},
       quit_completion_{executor_} {
   logger_ = std::make_shared<BoostLogAdapter>("client");
 
@@ -190,7 +190,8 @@ void ClientApplication::CreateNodeService(const PostLoginContext& ctx) {
   shutdown_stack_.Push([this] { node_service_.reset(); });
 }
 
-void ClientApplication::CreateEventAndDataServices(const PostLoginContext& ctx) {
+void ClientApplication::CreateEventAndDataServices(
+    const PostLoginContext& ctx) {
   profile_ = std::make_unique<Profile>();
   profile_->Load();
   profile_loaded_ = true;
@@ -248,8 +249,22 @@ void ClientApplication::CreateUserServices(const PostLoginContext& ctx) {
                               .timed_data_service_ = *timed_data_service_,
                               .profile_ = *profile_});
 
+  singletons_.emplace(std::make_shared<WriteModule>(WriteModuleContext{
+      .executor_ = executor_,
+      .timed_data_service_ = *timed_data_service_,
+      .session_service_ = *ctx.audited_scada_services.session_service,
+      .profile_ = *profile_,
+      .selection_commands_ = core_module_->selection_commands(),
+      .ui_command_registry_ = *ui_command_registry_}));
+
   create_tree_ = std::make_unique<CreateTree>();
   shutdown_stack_.Push([this] { create_tree_.reset(); });
+
+  singletons_.emplace(std::make_shared<LimitsModule>(LimitsModuleContext{
+      .session_service_ = *ctx.audited_scada_services.session_service,
+      .task_manager_ = *task_manager_,
+      .selection_commands_ = core_module_->selection_commands(),
+      .ui_command_registry_ = *ui_command_registry_}));
 }
 
 void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
@@ -268,13 +283,11 @@ void ClientApplication::CreateFeatureComponents(const PostLoginContext& ctx) {
       .ui_command_registry_ = *ui_command_registry_});
   shutdown_stack_.Push([this] { favorites_module_.reset(); });
 
-  portfolio_module_ = std::make_unique<PortfolioModule>(
-      PortfolioModuleContext{*node_service_, *profile_, *controller_registry_,
-                             *ui_command_registry_});
+  portfolio_module_ = std::make_unique<PortfolioModule>(PortfolioModuleContext{
+      *node_service_, *profile_, *controller_registry_, *ui_command_registry_});
   shutdown_stack_.Push([this] { portfolio_module_.reset(); });
 
-  property_service_ = std::make_unique<PropertyService>(
-      executor_);
+  property_service_ = std::make_unique<PropertyService>(executor_);
 }
 
 ClientApplicationModuleContext ClientApplication::BuildModuleContext(
@@ -288,13 +301,15 @@ ClientApplicationModuleContext ClientApplication::BuildModuleContext(
       .node_service_ = *node_service_,
       .task_manager_ = *task_manager_,
       .timed_data_service_ = *timed_data_service_,
+      .local_events_ = event_module_->local_events(),
       .write_service_ = *write_service_,
       .print_module_ = print_module_,
       .node_service_tree_factory_ =
           node_service_tree_factory_
               ? node_service_tree_factory_
               : NodeServiceTreeFactory{[](NodeServiceTreeImplContext&& inner) {
-                  return std::make_unique<NodeServiceTreeImpl>(std::move(inner));
+                  return std::make_unique<NodeServiceTreeImpl>(
+                      std::move(inner));
                 }},
       .filesystem_component_ = *filesystem_component_,
       .blinker_manager_ = *blinker_manager_,

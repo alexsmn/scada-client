@@ -1,4 +1,4 @@
-#include "main_window/configuration_commands.h"
+#include "configuration/configuration_module.h"
 
 #include "aui/dialog_service_mock.h"
 #include "base/awaitable.h"
@@ -6,6 +6,7 @@
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
+#include "controller/controller_registry.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
@@ -60,22 +61,23 @@ NodeRef MakeCommandNode(scada::node scada_node) {
 
 }  // namespace
 
-class ConfigurationCommandsTest : public Test {
+class ConfigurationModuleTest : public Test {
  protected:
-  ConfigurationCommandsTest()
+  ConfigurationModuleTest()
       : scada_client_{scada::services{.method_service = &method_service_}},
         command_node_{MakeCommandNode(scada_client_.node({kItemNodeId, 1}))},
         selection_{SelectionModelContext{timed_data_service_}},
-        commands_{selection_commands_,
-                  executor_,
-                  timed_data_service_,
-                  session_service_,
-                  profile_,
-                  local_events_,
-                  task_manager_,
-                  ui_command_registry_} {
+        configuration_module_{ConfigurationModuleContext{
+            .executor_ = executor_,
+            .controller_registry_ = controller_registry_,
+            .profile_ = profile_,
+            .node_service_tree_factory_ = {},
+            .session_service_ = session_service_,
+            .local_events_ = local_events_,
+            .task_manager_ = task_manager_,
+            .selection_commands_ = selection_commands_,
+            .ui_command_registry_ = ui_command_registry_}} {
     selection_.SelectNode(command_node_);
-    commands_.Register();
   }
 
   SelectionCommandContext MakeCommandContext() {
@@ -101,6 +103,7 @@ class ConfigurationCommandsTest : public Test {
   FakeTimedDataService timed_data_service_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;
   UiCommandRegistry ui_command_registry_;
+  ControllerRegistry controller_registry_;
   NiceMock<scada::MockSessionService> session_service_;
   Profile profile_;
   LocalEvents local_events_;
@@ -109,10 +112,10 @@ class ConfigurationCommandsTest : public Test {
   NiceMock<MockDialogService> dialog_service_;
   NiceMock<MockMainWindow> main_window_;
   FakeOpenedView opened_view_;
-  ConfigurationCommands commands_;
+  ConfigurationModule configuration_module_;
 };
 
-TEST_F(ConfigurationCommandsTest, ReportsMethodCallSuccessAfterCompletion) {
+TEST_F(ConfigurationModuleTest, ReportsMethodCallSuccessAfterCompletion) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
                    devices::id::DeviceType_Interrogate, IsEmpty(), _))
@@ -129,7 +132,7 @@ TEST_F(ConfigurationCommandsTest, ReportsMethodCallSuccessAfterCompletion) {
   EXPECT_NE(event.message.find(u"Pump"), std::u16string::npos);
 }
 
-TEST_F(ConfigurationCommandsTest, ReportsMethodCallFailureAfterCompletion) {
+TEST_F(ConfigurationModuleTest, ReportsMethodCallFailureAfterCompletion) {
   EXPECT_CALL(method_service_,
               Call(scada::NodeId{kItemNodeId, 1},
                    devices::id::DeviceType_Interrogate, IsEmpty(), _))

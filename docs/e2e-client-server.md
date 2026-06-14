@@ -20,6 +20,15 @@ cd /d C:\tc\scada
 cmake --build --preset release-dev --target client_server_e2e_tests
 ```
 
+Point the server at an externally issued signed license before running the
+tests. For local, non-GCP-bound licenses, disable the GCP binding check and let
+the server continue to validate the license signature and validity window:
+
+```cmd
+set SCADA_SERVER_LICENSE_FILE=C:\path\to\license.json
+set SCADA_SERVER_LICENSE_REQUIRE_GCP_BINDING=false
+```
+
 Run the full client/server E2E suite:
 
 ```cmd

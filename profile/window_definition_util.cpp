@@ -2,7 +2,6 @@
 
 #include "base/base64.h"
 #include "base/range_util.h"
-#include <boost/algorithm/string/trim.hpp>
 #include "base/time_range.h"
 #include "base/time_utils.h"
 #include "base/value_util.h"
@@ -10,6 +9,7 @@
 #include "model/node_id_util.h"
 #include "profile/window_definition.h"
 #include "scada/node_id.h"
+#include <boost/algorithm/string/trim.hpp>
 
 #include <boost/range/adaptor/transformed.hpp>
 #include <optional>
@@ -20,7 +20,9 @@ namespace {
 WindowItem LoadWindowItem(const boost::json::value& item_data) {
   WindowItem item;
   item.name = std::string{GetString(item_data, "name")};
-  if (auto* value = item_data.is_object() ? item_data.as_object().if_contains("@value") : nullptr) {
+  if (auto* value = item_data.is_object()
+                        ? item_data.as_object().if_contains("@value")
+                        : nullptr) {
     item.attributes = *value;
   } else {
     item.attributes = item_data;
@@ -85,18 +87,25 @@ std::optional<TimeRange> FromJson(const boost::json::value& value) {
   // Custom time range.
 
   auto* start_value = value.as_object().if_contains("start");
-  auto* end_value = value.as_object().if_contains("end");
-  if (!start_value || !end_value)
+  if (!start_value)
     return std::nullopt;
 
   auto start = FromJson<base::Time>(*start_value);
-  auto end = FromJson<base::Time>(*end_value);
-  if (!start.has_value() || !end.has_value())
+  if (!start.has_value())
     return std::nullopt;
   if (start->is_null())
     return std::nullopt;
 
-  return TimeRange{*start, *end};
+  base::Time end;
+  auto* end_value = value.as_object().if_contains("end");
+  if (end_value && !end_value->is_null()) {
+    auto parsed_end = FromJson<base::Time>(*end_value);
+    if (!parsed_end.has_value())
+      return std::nullopt;
+    end = *parsed_end;
+  }
+
+  return TimeRange{*start, end, GetBool(value, "dates", false)};
 }
 
 template <>
@@ -123,7 +132,10 @@ boost::json::value ToJson(const TimeRange& time_range) {
     result.as_object()["interval"] = ToJson(time_range.interval);
   } else if (time_range.type == TimeRange::Type::Custom) {
     result.as_object()["start"] = ToJson(time_range.start);
-    result.as_object()["end"] = ToJson(time_range.end);
+    result.as_object()["end"] =
+        time_range.end.is_null() || time_range.end.is_max()
+            ? boost::json::value{}
+            : ToJson(time_range.end);
     SetKey(result, "dates", time_range.dates);
   } else {
     SetKey(result, "type", ToString(time_range.type));
@@ -226,7 +238,8 @@ std::optional<WindowDefinition> FromJson(const boost::json::value& json) {
   w.path = std::filesystem::path(GetString16(json, "path"));
   w.size = {GetInt(json, "width"), GetInt(json, "height")};
 
-  if (auto* items = json.is_object() ? json.as_object().if_contains("items") : nullptr) {
+  if (auto* items =
+          json.is_object() ? json.as_object().if_contains("items") : nullptr) {
     w.items = FromJson<WindowItems>(*items).value_or(WindowItems{});
   }
 

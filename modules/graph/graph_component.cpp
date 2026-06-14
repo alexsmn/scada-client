@@ -7,10 +7,17 @@
 #include "graph/graph_view.h"
 #include "resources/common_resources.h"
 
+#include <utility>
+
 const WindowInfo kGraphWindowInfo = {
     ID_GRAPH_VIEW, "Graph", u"Graph", WIN_INS, 0, 0, IDR_GRAPH_POPUP};
 
 REGISTER_CONTROLLER(GraphView, kGraphWindowInfo);
+
+GraphModule::GraphModule(GraphModuleContext&& context)
+    : GraphModuleContext{std::move(context)} {
+  RegisterGraphCommandActions(ui_command_registry_);
+}
 
 void RegisterGraphCommandActions(UiCommandRegistry& ui_command_registry) {
   ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_GRAPH,

@@ -73,6 +73,24 @@ std::filesystem::path GetSqliteExePath() {
   return std::filesystem::path{SCADA_E2E_SQLITE3_EXE};
 }
 
+::testing::AssertionResult ValidateSignedLicenseEnv() {
+  auto* value = std::getenv("SCADA_SERVER_LICENSE_FILE");
+  if (!value || !*value) {
+    return ::testing::AssertionFailure()
+           << "SCADA_SERVER_LICENSE_FILE must be set to an external signed "
+              "license JSON before running client/server E2E tests";
+  }
+
+  const std::filesystem::path license_path{value};
+  if (!std::filesystem::exists(license_path)) {
+    return ::testing::AssertionFailure()
+           << "SCADA_SERVER_LICENSE_FILE points to missing license file: "
+           << license_path;
+  }
+
+  return ::testing::AssertionSuccess();
+}
+
 std::string SqlitePath(const std::filesystem::path& path) {
   auto result = path.lexically_normal().generic_string();
   for (auto& ch : result) {
@@ -181,6 +199,7 @@ void ClientServerE2eTest::SetUp() {
   ASSERT_TRUE(std::filesystem::exists(GetServerSettingsTemplatePath()));
   ASSERT_TRUE(std::filesystem::exists(GetConfigurationBaseSqlPath()));
   ASSERT_TRUE(std::filesystem::exists(GetConfigurationFixtureSqlPath()));
+  ASSERT_TRUE(ValidateSignedLicenseEnv());
 
   remote_port_ = FindAvailablePort();
   opcua_port_ = FindAvailablePort();

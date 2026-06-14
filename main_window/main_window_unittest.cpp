@@ -485,10 +485,14 @@ TEST_F(MainWindowTest,
 
 #if defined(UI_QT)
 TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
-  RegisterGraphCommandActions(ui_command_registry_);
-  RegisterTableCommandActions(ui_command_registry_);
-  RegisterSummaryCommandActions(ui_command_registry_);
-  RegisterTimedDataCommandActions(ui_command_registry_);
+  GraphModule graph_module{
+      GraphModuleContext{.ui_command_registry_ = ui_command_registry_}};
+  TableModule table_module{
+      TableModuleContext{.ui_command_registry_ = ui_command_registry_}};
+  SummaryModule summary_module{
+      SummaryModuleContext{.ui_command_registry_ = ui_command_registry_}};
+  TimedDataModule timed_data_module{
+      TimedDataModuleContext{.ui_command_registry_ = ui_command_registry_}};
   RegisterPortfolioCommandActions(ui_command_registry_);
   RegisterSelectionCommandActions(ui_command_registry_);
   RegisterOpenedViewCommandActions(ui_command_registry_,

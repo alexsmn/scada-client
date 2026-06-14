@@ -7,10 +7,17 @@
 #include "modules/table/table_view.h"
 #include "resources/common_resources.h"
 
+#include <utility>
+
 const WindowInfo kTableWindowInfo = {ID_TABLE_VIEW,           "Table", u"Table",
                                      WIN_INS | WIN_CAN_PRINT, 620,     400};
 
 REGISTER_CONTROLLER(TableView, kTableWindowInfo);
+
+TableModule::TableModule(TableModuleContext&& context)
+    : TableModuleContext{std::move(context)} {
+  RegisterTableCommandActions(ui_command_registry_);
+}
 
 void RegisterTableCommandActions(UiCommandRegistry& ui_command_registry) {
   ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_TABLE,

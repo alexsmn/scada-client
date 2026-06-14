@@ -7,6 +7,8 @@
 #include "modules/timed_data/timed_data_controller.h"
 #include "resources/common_resources.h"
 
+#include <utility>
+
 const WindowInfo kTimedDataWindowInfo = {
     ID_TIMED_DATA_VIEW,
     "TimeVal",
@@ -17,6 +19,11 @@ const WindowInfo kTimedDataWindowInfo = {
     0};
 
 REGISTER_CONTROLLER(TimedDataController, kTimedDataWindowInfo);
+
+TimedDataModule::TimedDataModule(TimedDataModuleContext&& context)
+    : TimedDataModuleContext{std::move(context)} {
+  RegisterTimedDataCommandActions(ui_command_registry_);
+}
 
 void RegisterTimedDataCommandActions(UiCommandRegistry& ui_command_registry) {
   ui_command_registry.AddAction(Action{.command_id_ = ID_TIMED_DATA_VIEW,
