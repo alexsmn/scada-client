@@ -2,4 +2,8 @@
 
 #include "controller/window_info.h"
 
+class UiCommandRegistry;
+
 extern const WindowInfo kSummaryWindowInfo;
+
+void RegisterSummaryCommandActions(UiCommandRegistry& ui_command_registry);

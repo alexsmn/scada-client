@@ -1,10 +1,10 @@
 #include "favorites/favorites_module.h"
 
-#include "resources/common_resources.h"
 #include "aui/translation.h"
+#include "controller/action.h"
 #include "controller/command_registry.h"
-#include "controller/controller_registry.h"
 #include "controller/command_ui_registry.h"
+#include "controller/controller_registry.h"
 #include "controller/window_info.h"
 #include "core/global_command_context.h"
 #include "favorites/add_favourites_dialog.h"
@@ -12,6 +12,7 @@
 #include "favorites/favourites_view.h"
 #include "main_window/main_window.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 namespace {
 
@@ -33,14 +34,20 @@ FavoritesModule::FavoritesModule(FavoritesModuleContext&& context)
         return std::make_unique<FavouritesView>(context, favorites);
       });
 
-  ui_command_registry_.AddMenuItem(
-      {.menu_id = MainMenuId::More,
-       .order = 120,
-       .command_id = ID_FAVOURITES_VIEW,
-       .title = Translate("Favourites"),
-       .checkable = true});
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::More,
+                                    .order = 120,
+                                    .command_id = ID_FAVOURITES_VIEW,
+                                    .title = Translate("Favourites"),
+                                    .checkable = true});
+  ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_FAVOURITES_ADD_URL,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Add Web Page..."),
+             .short_title_ = Translate("Add Web Page")});
 
-  if (auto* key = profile_.data().is_object() ? profile_.data().as_object().if_contains("favorites") : nullptr) {
+  if (auto* key = profile_.data().is_object()
+                      ? profile_.data().as_object().if_contains("favorites")
+                      : nullptr) {
     favourites_->Load(*key);
   }
 

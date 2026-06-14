@@ -25,3 +25,5 @@ class PortfolioModule : private PortfolioModuleContext {
  private:
   std::unique_ptr<PortfolioManager> portfolio_manager_;
 };
+
+void RegisterPortfolioCommandActions(UiCommandRegistry& ui_command_registry);

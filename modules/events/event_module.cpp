@@ -1,12 +1,12 @@
 #include "events/event_module.h"
 
-#include "base/awaitable.h"
-#include "base/any_executor.h"
 #include "aui/translation.h"
+#include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/value_util.h"
 #include "controller/command_registry.h"
-#include "controller/controller_registry.h"
 #include "controller/command_ui_registry.h"
+#include "controller/controller_registry.h"
 #include "core/selection_command_context.h"
 #include "events/event_fetcher.h"
 #include "events/event_fetcher_builder.h"
@@ -49,9 +49,7 @@ EventModule::EventModule(EventModuleContext&& context)
     : EventModuleContext(std::move(context)) {
   event_fetcher_ =
       EventFetcherBuilder{
-          .executor_ = executor_,
-          .logger_ = logger_,
-          .services_ = services_}
+          .executor_ = executor_, .logger_ = logger_, .services_ = services_}
           .Build();
 
   // TODO: Checked cast.
@@ -83,18 +81,41 @@ EventModule::EventModule(EventModuleContext&& context)
   AddOpenCommand(ID_OPEN_EVENTS, kEventJournalWindowInfo, "Current");
   AddOpenCommand(ID_HISTORICAL_EVENTS, kEventJournalWindowInfo);
 
-  ui_command_registry_.AddMenuItem(
-      {.menu_id = MainMenuId::More,
-       .order = 110,
-       .command_id = ID_EVENT_VIEW,
-       .title = Translate("Events"),
-       .checkable = true});
-  ui_command_registry_.AddMenuItem(
-      {.menu_id = MainMenuId::More,
-       .order = 160,
-       .command_id = ID_EVENT_JOURNAL_VIEW,
-       .title = Translate("Event Journal"),
-       .checkable = true});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_HISTORICAL_EVENTS,
+                                        .category_ = CATEGORY_OPEN,
+                                        .title_ = Translate("Events"),
+                                        .image_id_ = IDB_OPEN_EVENTS,
+                                        .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_CURRENT,
+                                        .category_ = CATEGORY_ITEM,
+                                        .title_ = Translate("Acknowledge")});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_ACKNOWLEDGE_ALL,
+                                        .category_ = CATEGORY_VIEW,
+                                        .title_ = Translate("Acknowledge All"),
+                                        .image_id_ = IDB_ACKNOWLEDGE_ALL});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_SEVERITY_CUSTOM,
+                                        .category_ = CATEGORY_VIEW,
+                                        .title_ = Translate("Severity..."),
+                                        .short_title_ = Translate("Severity")});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_EVENT_VIEW,
+                                        .category_ = CATEGORY_VIEW,
+                                        .title_ = Translate("Event Panel"),
+                                        .image_id_ = ID_EVENT_VIEW});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_CURRENT_EVENTS,
+                                        .category_ = CATEGORY_PERIOD,
+                                        .title_ = Translate("Current"),
+                                        .flags_ = Action::CHECKABLE});
+
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::More,
+                                    .order = 110,
+                                    .command_id = ID_EVENT_VIEW,
+                                    .title = Translate("Events"),
+                                    .checkable = true});
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::More,
+                                    .order = 160,
+                                    .command_id = ID_EVENT_JOURNAL_VIEW,
+                                    .title = Translate("Event Journal"),
+                                    .checkable = true});
 }
 
 EventModule::~EventModule() {}
@@ -109,12 +130,11 @@ void EventModule::AddOpenCommand(unsigned command_id,
   selection_commands_.AddCommand(
       {.command_id = command_id,
        .execute_handler =
-           [&window_info, mode, executor = executor_](
-               const SelectionCommandContext& context) {
+           [&window_info, mode,
+            executor = executor_](const SelectionCommandContext& context) {
              auto window_def =
                  context.opened_view.GetOpenWindowDefinition(&window_info);
-             CoSpawn(executor, [mode,
-                                &main_window = context.main_window,
+             CoSpawn(executor, [mode, &main_window = context.main_window,
                                 window_def = std::move(window_def)]() mutable {
                return OpenWindowDefinition(mode, main_window,
                                            std::move(window_def));

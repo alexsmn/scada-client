@@ -13,11 +13,17 @@
 #include "controller/controller_mock.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
-#include "main_window/actions.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "main_window/opened_view/opened_view_commands.h"
+#include "main_window/selection_commands.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
+#include "modules/graph/graph_component.h"
+#include "modules/portfolio/portfolio_module.h"
+#include "modules/summary/summary_component.h"
+#include "modules/table/table_component.h"
+#include "modules/timed_data/timed_data_component.h"
 #include "profile/page.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
@@ -479,7 +485,14 @@ TEST_F(MainWindowTest,
 
 #if defined(UI_QT)
 TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
-  AddGlobalActions(ui_command_registry_, controller_env_.node_service_);
+  RegisterGraphCommandActions(ui_command_registry_);
+  RegisterTableCommandActions(ui_command_registry_);
+  RegisterSummaryCommandActions(ui_command_registry_);
+  RegisterTimedDataCommandActions(ui_command_registry_);
+  RegisterPortfolioCommandActions(ui_command_registry_);
+  RegisterSelectionCommandActions(ui_command_registry_);
+  RegisterOpenedViewCommandActions(ui_command_registry_,
+                                   controller_env_.node_service_);
 
   constexpr unsigned kGraphActions[] = {
       ID_VIEW_LEGEND,       ID_GRAPH_DOTS,  ID_GRAPH_STEPS,

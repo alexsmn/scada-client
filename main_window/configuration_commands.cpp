@@ -1,18 +1,21 @@
 #include "configuration_commands.h"
 
+#include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/u16format.h"
-#include "resources/common_resources.h"
-#include "modules/limits/limit_dialog.h"
-#include "modules/write/write_dialog.h"
+#include "controller/action.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
 #include "events/local_event_util.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "modules/limits/limit_dialog.h"
+#include "modules/write/write_dialog.h"
 #include "node_service/node_ref.h"
 #include "node_service/node_util.h"
+#include "resources/common_resources.h"
 #include "scada/session_service.h"
 #include "services/task_manager.h"
 
@@ -31,6 +34,39 @@ Awaitable<void> ReportMethodCallResultAsync(AnyExecutor executor,
 }  // namespace
 
 void ConfigurationCommands::Register() {
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_UNLOCK_ITEM,
+                                        .category_ = CATEGORY_ITEM,
+                                        .title_ = Translate("Unlock"),
+                                        .image_id_ = IDB_UNLOCK});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_WRITE,
+                                        .category_ = CATEGORY_ITEM,
+                                        .title_ = Translate("Control..."),
+                                        .short_title_ = Translate("Control"),
+                                        .image_id_ = IDB_WRITE});
+  ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_WRITE_MANUAL,
+             .category_ = CATEGORY_ITEM,
+             .title_ = Translate("Manual Input..."),
+             .short_title_ = Translate("Manual Input"),
+             .image_id_ = IDB_WRITE_MANUAL});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_EDIT_LIMITS,
+                                        .category_ = CATEGORY_ITEM,
+                                        .title_ = Translate("Limits..."),
+                                        .short_title_ = Translate("Limits")});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_DEV1_REFR,
+                                        .category_ = CATEGORY_DEVICE,
+                                        .title_ = Translate("Poll Device")});
+  ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_DEV1_SYNC,
+             .category_ = CATEGORY_DEVICE,
+             .title_ = Translate("Synchronize Clock")});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_ITEM_ENABLE,
+                                        .category_ = CATEGORY_SPECIFIC,
+                                        .title_ = Translate("Enable")});
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_ITEM_DISABLE,
+                                        .category_ = CATEGORY_SPECIFIC,
+                                        .title_ = Translate("Disable")});
+
   selection_commands_.AddCommand(
       {.command_id = ID_WRITE,
        .execute_handler =
@@ -146,9 +182,8 @@ void ConfigurationCommands::CallMethod(
     const std::vector<scada::Variant>& arguments) {
   auto scada_node = node.scada_node();
   CoSpawn(executor_,
-          [executor = executor_, scada_node = std::move(scada_node),
-           method_id, arguments,
-           title = ToString16(node.display_name()),
+          [executor = executor_, scada_node = std::move(scada_node), method_id,
+           arguments, title = ToString16(node.display_name()),
            &local_events = local_events_,
            &profile = profile_]() mutable -> Awaitable<void> {
             co_await ReportMethodCallResultAsync(

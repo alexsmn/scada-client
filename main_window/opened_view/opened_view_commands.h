@@ -35,6 +35,7 @@ class PrintService;
 class SelectionCommands;
 class TaskManager;
 class TimedDataService;
+class UiCommandRegistry;
 
 struct OpenedViewCommandsContext {
   const AnyExecutor executor_;
@@ -94,3 +95,6 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
 
   Cancelation cancelation_;
 };
+
+void RegisterOpenedViewCommandActions(UiCommandRegistry& ui_command_registry,
+                                      NodeService& node_service);

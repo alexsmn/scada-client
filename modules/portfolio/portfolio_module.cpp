@@ -1,15 +1,16 @@
 #include "portfolio/portfolio_module.h"
 
-#include "base/value_util.h"
 #include "aui/translation.h"
-#include "controller/controller_registry.h"
+#include "base/value_util.h"
+#include "controller/action.h"
 #include "controller/command_ui_registry.h"
-#include "resources/common_resources.h"
+#include "controller/controller_registry.h"
 #include "model/node_id_util.h"
 #include "portfolio/portfolio.h"
 #include "portfolio/portfolio_manager.h"
 #include "portfolio/portfolio_view.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 namespace {
 
@@ -19,6 +20,17 @@ constexpr WindowInfo kPortfolioWindowInfo = {.command_id = ID_PORTFOLIO_VIEW,
                                              .flags = WIN_SING | WIN_INS,
                                              .size = {200, 400}};
 
+}  // namespace
+
+void RegisterPortfolioCommandActions(UiCommandRegistry& ui_command_registry) {
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_PORTFOLIO,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Create Portfolio")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ADD_ITEMS,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Add Items..."),
+                                       .short_title_ = Translate("Add Items")});
 }
 
 PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
@@ -32,12 +44,12 @@ PortfolioModule::PortfolioModule(PortfolioModuleContext&& context)
         return std::make_unique<PortfolioView>(context, portfolio_manager);
       });
 
-  ui_command_registry_.AddMenuItem(
-      {.menu_id = MainMenuId::More,
-       .order = 140,
-       .command_id = ID_PORTFOLIO_VIEW,
-       .title = Translate("Portfolio"),
-       .checkable = true});
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::More,
+                                    .order = 140,
+                                    .command_id = ID_PORTFOLIO_VIEW,
+                                    .title = Translate("Portfolio"),
+                                    .checkable = true});
+  RegisterPortfolioCommandActions(ui_command_registry_);
 
   // portfolios
   if (const auto* pfoliose = GetList(profile_.data(), "portfolios")) {

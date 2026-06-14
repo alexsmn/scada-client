@@ -5,6 +5,7 @@
 #include "base/test/awaitable_test.h"
 #include "base/test/test_executor.h"
 #include "controller/command_registry.h"
+#include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
@@ -71,7 +72,8 @@ class ConfigurationCommandsTest : public Test {
                   session_service_,
                   profile_,
                   local_events_,
-                  task_manager_} {
+                  task_manager_,
+                  ui_command_registry_} {
     selection_.SelectNode(command_node_);
     commands_.Register();
   }
@@ -98,6 +100,7 @@ class ConfigurationCommandsTest : public Test {
   NodeRef command_node_;
   FakeTimedDataService timed_data_service_;
   BasicCommandRegistry<SelectionCommandContext> selection_commands_;
+  UiCommandRegistry ui_command_registry_;
   NiceMock<scada::MockSessionService> session_service_;
   Profile profile_;
   LocalEvents local_events_;

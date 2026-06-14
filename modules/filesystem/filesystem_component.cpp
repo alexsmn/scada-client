@@ -1,16 +1,17 @@
 ﻿#include "filesystem/filesystem_component.h"
 
 #include "aui/translation.h"
+#include "controller/action.h"
 #include "controller/command_registry.h"
-#include "controller/controller_registry.h"
 #include "controller/command_ui_registry.h"
+#include "controller/controller_registry.h"
+#include "core/selection_command_context.h"
 #include "filesystem/file_cache.h"
 #include "filesystem/file_manager_impl.h"
 #include "filesystem/file_registry.h"
 #include "filesystem/file_synchronizer.h"
 #include "filesystem/filesystem_commands.h"
 #include "filesystem/filesystem_view.h"
-#include "core/selection_command_context.h"
 #include "node_service/node_service.h"
 #include "resources/common_resources.h"
 #include "services/create_tree.h"
@@ -27,15 +28,24 @@ FileSystemComponent::FileSystemComponent(FileSystemComponentContext&& context)
   file_registry_ = std::make_unique<FileRegistry>();
   file_cache_ = std::make_unique<FileCache>(*file_registry_);
 
-  file_manager_ = std::make_unique<FileManagerImpl>(
-      FileManagerContext{.executor_ = executor_, .scada_client_ = scada_client_});
+  file_manager_ = std::make_unique<FileManagerImpl>(FileManagerContext{
+      .executor_ = executor_, .scada_client_ = scada_client_});
 
-  ui_command_registry_.AddMenuItem(
-      {.menu_id = MainMenuId::More,
-       .order = 130,
-       .command_id = ID_FILE_SYSTEM_VIEW,
-       .title = Translate("Files"),
-       .checkable = true});
+  ui_command_registry_.AddMenuItem({.menu_id = MainMenuId::More,
+                                    .order = 130,
+                                    .command_id = ID_FILE_SYSTEM_VIEW,
+                                    .title = Translate("Files"),
+                                    .checkable = true});
+  ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_CREATE_FILE_DIRECTORY,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("Folder"),
+             .short_title_ = Translate("Create Folder...")});
+  ui_command_registry_.AddAction(
+      Action{.command_id_ = ID_ADD_FILE,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("File"),
+             .short_title_ = Translate("Add File...")});
 
   open_file_command_ = std::bind_front(
       &OpenFileCommandImpl::Execute,

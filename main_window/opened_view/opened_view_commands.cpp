@@ -1,16 +1,16 @@
 ﻿#include "main_window/opened_view/opened_view_commands.h"
 
 #include "aui/dialog_service.h"
+#include "aui/key_codes.h"
+#include "aui/translation.h"
 #include "base/awaitable.h"
-#include "base/program_options.h"
 #include "base/excel.h"
+#include "base/program_options.h"
 #include "base/u16format.h"
 #include "clipboard/clipboard_util.h"
-#include "resources/common_resources.h"
-#include "modules/create_service_item/create_service_item_dialog.h"
-#include "modules/multi_create/multi_create_dialog.h"
-#include "modules/node_properties/node_property_component.h"
-#include "modules/time_range/time_range_dialog.h"
+#include "controller/action.h"
+#include "controller/action_manager.h"
+#include "controller/command_ui_registry.h"
 #include "controller/controller.h"
 #include "controller/controller_registry.h"
 #include "controller/selection_model.h"
@@ -19,24 +19,31 @@
 #include "export/csv/csv_export_command.h"
 #include "export/csv/csv_export_util.h"
 #include "export/export_model.h"
-#include "main_window/actions.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view.h"
 #include "main_window/selection_commands.h"
+#include "main_window/window_definition_builder.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
+#include "model/history_node_ids.h"
+#include "model/security_node_ids.h"
 #include "model/static_types.h"
-#include "transport/transport_string.h"
+#include "modules/create_service_item/create_service_item_dialog.h"
+#include "modules/multi_create/multi_create_dialog.h"
+#include "modules/node_properties/node_property_component.h"
+#include "modules/time_range/time_range_dialog.h"
 #include "node_service/node_awaitable.h"
+#include "node_service/node_observer.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "print/service/print_service.h"
+#include "resources/common_resources.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
 #include "services/create_tree.h"
 #include "services/task_manager.h"
-#include "main_window/window_definition_builder.h"
+#include "transport/transport_string.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
@@ -46,9 +53,30 @@
 #include <QMenu>
 #endif
 
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 namespace {
+
+// TODO(semenov): Refactor to avoid listing the types.
+const scada::NodeId kNewCommandTypeIds[] = {
+    data_items::id::DataGroupType,
+    data_items::id::DiscreteItemType,
+    data_items::id::AnalogItemType,
+    security::id::UserType,
+    history::id::HistoricalDatabaseType,
+    data_items::id::SimulationSignalType,
+    devices::id::Iec60870DeviceType,
+    devices::id::Iec61850DeviceType,
+    devices::id::Iec61850RcbType,
+    devices::id::ModbusLinkType,
+    devices::id::ModbusDeviceType,
+    data_items::id::TsFormatType,
+    devices::id::ModbusTransmissionItemType,
+    devices::id::Iec60870TransmissionItemType,
+    devices::id::Iec61850TransmissionItemType,
+};
 
 std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
   switch (command_id) {
@@ -69,7 +97,191 @@ std::optional<TimeRange> GetTimeRangeCommand(unsigned command_id) {
   }
 }
 
+class NodeActionTitle : private NodeRefObserver {
+ public:
+  NodeActionTitle(ActionManager& action_manager,
+                  unsigned command_id,
+                  NodeRef node)
+      : action_manager_(action_manager),
+        command_id_(command_id),
+        node_(std::move(node)) {
+    node_.Subscribe(*this);
+  }
+
+  ~NodeActionTitle() { node_.Unsubscribe(*this); }
+
+  std::u16string GetTitle() const { return ToString16(node_.display_name()); }
+
+ private:
+  virtual void OnNodeSemanticChanged(const scada::NodeId& node_id) override {
+    action_manager_.NotifyActionChanged(command_id_, ActionChangeMask::Title);
+  }
+
+  ActionManager& action_manager_;
+  const unsigned command_id_;
+  const NodeRef node_;
+};
+
+Action MakeNodeAction(ActionManager& action_manager,
+                      unsigned command_id,
+                      CommandCategory category,
+                      NodeRef node) {
+  auto title = std::make_shared<NodeActionTitle>(action_manager, command_id,
+                                                 std::move(node));
+  return Action{.command_id_ = command_id,
+                .category_ = category,
+                .title_provider_ = [title] { return title->GetTitle(); }};
+}
+
 }  // namespace
+
+scada::NodeId GetNewCommandTypeId(unsigned command_id) {
+  if (command_id < ID_NEW)
+    return scada::NodeId();
+
+  auto index = command_id - ID_NEW;
+  if (index >= std::size(kNewCommandTypeIds))
+    return scada::NodeId();
+
+  return kNewCommandTypeIds[index];
+}
+
+void RegisterOpenedViewCommandActions(UiCommandRegistry& ui_command_registry,
+                                      NodeService& node_service) {
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_PASTE,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Paste"),
+             .image_id_ = IDB_PASTE,
+             .shortcut_ = Shortcut{aui::ControlModifier, aui::KeyCode::V}});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_PRINT,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Print"),
+                                       .image_id_ = IDB_PRINTER});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EXPORT_CSV,
+                                       .category_ = CATEGORY_EXPORT,
+                                       .title_ = Translate("Export to CSV")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EXPORT_EXCEL,
+                                       .category_ = CATEGORY_EXPORT,
+                                       .title_ = Translate("Export to Excel")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_VIEW_LEGEND,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Legend"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_DOTS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Dots"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_STEPS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Steps"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_SCROLL_BAR,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Scroll Bar"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_NOW,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Scroll to Now"),
+                                       .short_title_ = Translate("Now"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_COLOR,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Line Color..."),
+                                       .short_title_ = Translate("Color")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_SETUP,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Graph Setup..."),
+                                       .short_title_ = Translate("Setup"),
+                                       .image_id_ = ID_GRAPH_VIEW});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_GRAPH_BK_COLOR,
+             .category_ = CATEGORY_SETUP,
+             .title_ = Translate("Background Color..."),
+             .short_title_ = Translate("Background")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_ADD_PANE,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Add Pane")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_DELETE_PANE,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Delete Pane")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_EDIT,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Edit"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SAVE,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Save")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SAVE_AS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Save As..."),
+                                       .short_title_ = Translate("Save")});
+
+  const std::pair<unsigned, const char*> time_range_actions[] = {
+      {ID_TIME_RANGE_15M, "15 min"},
+      {ID_TIME_RANGE_HOUR, "Hour"},
+      {ID_TIME_RANGE_DAY, "Day"},
+      {ID_TIME_RANGE_WEEK, "Week"},
+      {ID_TIME_RANGE_MONTH, "Month"}};
+  for (const auto& [command_id, title] : time_range_actions) {
+    ui_command_registry.AddAction(Action{.command_id_ = command_id,
+                                         .category_ = CATEGORY_PERIOD,
+                                         .title_ = Translate(title),
+                                         .flags_ = Action::CHECKABLE});
+  }
+  ui_command_registry.AddAction(Action{.command_id_ = ID_TIME_RANGE_CUSTOM,
+                                       .category_ = CATEGORY_PERIOD,
+                                       .title_ = Translate("Custom..."),
+                                       .short_title_ = Translate("Custom"),
+                                       .flags_ = Action::CHECKABLE});
+
+  const std::pair<unsigned, const char*> interval_actions[] = {
+      {ID_INTERVAL_1M, "1-Minute"}, {ID_INTERVAL_5M, "5 min"},
+      {ID_INTERVAL_15M, "15 min"},  {ID_INTERVAL_30M, "30 min"},
+      {ID_INTERVAL_1H, "1-Hour"},   {ID_INTERVAL_12H, "12 hours"},
+      {ID_INTERVAL_1D, "1-Day"}};
+  for (const auto& [command_id, title] : interval_actions) {
+    ui_command_registry.AddAction(Action{.command_id_ = command_id,
+                                         .category_ = CATEGORY_INTERVAL,
+                                         .title_ = Translate(title),
+                                         .flags_ = Action::CHECKABLE});
+  }
+
+  const std::pair<unsigned, const char*> aggregation_actions[] = {
+      {ID_AGGREGATION_START, "First"}, {ID_AGGREGATION_END, "Last"},
+      {ID_AGGREGATION_COUNT, "Count"}, {ID_AGGREGATION_MIN, "Minimum"},
+      {ID_AGGREGATION_MAX, "Maximum"}, {ID_AGGREGATION_SUM, "Sum"},
+      {ID_AGGREGATION_AVG, "Average"}};
+  for (const auto& [command_id, title] : aggregation_actions) {
+    ui_command_registry.AddAction(Action{.command_id_ = command_id,
+                                         .category_ = CATEGORY_AGGREGATION,
+                                         .title_ = Translate(title),
+                                         .flags_ = Action::CHECKABLE});
+  }
+
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_ADD_MULTIPLE_ITEMS,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("Multiple Create...")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_SERVICE_ITEMS,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("Service Items...")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_IEC60870_LINK101,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("IEC 60870-101 Link")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_NEW_IEC60870_LINK104,
+             .category_ = CATEGORY_CREATE,
+             .title_ = Translate("IEC 60870-104 Link")});
+
+  for (size_t i = 0; i < std::size(kNewCommandTypeIds); ++i) {
+    ui_command_registry.AddAction(MakeNodeAction(
+        ui_command_registry.action_manager(), ID_NEW + i, CATEGORY_CREATE,
+        node_service.GetNode(kNewCommandTypeIds[i])));
+  }
+}
 
 OpenedViewCommands::OpenedViewCommands(OpenedViewCommandsContext&& context)
     : OpenedViewCommandsContext{std::move(context)},
@@ -142,11 +354,10 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
 
   switch (command_id) {
     case ID_PASTE:
-      CoSpawn(executor_, cancelation_,
-              [this]() mutable -> Awaitable<void> {
-                co_await PasteFromClipboard();
-                co_return;
-              });
+      CoSpawn(executor_, cancelation_, [this]() mutable -> Awaitable<void> {
+        co_await PasteFromClipboard();
+        co_return;
+      });
       return;
     case ID_VIEW_CLOSE:
       opened_view_->Close();
@@ -154,15 +365,15 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
     case ID_EXPORT_CSV:
       assert(dialog_service_);
       if (auto* export_model = controller_->GetExportModel()) {
-        CoSpawn(executor_, cancelation_,
-                [this, export_model,
-                 window_title = opened_view_->GetWindowTitle()]() mutable
-                -> Awaitable<void> {
-                  co_await RunCsvExport(
-                      {executor_, *dialog_service_, profile_, *export_model,
-                       std::move(window_title)});
-                  co_return;
-                });
+        CoSpawn(
+            executor_, cancelation_,
+            [this, export_model,
+             window_title =
+                 opened_view_->GetWindowTitle()]() mutable -> Awaitable<void> {
+              co_await RunCsvExport({executor_, *dialog_service_, profile_,
+                                     *export_model, std::move(window_title)});
+              co_return;
+            });
       }
       return;
     case ID_EXPORT_EXCEL:
@@ -211,8 +422,7 @@ void OpenedViewCommands::ExecuteCommand(unsigned command_id) {
         // `cancelation_.Bind(...)` callback had the same effect.
         CoSpawn(executor_, cancelation_,
                 [model, &dialog_service = *dialog_service_, &profile = profile_,
-                 range, time_required]() mutable
-                -> Awaitable<void> {
+                 range, time_required]() mutable -> Awaitable<void> {
                   auto picked = co_await ShowTimeRangeDialog(
                       dialog_service, {profile, range, time_required});
                   model->SetTimeRange(picked);
@@ -420,7 +630,8 @@ void OpenedViewCommands::ExportToExcel() {
 
   } catch (HRESULT /*err*/) {
     dialog_service_->RunMessageBox(
-        u"Export failed. Please check that Microsoft Excel is installed correctly.",
+        u"Export failed. Please check that Microsoft Excel is installed "
+        u"correctly.",
         u"Export", MessageBoxMode::Error);
   }
 }

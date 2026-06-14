@@ -19,6 +19,7 @@ class NodeRef;
 class Profile;
 class TaskManager;
 class TimedDataService;
+class UiCommandRegistry;
 struct SelectionCommandContext;
 
 class ConfigurationCommands {
@@ -32,6 +33,7 @@ class ConfigurationCommands {
   Profile& profile_;
   LocalEvents& local_events_;
   TaskManager& task_manager_;
+  UiCommandRegistry& ui_command_registry_;
 
  private:
   void RegisterMethodCommand(unsigned command_id,

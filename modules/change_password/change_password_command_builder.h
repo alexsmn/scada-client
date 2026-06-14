@@ -12,6 +12,7 @@ class SessionService;
 
 class LocalEvents;
 class Profile;
+class UiCommandRegistry;
 
 struct ChangePasswordCommandBuilder {
   BasicCommand<SelectionCommandContext> Build();
@@ -21,3 +22,6 @@ struct ChangePasswordCommandBuilder {
   Profile& profile_;
   scada::SessionService& session_service_;
 };
+
+void RegisterChangePasswordCommandActions(
+    UiCommandRegistry& ui_command_registry);

@@ -1,21 +1,14 @@
 ﻿#include "main_window/selection_commands.h"
 
 #include "aui/dialog_service.h"
+#include "aui/key_codes.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/program_options.h"
 #include "base/u16format.h"
-#include "ui/common/client_utils.h"
 #include "clipboard/clipboard_util.h"
-#include "resources/common_resources.h"
-#include "modules/device_metrics/device_metrics_command.h"
-#include "modules/node_properties/node_property_component.h"
-#include "modules/node_table/node_table_component.h"
-#include "modules/summary/summary_component.h"
-#include "modules/table/table_component.h"
-#include "modules/timed_data/timed_data_component.h"
-#include "modules/transmission/transmission_component.h"
-#include "modules/watch/watch_component.h"
+#include "controller/action.h"
+#include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "controller/window_info.h"
 #include "core/selection_command_context.h"
@@ -29,11 +22,21 @@
 #include "model/devices_node_ids.h"
 #include "model/filesystem_node_ids.h"
 #include "model/scada_node_ids.h"
+#include "modules/device_metrics/device_metrics_command.h"
+#include "modules/node_properties/node_property_component.h"
+#include "modules/node_table/node_table_component.h"
+#include "modules/summary/summary_component.h"
+#include "modules/table/table_component.h"
+#include "modules/timed_data/timed_data_component.h"
+#include "modules/transmission/transmission_component.h"
+#include "modules/watch/watch_component.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "profile/window_definition_util.h"
+#include "resources/common_resources.h"
 #include "scada/node_management_service.h"
 #include "scada/session_service.h"
+#include "ui/common/client_utils.h"
 #include "window_definition_builder.h"
 
 #if !defined(UI_WT)
@@ -63,16 +66,18 @@ BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
   return BasicCommand<SelectionCommandContext>{
       .command_id = command_id,
       .execute_handler =
-          [&window_info,
-           executor = std::move(executor)](const SelectionCommandContext& context) {
+          [&window_info, executor = std::move(executor)](
+              const SelectionCommandContext& context) {
             auto window_def =
                 context.opened_view.GetOpenWindowDefinition(&window_info);
-            CoSpawn(executor, [&main_window = context.main_window,
-                               window_def = std::move(window_def)]() mutable
-                              -> Awaitable<void> {
-              co_await main_window.OpenView(co_await std::move(window_def));
-              co_return;
-            });
+            CoSpawn(
+                executor,
+                [&main_window = context.main_window,
+                 window_def =
+                     std::move(window_def)]() mutable -> Awaitable<void> {
+                  co_await main_window.OpenView(co_await std::move(window_def));
+                  co_return;
+                });
           },
       .available_handler =
           [](const SelectionCommandContext& context) {
@@ -81,6 +86,46 @@ BasicCommand<SelectionCommandContext> MakeOpenViewCommand(
 }
 
 }  // namespace
+
+void RegisterSelectionCommandActions(UiCommandRegistry& ui_command_registry) {
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_DISPLAY,
+                                       .category_ = CATEGORY_OPEN,
+                                       .title_ = Translate("Display"),
+                                       .image_id_ = ID_MODUS_VIEW,
+                                       .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_DEVICE_METRICS,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Metrics")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_OPEN_WATCH,
+                                       .category_ = CATEGORY_SPECIFIC,
+                                       .title_ = Translate("Watch")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_ITEM_PARAMS,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Properties"),
+                                       .image_id_ = IDB_RECORD_EDITOR});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_TABLE_CONFIG,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Element Properties"),
+             .short_title_ = Translate("Elements")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_TRANSMISSION_VIEW,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Transmission Table"),
+             .short_title_ = Translate("Transmission")});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_COPY,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Copy"),
+             .image_id_ = IDB_COPY,
+             .shortcut_ = Shortcut{aui::ControlModifier, aui::KeyCode::C}});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_DELETE,
+             .category_ = CATEGORY_EDIT,
+             .title_ = Translate("Delete"),
+             .image_id_ = IDB_DELETE,
+             .shortcut_ = Shortcut{aui::KeyCode::Delete}});
+}
 
 // SelectionCommands
 
@@ -108,8 +153,7 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
             // The coroutine is gated by `cancelation_` so it cannot run after
             // this `SelectionCommands` is destroyed.
             CoSpawn(executor_, cancelation_,
-                    [this]() mutable
-                    -> Awaitable<void> {
+                    [this]() mutable -> Awaitable<void> {
                       auto window_definition =
                           co_await MakeDeviceMetricsWindowDefinitionAsync(
                               executor_, selection_->node());
@@ -125,12 +169,12 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
   command_registry_.AddCommand(
       Command{ID_OPEN_DISPLAY}
           .set_execute_handler([this] {
-            CoSpawn(executor_, cancelation_,
-                    [this, node = selection_->node()]() mutable
-                    -> Awaitable<void> {
-                      co_await OpenViewContainingNode(ID_MODUS_VIEW, node);
-                      co_return;
-                    });
+            CoSpawn(
+                executor_, cancelation_,
+                [this, node = selection_->node()]() mutable -> Awaitable<void> {
+                  co_await OpenViewContainingNode(ID_MODUS_VIEW, node);
+                  co_return;
+                });
           })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
@@ -140,16 +184,16 @@ SelectionCommands::SelectionCommands(SelectionCommandsContext&& context)
       Command{ID_OPEN_GROUP_TABLE}
           .set_execute_handler([this] {
             // TODO: Capture |main_window_| by weak pointer.
-            CoSpawn(executor_, [executor = executor_, main_window = main_window_,
-                                node = selection_->node()]() mutable
-                               -> Awaitable<void> {
-              auto window_def = co_await MakeGroupWindowDefinitionAsync(
-                  executor, &kTableWindowInfo, node);
-              if (window_def.has_value()) {
-                co_await ::OpenView(main_window, *window_def);
-              }
-              co_return;
-            });
+            CoSpawn(executor_,
+                    [executor = executor_, main_window = main_window_,
+                     node = selection_->node()]() mutable -> Awaitable<void> {
+                      auto window_def = co_await MakeGroupWindowDefinitionAsync(
+                          executor, &kTableWindowInfo, node);
+                      if (window_def.has_value()) {
+                        co_await ::OpenView(main_window, *window_def);
+                      }
+                      co_return;
+                    });
           })
           .set_available_handler(
               [this] { return selection_->timed_data().connected(); }));
@@ -234,8 +278,8 @@ void SelectionCommands::OpenWindow(const WindowInfo* window_info) {
   if (selection_ && !selection_->empty()) {
     // TODO: Capture |main_window_| by weak pointer.
     CoSpawn(executor_, cancelation_,
-            [this, window_info, node = selection_->node()]() mutable
-            -> Awaitable<void> {
+            [this, window_info,
+             node = selection_->node()]() mutable -> Awaitable<void> {
               auto window_definition = co_await MakeWindowDefinitionAsync(
                   executor_, window_info, node,
                   /*expand_groups=*/true);
@@ -348,28 +392,26 @@ void SelectionCommands::DeleteSelection() {
     return;
   }
 
-  auto message =
-      nodes.size() == 1
-          ? u16format(L"Are you sure you want to delete {}?",
-                      nodes.front().display_name())
-          : u16format(L"Are you sure you want to delete {} items?",
-                      nodes.size());
+  auto message = nodes.size() == 1
+                     ? u16format(L"Are you sure you want to delete {}?",
+                                 nodes.front().display_name())
+                     : u16format(L"Are you sure you want to delete {} items?",
+                                 nodes.size());
 
-  CoSpawn(executor_, [executor = executor_, &task_manager = task_manager_,
-                      &dialog_service = *dialog_service_,
-                      message = std::move(message),
-                      nodes = std::move(nodes)]() mutable
-                     -> Awaitable<void> {
-    auto result = co_await dialog_service.RunMessageBox(
-        message, Translate("Delete"), MessageBoxMode::QuestionYesNo);
-    if (result != MessageBoxResult::Yes) {
-      co_return;
-    }
-    for (const NodeRef& node : nodes) {
-      DeleteTreeRecordsRecursive(task_manager, node);
-    }
-    co_return;
-  });
+  CoSpawn(executor_,
+          [executor = executor_, &task_manager = task_manager_,
+           &dialog_service = *dialog_service_, message = std::move(message),
+           nodes = std::move(nodes)]() mutable -> Awaitable<void> {
+            auto result = co_await dialog_service.RunMessageBox(
+                message, Translate("Delete"), MessageBoxMode::QuestionYesNo);
+            if (result != MessageBoxResult::Yes) {
+              co_return;
+            }
+            for (const NodeRef& node : nodes) {
+              DeleteTreeRecordsRecursive(task_manager, node);
+            }
+            co_return;
+          });
 }
 
 void SelectionCommands::CopyToClipboard() {

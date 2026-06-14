@@ -1,11 +1,16 @@
 #include "modus/modus_module.h"
 
+#include "aui/translation.h"
+#include "controller/action.h"
+#include "controller/command_ui_registry.h"
+
 #include "controller/controller_registry.h"
 #include "filesystem/file_registry.h"
 #include "modus/libmodus/modus_module2.h"
 #include "modus/modus_component.h"
 #include "modus/modus_controller.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 ModusModule::ModusModule(ModusModuleContext&& context)
     : ModusModuleContext{std::move(context)} {
@@ -19,6 +24,10 @@ ModusModule::ModusModule(ModusModuleContext&& context)
 
   file_registry_.RegisterType(kModusWindowInfo.command_id,
                               kModusWindowInfo.name, ".sde;.xsde");
+
+  ui_command_registry_.AddAction(Action{.command_id_ = ID_SETUP,
+                                        .category_ = CATEGORY_SETUP,
+                                        .title_ = Translate("Options")});
 
   global_commands_.AddCommand(
       {.title = u"Отображать топологию на схемах Modus",

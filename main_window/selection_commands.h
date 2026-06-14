@@ -2,8 +2,8 @@
 
 #include "base/any_executor.h"
 
-#include "base/cancelation.h"
 #include "base/awaitable.h"
+#include "base/cancelation.h"
 #include "controller/command_handler.h"
 #include "controller/command_registry.h"
 #include "profile/window_definition.h"
@@ -26,6 +26,7 @@ class OpenedViewInterface;
 class Profile;
 class SelectionModel;
 class TaskManager;
+class UiCommandRegistry;
 struct SelectionCommandContext;
 
 struct SelectionCommandsContext {
@@ -74,9 +75,8 @@ class SelectionCommands : private SelectionCommandsContext,
 
   Awaitable<OpenedViewInterface*> OpenViewContainingNode(int view_type_id,
                                                          const NodeRef& node);
-  Awaitable<OpenedViewInterface*> OpenViewContainingNodeAsync(
-      int view_type_id,
-      NodeRef node);
+  Awaitable<OpenedViewInterface*> OpenViewContainingNodeAsync(int view_type_id,
+                                                              NodeRef node);
 
   SelectionModel* selection_ = nullptr;
   MainWindowInterface* main_window_ = nullptr;
@@ -89,3 +89,5 @@ class SelectionCommands : private SelectionCommandsContext,
 
   Cancelation cancelation_;
 };
+
+void RegisterSelectionCommandActions(UiCommandRegistry& ui_command_registry);

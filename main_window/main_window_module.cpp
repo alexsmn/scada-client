@@ -7,7 +7,6 @@
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
 #include "events/event_fetcher.h"
-#include "main_window/actions.h"
 #include "main_window/configuration_commands.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/event_dispatcher.h"
@@ -21,6 +20,12 @@
 #include "main_window/selection_commands.h"
 #include "main_window/status_bar/status_bar_model_builder.h"
 #include "modules/change_password/change_password_command_builder.h"
+#include "modules/graph/graph_component.h"
+#include "modules/sheet/sheet_component.h"
+#include "modules/summary/summary_component.h"
+#include "modules/table/table_component.h"
+#include "modules/timed_data/timed_data_component.h"
+#include "modules/watch/watch_component.h"
 #include "profile/profile.h"
 
 #if defined(UI_QT)
@@ -52,14 +57,22 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
-  AddGlobalActions(ui_command_registry_, node_service_);
-  AddDefaultMenuContributions(ui_command_registry_);
+  RegisterGraphCommandActions(ui_command_registry_);
+  RegisterTableCommandActions(ui_command_registry_);
+  RegisterSheetCommandActions(ui_command_registry_);
+  RegisterSummaryCommandActions(ui_command_registry_);
+  RegisterTimedDataCommandActions(ui_command_registry_);
+  RegisterWatchCommandActions(ui_command_registry_);
+  RegisterSelectionCommandActions(ui_command_registry_);
+  RegisterOpenedViewCommandActions(ui_command_registry_, node_service_);
+  RegisterChangePasswordCommandActions(ui_command_registry_);
 
   assert(scada_services_.session_service);
 
   auto configuration_commands = std::make_shared<ConfigurationCommands>(
       selection_commands_, executor_, timed_data_service_,
-      *scada_services_.session_service, profile_, local_events_, task_manager_);
+      *scada_services_.session_service, profile_, local_events_, task_manager_,
+      ui_command_registry_);
 
   singletons_.emplace(configuration_commands);
   configuration_commands->Register();
