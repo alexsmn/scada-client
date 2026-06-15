@@ -4,8 +4,8 @@
 #include "base/boost_log.h"
 #include "base/client_paths.h"
 #include "base/excel.h"
-#include "base/path_service.h"
 #include "base/format.h"
+#include "base/path_service.h"
 #include "base/time_utils.h"
 #include "base/utils.h"
 #include "base/value_util.h"
@@ -16,7 +16,8 @@
 
 namespace {
 
-void LoadMainWindowDef(MainWindowDef& main_window, const boost::json::value& data) {
+void LoadMainWindowDef(MainWindowDef& main_window,
+                       const boost::json::value& data) {
   const int inval = (unsigned)(-1) / 2;
   int left = GetInt(data, "left", inval);
   int top = GetInt(data, "top", inval);
@@ -87,8 +88,8 @@ void Profile::Load(const boost::json::value& data) {
       try {
         page.Load(pagee);
       } catch (HRESULT err) {
-        BOOST_LOG_TRIVIAL(error) << "Error " << static_cast<int>(err) << " on load page "
-                   << page.id;
+        BOOST_LOG_TRIVIAL(error)
+            << "Error " << static_cast<int>(err) << " on load page " << page.id;
         page.id = 0;
       }
       if (page.id)
@@ -97,7 +98,9 @@ void Profile::Load(const boost::json::value& data) {
   }
 
   // out-of-page
-  if (auto* out_pagese = data.is_object() ? data.as_object().if_contains("floatingWindows") : nullptr)
+  if (auto* out_pagese = data.is_object()
+                             ? data.as_object().if_contains("floatingWindows")
+                             : nullptr)
     out_wins.Load(*out_pagese);
 
   if (auto* event_journal = FindDict(data, "eventJournal")) {
@@ -107,7 +110,8 @@ void Profile::Load(const boost::json::value& data) {
 
   if (auto* graphe = FindDict(data, "graph")) {
     Deserialize(GetString(*graphe, "def_span"), graph_view.default_span);
-    if (auto default_color = GetString(*graphe, "def_color"); !default_color.empty())
+    if (auto default_color = GetString(*graphe, "def_color");
+        !default_color.empty())
       graph_view.default_color = aui::StringToColor(default_color);
     graph_view.default_width = GetInt(*graphe, "def_weight", 1);
     graph_view.default_scroll_bar = GetBool(*graphe, "def_scroll_bar", 1);

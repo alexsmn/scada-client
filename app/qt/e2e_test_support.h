@@ -61,8 +61,9 @@ struct ObjectTreeLabelsCheckContext {
 
 Awaitable<void> RunE2eObjectViewValuesCheck(ClientApplication& app,
                                             AnyExecutor executor);
-Awaitable<void> RunE2eObjectViewValuesCheck(ObjectViewValuesCheckContext context,
-                                            std::filesystem::path report_path);
+Awaitable<void> RunE2eObjectViewValuesCheck(
+    ObjectViewValuesCheckContext context,
+    std::filesystem::path report_path);
 Awaitable<void> RunE2eOperatorUseCaseSmoke(ClientApplication& app);
 Awaitable<void> RunE2eOperatorUseCaseSmoke(
     OperatorUseCaseSmokeContext context,
@@ -70,8 +71,9 @@ Awaitable<void> RunE2eOperatorUseCaseSmoke(
     std::vector<OperatorUseCaseSmokeCheck> checks);
 Awaitable<void> RunE2eObjectTreeLabelsCheck(ClientApplication& app,
                                             AnyExecutor executor);
-Awaitable<void> RunE2eObjectTreeLabelsCheck(ObjectTreeLabelsCheckContext context,
-                                            std::filesystem::path report_path);
+Awaitable<void> RunE2eObjectTreeLabelsCheck(
+    ObjectTreeLabelsCheckContext context,
+    std::filesystem::path report_path);
 Awaitable<void> RunE2eHardwareTreeDevicesCheck(ClientApplication& app,
                                                AnyExecutor executor);
 Awaitable<void> RunE2eProfileSaveCheck(ClientApplication& app);

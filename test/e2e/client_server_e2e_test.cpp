@@ -1,5 +1,7 @@
 #include "test/e2e/client_server_e2e_test_support.h"
 
+#include <boost/json.hpp>
+
 #include <chrono>
 #include <sstream>
 #include <string>
@@ -22,6 +24,23 @@ bool HasActiveHardwareTreeDevice(std::string_view report,
       continue;
     }
     if (in_matching_device && line.find(".active=true") != std::string::npos)
+      return true;
+  }
+  return false;
+}
+
+bool ProfileJsonContainsPageTitle(std::string_view profile_json,
+                                  std::string_view page_title) {
+  auto value = boost::json::parse(profile_json);
+  auto* pages = value.as_object().if_contains("pages");
+  if (!pages || !pages->is_array())
+    return false;
+
+  for (const auto& page : pages->as_array()) {
+    if (!page.is_object())
+      continue;
+    auto* title = page.as_object().if_contains("title");
+    if (title && title->is_string() && title->as_string() == page_title)
       return true;
   }
   return false;
@@ -101,12 +120,9 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
   ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
 
   const auto report = WaitForObjectTreeLabelsReport();
-  ASSERT_NE(report.find("object-tree-labels: ok"), std::string::npos)
-      << report;
+  ASSERT_NE(report.find("object-tree-labels: ok"), std::string::npos) << report;
   for (std::string_view expected_label :
-       {"label[0]=Все объекты",
-        "label[1]=Отрадная 110 КВ",
-        "label[2]=ТС",
+       {"label[0]=Все объекты", "label[1]=Отрадная 110 КВ", "label[2]=ТС",
         "label[3]=МВ-35 У"}) {
     EXPECT_NE(report.find(expected_label), std::string::npos)
         << "Missing expected object tree label " << expected_label
@@ -124,9 +140,8 @@ TEST_P(ClientServerE2eTest, Connect_Success_ExpandsObjectTreeLabels) {
 TEST_P(ClientServerE2eTest, Connect_Success_ExpandsHardwareTreeDevices) {
   WriteClientSettings(/*password=*/"");
   StartServer();
-  StartClient(
-      {"--test-hardware-tree-devices-file=" +
-       hardware_tree_devices_file_.string()});
+  StartClient({"--test-hardware-tree-devices-file=" +
+               hardware_tree_devices_file_.string()});
 
   ASSERT_TRUE(WaitForStartupOrStatus())
       << "Timed out waiting for client startup/status signal";
@@ -171,14 +186,12 @@ TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {
   ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
 
   const auto report = WaitForOperatorUseCasesReport();
-  ASSERT_NE(report.find("operator-use-cases: ok"), std::string::npos)
-      << report;
+  ASSERT_NE(report.find("operator-use-cases: ok"), std::string::npos) << report;
 
   for (std::string_view use_case :
-       {"UC-1", "UC-2", "UC-3", "UC-4", "UC-5", "UC-6",
-        "UC-7", "UC-8", "UC-9", "UC-10", "UC-11", "UC-12",
-        "UC-13", "UC-14", "UC-15", "UC-16", "UC-17", "UC-18",
-        "UC-19"}) {
+       {"UC-1", "UC-2", "UC-3", "UC-4", "UC-5", "UC-6", "UC-7", "UC-8", "UC-9",
+        "UC-10", "UC-11", "UC-12", "UC-13", "UC-14", "UC-15", "UC-16", "UC-17",
+        "UC-18", "UC-19"}) {
     EXPECT_NE(report.find(std::string{use_case} + " ok"), std::string::npos)
         << "Missing successful operator use-case coverage for " << use_case
         << " in report:\n"
@@ -194,29 +207,67 @@ TEST_P(ClientServerE2eTest, OperatorUseCases_OpenRegisteredSurfaces) {
 #endif
 }
 
+TEST_P(ClientServerE2eTest, ProfileSave_PersistsPagesOnServer) {
+  constexpr int kGuestUserId = 12;
+  constexpr std::string_view kSavedPageTitle = "E2E Server Profile Page";
+
+  WriteClientSettings(/*password=*/"", /*user=*/"guest");
+  StartServer();
+  StartClient({"--test-profile-save-file=" + profile_save_file_.string(),
+               "--test-profile-save-user-id=USER.12"});
+
+  ASSERT_TRUE(WaitForStartupOrStatus())
+      << "Timed out waiting for client startup/status signal";
+  const auto status = ReadFileOrEmpty(status_file_);
+  ASSERT_TRUE(ContainsInDirectory(client_log_dir_, kStartupCompletedLog))
+      << "Client did not log startup completion; status: " << status;
+  ASSERT_TRUE(status.empty() || status == "success")
+      << "Unexpected client status while waiting for startup: " << status;
+  ASSERT_TRUE(client_.IsRunning()) << "Client exited unexpectedly after login";
+
+  const auto report = WaitForProfileSaveReport();
+  ASSERT_NE(report.find("profile-save: ok"), std::string::npos) << report;
+  ASSERT_NE(report.find("page-title=E2E Server Profile Page"),
+            std::string::npos)
+      << report;
+
+  const auto profile_json = ReadUserProfileJsonFromServerDatabase(kGuestUserId);
+  EXPECT_TRUE(ProfileJsonContainsPageTitle(profile_json, kSavedPageTitle))
+      << profile_json;
+  EXPECT_EQ(ReadUserProfileRevisionFromServerDatabase(kGuestUserId), "1");
+
+  ExpectServerAuthLog();
+  ExpectProcessesRemainRunningFor(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kPostConnectStabilityTimeout),
+      "waiting after profile pages were saved to the server");
+}
+
 TEST_P(ClientServerE2eTest, Connect_BadPassword) {
   WriteClientSettings("wrong-password");
   StartServer();
   StartClient();
 
   auto status = WaitForStatus();
-  EXPECT_NE(status.find("failure: Bad_WrongLoginCredentials"), std::string::npos)
+  EXPECT_NE(status.find("failure: Bad_WrongLoginCredentials"),
+            std::string::npos)
       << "Unexpected client status: " << status;
   EXPECT_FALSE(ContainsInDirectory(server_log_dir_, "Authorization succeeded"))
       << "Server should not record successful authorization";
   ExpectServerRemainsRunningFor(
       std::chrono::duration_cast<std::chrono::milliseconds>(
           kPostConnectStabilityTimeout),
-      "waiting for the server to remain stable after rejecting bad credentials");
+      "waiting for the server to remain stable after rejecting bad "
+      "credentials");
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Protocols,
-    ClientServerE2eTest,
-    ::testing::Values(E2eProtocol::Remote, E2eProtocol::OpcUa),
-    [](const ::testing::TestParamInfo<E2eProtocol>& info) {
-      return std::string{ToString(info.param)};
-    });
+INSTANTIATE_TEST_SUITE_P(Protocols,
+                         ClientServerE2eTest,
+                         ::testing::Values(E2eProtocol::Remote,
+                                           E2eProtocol::OpcUa),
+                         [](const ::testing::TestParamInfo<E2eProtocol>& info) {
+                           return std::string{ToString(info.param)};
+                         });
 
 }  // namespace
 }  // namespace client::test

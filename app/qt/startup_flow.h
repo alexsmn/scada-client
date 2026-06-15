@@ -7,7 +7,6 @@
 #include <functional>
 #include <memory>
 
-
 namespace client {
 
 struct QtStartupFlowContext {
@@ -18,6 +17,7 @@ struct QtStartupFlowContext {
   std::function<Awaitable<void>()> run_operator_use_case_smoke;
   std::function<Awaitable<void>()> run_object_tree_labels_check;
   std::function<Awaitable<void>()> run_hardware_tree_devices_check;
+  std::function<Awaitable<void>()> run_profile_save_check;
   std::function<Awaitable<void>()> run_application;
 
   std::function<void(std::exception_ptr)> log_startup_exception;

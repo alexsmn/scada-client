@@ -35,7 +35,8 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   void TearDown() override;
 
   void PrepareWorkspace();
-  void WriteClientSettings(std::string_view password);
+  void WriteClientSettings(std::string_view password,
+                           std::string_view user = "root");
   void StartServer();
   void StartClient(std::vector<std::string> extra_args = {});
 
@@ -46,6 +47,9 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   std::string WaitForObjectTreeLabelsReport();
   std::string WaitForHardwareTreeDevicesReport();
   std::string WaitForOperatorUseCasesReport();
+  std::string WaitForProfileSaveReport();
+  std::string ReadUserProfileJsonFromServerDatabase(int user_id);
+  std::string ReadUserProfileRevisionFromServerDatabase(int user_id);
 
   std::string DescribeProcessExit(const ChildProcess& process,
                                   std::string_view name) const;
@@ -67,6 +71,7 @@ class ClientServerE2eTest : public ::testing::TestWithParam<E2eProtocol> {
   std::filesystem::path object_tree_labels_file_;
   std::filesystem::path hardware_tree_devices_file_;
   std::filesystem::path operator_use_cases_file_;
+  std::filesystem::path profile_save_file_;
   std::filesystem::path settings_file_;
   std::filesystem::path server_log_dir_;
   std::filesystem::path client_log_dir_;

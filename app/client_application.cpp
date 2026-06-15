@@ -137,7 +137,8 @@ bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
          core_module_->global_commands().FindCommand(command_id) != nullptr;
 }
 
-Awaitable<scada::Status> ClientApplication::SaveProfileToServer() {
+Awaitable<scada::Status> ClientApplication::SaveProfileToServer(
+    scada::NodeId target_user_id) {
   if (!profile_ || !master_data_services_) {
     co_return scada::StatusCode::Bad;
   }
@@ -147,7 +148,10 @@ Awaitable<scada::Status> ClientApplication::SaveProfileToServer() {
     co_return scada::StatusCode::Bad;
   }
 
-  const auto user_id = services.session_service->GetUserId();
+  auto user_id = services.session_service->GetUserId();
+  if (!target_user_id.is_null()) {
+    user_id = std::move(target_user_id);
+  }
   auto profile_json = boost::json::serialize(profile_->SaveToValue());
   auto status = co_await services.method_service->Call(
       user_id, security::id::UserType_SaveProfile,

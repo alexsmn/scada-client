@@ -6,10 +6,11 @@
 #include "app/login_canceled.h"
 #include "base/async_completion.h"
 #include "base/awaitable.h"
-#include "timed_data/timed_data_service.h"
 #include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
+#include "scada/node_id.h"
 #include "scada/status.h"
+#include "timed_data/timed_data_service.h"
 
 #include <functional>
 #include <memory>
@@ -28,9 +29,7 @@ class ShutdownStack {
       actions_.pop();
     }
   }
-  void Push(std::function<void()> action) {
-    actions_.push(std::move(action));
-  }
+  void Push(std::function<void()> action) { actions_.push(std::move(action)); }
 
  private:
   std::stack<std::function<void()>> actions_;
@@ -113,8 +112,10 @@ class ClientApplication : private ClientApplicationContext {
   bool HasSelectionCommandForTesting(unsigned command_id) const;
   bool HasGlobalCommandForTesting(unsigned command_id) const;
 
-  // Saves the current profile JSON to the logged-in server user.
-  [[nodiscard]] Awaitable<scada::Status> SaveProfileToServer();
+  // Saves the current profile JSON to the logged-in server user, or to
+  // `target_user_id` when provided.
+  [[nodiscard]] Awaitable<scada::Status> SaveProfileToServer(
+      scada::NodeId target_user_id = {});
 
   // Load profile and start.
   [[nodiscard]] Awaitable<void> Start();

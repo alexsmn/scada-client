@@ -6,6 +6,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/json.hpp>
+#include <boost/process/v1/args.hpp>
+#include <boost/process/v1/io.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -31,6 +33,7 @@ constexpr auto kObjectViewValuesTimeout = 30s;
 constexpr auto kObjectTreeLabelsTimeout = 30s;
 constexpr auto kHardwareTreeDevicesTimeout = 30s;
 constexpr auto kOperatorUseCasesTimeout = 30s;
+constexpr auto kProfileSaveTimeout = 30s;
 
 std::string_view GetServerType(E2eProtocol protocol) {
   switch (protocol) {
@@ -177,6 +180,31 @@ bool CanConnectTcp(int port) {
   }
 }
 
+std::string RunSqliteScalar(const std::filesystem::path& database_path,
+                            std::string sql) {
+  process::ipstream output;
+  process::child sqlite{GetSqliteExePath().string(),
+                        process::args({"-batch", "-noheader",
+                                       database_path.string(), std::move(sql)}),
+                        process::std_out > output,
+                        process::std_err > process::null};
+
+  std::string result;
+  std::string line;
+  while (std::getline(output, line)) {
+    if (!result.empty())
+      result += '\n';
+    result += line;
+  }
+
+  sqlite.wait();
+  if (sqlite.exit_code() != 0) {
+    throw std::runtime_error{"sqlite3 query failed for " +
+                             database_path.string()};
+  }
+  return result;
+}
+
 template <class Predicate>
 bool WaitUntil(Predicate&& predicate,
                std::chrono::milliseconds timeout,
@@ -278,12 +306,14 @@ void ClientServerE2eTest::PrepareWorkspace() {
   object_tree_labels_file_ = workspace_.path() / "object-tree-labels.txt";
   hardware_tree_devices_file_ = workspace_.path() / "hardware-tree-devices.txt";
   operator_use_cases_file_ = workspace_.path() / "operator-use-cases.txt";
+  profile_save_file_ = workspace_.path() / "profile-save.txt";
   settings_file_ = workspace_.path() / "client-settings.json";
   server_log_dir_ = workspace_.path() / "Logs";
   client_log_dir_ = workspace_.path() / "ClientLogs";
 }
 
-void ClientServerE2eTest::WriteClientSettings(std::string_view password) {
+void ClientServerE2eTest::WriteClientSettings(std::string_view password,
+                                              std::string_view user) {
   const auto remote_host =
       std::string{"localhost:"} + std::to_string(remote_port_);
   const auto opcua_host =
@@ -292,7 +322,7 @@ void ClientServerE2eTest::WriteClientSettings(std::string_view password) {
       {"ServerType", std::string{GetServerType(GetParam())}},
       {"Host:Scada", remote_host},
       {"Host:OpcUa", opcua_host},
-      {"User", "root"},
+      {"User", std::string{user}},
       {"Password", std::string{password}},
       {"AutoLogin", true},
   };
@@ -401,6 +431,34 @@ std::string ClientServerE2eTest::WaitForOperatorUseCasesReport() {
           kOperatorUseCasesTimeout));
   EXPECT_TRUE(ok) << "Timed out waiting for operator use-case report";
   return ReadFileOrEmpty(operator_use_cases_file_);
+}
+
+std::string ClientServerE2eTest::WaitForProfileSaveReport() {
+  bool ok = WaitUntil(
+      [this] {
+        return std::filesystem::exists(profile_save_file_) ||
+               !client_.IsRunning();
+      },
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          kProfileSaveTimeout));
+  EXPECT_TRUE(ok) << "Timed out waiting for profile-save report";
+  return ReadFileOrEmpty(profile_save_file_);
+}
+
+std::string ClientServerE2eTest::ReadUserProfileJsonFromServerDatabase(
+    int user_id) {
+  return RunSqliteScalar(
+      workspace_.path() / "Configuration" / "configuration.sqlite3",
+      "SELECT COALESCE(ProfileJson, '') FROM UserType WHERE ID = " +
+          std::to_string(user_id) + ";");
+}
+
+std::string ClientServerE2eTest::ReadUserProfileRevisionFromServerDatabase(
+    int user_id) {
+  return RunSqliteScalar(
+      workspace_.path() / "Configuration" / "configuration.sqlite3",
+      "SELECT COALESCE(ProfileRevision, '') FROM UserType WHERE ID = " +
+          std::to_string(user_id) + ";");
 }
 
 std::string ClientServerE2eTest::DescribeProcessExit(

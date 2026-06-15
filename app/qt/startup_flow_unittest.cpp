@@ -27,10 +27,11 @@ class QtStartupFlowTest : public testing::Test {
   QtStartupFlowContext MakeContext() {
     return QtStartupFlowContext{
         .executor = executor_,
-        .start = [this] {
-          order_.push_back("start");
-          return Resolve();
-        },
+        .start =
+            [this] {
+              order_.push_back("start");
+              return Resolve();
+            },
         .run_object_view_values_check =
             [this] {
               order_.push_back("object-view");
@@ -51,6 +52,11 @@ class QtStartupFlowTest : public testing::Test {
               order_.push_back("hardware-tree");
               return Resolve();
             },
+        .run_profile_save_check =
+            [this] {
+              order_.push_back("profile-save");
+              return Resolve();
+            },
         .run_application =
             [this] {
               order_.push_back("run");
@@ -64,8 +70,7 @@ class QtStartupFlowTest : public testing::Test {
             [this] { order_.push_back("success"); },
         .report_startup_failure_if_unset =
             [this] { order_.push_back("failure"); },
-        .on_e2e_run_completed =
-            [this] { order_.push_back("e2e-complete"); },
+        .on_e2e_run_completed = [this] { order_.push_back("e2e-complete"); },
         .quit_application = [this] { order_.push_back("quit"); },
     };
   }
@@ -83,14 +88,10 @@ TEST_F(QtStartupFlowTest, SuccessfulNormalStartupRunsChecksAndQuits) {
   WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
-  EXPECT_THAT(order_, testing::ElementsAre("start",
-                                           "success",
-                                           "object-view",
-                                           "operator-smoke",
-                                           "object-tree",
-                                           "hardware-tree",
-                                           "run",
-                                           "quit"));
+  EXPECT_THAT(order_, testing::ElementsAre("start", "success", "object-view",
+                                           "operator-smoke", "object-tree",
+                                           "hardware-tree", "profile-save",
+                                           "run", "quit"));
   EXPECT_FALSE(logged_exception_);
 }
 
@@ -115,14 +116,10 @@ TEST_F(QtStartupFlowTest, E2eModeReportsRunCompletionInsteadOfQuitting) {
   WaitAwaitable(executor_, RunQtStartupFlow(std::move(context)));
   Drain(executor_);
 
-  EXPECT_THAT(order_, testing::ElementsAre("start",
-                                           "success",
-                                           "object-view",
-                                           "operator-smoke",
-                                           "object-tree",
-                                           "hardware-tree",
-                                           "run",
-                                           "e2e-complete"));
+  EXPECT_THAT(order_, testing::ElementsAre("start", "success", "object-view",
+                                           "operator-smoke", "object-tree",
+                                           "hardware-tree", "profile-save",
+                                           "run", "e2e-complete"));
 }
 
 }  // namespace client

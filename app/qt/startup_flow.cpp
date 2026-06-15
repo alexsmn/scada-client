@@ -1,7 +1,7 @@
 #include "app/qt/startup_flow.h"
 
-#include "base/awaitable.h"
 #include "base/any_executor.h"
+#include "base/awaitable.h"
 #include "base/boost_log.h"
 
 #include <exception>
@@ -22,6 +22,7 @@ Awaitable<void> RunQtStartupFlowAsync(QtStartupFlowContext context) {
     co_await context.run_operator_use_case_smoke();
     co_await context.run_object_tree_labels_check();
     co_await context.run_hardware_tree_devices_check();
+    co_await context.run_profile_save_check();
 
     co_await context.run_application();
   } catch (...) {

@@ -3,8 +3,8 @@
 #include "aui/color.h"
 #include "aui/rect.h"
 #include "base/time/time.h"
-#include "resources/common_resources.h"
 #include "profile/page.h"
+#include "resources/common_resources.h"
 #include "scada/node_id.h"
 
 #include <boost/json.hpp>

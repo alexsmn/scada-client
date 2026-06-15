@@ -1,15 +1,15 @@
 #include "app/app_init.h"
 #include "app/client_application.h"
-#include "app/startup_exception.h"
 #include "app/qt/e2e_test_support.h"
 #include "app/qt/installed_style.h"
 #include "app/qt/installed_translation.h"
 #include "app/qt/startup_flow.h"
+#include "app/startup_exception.h"
 #include "aui/qt/message_loop_qt.h"
-#include "base/e2e_test_hooks.h"
-#include "base/boost_log.h"
 #include "base/any_executor.h"
 #include "base/any_executor_timer.h"
+#include "base/boost_log.h"
+#include "base/e2e_test_hooks.h"
 #ifdef _WIN32
 #include "base/win/gdiplus_initializer.h"
 #endif
@@ -41,12 +41,12 @@ void LogQtEventException(std::exception_ptr exception) {
   try {
     std::rethrow_exception(exception);
   } catch (const std::exception& e) {
-    BOOST_LOG_TRIVIAL(error)
-        << "Unhandled exception in Qt event handler"
-        << " | Error = " << e.what();
+    BOOST_LOG_TRIVIAL(error) << "Unhandled exception in Qt event handler"
+                             << " | Error = " << e.what();
     client::ReportE2eStatusIfUnset("failure: qt-event");
   } catch (...) {
-    BOOST_LOG_TRIVIAL(error) << "Unhandled unknown exception in Qt event handler";
+    BOOST_LOG_TRIVIAL(error)
+        << "Unhandled unknown exception in Qt event handler";
     client::ReportE2eStatusIfUnset("failure: qt-event");
   }
 }
@@ -56,7 +56,8 @@ void LogQtEventException(std::exception_ptr exception) {
   if (exception) {
     LogQtEventException(exception);
   } else {
-    BOOST_LOG_TRIVIAL(error) << "std::terminate called without an active exception";
+    BOOST_LOG_TRIVIAL(error)
+        << "std::terminate called without an active exception";
     client::ReportE2eStatusIfUnset("failure: terminate");
   }
   std::_Exit(1);
@@ -83,9 +84,9 @@ void ShowStartupTrace(const wchar_t* message) {
   MessageBoxW(nullptr, message, L"SCADA Client Startup", MB_OK | MB_ICONERROR);
 #else
   std::wstring wide_message{message};
-  BOOST_LOG_TRIVIAL(error)
-      << "SCADA Client Startup: "
-      << std::string{wide_message.begin(), wide_message.end()};
+  BOOST_LOG_TRIVIAL(error) << "SCADA Client Startup: "
+                           << std::string{wide_message.begin(),
+                                          wide_message.end()};
 #endif
 }
 
@@ -143,9 +144,7 @@ int main(int argc, char* argv[]) {
               return client::RunE2eObjectViewValuesCheck(app, executor);
             },
         .run_operator_use_case_smoke =
-            [&app] {
-              return client::RunE2eOperatorUseCaseSmoke(app);
-            },
+            [&app] { return client::RunE2eOperatorUseCaseSmoke(app); },
         .run_object_tree_labels_check =
             [&app, executor] {
               return client::RunE2eObjectTreeLabelsCheck(app, executor);
@@ -154,6 +153,8 @@ int main(int argc, char* argv[]) {
             [&app, executor] {
               return client::RunE2eHardwareTreeDevicesCheck(app, executor);
             },
+        .run_profile_save_check =
+            [&app] { return client::RunE2eProfileSaveCheck(app); },
         .run_application = [&app] { return app.Run(); },
         .log_startup_exception = &LogStartupException,
         .report_startup_success_if_unset =
