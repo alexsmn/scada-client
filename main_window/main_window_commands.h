@@ -17,27 +17,21 @@ template <class T>
 class BasicCommandRegistry;
 
 class DialogService;
-class Favourites;
 class LocalEvents;
 class MainWindowInterface;
 class MainWindowManager;
 class NodeEventProvider;
-class NodeService;
 class Profile;
 class SpeechService;
-class TaskManager;
 struct GlobalCommandContext;
 
 struct MainWindowCommandsContext {
   AnyExecutor executor_;
   MainWindowInterface& main_window_;
-  TaskManager& task_manager_;
   DialogService& dialog_service_;
   scada::SessionService& session_service_;
   NodeEventProvider& node_event_provider_;
-  NodeService& node_service_;
   LocalEvents& local_events_;
-  Favourites& favourites_;
   SpeechService& speech_service_;
   Profile& profile_;
   MainWindowManager& main_window_manager_;

@@ -130,10 +130,6 @@ void Profile::Load(const boost::json::value& data) {
 void Profile::Save() {
   BOOST_LOG_TRIVIAL(info) << "Save profile";
 
-  for (const Writer& writer : writers_) {
-    writer(*this);
-  }
-
   auto data = SaveToValue();
 
   if (SaveJsonToFile(data, GetFilePath()))
@@ -142,7 +138,15 @@ void Profile::Save() {
     BOOST_LOG_TRIVIAL(error) << "Profile save error";
 }
 
-boost::json::value Profile::SaveToValue() const {
+boost::json::value Profile::SaveToValue() {
+  for (const Writer& writer : writers_) {
+    writer(*this);
+  }
+
+  return SerializeToValue();
+}
+
+boost::json::value Profile::SerializeToValue() const {
   boost::json::value data = data_;
 
   // common settings

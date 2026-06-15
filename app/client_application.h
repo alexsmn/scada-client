@@ -9,6 +9,7 @@
 #include "timed_data/timed_data_service.h"
 #include "configuration/configuration_module.h"
 #include "scada/data_services_factory.h"
+#include "scada/status.h"
 
 #include <functional>
 #include <memory>
@@ -112,6 +113,9 @@ class ClientApplication : private ClientApplicationContext {
   bool HasSelectionCommandForTesting(unsigned command_id) const;
   bool HasGlobalCommandForTesting(unsigned command_id) const;
 
+  // Saves the current profile JSON to the logged-in server user.
+  [[nodiscard]] Awaitable<scada::Status> SaveProfileToServer();
+
   // Load profile and start.
   [[nodiscard]] Awaitable<void> Start();
   // Enter the main loop.
@@ -181,6 +185,7 @@ class ClientApplication : private ClientApplicationContext {
   std::stack<std::shared_ptr<void>> singletons_;
 
   bool profile_loaded_ = false;
+  scada::UInt64 profile_revision_ = 0;
 
   // Sets on `Quit` and never resets. Allows multiple `Quit` calls.
   bool quitting_ = false;

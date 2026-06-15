@@ -57,6 +57,9 @@ class Profile {
   void Load();
   void Save();
 
+  // Serializes the current profile after running registered writers.
+  boost::json::value SaveToValue();
+
   using MainWindows = std::map<int, MainWindowDef>;
   MainWindows main_windows;
 
@@ -135,7 +138,7 @@ class Profile {
 
  private:
   void Load(const boost::json::value& data);
-  boost::json::value SaveToValue() const;
+  boost::json::value SerializeToValue() const;
 
   std::filesystem::path GetFilePath();
 

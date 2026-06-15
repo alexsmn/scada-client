@@ -19,6 +19,8 @@ constexpr std::string_view kTestObjectTreeLabelsFileOption =
     "test-object-tree-labels-file";
 constexpr std::string_view kTestHardwareTreeDevicesFileOption =
     "test-hardware-tree-devices-file";
+constexpr std::string_view kTestProfileSaveFileOption =
+    "test-profile-save-file";
 
 std::atomic_bool& GetStatusReported() {
   static std::atomic_bool status_reported = false;
@@ -83,6 +85,10 @@ std::filesystem::path GetE2eObjectTreeLabelsReportPath() {
 
 std::filesystem::path GetE2eHardwareTreeDevicesReportPath() {
   return GetOptionPath(kTestHardwareTreeDevicesFileOption);
+}
+
+std::filesystem::path GetE2eProfileSaveReportPath() {
+  return GetOptionPath(kTestProfileSaveFileOption);
 }
 
 }  // namespace client

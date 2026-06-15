@@ -1,27 +1,36 @@
 #include "main_window/main_window_module.h"
 
+#include "aui/dialog_service.h"
+#include "aui/translation.h"
 #include "base/boost_log.h"
 #include "common/master_data_services.h"
 #include "controller/action_manager.h"
+#include "controller/command_registry.h"
 #include "controller/command_ui_registry.h"
 #include "controller/controller_context.h"
 #include "controller/controller_registry.h"
+#include "core/global_command_context.h"
 #include "events/event_fetcher.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/event_dispatcher.h"
 #include "main_window/main_menu/main_menu_model.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_commands.h"
+#include "main_window/main_window_interface.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
 #include "main_window/opened_view/opened_view_commands.h"
 #include "main_window/pages/page_commands.h"
 #include "main_window/selection_commands.h"
+#include "main_window/standard_command_ids.h"
 #include "main_window/status_bar/status_bar_model_builder.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 
 #if defined(UI_QT)
 #include "main_window/main_window_qt.h"
+#include <QApplication>
+#include <QSettings>
 #elif defined(UI_WT)
 #include "main_window/main_window_wt.h"
 #endif
@@ -45,10 +54,116 @@ std::unique_ptr<MainWindow> CreateMainWindow(MainWindowContext&& context) {
 }
 #endif
 
+BasicCommand<GlobalCommandContext> MakeMainWindowOptionCommand(
+    unsigned command_id,
+    std::u16string_view title,
+    Profile& profile,
+    bool MainWindowDef::* option) {
+  return {
+      .command_id = command_id,
+      .title = std::u16string{title},
+      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
+      .execute_handler =
+          [&profile, option](const GlobalCommandContext& context) {
+            MainWindowDef& prefs =
+                profile.GetMainWindow(context.main_window.GetMainWindowId());
+            prefs.*option = !(prefs.*option);
+            profile.NotifyChange();
+          },
+      .checked_handler =
+          [&profile, option](const GlobalCommandContext& context) {
+            const MainWindowDef* prefs =
+                profile.FindMainWindow(context.main_window.GetMainWindowId());
+            return prefs && prefs->*option;
+          }};
+}
+
+#if defined(UI_QT)
+QString GetSelectedLocaleName() {
+  QSettings settings;
+
+  if (auto locale_name = settings.value("LocaleName").toString();
+      !locale_name.isEmpty()) {
+    return locale_name;
+  }
+
+  return QLocale::system().bcp47Name();
+}
+
+bool IsRussianLocale(QStringView locale_name) {
+  return locale_name.startsWith(u"ru", Qt::CaseInsensitive);
+}
+
+void SetLocaleName(std::string_view locale_name) {
+  QSettings settings;
+  settings.setValue("LocaleName",
+                    QString::fromStdString(std::string(locale_name)));
+}
+
+void ApplyLanguageSelection(const AnyExecutor& executor,
+                            const GlobalCommandContext& context,
+                            std::string_view locale_name) {
+  SetLocaleName(locale_name);
+  CoSpawn(executor, [executor, &context]() -> Awaitable<void> {
+    auto result = co_await context.dialog_service.RunMessageBox(
+        Translate("Restart the application to apply the new language now?"),
+        Translate("Language"), MessageBoxMode::QuestionYesNo);
+    if (result == MessageBoxResult::Yes) {
+      QApplication::quit();
+    }
+    co_return;
+  });
+}
+
+BasicCommand<GlobalCommandContext> MakeLanguageCommand(
+    AnyExecutor executor,
+    unsigned command_id,
+    std::u16string_view title,
+    std::string_view locale_name,
+    bool is_russian) {
+  return {.command_id = command_id,
+          .title = std::u16string{title},
+          .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
+          .execute_handler =
+              [executor = std::move(executor),
+               locale_name](const GlobalCommandContext& context) {
+                ApplyLanguageSelection(executor, context, locale_name);
+              },
+          .checked_handler =
+              [is_russian](const GlobalCommandContext&) {
+                return IsRussianLocale(GetSelectedLocaleName()) == is_russian;
+              }};
+}
+#endif
+
+void RegisterMainWindowCommands(
+    AnyExecutor executor,
+    Profile& profile,
+    BasicCommandRegistry<GlobalCommandContext>& global_commands) {
+  global_commands.AddCommand(MakeMainWindowOptionCommand(
+      ID_VIEW_TOOLBAR, Translate("Toolbar"), profile, &MainWindowDef::toolbar));
+
+  global_commands.AddCommand(
+      MakeMainWindowOptionCommand(ID_VIEW_STATUS_BAR, Translate("Status Bar"),
+                                  profile, &MainWindowDef::status_bar));
+
+#if defined(UI_QT)
+  global_commands.AddCommand(MakeLanguageCommand(executor, ID_LANGUAGE_ENGLISH,
+                                                 Translate("English"), "en",
+                                                 /*is_russian=*/false));
+  global_commands.AddCommand(MakeLanguageCommand(executor, ID_LANGUAGE_RUSSIAN,
+                                                 Translate("Russian"), "ru_RU",
+                                                 /*is_russian=*/true));
+#else
+  (void)executor;
+#endif
+}
+
 }  // namespace
 
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
+  RegisterMainWindowCommands(executor_, profile_, global_commands_);
   RegisterOpenedViewCommandActions(ui_command_registry_, node_service_);
 
   assert(scada_services_.session_service);
@@ -93,10 +208,10 @@ MainWindowContext MainWindowModule::MakeMainWindowContext(int window_id) {
                                    DialogService& dialog_service) {
     assert(scada_services_.session_service);
     return std::make_unique<MainWindowCommands>(MainWindowCommandsContext{
-        executor_, main_window, task_manager_, dialog_service,
-        *scada_services_.session_service, node_event_provider_, node_service_,
-        local_events_, favourites_, speech_service_, profile_,
-        *main_window_manager_, login_handler, global_commands_});
+        executor_, main_window, dialog_service,
+        *scada_services_.session_service, node_event_provider_, local_events_,
+        speech_service_, profile_, *main_window_manager_, login_handler,
+        global_commands_});
   };
 
   auto main_menu_factory =

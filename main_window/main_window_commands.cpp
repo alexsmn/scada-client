@@ -1,17 +1,10 @@
 ﻿#include "main_window/main_window_commands.h"
 
-#include "aui/dialog_service.h"
 #include "aui/prompt_dialog.h"
 #include "aui/translation.h"
 #include "base/awaitable.h"
 #include "base/client_paths.h"
 #include "base/path_service.h"
-#include "ui/common/client_utils.h"
-#include "resources/common_resources.h"
-#include "modules/about/about_dialog.h"
-#ifdef _WIN32
-#include "modules/web/web_component.h"
-#endif
 #include "controller/command_registry.h"
 #include "controller/window_info.h"
 #include "events/local_events.h"
@@ -23,8 +16,10 @@
 #include "main_window/standard_command_ids.h"
 #include "net/net_executor_adapter.h"
 #include "profile/profile.h"
+#include "resources/common_resources.h"
 #include "scada/session_service.h"
 #include "services/speech_service.h"
+#include "ui/common/client_utils.h"
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -34,17 +29,11 @@
 #include <filesystem>
 #include <stdexcept>
 
-#if defined(UI_QT)
-#include <QApplication>
-#include <QSettings>
-#include <QMessageBox>
-#endif
-
 namespace {
 
 struct Option {
   unsigned id;
-  bool Profile::*option;
+  bool Profile::* option;
 };
 
 const Option options[] = {
@@ -57,7 +46,7 @@ const Option options[] = {
     {ID_EVENT_PLAY_SOUND, &Profile::event_play_sound},
     {0, nullptr}};
 
-static bool Profile::*GetOption(unsigned id) {
+static bool Profile::* GetOption(unsigned id) {
   for (const auto& opt : options) {
     if (opt.id == id) {
       return opt.option;
@@ -65,63 +54,6 @@ static bool Profile::*GetOption(unsigned id) {
   }
   return nullptr;
 }
-
-#if defined(UI_QT)
-QString GetSelectedLocaleName() {
-  QSettings settings;
-
-  if (auto locale_name = settings.value("LocaleName").toString();
-      !locale_name.isEmpty()) {
-    return locale_name;
-  }
-
-  return QLocale::system().bcp47Name();
-}
-
-bool IsRussianLocale(QStringView locale_name) {
-  return locale_name.startsWith(u"ru", Qt::CaseInsensitive);
-}
-
-void SetLocaleName(std::string_view locale_name) {
-  QSettings settings;
-  settings.setValue("LocaleName", QString::fromStdString(std::string(locale_name)));
-}
-
-void ApplyLanguageSelection(const AnyExecutor& executor,
-                            const GlobalCommandContext& context,
-                            std::string_view locale_name) {
-  SetLocaleName(locale_name);
-  CoSpawn(executor, [executor, &context]() -> Awaitable<void> {
-    auto result = co_await context.dialog_service.RunMessageBox(
-        Translate("Restart the application to apply the new language now?"),
-        Translate("Language"), MessageBoxMode::QuestionYesNo);
-    if (result == MessageBoxResult::Yes) {
-      QApplication::quit();
-    }
-    co_return;
-  });
-}
-
-BasicCommand<GlobalCommandContext> MakeLanguageCommand(
-    AnyExecutor executor,
-    unsigned command_id,
-    std::u16string_view title,
-    std::string_view locale_name,
-    bool is_russian) {
-  return {
-      .command_id = command_id,
-      .title = std::u16string{title},
-      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
-      .execute_handler =
-          [executor = std::move(executor),
-           locale_name](const GlobalCommandContext& context) {
-            ApplyLanguageSelection(executor, context, locale_name);
-          },
-      .checked_handler = [is_russian](const GlobalCommandContext&) {
-        return IsRussianLocale(GetSelectedLocaleName()) == is_russian;
-      }};
-}
-#endif
 
 void OpenPublicFolder() {
   std::filesystem::path path;
@@ -147,80 +79,11 @@ void OpenPublicFolder() {
 #endif
 }
 
-BasicCommand<GlobalCommandContext> MakeOptionCommand(
-    unsigned command_id,
-    std::u16string_view title,
-    Profile& profile,
-    bool MainWindowDef::*option) {
-  return {
-      .command_id = command_id,
-      .title = std::u16string{title},
-      .menu_group = MenuGroup::MAIN_WINDOW_SETTINGS,
-      .execute_handler =
-          [&profile, option](const GlobalCommandContext& context) {
-            MainWindowDef& prefs =
-                profile.GetMainWindow(context.main_window.GetMainWindowId());
-            prefs.*option = !(prefs.*option);
-            profile.NotifyChange();
-          },
-      .checked_handler =
-          [&profile, option](const GlobalCommandContext& context) {
-            const MainWindowDef* prefs =
-                profile.FindMainWindow(context.main_window.GetMainWindowId());
-            return prefs && prefs->*option;
-          }};
-}
-
 }  // namespace
 
 MainWindowCommands::MainWindowCommands(MainWindowCommandsContext&& context)
     : MainWindowCommandsContext{std::move(context)},
-      command_context_{main_window_, dialog_service_} {
-  global_commands_.AddCommand(
-      MakeOptionCommand(ID_VIEW_TOOLBAR, Translate("Toolbar"), profile_,
-                        &MainWindowDef::toolbar));
-
-  global_commands_.AddCommand(MakeOptionCommand(ID_VIEW_STATUS_BAR,
-                                                Translate("Status Bar"), profile_,
-                                                &MainWindowDef::status_bar));
-
-  global_commands_.AddCommand(
-      {.command_id = ID_APP_ABOUT,
-       .execute_handler = [](const GlobalCommandContext& context) {
-         ShowAboutDialog(context.dialog_service);
-       }});
-
-#if defined(UI_QT)
-  global_commands_.AddCommand(
-      {.command_id = ID_ABOUT_QT,
-       .execute_handler = [](const GlobalCommandContext& context) {
-         QMessageBox::aboutQt(context.dialog_service.GetParentWidget());
-       }});
-
-  global_commands_.AddCommand(MakeLanguageCommand(
-      executor_, ID_LANGUAGE_ENGLISH, Translate("English"), "en",
-      /*is_russian=*/false));
-  global_commands_.AddCommand(MakeLanguageCommand(
-      executor_, ID_LANGUAGE_RUSSIAN, Translate("Russian"), "ru_RU",
-      /*is_russian=*/true));
-#endif
-
-#if defined(_WIN32) && !defined(UI_WT)
-  global_commands_.AddCommand(
-      {.command_id = ID_HELP_MANUAL,
-       .execute_handler = [executor = executor_](
-                              const GlobalCommandContext& context) {
-         WindowDefinition def(kWebWindowInfo);
-         def.title = Translate("Documentation");
-         def.path = std::filesystem::path(
-             L"http://www.telecontrol.ru/workplace_manual");
-         CoSpawn(executor, [&main_window = context.main_window,
-                            def = std::move(def)]() -> Awaitable<void> {
-           co_await main_window.OpenView(def, true);
-         });
-       }});
-#endif
-}
+      command_context_{main_window_, dialog_service_} {}
 
 MainWindowCommands::~MainWindowCommands() {}
 
@@ -328,7 +191,7 @@ bool MainWindowCommands::IsCommandChecked(unsigned command_id) const {
            main_window_.FindViewByType(window_info->name);
   }
 
-  if (bool Profile::*option = GetOption(command_id))
+  if (bool Profile::* option = GetOption(command_id))
     return profile_.*option;
 
   if (const auto* command = global_commands_.FindCommand(command_id)) {
@@ -397,15 +260,15 @@ void MainWindowCommands::ExecuteCommand(unsigned command_id) {
         return;
       }
     }*/
-    CoSpawn(executor_, [this, def = WindowDefinition(*win_info)]()
-                         -> Awaitable<void> {
-      co_await main_window_.OpenView(def, true);
-    });
+    CoSpawn(executor_,
+            [this, def = WindowDefinition(*win_info)]() -> Awaitable<void> {
+              co_await main_window_.OpenView(def, true);
+            });
     return;
   }
 
   // Check option command.
-  if (bool Profile::*option = GetOption(command_id)) {
+  if (bool Profile::* option = GetOption(command_id)) {
     profile_.*option = !(profile_.*option);
     return;
   }
@@ -426,9 +289,9 @@ Awaitable<void> RenameCurrentPageAsync(AnyExecutor executor,
                                        MainWindowInterface& main_window,
                                        DialogService& dialog_service,
                                        std::u16string current_page_title) {
-  auto title = co_await RunPromptDialog(
-      dialog_service, Translate("Name:"), Translate("Rename"),
-      current_page_title);
+  auto title =
+      co_await RunPromptDialog(dialog_service, Translate("Name:"),
+                               Translate("Rename"), current_page_title);
   main_window.SetCurrentPageTitle(title);
   co_return;
 }
@@ -437,9 +300,9 @@ Awaitable<void> ShowRenameWindowDialogAsync(AnyExecutor executor,
                                             OpenedViewInterface& view,
                                             DialogService& dialog_service,
                                             std::u16string current_view_title) {
-  auto title = co_await RunPromptDialog(
-      dialog_service, Translate("Name:"), Translate("Rename"),
-      current_view_title);
+  auto title =
+      co_await RunPromptDialog(dialog_service, Translate("Name:"),
+                               Translate("Rename"), current_view_title);
   // TODO: Capture weak pointer.
   view.SetWindowTitle(title);
   co_return;

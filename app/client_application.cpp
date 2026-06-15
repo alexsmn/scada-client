@@ -21,6 +21,7 @@
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
 #include "metrics/otel_metrics.h"
+#include "model/security_node_ids.h"
 #include "modules/limits/limits_module.h"
 #include "modules/node_service_progress_tracker/node_service_progress_tracker.h"
 #include "modules/write/write_module.h"
@@ -40,6 +41,8 @@
 #include "services/speech_service_impl.h"
 #include "services/task_manager_impl.h"
 #include "timed_data/timed_data_service_factory.h"
+
+#include <boost/json.hpp>
 
 #include <transport/transport_factory_impl.h>
 
@@ -132,6 +135,27 @@ bool ClientApplication::HasSelectionCommandForTesting(
 bool ClientApplication::HasGlobalCommandForTesting(unsigned command_id) const {
   return core_module_ &&
          core_module_->global_commands().FindCommand(command_id) != nullptr;
+}
+
+Awaitable<scada::Status> ClientApplication::SaveProfileToServer() {
+  if (!profile_ || !master_data_services_) {
+    co_return scada::StatusCode::Bad;
+  }
+
+  auto services = master_data_services_->as_services();
+  if (!services.session_service || !services.method_service) {
+    co_return scada::StatusCode::Bad;
+  }
+
+  const auto user_id = services.session_service->GetUserId();
+  auto profile_json = boost::json::serialize(profile_->SaveToValue());
+  auto status = co_await services.method_service->Call(
+      user_id, security::id::UserType_SaveProfile,
+      {scada::String{std::move(profile_json)}, profile_revision_}, user_id);
+  if (scada::IsGood(status.code())) {
+    ++profile_revision_;
+  }
+  co_return status;
 }
 
 Awaitable<void> ClientApplication::Start() {

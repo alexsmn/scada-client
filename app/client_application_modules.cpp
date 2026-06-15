@@ -3,8 +3,12 @@
 #include "configuration/configuration_module.h"
 #include "export/configuration/export_configuration_module.h"
 #include "filesystem/filesystem_component.h"
+#include "modules/about/about_dialog.h"
 #include "modules/debugger/debugger_module.h"
 #include "modules/device_metrics/device_metrics_command.h"
+#if defined(_WIN32)
+#include "modules/web/web_component.h"
+#endif
 #if defined(UI_QT)
 #include "modules/graph/graph_component.h"
 #endif
@@ -39,6 +43,11 @@ void RegisterClientApplicationModules(ClientApplicationModules modules) {
 ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     ClientApplicationModules modules) {
   return [modules](ClientApplicationModuleContext& context) {
+    RegisterAboutCommands(context.global_commands_);
+#if defined(_WIN32)
+    RegisterWebCommands(context.executor_, context.global_commands_);
+#endif
+
 #if defined(UI_QT)
     context.singletons_.emplace(
         std::make_shared<GraphModule>(GraphModuleContext{
