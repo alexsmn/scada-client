@@ -4,6 +4,7 @@
 #include "export/configuration/export_configuration_module.h"
 #include "filesystem/filesystem_component.h"
 #include "modules/about/about_dialog.h"
+#include "modules/create/create_module.h"
 #include "modules/debugger/debugger_module.h"
 #include "modules/device_metrics/device_metrics_command.h"
 #if defined(_WIN32)
@@ -20,6 +21,7 @@
 #include "modules/sheet/sheet_component.h"
 #include "modules/summary/summary_component.h"
 #include "modules/table/table_component.h"
+#include "modules/time_range/time_range_module.h"
 #include "modules/timed_data/timed_data_component.h"
 #include "modules/transmission/transmission_component.h"
 #include "modules/watch/watch_component.h"
@@ -71,6 +73,9 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .selection_commands_ = context.selection_commands_,
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
+        std::make_shared<TimeRangeModule>(TimeRangeModuleContext{
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
         std::make_shared<TimedDataModule>(TimedDataModuleContext{
             .executor_ = context.executor_,
             .selection_commands_ = context.selection_commands_,
@@ -112,6 +117,10 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .profile_ = context.profile_,
             .session_service_ = *context.scada_services_.session_service,
             .selection_commands_ = context.selection_commands_,
+            .ui_command_registry_ = context.ui_command_registry_}));
+    context.singletons_.emplace(
+        std::make_shared<CreateModule>(CreateModuleContext{
+            .node_service_ = context.node_service_,
             .ui_command_registry_ = context.ui_command_registry_}));
 
     if (modules.configuration) {
@@ -170,8 +179,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     }
 
     if (modules.print) {
-      context.print_module_ =
-          std::make_unique<PrintModule>(PrintModuleContext{});
+      context.print_module_ = std::make_unique<PrintModule>(PrintModuleContext{
+          .ui_command_registry_ = context.ui_command_registry_});
     }
 
     if (modules.export_configuration) {

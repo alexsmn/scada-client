@@ -40,4 +40,8 @@ void RegisterWatchCommandActions(UiCommandRegistry& ui_command_registry) {
   ui_command_registry.AddAction(Action{.command_id_ = ID_CLEAR_ALL,
                                        .category_ = CATEGORY_EDIT,
                                        .title_ = Translate("Clear")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_SAVE_AS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Save As..."),
+                                       .short_title_ = Translate("Save")});
 }

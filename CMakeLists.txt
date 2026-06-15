@@ -111,6 +111,7 @@ endforeach()
 set(CLIENT_COMPONENTS
   about
   change_password
+  create
   create_service_item
   debugger
   device_metrics

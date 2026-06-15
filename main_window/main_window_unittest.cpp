@@ -13,6 +13,7 @@
 #include "controller/controller_mock.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
+#include "export/csv/csv_export_module.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
@@ -24,6 +25,7 @@
 #include "modules/summary/summary_component.h"
 #include "modules/table/table_component.h"
 #include "modules/timed_data/timed_data_component.h"
+#include "print/service/print_module.h"
 #include "profile/page.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
@@ -503,9 +505,11 @@ TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
       .executor_ = controller_env_.executor_,
       .selection_commands_ = controller_env_.selection_commands_,
       .ui_command_registry_ = ui_command_registry_}};
+  PrintModule print_module{
+      PrintModuleContext{.ui_command_registry_ = ui_command_registry_}};
+  CsvExportModule csv_export_module{
+      CsvExportModuleContext{.ui_command_registry_ = ui_command_registry_}};
   RegisterPortfolioCommandActions(ui_command_registry_);
-  RegisterOpenedViewCommandActions(ui_command_registry_,
-                                   controller_env_.node_service_);
 
   constexpr unsigned kGraphActions[] = {
       ID_VIEW_LEGEND,       ID_GRAPH_DOTS,  ID_GRAPH_STEPS,

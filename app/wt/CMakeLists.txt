@@ -40,6 +40,7 @@ target_link_libraries(client_wt_lib PUBLIC
   client_events_wt
   client_export_configuration_wt
   client_export_csv_wt
+  client_export_excel_wt
   client_favorites_wt
   client_filesystem_wt
   client_main_window_wt

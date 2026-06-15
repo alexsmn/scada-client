@@ -29,4 +29,28 @@ void RegisterSummaryCommandActions(UiCommandRegistry& ui_command_registry) {
                                        .title_ = Translate("Summary"),
                                        .image_id_ = IDB_SUMMARY,
                                        .flags_ = Action::ALWAYS_VISIBLE});
+
+  const std::pair<unsigned, const char*> interval_actions[] = {
+      {ID_INTERVAL_1M, "1-Minute"}, {ID_INTERVAL_5M, "5 min"},
+      {ID_INTERVAL_15M, "15 min"},  {ID_INTERVAL_30M, "30 min"},
+      {ID_INTERVAL_1H, "1-Hour"},   {ID_INTERVAL_12H, "12 hours"},
+      {ID_INTERVAL_1D, "1-Day"}};
+  for (const auto& [command_id, title] : interval_actions) {
+    ui_command_registry.AddAction(Action{.command_id_ = command_id,
+                                         .category_ = CATEGORY_INTERVAL,
+                                         .title_ = Translate(title),
+                                         .flags_ = Action::CHECKABLE});
+  }
+
+  const std::pair<unsigned, const char*> aggregation_actions[] = {
+      {ID_AGGREGATION_START, "First"}, {ID_AGGREGATION_END, "Last"},
+      {ID_AGGREGATION_COUNT, "Count"}, {ID_AGGREGATION_MIN, "Minimum"},
+      {ID_AGGREGATION_MAX, "Maximum"}, {ID_AGGREGATION_SUM, "Sum"},
+      {ID_AGGREGATION_AVG, "Average"}};
+  for (const auto& [command_id, title] : aggregation_actions) {
+    ui_command_registry.AddAction(Action{.command_id_ = command_id,
+                                         .category_ = CATEGORY_AGGREGATION,
+                                         .title_ = Translate(title),
+                                         .flags_ = Action::CHECKABLE});
+  }
 }

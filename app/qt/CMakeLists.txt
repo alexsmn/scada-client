@@ -42,6 +42,7 @@ target_link_libraries(client_qt_app_shared PUBLIC
   client_controller_qt
   client_events_qt
   client_export_configuration_qt
+  client_export_excel_qt
   client_graph_qt
   client_profile_qt
   client_services_qt

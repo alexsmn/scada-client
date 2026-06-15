@@ -11,6 +11,8 @@
 #include "controller/controller_registry.h"
 #include "core/global_command_context.h"
 #include "events/event_fetcher.h"
+#include "export/csv/opened_view_csv_export_command.h"
+#include "export/excel/opened_view_excel_export_command.h"
 #include "main_window/context_menu_model.h"
 #include "main_window/event_dispatcher.h"
 #include "main_window/main_menu/main_menu_model.h"
@@ -19,11 +21,18 @@
 #include "main_window/main_window_interface.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/main_window_module.h"
+#include "main_window/main_window_util.h"
 #include "main_window/opened_view/opened_view_commands.h"
 #include "main_window/pages/page_commands.h"
 #include "main_window/selection_commands.h"
 #include "main_window/standard_command_ids.h"
 #include "main_window/status_bar/status_bar_model_builder.h"
+#include "main_window/window_definition_builder.h"
+#include "modules/create/opened_view_create_command.h"
+#include "modules/node_properties/node_property_component.h"
+#include "modules/selection_edit/opened_view_paste_command.h"
+#include "modules/time_range/opened_view_time_range_command.h"
+#include "print/service/print_command.h"
 #include "profile/profile.h"
 #include "resources/common_resources.h"
 
@@ -164,7 +173,6 @@ void RegisterMainWindowCommands(
 MainWindowModule::MainWindowModule(MainWindowModuleContext&& context)
     : MainWindowModuleContext{std::move(context)} {
   RegisterMainWindowCommands(executor_, profile_, global_commands_);
-  RegisterOpenedViewCommandActions(ui_command_registry_, node_service_);
 
   assert(scada_services_.session_service);
 
@@ -320,15 +328,86 @@ std::unique_ptr<OpenedView> MainWindowModule::CreateOpenedView(
 
   auto opened_view_commands =
       std::make_unique<OpenedViewCommands>(OpenedViewCommandsContext{
-          executor_, selection_commands_object_, task_manager_,
-          *scada_services_.session_service, timed_data_service_, node_service_,
-          print_service_, ui_command_registry_.action_manager(), local_events_,
-          file_cache_, profile_, *main_window_manager_, create_tree_});
+          .executor_ = executor_,
+          .selection_commands_ = selection_commands_object_});
 
   // Must be called after `OpenedView::Init` is called, so it creates the
   // controller.
   opened_view_commands->SetContext(opened_view.get(),
                                    &main_window.GetDialogService());
+  auto* opened_view_ptr = opened_view.get();
+  auto& dialog_service = main_window.GetDialogService();
+  opened_view_commands->AddCommandHandler(
+      std::make_unique<OpenedViewPasteCommand>(OpenedViewPasteCommandContext{
+          .executor_ = executor_,
+          .session_service_ = *scada_services_.session_service,
+          .node_service_ = node_service_,
+          .task_manager_ = task_manager_,
+          .create_tree_ = create_tree_,
+          .controller_ = opened_view_ptr->controller()}));
+  opened_view_commands->AddCommandHandler(
+      std::make_unique<OpenedViewCsvExportCommand>(
+          OpenedViewCsvExportCommandContext{
+              .executor_ = executor_,
+              .dialog_service_ = dialog_service,
+              .profile_ = profile_,
+              .export_model_getter_ =
+                  [opened_view_ptr] {
+                    return opened_view_ptr->controller().GetExportModel();
+                  },
+              .window_title_getter_ =
+                  [opened_view_ptr] {
+                    return opened_view_ptr->GetWindowTitle();
+                  }}));
+  opened_view_commands->AddCommandHandler(
+      std::make_unique<OpenedViewExcelExportCommand>(
+          OpenedViewExcelExportCommandContext{
+              .dialog_service_ = dialog_service,
+              .export_model_getter_ = [opened_view_ptr] {
+                return opened_view_ptr->controller().GetExportModel();
+              }}));
+  opened_view_commands->AddCommandHandler(
+      std::make_unique<OpenedViewTimeRangeCommand>(
+          OpenedViewTimeRangeCommandContext{
+              .executor_ = executor_,
+              .dialog_service_ = dialog_service,
+              .profile_ = profile_,
+              .time_model_getter_ = [opened_view_ptr] {
+                return opened_view_ptr->controller().GetTimeModel();
+              }}));
+  opened_view_commands->AddCommandHandler(
+      std::make_unique<OpenedViewCreateCommand>(OpenedViewCreateCommandContext{
+          .executor_ = executor_,
+          .dialog_service_ = dialog_service,
+          .session_service_ = *scada_services_.session_service,
+          .node_service_ = node_service_,
+          .task_manager_ = task_manager_,
+          .local_events_ = local_events_,
+          .profile_ = profile_,
+          .create_tree_ = create_tree_,
+          .controller_ = opened_view_ptr->controller(),
+          .created_node_handler_ =
+              [this, opened_view_ptr](NodeRef node) -> Awaitable<void> {
+            auto def = co_await MakeWindowDefinitionAsync(
+                executor_, &kNodePropertyWindowInfo, node,
+                /*expand_groups=*/false);
+            co_await ::OpenView(&opened_view_ptr->main_window(), def, true);
+            co_return;
+          }}));
+  if (print_service_) {
+    opened_view_commands->AddCommandHandler(
+        std::make_unique<PrintCommand>(PrintCommandContext{
+            .print_service_ = *print_service_,
+            .dialog_service_ = dialog_service,
+            .export_model_getter_ =
+                [opened_view_ptr] {
+                  return opened_view_ptr->controller().GetExportModel();
+                },
+            .print_view_handler_ =
+                [opened_view_ptr](PrintService& print_service) {
+                  opened_view_ptr->Print(print_service);
+                }}));
+  }
 
   opened_view->commands = std::move(opened_view_commands);
 

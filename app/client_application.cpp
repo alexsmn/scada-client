@@ -16,6 +16,7 @@
 #include "events/local_events.h"
 #include "export/configuration/export_configuration_module.h"
 #include "export/csv/csv_export_module.h"
+#include "export/excel/excel_export_module.h"
 #include "favorites/favorites_module.h"
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_module.h"
@@ -185,8 +186,10 @@ void ClientApplication::PostLogin() {
   CreateNodeService(ctx);
   ctx.alias_resolver = CreateAliasResolver(*node_service_, logger_);
 
-  singletons_.emplace(
-      std::make_shared<CsvExportModule>(CsvExportModuleContext{}));
+  singletons_.emplace(std::make_shared<CsvExportModule>(
+      CsvExportModuleContext{.ui_command_registry_ = *ui_command_registry_}));
+  singletons_.emplace(std::make_shared<ExcelExportModule>(
+      ExcelExportModuleContext{.ui_command_registry_ = *ui_command_registry_}));
 
   CreateEventAndDataServices(ctx);
   CreateUserServices(ctx);

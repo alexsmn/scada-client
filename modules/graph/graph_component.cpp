@@ -103,6 +103,49 @@ void RegisterGraphCommandActions(UiCommandRegistry& ui_command_registry) {
                                        .title_ = Translate("Display"),
                                        .image_id_ = ID_MODUS_VIEW,
                                        .flags_ = Action::ALWAYS_VISIBLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_VIEW_LEGEND,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Legend"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_DOTS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Dots"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_STEPS,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Steps"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_SCROLL_BAR,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Scroll Bar"),
+                                       .flags_ = Action::CHECKABLE});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_NOW,
+                                       .category_ = CATEGORY_VIEW,
+                                       .title_ = Translate("Scroll to Now"),
+                                       .short_title_ = Translate("Now"),
+                                       .flags_ = Action::CHECKABLE});
+  if (!ui_command_registry.action_manager().FindAction(ID_GRAPH_COLOR)) {
+    ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_COLOR,
+                                         .category_ = CATEGORY_SETUP,
+                                         .title_ = Translate("Line Color..."),
+                                         .short_title_ = Translate("Color")});
+  }
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_SETUP,
+                                       .category_ = CATEGORY_SETUP,
+                                       .title_ = Translate("Graph Setup..."),
+                                       .short_title_ = Translate("Setup"),
+                                       .image_id_ = ID_GRAPH_VIEW});
+  ui_command_registry.AddAction(
+      Action{.command_id_ = ID_GRAPH_BK_COLOR,
+             .category_ = CATEGORY_SETUP,
+             .title_ = Translate("Background Color..."),
+             .short_title_ = Translate("Background")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_ADD_PANE,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Add Pane")});
+  ui_command_registry.AddAction(Action{.command_id_ = ID_GRAPH_DELETE_PANE,
+                                       .category_ = CATEGORY_EDIT,
+                                       .title_ = Translate("Delete Pane")});
 
   ui_command_registry.AddMenuItem({.menu_id = MainMenuId::Graph,
                                    .order = 100,
