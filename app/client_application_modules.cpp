@@ -74,7 +74,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .ui_command_registry_ = context.ui_command_registry_}));
     context.singletons_.emplace(
         std::make_shared<TimeRangeModule>(TimeRangeModuleContext{
-            .ui_command_registry_ = context.ui_command_registry_}));
+            .ui_command_registry_ = context.ui_command_registry_,
+            .opened_view_commands_ = context.opened_view_commands_}));
     context.singletons_.emplace(
         std::make_shared<TimedDataModule>(TimedDataModuleContext{
             .executor_ = context.executor_,
@@ -109,7 +110,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
             .node_service_ = context.node_service_,
             .task_manager_ = context.task_manager_,
             .selection_commands_ = context.selection_commands_,
-            .ui_command_registry_ = context.ui_command_registry_}));
+            .ui_command_registry_ = context.ui_command_registry_,
+            .opened_view_commands_ = context.opened_view_commands_}));
     context.singletons_.emplace(
         std::make_shared<ChangePasswordModule>(ChangePasswordModuleContext{
             .executor_ = context.executor_,
@@ -121,7 +123,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
     context.singletons_.emplace(
         std::make_shared<CreateModule>(CreateModuleContext{
             .node_service_ = context.node_service_,
-            .ui_command_registry_ = context.ui_command_registry_}));
+            .ui_command_registry_ = context.ui_command_registry_,
+            .opened_view_commands_ = context.opened_view_commands_}));
 
     if (modules.configuration) {
       context.singletons_.emplace(
@@ -180,7 +183,8 @@ ClientApplicationModuleConfigurator MakeDefaultClientApplicationModules(
 
     if (modules.print) {
       context.print_module_ = std::make_unique<PrintModule>(PrintModuleContext{
-          .ui_command_registry_ = context.ui_command_registry_});
+          .ui_command_registry_ = context.ui_command_registry_,
+          .opened_view_commands_ = context.opened_view_commands_});
     }
 
     if (modules.export_configuration) {

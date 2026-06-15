@@ -3,15 +3,16 @@
 #include "aui/test/app_environment.h"
 #include "base/logger.h"
 #include "base/test/awaitable_test.h"
-#include "modules/web/web_component.h"
-#include "controller/controller_fake.h"
 #include "controller/command_ui_registry.h"
+#include "controller/controller_fake.h"
 #include "controller/test/controller_environment.h"
 #include "core/progress_host_impl.h"
 #include "events/event_module.h"
 #include "favorites/favorites_module.h"
 #include "main_window/main_window.h"
 #include "main_window/main_window_manager.h"
+#include "main_window/opened_view/opened_view_command_registry.h"
+#include "modules/web/web_component.h"
 #include "portfolio/portfolio_module.h"
 #include "profile/profile.h"
 #include "services/speech_service_mock.h"
@@ -73,6 +74,7 @@ class MainWindowModuleTest : public Test {
        .ui_command_registry_ = ui_command_registry_}};
 
   std::optional<MainWindowModule> main_window_module_;
+  OpenedViewCommandRegistry opened_view_command_registry_;
 
   MainWindow* main_window_ = nullptr;
 
@@ -114,6 +116,7 @@ void MainWindowModuleTest::SetUp() {
       .global_commands_ = controller_env_.global_commands_,
       .selection_commands_ = controller_env_.selection_commands_,
       .ui_command_registry_ = ui_command_registry_,
+      .opened_view_commands_ = opened_view_command_registry_,
       .controller_factory_ = controller_factory});
 
   const auto& main_windows =
@@ -155,9 +158,8 @@ TEST_F(MainWindowModuleTest, OpensCachedViewWhenDownloadCompletes) {
   auto path = std::filesystem::path("some/path");
 
   EXPECT_CALL(controller_env_.file_manager_, DownloadFileFromServer(path))
-      .WillOnce([](const std::filesystem::path&) {
-        return CompleteDownloadAsync();
-      });
+      .WillOnce(
+          [](const std::filesystem::path&) { return CompleteDownloadAsync(); });
 
   auto window_def =
       WindowDefinition{ControllerEnvironment::kFakeWindowInfo}.set_path(path);

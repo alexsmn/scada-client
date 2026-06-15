@@ -31,6 +31,14 @@ void OpenedViewCommands::AddCommandHandler(
   command_handlers_.emplace_back(std::move(command_handler));
 }
 
+void OpenedViewCommands::AddCommandHandlers(
+    std::vector<std::unique_ptr<CommandHandler>> command_handlers) {
+  command_handlers_.reserve(command_handlers_.size() + command_handlers.size());
+  for (auto& command_handler : command_handlers) {
+    AddCommandHandler(std::move(command_handler));
+  }
+}
+
 CommandHandler* OpenedViewCommands::GetCommandHandler(unsigned command_id) {
   assert(controller_);
 

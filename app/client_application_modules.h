@@ -20,6 +20,7 @@ class ControllerRegistry;
 class FileSystemComponent;
 class LocalEvents;
 class NodeService;
+class OpenedViewCommandRegistry;
 class Profile;
 class PrintModule;
 class TaskManager;
@@ -62,6 +63,7 @@ struct ClientApplicationModuleContext {
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   UiCommandRegistry& ui_command_registry_;
+  OpenedViewCommandRegistry& opened_view_commands_;
   std::stack<std::shared_ptr<void>>& singletons_;
 };
 

@@ -11,9 +11,11 @@
 #include "controller/command_ui_registry.h"
 #include "controller/selection_model.h"
 #include "core/selection_command_context.h"
+#include "main_window/opened_view/opened_view_command_registry.h"
 #include "node_service/node_service.h"
 #include "node_service/node_util.h"
 #include "resources/common_resources.h"
+#include "selection_edit/opened_view_paste_command.h"
 #include "services/task_manager.h"
 #include "ui/common/client_utils.h"
 
@@ -114,6 +116,18 @@ SelectionEditModule::SelectionEditModule(SelectionEditModuleContext&& context)
              .title_ = Translate("Delete"),
              .image_id_ = IDB_DELETE,
              .shortcut_ = Shortcut{aui::KeyCode::Delete}});
+
+  opened_view_commands_.AddFactory(
+      [](const OpenedViewCommandFactoryContext& context) {
+        return std::make_unique<OpenedViewPasteCommand>(
+            OpenedViewPasteCommandContext{
+                .executor_ = context.executor_,
+                .session_service_ = context.session_service_,
+                .node_service_ = context.node_service_,
+                .task_manager_ = context.task_manager_,
+                .create_tree_ = context.create_tree_,
+                .controller_ = context.controller_});
+      });
 
   selection_commands_.AddCommand(BasicCommand<SelectionCommandContext>{
       .command_id = ID_COPY,

@@ -3,11 +3,13 @@
 #include "scada/node_id.h"
 
 class NodeService;
+class OpenedViewCommandRegistry;
 class UiCommandRegistry;
 
 struct CreateModuleContext {
   NodeService& node_service_;
   UiCommandRegistry& ui_command_registry_;
+  OpenedViewCommandRegistry& opened_view_commands_;
 };
 
 class CreateModule : private CreateModuleContext {

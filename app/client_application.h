@@ -60,6 +60,7 @@ class MainWindowModule;
 class MasterDataServices;
 class NodeService;
 class NodeServiceProgressTracker;
+class OpenedViewCommandRegistry;
 class PortfolioModule;
 class Profile;
 class PrintModule;
@@ -154,6 +155,7 @@ class ClientApplication : private ClientApplicationContext {
 
   std::unique_ptr<ControllerRegistry> controller_registry_;
   std::unique_ptr<UiCommandRegistry> ui_command_registry_;
+  std::unique_ptr<OpenedViewCommandRegistry> opened_view_command_registry_;
 
   std::shared_ptr<MasterDataServices> master_data_services_;
 

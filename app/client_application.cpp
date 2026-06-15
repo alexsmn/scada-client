@@ -21,6 +21,7 @@
 #include "filesystem/filesystem_component.h"
 #include "main_window/main_window_module.h"
 #include "main_window/main_window_util.h"
+#include "main_window/opened_view/opened_view_command_registry.h"
 #include "metrics/otel_metrics.h"
 #include "model/security_node_ids.h"
 #include "modules/limits/limits_module.h"
@@ -99,6 +100,8 @@ ClientApplication::ClientApplication(ClientApplicationContext&& context)
                                                .export_interval = 1min})},
       controller_registry_{std::make_unique<ControllerRegistry>()},
       ui_command_registry_{std::make_unique<UiCommandRegistry>()},
+      opened_view_command_registry_{
+          std::make_unique<OpenedViewCommandRegistry>()},
       master_data_services_{std::make_shared<MasterDataServices>(executor_)},
       quit_completion_{executor_} {
   logger_ = std::make_shared<BoostLogAdapter>("client");
@@ -186,10 +189,13 @@ void ClientApplication::PostLogin() {
   CreateNodeService(ctx);
   ctx.alias_resolver = CreateAliasResolver(*node_service_, logger_);
 
-  singletons_.emplace(std::make_shared<CsvExportModule>(
-      CsvExportModuleContext{.ui_command_registry_ = *ui_command_registry_}));
-  singletons_.emplace(std::make_shared<ExcelExportModule>(
-      ExcelExportModuleContext{.ui_command_registry_ = *ui_command_registry_}));
+  singletons_.emplace(std::make_shared<CsvExportModule>(CsvExportModuleContext{
+      .ui_command_registry_ = *ui_command_registry_,
+      .opened_view_commands_ = *opened_view_command_registry_}));
+  singletons_.emplace(
+      std::make_shared<ExcelExportModule>(ExcelExportModuleContext{
+          .ui_command_registry_ = *ui_command_registry_,
+          .opened_view_commands_ = *opened_view_command_registry_}));
 
   CreateEventAndDataServices(ctx);
   CreateUserServices(ctx);
@@ -348,6 +354,7 @@ ClientApplicationModuleContext ClientApplication::BuildModuleContext(
       .global_commands_ = core_module_->global_commands(),
       .selection_commands_ = core_module_->selection_commands(),
       .ui_command_registry_ = *ui_command_registry_,
+      .opened_view_commands_ = *opened_view_command_registry_,
       .singletons_ = singletons_};
 }
 
@@ -405,6 +412,7 @@ void ClientApplication::CreateMainWindow(const PostLoginContext& ctx) {
           .global_commands_ = core_module_->global_commands(),
           .selection_commands_ = core_module_->selection_commands(),
           .ui_command_registry_ = *ui_command_registry_,
+          .opened_view_commands_ = *opened_view_command_registry_,
           .controller_factory_ = std::bind_front(
               &ControllerFactoryImpl::CreateController, controller_factory)});
   shutdown_stack_.Push([this] { main_window_module_.reset(); });

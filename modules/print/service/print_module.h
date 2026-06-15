@@ -4,9 +4,11 @@
 
 class PrintService;
 class UiCommandRegistry;
+class OpenedViewCommandRegistry;
 
 struct PrintModuleContext {
   UiCommandRegistry& ui_command_registry_;
+  OpenedViewCommandRegistry& opened_view_commands_;
 };
 
 class PrintModule : private PrintModuleContext {

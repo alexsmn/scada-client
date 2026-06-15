@@ -17,6 +17,7 @@
 #include "main_window/context_menu_model.h"
 #include "main_window/main_window_manager.h"
 #include "main_window/opened_view/opened_view.h"
+#include "main_window/opened_view/opened_view_command_registry.h"
 #include "main_window/opened_view/opened_view_commands.h"
 #include "main_window/selection_commands.h"
 #include "main_window/status_bar/status_bar_model_impl.h"
@@ -487,6 +488,8 @@ TEST_F(MainWindowTest,
 
 #if defined(UI_QT)
 TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
+  OpenedViewCommandRegistry opened_view_command_registry;
+
   GraphModule graph_module{GraphModuleContext{
       .executor_ = controller_env_.executor_,
       .file_cache_ = controller_env_.file_cache_,
@@ -505,10 +508,12 @@ TEST_F(MainWindowTest, ContextMenuShowsExpectedActionsForActiveOpenedView) {
       .executor_ = controller_env_.executor_,
       .selection_commands_ = controller_env_.selection_commands_,
       .ui_command_registry_ = ui_command_registry_}};
-  PrintModule print_module{
-      PrintModuleContext{.ui_command_registry_ = ui_command_registry_}};
-  CsvExportModule csv_export_module{
-      CsvExportModuleContext{.ui_command_registry_ = ui_command_registry_}};
+  PrintModule print_module{PrintModuleContext{
+      .ui_command_registry_ = ui_command_registry_,
+      .opened_view_commands_ = opened_view_command_registry}};
+  CsvExportModule csv_export_module{CsvExportModuleContext{
+      .ui_command_registry_ = ui_command_registry_,
+      .opened_view_commands_ = opened_view_command_registry}};
   RegisterPortfolioCommandActions(ui_command_registry_);
 
   constexpr unsigned kGraphActions[] = {

@@ -23,6 +23,7 @@ class MainWindow;
 class MainWindowManager;
 class NodeEventProvider;
 class NodeService;
+class OpenedViewCommandRegistry;
 class OpenedView;
 class PortfolioManager;
 class Profile;
@@ -63,6 +64,7 @@ struct MainWindowModuleContext {
   BasicCommandRegistry<GlobalCommandContext>& global_commands_;
   BasicCommandRegistry<SelectionCommandContext>& selection_commands_;
   UiCommandRegistry& ui_command_registry_;
+  OpenedViewCommandRegistry& opened_view_commands_;
   // TODO: Keep either controller factory or controller registry.
   ControllerFactory controller_factory_;
 };

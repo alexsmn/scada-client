@@ -4,6 +4,8 @@
 #include "controller/action.h"
 #include "controller/action_manager.h"
 #include "controller/command_ui_registry.h"
+#include "create/opened_view_create_command.h"
+#include "main_window/opened_view/opened_view_command_registry.h"
 #include "model/data_items_node_ids.h"
 #include "model/devices_node_ids.h"
 #include "model/history_node_ids.h"
@@ -108,4 +110,20 @@ CreateModule::CreateModule(CreateModuleContext&& context)
         ui_command_registry_.action_manager(), ID_NEW + i, CATEGORY_CREATE,
         node_service_.GetNode(kNewCommandTypeIds[i])));
   }
+
+  opened_view_commands_.AddFactory(
+      [](const OpenedViewCommandFactoryContext& context) {
+        return std::make_unique<OpenedViewCreateCommand>(
+            OpenedViewCreateCommandContext{
+                .executor_ = context.executor_,
+                .dialog_service_ = context.dialog_service_,
+                .session_service_ = context.session_service_,
+                .node_service_ = context.node_service_,
+                .task_manager_ = context.task_manager_,
+                .local_events_ = context.local_events_,
+                .profile_ = context.profile_,
+                .create_tree_ = context.create_tree_,
+                .controller_ = context.controller_,
+                .created_node_handler_ = context.created_node_handler_});
+      });
 }

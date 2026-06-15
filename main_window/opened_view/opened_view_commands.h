@@ -32,6 +32,8 @@ class OpenedViewCommands : private OpenedViewCommandsContext,
   void SetContext(OpenedView* opened_view, DialogService* dialog_service);
   // Adds a module-owned opened-view command handler.
   void AddCommandHandler(std::unique_ptr<CommandHandler> command_handler);
+  void AddCommandHandlers(
+      std::vector<std::unique_ptr<CommandHandler>> command_handlers);
 
   // CommandHandler
   virtual CommandHandler* GetCommandHandler(unsigned command_id) override;
